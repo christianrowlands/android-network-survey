@@ -9,10 +9,24 @@
     tools:context="com.craxiom.networksurvey.NetworkDetailsActivity"
     tools:showIn="@layout/activity_network_details">
 
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_margin="@dimen/text_margin"
-        android:text="@string/large_text"/>
+    <GridLayout
+        android:id="@+id/grid"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
 
+        <TextView
+            android:id="@+id/mcc"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/mcc_label"/>
+
+        <TextView
+            android:id="@+id/mccValue"
+            android:layout_width="42dp"
+            android:layout_height="wrap_content"
+            android:layout_column="1"
+            android:layout_row="0"
+            />
+
+    </GridLayout>
 </android.support.v4.widget.NestedScrollView>

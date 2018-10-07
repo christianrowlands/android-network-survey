@@ -1,26 +1,43 @@
 package com.craxiom.networksurvey;
 
+import android.Manifest;
+import android.content.Context;
+import android.content.pm.PackageManager;
 import android.os.Bundle;
-import android.support.design.widget.FloatingActionButton;
-import android.support.design.widget.Snackbar;
+import android.support.annotation.NonNull;
+import android.support.v4.app.ActivityCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
-import android.view.View;
+import android.telephony.CellIdentityLte;
+import android.telephony.CellInfo;
+import android.telephony.CellInfoLte;
+import android.telephony.CellSignalStrengthLte;
+import android.telephony.TelephonyManager;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.widget.TextView;
+
+import java.util.List;
 
 public class NetworkDetailsActivity extends AppCompatActivity
 {
+    private final String LOG_TAG = NetworkDetailsActivity.class.getSimpleName();
+
+    private static final int ACCESS_COARSE_LOCATION_PERMISSION_REQUEST_ID = 1;
 
     @Override
     protected void onCreate(Bundle savedInstanceState)
     {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_network_details);
-        Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
+        Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
-        FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
+        ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.ACCESS_COARSE_LOCATION}, ACCESS_COARSE_LOCATION_PERMISSION_REQUEST_ID);
+
+        // TODO Delete me
+        /*FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
         fab.setOnClickListener(new View.OnClickListener()
         {
             @Override
@@ -29,7 +46,21 @@ public class NetworkDetailsActivity extends AppCompatActivity
                 Snackbar.make(view, "Replace with your own action", Snackbar.LENGTH_LONG)
                         .setAction("Action", null).show();
             }
-        });
+        });*/
+    }
+
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults)
+    {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+
+        if (requestCode == ACCESS_COARSE_LOCATION_PERMISSION_REQUEST_ID &&
+                grantResults.length > 0 &&
+                grantResults[0] == PackageManager.PERMISSION_GRANTED)
+        {
+            getCellDetails();
+        }
     }
 
     @Override
@@ -54,5 +85,50 @@ public class NetworkDetailsActivity extends AppCompatActivity
             return true;
         }
         return super.onOptionsItemSelected(item);
+    }
+
+    private void getCellDetails() throws SecurityException
+    {
+        //Context.CONNECTIVITY_SERVICE;
+        //Context.NETWORK_STATS_SERVICE;
+        //Context.TELEPHONY_SUBSCRIPTION_SERVICE;
+
+        TelephonyManager telephonyManager = (TelephonyManager) this.getSystemService(Context.TELEPHONY_SERVICE);
+
+        if (telephonyManager == null)
+        {
+            Log.w(LOG_TAG, "Unable to get access to the Telephony Manager.  No network information will be displayed");
+            return;
+        }
+
+        final List<CellInfo> allCellInfo = telephonyManager.getAllCellInfo();
+        if (allCellInfo.size() > 0)
+        {
+            for (CellInfo cellInfo : allCellInfo)
+            {
+                // For now, just look for the serving cell
+                if (cellInfo.isRegistered())
+                {
+                    if (cellInfo instanceof CellInfoLte)
+                    {
+                        CellInfoLte cellInfoLte = (CellInfoLte) cellInfo;
+                        final CellIdentityLte cellIdentity = ((CellInfoLte) cellInfo).getCellIdentity();
+
+                        final int mcc = cellIdentity.getMcc();
+                        if (mcc != Integer.MAX_VALUE)
+                        {
+                            final TextView mccView = findViewById(R.id.mccValue);
+                            mccView.setText(String.valueOf(mcc));
+                        }
+
+                        CellSignalStrengthLte cellSignalStrengthLte = cellInfoLte.getCellSignalStrength();
+                        cellSignalStrengthLte.getDbm();
+                    }
+
+                }
+            }
+
+        }
+
     }
 }
