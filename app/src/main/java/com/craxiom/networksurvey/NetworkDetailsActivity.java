@@ -59,7 +59,7 @@ public class NetworkDetailsActivity extends AppCompatActivity
                 grantResults.length > 0 &&
                 grantResults[0] == PackageManager.PERMISSION_GRANTED)
         {
-            getCellDetails();
+            refreshCellDetails();
         }
     }
 
@@ -87,7 +87,7 @@ public class NetworkDetailsActivity extends AppCompatActivity
         return super.onOptionsItemSelected(item);
     }
 
-    private void getCellDetails() throws SecurityException
+    private void refreshCellDetails() throws SecurityException
     {
         //Context.CONNECTIVITY_SERVICE;
         //Context.NETWORK_STATS_SERVICE;
@@ -114,12 +114,10 @@ public class NetworkDetailsActivity extends AppCompatActivity
                         CellInfoLte cellInfoLte = (CellInfoLte) cellInfo;
                         final CellIdentityLte cellIdentity = ((CellInfoLte) cellInfo).getCellIdentity();
 
-                        final int mcc = cellIdentity.getMcc();
-                        if (mcc != Integer.MAX_VALUE)
-                        {
-                            final TextView mccView = findViewById(R.id.mccValue);
-                            mccView.setText(String.valueOf(mcc));
-                        }
+                        checkAndSetValue(cellIdentity.getMcc(), (TextView) findViewById(R.id.mccValue));
+                        checkAndSetValue(cellIdentity.getMnc(), (TextView) findViewById(R.id.mncValue));
+                        checkAndSetValue(cellIdentity.getTac(), (TextView) findViewById(R.id.tacValue));
+                        checkAndSetValue(cellIdentity.getCi(), (TextView) findViewById(R.id.cidValue));
 
                         CellSignalStrengthLte cellSignalStrengthLte = cellInfoLte.getCellSignalStrength();
                         cellSignalStrengthLte.getDbm();
@@ -127,8 +125,21 @@ public class NetworkDetailsActivity extends AppCompatActivity
 
                 }
             }
-
         }
+    }
 
+    /**
+     * Checks to make sure the value is valid, and then sets it to the provided {@link TextView}.
+     *
+     * @param valueToCheck The value to check.  If the value is equal to {@link Integer#MAX_VALUE},
+     *                     it is ignored, otherwise it is set to the text view.
+     * @param textView     The text view to set the value on.
+     */
+    private void checkAndSetValue(int valueToCheck, TextView textView)
+    {
+        if (valueToCheck != Integer.MAX_VALUE)
+        {
+            textView.setText(String.valueOf(valueToCheck));
+        }
     }
 }

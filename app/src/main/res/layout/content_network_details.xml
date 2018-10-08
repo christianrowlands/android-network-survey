@@ -12,21 +12,81 @@
     <GridLayout
         android:id="@+id/grid"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content">
+        android:layout_height="wrap_content"
+        android:padding="3dp"
+        android:rowCount="15">
 
         <TextView
             android:id="@+id/mcc"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="@string/mcc_label"/>
+            android:layout_column="0"
+            android:layout_row="0"
+            android:text="@string/mcc_label"
+            android:textAppearance="@style/LabelText"/>
 
         <TextView
             android:id="@+id/mccValue"
-            android:layout_width="42dp"
+            android:layout_width="70dp"
             android:layout_height="wrap_content"
             android:layout_column="1"
             android:layout_row="0"
-            />
+            android:text=""
+            android:textAppearance="@style/ValueText"/>
+
+        <TextView
+            android:id="@+id/mnc"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_column="0"
+            android:layout_row="1"
+            android:text="@string/mnc_label"
+            android:textAppearance="@style/LabelText"/>
+
+        <TextView
+            android:id="@+id/mncValue"
+            android:layout_width="70dp"
+            android:layout_height="wrap_content"
+            android:layout_column="1"
+            android:layout_row="1"
+            android:text=""
+            android:textAppearance="@style/ValueText"/>
+
+        <TextView
+            android:id="@+id/tac"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_column="0"
+            android:layout_row="2"
+            android:text="@string/tac_label"
+            android:textAppearance="@style/LabelText"/>
+
+        <TextView
+            android:id="@+id/tacValue"
+            android:layout_width="120dp"
+            android:layout_height="wrap_content"
+            android:layout_column="1"
+            android:layout_row="2"
+            android:text=""
+            android:textAppearance="@style/ValueText"/>
+
+        <TextView
+            android:id="@+id/cid"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_column="0"
+            android:layout_row="3"
+            android:text="@string/cid_label"
+            android:textAppearance="@style/LabelText"/>
+
+        <TextView
+            android:id="@+id/cidValue"
+            android:layout_width="140dp"
+            android:layout_height="wrap_content"
+            android:layout_column="1"
+            android:layout_row="3"
+            android:text=""
+            android:textAppearance="@style/ValueText"/>
 
     </GridLayout>
 </android.support.v4.widget.NestedScrollView>

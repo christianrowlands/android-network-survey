@@ -3,5 +3,9 @@
 
     <string name="action_settings">Settings</string>
 
-    <string name="mcc_label">MCC:</string>
+    <string name="technology_label">Technology: </string>
+    <string name="mcc_label">MCC: </string>
+    <string name="mnc_label">MNC: </string>
+    <string name="tac_label">TAC: </string>
+    <string name="cid_label">CID: </string>
 </resources>
