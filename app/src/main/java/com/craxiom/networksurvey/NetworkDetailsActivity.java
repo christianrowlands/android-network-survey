@@ -4,6 +4,7 @@ import android.Manifest;
 import android.content.Context;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
+import android.os.Handler;
 import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
 import android.support.v7.app.AppCompatActivity;
@@ -25,6 +26,7 @@ public class NetworkDetailsActivity extends AppCompatActivity
     private final String LOG_TAG = NetworkDetailsActivity.class.getSimpleName();
 
     private static final int ACCESS_COARSE_LOCATION_PERMISSION_REQUEST_ID = 1;
+    private static final int NETWORK_DATA_REFRESH_RATE_MS = 1000;
 
     @Override
     protected void onCreate(Bundle savedInstanceState)
@@ -47,6 +49,18 @@ public class NetworkDetailsActivity extends AppCompatActivity
                         .setAction("Action", null).show();
             }
         });*/
+
+        final Handler handler = new Handler();
+
+        handler.postDelayed(new Runnable()
+        {
+            public void run()
+            {
+                refreshCellDetails();
+
+                handler.postDelayed(this, NETWORK_DATA_REFRESH_RATE_MS);
+            }
+        }, NETWORK_DATA_REFRESH_RATE_MS);
     }
 
 
@@ -117,12 +131,30 @@ public class NetworkDetailsActivity extends AppCompatActivity
                         checkAndSetValue(cellIdentity.getMcc(), (TextView) findViewById(R.id.mccValue));
                         checkAndSetValue(cellIdentity.getMnc(), (TextView) findViewById(R.id.mncValue));
                         checkAndSetValue(cellIdentity.getTac(), (TextView) findViewById(R.id.tacValue));
-                        checkAndSetValue(cellIdentity.getCi(), (TextView) findViewById(R.id.cidValue));
+
+                        final int ci = cellIdentity.getCi();
+                        if (ci != Integer.MAX_VALUE)
+                        {
+                            checkAndSetValue(ci, (TextView) findViewById(R.id.cidValue));
+
+                            // The Cell Identity is 28 bits long. The first 20 bits represent the Macro eNodeB ID. The last 8 bits
+                            // represent the sector.  Strip off the last 8 bits to get the Macro eNodeB ID.
+                            int eNodebId = ci >> 8;
+                            ((TextView) findViewById(R.id.enbIdValue)).setText(String.valueOf(eNodebId));
+
+                            int sectorId = ci & 0xFF;
+                            ((TextView) findViewById(R.id.sectorIdValue)).setText(String.valueOf(sectorId));
+                        }
+
+                        checkAndSetValue(cellIdentity.getEarfcn(), (TextView) findViewById(R.id.earfcnValue));
+                        checkAndSetValue(cellIdentity.getPci(), (TextView) findViewById(R.id.pciValue));
 
                         CellSignalStrengthLte cellSignalStrengthLte = cellInfoLte.getCellSignalStrength();
-                        cellSignalStrengthLte.getDbm();
+                        checkAndSetValue(cellSignalStrengthLte.getDbm(), (TextView) findViewById(R.id.signalStrengthValue));
+                        checkAndSetValue(cellSignalStrengthLte.getRsrp(), (TextView) findViewById(R.id.rsrpValue));
+                        checkAndSetValue(cellSignalStrengthLte.getRsrq(), (TextView) findViewById(R.id.rsrqValue));
+                        checkAndSetValue(cellSignalStrengthLte.getTimingAdvance(), (TextView) findViewById(R.id.taValue));
                     }
-
                 }
             }
         }

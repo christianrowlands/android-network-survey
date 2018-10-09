@@ -8,4 +8,14 @@
     <string name="mnc_label">MNC: </string>
     <string name="tac_label">TAC: </string>
     <string name="cid_label">CID: </string>
+
+    <string name="enb_id_label">eNB ID: </string>
+    <string name="sector_id_label">Sector ID: </string>
+    <string name="earfcn_label">EARFCN: </string>
+    <string name="pci_label">PCI: </string>
+
+    <string name="signal_strength_label">Signal Strength: </string>
+    <string name="rsrp_label">RSRP: </string>
+    <string name="rsrq_label">RSRQ: </string>
+    <string name="ta_label">TA: </string>
 </resources>
