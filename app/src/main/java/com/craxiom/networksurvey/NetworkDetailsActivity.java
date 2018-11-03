@@ -25,6 +25,12 @@ import android.widget.TextView;
 
 import java.util.List;
 
+/**
+ * The main activity for the Network Survey App.  This app is used to pull LTE Network Survey
+ * details, display them to a user, and also (optionallyY) write them to a file.
+ *
+ * @since 0.0.1
+ */
 public class NetworkDetailsActivity extends AppCompatActivity
 {
     private final String LOG_TAG = NetworkDetailsActivity.class.getSimpleName();
@@ -112,8 +118,8 @@ public class NetworkDetailsActivity extends AppCompatActivity
     public boolean onCreateOptionsMenu(Menu menu)
     {
         // Inflate the menu; this adds items to the action bar if it is present.
-        getMenuInflater().inflate(R.menu.menu_network_details, menu);
-        return true;
+        //getMenuInflater().inflate(R.menu.menu_network_details, menu);
+        return false;
     }
 
     @Override

@@ -28,7 +28,7 @@
 
         <TextView
             android:id="@+id/mccValue"
-            android:layout_width="70dp"
+            android:layout_width="150dp"
             android:layout_height="wrap_content"
             android:layout_column="1"
             android:layout_row="0"
@@ -47,7 +47,7 @@
 
         <TextView
             android:id="@+id/mncValue"
-            android:layout_width="70dp"
+            android:layout_width="150dp"
             android:layout_height="wrap_content"
             android:layout_column="1"
             android:layout_row="1"
@@ -67,7 +67,7 @@
         <TextView
             android:id="@+id/tacValue"
             style="@style/LabelStyle"
-            android:layout_width="120dp"
+            android:layout_width="150dp"
             android:layout_height="wrap_content"
             android:layout_column="1"
             android:layout_row="2"
@@ -86,7 +86,7 @@
 
         <TextView
             android:id="@+id/cidValue"
-            android:layout_width="126dp"
+            android:layout_width="150dp"
             android:layout_height="wrap_content"
             android:layout_column="1"
             android:layout_row="3"
@@ -124,7 +124,7 @@
 
         <TextView
             android:id="@+id/sectorIdValue"
-            android:layout_width="72dp"
+            android:layout_width="150dp"
             android:layout_height="wrap_content"
             android:layout_column="1"
             android:layout_row="5"
@@ -143,7 +143,7 @@
 
         <TextView
             android:id="@+id/earfcnValue"
-            android:layout_width="72dp"
+            android:layout_width="150dp"
             android:layout_height="wrap_content"
             android:layout_column="1"
             android:layout_row="6"
@@ -162,7 +162,7 @@
 
         <TextView
             android:id="@+id/pciValue"
-            android:layout_width="72dp"
+            android:layout_width="150dp"
             android:layout_height="wrap_content"
             android:layout_column="1"
             android:layout_row="7"
@@ -183,7 +183,7 @@
 
         <TextView
             android:id="@+id/latitudeValue"
-            android:layout_width="72dp"
+            android:layout_width="150dp"
             android:layout_height="wrap_content"
             android:layout_column="1"
             android:layout_row="9"
@@ -202,7 +202,7 @@
 
         <TextView
             android:id="@+id/longitudeValue"
-            android:layout_width="72dp"
+            android:layout_width="150dp"
             android:layout_height="wrap_content"
             android:layout_column="1"
             android:layout_row="10"
@@ -223,7 +223,7 @@
 
         <TextView
             android:id="@+id/rsrpValue"
-            android:layout_width="140dp"
+            android:layout_width="100dp"
             android:layout_height="wrap_content"
             android:layout_column="4"
             android:layout_row="0"
@@ -242,7 +242,7 @@
 
         <TextView
             android:id="@+id/rsrqValue"
-            android:layout_width="140dp"
+            android:layout_width="100dp"
             android:layout_height="wrap_content"
             android:layout_column="4"
             android:layout_row="1"
@@ -261,7 +261,7 @@
 
         <TextView
             android:id="@+id/taValue"
-            android:layout_width="140dp"
+            android:layout_width="100dp"
             android:layout_height="wrap_content"
             android:layout_column="4"
             android:layout_row="2"
