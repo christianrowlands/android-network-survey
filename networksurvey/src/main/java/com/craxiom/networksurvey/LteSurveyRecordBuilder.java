@@ -6,6 +6,8 @@ public class LteSurveyRecordBuilder
 {
     private Location location;
     private long time;
+    private int recordNumber = Integer.MAX_VALUE;
+    private int groupNumber = Integer.MAX_VALUE;
     private int mcc = Integer.MAX_VALUE;
     private int mnc = Integer.MAX_VALUE;
     private int tac = Integer.MAX_VALUE;
@@ -25,6 +27,18 @@ public class LteSurveyRecordBuilder
     public LteSurveyRecordBuilder setTime(long time)
     {
         this.time = time;
+        return this;
+    }
+
+    public LteSurveyRecordBuilder setRecordNumber(int recordNumber)
+    {
+        this.recordNumber = recordNumber;
+        return this;
+    }
+
+    public LteSurveyRecordBuilder setGroupNumber(int groupNumber)
+    {
+        this.groupNumber = groupNumber;
         return this;
     }
 
@@ -84,6 +98,6 @@ public class LteSurveyRecordBuilder
 
     public LteSurveyRecord createLteSurveyRecord()
     {
-        return new LteSurveyRecord(location, time, mcc, mnc, tac, ci, earfcn, pci, rsrp, rsrq, ta);
+        return new LteSurveyRecord(location, time, recordNumber, groupNumber, mcc, mnc, tac, ci, earfcn, pci, rsrp, rsrq, ta);
     }
 }

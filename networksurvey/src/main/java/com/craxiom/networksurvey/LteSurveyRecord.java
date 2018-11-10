@@ -12,6 +12,9 @@ public class LteSurveyRecord
 {
     private Location location;
     private long time;
+    private int recordNumber;
+    private int groupNumber;
+
     private int mcc;
     private int mnc;
     private int tac;
@@ -22,10 +25,13 @@ public class LteSurveyRecord
     private int rsrq;
     private int ta;
 
-    public LteSurveyRecord(Location location, long time, int mcc, int mnc, int tac, int ci, int earfcn, int pci, int rsrp, int rsrq, int ta)
+    public LteSurveyRecord(Location location, long time, int recordNumber, int groupNumber, int mcc,
+                           int mnc, int tac, int ci, int earfcn, int pci, int rsrp, int rsrq, int ta)
     {
         this.location = location;
         this.time = time;
+        this.recordNumber = recordNumber;
+        this.groupNumber = groupNumber;
         this.mcc = mcc;
         this.mnc = mnc;
         this.tac = tac;
@@ -40,6 +46,21 @@ public class LteSurveyRecord
     public Location getLocation()
     {
         return location;
+    }
+
+    public long getTime()
+    {
+        return time;
+    }
+
+    public int getRecordNumber()
+    {
+        return recordNumber;
+    }
+
+    public int getGroupNumber()
+    {
+        return groupNumber;
     }
 
     public int getMcc()
