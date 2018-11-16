@@ -34,6 +34,7 @@ public class NetworkDetailsActivity extends AppCompatActivity
     private SurveyRecordWriter surveyRecordWriter;
     private LocationManager locationManager;
     private String bestProvider;
+    MenuItem startStopLoggingMenuItem;
     private volatile boolean loggingEnabled = false;
 
     @Override
@@ -46,7 +47,8 @@ public class NetworkDetailsActivity extends AppCompatActivity
 
         ActivityCompat.requestPermissions(this, new String[]{
                         //Manifest.permission.ACCESS_COARSE_LOCATION,
-                        Manifest.permission.ACCESS_FINE_LOCATION},
+                        Manifest.permission.ACCESS_FINE_LOCATION,
+                        Manifest.permission.WRITE_EXTERNAL_STORAGE},
                 ACCESS_LOCATION_PERMISSION_REQUEST_ID);
 
         // TODO Delete me
@@ -83,7 +85,7 @@ public class NetworkDetailsActivity extends AppCompatActivity
                         }
                         break;*/
 
-                    case Manifest.permission.ACCESS_FINE_LOCATION:
+                    case Manifest.permission.WRITE_EXTERNAL_STORAGE:
                         if (grantResults[index] == PackageManager.PERMISSION_GRANTED)
                         {
                             initializeSurveyRecordWriter();
@@ -102,6 +104,7 @@ public class NetworkDetailsActivity extends AppCompatActivity
     {
         // Inflate the menu; this adds items to the action bar if it is present.
         getMenuInflater().inflate(R.menu.menu_network_details, menu);
+        startStopLoggingMenuItem = menu.findItem(R.id.action_start_stop_logging);
         return true;
     }
 
@@ -130,7 +133,7 @@ public class NetworkDetailsActivity extends AppCompatActivity
                 }
 
                 final String menuTitle = getString(loggingEnabled ? R.string.action_start_logging : R.string.action_stop_logging);
-                ((MenuItem) findViewById(R.id.action_start_stop_logging)).setTitle(menuTitle);
+                startStopLoggingMenuItem.setTitle(menuTitle);
 
                 loggingEnabled = !loggingEnabled;
             }

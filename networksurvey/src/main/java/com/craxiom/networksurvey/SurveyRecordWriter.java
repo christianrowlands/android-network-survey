@@ -41,8 +41,7 @@ import mil.nga.sf.GeometryType;
 import mil.nga.sf.Point;
 import mil.nga.sf.proj.ProjectionConstants;
 
-import static mil.nga.geopackage.db.GeoPackageDataType.DATETIME;
-import static mil.nga.geopackage.db.GeoPackageDataType.INT;
+import static mil.nga.geopackage.db.GeoPackageDataType.MEDIUMINT;
 
 /**
  * Responsible for pulling the network values and populating the UI.  This class can also optionally
@@ -52,10 +51,9 @@ import static mil.nga.geopackage.db.GeoPackageDataType.INT;
  */
 class SurveyRecordWriter
 {
-    private static final String DATABASE_NAME = "LTE";
     private static final String LOG_DIRECTORY_NAME = "NetworkSurveyData";
-    private static final SimpleDateFormat formatFilenameFriendlyTime = new SimpleDateFormat("YYYYMMdd HHmmss", Locale.US);
-    private static final String FILE_NAME_PREFIX = "craxiom-survey";
+    private static final SimpleDateFormat formatFilenameFriendlyTime = new SimpleDateFormat("YYYYMMdd-HHmmss", Locale.US);
+    private static final String FILE_NAME_PREFIX = "craxiom-lte";
     private static final String LTE_RECORDS_TABLE_NAME = "lte_drive_test_records";
     private static final long WGS84_SRS = 4326;
 
@@ -108,31 +106,47 @@ class SurveyRecordWriter
     {
         groupNumber++; // Group all the LTE records found in this scan iteration.
 
-        final List<CellInfo> allCellInfo = telephonyManager.getAllCellInfo();
-        if (allCellInfo.size() > 0)
+        try
         {
-            for (CellInfo cellInfo : allCellInfo)
+            final List<CellInfo> allCellInfo = telephonyManager.getAllCellInfo();
+            if (allCellInfo.size() > 0)
             {
-                // For now, just look for LTE towers
-                if (cellInfo instanceof CellInfoLte)
+                for (CellInfo cellInfo : allCellInfo)
                 {
-                    if (cellInfo.isRegistered())
+                    // For now, just look for LTE towers
+                    if (cellInfo instanceof CellInfoLte)
                     {
-                        // This record is for the serving cell
-                        parseServingCellInfo((CellInfoLte) cellInfo);
-                    } else
-                    {
-                        // This represents a neighbor record
-                        parseNeighborCellInfo((CellInfoLte) cellInfo);
+                        if (cellInfo.isRegistered())
+                        {
+                            // This record is for the serving cell
+                            if (!parseServingCellInfo((CellInfoLte) cellInfo))
+                            {
+                                Log.d(LOG_TAG, "The serving LTE record is invalid, skipping all the neighbor records as well.");
+                                break;
+                            }
+                        } else
+                        {
+                            // This represents a neighbor record
+                            parseNeighborCellInfo((CellInfoLte) cellInfo);
+                        }
                     }
                 }
             }
+        } catch (Exception e)
+        {
+            Log.e(LOG_TAG, "Unable to display and log an LTE Survey Record", e);
         }
     }
 
+    /**
+     * Sets up all the GeoPackage stuff so that the LTE records can be written to a log file.
+     *
+     * @param enable True if logging is being turned on, false if the log file should be closed.
+     * @throws SQLException If something goes wrong setting up the GeoPackage log file.
+     */
     void enableLogging(boolean enable) throws SQLException
     {
-        if (!loggingEnabled)
+        if (loggingEnabled)
         {
             loggingEnabled = false;
             geoPackage.close(); // TODO figure out what else needs to be done to clean up.
@@ -142,10 +156,15 @@ class SurveyRecordWriter
 
         if (isExternalStorageWritable())
         {
-            final File loggingFile = getPrivateStorageFile(networkDetailsActivity,
-                    FILE_NAME_PREFIX + "-" + formatFilenameFriendlyTime.format(System.currentTimeMillis()));
+            //final File loggingFile = getPublicStorageDir(
+            //      FILE_NAME_PREFIX + "-" + formatFilenameFriendlyTime.format(System.currentTimeMillis()));
+            final String loggingFile = createPublicStorageFilePath();
 
-            final boolean created = geoPackageManager.createAtPath(DATABASE_NAME, loggingFile);
+            //final boolean created = geoPackageManager.createAtPath(DATABASE_NAME, loggingFile);
+            //final String loggingFilePath = loggingFile.getAbsolutePath();
+            //final boolean created = geoPackageManager.create(loggingFilePath);
+            //final boolean created = geoPackageManager.createFile(loggingFile);
+            final boolean created = geoPackageManager.create(loggingFile);
 
             if (!created)
             {
@@ -154,7 +173,13 @@ class SurveyRecordWriter
                 return;
             }
 
-            geoPackage = geoPackageManager.open(DATABASE_NAME);
+            geoPackage = geoPackageManager.open(loggingFile);
+            if (geoPackage == null)
+            {
+                Log.e(LOG_TAG, "Unable to open the GeoPackage Database.  No logging will be recorded.");
+                // TODO show a toast to the user
+                return;
+            }
 
             final SpatialReferenceSystem spatialReferenceSystem;
             spatialReferenceSystem = geoPackage.getSpatialReferenceSystemDao()
@@ -182,9 +207,9 @@ class SurveyRecordWriter
         List<FeatureColumn> tblcols = new LinkedList<>();
         tblcols.add(FeatureColumn.createPrimaryKeyColumn(colNum++, ID_COLUMN));
         tblcols.add(FeatureColumn.createGeometryColumn(colNum++, GEOMETRY_COLUMN, GeometryType.POINT, false, null));
-        tblcols.add(FeatureColumn.createColumn(colNum++, "Time", DATETIME, false, null));
-        tblcols.add(FeatureColumn.createColumn(colNum++, RECORD_NUMBER_COLUMN, INT, true, -1));
-        tblcols.add(FeatureColumn.createColumn(colNum++, GROUP_NUMBER_COLUMN, INT, true, -1));
+        tblcols.add(FeatureColumn.createColumn(colNum++, TIME_COLUMN, GeoPackageDataType.INT, false, null));
+        tblcols.add(FeatureColumn.createColumn(colNum++, RECORD_NUMBER_COLUMN, MEDIUMINT, true, -1));
+        tblcols.add(FeatureColumn.createColumn(colNum++, GROUP_NUMBER_COLUMN, MEDIUMINT, true, -1));
         // TODO Why do we need Lat and Lon?  I would have guessed the geometry column would be used for that
         //tblcols.add(FeatureColumn.createColumn(colNum++, "Lat", REAL, false, null));
         //tblcols.add(FeatureColumn.createColumn(colNum++, "Lon", REAL, false, null));
@@ -192,9 +217,9 @@ class SurveyRecordWriter
 
         tblcols.add(FeatureColumn.createColumn(colNum++, MCC_COLUMN, GeoPackageDataType.SMALLINT, false, null));
         tblcols.add(FeatureColumn.createColumn(colNum++, MNC_COLUMN, GeoPackageDataType.SMALLINT, false, null));
-        tblcols.add(FeatureColumn.createColumn(colNum++, TAC_COLUMN, GeoPackageDataType.INT, false, null));
-        tblcols.add(FeatureColumn.createColumn(colNum++, CI_COLUMN, GeoPackageDataType.INT, false, null));
-        tblcols.add(FeatureColumn.createColumn(colNum++, EARFCN_COLUMN, GeoPackageDataType.INT, false, null));
+        tblcols.add(FeatureColumn.createColumn(colNum++, TAC_COLUMN, GeoPackageDataType.MEDIUMINT, false, null));
+        tblcols.add(FeatureColumn.createColumn(colNum++, CI_COLUMN, GeoPackageDataType.MEDIUMINT, false, null));
+        tblcols.add(FeatureColumn.createColumn(colNum++, EARFCN_COLUMN, GeoPackageDataType.MEDIUMINT, false, null));
         tblcols.add(FeatureColumn.createColumn(colNum++, PCI_COLUMN, GeoPackageDataType.SMALLINT, false, null));
         tblcols.add(FeatureColumn.createColumn(colNum++, RSRP_COLUMN, GeoPackageDataType.FLOAT, false, null));
         tblcols.add(FeatureColumn.createColumn(colNum++, RSRQ_COLUMN, GeoPackageDataType.FLOAT, false, null));
@@ -224,13 +249,19 @@ class SurveyRecordWriter
      * the latest cell details.
      *
      * @param cellInfoLte The LTE serving cell details.
+     * @return True if the LTE serving cell record is valid, false otherwise.
      */
-    private void parseServingCellInfo(CellInfoLte cellInfoLte)
+    private boolean parseServingCellInfo(CellInfoLte cellInfoLte)
     {
         final LteSurveyRecord lteSurveyRecord = generateLteSurveyRecord(cellInfoLte);
+        if (lteSurveyRecord == null)
+        {
+            return false;
+        }
 
         writeSurveyRecordEntryToLogFile(lteSurveyRecord);
         updateUi(lteSurveyRecord);
+        return true;
     }
 
     /**
@@ -240,11 +271,15 @@ class SurveyRecordWriter
      */
     private void parseNeighborCellInfo(CellInfoLte cellInfoLte)
     {
-        //Log.i(LOG_TAG, "LTE Neighbor Cell : " + cellInfoLte.getCellIdentity().toString() + "\n LTE Neighbor Signal Values: " + cellInfoLte.getCellSignalStrength().toString());
+        //Log.v(LOG_TAG, "LTE Neighbor Cell : " + cellInfoLte.getCellIdentity().toString() + "\n LTE Neighbor Signal Values: " + cellInfoLte.getCellSignalStrength().toString());
 
         if (loggingEnabled)
         {
-            writeSurveyRecordEntryToLogFile(generateLteSurveyRecord(cellInfoLte));
+            final LteSurveyRecord lteSurveyRecord = generateLteSurveyRecord(cellInfoLte);
+            if (lteSurveyRecord != null)
+            {
+                writeSurveyRecordEntryToLogFile(lteSurveyRecord);
+            }
         }
     }
 
@@ -394,15 +429,15 @@ class SurveyRecordWriter
                         row.setValue(RECORD_NUMBER_COLUMN, lteSurveyRecord.getRecordNumber());
                         row.setValue(GROUP_NUMBER_COLUMN, lteSurveyRecord.getGroupNumber());
 
-                        setIntValue(row, MCC_COLUMN, lteSurveyRecord.getMcc());
-                        setIntValue(row, MNC_COLUMN, lteSurveyRecord.getMnc());
+                        setShortValue(row, MCC_COLUMN, lteSurveyRecord.getMcc());
+                        setShortValue(row, MNC_COLUMN, lteSurveyRecord.getMnc());
                         setIntValue(row, TAC_COLUMN, lteSurveyRecord.getTac());
                         setIntValue(row, CI_COLUMN, lteSurveyRecord.getCi());
                         setIntValue(row, EARFCN_COLUMN, lteSurveyRecord.getEarfcn());
-                        setIntValue(row, PCI_COLUMN, lteSurveyRecord.getPci());
-                        setIntValue(row, RSRP_COLUMN, lteSurveyRecord.getRsrp());
-                        setIntValue(row, RSRQ_COLUMN, lteSurveyRecord.getRsrq());
-                        setIntValue(row, TA_COLUMN, lteSurveyRecord.getTa());
+                        setShortValue(row, PCI_COLUMN, lteSurveyRecord.getPci());
+                        setFloatValue(row, RSRP_COLUMN, lteSurveyRecord.getRsrp());
+                        setFloatValue(row, RSRQ_COLUMN, lteSurveyRecord.getRsrq());
+                        setShortValue(row, TA_COLUMN, lteSurveyRecord.getTa());
 
                         featureDao.insert(row);
                     }
@@ -416,19 +451,55 @@ class SurveyRecordWriter
 
     /**
      * Checks to see if the provided value is valid, and if it is the value is set on the row at the
-     * specified column.
+     * specified column as an int ({@link GeoPackageDataType#MEDIUMINT}).
      * <p>
      * An invalid value is equal to {@link Integer#MAX_VALUE}.
      *
      * @param featureRow The row to populate the value.
      * @param columnName The column to set the value in.
-     * @param value      The value to check, and then set.
+     * @param value      The value to check, and then set as an int.
      */
     private void setIntValue(FeatureRow featureRow, String columnName, int value)
     {
         if (value != Integer.MAX_VALUE)
         {
             featureRow.setValue(columnName, value);
+        }
+    }
+
+    /**
+     * Checks to see if the provided value is valid, and if it is the value is set on the row at the
+     * specified column as a short ({@link GeoPackageDataType#SMALLINT}).
+     * <p>
+     * An invalid value is equal to {@link Integer#MAX_VALUE}.
+     *
+     * @param featureRow The row to populate the value.
+     * @param columnName The column to set the value in.
+     * @param value      The value to check, and then set as a short.
+     */
+    private void setShortValue(FeatureRow featureRow, String columnName, int value)
+    {
+        if (value != Integer.MAX_VALUE)
+        {
+            featureRow.setValue(columnName, (short) value);
+        }
+    }
+
+    /**
+     * Checks to see if the provided value is valid, and if it is the value is set on the row at the
+     * specified column as a float ({@link GeoPackageDataType#FLOAT}).
+     * <p>
+     * An invalid value is equal to {@link Integer#MAX_VALUE}.
+     *
+     * @param featureRow The row to populate the value.
+     * @param columnName The column to set the value in.
+     * @param value      The value to check, and then set as a float.
+     */
+    private void setFloatValue(FeatureRow featureRow, String columnName, int value)
+    {
+        if (value != Integer.MAX_VALUE)
+        {
+            featureRow.setValue(columnName, (float) value);
         }
     }
 
@@ -441,7 +512,6 @@ class SurveyRecordWriter
     private boolean isExternalStorageWritable()
     {
         return Environment.MEDIA_MOUNTED.equals(Environment.getExternalStorageState());
-
     }
 
     private File getPrivateStorageFile(Context context, String fileName)
@@ -449,16 +519,22 @@ class SurveyRecordWriter
         return new File(context.getExternalFilesDir(null), fileName);
     }
 
-    public File getPublicStorageDir()
+    private File getPublicStorageDir(String fileName)
     {
-        // Get the directory for the log file
         File file = new File(Environment.getExternalStoragePublicDirectory(
-                Environment.DIRECTORY_DOWNLOADS), LOG_DIRECTORY_NAME);
-        if (!file.mkdirs())
+                Environment.DIRECTORY_DOWNLOADS), LOG_DIRECTORY_NAME + "/" + fileName);
+        /*if (!file.mkdirs())
         {
             Log.e(LOG_TAG, "The Network Survey Data Directory could not be created");
-        }
+        }*/
 
         return file;
+    }
+
+    private String createPublicStorageFilePath()
+    {
+        return Environment.getExternalStoragePublicDirectory(
+                Environment.DIRECTORY_DOWNLOADS) + "/" + LOG_DIRECTORY_NAME + "/" +
+                FILE_NAME_PREFIX + "-" + formatFilenameFriendlyTime.format(System.currentTimeMillis()) + ".gpkg";
     }
 }
