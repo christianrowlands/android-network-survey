@@ -65,9 +65,9 @@ class SurveyRecordWriter
     private static final String MCC_COLUMN = "MCC";
     private static final String MNC_COLUMN = "MNC";
     private static final String TAC_COLUMN = "TAC";
-    private static final String CI_COLUMN = "CI";
-    private static final String EARFCN_COLUMN = "EARFCN";
-    private static final String PCI_COLUMN = "PCI";
+    private static final String CI_COLUMN = "ECI";
+    private static final String EARFCN_COLUMN = "DL_EARFCN";
+    private static final String PCI_COLUMN = "Phys_Cell_Id";
     private static final String RSRP_COLUMN = "RSRP";
     private static final String RSRQ_COLUMN = "RSRQ";
     private static final String TA_COLUMN = "TA";
