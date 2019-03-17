@@ -13,14 +13,6 @@ import android.telephony.CellSignalStrengthLte;
 import android.telephony.TelephonyManager;
 import android.util.Log;
 import android.widget.TextView;
-
-import java.io.File;
-import java.sql.SQLException;
-import java.text.SimpleDateFormat;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Locale;
-
 import mil.nga.geopackage.GeoPackage;
 import mil.nga.geopackage.GeoPackageManager;
 import mil.nga.geopackage.core.contents.Contents;
@@ -40,6 +32,13 @@ import mil.nga.geopackage.user.UserTable;
 import mil.nga.sf.GeometryType;
 import mil.nga.sf.Point;
 import mil.nga.sf.proj.ProjectionConstants;
+
+import java.io.File;
+import java.sql.SQLException;
+import java.text.SimpleDateFormat;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Locale;
 
 import static mil.nga.geopackage.db.GeoPackageDataType.MEDIUMINT;
 
@@ -210,10 +209,6 @@ class SurveyRecordWriter
         tblcols.add(FeatureColumn.createColumn(colNum++, TIME_COLUMN, GeoPackageDataType.INT, false, null));
         tblcols.add(FeatureColumn.createColumn(colNum++, RECORD_NUMBER_COLUMN, MEDIUMINT, true, -1));
         tblcols.add(FeatureColumn.createColumn(colNum++, GROUP_NUMBER_COLUMN, MEDIUMINT, true, -1));
-        // TODO Why do we need Lat and Lon?  I would have guessed the geometry column would be used for that
-        //tblcols.add(FeatureColumn.createColumn(colNum++, "Lat", REAL, false, null));
-        //tblcols.add(FeatureColumn.createColumn(colNum++, "Lon", REAL, false, null));
-        //tblcols.add(FeatureColumn.createColumn(colNum++, "Alt", REAL, false, null));
 
         tblcols.add(FeatureColumn.createColumn(colNum++, MCC_COLUMN, GeoPackageDataType.SMALLINT, false, null));
         tblcols.add(FeatureColumn.createColumn(colNum++, MNC_COLUMN, GeoPackageDataType.SMALLINT, false, null));
@@ -422,9 +417,6 @@ class SurveyRecordWriter
 
                         row.setGeometry(geomData);
 
-                        //row.setValue("Lat", (double) loc.getLatitude());
-                        //row.setValue("Lon", (double) loc.getLongitude());
-                        //row.setValue("Alt", (double) loc.getAltitude());
                         row.setValue(TIME_COLUMN, lteSurveyRecord.getTime());
                         row.setValue(RECORD_NUMBER_COLUMN, lteSurveyRecord.getRecordNumber());
                         row.setValue(GROUP_NUMBER_COLUMN, lteSurveyRecord.getGroupNumber());
