@@ -1,7 +1,9 @@
 <resources>
     <string name="app_name">Network Survey</string>
 
-    <string name="action_settings">Settings</string>
+    <!--<string name="action_settings">Settings</string>-->
+    <string name="action_start_logging">Start Logging</string>
+    <string name="action_stop_logging">Stop Logging</string>
 
     <string name="technology_label">Technology: </string>
     <string name="mcc_label">MCC: </string>
