@@ -5,16 +5,22 @@ import android.content.Context;
 import android.content.pm.PackageManager;
 import android.location.Criteria;
 import android.location.LocationManager;
+import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
 import android.support.annotation.NonNull;
+import android.support.design.widget.BottomNavigationView;
 import android.support.v4.app.ActivityCompat;
+import android.support.v4.app.FragmentManager;
+import android.support.v4.app.FragmentTransaction;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.telephony.TelephonyManager;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.widget.Toast;
+import com.craxiom.networksurvey.fragments.NetworkDetailsFragment;
 
 import java.sql.SQLException;
 
@@ -24,7 +30,7 @@ import java.sql.SQLException;
  *
  * @since 0.0.1
  */
-public class NetworkDetailsActivity extends AppCompatActivity
+public class NetworkDetailsActivity extends AppCompatActivity implements NetworkDetailsFragment.OnFragmentInteractionListener
 {
     private final String LOG_TAG = NetworkDetailsActivity.class.getSimpleName();
 
@@ -32,8 +38,6 @@ public class NetworkDetailsActivity extends AppCompatActivity
     private static final int NETWORK_DATA_REFRESH_RATE_MS = 1000;
 
     private SurveyRecordWriter surveyRecordWriter;
-    private LocationManager locationManager;
-    private String bestProvider;
     MenuItem startStopLoggingMenuItem;
     private volatile boolean loggingEnabled = false;
 
@@ -50,6 +54,26 @@ public class NetworkDetailsActivity extends AppCompatActivity
                         Manifest.permission.ACCESS_FINE_LOCATION,
                         Manifest.permission.WRITE_EXTERNAL_STORAGE},
                 ACCESS_LOCATION_PERMISSION_REQUEST_ID);
+
+        BottomNavigationView bottomNavigationView = findViewById(R.id.bottom_navigation);
+        bottomNavigationView.setOnNavigationItemSelectedListener(new BottomNavigationView.OnNavigationItemSelectedListener()
+        {
+            @Override
+            public boolean onNavigationItemSelected(@NonNull MenuItem item)
+            {
+                switch (item.getItemId())
+                {
+                    case R.id.navigation_network_details:
+                        openNetworkDetailsFragment();
+                        Toast.makeText(NetworkDetailsActivity.this, "Network Details", Toast.LENGTH_SHORT).show();
+                        break;
+                    case R.id.navigation_calculator:
+                        Toast.makeText(NetworkDetailsActivity.this, "Calculator", Toast.LENGTH_SHORT).show();
+                        break;
+                }
+                return true;
+            }
+        });
 
         // TODO Delete me
         /*FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
@@ -144,6 +168,12 @@ public class NetworkDetailsActivity extends AppCompatActivity
         return super.onOptionsItemSelected(item);
     }
 
+    @Override
+    public void onFragmentInteraction(Uri uri)
+    {
+
+    }
+
     /**
      * Gets the {@link LocationManager} and the {@link TelephonyManager}, and then creates the
      * {@link SurveyRecordWriter} instance.  If something goes wrong getting access to those
@@ -151,12 +181,12 @@ public class NetworkDetailsActivity extends AppCompatActivity
      */
     private void initializeSurveyRecordWriter()
     {
-        locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
+        final LocationManager locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
 
         final Criteria criteria = new Criteria();
         criteria.setHorizontalAccuracy(Criteria.ACCURACY_HIGH);
 
-        bestProvider = locationManager.getBestProvider(criteria, true);
+        final String bestProvider = locationManager.getBestProvider(criteria, true);
 
         TelephonyManager telephonyManager = (TelephonyManager) getSystemService(Context.TELEPHONY_SERVICE);
 
@@ -185,5 +215,21 @@ public class NetworkDetailsActivity extends AppCompatActivity
                 }
             }
         }, NETWORK_DATA_REFRESH_RATE_MS);
+    }
+
+    /**
+     * Sets the Network Details fragment as the active fragment, and creates a new one if necessary.
+     *
+     * @since 0.0.2
+     */
+    private void openNetworkDetailsFragment()
+    {
+
+        final FragmentManager fragmentManager = getSupportFragmentManager();
+        final FragmentTransaction fragmentTransaction = fragmentManager.beginTransaction();
+
+        final NetworkDetailsFragment networkDetailsFragment = new NetworkDetailsFragment();
+        fragmentTransaction.add(R.id.fragment_container, networkDetailsFragment);
+        fragmentTransaction.commit();
     }
 }
