@@ -5,8 +5,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     app:layout_behavior="@string/appbar_scrolling_view_behavior"
-    tools:context="com.craxiom.networksurvey.NetworkDetailsActivity"
-    tools:showIn="@layout/activity_network_details">
+    tools:context="com.craxiom.networksurvey.NetworkDetailsActivity">
 
     <GridLayout
         android:id="@+id/grid"

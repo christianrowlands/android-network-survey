@@ -3,12 +3,22 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context=".fragments.CalculatorFragment">
+    tools:context="com.craxiom.networksurvey.NetworkDetailsActivity">
+    <!--tools:context=".fragments.CalculatorFragment">-->
 
-    <!-- TODO: Update blank fragment layout -->
-    <TextView
+    <EditText
+        android:id="@+id/lteCellId"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:ems="10"
+        android:hint="@string/lte_cell_id_label"
+        android:inputType="number"
+        android:maxLines="1"
+        android:autofillHints="Enter in the LTE Cell Id to calculate the eNodeB ID for." />
+
+    <!--<TextView
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:text="@string/hello_blank_fragment" />
+        android:text="@string/hello_blank_fragment" />-->
 
 </FrameLayout>

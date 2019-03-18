@@ -20,6 +20,7 @@ import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.Toast;
+import com.craxiom.networksurvey.fragments.CalculatorFragment;
 import com.craxiom.networksurvey.fragments.NetworkDetailsFragment;
 
 import java.sql.SQLException;
@@ -30,8 +31,11 @@ import java.sql.SQLException;
  *
  * @since 0.0.1
  */
-public class NetworkDetailsActivity extends AppCompatActivity implements NetworkDetailsFragment.OnFragmentInteractionListener
+public class NetworkDetailsActivity extends AppCompatActivity implements
+        NetworkDetailsFragment.OnFragmentInteractionListener, CalculatorFragment.OnFragmentInteractionListener
 {
+    public static final String NETWORK_DETAILS_FRAGMENT_TAG = "NetworkDetailsFragment";
+    public static final String CALCULATOR_FRAGMENT_TAG = "CalculatorFragment";
     private final String LOG_TAG = NetworkDetailsActivity.class.getSimpleName();
 
     private static final int ACCESS_LOCATION_PERMISSION_REQUEST_ID = 1;
@@ -40,6 +44,8 @@ public class NetworkDetailsActivity extends AppCompatActivity implements Network
     private SurveyRecordWriter surveyRecordWriter;
     MenuItem startStopLoggingMenuItem;
     private volatile boolean loggingEnabled = false;
+    private NetworkDetailsFragment networkDetailsFragment;
+    private CalculatorFragment calculatorFragment;
 
     @Override
     protected void onCreate(Bundle savedInstanceState)
@@ -68,12 +74,17 @@ public class NetworkDetailsActivity extends AppCompatActivity implements Network
                         Toast.makeText(NetworkDetailsActivity.this, "Network Details", Toast.LENGTH_SHORT).show();
                         break;
                     case R.id.navigation_calculator:
+                        openCalculatorFragment();
                         Toast.makeText(NetworkDetailsActivity.this, "Calculator", Toast.LENGTH_SHORT).show();
                         break;
                 }
                 return true;
             }
         });
+
+        // Set the Network details fragment as the default
+        initializeDefaultFragment();
+        //bottomNavigationView.setSelectedItemId(R.id.navigation_network_details);
 
         // TODO Delete me
         /*FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
@@ -222,14 +233,43 @@ public class NetworkDetailsActivity extends AppCompatActivity implements Network
      *
      * @since 0.0.2
      */
-    private void openNetworkDetailsFragment()
+    private void initializeDefaultFragment()
     {
+        networkDetailsFragment = new NetworkDetailsFragment();
 
         final FragmentManager fragmentManager = getSupportFragmentManager();
         final FragmentTransaction fragmentTransaction = fragmentManager.beginTransaction();
-
-        final NetworkDetailsFragment networkDetailsFragment = new NetworkDetailsFragment();
         fragmentTransaction.add(R.id.fragment_container, networkDetailsFragment);
         fragmentTransaction.commit();
+    }
+
+    /**
+     * Sets the Network Details fragment as the active fragment, and creates a new one if necessary.
+     *
+     * @since 0.0.2
+     */
+    private void openNetworkDetailsFragment()
+    {
+        if (networkDetailsFragment == null)
+        {
+            networkDetailsFragment = new NetworkDetailsFragment();
+        }
+
+        getSupportFragmentManager().beginTransaction().replace(R.id.fragment_container, networkDetailsFragment, NETWORK_DETAILS_FRAGMENT_TAG).commit();
+    }
+
+    /**
+     * Sets the Calculator fragment as the active fragment, and creates a new one if necessary.
+     *
+     * @since 0.0.2
+     */
+    private void openCalculatorFragment()
+    {
+        if (calculatorFragment == null)
+        {
+            calculatorFragment = new CalculatorFragment();
+        }
+
+        getSupportFragmentManager().beginTransaction().replace(R.id.fragment_container, calculatorFragment, CALCULATOR_FRAGMENT_TAG).commit();
     }
 }

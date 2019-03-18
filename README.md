@@ -20,7 +20,7 @@ Install Android Studio to work on this code.
 
 ## Built With
 
-* [GeoPackage Android](https://github.com/ngageoint/geopackage-android) - The logging file standard and
+* [GeoPackage Android](https://github.com/ngageoint/geopackage-android) - The logging file standard and library
 
 ## Authors
 
