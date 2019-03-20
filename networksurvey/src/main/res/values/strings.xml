@@ -23,4 +23,10 @@
     <string name="rsrp_label">RSRP: </string>
     <string name="rsrq_label">RSRQ: </string>
     <string name="ta_label">TA: </string>
+    <string name="nav_enodeb_id_calc">eNodeB ID Calc</string>
+    <string name="nav_network_details">Network Details</string>
+    <string name="lte_cell_id_label">LTE Cell ID </string>
+
+    <!-- TODO: Remove or change this placeholder text -->
+    <string name="hello_blank_fragment">Hello blank fragment</string>
 </resources>

@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <item
+        android:id="@+id/navigation_network_details"
+        android:icon="@drawable/ic_network_details"
+        android:title="@string/nav_network_details" />
+
+    <item
+        android:id="@+id/navigation_calculator"
+        android:icon="@drawable/ic_calculator"
+        android:title="@string/nav_enodeb_id_calc" />
+</menu>

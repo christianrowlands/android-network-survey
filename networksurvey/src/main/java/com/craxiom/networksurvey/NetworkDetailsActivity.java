@@ -5,16 +5,23 @@ import android.content.Context;
 import android.content.pm.PackageManager;
 import android.location.Criteria;
 import android.location.LocationManager;
+import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
 import android.support.annotation.NonNull;
+import android.support.design.widget.BottomNavigationView;
+import android.support.design.widget.CollapsingToolbarLayout;
 import android.support.v4.app.ActivityCompat;
+import android.support.v4.app.FragmentManager;
+import android.support.v4.app.FragmentTransaction;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.telephony.TelephonyManager;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
+import com.craxiom.networksurvey.fragments.CalculatorFragment;
+import com.craxiom.networksurvey.fragments.NetworkDetailsFragment;
 
 import java.sql.SQLException;
 
@@ -24,25 +31,33 @@ import java.sql.SQLException;
  *
  * @since 0.0.1
  */
-public class NetworkDetailsActivity extends AppCompatActivity
+public class NetworkDetailsActivity extends AppCompatActivity implements
+        NetworkDetailsFragment.OnFragmentInteractionListener, CalculatorFragment.OnFragmentInteractionListener
 {
-    private final String LOG_TAG = NetworkDetailsActivity.class.getSimpleName();
+    private static final String LOG_TAG = NetworkDetailsActivity.class.getSimpleName();
+
+    public static final String NETWORK_DETAILS_FRAGMENT_TAG = "NetworkDetailsFragment";
+    public static final String CALCULATOR_FRAGMENT_TAG = "CalculatorFragment";
+    public static final String NETWORK_DETAILS = "Network Details";
+    public static final String E_NODEB_ID_CALCULATOR = "eNodeb ID Calculator";
 
     private static final int ACCESS_LOCATION_PERMISSION_REQUEST_ID = 1;
     private static final int NETWORK_DATA_REFRESH_RATE_MS = 1000;
 
     private SurveyRecordWriter surveyRecordWriter;
-    private LocationManager locationManager;
-    private String bestProvider;
     MenuItem startStopLoggingMenuItem;
     private volatile boolean loggingEnabled = false;
+    private NetworkDetailsFragment networkDetailsFragment;
+    private CalculatorFragment calculatorFragment;
+    private CollapsingToolbarLayout toolbarLayout;
 
     @Override
     protected void onCreate(Bundle savedInstanceState)
     {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_network_details);
-        Toolbar toolbar = findViewById(R.id.toolbar);
+        toolbarLayout = findViewById(R.id.toolbar_layout);
+        final Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
         ActivityCompat.requestPermissions(this, new String[]{
@@ -50,6 +65,29 @@ public class NetworkDetailsActivity extends AppCompatActivity
                         Manifest.permission.ACCESS_FINE_LOCATION,
                         Manifest.permission.WRITE_EXTERNAL_STORAGE},
                 ACCESS_LOCATION_PERMISSION_REQUEST_ID);
+
+        BottomNavigationView bottomNavigationView = findViewById(R.id.bottom_navigation);
+        bottomNavigationView.setOnNavigationItemSelectedListener(new BottomNavigationView.OnNavigationItemSelectedListener()
+        {
+            @Override
+            public boolean onNavigationItemSelected(@NonNull MenuItem item)
+            {
+                switch (item.getItemId())
+                {
+                    case R.id.navigation_network_details:
+                        openNetworkDetailsFragment();
+                        break;
+                    case R.id.navigation_calculator:
+                        openCalculatorFragment();
+                        break;
+                }
+                return true;
+            }
+        });
+
+        // Set the Network details fragment as the default
+        initializeDefaultFragment();
+        //bottomNavigationView.setSelectedItemId(R.id.navigation_network_details);
 
         // TODO Delete me
         /*FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
@@ -103,8 +141,8 @@ public class NetworkDetailsActivity extends AppCompatActivity
     public boolean onCreateOptionsMenu(Menu menu)
     {
         // Inflate the menu; this adds items to the action bar if it is present.
-        getMenuInflater().inflate(R.menu.menu_network_details, menu);
-        startStopLoggingMenuItem = menu.findItem(R.id.action_start_stop_logging);
+        //getMenuInflater().inflate(R.menu.menu_network_details, menu);
+        //startStopLoggingMenuItem = menu.findItem(R.id.action_start_stop_logging);
         return true;
     }
 
@@ -144,6 +182,21 @@ public class NetworkDetailsActivity extends AppCompatActivity
         return super.onOptionsItemSelected(item);
     }
 
+    @Override
+    public void onFragmentInteraction(Uri uri)
+    {
+
+    }
+
+    /**
+     * @return Returns true if the Network Details UI is visible to the user, false otherwise.
+     * @since 0.0.2
+     */
+    boolean isNetworkDetailsVisible()
+    {
+        return networkDetailsFragment.isVisible();
+    }
+
     /**
      * Gets the {@link LocationManager} and the {@link TelephonyManager}, and then creates the
      * {@link SurveyRecordWriter} instance.  If something goes wrong getting access to those
@@ -151,12 +204,12 @@ public class NetworkDetailsActivity extends AppCompatActivity
      */
     private void initializeSurveyRecordWriter()
     {
-        locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
+        final LocationManager locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
 
         final Criteria criteria = new Criteria();
         criteria.setHorizontalAccuracy(Criteria.ACCURACY_HIGH);
 
-        bestProvider = locationManager.getBestProvider(criteria, true);
+        final String bestProvider = locationManager.getBestProvider(criteria, true);
 
         TelephonyManager telephonyManager = (TelephonyManager) getSystemService(Context.TELEPHONY_SERVICE);
 
@@ -185,5 +238,65 @@ public class NetworkDetailsActivity extends AppCompatActivity
                 }
             }
         }, NETWORK_DATA_REFRESH_RATE_MS);
+    }
+
+    /**
+     * Sets the Network Details fragment as the active fragment, and creates a new one if necessary.
+     *
+     * @since 0.0.2
+     */
+    private void initializeDefaultFragment()
+    {
+        networkDetailsFragment = new NetworkDetailsFragment();
+
+        updateToolbarTitle(NETWORK_DETAILS);
+
+        final FragmentManager fragmentManager = getSupportFragmentManager();
+        final FragmentTransaction fragmentTransaction = fragmentManager.beginTransaction();
+        fragmentTransaction.add(R.id.fragment_container, networkDetailsFragment);
+        fragmentTransaction.commit();
+    }
+
+    /**
+     * Sets the Network Details fragment as the active fragment, and creates a new one if necessary.
+     *
+     * @since 0.0.2
+     */
+    private void openNetworkDetailsFragment()
+    {
+        if (networkDetailsFragment == null)
+        {
+            networkDetailsFragment = new NetworkDetailsFragment();
+        }
+
+        updateToolbarTitle(NETWORK_DETAILS);
+        getSupportFragmentManager().beginTransaction().replace(R.id.fragment_container, networkDetailsFragment, NETWORK_DETAILS_FRAGMENT_TAG).commit();
+    }
+
+    /**
+     * Sets the Calculator fragment as the active fragment, and creates a new one if necessary.
+     *
+     * @since 0.0.2
+     */
+    private void openCalculatorFragment()
+    {
+        if (calculatorFragment == null)
+        {
+            calculatorFragment = new CalculatorFragment();
+        }
+
+        updateToolbarTitle(E_NODEB_ID_CALCULATOR);
+        getSupportFragmentManager().beginTransaction().replace(R.id.fragment_container, calculatorFragment, CALCULATOR_FRAGMENT_TAG).commit();
+    }
+
+    /**
+     * Updates the title in the Toolbar.
+     *
+     * @param newTitle The new title to set.
+     * @since 0.0.2
+     */
+    private void updateToolbarTitle(String newTitle)
+    {
+        toolbarLayout.setTitle(newTitle);
     }
 }

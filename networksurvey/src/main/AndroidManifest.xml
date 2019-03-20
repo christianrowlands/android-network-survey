@@ -18,6 +18,7 @@
         <activity
             android:name=".NetworkDetailsActivity"
             android:label="@string/app_name"
+            android:screenOrientation="portrait"
             android:theme="@style/NetworkSurveyTheme">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
