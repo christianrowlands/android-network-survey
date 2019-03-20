@@ -12,15 +12,13 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.EditText;
 import android.widget.TextView;
+import android.widget.Toast;
 import com.craxiom.networksurvey.R;
 
 /**
- * A simple {@link Fragment} subclass.
- * Activities that contain this fragment must implement the
- * {@link CalculatorFragment.OnFragmentInteractionListener} interface
- * to handle interaction events.
- * Use the {@link CalculatorFragment#newInstance} factory method to
- * create an instance of this fragment.
+ * A fragment to hold the LTE eNodeB ID calculator.
+ *
+ * @since 0.0.2
  */
 public class CalculatorFragment extends Fragment
 {
@@ -40,20 +38,28 @@ public class CalculatorFragment extends Fragment
 
     private TextWatcher lteCellIdTextWatcher = new TextWatcher()
     {
-
         @Override
         public void onTextChanged(CharSequence s, int start, int before, int count)
         {
             final String enteredText = s.toString();
             try
             {
-                if(enteredText.isEmpty())
+                if (enteredText.isEmpty())
                 {
                     Log.v(LOG_TAG, "The entered text for the LTE Cell ID is empty.  Can't calculate the eNodeB ID.");
+                    clearCalculatedValues();
                     return;
                 }
+
                 final int cellId = Integer.valueOf(enteredText);
-                view.findViewById(R.id.calculatedSectorIdValue);
+
+                if (cellId < 0 || cellId > 268435455)
+                {
+                    Log.d(LOG_TAG, "The entered value for the LTE Cell ID is out of range.");
+                    Toast.makeText(getActivity(), "Invalid Cell ID.  Valid Range is 0 - 268435455", Toast.LENGTH_LONG).show();
+                    clearCalculatedValues();
+                    return;
+                }
 
                 // The Cell Identity is 28 bits long. The first 20 bits represent the Macro eNodeB ID. The last 8 bits
                 // represent the sector.  Strip off the last 8 bits to get the Macro eNodeB ID.
@@ -175,5 +181,14 @@ public class CalculatorFragment extends Fragment
     {
         // TODO: Update argument type and name
         void onFragmentInteraction(Uri uri);
+    }
+
+    /**
+     * Sets the text in the calculated TextView's to an empty string.
+     */
+    private void clearCalculatedValues()
+    {
+        ((TextView) view.findViewById(R.id.calculatedEnbIdValue)).setText("");
+        ((TextView) view.findViewById(R.id.calculatedSectorIdValue)).setText("");
     }
 }

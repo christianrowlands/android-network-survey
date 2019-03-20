@@ -10,6 +10,7 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.support.annotation.NonNull;
 import android.support.design.widget.BottomNavigationView;
+import android.support.design.widget.CollapsingToolbarLayout;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentTransaction;
@@ -19,7 +20,6 @@ import android.telephony.TelephonyManager;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
-import android.widget.Toast;
 import com.craxiom.networksurvey.fragments.CalculatorFragment;
 import com.craxiom.networksurvey.fragments.NetworkDetailsFragment;
 
@@ -49,14 +49,15 @@ public class NetworkDetailsActivity extends AppCompatActivity implements
     private volatile boolean loggingEnabled = false;
     private NetworkDetailsFragment networkDetailsFragment;
     private CalculatorFragment calculatorFragment;
-    private Toolbar toolbar;
+    private CollapsingToolbarLayout toolbarLayout;
 
     @Override
     protected void onCreate(Bundle savedInstanceState)
     {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_network_details);
-        toolbar = findViewById(R.id.toolbar);
+        toolbarLayout = findViewById(R.id.toolbar_layout);
+        final Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
         ActivityCompat.requestPermissions(this, new String[]{
@@ -75,11 +76,9 @@ public class NetworkDetailsActivity extends AppCompatActivity implements
                 {
                     case R.id.navigation_network_details:
                         openNetworkDetailsFragment();
-                        Toast.makeText(NetworkDetailsActivity.this, "Network Details", Toast.LENGTH_SHORT).show();
                         break;
                     case R.id.navigation_calculator:
                         openCalculatorFragment();
-                        Toast.makeText(NetworkDetailsActivity.this, "Calculator", Toast.LENGTH_SHORT).show();
                         break;
                 }
                 return true;
@@ -142,8 +141,8 @@ public class NetworkDetailsActivity extends AppCompatActivity implements
     public boolean onCreateOptionsMenu(Menu menu)
     {
         // Inflate the menu; this adds items to the action bar if it is present.
-        getMenuInflater().inflate(R.menu.menu_network_details, menu);
-        startStopLoggingMenuItem = menu.findItem(R.id.action_start_stop_logging);
+        //getMenuInflater().inflate(R.menu.menu_network_details, menu);
+        //startStopLoggingMenuItem = menu.findItem(R.id.action_start_stop_logging);
         return true;
     }
 
@@ -298,8 +297,6 @@ public class NetworkDetailsActivity extends AppCompatActivity implements
      */
     private void updateToolbarTitle(String newTitle)
     {
-        setTitle(newTitle);
-        toolbar.invalidate();
-        toolbar.refreshDrawableState();
+        toolbarLayout.setTitle(newTitle);
     }
 }
