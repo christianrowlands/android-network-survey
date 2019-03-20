@@ -34,9 +34,12 @@ import java.sql.SQLException;
 public class NetworkDetailsActivity extends AppCompatActivity implements
         NetworkDetailsFragment.OnFragmentInteractionListener, CalculatorFragment.OnFragmentInteractionListener
 {
+    private static final String LOG_TAG = NetworkDetailsActivity.class.getSimpleName();
+
     public static final String NETWORK_DETAILS_FRAGMENT_TAG = "NetworkDetailsFragment";
     public static final String CALCULATOR_FRAGMENT_TAG = "CalculatorFragment";
-    private final String LOG_TAG = NetworkDetailsActivity.class.getSimpleName();
+    public static final String NETWORK_DETAILS = "Network Details";
+    public static final String E_NODEB_ID_CALCULATOR = "eNodeb ID Calculator";
 
     private static final int ACCESS_LOCATION_PERMISSION_REQUEST_ID = 1;
     private static final int NETWORK_DATA_REFRESH_RATE_MS = 1000;
@@ -46,13 +49,14 @@ public class NetworkDetailsActivity extends AppCompatActivity implements
     private volatile boolean loggingEnabled = false;
     private NetworkDetailsFragment networkDetailsFragment;
     private CalculatorFragment calculatorFragment;
+    private Toolbar toolbar;
 
     @Override
     protected void onCreate(Bundle savedInstanceState)
     {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_network_details);
-        Toolbar toolbar = findViewById(R.id.toolbar);
+        toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
         ActivityCompat.requestPermissions(this, new String[]{
@@ -237,6 +241,8 @@ public class NetworkDetailsActivity extends AppCompatActivity implements
     {
         networkDetailsFragment = new NetworkDetailsFragment();
 
+        updateToolbarTitle(NETWORK_DETAILS);
+
         final FragmentManager fragmentManager = getSupportFragmentManager();
         final FragmentTransaction fragmentTransaction = fragmentManager.beginTransaction();
         fragmentTransaction.add(R.id.fragment_container, networkDetailsFragment);
@@ -255,6 +261,7 @@ public class NetworkDetailsActivity extends AppCompatActivity implements
             networkDetailsFragment = new NetworkDetailsFragment();
         }
 
+        updateToolbarTitle(NETWORK_DETAILS);
         getSupportFragmentManager().beginTransaction().replace(R.id.fragment_container, networkDetailsFragment, NETWORK_DETAILS_FRAGMENT_TAG).commit();
     }
 
@@ -270,6 +277,20 @@ public class NetworkDetailsActivity extends AppCompatActivity implements
             calculatorFragment = new CalculatorFragment();
         }
 
+        updateToolbarTitle(E_NODEB_ID_CALCULATOR);
         getSupportFragmentManager().beginTransaction().replace(R.id.fragment_container, calculatorFragment, CALCULATOR_FRAGMENT_TAG).commit();
+    }
+
+    /**
+     * Updates the title in the Toolbar.
+     *
+     * @param newTitle The new title to set.
+     * @since 0.0.2
+     */
+    private void updateToolbarTitle(String newTitle)
+    {
+        setTitle(newTitle);
+        toolbar.invalidate();
+        toolbar.refreshDrawableState();
     }
 }

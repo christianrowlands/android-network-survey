@@ -4,9 +4,14 @@ import android.content.Context;
 import android.net.Uri;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
+import android.text.Editable;
+import android.text.TextWatcher;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.EditText;
+import android.widget.TextView;
 import com.craxiom.networksurvey.R;
 
 /**
@@ -19,6 +24,8 @@ import com.craxiom.networksurvey.R;
  */
 public class CalculatorFragment extends Fragment
 {
+    private final String LOG_TAG = CalculatorFragment.class.getSimpleName();
+
     // TODO: Rename parameter arguments, choose names that match
     // the fragment initialization parameters, e.g. ARG_ITEM_NUMBER
     private static final String ARG_PARAM1 = "param1";
@@ -29,6 +36,45 @@ public class CalculatorFragment extends Fragment
     private String mParam2;
 
     private OnFragmentInteractionListener mListener;
+    private View view;
+
+    private TextWatcher lteCellIdTextWatcher = new TextWatcher()
+    {
+
+        @Override
+        public void onTextChanged(CharSequence s, int start, int before, int count)
+        {
+            final String enteredText = s.toString();
+            try
+            {
+                final int cellId = Integer.valueOf(enteredText);
+                view.findViewById(R.id.calculatedSectorIdValue);
+
+                // The Cell Identity is 28 bits long. The first 20 bits represent the Macro eNodeB ID. The last 8 bits
+                // represent the sector.  Strip off the last 8 bits to get the Macro eNodeB ID.
+                int eNodebId = cellId >> 8;
+                ((TextView) view.findViewById(R.id.calculatedEnbIdValue)).setText(String.valueOf(eNodebId));
+
+                int sectorId = cellId & 0xFF;
+                ((TextView) view.findViewById(R.id.calculatedSectorIdValue)).setText(String.valueOf(sectorId));
+            } catch (Exception e)
+            {
+                Log.w(LOG_TAG, "Unable to parse the provide LTE Cell ID as an Integer:" + enteredText, e);
+            }
+        }
+
+        @Override
+        public void beforeTextChanged(CharSequence s, int start, int count, int after)
+        {
+
+        }
+
+        @Override
+        public void afterTextChanged(Editable s)
+        {
+
+        }
+    };
 
     public CalculatorFragment()
     {
@@ -58,6 +104,8 @@ public class CalculatorFragment extends Fragment
     public void onCreate(Bundle savedInstanceState)
     {
         super.onCreate(savedInstanceState);
+
+        // TODO update these arguments
         if (getArguments() != null)
         {
             mParam1 = getArguments().getString(ARG_PARAM1);
@@ -70,7 +118,12 @@ public class CalculatorFragment extends Fragment
                              Bundle savedInstanceState)
     {
         // Inflate the layout for this fragment
-        return inflater.inflate(R.layout.fragment_calculator, container, false);
+        view = inflater.inflate(R.layout.fragment_calculator, container, false);
+
+        final EditText editText = view.findViewById(R.id.lteCellId);
+        editText.addTextChangedListener(lteCellIdTextWatcher);
+
+        return view;
     }
 
     // TODO: Rename method, update argument and hook method into UI event
