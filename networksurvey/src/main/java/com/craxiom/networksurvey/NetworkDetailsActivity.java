@@ -190,6 +190,15 @@ public class NetworkDetailsActivity extends AppCompatActivity implements
     }
 
     /**
+     * @return Returns true if the Network Details UI is visible to the user, false otherwise.
+     * @since 0.0.2
+     */
+    boolean isNetworkDetailsVisible()
+    {
+        return networkDetailsFragment.isVisible();
+    }
+
+    /**
      * Gets the {@link LocationManager} and the {@link TelephonyManager}, and then creates the
      * {@link SurveyRecordWriter} instance.  If something goes wrong getting access to those
      * managers, then the {@link SurveyRecordWriter} instance will not be created.

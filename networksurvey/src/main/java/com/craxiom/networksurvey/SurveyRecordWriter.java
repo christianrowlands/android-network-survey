@@ -326,6 +326,12 @@ class SurveyRecordWriter
 
     private void updateUi(LteSurveyRecord lteSurveyRecord)
     {
+        if(!networkDetailsActivity.isNetworkDetailsVisible())
+        {
+            Log.v(LOG_TAG, "Skipping updating the Network Details UI because it is not visible");
+            return;
+        }
+
         checkAndSetValue(lteSurveyRecord.getMcc(), (TextView) networkDetailsActivity.findViewById(R.id.mccValue));
         checkAndSetValue(lteSurveyRecord.getMnc(), (TextView) networkDetailsActivity.findViewById(R.id.mncValue));
         checkAndSetValue(lteSurveyRecord.getTac(), (TextView) networkDetailsActivity.findViewById(R.id.tacValue));

@@ -47,6 +47,11 @@ public class CalculatorFragment extends Fragment
             final String enteredText = s.toString();
             try
             {
+                if(enteredText.isEmpty())
+                {
+                    Log.v(LOG_TAG, "The entered text for the LTE Cell ID is empty.  Can't calculate the eNodeB ID.");
+                    return;
+                }
                 final int cellId = Integer.valueOf(enteredText);
                 view.findViewById(R.id.calculatedSectorIdValue);
 
