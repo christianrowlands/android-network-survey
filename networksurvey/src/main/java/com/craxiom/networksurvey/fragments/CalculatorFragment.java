@@ -47,7 +47,7 @@ public class CalculatorFragment extends Fragment
                 if (enteredText.isEmpty())
                 {
                     Log.v(LOG_TAG, "The entered text for the LTE Cell ID is empty.  Can't calculate the eNodeB ID.");
-                    clearCalculatedValues();
+                    clearCellIdCalculatedValues();
                     return;
                 }
 
@@ -57,7 +57,7 @@ public class CalculatorFragment extends Fragment
                 {
                     Log.d(LOG_TAG, "The entered value for the LTE Cell ID is out of range.");
                     Toast.makeText(getActivity(), "Invalid Cell ID.  Valid Range is 0 - 268435455", Toast.LENGTH_LONG).show();
-                    clearCalculatedValues();
+                    clearCellIdCalculatedValues();
                     return;
                 }
 
@@ -98,7 +98,7 @@ public class CalculatorFragment extends Fragment
                 if (enteredText.isEmpty())
                 {
                     Log.v(LOG_TAG, "The entered text for the LTE PCI is empty.  Can't calculate the PSS and SSS.");
-                    clearCalculatedValues();
+                    clearPciCalculatedValues();
                     return;
                 }
 
@@ -108,7 +108,7 @@ public class CalculatorFragment extends Fragment
                 {
                     Log.d(LOG_TAG, "The entered value for the LTE PCI is out of range.");
                     Toast.makeText(getActivity(), "Invalid PCI.  Valid Range is 0 - 503", Toast.LENGTH_LONG).show();
-                    clearCalculatedValues();
+                    clearPciCalculatedValues();
                     return;
                 }
 
@@ -236,11 +236,20 @@ public class CalculatorFragment extends Fragment
     }
 
     /**
-     * Sets the text in the calculated TextView's to an empty string.
+     * Sets the text in the Cell ID calculated TextView's to an empty string.
      */
-    private void clearCalculatedValues()
+    private void clearCellIdCalculatedValues()
     {
         ((TextView) view.findViewById(R.id.calculatedEnbIdValue)).setText("");
         ((TextView) view.findViewById(R.id.calculatedSectorIdValue)).setText("");
+    }
+
+    /**
+     * Sets the text in the PCI calculated TextView's to an empty string.
+     */
+    private void clearPciCalculatedValues()
+    {
+        ((TextView) view.findViewById(R.id.calculatedPssValue)).setText("");
+        ((TextView) view.findViewById(R.id.calculatedSssValue)).setText("");
     }
 }
