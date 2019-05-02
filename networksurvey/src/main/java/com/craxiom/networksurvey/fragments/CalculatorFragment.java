@@ -87,6 +87,55 @@ public class CalculatorFragment extends Fragment
         }
     };
 
+    private TextWatcher ltePciTextWatcher = new TextWatcher()
+    {
+        @Override
+        public void onTextChanged(CharSequence s, int start, int before, int count)
+        {
+            final String enteredText = s.toString();
+            try
+            {
+                if (enteredText.isEmpty())
+                {
+                    Log.v(LOG_TAG, "The entered text for the LTE PCI is empty.  Can't calculate the PSS and SSS.");
+                    clearCalculatedValues();
+                    return;
+                }
+
+                final int pci = Integer.valueOf(enteredText);
+
+                if (pci < 0 || pci > 503)
+                {
+                    Log.d(LOG_TAG, "The entered value for the LTE PCI is out of range.");
+                    Toast.makeText(getActivity(), "Invalid PCI.  Valid Range is 0 - 503", Toast.LENGTH_LONG).show();
+                    clearCalculatedValues();
+                    return;
+                }
+
+                int primarySyncSequence = pci % 3;
+                ((TextView) view.findViewById(R.id.calculatedPssValue)).setText(String.valueOf(primarySyncSequence));
+
+                int secondarySyncSequence = pci / 3;
+                ((TextView) view.findViewById(R.id.calculatedSssValue)).setText(String.valueOf(secondarySyncSequence));
+            } catch (Exception e)
+            {
+                Log.w(LOG_TAG, "Unable to parse the provide LTE PCI as an Integer:" + enteredText, e);
+            }
+        }
+
+        @Override
+        public void beforeTextChanged(CharSequence s, int start, int count, int after)
+        {
+
+        }
+
+        @Override
+        public void afterTextChanged(Editable s)
+        {
+
+        }
+    };
+
     public CalculatorFragment()
     {
         // Required empty public constructor
@@ -131,8 +180,11 @@ public class CalculatorFragment extends Fragment
         // Inflate the layout for this fragment
         view = inflater.inflate(R.layout.fragment_calculator, container, false);
 
-        final EditText editText = view.findViewById(R.id.lteCellId);
-        editText.addTextChangedListener(lteCellIdTextWatcher);
+        final EditText cellIdField = view.findViewById(R.id.lteCalculatorCellId);
+        cellIdField.addTextChangedListener(lteCellIdTextWatcher);
+
+        final EditText pciField = view.findViewById(R.id.lteCalculatorPci);
+        pciField.addTextChangedListener(ltePciTextWatcher);
 
         return view;
     }

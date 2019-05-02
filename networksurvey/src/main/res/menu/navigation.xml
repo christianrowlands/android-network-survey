@@ -8,5 +8,5 @@
     <item
         android:id="@+id/navigation_calculator"
         android:icon="@drawable/ic_calculator"
-        android:title="@string/nav_enodeb_id_calc" />
+        android:title="@string/nav_calculators" />
 </menu>

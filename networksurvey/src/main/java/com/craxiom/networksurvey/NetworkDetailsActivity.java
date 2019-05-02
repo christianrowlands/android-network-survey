@@ -129,7 +129,7 @@ public class NetworkDetailsActivity extends AppCompatActivity implements
                             initializeSurveyRecordWriter();
                         } else
                         {
-                            Log.w(LOG_TAG, "The ACCESS_FINE_LOCATION Permission was denied.");
+                            Log.w(LOG_TAG, "The WRITE_EXTERNAL_STORAGE Permission was denied.");
                         }
                         break;
                 }
