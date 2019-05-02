@@ -326,7 +326,7 @@ class SurveyRecordWriter
 
     private void updateUi(LteSurveyRecord lteSurveyRecord)
     {
-        if(!networkDetailsActivity.isNetworkDetailsVisible())
+        if (!networkDetailsActivity.isNetworkDetailsVisible())
         {
             Log.v(LOG_TAG, "Skipping updating the Network Details UI because it is not visible");
             return;
@@ -351,7 +351,14 @@ class SurveyRecordWriter
         }
 
         checkAndSetValue(lteSurveyRecord.getEarfcn(), (TextView) networkDetailsActivity.findViewById(R.id.earfcnValue));
-        checkAndSetValue(lteSurveyRecord.getPci(), (TextView) networkDetailsActivity.findViewById(R.id.pciValue));
+
+        final int pci = lteSurveyRecord.getPci();
+        if (pci != Integer.MAX_VALUE)
+        {
+            int primarySyncSequence = pci % 3;
+            int secondarySyncSequence = pci / 3;
+            ((TextView) networkDetailsActivity.findViewById(R.id.pciValue)).setText(new StringBuilder().append(pci).append(" (").append(primarySyncSequence).append("/").append(secondarySyncSequence).append(")").toString());
+        }
 
         checkAndSetLocation(lteSurveyRecord.getLocation());
 

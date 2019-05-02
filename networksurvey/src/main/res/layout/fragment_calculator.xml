@@ -8,7 +8,7 @@
     <!--tools:context=".fragments.CalculatorFragment">-->
 
     <EditText
-        android:id="@+id/lteCellId"
+        android:id="@+id/lteCalculatorCellId"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:autofillHints="Enter in the LTE Cell Id to calculate the eNodeB ID for."
@@ -54,6 +54,64 @@
 
         <TextView
             android:id="@+id/calculatedSectorIdValue"
+            android:layout_width="150dp"
+            android:layout_height="wrap_content"
+            android:text=""
+            android:textAppearance="@style/ValueText" />
+    </LinearLayout>
+
+    <Space
+        android:layout_width="match_parent"
+        android:layout_height="32dp" />
+
+    <EditText
+        android:id="@+id/lteCalculatorPci"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:autofillHints="Enter in the LTE PCI to calculate the PSS and SSS for."
+        android:ems="10"
+        android:hint="@string/lte_pci_label"
+        android:inputType="number"
+        android:maxLines="1" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="top"
+        android:orientation="horizontal">
+
+        <TextView
+            android:id="@+id/calculatedPss"
+            style="@style/LabelStyle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/pss_label"
+            android:textAppearance="@style/LabelText" />
+
+        <TextView
+            android:id="@+id/calculatedPssValue"
+            android:layout_width="150dp"
+            android:layout_height="wrap_content"
+            android:text=""
+            android:textAppearance="@style/ValueText" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="top"
+        android:orientation="horizontal">
+
+        <TextView
+            android:id="@+id/calculatedSss"
+            style="@style/LabelStyle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/sss_label"
+            android:textAppearance="@style/LabelText" />
+
+        <TextView
+            android:id="@+id/calculatedSssValue"
             android:layout_width="150dp"
             android:layout_height="wrap_content"
             android:text=""
