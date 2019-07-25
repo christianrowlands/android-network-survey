@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <TextView
+        android:id="@+id/grpcConnectionTitle"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="6dp"
+        android:layout_marginStart="6dp"
+        android:layout_marginEnd="6dp"
+        android:text="@string/grpc_connection_title"
+        android:textAppearance="@style/TitleText" />
+
+    <TextView
+        android:id="@+id/grpcConnectionDescription"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="6dp"
+        android:layout_marginStart="6dp"
+        android:layout_marginEnd="6dp"
+        android:layout_marginBottom="20dp"
+        android:text="@string/grpc_connection_description"
+        android:textAppearance="@style/DescriptionText" />
+
+    <EditText
+        android:id="@+id/grpcIpAddress"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:autofillHints="Enter in the IP address of the remote gRPC server"
+        android:ems="10"
+        android:hint="@string/grpc_server_ip_hint"
+        android:inputType="number"
+        android:maxLines="1" />
+
+    <ToggleButton
+        android:id="@+id/grpcConnectToggleButton"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="" />
+
+</LinearLayout>

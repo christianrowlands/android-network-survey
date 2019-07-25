@@ -17,6 +17,7 @@ import android.telephony.CellSignalStrengthLte;
 import android.telephony.TelephonyManager;
 import android.util.Log;
 import android.widget.TextView;
+import android.widget.Toast;
 import com.craxiom.networksurvey.messaging.LteRecord;
 import com.google.protobuf.Int32Value;
 import mil.nga.geopackage.GeoPackage;
@@ -184,7 +185,7 @@ class SurveyRecordWriter
             if (!created)
             {
                 Log.e(LOG_TAG, "Unable to create the GeoPackage File.  No logging will be recorded.");
-                // TODO show a toast to the user
+                Toast.makeText(networkDetailsActivity.getApplicationContext(), "Error: Unable to create the GeoPackage file.  No logging will be recorded.", Toast.LENGTH_SHORT).show();
                 return;
             }
 
@@ -192,7 +193,7 @@ class SurveyRecordWriter
             if (geoPackage == null)
             {
                 Log.e(LOG_TAG, "Unable to open the GeoPackage Database.  No logging will be recorded.");
-                // TODO show a toast to the user
+                Toast.makeText(networkDetailsActivity.getApplicationContext(), "Error: Unable to open the GeoPackage file.  No logging will be recorded.", Toast.LENGTH_SHORT).show();
                 return;
             }
 
@@ -228,7 +229,7 @@ class SurveyRecordWriter
             }
         } else
         {
-            // TODO show a toast to the user letting them know we could not get the IMEI
+            Toast.makeText(networkDetailsActivity.getApplicationContext(), "Error: Could not get the device IMEI", Toast.LENGTH_SHORT).show();
             deviceId = Settings.Secure.getString(networkDetailsActivity.getContentResolver(), Settings.Secure.ANDROID_ID);
         }
 
@@ -478,12 +479,12 @@ class SurveyRecordWriter
         final double longitude = lteRecord.getLongitude();
         if (latitude == 0 && longitude == 0)
         {
-            setText(R.id.latitudeValue, String.valueOf(latitude));
-            setText(R.id.longitudeValue, String.valueOf(longitude));
-        } else
-        {
             setText(R.id.latitudeValue, "");
             setText(R.id.longitudeValue, "");
+        } else
+        {
+            setText(R.id.latitudeValue, String.valueOf(latitude));
+            setText(R.id.longitudeValue, String.valueOf(longitude));
         }
     }
 
