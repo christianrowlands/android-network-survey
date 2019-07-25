@@ -41,13 +41,12 @@ public class NetworkDetailsActivity extends AppCompatActivity implements
     public static final String NETWORK_DETAILS = "Network Details";
     public static final String E_NODEB_ID_CALCULATOR = "eNodeB ID Calculator";
 
-    private static final int ACCESS_IMEI_PERMISSION_REQUEST_ID = 1;
-    private static final int ACCESS_LOCATION_PERMISSION_REQUEST_ID = 2;
+    private static final int ACCESS_PERMISSION_REQUEST_ID = 1;
     private static final int NETWORK_DATA_REFRESH_RATE_MS = 1000;
 
     private SurveyRecordWriter surveyRecordWriter;
     private MenuItem startStopLoggingMenuItem;
-    private volatile boolean loggingEnabled = false;
+    private boolean loggingEnabled = false;
     private NetworkDetailsFragment networkDetailsFragment;
     private CalculatorFragment calculatorFragment;
     private CollapsingToolbarLayout toolbarLayout;
@@ -61,16 +60,12 @@ public class NetworkDetailsActivity extends AppCompatActivity implements
         final Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
-        // First request permission to get the IMEI
-        ActivityCompat.requestPermissions(this, new String[]{
-                        Manifest.permission.READ_PHONE_STATE},
-                ACCESS_IMEI_PERMISSION_REQUEST_ID);
-
         ActivityCompat.requestPermissions(this, new String[]{
                         //Manifest.permission.ACCESS_COARSE_LOCATION,
                         Manifest.permission.ACCESS_FINE_LOCATION,
-                        Manifest.permission.WRITE_EXTERNAL_STORAGE},
-                ACCESS_LOCATION_PERMISSION_REQUEST_ID);
+                        Manifest.permission.WRITE_EXTERNAL_STORAGE,
+                        Manifest.permission.READ_PHONE_STATE},
+                ACCESS_PERMISSION_REQUEST_ID);
 
         BottomNavigationView bottomNavigationView = findViewById(R.id.bottom_navigation);
         bottomNavigationView.setOnNavigationItemSelectedListener(new BottomNavigationView.OnNavigationItemSelectedListener()
@@ -113,31 +108,19 @@ public class NetworkDetailsActivity extends AppCompatActivity implements
     {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
 
-        if (requestCode == ACCESS_LOCATION_PERMISSION_REQUEST_ID)
+        if (requestCode == ACCESS_PERMISSION_REQUEST_ID)
         {
             for (int index = 0; index < permissions.length; index++)
             {
-                switch (permissions[index])
+                if (Manifest.permission.ACCESS_FINE_LOCATION.equals(permissions[index]))
                 {
-                    /*case Manifest.permission.ACCESS_COARSE_LOCATION:
-                        if (grantResults[index] == PackageManager.PERMISSION_GRANTED)
-                        {
-                            refreshCellDetails();
-                        } else
-                        {
-                            Log.w(LOG_TAG, "The ACCESS_COARSE_LOCATION Permission was denied.");
-                        }
-                        break;*/
-
-                    case Manifest.permission.WRITE_EXTERNAL_STORAGE:
-                        if (grantResults[index] == PackageManager.PERMISSION_GRANTED)
-                        {
-                            initializeSurveyRecordWriter();
-                        } else
-                        {
-                            Log.w(LOG_TAG, "The WRITE_EXTERNAL_STORAGE Permission was denied.");
-                        }
-                        break;
+                    if (grantResults[index] == PackageManager.PERMISSION_GRANTED)
+                    {
+                        initializeSurveyRecordWriter();
+                    } else
+                    {
+                        Log.w(LOG_TAG, "The ACCESS_FINE_LOCATION Permission was denied.");
+                    }
                 }
             }
         }

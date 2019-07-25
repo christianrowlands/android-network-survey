@@ -421,9 +421,9 @@ class SurveyRecordWriter
             return;
         }
 
-        setText(R.id.mccValue, lteSurveyRecord.hasMcc() ? String.valueOf(lteSurveyRecord.getMcc()) : "");
-        setText(R.id.mncValue, lteSurveyRecord.hasMnc() ? String.valueOf(lteSurveyRecord.getMnc()) : "");
-        setText(R.id.tacValue, lteSurveyRecord.hasTac() ? String.valueOf(lteSurveyRecord.getTac()) : "");
+        setText(R.id.mccValue, lteSurveyRecord.hasMcc() ? String.valueOf(lteSurveyRecord.getMcc().getValue()) : "");
+        setText(R.id.mncValue, lteSurveyRecord.hasMnc() ? String.valueOf(lteSurveyRecord.getMnc().getValue()) : "");
+        setText(R.id.tacValue, lteSurveyRecord.hasTac() ? String.valueOf(lteSurveyRecord.getTac().getValue()) : "");
 
         if (lteSurveyRecord.hasCi())
         {
@@ -439,7 +439,7 @@ class SurveyRecordWriter
             setText(R.id.sectorIdValue, String.valueOf(sectorId));
         }
 
-        setText(R.id.earfcnValue, lteSurveyRecord.hasEarfcn() ? String.valueOf(lteSurveyRecord.getEarfcn()) : "");
+        setText(R.id.earfcnValue, lteSurveyRecord.hasEarfcn() ? String.valueOf(lteSurveyRecord.getEarfcn().getValue()) : "");
 
         if (lteSurveyRecord.hasPci())
         {
@@ -451,9 +451,9 @@ class SurveyRecordWriter
 
         checkAndSetLocation(lteSurveyRecord);
 
-        setText(R.id.rsrpValue, lteSurveyRecord.hasRsrp() ? String.valueOf(lteSurveyRecord.getRsrp()) : "");
-        setText(R.id.rsrqValue, lteSurveyRecord.hasRsrq() ? String.valueOf(lteSurveyRecord.getRsrq()) : "");
-        setText(R.id.taValue, lteSurveyRecord.hasTa() ? String.valueOf(lteSurveyRecord.getTa()) : "");
+        setText(R.id.rsrpValue, lteSurveyRecord.hasRsrp() ? String.valueOf(lteSurveyRecord.getRsrp().getValue()) : "");
+        setText(R.id.rsrqValue, lteSurveyRecord.hasRsrq() ? String.valueOf(lteSurveyRecord.getRsrq().getValue()) : "");
+        setText(R.id.taValue, lteSurveyRecord.hasTa() ? String.valueOf(lteSurveyRecord.getTa().getValue()) : "");
     }
 
     /**
