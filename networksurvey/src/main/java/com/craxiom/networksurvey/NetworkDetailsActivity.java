@@ -27,7 +27,7 @@ import java.sql.SQLException;
 
 /**
  * The main activity for the Network Survey App.  This app is used to pull LTE Network Survey
- * details, display them to a user, and also (optionallyY) write them to a file.
+ * details, display them to a user, and also (optionally) write them to a file.
  *
  * @since 0.0.1
  */
@@ -39,13 +39,14 @@ public class NetworkDetailsActivity extends AppCompatActivity implements
     public static final String NETWORK_DETAILS_FRAGMENT_TAG = "NetworkDetailsFragment";
     public static final String CALCULATOR_FRAGMENT_TAG = "CalculatorFragment";
     public static final String NETWORK_DETAILS = "Network Details";
-    public static final String E_NODEB_ID_CALCULATOR = "eNodeb ID Calculator";
+    public static final String E_NODEB_ID_CALCULATOR = "eNodeB ID Calculator";
 
-    private static final int ACCESS_LOCATION_PERMISSION_REQUEST_ID = 1;
+    private static final int ACCESS_IMEI_PERMISSION_REQUEST_ID = 1;
+    private static final int ACCESS_LOCATION_PERMISSION_REQUEST_ID = 2;
     private static final int NETWORK_DATA_REFRESH_RATE_MS = 1000;
 
     private SurveyRecordWriter surveyRecordWriter;
-    MenuItem startStopLoggingMenuItem;
+    private MenuItem startStopLoggingMenuItem;
     private volatile boolean loggingEnabled = false;
     private NetworkDetailsFragment networkDetailsFragment;
     private CalculatorFragment calculatorFragment;
@@ -59,6 +60,11 @@ public class NetworkDetailsActivity extends AppCompatActivity implements
         toolbarLayout = findViewById(R.id.toolbar_layout);
         final Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
+
+        // First request permission to get the IMEI
+        ActivityCompat.requestPermissions(this, new String[]{
+                        Manifest.permission.READ_PHONE_STATE},
+                ACCESS_IMEI_PERMISSION_REQUEST_ID);
 
         ActivityCompat.requestPermissions(this, new String[]{
                         //Manifest.permission.ACCESS_COARSE_LOCATION,
@@ -141,8 +147,8 @@ public class NetworkDetailsActivity extends AppCompatActivity implements
     public boolean onCreateOptionsMenu(Menu menu)
     {
         // Inflate the menu; this adds items to the action bar if it is present.
-        //getMenuInflater().inflate(R.menu.menu_network_details, menu);
-        //startStopLoggingMenuItem = menu.findItem(R.id.action_start_stop_logging);
+        getMenuInflater().inflate(R.menu.menu_network_details, menu);
+        startStopLoggingMenuItem = menu.findItem(R.id.action_start_stop_logging);
         return true;
     }
 
