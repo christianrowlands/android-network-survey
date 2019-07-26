@@ -31,9 +31,15 @@
     <string name="lte_pci_label">LTE PCI</string>
 
     <string name="grpc_connection_title">Server Connection</string>
-    <string name="grpc_connection_description">Here you can connect to a remote server.  Once connected, all the survey results will be streamed to the server.
+    <string name="grpc_connection_description">Here you can connect to a remote server.  Once connected, all future survey results will be streamed to the server.
         \n\nSteps for Connecting:
-    \n1. Enter in the Server IP Address or Hostname
-    \n2. Click the Connect Button</string>
-    <string name="grpc_server_ip_hint">Server Address</string>
+        \n1. Enter in the Server IP Address or Hostname
+        \n2. Enter in the Server Port Number
+        \n3. Click the Connect Button</string>
+    <string name="grpc_server_host_hint">Server Address</string>
+    <string name="gprc_server_port_hint">Port Number</string>
+
+    <string name="status_disconnected">Disconnected</string>
+    <string name="status_connecting">Connecting …</string>
+    <string name="status_connected">Connected</string>
 </resources>

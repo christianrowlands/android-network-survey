@@ -2,14 +2,10 @@ package com.craxiom.networksurvey;
 
 import android.annotation.SuppressLint;
 import android.content.Context;
-import android.content.pm.PackageManager;
 import android.location.Location;
 import android.location.LocationManager;
-import android.os.Build;
 import android.os.Environment;
 import android.os.Handler;
-import android.provider.Settings;
-import android.support.v4.app.ActivityCompat;
 import android.telephony.CellIdentityLte;
 import android.telephony.CellInfo;
 import android.telephony.CellInfoLte;
@@ -45,6 +41,7 @@ import java.text.SimpleDateFormat;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 import static mil.nga.geopackage.db.GeoPackageDataType.MEDIUMINT;
 
@@ -54,7 +51,7 @@ import static mil.nga.geopackage.db.GeoPackageDataType.MEDIUMINT;
  *
  * @since 0.0.2
  */
-class SurveyRecordWriter
+public class SurveyRecordWriter
 {
     private static final String LOG_DIRECTORY_NAME = "NetworkSurveyData";
     private static final SimpleDateFormat formatFilenameFriendlyTime = new SimpleDateFormat("YYYYMMdd-HHmmss", Locale.US);
@@ -82,9 +79,10 @@ class SurveyRecordWriter
 
     private final LocationManager locationManager;
     private final TelephonyManager telephonyManager;
-    private final NetworkDetailsActivity networkDetailsActivity;
+    private final NetworkSurveyActivity networkSurveyActivity;
     private final String bestProvider;
     private final Handler handler = new Handler();
+    private final List<ISurveyRecordListener> surveyRecordListeners = new CopyOnWriteArrayList<>();
 
     private final String deviceId;
     private final String missionId;
@@ -97,17 +95,27 @@ class SurveyRecordWriter
     private int groupNumber = -1; // This will be incremented to 0 the first time it is used.
 
     SurveyRecordWriter(LocationManager locationManager, TelephonyManager telephonyManager,
-                       NetworkDetailsActivity networkDetailsActivity, String bestProvider)
+                       NetworkSurveyActivity networkSurveyActivity, String bestProvider, String deviceId)
     {
         this.locationManager = locationManager;
         this.telephonyManager = telephonyManager;
-        this.networkDetailsActivity = networkDetailsActivity;
+        this.networkSurveyActivity = networkSurveyActivity;
         this.bestProvider = bestProvider;
 
-        deviceId = getDeviceId();
+        this.deviceId = deviceId;
         missionId = MISSION_ID_PREFIX + formatFilenameFriendlyTime.format(System.currentTimeMillis());
 
-        geoPackageManager = GeoPackageFactory.getManager(networkDetailsActivity);
+        geoPackageManager = GeoPackageFactory.getManager(networkSurveyActivity);
+    }
+
+    public void registerSurveyRecordListener(ISurveyRecordListener surveyRecordListener)
+    {
+        surveyRecordListeners.add(surveyRecordListener);
+    }
+
+    public void unregisterSurveyRecordListener(ISurveyRecordListener surveyRecordListener)
+    {
+        surveyRecordListeners.remove(surveyRecordListener);
     }
 
     /**
@@ -185,7 +193,7 @@ class SurveyRecordWriter
             if (!created)
             {
                 Log.e(LOG_TAG, "Unable to create the GeoPackage File.  No logging will be recorded.");
-                Toast.makeText(networkDetailsActivity.getApplicationContext(), "Error: Unable to create the GeoPackage file.  No logging will be recorded.", Toast.LENGTH_SHORT).show();
+                Toast.makeText(networkSurveyActivity.getApplicationContext(), "Error: Unable to create the GeoPackage file.  No logging will be recorded.", Toast.LENGTH_SHORT).show();
                 return;
             }
 
@@ -193,7 +201,7 @@ class SurveyRecordWriter
             if (geoPackage == null)
             {
                 Log.e(LOG_TAG, "Unable to open the GeoPackage Database.  No logging will be recorded.");
-                Toast.makeText(networkDetailsActivity.getApplicationContext(), "Error: Unable to open the GeoPackage file.  No logging will be recorded.", Toast.LENGTH_SHORT).show();
+                Toast.makeText(networkSurveyActivity.getApplicationContext(), "Error: Unable to open the GeoPackage file.  No logging will be recorded.", Toast.LENGTH_SHORT).show();
                 return;
             }
 
@@ -206,34 +214,6 @@ class SurveyRecordWriter
         }
 
         loggingEnabled = true;
-    }
-
-    /**
-     * Attempts to get the device's IMEI if the user has granted the permission.  If not, then a default ID it used.
-     *
-     * @return The IMEI if it can be found, otherwise a random UUID
-     */
-    @SuppressLint("HardwareIds")
-    private String getDeviceId()
-    {
-        String deviceId;
-        if (ActivityCompat.checkSelfPermission(networkDetailsActivity, android.Manifest.permission.READ_PHONE_STATE) == PackageManager.PERMISSION_GRANTED)
-        {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O)
-            {
-                deviceId = telephonyManager.getImei();
-            } else
-            {
-                //noinspection deprecation
-                deviceId = telephonyManager.getDeviceId();
-            }
-        } else
-        {
-            Toast.makeText(networkDetailsActivity.getApplicationContext(), "Error: Could not get the device IMEI", Toast.LENGTH_SHORT).show();
-            deviceId = Settings.Secure.getString(networkDetailsActivity.getContentResolver(), Settings.Secure.ANDROID_ID);
-        }
-
-        return deviceId;
     }
 
     /**
@@ -307,6 +287,7 @@ class SurveyRecordWriter
 
         writeSurveyRecordEntryToLogFile(lteSurveyRecord);
         updateUi(lteSurveyRecord);
+        surveyRecordListeners.forEach(listener -> listener.onLteSurveyRecord(lteSurveyRecord));
         return true;
     }
 
@@ -416,7 +397,7 @@ class SurveyRecordWriter
 
     private void updateUi(LteRecord lteSurveyRecord)
     {
-        if (!networkDetailsActivity.isNetworkDetailsVisible())
+        if (!networkSurveyActivity.isNetworkDetailsVisible())
         {
             Log.v(LOG_TAG, "Skipping updating the Network Details UI because it is not visible");
             return;
@@ -465,7 +446,7 @@ class SurveyRecordWriter
      */
     private void setText(int textViewId, String text)
     {
-        ((TextView) networkDetailsActivity.findViewById(textViewId)).setText(text);
+        ((TextView) networkSurveyActivity.findViewById(textViewId)).setText(text);
     }
 
     /**

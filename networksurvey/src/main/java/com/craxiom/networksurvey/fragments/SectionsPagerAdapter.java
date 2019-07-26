@@ -4,19 +4,27 @@ import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentPagerAdapter;
 import android.util.Log;
+import com.craxiom.networksurvey.NetworkSurveyActivity;
 
 /**
  * A {@link FragmentPagerAdapter} that returns a fragment corresponding to
  * one of the sections/tabs/pages.
+ *
+ * @since 0.0.4
  */
 public class SectionsPagerAdapter extends FragmentPagerAdapter
 {
     private static final String LOG_TAG = SectionsPagerAdapter.class.getSimpleName();
-    private NetworkDetailsFragment networkDetailsFragment;
 
-    public SectionsPagerAdapter(FragmentManager fragmentManager)
+    private final NetworkSurveyActivity networkSurveyActivity;
+
+    private NetworkDetailsFragment networkDetailsFragment;
+    private GrpcConnectionFragment grpcConnectionFragment;
+
+    public SectionsPagerAdapter(FragmentManager fragmentManager, NetworkSurveyActivity networkSurveyActivity)
     {
         super(fragmentManager);
+        this.networkSurveyActivity = networkSurveyActivity;
     }
 
     @Override
@@ -35,7 +43,9 @@ public class SectionsPagerAdapter extends FragmentPagerAdapter
                 return new CalculatorFragment();
 
             case 2:
-                return new GrpcConnectionFragment();
+                grpcConnectionFragment = new GrpcConnectionFragment();
+                grpcConnectionFragment.setNetworkSurveyActivity(networkSurveyActivity);
+                return grpcConnectionFragment;
         }
 
         Log.wtf(LOG_TAG, "Somehow we are trying to get an item for a tab that does not exist");

@@ -1,15 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:orientation="vertical"
     android:layout_width="match_parent"
-    android:layout_height="match_parent">
+    android:layout_height="match_parent"
+    android:orientation="vertical">
 
     <TextView
         android:id="@+id/grpcConnectionTitle"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="6dp"
         android:layout_marginStart="6dp"
+        android:layout_marginTop="6dp"
         android:layout_marginEnd="6dp"
         android:text="@string/grpc_connection_title"
         android:textAppearance="@style/TitleText" />
@@ -18,27 +18,41 @@
         android:id="@+id/grpcConnectionDescription"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="6dp"
         android:layout_marginStart="6dp"
+        android:layout_marginTop="6dp"
         android:layout_marginEnd="6dp"
         android:layout_marginBottom="20dp"
         android:text="@string/grpc_connection_description"
         android:textAppearance="@style/DescriptionText" />
 
-    <EditText
-        android:id="@+id/grpcIpAddress"
-        android:layout_width="wrap_content"
+    <LinearLayout
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:autofillHints="Enter in the IP address of the remote gRPC server"
-        android:ems="10"
-        android:hint="@string/grpc_server_ip_hint"
-        android:inputType="number"
-        android:maxLines="1" />
+        android:orientation="horizontal">
+
+        <EditText
+            android:id="@+id/grpcHostAddress"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="2"
+            android:autofillHints="Enter in the Host address of the remote gRPC server"
+            android:ems="10"
+            android:hint="@string/grpc_server_host_hint"
+            android:maxLines="1" />
+
+        <EditText
+            android:id="@+id/grpcPortNumber"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:hint="@string/gprc_server_port_hint"
+            android:inputType="numberDecimal" />
+    </LinearLayout>
 
     <ToggleButton
         android:id="@+id/grpcConnectToggleButton"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="" />
+        android:text="Connect To Server" />
 
 </LinearLayout>

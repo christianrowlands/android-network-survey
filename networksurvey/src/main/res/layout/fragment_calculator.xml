@@ -4,7 +4,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    tools:context="com.craxiom.networksurvey.NetworkDetailsActivity">
+    tools:context="com.craxiom.networksurvey.NetworkSurveyActivity">
     <!--tools:context=".fragments.CalculatorFragment">-->
 
     <EditText
