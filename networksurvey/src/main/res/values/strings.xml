@@ -5,6 +5,9 @@
     <string name="action_start_logging">Start Logging</string>
     <string name="action_stop_logging">Stop Logging</string>
 
+    <string name="no_gps_device">No GPS detected in device!</string>
+    <string name="turn_on_gps">Please turn on GPS</string>
+
     <string name="technology_label">Technology: </string>
     <string name="mcc_label">MCC: </string>
     <string name="mnc_label">MNC: </string>
@@ -34,7 +37,7 @@
     <string name="grpc_connection_description">Here you can connect to a remote server.  Once connected, all future survey results will be streamed to the server.
         \n\nSteps for Connecting:
         \n1. Enter in the Server IP Address or Hostname
-        \n2. Enter in the Server Port Number
+        \n2. Enter in the Server Port Number (Default: 2621)
         \n3. Click the Connect Button</string>
     <string name="grpc_server_host_hint">Server Address</string>
     <string name="gprc_server_port_hint">Port Number</string>

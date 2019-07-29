@@ -9,6 +9,7 @@ import android.content.pm.PackageManager;
 import android.location.Criteria;
 import android.location.Location;
 import android.location.LocationManager;
+import android.location.LocationProvider;
 import android.net.Uri;
 import android.os.BatteryManager;
 import android.os.Build;
@@ -33,6 +34,8 @@ import com.craxiom.networksurvey.messaging.DeviceStatus;
 
 import java.sql.SQLException;
 
+import static android.location.LocationManager.GPS_PROVIDER;
+
 /**
  * The main activity for the Network Survey App.  This app is used to pull LTE Network Survey
  * details, display them to a user, and also (optionally) write them to a file.
@@ -45,7 +48,7 @@ public class NetworkSurveyActivity extends AppCompatActivity implements
     private static final String LOG_TAG = NetworkSurveyActivity.class.getSimpleName();
 
     private static final int ACCESS_PERMISSION_REQUEST_ID = 1;
-    private static final int DEVICE_STATUS_REFRESH_RATE_MS = 30_000;
+    private static final int DEVICE_STATUS_REFRESH_RATE_MS = 15_000;
     private static final int NETWORK_DATA_REFRESH_RATE_MS = 2_000;
 
     private SurveyRecordWriter surveyRecordWriter;
@@ -56,6 +59,7 @@ public class NetworkSurveyActivity extends AppCompatActivity implements
     private IDeviceStatusListener deviceStatusListener;
 
     private String deviceId = "Device";
+    private GpsListener gpsListener;
 
     @Override
     protected void onCreate(Bundle savedInstanceState)
@@ -79,11 +83,18 @@ public class NetworkSurveyActivity extends AppCompatActivity implements
         tabLayout.setupWithViewPager(viewPager);
 
         ActivityCompat.requestPermissions(this, new String[]{
-                        //Manifest.permission.ACCESS_COARSE_LOCATION,
                         Manifest.permission.ACCESS_FINE_LOCATION,
                         Manifest.permission.WRITE_EXTERNAL_STORAGE,
                         Manifest.permission.READ_PHONE_STATE},
                 ACCESS_PERMISSION_REQUEST_ID);
+    }
+
+    @Override
+    protected void onDestroy()
+    {
+        final LocationManager locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
+        if (gpsListener != null) locationManager.removeUpdates(gpsListener);
+        super.onDestroy();
     }
 
     @Override
@@ -226,10 +237,8 @@ public class NetworkSurveyActivity extends AppCompatActivity implements
      */
     private void initializeDeviceStatusReport()
     {
-        final LocationManager locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
-        final Criteria criteria = new Criteria();
-        criteria.setHorizontalAccuracy(Criteria.ACCURACY_HIGH);
-        final String bestProvider = locationManager.getBestProvider(criteria, true);
+        checkLocationProvider();
+        initializeLocationListener();
 
         final Handler handler = new Handler();
 
@@ -241,7 +250,7 @@ public class NetworkSurveyActivity extends AppCompatActivity implements
                 {
                     if (deviceStatusListener != null)
                     {
-                        deviceStatusListener.onDeviceStatus(generateDeviceStatus(locationManager, bestProvider));
+                        deviceStatusListener.onDeviceStatus(generateDeviceStatus());
                     }
 
                     handler.postDelayed(this, DEVICE_STATUS_REFRESH_RATE_MS);
@@ -254,20 +263,68 @@ public class NetworkSurveyActivity extends AppCompatActivity implements
     }
 
     /**
+     * Sets up the GPS location provider.  If GPS location is not enabled on this device, then the settings UI is opened so the user can enable it.
+     */
+    private void checkLocationProvider()
+    {
+        final LocationManager locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
+        final LocationProvider locationProvider = locationManager.getProvider(LocationManager.GPS_PROVIDER);
+        if (locationProvider == null)
+        {
+            final String noGpsMessage = getString(R.string.no_gps_device);
+            Log.w(LOG_TAG, noGpsMessage);
+            Toast.makeText(getApplicationContext(), noGpsMessage, Toast.LENGTH_LONG).show();
+        } else if (!locationManager.isProviderEnabled(GPS_PROVIDER))
+        {
+            // gps exists, but isn't on
+            final String turnOnGpsMessage = getString(R.string.turn_on_gps);
+            Log.w(LOG_TAG, turnOnGpsMessage);
+            Toast.makeText(getApplicationContext(), turnOnGpsMessage, Toast.LENGTH_LONG).show();
+
+            // Allow the user to turn on the GPS
+            final Intent myIntent = new Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS);
+            try
+            {
+                startActivity(myIntent);
+            } catch (Exception ex)
+            {
+                Log.e(LOG_TAG, "An exception occured trying to start the location activity: ", ex);
+            }
+        }
+    }
+
+    /**
+     * Registers with the LocationManager for location updates.
+     */
+    private void initializeLocationListener()
+    {
+        if (gpsListener != null) return;
+        final LocationManager locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
+
+        gpsListener = new GpsListener(this);
+
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED
+                && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED)
+        {
+            return;
+        }
+
+        locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, (long) NETWORK_DATA_REFRESH_RATE_MS, 0f, gpsListener);
+    }
+
+    /**
      * Generate a device status message that can be sent to any remote servers.
      *
-     * @param locationManager The {@link LocationManager} that is used to get the current location.
-     * @param bestProvider    The location provider that is used to get the location.
      * @return A Device Status message that can be sent to a remote server.
      */
-    private DeviceStatus generateDeviceStatus(LocationManager locationManager, String bestProvider)
+    private DeviceStatus generateDeviceStatus()
     {
         final DeviceStatus.Builder builder = DeviceStatus.newBuilder();
         builder.setDeviceSerialNumber(deviceId)
                 .setDeviceName("Test Phone") // TODO Add a user setting to name the device and use it here
                 .setDeviceTime(System.currentTimeMillis());
 
-        @SuppressLint("MissingPermission") final Location lastKnownLocation = locationManager.getLastKnownLocation(bestProvider);
+        final Location lastKnownLocation = gpsListener.getLatestLocation();
         if (lastKnownLocation != null)
         {
             builder.setLatitude(lastKnownLocation.getLatitude());
@@ -281,7 +338,7 @@ public class NetworkSurveyActivity extends AppCompatActivity implements
         {
             int level = batteryStatus.getIntExtra(BatteryManager.EXTRA_LEVEL, -1);
             int scale = batteryStatus.getIntExtra(BatteryManager.EXTRA_SCALE, -1);
-            final float batteryPercent = level / (float) scale;
+            final float batteryPercent = (level / (float) scale) * 100;
             builder.setBatteryLevelPercent((int) batteryPercent);
         }
 

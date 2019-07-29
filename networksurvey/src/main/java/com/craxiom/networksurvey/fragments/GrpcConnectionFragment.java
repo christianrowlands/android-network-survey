@@ -1,10 +1,16 @@
 package com.craxiom.networksurvey.fragments;
 
+import android.Manifest;
 import android.content.Context;
+import android.content.pm.PackageManager;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
+import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentActivity;
+import android.support.v4.content.ContextCompat;
 import android.text.TextUtils;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -40,6 +46,8 @@ public class GrpcConnectionFragment extends Fragment implements View.OnClickList
 {
     private static final String LOG_TAG = GrpcConnectionFragment.class.getSimpleName();
 
+    private static final int ACCESS_PERMISSION_REQUEST_ID = 10;
+
     private View view;
     private ToggleButton grpcConnectionToggleButton;
     private EditText grpcHostAddressEdit;
@@ -70,13 +78,25 @@ public class GrpcConnectionFragment extends Fragment implements View.OnClickList
 
         grpcConnectionToggleButton.setOnClickListener(this);
 
+        ActivityCompat.requestPermissions(networkSurveyActivity, new String[]{
+                        Manifest.permission.INTERNET},
+                ACCESS_PERMISSION_REQUEST_ID);
+
         return view;
+    }
+
+    @Override
+    public void onSaveInstanceState(@NonNull Bundle outState)
+    {
+        super.onSaveInstanceState(outState);
     }
 
     @Override
     public void onClick(View view)
     {
-        if (grpcConnectionToggleButton.isActivated())
+        if (!hasInternetPermission()) return;
+
+        if (grpcConnectionToggleButton.isChecked())
         {
             connectToGrpcServer();
         } else
@@ -102,6 +122,27 @@ public class GrpcConnectionFragment extends Fragment implements View.OnClickList
         this.networkSurveyActivity = networkSurveyActivity;
         networkSurveyActivity.registerDeviceStatusListener(this);
         networkSurveyActivity.registerSurveyRecordListener(this);
+    }
+
+    /**
+     * Checks to see if the Internet permission has been granted.  If it has not, false is returned, but a request is put in to get
+     * access to the Internet permission.
+     *
+     * @return True if the Internet permission has already been granted, false otherwise.
+     */
+    private boolean hasInternetPermission()
+    {
+        final boolean hasPermission = ContextCompat.checkSelfPermission(networkSurveyActivity, Manifest.permission.INTERNET)
+                == PackageManager.PERMISSION_GRANTED;
+
+        Log.d(LOG_TAG, "Has Internet permission: " + hasPermission);
+
+        if (hasPermission) return true;
+
+        ActivityCompat.requestPermissions(networkSurveyActivity, new String[]{
+                        Manifest.permission.INTERNET},
+                ACCESS_PERMISSION_REQUEST_ID);
+        return false;
     }
 
     /**
@@ -144,8 +185,8 @@ public class GrpcConnectionFragment extends Fragment implements View.OnClickList
 
         try
         {
-            String host = grpcHostAddressEdit.getText().toString();
-            String portStr = grpcPortNumberEdit.getText().toString();
+            final String host = grpcHostAddressEdit.getText().toString();
+            final String portStr = grpcPortNumberEdit.getText().toString();
             int port = TextUtils.isEmpty(portStr) ? 0 : Integer.valueOf(portStr);
 
             hideSoftInputFromWindow();
@@ -154,6 +195,7 @@ public class GrpcConnectionFragment extends Fragment implements View.OnClickList
 
             grpcDeviceStatusTask = new GrpcDeviceStatusTask(channel, this);
             grpcDeviceStatusTask.execute();
+            updateUiState(ConnectionState.CONNECTED);
         } catch (Exception e)
         {
             Log.e(LOG_TAG, "An exception occurred when trying to connect to the remote gRPC server");
@@ -263,8 +305,7 @@ public class GrpcConnectionFragment extends Fragment implements View.OnClickList
                 // Receiving happens asynchronously
                 if (!finishLatch.await(1, TimeUnit.MINUTES))
                 {
-                    throw new RuntimeException(
-                            "Could not finish rpc within 1 minute, the server is likely down");
+                    throw new RuntimeException("Could not finish rpc within 1 minute, the server is likely down");
                 }
 
                 if (failed != null)
@@ -291,6 +332,7 @@ public class GrpcConnectionFragment extends Fragment implements View.OnClickList
             {
                 Thread.currentThread().interrupt();
             }
+
             GrpcConnectionFragment grpcConnectionFragment = fragmentReference.get();
             if (grpcConnectionFragment != null)
             {

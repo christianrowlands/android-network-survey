@@ -38,7 +38,8 @@
             android:autofillHints="Enter in the Host address of the remote gRPC server"
             android:ems="10"
             android:hint="@string/grpc_server_host_hint"
-            android:maxLines="1" />
+            android:maxLines="1"
+            android:text="172.22.49.245" />
 
         <EditText
             android:id="@+id/grpcPortNumber"
@@ -46,13 +47,16 @@
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:hint="@string/gprc_server_port_hint"
-            android:inputType="numberDecimal" />
+            android:inputType="numberDecimal"
+            android:text="2621" />
     </LinearLayout>
 
     <ToggleButton
         android:id="@+id/grpcConnectToggleButton"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Connect To Server" />
+        android:text="Connect To Server"
+        android:textOff="@string/status_disconnected"
+        android:textOn="@string/status_connected" />
 
 </LinearLayout>
