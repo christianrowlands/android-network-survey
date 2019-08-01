@@ -1,5 +1,6 @@
 package com.craxiom.networksurvey;
 
+import android.annotation.SuppressLint;
 import android.os.AsyncTask;
 import android.util.Log;
 import com.craxiom.networksurvey.listeners.IDeviceStatusListener;
@@ -7,10 +8,12 @@ import com.craxiom.networksurvey.listeners.IGrpcConnectionStateListener;
 import com.craxiom.networksurvey.listeners.ISurveyRecordListener;
 import com.craxiom.networksurvey.messaging.DeviceStatus;
 import com.craxiom.networksurvey.messaging.LteRecord;
+import com.craxiom.networksurvey.messaging.LteSurveyResponse;
 import com.craxiom.networksurvey.messaging.NetworkSurveyStatusGrpc;
 import com.craxiom.networksurvey.messaging.StatusUpdateReply;
+import com.craxiom.networksurvey.messaging.WirelessSurveyGrpc;
 import io.grpc.ManagedChannel;
-import io.grpc.ManagedChannelBuilder;
+import io.grpc.android.AndroidChannelBuilder;
 import io.grpc.stub.StreamObserver;
 
 import java.lang.ref.WeakReference;
@@ -20,6 +23,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
 
 /**
  * A controller for allowing the user to connect to a remote gRPC based server.  This allows them to stream the survey results back to a server.
@@ -30,18 +34,22 @@ public class GrpcConnectionController implements IDeviceStatusListener, ISurveyR
 {
     private static final String LOG_TAG = GrpcConnectionController.class.getSimpleName();
 
+    private final NetworkSurveyActivity networkSurveyActivity;
+
     private final BlockingQueue<DeviceStatus> deviceStatusBlockingQueue = new LinkedBlockingQueue<>();
     private final BlockingQueue<LteRecord> lteRecordBlockingQueue = new LinkedBlockingQueue<>();
 
     private final List<IGrpcConnectionStateListener> grpcConnectionListeners = new CopyOnWriteArrayList<>();
 
-    private GrpcDeviceStatusTask grpcDeviceStatusTask;
-
     private ConnectionState currentConnectionState;
+    private GrpcTask<DeviceStatus, StatusUpdateReply> deviceStatusGrpcTask;
+    private GrpcTask<LteRecord, LteSurveyResponse> lteRecordGrpcTask;
+    private ManagedChannel channel;
+    private CountDownLatch channelFinishLatch;
 
-    public GrpcConnectionController()
+    GrpcConnectionController(NetworkSurveyActivity networkSurveyActivity)
     {
-
+        this.networkSurveyActivity = networkSurveyActivity;
     }
 
     @Override
@@ -74,27 +82,35 @@ public class GrpcConnectionController implements IDeviceStatusListener, ISurveyR
      *
      * @param host The Host Name or IP Address of the remote gRPC server.
      * @param port The Port Number of the gRPC server.
-     * @return True if the connection is successful, false otherwise.
      */
-    public boolean connectToGrpcServer(String host, int port)
+    public void connectToGrpcServer(String host, int port)
     {
         try
         {
             notifyConnectionStateChange(ConnectionState.CONNECTING);
 
-            final ManagedChannel channel = ManagedChannelBuilder.forAddress(host, port).usePlaintext().build();
+            channel = AndroidChannelBuilder.forAddress(host, port)
+                    .usePlaintext()
+                    .context(networkSurveyActivity.getApplicationContext())
+                    .build();
 
-            grpcDeviceStatusTask = new GrpcDeviceStatusTask(channel, this);
             notifyConnectionStateChange(ConnectionState.CONNECTED);
-            grpcDeviceStatusTask.execute();
+
+            deviceStatusGrpcTask = new GrpcTask<>(this, deviceStatusBlockingQueue,
+                    statusUpdateReplyStreamObserver -> NetworkSurveyStatusGrpc.newStub(channel).statusUpdate(statusUpdateReplyStreamObserver));
+            deviceStatusGrpcTask.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
+
+            lteRecordGrpcTask = new GrpcTask<>(this, lteRecordBlockingQueue,
+                    lteRecordReplyStreamObserver -> WirelessSurveyGrpc.newStub(channel).streamLteSurvey(lteRecordReplyStreamObserver));
+            lteRecordGrpcTask.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
+
+            channelFinishLatch = new CountDownLatch(2);
         } catch (Exception e)
         {
             Log.e(LOG_TAG, "An exception occurred when trying to connect to the remote gRPC server");
+            shutdownChannel();
             notifyConnectionStateChange(ConnectionState.DISCONNECTED);
-            return false;
         }
-
-        return true;
     }
 
     /**
@@ -102,10 +118,11 @@ public class GrpcConnectionController implements IDeviceStatusListener, ISurveyR
      */
     public void disconnectFromGrpcServer()
     {
-        if (grpcDeviceStatusTask != null)
-        {
-            grpcDeviceStatusTask.cancel(true);
-        }
+        if (deviceStatusGrpcTask != null) deviceStatusGrpcTask.cancel(true);
+
+        if (lteRecordGrpcTask != null) lteRecordGrpcTask.cancel(true);
+
+        shutdownChannel();
 
         notifyConnectionStateChange(ConnectionState.DISCONNECTED);
     }
@@ -113,9 +130,39 @@ public class GrpcConnectionController implements IDeviceStatusListener, ISurveyR
     /**
      * @return True if the gRPC connection is active, false otherwise.
      */
-    public boolean isConnected()
+    boolean isConnected()
     {
         return currentConnectionState == ConnectionState.CONNECTED;
+    }
+
+    /**
+     * Called whenever a gRPC Task finishes executing.  Once all of the tasks are finished, then the channel is shutdown.
+     */
+    private void onGrpcTaskFinished()
+    {
+        channelFinishLatch.countDown();
+
+        if (channelFinishLatch.getCount() <= 0) shutdownChannel();
+    }
+
+    /**
+     * Closes the gRPC managed channel and assigns null to the instance variable.
+     */
+    private void shutdownChannel()
+    {
+        if (channel != null)
+        {
+            try
+            {
+                channel.shutdown().awaitTermination(1, TimeUnit.SECONDS);
+            } catch (Exception e)
+            {
+                Log.w(LOG_TAG, "An exception occurred while trying to shutdown the gRPC Channel", e);
+            } finally
+            {
+                channel = null;
+            }
+        }
     }
 
     /**
@@ -139,17 +186,27 @@ public class GrpcConnectionController implements IDeviceStatusListener, ISurveyR
         }
     }
 
-    private static class GrpcDeviceStatusTask extends AsyncTask<Void, Void, String>
+    /**
+     * A task that can be run for each RPC stream that needs to be opened.
+     *
+     * @param <MessageType> The type of message that will be streamed to the remote gRPC server.
+     * @param <Reply>       The reply type that will come back from gRPC server once the stream is complete.
+     */
+    @SuppressLint("StaticFieldLeak")
+    private class GrpcTask<MessageType, Reply> extends AsyncTask<Void, Void, String>
     {
-        private final ManagedChannel channel;
         private final WeakReference<GrpcConnectionController> controllerWeakReference;
+        private final BlockingQueue<MessageType> messageBlockingQueue;
+        private final Function<StreamObserver<Reply>, StreamObserver<MessageType>> asyncStubCall;
 
         private Throwable failed;
 
-        private GrpcDeviceStatusTask(ManagedChannel channel, GrpcConnectionController grpcConnectionController)
+        private GrpcTask(GrpcConnectionController grpcConnectionController, BlockingQueue<MessageType> messageBlockingQueue,
+                         Function<StreamObserver<Reply>, StreamObserver<MessageType>> asyncStubCall)
         {
-            this.channel = channel;
             this.controllerWeakReference = new WeakReference<>(grpcConnectionController);
+            this.messageBlockingQueue = messageBlockingQueue;
+            this.asyncStubCall = asyncStubCall;
         }
 
         @Override
@@ -157,13 +214,11 @@ public class GrpcConnectionController implements IDeviceStatusListener, ISurveyR
         {
             try
             {
-                NetworkSurveyStatusGrpc.NetworkSurveyStatusStub asyncStub = NetworkSurveyStatusGrpc.newStub(channel);
-
                 final CountDownLatch finishLatch = new CountDownLatch(1);
-                final StreamObserver<StatusUpdateReply> responseObserver = new StreamObserver<StatusUpdateReply>()
+                final StreamObserver<Reply> responseObserver = new StreamObserver<Reply>()
                 {
                     @Override
-                    public void onNext(StatusUpdateReply value)
+                    public void onNext(Reply value)
                     {
 
                     }
@@ -182,34 +237,37 @@ public class GrpcConnectionController implements IDeviceStatusListener, ISurveyR
                     }
                 };
 
-                final StreamObserver<DeviceStatus> deviceStatusStream = asyncStub.statusUpdate(responseObserver);
+                final StreamObserver<MessageType> outgoingMessageStream = asyncStubCall.apply(responseObserver);
 
                 try
                 {
                     while (finishLatch.getCount() != 0)
                     {
                         final GrpcConnectionController grpcConnectionController = controllerWeakReference.get();
-                        if (grpcConnectionController != null)
+                        if (grpcConnectionController == null)
                         {
-                            final DeviceStatus deviceStatus = grpcConnectionController.deviceStatusBlockingQueue.poll(60, TimeUnit.SECONDS);
-
-                            if (Log.isLoggable(LOG_TAG, Log.VERBOSE))
-                            {
-                                Log.v(LOG_TAG, "Sending a DeviceStatus message to the remote gRPC server: " + deviceStatus.toString());
-                            }
-
-                            deviceStatusStream.onNext(deviceStatus);
+                            finishLatch.countDown();
+                            break;
                         }
+
+                        final MessageType nextMessageToSend = messageBlockingQueue.poll(60, TimeUnit.SECONDS);
+
+                        if (Log.isLoggable(LOG_TAG, Log.VERBOSE))
+                        {
+                            Log.v(LOG_TAG, "Sending a message to the remote gRPC server: " + nextMessageToSend.toString());
+                        }
+
+                        outgoingMessageStream.onNext(nextMessageToSend);
                     }
                 } catch (RuntimeException e)
                 {
                     // Cancel RPC
-                    deviceStatusStream.onError(e);
+                    outgoingMessageStream.onError(e);
                     throw e;
                 }
 
                 // Mark the end of the stream
-                deviceStatusStream.onCompleted();
+                outgoingMessageStream.onCompleted();
 
                 // Receiving happens asynchronously
                 if (!finishLatch.await(1, TimeUnit.MINUTES))
@@ -225,7 +283,7 @@ public class GrpcConnectionController implements IDeviceStatusListener, ISurveyR
                 return ""; // TODO figure out something useful to return from the task
             } catch (Exception e)
             {
-                Log.e(LOG_TAG, "Unable to establish a connection to the remote gRPC server", e);
+                Log.e(LOG_TAG, "The connection to the remote gRPC server closed with an exception", e);
                 return e.getMessage();
             }
         }
@@ -233,20 +291,9 @@ public class GrpcConnectionController implements IDeviceStatusListener, ISurveyR
         @Override
         protected void onPostExecute(String result)
         {
-            try
-            {
-                // TODO We don't want to close the channel once we start streaming LTE Records too
-                channel.shutdown().awaitTermination(1, TimeUnit.SECONDS);
-            } catch (InterruptedException e)
-            {
-                Thread.currentThread().interrupt();
-            }
-
+            Log.i(LOG_TAG, "Completed a gRPC Task");
             GrpcConnectionController grpcConnectionController = controllerWeakReference.get();
-            if (grpcConnectionController != null)
-            {
-                grpcConnectionController.notifyConnectionStateChange(ConnectionState.DISCONNECTED);
-            }
+            if (grpcConnectionController != null) grpcConnectionController.onGrpcTaskFinished();
         }
     }
 }

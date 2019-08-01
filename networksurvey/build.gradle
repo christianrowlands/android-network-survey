@@ -32,6 +32,7 @@ dependencies {
     implementation "io.grpc:grpc-stub:${grpcVersion}"
     implementation "io.grpc:grpc-protobuf-lite:${grpcVersion}"
     implementation "io.grpc:grpc-okhttp:${grpcVersion}"
+    implementation "io.grpc:grpc-android:${grpcVersion}"
 
     implementation "com.craxiom:network-survey-messaging:${networkSurveyMessagingVersion}"
 

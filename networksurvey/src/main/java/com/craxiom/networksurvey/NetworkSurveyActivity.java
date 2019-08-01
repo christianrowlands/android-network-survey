@@ -6,7 +6,6 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.pm.PackageManager;
-import android.location.Criteria;
 import android.location.Location;
 import android.location.LocationManager;
 import android.location.LocationProvider;
@@ -31,6 +30,7 @@ import com.craxiom.networksurvey.fragments.CalculatorFragment;
 import com.craxiom.networksurvey.fragments.NetworkDetailsFragment;
 import com.craxiom.networksurvey.fragments.SectionsPagerAdapter;
 import com.craxiom.networksurvey.listeners.IDeviceStatusListener;
+import com.craxiom.networksurvey.listeners.IGrpcConnectionStateListener;
 import com.craxiom.networksurvey.listeners.ISurveyRecordListener;
 import com.craxiom.networksurvey.messaging.DeviceStatus;
 
@@ -45,7 +45,7 @@ import static android.location.LocationManager.GPS_PROVIDER;
  * @since 0.0.1
  */
 public class NetworkSurveyActivity extends AppCompatActivity implements
-        NetworkDetailsFragment.OnFragmentInteractionListener, CalculatorFragment.OnFragmentInteractionListener
+        NetworkDetailsFragment.OnFragmentInteractionListener, CalculatorFragment.OnFragmentInteractionListener, IGrpcConnectionStateListener
 {
     private static final String LOG_TAG = NetworkSurveyActivity.class.getSimpleName();
 
@@ -74,9 +74,7 @@ public class NetworkSurveyActivity extends AppCompatActivity implements
         // Find the view pager that will allow the user to swipe between fragments
         ViewPager viewPager = findViewById(R.id.viewpager);
 
-        grpcConnectionController = new GrpcConnectionController();
-        registerDeviceStatusListener(grpcConnectionController);
-        registerSurveyRecordListener(grpcConnectionController);
+        grpcConnectionController = new GrpcConnectionController(this);
 
         // Create an adapter that knows which fragment should be shown on each page
         sectionsPagerAdapter = new SectionsPagerAdapter(getSupportFragmentManager(), this, grpcConnectionController);
@@ -100,6 +98,15 @@ public class NetworkSurveyActivity extends AppCompatActivity implements
     {
         final LocationManager locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
         if (gpsListener != null) locationManager.removeUpdates(gpsListener);
+
+        if (grpcConnectionController != null)
+        {
+            unregisterDeviceStatusListener(grpcConnectionController);
+            unregisterSurveyRecordListener(grpcConnectionController);
+            grpcConnectionController.unregisterConnectionListener(this);
+            grpcConnectionController.disconnectFromGrpcServer();
+        }
+
         super.onDestroy();
     }
 
@@ -119,6 +126,10 @@ public class NetworkSurveyActivity extends AppCompatActivity implements
                         deviceId = getDeviceId();  // Need to set the Device ID before initializing any of the services.
                         initializeDeviceStatusReport();
                         initializeSurveyRecordWriter();
+
+                        grpcConnectionController.registerConnectionListener(this);
+                        registerDeviceStatusListener(grpcConnectionController);
+                        registerSurveyRecordListener(grpcConnectionController);
                     } else
                     {
                         Log.w(LOG_TAG, "The ACCESS_FINE_LOCATION Permission was denied.");
@@ -179,6 +190,12 @@ public class NetworkSurveyActivity extends AppCompatActivity implements
 
     }
 
+    @Override
+    public void onGrpcConnectionStateChange(ConnectionState newConnectionState)
+    {
+        // TODO add a server connection status light on the toolbar
+    }
+
     public void registerDeviceStatusListener(IDeviceStatusListener deviceStatusListener)
     {
         this.deviceStatusListener = deviceStatusListener;
@@ -191,12 +208,12 @@ public class NetworkSurveyActivity extends AppCompatActivity implements
 
     public void registerSurveyRecordListener(ISurveyRecordListener surveyRecordListener)
     {
-        surveyRecordWriter.registerSurveyRecordListener(surveyRecordListener);
+        if (surveyRecordWriter != null) surveyRecordWriter.registerSurveyRecordListener(surveyRecordListener);
     }
 
     public void unregisterSurveyRecordListener(ISurveyRecordListener surveyRecordListener)
     {
-        surveyRecordWriter.unregisterSurveyRecordListener(surveyRecordListener);
+        if (surveyRecordWriter != null) surveyRecordWriter.unregisterSurveyRecordListener(surveyRecordListener);
     }
 
     /**
@@ -352,22 +369,15 @@ public class NetworkSurveyActivity extends AppCompatActivity implements
     }
 
     /**
-     * Gets the {@link LocationManager} and the {@link TelephonyManager}, and then creates the
-     * {@link SurveyRecordWriter} instance.  If something goes wrong getting access to those
-     * managers, then the {@link SurveyRecordWriter} instance will not be created.
+     * Gets the {@link TelephonyManager}, and then creates the
+     * {@link SurveyRecordWriter} instance.  If something goes wrong getting access to the manager
+     * then the {@link SurveyRecordWriter} instance will not be created.
      */
     private void initializeSurveyRecordWriter()
     {
-        final LocationManager locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
+        final TelephonyManager telephonyManager = (TelephonyManager) getSystemService(Context.TELEPHONY_SERVICE);
 
-        final Criteria criteria = new Criteria();
-        criteria.setHorizontalAccuracy(Criteria.ACCURACY_HIGH);
-
-        final String bestProvider = locationManager.getBestProvider(criteria, true);
-
-        TelephonyManager telephonyManager = (TelephonyManager) getSystemService(Context.TELEPHONY_SERVICE);
-
-        if (telephonyManager == null)
+        if (telephonyManager == null || !getPackageManager().hasSystemFeature(PackageManager.FEATURE_TELEPHONY))
         {
             Log.w(LOG_TAG, "Unable to get access to the Telephony Manager.  No network information will be displayed");
             return;

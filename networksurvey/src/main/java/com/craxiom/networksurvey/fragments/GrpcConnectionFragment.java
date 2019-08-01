@@ -68,6 +68,13 @@ public class GrpcConnectionFragment extends Fragment implements View.OnClickList
     }
 
     @Override
+    public void onDestroyView()
+    {
+        grpcConnectionController.unregisterConnectionListener(this);
+        super.onDestroyView();
+    }
+
+    @Override
     public void onClick(View view)
     {
         if (!hasInternetPermission()) return;

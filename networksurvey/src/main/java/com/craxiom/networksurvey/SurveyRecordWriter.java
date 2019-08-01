@@ -15,6 +15,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 import com.craxiom.networksurvey.listeners.ISurveyRecordListener;
 import com.craxiom.networksurvey.messaging.LteRecord;
+import com.google.protobuf.BoolValue;
 import com.google.protobuf.Int32Value;
 import mil.nga.geopackage.GeoPackage;
 import mil.nga.geopackage.GeoPackageManager;
@@ -127,7 +128,7 @@ public class SurveyRecordWriter
         try
         {
             final List<CellInfo> allCellInfo = telephonyManager.getAllCellInfo();
-            if (allCellInfo.size() > 0)
+            if (allCellInfo != null && allCellInfo.size() > 0)
             {
                 for (CellInfo cellInfo : allCellInfo)
                 {
@@ -277,7 +278,7 @@ public class SurveyRecordWriter
      */
     private boolean parseServingCellInfo(CellInfoLte cellInfoLte)
     {
-        final LteRecord lteSurveyRecord = generateLteSurveyRecord(cellInfoLte);
+        final LteRecord lteSurveyRecord = generateLteSurveyRecord(cellInfoLte, true);
         if (lteSurveyRecord == null)
         {
             return false;
@@ -311,7 +312,7 @@ public class SurveyRecordWriter
 
         if (loggingEnabled)
         {
-            final LteRecord lteSurveyRecord = generateLteSurveyRecord(cellInfoLte);
+            final LteRecord lteSurveyRecord = generateLteSurveyRecord(cellInfoLte, false);
             if (lteSurveyRecord != null)
             {
                 writeSurveyRecordEntryToLogFile(lteSurveyRecord);
@@ -324,9 +325,10 @@ public class SurveyRecordWriter
      *
      * @param cellInfoLte The object that contains the LTE Cell info.  This can be a serving cell,
      *                    or a neighbor cell.
+     * @param servingCell True if this record belongs to a serving cell, false otherwise.
      * @return The survey record.
      */
-    private LteRecord generateLteSurveyRecord(CellInfoLte cellInfoLte)
+    private LteRecord generateLteSurveyRecord(CellInfoLte cellInfoLte, boolean servingCell)
     {
         final CellIdentityLte cellIdentity = cellInfoLte.getCellIdentity();
         final int mcc = cellIdentity.getMcc();
@@ -362,6 +364,7 @@ public class SurveyRecordWriter
         lteRecordBuilder.setMissionId(missionId);
         lteRecordBuilder.setRecordNumber(recordNumber++);
         lteRecordBuilder.setGroupNumber(groupNumber);
+        lteRecordBuilder.setServingCell(BoolValue.newBuilder().setValue(servingCell).build());
 
         if (mcc != Integer.MAX_VALUE) lteRecordBuilder.setMcc(Int32Value.newBuilder().setValue(mcc).build());
         if (mnc != Integer.MAX_VALUE) lteRecordBuilder.setMnc(Int32Value.newBuilder().setValue(mnc).build());
