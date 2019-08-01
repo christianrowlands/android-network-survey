@@ -3,7 +3,6 @@ package com.craxiom.networksurvey;
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.location.Location;
-import android.location.LocationManager;
 import android.os.Environment;
 import android.os.Handler;
 import android.telephony.CellIdentityLte;
@@ -14,6 +13,7 @@ import android.telephony.TelephonyManager;
 import android.util.Log;
 import android.widget.TextView;
 import android.widget.Toast;
+import com.craxiom.networksurvey.listeners.ISurveyRecordListener;
 import com.craxiom.networksurvey.messaging.LteRecord;
 import com.google.protobuf.Int32Value;
 import mil.nga.geopackage.GeoPackage;
@@ -77,10 +77,9 @@ public class SurveyRecordWriter
 
     private final String LOG_TAG = SurveyRecordWriter.class.getSimpleName();
 
-    private final LocationManager locationManager;
+    private final GpsListener gpsListener;
     private final TelephonyManager telephonyManager;
     private final NetworkSurveyActivity networkSurveyActivity;
-    private final String bestProvider;
     private final Handler handler = new Handler();
     private final List<ISurveyRecordListener> surveyRecordListeners = new CopyOnWriteArrayList<>();
 
@@ -94,13 +93,12 @@ public class SurveyRecordWriter
     private int recordNumber = 0;
     private int groupNumber = -1; // This will be incremented to 0 the first time it is used.
 
-    SurveyRecordWriter(LocationManager locationManager, TelephonyManager telephonyManager,
-                       NetworkSurveyActivity networkSurveyActivity, String bestProvider, String deviceId)
+    SurveyRecordWriter(GpsListener gpsListener, TelephonyManager telephonyManager,
+                       NetworkSurveyActivity networkSurveyActivity, String deviceId)
     {
-        this.locationManager = locationManager;
+        this.gpsListener = gpsListener;
         this.telephonyManager = telephonyManager;
         this.networkSurveyActivity = networkSurveyActivity;
-        this.bestProvider = bestProvider;
 
         this.deviceId = deviceId;
         missionId = MISSION_ID_PREFIX + formatFilenameFriendlyTime.format(System.currentTimeMillis());
@@ -287,7 +285,18 @@ public class SurveyRecordWriter
 
         writeSurveyRecordEntryToLogFile(lteSurveyRecord);
         updateUi(lteSurveyRecord);
-        surveyRecordListeners.forEach(listener -> listener.onLteSurveyRecord(lteSurveyRecord));
+
+        for (ISurveyRecordListener listener : surveyRecordListeners)
+        {
+            try
+            {
+                listener.onLteSurveyRecord(lteSurveyRecord);
+            } catch (Exception e)
+            {
+                Log.e(LOG_TAG, "Unable to notify a Survey Record Listener because of an exception", e);
+            }
+        }
+
         return true;
     }
 
@@ -337,9 +346,9 @@ public class SurveyRecordWriter
 
         final LteRecord.Builder lteRecordBuilder = LteRecord.newBuilder();
 
-        if (locationManager != null)
+        if (gpsListener != null)
         {
-            @SuppressLint("MissingPermission") final Location lastKnownLocation = locationManager.getLastKnownLocation(bestProvider);
+            @SuppressLint("MissingPermission") final Location lastKnownLocation = gpsListener.getLatestLocation();
             if (lastKnownLocation != null)
             {
                 lteRecordBuilder.setLatitude(lastKnownLocation.getLatitude());

@@ -4,6 +4,7 @@ import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentPagerAdapter;
 import android.util.Log;
+import com.craxiom.networksurvey.GrpcConnectionController;
 import com.craxiom.networksurvey.NetworkSurveyActivity;
 
 /**
@@ -17,14 +18,15 @@ public class SectionsPagerAdapter extends FragmentPagerAdapter
     private static final String LOG_TAG = SectionsPagerAdapter.class.getSimpleName();
 
     private final NetworkSurveyActivity networkSurveyActivity;
+    private final GrpcConnectionController grpcConnectionController;
 
     private NetworkDetailsFragment networkDetailsFragment;
-    private GrpcConnectionFragment grpcConnectionFragment;
 
-    public SectionsPagerAdapter(FragmentManager fragmentManager, NetworkSurveyActivity networkSurveyActivity)
+    public SectionsPagerAdapter(FragmentManager fragmentManager, NetworkSurveyActivity networkSurveyActivity, GrpcConnectionController grpcConnectionController)
     {
         super(fragmentManager);
         this.networkSurveyActivity = networkSurveyActivity;
+        this.grpcConnectionController = grpcConnectionController;
     }
 
     @Override
@@ -43,7 +45,8 @@ public class SectionsPagerAdapter extends FragmentPagerAdapter
                 return new CalculatorFragment();
 
             case 2:
-                grpcConnectionFragment = new GrpcConnectionFragment();
+                final GrpcConnectionFragment grpcConnectionFragment = new GrpcConnectionFragment();
+                grpcConnectionFragment.setGrpcConnectionController(grpcConnectionController);
                 grpcConnectionFragment.setNetworkSurveyActivity(networkSurveyActivity);
                 return grpcConnectionFragment;
         }

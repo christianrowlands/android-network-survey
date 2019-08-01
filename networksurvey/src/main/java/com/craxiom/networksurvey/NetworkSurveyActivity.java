@@ -30,6 +30,8 @@ import android.widget.Toast;
 import com.craxiom.networksurvey.fragments.CalculatorFragment;
 import com.craxiom.networksurvey.fragments.NetworkDetailsFragment;
 import com.craxiom.networksurvey.fragments.SectionsPagerAdapter;
+import com.craxiom.networksurvey.listeners.IDeviceStatusListener;
+import com.craxiom.networksurvey.listeners.ISurveyRecordListener;
 import com.craxiom.networksurvey.messaging.DeviceStatus;
 
 import java.sql.SQLException;
@@ -55,7 +57,7 @@ public class NetworkSurveyActivity extends AppCompatActivity implements
     private MenuItem startStopLoggingMenuItem;
     private boolean loggingEnabled = false;
     private SectionsPagerAdapter sectionsPagerAdapter;
-
+    private GrpcConnectionController grpcConnectionController;
     private IDeviceStatusListener deviceStatusListener;
 
     private String deviceId = "Device";
@@ -72,8 +74,12 @@ public class NetworkSurveyActivity extends AppCompatActivity implements
         // Find the view pager that will allow the user to swipe between fragments
         ViewPager viewPager = findViewById(R.id.viewpager);
 
+        grpcConnectionController = new GrpcConnectionController();
+        registerDeviceStatusListener(grpcConnectionController);
+        registerSurveyRecordListener(grpcConnectionController);
+
         // Create an adapter that knows which fragment should be shown on each page
-        sectionsPagerAdapter = new SectionsPagerAdapter(getSupportFragmentManager(), this);
+        sectionsPagerAdapter = new SectionsPagerAdapter(getSupportFragmentManager(), this, grpcConnectionController);
 
         // Set the adapter onto the view pager
         viewPager.setAdapter(sectionsPagerAdapter);
@@ -248,7 +254,7 @@ public class NetworkSurveyActivity extends AppCompatActivity implements
             {
                 try
                 {
-                    if (deviceStatusListener != null)
+                    if (deviceStatusListener != null && grpcConnectionController.isConnected())
                     {
                         deviceStatusListener.onDeviceStatus(generateDeviceStatus());
                     }
@@ -367,7 +373,7 @@ public class NetworkSurveyActivity extends AppCompatActivity implements
             return;
         }
 
-        surveyRecordWriter = new SurveyRecordWriter(locationManager, telephonyManager, this, bestProvider, deviceId);
+        surveyRecordWriter = new SurveyRecordWriter(gpsListener, telephonyManager, this, deviceId);
         final Handler handler = new Handler();
 
         handler.postDelayed(new Runnable()

@@ -3,10 +3,7 @@ package com.craxiom.networksurvey.fragments;
 import android.Manifest;
 import android.content.Context;
 import android.content.pm.PackageManager;
-import android.os.AsyncTask;
 import android.os.Bundle;
-import android.support.annotation.NonNull;
-import android.support.annotation.Nullable;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentActivity;
@@ -19,30 +16,20 @@ import android.view.ViewGroup;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.EditText;
 import android.widget.ToggleButton;
-import com.craxiom.networksurvey.IDeviceStatusListener;
-import com.craxiom.networksurvey.ISurveyRecordListener;
+import com.craxiom.networksurvey.ConnectionState;
+import com.craxiom.networksurvey.GrpcConnectionController;
 import com.craxiom.networksurvey.NetworkSurveyActivity;
 import com.craxiom.networksurvey.R;
-import com.craxiom.networksurvey.messaging.DeviceStatus;
-import com.craxiom.networksurvey.messaging.LteRecord;
-import com.craxiom.networksurvey.messaging.NetworkSurveyStatusGrpc;
-import com.craxiom.networksurvey.messaging.StatusUpdateReply;
+import com.craxiom.networksurvey.listeners.IGrpcConnectionStateListener;
 import io.grpc.ManagedChannel;
-import io.grpc.ManagedChannelBuilder;
-import io.grpc.stub.StreamObserver;
-
-import java.lang.ref.WeakReference;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.TimeUnit;
 
 /**
- * A fragment for allowing the user to connect to a remote gRPC based server.  This allows them to stream the survey results back to a server.
+ * A fragment for allowing the user to connect to a remote gRPC based server.  This fragment handles the UI portion of the connection and delegates the actual
+ * connection logic to {@link com.craxiom.networksurvey.GrpcConnectionController}.
  *
  * @since 0.0.4
  */
-public class GrpcConnectionFragment extends Fragment implements View.OnClickListener, IDeviceStatusListener, ISurveyRecordListener
+public class GrpcConnectionFragment extends Fragment implements View.OnClickListener, IGrpcConnectionStateListener
 {
     private static final String LOG_TAG = GrpcConnectionFragment.class.getSimpleName();
 
@@ -52,13 +39,9 @@ public class GrpcConnectionFragment extends Fragment implements View.OnClickList
     private ToggleButton grpcConnectionToggleButton;
     private EditText grpcHostAddressEdit;
     private EditText grpcPortNumberEdit;
-    private ManagedChannel channel;
 
     private NetworkSurveyActivity networkSurveyActivity;  // TODO Need to unregister as listeners for Device Status and LTE Records so the queues don't get huge.
-
-    private final BlockingQueue<DeviceStatus> deviceStatusBlockingQueue = new LinkedBlockingQueue<>();
-    private final BlockingQueue<LteRecord> lteRecordBlockingQueue = new LinkedBlockingQueue<>();
-    private GrpcDeviceStatusTask grpcDeviceStatusTask;
+    private GrpcConnectionController grpcConnectionController;
 
     public GrpcConnectionFragment()
     {
@@ -66,8 +49,7 @@ public class GrpcConnectionFragment extends Fragment implements View.OnClickList
     }
 
     @Override
-    public View onCreateView(LayoutInflater inflater, ViewGroup container,
-                             Bundle savedInstanceState)
+    public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState)
     {
         // Inflate the layout for this fragment
         view = inflater.inflate(R.layout.fragment_grpc_connection, container, false);
@@ -86,12 +68,6 @@ public class GrpcConnectionFragment extends Fragment implements View.OnClickList
     }
 
     @Override
-    public void onSaveInstanceState(@NonNull Bundle outState)
-    {
-        super.onSaveInstanceState(outState);
-    }
-
-    @Override
     public void onClick(View view)
     {
         if (!hasInternetPermission()) return;
@@ -106,22 +82,20 @@ public class GrpcConnectionFragment extends Fragment implements View.OnClickList
     }
 
     @Override
-    public void onDeviceStatus(DeviceStatus deviceStatus)
+    public void onGrpcConnectionStateChange(ConnectionState newConnectionState)
     {
-        deviceStatusBlockingQueue.add(deviceStatus);
+        updateUiState(newConnectionState);
     }
 
-    @Override
-    public void onLteSurveyRecord(LteRecord lteRecord)
+    public void setGrpcConnectionController(GrpcConnectionController grpcConnectionController)
     {
-        lteRecordBlockingQueue.add(lteRecord);
+        this.grpcConnectionController = grpcConnectionController;
+        grpcConnectionController.registerConnectionListener(this);
     }
 
     public void setNetworkSurveyActivity(NetworkSurveyActivity networkSurveyActivity)
     {
         this.networkSurveyActivity = networkSurveyActivity;
-        networkSurveyActivity.registerDeviceStatusListener(this);
-        networkSurveyActivity.registerSurveyRecordListener(this);
     }
 
     /**
@@ -179,23 +153,17 @@ public class GrpcConnectionFragment extends Fragment implements View.OnClickList
      */
     private void connectToGrpcServer()
     {
-        updateUiState(ConnectionState.CONNECTING);
-
-        disconnectFromGrpcServer();
+        grpcConnectionController.disconnectFromGrpcServer();
 
         try
         {
             final String host = grpcHostAddressEdit.getText().toString();
-            final String portStr = grpcPortNumberEdit.getText().toString();
-            int port = TextUtils.isEmpty(portStr) ? 0 : Integer.valueOf(portStr);
+            final String portString = grpcPortNumberEdit.getText().toString();
+            int port = TextUtils.isEmpty(portString) ? 0 : Integer.valueOf(portString);
 
             hideSoftInputFromWindow();
 
-            channel = ManagedChannelBuilder.forAddress(host, port).usePlaintext().build();
-
-            grpcDeviceStatusTask = new GrpcDeviceStatusTask(channel, this);
-            grpcDeviceStatusTask.execute();
-            updateUiState(ConnectionState.CONNECTED);
+            grpcConnectionController.connectToGrpcServer(host, port);
         } catch (Exception e)
         {
             Log.e(LOG_TAG, "An exception occurred when trying to connect to the remote gRPC server");
@@ -208,9 +176,9 @@ public class GrpcConnectionFragment extends Fragment implements View.OnClickList
      */
     private void disconnectFromGrpcServer()
     {
-        if (grpcDeviceStatusTask != null)
+        if (grpcConnectionController != null)
         {
-            grpcDeviceStatusTask.cancel(true);
+            grpcConnectionController.disconnectFromGrpcServer();
         }
     }
 
@@ -228,123 +196,5 @@ public class GrpcConnectionFragment extends Fragment implements View.OnClickList
             ((InputMethodManager) activity.getSystemService(Context.INPUT_METHOD_SERVICE))
                     .hideSoftInputFromWindow(grpcHostAddressEdit.getWindowToken(), 0);
         }
-    }
-
-    private static class GrpcDeviceStatusTask extends AsyncTask<Void, Void, String>
-    {
-        private final ManagedChannel channel;
-        private final WeakReference<GrpcConnectionFragment> fragmentReference;
-
-        private Throwable failed;
-
-        private GrpcDeviceStatusTask(ManagedChannel channel, GrpcConnectionFragment grpcConnectionFragment)
-        {
-            this.channel = channel;
-            this.fragmentReference = new WeakReference<>(grpcConnectionFragment);
-        }
-
-        @Override
-        protected String doInBackground(Void... nothing)
-        {
-            try
-            {
-                NetworkSurveyStatusGrpc.NetworkSurveyStatusStub asyncStub = NetworkSurveyStatusGrpc.newStub(channel);
-
-                final CountDownLatch finishLatch = new CountDownLatch(1);
-                final StreamObserver<StatusUpdateReply> responseObserver = new StreamObserver<StatusUpdateReply>()
-                {
-                    @Override
-                    public void onNext(StatusUpdateReply value)
-                    {
-
-                    }
-
-                    @Override
-                    public void onError(Throwable t)
-                    {
-                        failed = t;
-                        finishLatch.countDown();
-                    }
-
-                    @Override
-                    public void onCompleted()
-                    {
-                        finishLatch.countDown();
-                    }
-                };
-
-                final StreamObserver<DeviceStatus> deviceStatusStream = asyncStub.statusUpdate(responseObserver);
-
-                try
-                {
-                    while (finishLatch.getCount() != 0)
-                    {
-                        final GrpcConnectionFragment grpcConnectionFragment = fragmentReference.get();
-                        if (grpcConnectionFragment != null)
-                        {
-                            final DeviceStatus deviceStatus = grpcConnectionFragment.deviceStatusBlockingQueue.poll(60, TimeUnit.SECONDS);
-
-                            if (Log.isLoggable(LOG_TAG, Log.VERBOSE))
-                            {
-                                Log.v(LOG_TAG, "Sending a DeviceStatus message to the remote gRPC server: " + deviceStatus.toString());
-                            }
-
-                            deviceStatusStream.onNext(deviceStatus);
-                        }
-                    }
-                } catch (RuntimeException e)
-                {
-                    // Cancel RPC
-                    deviceStatusStream.onError(e);
-                    throw e;
-                }
-
-                // Mark the end of the stream
-                deviceStatusStream.onCompleted();
-
-                // Receiving happens asynchronously
-                if (!finishLatch.await(1, TimeUnit.MINUTES))
-                {
-                    throw new RuntimeException("Could not finish rpc within 1 minute, the server is likely down");
-                }
-
-                if (failed != null)
-                {
-                    throw new RuntimeException(failed);
-                }
-
-                return ""; // TODO figure out something useful to return from the task
-            } catch (Exception e)
-            {
-                Log.e(LOG_TAG, "Unable to establish a connection to the remote gRPC server", e);
-                return e.getMessage();
-            }
-        }
-
-        @Override
-        protected void onPostExecute(String result)
-        {
-            try
-            {
-                // TODO We don't want to close the channel once we start streaming LTE Records too
-                channel.shutdown().awaitTermination(1, TimeUnit.SECONDS);
-            } catch (InterruptedException e)
-            {
-                Thread.currentThread().interrupt();
-            }
-
-            GrpcConnectionFragment grpcConnectionFragment = fragmentReference.get();
-            if (grpcConnectionFragment != null)
-            {
-                grpcConnectionFragment.updateUiState(ConnectionState.DISCONNECTED);
-            }
-        }
-    }
-
-    private enum ConnectionState
-    {
-        DISCONNECTED,
-        CONNECTING,
-        CONNECTED
     }
 }
