@@ -184,6 +184,14 @@ public class NetworkSurveyActivity extends AppCompatActivity implements
                 startStopLoggingMenuItem.setTitle(menuTitle);
 
                 loggingEnabled = !loggingEnabled;
+
+                if (loggingEnabled)
+                {
+                    setupLoggingNotification();
+                } else
+                {
+                    removeNotification(LOGGING_NOTIFICATION_ID);
+                }
             }
 
             return true;
@@ -205,7 +213,7 @@ public class NetworkSurveyActivity extends AppCompatActivity implements
         switch (newConnectionState)
         {
             case DISCONNECTED:
-                removeConnectionNotification();
+                removeNotification(CONNECTION_NOTIFICATION_ID);
                 break;
 
             case CONNECTING:
@@ -240,6 +248,33 @@ public class NetworkSurveyActivity extends AppCompatActivity implements
     /**
      * Creates the persistent notification for the server connection.
      */
+    private void setupLoggingNotification()
+    {
+        final NotificationManager notificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+        if (notificationManager == null) return;
+
+        final NotificationChannel channel = new NotificationChannel(NOTIFICATION_CHANNEL_ID,
+                getText(R.string.notification_channel_name), NotificationManager.IMPORTANCE_LOW);
+        notificationManager.createNotificationChannel(channel);
+
+        Intent notificationIntent = new Intent(this, NetworkSurveyActivity.class);
+        PendingIntent pendingIntent = PendingIntent.getActivity(this, 0, notificationIntent, PendingIntent.FLAG_UPDATE_CURRENT);
+
+        Notification notification = new Notification.Builder(this, NOTIFICATION_CHANNEL_ID)
+                .setContentTitle(getText(R.string.logging_notification_title))
+                .setContentText(getText(R.string.logging_notification_text))
+                .setOngoing(true)
+                .setSmallIcon(R.drawable.logging_icon)
+                .setContentIntent(pendingIntent)
+                .setTicker(getText(R.string.logging_notification_title))
+                .build();
+
+        notificationManager.notify(LOGGING_NOTIFICATION_ID, notification);
+    }
+
+    /**
+     * Creates the persistent notification for the server connection.
+     */
     private void setupConnectionNotification()
     {
         final NotificationManager notificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
@@ -253,23 +288,28 @@ public class NetworkSurveyActivity extends AppCompatActivity implements
         PendingIntent pendingIntent = PendingIntent.getActivity(this, 0, notificationIntent, PendingIntent.FLAG_UPDATE_CURRENT);
 
         Notification notification = new Notification.Builder(this, NOTIFICATION_CHANNEL_ID)
-                .setContentTitle(getText(R.string.connection_service_title))
+                .setContentTitle(getText(R.string.connection_notification_title))
                 .setContentText(getText(R.string.connection_notification_text))
                 .setOngoing(true)
                 .setSmallIcon(R.drawable.connection_icon)
                 .setContentIntent(pendingIntent)
-                .setTicker(getText(R.string.connection_service_title))
+                .setTicker(getText(R.string.connection_notification_title))
                 .build();
 
         notificationManager.notify(CONNECTION_NOTIFICATION_ID, notification);
     }
 
-    private void removeConnectionNotification()
+    /**
+     * Removes the notification identified by the provided notification ID.
+     *
+     * @param notificationId The ID of the notification to remove.
+     */
+    private void removeNotification(int notificationId)
     {
         final NotificationManager notificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
         if (notificationManager == null) return;
 
-        notificationManager.cancel(CONNECTION_NOTIFICATION_ID);
+        notificationManager.cancel(notificationId);
     }
 
     /**
