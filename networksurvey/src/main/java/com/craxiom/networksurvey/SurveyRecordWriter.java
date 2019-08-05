@@ -14,6 +14,7 @@ import android.util.Log;
 import android.widget.TextView;
 import android.widget.Toast;
 import com.craxiom.networksurvey.listeners.ISurveyRecordListener;
+import com.craxiom.networksurvey.messaging.LteBandwidth;
 import com.craxiom.networksurvey.messaging.LteRecord;
 import com.google.protobuf.BoolValue;
 import com.google.protobuf.Int32Value;
@@ -52,14 +53,14 @@ import static mil.nga.geopackage.db.GeoPackageDataType.MEDIUMINT;
  *
  * @since 0.0.2
  */
-public class SurveyRecordWriter
+class SurveyRecordWriter
 {
     private static final String LOG_DIRECTORY_NAME = "NetworkSurveyData";
     private static final SimpleDateFormat formatFilenameFriendlyTime = new SimpleDateFormat("YYYYMMdd-HHmmss", Locale.US);
     private static final String FILE_NAME_PREFIX = "craxiom-lte";
     private static final String LTE_RECORDS_TABLE_NAME = "lte_drive_test_records";
     private static final long WGS84_SRS = 4326;
-    private static final String MISSION_ID_PREFIX = "Network Survey ";
+    private static final String MISSION_ID_PREFIX = "NS ";
 
     private static final String ID_COLUMN = "id";
     private static final String GEOMETRY_COLUMN = "geom";
@@ -75,11 +76,11 @@ public class SurveyRecordWriter
     private static final String RSRP_COLUMN = "RSRP";
     private static final String RSRQ_COLUMN = "RSRQ";
     private static final String TA_COLUMN = "TA";
+    private static final String BANDWIDTH_COLUMN = "DL_BANDWIDTH";
 
     private final String LOG_TAG = SurveyRecordWriter.class.getSimpleName();
 
     private final GpsListener gpsListener;
-    private final TelephonyManager telephonyManager;
     private final NetworkSurveyActivity networkSurveyActivity;
     private final Handler handler = new Handler();
     private final List<ISurveyRecordListener> surveyRecordListeners = new CopyOnWriteArrayList<>();
@@ -94,25 +95,23 @@ public class SurveyRecordWriter
     private int recordNumber = 0;
     private int groupNumber = -1; // This will be incremented to 0 the first time it is used.
 
-    SurveyRecordWriter(GpsListener gpsListener, TelephonyManager telephonyManager,
-                       NetworkSurveyActivity networkSurveyActivity, String deviceId)
+    SurveyRecordWriter(GpsListener gpsListener, NetworkSurveyActivity networkSurveyActivity, String deviceId)
     {
         this.gpsListener = gpsListener;
-        this.telephonyManager = telephonyManager;
         this.networkSurveyActivity = networkSurveyActivity;
 
         this.deviceId = deviceId;
-        missionId = MISSION_ID_PREFIX + formatFilenameFriendlyTime.format(System.currentTimeMillis());
+        missionId = MISSION_ID_PREFIX + deviceId + " " + formatFilenameFriendlyTime.format(System.currentTimeMillis());
 
         geoPackageManager = GeoPackageFactory.getManager(networkSurveyActivity);
     }
 
-    public void registerSurveyRecordListener(ISurveyRecordListener surveyRecordListener)
+    void registerSurveyRecordListener(ISurveyRecordListener surveyRecordListener)
     {
         surveyRecordListeners.add(surveyRecordListener);
     }
 
-    public void unregisterSurveyRecordListener(ISurveyRecordListener surveyRecordListener)
+    void unregisterSurveyRecordListener(ISurveyRecordListener surveyRecordListener)
     {
         surveyRecordListeners.remove(surveyRecordListener);
     }
@@ -120,16 +119,17 @@ public class SurveyRecordWriter
     /**
      * Uses the {@link TelephonyManager} to pull the current network details, displays the values
      * in the UI, and also writes the values out to a log file for other systems to post process.
+     *
+     * @param allCellInfo The List of {@link CellInfo} records to look through for cell survey records.
      */
-    void logSurveyRecord() throws SecurityException
+    void logSurveyRecord(List<CellInfo> allCellInfo) throws SecurityException
     {
-        groupNumber++; // Group all the LTE records found in this scan iteration.
-
         try
         {
-            final List<CellInfo> allCellInfo = telephonyManager.getAllCellInfo();
             if (allCellInfo != null && allCellInfo.size() > 0)
             {
+                groupNumber++; // Group all the records found in this scan iteration.
+
                 for (CellInfo cellInfo : allCellInfo)
                 {
                     // For now, just look for LTE towers
@@ -249,8 +249,9 @@ public class SurveyRecordWriter
         tblcols.add(FeatureColumn.createColumn(colNum++, PCI_COLUMN, GeoPackageDataType.SMALLINT, false, null));
         tblcols.add(FeatureColumn.createColumn(colNum++, RSRP_COLUMN, GeoPackageDataType.FLOAT, false, null));
         tblcols.add(FeatureColumn.createColumn(colNum++, RSRQ_COLUMN, GeoPackageDataType.FLOAT, false, null));
-        //noinspection UnusedAssignment
         tblcols.add(FeatureColumn.createColumn(colNum++, TA_COLUMN, GeoPackageDataType.SMALLINT, false, null));
+        //noinspection UnusedAssignment
+        tblcols.add(FeatureColumn.createColumn(colNum++, BANDWIDTH_COLUMN, GeoPackageDataType.FLOAT, false, null));
 
         FeatureTable table = new FeatureTable(SurveyRecordWriter.LTE_RECORDS_TABLE_NAME, tblcols);
         geoPackage.createFeatureTable(table);
@@ -376,7 +377,55 @@ public class SurveyRecordWriter
         if (rsrq != Integer.MAX_VALUE) lteRecordBuilder.setRsrq(Int32Value.newBuilder().setValue(rsrq).build());
         if (timingAdvance != Integer.MAX_VALUE) lteRecordBuilder.setTa(Int32Value.newBuilder().setValue(timingAdvance).build());
 
+        setBandwidth(lteRecordBuilder, cellIdentity);
+
         return lteRecordBuilder.build();
+    }
+
+    /**
+     * Sets the LTE bandwidth on the record if it is valid, and if the current android version supports it.
+     *
+     * @param lteRecordBuilder The builder to set the bandwidth on.
+     * @param cellIdentity     The {@link CellIdentityLte} to pull the bandwidth from.
+     */
+    private void setBandwidth(LteRecord.Builder lteRecordBuilder, CellIdentityLte cellIdentity)
+    {
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.P)
+        {
+            final int bandwidth = cellIdentity.getBandwidth();
+            if (bandwidth != Integer.MAX_VALUE)
+            {
+                LteBandwidth lteBandwidth = null;
+                switch (bandwidth)
+                {
+                    case 1_400:
+                        lteBandwidth = LteBandwidth.MHZ_1_4;
+                        break;
+
+                    case 3_000:
+                        lteBandwidth = LteBandwidth.MHZ_3;
+                        break;
+
+                    case 5_000:
+                        lteBandwidth = LteBandwidth.MHZ_5;
+                        break;
+
+                    case 10_000:
+                        lteBandwidth = LteBandwidth.MHZ_10;
+                        break;
+
+                    case 15_000:
+                        lteBandwidth = LteBandwidth.MHZ_15;
+                        break;
+
+                    case 20_000:
+                        lteBandwidth = LteBandwidth.MHZ_20;
+                        break;
+                }
+
+                if (lteBandwidth != null) lteRecordBuilder.setLteBandwidth(lteBandwidth);
+            }
+        }
     }
 
     /**
@@ -489,46 +538,80 @@ public class SurveyRecordWriter
             return;
         }
 
-        handler.post(new Runnable()
-        {
-            public void run()
+        handler.post(() -> {
+            try
             {
-                try
+                if (geoPackage != null)
                 {
-                    if (geoPackage != null)
-                    {
-                        FeatureDao featureDao = geoPackage.getFeatureDao(LTE_RECORDS_TABLE_NAME);
-                        FeatureRow row = featureDao.newRow();
+                    FeatureDao featureDao = geoPackage.getFeatureDao(LTE_RECORDS_TABLE_NAME);
+                    FeatureRow row = featureDao.newRow();
 
-                        Point fix = new Point(lteSurveyRecord.getLongitude(), lteSurveyRecord.getLatitude(), (double) lteSurveyRecord.getAltitude());
+                    Point fix = new Point(lteSurveyRecord.getLongitude(), lteSurveyRecord.getLatitude(), (double) lteSurveyRecord.getAltitude());
 
-                        GeoPackageGeometryData geomData = new GeoPackageGeometryData(WGS84_SRS);
-                        geomData.setGeometry(fix);
+                    GeoPackageGeometryData geomData = new GeoPackageGeometryData(WGS84_SRS);
+                    geomData.setGeometry(fix);
 
-                        row.setGeometry(geomData);
+                    row.setGeometry(geomData);
 
-                        row.setValue(TIME_COLUMN, lteSurveyRecord.getDeviceTime());
-                        row.setValue(RECORD_NUMBER_COLUMN, lteSurveyRecord.getRecordNumber());
-                        row.setValue(GROUP_NUMBER_COLUMN, lteSurveyRecord.getGroupNumber());
+                    row.setValue(TIME_COLUMN, lteSurveyRecord.getDeviceTime());
+                    row.setValue(RECORD_NUMBER_COLUMN, lteSurveyRecord.getRecordNumber());
+                    row.setValue(GROUP_NUMBER_COLUMN, lteSurveyRecord.getGroupNumber());
 
-                        if (lteSurveyRecord.hasMcc()) setShortValue(row, MCC_COLUMN, lteSurveyRecord.getMcc().getValue());
-                        if (lteSurveyRecord.hasMnc()) setShortValue(row, MNC_COLUMN, lteSurveyRecord.getMnc().getValue());
-                        if (lteSurveyRecord.hasTac()) setIntValue(row, TAC_COLUMN, lteSurveyRecord.getTac().getValue());
-                        if (lteSurveyRecord.hasCi()) setIntValue(row, CI_COLUMN, lteSurveyRecord.getCi().getValue());
-                        if (lteSurveyRecord.hasEarfcn()) setIntValue(row, EARFCN_COLUMN, lteSurveyRecord.getEarfcn().getValue());
-                        if (lteSurveyRecord.hasPci()) setShortValue(row, PCI_COLUMN, lteSurveyRecord.getPci().getValue());
-                        if (lteSurveyRecord.hasRsrp()) setFloatValue(row, RSRP_COLUMN, lteSurveyRecord.getRsrp().getValue());
-                        if (lteSurveyRecord.hasRsrq()) setFloatValue(row, RSRQ_COLUMN, lteSurveyRecord.getRsrq().getValue());
-                        if (lteSurveyRecord.hasTa()) setShortValue(row, TA_COLUMN, lteSurveyRecord.getTa().getValue());
+                    if (lteSurveyRecord.hasMcc()) setShortValue(row, MCC_COLUMN, lteSurveyRecord.getMcc().getValue());
+                    if (lteSurveyRecord.hasMnc()) setShortValue(row, MNC_COLUMN, lteSurveyRecord.getMnc().getValue());
+                    if (lteSurveyRecord.hasTac()) setIntValue(row, TAC_COLUMN, lteSurveyRecord.getTac().getValue());
+                    if (lteSurveyRecord.hasCi()) setIntValue(row, CI_COLUMN, lteSurveyRecord.getCi().getValue());
+                    if (lteSurveyRecord.hasEarfcn()) setIntValue(row, EARFCN_COLUMN, lteSurveyRecord.getEarfcn().getValue());
+                    if (lteSurveyRecord.hasPci()) setShortValue(row, PCI_COLUMN, lteSurveyRecord.getPci().getValue());
+                    if (lteSurveyRecord.hasRsrp()) setFloatValue(row, RSRP_COLUMN, lteSurveyRecord.getRsrp().getValue());
+                    if (lteSurveyRecord.hasRsrq()) setFloatValue(row, RSRQ_COLUMN, lteSurveyRecord.getRsrq().getValue());
+                    if (lteSurveyRecord.hasTa()) setShortValue(row, TA_COLUMN, lteSurveyRecord.getTa().getValue());
 
-                        featureDao.insert(row);
-                    }
-                } catch (Exception e)
-                {
-                    Log.e(LOG_TAG, "Something went wrong when trying to write an LTE survey record", e);
+                    setLteBandwidth(row, lteSurveyRecord.getLteBandwidth());
+
+                    featureDao.insert(row);
                 }
+            } catch (Exception e)
+            {
+                Log.e(LOG_TAG, "Something went wrong when trying to write an LTE survey record", e);
             }
         });
+    }
+
+    /**
+     * Converts the LTE Bandwidth to a float and sets it on the provided row.
+     *
+     * @param featureRow   The row of the GeoPackage file to set the LTE Bandwith on.
+     * @param lteBandwidth The LTE Bandwidth enum to convert to a float.
+     */
+    private void setLteBandwidth(FeatureRow featureRow, LteBandwidth lteBandwidth)
+    {
+        switch (lteBandwidth)
+        {
+            case MHZ_1_4:
+                featureRow.setValue(BANDWIDTH_COLUMN, 1.4);
+                break;
+
+            case MHZ_3:
+                featureRow.setValue(BANDWIDTH_COLUMN, 3);
+                break;
+
+            case MHZ_5:
+                featureRow.setValue(BANDWIDTH_COLUMN, 5);
+                break;
+
+            case MHZ_10:
+                featureRow.setValue(BANDWIDTH_COLUMN, 10);
+                break;
+
+            case MHZ_15:
+                featureRow.setValue(BANDWIDTH_COLUMN, 15);
+                break;
+
+            case MHZ_20:
+                featureRow.setValue(BANDWIDTH_COLUMN, 20);
+                break;
+        }
     }
 
     /**

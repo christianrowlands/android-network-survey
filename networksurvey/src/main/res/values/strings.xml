@@ -45,4 +45,9 @@
     <string name="status_disconnected">Disconnected</string>
     <string name="status_connecting">Connecting …</string>
     <string name="status_connected">Connected</string>
+
+    <string name="notification_channel_name">Network Survey</string>
+    <string name="connection_service">Network Survey Connection Service</string>
+    <string name="connection_service_title">Network Survey Server Connected</string>
+    <string name="connection_notification_text">The Connection is Active</string>
 </resources>

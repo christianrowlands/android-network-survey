@@ -118,13 +118,13 @@ public class GrpcConnectionController implements IDeviceStatusListener, ISurveyR
      */
     public void disconnectFromGrpcServer()
     {
+        notifyConnectionStateChange(ConnectionState.DISCONNECTED);
+
         if (deviceStatusGrpcTask != null) deviceStatusGrpcTask.cancel(true);
 
         if (lteRecordGrpcTask != null) lteRecordGrpcTask.cancel(true);
 
         shutdownChannel();
-
-        notifyConnectionStateChange(ConnectionState.DISCONNECTED);
     }
 
     /**

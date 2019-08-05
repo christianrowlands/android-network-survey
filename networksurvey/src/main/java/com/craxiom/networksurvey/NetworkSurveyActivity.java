@@ -2,6 +2,10 @@ package com.craxiom.networksurvey;
 
 import android.Manifest;
 import android.annotation.SuppressLint;
+import android.app.Notification;
+import android.app.NotificationChannel;
+import android.app.NotificationManager;
+import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
@@ -48,6 +52,10 @@ public class NetworkSurveyActivity extends AppCompatActivity implements
         NetworkDetailsFragment.OnFragmentInteractionListener, CalculatorFragment.OnFragmentInteractionListener, IGrpcConnectionStateListener
 {
     private static final String LOG_TAG = NetworkSurveyActivity.class.getSimpleName();
+
+    private static final int LOGGING_NOTIFICATION_ID = 1;
+    private static final int CONNECTION_NOTIFICATION_ID = 2;
+    public static final String NOTIFICATION_CHANNEL_ID = "network_survey_notification";
 
     private static final int ACCESS_PERMISSION_REQUEST_ID = 1;
     private static final int DEVICE_STATUS_REFRESH_RATE_MS = 15_000;
@@ -194,6 +202,19 @@ public class NetworkSurveyActivity extends AppCompatActivity implements
     public void onGrpcConnectionStateChange(ConnectionState newConnectionState)
     {
         // TODO add a server connection status light on the toolbar
+        switch (newConnectionState)
+        {
+            case DISCONNECTED:
+                removeConnectionNotification();
+                break;
+
+            case CONNECTING:
+                break;
+
+            case CONNECTED:
+                setupConnectionNotification();
+                break;
+        }
     }
 
     public void registerDeviceStatusListener(IDeviceStatusListener deviceStatusListener)
@@ -215,6 +236,90 @@ public class NetworkSurveyActivity extends AppCompatActivity implements
     {
         if (surveyRecordWriter != null) surveyRecordWriter.unregisterSurveyRecordListener(surveyRecordListener);
     }
+
+    /**
+     * Causes the thread to sleep for the specified amount of time.
+     *
+     * @param sleepInMilliseconds The amount of time to sleep in milliseconds.
+     */
+    public static void sleep(final long sleepInMilliseconds)
+    {
+        try
+        {
+            Thread.sleep(sleepInMilliseconds);
+        } catch (final InterruptedException ex)
+        {
+            // no worries
+        }
+    }
+
+    /**
+     * Creates the persistent notification for the server connection.
+     */
+    private void setupConnectionNotification()
+    {
+        final NotificationManager notificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+        if (notificationManager == null) return;
+
+        final NotificationChannel channel = new NotificationChannel(NOTIFICATION_CHANNEL_ID,
+                getText(R.string.notification_channel_name), NotificationManager.IMPORTANCE_LOW);
+        notificationManager.createNotificationChannel(channel);
+
+        Intent notificationIntent = new Intent(this, NetworkSurveyActivity.class);
+        PendingIntent pendingIntent = PendingIntent.getActivity(this, 0, notificationIntent, PendingIntent.FLAG_UPDATE_CURRENT);
+
+        Notification notification = new Notification.Builder(this, NOTIFICATION_CHANNEL_ID)
+                .setContentTitle(getText(R.string.connection_service_title))
+                .setContentText(getText(R.string.connection_notification_text))
+                .setOngoing(true)
+                .setSmallIcon(R.drawable.connection_icon)
+                .setContentIntent(pendingIntent)
+                .setTicker(getText(R.string.connection_service_title))
+                .build();
+
+        notificationManager.notify(CONNECTION_NOTIFICATION_ID, notification);
+    }
+
+    private void removeConnectionNotification()
+    {
+        final NotificationManager notificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+        if (notificationManager == null) return;
+
+        notificationManager.cancel(CONNECTION_NOTIFICATION_ID);
+    }
+
+    /* This code should be used to create the gRPC connection instead of the AsyncTask from the GrpcConnectionController
+    private void setupConnectionService()
+    {
+        if (serviceConnection == null)
+        {
+            serviceConnection = new ServiceConnection()
+            {
+                @Override
+                public void onServiceConnected(final ComponentName name, final IBinder iBinder)
+                {
+                    Log.i(LOG_TAG, name + " service connected");
+                    final GrpcConnectionService.ConnectionServiceBinder binder = (GrpcConnectionService.ConnectionServiceBinder) iBinder;
+                    connectionNotificationService = binder.getService();
+                }
+
+                @Override
+                public void onServiceDisconnected(final ComponentName name)
+                {
+                    Log.i(LOG_TAG, name + " service disconnected");
+                }
+            };
+
+            final Intent serviceIntent = new Intent(this, GrpcConnectionService.class);
+
+            // have to use the app context to bind to the service, cuz we're in tabs
+            // http://code.google.com/p/android/issues/detail?id=2483#c2
+            //final Intent serviceIntent = new Intent(getApplicationContext(), GrpcConnectionService.class);
+            final boolean bound = getApplicationContext().bindService(serviceIntent, serviceConnection,
+                    Context.BIND_AUTO_CREATE | Context.BIND_IMPORTANT);
+            Log.i(LOG_TAG, "service bound: " + bound);
+        }
+    }*/
 
     /**
      * @return Returns true if the Network Details UI is visible to the user, false otherwise.
@@ -383,7 +488,45 @@ public class NetworkSurveyActivity extends AppCompatActivity implements
             return;
         }
 
-        surveyRecordWriter = new SurveyRecordWriter(gpsListener, telephonyManager, this, deviceId);
+        surveyRecordWriter = new SurveyRecordWriter(gpsListener, this, deviceId);
+
+        /* Seems like this approach was a bust on my phone.  It was rarely called
+        final PhoneStateListener listener = new PhoneStateListener()
+        {
+            @Override
+            public void onCellInfoChanged(List<CellInfo> cellInfo)
+            {
+                surveyRecordWriter.logSurveyRecord(cellInfo);
+            }
+        };
+        telephonyManager.listen(listener, PhoneStateListener.LISTEN_CELL_INFO);*/
+
+        /*if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.P)
+        {
+            final NetworkScanRequest networkScanRequest = new NetworkScanRequest(NetworkScanRequest.SCAN_TYPE_ONE_SHOT,
+                    new RadioAccessSpecifier());
+            final NetworkScan networkScan = telephonyManager.requestNetworkScan(networkScanRequest, AsyncTask.SERIAL_EXECUTOR, new TelephonyScanManager.NetworkScanCallback()
+            {
+                @Override
+                public void onResults(List<CellInfo> results)
+                {
+                    super.onResults(results);
+                }
+
+                @Override
+                public void onComplete()
+                {
+                    super.onComplete();
+                }
+
+                @Override
+                public void onError(int error)
+                {
+                    super.onError(error);
+                }
+            });
+        }*/
+
         final Handler handler = new Handler();
 
         handler.postDelayed(new Runnable()
@@ -392,7 +535,7 @@ public class NetworkSurveyActivity extends AppCompatActivity implements
             {
                 try
                 {
-                    surveyRecordWriter.logSurveyRecord();
+                    surveyRecordWriter.logSurveyRecord(telephonyManager.getAllCellInfo());
 
                     handler.postDelayed(this, NETWORK_DATA_REFRESH_RATE_MS);
                 } catch (SecurityException e)
