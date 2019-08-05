@@ -30,10 +30,6 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        <service
-            android:name=".GrpcConnectionService"
-            android:exported="false"
-            android:description="@string/connection_service"/>
     </application>
 
 </manifest>

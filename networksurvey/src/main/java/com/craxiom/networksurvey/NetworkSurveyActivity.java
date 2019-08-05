@@ -238,22 +238,6 @@ public class NetworkSurveyActivity extends AppCompatActivity implements
     }
 
     /**
-     * Causes the thread to sleep for the specified amount of time.
-     *
-     * @param sleepInMilliseconds The amount of time to sleep in milliseconds.
-     */
-    public static void sleep(final long sleepInMilliseconds)
-    {
-        try
-        {
-            Thread.sleep(sleepInMilliseconds);
-        } catch (final InterruptedException ex)
-        {
-            // no worries
-        }
-    }
-
-    /**
      * Creates the persistent notification for the server connection.
      */
     private void setupConnectionNotification()
@@ -287,39 +271,6 @@ public class NetworkSurveyActivity extends AppCompatActivity implements
 
         notificationManager.cancel(CONNECTION_NOTIFICATION_ID);
     }
-
-    /* This code should be used to create the gRPC connection instead of the AsyncTask from the GrpcConnectionController
-    private void setupConnectionService()
-    {
-        if (serviceConnection == null)
-        {
-            serviceConnection = new ServiceConnection()
-            {
-                @Override
-                public void onServiceConnected(final ComponentName name, final IBinder iBinder)
-                {
-                    Log.i(LOG_TAG, name + " service connected");
-                    final GrpcConnectionService.ConnectionServiceBinder binder = (GrpcConnectionService.ConnectionServiceBinder) iBinder;
-                    connectionNotificationService = binder.getService();
-                }
-
-                @Override
-                public void onServiceDisconnected(final ComponentName name)
-                {
-                    Log.i(LOG_TAG, name + " service disconnected");
-                }
-            };
-
-            final Intent serviceIntent = new Intent(this, GrpcConnectionService.class);
-
-            // have to use the app context to bind to the service, cuz we're in tabs
-            // http://code.google.com/p/android/issues/detail?id=2483#c2
-            //final Intent serviceIntent = new Intent(getApplicationContext(), GrpcConnectionService.class);
-            final boolean bound = getApplicationContext().bindService(serviceIntent, serviceConnection,
-                    Context.BIND_AUTO_CREATE | Context.BIND_IMPORTANT);
-            Log.i(LOG_TAG, "service bound: " + bound);
-        }
-    }*/
 
     /**
      * @return Returns true if the Network Details UI is visible to the user, false otherwise.
