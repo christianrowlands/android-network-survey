@@ -23,7 +23,7 @@ public class GpsListener implements LocationListener
 
     private Location latestLocation;
 
-    public GpsListener(NetworkSurveyActivity networkSurveyActivity)
+    GpsListener(NetworkSurveyActivity networkSurveyActivity)
     {
         this.networkSurveyActivity = networkSurveyActivity;
     }
@@ -52,7 +52,7 @@ public class GpsListener implements LocationListener
         if (Log.isLoggable(LOG_TAG, Log.INFO)) Log.i(LOG_TAG, "Location Provider (" + provider + ") has been disabled");
     }
 
-    public Location getLatestLocation()
+    Location getLatestLocation()
     {
         return latestLocation;
     }

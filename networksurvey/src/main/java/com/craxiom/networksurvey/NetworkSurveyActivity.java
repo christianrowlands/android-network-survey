@@ -418,9 +418,6 @@ public class NetworkSurveyActivity extends AppCompatActivity implements
     private void initializeLocationListener()
     {
         if (gpsListener != null) return;
-        final LocationManager locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
-
-        gpsListener = new GpsListener(this);
 
         if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED
                 && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED)
@@ -428,6 +425,9 @@ public class NetworkSurveyActivity extends AppCompatActivity implements
             return;
         }
 
+        gpsListener = new GpsListener(this);
+
+        final LocationManager locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
         locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, (long) NETWORK_DATA_REFRESH_RATE_MS, 0f, gpsListener);
     }
 

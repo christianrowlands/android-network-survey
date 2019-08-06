@@ -72,11 +72,12 @@ class SurveyRecordWriter
     private static final String TAC_COLUMN = "TAC";
     private static final String CI_COLUMN = "ECI";
     private static final String EARFCN_COLUMN = "DL_EARFCN";
-    private static final String PCI_COLUMN = "Phys_Cell_Id";
+    private static final String PCI_COLUMN = "Phys_Cell_ID";
     private static final String RSRP_COLUMN = "RSRP";
     private static final String RSRQ_COLUMN = "RSRQ";
     private static final String TA_COLUMN = "TA";
     private static final String BANDWIDTH_COLUMN = "DL_Bandwidth";
+    private static final String PROVIDER_COLUMN = "Provider";
 
     private final String LOG_TAG = SurveyRecordWriter.class.getSimpleName();
 
@@ -250,8 +251,9 @@ class SurveyRecordWriter
         tblcols.add(FeatureColumn.createColumn(colNum++, RSRP_COLUMN, GeoPackageDataType.FLOAT, false, null));
         tblcols.add(FeatureColumn.createColumn(colNum++, RSRQ_COLUMN, GeoPackageDataType.FLOAT, false, null));
         tblcols.add(FeatureColumn.createColumn(colNum++, TA_COLUMN, GeoPackageDataType.SMALLINT, false, null));
+        tblcols.add(FeatureColumn.createColumn(colNum++, BANDWIDTH_COLUMN, GeoPackageDataType.TEXT, false, null));
         //noinspection UnusedAssignment
-        tblcols.add(FeatureColumn.createColumn(colNum++, BANDWIDTH_COLUMN, GeoPackageDataType.FLOAT, false, null));
+        tblcols.add(FeatureColumn.createColumn(colNum++, PROVIDER_COLUMN, GeoPackageDataType.TEXT, false, null));
 
         FeatureTable table = new FeatureTable(SurveyRecordWriter.LTE_RECORDS_TABLE_NAME, tblcols);
         geoPackage.createFeatureTable(table);
@@ -282,6 +284,7 @@ class SurveyRecordWriter
         final LteRecord lteSurveyRecord = generateLteSurveyRecord(cellInfoLte, true);
         if (lteSurveyRecord == null)
         {
+            Log.d(LOG_TAG, "Could not generate a Server LteRecord from the CellInfoLte");
             return false;
         }
 
@@ -317,6 +320,9 @@ class SurveyRecordWriter
             if (lteSurveyRecord != null)
             {
                 writeSurveyRecordEntryToLogFile(lteSurveyRecord);
+            } else
+            {
+                Log.d(LOG_TAG, "Could not generate a Neighbor LteRecord from the CellInfoLte");
             }
         }
     }
@@ -338,6 +344,12 @@ class SurveyRecordWriter
         final int ci = cellIdentity.getCi();
         final int earfcn = cellIdentity.getEarfcn();
         final int pci = cellIdentity.getPci();
+
+        CharSequence provider = null;
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.P)
+        {
+            provider = cellIdentity.getOperatorAlphaLong();
+        }
 
         CellSignalStrengthLte cellSignalStrengthLte = cellInfoLte.getCellSignalStrength();
         final int rsrp = cellSignalStrengthLte.getRsrp();
@@ -378,6 +390,7 @@ class SurveyRecordWriter
         if (timingAdvance != Integer.MAX_VALUE) lteRecordBuilder.setTa(Int32Value.newBuilder().setValue(timingAdvance).build());
 
         setBandwidth(lteRecordBuilder, cellIdentity);
+        if (provider != null) lteRecordBuilder.setProvider(provider.toString());
 
         return lteRecordBuilder.build();
     }
@@ -567,6 +580,9 @@ class SurveyRecordWriter
                     if (lteSurveyRecord.hasRsrq()) setFloatValue(row, RSRQ_COLUMN, lteSurveyRecord.getRsrq().getValue());
                     if (lteSurveyRecord.hasTa()) setShortValue(row, TA_COLUMN, lteSurveyRecord.getTa().getValue());
 
+                    final String provider = lteSurveyRecord.getProvider();
+                    if (!provider.isEmpty()) row.setValue(PROVIDER_COLUMN, provider);
+
                     setLteBandwidth(row, lteSurveyRecord.getLteBandwidth());
 
                     featureDao.insert(row);
@@ -589,27 +605,27 @@ class SurveyRecordWriter
         switch (lteBandwidth)
         {
             case MHZ_1_4:
-                featureRow.setValue(BANDWIDTH_COLUMN, 1.4);
+                featureRow.setValue(BANDWIDTH_COLUMN, "1.4");
                 break;
 
             case MHZ_3:
-                featureRow.setValue(BANDWIDTH_COLUMN, 3);
+                featureRow.setValue(BANDWIDTH_COLUMN, "3");
                 break;
 
             case MHZ_5:
-                featureRow.setValue(BANDWIDTH_COLUMN, 5);
+                featureRow.setValue(BANDWIDTH_COLUMN, "5");
                 break;
 
             case MHZ_10:
-                featureRow.setValue(BANDWIDTH_COLUMN, 10);
+                featureRow.setValue(BANDWIDTH_COLUMN, "10");
                 break;
 
             case MHZ_15:
-                featureRow.setValue(BANDWIDTH_COLUMN, 15);
+                featureRow.setValue(BANDWIDTH_COLUMN, "15");
                 break;
 
             case MHZ_20:
-                featureRow.setValue(BANDWIDTH_COLUMN, 20);
+                featureRow.setValue(BANDWIDTH_COLUMN, "20");
                 break;
         }
     }
