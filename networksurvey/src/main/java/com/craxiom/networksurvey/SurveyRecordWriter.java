@@ -58,7 +58,7 @@ class SurveyRecordWriter
     private static final String LOG_DIRECTORY_NAME = "NetworkSurveyData";
     private static final SimpleDateFormat formatFilenameFriendlyTime = new SimpleDateFormat("YYYYMMdd-HHmmss", Locale.US);
     private static final String FILE_NAME_PREFIX = "craxiom-lte";
-    private static final String LTE_RECORDS_TABLE_NAME = "lte_drive_test_records";
+    private static final String LTE_RECORDS_TABLE_NAME = "LTE_MESSAGE";
     private static final long WGS84_SRS = 4326;
     private static final String MISSION_ID_PREFIX = "NS ";
 
@@ -76,7 +76,7 @@ class SurveyRecordWriter
     private static final String RSRP_COLUMN = "RSRP";
     private static final String RSRQ_COLUMN = "RSRQ";
     private static final String TA_COLUMN = "TA";
-    private static final String BANDWIDTH_COLUMN = "DL_BANDWIDTH";
+    private static final String BANDWIDTH_COLUMN = "DL_Bandwidth";
 
     private final String LOG_TAG = SurveyRecordWriter.class.getSimpleName();
 
