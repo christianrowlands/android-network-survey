@@ -2,13 +2,13 @@ package com.craxiom.networksurvey;
 
 import android.Manifest;
 import android.annotation.SuppressLint;
-import android.app.Notification;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
-import android.app.PendingIntent;
+import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.ServiceConnection;
 import android.content.pm.PackageManager;
 import android.location.Location;
 import android.location.LocationManager;
@@ -18,6 +18,7 @@ import android.os.BatteryManager;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
+import android.os.IBinder;
 import android.provider.Settings;
 import android.support.annotation.NonNull;
 import android.support.design.widget.TabLayout;
@@ -53,10 +54,6 @@ public class NetworkSurveyActivity extends AppCompatActivity implements
 {
     private static final String LOG_TAG = NetworkSurveyActivity.class.getSimpleName();
 
-    private static final int LOGGING_NOTIFICATION_ID = 1;
-    private static final int CONNECTION_NOTIFICATION_ID = 2;
-    public static final String NOTIFICATION_CHANNEL_ID = "network_survey_notification";
-
     private static final int ACCESS_PERMISSION_REQUEST_ID = 1;
     private static final int DEVICE_STATUS_REFRESH_RATE_MS = 15_000;
     private static final int NETWORK_DATA_REFRESH_RATE_MS = 2_000;
@@ -70,6 +67,9 @@ public class NetworkSurveyActivity extends AppCompatActivity implements
 
     private String deviceId = "Device";
     private GpsListener gpsListener;
+    private ServiceConnection serviceConnection;
+    private NetworkSurveyService networkSurveyService;
+    private ConnectionState connectionState;
 
     @Override
     protected void onCreate(Bundle savedInstanceState)
@@ -99,6 +99,40 @@ public class NetworkSurveyActivity extends AppCompatActivity implements
                         Manifest.permission.WRITE_EXTERNAL_STORAGE,
                         Manifest.permission.READ_PHONE_STATE},
                 ACCESS_PERMISSION_REQUEST_ID);
+
+        final NotificationManager notificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+        final NotificationChannel channel = new NotificationChannel(NetworkSurveyService.NOTIFICATION_CHANNEL_ID,
+                getText(R.string.notification_channel_name), NotificationManager.IMPORTANCE_LOW);
+        notificationManager.createNotificationChannel(channel);
+    }
+
+    @Override
+    protected void onResume()
+    {
+        // The first time this activity is launched, when this method is called the GPS Listener will be null.  However, this method is also called when
+        // the activity goes to the background, and then comes back to the foreground.
+        if (gpsListener != null && networkSurveyService == null)
+        {
+            if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED)
+            {
+                final LocationManager locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
+                locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, (long) NETWORK_DATA_REFRESH_RATE_MS, 0f, gpsListener);
+            }
+        }
+        super.onResume();
+    }
+
+    @Override
+    protected void onPause()
+    {
+        // Since we don't need location updates while in the background, remove the GPS Listener.  However, we do want to keep the GPS Listener if we are
+        // logging to a file, or have an active connection to a server.  Therefore, if the service is running, then don't unregister the GPS Listener
+        if (gpsListener != null && networkSurveyService == null)
+        {
+            final LocationManager locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
+            locationManager.removeUpdates(gpsListener);
+        }
+        super.onPause();
     }
 
     @Override
@@ -190,7 +224,7 @@ public class NetworkSurveyActivity extends AppCompatActivity implements
                     setupLoggingNotification();
                 } else
                 {
-                    removeNotification(LOGGING_NOTIFICATION_ID);
+                    removeLoggingNotification();
                 }
             }
 
@@ -210,10 +244,11 @@ public class NetworkSurveyActivity extends AppCompatActivity implements
     public void onGrpcConnectionStateChange(ConnectionState newConnectionState)
     {
         // TODO add a server connection status light on the toolbar
-        switch (newConnectionState)
+        connectionState = newConnectionState;
+        switch (connectionState)
         {
             case DISCONNECTED:
-                removeNotification(CONNECTION_NOTIFICATION_ID);
+                removeConnectionNotification();
                 break;
 
             case CONNECTING:
@@ -246,30 +281,21 @@ public class NetworkSurveyActivity extends AppCompatActivity implements
     }
 
     /**
+     * @return Returns true if the Network Details UI is visible to the user, false otherwise.
+     * @since 0.0.2
+     */
+    boolean isNetworkDetailsVisible()
+    {
+        return sectionsPagerAdapter.isNetworkDetailsVisible();
+    }
+
+    /**
      * Creates the persistent notification for the server connection.
      */
     private void setupLoggingNotification()
     {
-        final NotificationManager notificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
-        if (notificationManager == null) return;
-
-        final NotificationChannel channel = new NotificationChannel(NOTIFICATION_CHANNEL_ID,
-                getText(R.string.notification_channel_name), NotificationManager.IMPORTANCE_LOW);
-        notificationManager.createNotificationChannel(channel);
-
-        Intent notificationIntent = new Intent(this, NetworkSurveyActivity.class);
-        PendingIntent pendingIntent = PendingIntent.getActivity(this, 0, notificationIntent, PendingIntent.FLAG_UPDATE_CURRENT);
-
-        Notification notification = new Notification.Builder(this, NOTIFICATION_CHANNEL_ID)
-                .setContentTitle(getText(R.string.logging_notification_title))
-                .setContentText(getText(R.string.logging_notification_text))
-                .setOngoing(true)
-                .setSmallIcon(R.drawable.logging_icon)
-                .setContentIntent(pendingIntent)
-                .setTicker(getText(R.string.logging_notification_title))
-                .build();
-
-        notificationManager.notify(LOGGING_NOTIFICATION_ID, notification);
+        startServiceIfNecessary();
+        if (networkSurveyService != null) networkSurveyService.addLoggingNotification();
     }
 
     /**
@@ -277,48 +303,50 @@ public class NetworkSurveyActivity extends AppCompatActivity implements
      */
     private void setupConnectionNotification()
     {
-        final NotificationManager notificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
-        if (notificationManager == null) return;
-
-        final NotificationChannel channel = new NotificationChannel(NOTIFICATION_CHANNEL_ID,
-                getText(R.string.notification_channel_name), NotificationManager.IMPORTANCE_LOW);
-        notificationManager.createNotificationChannel(channel);
-
-        Intent notificationIntent = new Intent(this, NetworkSurveyActivity.class);
-        PendingIntent pendingIntent = PendingIntent.getActivity(this, 0, notificationIntent, PendingIntent.FLAG_UPDATE_CURRENT);
-
-        Notification notification = new Notification.Builder(this, NOTIFICATION_CHANNEL_ID)
-                .setContentTitle(getText(R.string.connection_notification_title))
-                .setContentText(getText(R.string.connection_notification_text))
-                .setOngoing(true)
-                .setSmallIcon(R.drawable.connection_icon)
-                .setContentIntent(pendingIntent)
-                .setTicker(getText(R.string.connection_notification_title))
-                .build();
-
-        notificationManager.notify(CONNECTION_NOTIFICATION_ID, notification);
+        startServiceIfNecessary();
+        if (networkSurveyService != null) networkSurveyService.addConnectionNotification();
     }
 
     /**
-     * Removes the notification identified by the provided notification ID.
-     *
-     * @param notificationId The ID of the notification to remove.
+     * Read the current logging and connection states, and trigger the notifications to either appear, or disappear.
      */
-    private void removeNotification(int notificationId)
+    private void refreshNotifications()
     {
-        final NotificationManager notificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
-        if (notificationManager == null) return;
+        if (loggingEnabled)
+        {
+            if (networkSurveyService != null) networkSurveyService.addLoggingNotification();
+        } else
+        {
+            removeLoggingNotification();
+        }
 
-        notificationManager.cancel(notificationId);
+        if (connectionState == ConnectionState.CONNECTED)
+        {
+            if (networkSurveyService != null) networkSurveyService.addConnectionNotification();
+        } else
+        {
+            removeConnectionNotification();
+        }
     }
 
     /**
-     * @return Returns true if the Network Details UI is visible to the user, false otherwise.
-     * @since 0.0.2
+     * Removes the logging notification.
      */
-    boolean isNetworkDetailsVisible()
+    private void removeLoggingNotification()
     {
-        return sectionsPagerAdapter.isNetworkDetailsVisible();
+        if (networkSurveyService != null) networkSurveyService.removeLoggingNotification();
+
+        stopServiceIfNecessary();
+    }
+
+    /**
+     * Removes the logging notification.
+     */
+    private void removeConnectionNotification()
+    {
+        if (networkSurveyService != null) networkSurveyService.removeConnectionNotification();
+
+        stopServiceIfNecessary();
     }
 
     /**
@@ -419,8 +447,7 @@ public class NetworkSurveyActivity extends AppCompatActivity implements
     {
         if (gpsListener != null) return;
 
-        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED
-                && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED)
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED)
         {
             return;
         }
@@ -535,5 +562,68 @@ public class NetworkSurveyActivity extends AppCompatActivity implements
                 }
             }
         }, NETWORK_DATA_REFRESH_RATE_MS);
+    }
+
+    /**
+     * Looks at the state of the file logging and the server connection, and if either (or both) of them are active, the Network Survey Service is started (or
+     * updated) to show a persistent notification to the user.  This also allows for the Location Listener to run in the background.
+     */
+    private synchronized void startServiceIfNecessary()
+    {
+        if (!loggingEnabled && connectionState != ConnectionState.CONNECTED) return;
+
+        if (serviceConnection == null || networkSurveyService == null)
+        {
+            serviceConnection = new ServiceConnection()
+            {
+                @Override
+                public void onServiceConnected(final ComponentName name, final IBinder iBinder)
+                {
+                    Log.i(LOG_TAG, name + " service connected");
+                    final NetworkSurveyService.ConnectionServiceBinder binder = (NetworkSurveyService.ConnectionServiceBinder) iBinder;
+                    networkSurveyService = binder.getService();
+
+                    refreshNotifications();
+                }
+
+                @Override
+                public void onServiceDisconnected(final ComponentName name)
+                {
+                    Log.i(LOG_TAG, name + " service disconnected");
+                }
+            };
+
+            final Intent serviceIntent = new Intent(this, NetworkSurveyService.class);
+
+            // have to use the app context to bind to the service, cuz we're in tabs
+            // http://code.google.com/p/android/issues/detail?id=2483#c2
+            //final Intent serviceIntent = new Intent(getApplicationContext(), GrpcConnectionService.class);
+            final boolean bound = bindService(serviceIntent, serviceConnection, Context.BIND_AUTO_CREATE | Context.BIND_IMPORTANT);
+
+            Log.i(LOG_TAG, "service bound: " + bound);
+        }
+    }
+
+    /**
+     * Stops the Service, which will remove all the notifications and prevent location updates while the app is in the background.
+     */
+    private synchronized void stopServiceIfNecessary()
+    {
+        if (loggingEnabled || connectionState == ConnectionState.CONNECTED)
+        {
+            Log.i(LOG_TAG, "Not stopping the service because logging is enabled or the connection is active");
+            return;
+        }
+
+        if (serviceConnection != null)
+        {
+            Log.i(LOG_TAG, "Stopping the service");
+
+            unbindService(serviceConnection);
+            //stopService(new Intent(this, NetworkSurveyService.class));
+        }
+
+        networkSurveyService = null;
+        serviceConnection = null;
     }
 }

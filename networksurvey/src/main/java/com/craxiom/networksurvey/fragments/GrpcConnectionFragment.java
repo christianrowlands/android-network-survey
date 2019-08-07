@@ -136,18 +136,21 @@ public class GrpcConnectionFragment extends Fragment implements View.OnClickList
         switch (connectionState)
         {
             case DISCONNECTED:
-                grpcConnectionToggleButton.setEnabled(true);
                 grpcConnectionToggleButton.setText(getString(R.string.status_disconnected));
+                grpcConnectionToggleButton.setEnabled(true);
+                grpcConnectionToggleButton.setChecked(false);
                 break;
 
             case CONNECTING:
-                grpcConnectionToggleButton.setEnabled(false);
                 grpcConnectionToggleButton.setText(getString(R.string.status_connecting));
+                grpcConnectionToggleButton.setEnabled(false);
+                grpcConnectionToggleButton.setChecked(false);
                 break;
 
             case CONNECTED:
-                grpcConnectionToggleButton.setEnabled(true);
                 grpcConnectionToggleButton.setText(getString(R.string.status_connected));
+                grpcConnectionToggleButton.setEnabled(true);
+                grpcConnectionToggleButton.setChecked(true);
                 break;
         }
     }

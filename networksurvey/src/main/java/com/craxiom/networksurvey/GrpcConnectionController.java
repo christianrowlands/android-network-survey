@@ -3,9 +3,12 @@ package com.craxiom.networksurvey;
 import android.annotation.SuppressLint;
 import android.os.AsyncTask;
 import android.util.Log;
+import android.widget.Toast;
 import com.craxiom.networksurvey.listeners.IDeviceStatusListener;
 import com.craxiom.networksurvey.listeners.IGrpcConnectionStateListener;
 import com.craxiom.networksurvey.listeners.ISurveyRecordListener;
+import com.craxiom.networksurvey.messaging.ConnectionReply;
+import com.craxiom.networksurvey.messaging.ConnectionRequest;
 import com.craxiom.networksurvey.messaging.DeviceStatus;
 import com.craxiom.networksurvey.messaging.LteRecord;
 import com.craxiom.networksurvey.messaging.LteSurveyResponse;
@@ -17,6 +20,7 @@ import io.grpc.android.AndroidChannelBuilder;
 import io.grpc.stub.StreamObserver;
 
 import java.lang.ref.WeakReference;
+import java.net.ConnectException;
 import java.util.List;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -94,6 +98,21 @@ public class GrpcConnectionController implements IDeviceStatusListener, ISurveyR
                     .context(networkSurveyActivity.getApplicationContext())
                     .build();
 
+            if (!startConnection())
+            {
+                final String errorMessage = "Unable to connect to the Server";
+                Log.w(LOG_TAG, errorMessage);
+                Toast.makeText(networkSurveyActivity, errorMessage, Toast.LENGTH_SHORT).show();
+                shutdownChannel();
+                return;
+            }
+
+            final String message = "Connected to the Server!";
+            Log.i(LOG_TAG, message);
+            Toast.makeText(networkSurveyActivity, message, Toast.LENGTH_SHORT).show();
+
+            channelFinishLatch = new CountDownLatch(2);
+
             notifyConnectionStateChange(ConnectionState.CONNECTED);
 
             deviceStatusGrpcTask = new GrpcTask<>(this, deviceStatusBlockingQueue,
@@ -103,13 +122,10 @@ public class GrpcConnectionController implements IDeviceStatusListener, ISurveyR
             lteRecordGrpcTask = new GrpcTask<>(this, lteRecordBlockingQueue,
                     lteRecordReplyStreamObserver -> WirelessSurveyGrpc.newStub(channel).streamLteSurvey(lteRecordReplyStreamObserver));
             lteRecordGrpcTask.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
-
-            channelFinishLatch = new CountDownLatch(2);
         } catch (Exception e)
         {
-            Log.e(LOG_TAG, "An exception occurred when trying to connect to the remote gRPC server");
+            Log.e(LOG_TAG, "An exception occurred when trying to connect to the remote gRPC server", e);
             shutdownChannel();
-            notifyConnectionStateChange(ConnectionState.DISCONNECTED);
         }
     }
 
@@ -118,8 +134,6 @@ public class GrpcConnectionController implements IDeviceStatusListener, ISurveyR
      */
     public void disconnectFromGrpcServer()
     {
-        notifyConnectionStateChange(ConnectionState.DISCONNECTED);
-
         if (deviceStatusGrpcTask != null) deviceStatusGrpcTask.cancel(true);
 
         if (lteRecordGrpcTask != null) lteRecordGrpcTask.cancel(true);
@@ -133,6 +147,35 @@ public class GrpcConnectionController implements IDeviceStatusListener, ISurveyR
     boolean isConnected()
     {
         return currentConnectionState == ConnectionState.CONNECTED;
+    }
+
+    /**
+     * Tries to perform a handshake with the gRPC Server.  This should be done anytime we start a new connection with the server.
+     *
+     * @return True if the handshake is successful, false otherwise.
+     */
+    private boolean startConnection()
+    {
+        try
+        {
+            final NetworkSurveyStatusGrpc.NetworkSurveyStatusBlockingStub blockingStub = NetworkSurveyStatusGrpc
+                    .newBlockingStub(channel).withDeadlineAfter(10, TimeUnit.SECONDS); // TODO make the timeout a user preference
+
+            final ConnectionReply connectionReply = blockingStub.startConnection(ConnectionRequest.newBuilder().build());
+
+            return connectionReply != null && connectionReply.getConnectionAccept();
+        } catch (Exception e)
+        {
+            if (e.getCause() instanceof ConnectException)
+            {
+                Log.w(LOG_TAG, "Could not connect to the remote gRPC Server because: " + e.getCause().getMessage(), e);
+            } else
+            {
+                Log.e(LOG_TAG, "Could not connect to the remote gRPC Server due to an Exception", e);
+            }
+        }
+
+        return false;
     }
 
     /**
@@ -150,6 +193,7 @@ public class GrpcConnectionController implements IDeviceStatusListener, ISurveyR
      */
     private void shutdownChannel()
     {
+        notifyConnectionStateChange(ConnectionState.DISCONNECTED);
         if (channel != null)
         {
             try

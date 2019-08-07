@@ -46,7 +46,9 @@
     <string name="status_connecting">Connecting …</string>
     <string name="status_connected">Connected</string>
 
+    <string name="network_survey_service_description">The Network Survey Service runs when the app needs to do work in the background such as write to the log file or stream data out over active connection</string>
     <string name="notification_channel_name">Network Survey</string>
+    <string name="service_notification_title">GPS Active</string>
     <string name="logging_notification_title">Network Survey Logging Active</string>
     <string name="logging_notification_text">Writing to the GeoPackage log file</string>
     <string name="connection_notification_title">Network Survey Server Connected</string>

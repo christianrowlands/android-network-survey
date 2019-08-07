@@ -43,13 +43,13 @@ public class GpsListener implements LocationListener
     @Override
     public void onProviderEnabled(String provider)
     {
-        if (Log.isLoggable(LOG_TAG, Log.INFO)) Log.i(LOG_TAG, "Location Provider (" + provider + ") has been enabled");
+        Log.i(LOG_TAG, "Location Provider (" + provider + ") has been enabled");
     }
 
     @Override
     public void onProviderDisabled(String provider)
     {
-        if (Log.isLoggable(LOG_TAG, Log.INFO)) Log.i(LOG_TAG, "Location Provider (" + provider + ") has been disabled");
+        Log.i(LOG_TAG, "Location Provider (" + provider + ") has been disabled");
     }
 
     Location getLatestLocation()
@@ -59,8 +59,6 @@ public class GpsListener implements LocationListener
 
     private void updateLocation(Location newLocation)
     {
-        if (Log.isLoggable(LOG_TAG, Log.DEBUG)) Log.d(LOG_TAG, "Received an updated location: " + newLocation.toString());
-
         if (newLocation != null && LocationManager.GPS_PROVIDER.equals(newLocation.getProvider())
                 && newLocation.getAccuracy() <= MIN_DISTANCE_ACCURACY)
         {
