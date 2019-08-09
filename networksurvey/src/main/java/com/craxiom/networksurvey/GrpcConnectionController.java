@@ -156,6 +156,7 @@ public class GrpcConnectionController implements IDeviceStatusListener, ISurveyR
      */
     private boolean startConnection()
     {
+        // TODO move this to a worker thread so the UI does not lock up
         try
         {
             final NetworkSurveyStatusGrpc.NetworkSurveyStatusBlockingStub blockingStub = NetworkSurveyStatusGrpc
@@ -303,6 +304,9 @@ public class GrpcConnectionController implements IDeviceStatusListener, ISurveyR
 
                         outgoingMessageStream.onNext(nextMessageToSend);
                     }
+                } catch (InterruptedException ignore)
+                {
+                    Log.i(LOG_TAG, "The Connection was interrupted, likely due to the user stopping the connection");
                 } catch (RuntimeException e)
                 {
                     // Cancel RPC
@@ -335,7 +339,7 @@ public class GrpcConnectionController implements IDeviceStatusListener, ISurveyR
         @Override
         protected void onPostExecute(String result)
         {
-            Log.i(LOG_TAG, "Completed a gRPC Task");
+            Log.i(LOG_TAG, "Completed a gRPC Task, result: " + result);
             GrpcConnectionController grpcConnectionController = controllerWeakReference.get();
             if (grpcConnectionController != null) grpcConnectionController.onGrpcTaskFinished();
         }
