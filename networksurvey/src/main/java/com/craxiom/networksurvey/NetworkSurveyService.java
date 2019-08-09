@@ -104,7 +104,7 @@ public class NetworkSurveyService extends IntentService
                 .setContentTitle(getText(R.string.logging_notification_title))
                 .setContentText(getText(R.string.logging_notification_text))
                 .setOngoing(true)
-                .setSmallIcon(R.drawable.logging_icon)
+                .setSmallIcon(R.drawable.logging_thick_icon)
                 .setContentIntent(pendingIntent)
                 .setTicker(getText(R.string.logging_notification_title))
                 .build();

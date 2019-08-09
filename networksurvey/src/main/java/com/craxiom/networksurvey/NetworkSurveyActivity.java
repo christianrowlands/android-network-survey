@@ -10,6 +10,8 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.ServiceConnection;
 import android.content.pm.PackageManager;
+import android.content.res.ColorStateList;
+import android.graphics.Color;
 import android.location.Location;
 import android.location.LocationManager;
 import android.location.LocationProvider;
@@ -38,8 +40,6 @@ import com.craxiom.networksurvey.listeners.IDeviceStatusListener;
 import com.craxiom.networksurvey.listeners.IGrpcConnectionStateListener;
 import com.craxiom.networksurvey.listeners.ISurveyRecordListener;
 import com.craxiom.networksurvey.messaging.DeviceStatus;
-
-import java.sql.SQLException;
 
 import static android.location.LocationManager.GPS_PROVIDER;
 
@@ -207,7 +207,7 @@ public class NetworkSurveyActivity extends AppCompatActivity implements
                 try
                 {
                     surveyRecordWriter.enableLogging(!loggingEnabled);
-                } catch (SQLException e)
+                } catch (Exception e)
                 {
                     Log.e(LOG_TAG, "Could not setup the logging file database.  No logging will occur", e);
                     Toast.makeText(getApplicationContext(), "Error: Could not enable Logging", Toast.LENGTH_LONG).show();
@@ -219,13 +219,21 @@ public class NetworkSurveyActivity extends AppCompatActivity implements
 
                 loggingEnabled = !loggingEnabled;
 
+                final String message;
+                ColorStateList colorStateList = null;
                 if (loggingEnabled)
                 {
+                    message = getString(R.string.logging_start_toast);
                     setupLoggingNotification();
+                    colorStateList = ColorStateList.valueOf(Color.GREEN);//Color.rgb(26, 26, 26));
                 } else
                 {
+                    message = getString(R.string.logging_stop_toast);
                     removeLoggingNotification();
                 }
+
+                startStopLoggingMenuItem.setIconTintList(colorStateList);
+                Toast.makeText(this, message, Toast.LENGTH_SHORT).show();
             }
 
             return true;

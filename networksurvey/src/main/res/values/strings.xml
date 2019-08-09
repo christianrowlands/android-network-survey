@@ -33,6 +33,9 @@
     <string name="lte_cell_id_label">LTE Cell ID</string>
     <string name="lte_pci_label">LTE PCI</string>
 
+    <string name="logging_start_toast">Started Writing the Log File</string>
+    <string name="logging_stop_toast">Log File Closed</string>
+
     <string name="grpc_connection_title">Server Connection</string>
     <string name="grpc_connection_description">Here you can connect to a remote server.  Once connected, all future survey results will be streamed to the server.
         \n\nSteps for Connecting:
