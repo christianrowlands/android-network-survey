@@ -477,50 +477,54 @@ class SurveyRecordWriter
             return;
         }
 
-        setText(R.id.mccValue, lteSurveyRecord.hasMcc() ? String.valueOf(lteSurveyRecord.getMcc().getValue()) : "");
-        setText(R.id.mncValue, lteSurveyRecord.hasMnc() ? String.valueOf(lteSurveyRecord.getMnc().getValue()) : "");
-        setText(R.id.tacValue, lteSurveyRecord.hasTac() ? String.valueOf(lteSurveyRecord.getTac().getValue()) : "");
+        final String provider = lteSurveyRecord.getProvider();
+        setText(R.id.carrier, R.string.carrier_label, provider != null ? provider : "");
+
+        setText(R.id.mcc, R.string.mcc_label, lteSurveyRecord.hasMcc() ? String.valueOf(lteSurveyRecord.getMcc().getValue()) : "");
+        setText(R.id.mnc, R.string.mnc_label, lteSurveyRecord.hasMnc() ? String.valueOf(lteSurveyRecord.getMnc().getValue()) : "");
+        setText(R.id.tac, R.string.tac_label, lteSurveyRecord.hasTac() ? String.valueOf(lteSurveyRecord.getTac().getValue()) : "");
 
         if (lteSurveyRecord.hasCi())
         {
             final int ci = lteSurveyRecord.getCi().getValue();
-            setText(R.id.cidValue, String.valueOf(ci));
+            setText(R.id.cid, R.string.cid_label, String.valueOf(ci));
 
             // The Cell Identity is 28 bits long. The first 20 bits represent the Macro eNodeB ID. The last 8 bits
             // represent the sector.  Strip off the last 8 bits to get the Macro eNodeB ID.
             int eNodebId = ci >> 8;
-            setText(R.id.enbIdValue, String.valueOf(eNodebId));
+            setText(R.id.enbId, R.string.enb_id_label, String.valueOf(eNodebId));
 
             int sectorId = ci & 0xFF;
-            setText(R.id.sectorIdValue, String.valueOf(sectorId));
+            setText(R.id.sectorId, R.string.sector_id_label, String.valueOf(sectorId));
         }
 
-        setText(R.id.earfcnValue, lteSurveyRecord.hasEarfcn() ? String.valueOf(lteSurveyRecord.getEarfcn().getValue()) : "");
+        setText(R.id.earfcn, R.string.earfcn_label, lteSurveyRecord.hasEarfcn() ? String.valueOf(lteSurveyRecord.getEarfcn().getValue()) : "");
 
         if (lteSurveyRecord.hasPci())
         {
             final int pci = lteSurveyRecord.getPci().getValue();
             int primarySyncSequence = pci % 3;
             int secondarySyncSequence = pci / 3;
-            setText(R.id.pciValue, pci + " (" + primarySyncSequence + "/" + secondarySyncSequence + ")");
+            setText(R.id.pci, R.string.pci_label, pci + " (" + primarySyncSequence + "/" + secondarySyncSequence + ")");
         }
 
         checkAndSetLocation(lteSurveyRecord);
 
-        setText(R.id.rsrpValue, lteSurveyRecord.hasRsrp() ? String.valueOf(lteSurveyRecord.getRsrp().getValue()) : "");
-        setText(R.id.rsrqValue, lteSurveyRecord.hasRsrq() ? String.valueOf(lteSurveyRecord.getRsrq().getValue()) : "");
-        setText(R.id.taValue, lteSurveyRecord.hasTa() ? String.valueOf(lteSurveyRecord.getTa().getValue()) : "");
+        setText(R.id.rsrp, R.string.rsrp_label, lteSurveyRecord.hasRsrp() ? String.valueOf(lteSurveyRecord.getRsrp().getValue()) : "");
+        setText(R.id.rsrq, R.string.rsrq_label, lteSurveyRecord.hasRsrq() ? String.valueOf(lteSurveyRecord.getRsrq().getValue()) : "");
+        setText(R.id.ta, R.string.ta_label, lteSurveyRecord.hasTa() ? String.valueOf(lteSurveyRecord.getTa().getValue()) : "");
     }
 
     /**
      * Sets the provided text on the TextView with the provided Text View ID.
      *
-     * @param textViewId The ID that is used to lookup the TextView.
-     * @param text       The text to set on the text view.
+     * @param textViewId       The ID that is used to lookup the TextView.
+     * @param stringResourceId The resource ID for the String to populate.
+     * @param text             The text to set on the text view.
      */
-    private void setText(int textViewId, String text)
+    private void setText(int textViewId, int stringResourceId, String text)
     {
-        ((TextView) networkSurveyActivity.findViewById(textViewId)).setText(text);
+        ((TextView) networkSurveyActivity.findViewById(textViewId)).setText(networkSurveyActivity.getString(stringResourceId, text));
     }
 
     /**
@@ -534,12 +538,12 @@ class SurveyRecordWriter
         final double longitude = lteRecord.getLongitude();
         if (latitude == 0 && longitude == 0)
         {
-            setText(R.id.latitudeValue, "");
-            setText(R.id.longitudeValue, "");
+            setText(R.id.latitude, R.string.latitude_label, "");
+            setText(R.id.longitude, R.string.longitude_label, "");
         } else
         {
-            setText(R.id.latitudeValue, String.valueOf(latitude));
-            setText(R.id.longitudeValue, String.valueOf(longitude));
+            setText(R.id.latitude, R.string.latitude_label, String.valueOf(latitude));
+            setText(R.id.longitude, R.string.longitude_label, String.valueOf(longitude));
         }
     }
 

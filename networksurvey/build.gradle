@@ -27,7 +27,8 @@ dependencies {
 
     implementation "com.android.support:appcompat-v7:$androidVersion"
     implementation "com.android.support:design:$androidVersion"
-    implementation 'com.android.support:support-v4:28.0.0'
+    implementation "com.android.support:support-v4:$androidVersion"
+    implementation "com.android.support:cardview-v7:$androidVersion"
 
     implementation "io.grpc:grpc-stub:${grpcVersion}"
     implementation "io.grpc:grpc-protobuf-lite:${grpcVersion}"
