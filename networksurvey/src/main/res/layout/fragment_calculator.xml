@@ -14,6 +14,7 @@
         android:autofillHints="Enter in the LTE Cell Id to calculate the eNodeB ID for."
         android:ems="10"
         android:hint="@string/lte_cell_id_label"
+        android:importantForAutofill="no"
         android:inputType="number"
         android:maxLines="1" />
 
@@ -71,6 +72,7 @@
         android:autofillHints="Enter in the LTE PCI to calculate the PSS and SSS for."
         android:ems="10"
         android:hint="@string/lte_pci_label"
+        android:importantForAutofill="no"
         android:inputType="number"
         android:maxLines="1" />
 

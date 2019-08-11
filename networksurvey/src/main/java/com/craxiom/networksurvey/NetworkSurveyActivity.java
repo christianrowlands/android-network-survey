@@ -41,6 +41,8 @@ import com.craxiom.networksurvey.listeners.IGrpcConnectionStateListener;
 import com.craxiom.networksurvey.listeners.ISurveyRecordListener;
 import com.craxiom.networksurvey.messaging.DeviceStatus;
 
+import java.util.concurrent.atomic.AtomicBoolean;
+
 import static android.location.LocationManager.GPS_PROVIDER;
 
 /**
@@ -57,10 +59,11 @@ public class NetworkSurveyActivity extends AppCompatActivity implements
     private static final int ACCESS_PERMISSION_REQUEST_ID = 1;
     private static final int DEVICE_STATUS_REFRESH_RATE_MS = 15_000;
     private static final int NETWORK_DATA_REFRESH_RATE_MS = 2_000;
+    private static final int PING_RATE_MS = 10_000;
 
     private SurveyRecordWriter surveyRecordWriter;
     private MenuItem startStopLoggingMenuItem;
-    private boolean loggingEnabled = false;
+    private final AtomicBoolean loggingEnabled = new AtomicBoolean(false);
     private SectionsPagerAdapter sectionsPagerAdapter;
     private GrpcConnectionController grpcConnectionController;
     private IDeviceStatusListener deviceStatusListener;
@@ -203,10 +206,10 @@ public class NetworkSurveyActivity extends AppCompatActivity implements
         {
             if (surveyRecordWriter != null)
             {
-                // Stop writing to a log file, and update the menu option text.
+                final boolean logging = !loggingEnabled.getAndSet(!loggingEnabled.get());
                 try
                 {
-                    surveyRecordWriter.enableLogging(!loggingEnabled);
+                    surveyRecordWriter.enableLogging(logging);
                 } catch (Exception e)
                 {
                     Log.e(LOG_TAG, "Could not setup the logging file database.  No logging will occur", e);
@@ -214,18 +217,17 @@ public class NetworkSurveyActivity extends AppCompatActivity implements
                     return true;
                 }
 
-                final String menuTitle = getString(loggingEnabled ? R.string.action_start_logging : R.string.action_stop_logging);
+                final String menuTitle = getString(logging ? R.string.action_stop_logging : R.string.action_start_logging);
                 startStopLoggingMenuItem.setTitle(menuTitle);
-
-                loggingEnabled = !loggingEnabled;
 
                 final String message;
                 ColorStateList colorStateList = null;
-                if (loggingEnabled)
+                if (logging)
                 {
                     message = getString(R.string.logging_start_toast);
                     setupLoggingNotification();
-                    colorStateList = ColorStateList.valueOf(Color.GREEN);//Color.rgb(26, 26, 26));
+                    initializePing();
+                    colorStateList = ColorStateList.valueOf(Color.GREEN);
                 } else
                 {
                     message = getString(R.string.logging_stop_toast);
@@ -273,6 +275,7 @@ public class NetworkSurveyActivity extends AppCompatActivity implements
         this.deviceStatusListener = deviceStatusListener;
     }
 
+    @SuppressWarnings("unused")
     public void unregisterDeviceStatusListener(IDeviceStatusListener deviceStatusListener)
     {
         this.deviceStatusListener = null;
@@ -320,7 +323,7 @@ public class NetworkSurveyActivity extends AppCompatActivity implements
      */
     private void refreshNotifications()
     {
-        if (loggingEnabled)
+        if (loggingEnabled.get())
         {
             if (networkSurveyService != null) networkSurveyService.addLoggingNotification();
         } else
@@ -573,12 +576,54 @@ public class NetworkSurveyActivity extends AppCompatActivity implements
     }
 
     /**
+     * Sends out a ping to the Google DNS IP Address (8.8.8.8) every n seconds.  This allow the LTE data connection to stay alive, which will enable us to get
+     * Timing Advance information.
+     */
+    private void initializePing()
+    {
+        final Handler handler = new Handler();
+
+        handler.postDelayed(new Runnable()
+        {
+            public void run()
+            {
+                try
+                {
+                    sendPing();
+
+                    if (loggingEnabled.get()) handler.postDelayed(this, PING_RATE_MS);
+                } catch (Exception e)
+                {
+                    Log.e(LOG_TAG, "An exception occurred trying to send out a ping", e);
+                }
+            }
+        }, NETWORK_DATA_REFRESH_RATE_MS);
+    }
+
+    /**
+     * Sends out a ping to the Google DNS IP Address (8.8.8.8).
+     */
+    private void sendPing()
+    {
+        try
+        {
+            Runtime runtime = Runtime.getRuntime();
+            Process ipAddressProcess = runtime.exec("/system/bin/ping -c 1 8.8.8.8");
+            int exitValue = ipAddressProcess.waitFor();
+            Log.d(LOG_TAG, "Ping Exit Value: " + exitValue);
+        } catch (Exception e)
+        {
+            Log.e(LOG_TAG, "An exception occurred trying to send out a ping ", e);
+        }
+    }
+
+    /**
      * Looks at the state of the file logging and the server connection, and if either (or both) of them are active, the Network Survey Service is started (or
      * updated) to show a persistent notification to the user.  This also allows for the Location Listener to run in the background.
      */
     private synchronized void startServiceIfNecessary()
     {
-        if (!loggingEnabled && connectionState != ConnectionState.CONNECTED) return;
+        if (!loggingEnabled.get() && connectionState != ConnectionState.CONNECTED) return;
 
         if (serviceConnection == null || networkSurveyService == null)
         {
@@ -617,7 +662,7 @@ public class NetworkSurveyActivity extends AppCompatActivity implements
      */
     private synchronized void stopServiceIfNecessary()
     {
-        if (loggingEnabled || connectionState == ConnectionState.CONNECTED)
+        if (loggingEnabled.get() || connectionState == ConnectionState.CONNECTED)
         {
             Log.i(LOG_TAG, "Not stopping the service because logging is enabled or the connection is active");
             return;
@@ -628,7 +673,6 @@ public class NetworkSurveyActivity extends AppCompatActivity implements
             Log.i(LOG_TAG, "Stopping the service");
 
             unbindService(serviceConnection);
-            //stopService(new Intent(this, NetworkSurveyService.class));
         }
 
         networkSurveyService = null;
