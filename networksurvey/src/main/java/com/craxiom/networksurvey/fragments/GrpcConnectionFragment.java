@@ -2,8 +2,10 @@ package com.craxiom.networksurvey.fragments;
 
 import android.Manifest;
 import android.content.Context;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
+import android.preference.PreferenceManager;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentActivity;
@@ -19,6 +21,7 @@ import android.widget.ToggleButton;
 import com.craxiom.networksurvey.ConnectionState;
 import com.craxiom.networksurvey.GrpcConnectionController;
 import com.craxiom.networksurvey.NetworkSurveyActivity;
+import com.craxiom.networksurvey.NetworkSurveyConstants;
 import com.craxiom.networksurvey.R;
 import com.craxiom.networksurvey.listeners.IGrpcConnectionStateListener;
 import io.grpc.ManagedChannel;
@@ -34,6 +37,8 @@ public class GrpcConnectionFragment extends Fragment implements View.OnClickList
     private static final String LOG_TAG = GrpcConnectionFragment.class.getSimpleName();
 
     private static final int ACCESS_PERMISSION_REQUEST_ID = 10;
+    private static final String NETWORK_SURVEY_CONNECTION_HOST = "NetworkSurvey:connectionHost";
+    private static final String NETWORK_SURVEY_CONNECTION_PORT = "NetworkSurvey:connectionPort";
 
     private View view;
     private ToggleButton grpcConnectionToggleButton;
@@ -42,6 +47,8 @@ public class GrpcConnectionFragment extends Fragment implements View.OnClickList
 
     private NetworkSurveyActivity networkSurveyActivity;  // TODO Need to unregister as listeners for Device Status and LTE Records so the queues don't get huge.
     private GrpcConnectionController grpcConnectionController;
+    private String host = "";
+    private Integer portNumber = NetworkSurveyConstants.DEFAULT_GRPC_PORT;
 
     public GrpcConnectionFragment()
     {
@@ -57,6 +64,10 @@ public class GrpcConnectionFragment extends Fragment implements View.OnClickList
         grpcConnectionToggleButton = view.findViewById(R.id.grpcConnectToggleButton);
         grpcHostAddressEdit = view.findViewById(R.id.grpcHostAddress);
         grpcPortNumberEdit = view.findViewById(R.id.grpcPortNumber);
+
+        restoreConnectionParameters();
+        grpcHostAddressEdit.setText(host);
+        grpcPortNumberEdit.setText(String.valueOf(portNumber));
 
         grpcConnectionToggleButton.setOnClickListener(this);
 
@@ -167,9 +178,12 @@ public class GrpcConnectionFragment extends Fragment implements View.OnClickList
 
         try
         {
-            final String host = grpcHostAddressEdit.getText().toString();
+            host = grpcHostAddressEdit.getText().toString();
             final String portString = grpcPortNumberEdit.getText().toString();
-            int port = TextUtils.isEmpty(portString) ? 0 : Integer.valueOf(portString);
+            portNumber = Integer.valueOf(portString);
+            int port = TextUtils.isEmpty(portString) ? 0 : portNumber;
+
+            storeConnectionParameters();
 
             hideSoftInputFromWindow();
 
@@ -179,6 +193,32 @@ public class GrpcConnectionFragment extends Fragment implements View.OnClickList
             Log.e(LOG_TAG, "An exception occurred when trying to connect to the remote gRPC server");
             updateUiState(ConnectionState.DISCONNECTED);
         }
+    }
+
+    /**
+     * Store the connection host address and port number so they can be used on app restart.
+     */
+    private void storeConnectionParameters()
+    {
+        final SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(networkSurveyActivity.getApplicationContext());
+        final SharedPreferences.Editor edit = preferences.edit();
+        if (host != null) edit.putString(NETWORK_SURVEY_CONNECTION_HOST, host);
+        edit.putInt(NETWORK_SURVEY_CONNECTION_PORT, portNumber);
+        edit.apply();
+    }
+
+    /**
+     * Restore the connection host address and port number.
+     */
+    private void restoreConnectionParameters()
+    {
+        final SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(networkSurveyActivity.getApplicationContext());
+
+        final String restoredHost = preferences.getString(NETWORK_SURVEY_CONNECTION_HOST, "");
+        if ((restoredHost != null) && (!restoredHost.isEmpty())) host = restoredHost;
+
+        final int restoredPortNumber = preferences.getInt(NETWORK_SURVEY_CONNECTION_PORT, -1);
+        if ((restoredPortNumber == -1)) portNumber = restoredPortNumber;
     }
 
     /**
