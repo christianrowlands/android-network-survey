@@ -93,35 +93,39 @@ public class GrpcConnectionController implements IDeviceStatusListener, ISurveyR
         {
             notifyConnectionStateChange(ConnectionState.CONNECTING);
 
-            channel = AndroidChannelBuilder.forAddress(host, port)
-                    .usePlaintext()
-                    .context(networkSurveyActivity.getApplicationContext())
-                    .build();
+            new Thread(() -> {
 
-            if (!startConnection())
-            {
-                final String errorMessage = "Unable to connect to the Server";
-                Log.w(LOG_TAG, errorMessage);
-                Toast.makeText(networkSurveyActivity, errorMessage, Toast.LENGTH_SHORT).show();
-                shutdownChannel();
-                return;
-            }
+                Thread.currentThread().setName("gRPC Connection Thread");
+                channel = AndroidChannelBuilder.forAddress(host, port)
+                        .usePlaintext()
+                        .context(networkSurveyActivity.getApplicationContext())
+                        .build();
 
-            final String message = "Connected to the Server!";
-            Log.i(LOG_TAG, message);
-            Toast.makeText(networkSurveyActivity, message, Toast.LENGTH_SHORT).show();
+                if (!startConnection())
+                {
+                    final String errorMessage = "Unable to connect to the Server";
+                    Log.w(LOG_TAG, errorMessage);
+                    networkSurveyActivity.runOnUiThread(() -> Toast.makeText(networkSurveyActivity, errorMessage, Toast.LENGTH_SHORT).show());
+                    shutdownChannel();
+                    return;
+                }
 
-            channelFinishLatch = new CountDownLatch(2);
+                final String message = "Connected to the Server!";
+                Log.i(LOG_TAG, message);
+                networkSurveyActivity.runOnUiThread(() -> Toast.makeText(networkSurveyActivity, message, Toast.LENGTH_SHORT).show());
 
-            notifyConnectionStateChange(ConnectionState.CONNECTED);
+                channelFinishLatch = new CountDownLatch(2);
 
-            deviceStatusGrpcTask = new GrpcTask<>(this, deviceStatusBlockingQueue,
-                    statusUpdateReplyStreamObserver -> NetworkSurveyStatusGrpc.newStub(channel).statusUpdate(statusUpdateReplyStreamObserver));
-            deviceStatusGrpcTask.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
+                notifyConnectionStateChange(ConnectionState.CONNECTED);
 
-            lteRecordGrpcTask = new GrpcTask<>(this, lteRecordBlockingQueue,
-                    lteRecordReplyStreamObserver -> WirelessSurveyGrpc.newStub(channel).streamLteSurvey(lteRecordReplyStreamObserver));
-            lteRecordGrpcTask.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
+                deviceStatusGrpcTask = new GrpcTask<>(this, deviceStatusBlockingQueue,
+                        statusUpdateReplyStreamObserver -> NetworkSurveyStatusGrpc.newStub(channel).statusUpdate(statusUpdateReplyStreamObserver));
+                deviceStatusGrpcTask.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
+
+                lteRecordGrpcTask = new GrpcTask<>(this, lteRecordBlockingQueue,
+                        lteRecordReplyStreamObserver -> WirelessSurveyGrpc.newStub(channel).streamLteSurvey(lteRecordReplyStreamObserver));
+                lteRecordGrpcTask.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
+            }).start();
         } catch (Exception e)
         {
             Log.e(LOG_TAG, "An exception occurred when trying to connect to the remote gRPC server", e);
@@ -156,7 +160,6 @@ public class GrpcConnectionController implements IDeviceStatusListener, ISurveyR
      */
     private boolean startConnection()
     {
-        // TODO move this to a worker thread so the UI does not lock up
         try
         {
             final NetworkSurveyStatusGrpc.NetworkSurveyStatusBlockingStub blockingStub = NetworkSurveyStatusGrpc

@@ -102,7 +102,7 @@ public class GrpcConnectionFragment extends Fragment implements View.OnClickList
     @Override
     public void onGrpcConnectionStateChange(ConnectionState newConnectionState)
     {
-        updateUiState(newConnectionState);
+        networkSurveyActivity.runOnUiThread(() -> updateUiState(newConnectionState));
     }
 
     public void setGrpcConnectionController(GrpcConnectionController grpcConnectionController)
