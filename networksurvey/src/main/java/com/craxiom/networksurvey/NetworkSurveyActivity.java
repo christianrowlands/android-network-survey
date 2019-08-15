@@ -16,6 +16,7 @@ import android.location.Location;
 import android.location.LocationManager;
 import android.location.LocationProvider;
 import android.net.Uri;
+import android.os.AsyncTask;
 import android.os.BatteryManager;
 import android.os.Build;
 import android.os.Bundle;
@@ -196,48 +197,12 @@ public class NetworkSurveyActivity extends AppCompatActivity implements
     @Override
     public boolean onOptionsItemSelected(MenuItem item)
     {
-        // Handle action bar item clicks here. The action bar will
-        // automatically handle clicks on the Home/Up button, so long
-        // as you specify a parent activity in AndroidManifest.xml.
         int id = item.getItemId();
 
         //noinspection SimplifiableIfStatement
         if (id == R.id.action_start_stop_logging)
         {
-            if (surveyRecordWriter != null)
-            {
-                final boolean logging = !loggingEnabled.getAndSet(!loggingEnabled.get());
-                try
-                {
-                    surveyRecordWriter.enableLogging(logging);
-                } catch (Exception e)
-                {
-                    Log.e(LOG_TAG, "Could not setup the logging file database.  No logging will occur", e);
-                    Toast.makeText(getApplicationContext(), "Error: Could not enable Logging", Toast.LENGTH_LONG).show();
-                    return true;
-                }
-
-                final String menuTitle = getString(logging ? R.string.action_stop_logging : R.string.action_start_logging);
-                startStopLoggingMenuItem.setTitle(menuTitle);
-
-                final String message;
-                ColorStateList colorStateList = null;
-                if (logging)
-                {
-                    message = getString(R.string.logging_start_toast);
-                    setupLoggingNotification();
-                    initializePing();
-                    colorStateList = ColorStateList.valueOf(Color.GREEN);
-                } else
-                {
-                    message = getString(R.string.logging_stop_toast);
-                    removeLoggingNotification();
-                }
-
-                startStopLoggingMenuItem.setIconTintList(colorStateList);
-                Toast.makeText(this, message, Toast.LENGTH_SHORT).show();
-            }
-
+            toggleLoggingEnabled();
             return true;
         }
 
@@ -677,5 +642,69 @@ public class NetworkSurveyActivity extends AppCompatActivity implements
 
         networkSurveyService = null;
         serviceConnection = null;
+    }
+
+    /**
+     * Starts or stops writing the log file based on the current state.
+     */
+    private synchronized void toggleLoggingEnabled()
+    {
+        new ToggleLoggingTask().executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
+    }
+
+    /**
+     * A task to move the action of starting or stopping logging off of the UI thread.
+     */
+    private class ToggleLoggingTask extends AsyncTask<Void, Void, Boolean>
+    {
+        protected Boolean doInBackground(Void... nothing)
+        {
+            if (surveyRecordWriter != null)
+            {
+                final boolean logging = !loggingEnabled.getAndSet(!loggingEnabled.get());
+                try
+                {
+                    surveyRecordWriter.enableLogging(logging);
+                } catch (Exception e)
+                {
+                    Log.e(LOG_TAG, "Could not setup the logging file database.  No logging will occur", e);
+                    return null;
+                }
+
+                return logging;
+            }
+
+            return null;
+        }
+
+        protected void onPostExecute(Boolean enabled)
+        {
+            if (enabled == null)
+            {
+                // An exception occurred or something went wrong, so don't do anything
+                Toast.makeText(getApplicationContext(), "Error: Could not enable Logging", Toast.LENGTH_LONG).show();
+                return;
+            }
+
+            final String menuTitle = getString(enabled ? R.string.action_stop_logging : R.string.action_start_logging);
+            startStopLoggingMenuItem.setTitle(menuTitle);
+
+            final String message;
+            ColorStateList colorStateList = null;
+            if (enabled)
+            {
+                message = getString(R.string.logging_start_toast);
+                setupLoggingNotification();
+                initializePing();
+                colorStateList = ColorStateList.valueOf(Color.GREEN);
+            } else
+            {
+                message = getString(R.string.logging_stop_toast);
+                removeLoggingNotification();
+            }
+
+            startStopLoggingMenuItem.setIconTintList(colorStateList);
+            Toast.makeText(getApplicationContext(), message, Toast.LENGTH_SHORT).show();
+        }
     }
 }
