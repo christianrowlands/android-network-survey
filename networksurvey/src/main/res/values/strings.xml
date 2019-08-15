@@ -8,6 +8,7 @@
     <string name="no_gps_device">No GPS detected in device!</string>
     <string name="turn_on_gps">Please turn on GPS</string>
 
+    <string name="current_technology_initial">Current Technology: </string>
     <string name="carrier_initial">Carrier: </string>
     <string name="mcc_initial">MCC: </string>
     <string name="mnc_initial">MNC: </string>
@@ -26,7 +27,7 @@
     <string name="rsrq_initial">RSRQ: </string>
     <string name="ta_initial">TA: </string>
 
-    <string name="technology_label">Technology: </string>
+    <string name="current_technology_label">Current Technology: %1$s</string>
     <string name="carrier_label">Carrier: %1$s</string>
     <string name="mcc_label">MCC: %1$s</string>
     <string name="mnc_label">MNC: %1$s</string>

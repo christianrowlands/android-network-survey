@@ -14,10 +14,35 @@
         android:orientation="vertical"
         android:padding="3dp">
 
+        <android.support.v7.widget.CardView
+            android:id="@+id/technology_card_view"
+            style="?attr/cardStyle"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent">
+
+            <RelativeLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:elevation="4dp">
+
+                <TextView
+                    android:id="@+id/current_technology"
+                    style="@style/LabelStyle"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/current_technology_initial"
+                    android:textAppearance="@style/LabelText" />
+
+            </RelativeLayout>
+
+        </android.support.v7.widget.CardView>
+
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="match_parent"
+            android:layout_margin="5dp"
             android:orientation="horizontal"
+            android:padding="0dp"
             android:weightSum="2">
 
             <android.support.v7.widget.CardView xmlns:card_view="http://schemas.android.com/apk/res-auto"
@@ -25,7 +50,10 @@
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_gravity="start"
-                android:layout_margin="5dp"
+                android:layout_marginStart="0dp"
+                android:layout_marginTop="0dp"
+                android:layout_marginEnd="5dp"
+                android:layout_marginBottom="0dp"
                 android:layout_weight="1"
                 card_view:cardCornerRadius="4dp"
                 card_view:contentPadding="3dp">
@@ -70,7 +98,10 @@
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_gravity="start"
-                android:layout_margin="5dp"
+                android:layout_marginStart="5dp"
+                android:layout_marginTop="0dp"
+                android:layout_marginEnd="0dp"
+                android:layout_marginBottom="0dp"
                 android:layout_weight="1"
                 card_view:cardCornerRadius="4dp"
                 card_view:contentPadding="3dp">
@@ -112,15 +143,11 @@
 
         </LinearLayout>
 
-        <android.support.v7.widget.CardView xmlns:card_view="http://schemas.android.com/apk/res-auto"
+        <android.support.v7.widget.CardView
             android:id="@+id/tower_card_view"
+            style="?attr/cardStyle"
             android:layout_width="match_parent"
-            android:layout_height="0dp"
-            android:layout_gravity="start"
-            android:layout_margin="5dp"
-            android:layout_weight="1"
-            card_view:cardCornerRadius="4dp"
-            card_view:contentPadding="3dp">
+            android:layout_height="match_parent">
 
             <RelativeLayout
                 android:layout_width="wrap_content"
@@ -166,14 +193,11 @@
 
         </android.support.v7.widget.CardView>
 
-        <android.support.v7.widget.CardView xmlns:card_view="http://schemas.android.com/apk/res-auto"
+        <android.support.v7.widget.CardView
             android:id="@+id/frequency_card_view"
+            style="?attr/cardStyle"
             android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:layout_gravity="start"
-            android:layout_margin="5dp"
-            card_view:cardCornerRadius="4dp"
-            card_view:contentPadding="3dp">
+            android:layout_height="match_parent">
 
             <RelativeLayout
                 android:layout_width="wrap_content"
@@ -201,14 +225,11 @@
 
         </android.support.v7.widget.CardView>
 
-        <android.support.v7.widget.CardView xmlns:card_view="http://schemas.android.com/apk/res-auto"
+        <android.support.v7.widget.CardView
             android:id="@+id/location_card_view"
+            style="?attr/cardStyle"
             android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:layout_gravity="start"
-            android:layout_margin="5dp"
-            card_view:cardCornerRadius="4dp"
-            card_view:contentPadding="3dp">
+            android:layout_height="match_parent">
 
             <RelativeLayout
                 android:layout_width="wrap_content"

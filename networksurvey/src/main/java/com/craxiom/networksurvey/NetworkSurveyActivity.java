@@ -176,6 +176,8 @@ public class NetworkSurveyActivity extends AppCompatActivity implements
                         grpcConnectionController.registerConnectionListener(this);
                         registerDeviceStatusListener(grpcConnectionController);
                         registerSurveyRecordListener(grpcConnectionController);
+
+                        toggleLogging();
                     } else
                     {
                         Log.w(LOG_TAG, "The ACCESS_FINE_LOCATION Permission was denied.");
@@ -202,7 +204,7 @@ public class NetworkSurveyActivity extends AppCompatActivity implements
         //noinspection SimplifiableIfStatement
         if (id == R.id.action_start_stop_logging)
         {
-            toggleLoggingEnabled();
+            toggleLogging();
             return true;
         }
 
@@ -647,7 +649,7 @@ public class NetworkSurveyActivity extends AppCompatActivity implements
     /**
      * Starts or stops writing the log file based on the current state.
      */
-    private synchronized void toggleLoggingEnabled()
+    private synchronized void toggleLogging()
     {
         new ToggleLoggingTask().executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
     }

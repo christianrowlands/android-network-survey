@@ -7,7 +7,10 @@ import android.os.Environment;
 import android.os.Handler;
 import android.telephony.CellIdentityLte;
 import android.telephony.CellInfo;
+import android.telephony.CellInfoCdma;
+import android.telephony.CellInfoGsm;
 import android.telephony.CellInfoLte;
+import android.telephony.CellInfoWcdma;
 import android.telephony.CellSignalStrengthLte;
 import android.telephony.TelephonyManager;
 import android.util.Log;
@@ -133,16 +136,22 @@ class SurveyRecordWriter
 
                 for (CellInfo cellInfo : allCellInfo)
                 {
+                    // If there is a serving cell that is not an LTE cell, then clear the UI TODO Change this once we support other technologies like GSM
+                    final boolean isServingCell = cellInfo.isRegistered();
+                    if (isServingCell && !(cellInfo instanceof CellInfoLte)) updateUi(LteRecord.getDefaultInstance());
+
+                    if (isServingCell) updateCurrentTechnologyUi(cellInfo);
+
                     // For now, just look for LTE towers
                     if (cellInfo instanceof CellInfoLte)
                     {
-                        if (cellInfo.isRegistered())
+                        if (isServingCell)
                         {
                             // This record is for the serving cell
                             if (!parseServingCellInfo((CellInfoLte) cellInfo))
                             {
-                                Log.d(LOG_TAG, "The serving LTE record is invalid, skipping all the neighbor records as well.");
-                                break;
+                                Log.w(LOG_TAG, "The serving LTE record is invalid");//, skipping all the neighbor records as well.");
+                                updateUi(LteRecord.getDefaultInstance());
                             }
                         } else
                         {
@@ -151,10 +160,16 @@ class SurveyRecordWriter
                         }
                     }
                 }
+            } else
+            {
+                updateUi(LteRecord.getDefaultInstance());
+                updateCurrentTechnologyUi(null);
             }
         } catch (Exception e)
         {
             Log.e(LOG_TAG, "Unable to display and log an LTE Survey Record", e);
+            updateUi(LteRecord.getDefaultInstance());
+            updateCurrentTechnologyUi(null);
         }
     }
 
@@ -291,16 +306,7 @@ class SurveyRecordWriter
         writeSurveyRecordEntryToLogFile(lteSurveyRecord);
         updateUi(lteSurveyRecord);
 
-        for (ISurveyRecordListener listener : surveyRecordListeners)
-        {
-            try
-            {
-                listener.onLteSurveyRecord(lteSurveyRecord);
-            } catch (Exception e)
-            {
-                Log.e(LOG_TAG, "Unable to notify a Survey Record Listener because of an exception", e);
-            }
-        }
+        notifyLteRecordListeners(lteSurveyRecord);
 
         return true;
     }
@@ -314,12 +320,13 @@ class SurveyRecordWriter
     {
         //Log.v(LOG_TAG, "LTE Neighbor Cell : " + cellInfoLte.getCellIdentity().toString() + "\n LTE Neighbor Signal Values: " + cellInfoLte.getCellSignalStrength().toString());
 
-        if (loggingEnabled)
+        if (loggingEnabled || !surveyRecordListeners.isEmpty())
         {
             final LteRecord lteSurveyRecord = generateLteSurveyRecord(cellInfoLte, false);
             if (lteSurveyRecord != null)
             {
                 writeSurveyRecordEntryToLogFile(lteSurveyRecord);
+                notifyLteRecordListeners(lteSurveyRecord);
             } else
             {
                 Log.d(LOG_TAG, "Could not generate a Neighbor LteRecord from the CellInfoLte");
@@ -469,6 +476,52 @@ class SurveyRecordWriter
         return true;
     }
 
+    /**
+     * Notify all the listeners that we have a new LTE Record available.
+     *
+     * @param lteSurveyRecord The new LTE Survey Record to send to the listeners.
+     */
+    private void notifyLteRecordListeners(LteRecord lteSurveyRecord)
+    {
+        for (ISurveyRecordListener listener : surveyRecordListeners)
+        {
+            try
+            {
+                listener.onLteSurveyRecord(lteSurveyRecord);
+            } catch (Exception e)
+            {
+                Log.e(LOG_TAG, "Unable to notify a Survey Record Listener because of an exception", e);
+            }
+        }
+    }
+
+    /**
+     * Sets the provided String as the current technology in the UI.
+     *
+     * @param servingCellInfo The {@link CellInfo} for the current serving cell.
+     */
+    private void updateCurrentTechnologyUi(CellInfo servingCellInfo)
+    {
+        final String currentTechnology;
+        if (servingCellInfo instanceof CellInfoLte)
+        {
+            currentTechnology = "LTE";
+        } else if (servingCellInfo instanceof CellInfoWcdma)
+        {
+            currentTechnology = "UMTS";
+        } else if (servingCellInfo instanceof CellInfoCdma)
+        {
+            currentTechnology = "CDMA";
+        } else if (servingCellInfo instanceof CellInfoGsm)
+        {
+            currentTechnology = "GSM";
+        } else
+        {
+            currentTechnology = "Unknown";
+        }
+        setText(R.id.current_technology, R.string.current_technology_label, currentTechnology);
+    }
+
     private void updateUi(LteRecord lteSurveyRecord)
     {
         if (!networkSurveyActivity.isNetworkDetailsVisible())
@@ -496,6 +549,11 @@ class SurveyRecordWriter
 
             int sectorId = ci & 0xFF;
             setText(R.id.sectorId, R.string.sector_id_label, String.valueOf(sectorId));
+        } else
+        {
+            setText(R.id.cid, R.string.cid_label, "");
+            setText(R.id.enbId, R.string.enb_id_label, "");
+            setText(R.id.sectorId, R.string.sector_id_label, "");
         }
 
         setText(R.id.earfcn, R.string.earfcn_label, lteSurveyRecord.hasEarfcn() ? String.valueOf(lteSurveyRecord.getEarfcn().getValue()) : "");
@@ -506,6 +564,9 @@ class SurveyRecordWriter
             int primarySyncSequence = pci % 3;
             int secondarySyncSequence = pci / 3;
             setText(R.id.pci, R.string.pci_label, pci + " (" + primarySyncSequence + "/" + secondarySyncSequence + ")");
+        } else
+        {
+            setText(R.id.pci, R.string.pci_label, "");
         }
 
         checkAndSetLocation(lteSurveyRecord);

@@ -1,6 +1,6 @@
 <resources>
 
-    <attr format="reference" name="cardStyle" />
+    <attr name="cardStyle" format="reference" />
 
     <!-- Base application theme. -->
     <style name="NetworkSurveyTheme" parent="Theme.AppCompat.NoActionBar">
@@ -15,6 +15,10 @@
 
     <style name="CardViewTheme" parent="CardView.Dark">
         <item name="cardBackgroundColor">@color/colorCardDark</item>
+        <item name="android:layout_gravity">start</item>
+        <item name="android:layout_margin">5dp</item>
+        <item name="cardCornerRadius">4dp</item>
+        <item name="contentPadding">3dp</item>
     </style>
 
     <style name="NetworkSurveyTheme.AppBarOverlay" parent="ThemeOverlay.AppCompat.Dark.ActionBar" />
