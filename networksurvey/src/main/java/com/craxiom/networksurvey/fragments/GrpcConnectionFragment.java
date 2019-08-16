@@ -217,7 +217,7 @@ public class GrpcConnectionFragment extends Fragment implements View.OnClickList
         final String restoredHost = preferences.getString(NETWORK_SURVEY_CONNECTION_HOST, "");
         if ((restoredHost != null) && (!restoredHost.isEmpty())) host = restoredHost;
 
-        final int restoredPortNumber = preferences.getInt(NETWORK_SURVEY_CONNECTION_PORT, -1);
+        final int restoredPortNumber = preferences.getInt(NETWORK_SURVEY_CONNECTION_PORT, NetworkSurveyConstants.DEFAULT_GRPC_PORT);
         if ((restoredPortNumber == -1)) portNumber = restoredPortNumber;
     }
 

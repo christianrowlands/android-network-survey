@@ -502,6 +502,12 @@ class SurveyRecordWriter
      */
     private void updateCurrentTechnologyUi(CellInfo servingCellInfo)
     {
+        if (!networkSurveyActivity.isNetworkDetailsVisible())
+        {
+            Log.v(LOG_TAG, "Skipping updating the Current Technology UI because it is not visible");
+            return;
+        }
+
         final String currentTechnology;
         if (servingCellInfo instanceof CellInfoLte)
         {
@@ -603,8 +609,8 @@ class SurveyRecordWriter
             setText(R.id.longitude, R.string.longitude_label, "");
         } else
         {
-            setText(R.id.latitude, R.string.latitude_label, String.valueOf(latitude));
-            setText(R.id.longitude, R.string.longitude_label, String.valueOf(longitude));
+            setText(R.id.latitude, R.string.latitude_label, String.format(Locale.US, "%.7f", latitude));
+            setText(R.id.longitude, R.string.longitude_label, String.format(Locale.US, "%.7f", latitude));
         }
     }
 
