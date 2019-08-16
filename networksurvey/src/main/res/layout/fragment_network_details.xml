@@ -4,267 +4,259 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:paddingTop="4dp"
     app:layout_behavior="@string/appbar_scrolling_view_behavior"
-    tools:context="com.craxiom.networksurvey.NetworkDetailsActivity">
+    tools:context="com.craxiom.networksurvey.NetworkSurveyActivity">
 
-    <GridLayout
-        android:id="@+id/grid"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:padding="3dp"
-        android:rowCount="15">
+    <LinearLayout
+        android:layout_width="fill_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        android:padding="3dp">
 
-        <TextView
-            android:id="@+id/mcc"
-            style="@style/LabelStyle"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_column="0"
-            android:layout_row="0"
-            android:text="@string/mcc_label"
-            android:textAppearance="@style/LabelText" />
+        <android.support.v7.widget.CardView
+            android:id="@+id/technology_card_view"
+            style="?attr/cardStyle"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent">
 
-        <TextView
-            android:id="@+id/mccValue"
-            android:layout_width="150dp"
-            android:layout_height="wrap_content"
-            android:layout_column="1"
-            android:layout_row="0"
-            android:text=""
-            android:textAppearance="@style/ValueText" />
+            <RelativeLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:elevation="4dp">
 
-        <TextView
-            android:id="@+id/mnc"
-            style="@style/LabelStyle"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_column="0"
-            android:layout_row="1"
-            android:text="@string/mnc_label"
-            android:textAppearance="@style/LabelText" />
+                <TextView
+                    android:id="@+id/current_technology"
+                    style="@style/TitleText"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/current_technology_initial"
+                    android:textAppearance="@style/LabelText" />
 
-        <TextView
-            android:id="@+id/mncValue"
-            android:layout_width="150dp"
-            android:layout_height="wrap_content"
-            android:layout_column="1"
-            android:layout_row="1"
-            android:text=""
-            android:textAppearance="@style/ValueText" />
+            </RelativeLayout>
 
-        <TextView
-            android:id="@+id/tac"
-            style="@style/LabelStyle"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_column="0"
-            android:layout_row="2"
-            android:text="@string/tac_label"
-            android:textAppearance="@style/LabelText" />
+        </android.support.v7.widget.CardView>
 
-        <TextView
-            android:id="@+id/tacValue"
-            style="@style/LabelStyle"
-            android:layout_width="150dp"
-            android:layout_height="wrap_content"
-            android:layout_column="1"
-            android:layout_row="2"
-            android:text=""
-            android:textAppearance="@style/ValueText" />
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_margin="5dp"
+            android:orientation="horizontal"
+            android:padding="0dp"
+            android:weightSum="2">
 
-        <TextView
-            android:id="@+id/cid"
-            style="@style/LabelStyle"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_column="0"
-            android:layout_row="3"
-            android:text="@string/cid_label"
-            android:textAppearance="@style/LabelText" />
+            <android.support.v7.widget.CardView xmlns:card_view="http://schemas.android.com/apk/res-auto"
+                android:id="@+id/carrier_card_view"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_gravity="start"
+                android:layout_marginStart="0dp"
+                android:layout_marginTop="0dp"
+                android:layout_marginEnd="5dp"
+                android:layout_marginBottom="0dp"
+                android:layout_weight="1"
+                card_view:cardCornerRadius="4dp"
+                card_view:contentPadding="3dp">
 
-        <TextView
-            android:id="@+id/cidValue"
-            android:layout_width="150dp"
-            android:layout_height="wrap_content"
-            android:layout_column="1"
-            android:layout_row="3"
-            android:text=""
-            android:textAppearance="@style/ValueText" />
+                <RelativeLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:elevation="4dp">
 
-        <TextView
-            android:id="@+id/enbId"
-            style="@style/LabelStyle"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_column="0"
-            android:layout_row="4"
-            android:text="@string/enb_id_label"
-            android:textAppearance="@style/LabelText" />
+                    <TextView
+                        android:id="@+id/carrier"
+                        style="@style/LabelStyle"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/carrier_initial"
+                        android:textAppearance="@style/LabelText" />
 
-        <TextView
-            android:id="@+id/enbIdValue"
-            android:layout_width="150dp"
-            android:layout_height="wrap_content"
-            android:layout_column="1"
-            android:layout_row="4"
-            android:text=""
-            android:textAppearance="@style/ValueText" />
+                    <TextView
+                        android:id="@+id/mcc"
+                        style="@style/LabelStyle"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_below="@+id/carrier"
+                        android:text="@string/mcc_initial"
+                        android:textAppearance="@style/LabelText" />
 
-        <TextView
-            android:id="@+id/sectorId"
-            style="@style/LabelStyle"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_column="0"
-            android:layout_row="5"
-            android:text="@string/sector_id_label"
-            android:textAppearance="@style/LabelText" />
+                    <TextView
+                        android:id="@+id/mnc"
+                        style="@style/LabelStyle"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_below="@+id/mcc"
+                        android:text="@string/mnc_initial"
+                        android:textAppearance="@style/LabelText" />
 
-        <TextView
-            android:id="@+id/sectorIdValue"
-            android:layout_width="150dp"
-            android:layout_height="wrap_content"
-            android:layout_column="1"
-            android:layout_row="5"
-            android:text=""
-            android:textAppearance="@style/ValueText" />
+                </RelativeLayout>
 
-        <TextView
-            android:id="@+id/earfcn"
-            style="@style/LabelStyle"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_column="0"
-            android:layout_row="6"
-            android:text="@string/earfcn_label"
-            android:textAppearance="@style/LabelText" />
+            </android.support.v7.widget.CardView>
 
-        <TextView
-            android:id="@+id/earfcnValue"
-            android:layout_width="150dp"
-            android:layout_height="wrap_content"
-            android:layout_column="1"
-            android:layout_row="6"
-            android:text=""
-            android:textAppearance="@style/ValueText" />
+            <android.support.v7.widget.CardView xmlns:card_view="http://schemas.android.com/apk/res-auto"
+                android:id="@+id/signal_card_view"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_gravity="start"
+                android:layout_marginStart="5dp"
+                android:layout_marginTop="0dp"
+                android:layout_marginEnd="0dp"
+                android:layout_marginBottom="0dp"
+                android:layout_weight="1"
+                card_view:cardCornerRadius="4dp"
+                card_view:contentPadding="3dp">
 
-        <TextView
-            android:id="@+id/pci"
-            style="@style/LabelStyle"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_column="0"
-            android:layout_row="7"
-            android:text="@string/pci_label"
-            android:textAppearance="@style/LabelText" />
+                <RelativeLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:elevation="4dp">
 
-        <TextView
-            android:id="@+id/pciValue"
-            android:layout_width="150dp"
-            android:layout_height="wrap_content"
-            android:layout_column="1"
-            android:layout_row="7"
-            android:text=""
-            android:textAppearance="@style/ValueText" />
+                    <TextView
+                        android:id="@+id/rsrp"
+                        style="@style/LabelStyle"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/rsrp_initial"
+                        android:textAppearance="@style/LabelText" />
 
-        <!-- Start of the Location Information -->
+                    <TextView
+                        android:id="@+id/rsrq"
+                        style="@style/LabelStyle"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_below="@+id/rsrp"
+                        android:text="@string/rsrq_initial"
+                        android:textAppearance="@style/LabelText" />
 
-        <TextView
-            android:id="@+id/latitude"
-            style="@style/LabelStyle"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_column="0"
-            android:layout_row="9"
-            android:text="@string/latitude_label"
-            android:textAppearance="@style/LabelText" />
+                    <TextView
+                        android:id="@+id/ta"
+                        style="@style/LabelStyle"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_below="@+id/rsrq"
+                        android:text="@string/ta_initial"
+                        android:textAppearance="@style/LabelText" />
 
-        <TextView
-            android:id="@+id/latitudeValue"
-            android:layout_width="150dp"
-            android:layout_height="wrap_content"
-            android:layout_column="1"
-            android:layout_row="9"
-            android:text=""
-            android:textAppearance="@style/ValueText" />
+                </RelativeLayout>
 
-        <TextView
-            android:id="@+id/longitude"
-            style="@style/LabelStyle"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_column="0"
-            android:layout_row="10"
-            android:text="@string/longitude_label"
-            android:textAppearance="@style/LabelText" />
+            </android.support.v7.widget.CardView>
 
-        <TextView
-            android:id="@+id/longitudeValue"
-            android:layout_width="150dp"
-            android:layout_height="wrap_content"
-            android:layout_column="1"
-            android:layout_row="10"
-            android:text=""
-            android:textAppearance="@style/ValueText" />
+        </LinearLayout>
 
-        <!-- Start of the right column -->
+        <android.support.v7.widget.CardView
+            android:id="@+id/tower_card_view"
+            style="?attr/cardStyle"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent">
 
-        <TextView
-            android:id="@+id/rsrp"
-            style="@style/LabelStyle"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_column="3"
-            android:layout_row="0"
-            android:text="@string/rsrp_label"
-            android:textAppearance="@style/LabelText" />
+            <RelativeLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:elevation="4dp">
 
-        <TextView
-            android:id="@+id/rsrpValue"
-            android:layout_width="100dp"
-            android:layout_height="wrap_content"
-            android:layout_column="4"
-            android:layout_row="0"
-            android:text=""
-            android:textAppearance="@style/ValueText" />
+                <TextView
+                    android:id="@+id/tac"
+                    style="@style/LabelStyle"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/tac_initial"
+                    android:textAppearance="@style/LabelText" />
 
-        <TextView
-            android:id="@+id/rsrq"
-            style="@style/LabelStyle"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_column="3"
-            android:layout_row="1"
-            android:text="@string/rsrq_label"
-            android:textAppearance="@style/LabelText" />
+                <TextView
+                    android:id="@+id/cid"
+                    style="@style/LabelStyle"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_below="@+id/tac"
+                    android:text="@string/cid_initial"
+                    android:textAppearance="@style/LabelText" />
 
-        <TextView
-            android:id="@+id/rsrqValue"
-            android:layout_width="100dp"
-            android:layout_height="wrap_content"
-            android:layout_column="4"
-            android:layout_row="1"
-            android:text=""
-            android:textAppearance="@style/ValueText" />
+                <TextView
+                    android:id="@+id/enbId"
+                    style="@style/LabelStyle"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_below="@+id/cid"
+                    android:text="@string/enb_id_initial"
+                    android:textAppearance="@style/LabelText" />
 
-        <TextView
-            android:id="@+id/ta"
-            style="@style/LabelStyle"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_column="3"
-            android:layout_row="2"
-            android:text="@string/ta_label"
-            android:textAppearance="@style/LabelText" />
+                <TextView
+                    android:id="@+id/sectorId"
+                    style="@style/LabelStyle"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_below="@+id/enbId"
+                    android:text="@string/sector_id_initial"
+                    android:textAppearance="@style/LabelText" />
 
-        <TextView
-            android:id="@+id/taValue"
-            android:layout_width="100dp"
-            android:layout_height="wrap_content"
-            android:layout_column="4"
-            android:layout_row="2"
-            android:text=""
-            android:textAppearance="@style/ValueText" />
+            </RelativeLayout>
 
-    </GridLayout>
+        </android.support.v7.widget.CardView>
+
+        <android.support.v7.widget.CardView
+            android:id="@+id/frequency_card_view"
+            style="?attr/cardStyle"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent">
+
+            <RelativeLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:elevation="4dp">
+
+                <TextView
+                    android:id="@+id/earfcn"
+                    style="@style/LabelStyle"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/earfcn_initial"
+                    android:textAppearance="@style/LabelText" />
+
+                <TextView
+                    android:id="@+id/pci"
+                    style="@style/LabelStyle"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_below="@+id/earfcn"
+                    android:text="@string/pci_initial"
+                    android:textAppearance="@style/LabelText" />
+
+            </RelativeLayout>
+
+        </android.support.v7.widget.CardView>
+
+        <android.support.v7.widget.CardView
+            android:id="@+id/location_card_view"
+            style="?attr/cardStyle"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent">
+
+            <RelativeLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:elevation="4dp">
+
+                <TextView
+                    android:id="@+id/latitude"
+                    style="@style/LabelStyle"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/latitude_initial"
+                    android:textAppearance="@style/LabelText" />
+
+                <TextView
+                    android:id="@+id/longitude"
+                    style="@style/LabelStyle"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_below="@+id/latitude"
+                    android:text="@string/longitude_initial"
+                    android:textAppearance="@style/LabelText" />
+
+            </RelativeLayout>
+
+        </android.support.v7.widget.CardView>
+
+    </LinearLayout>
+
 </android.support.v4.widget.NestedScrollView>

@@ -4,7 +4,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    tools:context="com.craxiom.networksurvey.NetworkDetailsActivity">
+    tools:context="com.craxiom.networksurvey.NetworkSurveyActivity">
     <!--tools:context=".fragments.CalculatorFragment">-->
 
     <EditText
@@ -14,6 +14,7 @@
         android:autofillHints="Enter in the LTE Cell Id to calculate the eNodeB ID for."
         android:ems="10"
         android:hint="@string/lte_cell_id_label"
+        android:importantForAutofill="no"
         android:inputType="number"
         android:maxLines="1" />
 
@@ -28,7 +29,7 @@
             style="@style/LabelStyle"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="@string/enb_id_label"
+            android:text="@string/enb_id_initial"
             android:textAppearance="@style/LabelText" />
 
         <TextView
@@ -49,7 +50,7 @@
             style="@style/LabelStyle"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="@string/sector_id_label"
+            android:text="@string/sector_id_initial"
             android:textAppearance="@style/LabelText" />
 
         <TextView
@@ -71,6 +72,7 @@
         android:autofillHints="Enter in the LTE PCI to calculate the PSS and SSS for."
         android:ems="10"
         android:hint="@string/lte_pci_label"
+        android:importantForAutofill="no"
         android:inputType="number"
         android:maxLines="1" />
 
