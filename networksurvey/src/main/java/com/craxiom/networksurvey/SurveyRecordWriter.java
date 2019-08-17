@@ -610,7 +610,7 @@ class SurveyRecordWriter
         } else
         {
             setText(R.id.latitude, R.string.latitude_label, String.format(Locale.US, "%.7f", latitude));
-            setText(R.id.longitude, R.string.longitude_label, String.format(Locale.US, "%.7f", latitude));
+            setText(R.id.longitude, R.string.longitude_label, String.format(Locale.US, "%.7f", longitude));
         }
     }
 
