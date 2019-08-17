@@ -1,31 +1,48 @@
 <resources>
 
+    <attr name="cardStyle" format="reference" />
+
     <!-- Base application theme. -->
-    <style name="AppTheme" parent="Theme.AppCompat.NoActionBar">
-        <!-- Customize your theme here. -->
-        <item name="colorPrimary">@color/colorPrimary</item>
-        <item name="colorPrimaryDark">@color/colorPrimaryDark</item>
-        <item name="colorAccent">@color/colorAccent</item>
+    <style name="NetworkSurveyTheme" parent="Theme.AppCompat.NoActionBar">
+        <item name="android:colorBackgroundFloating">@color/colorCardDark</item>
+        <item name="cardStyle">@style/CardViewTheme</item>
     </style>
 
-    <style name="AppTheme.NoActionBar">
+    <style name="NetworkSurveyTheme.NoActionBar">
         <item name="windowActionBar">false</item>
         <item name="windowNoTitle">true</item>
     </style>
 
-    <style name="AppTheme.AppBarOverlay" parent="ThemeOverlay.AppCompat.Dark.ActionBar"/>
+    <style name="CardViewTheme" parent="CardView.Dark">
+        <item name="cardBackgroundColor">@color/colorCardDark</item>
+        <item name="android:layout_gravity">start</item>
+        <item name="android:layout_margin">5dp</item>
+        <item name="cardCornerRadius">4dp</item>
+        <item name="contentPadding">3dp</item>
+    </style>
 
-    <style name="AppTheme.PopupOverlay" parent="ThemeOverlay.AppCompat.Light"/>
+    <style name="NetworkSurveyTheme.AppBarOverlay" parent="ThemeOverlay.AppCompat.Dark.ActionBar" />
 
-    <style name="NetworkSurveyTheme" parent="Theme.AppCompat.NoActionBar"/>
+    <style name="NetworkSurveyTheme.PopupOverlay" parent="ThemeOverlay.AppCompat.Dark" />
 
     <style name="LabelText" parent="TextAppearance.AppCompat">
         <item name="android:textSize">18sp</item>
         <item name="android:textColor">#c2c1c1</item>
     </style>
 
+    <style name="TitleText" parent="TextAppearance.AppCompat">
+        <item name="android:textSize">22sp</item>
+        <item name="android:textColor">#c2c1c1</item>
+    </style>
+
+    <style name="DescriptionText" parent="TextAppearance.AppCompat">
+        <item name="android:textSize">14sp</item>
+        <item name="android:textColor">#c2c1c1</item>
+    </style>
+
     <style name="LabelStyle" parent="android:Widget.TextView">
         <item name="android:layout_marginEnd">@dimen/label_value_margin</item>
+        <item name="android:textSize">14sp</item>
     </style>
 
     <style name="ValueText" parent="TextAppearance.AppCompat">
