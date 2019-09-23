@@ -7,13 +7,16 @@ import android.widget.Toast;
 import com.craxiom.networksurvey.listeners.IDeviceStatusListener;
 import com.craxiom.networksurvey.listeners.IGrpcConnectionStateListener;
 import com.craxiom.networksurvey.listeners.ISurveyRecordListener;
+import com.craxiom.networksurvey.messaging.CdmaRecord;
 import com.craxiom.networksurvey.messaging.ConnectionReply;
 import com.craxiom.networksurvey.messaging.ConnectionRequest;
 import com.craxiom.networksurvey.messaging.DeviceStatus;
+import com.craxiom.networksurvey.messaging.GsmRecord;
 import com.craxiom.networksurvey.messaging.LteRecord;
 import com.craxiom.networksurvey.messaging.LteSurveyResponse;
 import com.craxiom.networksurvey.messaging.NetworkSurveyStatusGrpc;
 import com.craxiom.networksurvey.messaging.StatusUpdateReply;
+import com.craxiom.networksurvey.messaging.UmtsRecord;
 import com.craxiom.networksurvey.messaging.WirelessSurveyGrpc;
 import io.grpc.ManagedChannel;
 import io.grpc.android.AndroidChannelBuilder;
@@ -60,6 +63,24 @@ public class GrpcConnectionController implements IDeviceStatusListener, ISurveyR
     public void onDeviceStatus(DeviceStatus deviceStatus)
     {
         if (isConnected()) deviceStatusBlockingQueue.add(deviceStatus);
+    }
+
+    @Override
+    public void onGsmSurveyRecord(GsmRecord gsmRecord)
+    {
+        // TODO Add support for streaming these records
+    }
+
+    @Override
+    public void onCdmaSurveyRecord(CdmaRecord cdmaRecord)
+    {
+        // TODO Add support for streaming these records
+    }
+
+    @Override
+    public void onUmtsSurveyRecord(UmtsRecord umtsRecord)
+    {
+        // TODO Add support for streaming these records
     }
 
     @Override
