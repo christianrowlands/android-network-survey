@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <SwitchPreferenceCompat
+        app:key="autoStartLogging"
+        app:title="Auto Start Logging"
+        app:summary="Automatically starts logging to a file on app opening" />
+
+</PreferenceScreen>

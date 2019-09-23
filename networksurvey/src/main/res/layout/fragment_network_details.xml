@@ -221,6 +221,15 @@
                     android:text="@string/pci_initial"
                     android:textAppearance="@style/LabelText" />
 
+                <TextView
+                    android:id="@+id/bandwidth"
+                    style="@style/LabelStyle"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_below="@+id/pci"
+                    android:text="@string/bandwidth_initial"
+                    android:textAppearance="@style/LabelText" />
+
             </RelativeLayout>
 
         </androidx.cardview.widget.CardView>

@@ -23,17 +23,16 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.IBinder;
 import android.provider.Settings;
-import androidx.annotation.NonNull;
-import com.google.android.material.tabs.TabLayout;
-import androidx.core.app.ActivityCompat;
-import androidx.viewpager.widget.ViewPager;
-import androidx.appcompat.app.AppCompatActivity;
-import androidx.appcompat.widget.Toolbar;
 import android.telephony.TelephonyManager;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.Toast;
+import androidx.annotation.NonNull;
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.widget.Toolbar;
+import androidx.core.app.ActivityCompat;
+import androidx.viewpager.widget.ViewPager;
 import com.craxiom.networksurvey.fragments.CalculatorFragment;
 import com.craxiom.networksurvey.fragments.NetworkDetailsFragment;
 import com.craxiom.networksurvey.fragments.SectionsPagerAdapter;
@@ -41,6 +40,7 @@ import com.craxiom.networksurvey.listeners.IDeviceStatusListener;
 import com.craxiom.networksurvey.listeners.IGrpcConnectionStateListener;
 import com.craxiom.networksurvey.listeners.ISurveyRecordListener;
 import com.craxiom.networksurvey.messaging.DeviceStatus;
+import com.google.android.material.tabs.TabLayout;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -62,10 +62,11 @@ public class NetworkSurveyActivity extends AppCompatActivity implements
     private static final int NETWORK_DATA_REFRESH_RATE_MS = 2_000;
     private static final int PING_RATE_MS = 10_000;
 
-    private SurveyRecordWriter surveyRecordWriter;
+    private SurveyRecordProcessor surveyRecordProcessor;
     private MenuItem startStopLoggingMenuItem;
     private final AtomicBoolean loggingEnabled = new AtomicBoolean(false);
     private SectionsPagerAdapter sectionsPagerAdapter;
+    private SurveyRecordLogger surveyRecordLogger;
     private GrpcConnectionController grpcConnectionController;
     private IDeviceStatusListener deviceStatusListener;
 
@@ -145,10 +146,10 @@ public class NetworkSurveyActivity extends AppCompatActivity implements
         final LocationManager locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
         if (gpsListener != null) locationManager.removeUpdates(gpsListener);
 
-        if (loggingEnabled.get() && surveyRecordWriter != null)
+        if (loggingEnabled.get() && surveyRecordLogger != null)
         {
             loggingEnabled.set(false);
-            surveyRecordWriter.enableLogging(false);
+            surveyRecordLogger.enableLogging(false);
         }
 
         if (grpcConnectionController != null)
@@ -177,7 +178,8 @@ public class NetworkSurveyActivity extends AppCompatActivity implements
                     {
                         deviceId = getDeviceId();  // Need to set the Device ID before initializing any of the services.
                         initializeDeviceStatusReport();
-                        initializeSurveyRecordWriter();
+                        surveyRecordLogger = new SurveyRecordLogger(this);
+                        initializeSurveyRecordScanning();
 
                         grpcConnectionController.registerConnectionListener(this);
                         registerDeviceStatusListener(grpcConnectionController);
@@ -256,12 +258,12 @@ public class NetworkSurveyActivity extends AppCompatActivity implements
 
     public void registerSurveyRecordListener(ISurveyRecordListener surveyRecordListener)
     {
-        if (surveyRecordWriter != null) surveyRecordWriter.registerSurveyRecordListener(surveyRecordListener);
+        if (surveyRecordProcessor != null) surveyRecordProcessor.registerSurveyRecordListener(surveyRecordListener);
     }
 
     public void unregisterSurveyRecordListener(ISurveyRecordListener surveyRecordListener)
     {
-        if (surveyRecordWriter != null) surveyRecordWriter.unregisterSurveyRecordListener(surveyRecordListener);
+        if (surveyRecordProcessor != null) surveyRecordProcessor.unregisterSurveyRecordListener(surveyRecordListener);
     }
 
     /**
@@ -477,10 +479,10 @@ public class NetworkSurveyActivity extends AppCompatActivity implements
 
     /**
      * Gets the {@link TelephonyManager}, and then creates the
-     * {@link SurveyRecordWriter} instance.  If something goes wrong getting access to the manager
-     * then the {@link SurveyRecordWriter} instance will not be created.
+     * {@link SurveyRecordProcessor} instance.  If something goes wrong getting access to the manager
+     * then the {@link SurveyRecordProcessor} instance will not be created.
      */
-    private void initializeSurveyRecordWriter()
+    private void initializeSurveyRecordScanning()
     {
         final TelephonyManager telephonyManager = (TelephonyManager) getSystemService(Context.TELEPHONY_SERVICE);
 
@@ -490,18 +492,7 @@ public class NetworkSurveyActivity extends AppCompatActivity implements
             return;
         }
 
-        surveyRecordWriter = new SurveyRecordWriter(gpsListener, this, deviceId);
-
-        /* Seems like this approach was a bust on my phone.  It was rarely called
-        final PhoneStateListener listener = new PhoneStateListener()
-        {
-            @Override
-            public void onCellInfoChanged(List<CellInfo> cellInfo)
-            {
-                surveyRecordWriter.logSurveyRecord(cellInfo);
-            }
-        };
-        telephonyManager.listen(listener, PhoneStateListener.LISTEN_CELL_INFO);*/
+        surveyRecordProcessor = new SurveyRecordProcessor(gpsListener, this, deviceId);
 
         /*if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.P)
         {
@@ -537,7 +528,7 @@ public class NetworkSurveyActivity extends AppCompatActivity implements
             {
                 try
                 {
-                    surveyRecordWriter.logSurveyRecord(telephonyManager.getAllCellInfo());
+                    surveyRecordProcessor.onCellInfoUpdate(telephonyManager.getAllCellInfo());
 
                     handler.postDelayed(this, NETWORK_DATA_REFRESH_RATE_MS);
                 } catch (SecurityException e)
@@ -667,11 +658,11 @@ public class NetworkSurveyActivity extends AppCompatActivity implements
     {
         protected Boolean doInBackground(Void... nothing)
         {
-            if (surveyRecordWriter != null)
+            if (surveyRecordLogger != null)
             {
                 synchronized (loggingEnabled)
                 {
-                    final boolean enabled = surveyRecordWriter.enableLogging(!loggingEnabled.get());
+                    final boolean enabled = surveyRecordLogger.enableLogging(!loggingEnabled.get());
 
                     loggingEnabled.set(enabled);
 
