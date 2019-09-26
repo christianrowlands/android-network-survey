@@ -692,10 +692,10 @@ class SurveyRecordProcessor
 
             // The Cell Identity is 28 bits long. The first 20 bits represent the Macro eNodeB ID. The last 8 bits
             // represent the sector.  Strip off the last 8 bits to get the Macro eNodeB ID.
-            int eNodebId = ci >> 8;
+            int eNodebId = CalculationUtils.getEnodebIdFromCellId(ci);
             setText(R.id.enbId, R.string.enb_id_label, String.valueOf(eNodebId));
 
-            int sectorId = ci & 0xFF;
+            int sectorId = CalculationUtils.getSectorIdFromCellId(ci);
             setText(R.id.sectorId, R.string.sector_id_label, String.valueOf(sectorId));
         } else
         {
@@ -709,8 +709,8 @@ class SurveyRecordProcessor
         if (lteSurveyRecord.hasPci())
         {
             final int pci = lteSurveyRecord.getPci().getValue();
-            int primarySyncSequence = pci % 3;
-            int secondarySyncSequence = pci / 3;
+            int primarySyncSequence = CalculationUtils.getPrimarySyncSequence(pci);
+            int secondarySyncSequence = CalculationUtils.getSecondarySyncSequence(pci);
             setText(R.id.pci, R.string.pci_label, pci + " (" + primarySyncSequence + "/" + secondarySyncSequence + ")");
         } else
         {

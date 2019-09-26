@@ -3,7 +3,6 @@ package com.craxiom.networksurvey.fragments;
 import android.content.Context;
 import android.net.Uri;
 import android.os.Bundle;
-import androidx.fragment.app.Fragment;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.util.Log;
@@ -13,6 +12,8 @@ import android.view.ViewGroup;
 import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
+import androidx.fragment.app.Fragment;
+import com.craxiom.networksurvey.CalculationUtils;
 import com.craxiom.networksurvey.R;
 
 /**
@@ -53,7 +54,7 @@ public class CalculatorFragment extends Fragment
 
                 final int cellId = Integer.valueOf(enteredText);
 
-                if (cellId < 0 || cellId > 268435455)
+                if (!CalculationUtils.isLteCellIdValid(cellId))
                 {
                     Log.d(LOG_TAG, "The entered value for the LTE Cell ID is out of range.");
                     Toast.makeText(getActivity(), "Invalid Cell ID.  Valid Range is 0 - 268435455", Toast.LENGTH_LONG).show();
@@ -63,10 +64,10 @@ public class CalculatorFragment extends Fragment
 
                 // The Cell Identity is 28 bits long. The first 20 bits represent the Macro eNodeB ID. The last 8 bits
                 // represent the sector.  Strip off the last 8 bits to get the Macro eNodeB ID.
-                int eNodebId = cellId >> 8;
+                int eNodebId = CalculationUtils.getEnodebIdFromCellId(cellId);
                 ((TextView) view.findViewById(R.id.calculatedEnbIdValue)).setText(String.valueOf(eNodebId));
 
-                int sectorId = cellId & 0xFF;
+                int sectorId = CalculationUtils.getSectorIdFromCellId(cellId);
                 ((TextView) view.findViewById(R.id.calculatedSectorIdValue)).setText(String.valueOf(sectorId));
             } catch (Exception e)
             {
@@ -112,10 +113,10 @@ public class CalculatorFragment extends Fragment
                     return;
                 }
 
-                int primarySyncSequence = pci % 3;
+                int primarySyncSequence = CalculationUtils.getPrimarySyncSequence(pci);
                 ((TextView) view.findViewById(R.id.calculatedPssValue)).setText(String.valueOf(primarySyncSequence));
 
-                int secondarySyncSequence = pci / 3;
+                int secondarySyncSequence = CalculationUtils.getSecondarySyncSequence(pci);
                 ((TextView) view.findViewById(R.id.calculatedSssValue)).setText(String.valueOf(secondarySyncSequence));
             } catch (Exception e)
             {
