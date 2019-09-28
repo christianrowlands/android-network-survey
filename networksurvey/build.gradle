@@ -1,13 +1,13 @@
 apply plugin: 'com.android.application'
 
 android {
-    compileSdkVersion 28
+    compileSdkVersion 29
     defaultConfig {
         applicationId "com.craxiom.networksurvey"
         minSdkVersion 26
-        targetSdkVersion 28
-        versionCode 5
-        versionName "0.0.5"
+        targetSdkVersion 29
+        versionCode 6
+        versionName "0.0.6"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }
     buildTypes {
