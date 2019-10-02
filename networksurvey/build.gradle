@@ -38,7 +38,7 @@ dependencies {
 
     implementation "com.craxiom:network-survey-messaging:${networkSurveyMessagingVersion}"
 
-    implementation "mil.nga.geopackage:geopackage-android:3.1.0"
+    implementation "mil.nga.geopackage:geopackage-android:3.3.0"
 
     testImplementation 'junit:junit:4.12'
     androidTestImplementation 'androidx.test:runner:1.2.0'

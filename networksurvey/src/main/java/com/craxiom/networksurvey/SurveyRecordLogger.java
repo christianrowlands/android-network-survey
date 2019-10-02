@@ -4,12 +4,21 @@ import android.os.Environment;
 import android.os.Handler;
 import android.util.Log;
 import android.widget.Toast;
+
 import com.craxiom.networksurvey.listeners.ISurveyRecordListener;
 import com.craxiom.networksurvey.messaging.CdmaRecord;
 import com.craxiom.networksurvey.messaging.GsmRecord;
 import com.craxiom.networksurvey.messaging.LteBandwidth;
 import com.craxiom.networksurvey.messaging.LteRecord;
 import com.craxiom.networksurvey.messaging.UmtsRecord;
+
+import java.sql.SQLException;
+import java.text.SimpleDateFormat;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Locale;
+import java.util.function.BiConsumer;
+
 import mil.nga.geopackage.GeoPackage;
 import mil.nga.geopackage.GeoPackageManager;
 import mil.nga.geopackage.core.contents.Contents;
@@ -28,13 +37,6 @@ import mil.nga.geopackage.geom.GeoPackageGeometryData;
 import mil.nga.sf.GeometryType;
 import mil.nga.sf.Point;
 import mil.nga.sf.proj.ProjectionConstants;
-
-import java.sql.SQLException;
-import java.text.SimpleDateFormat;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Locale;
-import java.util.function.BiConsumer;
 
 import static mil.nga.geopackage.db.GeoPackageDataType.MEDIUMINT;
 
@@ -119,6 +121,8 @@ public class SurveyRecordLogger implements ISurveyRecordListener
             if (!isExternalStorageWritable()) return false;
 
             final String loggingFile = createPublicStorageFilePath();
+
+            Log.i(LOG_TAG, "Creating the log file: " + loggingFile);
 
             final boolean created = geoPackageManager.create(loggingFile);
 

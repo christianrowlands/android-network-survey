@@ -28,11 +28,13 @@ import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.Toast;
+
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
 import androidx.core.app.ActivityCompat;
 import androidx.viewpager.widget.ViewPager;
+
 import com.craxiom.networksurvey.fragments.CalculatorFragment;
 import com.craxiom.networksurvey.fragments.NetworkDetailsFragment;
 import com.craxiom.networksurvey.fragments.SectionsPagerAdapter;
@@ -345,7 +347,8 @@ public class NetworkSurveyActivity extends AppCompatActivity implements
     {
         String deviceId;
         if (ActivityCompat.checkSelfPermission(this, android.Manifest.permission.READ_PHONE_STATE) == PackageManager.PERMISSION_GRANTED
-                && getSystemService(Context.TELEPHONY_SERVICE) != null)
+                && getSystemService(Context.TELEPHONY_SERVICE) != null
+                && Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) // As of Android API level 29 the IMEI permission is restricted to system apps only.
         {
             TelephonyManager telephonyManager = (TelephonyManager) getSystemService(Context.TELEPHONY_SERVICE);
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O)
@@ -358,7 +361,8 @@ public class NetworkSurveyActivity extends AppCompatActivity implements
             }
         } else
         {
-            Toast.makeText(getApplicationContext(), "Error: Could not get the device IMEI", Toast.LENGTH_SHORT).show();
+            Log.w(LOG_TAG, "Could not get the device IMEI");
+            //Toast.makeText(getApplicationContext(), "Could not get the device IMEI", Toast.LENGTH_SHORT).show();
             deviceId = Settings.Secure.getString(getContentResolver(), Settings.Secure.ANDROID_ID);
         }
 
