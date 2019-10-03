@@ -50,6 +50,8 @@ public class GpsListener implements LocationListener
     public void onProviderDisabled(String provider)
     {
         Log.i(LOG_TAG, "Location Provider (" + provider + ") has been disabled");
+
+        if (LocationManager.GPS_PROVIDER.equals(provider)) latestLocation = null;
     }
 
     Location getLatestLocation()
@@ -57,12 +59,21 @@ public class GpsListener implements LocationListener
         return latestLocation;
     }
 
+    /**
+     * Updates the cached location with the newly provided location.
+     *
+     * @param newLocation The newly provided location.
+     */
     private void updateLocation(Location newLocation)
     {
         if (newLocation != null && LocationManager.GPS_PROVIDER.equals(newLocation.getProvider())
                 && newLocation.getAccuracy() <= MIN_DISTANCE_ACCURACY)
         {
             latestLocation = newLocation;
+        } else
+        {
+            Log.d(LOG_TAG, "The accuracy of the last GPS location is less than the required minimum");
+            latestLocation = null;
         }
     }
 }
