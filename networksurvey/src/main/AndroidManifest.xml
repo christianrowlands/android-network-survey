@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
     package="com.craxiom.networksurvey">
 
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
@@ -19,7 +20,8 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/NetworkSurveyTheme"
-        android:requestLegacyExternalStorage="true">
+        android:requestLegacyExternalStorage="true"
+        tools:ignore="GoogleAppIndexingWarning">
         <activity
             android:name=".NetworkSurveyActivity"
             android:label="@string/app_name"
@@ -34,6 +36,7 @@
         </activity>
         <service
             android:name=".NetworkSurveyService"
+            android:foregroundServiceType="location"
             android:exported="false"
             android:description="@string/network_survey_service_description" />
     </application>

@@ -17,7 +17,6 @@ public class NetworkSurveyService extends IntentService
     private static final String LOG_TAG = NetworkSurveyService.class.getSimpleName();
 
     private static final int SERVICE_NOTIFICATION_ID = 1;
-    private static final int LOGGING_NOTIFICATION_ID = 2;
     private static final int CONNECTION_NOTIFICATION_ID = 3;
     public static final String NOTIFICATION_CHANNEL_ID = "network_survey_notification";
 
@@ -95,21 +94,7 @@ public class NetworkSurveyService extends IntentService
     public void addLoggingNotification()
     {
         final NotificationManager notificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
-        if (notificationManager == null) return;
-
-        Intent notificationIntent = new Intent(this, NetworkSurveyActivity.class);
-        PendingIntent pendingIntent = PendingIntent.getActivity(this, 0, notificationIntent, 0);
-
-        Notification notification = new Notification.Builder(this, NOTIFICATION_CHANNEL_ID)
-                .setContentTitle(getText(R.string.logging_notification_title))
-                .setContentText(getText(R.string.logging_notification_text))
-                .setOngoing(true)
-                .setSmallIcon(R.drawable.logging_thick_icon)
-                .setContentIntent(pendingIntent)
-                .setTicker(getText(R.string.logging_notification_title))
-                .build();
-
-        notificationManager.notify(LOGGING_NOTIFICATION_ID, notification);
+        if (notificationManager != null) notificationManager.notify(SERVICE_NOTIFICATION_ID, buildNotification(true));
     }
 
     /**
@@ -135,9 +120,10 @@ public class NetworkSurveyService extends IntentService
         notificationManager.notify(CONNECTION_NOTIFICATION_ID, notification);
     }
 
-    public void removeLoggingNotification()
+    public synchronized void removeLoggingNotification()
     {
-        removeNotification(LOGGING_NOTIFICATION_ID);
+        final NotificationManager notificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+        if (notificationManager != null) notificationManager.notify(SERVICE_NOTIFICATION_ID, buildNotification(false));
     }
 
     public void removeConnectionNotification()
@@ -149,20 +135,26 @@ public class NetworkSurveyService extends IntentService
      * A notification for this service that is started in the foreground so that we can continue to get GPS location updates while the phone is locked
      * or the app is not in the foreground.
      */
-    private void addServiceNotification()
+    private synchronized void addServiceNotification()
+    {
+        startForeground(SERVICE_NOTIFICATION_ID, buildNotification(false));
+    }
+
+    private synchronized Notification buildNotification(boolean logging)
     {
         Intent notificationIntent = new Intent(this, NetworkSurveyActivity.class);
-        PendingIntent pendingIntent = PendingIntent.getActivity(this, 0, notificationIntent, PendingIntent.FLAG_UPDATE_CURRENT);
+        PendingIntent pendingIntent = PendingIntent.getActivity(this, 0, notificationIntent, 0);
 
-        Notification notification = new Notification.Builder(this, NOTIFICATION_CHANNEL_ID)
-                .setContentTitle(getText(R.string.service_notification_title))
+        final CharSequence notificationTitle = getText(logging ? R.string.logging_notification_title : R.string.service_notification_title);
+
+        return new Notification.Builder(this, NOTIFICATION_CHANNEL_ID)
+                .setContentTitle(notificationTitle)
+                .setContentText(logging ? getText(R.string.logging_notification_text) : "")
                 .setOngoing(true)
-                .setSmallIcon(R.drawable.gps_map_icon)
+                .setSmallIcon(logging ? R.drawable.logging_thick_icon : R.drawable.gps_map_icon)
                 .setContentIntent(pendingIntent)
-                .setTicker(getText(R.string.service_notification_title))
+                .setTicker(notificationTitle)
                 .build();
-
-        startForeground(SERVICE_NOTIFICATION_ID, notification);
     }
 
     /**
@@ -185,7 +177,6 @@ public class NetworkSurveyService extends IntentService
 
     private void shutdownNotifications()
     {
-        removeLoggingNotification();
         removeConnectionNotification();
         stopForeground(true);
     }

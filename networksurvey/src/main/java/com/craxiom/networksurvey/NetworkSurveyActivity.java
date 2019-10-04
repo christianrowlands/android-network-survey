@@ -578,7 +578,7 @@ public class NetworkSurveyActivity extends AppCompatActivity implements
             Runtime runtime = Runtime.getRuntime();
             Process ipAddressProcess = runtime.exec("/system/bin/ping -c 1 8.8.8.8");
             int exitValue = ipAddressProcess.waitFor();
-            Log.d(LOG_TAG, "Ping Exit Value: " + exitValue);
+            if (Log.isLoggable(LOG_TAG, Log.VERBOSE)) Log.v(LOG_TAG, "Ping Exit Value: " + exitValue);
         } catch (Exception e)
         {
             Log.e(LOG_TAG, "An exception occurred trying to send out a ping ", e);

@@ -569,6 +569,7 @@ class SurveyRecordProcessor
      */
     private void notifyGsmRecordListeners(GsmRecord gsmRecord)
     {
+        if (gsmRecord == null) return;
         for (ISurveyRecordListener listener : surveyRecordListeners)
         {
             try
@@ -588,6 +589,7 @@ class SurveyRecordProcessor
      */
     private void notifyCdmaRecordListeners(CdmaRecord cdmaRecord)
     {
+        if (cdmaRecord == null) return;
         for (ISurveyRecordListener listener : surveyRecordListeners)
         {
             try
@@ -607,6 +609,7 @@ class SurveyRecordProcessor
      */
     private void notifyUmtsRecordListeners(UmtsRecord umtsRecord)
     {
+        if (umtsRecord == null) return;
         for (ISurveyRecordListener listener : surveyRecordListeners)
         {
             try
@@ -626,6 +629,7 @@ class SurveyRecordProcessor
      */
     private void notifyLteRecordListeners(LteRecord lteRecord)
     {
+        if (lteRecord == null) return;
         for (ISurveyRecordListener listener : surveyRecordListeners)
         {
             try
