@@ -20,6 +20,7 @@ import android.util.Log;
 import android.widget.TextView;
 
 import com.craxiom.networksurvey.constants.LteMessageConstants;
+import com.craxiom.networksurvey.constants.NetworkSurveyConstants;
 import com.craxiom.networksurvey.listeners.ISurveyRecordListener;
 import com.craxiom.networksurvey.messaging.CdmaRecord;
 import com.craxiom.networksurvey.messaging.GsmRecord;
@@ -89,20 +90,20 @@ class SurveyRecordProcessor
     {
         try
         {
+            if (Log.isLoggable(LOG_TAG, Log.VERBOSE))
+            {
+                Log.v(LOG_TAG, "currentTechnology=" + currentTechnology);
+
+                Log.v(LOG_TAG, "allCellInfo: ");
+                allCellInfo.forEach(cellInfo -> Log.i(LOG_TAG, cellInfo.toString()));
+            }
             updateCurrentTechnologyUi(currentTechnology);
 
             if (allCellInfo != null && allCellInfo.size() > 0)
             {
                 groupNumber++; // Group all the records found in this scan iteration.
 
-                for (CellInfo cellInfo : allCellInfo)
-                {
-                    // If there is a serving cell that is not an LTE cell, then clear the UI TODO Change this once we support other technologies like GSM
-                    final boolean isServingCell = cellInfo.isRegistered();
-                    if (isServingCell && !(cellInfo instanceof CellInfoLte)) updateUi(LteRecord.getDefaultInstance());
-
-                    processCellInfo(cellInfo);
-                }
+                allCellInfo.forEach(this::processCellInfo);
             } else
             {
                 updateUi(LteRecord.getDefaultInstance());
@@ -652,6 +653,12 @@ class SurveyRecordProcessor
         {
             Log.v(LOG_TAG, "Skipping updating the Current Technology UI because it is not visible");
             return;
+        }
+
+        // Clear out the UI if the technology is not LTE
+        if (!NetworkSurveyConstants.LTE.equals(currentTechnology) && !NetworkSurveyConstants.LTE_CA.equals(currentTechnology))
+        {
+            updateUi(LteRecord.getDefaultInstance());
         }
 
         networkSurveyActivity.runOnUiThread(() -> setText(R.id.current_technology, R.string.current_technology_label, currentTechnology));

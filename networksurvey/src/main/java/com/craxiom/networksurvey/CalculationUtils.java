@@ -2,6 +2,8 @@ package com.craxiom.networksurvey;
 
 import android.telephony.TelephonyManager;
 
+import com.craxiom.networksurvey.constants.NetworkSurveyConstants;
+
 /**
  * A utils class for calculations used throughout the app, as well as some validation logic.
  *
@@ -65,6 +67,7 @@ public final class CalculationUtils
     }
 
     /**
+     * ¬
      * Given the Android int value for a network type, return the String value that it represents.
      *
      * @param networkType The network type in integer form as reported by Android.
@@ -79,64 +82,64 @@ public final class CalculationUtils
                 return "Unknown";
 
             case 1:
-                return "GRPS";
+                return NetworkSurveyConstants.GPRS;
 
             case 2:
-                return "EDGE";
+                return NetworkSurveyConstants.EDGE;
 
             case 3:
-                return "UMTS";
+                return NetworkSurveyConstants.UMTS;
 
             case 4:
-                return "CDMA";
+                return NetworkSurveyConstants.CDMA;
 
             case 5:
-                return "EVDO 0";
+                return NetworkSurveyConstants.EVDO_0;
 
             case 6:
-                return "EVDO A";
+                return NetworkSurveyConstants.EVDO_A;
 
             case 7:
-                return "1xRTT";
+                return NetworkSurveyConstants.RTT1x;
 
             case 8:
-                return "HSDPA";
+                return NetworkSurveyConstants.HSDPA;
 
             case 9:
-                return "HSUPA";
+                return NetworkSurveyConstants.HSUPA;
 
             case 10:
-                return "HSPA";
+                return NetworkSurveyConstants.HSPA;
 
             case 11:
-                return "IDEN";
+                return NetworkSurveyConstants.IDEN;
 
             case 12:
-                return "EVDO B";
+                return NetworkSurveyConstants.EVDO_B;
 
             case 13:
-                return "LTE";
+                return NetworkSurveyConstants.LTE;
 
             case 14:
-                return "EHRPD";
+                return NetworkSurveyConstants.EHRPD;
 
             case 15:
-                return "HSPAP";
+                return NetworkSurveyConstants.HSPAP;
 
             case 16:
-                return "GSM";
+                return NetworkSurveyConstants.GSM;
 
             case 17:
-                return "TD-SCDMA";
+                return NetworkSurveyConstants.TD_SCDMA;
 
             case 18:
-                return "IWLAN";
+                return NetworkSurveyConstants.IWLAN;
 
             case 19:
-                return "LTE-CA";
+                return NetworkSurveyConstants.LTE_CA;
 
             case 20:
-                return "NR";
+                return NetworkSurveyConstants.NR;
 
             default:
                 return "Unknown";
