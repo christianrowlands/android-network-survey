@@ -1,4 +1,4 @@
-package com.craxiom.networksurvey;
+package com.craxiom.networksurvey.constants;
 
 /**
  * Some constants used in the Network Survey App.

@@ -1,4 +1,4 @@
-package com.craxiom.networksurvey;
+package com.craxiom.networksurvey.constants;
 
 /**
  * GeoPackage table constants generic to all messages (i.e. GSM, CDMA, UMTS and LTE).

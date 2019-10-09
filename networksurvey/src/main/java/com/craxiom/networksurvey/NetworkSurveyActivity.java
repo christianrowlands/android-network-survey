@@ -23,6 +23,7 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.IBinder;
 import android.provider.Settings;
+import android.telephony.CellInfo;
 import android.telephony.TelephonyManager;
 import android.util.Log;
 import android.view.Menu;
@@ -30,6 +31,7 @@ import android.view.MenuItem;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
 import androidx.core.app.ActivityCompat;
@@ -44,6 +46,7 @@ import com.craxiom.networksurvey.listeners.ISurveyRecordListener;
 import com.craxiom.networksurvey.messaging.DeviceStatus;
 import com.google.android.material.tabs.TabLayout;
 
+import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static android.location.LocationManager.GPS_PROVIDER;
@@ -532,7 +535,27 @@ public class NetworkSurveyActivity extends AppCompatActivity implements
             {
                 try
                 {
-                    surveyRecordProcessor.onCellInfoUpdate(telephonyManager.getAllCellInfo());
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q)
+                    {
+                        telephonyManager.requestCellInfoUpdate(AsyncTask.THREAD_POOL_EXECUTOR, new TelephonyManager.CellInfoCallback()
+                        {
+                            @Override
+                            public void onCellInfo(@NonNull List<CellInfo> cellInfo)
+                            {
+                                surveyRecordProcessor.onCellInfoUpdate(cellInfo, CalculationUtils.getNetworkType(telephonyManager.getNetworkType()));
+                            }
+
+                            @Override
+                            public void onError(int errorCode, @Nullable Throwable detail)
+                            {
+                                super.onError(errorCode, detail);
+                                Log.w(LOG_TAG, "Received an error from the Telephony Manager when requesting a cell info update; errorCode=" + errorCode, detail);
+                            }
+                        });
+                    } else
+                    {
+                        surveyRecordProcessor.onCellInfoUpdate(telephonyManager.getAllCellInfo(), CalculationUtils.getNetworkType(telephonyManager.getNetworkType()));
+                    }
 
                     handler.postDelayed(this, NETWORK_DATA_REFRESH_RATE_MS);
                 } catch (SecurityException e)

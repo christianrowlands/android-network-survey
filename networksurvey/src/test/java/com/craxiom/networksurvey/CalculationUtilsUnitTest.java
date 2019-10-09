@@ -92,4 +92,30 @@ public class CalculationUtilsUnitTest
     {
         assertNotEquals(25, CalculationUtils.getPrimarySyncSequence(79));
     }
+
+    @Test
+    public void getNetworkType()
+    {
+        assertEquals("Unknown", CalculationUtils.getNetworkType(0));
+        assertEquals("GPRS", CalculationUtils.getNetworkType(1));
+        assertEquals("EDGE", CalculationUtils.getNetworkType(2));
+        assertEquals("UMTS", CalculationUtils.getNetworkType(3));
+        assertEquals("CDMA", CalculationUtils.getNetworkType(4));
+        assertEquals("EVDO 0", CalculationUtils.getNetworkType(5));
+        assertEquals("EVDO A", CalculationUtils.getNetworkType(6));
+        assertEquals("1xRTT", CalculationUtils.getNetworkType(7));
+        assertEquals("HSDPA", CalculationUtils.getNetworkType(8));
+        assertEquals("HSUPA", CalculationUtils.getNetworkType(9));
+        assertEquals("HSPA", CalculationUtils.getNetworkType(10));
+        assertEquals("IDEN", CalculationUtils.getNetworkType(11));
+        assertEquals("EVDO", CalculationUtils.getNetworkType(12));
+        assertEquals("LTE", CalculationUtils.getNetworkType(13));
+        assertEquals("EHRPD", CalculationUtils.getNetworkType(14));
+        assertEquals("HSPAP", CalculationUtils.getNetworkType(15));
+        assertEquals("GSM", CalculationUtils.getNetworkType(16));
+        assertEquals("TD-SCDMA", CalculationUtils.getNetworkType(17));
+        assertEquals("IWLAN", CalculationUtils.getNetworkType(18));
+        assertEquals("LTE-CA", CalculationUtils.getNetworkType(19));
+        assertEquals("NR", CalculationUtils.getNetworkType(20));
+    }
 }

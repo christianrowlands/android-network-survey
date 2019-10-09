@@ -1,4 +1,4 @@
-package com.craxiom.networksurvey;
+package com.craxiom.networksurvey.constants;
 
 import com.craxiom.networksurvey.messaging.LteBandwidth;
 

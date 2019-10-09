@@ -1,4 +1,4 @@
-package com.craxiom.networksurvey;
+package com.craxiom.networksurvey.constants;
 
 /**
  * The constants associated with the UMTS table in the GeoPackage file.

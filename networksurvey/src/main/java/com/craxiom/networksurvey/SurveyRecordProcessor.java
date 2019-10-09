@@ -19,6 +19,7 @@ import android.telephony.TelephonyManager;
 import android.util.Log;
 import android.widget.TextView;
 
+import com.craxiom.networksurvey.constants.LteMessageConstants;
 import com.craxiom.networksurvey.listeners.ISurveyRecordListener;
 import com.craxiom.networksurvey.messaging.CdmaRecord;
 import com.craxiom.networksurvey.messaging.GsmRecord;
@@ -84,10 +85,12 @@ class SurveyRecordProcessor
      *
      * @param allCellInfo The List of {@link CellInfo} records to convert to survey records.
      */
-    synchronized void onCellInfoUpdate(List<CellInfo> allCellInfo) throws SecurityException
+    synchronized void onCellInfoUpdate(List<CellInfo> allCellInfo, String currentTechnology) throws SecurityException
     {
         try
         {
+            updateCurrentTechnologyUi(currentTechnology);
+
             if (allCellInfo != null && allCellInfo.size() > 0)
             {
                 groupNumber++; // Group all the records found in this scan iteration.
@@ -98,20 +101,16 @@ class SurveyRecordProcessor
                     final boolean isServingCell = cellInfo.isRegistered();
                     if (isServingCell && !(cellInfo instanceof CellInfoLte)) updateUi(LteRecord.getDefaultInstance());
 
-                    if (isServingCell) updateCurrentTechnologyUi(cellInfo);
-
                     processCellInfo(cellInfo);
                 }
             } else
             {
                 updateUi(LteRecord.getDefaultInstance());
-                updateCurrentTechnologyUi(null);
             }
         } catch (Exception e)
         {
             Log.e(LOG_TAG, "Unable to display and log an LTE Survey Record", e);
             updateUi(LteRecord.getDefaultInstance());
-            updateCurrentTechnologyUi(null);
         }
     }
 
@@ -645,9 +644,9 @@ class SurveyRecordProcessor
     /**
      * Sets the provided String as the current technology in the UI.
      *
-     * @param servingCellInfo The {@link CellInfo} for the current serving cell.
+     * @param currentTechnology The {@link String} for the current serving cell.
      */
-    private void updateCurrentTechnologyUi(CellInfo servingCellInfo)
+    private void updateCurrentTechnologyUi(String currentTechnology)
     {
         if (!networkSurveyActivity.isNetworkDetailsVisible())
         {
@@ -655,24 +654,7 @@ class SurveyRecordProcessor
             return;
         }
 
-        final String currentTechnology;
-        if (servingCellInfo instanceof CellInfoLte)
-        {
-            currentTechnology = "LTE";
-        } else if (servingCellInfo instanceof CellInfoWcdma)
-        {
-            currentTechnology = "UMTS";
-        } else if (servingCellInfo instanceof CellInfoCdma)
-        {
-            currentTechnology = "CDMA";
-        } else if (servingCellInfo instanceof CellInfoGsm)
-        {
-            currentTechnology = "GSM";
-        } else
-        {
-            currentTechnology = "Unknown";
-        }
-        setText(R.id.current_technology, R.string.current_technology_label, currentTechnology);
+        networkSurveyActivity.runOnUiThread(() -> setText(R.id.current_technology, R.string.current_technology_label, currentTechnology));
     }
 
     private void updateUi(LteRecord lteSurveyRecord)
@@ -683,52 +665,55 @@ class SurveyRecordProcessor
             return;
         }
 
-        final String provider = lteSurveyRecord.getProvider();
-        setText(R.id.carrier, R.string.carrier_label, provider != null ? provider : "");
+        networkSurveyActivity.runOnUiThread(() -> {
 
-        setText(R.id.mcc, R.string.mcc_label, lteSurveyRecord.hasMcc() ? String.valueOf(lteSurveyRecord.getMcc().getValue()) : "");
-        setText(R.id.mnc, R.string.mnc_label, lteSurveyRecord.hasMnc() ? String.valueOf(lteSurveyRecord.getMnc().getValue()) : "");
-        setText(R.id.tac, R.string.tac_label, lteSurveyRecord.hasTac() ? String.valueOf(lteSurveyRecord.getTac().getValue()) : "");
+            final String provider = lteSurveyRecord.getProvider();
+            setText(R.id.carrier, R.string.carrier_label, provider != null ? provider : "");
 
-        if (lteSurveyRecord.hasCi())
-        {
-            final int ci = lteSurveyRecord.getCi().getValue();
-            setText(R.id.cid, R.string.cid_label, String.valueOf(ci));
+            setText(R.id.mcc, R.string.mcc_label, lteSurveyRecord.hasMcc() ? String.valueOf(lteSurveyRecord.getMcc().getValue()) : "");
+            setText(R.id.mnc, R.string.mnc_label, lteSurveyRecord.hasMnc() ? String.valueOf(lteSurveyRecord.getMnc().getValue()) : "");
+            setText(R.id.tac, R.string.tac_label, lteSurveyRecord.hasTac() ? String.valueOf(lteSurveyRecord.getTac().getValue()) : "");
 
-            // The Cell Identity is 28 bits long. The first 20 bits represent the Macro eNodeB ID. The last 8 bits
-            // represent the sector.  Strip off the last 8 bits to get the Macro eNodeB ID.
-            int eNodebId = CalculationUtils.getEnodebIdFromCellId(ci);
-            setText(R.id.enbId, R.string.enb_id_label, String.valueOf(eNodebId));
+            if (lteSurveyRecord.hasCi())
+            {
+                final int ci = lteSurveyRecord.getCi().getValue();
+                setText(R.id.cid, R.string.cid_label, String.valueOf(ci));
 
-            int sectorId = CalculationUtils.getSectorIdFromCellId(ci);
-            setText(R.id.sectorId, R.string.sector_id_label, String.valueOf(sectorId));
-        } else
-        {
-            setText(R.id.cid, R.string.cid_label, "");
-            setText(R.id.enbId, R.string.enb_id_label, "");
-            setText(R.id.sectorId, R.string.sector_id_label, "");
-        }
+                // The Cell Identity is 28 bits long. The first 20 bits represent the Macro eNodeB ID. The last 8 bits
+                // represent the sector.  Strip off the last 8 bits to get the Macro eNodeB ID.
+                int eNodebId = CalculationUtils.getEnodebIdFromCellId(ci);
+                setText(R.id.enbId, R.string.enb_id_label, String.valueOf(eNodebId));
 
-        setText(R.id.earfcn, R.string.earfcn_label, lteSurveyRecord.hasEarfcn() ? String.valueOf(lteSurveyRecord.getEarfcn().getValue()) : "");
+                int sectorId = CalculationUtils.getSectorIdFromCellId(ci);
+                setText(R.id.sectorId, R.string.sector_id_label, String.valueOf(sectorId));
+            } else
+            {
+                setText(R.id.cid, R.string.cid_label, "");
+                setText(R.id.enbId, R.string.enb_id_label, "");
+                setText(R.id.sectorId, R.string.sector_id_label, "");
+            }
 
-        if (lteSurveyRecord.hasPci())
-        {
-            final int pci = lteSurveyRecord.getPci().getValue();
-            int primarySyncSequence = CalculationUtils.getPrimarySyncSequence(pci);
-            int secondarySyncSequence = CalculationUtils.getSecondarySyncSequence(pci);
-            setText(R.id.pci, R.string.pci_label, pci + " (" + primarySyncSequence + "/" + secondarySyncSequence + ")");
-        } else
-        {
-            setText(R.id.pci, R.string.pci_label, "");
-        }
+            setText(R.id.earfcn, R.string.earfcn_label, lteSurveyRecord.hasEarfcn() ? String.valueOf(lteSurveyRecord.getEarfcn().getValue()) : "");
 
-        setText(R.id.bandwidth, R.string.bandwidth_label, LteMessageConstants.getLteBandwidth(lteSurveyRecord.getLteBandwidth()));
+            if (lteSurveyRecord.hasPci())
+            {
+                final int pci = lteSurveyRecord.getPci().getValue();
+                int primarySyncSequence = CalculationUtils.getPrimarySyncSequence(pci);
+                int secondarySyncSequence = CalculationUtils.getSecondarySyncSequence(pci);
+                setText(R.id.pci, R.string.pci_label, pci + " (" + primarySyncSequence + "/" + secondarySyncSequence + ")");
+            } else
+            {
+                setText(R.id.pci, R.string.pci_label, "");
+            }
 
-        checkAndSetLocation(lteSurveyRecord);
+            setText(R.id.bandwidth, R.string.bandwidth_label, LteMessageConstants.getLteBandwidth(lteSurveyRecord.getLteBandwidth()));
 
-        setText(R.id.rsrp, R.string.rsrp_label, lteSurveyRecord.hasRsrp() ? String.valueOf(lteSurveyRecord.getRsrp().getValue()) : "");
-        setText(R.id.rsrq, R.string.rsrq_label, lteSurveyRecord.hasRsrq() ? String.valueOf(lteSurveyRecord.getRsrq().getValue()) : "");
-        setText(R.id.ta, R.string.ta_label, lteSurveyRecord.hasTa() ? String.valueOf(lteSurveyRecord.getTa().getValue()) : "");
+            checkAndSetLocation(lteSurveyRecord);
+
+            setText(R.id.rsrp, R.string.rsrp_label, lteSurveyRecord.hasRsrp() ? String.valueOf(lteSurveyRecord.getRsrp().getValue()) : "");
+            setText(R.id.rsrq, R.string.rsrq_label, lteSurveyRecord.hasRsrq() ? String.valueOf(lteSurveyRecord.getRsrq().getValue()) : "");
+            setText(R.id.ta, R.string.ta_label, lteSurveyRecord.hasTa() ? String.valueOf(lteSurveyRecord.getTa().getValue()) : "");
+        });
     }
 
     /**

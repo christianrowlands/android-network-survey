@@ -23,8 +23,8 @@ import androidx.fragment.app.FragmentActivity;
 import com.craxiom.networksurvey.ConnectionState;
 import com.craxiom.networksurvey.GrpcConnectionController;
 import com.craxiom.networksurvey.NetworkSurveyActivity;
-import com.craxiom.networksurvey.NetworkSurveyConstants;
 import com.craxiom.networksurvey.R;
+import com.craxiom.networksurvey.constants.NetworkSurveyConstants;
 import com.craxiom.networksurvey.listeners.IGrpcConnectionStateListener;
 
 import io.grpc.ManagedChannel;
