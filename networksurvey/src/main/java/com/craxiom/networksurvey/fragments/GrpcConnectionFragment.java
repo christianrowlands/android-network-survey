@@ -6,10 +6,6 @@ import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
-import android.support.v4.app.ActivityCompat;
-import android.support.v4.app.Fragment;
-import android.support.v4.app.FragmentActivity;
-import android.support.v4.content.ContextCompat;
 import android.text.TextUtils;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -18,12 +14,19 @@ import android.view.ViewGroup;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.EditText;
 import android.widget.ToggleButton;
+
+import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
+import androidx.fragment.app.Fragment;
+import androidx.fragment.app.FragmentActivity;
+
 import com.craxiom.networksurvey.ConnectionState;
 import com.craxiom.networksurvey.GrpcConnectionController;
 import com.craxiom.networksurvey.NetworkSurveyActivity;
-import com.craxiom.networksurvey.NetworkSurveyConstants;
 import com.craxiom.networksurvey.R;
+import com.craxiom.networksurvey.constants.NetworkSurveyConstants;
 import com.craxiom.networksurvey.listeners.IGrpcConnectionStateListener;
+
 import io.grpc.ManagedChannel;
 
 /**
@@ -105,13 +108,13 @@ public class GrpcConnectionFragment extends Fragment implements View.OnClickList
         networkSurveyActivity.runOnUiThread(() -> updateUiState(newConnectionState));
     }
 
-    public void setGrpcConnectionController(GrpcConnectionController grpcConnectionController)
+    void setGrpcConnectionController(GrpcConnectionController grpcConnectionController)
     {
         this.grpcConnectionController = grpcConnectionController;
         grpcConnectionController.registerConnectionListener(this);
     }
 
-    public void setNetworkSurveyActivity(NetworkSurveyActivity networkSurveyActivity)
+    void setNetworkSurveyActivity(NetworkSurveyActivity networkSurveyActivity)
     {
         this.networkSurveyActivity = networkSurveyActivity;
     }
@@ -142,7 +145,7 @@ public class GrpcConnectionFragment extends Fragment implements View.OnClickList
      *
      * @param connectionState The new state of the server connection to update the UI for.
      */
-    private void updateUiState(ConnectionState connectionState)
+    private synchronized void updateUiState(ConnectionState connectionState)
     {
         switch (connectionState)
         {
@@ -215,10 +218,10 @@ public class GrpcConnectionFragment extends Fragment implements View.OnClickList
         final SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(networkSurveyActivity.getApplicationContext());
 
         final String restoredHost = preferences.getString(NETWORK_SURVEY_CONNECTION_HOST, "");
-        if ((restoredHost != null) && (!restoredHost.isEmpty())) host = restoredHost;
+        if (!restoredHost.isEmpty()) host = restoredHost;
 
         final int restoredPortNumber = preferences.getInt(NETWORK_SURVEY_CONNECTION_PORT, NetworkSurveyConstants.DEFAULT_GRPC_PORT);
-        if ((restoredPortNumber == -1)) portNumber = restoredPortNumber;
+        if (restoredPortNumber != -1) portNumber = restoredPortNumber;
     }
 
     /**
@@ -243,8 +246,8 @@ public class GrpcConnectionFragment extends Fragment implements View.OnClickList
             Log.e(LOG_TAG, "Unable to get the activity from the gRPC Connection Fragment");
         } else
         {
-            ((InputMethodManager) activity.getSystemService(Context.INPUT_METHOD_SERVICE))
-                    .hideSoftInputFromWindow(grpcHostAddressEdit.getWindowToken(), 0);
+            final InputMethodManager inputMethodManager = (InputMethodManager) activity.getSystemService(Context.INPUT_METHOD_SERVICE);
+            if (inputMethodManager != null) inputMethodManager.hideSoftInputFromWindow(grpcHostAddressEdit.getWindowToken(), 0);
         }
     }
 }

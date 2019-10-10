@@ -4,20 +4,21 @@ import android.annotation.SuppressLint;
 import android.os.AsyncTask;
 import android.util.Log;
 import android.widget.Toast;
+
 import com.craxiom.networksurvey.listeners.IDeviceStatusListener;
 import com.craxiom.networksurvey.listeners.IGrpcConnectionStateListener;
 import com.craxiom.networksurvey.listeners.ISurveyRecordListener;
+import com.craxiom.networksurvey.messaging.CdmaRecord;
 import com.craxiom.networksurvey.messaging.ConnectionReply;
 import com.craxiom.networksurvey.messaging.ConnectionRequest;
 import com.craxiom.networksurvey.messaging.DeviceStatus;
+import com.craxiom.networksurvey.messaging.GsmRecord;
 import com.craxiom.networksurvey.messaging.LteRecord;
 import com.craxiom.networksurvey.messaging.LteSurveyResponse;
 import com.craxiom.networksurvey.messaging.NetworkSurveyStatusGrpc;
 import com.craxiom.networksurvey.messaging.StatusUpdateReply;
+import com.craxiom.networksurvey.messaging.UmtsRecord;
 import com.craxiom.networksurvey.messaging.WirelessSurveyGrpc;
-import io.grpc.ManagedChannel;
-import io.grpc.android.AndroidChannelBuilder;
-import io.grpc.stub.StreamObserver;
 
 import java.lang.ref.WeakReference;
 import java.net.ConnectException;
@@ -28,6 +29,11 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
+
+import io.grpc.ConnectivityState;
+import io.grpc.ManagedChannel;
+import io.grpc.android.AndroidChannelBuilder;
+import io.grpc.stub.StreamObserver;
 
 /**
  * A controller for allowing the user to connect to a remote gRPC based server.  This allows them to stream the survey results back to a server.
@@ -51,6 +57,9 @@ public class GrpcConnectionController implements IDeviceStatusListener, ISurveyR
     private ManagedChannel channel;
     private CountDownLatch channelFinishLatch;
 
+    private String host = null;
+    private Integer portNumber = null;
+
     GrpcConnectionController(NetworkSurveyActivity networkSurveyActivity)
     {
         this.networkSurveyActivity = networkSurveyActivity;
@@ -59,13 +68,31 @@ public class GrpcConnectionController implements IDeviceStatusListener, ISurveyR
     @Override
     public void onDeviceStatus(DeviceStatus deviceStatus)
     {
-        if (isConnected()) deviceStatusBlockingQueue.add(deviceStatus);
+        if (isConnected() && deviceStatus != null) deviceStatusBlockingQueue.add(deviceStatus);
+    }
+
+    @Override
+    public void onGsmSurveyRecord(GsmRecord gsmRecord)
+    {
+        // TODO Add support for streaming these records
+    }
+
+    @Override
+    public void onCdmaSurveyRecord(CdmaRecord cdmaRecord)
+    {
+        // TODO Add support for streaming these records
+    }
+
+    @Override
+    public void onUmtsSurveyRecord(UmtsRecord umtsRecord)
+    {
+        // TODO Add support for streaming these records
     }
 
     @Override
     public void onLteSurveyRecord(LteRecord lteRecord)
     {
-        if (isConnected()) lteRecordBlockingQueue.add(lteRecord);
+        if (isConnected() && lteRecord != null) lteRecordBlockingQueue.add(lteRecord);
     }
 
     public void registerConnectionListener(IGrpcConnectionStateListener connectionListener)
@@ -91,7 +118,8 @@ public class GrpcConnectionController implements IDeviceStatusListener, ISurveyR
     {
         try
         {
-            notifyConnectionStateChange(ConnectionState.CONNECTING);
+            this.host = host;
+            this.portNumber = port;
 
             new Thread(() -> {
 
@@ -100,6 +128,11 @@ public class GrpcConnectionController implements IDeviceStatusListener, ISurveyR
                         .usePlaintext()
                         .context(networkSurveyActivity.getApplicationContext())
                         .build();
+
+                channel.notifyWhenStateChanged(ConnectivityState.CONNECTING, () -> notifyConnectionStateChange(ConnectionState.CONNECTING));
+                channel.notifyWhenStateChanged(ConnectivityState.SHUTDOWN, () -> notifyConnectionStateChange(ConnectionState.DISCONNECTED));
+                channel.notifyWhenStateChanged(ConnectivityState.IDLE, () -> notifyConnectionStateChange(ConnectionState.CONNECTED));
+                channel.notifyWhenStateChanged(ConnectivityState.READY, () -> notifyConnectionStateChange(ConnectionState.CONNECTED));
 
                 if (!startConnection())
                 {
@@ -115,8 +148,6 @@ public class GrpcConnectionController implements IDeviceStatusListener, ISurveyR
                 networkSurveyActivity.runOnUiThread(() -> Toast.makeText(networkSurveyActivity, message, Toast.LENGTH_SHORT).show());
 
                 channelFinishLatch = new CountDownLatch(2);
-
-                notifyConnectionStateChange(ConnectionState.CONNECTED);
 
                 deviceStatusGrpcTask = new GrpcTask<>(this, deviceStatusBlockingQueue,
                         statusUpdateReplyStreamObserver -> NetworkSurveyStatusGrpc.newStub(channel).statusUpdate(statusUpdateReplyStreamObserver));
@@ -193,6 +224,19 @@ public class GrpcConnectionController implements IDeviceStatusListener, ISurveyR
     }
 
     /**
+     * Used to reconnect to the gRPC server using the last known connection settings.
+     */
+    private void reconnectToGrpcServer()
+    {
+        if (host == null || portNumber == null)
+        {
+            Log.e(LOG_TAG, "Can't reconnect to the last gRPC server because the host or port is null");
+        }
+
+        connectToGrpcServer(host, portNumber);
+    }
+
+    /**
      * Closes the gRPC managed channel and assigns null to the instance variable.
      */
     private void shutdownChannel()
@@ -218,8 +262,13 @@ public class GrpcConnectionController implements IDeviceStatusListener, ISurveyR
      *
      * @param newConnectionState The new gRPC connection state.
      */
-    private void notifyConnectionStateChange(ConnectionState newConnectionState)
+    private synchronized void notifyConnectionStateChange(ConnectionState newConnectionState)
     {
+        if (Log.isLoggable(LOG_TAG, Log.INFO))
+        {
+            Log.i(LOG_TAG, "gRPC Connection State Changed.  oldConnectionState=" + currentConnectionState + ", newConnectionState=" + newConnectionState);
+        }
+
         currentConnectionState = newConnectionState;
 
         for (IGrpcConnectionStateListener listener : grpcConnectionListeners)
@@ -241,7 +290,7 @@ public class GrpcConnectionController implements IDeviceStatusListener, ISurveyR
      * @param <Reply>       The reply type that will come back from gRPC server once the stream is complete.
      */
     @SuppressLint("StaticFieldLeak")
-    private class GrpcTask<MessageType, Reply> extends AsyncTask<Void, Void, String>
+    private class GrpcTask<MessageType, Reply> extends AsyncTask<Void, Void, Boolean>
     {
         private final WeakReference<GrpcConnectionController> controllerWeakReference;
         private final BlockingQueue<MessageType> messageBlockingQueue;
@@ -258,7 +307,7 @@ public class GrpcConnectionController implements IDeviceStatusListener, ISurveyR
         }
 
         @Override
-        protected String doInBackground(Void... nothing)
+        protected Boolean doInBackground(Void... nothing)
         {
             try
             {
@@ -300,6 +349,8 @@ public class GrpcConnectionController implements IDeviceStatusListener, ISurveyR
 
                         final MessageType nextMessageToSend = messageBlockingQueue.poll(60, TimeUnit.SECONDS);
 
+                        if (nextMessageToSend == null) continue;
+
                         if (Log.isLoggable(LOG_TAG, Log.VERBOSE))
                         {
                             Log.v(LOG_TAG, "Sending a message to the remote gRPC server: " + nextMessageToSend.toString());
@@ -326,25 +377,24 @@ public class GrpcConnectionController implements IDeviceStatusListener, ISurveyR
                     throw new RuntimeException("Could not finish rpc within 1 minute, the server is likely down");
                 }
 
-                if (failed != null)
-                {
-                    throw new RuntimeException(failed);
-                }
-
-                return ""; // TODO figure out something useful to return from the task
+                return failed != null;
             } catch (Exception e)
             {
                 Log.e(LOG_TAG, "The connection to the remote gRPC server closed with an exception", e);
-                return e.getMessage();
+                return false;  // TODO Should this be true so that a reconnection happens?
             }
         }
 
         @Override
-        protected void onPostExecute(String result)
+        protected void onPostExecute(Boolean reconnect)
         {
-            Log.i(LOG_TAG, "Completed a gRPC Task, result: " + result);
+            Log.i(LOG_TAG, "Completed a gRPC Task, should reconnect= " + reconnect);
             GrpcConnectionController grpcConnectionController = controllerWeakReference.get();
-            if (grpcConnectionController != null) grpcConnectionController.onGrpcTaskFinished();
+            if (grpcConnectionController != null)
+            {
+                grpcConnectionController.onGrpcTaskFinished();
+                grpcConnectionController.reconnectToGrpcServer();
+            }
         }
     }
 }

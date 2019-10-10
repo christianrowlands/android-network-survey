@@ -23,17 +23,20 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.IBinder;
 import android.provider.Settings;
-import android.support.annotation.NonNull;
-import android.support.design.widget.TabLayout;
-import android.support.v4.app.ActivityCompat;
-import android.support.v4.view.ViewPager;
-import android.support.v7.app.AppCompatActivity;
-import android.support.v7.widget.Toolbar;
+import android.telephony.CellInfo;
 import android.telephony.TelephonyManager;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.Toast;
+
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.widget.Toolbar;
+import androidx.core.app.ActivityCompat;
+import androidx.viewpager.widget.ViewPager;
+
 import com.craxiom.networksurvey.fragments.CalculatorFragment;
 import com.craxiom.networksurvey.fragments.NetworkDetailsFragment;
 import com.craxiom.networksurvey.fragments.SectionsPagerAdapter;
@@ -41,7 +44,9 @@ import com.craxiom.networksurvey.listeners.IDeviceStatusListener;
 import com.craxiom.networksurvey.listeners.IGrpcConnectionStateListener;
 import com.craxiom.networksurvey.listeners.ISurveyRecordListener;
 import com.craxiom.networksurvey.messaging.DeviceStatus;
+import com.google.android.material.tabs.TabLayout;
 
+import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static android.location.LocationManager.GPS_PROVIDER;
@@ -62,10 +67,11 @@ public class NetworkSurveyActivity extends AppCompatActivity implements
     private static final int NETWORK_DATA_REFRESH_RATE_MS = 2_000;
     private static final int PING_RATE_MS = 10_000;
 
-    private SurveyRecordWriter surveyRecordWriter;
+    private SurveyRecordProcessor surveyRecordProcessor;
     private MenuItem startStopLoggingMenuItem;
     private final AtomicBoolean loggingEnabled = new AtomicBoolean(false);
     private SectionsPagerAdapter sectionsPagerAdapter;
+    private SurveyRecordLogger surveyRecordLogger;
     private GrpcConnectionController grpcConnectionController;
     private IDeviceStatusListener deviceStatusListener;
 
@@ -145,6 +151,12 @@ public class NetworkSurveyActivity extends AppCompatActivity implements
         final LocationManager locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
         if (gpsListener != null) locationManager.removeUpdates(gpsListener);
 
+        if (loggingEnabled.get() && surveyRecordLogger != null)
+        {
+            loggingEnabled.set(false);
+            surveyRecordLogger.enableLogging(false);
+        }
+
         if (grpcConnectionController != null)
         {
             unregisterDeviceStatusListener(grpcConnectionController);
@@ -171,7 +183,8 @@ public class NetworkSurveyActivity extends AppCompatActivity implements
                     {
                         deviceId = getDeviceId();  // Need to set the Device ID before initializing any of the services.
                         initializeDeviceStatusReport();
-                        initializeSurveyRecordWriter();
+                        surveyRecordLogger = new SurveyRecordLogger(this);
+                        initializeSurveyRecordScanning();
 
                         grpcConnectionController.registerConnectionListener(this);
                         registerDeviceStatusListener(grpcConnectionController);
@@ -250,12 +263,12 @@ public class NetworkSurveyActivity extends AppCompatActivity implements
 
     public void registerSurveyRecordListener(ISurveyRecordListener surveyRecordListener)
     {
-        if (surveyRecordWriter != null) surveyRecordWriter.registerSurveyRecordListener(surveyRecordListener);
+        if (surveyRecordProcessor != null) surveyRecordProcessor.registerSurveyRecordListener(surveyRecordListener);
     }
 
     public void unregisterSurveyRecordListener(ISurveyRecordListener surveyRecordListener)
     {
-        if (surveyRecordWriter != null) surveyRecordWriter.unregisterSurveyRecordListener(surveyRecordListener);
+        if (surveyRecordProcessor != null) surveyRecordProcessor.unregisterSurveyRecordListener(surveyRecordListener);
     }
 
     /**
@@ -337,7 +350,8 @@ public class NetworkSurveyActivity extends AppCompatActivity implements
     {
         String deviceId;
         if (ActivityCompat.checkSelfPermission(this, android.Manifest.permission.READ_PHONE_STATE) == PackageManager.PERMISSION_GRANTED
-                && getSystemService(Context.TELEPHONY_SERVICE) != null)
+                && getSystemService(Context.TELEPHONY_SERVICE) != null
+                && Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) // As of Android API level 29 the IMEI permission is restricted to system apps only.
         {
             TelephonyManager telephonyManager = (TelephonyManager) getSystemService(Context.TELEPHONY_SERVICE);
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O)
@@ -350,7 +364,8 @@ public class NetworkSurveyActivity extends AppCompatActivity implements
             }
         } else
         {
-            Toast.makeText(getApplicationContext(), "Error: Could not get the device IMEI", Toast.LENGTH_SHORT).show();
+            Log.w(LOG_TAG, "Could not get the device IMEI");
+            //Toast.makeText(getApplicationContext(), "Could not get the device IMEI", Toast.LENGTH_SHORT).show();
             deviceId = Settings.Secure.getString(getContentResolver(), Settings.Secure.ANDROID_ID);
         }
 
@@ -471,10 +486,10 @@ public class NetworkSurveyActivity extends AppCompatActivity implements
 
     /**
      * Gets the {@link TelephonyManager}, and then creates the
-     * {@link SurveyRecordWriter} instance.  If something goes wrong getting access to the manager
-     * then the {@link SurveyRecordWriter} instance will not be created.
+     * {@link SurveyRecordProcessor} instance.  If something goes wrong getting access to the manager
+     * then the {@link SurveyRecordProcessor} instance will not be created.
      */
-    private void initializeSurveyRecordWriter()
+    private void initializeSurveyRecordScanning()
     {
         final TelephonyManager telephonyManager = (TelephonyManager) getSystemService(Context.TELEPHONY_SERVICE);
 
@@ -484,18 +499,7 @@ public class NetworkSurveyActivity extends AppCompatActivity implements
             return;
         }
 
-        surveyRecordWriter = new SurveyRecordWriter(gpsListener, this, deviceId);
-
-        /* Seems like this approach was a bust on my phone.  It was rarely called
-        final PhoneStateListener listener = new PhoneStateListener()
-        {
-            @Override
-            public void onCellInfoChanged(List<CellInfo> cellInfo)
-            {
-                surveyRecordWriter.logSurveyRecord(cellInfo);
-            }
-        };
-        telephonyManager.listen(listener, PhoneStateListener.LISTEN_CELL_INFO);*/
+        surveyRecordProcessor = new SurveyRecordProcessor(gpsListener, this, deviceId);
 
         /*if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.P)
         {
@@ -531,7 +535,28 @@ public class NetworkSurveyActivity extends AppCompatActivity implements
             {
                 try
                 {
-                    surveyRecordWriter.logSurveyRecord(telephonyManager.getAllCellInfo());
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q)
+                    {
+                        final TelephonyManager.CellInfoCallback cellInfoCallback = new TelephonyManager.CellInfoCallback()
+                        {
+                            @Override
+                            public void onCellInfo(@NonNull List<CellInfo> cellInfo)
+                            {
+                                surveyRecordProcessor.onCellInfoUpdate(cellInfo, CalculationUtils.getNetworkType(telephonyManager.getNetworkType()));
+                            }
+
+                            @Override
+                            public void onError(int errorCode, @Nullable Throwable detail)
+                            {
+                                super.onError(errorCode, detail);
+                                Log.w(LOG_TAG, "Received an error from the Telephony Manager when requesting a cell info update; errorCode=" + errorCode, detail);
+                            }
+                        };
+                        telephonyManager.requestCellInfoUpdate(AsyncTask.THREAD_POOL_EXECUTOR, cellInfoCallback);
+                    } else
+                    {
+                        surveyRecordProcessor.onCellInfoUpdate(telephonyManager.getAllCellInfo(), CalculationUtils.getNetworkType(telephonyManager.getNetworkType()));
+                    }
 
                     handler.postDelayed(this, NETWORK_DATA_REFRESH_RATE_MS);
                 } catch (SecurityException e)
@@ -577,7 +602,7 @@ public class NetworkSurveyActivity extends AppCompatActivity implements
             Runtime runtime = Runtime.getRuntime();
             Process ipAddressProcess = runtime.exec("/system/bin/ping -c 1 8.8.8.8");
             int exitValue = ipAddressProcess.waitFor();
-            Log.d(LOG_TAG, "Ping Exit Value: " + exitValue);
+            if (Log.isLoggable(LOG_TAG, Log.VERBOSE)) Log.v(LOG_TAG, "Ping Exit Value: " + exitValue);
         } catch (Exception e)
         {
             Log.e(LOG_TAG, "An exception occurred trying to send out a ping ", e);
@@ -649,7 +674,7 @@ public class NetworkSurveyActivity extends AppCompatActivity implements
     /**
      * Starts or stops writing the log file based on the current state.
      */
-    private synchronized void toggleLogging()
+    private void toggleLogging()
     {
         new ToggleLoggingTask().executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
     }
@@ -661,19 +686,16 @@ public class NetworkSurveyActivity extends AppCompatActivity implements
     {
         protected Boolean doInBackground(Void... nothing)
         {
-            if (surveyRecordWriter != null)
+            if (surveyRecordLogger != null)
             {
-                final boolean logging = !loggingEnabled.getAndSet(!loggingEnabled.get());
-                try
+                synchronized (loggingEnabled)
                 {
-                    surveyRecordWriter.enableLogging(logging);
-                } catch (Exception e)
-                {
-                    Log.e(LOG_TAG, "Could not setup the logging file database.  No logging will occur", e);
-                    return null;
-                }
+                    final boolean enabled = surveyRecordLogger.enableLogging(!loggingEnabled.get());
 
-                return logging;
+                    loggingEnabled.set(enabled);
+
+                    return enabled;
+                }
             }
 
             return null;

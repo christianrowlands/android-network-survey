@@ -18,6 +18,7 @@
     <string name="sector_id_initial">Sector ID: </string>
     <string name="earfcn_initial">EARFCN: </string>
     <string name="pci_initial">PCI: </string>
+    <string name="bandwidth_initial">Bandwidth: </string>
 
     <string name="latitude_initial">Latitude: </string>
     <string name="longitude_initial">Longitude: </string>
@@ -40,6 +41,7 @@
     <string name="pci_label">PCI: %1$s</string>
     <string name="pss_label">PSS: </string>
     <string name="sss_label">SSS: </string>
+    <string name="bandwidth_label">Bandwidth: %1$s</string>
 
     <string name="latitude_label">Latitude: %1$s</string>
     <string name="longitude_label">Longitude: %1$s</string>
