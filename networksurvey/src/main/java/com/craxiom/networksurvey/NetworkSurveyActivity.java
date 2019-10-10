@@ -537,7 +537,7 @@ public class NetworkSurveyActivity extends AppCompatActivity implements
                 {
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q)
                     {
-                        telephonyManager.requestCellInfoUpdate(AsyncTask.THREAD_POOL_EXECUTOR, new TelephonyManager.CellInfoCallback()
+                        final TelephonyManager.CellInfoCallback cellInfoCallback = new TelephonyManager.CellInfoCallback()
                         {
                             @Override
                             public void onCellInfo(@NonNull List<CellInfo> cellInfo)
@@ -551,7 +551,8 @@ public class NetworkSurveyActivity extends AppCompatActivity implements
                                 super.onError(errorCode, detail);
                                 Log.w(LOG_TAG, "Received an error from the Telephony Manager when requesting a cell info update; errorCode=" + errorCode, detail);
                             }
-                        });
+                        };
+                        telephonyManager.requestCellInfoUpdate(AsyncTask.THREAD_POOL_EXECUTOR, cellInfoCallback);
                     } else
                     {
                         surveyRecordProcessor.onCellInfoUpdate(telephonyManager.getAllCellInfo(), CalculationUtils.getNetworkType(telephonyManager.getNetworkType()));

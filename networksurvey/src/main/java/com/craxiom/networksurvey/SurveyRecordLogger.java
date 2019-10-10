@@ -456,7 +456,7 @@ public class SurveyRecordLogger implements ISurveyRecordListener
                     if (umtsRecord.hasMnc()) setShortValue(row, UmtsMessageConstants.MNC_COLUMN, umtsRecord.getMnc().getValue());
                     if (umtsRecord.hasLac()) setIntValue(row, UmtsMessageConstants.LAC_COLUMN, umtsRecord.getLac().getValue());
                     if (umtsRecord.hasCi()) setIntValue(row, UmtsMessageConstants.CELL_ID_COLUMN, umtsRecord.getCi().getValue());
-                    if (umtsRecord.hasUarfcn()) setIntValue(row, UmtsMessageConstants.UARFCN_COLUMN, umtsRecord.getUarfcn().getValue());
+                    if (umtsRecord.hasUarfcn()) setShortValue(row, UmtsMessageConstants.UARFCN_COLUMN, umtsRecord.getUarfcn().getValue());
                     if (umtsRecord.hasPsc()) setShortValue(row, UmtsMessageConstants.PSC_COLUMN, umtsRecord.getPsc().getValue());
                     if (umtsRecord.hasSignalStrength()) row.setValue(UmtsMessageConstants.SIGNAL_STRENGTH_COLUMN, umtsRecord.getSignalStrength().getValue());
                     if (umtsRecord.hasRscp()) row.setValue(UmtsMessageConstants.RSCP_COLUMN, umtsRecord.getRscp().getValue());
