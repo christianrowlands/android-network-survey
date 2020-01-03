@@ -44,7 +44,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
  */
 class SurveyRecordProcessor
 {
-    private static final SimpleDateFormat formatFilenameFriendlyTime = new SimpleDateFormat("YYYYMMdd-HHmmss", Locale.US);
+    public static final SimpleDateFormat FORMAT_FILENAME_FRIENDLY_TIME = new SimpleDateFormat("yyyyMMdd-HHmmss", Locale.US);
     private static final String MISSION_ID_PREFIX = "NS ";
 
     private final String LOG_TAG = SurveyRecordProcessor.class.getSimpleName();
@@ -65,7 +65,7 @@ class SurveyRecordProcessor
         this.networkSurveyActivity = networkSurveyActivity;
 
         this.deviceId = deviceId;
-        missionId = MISSION_ID_PREFIX + deviceId + " " + formatFilenameFriendlyTime.format(System.currentTimeMillis());
+        missionId = MISSION_ID_PREFIX + deviceId + " " + FORMAT_FILENAME_FRIENDLY_TIME.format(System.currentTimeMillis());
     }
 
     void registerSurveyRecordListener(ISurveyRecordListener surveyRecordListener)

@@ -18,10 +18,8 @@ import com.craxiom.networksurvey.messaging.LteRecord;
 import com.craxiom.networksurvey.messaging.UmtsRecord;
 
 import java.sql.SQLException;
-import java.text.SimpleDateFormat;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Locale;
 import java.util.function.BiConsumer;
 
 import mil.nga.geopackage.GeoPackage;
@@ -57,7 +55,6 @@ public class SurveyRecordLogger implements ISurveyRecordListener
     private static final String LOG_DIRECTORY_NAME = "NetworkSurveyData";
     private static final String FILE_NAME_PREFIX = "craxiom-";
     private static final long WGS84_SRS = 4326;
-    private static final SimpleDateFormat formatFilenameFriendlyTime = new SimpleDateFormat("YYYYMMdd-HHmmss", Locale.US);
 
     private static final String LOG_TAG = SurveyRecordLogger.class.getSimpleName();
 
@@ -578,6 +575,6 @@ public class SurveyRecordLogger implements ISurveyRecordListener
     {
         return Environment.getExternalStoragePublicDirectory(
                 Environment.DIRECTORY_DOWNLOADS) + "/" + LOG_DIRECTORY_NAME + "/" +
-                FILE_NAME_PREFIX + formatFilenameFriendlyTime.format(System.currentTimeMillis()) + ".gpkg";
+                FILE_NAME_PREFIX + SurveyRecordProcessor.FORMAT_FILENAME_FRIENDLY_TIME.format(System.currentTimeMillis()) + ".gpkg";
     }
 }
