@@ -4,4 +4,8 @@
     <color name="colorPrimaryDark">#303F9F</color>
     <color name="colorAccent">#FF4081</color>
     <color name="colorCardDark">#161212</color>
+
+    <color name="connectionStatusDisconnected">#A21919</color>
+    <color name="connectionStatusConnecting">#FF6D00</color>
+    <color name="connectionStatusConnected">#00912F</color>
 </resources>

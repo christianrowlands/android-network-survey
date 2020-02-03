@@ -2,8 +2,24 @@
 <PreferenceScreen xmlns:app="http://schemas.android.com/apk/res-auto">
 
     <SwitchPreferenceCompat
+        app:defaultValue="false"
+        app:icon="@drawable/ic_action_bar_logging"
         app:key="autoStartLogging"
-        app:title="Auto Start Logging"
-        app:summary="Automatically starts logging to a file on app opening" />
+        app:summaryOff="@string/auto_start_logging_summary_off"
+        app:summaryOn="@string/auto_start_logging_summary_on"
+        app:title="@string/auto_start_logging_title" />
+
+    <!--    <PreferenceCategory
+            app:key="connectionConfig"
+            app:title="@string/server_config_title">
+
+            <EditTextPreference
+                app:defaultValue="10"
+                app:dialogMessage="@string/connection_timeout_description"
+                app:key="connectionTimeout"
+                app:title="@string/connection_timeout_title"
+                app:useSimpleSummaryProvider="true" />
+
+        </PreferenceCategory>-->
 
 </PreferenceScreen>

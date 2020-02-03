@@ -3,14 +3,11 @@
     <attr name="cardStyle" format="reference" />
 
     <!-- Base application theme. -->
-    <style name="NetworkSurveyTheme" parent="Theme.AppCompat.NoActionBar">
-        <item name="android:colorBackgroundFloating">@color/colorCardDark</item>
-        <item name="cardStyle">@style/CardViewTheme</item>
-    </style>
-
-    <style name="NetworkSurveyTheme.NoActionBar">
+    <style name="NetworkSurveyTheme" parent="Theme.AppCompat.DayNight">
         <item name="windowActionBar">false</item>
         <item name="windowNoTitle">true</item>
+        <item name="android:colorBackgroundFloating">@color/colorCardDark</item>
+        <item name="cardStyle">@style/CardViewTheme</item>
     </style>
 
     <style name="CardViewTheme" parent="CardView.Dark">
@@ -21,17 +18,20 @@
         <item name="contentPadding">3dp</item>
     </style>
 
-    <style name="NetworkSurveyTheme.AppBarOverlay" parent="ThemeOverlay.AppCompat.Dark.ActionBar" />
-
-    <style name="NetworkSurveyTheme.PopupOverlay" parent="ThemeOverlay.AppCompat.Dark" />
-
-    <style name="LabelText" parent="TextAppearance.AppCompat">
-        <item name="android:textSize">18sp</item>
-        <item name="android:textColor">#c2c1c1</item>
-    </style>
+    <style name="NetworkSurveyTheme.PopupOverlay" parent="ThemeOverlay.MaterialComponents.Dark" />
 
     <style name="TitleText" parent="TextAppearance.AppCompat">
         <item name="android:textSize">22sp</item>
+        <item name="android:textColor">#c2c1c1</item>
+    </style>
+
+    <style name="StatusText" parent="TextAppearance.AppCompat">
+        <item name="android:textSize">20sp</item>
+        <item name="android:textColor">#FFFFFF</item>
+    </style>
+
+    <style name="LabelText" parent="TextAppearance.AppCompat">
+        <item name="android:textSize">18sp</item>
         <item name="android:textColor">#c2c1c1</item>
     </style>
 

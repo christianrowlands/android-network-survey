@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<navigation xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/nav_graph"
+    app:startDestination="@id/main_fragment">
+
+    <fragment
+        android:id="@+id/main_fragment"
+        android:name="com.craxiom.networksurvey.fragments.NetworkDetailsFragment"
+        android:label="Network Details"
+        tools:layout="@layout/fragment_network_details">
+        <action
+            android:id="@+id/action_main_to_cellular_calculators"
+            app:destination="@id/calculator_fragment" />
+        <action
+            android:id="@+id/action_main_to_connection"
+            app:destination="@id/connection_fragment" />
+        <action
+            android:id="@+id/action_main_to_settings"
+            app:destination="@id/settings_fragment" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/calculator_fragment"
+        android:name="com.craxiom.networksurvey.fragments.CalculatorFragment"
+        android:label="Network Details"
+        tools:layout="@layout/fragment_calculator" />
+
+    <fragment
+        android:id="@+id/connection_fragment"
+        android:name="com.craxiom.networksurvey.fragments.GrpcConnectionFragment"
+        android:label="Server Connection"
+        tools:layout="@layout/fragment_grpc_connection" />
+
+    <fragment
+        android:id="@+id/settings_fragment"
+        android:name="com.craxiom.networksurvey.fragments.SettingsFragment"
+        android:label="Settings" />
+
+</navigation>
