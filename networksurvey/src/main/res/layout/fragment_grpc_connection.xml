@@ -5,17 +5,6 @@
     android:orientation="vertical"
     android:paddingTop="4dp">
 
-    <TextView
-        android:id="@+id/grpcConnectionDescription"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginStart="6dp"
-        android:layout_marginTop="6dp"
-        android:layout_marginEnd="6dp"
-        android:layout_marginBottom="20dp"
-        android:text="@string/grpc_connection_description"
-        android:textAppearance="@style/DescriptionText" />
-
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -109,5 +98,16 @@
         </LinearLayout>
 
     </androidx.cardview.widget.CardView>
+
+    <TextView
+        android:id="@+id/grpcConnectionDescription"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="6dp"
+        android:layout_marginTop="6dp"
+        android:layout_marginEnd="6dp"
+        android:layout_marginBottom="20dp"
+        android:text="@string/grpc_connection_description"
+        android:textAppearance="@style/DescriptionText" />
 
 </LinearLayout>

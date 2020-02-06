@@ -8,14 +8,14 @@ buildscript {
     }
     dependencies {
         classpath 'com.android.tools.build:gradle:3.5.3'
-        classpath "androidx.navigation:navigation-safe-args-gradle-plugin:2.2.0"
+        classpath "androidx.navigation:navigation-safe-args-gradle-plugin:2.2.1"
     }
 }
 
 ext {
     androidVersion = '28.0.0'
     grpcVersion = '1.21.0'
-    networkSurveyMessagingVersion = '0.0.1'
+    networkSurveyMessagingVersion = '0.0.2'
     navigationVersion = '2.2.0'
 }
 

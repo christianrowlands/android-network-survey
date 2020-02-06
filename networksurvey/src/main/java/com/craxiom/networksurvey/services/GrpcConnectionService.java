@@ -12,7 +12,6 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.ServiceConnection;
 import android.location.Location;
-import android.location.LocationManager;
 import android.os.AsyncTask;
 import android.os.BatteryManager;
 import android.os.Binder;
@@ -31,15 +30,18 @@ import com.craxiom.networksurvey.listeners.IDeviceStatusListener;
 import com.craxiom.networksurvey.listeners.IGrpcConnectionStateListener;
 import com.craxiom.networksurvey.listeners.ISurveyRecordListener;
 import com.craxiom.networksurvey.messaging.CdmaRecord;
+import com.craxiom.networksurvey.messaging.CdmaSurveyResponse;
 import com.craxiom.networksurvey.messaging.ConnectionReply;
 import com.craxiom.networksurvey.messaging.ConnectionRequest;
 import com.craxiom.networksurvey.messaging.DeviceStatus;
 import com.craxiom.networksurvey.messaging.GsmRecord;
+import com.craxiom.networksurvey.messaging.GsmSurveyResponse;
 import com.craxiom.networksurvey.messaging.LteRecord;
 import com.craxiom.networksurvey.messaging.LteSurveyResponse;
 import com.craxiom.networksurvey.messaging.NetworkSurveyStatusGrpc;
 import com.craxiom.networksurvey.messaging.StatusUpdateReply;
 import com.craxiom.networksurvey.messaging.UmtsRecord;
+import com.craxiom.networksurvey.messaging.UmtsSurveyResponse;
 import com.craxiom.networksurvey.messaging.WirelessSurveyGrpc;
 
 import java.lang.ref.WeakReference;
@@ -64,6 +66,7 @@ import io.grpc.stub.StreamObserver;
  */
 public class GrpcConnectionService extends Service implements IDeviceStatusListener, ISurveyRecordListener
 {
+    public static final long RECONNECTION_ATTEMPT_BACKOFF_TIME = 10_000L;
     private static final String LOG_TAG = GrpcConnectionService.class.getSimpleName();
     private static final int DEVICE_STATUS_REFRESH_RATE_MS = 15_000;
 
@@ -83,15 +86,27 @@ public class GrpcConnectionService extends Service implements IDeviceStatusListe
     private GpsListener gpsListener;
 
     private final BlockingQueue<DeviceStatus> deviceStatusBlockingQueue = new LinkedBlockingQueue<>();
+    private final BlockingQueue<GsmRecord> gsmRecordBlockingQueue = new LinkedBlockingQueue<>();
+    private final BlockingQueue<CdmaRecord> cdmaRecordBlockingQueue = new LinkedBlockingQueue<>();
+    private final BlockingQueue<UmtsRecord> umtsRecordBlockingQueue = new LinkedBlockingQueue<>();
     private final BlockingQueue<LteRecord> lteRecordBlockingQueue = new LinkedBlockingQueue<>();
 
     private final List<IGrpcConnectionStateListener> grpcConnectionListeners = new CopyOnWriteArrayList<>();
 
     private GrpcTask<DeviceStatus, StatusUpdateReply> deviceStatusGrpcTask;
+    private GrpcTask<GsmRecord, GsmSurveyResponse> gsmRecordGrpcTask;
+    private GrpcTask<CdmaRecord, CdmaSurveyResponse> cdmaRecordGrpcTask;
+    private GrpcTask<UmtsRecord, UmtsSurveyResponse> umtsRecordGrpcTask;
     private GrpcTask<LteRecord, LteSurveyResponse> lteRecordGrpcTask;
     private ManagedChannel channel;
-    private CountDownLatch channelFinishLatch;
     private final AtomicInteger deviceStatusGeneratorTaskId = new AtomicInteger();
+
+    /**
+     * It is sometimes hard to know if we should attempt a reconnect to the remote gRPC server based on the gRPC
+     * connection failure messages.  Therefore, we always assume that we should keep attempting to reconnect unless
+     * the user has specifically toggled the connection to off via the UI toggle switch.
+     */
+    private volatile boolean userCanceled = false;
 
     private String host = null;
     private Integer portNumber = null;
@@ -180,19 +195,19 @@ public class GrpcConnectionService extends Service implements IDeviceStatusListe
             {
                 final String host = intent.getStringExtra(HOST_PARAMETER);
                 final int port = intent.getIntExtra(PORT_PARAMETER, -1);
-                final String deviceName = intent.getStringExtra(HOST_PARAMETER);
+                final String deviceName = intent.getStringExtra(DEVICE_NAME_PARAMETER);
                 if (host == null || port == -1 || deviceName == null)
                 {
                     Log.e(LOG_TAG, "A valid hostname {} and port {} is required to connect to a gRPC server: " + host + ":" + port);
                 } else
                 {
-                    addConnectionNotification();
-                    connectToGrpcServer(host, port, deviceName);
+                    userCanceled = false;
+                    connectToGrpcServer(host, port, deviceName, false);
                 }
             } else if (ACTION_DISCONNECT.equals(action))
             {
-                removeConnectionNotification();
-                disconnectFromGrpcServer();
+                userCanceled = true;
+                disconnectFromGrpcServer(true);
             }
         }
 
@@ -212,9 +227,7 @@ public class GrpcConnectionService extends Service implements IDeviceStatusListe
 
         if (surveyServiceConnection != null) getApplicationContext().unbindService(surveyServiceConnection);
 
-        // FIXME Also need to notify the NetworkSurveyService so that it can stop itself if the connection service is the last usage
-
-        disconnectFromGrpcServer();
+        disconnectFromGrpcServer(true);
 
         super.onDestroy();
     }
@@ -228,19 +241,19 @@ public class GrpcConnectionService extends Service implements IDeviceStatusListe
     @Override
     public void onGsmSurveyRecord(GsmRecord gsmRecord)
     {
-        // TODO Add support for streaming these records
+        if (isConnected() && gsmRecord != null) gsmRecordBlockingQueue.add(gsmRecord);
     }
 
     @Override
     public void onCdmaSurveyRecord(CdmaRecord cdmaRecord)
     {
-        // TODO Add support for streaming these records
+        if (isConnected() && cdmaRecord != null) cdmaRecordBlockingQueue.add(cdmaRecord);
     }
 
     @Override
     public void onUmtsSurveyRecord(UmtsRecord umtsRecord)
     {
-        // TODO Add support for streaming these records
+        if (isConnected() && umtsRecord != null) umtsRecordBlockingQueue.add(umtsRecord);
     }
 
     @Override
@@ -270,48 +283,26 @@ public class GrpcConnectionService extends Service implements IDeviceStatusListe
     }
 
     /**
-     * Create and add the persistent notification indicating there is an active connection to the remote gRPC server.
+     * Synchronized because the connection state can be updated from multiple threads.
+     *
+     * @return True if the gRPC connection is active, false otherwise.
      */
-    private void addConnectionNotification()
+    synchronized boolean isConnected()
     {
-        final NotificationManager notificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
-        if (notificationManager == null) return;
-
-        Intent notificationIntent = new Intent(this, NetworkSurveyActivity.class);
-        PendingIntent pendingIntent = PendingIntent.getActivity(this, 0, notificationIntent, PendingIntent.FLAG_UPDATE_CURRENT);
-
-        Notification notification = new Notification.Builder(this, NetworkSurveyConstants.NOTIFICATION_CHANNEL_ID)
-                .setContentTitle(getText(R.string.connection_notification_title))
-                .setContentText(getText(R.string.connection_notification_text))
-                .setOngoing(true)
-                .setSmallIcon(R.drawable.connection_icon)
-                .setContentIntent(pendingIntent)
-                .setTicker(getText(R.string.connection_notification_title))
-                .build();
-
-        startForeground(NetworkSurveyConstants.CONNECTION_NOTIFICATION_ID, notification);
-    }
-
-    /**
-     * Removes the persistent notification.
-     */
-    private void removeConnectionNotification()
-    {
-        final NotificationManager notificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
-        if (notificationManager == null) return;
-
-        notificationManager.cancel(NetworkSurveyConstants.CONNECTION_NOTIFICATION_ID);
+        return connectionState == ConnectionState.CONNECTED;
     }
 
     /**
      * Connect to a gRPC server by establishing the {@link ManagedChannel}, and then kick off the appropriate tasks so
      * that streaming is started.
      *
-     * @param host       The Host Name or IP Address of the remote gRPC server.
-     * @param port       The Port Number of the gRPC server.
-     * @param deviceName The name that represents this device to the gRPC server.
+     * @param host               The Host Name or IP Address of the remote gRPC server.
+     * @param port               The Port Number of the gRPC server.
+     * @param deviceName         The name that represents this device to the gRPC server.
+     * @param reconnectOnFailure True if the a reconnection should be performed if the connection fails, false if
+     *                           only a single connection attempt should be made.
      */
-    public void connectToGrpcServer(String host, int port, String deviceName)
+    private void connectToGrpcServer(String host, int port, String deviceName, boolean reconnectOnFailure)
     {
         try
         {
@@ -337,63 +328,73 @@ public class GrpcConnectionService extends Service implements IDeviceStatusListe
                 {
                     final String errorMessage = "Unable to connect to the Server";
                     Log.w(LOG_TAG, errorMessage);
-                    //networkSurveyActivity.runOnUiThread(() -> Toast.makeText(networkSurveyActivity, errorMessage, Toast.LENGTH_SHORT).show());
                     uiThreadHandler.post(() -> Toast.makeText(applicationContext, errorMessage, Toast.LENGTH_SHORT).show());
-                    shutdownChannel();
+                    final boolean attemptReconnection = !userCanceled && reconnectOnFailure;
+                    disconnectFromGrpcServer(!attemptReconnection);
+                    if (attemptReconnection)
+                    {
+                        uiThreadHandler.postDelayed(this::reconnectToGrpcServer, RECONNECTION_ATTEMPT_BACKOFF_TIME);
+                    }
                     return;
                 }
-
-                /*channel.notifyWhenStateChanged(ConnectivityState.CONNECTING, () -> {
-                    Log.i(LOG_TAG, "Channel CONNECTING state notification");
-                    notifyConnectionStateChange(ConnectionState.CONNECTING);
-                });
-                channel.notifyWhenStateChanged(ConnectivityState.SHUTDOWN, () -> {
-                    Log.i(LOG_TAG, "Channel SHUTDOWN state notification");
-                    notifyConnectionStateChange(ConnectionState.DISCONNECTED);
-                });*/
 
                 notifyConnectionStateChange(ConnectionState.CONNECTED);
                 final String message = "Connected to the Server!";
                 Log.i(LOG_TAG, message);
                 uiThreadHandler.post(() -> Toast.makeText(applicationContext, message, Toast.LENGTH_SHORT).show());
 
-                channelFinishLatch = new CountDownLatch(2);
-
                 deviceStatusGrpcTask = new GrpcTask<>(this, deviceStatusBlockingQueue,
                         statusUpdateReplyStreamObserver -> NetworkSurveyStatusGrpc.newStub(channel).statusUpdate(statusUpdateReplyStreamObserver));
                 deviceStatusGrpcTask.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
 
+                final WirelessSurveyGrpc.WirelessSurveyStub wirelessSurveyStub = WirelessSurveyGrpc.newStub(channel);
+
+                gsmRecordGrpcTask = new GrpcTask<>(this, gsmRecordBlockingQueue,
+                        wirelessSurveyStub::streamGsmSurvey);
+                gsmRecordGrpcTask.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
+
+                cdmaRecordGrpcTask = new GrpcTask<>(this, cdmaRecordBlockingQueue,
+                        wirelessSurveyStub::streamCdmaSurvey);
+                cdmaRecordGrpcTask.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
+
+                umtsRecordGrpcTask = new GrpcTask<>(this, umtsRecordBlockingQueue,
+                        wirelessSurveyStub::streamUmtsSurvey);
+                umtsRecordGrpcTask.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
+
                 lteRecordGrpcTask = new GrpcTask<>(this, lteRecordBlockingQueue,
-                        lteRecordReplyStreamObserver -> WirelessSurveyGrpc.newStub(channel).streamLteSurvey(lteRecordReplyStreamObserver));
+                        wirelessSurveyStub::streamLteSurvey);
                 lteRecordGrpcTask.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
             }).start();
-        } catch (Exception e)
+        } catch (Throwable e)
         {
             Log.e(LOG_TAG, "An exception occurred when trying to connect to the remote gRPC server", e);
-            shutdownChannel();
+            disconnectFromGrpcServer(!reconnectOnFailure);
+
+            if (reconnectOnFailure)
+            {
+                uiThreadHandler.postDelayed(this::reconnectToGrpcServer, RECONNECTION_ATTEMPT_BACKOFF_TIME);
+            }
         }
     }
 
     /**
      * Disconnect from the gRPC server if it is connected.  If it is not connected, then do nothing.
+     *
+     * @param stopService True if the service should be stopped after disconnecting from the gRCP server, false otherwise.
      */
-    public void disconnectFromGrpcServer()
+    private void disconnectFromGrpcServer(boolean stopService)
     {
         notifyConnectionStateChange(ConnectionState.DISCONNECTING);
 
         if (deviceStatusGrpcTask != null) deviceStatusGrpcTask.cancel(true);
-
+        if (gsmRecordGrpcTask != null) gsmRecordGrpcTask.cancel(true);
+        if (cdmaRecordGrpcTask != null) cdmaRecordGrpcTask.cancel(true);
+        if (umtsRecordGrpcTask != null) umtsRecordGrpcTask.cancel(true);
         if (lteRecordGrpcTask != null) lteRecordGrpcTask.cancel(true);
 
-        shutdownChannel();
-    }
+        shutdownChannel(!stopService);
 
-    /**
-     * @return True if the gRPC connection is active, false otherwise.
-     */
-    boolean isConnected()
-    {
-        return connectionState == ConnectionState.CONNECTED;
+        if (stopService) stopService();
     }
 
     /**
@@ -434,8 +435,6 @@ public class GrpcConnectionService extends Service implements IDeviceStatusListe
      */
     private void initializeDeviceStatusReport(int taskId)
     {
-        // TODO Figure out where the right place to call this is checkLocationProvider();
-
         final int handlerTaskId = taskId;
 
         final Handler handler = new Handler();
@@ -500,13 +499,68 @@ public class GrpcConnectionService extends Service implements IDeviceStatusListe
     }
 
     /**
-     * Called whenever a gRPC Task finishes executing.  Once all of the tasks are finished, then the channel is shutdown.
+     * Create and add the persistent notification indicating the current connection state to the remote gRPC server.
+     * <p>
+     * If the connection is disconnected, then the notification is removed.
+     * <p>
+     * This method is synchronized since we get notified of connection state changes from multiple threads.
      */
-    private void onGrpcTaskFinished()
+    private synchronized void updateConnectionNotification()
     {
-        channelFinishLatch.countDown();
+        // Do nothing if the connection is in a disconnecting state.  We will update the notification once the full disconnection happens.
+        if (connectionState == ConnectionState.DISCONNECTING) return;
 
-        if (channelFinishLatch.getCount() <= 0) shutdownChannel();
+        if (connectionState == ConnectionState.DISCONNECTED)
+        {
+            Log.i(LOG_TAG, "Removing the connection notification");
+
+            final NotificationManager notificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+            //noinspection ConstantConditions
+            notificationManager.cancel(NetworkSurveyConstants.CONNECTION_NOTIFICATION_ID);
+
+            return;
+        }
+
+        Intent notificationIntent = new Intent(this, NetworkSurveyActivity.class);
+        PendingIntent pendingIntent = PendingIntent.getActivity(this, 0, notificationIntent, PendingIntent.FLAG_UPDATE_CURRENT);
+
+        final CharSequence notificationText = getNotificationText();
+
+        Notification notification = new Notification.Builder(this, NetworkSurveyConstants.NOTIFICATION_CHANNEL_ID)
+                .setContentTitle(getText(R.string.connection_notification_title))
+                .setContentText(notificationText)
+                .setOngoing(true)
+                .setSmallIcon(R.drawable.connection_icon)
+                .setContentIntent(pendingIntent)
+                .setTicker(getText(R.string.connection_notification_title))
+                .build();
+
+        startForeground(NetworkSurveyConstants.CONNECTION_NOTIFICATION_ID, notification);
+    }
+
+    /**
+     * Synchronized because the connection state variable can be updated from multiple threads.
+     *
+     * @return A String that can be used in the Android notification to represent the current connection state.
+     */
+    private synchronized CharSequence getNotificationText()
+    {
+        final CharSequence notificationText;
+        switch (connectionState)
+        {
+            case CONNECTING:
+                notificationText = getText(R.string.connection_notification_connecting_text);
+                break;
+
+            case CONNECTED:
+                notificationText = getText(R.string.connection_notification_active_text);
+                break;
+
+            default:
+                notificationText = "";
+        }
+
+        return notificationText;
     }
 
     /**
@@ -519,28 +573,19 @@ public class GrpcConnectionService extends Service implements IDeviceStatusListe
             Log.e(LOG_TAG, "Can't reconnect to the last gRPC server because the host or port is null");
         }
 
-        connectToGrpcServer(host, portNumber, deviceName);
+        connectToGrpcServer(host, portNumber, deviceName, true);
     }
 
     /**
-     * Closes the gRPC managed channel, unregisters the location listener, and stops this service.  After calling this
-     * method this service should no longer be used.
+     * Closes the gRPC managed channel, and handles any channel cleanup.
+     *
+     * @param willReconnect True if an attempt is going to be made to reestablish the channel.  False if the connection
+     *                      is going to remain disconnected.
      */
-    private void shutdownChannel()
+    private void shutdownChannel(boolean willReconnect)
     {
-        if (gpsListener != null)
-        {
-            final LocationManager locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
-            if (locationManager != null) locationManager.removeUpdates(gpsListener);
-        }
-
         // Increment the device status task ID so that the handler will stop on the next running
         deviceStatusGeneratorTaskId.getAndIncrement();
-
-        if (networkSurveyService != null)
-        {
-            networkSurveyService.unregisterSurveyRecordListener(this);
-        }
 
         if (channel != null)
         {
@@ -556,9 +601,22 @@ public class GrpcConnectionService extends Service implements IDeviceStatusListe
             }
         }
 
-        notifyConnectionStateChange(ConnectionState.DISCONNECTED);
+        if (!willReconnect) notifyConnectionStateChange(ConnectionState.DISCONNECTED);
+    }
+
+    /**
+     * Closes the gRPC managed channel, unregisters the location listener, and stops this service.  After calling this
+     * method this service should no longer be used.
+     */
+    private void stopService()
+    {
+        if (networkSurveyService != null)
+        {
+            networkSurveyService.unregisterSurveyRecordListener(this);
+        }
 
         Log.i(LOG_TAG, "About to call stopSelf for the GrpcConnectionService");
+
         stopSelf();
     }
 
@@ -575,6 +633,8 @@ public class GrpcConnectionService extends Service implements IDeviceStatusListe
         }
 
         connectionState = newConnectionState;
+
+        updateConnectionNotification();
 
         for (IGrpcConnectionStateListener listener : grpcConnectionListeners)
         {
@@ -641,12 +701,14 @@ public class GrpcConnectionService extends Service implements IDeviceStatusListe
                     public void onError(Throwable t)
                     {
                         failed = t;
+                        Log.e(LOG_TAG, "An error occurred in a gRPC stream", t);
                         finishLatch.countDown();
                     }
 
                     @Override
                     public void onCompleted()
                     {
+                        Log.i(LOG_TAG, "Completed a gRPC stream");
                         finishLatch.countDown();
                     }
                 };
@@ -655,7 +717,7 @@ public class GrpcConnectionService extends Service implements IDeviceStatusListe
 
                 try
                 {
-                    while (finishLatch.getCount() != 0)
+                    while (finishLatch.getCount() != 0 && !isCancelled())
                     {
                         final GrpcConnectionService grpcConnectionService = serviceWeakReference.get();
                         if (grpcConnectionService == null)
@@ -695,27 +757,23 @@ public class GrpcConnectionService extends Service implements IDeviceStatusListe
                 }
 
                 return failed != null;
-            } catch (Exception e)
+            } catch (Throwable e)
             {
                 Log.e(LOG_TAG, "The connection to the remote gRPC server closed with an exception", e);
-                return false;  // TODO Should this be true so that a reconnection happens?
+                return true;
             }
         }
 
         @Override
         protected void onPostExecute(Boolean reconnect)
         {
-            Log.i(LOG_TAG, "Completed a gRPC Task, should reconnect= " + reconnect);
+            Log.i(LOG_TAG, "Completed a gRPC Task, should reconnect= " + !userCanceled);
             GrpcConnectionService grpcConnectionService = serviceWeakReference.get();
             if (grpcConnectionService != null)
             {
-                if (reconnect)
-                {
-                    grpcConnectionService.reconnectToGrpcServer();
-                } else
-                {
-                    grpcConnectionService.onGrpcTaskFinished();
-                }
+                grpcConnectionService.disconnectFromGrpcServer(userCanceled);
+
+                if (!userCanceled) grpcConnectionService.reconnectToGrpcServer();
             }
         }
     }

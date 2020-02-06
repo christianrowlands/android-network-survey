@@ -131,6 +131,10 @@ public class NetworkSurveyService extends Service
     public void unregisterSurveyRecordListener(ISurveyRecordListener surveyRecordListener)
     {
         if (surveyRecordProcessor != null) surveyRecordProcessor.unregisterSurveyRecordListener(surveyRecordListener);
+
+        // Check to see if this service is still needed.  It is still needed if we are either logging, the UI is
+        // visible, or a server connection is active.
+        if (!loggingEnabled.get() && !surveyRecordProcessor.isBeingUsed()) stopSelf();
     }
 
     /**
@@ -167,7 +171,6 @@ public class NetworkSurveyService extends Service
             final boolean enabled = surveyRecordLogger.enableLogging(!loggingEnabled.get());
             loggingEnabled.set(enabled);
             updateServiceNotification();
-            if (enabled) initializePing();
             return loggingEnabled.get();
         }
     }
@@ -175,6 +178,33 @@ public class NetworkSurveyService extends Service
     public boolean isLoggingEnabled()
     {
         return loggingEnabled.get();
+    }
+
+    /**
+     * Sends out a ping to the Google DNS IP Address (8.8.8.8) every n seconds.  This allow the data connection to
+     * stay alive, which will enable us to get Timing Advance information.
+     */
+    public void initializePing()
+    {
+        final Handler handler = new Handler();
+
+        handler.postDelayed(new Runnable()
+        {
+            public void run()
+            {
+                try
+                {
+                    if (!loggingEnabled.get()) return;
+
+                    sendPing();
+
+                    handler.postDelayed(this, PING_RATE_MS);
+                } catch (Exception e)
+                {
+                    Log.e(LOG_TAG, "An exception occurred trying to send out a ping", e);
+                }
+            }
+        }, NETWORK_DATA_REFRESH_RATE_MS);
     }
 
     /**
@@ -300,33 +330,6 @@ public class NetworkSurveyService extends Service
                 } catch (SecurityException e)
                 {
                     Log.e(LOG_TAG, "Could not get the required permissions to get the network details", e);
-                }
-            }
-        }, NETWORK_DATA_REFRESH_RATE_MS);
-    }
-
-    /**
-     * Sends out a ping to the Google DNS IP Address (8.8.8.8) every n seconds.  This allow the LTE data connection to stay alive, which will enable us to get
-     * Timing Advance information.
-     */
-    private void initializePing()
-    {
-        final Handler handler = new Handler();
-
-        handler.postDelayed(new Runnable()
-        {
-            public void run()
-            {
-                try
-                {
-                    if (!loggingEnabled.get()) return;
-
-                    sendPing();
-
-                    handler.postDelayed(this, PING_RATE_MS);
-                } catch (Exception e)
-                {
-                    Log.e(LOG_TAG, "An exception occurred trying to send out a ping", e);
                 }
             }
         }, NETWORK_DATA_REFRESH_RATE_MS);

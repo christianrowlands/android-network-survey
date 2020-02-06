@@ -60,7 +60,7 @@ public class GrpcConnectionFragment extends Fragment implements View.OnClickList
     private EditText grpcPortNumberEdit;
     private EditText deviceNameEdit;
 
-    private GrpcConnectionService grpcConnectionService;  // TODO Make this a weak reference
+    private GrpcConnectionService grpcConnectionService;
 
     private String host = "";
     private Integer portNumber = NetworkSurveyConstants.DEFAULT_GRPC_PORT;
@@ -368,6 +368,7 @@ public class GrpcConnectionFragment extends Fragment implements View.OnClickList
         public void onServiceDisconnected(final ComponentName name)
         {
             Log.i(LOG_TAG, name + " service disconnected");
+            grpcConnectionService = null;
         }
     }
 }

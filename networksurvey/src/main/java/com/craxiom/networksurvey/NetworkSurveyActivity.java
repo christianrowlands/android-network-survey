@@ -7,6 +7,7 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.content.res.ColorStateList;
 import android.graphics.Color;
@@ -15,6 +16,7 @@ import android.location.LocationProvider;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.IBinder;
+import android.preference.PreferenceManager;
 import android.provider.Settings;
 import android.util.Log;
 import android.view.Menu;
@@ -57,6 +59,7 @@ public class NetworkSurveyActivity extends AppCompatActivity
 
     private SurveyServiceConnection surveyServiceConnection;
     private NetworkSurveyService networkSurveyService;
+    private boolean turnOnLoggingOnNextServiceConnection = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState)
@@ -98,6 +101,8 @@ public class NetworkSurveyActivity extends AppCompatActivity
     @Override
     protected void onResume()
     {
+        checkLocationProvider();
+
         // Bind to the survey service
         final Context applicationContext = getApplicationContext();
         final Intent startServiceIntent = new Intent(applicationContext, NetworkSurveyService.class);
@@ -137,20 +142,7 @@ public class NetworkSurveyActivity extends AppCompatActivity
     @Override
     protected void onDestroy()
     {
-        // TODO Figure out any logging cleanup
-
         super.onDestroy();
-    }
-
-    /**
-     * Overriding this method so that logging is not stopped if the user hits the back button from the main activity.
-     * <p>
-     * The desired behavior when hitting the back button is to be the same as hitting the home button.
-     */
-    @Override
-    public void onBackPressed()
-    {
-        moveTaskToBack(true);
     }
 
     @Override
@@ -173,10 +165,9 @@ public class NetworkSurveyActivity extends AppCompatActivity
                     if (grantResults[index] == PackageManager.PERMISSION_GRANTED)
                     {
                         // FIXME We need to track which permissions are granted and then take action accordingly
-                        //surveyRecordLogger = new SurveyRecordLogger(this);
-                        //initializeSurveyRecordScanning();
 
-                        // TODO toggleLogging();
+                        final SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
+                        turnOnLoggingOnNextServiceConnection = preferences.getBoolean(NetworkSurveyConstants.PROPERTY_AUTO_START_LOGGING_KEY, false);
                     } else
                     {
                         Log.w(LOG_TAG, "The ACCESS_FINE_LOCATION Permission was denied.");
@@ -232,7 +223,8 @@ public class NetworkSurveyActivity extends AppCompatActivity
     }
 
     /**
-     * Sets up the GPS location provider.  If GPS location is not enabled on this device, then the settings UI is opened so the user can enable it.
+     * Sets up the GPS location provider.  If GPS location is not enabled on this device, then the settings UI is opened
+     * so the user can enable it.
      */
     private void checkLocationProvider()
     {
@@ -255,9 +247,9 @@ public class NetworkSurveyActivity extends AppCompatActivity
             try
             {
                 startActivity(myIntent);
-            } catch (Exception ex)
+            } catch (Exception e)
             {
-                Log.e(LOG_TAG, "An exception occured trying to start the location activity: ", ex);
+                Log.e(LOG_TAG, "An exception occurred trying to start the location activity: ", e);
             }
         }
     }
@@ -268,6 +260,24 @@ public class NetworkSurveyActivity extends AppCompatActivity
     private void toggleLogging()
     {
         new ToggleLoggingTask().executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
+
+        if (networkSurveyService.isLoggingEnabled()) networkSurveyService.initializePing();
+    }
+
+    /**
+     * Updates the logging button based on specified logging state.
+     *
+     * @param enabled True if logging is currently enabled, false otherwise.
+     */
+    private void updateLoggingButton(boolean enabled)
+    {
+        final String menuTitle = getString(enabled ? R.string.action_stop_logging : R.string.action_start_logging);
+        startStopLoggingMenuItem.setTitle(menuTitle);
+
+        ColorStateList colorStateList = null;
+        if (enabled) colorStateList = ColorStateList.valueOf(Color.GREEN);
+
+        startStopLoggingMenuItem.setIconTintList(colorStateList);
     }
 
     /**
@@ -294,21 +304,10 @@ public class NetworkSurveyActivity extends AppCompatActivity
                 return;
             }
 
-            final String menuTitle = getString(enabled ? R.string.action_stop_logging : R.string.action_start_logging);
-            startStopLoggingMenuItem.setTitle(menuTitle);
+            updateLoggingButton(enabled);
 
-            final String message;
-            ColorStateList colorStateList = null;
-            if (enabled)
-            {
-                message = getString(R.string.logging_start_toast);
-                colorStateList = ColorStateList.valueOf(Color.GREEN);
-            } else
-            {
-                message = getString(R.string.logging_stop_toast);
-            }
+            final String message = getString(enabled ? R.string.logging_start_toast : R.string.logging_stop_toast);
 
-            startStopLoggingMenuItem.setIconTintList(colorStateList);
             Toast.makeText(getApplicationContext(), message, Toast.LENGTH_SHORT).show();
         }
     }
@@ -325,6 +324,18 @@ public class NetworkSurveyActivity extends AppCompatActivity
             final NetworkSurveyService.SurveyServiceBinder binder = (NetworkSurveyService.SurveyServiceBinder) iBinder;
             networkSurveyService = binder.getService();
             networkSurveyService.onUiVisible(NetworkSurveyActivity.this);
+
+            final boolean loggingEnabled = networkSurveyService.isLoggingEnabled();
+
+            if (turnOnLoggingOnNextServiceConnection && !loggingEnabled)
+            {
+                toggleLogging();
+            } else
+            {
+                updateLoggingButton(loggingEnabled);
+            }
+
+            turnOnLoggingOnNextServiceConnection = false;
         }
 
         @Override

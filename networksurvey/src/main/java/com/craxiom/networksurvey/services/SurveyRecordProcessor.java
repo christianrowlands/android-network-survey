@@ -39,7 +39,8 @@ import com.google.protobuf.Int32Value;
 import java.text.SimpleDateFormat;
 import java.util.List;
 import java.util.Locale;
-import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.Set;
+import java.util.concurrent.CopyOnWriteArraySet;
 
 /**
  * Responsible for consuming {@link CellInfo} objects, converting them to records specific to a protocol, and then notifying any listeners
@@ -55,7 +56,7 @@ public class SurveyRecordProcessor
     private final String LOG_TAG = SurveyRecordProcessor.class.getSimpleName();
 
     private final GpsListener gpsListener;
-    private final List<ISurveyRecordListener> surveyRecordListeners = new CopyOnWriteArrayList<>();
+    private final Set<ISurveyRecordListener> surveyRecordListeners = new CopyOnWriteArraySet<>();
     private NetworkSurveyActivity networkSurveyActivity;
 
     private final String deviceId;
@@ -98,6 +99,15 @@ public class SurveyRecordProcessor
     synchronized void onUiHidden()
     {
         networkSurveyActivity = null;
+    }
+
+    /**
+     * @return True if either the UI or a listener needs this survey record processor.  False if the UI is hidden and
+     * there are not any listeners.
+     */
+    synchronized boolean isBeingUsed()
+    {
+        return networkSurveyActivity != null || !surveyRecordListeners.isEmpty();
     }
 
     /**
@@ -238,18 +248,11 @@ public class SurveyRecordProcessor
         if (mnc != Integer.MAX_VALUE && mnc != 0) recordBuilder.setMnc(Int32Value.newBuilder().setValue(mnc).build());
         if (lac != Integer.MAX_VALUE && lac != 0) recordBuilder.setLac(Int32Value.newBuilder().setValue(lac).build());
         if (cid != Integer.MAX_VALUE && cid != -1) recordBuilder.setCi(Int32Value.newBuilder().setValue(cid).build());
-        if (arfcn != Integer.MAX_VALUE && arfcn != 0)
-        {
-            recordBuilder.setArfcn(Int32Value.newBuilder().setValue(arfcn).build());
-        }
-        if (bsic != Integer.MAX_VALUE && bsic != 0)
-        {
-            recordBuilder.setBsic(Int32Value.newBuilder().setValue(bsic).build());
-        }
-        if (signalStrength != Integer.MAX_VALUE)
-        {
-            recordBuilder.setSignalStrength(FloatValue.newBuilder().setValue(signalStrength).build());
-        }
+
+        recordBuilder.setArfcn(Int32Value.newBuilder().setValue(arfcn).build());
+        recordBuilder.setBsic(Int32Value.newBuilder().setValue(bsic).build());
+        recordBuilder.setSignalStrength(FloatValue.newBuilder().setValue(signalStrength).build());
+
         if (timingAdvance != Integer.MAX_VALUE && timingAdvance != -1)
         {
             recordBuilder.setTa(Int32Value.newBuilder().setValue(timingAdvance).build());
@@ -312,11 +315,9 @@ public class SurveyRecordProcessor
         if (sid != Integer.MAX_VALUE) recordBuilder.setSid(Int32Value.newBuilder().setValue(sid).build());
         if (nid != Integer.MAX_VALUE) recordBuilder.setNid(Int32Value.newBuilder().setValue(nid).build());
         if (bsid != Integer.MAX_VALUE) recordBuilder.setBsid(Int32Value.newBuilder().setValue(bsid).build());
-        if (signalStrength != Integer.MAX_VALUE)
-        {
-            recordBuilder.setSignalStrength(FloatValue.newBuilder().setValue(signalStrength).build());
-        }
-        if (ecio != Integer.MAX_VALUE) recordBuilder.setEcio(FloatValue.newBuilder().setValue(ecioFloat).build());
+
+        recordBuilder.setSignalStrength(FloatValue.newBuilder().setValue(signalStrength).build());
+        recordBuilder.setEcio(FloatValue.newBuilder().setValue(ecioFloat).build());
 
         return recordBuilder.build();
     }
@@ -374,12 +375,10 @@ public class SurveyRecordProcessor
         if (mnc != Integer.MAX_VALUE) recordBuilder.setMnc(Int32Value.newBuilder().setValue(mnc).build());
         if (lac != Integer.MAX_VALUE) recordBuilder.setLac(Int32Value.newBuilder().setValue(lac).build());
         if (ci != Integer.MAX_VALUE) recordBuilder.setCi(Int32Value.newBuilder().setValue(ci).build());
-        if (uarfcn != Integer.MAX_VALUE) recordBuilder.setUarfcn(Int32Value.newBuilder().setValue(uarfcn).build());
-        if (psc != Integer.MAX_VALUE) recordBuilder.setPsc(Int32Value.newBuilder().setValue(psc).build());
-        if (signalStrength != Integer.MAX_VALUE)
-        {
-            recordBuilder.setSignalStrength(FloatValue.newBuilder().setValue(signalStrength).build());
-        }
+
+        recordBuilder.setUarfcn(Int32Value.newBuilder().setValue(uarfcn).build());
+        recordBuilder.setPsc(Int32Value.newBuilder().setValue(psc).build());
+        recordBuilder.setSignalStrength(FloatValue.newBuilder().setValue(signalStrength).build());
 
         return recordBuilder.build();
     }
@@ -439,9 +438,11 @@ public class SurveyRecordProcessor
         if (mnc != Integer.MAX_VALUE) lteRecordBuilder.setMnc(Int32Value.newBuilder().setValue(mnc).build());
         if (tac != Integer.MAX_VALUE) lteRecordBuilder.setTac(Int32Value.newBuilder().setValue(tac).build());
         if (ci != Integer.MAX_VALUE) lteRecordBuilder.setCi(Int32Value.newBuilder().setValue(ci).build());
-        if (earfcn != Integer.MAX_VALUE) lteRecordBuilder.setEarfcn(Int32Value.newBuilder().setValue(earfcn).build());
-        if (pci != Integer.MAX_VALUE) lteRecordBuilder.setPci(Int32Value.newBuilder().setValue(pci).build());
-        if (rsrp != Integer.MAX_VALUE) lteRecordBuilder.setRsrp(FloatValue.newBuilder().setValue(rsrp).build());
+
+        lteRecordBuilder.setEarfcn(Int32Value.newBuilder().setValue(earfcn).build());
+        lteRecordBuilder.setPci(Int32Value.newBuilder().setValue(pci).build());
+        lteRecordBuilder.setRsrp(FloatValue.newBuilder().setValue(rsrp).build());
+
         if (rsrq != Integer.MAX_VALUE) lteRecordBuilder.setRsrq(FloatValue.newBuilder().setValue(rsrq).build());
         if (timingAdvance != Integer.MAX_VALUE)
         {
@@ -506,13 +507,13 @@ public class SurveyRecordProcessor
      */
     private boolean validateGsmFields(int arfcn, int bsic, int signalStrength)
     {
-        if (arfcn == Integer.MAX_VALUE)
+        if (arfcn == Integer.MAX_VALUE || arfcn == -1)
         {
             Log.v(LOG_TAG, "The ARFCN is required to build a GSM Survey Record.");
             return false;
         }
 
-        if (bsic == Integer.MAX_VALUE)
+        if (bsic == Integer.MAX_VALUE || bsic == -1)
         {
             Log.v(LOG_TAG, "The BSIC is required to build a GSM Survey Record.");
             return false;
@@ -556,13 +557,13 @@ public class SurveyRecordProcessor
      */
     private boolean validateUmtsFields(int uarfcn, int psc, int signalStrength)
     {
-        if (uarfcn == Integer.MAX_VALUE)
+        if (uarfcn == Integer.MAX_VALUE || uarfcn == -1)
         {
             Log.v(LOG_TAG, "The UARFCN is required to build a UMTS Survey Record.");
             return false;
         }
 
-        if (psc == Integer.MAX_VALUE)
+        if (psc == Integer.MAX_VALUE || psc == -1)
         {
             Log.v(LOG_TAG, "The PSC is required to build a UMTS Survey Record.");
             return false;
@@ -584,13 +585,13 @@ public class SurveyRecordProcessor
      */
     private boolean validateLteFields(int earfcn, int pci, int rsrp)
     {
-        if (earfcn == Integer.MAX_VALUE)
+        if (earfcn == Integer.MAX_VALUE || earfcn == -1)
         {
             Log.v(LOG_TAG, "The EARFCN is required to build an LTE Survey Record.");
             return false;
         }
 
-        if (pci == Integer.MAX_VALUE)
+        if (pci == Integer.MAX_VALUE || pci == -1)
         {
             Log.v(LOG_TAG, "The PCI is required to build an LTE Survey Record.");
             return false;
