@@ -1,9 +1,10 @@
 # Network Survey Android App
 
 The Network Survey Android App provides a basic survey capability for LTE networks.  In its current state, it can be 
-used to examine the network details of the current LTE serving cell.
+used to examine the network details of the current LTE serving cell, and log GSM, CDMA, UMTS, and LTE records to a 
+GeoPackage file.  The App also supports connecting to a remote gRPC server and live streaming the LTE records.
 
-![App Screenshot](screenshots/network_survey_screenshot_v0.0.1_blur.png "v0.0.1 of the Network Survey App")
+![App Screenshot](screenshots/network_survey_screenshot.png "The Network Survey App Main Screen")
 
 ## Getting Started
 

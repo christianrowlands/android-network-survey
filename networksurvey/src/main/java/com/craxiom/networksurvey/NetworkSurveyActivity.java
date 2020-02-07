@@ -168,6 +168,17 @@ public class NetworkSurveyActivity extends AppCompatActivity implements
         super.onDestroy();
     }
 
+    /**
+     * Overriding this method so that logging is not stopped if the user hits the back button from the main activity.
+     * <p>
+     * The desired behavior when hitting the back button is to be the same as hitting the home button.
+     */
+    @Override
+    public void onBackPressed()
+    {
+        moveTaskToBack(true);
+    }
+
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults)
     {

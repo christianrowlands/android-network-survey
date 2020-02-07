@@ -140,6 +140,7 @@ public class GrpcConnectionController implements IDeviceStatusListener, ISurveyR
                     Log.w(LOG_TAG, errorMessage);
                     networkSurveyActivity.runOnUiThread(() -> Toast.makeText(networkSurveyActivity, errorMessage, Toast.LENGTH_SHORT).show());
                     shutdownChannel();
+                    notifyConnectionStateChange(ConnectionState.DISCONNECTED);
                     return;
                 }
 
