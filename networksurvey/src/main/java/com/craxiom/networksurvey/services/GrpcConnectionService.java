@@ -21,9 +21,10 @@ import android.os.Looper;
 import android.util.Log;
 import android.widget.Toast;
 
+import androidx.navigation.NavDeepLinkBuilder;
+
 import com.craxiom.networksurvey.ConnectionState;
 import com.craxiom.networksurvey.GpsListener;
-import com.craxiom.networksurvey.NetworkSurveyActivity;
 import com.craxiom.networksurvey.R;
 import com.craxiom.networksurvey.constants.NetworkSurveyConstants;
 import com.craxiom.networksurvey.listeners.IDeviceStatusListener;
@@ -326,7 +327,7 @@ public class GrpcConnectionService extends Service implements IDeviceStatusListe
 
                 if (!startConnection())
                 {
-                    final String errorMessage = "Unable to connect to the Server";
+                    final String errorMessage = "Unable to connect to the Network Survey Server";
                     Log.w(LOG_TAG, errorMessage);
                     uiThreadHandler.post(() -> Toast.makeText(applicationContext, errorMessage, Toast.LENGTH_SHORT).show());
                     final boolean attemptReconnection = !userCanceled && reconnectOnFailure;
@@ -339,7 +340,7 @@ public class GrpcConnectionService extends Service implements IDeviceStatusListe
                 }
 
                 notifyConnectionStateChange(ConnectionState.CONNECTED);
-                final String message = "Connected to the Server!";
+                final String message = "Connected to the Network Survey Server!";
                 Log.i(LOG_TAG, message);
                 uiThreadHandler.post(() -> Toast.makeText(applicationContext, message, Toast.LENGTH_SHORT).show());
 
@@ -384,7 +385,7 @@ public class GrpcConnectionService extends Service implements IDeviceStatusListe
      */
     private void disconnectFromGrpcServer(boolean stopService)
     {
-        notifyConnectionStateChange(ConnectionState.DISCONNECTING);
+        if (stopService) notifyConnectionStateChange(ConnectionState.DISCONNECTING);
 
         if (deviceStatusGrpcTask != null) deviceStatusGrpcTask.cancel(true);
         if (gsmRecordGrpcTask != null) gsmRecordGrpcTask.cancel(true);
@@ -521,8 +522,10 @@ public class GrpcConnectionService extends Service implements IDeviceStatusListe
             return;
         }
 
-        Intent notificationIntent = new Intent(this, NetworkSurveyActivity.class);
-        PendingIntent pendingIntent = PendingIntent.getActivity(this, 0, notificationIntent, PendingIntent.FLAG_UPDATE_CURRENT);
+        PendingIntent pendingIntent = new NavDeepLinkBuilder(this)
+                .setGraph(R.navigation.nav_graph)
+                .setDestination(R.id.connection_fragment)
+                .createPendingIntent();
 
         final CharSequence notificationText = getNotificationText();
 
@@ -739,7 +742,7 @@ public class GrpcConnectionService extends Service implements IDeviceStatusListe
                     }
                 } catch (InterruptedException ignore)
                 {
-                    Log.i(LOG_TAG, "The Connection was interrupted, likely due to the user stopping the connection");
+                    Log.i(LOG_TAG, "The gRPC task was interrupted");
                 } catch (RuntimeException e)
                 {
                     // Cancel RPC
