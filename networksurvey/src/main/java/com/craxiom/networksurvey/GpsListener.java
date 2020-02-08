@@ -19,14 +19,7 @@ public class GpsListener implements LocationListener
     private static final String LOG_TAG = GpsListener.class.getSimpleName();
     private static final float MIN_DISTANCE_ACCURACY = 32f; // This is the number that WiGLE Wi-Fi uses.
 
-    private NetworkSurveyActivity networkSurveyActivity;
-
     private Location latestLocation;
-
-    GpsListener(NetworkSurveyActivity networkSurveyActivity)
-    {
-        this.networkSurveyActivity = networkSurveyActivity;
-    }
 
     @Override
     public void onLocationChanged(Location location)
@@ -54,7 +47,7 @@ public class GpsListener implements LocationListener
         if (LocationManager.GPS_PROVIDER.equals(provider)) latestLocation = null;
     }
 
-    Location getLatestLocation()
+    public Location getLatestLocation()
     {
         return latestLocation;
     }

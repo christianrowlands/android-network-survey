@@ -4,8 +4,7 @@
     package="com.craxiom.networksurvey">
 
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
-    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
-    <!-- <uses-permission android:name="android.permission.MODIFY_PHONE_STATE" /> -->
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" /> <!-- <uses-permission android:name="android.permission.MODIFY_PHONE_STATE" /> -->
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
     <uses-permission android:name="android.permission.READ_PHONE_STATE" /> <!-- For the IMEI / MEID -->
     <uses-permission android:name="android.permission.INTERNET" /> <!-- To connect to a remote gRPC server -->
@@ -36,11 +35,15 @@
         </activity>
 
         <service
-            android:name=".NetworkSurveyService"
+            android:name=".services.NetworkSurveyService"
             android:description="@string/network_survey_service_description"
             android:exported="false"
             android:foregroundServiceType="location" />
 
+        <service
+            android:name=".services.GrpcConnectionService"
+            android:description="@string/connection_service_description"
+            android:exported="false" />
     </application>
 
 </manifest>

@@ -61,21 +61,44 @@
     <string name="grpc_connection_title">Server Connection</string>
     <string name="grpc_connection_description">Here you can connect to a remote server.  Once connected, all future survey results will be streamed to the server.
         \n\nSteps for Connecting:
-        \n1. Enter in the Server IP Address or Hostname
-        \n2. Enter in the Server Port Number (Default: 2621)
-        \n3. Click the Connect Button</string>
+        \n\n1. Enter in the following information:
+        \n     a. The Server IP Address or Hostname
+        \n     b. The Server Port Number (Default: 2621)
+        \n     c. A name that is used to identify this device on the server
+        \n\n2. Click the connect toggle switch</string>
     <string name="grpc_server_host_hint">Server Address</string>
     <string name="gprc_server_port_hint">Port Number</string>
+    <string name="device_name_hint">Device Name</string>
 
     <string name="status_disconnected">Disconnected</string>
     <string name="status_connecting">Connecting …</string>
     <string name="status_connected">Connected</string>
+    <string name="status_disconnecting">Disconnecting …</string>
+
+    <string name="cellular_details">Cellular Details</string>
+    <string name="cellular_calculators">Cellular Calculators</string>
+    <string name="settings">Settings</string>
 
     <string name="network_survey_service_description">The Network Survey Service runs when the app needs to do work in the background such as write to the log file or stream data out over active connection</string>
+    <string name="connection_service_description">The Connection Service handles managing the connection to a remote server to stream Network Survey data</string>
+
     <string name="notification_channel_name">Network Survey</string>
     <string name="service_notification_title">GPS Active</string>
     <string name="logging_notification_title">Network Survey Logging Active</string>
     <string name="logging_notification_text">Writing to the GeoPackage log file</string>
-    <string name="connection_notification_title">Network Survey Server Connected</string>
-    <string name="connection_notification_text">The Connection is Active</string>
+    <string name="connection_notification_title">Network Survey Server Connection</string>
+    <string name="connection_notification_active_text">The Connection is Active</string>
+    <string name="connection_notification_connecting_text">Attempting to Connect</string>
+    <string name="title_activity_connection">ConnectionActivity</string>
+
+    <!-- User Preference Constants -->
+    <string name="auto_start_logging_title">Auto Start Logging</string>
+    <string name="auto_start_logging_summary_on">Logging will be started upon app opening</string>
+    <string name="auto_start_logging_summary_off">Logging will only start when manually enabled</string>
+
+    <string name="server_config_title">Connection Config</string>
+    <string name="connection_timeout_title">Connection Timeout</string>
+    <string name="connection_timeout_description">The timeout in seconds when trying to establish a new connection</string>
+
+
 </resources>

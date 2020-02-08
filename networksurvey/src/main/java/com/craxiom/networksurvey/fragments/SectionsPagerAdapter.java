@@ -1,10 +1,12 @@
 package com.craxiom.networksurvey.fragments;
 
+import android.util.Log;
+
+import androidx.annotation.NonNull;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
 import androidx.fragment.app.FragmentPagerAdapter;
-import android.util.Log;
-import com.craxiom.networksurvey.GrpcConnectionController;
+
 import com.craxiom.networksurvey.NetworkSurveyActivity;
 
 /**
@@ -18,17 +20,16 @@ public class SectionsPagerAdapter extends FragmentPagerAdapter
     private static final String LOG_TAG = SectionsPagerAdapter.class.getSimpleName();
 
     private final NetworkSurveyActivity networkSurveyActivity;
-    private final GrpcConnectionController grpcConnectionController;
 
     private NetworkDetailsFragment networkDetailsFragment;
 
-    public SectionsPagerAdapter(FragmentManager fragmentManager, NetworkSurveyActivity networkSurveyActivity, GrpcConnectionController grpcConnectionController)
+    public SectionsPagerAdapter(FragmentManager fragmentManager, NetworkSurveyActivity networkSurveyActivity)
     {
-        super(fragmentManager);
+        super(fragmentManager, FragmentPagerAdapter.BEHAVIOR_RESUME_ONLY_CURRENT_FRAGMENT);
         this.networkSurveyActivity = networkSurveyActivity;
-        this.grpcConnectionController = grpcConnectionController;
     }
 
+    @NonNull
     @Override
     public Fragment getItem(int position)
     {
@@ -45,10 +46,7 @@ public class SectionsPagerAdapter extends FragmentPagerAdapter
                 return new CalculatorFragment();
 
             case 2:
-                final GrpcConnectionFragment grpcConnectionFragment = new GrpcConnectionFragment();
-                grpcConnectionFragment.setGrpcConnectionController(grpcConnectionController);
-                grpcConnectionFragment.setNetworkSurveyActivity(networkSurveyActivity);
-                return grpcConnectionFragment;
+                return new GrpcConnectionFragment();
         }
 
         Log.wtf(LOG_TAG, "Somehow we are trying to get an item for a tab that does not exist");
@@ -59,7 +57,6 @@ public class SectionsPagerAdapter extends FragmentPagerAdapter
     @Override
     public int getCount()
     {
-        // Show 3 total pages.
         return 3;
     }
 

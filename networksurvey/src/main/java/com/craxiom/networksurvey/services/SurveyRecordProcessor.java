@@ -1,4 +1,4 @@
-package com.craxiom.networksurvey;
+package com.craxiom.networksurvey.services;
 
 import android.annotation.SuppressLint;
 import android.location.Location;
@@ -19,8 +19,13 @@ import android.telephony.TelephonyManager;
 import android.util.Log;
 import android.widget.TextView;
 
+import com.craxiom.networksurvey.CalculationUtils;
+import com.craxiom.networksurvey.GpsListener;
+import com.craxiom.networksurvey.NetworkSurveyActivity;
+import com.craxiom.networksurvey.R;
 import com.craxiom.networksurvey.constants.LteMessageConstants;
 import com.craxiom.networksurvey.constants.NetworkSurveyConstants;
+import com.craxiom.networksurvey.fragments.NetworkDetailsFragment;
 import com.craxiom.networksurvey.listeners.ISurveyRecordListener;
 import com.craxiom.networksurvey.messaging.CdmaRecord;
 import com.craxiom.networksurvey.messaging.GsmRecord;
@@ -34,7 +39,8 @@ import com.google.protobuf.Int32Value;
 import java.text.SimpleDateFormat;
 import java.util.List;
 import java.util.Locale;
-import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.Set;
+import java.util.concurrent.CopyOnWriteArraySet;
 
 /**
  * Responsible for consuming {@link CellInfo} objects, converting them to records specific to a protocol, and then notifying any listeners
@@ -42,7 +48,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
  *
  * @since 0.0.2
  */
-class SurveyRecordProcessor
+public class SurveyRecordProcessor
 {
     public static final SimpleDateFormat FORMAT_FILENAME_FRIENDLY_TIME = new SimpleDateFormat("yyyyMMdd-HHmmss", Locale.US);
     private static final String MISSION_ID_PREFIX = "NS ";
@@ -50,8 +56,8 @@ class SurveyRecordProcessor
     private final String LOG_TAG = SurveyRecordProcessor.class.getSimpleName();
 
     private final GpsListener gpsListener;
-    private final NetworkSurveyActivity networkSurveyActivity;
-    private final List<ISurveyRecordListener> surveyRecordListeners = new CopyOnWriteArrayList<>();
+    private final Set<ISurveyRecordListener> surveyRecordListeners = new CopyOnWriteArraySet<>();
+    private NetworkSurveyActivity networkSurveyActivity;
 
     private final String deviceId;
     private final String missionId;
@@ -59,10 +65,9 @@ class SurveyRecordProcessor
     private int recordNumber = 0;
     private int groupNumber = -1; // This will be incremented to 0 the first time it is used.
 
-    SurveyRecordProcessor(GpsListener gpsListener, NetworkSurveyActivity networkSurveyActivity, String deviceId)
+    SurveyRecordProcessor(GpsListener gpsListener, String deviceId)
     {
         this.gpsListener = gpsListener;
-        this.networkSurveyActivity = networkSurveyActivity;
 
         this.deviceId = deviceId;
         missionId = MISSION_ID_PREFIX + deviceId + " " + FORMAT_FILENAME_FRIENDLY_TIME.format(System.currentTimeMillis());
@@ -76,6 +81,33 @@ class SurveyRecordProcessor
     void unregisterSurveyRecordListener(ISurveyRecordListener surveyRecordListener)
     {
         surveyRecordListeners.remove(surveyRecordListener);
+    }
+
+    /**
+     * Whenever the UI is visible, we need to pass information to it so it can be displayed to the user.
+     *
+     * @param networkSurveyActivity The activity that is now visible to the user.
+     */
+    synchronized void onUiVisible(NetworkSurveyActivity networkSurveyActivity)
+    {
+        this.networkSurveyActivity = networkSurveyActivity;
+    }
+
+    /**
+     * The UI is no longer visible, so don't send any updates to the UI.
+     */
+    synchronized void onUiHidden()
+    {
+        networkSurveyActivity = null;
+    }
+
+    /**
+     * @return True if either the UI or a listener needs this survey record processor.  False if the UI is hidden and
+     * there are not any listeners.
+     */
+    synchronized boolean isBeingUsed()
+    {
+        return networkSurveyActivity != null || !surveyRecordListeners.isEmpty();
     }
 
     /**
@@ -129,7 +161,7 @@ class SurveyRecordProcessor
 
         // We only want to take the time to process a record if we are going to do something with it.  Currently, that means logging,
         // sending to a server, or updating the UI with the latest LTE information.
-        if (!surveyRecordListeners.isEmpty() || (isServingCell && isLteRecord && this.networkSurveyActivity.isNetworkDetailsVisible()))
+        if (!surveyRecordListeners.isEmpty() || (isServingCell && isLteRecord && NetworkDetailsFragment.visible.get()))
         {
             if (isLteRecord)
             {
@@ -216,10 +248,15 @@ class SurveyRecordProcessor
         if (mnc != Integer.MAX_VALUE && mnc != 0) recordBuilder.setMnc(Int32Value.newBuilder().setValue(mnc).build());
         if (lac != Integer.MAX_VALUE && lac != 0) recordBuilder.setLac(Int32Value.newBuilder().setValue(lac).build());
         if (cid != Integer.MAX_VALUE && cid != -1) recordBuilder.setCi(Int32Value.newBuilder().setValue(cid).build());
-        if (arfcn != Integer.MAX_VALUE && arfcn != 0) recordBuilder.setArfcn(Int32Value.newBuilder().setValue(arfcn).build());
-        if (bsic != Integer.MAX_VALUE && bsic != 0) recordBuilder.setBsic(Int32Value.newBuilder().setValue(bsic).build());
-        if (signalStrength != Integer.MAX_VALUE) recordBuilder.setSignalStrength(FloatValue.newBuilder().setValue(signalStrength).build());
-        if (timingAdvance != Integer.MAX_VALUE && timingAdvance != -1) recordBuilder.setTa(Int32Value.newBuilder().setValue(timingAdvance).build());
+
+        recordBuilder.setArfcn(Int32Value.newBuilder().setValue(arfcn).build());
+        recordBuilder.setBsic(Int32Value.newBuilder().setValue(bsic).build());
+        recordBuilder.setSignalStrength(FloatValue.newBuilder().setValue(signalStrength).build());
+
+        if (timingAdvance != Integer.MAX_VALUE && timingAdvance != -1)
+        {
+            recordBuilder.setTa(Int32Value.newBuilder().setValue(timingAdvance).build());
+        }
 
         return recordBuilder.build();
     }
@@ -278,8 +315,9 @@ class SurveyRecordProcessor
         if (sid != Integer.MAX_VALUE) recordBuilder.setSid(Int32Value.newBuilder().setValue(sid).build());
         if (nid != Integer.MAX_VALUE) recordBuilder.setNid(Int32Value.newBuilder().setValue(nid).build());
         if (bsid != Integer.MAX_VALUE) recordBuilder.setBsid(Int32Value.newBuilder().setValue(bsid).build());
-        if (signalStrength != Integer.MAX_VALUE) recordBuilder.setSignalStrength(FloatValue.newBuilder().setValue(signalStrength).build());
-        if (ecio != Integer.MAX_VALUE) recordBuilder.setEcio(FloatValue.newBuilder().setValue(ecioFloat).build());
+
+        recordBuilder.setSignalStrength(FloatValue.newBuilder().setValue(signalStrength).build());
+        recordBuilder.setEcio(FloatValue.newBuilder().setValue(ecioFloat).build());
 
         return recordBuilder.build();
     }
@@ -337,9 +375,10 @@ class SurveyRecordProcessor
         if (mnc != Integer.MAX_VALUE) recordBuilder.setMnc(Int32Value.newBuilder().setValue(mnc).build());
         if (lac != Integer.MAX_VALUE) recordBuilder.setLac(Int32Value.newBuilder().setValue(lac).build());
         if (ci != Integer.MAX_VALUE) recordBuilder.setCi(Int32Value.newBuilder().setValue(ci).build());
-        if (uarfcn != Integer.MAX_VALUE) recordBuilder.setUarfcn(Int32Value.newBuilder().setValue(uarfcn).build());
-        if (psc != Integer.MAX_VALUE) recordBuilder.setPsc(Int32Value.newBuilder().setValue(psc).build());
-        if (signalStrength != Integer.MAX_VALUE) recordBuilder.setSignalStrength(FloatValue.newBuilder().setValue(signalStrength).build());
+
+        recordBuilder.setUarfcn(Int32Value.newBuilder().setValue(uarfcn).build());
+        recordBuilder.setPsc(Int32Value.newBuilder().setValue(psc).build());
+        recordBuilder.setSignalStrength(FloatValue.newBuilder().setValue(signalStrength).build());
 
         return recordBuilder.build();
     }
@@ -399,11 +438,16 @@ class SurveyRecordProcessor
         if (mnc != Integer.MAX_VALUE) lteRecordBuilder.setMnc(Int32Value.newBuilder().setValue(mnc).build());
         if (tac != Integer.MAX_VALUE) lteRecordBuilder.setTac(Int32Value.newBuilder().setValue(tac).build());
         if (ci != Integer.MAX_VALUE) lteRecordBuilder.setCi(Int32Value.newBuilder().setValue(ci).build());
-        if (earfcn != Integer.MAX_VALUE) lteRecordBuilder.setEarfcn(Int32Value.newBuilder().setValue(earfcn).build());
-        if (pci != Integer.MAX_VALUE) lteRecordBuilder.setPci(Int32Value.newBuilder().setValue(pci).build());
-        if (rsrp != Integer.MAX_VALUE) lteRecordBuilder.setRsrp(FloatValue.newBuilder().setValue(rsrp).build());
+
+        lteRecordBuilder.setEarfcn(Int32Value.newBuilder().setValue(earfcn).build());
+        lteRecordBuilder.setPci(Int32Value.newBuilder().setValue(pci).build());
+        lteRecordBuilder.setRsrp(FloatValue.newBuilder().setValue(rsrp).build());
+
         if (rsrq != Integer.MAX_VALUE) lteRecordBuilder.setRsrq(FloatValue.newBuilder().setValue(rsrq).build());
-        if (timingAdvance != Integer.MAX_VALUE) lteRecordBuilder.setTa(Int32Value.newBuilder().setValue(timingAdvance).build());
+        if (timingAdvance != Integer.MAX_VALUE)
+        {
+            lteRecordBuilder.setTa(Int32Value.newBuilder().setValue(timingAdvance).build());
+        }
 
         setBandwidth(lteRecordBuilder, cellIdentity);
 
@@ -463,13 +507,13 @@ class SurveyRecordProcessor
      */
     private boolean validateGsmFields(int arfcn, int bsic, int signalStrength)
     {
-        if (arfcn == Integer.MAX_VALUE)
+        if (arfcn == Integer.MAX_VALUE || arfcn == -1)
         {
             Log.v(LOG_TAG, "The ARFCN is required to build a GSM Survey Record.");
             return false;
         }
 
-        if (bsic == Integer.MAX_VALUE)
+        if (bsic == Integer.MAX_VALUE || bsic == -1)
         {
             Log.v(LOG_TAG, "The BSIC is required to build a GSM Survey Record.");
             return false;
@@ -513,13 +557,13 @@ class SurveyRecordProcessor
      */
     private boolean validateUmtsFields(int uarfcn, int psc, int signalStrength)
     {
-        if (uarfcn == Integer.MAX_VALUE)
+        if (uarfcn == Integer.MAX_VALUE || uarfcn == -1)
         {
             Log.v(LOG_TAG, "The UARFCN is required to build a UMTS Survey Record.");
             return false;
         }
 
-        if (psc == Integer.MAX_VALUE)
+        if (psc == Integer.MAX_VALUE || psc == -1)
         {
             Log.v(LOG_TAG, "The PSC is required to build a UMTS Survey Record.");
             return false;
@@ -541,13 +585,13 @@ class SurveyRecordProcessor
      */
     private boolean validateLteFields(int earfcn, int pci, int rsrp)
     {
-        if (earfcn == Integer.MAX_VALUE)
+        if (earfcn == Integer.MAX_VALUE || earfcn == -1)
         {
             Log.v(LOG_TAG, "The EARFCN is required to build an LTE Survey Record.");
             return false;
         }
 
-        if (pci == Integer.MAX_VALUE)
+        if (pci == Integer.MAX_VALUE || pci == -1)
         {
             Log.v(LOG_TAG, "The PCI is required to build an LTE Survey Record.");
             return false;
@@ -649,7 +693,7 @@ class SurveyRecordProcessor
      */
     private void updateCurrentTechnologyUi(String currentTechnology)
     {
-        if (!networkSurveyActivity.isNetworkDetailsVisible())
+        if (!NetworkDetailsFragment.visible.get())
         {
             Log.v(LOG_TAG, "Skipping updating the Current Technology UI because it is not visible");
             return;
@@ -661,12 +705,26 @@ class SurveyRecordProcessor
             updateUi(LteRecord.getDefaultInstance());
         }
 
-        networkSurveyActivity.runOnUiThread(() -> setText(R.id.current_technology, R.string.current_technology_label, currentTechnology));
+        synchronized (this)
+        {
+            if (networkSurveyActivity != null && NetworkDetailsFragment.visible.get())
+            {
+                networkSurveyActivity.runOnUiThread(() -> setText(R.id.current_technology, R.string.current_technology_label, currentTechnology));
+            }
+        }
     }
 
-    private void updateUi(LteRecord lteSurveyRecord)
+    /**
+     * Updates the UI with the information from the latest survey record.
+     * <p>
+     * This method is synchronized since it uses the network survey activity reference, and that can be added or removed
+     * from a different thread.
+     *
+     * @param lteSurveyRecord The latest LTE serving cell record.
+     */
+    private synchronized void updateUi(LteRecord lteSurveyRecord)
     {
-        if (!networkSurveyActivity.isNetworkDetailsVisible())
+        if (networkSurveyActivity == null || !NetworkDetailsFragment.visible.get())
         {
             Log.v(LOG_TAG, "Skipping updating the Network Details UI because it is not visible");
             return;
@@ -725,13 +783,18 @@ class SurveyRecordProcessor
 
     /**
      * Sets the provided text on the TextView with the provided Text View ID.
+     * <p>
+     * This method is synchronized since it uses the network survey activity reference, and that can be added or removed
+     * from a different thread.
      *
      * @param textViewId       The ID that is used to lookup the TextView.
      * @param stringResourceId The resource ID for the String to populate.
      * @param text             The text to set on the text view.
      */
-    private void setText(int textViewId, int stringResourceId, String text)
+    private synchronized void setText(int textViewId, int stringResourceId, String text)
     {
+        if (networkSurveyActivity == null || !NetworkDetailsFragment.visible.get()) return;
+
         ((TextView) networkSurveyActivity.findViewById(textViewId)).setText(networkSurveyActivity.getString(stringResourceId, text));
     }
 
