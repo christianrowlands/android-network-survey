@@ -24,18 +24,18 @@
     <fragment
         android:id="@+id/calculator_fragment"
         android:name="com.craxiom.networksurvey.fragments.CalculatorFragment"
-        android:label="Network Details"
+        android:label="@string/cellular_calculators"
         tools:layout="@layout/fragment_calculator" />
 
     <fragment
         android:id="@+id/connection_fragment"
         android:name="com.craxiom.networksurvey.fragments.GrpcConnectionFragment"
-        android:label="Server Connection"
+        android:label="@string/grpc_connection_title"
         tools:layout="@layout/fragment_grpc_connection" />
 
     <fragment
         android:id="@+id/settings_fragment"
         android:name="com.craxiom.networksurvey.fragments.SettingsFragment"
-        android:label="Settings" />
+        android:label="@string/settings" />
 
 </navigation>
