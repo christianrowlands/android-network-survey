@@ -118,6 +118,7 @@ public class SurveyRecordLogger implements ISurveyRecordListener
                     loggingEnabled = false;
                     geoPackage.close();
                     geoPackage = null;
+                    return true;
                 }
 
                 return false;

@@ -11,19 +11,16 @@ import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.content.res.ColorStateList;
 import android.graphics.Color;
-import android.location.LocationManager;
-import android.location.LocationProvider;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.IBinder;
-import android.preference.PreferenceManager;
-import android.provider.Settings;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.app.AppCompatDelegate;
 import androidx.core.app.ActivityCompat;
@@ -32,13 +29,12 @@ import androidx.navigation.NavController;
 import androidx.navigation.Navigation;
 import androidx.navigation.ui.AppBarConfiguration;
 import androidx.navigation.ui.NavigationUI;
+import androidx.preference.PreferenceManager;
 
 import com.craxiom.networksurvey.constants.NetworkSurveyConstants;
 import com.craxiom.networksurvey.services.GrpcConnectionService;
 import com.craxiom.networksurvey.services.NetworkSurveyService;
 import com.google.android.material.navigation.NavigationView;
-
-import static android.location.LocationManager.GPS_PROVIDER;
 
 /**
  * The main activity for the Network Survey App.  This app is used to pull LTE Network Survey
@@ -86,31 +82,24 @@ public class NetworkSurveyActivity extends AppCompatActivity
         /*TODO TabLayout tabLayout = findViewById(R.id.sliding_tabs);
         tabLayout.setupWithViewPager(viewPager);*/
 
-        ActivityCompat.requestPermissions(this, new String[]{
-                        Manifest.permission.ACCESS_FINE_LOCATION,
-                        Manifest.permission.WRITE_EXTERNAL_STORAGE,
-                        Manifest.permission.READ_PHONE_STATE},
-                ACCESS_PERMISSION_REQUEST_ID);
-
         final NotificationManager notificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
-        final NotificationChannel channel = new NotificationChannel(NetworkSurveyConstants.NOTIFICATION_CHANNEL_ID,
-                getText(R.string.notification_channel_name), NotificationManager.IMPORTANCE_LOW);
-        notificationManager.createNotificationChannel(channel);
+        if (notificationManager != null)
+        {
+            final NotificationChannel channel = new NotificationChannel(NetworkSurveyConstants.NOTIFICATION_CHANNEL_ID,
+                    getText(R.string.notification_channel_name), NotificationManager.IMPORTANCE_LOW);
+            notificationManager.createNotificationChannel(channel);
+        } else
+        {
+            Log.e(LOG_TAG, "The Notification Manager could not be retrieved to add the Network Suryey notification channel");
+        }
+
+        showPermissionRationaleAndRequestPermissions();
     }
 
     @Override
     protected void onResume()
     {
-        checkLocationProvider();
-
-        // Bind to the survey service
-        final Context applicationContext = getApplicationContext();
-        final Intent startServiceIntent = new Intent(applicationContext, NetworkSurveyService.class);
-        startService(startServiceIntent);
-
-        final Intent serviceIntent = new Intent(applicationContext, NetworkSurveyService.class);
-        final boolean bound = applicationContext.bindService(serviceIntent, surveyServiceConnection, Context.BIND_ABOVE_CLIENT);
-        Log.i(LOG_TAG, "NetworkSurveyService bound in the NetworkSurveyActivity: " + bound);
+        startAndBindToNetworkSurveyService();
 
         super.onResume();
     }
@@ -132,9 +121,9 @@ public class NetworkSurveyActivity extends AppCompatActivity
                 stopService(networkSurveyServiceIntent);
                 stopService(connectionServiceIntent);
             }
-        }
 
-        applicationContext.unbindService(surveyServiceConnection);
+            applicationContext.unbindService(surveyServiceConnection);
+        }
 
         super.onPause();
     }
@@ -164,7 +153,7 @@ public class NetworkSurveyActivity extends AppCompatActivity
                 {
                     if (grantResults[index] == PackageManager.PERMISSION_GRANTED)
                     {
-                        // FIXME We need to track which permissions are granted and then take action accordingly
+                        startAndBindToNetworkSurveyService();
 
                         final SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
                         turnOnLoggingOnNextServiceConnection = preferences.getBoolean(NetworkSurveyConstants.PROPERTY_AUTO_START_LOGGING_KEY, false);
@@ -183,6 +172,9 @@ public class NetworkSurveyActivity extends AppCompatActivity
         // Inflate the menu; this adds items to the action bar if it is present.
         getMenuInflater().inflate(R.menu.menu_network_details, menu);
         startStopLoggingMenuItem = menu.findItem(R.id.action_start_stop_logging);
+
+        if (networkSurveyService != null) updateLoggingButton(networkSurveyService.isLoggingEnabled());
+
         return true;
     }
 
@@ -199,6 +191,62 @@ public class NetworkSurveyActivity extends AppCompatActivity
         }
 
         return super.onOptionsItemSelected(item);
+    }
+
+    /**
+     * Check to see if we should show the rationale for any of the permissions.  If so, then display a dialog that
+     * explains what permissions we need for this app to work properly.
+     * <p>
+     * If we should not show the rationale, then just request the permissions.
+     */
+    private void showPermissionRationaleAndRequestPermissions()
+    {
+        if (ActivityCompat.shouldShowRequestPermissionRationale(this, Manifest.permission.ACCESS_FINE_LOCATION)
+                || ActivityCompat.shouldShowRequestPermissionRationale(this, Manifest.permission.WRITE_EXTERNAL_STORAGE)
+                || ActivityCompat.shouldShowRequestPermissionRationale(this, Manifest.permission.READ_PHONE_STATE))
+        {
+            AlertDialog.Builder alertBuilder = new AlertDialog.Builder(this);
+            alertBuilder.setCancelable(true);
+            alertBuilder.setTitle(getString(R.string.permissions_rationale_title));
+            alertBuilder.setMessage(getText(R.string.permissions_rationale));
+            alertBuilder.setPositiveButton(android.R.string.yes, (dialog, which) -> requestPermissions());
+
+            AlertDialog permissionsExplanationDialog = alertBuilder.create();
+            permissionsExplanationDialog.show();
+        } else
+        {
+            requestPermissions();
+        }
+    }
+
+    /**
+     * Request the permissions needed for this app.
+     */
+    private void requestPermissions()
+    {
+        ActivityCompat.requestPermissions(NetworkSurveyActivity.this, new String[]{
+                        Manifest.permission.ACCESS_FINE_LOCATION,
+                        Manifest.permission.WRITE_EXTERNAL_STORAGE,
+                        Manifest.permission.READ_PHONE_STATE},
+                ACCESS_PERMISSION_REQUEST_ID);
+    }
+
+    private void startAndBindToNetworkSurveyService()
+    {
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED)
+        {
+            Log.w(LOG_TAG, "The ACCESS_FINE_LOCATION permission has not been granted, not starting the service");
+            return;
+        }
+
+        // Start and bind to the survey service
+        final Context applicationContext = getApplicationContext();
+        final Intent startServiceIntent = new Intent(applicationContext, NetworkSurveyService.class);
+        startService(startServiceIntent);
+
+        final Intent serviceIntent = new Intent(applicationContext, NetworkSurveyService.class);
+        final boolean bound = applicationContext.bindService(serviceIntent, surveyServiceConnection, Context.BIND_ABOVE_CLIENT);
+        Log.i(LOG_TAG, "NetworkSurveyService bound in the NetworkSurveyActivity: " + bound);
     }
 
     /**
@@ -223,45 +271,16 @@ public class NetworkSurveyActivity extends AppCompatActivity
     }
 
     /**
-     * Sets up the GPS location provider.  If GPS location is not enabled on this device, then the settings UI is opened
-     * so the user can enable it.
-     */
-    private void checkLocationProvider()
-    {
-        final LocationManager locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
-        final LocationProvider locationProvider = locationManager.getProvider(LocationManager.GPS_PROVIDER);
-        if (locationProvider == null)
-        {
-            final String noGpsMessage = getString(R.string.no_gps_device);
-            Log.w(LOG_TAG, noGpsMessage);
-            Toast.makeText(getApplicationContext(), noGpsMessage, Toast.LENGTH_LONG).show();
-        } else if (!locationManager.isProviderEnabled(GPS_PROVIDER))
-        {
-            // gps exists, but isn't on
-            final String turnOnGpsMessage = getString(R.string.turn_on_gps);
-            Log.w(LOG_TAG, turnOnGpsMessage);
-            Toast.makeText(getApplicationContext(), turnOnGpsMessage, Toast.LENGTH_LONG).show();
-
-            // Allow the user to turn on the GPS
-            final Intent myIntent = new Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS);
-            try
-            {
-                startActivity(myIntent);
-            } catch (Exception e)
-            {
-                Log.e(LOG_TAG, "An exception occurred trying to start the location activity: ", e);
-            }
-        }
-    }
-
-    /**
      * Starts or stops writing the log file based on the current state.
      */
     private void toggleLogging()
     {
         new ToggleLoggingTask().executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
 
-        if (networkSurveyService.isLoggingEnabled()) networkSurveyService.initializePing();
+        if (networkSurveyService != null && networkSurveyService.isLoggingEnabled())
+        {
+            networkSurveyService.initializePing();
+        }
     }
 
     /**
@@ -271,6 +290,8 @@ public class NetworkSurveyActivity extends AppCompatActivity
      */
     private void updateLoggingButton(boolean enabled)
     {
+        if (startStopLoggingMenuItem == null) return;
+
         final String menuTitle = getString(enabled ? R.string.action_stop_logging : R.string.action_start_logging);
         startStopLoggingMenuItem.setTitle(menuTitle);
 
@@ -341,6 +362,7 @@ public class NetworkSurveyActivity extends AppCompatActivity
         @Override
         public void onServiceDisconnected(final ComponentName name)
         {
+            networkSurveyService = null;
             Log.i(LOG_TAG, name + " service disconnected");
         }
     }

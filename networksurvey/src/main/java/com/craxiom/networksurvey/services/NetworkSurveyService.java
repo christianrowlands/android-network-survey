@@ -9,6 +9,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.location.LocationManager;
+import android.location.LocationProvider;
 import android.os.AsyncTask;
 import android.os.Binder;
 import android.os.Build;
@@ -18,6 +19,7 @@ import android.provider.Settings;
 import android.telephony.CellInfo;
 import android.telephony.TelephonyManager;
 import android.util.Log;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -33,6 +35,8 @@ import com.craxiom.networksurvey.listeners.ISurveyRecordListener;
 
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
+
+import static android.location.LocationManager.GPS_PROVIDER;
 
 /**
  * This service is responsible for getting access to the Android {@link TelephonyManager} and periodically getting the
@@ -77,6 +81,8 @@ public class NetworkSurveyService extends Service
     @Override
     public int onStartCommand(Intent intent, int flags, int startId)
     {
+        checkLocationProvider();
+
         return START_REDELIVER_INTENT;
     }
 
@@ -162,16 +168,18 @@ public class NetworkSurveyService extends Service
      * It is possible that an error occurs while trying to enable logging.  In that event false will be returned
      * indicating that logging is still not enabled.
      *
-     * @return The new state of logging.  True if it is enabled, or false if it is disabled.
+     * @return The new state of logging.  True if it is enabled, or false if it is disabled.  Null is returned if the
+     * toggling was unsuccessful.
      */
-    public boolean toggleLogging()
+    public Boolean toggleLogging()
     {
         synchronized (loggingEnabled)
         {
-            final boolean enabled = surveyRecordLogger.enableLogging(!loggingEnabled.get());
-            loggingEnabled.set(enabled);
+            final boolean originalLoggingState = loggingEnabled.get();
+            final boolean successful = surveyRecordLogger.enableLogging(!originalLoggingState);
+            loggingEnabled.set(successful != originalLoggingState);
             updateServiceNotification();
-            return loggingEnabled.get();
+            return successful ? loggingEnabled.get() : null;
         }
     }
 
@@ -208,35 +216,12 @@ public class NetworkSurveyService extends Service
     }
 
     /**
-     * Attempts to get the device's IMEI if the user has granted the permission.  If not, then a default ID it used.
-     *
-     * @return The IMEI if it can be found, otherwise a random UUID
+     * @return The Android ID associated with this device and app.
      */
-    @SuppressWarnings("ConstantConditions")
     @SuppressLint("HardwareIds")
     private String createDeviceId()
     {
-        String deviceId;
-        if (ActivityCompat.checkSelfPermission(getApplicationContext(), android.Manifest.permission.READ_PHONE_STATE) == PackageManager.PERMISSION_GRANTED
-                && getSystemService(Context.TELEPHONY_SERVICE) != null
-                && Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) // As of Android API level 29 the IMEI permission is restricted to system apps only.
-        {
-            TelephonyManager telephonyManager = (TelephonyManager) getSystemService(Context.TELEPHONY_SERVICE);
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O)
-            {
-                deviceId = telephonyManager.getImei();
-            } else
-            {
-                //noinspection deprecation
-                deviceId = telephonyManager.getDeviceId();
-            }
-        } else
-        {
-            Log.w(LOG_TAG, "Could not get the device IMEI");
-            deviceId = Settings.Secure.getString(getContentResolver(), Settings.Secure.ANDROID_ID);
-        }
-
-        return deviceId;
+        return Settings.Secure.getString(getContentResolver(), Settings.Secure.ANDROID_ID);
     }
 
     /**
@@ -246,17 +231,57 @@ public class NetworkSurveyService extends Service
     {
         if (gpsListener != null) return;
 
+        gpsListener = new GpsListener();
+
         if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED)
         {
             return;
         }
 
-        gpsListener = new GpsListener();
+        checkLocationProvider();
 
         final LocationManager locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
         if (locationManager != null)
         {
             locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, (long) NETWORK_DATA_REFRESH_RATE_MS, 0f, gpsListener);
+        }
+    }
+
+    /**
+     * Checks that the location provider is enabled and that the location permission has been granted.  If GPS location
+     * is not enabled on this device, then the settings UI is opened so the user can enable it.
+     */
+    private void checkLocationProvider()
+    {
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED)
+        {
+            Log.w(LOG_TAG, "The ACCESS_FINE_LOCATION permission has not been granted");
+            return;
+        }
+
+        final LocationManager locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
+        final LocationProvider locationProvider = locationManager.getProvider(LocationManager.GPS_PROVIDER);
+        if (locationProvider == null)
+        {
+            final String noGpsMessage = getString(R.string.no_gps_device);
+            Log.w(LOG_TAG, noGpsMessage);
+            Toast.makeText(getApplicationContext(), noGpsMessage, Toast.LENGTH_LONG).show();
+        } else if (!locationManager.isProviderEnabled(GPS_PROVIDER))
+        {
+            // gps exists, but isn't on
+            final String turnOnGpsMessage = getString(R.string.turn_on_gps);
+            Log.w(LOG_TAG, turnOnGpsMessage);
+            Toast.makeText(getApplicationContext(), turnOnGpsMessage, Toast.LENGTH_LONG).show();
+
+            // Allow the user to turn on the GPS
+            final Intent myIntent = new Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS);
+            try
+            {
+                startActivity(myIntent);
+            } catch (Exception e)
+            {
+                Log.e(LOG_TAG, "An exception occurred trying to start the location activity: ", e);
+            }
         }
     }
 

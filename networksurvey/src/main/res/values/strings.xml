@@ -1,7 +1,12 @@
 <resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
     <string name="app_name">Network Survey</string>
 
-    <!--<string name="action_settings">Settings</string>-->
+    <string name="permissions_rationale_title">Network Survey Permissions</string>
+    <string name="permissions_rationale">The Network Survey app requires a few permissions to work.  Denying these permissions will result in the app not functioning properly.
+        \n\n1. <b>Make and Manage Phone Calls</b>:  This app does not make or manage phone calls.  Instead, it needs this permission to get access to the current cellular connection type (e.g. LTE vs UMTS).
+        \n\n2. <b>Access this Device\'s Location</b>:  This app creates a log file which includes the location the cellular record was captured at.
+        \n\n3. <b>Access Photos, Media, and Files on Your Device</b>:  This permission allows the log file to be written.</string>
+
     <string name="action_start_logging">Start Logging</string>
     <string name="action_stop_logging">Stop Logging</string>
 
