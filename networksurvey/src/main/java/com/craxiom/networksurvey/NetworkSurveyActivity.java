@@ -65,6 +65,12 @@ public class NetworkSurveyActivity extends AppCompatActivity
         setContentView(R.layout.activity_network_details);
         setSupportActionBar(findViewById(R.id.toolbar));
 
+        // Install the defaults specified in the XML preferences file, this is only done the first time the app is opened
+        PreferenceManager.setDefaultValues(this, R.xml.preferences, false);
+
+        final SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
+        turnOnLoggingOnNextServiceConnection = preferences.getBoolean(NetworkSurveyConstants.PROPERTY_AUTO_START_LOGGING_KEY, false);
+
         setupNavigation();
 
         // Find the view pager that will allow the user to swipe between fragments
@@ -154,9 +160,6 @@ public class NetworkSurveyActivity extends AppCompatActivity
                     if (grantResults[index] == PackageManager.PERMISSION_GRANTED)
                     {
                         startAndBindToNetworkSurveyService();
-
-                        final SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
-                        turnOnLoggingOnNextServiceConnection = preferences.getBoolean(NetworkSurveyConstants.PROPERTY_AUTO_START_LOGGING_KEY, false);
                     } else
                     {
                         Log.w(LOG_TAG, "The ACCESS_FINE_LOCATION Permission was denied.");
