@@ -13,6 +13,10 @@ public class NetworkSurveyConstants
 
     public static final int DEFAULT_GRPC_PORT = 2621;
 
+    public static final String NOTIFICATION_CHANNEL_ID = "network_survey_notification";
+    public static final int CONNECTION_NOTIFICATION_ID = 3;
+    public static final int LOGGING_NOTIFICATION_ID = 1;
+
     public static final String GPRS = "GRPS";
     public static final String EDGE = "EDGE";
     public static final String UMTS = "UMTS";
@@ -33,4 +37,8 @@ public class NetworkSurveyConstants
     public static final String IWLAN = "IWLAN";
     public static final String LTE_CA = "LTE-CA";
     public static final String NR = "NR";
+
+    // Properties
+    public static final String PROPERTY_AUTO_START_LOGGING_KEY = "autoStartLogging";
+    public static final String PROPERTY_CONNECTION_TIMEOUT_KEY = "connectionTimeout";
 }

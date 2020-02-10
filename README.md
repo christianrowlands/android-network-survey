@@ -27,6 +27,15 @@ Install Android Studio to work on this code.
 
 [The Google Play Listing for this app](https://play.google.com/store/apps/details?id=com.craxiom.networksurvey)
 
-## Authors
+## Changelog
 
-* **Christian Rowlands** - *Initial work* - [Craxiom](https://github.com/craxiom)
+##### 0.0.9 - 2020-01-10
+ * Moved the file logging and connection logic to foreground services to prevent the Android System from stopping them
+ * The connection now supports sending GSM, CDMA, UMTS, and LTE survey records.
+ * Added a navigation drawer and put the calculators and connection in it
+ * Added a settings UI
+ * Other general improvements
+
+## Contact
+
+* **Christian Rowlands** - [Craxiom](https://github.com/christianrowlands)

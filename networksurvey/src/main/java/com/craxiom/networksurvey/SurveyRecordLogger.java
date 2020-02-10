@@ -1,5 +1,6 @@
 package com.craxiom.networksurvey;
 
+import android.content.Context;
 import android.os.Environment;
 import android.os.Handler;
 import android.util.Log;
@@ -16,6 +17,8 @@ import com.craxiom.networksurvey.messaging.GsmRecord;
 import com.craxiom.networksurvey.messaging.LteBandwidth;
 import com.craxiom.networksurvey.messaging.LteRecord;
 import com.craxiom.networksurvey.messaging.UmtsRecord;
+import com.craxiom.networksurvey.services.NetworkSurveyService;
+import com.craxiom.networksurvey.services.SurveyRecordProcessor;
 
 import java.sql.SQLException;
 import java.util.LinkedList;
@@ -58,18 +61,18 @@ public class SurveyRecordLogger implements ISurveyRecordListener
 
     private static final String LOG_TAG = SurveyRecordLogger.class.getSimpleName();
 
-    private final NetworkSurveyActivity networkSurveyActivity;
+    private final NetworkSurveyService networkSurveyService;
     private final GeoPackageManager geoPackageManager;
     private final Handler handler = new Handler();
 
     private GeoPackage geoPackage;
     private volatile boolean loggingEnabled;
 
-    SurveyRecordLogger(NetworkSurveyActivity networkSurveyActivity)
+    public SurveyRecordLogger(NetworkSurveyService networkSurveyService)
     {
-        this.networkSurveyActivity = networkSurveyActivity;
+        this.networkSurveyService = networkSurveyService;
 
-        geoPackageManager = GeoPackageFactory.getManager(networkSurveyActivity);
+        geoPackageManager = GeoPackageFactory.getManager(networkSurveyService.getApplicationContext());
     }
 
     @Override
@@ -102,19 +105,20 @@ public class SurveyRecordLogger implements ISurveyRecordListener
      * @param enable True if logging is being turned on, false if the log file should be closed.
      * @return True if the toggling action was successful, false if the request could not be completed.
      */
-    boolean enableLogging(boolean enable)
+    public boolean enableLogging(boolean enable)
     {
         try
         {
-            networkSurveyActivity.unregisterSurveyRecordListener(this);
+            networkSurveyService.unregisterSurveyRecordListener(this);
 
             if (!enable)
             {
                 if (loggingEnabled)
                 {
                     loggingEnabled = false;
-                    geoPackage.close(); // TODO figure out what else needs to be done to clean up.
+                    geoPackage.close();
                     geoPackage = null;
+                    return true;
                 }
 
                 return false;
@@ -127,12 +131,13 @@ public class SurveyRecordLogger implements ISurveyRecordListener
             Log.i(LOG_TAG, "Creating the log file: " + loggingFile);
 
             final boolean created = geoPackageManager.create(loggingFile);
+            final Context applicationContext = networkSurveyService.getApplicationContext();
 
             if (!created)
             {
                 final String errorMessage = "Error: Unable to create the GeoPackage file.  No logging will be recorded.";
                 Log.e(LOG_TAG, errorMessage);
-                Toast.makeText(networkSurveyActivity.getApplicationContext(), errorMessage, Toast.LENGTH_SHORT).show();
+                Toast.makeText(applicationContext, errorMessage, Toast.LENGTH_SHORT).show();
                 return false;
             }
 
@@ -141,7 +146,7 @@ public class SurveyRecordLogger implements ISurveyRecordListener
             {
                 final String errorMessage = "Error: Unable to open the GeoPackage file.  No logging will be recorded.";
                 Log.e(LOG_TAG, errorMessage);
-                Toast.makeText(networkSurveyActivity.getApplicationContext(), errorMessage, Toast.LENGTH_SHORT).show();
+                Toast.makeText(applicationContext, errorMessage, Toast.LENGTH_SHORT).show();
                 return false;
             }
 
@@ -155,7 +160,7 @@ public class SurveyRecordLogger implements ISurveyRecordListener
             createUmtsRecordTable(geoPackage, spatialReferenceSystem);
             createLteRecordTable(geoPackage, spatialReferenceSystem);
 
-            networkSurveyActivity.registerSurveyRecordListener(this);
+            networkSurveyService.registerSurveyRecordListener(this);
             return loggingEnabled = true;
         } catch (Exception e)
         {
@@ -341,18 +346,45 @@ public class SurveyRecordLogger implements ISurveyRecordListener
                     row.setValue(GsmMessageConstants.TIME_COLUMN, gsmRecord.getDeviceTime());
                     row.setValue(GsmMessageConstants.RECORD_NUMBER_COLUMN, gsmRecord.getRecordNumber());
                     row.setValue(GsmMessageConstants.GROUP_NUMBER_COLUMN, gsmRecord.getGroupNumber());
-                    if (gsmRecord.hasServingCell()) row.setValue(GsmMessageConstants.SERVING_CELL_COLUMN, gsmRecord.getServingCell().getValue());
+                    if (gsmRecord.hasServingCell())
+                    {
+                        row.setValue(GsmMessageConstants.SERVING_CELL_COLUMN, gsmRecord.getServingCell().getValue());
+                    }
                     final String provider = gsmRecord.getProvider();
                     if (!provider.isEmpty()) row.setValue(GsmMessageConstants.PROVIDER_COLUMN, provider);
 
-                    if (gsmRecord.hasMcc()) setShortValue(row, GsmMessageConstants.MCC_COLUMN, gsmRecord.getMcc().getValue());
-                    if (gsmRecord.hasMnc()) setShortValue(row, GsmMessageConstants.MNC_COLUMN, gsmRecord.getMnc().getValue());
-                    if (gsmRecord.hasLac()) setIntValue(row, GsmMessageConstants.LAC_COLUMN, gsmRecord.getLac().getValue());
-                    if (gsmRecord.hasCi()) setIntValue(row, GsmMessageConstants.CID_COLUMN, gsmRecord.getCi().getValue());
-                    if (gsmRecord.hasArfcn()) setShortValue(row, GsmMessageConstants.ARFCN_COLUMN, gsmRecord.getArfcn().getValue());
-                    if (gsmRecord.hasBsic()) setShortValue(row, GsmMessageConstants.BSIC_COLUMN, gsmRecord.getBsic().getValue());
-                    if (gsmRecord.hasSignalStrength()) row.setValue(GsmMessageConstants.SIGNAL_STRENGTH_COLUMN, gsmRecord.getSignalStrength().getValue());
-                    if (gsmRecord.hasTa()) setShortValue(row, GsmMessageConstants.TA_COLUMN, gsmRecord.getTa().getValue());
+                    if (gsmRecord.hasMcc())
+                    {
+                        setShortValue(row, GsmMessageConstants.MCC_COLUMN, gsmRecord.getMcc().getValue());
+                    }
+                    if (gsmRecord.hasMnc())
+                    {
+                        setShortValue(row, GsmMessageConstants.MNC_COLUMN, gsmRecord.getMnc().getValue());
+                    }
+                    if (gsmRecord.hasLac())
+                    {
+                        setIntValue(row, GsmMessageConstants.LAC_COLUMN, gsmRecord.getLac().getValue());
+                    }
+                    if (gsmRecord.hasCi())
+                    {
+                        setIntValue(row, GsmMessageConstants.CID_COLUMN, gsmRecord.getCi().getValue());
+                    }
+                    if (gsmRecord.hasArfcn())
+                    {
+                        setShortValue(row, GsmMessageConstants.ARFCN_COLUMN, gsmRecord.getArfcn().getValue());
+                    }
+                    if (gsmRecord.hasBsic())
+                    {
+                        setShortValue(row, GsmMessageConstants.BSIC_COLUMN, gsmRecord.getBsic().getValue());
+                    }
+                    if (gsmRecord.hasSignalStrength())
+                    {
+                        row.setValue(GsmMessageConstants.SIGNAL_STRENGTH_COLUMN, gsmRecord.getSignalStrength().getValue());
+                    }
+                    if (gsmRecord.hasTa())
+                    {
+                        setShortValue(row, GsmMessageConstants.TA_COLUMN, gsmRecord.getTa().getValue());
+                    }
 
                     featureDao.insert(row);
                 }
@@ -394,16 +426,37 @@ public class SurveyRecordLogger implements ISurveyRecordListener
                     row.setValue(CdmaMessageConstants.TIME_COLUMN, cdmaRecord.getDeviceTime());
                     row.setValue(CdmaMessageConstants.RECORD_NUMBER_COLUMN, cdmaRecord.getRecordNumber());
                     row.setValue(CdmaMessageConstants.GROUP_NUMBER_COLUMN, cdmaRecord.getGroupNumber());
-                    if (cdmaRecord.hasServingCell()) row.setValue(CdmaMessageConstants.SERVING_CELL_COLUMN, cdmaRecord.getServingCell().getValue());
+                    if (cdmaRecord.hasServingCell())
+                    {
+                        row.setValue(CdmaMessageConstants.SERVING_CELL_COLUMN, cdmaRecord.getServingCell().getValue());
+                    }
                     final String provider = cdmaRecord.getProvider();
                     if (!provider.isEmpty()) row.setValue(CdmaMessageConstants.PROVIDER_COLUMN, provider);
 
-                    if (cdmaRecord.hasSid()) setIntValue(row, CdmaMessageConstants.SID_COLUMN, cdmaRecord.getSid().getValue());
-                    if (cdmaRecord.hasNid()) setIntValue(row, CdmaMessageConstants.NID_COLUMN, cdmaRecord.getNid().getValue());
-                    if (cdmaRecord.hasBsid()) setIntValue(row, CdmaMessageConstants.BSID_COLUMN, cdmaRecord.getBsid().getValue());
-                    if (cdmaRecord.hasPnOffset()) setShortValue(row, CdmaMessageConstants.PN_OFFSET_COLUMN, cdmaRecord.getPnOffset().getValue());
-                    if (cdmaRecord.hasSignalStrength()) row.setValue(CdmaMessageConstants.SIGNAL_STRENGTH_COLUMN, cdmaRecord.getSignalStrength().getValue());
-                    if (cdmaRecord.hasEcio()) row.setValue(CdmaMessageConstants.ECIO_COLUMN, cdmaRecord.getEcio().getValue());
+                    if (cdmaRecord.hasSid())
+                    {
+                        setIntValue(row, CdmaMessageConstants.SID_COLUMN, cdmaRecord.getSid().getValue());
+                    }
+                    if (cdmaRecord.hasNid())
+                    {
+                        setIntValue(row, CdmaMessageConstants.NID_COLUMN, cdmaRecord.getNid().getValue());
+                    }
+                    if (cdmaRecord.hasBsid())
+                    {
+                        setIntValue(row, CdmaMessageConstants.BSID_COLUMN, cdmaRecord.getBsid().getValue());
+                    }
+                    if (cdmaRecord.hasPnOffset())
+                    {
+                        setShortValue(row, CdmaMessageConstants.PN_OFFSET_COLUMN, cdmaRecord.getPnOffset().getValue());
+                    }
+                    if (cdmaRecord.hasSignalStrength())
+                    {
+                        row.setValue(CdmaMessageConstants.SIGNAL_STRENGTH_COLUMN, cdmaRecord.getSignalStrength().getValue());
+                    }
+                    if (cdmaRecord.hasEcio())
+                    {
+                        row.setValue(CdmaMessageConstants.ECIO_COLUMN, cdmaRecord.getEcio().getValue());
+                    }
 
                     featureDao.insert(row);
                 }
@@ -445,18 +498,45 @@ public class SurveyRecordLogger implements ISurveyRecordListener
                     row.setValue(UmtsMessageConstants.TIME_COLUMN, umtsRecord.getDeviceTime());
                     row.setValue(UmtsMessageConstants.RECORD_NUMBER_COLUMN, umtsRecord.getRecordNumber());
                     row.setValue(UmtsMessageConstants.GROUP_NUMBER_COLUMN, umtsRecord.getGroupNumber());
-                    if (umtsRecord.hasServingCell()) row.setValue(UmtsMessageConstants.SERVING_CELL_COLUMN, umtsRecord.getServingCell().getValue());
+                    if (umtsRecord.hasServingCell())
+                    {
+                        row.setValue(UmtsMessageConstants.SERVING_CELL_COLUMN, umtsRecord.getServingCell().getValue());
+                    }
                     final String provider = umtsRecord.getProvider();
                     if (!provider.isEmpty()) row.setValue(UmtsMessageConstants.PROVIDER_COLUMN, provider);
 
-                    if (umtsRecord.hasMcc()) setShortValue(row, UmtsMessageConstants.MCC_COLUMN, umtsRecord.getMcc().getValue());
-                    if (umtsRecord.hasMnc()) setShortValue(row, UmtsMessageConstants.MNC_COLUMN, umtsRecord.getMnc().getValue());
-                    if (umtsRecord.hasLac()) setIntValue(row, UmtsMessageConstants.LAC_COLUMN, umtsRecord.getLac().getValue());
-                    if (umtsRecord.hasCi()) setIntValue(row, UmtsMessageConstants.CELL_ID_COLUMN, umtsRecord.getCi().getValue());
-                    if (umtsRecord.hasUarfcn()) setShortValue(row, UmtsMessageConstants.UARFCN_COLUMN, umtsRecord.getUarfcn().getValue());
-                    if (umtsRecord.hasPsc()) setShortValue(row, UmtsMessageConstants.PSC_COLUMN, umtsRecord.getPsc().getValue());
-                    if (umtsRecord.hasSignalStrength()) row.setValue(UmtsMessageConstants.SIGNAL_STRENGTH_COLUMN, umtsRecord.getSignalStrength().getValue());
-                    if (umtsRecord.hasRscp()) row.setValue(UmtsMessageConstants.RSCP_COLUMN, umtsRecord.getRscp().getValue());
+                    if (umtsRecord.hasMcc())
+                    {
+                        setShortValue(row, UmtsMessageConstants.MCC_COLUMN, umtsRecord.getMcc().getValue());
+                    }
+                    if (umtsRecord.hasMnc())
+                    {
+                        setShortValue(row, UmtsMessageConstants.MNC_COLUMN, umtsRecord.getMnc().getValue());
+                    }
+                    if (umtsRecord.hasLac())
+                    {
+                        setIntValue(row, UmtsMessageConstants.LAC_COLUMN, umtsRecord.getLac().getValue());
+                    }
+                    if (umtsRecord.hasCi())
+                    {
+                        setIntValue(row, UmtsMessageConstants.CELL_ID_COLUMN, umtsRecord.getCi().getValue());
+                    }
+                    if (umtsRecord.hasUarfcn())
+                    {
+                        setShortValue(row, UmtsMessageConstants.UARFCN_COLUMN, umtsRecord.getUarfcn().getValue());
+                    }
+                    if (umtsRecord.hasPsc())
+                    {
+                        setShortValue(row, UmtsMessageConstants.PSC_COLUMN, umtsRecord.getPsc().getValue());
+                    }
+                    if (umtsRecord.hasSignalStrength())
+                    {
+                        row.setValue(UmtsMessageConstants.SIGNAL_STRENGTH_COLUMN, umtsRecord.getSignalStrength().getValue());
+                    }
+                    if (umtsRecord.hasRscp())
+                    {
+                        row.setValue(UmtsMessageConstants.RSCP_COLUMN, umtsRecord.getRscp().getValue());
+                    }
 
                     featureDao.insert(row);
                 }
@@ -499,16 +579,46 @@ public class SurveyRecordLogger implements ISurveyRecordListener
                     row.setValue(LteMessageConstants.RECORD_NUMBER_COLUMN, lteRecord.getRecordNumber());
                     row.setValue(LteMessageConstants.GROUP_NUMBER_COLUMN, lteRecord.getGroupNumber());
 
-                    if (lteRecord.hasMcc()) setShortValue(row, LteMessageConstants.MCC_COLUMN, lteRecord.getMcc().getValue());
-                    if (lteRecord.hasMnc()) setShortValue(row, LteMessageConstants.MNC_COLUMN, lteRecord.getMnc().getValue());
-                    if (lteRecord.hasTac()) setIntValue(row, LteMessageConstants.TAC_COLUMN, lteRecord.getTac().getValue());
-                    if (lteRecord.hasCi()) setIntValue(row, LteMessageConstants.CI_COLUMN, lteRecord.getCi().getValue());
-                    if (lteRecord.hasEarfcn()) setIntValue(row, LteMessageConstants.EARFCN_COLUMN, lteRecord.getEarfcn().getValue());
-                    if (lteRecord.hasPci()) setShortValue(row, LteMessageConstants.PCI_COLUMN, lteRecord.getPci().getValue());
-                    if (lteRecord.hasRsrp()) row.setValue(LteMessageConstants.RSRP_COLUMN, lteRecord.getRsrp().getValue());
-                    if (lteRecord.hasRsrq()) row.setValue(LteMessageConstants.RSRQ_COLUMN, lteRecord.getRsrq().getValue());
-                    if (lteRecord.hasTa()) setShortValue(row, LteMessageConstants.TA_COLUMN, lteRecord.getTa().getValue());
-                    if (lteRecord.hasServingCell()) row.setValue(LteMessageConstants.SERVING_CELL_COLUMN, lteRecord.getServingCell().getValue());
+                    if (lteRecord.hasMcc())
+                    {
+                        setShortValue(row, LteMessageConstants.MCC_COLUMN, lteRecord.getMcc().getValue());
+                    }
+                    if (lteRecord.hasMnc())
+                    {
+                        setShortValue(row, LteMessageConstants.MNC_COLUMN, lteRecord.getMnc().getValue());
+                    }
+                    if (lteRecord.hasTac())
+                    {
+                        setIntValue(row, LteMessageConstants.TAC_COLUMN, lteRecord.getTac().getValue());
+                    }
+                    if (lteRecord.hasCi())
+                    {
+                        setIntValue(row, LteMessageConstants.CI_COLUMN, lteRecord.getCi().getValue());
+                    }
+                    if (lteRecord.hasEarfcn())
+                    {
+                        setIntValue(row, LteMessageConstants.EARFCN_COLUMN, lteRecord.getEarfcn().getValue());
+                    }
+                    if (lteRecord.hasPci())
+                    {
+                        setShortValue(row, LteMessageConstants.PCI_COLUMN, lteRecord.getPci().getValue());
+                    }
+                    if (lteRecord.hasRsrp())
+                    {
+                        row.setValue(LteMessageConstants.RSRP_COLUMN, lteRecord.getRsrp().getValue());
+                    }
+                    if (lteRecord.hasRsrq())
+                    {
+                        row.setValue(LteMessageConstants.RSRQ_COLUMN, lteRecord.getRsrq().getValue());
+                    }
+                    if (lteRecord.hasTa())
+                    {
+                        setShortValue(row, LteMessageConstants.TA_COLUMN, lteRecord.getTa().getValue());
+                    }
+                    if (lteRecord.hasServingCell())
+                    {
+                        row.setValue(LteMessageConstants.SERVING_CELL_COLUMN, lteRecord.getServingCell().getValue());
+                    }
 
                     final String provider = lteRecord.getProvider();
                     if (!provider.isEmpty()) row.setValue(LteMessageConstants.PROVIDER_COLUMN, provider);
@@ -533,7 +643,10 @@ public class SurveyRecordLogger implements ISurveyRecordListener
     private void setLteBandwidth(FeatureRow featureRow, LteBandwidth lteBandwidth)
     {
         final String lteBandwidthString = LteMessageConstants.getLteBandwidth(lteBandwidth);
-        if (!lteBandwidthString.isEmpty()) featureRow.setValue(LteMessageConstants.BANDWIDTH_COLUMN, lteBandwidthString);
+        if (!lteBandwidthString.isEmpty())
+        {
+            featureRow.setValue(LteMessageConstants.BANDWIDTH_COLUMN, lteBandwidthString);
+        }
     }
 
     /**
