@@ -19,6 +19,7 @@ import android.view.inputmethod.InputMethodManager;
 import android.widget.EditText;
 import android.widget.TextView;
 
+import android.widget.Toast;
 import androidx.annotation.Nullable;
 import androidx.appcompat.widget.SwitchCompat;
 import androidx.cardview.widget.CardView;
@@ -214,6 +215,46 @@ public class GrpcConnectionFragment extends Fragment implements View.OnClickList
     }
 
     /**
+     * Validates the user-specified server connection parameters
+     * @param host Specified host name. All non empty strings are 'valid'.
+     * @param port Specified port number. All numeric numbers between 0 and 65535 are 'valid'.
+     * @param deviceName Specified device name. Not validated.
+     * @return True if all parameters are valid according to the above criteria.
+     */
+    private boolean areConnectionParamsValid(String host, String port, String deviceName)
+    {
+        final Context applicationContext = getContext();
+        if (host.isEmpty())
+        {
+            final String hostEmptyMessage = "Host address must be specified.";
+            uiThreadHandler.post(() -> Toast.makeText(applicationContext, hostEmptyMessage, Toast.LENGTH_SHORT).show());
+            return false;
+        }
+        this.host = host;
+
+        try
+        {
+            final int portNumber = Integer.valueOf(port);
+            if (portNumber < 0 || portNumber > 65535)
+            {
+                final String invalidPortNumberMessage = "Specified port number is not valid.";
+                uiThreadHandler.post(() -> Toast.makeText(applicationContext, invalidPortNumberMessage, Toast.LENGTH_SHORT).show());
+                return false;
+            }
+            this.portNumber = portNumber;
+        } catch (Exception e)
+        {
+            final String portNotANumberMessage = "Port must be a number";
+            uiThreadHandler.post(() -> Toast.makeText(applicationContext, portNotANumberMessage, Toast.LENGTH_SHORT).show());
+            return false;
+        }
+
+        this.deviceName = deviceName;
+
+        return true;
+    }
+
+    /**
      * Read the connection values from the UI, and then start the {@link GrpcConnectionService} and pass it the
      * parameters so it can establish the connection to the gRPC server.
      */
@@ -221,18 +262,16 @@ public class GrpcConnectionFragment extends Fragment implements View.OnClickList
     {
         try
         {
-            updateUiState(ConnectionState.CONNECTING);
-
-            host = grpcHostAddressEdit.getText().toString();
-            final String portString = grpcPortNumberEdit.getText().toString();
-            portNumber = Integer.valueOf(portString);
-            deviceName = deviceNameEdit.getText().toString();
-
-            storeConnectionParameters();
-
-            hideSoftInputFromWindow();
-
-            startService(true);
+            if (areConnectionParamsValid(
+                 grpcHostAddressEdit.getText().toString(),
+                 grpcPortNumberEdit.getText().toString(),
+                 deviceNameEdit.getText().toString()))
+            {
+                updateUiState(ConnectionState.CONNECTING);
+                storeConnectionParameters();
+                hideSoftInputFromWindow();
+                startService(true);
+            }
         } catch (Exception e)
         {
             Log.e(LOG_TAG, "An exception occurred when trying to connect to the remote gRPC server");
