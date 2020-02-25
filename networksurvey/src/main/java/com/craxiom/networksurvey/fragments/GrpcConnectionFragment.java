@@ -18,6 +18,7 @@ import android.view.ViewGroup;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.EditText;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.annotation.Nullable;
 import androidx.appcompat.widget.SwitchCompat;
@@ -216,11 +217,21 @@ public class GrpcConnectionFragment extends Fragment implements View.OnClickList
     /**
      * Read the connection values from the UI, and then start the {@link GrpcConnectionService} and pass it the
      * parameters so it can establish the connection to the gRPC server.
+     * <p>
+     * If the connection values from the UI are invalid, then the connection is not started and a Toast is dislayed to
+     * the user.
      */
     private void connectToGrpcServer()
     {
         try
         {
+            if (!areConnectionParametersValid())
+            {
+                updateUiState(ConnectionState.DISCONNECTED);
+                Log.w(LOG_TAG, "Can't connect because one ore more of the connection parameters are invalid");
+                return;
+            }
+
             updateUiState(ConnectionState.CONNECTING);
 
             host = grpcHostAddressEdit.getText().toString();
@@ -238,6 +249,50 @@ public class GrpcConnectionFragment extends Fragment implements View.OnClickList
             Log.e(LOG_TAG, "An exception occurred when trying to connect to the remote gRPC server");
             updateUiState(ConnectionState.DISCONNECTED);
         }
+    }
+
+    /**
+     * Validates the user-specified server connection parameters.
+     * <p>
+     * For the host name, all non empty strings are 'valid'.
+     * For the port number, all numeric numbers between 0 and 65535 are 'valid'.
+     * For the device name, it must not be empty.
+     *
+     * @return True if all parameters are valid according to the above criteria.
+     */
+    private boolean areConnectionParametersValid()
+    {
+        if (grpcHostAddressEdit.getText().toString().isEmpty())
+        {
+            final String hostEmptyMessage = "Host address must be specified";
+            uiThreadHandler.post(() -> Toast.makeText(applicationContext, hostEmptyMessage, Toast.LENGTH_SHORT).show());
+            return false;
+        }
+
+        if (deviceNameEdit.getText().toString().isEmpty())
+        {
+            final String deviceNameEmptyMessage = "A device name must be specified";
+            uiThreadHandler.post(() -> Toast.makeText(applicationContext, deviceNameEmptyMessage, Toast.LENGTH_SHORT).show());
+            return false;
+        }
+
+        try
+        {
+            final int portNumber = Integer.valueOf(grpcPortNumberEdit.getText().toString());
+            if (portNumber < 0 || portNumber > 65535)
+            {
+                final String invalidPortNumberMessage = "Port number must be between 0 and 65535";
+                uiThreadHandler.post(() -> Toast.makeText(applicationContext, invalidPortNumberMessage, Toast.LENGTH_SHORT).show());
+                return false;
+            }
+        } catch (Exception e)
+        {
+            final String portNotANumberMessage = "Port must be a number";
+            uiThreadHandler.post(() -> Toast.makeText(applicationContext, portNotANumberMessage, Toast.LENGTH_SHORT).show());
+            return false;
+        }
+
+        return true;
     }
 
     /**
