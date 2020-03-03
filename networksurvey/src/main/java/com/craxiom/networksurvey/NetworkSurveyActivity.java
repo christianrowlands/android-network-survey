@@ -34,7 +34,11 @@ import androidx.preference.PreferenceManager;
 import com.craxiom.networksurvey.constants.NetworkSurveyConstants;
 import com.craxiom.networksurvey.services.GrpcConnectionService;
 import com.craxiom.networksurvey.services.NetworkSurveyService;
+import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.android.material.navigation.NavigationView;
+
+import java.util.function.Function;
+import java.util.function.Supplier;
 
 /**
  * The main activity for the Network Survey App.  This app is used to pull LTE Network Survey
@@ -51,11 +55,13 @@ public class NetworkSurveyActivity extends AppCompatActivity
     public DrawerLayout drawerLayout;
     public NavController navController;
 
-    private MenuItem startStopLoggingMenuItem;
+    private MenuItem startStopCellularLoggingMenuItem;
+    private MenuItem startStopGnssLoggingMenuItem;
 
     private SurveyServiceConnection surveyServiceConnection;
     private NetworkSurveyService networkSurveyService;
     private boolean turnOnLoggingOnNextServiceConnection = false;
+    private AppBarConfiguration appBarConfiguration;
 
     @Override
     protected void onCreate(Bundle savedInstanceState)
@@ -73,20 +79,7 @@ public class NetworkSurveyActivity extends AppCompatActivity
 
         setupNavigation();
 
-        // Find the view pager that will allow the user to swipe between fragments
-        // TODO ViewPager viewPager = findViewById(R.id.viewpager);
-
         surveyServiceConnection = new SurveyServiceConnection();
-
-        // Create an adapter that knows which fragment should be shown on each page
-        // FIXME sectionsPagerAdapter = new SectionsPagerAdapter(getSupportFragmentManager(), this, grpcConnectionController);
-
-        // Set the adapter onto the view pager
-        // TODO viewPager.setAdapter(sectionsPagerAdapter);
-
-        // Give the TabLayout the ViewPager
-        /*TODO TabLayout tabLayout = findViewById(R.id.sliding_tabs);
-        tabLayout.setupWithViewPager(viewPager);*/
 
         final NotificationManager notificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
         if (notificationManager != null)
@@ -119,7 +112,7 @@ public class NetworkSurveyActivity extends AppCompatActivity
         {
             networkSurveyService.onUiHidden();
 
-            if (!networkSurveyService.isLoggingEnabled() && GrpcConnectionService.getConnectedState() == ConnectionState.DISCONNECTED)
+            if (!networkSurveyService.isCellularLoggingEnabled() && GrpcConnectionService.getConnectedState() == ConnectionState.DISCONNECTED)
             {
                 // We can safely shutdown the service since both logging and the connection are turned off
                 final Intent networkSurveyServiceIntent = new Intent(applicationContext, NetworkSurveyService.class);
@@ -143,7 +136,7 @@ public class NetworkSurveyActivity extends AppCompatActivity
     @Override
     public boolean onSupportNavigateUp()
     {
-        return NavigationUI.navigateUp(navController, drawerLayout) || super.onSupportNavigateUp();
+        return NavigationUI.navigateUp(navController, appBarConfiguration) || super.onSupportNavigateUp();
     }
 
     @Override
@@ -174,9 +167,14 @@ public class NetworkSurveyActivity extends AppCompatActivity
     {
         // Inflate the menu; this adds items to the action bar if it is present.
         getMenuInflater().inflate(R.menu.menu_network_details, menu);
-        startStopLoggingMenuItem = menu.findItem(R.id.action_start_stop_logging);
+        startStopCellularLoggingMenuItem = menu.findItem(R.id.action_start_stop_cellular_logging);
+        startStopGnssLoggingMenuItem = menu.findItem(R.id.action_start_stop_gnss_logging);
 
-        if (networkSurveyService != null) updateLoggingButton(networkSurveyService.isLoggingEnabled());
+        if (networkSurveyService != null)
+        {
+            updateCellularLoggingButton(networkSurveyService.isCellularLoggingEnabled());
+            updateGnssLoggingButton(networkSurveyService.isGnssLoggingEnabled());
+        }
 
         return true;
     }
@@ -187,9 +185,13 @@ public class NetworkSurveyActivity extends AppCompatActivity
         int id = item.getItemId();
 
         //noinspection SimplifiableIfStatement
-        if (id == R.id.action_start_stop_logging)
+        if (id == R.id.action_start_stop_cellular_logging)
         {
-            toggleLogging();
+            toggleCellularLogging();
+            return true;
+        } else if (id == R.id.action_start_stop_gnss_logging)
+        {
+            toggleGnssLogging(!item.isChecked());
             return true;
         }
 
@@ -253,55 +255,97 @@ public class NetworkSurveyActivity extends AppCompatActivity
     }
 
     /**
-     * Setup the navigation drawer.
+     * Setup the navigation drawer and the bottom navigation view.
      *
      * @since 0.0.9
      */
     private void setupNavigation()
     {
         drawerLayout = findViewById(R.id.drawer_layout);
+        BottomNavigationView bottomNav = findViewById(R.id.bottom_nav);
         final NavigationView navigationView = findViewById(R.id.navigation_view);
 
         navController = Navigation.findNavController(this, R.id.main_content);
 
-        final AppBarConfiguration appBarConfiguration = new AppBarConfiguration.Builder(navController.getGraph())
+        appBarConfiguration = new AppBarConfiguration.Builder(R.id.main_cellular_fragment, R.id.main_gnss_fragment)
                 .setDrawerLayout(drawerLayout)
                 .build();
 
         NavigationUI.setupActionBarWithNavController(this, navController, appBarConfiguration);
 
         NavigationUI.setupWithNavController(navigationView, navController);
+        NavigationUI.setupWithNavController(bottomNav, navController);
     }
 
     /**
      * Starts or stops writing the log file based on the current state.
      */
-    private void toggleLogging()
+    private void toggleCellularLogging()
     {
-        new ToggleLoggingTask().executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
+        new ToggleLoggingTask(() -> {
+            if (networkSurveyService != null) return networkSurveyService.toggleLogging();
+            return null;
+        }, enabled -> {
+            updateCellularLoggingButton(enabled);
+            return getString(enabled ? R.string.cellular_logging_start_toast : R.string.cellular_logging_stop_toast);
+        }).executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
 
-        if (networkSurveyService != null && networkSurveyService.isLoggingEnabled())
+        // FIXME I thought I already fixed this but I guess not.  Checking if logging is enabled here results in a race
+        // condition since the ToggleLoggingTask above runs on a different thread.
+        if (networkSurveyService != null && networkSurveyService.isCellularLoggingEnabled())
         {
             networkSurveyService.initializePing();
         }
     }
 
     /**
-     * Updates the logging button based on specified logging state.
+     * Starts or stops writing the GNSS log file based on the current state.
+     */
+    private void toggleGnssLogging(boolean enable)
+    {
+        new ToggleLoggingTask(() -> {
+            if (networkSurveyService != null) return networkSurveyService.toggleGnssLogging(enable);
+            return null;
+        }, enabled -> {
+            updateGnssLoggingButton(enabled);
+            return getString(enabled ? R.string.gnss_logging_start_toast : R.string.gnss_logging_stop_toast);
+        }).executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
+    }
+
+    /**
+     * Updates the Cellular logging button based on the specified logging state.
      *
      * @param enabled True if logging is currently enabled, false otherwise.
      */
-    private void updateLoggingButton(boolean enabled)
+    private void updateCellularLoggingButton(boolean enabled)
     {
-        if (startStopLoggingMenuItem == null) return;
+        if (startStopCellularLoggingMenuItem == null) return;
 
-        final String menuTitle = getString(enabled ? R.string.action_stop_logging : R.string.action_start_logging);
-        startStopLoggingMenuItem.setTitle(menuTitle);
+        final String menuTitle = getString(enabled ? R.string.action_stop_cellular_logging : R.string.action_start_cellular_logging);
+        startStopCellularLoggingMenuItem.setTitle(menuTitle);
 
         ColorStateList colorStateList = null;
         if (enabled) colorStateList = ColorStateList.valueOf(Color.GREEN);
 
-        startStopLoggingMenuItem.setIconTintList(colorStateList);
+        startStopCellularLoggingMenuItem.setIconTintList(colorStateList);
+    }
+
+    /**
+     * Updates the GNSS logging button based on the specified logging state.
+     *
+     * @param enabled True if logging is currently enabled, false otherwise.
+     */
+    private void updateGnssLoggingButton(boolean enabled)
+    {
+        if (startStopGnssLoggingMenuItem == null) return;
+
+        final String menuTitle = getString(enabled ? R.string.action_stop_gnss_logging : R.string.action_start_gnss_logging);
+        startStopGnssLoggingMenuItem.setTitle(menuTitle);
+
+        ColorStateList colorStateList = null;
+        if (enabled) colorStateList = ColorStateList.valueOf(Color.GREEN);
+
+        startStopGnssLoggingMenuItem.setIconTintList(colorStateList);
     }
 
     /**
@@ -309,14 +353,18 @@ public class NetworkSurveyActivity extends AppCompatActivity
      */
     private class ToggleLoggingTask extends AsyncTask<Void, Void, Boolean>
     {
+        private final Supplier<Boolean> toggleLoggingFunction;
+        private final Function<Boolean, String> postExecuteFunction;
+
+        private ToggleLoggingTask(Supplier<Boolean> toggleLoggingFunction, Function<Boolean, String> postExecuteFunction)
+        {
+            this.toggleLoggingFunction = toggleLoggingFunction;
+            this.postExecuteFunction = postExecuteFunction;
+        }
+
         protected Boolean doInBackground(Void... nothing)
         {
-            if (networkSurveyService != null)
-            {
-                return networkSurveyService.toggleLogging();
-            }
-
-            return null;
+            return toggleLoggingFunction.get();
         }
 
         protected void onPostExecute(Boolean enabled)
@@ -328,11 +376,7 @@ public class NetworkSurveyActivity extends AppCompatActivity
                 return;
             }
 
-            updateLoggingButton(enabled);
-
-            final String message = getString(enabled ? R.string.logging_start_toast : R.string.logging_stop_toast);
-
-            Toast.makeText(getApplicationContext(), message, Toast.LENGTH_SHORT).show();
+            Toast.makeText(getApplicationContext(), postExecuteFunction.apply(enabled), Toast.LENGTH_SHORT).show();
         }
     }
 
@@ -349,14 +393,14 @@ public class NetworkSurveyActivity extends AppCompatActivity
             networkSurveyService = binder.getService();
             networkSurveyService.onUiVisible(NetworkSurveyActivity.this);
 
-            final boolean loggingEnabled = networkSurveyService.isLoggingEnabled();
+            final boolean loggingEnabled = networkSurveyService.isCellularLoggingEnabled();
 
             if (turnOnLoggingOnNextServiceConnection && !loggingEnabled)
             {
-                toggleLogging();
+                toggleCellularLogging();
             } else
             {
-                updateLoggingButton(loggingEnabled);
+                updateCellularLoggingButton(loggingEnabled);
             }
 
             turnOnLoggingOnNextServiceConnection = false;

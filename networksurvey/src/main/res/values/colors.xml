@@ -1,11 +1,20 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="colorPrimary">#3F51B5</color>
-    <color name="colorPrimaryDark">#303F9F</color>
-    <color name="colorAccent">#FF4081</color>
+    <color name="colorPrimary">#03A9F4</color>
+    <color name="colorAccent">#4CAF50</color>
     <color name="colorCardDark">#161212</color>
+
+    <color name="activeTabColor">#FFFFFF</color>
+    <color name="inactiveTabColor">#4E4E4E</color>
 
     <color name="connectionStatusDisconnected">#A21919</color>
     <color name="connectionStatusConnecting">#FF6D00</color>
     <color name="connectionStatusConnected">#00912F</color>
+
+    <color name="body_text_2_light">#8a000000</color>
+
+    <color name="gray">#ff888888</color>
+    <color name="red">#d50000</color>
+    <color name="yellow">#ffb300</color>
+    <color name="green">#009d00</color>
 </resources>

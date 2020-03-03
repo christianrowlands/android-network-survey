@@ -8,6 +8,9 @@ import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.location.GnssMeasurementsEvent;
+import android.location.GnssStatus;
+import android.location.Location;
 import android.location.LocationManager;
 import android.location.LocationProvider;
 import android.os.AsyncTask;
@@ -24,7 +27,9 @@ import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
 
+import com.craxiom.networksurvey.Application;
 import com.craxiom.networksurvey.CalculationUtils;
 import com.craxiom.networksurvey.GpsListener;
 import com.craxiom.networksurvey.NetworkSurveyActivity;
@@ -32,6 +37,7 @@ import com.craxiom.networksurvey.R;
 import com.craxiom.networksurvey.SurveyRecordLogger;
 import com.craxiom.networksurvey.constants.NetworkSurveyConstants;
 import com.craxiom.networksurvey.listeners.ISurveyRecordListener;
+import com.craxiom.networksurvey.util.PreferenceUtils;
 
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -46,16 +52,51 @@ public class NetworkSurveyService extends Service
 {
     private static final String LOG_TAG = NetworkSurveyService.class.getSimpleName();
 
+    /**
+     * Time to wait between first location measurement received before considering this device does
+     * not likely support raw GNSS collection.
+     */
+    private static final long TIME_TO_WAIT_FOR_GNSS_RAW_BEFORE_FAILURE = 1000L * 15L;
     private static final int NETWORK_DATA_REFRESH_RATE_MS = 2_000;
     private static final int PING_RATE_MS = 10_000;
 
     private final AtomicBoolean done = new AtomicBoolean(false);
-    private final AtomicBoolean loggingEnabled = new AtomicBoolean(false);
+    private final AtomicBoolean cellularLoggingEnabled = new AtomicBoolean(false);
+    private final AtomicBoolean gnssLoggingEnabled = new AtomicBoolean(false);
+    private final AtomicBoolean gnssStarted = new AtomicBoolean(false);
     private String deviceId;
     private SurveyServiceBinder surveyServiceBinder;
     private SurveyRecordProcessor surveyRecordProcessor;
     private GpsListener gpsListener;
     private SurveyRecordLogger surveyRecordLogger;
+    private GnssGeoPackageRecorder gnssGeoPackageRecorder = null;
+    private LocationManager locationManager = null;
+    private long firstGpsAcqTime = Long.MIN_VALUE;
+    private boolean gnssRawSupportKnown = false;
+    private boolean hasGnssRawFailureNagLaunched = false;
+
+    /**
+     * Callback for receiving GNSS measurements from the location manager.
+     */
+    private final GnssMeasurementsEvent.Callback measurementListener = new GnssMeasurementsEvent.Callback()
+    {
+        public void onGnssMeasurementsReceived(GnssMeasurementsEvent event)
+        {
+            gnssRawSupportKnown = true;
+            if (gnssGeoPackageRecorder != null) gnssGeoPackageRecorder.onGnssMeasurementsReceived(event);
+        }
+    };
+
+    /**
+     * Callback for receiving GNSS status from the location manager.
+     */
+    private final GnssStatus.Callback statusListener = new GnssStatus.Callback()
+    {
+        public void onSatelliteStatusChanged(final GnssStatus status)
+        {
+            if (gnssGeoPackageRecorder != null) gnssGeoPackageRecorder.onSatelliteStatusChanged(status);
+        }
+    };
 
     public NetworkSurveyService()
     {
@@ -98,6 +139,12 @@ public class NetworkSurveyService extends Service
         Log.i(LOG_TAG, "onDestroy");
         setDone();
         removeLocationListener();
+        stopGnssLogging();
+        if (gnssGeoPackageRecorder != null)
+        {
+            gnssGeoPackageRecorder.shutdown();
+            gnssGeoPackageRecorder = null;
+        }
         shutdownNotifications();
         super.onDestroy();
     }
@@ -140,7 +187,7 @@ public class NetworkSurveyService extends Service
 
         // Check to see if this service is still needed.  It is still needed if we are either logging, the UI is
         // visible, or a server connection is active.
-        if (!loggingEnabled.get() && !surveyRecordProcessor.isBeingUsed()) stopSelf();
+        if (!cellularLoggingEnabled.get() && !surveyRecordProcessor.isBeingUsed()) stopSelf();
     }
 
     /**
@@ -173,19 +220,48 @@ public class NetworkSurveyService extends Service
      */
     public Boolean toggleLogging()
     {
-        synchronized (loggingEnabled)
+        synchronized (cellularLoggingEnabled)
         {
-            final boolean originalLoggingState = loggingEnabled.get();
+            final boolean originalLoggingState = cellularLoggingEnabled.get();
             final boolean successful = surveyRecordLogger.enableLogging(!originalLoggingState);
-            loggingEnabled.set(successful != originalLoggingState);
+            cellularLoggingEnabled.set(successful != originalLoggingState);
             updateServiceNotification();
-            return successful ? loggingEnabled.get() : null;
+            return successful ? cellularLoggingEnabled.get() : null;
         }
     }
 
-    public boolean isLoggingEnabled()
+    public boolean isCellularLoggingEnabled()
     {
-        return loggingEnabled.get();
+        return cellularLoggingEnabled.get();
+    }
+
+    public boolean isGnssLoggingEnabled()
+    {
+        return gnssLoggingEnabled.get();
+    }
+
+    /**
+     * Turns GNSS Logging on or off based on the provided parameter.
+     *
+     * @param enable True if logging should be enabled, false otherwise
+     * @return Returns true if GNSS logging is now enabled, or false if it is disabled.
+     */
+    public boolean toggleGnssLogging(boolean enable)
+    {
+        synchronized (gnssLoggingEnabled)
+        {
+            if (enable)
+            {
+                startGnssLogging();
+            } else
+            {
+                stopGnssLogging();
+            }
+
+            updateServiceNotification();
+
+            return gnssLoggingEnabled.get();
+        }
     }
 
     /**
@@ -202,7 +278,7 @@ public class NetworkSurveyService extends Service
             {
                 try
                 {
-                    if (!loggingEnabled.get()) return;
+                    if (!cellularLoggingEnabled.get()) return;
 
                     sendPing();
 
@@ -213,6 +289,46 @@ public class NetworkSurveyService extends Service
                 }
             }
         }, NETWORK_DATA_REFRESH_RATE_MS);
+    }
+
+    /**
+     * Updates the location in the GNSS GeoPackage recorder if it is not null.
+     * <p>
+     * Also notifies the user if the RAW GNSS measurement timeout has expired.
+     *
+     * @param location The new location of this Android device.
+     */
+    public void updateLocation(final Location location)
+    {
+        if (gnssGeoPackageRecorder != null) gnssGeoPackageRecorder.onLocationChanged(location);
+
+        if (!gnssRawSupportKnown && !hasGnssRawFailureNagLaunched)
+        {
+            if (firstGpsAcqTime < 0L)
+            {
+                firstGpsAcqTime = System.currentTimeMillis();
+            } else if (System.currentTimeMillis() > firstGpsAcqTime + TIME_TO_WAIT_FOR_GNSS_RAW_BEFORE_FAILURE)
+            {
+                hasGnssRawFailureNagLaunched = true;
+
+                // The user may choose to continue using the app even without GNSS since
+                // they do get some satellite status on this display. If that is the case,
+                // they can choose not to be nagged about this every time they launch the app.
+                boolean ignoreRawGnssFailure = PreferenceUtils.getBoolean(Application.get().getString(R.string.pref_key_ignore_raw_gnss_failure), false);
+                if (!ignoreRawGnssFailure)
+                {
+                    // TODO Convert the activity to a dialog or something similar startActivity(new Intent(NetworkSurveyService.this, RawGnssFailureActivity.class));
+                }
+            }
+        }
+    }
+
+    /**
+     * Sets the atomic done flag so that any handler loops can be stopped.
+     */
+    public void setDone()
+    {
+        done.set(true);
     }
 
     /**
@@ -243,7 +359,7 @@ public class NetworkSurveyService extends Service
         final LocationManager locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
         if (locationManager != null)
         {
-            locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, (long) NETWORK_DATA_REFRESH_RATE_MS, 0f, gpsListener);
+            locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, NETWORK_DATA_REFRESH_RATE_MS, 0f, gpsListener);
         }
     }
 
@@ -383,11 +499,19 @@ public class NetworkSurveyService extends Service
      */
     private synchronized void updateServiceNotification()
     {
-        startForeground(NetworkSurveyConstants.LOGGING_NOTIFICATION_ID, buildNotification(loggingEnabled.get()));
+        startForeground(NetworkSurveyConstants.LOGGING_NOTIFICATION_ID, buildNotification());
     }
 
-    private synchronized Notification buildNotification(boolean logging)
+    /**
+     * Creates a new {@link Notification} based on the current state of this service.  The returned notification can
+     * then be passed on to the Android system.
+     *
+     * @return A {@link Notification} that represents the current state of this service (e.g. if logging is enabled).
+     */
+    private synchronized Notification buildNotification()
     {
+        final boolean logging = cellularLoggingEnabled.get() || gnssLoggingEnabled.get();
+
         Intent notificationIntent = new Intent(this, NetworkSurveyActivity.class);
         PendingIntent pendingIntent = PendingIntent.getActivity(this, 0, notificationIntent, 0);
 
@@ -404,11 +528,91 @@ public class NetworkSurveyService extends Service
     }
 
     /**
-     * Sets the atomic done flag so that any handler loops can be stopped.
+     * Starts GNSS logging if the {@link GnssGeoPackageRecorder} is not already initialized and started.
+     * <p>
+     * This method also handles registering the GNSS listeners with Android so we get notified of updates.
+     * <p>
+     * This method is not thread safe, so make sure to call this method from a synchronized block.
      */
-    public void setDone()
+    private void startGnssLogging()
     {
-        done.set(true);
+        if (gnssGeoPackageRecorder == null)
+        {
+            Log.i(LOG_TAG, "Starting GNSS Logging");
+
+            gnssGeoPackageRecorder = new GnssGeoPackageRecorder(this);
+            gnssGeoPackageRecorder.start();
+            gnssLoggingEnabled.set(true);
+            gnssGeoPackageRecorder.openGeoPackageDatabase();
+            registerGnssListeners();
+        }
+    }
+
+    /**
+     * Stops GNSS logging, removes the GNSS listeners from the Android system, and closes the GeoPackage file if it is
+     * open.
+     * <p>
+     * This method is not thread safe, so make sure to call this method from a synchronized block.
+     */
+    private void stopGnssLogging()
+    {
+        unregisterGnssListeners();
+        if (gnssGeoPackageRecorder != null)
+        {
+            Log.i(LOG_TAG, "Stopping GNSS Logging");
+
+            gnssGeoPackageRecorder.shutdown();
+            gnssGeoPackageRecorder = null;
+        }
+        gnssLoggingEnabled.set(false);
+    }
+
+    /**
+     * Registers for GPS/GNSS updates.
+     */
+    private void registerGnssListeners()
+    {
+        if (gnssStarted.getAndSet(true)) return;
+
+        boolean hasPermissions = ContextCompat.checkSelfPermission(this,
+                Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED;
+        hasPermissions = hasPermissions && ContextCompat.checkSelfPermission(this,
+                Manifest.permission.WRITE_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED;
+
+        if (hasPermissions)
+        {
+            if (locationManager == null)
+            {
+                locationManager = getSystemService(LocationManager.class);
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O)
+                {
+                    locationManager.registerGnssMeasurementsCallback(measurementListener);
+                    //locationManager.registerGnssStatusCallback(statusListener);
+                }
+
+                gpsListener.addLocationListener(this);
+            }
+        }
+    }
+
+    /**
+     * Unregisters from GPS/GNSS updates.
+     */
+    private void unregisterGnssListeners()
+    {
+        if (!gnssStarted.getAndSet(false)) return;
+
+        if (locationManager != null)
+        {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O)
+            {
+                locationManager.unregisterGnssMeasurementsCallback(measurementListener);
+                locationManager.unregisterGnssStatusCallback(statusListener);
+            }
+
+            gpsListener.removeLocationListener();
+            locationManager = null;
+        }
     }
 
     /**

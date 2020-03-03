@@ -14,6 +14,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 public class NetworkDetailsFragment extends Fragment
 {
     public static final AtomicBoolean visible = new AtomicBoolean(false);
+    static final String TITLE = "Details";
 
     public NetworkDetailsFragment()
     {

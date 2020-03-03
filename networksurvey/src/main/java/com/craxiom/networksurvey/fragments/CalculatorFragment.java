@@ -23,6 +23,7 @@ import com.craxiom.networksurvey.R;
  */
 public class CalculatorFragment extends Fragment
 {
+    static final String TITLE = "Calculators";
     private final String LOG_TAG = CalculatorFragment.class.getSimpleName();
 
     private View view;

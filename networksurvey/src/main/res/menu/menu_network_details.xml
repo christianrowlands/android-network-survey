@@ -3,9 +3,15 @@
     xmlns:tools="http://schemas.android.com/tools"
     tools:context="com.craxiom.networksurvey.NetworkSurveyActivity">
     <item
-        android:id="@+id/action_start_stop_logging"
+        android:id="@+id/action_start_stop_cellular_logging"
         android:orderInCategory="100"
-        android:title="@string/action_start_logging"
-        android:icon="@drawable/ic_action_bar_logging"
+        android:title="@string/action_start_cellular_logging"
+        android:icon="@drawable/ic_cellular"
+        app:showAsAction="ifRoom" />
+    <item
+        android:id="@+id/action_start_stop_gnss_logging"
+        android:orderInCategory="100"
+        android:title="@string/action_start_gnss_logging"
+        android:icon="@drawable/ic_gnss"
         app:showAsAction="ifRoom" />
 </menu>
