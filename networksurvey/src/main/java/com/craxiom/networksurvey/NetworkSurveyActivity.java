@@ -1,6 +1,7 @@
 package com.craxiom.networksurvey;
 
 import android.Manifest;
+import android.annotation.SuppressLint;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.content.ComponentName;
@@ -11,9 +12,12 @@ import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.content.res.ColorStateList;
 import android.graphics.Color;
+import android.location.LocationManager;
+import android.location.LocationProvider;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.IBinder;
+import android.provider.Settings;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -24,6 +28,7 @@ import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.app.AppCompatDelegate;
 import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
 import androidx.drawerlayout.widget.DrawerLayout;
 import androidx.navigation.NavController;
 import androidx.navigation.Navigation;
@@ -51,6 +56,10 @@ public class NetworkSurveyActivity extends AppCompatActivity
     private static final String LOG_TAG = NetworkSurveyActivity.class.getSimpleName();
 
     private static final int ACCESS_PERMISSION_REQUEST_ID = 1;
+    public static final String[] PERMISSIONS = {
+            Manifest.permission.ACCESS_FINE_LOCATION,
+            Manifest.permission.WRITE_EXTERNAL_STORAGE,
+            Manifest.permission.READ_PHONE_STATE};
 
     public DrawerLayout drawerLayout;
     public NavController navController;
@@ -89,18 +98,23 @@ public class NetworkSurveyActivity extends AppCompatActivity
             notificationManager.createNotificationChannel(channel);
         } else
         {
-            Log.e(LOG_TAG, "The Notification Manager could not be retrieved to add the Network Suryey notification channel");
+            Log.e(LOG_TAG, "The Notification Manager could not be retrieved to add the Network Survey notification channel");
         }
-
-        showPermissionRationaleAndRequestPermissions();
     }
 
     @Override
     protected void onResume()
     {
-        startAndBindToNetworkSurveyService();
-
         super.onResume();
+
+        if (missingAnyPermissions()) showPermissionRationaleAndRequestPermissions();
+
+        // If we have been granted the location permission, we want to check to see if the location service is enabled.
+        // If it is not, then this call will report that to the user and give them the option to enable it.
+        if (hasLocationPermission()) checkLocationProvider();
+
+        // All we need for the cellular information is the Manifest.permission.READ_PHONE_STATE permission.  Location is optional
+        if (hasCellularPermission()) startAndBindToNetworkSurveyService();
     }
 
     @Override
@@ -152,6 +166,7 @@ public class NetworkSurveyActivity extends AppCompatActivity
                 {
                     if (grantResults[index] == PackageManager.PERMISSION_GRANTED)
                     {
+                        checkLocationProvider();
                         startAndBindToNetworkSurveyService();
                     } else
                     {
@@ -191,7 +206,7 @@ public class NetworkSurveyActivity extends AppCompatActivity
             return true;
         } else if (id == R.id.action_start_stop_gnss_logging)
         {
-            toggleGnssLogging(!item.isChecked());
+            toggleGnssLogging();
             return true;
         }
 
@@ -210,6 +225,8 @@ public class NetworkSurveyActivity extends AppCompatActivity
                 || ActivityCompat.shouldShowRequestPermissionRationale(this, Manifest.permission.WRITE_EXTERNAL_STORAGE)
                 || ActivityCompat.shouldShowRequestPermissionRationale(this, Manifest.permission.READ_PHONE_STATE))
         {
+            Log.d(LOG_TAG, "Showing the permissions rationale dialog");
+
             AlertDialog.Builder alertBuilder = new AlertDialog.Builder(this);
             alertBuilder.setCancelable(true);
             alertBuilder.setTitle(getString(R.string.permissions_rationale_title));
@@ -225,25 +242,123 @@ public class NetworkSurveyActivity extends AppCompatActivity
     }
 
     /**
-     * Request the permissions needed for this app.
+     * Request the permissions needed for this app if any of them have not yet been granted.  If all of the permissions
+     * are already granted then don't request anything.
      */
     private void requestPermissions()
     {
-        ActivityCompat.requestPermissions(NetworkSurveyActivity.this, new String[]{
-                        Manifest.permission.ACCESS_FINE_LOCATION,
-                        Manifest.permission.WRITE_EXTERNAL_STORAGE,
-                        Manifest.permission.READ_PHONE_STATE},
-                ACCESS_PERMISSION_REQUEST_ID);
+        if (missingAnyPermissions())
+        {
+            ActivityCompat.requestPermissions(NetworkSurveyActivity.this, PERMISSIONS,
+                    ACCESS_PERMISSION_REQUEST_ID);
+        }
     }
 
-    private void startAndBindToNetworkSurveyService()
+    /**
+     * Checks that the location provider is enabled and that the location permission has been granted.  If GPS location
+     * is not enabled on this device, then the settings UI is opened so the user can enable it.
+     */
+    private void checkLocationProvider()
     {
-        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED)
+        final LocationManager locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
+        if (locationManager == null)
         {
-            Log.w(LOG_TAG, "The ACCESS_FINE_LOCATION permission has not been granted, not starting the service");
+            Log.w(LOG_TAG, "Could not get the location manager.  Skipping checking the location provider");
             return;
         }
 
+        final LocationProvider locationProvider = locationManager.getProvider(LocationManager.GPS_PROVIDER);
+        if (locationProvider == null)
+        {
+            final String noGpsMessage = getString(R.string.no_gps_device);
+            Log.w(LOG_TAG, noGpsMessage);
+            Toast.makeText(getApplicationContext(), noGpsMessage, Toast.LENGTH_LONG).show();
+        } else if (!locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER))
+        {
+            // gps exists, but isn't on
+            final String turnOnGpsMessage = getString(R.string.turn_on_gps);
+            Log.w(LOG_TAG, turnOnGpsMessage);
+            Toast.makeText(getApplicationContext(), turnOnGpsMessage, Toast.LENGTH_LONG).show();
+
+            promptEnableGps();
+        }
+    }
+
+    /**
+     * Ask the user if they want to enable GPS.  If they do, then open the Location settings.
+     */
+    private void promptEnableGps()
+    {
+        new AlertDialog.Builder(this)
+                .setMessage(getString(R.string.enable_gps_message))
+                .setPositiveButton(getString(R.string.enable_gps_positive_button),
+                        (dialog, which) -> {
+                            Intent intent = new Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS);
+                            startActivity(intent);
+                        }
+                )
+                .setNegativeButton(getString(R.string.enable_gps_negative_button),
+                        (dialog, which) -> {
+                        }
+                )
+                .show();
+    }
+
+    /**
+     * @return True if any of the permissions for this app have been denied.  False if all the permissions have been granted.
+     */
+    private boolean missingAnyPermissions()
+    {
+        for (String permission : PERMISSIONS)
+        {
+            if (ContextCompat.checkSelfPermission(this, permission) != PackageManager.PERMISSION_GRANTED)
+            {
+                Log.i(LOG_TAG, "Missing the permission: " + permission);
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * @return True if the {@link Manifest.permission#ACCESS_FINE_LOCATION} permission has been granted.  False otherwise.
+     */
+    private boolean hasLocationPermission()
+    {
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED)
+        {
+            Log.w(LOG_TAG, "The ACCESS_FINE_LOCATION permission has not been granted");
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * @return True if the {@link Manifest.permission#READ_PHONE_STATE} permission has been granted.  False otherwise.
+     */
+    private boolean hasCellularPermission()
+    {
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.READ_PHONE_STATE) != PackageManager.PERMISSION_GRANTED)
+        {
+            Log.w(LOG_TAG, "The READ_PHONE_STATE permission has not been granted");
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * Start the Network Survey Service (it won't start if it is already started), and then bind to the service.
+     * <p>
+     * Starting the service will cause the cellular records to be pulled from the Android system so they can be shown
+     * in the UI, logged to a file, sent over a connection, or any combination of the three.
+     * <p>
+     * The Network survey service also handles getting GNSS information so that it can be used accordingly.
+     */
+    private void startAndBindToNetworkSurveyService()
+    {
         // Start and bind to the survey service
         final Context applicationContext = getApplicationContext();
         final Intent startServiceIntent = new Intent(applicationContext, NetworkSurveyService.class);
@@ -283,9 +398,10 @@ public class NetworkSurveyActivity extends AppCompatActivity
     private void toggleCellularLogging()
     {
         new ToggleLoggingTask(() -> {
-            if (networkSurveyService != null) return networkSurveyService.toggleLogging();
+            if (networkSurveyService != null) return networkSurveyService.toggleCellularLogging();
             return null;
         }, enabled -> {
+            if (enabled == null) return getString(R.string.cellular_logging_toggle_failed);
             updateCellularLoggingButton(enabled);
             return getString(enabled ? R.string.cellular_logging_start_toast : R.string.cellular_logging_stop_toast);
         }).executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
@@ -301,12 +417,13 @@ public class NetworkSurveyActivity extends AppCompatActivity
     /**
      * Starts or stops writing the GNSS log file based on the current state.
      */
-    private void toggleGnssLogging(boolean enable)
+    private void toggleGnssLogging()
     {
         new ToggleLoggingTask(() -> {
-            if (networkSurveyService != null) return networkSurveyService.toggleGnssLogging(enable);
+            if (networkSurveyService != null) return networkSurveyService.toggleGnssLogging();
             return null;
         }, enabled -> {
+            if (enabled == null) return getString(R.string.gnss_logging_toggle_failed);
             updateGnssLoggingButton(enabled);
             return getString(enabled ? R.string.gnss_logging_start_toast : R.string.gnss_logging_stop_toast);
         }).executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
@@ -351,6 +468,7 @@ public class NetworkSurveyActivity extends AppCompatActivity
     /**
      * A task to move the action of starting or stopping logging off of the UI thread.
      */
+    @SuppressLint("StaticFieldLeak")
     private class ToggleLoggingTask extends AsyncTask<Void, Void, Boolean>
     {
         private final Supplier<Boolean> toggleLoggingFunction;

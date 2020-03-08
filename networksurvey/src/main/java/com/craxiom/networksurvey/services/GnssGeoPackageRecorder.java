@@ -1,7 +1,6 @@
 package com.craxiom.networksurvey.services;
 
 import android.content.Context;
-import android.hardware.SensorEvent;
 import android.location.GnssMeasurementsEvent;
 import android.location.GnssStatus;
 import android.location.Location;
@@ -26,7 +25,7 @@ import java.util.function.Consumer;
  */
 public class GnssGeoPackageRecorder extends HandlerThread
 {
-    private static final String TAG = "GPSMonkey.GpkgRec";
+    private static final String LOG_TAG = GnssGeoPackageRecorder.class.getSimpleName();
     private static final String FILENAME_PREFIX = "GNSS-MONKEY";
 
     @SuppressWarnings("SpellCheckingInspection")
@@ -41,7 +40,7 @@ public class GnssGeoPackageRecorder extends HandlerThread
     private String gpkgFilePath;
     private String gpkgFolderPath;
 
-    protected GnssGeoPackageRecorder(Context context)
+    GnssGeoPackageRecorder(Context context)
     {
         super("GeoPkgRcdr");
         this.context = context;
@@ -50,7 +49,7 @@ public class GnssGeoPackageRecorder extends HandlerThread
 
         if (gpkgFolderPath == null)
         {
-            Log.e(TAG, "Unable to find GPSMonkey storage location; using Download directory");
+            Log.e(LOG_TAG, "Unable to find GPSMonkey storage location; using Download directory");
             gpkgFolderPath = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS).getAbsolutePath();
         }
     }
@@ -61,7 +60,7 @@ public class GnssGeoPackageRecorder extends HandlerThread
         handler = new Handler();
     }
 
-    public void onGnssMeasurementsReceived(final GnssMeasurementsEvent event)
+    void onGnssMeasurementsReceived(final GnssMeasurementsEvent event)
     {
         provideDataToDatabase((e) -> gpkgDatabase.writeGnssMeasurements(e), event);
     }
@@ -84,47 +83,27 @@ public class GnssGeoPackageRecorder extends HandlerThread
         }
     }
 
-    public void onLocationChanged(final Location location)
+    void onLocationChanged(final Location location)
     {
         provideDataToDatabase((l) -> gpkgDatabase.writeLocation(l), location);
     }
 
-    public void onSatelliteStatusChanged(final GnssStatus status)
+    void onSatelliteStatusChanged(final GnssStatus status)
     {
         provideDataToDatabase((s) -> gpkgDatabase.writeSatelliteStatus(s), status);
     }
 
-    // TODO KMB: Need to check with Steve to see if this is still needed. Currently, there is no
-    //  logic to setup the motion table, and nothing is calling this method.
-    public void onSensorUpdated(final SensorEvent event)
-    {
-        provideDataToDatabase((e) -> gpkgDatabase.writeSensorStatus(e), event);
-    }
-
-    /**
-     * @return True if any data has ever been recorded by the recorder, whether in the current
-     * database or a previous one.
-     */
-    public boolean isDataRecorded()
-    {
-        return isDataRecorded.get();
-    }
-
     /**
      * Shuts down the recorder and provides the file path for the database
-     *
-     * @return The gpkg filename.
      */
-    public String shutdown()
+    void shutdown()
     {
-        Log.d(TAG, "GeoPackageRecorder.shutdown()");
+        Log.d(LOG_TAG, "GeoPackageRecorder.shutdown()");
         closeGeoPackageDatabase();
 
         getLooper().quit();
 
         removeTempFiles();
-
-        return gpkgFilePath;
     }
 
     /**
@@ -147,7 +126,7 @@ public class GnssGeoPackageRecorder extends HandlerThread
                         for (File file : files)
                         {
                             String fileName = file.getName();
-                            if ((fileName != null) && fileName.endsWith(JOURNAL_FILE_SUFFIX))
+                            if (fileName.endsWith(JOURNAL_FILE_SUFFIX))
                             {
                                 //noinspection ResultOfMethodCallIgnored
                                 file.delete();
@@ -164,7 +143,7 @@ public class GnssGeoPackageRecorder extends HandlerThread
     /**
      * @return True if the recorder has an open database that is available to store data.
      */
-    public boolean isActive()
+    private boolean isActive()
     {
         return geoPackageOpen.get();
     }
@@ -180,12 +159,14 @@ public class GnssGeoPackageRecorder extends HandlerThread
 
     /**
      * Opens a new GeoPackage database.
+     *
+     * @return True if the GeoPackage database was successfully opened, false if something went wrong.
      */
-    public void openGeoPackageDatabase()
+    synchronized boolean openGeoPackageDatabase()
     {
         if (geoPackageOpen.get())
         {
-            Log.w(TAG, "Open called while another gpkg that was already open: " + gpkgFilePath +
+            Log.w(LOG_TAG, "Open called while another gpkg that was already open: " + gpkgFilePath +
                     "; closing it now.");
             closeGeoPackageDatabase();
         }
@@ -196,12 +177,15 @@ public class GnssGeoPackageRecorder extends HandlerThread
 
             gpkgDatabase = new GnssGeoPackageDatabase(context);
             gpkgDatabase.start(gpkgFilePath);
-            Log.d(TAG, "Opened file: " + gpkgFilePath);
+            Log.d(LOG_TAG, "Opened file: " + gpkgFilePath);
             geoPackageOpen.set(true);
         } catch (SQLException e)
         {
-            Log.e(TAG, "Error setting up GeoPackage", e);
+            Log.e(LOG_TAG, "Error setting up GeoPackage", e);
+            return false;
         }
+
+        return geoPackageOpen.get();
     }
 
     /**
@@ -217,20 +201,15 @@ public class GnssGeoPackageRecorder extends HandlerThread
 
     /**
      * Closes the current GeoPackage database.
-     *
-     * @return The file path of the database that was closed, or null if there was not an open database.
      */
-    public String closeGeoPackageDatabase()
+    private synchronized void closeGeoPackageDatabase()
     {
         geoPackageOpen.set(false);
 
-        if (gpkgDatabase == null)
-        {
-            return null;
-        }
+        if (gpkgDatabase == null) return;
 
         gpkgDatabase.shutdown();
-        Log.d(TAG, "Closed file: " + gpkgFilePath);
+        Log.d(LOG_TAG, "Closed file: " + gpkgFilePath);
 
         // Delete the journal file for the database that was just shutdown.
         try
@@ -245,12 +224,9 @@ public class GnssGeoPackageRecorder extends HandlerThread
                     journalFile.delete();
                 }
             }
-        } catch (Exception ignore)
+        } catch (Exception e)
         {
+            Log.e(LOG_TAG, "Could not clear out the GNSS journal file", e);
         }
-
-        // TODO Toast.makeText(context, context.getString(R.string.data_saved_location) + gpkgFolderPath, Toast.LENGTH_LONG).show();
-
-        return gpkgFilePath;
     }
 }

@@ -68,7 +68,7 @@ import static mil.nga.geopackage.db.GeoPackageDataType.TEXT;
  */
 public class GnssGeoPackageDatabase
 {
-    private static final String TAG = "GPSMonkey.GpkgWrtr";
+    private static final String TAG = GnssGeoPackageDatabase.class.getSimpleName();
 
     private static final String CLOCK_TABLE_NAME = "rcvr_clock";
     private static final String MOTION_TABLE_NAME = "motion";

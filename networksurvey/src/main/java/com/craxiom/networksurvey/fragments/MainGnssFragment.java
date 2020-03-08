@@ -1,5 +1,13 @@
 package com.craxiom.networksurvey.fragments;
 
+import android.Manifest;
+import android.annotation.SuppressLint;
+import android.content.Context;
+import android.content.pm.PackageManager;
+import android.location.GnssStatus;
+import android.location.Location;
+import android.location.LocationListener;
+import android.location.LocationManager;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -8,13 +16,19 @@ import android.view.ViewGroup;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.core.app.ActivityCompat;
 import androidx.fragment.app.Fragment;
+import androidx.fragment.app.FragmentActivity;
 import androidx.viewpager2.adapter.FragmentStateAdapter;
 import androidx.viewpager2.widget.ViewPager2;
 
 import com.craxiom.networksurvey.R;
+import com.craxiom.networksurvey.listeners.IGnssListener;
 import com.google.android.material.tabs.TabLayout;
 import com.google.android.material.tabs.TabLayoutMediator;
+
+import java.util.Set;
+import java.util.concurrent.CopyOnWriteArraySet;
 
 /**
  * The primary fragment to use for the GNSS page of the bottom navigation component.  This fragment view contains tabs
@@ -25,6 +39,28 @@ import com.google.android.material.tabs.TabLayoutMediator;
 public class MainGnssFragment extends Fragment
 {
     private static final String LOG_TAG = MainGnssFragment.class.getSimpleName();
+
+    private static final int LOCATION_REFRESH_RATE_MS = 2_000;
+
+    private LocationListener locationListener;
+    private GnssStatus.Callback gnssStatusListener;
+    private final Set<IGnssListener> gnssListeners = new CopyOnWriteArraySet<>();
+    private FragmentActivity fragmentActivity;
+    private LocationManager locationManager;
+
+    @Override
+    public void onCreate(@Nullable Bundle savedInstanceState)
+    {
+        super.onCreate(savedInstanceState);
+
+        fragmentActivity = getActivity(); // Must be set before the call to initGnss()
+        if (fragmentActivity != null)
+        {
+            locationManager = fragmentActivity.getSystemService(LocationManager.class);
+        }
+
+        if (locationManager == null) Log.e(LOG_TAG, "The Location Manager is null. Unable to get GNSS information");
+    }
 
     @Nullable
     @Override
@@ -45,39 +81,193 @@ public class MainGnssFragment extends Fragment
         new TabLayoutMediator(tabLayout, viewPager, (tab, position) -> tab.setText(getTabTitle(position))).attach();
     }
 
-    /**
-     * An adapter that handles creating a new fragment when a tab is selected for the first time.
-     */
-    public static class GnssCollectionAdapter extends FragmentStateAdapter
+    @Override
+    public void onResume()
     {
-        GnssCollectionAdapter(Fragment fragment)
+        super.onResume();
+
+        if (!hasLocationPermission()) return;
+
+        addLocationListener();
+        addGnssStatusListener();
+    }
+
+    @Override
+    public void onPause()
+    {
+        removeLocationListener();
+        removeGnssStatusListener();
+
+        super.onPause();
+    }
+
+    /**
+     * Add a listener for GNSS updates per the {@link IGnssListener} contract.
+     *
+     * @param gnssListener The GNSS listener to add.
+     */
+    void registerGnssListener(IGnssListener gnssListener)
+    {
+        gnssListeners.add(gnssListener);
+    }
+
+    /**
+     * Remove a listener for GNSS updates.
+     *
+     * @param gnssListener The GNSS listener to remove.
+     */
+    void unregisterGnssListener(IGnssListener gnssListener)
+    {
+        gnssListeners.remove(gnssListener);
+    }
+
+    /**
+     * @return True if the {@link Manifest.permission#ACCESS_FINE_LOCATION} permission has been granted.  False otherwise.
+     */
+    private boolean hasLocationPermission()
+    {
+        final Context context = getContext();
+        if (context != null && ActivityCompat.checkSelfPermission(context.getApplicationContext(), Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED)
         {
-            super(fragment);
+            Log.w(LOG_TAG, "The ACCESS_FINE_LOCATION permission has not been granted");
+            return false;
         }
 
-        @NonNull
-        @Override
-        public Fragment createFragment(int position)
+        return true;
+    }
+
+    /**
+     * Register a listener for location updates from the Android system.
+     */
+    @SuppressLint("MissingPermission")
+    private void addLocationListener()
+    {
+        if (locationManager == null)
         {
-            switch (position)
+            Log.e(LOG_TAG, "The location manager is null.  Unable to register a location listener");
+            return;
+        }
+
+        if (locationListener == null)
+        {
+            locationListener = new LocationListener()
             {
-                case 0:
-                    return new GpsStatusFragment();
+                @Override
+                public void onLocationChanged(Location location)
+                {
+                    for (IGnssListener listener : gnssListeners)
+                    {
+                        listener.onLocationChanged(location);
+                    }
+                }
 
-                case 1:
-                    return new CalculatorFragment(); // TODO Update this to the Sky View Fragment
+                @Override
+                public void onStatusChanged(String provider, int status, Bundle extras)
+                {
+                }
 
-                default:
-                    Log.wtf(LOG_TAG, "A fragment has not been specified for one of the tabs in the GNSS UI.");
-                    return new GpsStatusFragment();
-            }
+                @Override
+                public void onProviderEnabled(String provider)
+                {
+                }
+
+                @Override
+                public void onProviderDisabled(String provider)
+                {
+                }
+            };
         }
 
-        @Override
-        public int getItemCount()
+        locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, LOCATION_REFRESH_RATE_MS, 0f, locationListener);
+    }
+
+    /**
+     * Unregister the location listener from the Android system.
+     */
+    private void removeLocationListener()
+    {
+        if (locationManager == null)
         {
-            return 2;
+            Log.e(LOG_TAG, "The location manager is null.  Unable to remove a location listener");
+            return;
         }
+
+        locationManager.removeUpdates(locationListener);
+    }
+
+    /**
+     * Registers the GNSS Status Listener with the Android System.  Registration occurs in this {@link MainGnssFragment}
+     * so that each child fragment in the various tabs don't have to register directly with the Android system.
+     */
+    @SuppressLint("MissingPermission")
+    private void addGnssStatusListener()
+    {
+        if (locationManager == null)
+        {
+            Log.e(LOG_TAG, "The location manager is null.  Unable to register a GNSS status listener");
+            return;
+        }
+
+        if (gnssStatusListener == null)
+        {
+            gnssStatusListener = new GnssStatus.Callback()
+            {
+                @Override
+                public void onStarted()
+                {
+                    for (IGnssListener listener : gnssListeners)
+                    {
+                        listener.onGnssStarted();
+                    }
+                }
+
+                @Override
+                public void onStopped()
+                {
+                    for (IGnssListener listener : gnssListeners)
+                    {
+                        listener.onGnssStopped();
+                    }
+                }
+
+                @Override
+                public void onFirstFix(int ttffMillis)
+                {
+                    for (IGnssListener listener : gnssListeners)
+                    {
+                        listener.onGnssFirstFix(ttffMillis);
+                    }
+                }
+
+                @Override
+                public void onSatelliteStatusChanged(GnssStatus status)
+                {
+                    // Stop progress bar after the first status information is obtained
+                    // TODO is this needed? setSupportProgressBarIndeterminateVisibility(Boolean.FALSE);
+
+                    for (IGnssListener listener : gnssListeners)
+                    {
+                        listener.onSatelliteStatusChanged(status);
+                    }
+                }
+            };
+        }
+
+        locationManager.registerGnssStatusCallback(gnssStatusListener);
+    }
+
+    /**
+     * Unregisters the GNSS Status Listener with the Android system.
+     */
+    private void removeGnssStatusListener()
+    {
+        if (locationManager == null)
+        {
+            Log.e(LOG_TAG, "The location manager is null.  Unable to unregister a GNSS status listener");
+            return;
+        }
+
+        locationManager.unregisterGnssStatusCallback(gnssStatusListener);
     }
 
     /**
@@ -99,6 +289,44 @@ public class MainGnssFragment extends Fragment
             default:
                 Log.wtf(LOG_TAG, "No title specified for the GNSS tab.  Using a default");
                 return "";
+        }
+    }
+
+    /**
+     * An adapter that handles creating a new fragment when a tab is selected for the first time.
+     */
+    public static class GnssCollectionAdapter extends FragmentStateAdapter
+    {
+        private MainGnssFragment mainGnssFragment;
+
+        GnssCollectionAdapter(MainGnssFragment fragment)
+        {
+            super(fragment);
+            mainGnssFragment = fragment;
+        }
+
+        @NonNull
+        @Override
+        public Fragment createFragment(int position)
+        {
+            switch (position)
+            {
+                case 0:
+                    return new GpsStatusFragment(mainGnssFragment);
+
+                case 1:
+                    return new CalculatorFragment(); // TODO Update this to the Sky View Fragment
+
+                default:
+                    Log.wtf(LOG_TAG, "A fragment has not been specified for one of the tabs in the GNSS UI.");
+                    return new GpsStatusFragment(mainGnssFragment);
+            }
+        }
+
+        @Override
+        public int getItemCount()
+        {
+            return 2;
         }
     }
 }

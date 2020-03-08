@@ -2,7 +2,6 @@ package com.craxiom.networksurvey.listeners;
 
 import android.location.GnssMeasurementsEvent;
 import android.location.GnssStatus;
-import android.location.GpsStatus;
 import android.location.LocationListener;
 
 /**
@@ -11,7 +10,7 @@ import android.location.LocationListener;
  * This interface is originally from the GPS Test open source Android app.
  * https://github.com/barbeau/gpstest/blob/master/GPSTest/src/main/java/com/android/gpstest/GpsTestListener.java
  */
-public interface IGpsTestListener extends LocationListener
+public interface IGnssListener extends LocationListener
 {
 
     default void gpsStart()
@@ -19,11 +18,6 @@ public interface IGpsTestListener extends LocationListener
     }
 
     default void gpsStop()
-    {
-    }
-
-    @Deprecated
-    default void onGpsStatusChanged(int event, GpsStatus status)
     {
     }
 

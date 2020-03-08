@@ -12,7 +12,6 @@ import android.location.GnssMeasurementsEvent;
 import android.location.GnssStatus;
 import android.location.Location;
 import android.location.LocationManager;
-import android.location.LocationProvider;
 import android.os.AsyncTask;
 import android.os.Binder;
 import android.os.Build;
@@ -22,7 +21,6 @@ import android.provider.Settings;
 import android.telephony.CellInfo;
 import android.telephony.TelephonyManager;
 import android.util.Log;
-import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -41,8 +39,6 @@ import com.craxiom.networksurvey.util.PreferenceUtils;
 
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
-
-import static android.location.LocationManager.GPS_PROVIDER;
 
 /**
  * This service is responsible for getting access to the Android {@link TelephonyManager} and periodically getting the
@@ -122,8 +118,6 @@ public class NetworkSurveyService extends Service
     @Override
     public int onStartCommand(Intent intent, int flags, int startId)
     {
-        checkLocationProvider();
-
         return START_REDELIVER_INTENT;
     }
 
@@ -209,8 +203,8 @@ public class NetworkSurveyService extends Service
     }
 
     /**
-     * Toggles the logging setting.  If it is currently disabled, then an attempt will be made to enable logging.  If
-     * logging is already enabled then it will be turned off.
+     * Toggles the cellular logging setting.  If it is currently disabled, then an attempt will be made to enable
+     * logging.  If logging is already enabled then it will be turned off.
      * <p>
      * It is possible that an error occurs while trying to enable logging.  In that event false will be returned
      * indicating that logging is still not enabled.
@@ -218,7 +212,7 @@ public class NetworkSurveyService extends Service
      * @return The new state of logging.  True if it is enabled, or false if it is disabled.  Null is returned if the
      * toggling was unsuccessful.
      */
-    public Boolean toggleLogging()
+    public Boolean toggleCellularLogging()
     {
         synchronized (cellularLoggingEnabled)
         {
@@ -241,26 +235,33 @@ public class NetworkSurveyService extends Service
     }
 
     /**
-     * Turns GNSS Logging on or off based on the provided parameter.
+     * Toggles the GNSS logging setting.  If it is currently disabled, then an attempt will be made to enable
+     * logging.  If logging is already enabled then it will be turned off.
+     * <p>
+     * It is possible that an error occurs while trying to enable logging.  In that event false will be returned
+     * indicating that logging is still not enabled.
      *
-     * @param enable True if logging should be enabled, false otherwise
-     * @return Returns true if GNSS logging is now enabled, or false if it is disabled.
+     * @return The new state of logging.  True if it is enabled, or false if it is disabled.  Null is returned if the
+     * toggling was unsuccessful.
      */
-    public boolean toggleGnssLogging(boolean enable)
+    public Boolean toggleGnssLogging()
     {
         synchronized (gnssLoggingEnabled)
         {
-            if (enable)
-            {
-                startGnssLogging();
-            } else
+            final boolean originalLoggingState = gnssLoggingEnabled.get();
+
+            if (originalLoggingState)
             {
                 stopGnssLogging();
+            } else
+            {
+                startGnssLogging();
             }
 
             updateServiceNotification();
 
-            return gnssLoggingEnabled.get();
+            final boolean newLoggingState = gnssLoggingEnabled.get();
+            return newLoggingState == originalLoggingState ? null : newLoggingState;
         }
     }
 
@@ -354,50 +355,10 @@ public class NetworkSurveyService extends Service
             return;
         }
 
-        checkLocationProvider();
-
         final LocationManager locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
         if (locationManager != null)
         {
             locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, NETWORK_DATA_REFRESH_RATE_MS, 0f, gpsListener);
-        }
-    }
-
-    /**
-     * Checks that the location provider is enabled and that the location permission has been granted.  If GPS location
-     * is not enabled on this device, then the settings UI is opened so the user can enable it.
-     */
-    private void checkLocationProvider()
-    {
-        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED)
-        {
-            Log.w(LOG_TAG, "The ACCESS_FINE_LOCATION permission has not been granted");
-            return;
-        }
-
-        final LocationManager locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
-        final LocationProvider locationProvider = locationManager.getProvider(LocationManager.GPS_PROVIDER);
-        if (locationProvider == null)
-        {
-            final String noGpsMessage = getString(R.string.no_gps_device);
-            Log.w(LOG_TAG, noGpsMessage);
-            Toast.makeText(getApplicationContext(), noGpsMessage, Toast.LENGTH_LONG).show();
-        } else if (!locationManager.isProviderEnabled(GPS_PROVIDER))
-        {
-            // gps exists, but isn't on
-            final String turnOnGpsMessage = getString(R.string.turn_on_gps);
-            Log.w(LOG_TAG, turnOnGpsMessage);
-            Toast.makeText(getApplicationContext(), turnOnGpsMessage, Toast.LENGTH_LONG).show();
-
-            // Allow the user to turn on the GPS
-            final Intent myIntent = new Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS);
-            try
-            {
-                startActivity(myIntent);
-            } catch (Exception e)
-            {
-                Log.e(LOG_TAG, "An exception occurred trying to start the location activity: ", e);
-            }
         }
     }
 
@@ -542,9 +503,8 @@ public class NetworkSurveyService extends Service
 
             gnssGeoPackageRecorder = new GnssGeoPackageRecorder(this);
             gnssGeoPackageRecorder.start();
-            gnssLoggingEnabled.set(true);
-            gnssGeoPackageRecorder.openGeoPackageDatabase();
-            registerGnssListeners();
+
+            gnssLoggingEnabled.set(gnssGeoPackageRecorder.openGeoPackageDatabase() && registerGnssListeners());
         }
     }
 
@@ -569,10 +529,14 @@ public class NetworkSurveyService extends Service
 
     /**
      * Registers for GPS/GNSS updates.
+     *
+     * @return True if the listeners are registered successfully, false if something went wrong or
      */
-    private void registerGnssListeners()
+    private boolean registerGnssListeners()
     {
-        if (gnssStarted.getAndSet(true)) return;
+        if (gnssStarted.getAndSet(true)) return true;
+
+        boolean success = false;
 
         boolean hasPermissions = ContextCompat.checkSelfPermission(this,
                 Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED;
@@ -584,15 +548,19 @@ public class NetworkSurveyService extends Service
             if (locationManager == null)
             {
                 locationManager = getSystemService(LocationManager.class);
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O)
+                if (locationManager != null)
                 {
                     locationManager.registerGnssMeasurementsCallback(measurementListener);
-                    //locationManager.registerGnssStatusCallback(statusListener);
+                    // FIXME Figure out why this causes a NPE locationManager.registerGnssStatusCallback(statusListener);
                 }
 
                 gpsListener.addLocationListener(this);
             }
+
+            success = true;
         }
+
+        return success;
     }
 
     /**

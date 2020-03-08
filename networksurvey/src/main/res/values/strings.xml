@@ -3,7 +3,7 @@
     <string name="permissions_rationale_title">Network Survey Permissions</string>
     <string name="permissions_rationale">The Network Survey app requires a few permissions to work.  Denying these permissions will result in the app not functioning properly.
         \n\n1. <b>Make and Manage Phone Calls</b>:  This app does not make or manage phone calls.  Instead, it needs this permission to get access to the current cellular connection type (e.g. LTE vs UMTS).
-        \n\n2. <b>Access this Device\'s Location</b>:  This app creates a log file which includes the location the cellular record was captured at.
+        \n\n2. <b>Access this Device\'s Location</b>:  This app creates a log file which includes the location the cellular record was captured at and to display GNSS details.
         \n\n3. <b>Access Photos, Media, and Files on Your Device</b>:  This permission allows the log file to be written.</string>
 
     <string name="action_start_cellular_logging">Start Cellular Logging</string>
@@ -62,8 +62,10 @@
 
     <string name="cellular_logging_start_toast">Started Writing the Cellular Log File</string>
     <string name="cellular_logging_stop_toast">Cellular Log File Closed</string>
+    <string name="cellular_logging_toggle_failed">Failed to toggle the cellular logging state</string>
     <string name="gnss_logging_start_toast">Started Writing the GNSS Log File</string>
     <string name="gnss_logging_stop_toast">GNSS Log File Closed</string>
+    <string name="gnss_logging_toggle_failed">Failed to toggle the GNSS logging state</string>
 
     <string name="grpc_connection_title">Server Connection</string>
     <string name="grpc_connection_description">Here you can connect to a remote server.  Once connected, all future survey results will be streamed to the server.
@@ -127,6 +129,12 @@
     <!-- Bottom Navigation -->
     <string name="nav_gnss">GNSS</string>
     <string name="nav_cellular">Cellular</string>
+
+    <!-- General GNSS Constants -->
+    <string name="enable_gps_message">Location (GPS/GNSS) is disabled. It is required for tying cellular survey records to a location and to also get GNSS details.
+        \n\nDo you want to enable it now?</string>
+    <string name="enable_gps_positive_button">Enable GPS/GNSS</string>
+    <string name="enable_gps_negative_button">No</string>
 
     <!-- GNSS Status View -->
     <string name="gps_latitude_label">Lat:</string>
