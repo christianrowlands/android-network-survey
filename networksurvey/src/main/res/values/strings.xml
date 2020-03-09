@@ -150,6 +150,7 @@
     <string name="gps_bearing_label">Bearing:</string>
     <string name="gps_bearing_acc_label">B. Acc:</string>
     <string name="gps_num_sats_label"># Sats:</string>
+    <string name="gps_avg_cn0_label">Avg</string>
     <string name="pdop_label">PDOP:</string>
     <string name="hvdop_label">H/V DOP:</string>
     <string name="gnss_not_available">Global Navigation Satellite System (GNSS) satellites not available</string>
@@ -167,6 +168,30 @@
     <string name="gps_flags_column_label">Flags</string>
     <string name="copied_to_clipboard">Location copied to clipboard</string>
     <string name="send_log">"Send log…"</string>
+
+    <!-- GNSS Sky View -->
+    <string name="sky_legend_title">Legend</string>
+    <string name="sky_legend_shape_gnss_title">Global Navigation Satellite Systems (GNSS)</string>
+    <string name="sky_legend_shape_navstar">NAVSTAR GPS (USA)</string>
+    <string name="sky_legend_shape_glonass">GLONASS (Russia)</string>
+    <string name="sky_legend_shape_galileo">Galileo (European Union)</string>
+    <string name="sky_legend_shape_qzss">QZSS (Japan)</string>
+    <string name="sky_legend_shape_beidou">BeiDou/COMPASS (China)</string>
+    <string name="sky_legend_shape_irnss">IRNSS (India)</string>
+
+    <string name="sky_legend_shape_sbas_title">Satellite-based Augmentation Systems (SBAS)</string>
+    <string name="sky_legend_shape_waas">WAAS (USA)</string>
+    <string name="sky_legend_shape_egnos">EGNOS (European Union)</string>
+    <string name="sky_legend_shape_gagan">GAGAN (India)</string>
+    <string name="sky_legend_shape_msas">MSAS (Japan)</string>
+    <string name="sky_legend_shape_sdcm">SDCM (Russia)</string>
+    <string name="sky_legend_shape_snas">SNAS (China)</string>
+    <string name="sky_legend_shape_saccsa">SACCSA (ICAO)</string>
+
+    <string name="sky_legend_shape_availability_title">Signal Availability</string>
+    <string name="sky_legend_shape_not_in_view">Not in view of device</string>
+    <string name="sky_legend_shape_in_view">In view</string>
+    <string name="sky_legend_shape_used_in_fix">Used in fix</string>
 
     <!-- GNSS Map View -->
     <string name="ground_truth_marker_title">Your real location</string>

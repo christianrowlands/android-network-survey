@@ -12,9 +12,14 @@
     <color name="connectionStatusConnected">#00912F</color>
 
     <color name="body_text_2_light">#8a000000</color>
+    <color name="body_text_1_dark">#deffffff</color>
 
+    <!-- GNSS Sky View -->
+    <color name="not_in_view_sat">#DDFFFFFF</color>
     <color name="gray">#ff888888</color>
     <color name="red">#d50000</color>
     <color name="yellow">#ffb300</color>
     <color name="green">#009d00</color>
+
+    <color name="cn0_meter_border">@color/body_text_2_light</color>
 </resources>

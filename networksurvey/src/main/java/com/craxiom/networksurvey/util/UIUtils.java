@@ -45,6 +45,10 @@ import java.util.concurrent.TimeUnit;
 
 import static android.content.pm.PackageManager.GET_META_DATA;
 import static android.text.TextUtils.isEmpty;
+import static com.craxiom.networksurvey.view.GnssSkyView.MAX_VALUE_CN0;
+import static com.craxiom.networksurvey.view.GnssSkyView.MAX_VALUE_SNR;
+import static com.craxiom.networksurvey.view.GnssSkyView.MIN_VALUE_CN0;
+import static com.craxiom.networksurvey.view.GnssSkyView.MIN_VALUE_SNR;
 
 /**
  * Utilities for processing user interface elements.
@@ -54,7 +58,6 @@ import static android.text.TextUtils.isEmpty;
 
 public class UIUtils
 {
-
     public static final String COORDINATE_LATITUDE = "lat";
     public static final String COORDINATE_LONGITUDE = "lon";
 
@@ -151,10 +154,10 @@ public class UIUtils
      * @param snr signal-to-noise ratio of the satellite in dB (from GpsSatellite)
      * @return left margin value in pixels for the SNR indicator ImageViews
      */
-    /* FIXME public static int snrToIndicatorLeftMarginPx(float snr, int minIndicatorMarginPx, int maxIndicatorMarginPx)
+    public static int snrToIndicatorLeftMarginPx(float snr, int minIndicatorMarginPx, int maxIndicatorMarginPx)
     {
         return (int) MathUtils.mapToRange(snr, MIN_VALUE_SNR, MAX_VALUE_SNR, minIndicatorMarginPx, maxIndicatorMarginPx);
-    }*/
+    }
 
     /**
      * Converts the provided SNR values to a left margin value (pixels) for the avg SNR TextViews in gps_sky_signal
@@ -166,10 +169,10 @@ public class UIUtils
      * @param snr signal-to-noise ratio of the satellite in dB (from GpsSatellite)
      * @return left margin value in dp for the SNR TextViews
      */
-    /* FIXME public static int snrToTextViewLeftMarginPx(float snr, int minTextViewMarginPx, int maxTextViewMarginPx)
+    public static int snrToTextViewLeftMarginPx(float snr, int minTextViewMarginPx, int maxTextViewMarginPx)
     {
         return (int) MathUtils.mapToRange(snr, MIN_VALUE_SNR, MAX_VALUE_SNR, minTextViewMarginPx, maxTextViewMarginPx);
-    }*/
+    }
 
     /**
      * Converts the provided C/N0 values to a left margin value (dp) for the avg C/N0 indicator ImageViews in gps_sky_signal
@@ -181,10 +184,10 @@ public class UIUtils
      * @param cn0 carrier-to-noise density at the antenna of the satellite in dB-Hz (from GnssStatus)
      * @return left margin value in dp for the C/N0 indicator ImageViews
      */
-    /* FIXME public static int cn0ToIndicatorLeftMarginPx(float cn0, int minIndicatorMarginPx, int maxIndicatorMarginPx)
+    public static int cn0ToIndicatorLeftMarginPx(float cn0, int minIndicatorMarginPx, int maxIndicatorMarginPx)
     {
         return (int) MathUtils.mapToRange(cn0, MIN_VALUE_CN0, MAX_VALUE_CN0, minIndicatorMarginPx, maxIndicatorMarginPx);
-    }*/
+    }
 
     /**
      * Converts the provided C/N0 values to a left margin value (dp) for the avg C/N0 TextViews in gps_sky_signal
@@ -196,10 +199,10 @@ public class UIUtils
      * @param cn0 carrier-to-noise density at the antenna of the satellite in dB-Hz (from GnssStatus)
      * @return left margin value in dp for the C/N0 TextViews
      */
-    /* FIXME public static int cn0ToTextViewLeftMarginPx(float cn0, int minTextViewMarginPx, int maxTextViewMarginPx)
+    public static int cn0ToTextViewLeftMarginPx(float cn0, int minTextViewMarginPx, int maxTextViewMarginPx)
     {
         return (int) MathUtils.mapToRange(cn0, MIN_VALUE_CN0, MAX_VALUE_CN0, minTextViewMarginPx, maxTextViewMarginPx);
-    }*/
+    }
 
     /**
      * Sets the margins for a given view

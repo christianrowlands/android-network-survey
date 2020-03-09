@@ -72,7 +72,6 @@ import static android.util.TypedValue.COMPLEX_UNIT_DIP;
 import static android.util.TypedValue.COMPLEX_UNIT_PX;
 import static com.craxiom.networksurvey.model.ConstellationType.GNSS;
 import static com.craxiom.networksurvey.model.ConstellationType.SBAS;
-import static com.craxiom.networksurvey.model.SatelliteStatus.NO_DATA;
 
 /**
  * A fragment for displaying the latest GNSS information to the user.
@@ -81,9 +80,9 @@ import static com.craxiom.networksurvey.model.SatelliteStatus.NO_DATA;
  * this Network Survey app.
  * https://github.com/barbeau/gpstest/blob/master/GPSTest/src/main/java/com/android/gpstest/GpsStatusFragment.java
  */
-public class GpsStatusFragment extends Fragment implements IGnssListener
+public class GnssStatusFragment extends Fragment implements IGnssListener
 {
-    private static final String LOG_TAG = GpsStatusFragment.class.getSimpleName();
+    private static final String LOG_TAG = GnssStatusFragment.class.getSimpleName();
     static final String TITLE = "Details";
 
     private static final String EMPTY_LAT_LONG = "             ";
@@ -141,7 +140,7 @@ public class GpsStatusFragment extends Fragment implements IGnssListener
      *
      * @param mainGnssFragment Used to register and unregister for updates to GNSS events.
      */
-    GpsStatusFragment(MainGnssFragment mainGnssFragment)
+    GnssStatusFragment(MainGnssFragment mainGnssFragment)
     {
         this.mainGnssFragment = mainGnssFragment;
     }
@@ -980,7 +979,7 @@ public class GpsStatusFragment extends Fragment implements IGnssListener
 
                 if (GpsTestUtil.isGnssCarrierFrequenciesSupported())
                 {
-                    if (sats.get(dataRow).getCarrierFrequencyHz() != NO_DATA)
+                    if (sats.get(dataRow).getCarrierFrequencyHz() != SatelliteStatus.NO_DATA)
                     {
                         // Convert Hz to MHz
                         float carrierMhz = MathUtils.toMhz(sats.get(dataRow).getCarrierFrequencyHz());
@@ -1009,7 +1008,7 @@ public class GpsStatusFragment extends Fragment implements IGnssListener
                 {
                     v.getCarrierFrequency().setVisibility(View.GONE);
                 }
-                if (sats.get(dataRow).getCn0DbHz() != NO_DATA)
+                if (sats.get(dataRow).getCn0DbHz() != SatelliteStatus.NO_DATA)
                 {
                     v.getSignal().setText(String.format(defaultLocale, "%.1f", sats.get(dataRow).getCn0DbHz()));
                 } else
@@ -1017,7 +1016,7 @@ public class GpsStatusFragment extends Fragment implements IGnssListener
                     v.getSignal().setText("");
                 }
 
-                if (sats.get(dataRow).getElevationDegrees() != NO_DATA)
+                if (sats.get(dataRow).getElevationDegrees() != SatelliteStatus.NO_DATA)
                 {
                     v.getElevation().setText(resources.getString(R.string.gps_elevation_column_value,
                             sats.get(dataRow).getElevationDegrees()).replace(".0", "").replace(",0", ""));
@@ -1026,7 +1025,7 @@ public class GpsStatusFragment extends Fragment implements IGnssListener
                     v.getElevation().setText("");
                 }
 
-                if (sats.get(dataRow).getAzimuthDegrees() != NO_DATA)
+                if (sats.get(dataRow).getAzimuthDegrees() != SatelliteStatus.NO_DATA)
                 {
                     v.getAzimuth().setText(resources.getString(R.string.gps_azimuth_column_value,
                             sats.get(dataRow).getAzimuthDegrees()).replace(".0", "").replace(",0", ""));

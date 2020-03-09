@@ -281,10 +281,10 @@ public class MainGnssFragment extends Fragment
         switch (position)
         {
             case 0:
-                return GpsStatusFragment.TITLE;
+                return GnssStatusFragment.TITLE;
 
             case 1:
-                return CalculatorFragment.TITLE; // TODO Update this to the Sky View Fragment
+                return GnssSkyFragment.TITLE;
 
             default:
                 Log.wtf(LOG_TAG, "No title specified for the GNSS tab.  Using a default");
@@ -312,14 +312,14 @@ public class MainGnssFragment extends Fragment
             switch (position)
             {
                 case 0:
-                    return new GpsStatusFragment(mainGnssFragment);
+                    return new GnssStatusFragment(mainGnssFragment);
 
                 case 1:
-                    return new CalculatorFragment(); // TODO Update this to the Sky View Fragment
+                    return new GnssSkyFragment(mainGnssFragment);
 
                 default:
                     Log.wtf(LOG_TAG, "A fragment has not been specified for one of the tabs in the GNSS UI.");
-                    return new GpsStatusFragment(mainGnssFragment);
+                    return new GnssStatusFragment(mainGnssFragment);
             }
         }
 

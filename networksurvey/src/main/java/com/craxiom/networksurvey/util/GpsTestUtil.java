@@ -217,15 +217,10 @@ public class GpsTestUtil
         switch (gnssType)
         {
             case NAVSTAR:
-                return SatelliteName.UNKNOWN;
             case GLONASS:
-                return SatelliteName.UNKNOWN;
             case BEIDOU:
-                return SatelliteName.UNKNOWN;
             case QZSS:
-                return SatelliteName.UNKNOWN;
             case GALILEO:
-                return SatelliteName.UNKNOWN;
             case IRNSS:
                 return SatelliteName.UNKNOWN;
             case SBAS:
