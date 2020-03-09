@@ -74,7 +74,7 @@ public class GnssSkyFragment extends Fragment implements IGnssListener
 
     private ImageView snrCn0InViewAvg, snrCn0UsedAvg;
 
-    Animation snrCn0InViewAvgAnimation, snrCn0UsedAvgAnimation, snrCn0InViewAvgAnimationTextView, snrCn0UsedAvgAnimationTextView;
+    private Animation snrCn0InViewAvgAnimation, snrCn0UsedAvgAnimation, snrCn0InViewAvgAnimationTextView, snrCn0UsedAvgAnimationTextView;
 
     private boolean useLegacyGnssApi = false;
 

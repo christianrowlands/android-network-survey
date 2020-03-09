@@ -8,6 +8,8 @@
     <dimen name="text_margin">16dp</dimen>
     <dimen name="label_value_margin">6dp</dimen>
     <dimen name="status_margin">5dp</dimen>
+    <dimen name="calculator_margin">10dp</dimen>
+    <dimen name="fragment_padding_top">4dp</dimen>
 
     <!-- GNSS Status view -->
     <dimen name="status_label_right_margin">4dp</dimen>

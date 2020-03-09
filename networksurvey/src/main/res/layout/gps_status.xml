@@ -16,34 +16,35 @@
 */
 -->
 <androidx.core.widget.NestedScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:card_view="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    xmlns:card_view="http://schemas.android.com/apk/res-auto">
+    android:paddingTop="@dimen/fragment_padding_top">
 
     <LinearLayout
-        android:orientation="vertical"
         android:layout_width="fill_parent"
         android:layout_height="fill_parent"
-        android:layout_marginLeft="@dimen/status_margin"
         android:layout_marginStart="@dimen/status_margin"
-        android:layout_marginRight="@dimen/status_margin"
-        android:layout_marginEnd="@dimen/status_margin"
+        android:layout_marginLeft="@dimen/status_margin"
         android:layout_marginTop="@dimen/status_margin"
-        android:layout_marginBottom="@dimen/status_margin">
+        android:layout_marginEnd="@dimen/status_margin"
+        android:layout_marginRight="@dimen/status_margin"
+        android:layout_marginBottom="@dimen/status_margin"
+        android:orientation="vertical">
 
         <LinearLayout
-            android:orientation="horizontal"
             android:layout_width="fill_parent"
-            android:layout_height="wrap_content">
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
 
             <androidx.cardview.widget.CardView xmlns:card_view="http://schemas.android.com/apk/res-auto"
                 android:id="@+id/status_location_card"
-                android:layout_gravity="center"
                 android:layout_width="fill_parent"
                 android:layout_height="wrap_content"
-                card_view:cardUseCompatPadding="true"
+                android:layout_gravity="center"
+                android:foreground="?attr/selectableItemBackground"
                 card_view:cardCornerRadius="4dp"
-                android:foreground="?attr/selectableItemBackground">
+                card_view:cardUseCompatPadding="true">
 
                 <TableLayout
                     android:id="@+id/lat_long_table"
@@ -239,12 +240,12 @@
 
         <androidx.cardview.widget.CardView
             android:id="@+id/gnss_status_card"
-            android:layout_gravity="center"
             android:layout_width="fill_parent"
             android:layout_height="wrap_content"
-            card_view:cardUseCompatPadding="true"
+            android:layout_gravity="center"
+            android:foreground="?attr/selectableItemBackground"
             card_view:cardCornerRadius="4dp"
-            android:foreground="?attr/selectableItemBackground">
+            card_view:cardUseCompatPadding="true">
 
             <androidx.recyclerview.widget.RecyclerView
                 android:id="@+id/gnss_status_list"
@@ -255,20 +256,20 @@
             <TextView
                 android:id="@+id/gnss_not_available"
                 style="@style/info_value"
+                android:layout_margin="10dp"
                 android:gravity="center"
                 android:text="@string/gnss_not_available"
-                android:layout_margin="10dp"
                 android:visibility="gone" />
         </androidx.cardview.widget.CardView>
 
         <androidx.cardview.widget.CardView
             android:id="@+id/sbas_status_card"
-            android:layout_gravity="center"
             android:layout_width="fill_parent"
             android:layout_height="wrap_content"
-            card_view:cardUseCompatPadding="true"
+            android:layout_gravity="center"
+            android:foreground="?attr/selectableItemBackground"
             card_view:cardCornerRadius="4dp"
-            android:foreground="?attr/selectableItemBackground">
+            card_view:cardUseCompatPadding="true">
 
             <androidx.recyclerview.widget.RecyclerView
                 android:id="@+id/sbas_status_list"
@@ -279,8 +280,8 @@
             <TextView
                 android:id="@+id/sbas_not_available"
                 style="@style/info_value"
-                android:gravity="center"
                 android:layout_margin="10dp"
+                android:gravity="center"
                 android:text="@string/sbas_not_available"
                 android:visibility="gone" />
         </androidx.cardview.widget.CardView>

@@ -23,6 +23,7 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.Toast;
 
+import androidx.activity.OnBackPressedCallback;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
@@ -31,6 +32,7 @@ import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import androidx.drawerlayout.widget.DrawerLayout;
 import androidx.navigation.NavController;
+import androidx.navigation.NavDestination;
 import androidx.navigation.Navigation;
 import androidx.navigation.ui.AppBarConfiguration;
 import androidx.navigation.ui.NavigationUI;
@@ -390,6 +392,27 @@ public class NetworkSurveyActivity extends AppCompatActivity
 
         NavigationUI.setupWithNavController(navigationView, navController);
         NavigationUI.setupWithNavController(bottomNav, navController);
+
+        OnBackPressedCallback callback = new OnBackPressedCallback(true)
+        {
+            @Override
+            public void handleOnBackPressed()
+            {
+                // For whatever reason calling navigateUp from one of the top level destinations results in the
+                // navigation drawer being opened.  Therefore, if the current destination a top level we have custom
+                // code here to move this activity to the back stack.
+                final NavDestination currentDestination = navController.getCurrentDestination();
+                if (currentDestination != null &&
+                        (currentDestination.getId() == R.id.main_cellular_fragment || currentDestination.getId() == R.id.main_gnss_fragment))
+                {
+                    moveTaskToBack(true);
+                } else
+                {
+                    NavigationUI.navigateUp(navController, appBarConfiguration);
+                }
+            }
+        };
+        getOnBackPressedDispatcher().addCallback(this, callback);
     }
 
     /**
