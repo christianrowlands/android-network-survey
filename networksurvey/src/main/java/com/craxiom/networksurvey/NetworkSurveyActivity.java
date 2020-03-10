@@ -430,13 +430,6 @@ public class NetworkSurveyActivity extends AppCompatActivity
             updateCellularLoggingButton(enabled);
             return getString(enabled ? R.string.cellular_logging_start_toast : R.string.cellular_logging_stop_toast);
         }).executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
-
-        // FIXME I thought I already fixed this but I guess not.  Checking if logging is enabled here results in a race
-        // condition since the ToggleLoggingTask above runs on a different thread.
-        if (networkSurveyService != null && networkSurveyService.isCellularLoggingEnabled())
-        {
-            networkSurveyService.initializePing();
-        }
     }
 
     /**

@@ -87,7 +87,7 @@ public class GnssStatusFragment extends Fragment implements IGnssListener
 
     private static final String EMPTY_LAT_LONG = "             ";
 
-    /*TODO Delete me private static final String METERS = Application.get().getResources().getStringArray(R.array.preferred_distance_units_values)[0];
+    /*TODO private static final String METERS = Application.get().getResources().getStringArray(R.array.preferred_distance_units_values)[0];
     private static final String METERS_PER_SECOND = Application.get().getResources().getStringArray(R.array.preferred_speed_units_values)[0];
     private static final String KILOMETERS_PER_HOUR = Application.get().getResources().getStringArray(R.array.preferred_speed_units_values)[1];*/
 
@@ -490,13 +490,7 @@ public class GnssStatusFragment extends Fragment implements IGnssListener
 
     private void updateFixTime()
     {
-        if (fixTime == 0)// FIXME || (GpsTestActivity.getInstance() != null && !GpsTestActivity.getInstance().mStarted))
-        {
-            fixTimeView.setText("");
-        } else
-        {
-            fixTimeView.setText(dateFormat.format(fixTime));
-        }
+        fixTimeView.setText(fixTime == 0 ? "" : dateFormat.format(fixTime));
     }
 
     /**

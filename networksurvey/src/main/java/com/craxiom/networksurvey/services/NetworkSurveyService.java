@@ -29,7 +29,6 @@ import androidx.annotation.Nullable;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 
-import com.craxiom.networksurvey.Application;
 import com.craxiom.networksurvey.CalculationUtils;
 import com.craxiom.networksurvey.GpsListener;
 import com.craxiom.networksurvey.NetworkSurveyActivity;
@@ -37,7 +36,6 @@ import com.craxiom.networksurvey.R;
 import com.craxiom.networksurvey.SurveyRecordLogger;
 import com.craxiom.networksurvey.constants.NetworkSurveyConstants;
 import com.craxiom.networksurvey.listeners.ISurveyRecordListener;
-import com.craxiom.networksurvey.util.PreferenceUtils;
 
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -213,9 +211,13 @@ public class NetworkSurveyService extends Service
         {
             final boolean originalLoggingState = cellularLoggingEnabled.get();
             final boolean successful = surveyRecordLogger.enableLogging(!originalLoggingState);
-            cellularLoggingEnabled.set(successful != originalLoggingState);
+            if (successful) cellularLoggingEnabled.set(!originalLoggingState);
             updateServiceNotification();
-            return successful ? cellularLoggingEnabled.get() : null;
+
+            final boolean newLoggingState = cellularLoggingEnabled.get();
+            if (successful && newLoggingState) initializePing();
+
+            return successful ? newLoggingState : null;
         }
     }
 
@@ -296,7 +298,8 @@ public class NetworkSurveyService extends Service
     {
         if (gnssGeoPackageRecorder != null) gnssGeoPackageRecorder.onLocationChanged(location);
 
-        if (!gnssRawSupportKnown && !hasGnssRawFailureNagLaunched)
+        // TODO Add this back in when we can test on a device that does not support GNSS
+        /*if (!gnssRawSupportKnown && !hasGnssRawFailureNagLaunched)
         {
             if (firstGpsAcqTime < 0L)
             {
@@ -311,10 +314,11 @@ public class NetworkSurveyService extends Service
                 boolean ignoreRawGnssFailure = PreferenceUtils.getBoolean(Application.get().getString(R.string.pref_key_ignore_raw_gnss_failure), false);
                 if (!ignoreRawGnssFailure)
                 {
-                    // TODO Convert the activity to a dialog or something similar startActivity(new Intent(NetworkSurveyService.this, RawGnssFailureActivity.class));
+                    final GnssFailureDialogFragment gnssFailureDialogFragment = new GnssFailureDialogFragment();
+                    gnssFailureDialogFragment.show();
                 }
             }
-        }
+        }*/
     }
 
     /**

@@ -1,8 +1,6 @@
 package com.craxiom.networksurvey.services;
 
 import android.content.Context;
-import android.hardware.Sensor;
-import android.hardware.SensorEvent;
 import android.location.GnssClock;
 import android.location.GnssMeasurement;
 import android.location.GnssMeasurementsEvent;
@@ -50,8 +48,6 @@ import mil.nga.geopackage.features.user.FeatureRow;
 import mil.nga.geopackage.features.user.FeatureTable;
 import mil.nga.geopackage.geom.GeoPackageGeometryData;
 import mil.nga.geopackage.user.custom.UserCustomColumn;
-import mil.nga.geopackage.user.custom.UserCustomDao;
-import mil.nga.geopackage.user.custom.UserCustomRow;
 import mil.nga.sf.GeometryType;
 import mil.nga.sf.Point;
 import mil.nga.sf.proj.ProjectionConstants;
@@ -71,12 +67,10 @@ public class GnssGeoPackageDatabase
     private static final String TAG = GnssGeoPackageDatabase.class.getSimpleName();
 
     private static final String CLOCK_TABLE_NAME = "rcvr_clock";
-    private static final String MOTION_TABLE_NAME = "motion";
     private static final String POINTS_TABLE_NAME = "gps_observation_points";
     private static final String SAT_TABLE_NAME = "sat_data";
 
     private static final String CLOCK_MAP_TABLE_NAME = SAT_TABLE_NAME + "_" + CLOCK_TABLE_NAME;
-    //    private static final String MOTION_MAP_TABLE_NAME = POINTS_TABLE_NAME + "_" + MOTION_TABLE_NAME;
     private static final String SAT_MAP_TABLE_NAME = POINTS_TABLE_NAME + "_" + SAT_TABLE_NAME;
 
     private static final String CLK_TIME_NANOS = "time_nanos";
@@ -148,35 +142,6 @@ public class GnssGeoPackageDatabase
     private static final String SAT_DATA_AZIMUTH_DEG = "azimuth_deg";
     private static final String SAT_DATA_ELEVATION_DEG = "elevation_deg";
 
-    private static final String SENSOR_TIME = "time";
-    private static final String SENSOR_ACCEL_X = "accel_x";
-    private static final String SENSOR_ACCEL_Y = "accel_y";
-    private static final String SENSOR_ACCEL_Z = "accel_z";
-    private static final String SENSOR_LINEAR_ACCEL_X = "linear_accel_x";
-    private static final String SENSOR_LINEAR_ACCEL_Y = "linear_accel_y";
-    private static final String SENSOR_LINEAR_ACCEL_Z = "linear_accel_z";
-    private static final String SENSOR_MAG_X = "mag_x";
-    private static final String SENSOR_MAG_Y = "mag_y";
-    private static final String SENSOR_MAG_Z = "mag_z";
-    private static final String SENSOR_GYRO_X = "gyro_x";
-    private static final String SENSOR_GYRO_Y = "gyro_y";
-    private static final String SENSOR_GYRO_Z = "gyro_z";
-    private static final String SENSOR_GRAVITY_X = "gravity_x";
-    private static final String SENSOR_GRAVITY_Y = "gravity_y";
-    private static final String SENSOR_GRAVITY_Z = "gravity_z";
-    private static final String SENSOR_ROT_VEC_X = "rot_vec_x";
-    private static final String SENSOR_ROT_VEC_Y = "rot_vec_y";
-    private static final String SENSOR_ROT_VEC_Z = "rot_vec_z";
-    private static final String SENSOR_ROT_VEC_COS = "rot_vec_cos";
-    private static final String SENSOR_ROT_VEC_HDG_ACC = "rot_vec_hdg_acc";
-    private static final String SENSOR_BARO = "baro";
-    private static final String SENSOR_HUMIDITY = "humidity";
-    private static final String SENSOR_TEMP = "temp";
-    private static final String SENSOR_LUX = "lux";
-    private static final String SENSOR_PROX = "prox";
-    private static final String SENSOR_STATIONARY = "stationary";
-    private static final String SENSOR_MOTION = "motion";
-
     private static final String ID_COLUMN = "id";
     private static final String GEOMETRY_COLUMN = "geom";
     private static final long WGS84_SRS = 4326;
@@ -190,9 +155,8 @@ public class GnssGeoPackageDatabase
     private UserMappingDao clkMapDao;
     private SimpleAttributesDao satDao;
     private UserMappingDao satMapDao;
-    private UserCustomDao sensorDao;
 
-    public GnssGeoPackageDatabase(Context context)
+    GnssGeoPackageDatabase(Context context)
     {
         gpkgManager = GeoPackageFactory.getManager(context);
     }
@@ -217,7 +181,7 @@ public class GnssGeoPackageDatabase
         // create SRS & feature tables
         SpatialReferenceSystemDao srsDao = gpsGpkg.getSpatialReferenceSystemDao();
         SpatialReferenceSystem srs = srsDao.getOrCreateCode(ProjectionConstants.AUTHORITY_EPSG,
-                (long) ProjectionConstants.EPSG_WORLD_GEODETIC_SYSTEM);
+                ProjectionConstants.EPSG_WORLD_GEODETIC_SYSTEM);
 
         gpsGpkg.createGeometryColumnsTable();
 
@@ -230,7 +194,6 @@ public class GnssGeoPackageDatabase
 
         createSatelliteTable(contents, rte, srs);
         createClockTable(contents, rte, srs);
-//        createMotionTable(contents, rte, srs);
     }
 
     /**
@@ -433,28 +396,13 @@ public class GnssGeoPackageDatabase
     }
 
     /**
-     * Creates the motion table and initializes the {@link #sensorDao} field, which can be used to
-     * add data to the table.
-     *
-     * @param contents The database contents
-     * @param rte      The related tables extension
-     * @param srs      The spatial reference system
-     */
-    private void createMotionTable(Contents contents, RelatedTablesExtension rte, SpatialReferenceSystem srs)
-    {
-        // TODO KMB: This is a stub; if this table is still needed, this method will need to be
-        //  fleshed out similar to the clock or sat data table.
-        sensorDao = rte.getUserDao(MOTION_TABLE_NAME);
-    }
-
-    /**
      * Writes the provide GNSS measurement event data to the database. Note: this method and any
      * other method that accesses the GeoPackage is synchronized to ensure the database doesn't get
      * closed while it is being updated.
      *
      * @param event The event providing the GNSS measurement data
      */
-    public synchronized void writeGnssMeasurements(final GnssMeasurementsEvent event)
+    synchronized void writeGnssMeasurements(final GnssMeasurementsEvent event)
     {
         try
         {
@@ -584,7 +532,7 @@ public class GnssGeoPackageDatabase
      *
      * @param location The updated location
      */
-    public synchronized void writeLocation(final Location location)
+    synchronized void writeLocation(final Location location)
     {
         try
         {
@@ -723,7 +671,7 @@ public class GnssGeoPackageDatabase
      *
      * @param status The updated GNSS status
      */
-    public synchronized void writeSatelliteStatus(final GnssStatus status)
+    synchronized void writeSatelliteStatus(final GnssStatus status)
     {
         try
         {
@@ -759,127 +707,11 @@ public class GnssGeoPackageDatabase
     }
 
     /**
-     * Writes the provided sensor status to the database. Note: this method and any other method
-     * that accesses the GeoPackage is synchronized to ensure the database doesn't get closed while
-     * it is being updated.
-     *
-     * @param event The event providing the sensor status
-     */
-    public synchronized void writeSensorStatus(final SensorEvent event)
-    {
-        try
-        {
-            float[] values = event.values;
-            if ((values != null) && (values.length > 0))
-            {
-                UserCustomRow sensorRow = sensorDao.newRow();
-
-                for (int i = 1; i < sensorRow.columnCount(); i++)
-                {
-                    sensorRow.setValue(i, 0d);
-                }
-
-                sensorRow.setValue(SENSOR_STATIONARY, 0);
-                sensorRow.setValue(SENSOR_MOTION, 0);
-                sensorRow.setValue("data_dump", "");
-                sensorRow.setValue(SENSOR_TIME, event.timestamp);
-                switch (event.sensor.getType())
-                {
-                    case Sensor.TYPE_MAGNETIC_FIELD:
-                    case Sensor.TYPE_MAGNETIC_FIELD_UNCALIBRATED:
-                        if (values.length >= 3)
-                        {
-                            sensorRow.setValue(SENSOR_MAG_X, (double) values[0]);
-                            sensorRow.setValue(SENSOR_MAG_Y, (double) values[1]);
-                            sensorRow.setValue(SENSOR_MAG_Z, (double) values[2]);
-                        }
-                        break;
-                    case Sensor.TYPE_ACCELEROMETER:
-                    case Sensor.TYPE_ACCELEROMETER_UNCALIBRATED:
-                        if (values.length >= 3)
-                        {
-                            sensorRow.setValue(SENSOR_ACCEL_X, (double) values[0]);
-                            sensorRow.setValue(SENSOR_ACCEL_Y, (double) values[1]);
-                            sensorRow.setValue(SENSOR_ACCEL_Z, (double) values[2]);
-                        }
-                        break;
-                    case Sensor.TYPE_LINEAR_ACCELERATION:
-                        if (values.length >= 3)
-                        {
-                            sensorRow.setValue(SENSOR_LINEAR_ACCEL_X, (double) values[0]);
-                            sensorRow.setValue(SENSOR_LINEAR_ACCEL_Y, (double) values[1]);
-                            sensorRow.setValue(SENSOR_LINEAR_ACCEL_Z, (double) values[2]);
-                        }
-                        break;
-                    case Sensor.TYPE_GYROSCOPE:
-                    case Sensor.TYPE_GYROSCOPE_UNCALIBRATED:
-                        if (values.length >= 3)
-                        {
-                            sensorRow.setValue(SENSOR_GYRO_X, (double) values[0]);
-                            sensorRow.setValue(SENSOR_GYRO_Y, (double) values[1]);
-                            sensorRow.setValue(SENSOR_GYRO_Z, (double) values[2]);
-                        }
-                        break;
-                    case Sensor.TYPE_GRAVITY:
-                        if (values.length >= 3)
-                        {
-                            sensorRow.setValue(SENSOR_GRAVITY_X, (double) values[0]);
-                            sensorRow.setValue(SENSOR_GRAVITY_Y, (double) values[1]);
-                            sensorRow.setValue(SENSOR_GRAVITY_Z, (double) values[2]);
-                        }
-                        break;
-                    case Sensor.TYPE_ROTATION_VECTOR:
-                        if (values.length >= 5)
-                        {
-                            sensorRow.setValue(SENSOR_ROT_VEC_X, (double) values[0]);
-                            sensorRow.setValue(SENSOR_ROT_VEC_Y, (double) values[1]);
-                            sensorRow.setValue(SENSOR_ROT_VEC_Z, (double) values[2]);
-                            sensorRow.setValue(SENSOR_ROT_VEC_COS, (double) values[3]);
-                            sensorRow.setValue(SENSOR_ROT_VEC_HDG_ACC, (double) values[4]);
-                        }
-                        break;
-                    case Sensor.TYPE_AMBIENT_TEMPERATURE:
-                        sensorRow.setValue(SENSOR_TEMP, (double) values[0]);
-                        break;
-                    case Sensor.TYPE_RELATIVE_HUMIDITY:
-                        sensorRow.setValue(SENSOR_HUMIDITY, (double) values[0]);
-                        break;
-                    case Sensor.TYPE_PROXIMITY:
-                        sensorRow.setValue(SENSOR_PROX, (double) values[0]);
-                        break;
-                    case Sensor.TYPE_PRESSURE:
-                        sensorRow.setValue(SENSOR_BARO, (double) values[0]);
-                        break;
-                    case Sensor.TYPE_LIGHT:
-                        sensorRow.setValue(SENSOR_LUX, (double) values[0]);
-                        break;
-                    case Sensor.TYPE_STATIONARY_DETECT:
-                        sensorRow.setValue(SENSOR_STATIONARY, 1);
-                        break;
-                    case Sensor.TYPE_MOTION_DETECT:
-                        sensorRow.setValue(SENSOR_MOTION, 1);
-                        break;
-                    default:
-                        sensorRow = null;
-                }
-
-                if (sensorRow != null)
-                {
-                    sensorDao.insert(sensorRow);
-                }
-            }
-        } catch (Exception e)
-        {
-            Log.e(TAG, "Error adding sensor status change to GeoPackage", e);
-        }
-    }
-
-    /**
      * Shuts down the GeoPackage database. Note: this method and any other method that accesses the
      * GeoPackage is synchronized to ensure the database doesn't get closed while it is being
      * updated.
      */
-    public synchronized void shutdown()
+    synchronized void shutdown()
     {
         if (gpsGpkg != null)
         {

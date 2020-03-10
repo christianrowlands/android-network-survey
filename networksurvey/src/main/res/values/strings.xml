@@ -140,6 +140,12 @@
     <string name="enable_gps_positive_button">Enable GPS/GNSS</string>
     <string name="enable_gps_negative_button">No</string>
 
+    <!-- GNSS Failure Alert -->
+    <string name="app_icon_description">App Icon</string>
+    <string name="not_supported_title">GNSS Features May Not Work</string>
+    <string name="not_supported_description">Network Survey is not receiving raw GNSS measurements from the phone, which are required for generating GeoPackage files with useful data. You will still see some satellite status in the app, but any GeoPackage files generated will only contain basic location information. For more information and a list of devices that support raw GNSS, consult Android\'s <a href="https://developer.android.com/guide/topics/sensors/gnss">Raw GNSS Measurements</a> guide.</string>
+    <string name="remember_my_decision">Don\'t ask me again</string>
+
     <!-- GNSS Status View -->
     <string name="gps_latitude_label">Lat:</string>
     <string name="gps_longitude_label">Long:</string>
@@ -213,8 +219,7 @@
 
     <!-- GNSS Logging -->
     <string name="data_saved_location">Data saved in </string>
-    <string name="notification">Network Survey is surveying GNSS data...</string>
-    <string name="notification_historical">Network Survey is reviewing old GNSS data...</string>
-
+    <string name="notification">Network Survey is surveying GNSS data…</string>
+    <string name="notification_historical">Network Survey is reviewing old GNSS data…</string>
 
 </resources>

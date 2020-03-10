@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical">
+
+    <ImageView
+        android:id="@+id/aboutLogo"
+        android:layout_width="match_parent"
+        android:layout_height="50dp"
+        android:contentDescription="@string/app_icon_description"
+        android:src="@mipmap/ic_launcher_round" />
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center_horizontal"
+        android:text="@string/not_supported_title"
+        android:textSize="24sp"
+        android:textStyle="bold" />
+
+    <TextView
+        android:id="@+id/failureDescriptionTextView"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_margin="@dimen/calculator_margin"
+        android:paddingLeft="6dp"
+        android:paddingRight="6dp"
+        android:text="@string/not_supported_description"
+        android:textSize="18sp" />
+
+    <CheckBox
+        android:id="@+id/failureRememberDecisionCheckBox"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_margin="@dimen/calculator_margin"
+        android:text="@string/remember_my_decision" />
+
+</LinearLayout>

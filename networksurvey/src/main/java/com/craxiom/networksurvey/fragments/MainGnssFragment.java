@@ -242,9 +242,6 @@ public class MainGnssFragment extends Fragment
                 @Override
                 public void onSatelliteStatusChanged(GnssStatus status)
                 {
-                    // Stop progress bar after the first status information is obtained
-                    // TODO is this needed? setSupportProgressBarIndeterminateVisibility(Boolean.FALSE);
-
                     for (IGnssListener listener : gnssListeners)
                     {
                         listener.onSatelliteStatusChanged(status);
