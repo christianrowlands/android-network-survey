@@ -16,7 +16,9 @@ import android.os.AsyncTask;
 import android.os.Binder;
 import android.os.Build;
 import android.os.Handler;
+import android.os.HandlerThread;
 import android.os.IBinder;
+import android.os.Looper;
 import android.provider.Settings;
 import android.telephony.CellInfo;
 import android.telephony.TelephonyManager;
@@ -66,6 +68,8 @@ public class NetworkSurveyService extends Service
     private GpsListener gpsListener;
     private SurveyRecordLogger surveyRecordLogger;
     private GnssGeoPackageRecorder gnssGeoPackageRecorder = null;
+    private Looper serviceLooper;
+    private Handler serviceHandler;
     private LocationManager locationManager = null;
     private long firstGpsAcqTime = Long.MIN_VALUE;
     private boolean gnssRawSupportKnown = false;
@@ -106,8 +110,14 @@ public class NetworkSurveyService extends Service
 
         Log.i(LOG_TAG, "Creating the Network Survey Service");
 
+        final HandlerThread handlerThread = new HandlerThread(LOG_TAG);
+        handlerThread.start();
+
+        serviceLooper = handlerThread.getLooper();
+        serviceHandler = new Handler(serviceLooper);
+
         deviceId = createDeviceId();
-        surveyRecordLogger = new SurveyRecordLogger(this);
+        surveyRecordLogger = new SurveyRecordLogger(this, serviceLooper);
 
         initializeLocationListener();
         initializeSurveyRecordScanning();
@@ -139,25 +149,10 @@ public class NetworkSurveyService extends Service
             gnssGeoPackageRecorder.shutdown();
             gnssGeoPackageRecorder = null;
         }
+        serviceLooper.quitSafely();
+        serviceHandler = null;
         shutdownNotifications();
         super.onDestroy();
-    }
-
-    /**
-     * This is called if the user force-kills the app
-     * <p>
-     * TODO I am not sure if this method is needed.  We might be able to use ServiceInfo#FLAG_STOP_WITH_TASK instead
-     */
-    @Override
-    public void onTaskRemoved(Intent rootIntent)
-    {
-        Log.i(LOG_TAG, "onTaskRemoved (the app might have been force killed)");
-        setDone();
-        removeLocationListener();
-        shutdownNotifications();
-        stopSelf();
-        super.onTaskRemoved(rootIntent);
-        Log.i(LOG_TAG, "onTaskRemoved complete");
     }
 
     public GpsListener getGpsListener()
@@ -271,9 +266,7 @@ public class NetworkSurveyService extends Service
      */
     public void initializePing()
     {
-        final Handler handler = new Handler();
-
-        handler.postDelayed(new Runnable()
+        serviceHandler.postDelayed(new Runnable()
         {
             public void run()
             {
@@ -283,7 +276,7 @@ public class NetworkSurveyService extends Service
 
                     sendPing();
 
-                    handler.postDelayed(this, PING_RATE_MS);
+                    serviceHandler.postDelayed(this, PING_RATE_MS);
                 } catch (Exception e)
                 {
                     Log.e(LOG_TAG, "An exception occurred trying to send out a ping", e);
@@ -391,9 +384,7 @@ public class NetworkSurveyService extends Service
 
         surveyRecordProcessor = new SurveyRecordProcessor(gpsListener, deviceId);
 
-        final Handler handler = new Handler();
-
-        handler.postDelayed(new Runnable()
+        serviceHandler.postDelayed(new Runnable()
         {
             public void run()
             {
@@ -428,7 +419,7 @@ public class NetworkSurveyService extends Service
                         surveyRecordProcessor.onCellInfoUpdate(telephonyManager.getAllCellInfo(), CalculationUtils.getNetworkType(telephonyManager.getNetworkType()));
                     }
 
-                    handler.postDelayed(this, NETWORK_DATA_REFRESH_RATE_MS);
+                    serviceHandler.postDelayed(this, NETWORK_DATA_REFRESH_RATE_MS);
                 } catch (SecurityException e)
                 {
                     Log.e(LOG_TAG, "Could not get the required permissions to get the network details", e);
@@ -501,7 +492,7 @@ public class NetworkSurveyService extends Service
         {
             Log.i(LOG_TAG, "Starting GNSS Logging");
 
-            gnssGeoPackageRecorder = new GnssGeoPackageRecorder(this);
+            gnssGeoPackageRecorder = new GnssGeoPackageRecorder(this, serviceLooper);
             gnssGeoPackageRecorder.start();
 
             gnssLoggingEnabled.set(gnssGeoPackageRecorder.openGeoPackageDatabase() && registerGnssListeners());
@@ -551,7 +542,7 @@ public class NetworkSurveyService extends Service
                 if (locationManager != null)
                 {
                     locationManager.registerGnssMeasurementsCallback(measurementListener);
-                    // FIXME Figure out why this causes a NPE locationManager.registerGnssStatusCallback(statusListener);
+                    locationManager.registerGnssStatusCallback(statusListener, serviceHandler);
                 }
 
                 gpsListener.addLocationListener(this);

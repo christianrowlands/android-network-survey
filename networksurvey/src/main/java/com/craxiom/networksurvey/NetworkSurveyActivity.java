@@ -71,7 +71,8 @@ public class NetworkSurveyActivity extends AppCompatActivity
 
     private SurveyServiceConnection surveyServiceConnection;
     private NetworkSurveyService networkSurveyService;
-    private boolean turnOnLoggingOnNextServiceConnection = false;
+    private boolean turnOnCellularLoggingOnNextServiceConnection = false;
+    private boolean turnOnGnssLoggingOnNextServiceConnection = false;
     private AppBarConfiguration appBarConfiguration;
 
     @Override
@@ -86,7 +87,8 @@ public class NetworkSurveyActivity extends AppCompatActivity
         PreferenceManager.setDefaultValues(this, R.xml.preferences, false);
 
         final SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
-        turnOnLoggingOnNextServiceConnection = preferences.getBoolean(NetworkSurveyConstants.PROPERTY_AUTO_START_LOGGING_KEY, false);
+        turnOnCellularLoggingOnNextServiceConnection = preferences.getBoolean(NetworkSurveyConstants.PROPERTY_AUTO_START_CELLULAR_LOGGING_KEY, false);
+        turnOnGnssLoggingOnNextServiceConnection = preferences.getBoolean(NetworkSurveyConstants.PROPERTY_AUTO_START_GNSS_LOGGING_KEY, false);
 
         setupNavigation();
 
@@ -534,17 +536,26 @@ public class NetworkSurveyActivity extends AppCompatActivity
             networkSurveyService = binder.getService();
             networkSurveyService.onUiVisible(NetworkSurveyActivity.this);
 
-            final boolean loggingEnabled = networkSurveyService.isCellularLoggingEnabled();
-
-            if (turnOnLoggingOnNextServiceConnection && !loggingEnabled)
+            final boolean cellularLoggingEnabled = networkSurveyService.isCellularLoggingEnabled();
+            if (turnOnCellularLoggingOnNextServiceConnection && !cellularLoggingEnabled)
             {
                 toggleCellularLogging();
             } else
             {
-                updateCellularLoggingButton(loggingEnabled);
+                updateCellularLoggingButton(cellularLoggingEnabled);
             }
 
-            turnOnLoggingOnNextServiceConnection = false;
+            final boolean gnssLoggingEnabled = networkSurveyService.isGnssLoggingEnabled();
+            if (turnOnGnssLoggingOnNextServiceConnection && !gnssLoggingEnabled)
+            {
+                toggleGnssLogging();
+            } else
+            {
+                updateGnssLoggingButton(gnssLoggingEnabled);
+            }
+
+            turnOnCellularLoggingOnNextServiceConnection = false;
+            turnOnGnssLoggingOnNextServiceConnection = false;
         }
 
         @Override

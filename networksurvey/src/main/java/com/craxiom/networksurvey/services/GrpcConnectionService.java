@@ -16,6 +16,7 @@ import android.os.AsyncTask;
 import android.os.BatteryManager;
 import android.os.Binder;
 import android.os.Handler;
+import android.os.HandlerThread;
 import android.os.IBinder;
 import android.os.Looper;
 import android.util.Log;
@@ -113,6 +114,7 @@ public class GrpcConnectionService extends Service implements IDeviceStatusListe
     private Integer portNumber = null;
     private String deviceName = "";
     private String deviceId = "";
+    private Handler deviceStatusReportHandler;
 
     public GrpcConnectionService()
     {
@@ -176,6 +178,11 @@ public class GrpcConnectionService extends Service implements IDeviceStatusListe
     {
         super.onCreate();
 
+        HandlerThread deviceStatusReportHandlerThread = new HandlerThread("DeviceStatusThread");
+        deviceStatusReportHandlerThread.start();
+
+        deviceStatusReportHandler = new Handler(deviceStatusReportHandlerThread.getLooper());
+
         // Bind to the survey service
         final Context applicationContext = getApplicationContext();
         final Intent serviceIntent = new Intent(applicationContext, NetworkSurveyService.class);
@@ -227,6 +234,12 @@ public class GrpcConnectionService extends Service implements IDeviceStatusListe
         Log.i(LOG_TAG, "Destroying the Connection Service");
 
         if (surveyServiceConnection != null) getApplicationContext().unbindService(surveyServiceConnection);
+
+        if (deviceStatusReportHandler != null)
+        {
+            deviceStatusReportHandler.getLooper().quitSafely();
+            deviceStatusReportHandler = null;
+        }
 
         disconnectFromGrpcServer(true);
 
@@ -438,9 +451,7 @@ public class GrpcConnectionService extends Service implements IDeviceStatusListe
     {
         final int handlerTaskId = taskId;
 
-        final Handler handler = new Handler();
-
-        handler.postDelayed(new Runnable()
+        deviceStatusReportHandler.postDelayed(new Runnable()
         {
             public void run()
             {
@@ -454,13 +465,13 @@ public class GrpcConnectionService extends Service implements IDeviceStatusListe
 
                     onDeviceStatus(generateDeviceStatus());
 
-                    handler.postDelayed(this, DEVICE_STATUS_REFRESH_RATE_MS);
+                    deviceStatusReportHandler.postDelayed(this, DEVICE_STATUS_REFRESH_RATE_MS);
                 } catch (SecurityException e)
                 {
                     Log.e(LOG_TAG, "Could not get the required permissions to generate a device status message", e);
                 }
             }
-        }, 100L);
+        }, 200L);
     }
 
     /**

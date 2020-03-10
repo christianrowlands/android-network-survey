@@ -43,12 +43,12 @@ public class CalculatorFragment extends Fragment
                     return;
                 }
 
-                final int cellId = Integer.valueOf(enteredText);
+                final int cellId = Integer.parseInt(enteredText);
 
                 if (!CalculationUtils.isLteCellIdValid(cellId))
                 {
                     Log.d(LOG_TAG, "The entered value for the LTE Cell ID is out of range.");
-                    Toast.makeText(getActivity(), "Invalid Cell ID.  Valid Range is 0 - 268435455", Toast.LENGTH_LONG).show();
+                    Toast.makeText(getActivity(), "Invalid Cell ID.  Valid Range is 0 - 268435455", Toast.LENGTH_SHORT).show();
                     clearCellIdCalculatedValues();
                     return;
                 }
@@ -94,12 +94,12 @@ public class CalculatorFragment extends Fragment
                     return;
                 }
 
-                final int pci = Integer.valueOf(enteredText);
+                final int pci = Integer.parseInt(enteredText);
 
                 if (pci < 0 || pci > 503)
                 {
                     Log.d(LOG_TAG, "The entered value for the LTE PCI is out of range.");
-                    Toast.makeText(getActivity(), "Invalid PCI.  Valid Range is 0 - 503", Toast.LENGTH_LONG).show();
+                    Toast.makeText(getActivity(), "Invalid PCI.  Valid Range is 0 - 503", Toast.LENGTH_SHORT).show();
                     clearPciCalculatedValues();
                     return;
                 }

@@ -7,6 +7,7 @@ import android.location.Location;
 import android.os.Environment;
 import android.os.Handler;
 import android.os.HandlerThread;
+import android.os.Looper;
 import android.util.Log;
 
 import com.craxiom.networksurvey.util.Config;
@@ -33,6 +34,7 @@ public class GnssGeoPackageRecorder extends HandlerThread
     private static final String JOURNAL_FILE_SUFFIX = "-journal";
 
     private final Context context;
+    private Looper serviceLooper;
     private Handler handler;
     private final AtomicBoolean isDataRecorded = new AtomicBoolean(false);
     private final AtomicBoolean geoPackageOpen = new AtomicBoolean(false);
@@ -40,16 +42,17 @@ public class GnssGeoPackageRecorder extends HandlerThread
     private String gpkgFilePath;
     private String gpkgFolderPath;
 
-    GnssGeoPackageRecorder(Context context)
+    GnssGeoPackageRecorder(Context context, Looper serviceLooper)
     {
         super("GeoPkgRcdr");
         this.context = context;
+        this.serviceLooper = serviceLooper;
         Config config = Config.getInstance(context);
         gpkgFolderPath = config.getSaveDirectoryPath();
 
         if (gpkgFolderPath == null)
         {
-            Log.e(LOG_TAG, "Unable to find GPSMonkey storage location; using Download directory");
+            Log.e(LOG_TAG, "Unable to find GNSS GeoPackage storage location; using Download directory");
             gpkgFolderPath = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS).getAbsolutePath();
         }
     }
@@ -57,7 +60,7 @@ public class GnssGeoPackageRecorder extends HandlerThread
     @Override
     protected void onLooperPrepared()
     {
-        handler = new Handler();
+        handler = new Handler(serviceLooper);
     }
 
     void onGnssMeasurementsReceived(final GnssMeasurementsEvent event)

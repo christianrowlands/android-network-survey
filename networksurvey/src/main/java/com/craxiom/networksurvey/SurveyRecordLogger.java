@@ -3,6 +3,7 @@ package com.craxiom.networksurvey;
 import android.content.Context;
 import android.os.Environment;
 import android.os.Handler;
+import android.os.Looper;
 import android.util.Log;
 import android.widget.Toast;
 
@@ -63,14 +64,21 @@ public class SurveyRecordLogger implements ISurveyRecordListener
 
     private final NetworkSurveyService networkSurveyService;
     private final GeoPackageManager geoPackageManager;
-    private final Handler handler = new Handler();
+    private final Handler handler;
 
     private GeoPackage geoPackage;
     private volatile boolean loggingEnabled;
 
-    public SurveyRecordLogger(NetworkSurveyService networkSurveyService)
+    /**
+     * Constructs a Logger that writes Cellular Survey records to a GeoPackage SQLite database.
+     *
+     * @param networkSurveyService The Service instance that is running this logger.
+     * @param serviceLooper        The Looper associated with the service that can be used to do any background processing.
+     */
+    public SurveyRecordLogger(NetworkSurveyService networkSurveyService, Looper serviceLooper)
     {
         this.networkSurveyService = networkSurveyService;
+        handler = new Handler(serviceLooper);
 
         geoPackageManager = GeoPackageFactory.getManager(networkSurveyService.getApplicationContext());
     }

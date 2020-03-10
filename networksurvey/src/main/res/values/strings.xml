@@ -101,9 +101,13 @@
     <string name="title_activity_connection">ConnectionActivity</string>
 
     <!-- User Preference Constants -->
-    <string name="auto_start_logging_title">Auto Start Logging</string>
-    <string name="auto_start_logging_summary_on">Logging will be started upon app opening</string>
-    <string name="auto_start_logging_summary_off">Logging will only start when manually enabled</string>
+    <string name="auto_start_cellular_logging_title">Auto Start Cellular Logging</string>
+    <string name="auto_start_cellular_logging_summary_on">Cellular logging will be started upon app opening</string>
+    <string name="auto_start_cellular_logging_summary_off">Cellular logging will only start when manually enabled</string>
+
+    <string name="auto_start_gnss_logging_title">Auto Start GNSS Logging</string>
+    <string name="auto_start_gnss_logging_summary_on">GNSS logging will be started upon app opening</string>
+    <string name="auto_start_gnss_logging_summary_off">GNSS logging will only start when manually enabled</string>
 
     <string name="server_config_title">Connection Config</string>
     <string name="connection_timeout_title">Connection Timeout</string>
