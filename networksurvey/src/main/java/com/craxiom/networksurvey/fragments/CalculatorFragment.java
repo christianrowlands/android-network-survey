@@ -24,6 +24,8 @@ import com.craxiom.networksurvey.R;
 public class CalculatorFragment extends Fragment
 {
     static final String TITLE = "Calculators";
+    private static final String INVALID_CELL_ID_MESSAGE = "Invalid Cell ID.  Valid Range is 0 - 268435455";
+    private static final String INVALID_PCI_MESSAGE = "Invalid PCI.  Valid Range is 0 - 503";
     private final String LOG_TAG = CalculatorFragment.class.getSimpleName();
 
     private View view;
@@ -43,12 +45,20 @@ public class CalculatorFragment extends Fragment
                     return;
                 }
 
-                final int cellId = Integer.parseInt(enteredText);
+                final int cellId;
+                try
+                {
+                    cellId = Integer.parseInt(enteredText);
+                } catch (Exception e)
+                {
+                    showToast(INVALID_CELL_ID_MESSAGE);
+                    clearCellIdCalculatedValues();
+                    return;
+                }
 
                 if (!CalculationUtils.isLteCellIdValid(cellId))
                 {
-                    Log.d(LOG_TAG, "The entered value for the LTE Cell ID is out of range.");
-                    Toast.makeText(getActivity(), "Invalid Cell ID.  Valid Range is 0 - 268435455", Toast.LENGTH_SHORT).show();
+                    showToast(INVALID_CELL_ID_MESSAGE);
                     clearCellIdCalculatedValues();
                     return;
                 }
@@ -94,12 +104,20 @@ public class CalculatorFragment extends Fragment
                     return;
                 }
 
-                final int pci = Integer.parseInt(enteredText);
+                final int pci;
+                try
+                {
+                    pci = Integer.parseInt(enteredText);
+                } catch (Exception e)
+                {
+                    showToast(INVALID_PCI_MESSAGE);
+                    clearPciCalculatedValues();
+                    return;
+                }
 
                 if (pci < 0 || pci > 503)
                 {
-                    Log.d(LOG_TAG, "The entered value for the LTE PCI is out of range.");
-                    Toast.makeText(getActivity(), "Invalid PCI.  Valid Range is 0 - 503", Toast.LENGTH_SHORT).show();
+                    showToast(INVALID_PCI_MESSAGE);
                     clearPciCalculatedValues();
                     return;
                 }
@@ -165,5 +183,18 @@ public class CalculatorFragment extends Fragment
     {
         ((TextView) view.findViewById(R.id.calculatedPssValue)).setText("");
         ((TextView) view.findViewById(R.id.calculatedSssValue)).setText("");
+    }
+
+    /**
+     * Shows a short toast to the user with the provided message.
+     * <p>
+     * This method also logs a warning.
+     *
+     * @param toastMessage The message to show the user.
+     */
+    private void showToast(String toastMessage)
+    {
+        Log.d(LOG_TAG, toastMessage);
+        Toast.makeText(getActivity(), toastMessage, Toast.LENGTH_SHORT).show();
     }
 }

@@ -176,6 +176,9 @@ public class MainGnssFragment extends Fragment
                 {
                 }
             };
+        } else
+        {
+            Log.w(LOG_TAG, "When trying to add a new location listener, the old one was not null.");
         }
 
         locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, LOCATION_REFRESH_RATE_MS, 0f, locationListener);

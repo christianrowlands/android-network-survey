@@ -27,7 +27,7 @@ import java.util.function.Consumer;
 public class GnssGeoPackageRecorder extends HandlerThread
 {
     private static final String LOG_TAG = GnssGeoPackageRecorder.class.getSimpleName();
-    private static final String FILENAME_PREFIX = "GNSS-MONKEY";
+    private static final String FILENAME_PREFIX = "gnss-networksurvey-";
 
     @SuppressWarnings("SpellCheckingInspection")
     private static final SimpleDateFormat FILENAME_FRIENDLY_TIME_FORMAT = new SimpleDateFormat("yyyyMMdd-HHmmss", Locale.US);
@@ -199,7 +199,7 @@ public class GnssGeoPackageRecorder extends HandlerThread
     private String createGpkgFilename()
     {
         String timestamp = FILENAME_FRIENDLY_TIME_FORMAT.format(System.currentTimeMillis());
-        return FILENAME_PREFIX + "-" + timestamp + ".gpkg";
+        return FILENAME_PREFIX + timestamp + ".gpkg";
     }
 
     /**

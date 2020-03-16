@@ -87,7 +87,8 @@ public class GnssStatusFragment extends Fragment implements IGnssListener
 
     private static final String EMPTY_LAT_LONG = "             ";
 
-    /*TODO private static final String METERS = Application.get().getResources().getStringArray(R.array.preferred_distance_units_values)[0];
+    /*TODO We either need to fix everything to a specific unit of measurement, or update the Settings UI to allow the user to control it.
+    private static final String METERS = Application.get().getResources().getStringArray(R.array.preferred_distance_units_values)[0];
     private static final String METERS_PER_SECOND = Application.get().getResources().getStringArray(R.array.preferred_speed_units_values)[0];
     private static final String KILOMETERS_PER_HOUR = Application.get().getResources().getStringArray(R.array.preferred_speed_units_values)[1];*/
 
