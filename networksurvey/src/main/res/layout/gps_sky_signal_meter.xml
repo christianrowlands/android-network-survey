@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="utf-8"?><!--
+/*
+** Copyright 2018, Sean J. Barbeau
+**
+** Licensed under the Apache License, Version 2.0 (the "License");
+** you may not use this file except in compliance with the License.
+** You may obtain a copy of the License at
+**
+**     http://www.apache.org/licenses/LICENSE-2.0
+**
+** Unless required by applicable law or agreed to in writing, software
+** distributed under the License is distributed on an "AS IS" BASIS,
+** WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+** See the License for the specific language governing permissions and
+** limitations under the License.
+*/
+-->
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/sky_signal_legend"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:clipChildren="false">
+
+    <!-- Colored C/N0 legend -->
+    <androidx.appcompat.widget.AppCompatImageView
+        android:id="@+id/sky_legend_cn0"
+        android:layout_width="@dimen/cn0_meter_width"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/cn0_indicator_in_view"
+        android:layout_centerHorizontal="true"
+        android:layout_marginStart="20dp"
+        android:layout_marginLeft="20dp"
+        android:layout_marginTop="3dp"
+        android:layout_marginEnd="20dp"
+        android:layout_marginRight="20dp"
+        android:layout_marginBottom="5dp"
+        android:adjustViewBounds="true"
+        android:background="@color/cn0_meter_border"
+        android:paddingLeft="1dp"
+        android:paddingTop="2dp"
+        android:paddingRight="1dp"
+        android:paddingBottom="2dp"
+        android:scaleType="fitXY"
+        app:srcCompat="@drawable/signal_gradient" />
+
+    <ImageView
+        android:id="@+id/cn0_indicator_in_view"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/cn0_text_in_view"
+        android:layout_alignStart="@id/sky_legend_cn0"
+        android:layout_alignLeft="@id/sky_legend_cn0"
+        android:layout_marginStart="@dimen/cn0_indicator_min_left_margin"
+        android:layout_marginLeft="@dimen/cn0_indicator_min_left_margin"
+        android:layout_marginBottom="-3dp"
+        android:tint="@color/red"
+        android:visibility="invisible"
+        app:srcCompat="@drawable/ic_cn0_indicator" />
+
+    <include
+        android:id="@+id/cn0_text_in_view"
+        layout="@layout/cn0_in_view_value_text"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="@dimen/cn0_textview_min_left_margin"
+        android:layout_marginLeft="@dimen/cn0_textview_min_left_margin"
+        android:layout_marginTop="1dp"
+        android:layout_marginBottom="-7dp"
+        android:visibility="invisible" />
+
+    <ImageView
+        android:id="@+id/cn0_indicator_used"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/cn0_text_used"
+        android:layout_alignStart="@id/sky_legend_cn0"
+        android:layout_alignLeft="@id/sky_legend_cn0"
+        android:layout_marginStart="@dimen/cn0_indicator_min_left_margin"
+        android:layout_marginLeft="@dimen/cn0_indicator_min_left_margin"
+        android:layout_marginBottom="-3dp"
+        android:visibility="invisible"
+        app:srcCompat="@drawable/ic_cn0_indicator" />
+
+    <include
+        android:id="@+id/cn0_text_used"
+        layout="@layout/cn0_used_value_text"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="@dimen/cn0_textview_min_left_margin"
+        android:layout_marginLeft="@dimen/cn0_textview_min_left_margin"
+        android:layout_marginTop="1dp"
+        android:layout_marginBottom="-7dp"
+        android:visibility="invisible" />
+
+    <include
+        layout="@layout/signal_meter_ticks_and_text"
+        android:layout_width="@dimen/cn0_meter_width"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/sky_legend_cn0"
+        android:layout_centerHorizontal="true" />
+
+</RelativeLayout>

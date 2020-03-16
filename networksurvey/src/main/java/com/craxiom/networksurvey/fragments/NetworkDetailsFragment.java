@@ -1,7 +1,5 @@
 package com.craxiom.networksurvey.fragments;
 
-import android.os.Bundle;
-
 import androidx.fragment.app.Fragment;
 
 import com.craxiom.networksurvey.R;
@@ -14,16 +12,11 @@ import java.util.concurrent.atomic.AtomicBoolean;
 public class NetworkDetailsFragment extends Fragment
 {
     public static final AtomicBoolean visible = new AtomicBoolean(false);
+    static final String TITLE = "Details";
 
     public NetworkDetailsFragment()
     {
         super(R.layout.fragment_network_details);
-    }
-
-    @Override
-    public void onCreate(Bundle savedInstanceState)
-    {
-        super.onCreate(savedInstanceState);
     }
 
     @Override
@@ -40,11 +33,5 @@ public class NetworkDetailsFragment extends Fragment
         visible.set(false);
 
         super.onPause();
-    }
-
-    @Override
-    public void onDetach()
-    {
-        super.onDetach();
     }
 }

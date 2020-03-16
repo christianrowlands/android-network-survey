@@ -1,6 +1,7 @@
 package com.craxiom.networksurvey;
 
 import android.Manifest;
+import android.annotation.SuppressLint;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.content.ComponentName;
@@ -11,21 +12,27 @@ import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.content.res.ColorStateList;
 import android.graphics.Color;
+import android.location.LocationManager;
+import android.location.LocationProvider;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.IBinder;
+import android.provider.Settings;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.Toast;
 
+import androidx.activity.OnBackPressedCallback;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.app.AppCompatDelegate;
 import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
 import androidx.drawerlayout.widget.DrawerLayout;
 import androidx.navigation.NavController;
+import androidx.navigation.NavDestination;
 import androidx.navigation.Navigation;
 import androidx.navigation.ui.AppBarConfiguration;
 import androidx.navigation.ui.NavigationUI;
@@ -34,7 +41,11 @@ import androidx.preference.PreferenceManager;
 import com.craxiom.networksurvey.constants.NetworkSurveyConstants;
 import com.craxiom.networksurvey.services.GrpcConnectionService;
 import com.craxiom.networksurvey.services.NetworkSurveyService;
+import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.android.material.navigation.NavigationView;
+
+import java.util.function.Function;
+import java.util.function.Supplier;
 
 /**
  * The main activity for the Network Survey App.  This app is used to pull LTE Network Survey
@@ -47,15 +58,22 @@ public class NetworkSurveyActivity extends AppCompatActivity
     private static final String LOG_TAG = NetworkSurveyActivity.class.getSimpleName();
 
     private static final int ACCESS_PERMISSION_REQUEST_ID = 1;
+    public static final String[] PERMISSIONS = {
+            Manifest.permission.ACCESS_FINE_LOCATION,
+            Manifest.permission.WRITE_EXTERNAL_STORAGE,
+            Manifest.permission.READ_PHONE_STATE};
 
     public DrawerLayout drawerLayout;
     public NavController navController;
 
-    private MenuItem startStopLoggingMenuItem;
+    private MenuItem startStopCellularLoggingMenuItem;
+    private MenuItem startStopGnssLoggingMenuItem;
 
     private SurveyServiceConnection surveyServiceConnection;
     private NetworkSurveyService networkSurveyService;
-    private boolean turnOnLoggingOnNextServiceConnection = false;
+    private boolean turnOnCellularLoggingOnNextServiceConnection = false;
+    private boolean turnOnGnssLoggingOnNextServiceConnection = false;
+    private AppBarConfiguration appBarConfiguration;
 
     @Override
     protected void onCreate(Bundle savedInstanceState)
@@ -69,24 +87,12 @@ public class NetworkSurveyActivity extends AppCompatActivity
         PreferenceManager.setDefaultValues(this, R.xml.preferences, false);
 
         final SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
-        turnOnLoggingOnNextServiceConnection = preferences.getBoolean(NetworkSurveyConstants.PROPERTY_AUTO_START_LOGGING_KEY, false);
+        turnOnCellularLoggingOnNextServiceConnection = preferences.getBoolean(NetworkSurveyConstants.PROPERTY_AUTO_START_CELLULAR_LOGGING_KEY, false);
+        turnOnGnssLoggingOnNextServiceConnection = preferences.getBoolean(NetworkSurveyConstants.PROPERTY_AUTO_START_GNSS_LOGGING_KEY, false);
 
         setupNavigation();
 
-        // Find the view pager that will allow the user to swipe between fragments
-        // TODO ViewPager viewPager = findViewById(R.id.viewpager);
-
         surveyServiceConnection = new SurveyServiceConnection();
-
-        // Create an adapter that knows which fragment should be shown on each page
-        // FIXME sectionsPagerAdapter = new SectionsPagerAdapter(getSupportFragmentManager(), this, grpcConnectionController);
-
-        // Set the adapter onto the view pager
-        // TODO viewPager.setAdapter(sectionsPagerAdapter);
-
-        // Give the TabLayout the ViewPager
-        /*TODO TabLayout tabLayout = findViewById(R.id.sliding_tabs);
-        tabLayout.setupWithViewPager(viewPager);*/
 
         final NotificationManager notificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
         if (notificationManager != null)
@@ -96,18 +102,23 @@ public class NetworkSurveyActivity extends AppCompatActivity
             notificationManager.createNotificationChannel(channel);
         } else
         {
-            Log.e(LOG_TAG, "The Notification Manager could not be retrieved to add the Network Suryey notification channel");
+            Log.e(LOG_TAG, "The Notification Manager could not be retrieved to add the Network Survey notification channel");
         }
-
-        showPermissionRationaleAndRequestPermissions();
     }
 
     @Override
     protected void onResume()
     {
-        startAndBindToNetworkSurveyService();
-
         super.onResume();
+
+        if (missingAnyPermissions()) showPermissionRationaleAndRequestPermissions();
+
+        // If we have been granted the location permission, we want to check to see if the location service is enabled.
+        // If it is not, then this call will report that to the user and give them the option to enable it.
+        if (hasLocationPermission()) checkLocationProvider();
+
+        // All we need for the cellular information is the Manifest.permission.READ_PHONE_STATE permission.  Location is optional
+        if (hasCellularPermission()) startAndBindToNetworkSurveyService();
     }
 
     @Override
@@ -119,7 +130,7 @@ public class NetworkSurveyActivity extends AppCompatActivity
         {
             networkSurveyService.onUiHidden();
 
-            if (!networkSurveyService.isLoggingEnabled() && GrpcConnectionService.getConnectedState() == ConnectionState.DISCONNECTED)
+            if (!networkSurveyService.isCellularLoggingEnabled() && GrpcConnectionService.getConnectedState() == ConnectionState.DISCONNECTED)
             {
                 // We can safely shutdown the service since both logging and the connection are turned off
                 final Intent networkSurveyServiceIntent = new Intent(applicationContext, NetworkSurveyService.class);
@@ -143,7 +154,7 @@ public class NetworkSurveyActivity extends AppCompatActivity
     @Override
     public boolean onSupportNavigateUp()
     {
-        return NavigationUI.navigateUp(navController, drawerLayout) || super.onSupportNavigateUp();
+        return NavigationUI.navigateUp(navController, appBarConfiguration) || super.onSupportNavigateUp();
     }
 
     @Override
@@ -159,6 +170,7 @@ public class NetworkSurveyActivity extends AppCompatActivity
                 {
                     if (grantResults[index] == PackageManager.PERMISSION_GRANTED)
                     {
+                        checkLocationProvider();
                         startAndBindToNetworkSurveyService();
                     } else
                     {
@@ -174,9 +186,14 @@ public class NetworkSurveyActivity extends AppCompatActivity
     {
         // Inflate the menu; this adds items to the action bar if it is present.
         getMenuInflater().inflate(R.menu.menu_network_details, menu);
-        startStopLoggingMenuItem = menu.findItem(R.id.action_start_stop_logging);
+        startStopCellularLoggingMenuItem = menu.findItem(R.id.action_start_stop_cellular_logging);
+        startStopGnssLoggingMenuItem = menu.findItem(R.id.action_start_stop_gnss_logging);
 
-        if (networkSurveyService != null) updateLoggingButton(networkSurveyService.isLoggingEnabled());
+        if (networkSurveyService != null)
+        {
+            updateCellularLoggingButton(networkSurveyService.isCellularLoggingEnabled());
+            updateGnssLoggingButton(networkSurveyService.isGnssLoggingEnabled());
+        }
 
         return true;
     }
@@ -187,9 +204,13 @@ public class NetworkSurveyActivity extends AppCompatActivity
         int id = item.getItemId();
 
         //noinspection SimplifiableIfStatement
-        if (id == R.id.action_start_stop_logging)
+        if (id == R.id.action_start_stop_cellular_logging)
         {
-            toggleLogging();
+            toggleCellularLogging();
+            return true;
+        } else if (id == R.id.action_start_stop_gnss_logging)
+        {
+            toggleGnssLogging();
             return true;
         }
 
@@ -208,6 +229,8 @@ public class NetworkSurveyActivity extends AppCompatActivity
                 || ActivityCompat.shouldShowRequestPermissionRationale(this, Manifest.permission.WRITE_EXTERNAL_STORAGE)
                 || ActivityCompat.shouldShowRequestPermissionRationale(this, Manifest.permission.READ_PHONE_STATE))
         {
+            Log.d(LOG_TAG, "Showing the permissions rationale dialog");
+
             AlertDialog.Builder alertBuilder = new AlertDialog.Builder(this);
             alertBuilder.setCancelable(true);
             alertBuilder.setTitle(getString(R.string.permissions_rationale_title));
@@ -223,25 +246,123 @@ public class NetworkSurveyActivity extends AppCompatActivity
     }
 
     /**
-     * Request the permissions needed for this app.
+     * Request the permissions needed for this app if any of them have not yet been granted.  If all of the permissions
+     * are already granted then don't request anything.
      */
     private void requestPermissions()
     {
-        ActivityCompat.requestPermissions(NetworkSurveyActivity.this, new String[]{
-                        Manifest.permission.ACCESS_FINE_LOCATION,
-                        Manifest.permission.WRITE_EXTERNAL_STORAGE,
-                        Manifest.permission.READ_PHONE_STATE},
-                ACCESS_PERMISSION_REQUEST_ID);
+        if (missingAnyPermissions())
+        {
+            ActivityCompat.requestPermissions(NetworkSurveyActivity.this, PERMISSIONS,
+                    ACCESS_PERMISSION_REQUEST_ID);
+        }
     }
 
-    private void startAndBindToNetworkSurveyService()
+    /**
+     * Checks that the location provider is enabled and that the location permission has been granted.  If GPS location
+     * is not enabled on this device, then the settings UI is opened so the user can enable it.
+     */
+    private void checkLocationProvider()
     {
-        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED)
+        final LocationManager locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
+        if (locationManager == null)
         {
-            Log.w(LOG_TAG, "The ACCESS_FINE_LOCATION permission has not been granted, not starting the service");
+            Log.w(LOG_TAG, "Could not get the location manager.  Skipping checking the location provider");
             return;
         }
 
+        final LocationProvider locationProvider = locationManager.getProvider(LocationManager.GPS_PROVIDER);
+        if (locationProvider == null)
+        {
+            final String noGpsMessage = getString(R.string.no_gps_device);
+            Log.w(LOG_TAG, noGpsMessage);
+            Toast.makeText(getApplicationContext(), noGpsMessage, Toast.LENGTH_LONG).show();
+        } else if (!locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER))
+        {
+            // gps exists, but isn't on
+            final String turnOnGpsMessage = getString(R.string.turn_on_gps);
+            Log.w(LOG_TAG, turnOnGpsMessage);
+            Toast.makeText(getApplicationContext(), turnOnGpsMessage, Toast.LENGTH_LONG).show();
+
+            promptEnableGps();
+        }
+    }
+
+    /**
+     * Ask the user if they want to enable GPS.  If they do, then open the Location settings.
+     */
+    private void promptEnableGps()
+    {
+        new AlertDialog.Builder(this)
+                .setMessage(getString(R.string.enable_gps_message))
+                .setPositiveButton(getString(R.string.enable_gps_positive_button),
+                        (dialog, which) -> {
+                            Intent intent = new Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS);
+                            startActivity(intent);
+                        }
+                )
+                .setNegativeButton(getString(R.string.enable_gps_negative_button),
+                        (dialog, which) -> {
+                        }
+                )
+                .show();
+    }
+
+    /**
+     * @return True if any of the permissions for this app have been denied.  False if all the permissions have been granted.
+     */
+    private boolean missingAnyPermissions()
+    {
+        for (String permission : PERMISSIONS)
+        {
+            if (ContextCompat.checkSelfPermission(this, permission) != PackageManager.PERMISSION_GRANTED)
+            {
+                Log.i(LOG_TAG, "Missing the permission: " + permission);
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * @return True if the {@link Manifest.permission#ACCESS_FINE_LOCATION} permission has been granted.  False otherwise.
+     */
+    private boolean hasLocationPermission()
+    {
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED)
+        {
+            Log.w(LOG_TAG, "The ACCESS_FINE_LOCATION permission has not been granted");
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * @return True if the {@link Manifest.permission#READ_PHONE_STATE} permission has been granted.  False otherwise.
+     */
+    private boolean hasCellularPermission()
+    {
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.READ_PHONE_STATE) != PackageManager.PERMISSION_GRANTED)
+        {
+            Log.w(LOG_TAG, "The READ_PHONE_STATE permission has not been granted");
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * Start the Network Survey Service (it won't start if it is already started), and then bind to the service.
+     * <p>
+     * Starting the service will cause the cellular records to be pulled from the Android system so they can be shown
+     * in the UI, logged to a file, sent over a connection, or any combination of the three.
+     * <p>
+     * The Network survey service also handles getting GNSS information so that it can be used accordingly.
+     */
+    private void startAndBindToNetworkSurveyService()
+    {
         // Start and bind to the survey service
         final Context applicationContext = getApplicationContext();
         final Intent startServiceIntent = new Intent(applicationContext, NetworkSurveyService.class);
@@ -253,70 +374,133 @@ public class NetworkSurveyActivity extends AppCompatActivity
     }
 
     /**
-     * Setup the navigation drawer.
+     * Setup the navigation drawer and the bottom navigation view.
      *
      * @since 0.0.9
      */
     private void setupNavigation()
     {
         drawerLayout = findViewById(R.id.drawer_layout);
+        BottomNavigationView bottomNav = findViewById(R.id.bottom_nav);
         final NavigationView navigationView = findViewById(R.id.navigation_view);
 
         navController = Navigation.findNavController(this, R.id.main_content);
 
-        final AppBarConfiguration appBarConfiguration = new AppBarConfiguration.Builder(navController.getGraph())
+        appBarConfiguration = new AppBarConfiguration.Builder(R.id.main_cellular_fragment, R.id.main_gnss_fragment)
                 .setDrawerLayout(drawerLayout)
                 .build();
 
         NavigationUI.setupActionBarWithNavController(this, navController, appBarConfiguration);
 
         NavigationUI.setupWithNavController(navigationView, navController);
+        NavigationUI.setupWithNavController(bottomNav, navController);
+
+        OnBackPressedCallback callback = new OnBackPressedCallback(true)
+        {
+            @Override
+            public void handleOnBackPressed()
+            {
+                // For whatever reason calling navigateUp from one of the top level destinations results in the
+                // navigation drawer being opened.  Therefore, if the current destination a top level we have custom
+                // code here to move this activity to the back stack.
+                final NavDestination currentDestination = navController.getCurrentDestination();
+                if (currentDestination != null &&
+                        (currentDestination.getId() == R.id.main_cellular_fragment || currentDestination.getId() == R.id.main_gnss_fragment))
+                {
+                    moveTaskToBack(true);
+                } else
+                {
+                    NavigationUI.navigateUp(navController, appBarConfiguration);
+                }
+            }
+        };
+        getOnBackPressedDispatcher().addCallback(this, callback);
     }
 
     /**
      * Starts or stops writing the log file based on the current state.
      */
-    private void toggleLogging()
+    private void toggleCellularLogging()
     {
-        new ToggleLoggingTask().executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
-
-        if (networkSurveyService != null && networkSurveyService.isLoggingEnabled())
-        {
-            networkSurveyService.initializePing();
-        }
+        new ToggleLoggingTask(() -> {
+            if (networkSurveyService != null) return networkSurveyService.toggleCellularLogging();
+            return null;
+        }, enabled -> {
+            if (enabled == null) return getString(R.string.cellular_logging_toggle_failed);
+            updateCellularLoggingButton(enabled);
+            return getString(enabled ? R.string.cellular_logging_start_toast : R.string.cellular_logging_stop_toast);
+        }).executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
     }
 
     /**
-     * Updates the logging button based on specified logging state.
+     * Starts or stops writing the GNSS log file based on the current state.
+     */
+    private void toggleGnssLogging()
+    {
+        new ToggleLoggingTask(() -> {
+            if (networkSurveyService != null) return networkSurveyService.toggleGnssLogging();
+            return null;
+        }, enabled -> {
+            if (enabled == null) return getString(R.string.gnss_logging_toggle_failed);
+            updateGnssLoggingButton(enabled);
+            return getString(enabled ? R.string.gnss_logging_start_toast : R.string.gnss_logging_stop_toast);
+        }).executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
+    }
+
+    /**
+     * Updates the Cellular logging button based on the specified logging state.
      *
      * @param enabled True if logging is currently enabled, false otherwise.
      */
-    private void updateLoggingButton(boolean enabled)
+    private void updateCellularLoggingButton(boolean enabled)
     {
-        if (startStopLoggingMenuItem == null) return;
+        if (startStopCellularLoggingMenuItem == null) return;
 
-        final String menuTitle = getString(enabled ? R.string.action_stop_logging : R.string.action_start_logging);
-        startStopLoggingMenuItem.setTitle(menuTitle);
+        final String menuTitle = getString(enabled ? R.string.action_stop_cellular_logging : R.string.action_start_cellular_logging);
+        startStopCellularLoggingMenuItem.setTitle(menuTitle);
 
         ColorStateList colorStateList = null;
         if (enabled) colorStateList = ColorStateList.valueOf(Color.GREEN);
 
-        startStopLoggingMenuItem.setIconTintList(colorStateList);
+        startStopCellularLoggingMenuItem.setIconTintList(colorStateList);
+    }
+
+    /**
+     * Updates the GNSS logging button based on the specified logging state.
+     *
+     * @param enabled True if logging is currently enabled, false otherwise.
+     */
+    private void updateGnssLoggingButton(boolean enabled)
+    {
+        if (startStopGnssLoggingMenuItem == null) return;
+
+        final String menuTitle = getString(enabled ? R.string.action_stop_gnss_logging : R.string.action_start_gnss_logging);
+        startStopGnssLoggingMenuItem.setTitle(menuTitle);
+
+        ColorStateList colorStateList = null;
+        if (enabled) colorStateList = ColorStateList.valueOf(Color.GREEN);
+
+        startStopGnssLoggingMenuItem.setIconTintList(colorStateList);
     }
 
     /**
      * A task to move the action of starting or stopping logging off of the UI thread.
      */
+    @SuppressLint("StaticFieldLeak")
     private class ToggleLoggingTask extends AsyncTask<Void, Void, Boolean>
     {
+        private final Supplier<Boolean> toggleLoggingFunction;
+        private final Function<Boolean, String> postExecuteFunction;
+
+        private ToggleLoggingTask(Supplier<Boolean> toggleLoggingFunction, Function<Boolean, String> postExecuteFunction)
+        {
+            this.toggleLoggingFunction = toggleLoggingFunction;
+            this.postExecuteFunction = postExecuteFunction;
+        }
+
         protected Boolean doInBackground(Void... nothing)
         {
-            if (networkSurveyService != null)
-            {
-                return networkSurveyService.toggleLogging();
-            }
-
-            return null;
+            return toggleLoggingFunction.get();
         }
 
         protected void onPostExecute(Boolean enabled)
@@ -328,11 +512,7 @@ public class NetworkSurveyActivity extends AppCompatActivity
                 return;
             }
 
-            updateLoggingButton(enabled);
-
-            final String message = getString(enabled ? R.string.logging_start_toast : R.string.logging_stop_toast);
-
-            Toast.makeText(getApplicationContext(), message, Toast.LENGTH_SHORT).show();
+            Toast.makeText(getApplicationContext(), postExecuteFunction.apply(enabled), Toast.LENGTH_SHORT).show();
         }
     }
 
@@ -349,17 +529,26 @@ public class NetworkSurveyActivity extends AppCompatActivity
             networkSurveyService = binder.getService();
             networkSurveyService.onUiVisible(NetworkSurveyActivity.this);
 
-            final boolean loggingEnabled = networkSurveyService.isLoggingEnabled();
-
-            if (turnOnLoggingOnNextServiceConnection && !loggingEnabled)
+            final boolean cellularLoggingEnabled = networkSurveyService.isCellularLoggingEnabled();
+            if (turnOnCellularLoggingOnNextServiceConnection && !cellularLoggingEnabled)
             {
-                toggleLogging();
+                toggleCellularLogging();
             } else
             {
-                updateLoggingButton(loggingEnabled);
+                updateCellularLoggingButton(cellularLoggingEnabled);
             }
 
-            turnOnLoggingOnNextServiceConnection = false;
+            final boolean gnssLoggingEnabled = networkSurveyService.isGnssLoggingEnabled();
+            if (turnOnGnssLoggingOnNextServiceConnection && !gnssLoggingEnabled)
+            {
+                toggleGnssLogging();
+            } else
+            {
+                updateGnssLoggingButton(gnssLoggingEnabled);
+            }
+
+            turnOnCellularLoggingOnNextServiceConnection = false;
+            turnOnGnssLoggingOnNextServiceConnection = false;
         }
 
         @Override

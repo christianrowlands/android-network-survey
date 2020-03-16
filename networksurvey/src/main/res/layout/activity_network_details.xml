@@ -22,9 +22,18 @@
             android:id="@+id/main_content"
             android:name="androidx.navigation.fragment.NavHostFragment"
             android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            app:defaultNavHost="true"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            app:defaultNavHost="false"
             app:navGraph="@navigation/nav_graph" />
+
+        <com.google.android.material.bottomnavigation.BottomNavigationView
+            android:id="@+id/bottom_nav"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:theme="@style/BottomNavigationTheme"
+            app:elevation="24dp"
+            app:menu="@menu/bottom_navigation_menu" />
 
     </LinearLayout>
 

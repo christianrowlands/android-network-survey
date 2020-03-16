@@ -6,6 +6,8 @@ import android.location.LocationManager;
 import android.os.Bundle;
 import android.util.Log;
 
+import com.craxiom.networksurvey.services.NetworkSurveyService;
+
 /**
  * A GPS Listener that is registered with the Android Location Service so that we are notified of Location updates.
  * <p>
@@ -20,6 +22,7 @@ public class GpsListener implements LocationListener
     private static final float MIN_DISTANCE_ACCURACY = 32f; // This is the number that WiGLE Wi-Fi uses.
 
     private Location latestLocation;
+    private NetworkSurveyService networkSurveyService;
 
     @Override
     public void onLocationChanged(Location location)
@@ -53,6 +56,25 @@ public class GpsListener implements LocationListener
     }
 
     /**
+     * The {@link com.craxiom.networksurvey.services.GnssGeoPackageRecorder} works differently than the
+     * {@link SurveyRecordLogger}.  The GNSS logger expects to be notified of the new location which triggers a write to
+     * the GeoPackage file.  This method allows the GNSS logger to get notified anytime the location update occurs.
+     * <p>
+     * Likely we need to unify the two approaches.
+     *
+     * @param networkSurveyService The listener wanted to get notified of location changes.
+     */
+    public void addLocationListener(NetworkSurveyService networkSurveyService)
+    {
+        this.networkSurveyService = networkSurveyService;
+    }
+
+    public void removeLocationListener()
+    {
+        networkSurveyService = null;
+    }
+
+    /**
      * Updates the cached location with the newly provided location.
      *
      * @param newLocation The newly provided location.
@@ -63,6 +85,7 @@ public class GpsListener implements LocationListener
                 && newLocation.getAccuracy() <= MIN_DISTANCE_ACCURACY)
         {
             latestLocation = newLocation;
+            if (networkSurveyService != null) networkSurveyService.updateLocation(newLocation);
         } else
         {
             Log.d(LOG_TAG, "The accuracy of the last GPS location is less than the required minimum");

@@ -39,6 +39,7 @@ public class NetworkSurveyConstants
     public static final String NR = "NR";
 
     // Properties
-    public static final String PROPERTY_AUTO_START_LOGGING_KEY = "autoStartLogging";
+    public static final String PROPERTY_AUTO_START_CELLULAR_LOGGING_KEY = "autoStartLogging";
+    public static final String PROPERTY_AUTO_START_GNSS_LOGGING_KEY = "autoStartGnssLogging";
     public static final String PROPERTY_CONNECTION_TIMEOUT_KEY = "connectionTimeout";
 }
