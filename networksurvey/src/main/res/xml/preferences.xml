@@ -2,7 +2,7 @@
 <PreferenceScreen xmlns:app="http://schemas.android.com/apk/res-auto">
 
     <SwitchPreferenceCompat
-        app:defaultValue="true"
+        app:defaultValue="false"
         app:icon="@drawable/ic_cellular"
         app:key="autoStartLogging"
         app:summaryOff="@string/auto_start_cellular_logging_summary_off"
@@ -10,7 +10,7 @@
         app:title="@string/auto_start_cellular_logging_title" />
 
     <SwitchPreferenceCompat
-        app:defaultValue="true"
+        app:defaultValue="false"
         app:icon="@drawable/ic_gnss"
         app:key="autoStartGnssLogging"
         app:summaryOff="@string/auto_start_gnss_logging_summary_off"

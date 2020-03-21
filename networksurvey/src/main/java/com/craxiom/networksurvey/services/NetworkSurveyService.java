@@ -547,9 +547,13 @@ public class NetworkSurveyService extends Service
                 {
                     locationManager.registerGnssMeasurementsCallback(measurementListener);
                     locationManager.registerGnssStatusCallback(statusListener, serviceHandler);
+                    Log.i(LOG_TAG, "Successfully registered the GNSS listeners");
                 }
 
                 gpsListener.addLocationListener(this);
+            } else
+            {
+                Log.w(LOG_TAG, "The location manager was not null when registering the GNSS listeners");
             }
 
             success = true;
