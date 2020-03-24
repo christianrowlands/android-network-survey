@@ -1,6 +1,7 @@
 apply plugin: 'com.android.application'
 apply plugin: "androidx.navigation.safeargs"
 apply plugin: 'kotlin-android'
+apply from: "../artifacts.gradle"
 
 android {
     compileSdkVersion 29
