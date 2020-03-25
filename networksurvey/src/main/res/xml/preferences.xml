@@ -2,12 +2,20 @@
 <PreferenceScreen xmlns:app="http://schemas.android.com/apk/res-auto">
 
     <SwitchPreferenceCompat
-        app:defaultValue="true"
-        app:icon="@drawable/ic_action_bar_logging"
+        app:defaultValue="false"
+        app:icon="@drawable/ic_cellular"
         app:key="autoStartLogging"
-        app:summaryOff="@string/auto_start_logging_summary_off"
-        app:summaryOn="@string/auto_start_logging_summary_on"
-        app:title="@string/auto_start_logging_title" />
+        app:summaryOff="@string/auto_start_cellular_logging_summary_off"
+        app:summaryOn="@string/auto_start_cellular_logging_summary_on"
+        app:title="@string/auto_start_cellular_logging_title" />
+
+    <SwitchPreferenceCompat
+        app:defaultValue="false"
+        app:icon="@drawable/ic_gnss"
+        app:key="autoStartGnssLogging"
+        app:summaryOff="@string/auto_start_gnss_logging_summary_off"
+        app:summaryOn="@string/auto_start_gnss_logging_summary_on"
+        app:title="@string/auto_start_gnss_logging_title" />
 
     <!--    <PreferenceCategory
             app:key="connectionConfig"

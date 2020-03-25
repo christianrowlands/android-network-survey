@@ -23,9 +23,11 @@ Install Android Studio to work on this code.
 
 * [GeoPackage Android](https://github.com/ngageoint/geopackage-android) - The logging file standard and library
 
-## Google Play Listing
+## Available At
 
 [The Google Play Listing for this app](https://play.google.com/store/apps/details?id=com.craxiom.networksurvey)
+
+[IzzyOnDroid F-Droid](https://apt.izzysoft.de/fdroid/index/apk/com.craxiom.networksurvey)
 
 ## Changelog
 

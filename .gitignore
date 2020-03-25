@@ -9,3 +9,4 @@
 .externalNativeBuild
 /networksurvey/release/*
 .idea/*
+/networksurvey/google-services.json

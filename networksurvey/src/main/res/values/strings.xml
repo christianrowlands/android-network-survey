@@ -1,14 +1,16 @@
 <resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
-    <string name="app_name">Network Survey</string>
 
     <string name="permissions_rationale_title">Network Survey Permissions</string>
     <string name="permissions_rationale">The Network Survey app requires a few permissions to work.  Denying these permissions will result in the app not functioning properly.
         \n\n1. <b>Make and Manage Phone Calls</b>:  This app does not make or manage phone calls.  Instead, it needs this permission to get access to the current cellular connection type (e.g. LTE vs UMTS).
-        \n\n2. <b>Access this Device\'s Location</b>:  This app creates a log file which includes the location the cellular record was captured at.
+        \n\n2. <b>Access this Device\'s Location</b>:  This app creates a log file which includes the location the cellular record was captured at and to display GNSS details.
         \n\n3. <b>Access Photos, Media, and Files on Your Device</b>:  This permission allows the log file to be written.</string>
 
-    <string name="action_start_logging">Start Logging</string>
-    <string name="action_stop_logging">Stop Logging</string>
+    <string name="action_start_cellular_logging">Start Cellular Logging</string>
+    <string name="action_stop_cellular_logging">Stop Cellular Logging</string>
+
+    <string name="action_start_gnss_logging">Start GNSS Logging</string>
+    <string name="action_stop_gnss_logging">Stop GNSS Logging</string>
 
     <string name="no_gps_device">No GPS detected in device!</string>
     <string name="turn_on_gps">Please turn on GPS</string>
@@ -55,13 +57,15 @@
     <string name="rsrp_label">RSRP: %1$s</string>
     <string name="rsrq_label">RSRQ: %1$s</string>
     <string name="ta_label">TA: %1$s</string>
-    <string name="nav_calculators">Calculators</string>
-    <string name="nav_network_details">Network Details</string>
     <string name="lte_cell_id_label">&lt;LTE Cell ID&gt;</string>
     <string name="lte_pci_label">&lt;LTE PCI&gt;</string>
 
-    <string name="logging_start_toast">Started Writing the Log File</string>
-    <string name="logging_stop_toast">Log File Closed</string>
+    <string name="cellular_logging_start_toast">Started Writing the Cellular Log File</string>
+    <string name="cellular_logging_stop_toast">Cellular Log File Closed</string>
+    <string name="cellular_logging_toggle_failed">Failed to toggle the cellular logging state</string>
+    <string name="gnss_logging_start_toast">Started Writing the GNSS Log File</string>
+    <string name="gnss_logging_stop_toast">GNSS Log File Closed</string>
+    <string name="gnss_logging_toggle_failed">Failed to toggle the GNSS logging state</string>
 
     <string name="grpc_connection_title">Server Connection</string>
     <string name="grpc_connection_description">Here you can connect to a remote server.  Once connected, all future survey results will be streamed to the server.
@@ -97,13 +101,125 @@
     <string name="title_activity_connection">ConnectionActivity</string>
 
     <!-- User Preference Constants -->
-    <string name="auto_start_logging_title">Auto Start Logging</string>
-    <string name="auto_start_logging_summary_on">Logging will be started upon app opening</string>
-    <string name="auto_start_logging_summary_off">Logging will only start when manually enabled</string>
+    <string name="auto_start_cellular_logging_title">Auto Start Cellular Logging</string>
+    <string name="auto_start_cellular_logging_summary_on">Cellular logging will be started upon app opening</string>
+    <string name="auto_start_cellular_logging_summary_off">Cellular logging will only start when manually enabled</string>
+
+    <string name="auto_start_gnss_logging_title">Auto Start GNSS Logging</string>
+    <string name="auto_start_gnss_logging_summary_on">GNSS logging will be started upon app opening</string>
+    <string name="auto_start_gnss_logging_summary_off">GNSS logging will only start when manually enabled</string>
 
     <string name="server_config_title">Connection Config</string>
     <string name="connection_timeout_title">Connection Timeout</string>
     <string name="connection_timeout_description">The timeout in seconds when trying to establish a new connection</string>
 
+    <string name="pref_file_location_output_title">Location</string>
+    <string name="pref_file_location_output_summary">Logs location fix details to a file</string>
+    <string name="auto_share_preference_key">auto_share_file</string>
+
+    <string name="preferences_coordinate_format_dd">Decimal Degrees</string>
+    <string name="preferences_coordinate_format_dms">Degrees, Minutes, Decimal Seconds</string>
+    <string name="preferences_coordinate_format_ddm">Degrees, Decimal Minutes</string>
+
+    <string name="preferences_preferred_distance_units_title">Preferred distance units</string>
+    <string name="preferences_preferred_distance_units_option_meters">Meters</string>
+    <string name="preferences_preferred_distance_units_option_feet">Feet</string>
+
+    <string name="preferences_preferred_speed_units_title">Preferred speed units</string>
+    <string name="preferences_preferred_speed_units_option_meters_per_second">Meters per second</string>
+    <string name="preferences_preferred_speed_units_option_kilometers_per_hour">Kilometers per hour</string>
+    <string name="preferences_preferred_speed_units_option_miles_per_hour">Miles per hour</string>
+
+    <!-- Bottom Navigation -->
+    <string name="nav_gnss">GNSS</string>
+    <string name="nav_cellular">Cellular</string>
+
+    <!-- General GNSS Constants -->
+    <string name="enable_gps_message">Location (GPS/GNSS) is disabled. It is required for tying cellular survey records to a location and to also get GNSS details.
+        \n\nDo you want to enable it now?</string>
+    <string name="enable_gps_positive_button">Enable GPS/GNSS</string>
+    <string name="enable_gps_negative_button">No</string>
+
+    <!-- GNSS Failure Alert -->
+    <string name="app_icon_description">App Icon</string>
+    <string name="not_supported_title">GNSS Features May Not Work</string>
+    <string name="not_supported_description">Network Survey is not receiving raw GNSS measurements from the phone, which are required for generating GeoPackage files with useful data. You will still see some satellite status in the app, but any GeoPackage files generated will only contain basic location information. For more information and a list of devices that support raw GNSS, consult Android\'s <a href="https://developer.android.com/guide/topics/sensors/gnss">Raw GNSS Measurements</a> guide.</string>
+    <string name="remember_my_decision">Don\'t ask me again</string>
+
+    <!-- GNSS Status View -->
+    <string name="gps_latitude_label">Lat:</string>
+    <string name="gps_longitude_label">Long:</string>
+    <string name="gps_fix_time_label">Time:</string>
+    <string name="gps_ttff_label">TTFF:</string>
+    <string name="gps_altitude_label">Alt:</string>
+    <string name="gps_altitude_msl_label">Alt (MSL):</string>
+    <string name="gps_accuracy_label">E Acc:</string>
+    <string name="gps_hor_and_vert_accuracy_label">E H/V Acc:</string>
+    <string name="gps_speed_label">Speed:</string>
+    <string name="gps_speed_acc_label">S. Acc:</string>
+    <string name="gps_bearing_label">Bearing:</string>
+    <string name="gps_bearing_acc_label">B. Acc:</string>
+    <string name="gps_num_sats_label"># Sats:</string>
+    <string name="gps_avg_cn0_label">Avg</string>
+    <string name="pdop_label">PDOP:</string>
+    <string name="hvdop_label">H/V DOP:</string>
+    <string name="gnss_not_available">Global Navigation Satellite System (GNSS) satellites not available</string>
+    <string name="sbas_not_available">Satellite-based Augmentation System (SBAS) satellites not available</string>
+
+    <string name="gps_snr_column_label">SNR</string>
+    <string name="gps_cn0_column_label">C/N0</string>
+    <string name="menu_option_sort_by">Sort by</string>
+    <string name="gps_prn_column_label">ID</string>
+    <string name="gnss_flag_image_label">GNSS</string>
+    <string name="sbas_flag_image_label">SBAS</string>
+    <string name="gps_carrier_column_label">CF</string>
+    <string name="gps_elevation_column_label">Elev</string>
+    <string name="gps_azimuth_column_label">Azim</string>
+    <string name="gps_flags_column_label">Flags</string>
+    <string name="copied_to_clipboard">Location copied to clipboard</string>
+    <string name="send_log">"Send log…"</string>
+
+    <!-- GNSS Sky View -->
+    <string name="sky_legend_title">Legend</string>
+    <string name="sky_legend_shape_gnss_title">Global Navigation Satellite Systems (GNSS)</string>
+    <string name="sky_legend_shape_navstar">NAVSTAR GPS (USA)</string>
+    <string name="sky_legend_shape_glonass">GLONASS (Russia)</string>
+    <string name="sky_legend_shape_galileo">Galileo (European Union)</string>
+    <string name="sky_legend_shape_qzss">QZSS (Japan)</string>
+    <string name="sky_legend_shape_beidou">BeiDou/COMPASS (China)</string>
+    <string name="sky_legend_shape_irnss">IRNSS (India)</string>
+
+    <string name="sky_legend_shape_sbas_title">Satellite-based Augmentation Systems (SBAS)</string>
+    <string name="sky_legend_shape_waas">WAAS (USA)</string>
+    <string name="sky_legend_shape_egnos">EGNOS (European Union)</string>
+    <string name="sky_legend_shape_gagan">GAGAN (India)</string>
+    <string name="sky_legend_shape_msas">MSAS (Japan)</string>
+    <string name="sky_legend_shape_sdcm">SDCM (Russia)</string>
+    <string name="sky_legend_shape_snas">SNAS (China)</string>
+    <string name="sky_legend_shape_saccsa">SACCSA (ICAO)</string>
+
+    <string name="sky_legend_shape_availability_title">Signal Availability</string>
+    <string name="sky_legend_shape_not_in_view">Not in view of device</string>
+    <string name="sky_legend_shape_in_view">In view</string>
+    <string name="sky_legend_shape_used_in_fix">Used in fix</string>
+
+    <!-- GNSS Map View -->
+    <string name="ground_truth_marker_title">Your real location</string>
+    <string name="ground_truth_invalid_location_title">Invalid location</string>
+    <string name="ground_truth_invalid_lat">Latitude must be in decimal degrees between -90 and 90</string>
+    <string name="ground_truth_invalid_long">Longitude must be in decimal degrees between -180 and 180</string>
+    <string name="ground_truth_invalid_alt">Altitude must be in WGS84 in meters</string>
+
+    <!-- Accuracy View -->
+    <string name="qr_code_instructions_title">Scan a QR Code</string>
+    <string name="qr_code_instructions_text">Import a ground truth location using a QR Code in the Geo URI format (geo:28.38434,-87.24334).  Create your own QR Codes at https://zxing.appspot.com/generator/.</string>
+    <string name="never_show_again">Never show again</string>
+    <string name="ok">OK</string>
+    <string name="not_now">Not now</string>
+
+    <!-- GNSS Logging -->
+    <string name="data_saved_location">Data saved in </string>
+    <string name="notification">Network Survey is surveying GNSS data…</string>
+    <string name="notification_historical">Network Survey is reviewing old GNSS data…</string>
 
 </resources>

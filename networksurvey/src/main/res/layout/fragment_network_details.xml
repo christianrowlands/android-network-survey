@@ -4,7 +4,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:paddingTop="4dp"
+    android:paddingTop="@dimen/fragment_padding_top"
     app:layout_behavior="@string/appbar_scrolling_view_behavior"
     tools:context="com.craxiom.networksurvey.NetworkSurveyActivity">
 
@@ -40,7 +40,7 @@
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:layout_margin="5dp"
+            android:layout_margin="@dimen/status_margin"
             android:orientation="horizontal"
             android:padding="0dp"
             android:weightSum="2">
@@ -52,7 +52,7 @@
                 android:layout_gravity="start"
                 android:layout_marginStart="0dp"
                 android:layout_marginTop="0dp"
-                android:layout_marginEnd="5dp"
+                android:layout_marginEnd="@dimen/status_margin"
                 android:layout_marginBottom="0dp"
                 android:layout_weight="1"
                 card_view:cardCornerRadius="4dp"
@@ -98,7 +98,7 @@
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_gravity="start"
-                android:layout_marginStart="5dp"
+                android:layout_marginStart="@dimen/status_margin"
                 android:layout_marginTop="0dp"
                 android:layout_marginEnd="0dp"
                 android:layout_marginBottom="0dp"
