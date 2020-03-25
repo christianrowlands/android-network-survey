@@ -1,8 +1,10 @@
 # Network Survey Android App
 
-The Network Survey Android App provides a basic survey capability for LTE networks.  In its current state, it can be 
-used to examine the network details of the current LTE serving cell, and log GSM, CDMA, UMTS, and LTE records to a 
-GeoPackage file.  The App also supports connecting to a remote gRPC server and live streaming the LTE records.
+The Network Survey Android App provides a basic survey capability for Cellular networks and GNSS constellations.  
+For cellular data, in its current state it can be used to examine the network details of the current LTE serving cell, and log 
+GSM, CDMA, UMTS, and LTE records to a GeoPackage file.  The App also supports connecting to a remote gRPC server and live 
+streaming the celluar records.  For GNSS data, it can display the latest information about the satellite vehicles and
+also log the information to a GeoPackage file.
 
 ![App Screenshot](screenshots/network_survey_screenshot.png "The Network Survey App Main Screen")
 
@@ -30,6 +32,9 @@ Install Android Studio to work on this code.
 [IzzyOnDroid F-Droid](https://apt.izzysoft.de/fdroid/index/apk/com.craxiom.networksurvey)
 
 ## Changelog
+
+##### [0.1.0](https://github.com/christianrowlands/android-network-survey/releases/tag/release-0.1.0) - 2020-03-24
+ * Added support for logging GNSS information to a GeoPackage file
 
 ##### [0.0.9](https://github.com/christianrowlands/android-network-survey/releases/tag/release-0.0.9) - 2020-01-10
  * Moved the file logging and connection logic to foreground services to prevent the Android System from stopping them
