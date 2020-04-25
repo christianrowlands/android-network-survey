@@ -7,17 +7,17 @@ buildscript {
         jcenter()
     }
     dependencies {
-        classpath 'com.android.tools.build:gradle:3.6.1'
+        classpath 'com.android.tools.build:gradle:3.6.3'
         classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
-        classpath "androidx.navigation:navigation-safe-args-gradle-plugin:2.2.1"
+        classpath "androidx.navigation:navigation-safe-args-gradle-plugin:2.2.2"
     }
 }
 
 ext {
     androidVersion = '28.0.0'
     grpcVersion = '1.21.0'
-    networkSurveyMessagingVersion = '0.0.2'
-    navigationVersion = '2.2.1'
+    networkSurveyMessagingVersion = '0.1.0'
+    navigationVersion = '2.2.2'
     kotlin_version = '1.3.61'
 }
 

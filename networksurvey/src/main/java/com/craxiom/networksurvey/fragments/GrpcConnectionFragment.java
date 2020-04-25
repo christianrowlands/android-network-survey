@@ -46,9 +46,6 @@ public class GrpcConnectionFragment extends Fragment implements View.OnClickList
     private static final String LOG_TAG = GrpcConnectionFragment.class.getSimpleName();
 
     private static final int ACCESS_PERMISSION_REQUEST_ID = 10;
-    private static final String NETWORK_SURVEY_CONNECTION_HOST = "connectionHost";
-    private static final String NETWORK_SURVEY_CONNECTION_PORT = "connectionPort";
-    private static final String NETWORK_SURVEY_DEVICE_NAME = "deviceName";
 
     private final Handler uiThreadHandler;
 
@@ -302,9 +299,9 @@ public class GrpcConnectionFragment extends Fragment implements View.OnClickList
     {
         final SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(applicationContext);
         final SharedPreferences.Editor edit = preferences.edit();
-        if (host != null) edit.putString(NETWORK_SURVEY_CONNECTION_HOST, host);
-        edit.putInt(NETWORK_SURVEY_CONNECTION_PORT, portNumber);
-        if (deviceName != null) edit.putString(NETWORK_SURVEY_DEVICE_NAME, deviceName);
+        if (host != null) edit.putString(NetworkSurveyConstants.PROPERTY_NETWORK_SURVEY_CONNECTION_HOST, host);
+        edit.putInt(NetworkSurveyConstants.PROPERTY_NETWORK_SURVEY_CONNECTION_PORT, portNumber);
+        if (deviceName != null) edit.putString(NetworkSurveyConstants.PROPERTY_NETWORK_SURVEY_DEVICE_NAME, deviceName);
         edit.apply();
     }
 
@@ -315,13 +312,13 @@ public class GrpcConnectionFragment extends Fragment implements View.OnClickList
     {
         final SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(applicationContext);
 
-        final String restoredHost = preferences.getString(NETWORK_SURVEY_CONNECTION_HOST, "");
+        final String restoredHost = preferences.getString(NetworkSurveyConstants.PROPERTY_NETWORK_SURVEY_CONNECTION_HOST, "");
         if (!restoredHost.isEmpty()) host = restoredHost;
 
-        final int restoredPortNumber = preferences.getInt(NETWORK_SURVEY_CONNECTION_PORT, NetworkSurveyConstants.DEFAULT_GRPC_PORT);
+        final int restoredPortNumber = preferences.getInt(NetworkSurveyConstants.PROPERTY_NETWORK_SURVEY_CONNECTION_PORT, NetworkSurveyConstants.DEFAULT_GRPC_PORT);
         if (restoredPortNumber != -1) portNumber = restoredPortNumber;
 
-        final String restoredDeviceName = preferences.getString(NETWORK_SURVEY_DEVICE_NAME, "");
+        final String restoredDeviceName = preferences.getString(NetworkSurveyConstants.PROPERTY_NETWORK_SURVEY_DEVICE_NAME, "");
         if (!restoredDeviceName.isEmpty()) deviceName = restoredDeviceName;
     }
 

@@ -38,8 +38,19 @@ public class NetworkSurveyConstants
     public static final String LTE_CA = "LTE-CA";
     public static final String NR = "NR";
 
-    // Properties
-    public static final String PROPERTY_AUTO_START_CELLULAR_LOGGING_KEY = "autoStartLogging";
-    public static final String PROPERTY_AUTO_START_GNSS_LOGGING_KEY = "autoStartGnssLogging";
-    public static final String PROPERTY_CONNECTION_TIMEOUT_KEY = "connectionTimeout";
+    // Preferences
+    public static final String PROPERTY_AUTO_START_CELLULAR_LOGGING = "auto_start_logging";
+    public static final String PROPERTY_AUTO_START_GNSS_LOGGING = "auto_start_gnss_logging";
+    public static final String PROPERTY_CONNECTION_TIMEOUT = "connection_timeout";
+    public static final String PROPERTY_MQTT_MDM_OVERRIDE = "mqtt_mdm_override";
+    // The following 4 keys are used in the app_restrictions.xml file as well.
+    public static final String PROPERTY_MQTT_BROKER_URL = "mqtt_broker_url";
+    public static final String PROPERTY_MQTT_CLIENT_ID = "mqtt_client_id";
+    public static final String PROPERTY_MQTT_USERNAME = "mqtt_username";
+    public static final String PROPERTY_MQTT_PASSWORD = "mqtt_password";
+
+    // Stored Preferences not exposed via the Settings UI
+    public static final String PROPERTY_NETWORK_SURVEY_CONNECTION_HOST = "connection_host";
+    public static final String PROPERTY_NETWORK_SURVEY_CONNECTION_PORT = "connection_port";
+    public static final String PROPERTY_NETWORK_SURVEY_DEVICE_NAME = "device_name";
 }

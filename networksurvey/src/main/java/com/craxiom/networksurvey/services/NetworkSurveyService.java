@@ -7,6 +7,8 @@ import android.app.PendingIntent;
 import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
+import android.content.RestrictionsManager;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.location.GnssMeasurementsEvent;
 import android.location.GnssStatus;
@@ -15,6 +17,7 @@ import android.location.LocationManager;
 import android.os.AsyncTask;
 import android.os.Binder;
 import android.os.Build;
+import android.os.Bundle;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.IBinder;
@@ -28,6 +31,7 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
+import androidx.preference.PreferenceManager;
 
 import com.craxiom.networksurvey.CalculationUtils;
 import com.craxiom.networksurvey.GpsListener;
@@ -36,6 +40,8 @@ import com.craxiom.networksurvey.R;
 import com.craxiom.networksurvey.SurveyRecordLogger;
 import com.craxiom.networksurvey.constants.NetworkSurveyConstants;
 import com.craxiom.networksurvey.listeners.ISurveyRecordListener;
+import com.craxiom.networksurvey.mqtt.MqttBrokerConnectionInfo;
+import com.craxiom.networksurvey.mqtt.MqttConnection;
 
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -78,6 +84,7 @@ public class NetworkSurveyService extends Service
      */
     private final GnssMeasurementsEvent.Callback measurementListener = new GnssMeasurementsEvent.Callback()
     {
+        @Override
         public void onGnssMeasurementsReceived(GnssMeasurementsEvent event)
         {
             gnssRawSupportKnown = true;
@@ -90,11 +97,13 @@ public class NetworkSurveyService extends Service
      */
     private final GnssStatus.Callback statusListener = new GnssStatus.Callback()
     {
+        @Override
         public void onSatelliteStatusChanged(final GnssStatus status)
         {
             if (gnssGeoPackageRecorder != null) gnssGeoPackageRecorder.onSatelliteStatusChanged(status);
         }
     };
+    private MqttConnection mqttConnection;
 
     public NetworkSurveyService()
     {
@@ -120,6 +129,8 @@ public class NetworkSurveyService extends Service
         initializeLocationListener();
         initializeSurveyRecordScanning();
 
+        initializeMqttConnection();
+
         updateServiceNotification();
     }
 
@@ -139,6 +150,12 @@ public class NetworkSurveyService extends Service
     public void onDestroy()
     {
         Log.i(LOG_TAG, "onDestroy");
+
+        if (mqttConnection != null)
+        {
+            unregisterSurveyRecordListener(mqttConnection);
+            mqttConnection.disconnect();
+        }
         setDone();
         removeLocationListener();
         stopGnssLogging();
@@ -151,6 +168,28 @@ public class NetworkSurveyService extends Service
         serviceHandler = null;
         shutdownNotifications();
         super.onDestroy();
+    }
+
+    /**
+     * If connection information is specified for an MQTT Broker, then kick off an MQTT connection.
+     * <p>
+     * This method can also be called if the MQTT Broker connection information has changed and the connection needs to
+     * be reestablished with the new information.
+     *
+     * @since 0.1.1
+     */
+    public void initializeMqttConnection()
+    {
+        final MqttBrokerConnectionInfo connectionInfo = getMqttBrokerConnectionInfo();
+
+        if (connectionInfo != null)
+        {
+            mqttConnection = new MqttConnection(getApplicationContext(), connectionInfo);
+            registerSurveyRecordListener(mqttConnection);
+        } else
+        {
+            Log.i(LOG_TAG, "Skipping the MQTT connection because no MQTT broker configuration has been set");
+        }
     }
 
     public GpsListener getGpsListener()
@@ -270,6 +309,7 @@ public class NetworkSurveyService extends Service
     {
         serviceHandler.postDelayed(new Runnable()
         {
+            @Override
             public void run()
             {
                 try
@@ -390,6 +430,7 @@ public class NetworkSurveyService extends Service
 
         serviceHandler.postDelayed(new Runnable()
         {
+            @Override
             public void run()
             {
                 try
@@ -588,6 +629,57 @@ public class NetworkSurveyService extends Service
     private void shutdownNotifications()
     {
         stopForeground(true);
+    }
+
+    /**
+     * Get the MQTT broker connection information to use to establish the connection.
+     * <p>
+     * First try to use the local configuration from the preferences UI, if it has been set.  If not, then try to get
+     * the MDM configured connection settings.
+     *
+     * @return The connection settings to use for the MQTT broker, or null if no connection information is present.
+     * @since 0.1.1
+     */
+    private MqttBrokerConnectionInfo getMqttBrokerConnectionInfo()
+    {
+        final SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
+        if (preferences.getBoolean(NetworkSurveyConstants.PROPERTY_MQTT_MDM_OVERRIDE, false))
+        {
+            final String mqttBrokerUri = preferences.getString(NetworkSurveyConstants.PROPERTY_MQTT_BROKER_URL, null);
+            final String clientId = preferences.getString(NetworkSurveyConstants.PROPERTY_MQTT_CLIENT_ID, null);
+            final String username = preferences.getString(NetworkSurveyConstants.PROPERTY_MQTT_USERNAME, null);
+            final String password = preferences.getString(NetworkSurveyConstants.PROPERTY_MQTT_PASSWORD, null);
+
+            if (mqttBrokerUri == null || clientId == null)
+            {
+                return null;
+            }
+
+            return new MqttBrokerConnectionInfo(mqttBrokerUri, clientId, username, password);
+        }
+
+        final RestrictionsManager restrictionsManager = (RestrictionsManager) getSystemService(Context.RESTRICTIONS_SERVICE);
+        if (restrictionsManager != null)
+        {
+            final Bundle mdmProperties = restrictionsManager.getApplicationRestrictions();
+
+            final boolean hasBrokerUri = mdmProperties.containsKey(NetworkSurveyConstants.PROPERTY_MQTT_BROKER_URL);
+            if (!hasBrokerUri) return null;
+
+            final String mqttBrokerUri = mdmProperties.getString(NetworkSurveyConstants.PROPERTY_MQTT_BROKER_URL);
+            final String clientId = mdmProperties.getString(NetworkSurveyConstants.PROPERTY_MQTT_CLIENT_ID);
+            final String username = mdmProperties.getString(NetworkSurveyConstants.PROPERTY_MQTT_USERNAME);
+            final String password = mdmProperties.getString(NetworkSurveyConstants.PROPERTY_MQTT_PASSWORD);
+
+            if (mqttBrokerUri == null || clientId == null)
+            {
+                return null;
+            }
+
+            return new MqttBrokerConnectionInfo(mqttBrokerUri, clientId, username, password);
+        }
+
+        return null;
     }
 
     /**
