@@ -68,15 +68,15 @@
     <string name="gnss_logging_toggle_failed">Failed to toggle the GNSS logging state</string>
 
     <string name="grpc_connection_title">Server Connection</string>
-    <string name="grpc_connection_description">Here you can connect to a remote server.  Once connected, all future survey results will be streamed to the server.
+    <string name="grpc_connection_description">Here you can connect to a Network Survey server.  Once connected, all future survey results will be streamed to the server.
         \n\nSteps for Connecting:
         \n\n1. Enter in the following information:
         \n     a. The Server IP Address or Hostname
         \n     b. The Server Port Number (Default: 2621)
         \n     c. A name that is used to identify this device on the server
         \n\n2. Click the connect toggle switch</string>
-    <string name="grpc_server_host_hint">Server Address</string>
-    <string name="gprc_server_port_hint">Port Number</string>
+    <string name="server_host_hint">Server Address</string>
+    <string name="server_port_hint">Port Number</string>
     <string name="device_name_hint">Device Name</string>
 
     <string name="status_disconnected">Disconnected</string>
@@ -95,10 +95,32 @@
     <string name="service_notification_title">GPS Active</string>
     <string name="logging_notification_title">Network Survey Logging Active</string>
     <string name="logging_notification_text">Writing to the GeoPackage log file</string>
+    <string name="mqtt_connection_notification_title">MQTT Broker Connected</string>
+    <string name="mqtt_connection_notification_text">Streaming records to an MQTT Broker</string>
+    <string name="logging_and_mqtt_notification_title">Logging and Connection Active</string>
+    <string name="logging_and_mqtt_notification_text">Writing to the GeoPackage log file and streaming records to an MQTT Broker</string>
     <string name="connection_notification_title">Network Survey Server Connection</string>
     <string name="connection_notification_active_text">The Connection is Active</string>
     <string name="connection_notification_connecting_text">Attempting to Connect</string>
     <string name="title_activity_connection">ConnectionActivity</string>
+
+    <!-- MQTT Connection UI constants -->
+    <string name="mqtt_connection_title">MQTT Broker Connection</string>
+    <string name="mqtt_mdm_override_description">Your MQTT connection settings have been set by a Mobile Device Management server.  Toggle the switch below to override those settings so you can specify your own MQTT Broker connection information.</string>
+    <string name="mqtt_mdm_override_title">Override MDM MQTT Settings</string>
+    <string name="tls">TLS</string>
+    <string name="username_hint">MQTT Username</string>
+    <string name="password_hint">MQTT Password</string>
+    <string name="help_title">Help?</string>
+    <string name="mqtt_connection_description">Here you can connect to an MQTT broker.  Once connected, all future survey results will be streamed to the server.
+        \n\nSteps for Connecting:
+        \n\n1. Enter in the following information:
+        \n     a. The MQTT broker IP Address or Hostname
+        \n     b. The MQTT broker Port Number (Default: 1883)
+        \n     c. If the server supports SSL/TLS, then turn on the TLS toggle switch
+        \n     d. A name that is used to identify this device on the server
+        \n     e. (Optional) The username and password used to authenticate with the MQTT Broker
+        \n\n2. Click the connect toggle switch</string>
 
     <!-- App Restriction Constants -->
     <string name="mqtt_broker_url_title">MQTT Broker URL</string>

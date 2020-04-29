@@ -13,8 +13,11 @@ public class NetworkSurveyConstants
 
     public static final int DEFAULT_GRPC_PORT = 2621;
 
+    public static final int DEFAULT_MQTT_PORT = 1883;
+    public static final boolean DEFAULT_MQTT_TLS_SETTING = true;
+
     public static final String NOTIFICATION_CHANNEL_ID = "network_survey_notification";
-    public static final int CONNECTION_NOTIFICATION_ID = 3;
+    public static final int GRPC_CONNECTION_NOTIFICATION_ID = 3;
     public static final int LOGGING_NOTIFICATION_ID = 1;
 
     public static final String GPRS = "GRPS";
@@ -53,4 +56,9 @@ public class NetworkSurveyConstants
     public static final String PROPERTY_NETWORK_SURVEY_CONNECTION_HOST = "connection_host";
     public static final String PROPERTY_NETWORK_SURVEY_CONNECTION_PORT = "connection_port";
     public static final String PROPERTY_NETWORK_SURVEY_DEVICE_NAME = "device_name";
+
+    public static final String PROPERTY_MQTT_CONNECTION_HOST = "mqtt_connection_host";
+    public static final String PROPERTY_MQTT_CONNECTION_PORT = "mqtt_connection_port";
+    public static final String PROPERTY_MQTT_CONNECTION_TLS_ENABLED = "mqtt_tls_enabled";
+    public static final String PROPERTY_MQTT_DEVICE_NAME = "mqtt_device_name";
 }

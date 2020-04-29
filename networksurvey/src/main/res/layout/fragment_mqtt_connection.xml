@@ -6,9 +6,42 @@
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_margin="@dimen/small_margin"
-        android:orientation="vertical"
-        android:paddingTop="@dimen/fragment_padding_top">
+        android:orientation="vertical">
+
+        <androidx.cardview.widget.CardView
+            android:id="@+id/mdm_override_card_view"
+            style="?attr/cardStyle"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:visibility="visible">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical">
+
+                <TextView
+                    android:id="@+id/mdm_override_description"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_margin="@dimen/x_small_margin"
+                    android:text="@string/mqtt_mdm_override_description"
+                    android:textAppearance="@style/DescriptionText" />
+
+                <androidx.appcompat.widget.SwitchCompat
+                    android:id="@+id/mdm_override_toggle_switch"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_margin="@dimen/x_small_margin"
+                    android:defaultValue="false"
+                    android:summaryOff="@string/auto_start_cellular_logging_summary_off"
+                    android:summaryOn="@string/auto_start_cellular_logging_summary_on"
+                    android:text="@string/mqtt_mdm_override_title"
+                    android:textAppearance="@style/LabelText" />
+
+            </LinearLayout>
+
+        </androidx.cardview.widget.CardView>
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -16,30 +49,34 @@
             android:orientation="horizontal">
 
             <com.google.android.material.textfield.TextInputLayout
-                android:id="@+id/grpcHostAddressTextInputLayout"
+                android:id="@+id/mqttHostAddressTextInputLayout"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
+                android:layout_margin="@dimen/small_margin"
                 android:layout_weight="2"
-                android:autofillHints="Enter in the Host address of the remote gRPC server"
+                android:autofillHints="Enter in the Host address of the MQTT broker"
+                android:ellipsize="end"
                 android:hint="@string/server_host_hint">
 
                 <com.google.android.material.textfield.TextInputEditText
-                    android:id="@+id/grpcHostAddress"
+                    android:id="@+id/mqttHostAddress"
                     android:layout_width="match_parent"
                     android:layout_height="match_parent"
+                    android:ellipsize="end"
                     android:inputType="textUri" />
 
             </com.google.android.material.textfield.TextInputLayout>
 
             <com.google.android.material.textfield.TextInputLayout
-                android:id="@+id/grpcPortNumberTextInputLayout"
+                android:id="@+id/mqttPortNumberTextInputLayout"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
+                android:layout_margin="@dimen/small_margin"
                 android:layout_weight="1"
                 android:hint="@string/server_port_hint">
 
                 <com.google.android.material.textfield.TextInputEditText
-                    android:id="@+id/grpcPortNumber"
+                    android:id="@+id/mqttPortNumber"
                     android:layout_width="match_parent"
                     android:layout_height="match_parent"
                     android:inputType="numberDecimal" />
@@ -57,6 +94,7 @@
                 android:id="@+id/deviceNameTextInputLayout"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
+                android:layout_margin="@dimen/small_margin"
                 android:layout_weight="2"
                 android:autofillHints="Enter in a name to identify this device"
                 android:hint="@string/device_name_hint">
@@ -66,6 +104,64 @@
                     android:layout_width="match_parent"
                     android:layout_height="match_parent"
                     android:inputType="textAutoComplete" />
+
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <androidx.appcompat.widget.SwitchCompat
+                android:id="@+id/tlsToggleSwitch"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="bottom"
+                android:layout_margin="@dimen/x_small_margin"
+                android:paddingStart="@dimen/small_margin"
+                android:text="@string/tls" />
+
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="6dp"
+            android:orientation="horizontal">
+
+            <com.google.android.material.textfield.TextInputLayout
+                android:id="@+id/usernameTextInputLayout"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_margin="@dimen/small_margin"
+                android:layout_weight="2"
+                android:autofillHints="Enter in the username used to authenticate with the MQTT broker"
+                android:hint="@string/username_hint">
+
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/mqttUsername"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:inputType="textAutoComplete" />
+
+            </com.google.android.material.textfield.TextInputLayout>
+
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
+
+            <com.google.android.material.textfield.TextInputLayout
+                android:id="@+id/passwordTextInputLayout"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_margin="@dimen/small_margin"
+                android:layout_weight="2"
+                android:autofillHints="Enter in the password used to authenticate with the MQTT broker"
+                android:hint="@string/password_hint">
+
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/mqttPassword"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:inputType="textPassword" />
 
             </com.google.android.material.textfield.TextInputLayout>
 
@@ -93,11 +189,12 @@
                     android:text="Connecting ..." />
 
                 <androidx.appcompat.widget.SwitchCompat
-                    android:id="@+id/grpcConnectToggleSwitch"
+                    android:id="@+id/mqttConnectToggleSwitch"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_gravity="center"
-                    android:layout_weight="0" />
+                    android:layout_weight="0"
+                    android:theme="@style/ConnectionSwitchStyle" />
 
             </LinearLayout>
 
@@ -107,7 +204,8 @@
             android:id="@+id/help_card_view"
             style="?attr/cardStyle"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content">
+            android:layout_height="wrap_content"
+            android:layout_gravity="bottom">
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -135,7 +233,7 @@
                         android:layout_width="@dimen/medium_margin"
                         android:layout_height="@dimen/medium_margin"
                         android:layout_gravity="center"
-                        android:layout_margin="@dimen/x_small_margin"
+                        android:layout_marginEnd="@dimen/medium_margin"
                         android:background="@drawable/expand_arrow"
                         android:checked="false"
                         android:clickable="false"
@@ -146,11 +244,11 @@
                 </LinearLayout>
 
                 <TextView
-                    android:id="@+id/grpc_connection_description"
+                    android:id="@+id/mqtt_connection_description"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_margin="@dimen/x_small_margin"
-                    android:text="@string/grpc_connection_description"
+                    android:text="@string/mqtt_connection_description"
                     android:textAppearance="@style/DescriptionText"
                     android:visibility="gone" />
 
@@ -159,4 +257,5 @@
         </androidx.cardview.widget.CardView>
 
     </LinearLayout>
+
 </ScrollView>

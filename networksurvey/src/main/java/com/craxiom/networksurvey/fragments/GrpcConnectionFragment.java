@@ -19,6 +19,7 @@ import android.view.inputmethod.InputMethodManager;
 import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
+import android.widget.ToggleButton;
 
 import androidx.annotation.Nullable;
 import androidx.appcompat.widget.SwitchCompat;
@@ -32,16 +33,16 @@ import androidx.preference.PreferenceManager;
 import com.craxiom.networksurvey.ConnectionState;
 import com.craxiom.networksurvey.R;
 import com.craxiom.networksurvey.constants.NetworkSurveyConstants;
-import com.craxiom.networksurvey.listeners.IGrpcConnectionStateListener;
+import com.craxiom.networksurvey.listeners.IConnectionStateListener;
 import com.craxiom.networksurvey.services.GrpcConnectionService;
 
 /**
  * A fragment for allowing the user to connect to a remote gRPC based server.  This fragment handles
- * the UI portion ofmthe connection and delegates the actual connection logic to {@link GrpcConnectionService}.
+ * the UI portion of the connection and delegates the actual connection logic to {@link GrpcConnectionService}.
  *
  * @since 0.0.4
  */
-public class GrpcConnectionFragment extends Fragment implements View.OnClickListener, IGrpcConnectionStateListener
+public class GrpcConnectionFragment extends Fragment implements View.OnClickListener, IConnectionStateListener
 {
     private static final String LOG_TAG = GrpcConnectionFragment.class.getSimpleName();
 
@@ -72,7 +73,7 @@ public class GrpcConnectionFragment extends Fragment implements View.OnClickList
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState)
     {
-        applicationContext = getActivity().getApplicationContext();
+        applicationContext = requireActivity().getApplicationContext();
         super.onCreate(savedInstanceState);
     }
 
@@ -88,6 +89,21 @@ public class GrpcConnectionFragment extends Fragment implements View.OnClickList
         grpcPortNumberEdit = view.findViewById(R.id.grpcPortNumber);
         deviceNameEdit = view.findViewById(R.id.deviceName);
 
+        final CardView helpCardView = view.findViewById(R.id.help_card_view);
+        helpCardView.setOnClickListener(v -> {
+            final ToggleButton expandArrow = view.findViewById(R.id.expand_toggle_button);
+            final TextView connectionDescriptionText = view.findViewById(R.id.grpc_connection_description);
+            if (connectionDescriptionText.getVisibility() == View.VISIBLE)
+            {
+                connectionDescriptionText.setVisibility(View.GONE);
+                expandArrow.setChecked(false);
+            } else
+            {
+                connectionDescriptionText.setVisibility(View.VISIBLE);
+                expandArrow.setChecked(true);
+            }
+        });
+
         restoreConnectionParameters();
         grpcHostAddressEdit.setText(host);
         grpcPortNumberEdit.setText(String.valueOf(portNumber));
@@ -97,8 +113,7 @@ public class GrpcConnectionFragment extends Fragment implements View.OnClickList
 
         initializeFragmentBasedOnConnectionState();
 
-        ActivityCompat.requestPermissions(getActivity(), new String[]{
-                        Manifest.permission.INTERNET},
+        ActivityCompat.requestPermissions(requireActivity(), new String[]{Manifest.permission.INTERNET},
                 ACCESS_PERMISSION_REQUEST_ID);
 
         return view;
@@ -108,6 +123,7 @@ public class GrpcConnectionFragment extends Fragment implements View.OnClickList
     public void onDestroyView()
     {
         if (grpcConnectionService != null) grpcConnectionService.unregisterConnectionStateListener(this);
+        hideSoftInputFromWindow();
         super.onDestroyView();
     }
 
@@ -126,7 +142,7 @@ public class GrpcConnectionFragment extends Fragment implements View.OnClickList
     }
 
     @Override
-    public void onGrpcConnectionStateChange(ConnectionState newConnectionState)
+    public void onConnectionStateChange(ConnectionState newConnectionState)
     {
         uiThreadHandler.post(() -> updateUiState(newConnectionState));
     }
@@ -160,7 +176,7 @@ public class GrpcConnectionFragment extends Fragment implements View.OnClickList
 
         if (hasPermission) return true;
 
-        ActivityCompat.requestPermissions(getActivity(), new String[]{
+        ActivityCompat.requestPermissions(requireActivity(), new String[]{
                         Manifest.permission.INTERNET},
                 ACCESS_PERMISSION_REQUEST_ID);
         return false;
@@ -275,7 +291,7 @@ public class GrpcConnectionFragment extends Fragment implements View.OnClickList
 
         try
         {
-            final int portNumber = Integer.valueOf(grpcPortNumberEdit.getText().toString());
+            final int portNumber = Integer.parseInt(grpcPortNumberEdit.getText().toString());
             if (portNumber < 0 || portNumber > 65535)
             {
                 final String invalidPortNumberMessage = "Port number must be between 0 and 65535";

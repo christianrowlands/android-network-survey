@@ -6,14 +6,14 @@
     <group android:checkableBehavior="single">
 
         <item
-            android:id="@+id/calculator_fragment"
-            android:icon="@drawable/ic_calculator"
-            android:title="@string/cellular_calculators" />
-
-        <item
             android:id="@+id/connection_fragment"
             android:icon="@drawable/connection_icon"
             android:title="@string/grpc_connection_title" />
+
+        <item
+            android:id="@+id/mqtt_connection_fragment"
+            android:icon="@drawable/ic_cloud_connection"
+            android:title="@string/mqtt_connection_title" />
 
         <item
             android:id="@+id/settings_fragment"

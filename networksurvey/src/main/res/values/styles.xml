@@ -15,7 +15,7 @@
     <style name="CardViewTheme" parent="CardView.Dark">
         <item name="cardBackgroundColor">@color/colorCardDark</item>
         <item name="android:layout_gravity">start</item>
-        <item name="android:layout_margin">5dp</item>
+        <item name="android:layout_margin">@dimen/small_margin</item>
         <item name="cardCornerRadius">4dp</item>
         <item name="contentPadding">3dp</item>
     </style>
@@ -26,6 +26,10 @@
     </style>
 
     <style name="NetworkSurveyTheme.PopupOverlay" parent="ThemeOverlay.MaterialComponents.Dark" />
+
+    <style name="ConnectionSwitchStyle">
+        <item name="colorControlActivated">@color/colorCardDark</item>
+    </style>
 
     <style name="TitleText" parent="TextAppearance.AppCompat">
         <item name="android:textSize">22sp</item>

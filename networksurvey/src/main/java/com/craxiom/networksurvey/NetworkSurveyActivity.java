@@ -139,9 +139,11 @@ public class NetworkSurveyActivity extends AppCompatActivity
         {
             networkSurveyService.onUiHidden();
 
-            if (!networkSurveyService.isCellularLoggingEnabled() && GrpcConnectionService.getConnectedState() == ConnectionState.DISCONNECTED)
+            if (!networkSurveyService.isCellularLoggingEnabled()
+                    && networkSurveyService.getMqttConnectionState() == ConnectionState.DISCONNECTED
+                    && GrpcConnectionService.getConnectedState() == ConnectionState.DISCONNECTED)
             {
-                // We can safely shutdown the service since both logging and the connection are turned off
+                // We can safely shutdown the service since both logging and the connections are turned off
                 final Intent networkSurveyServiceIntent = new Intent(applicationContext, NetworkSurveyService.class);
                 final Intent connectionServiceIntent = new Intent(applicationContext, GrpcConnectionService.class);
                 stopService(networkSurveyServiceIntent);
@@ -302,7 +304,7 @@ public class NetworkSurveyActivity extends AppCompatActivity
         {
             try
             {
-                getApplicationContext().unregisterReceiver(managedConfigurationListener);
+                unregisterReceiver(managedConfigurationListener);
             } catch (Exception e)
             {
                 Log.e(LOG_TAG, "Unable to unregister the Managed Configuration Listener when pausing the app", e);
