@@ -24,47 +24,4 @@
 
     </PreferenceCategory>
 
-    <PreferenceCategory
-        app:key="mqtt_connection_config"
-        app:icon="@drawable/ic_cloud_connection"
-        app:summary="@string/mqtt_preference_category_summary"
-        app:title="@string/mqtt_preference_category_title">
-
-        <SwitchPreferenceCompat
-            app:defaultValue="false"
-            app:key="mqtt_mdm_override"
-            app:summaryOff="@string/mqtt_enable_summary_off"
-            app:summaryOn="@string/mqtt_enable_summary_on"
-            app:title="@string/mqtt_enable_title" />
-
-        <EditTextPreference
-            app:dependency="mqtt_mdm_override"
-            app:dialogMessage="@string/mqtt_broker_connection_description"
-            app:key="mqtt_broker_url"
-            app:title="@string/mqtt_broker_url_title"
-            app:useSimpleSummaryProvider="true" />
-
-        <EditTextPreference
-            app:dependency="mqtt_mdm_override"
-            app:dialogMessage="@string/mqtt_client_id_description"
-            app:key="mqtt_client_id"
-            app:title="@string/mqtt_client_id_title"
-            app:useSimpleSummaryProvider="true" />
-
-        <EditTextPreference
-            app:dependency="mqtt_mdm_override"
-            app:dialogMessage="@string/mqtt_username_description"
-            app:key="mqtt_username"
-            app:title="@string/mqtt_username_title"
-            app:useSimpleSummaryProvider="true" />
-
-        <EditTextPreference
-            app:dependency="mqtt_mdm_override"
-            app:dialogMessage="@string/mqtt_password_description"
-            app:key="mqtt_password"
-            app:title="@string/mqtt_password_title"
-            app:useSimpleSummaryProvider="true" />
-
-    </PreferenceCategory>
-
 </PreferenceScreen>

@@ -6,9 +6,7 @@
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_margin="@dimen/small_margin"
-        android:orientation="vertical"
-        android:paddingTop="@dimen/fragment_padding_top">
+        android:orientation="vertical">
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -19,6 +17,7 @@
                 android:id="@+id/grpcHostAddressTextInputLayout"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
+                android:layout_margin="@dimen/small_margin"
                 android:layout_weight="2"
                 android:autofillHints="Enter in the Host address of the remote gRPC server"
                 android:hint="@string/server_host_hint">
@@ -35,6 +34,7 @@
                 android:id="@+id/grpcPortNumberTextInputLayout"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
+                android:layout_margin="@dimen/small_margin"
                 android:layout_weight="1"
                 android:hint="@string/server_port_hint">
 
@@ -57,6 +57,7 @@
                 android:id="@+id/deviceNameTextInputLayout"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
+                android:layout_margin="@dimen/small_margin"
                 android:layout_weight="2"
                 android:autofillHints="Enter in a name to identify this device"
                 android:hint="@string/device_name_hint">
@@ -97,7 +98,8 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_gravity="center"
-                    android:layout_weight="0" />
+                    android:layout_weight="0"
+                    android:theme="@style/ConnectionSwitchStyle" />
 
             </LinearLayout>
 
