@@ -95,9 +95,10 @@
     <string name="service_notification_title">GPS Active</string>
     <string name="logging_notification_title">Network Survey Logging Active</string>
     <string name="logging_notification_text">Writing to the GeoPackage log file</string>
-    <string name="mqtt_connection_notification_title">MQTT Broker Connected</string>
+    <string name="and">" and "</string>
     <string name="mqtt_connection_notification_text">Streaming records to an MQTT Broker</string>
-    <string name="logging_and_mqtt_notification_title">Logging and Connection Active</string>
+    <string name="mqtt_reconnecting_notification_text">Reconnecting to MQTT Broker</string>
+    <string name="network_survey_notification_title">Network Survey Active</string>
     <string name="logging_and_mqtt_notification_text">Writing to the GeoPackage log file and streaming records to an MQTT Broker</string>
     <string name="connection_notification_title">Network Survey Server Connection</string>
     <string name="connection_notification_active_text">The Connection is Active</string>
@@ -105,7 +106,8 @@
     <string name="title_activity_connection">ConnectionActivity</string>
 
     <!-- MQTT Connection UI constants -->
-    <string name="mqtt_connection_title">MQTT Broker Connection</string>
+    <string name="mqtt_connection_title_full">MQTT Broker Connection</string>
+    <string name="mqtt_connection_title">MQTT Broker</string>
     <string name="mqtt_mdm_override_description">Your MQTT connection settings have been set by a Mobile Device Management server.  Toggle the switch below to override those settings so you can specify your own MQTT Broker connection information.</string>
     <string name="mqtt_mdm_override_title">Override MDM MQTT Settings</string>
     <string name="tls">TLS</string>

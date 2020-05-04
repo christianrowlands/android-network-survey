@@ -81,6 +81,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
     private long firstGpsAcqTime = Long.MIN_VALUE;
     private boolean gnssRawSupportKnown = false;
     private boolean hasGnssRawFailureNagLaunched = false;
+    private MqttConnection mqttConnection;
 
     /**
      * Callback for receiving GNSS measurements from the location manager.
@@ -106,7 +107,6 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
             if (gnssGeoPackageRecorder != null) gnssGeoPackageRecorder.onSatelliteStatusChanged(status);
         }
     };
-    private MqttConnection mqttConnection;
 
     public NetworkSurveyService()
     {
@@ -559,32 +559,54 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
     private synchronized Notification buildNotification()
     {
         final boolean logging = cellularLoggingEnabled.get() || gnssLoggingEnabled.get();
-        final boolean mqttConnected = mqttConnection.isConnected();
+        final ConnectionState connectionState = mqttConnection.getConnectionState();
+        final boolean mqttConnectionActive = connectionState == ConnectionState.CONNECTED || connectionState == ConnectionState.CONNECTING;
+        final CharSequence notificationTitle = getText(R.string.network_survey_notification_title);
+        final String notificationText = getNotificationText(logging, mqttConnectionActive, connectionState);
 
-        Intent notificationIntent = new Intent(this, NetworkSurveyActivity.class);
-        PendingIntent pendingIntent = PendingIntent.getActivity(this, 0, notificationIntent, 0);
-
-        final CharSequence notificationTitle;
-        final CharSequence notificationText;
-
-        if (logging)
-        {
-            notificationTitle = getText(mqttConnected ? R.string.logging_and_mqtt_notification_title : R.string.logging_notification_title);
-            notificationText = getText(mqttConnected ? R.string.logging_and_mqtt_notification_text : R.string.logging_notification_text);
-        } else
-        {
-            notificationTitle = getText(mqttConnected ? R.string.mqtt_connection_notification_title : R.string.service_notification_title);
-            notificationText = mqttConnected ? getText(R.string.mqtt_connection_notification_text) : "";
-        }
+        final Intent notificationIntent = new Intent(this, NetworkSurveyActivity.class);
+        final PendingIntent pendingIntent = PendingIntent.getActivity(this, 0, notificationIntent, 0);
 
         return new NotificationCompat.Builder(this, NetworkSurveyConstants.NOTIFICATION_CHANNEL_ID)
                 .setContentTitle(notificationTitle)
                 .setOngoing(true)
-                .setSmallIcon(mqttConnected ? R.drawable.ic_cloud_connection : logging ? R.drawable.logging_thick_icon : R.drawable.gps_map_icon)
+                .setSmallIcon(mqttConnectionActive ? R.drawable.ic_cloud_connection : logging ? R.drawable.logging_thick_icon : R.drawable.gps_map_icon)
                 .setContentIntent(pendingIntent)
                 .setTicker(notificationTitle)
                 .setStyle(new NotificationCompat.BigTextStyle().bigText(notificationText))
                 .build();
+    }
+
+    /**
+     * Gets the text to use for the Network Survey Service Notification.
+     *
+     * @param logging              True if logging is active, false if disabled.
+     * @param mqttConnectionActive True if the MQTT connection is either in a connected or reconnecting state.
+     * @param connectionState      The actual connection state of the MQTT broker connection.
+     * @return The text that can be added to the service notification.
+     * @since 0.1.1
+     */
+    private String getNotificationText(boolean logging, boolean mqttConnectionActive, ConnectionState connectionState)
+    {
+        String notificationText = "";
+
+        if (logging)
+        {
+            notificationText = String.valueOf(getText(R.string.logging_notification_text)) + (mqttConnectionActive ? getText(R.string.and) : "");
+        }
+
+        switch (connectionState)
+        {
+            case CONNECTED:
+                notificationText += getText(R.string.mqtt_connection_notification_text);
+                break;
+            case CONNECTING:
+                notificationText += getText(R.string.mqtt_reconnecting_notification_text);
+                break;
+            default:
+        }
+
+        return notificationText;
     }
 
     /**

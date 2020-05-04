@@ -13,7 +13,7 @@
         <item
             android:id="@+id/mqtt_connection_fragment"
             android:icon="@drawable/ic_cloud_connection"
-            android:title="@string/mqtt_connection_title" />
+            android:title="@string/mqtt_connection_title_full" />
 
         <item
             android:id="@+id/settings_fragment"

@@ -44,7 +44,7 @@ import com.craxiom.networksurvey.services.NetworkSurveyService;
  *
  * @since 0.1.1
  */
-public class MqttConnectionFragment extends Fragment implements View.OnClickListener, IConnectionStateListener
+public class MqttConnectionFragment extends Fragment implements IConnectionStateListener
 {
     private static final String LOG_TAG = MqttConnectionFragment.class.getSimpleName();
 
@@ -132,24 +132,47 @@ public class MqttConnectionFragment extends Fragment implements View.OnClickList
         usernameEdit.setText(mqttUsername);
         passwordEdit.setText(mqttPassword);
 
-        mdmOverrideToggleSwitch.setOnClickListener(v -> onMdmOverride(mdmOverrideToggleSwitch.isChecked()));
-        mqttConnectionToggleSwitch.setOnClickListener(this);
-
-        startAndBindToNetworkSurveyService();
+        mdmOverrideToggleSwitch.setOnCheckedChangeListener((buttonView, isChecked) -> onMdmOverride(mdmOverrideToggleSwitch.isChecked()));
+        mqttConnectionToggleSwitch.setOnCheckedChangeListener((buttonView, isChecked) -> {
+            if (buttonView.isPressed()) onConnectionSwitchToggled();
+        });
 
         return view;
     }
 
     @Override
-    public void onDestroyView()
+    public void onResume()
+    {
+        super.onResume();
+
+        startAndBindToNetworkSurveyService();
+    }
+
+    @Override
+    public void onPause()
     {
         if (surveyService != null) surveyService.unregisterMqttConnectionStateListener(this);
+
+        super.onPause();
+    }
+
+    @Override
+    public void onDestroyView()
+    {
         hideSoftInputFromWindow();
         super.onDestroyView();
     }
 
     @Override
-    public void onClick(View view)
+    public void onConnectionStateChange(ConnectionState newConnectionState)
+    {
+        uiThreadHandler.post(() -> updateUiState(newConnectionState));
+    }
+
+    /**
+     * Checks the current state of the connection toggle switch and initiates either the connection or disconnection.
+     */
+    private void onConnectionSwitchToggled()
     {
         if (!hasInternetPermission()) return;
 
@@ -160,12 +183,6 @@ public class MqttConnectionFragment extends Fragment implements View.OnClickList
         {
             disconnectFromMqttBroker();
         }
-    }
-
-    @Override
-    public void onConnectionStateChange(ConnectionState newConnectionState)
-    {
-        uiThreadHandler.post(() -> updateUiState(newConnectionState));
     }
 
     /**
@@ -307,7 +324,7 @@ public class MqttConnectionFragment extends Fragment implements View.OnClickList
             surveyService.connectToMqttBroker(getMqttBrokerConnectionInfo());
         } catch (Exception e)
         {
-            Log.e(LOG_TAG, "An exception occurred when trying to connect to the MQTT broker");
+            Log.e(LOG_TAG, "An exception occurred when trying to connect to the MQTT broker", e);
             updateUiState(ConnectionState.DISCONNECTED);
         }
     }

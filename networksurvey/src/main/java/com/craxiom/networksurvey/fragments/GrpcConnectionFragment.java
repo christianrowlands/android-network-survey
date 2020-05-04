@@ -42,7 +42,7 @@ import com.craxiom.networksurvey.services.GrpcConnectionService;
  *
  * @since 0.0.4
  */
-public class GrpcConnectionFragment extends Fragment implements View.OnClickListener, IConnectionStateListener
+public class GrpcConnectionFragment extends Fragment implements IConnectionStateListener
 {
     private static final String LOG_TAG = GrpcConnectionFragment.class.getSimpleName();
 
@@ -109,7 +109,9 @@ public class GrpcConnectionFragment extends Fragment implements View.OnClickList
         grpcPortNumberEdit.setText(String.valueOf(portNumber));
         deviceNameEdit.setText(deviceName);
 
-        grpcConnectionToggleSwitch.setOnClickListener(this);
+        grpcConnectionToggleSwitch.setOnCheckedChangeListener((buttonView, isChecked) -> {
+            if (buttonView.isPressed()) onConnectionSwitchToggled();
+        });
 
         initializeFragmentBasedOnConnectionState();
 
@@ -125,20 +127,6 @@ public class GrpcConnectionFragment extends Fragment implements View.OnClickList
         if (grpcConnectionService != null) grpcConnectionService.unregisterConnectionStateListener(this);
         hideSoftInputFromWindow();
         super.onDestroyView();
-    }
-
-    @Override
-    public void onClick(View view)
-    {
-        if (!hasInternetPermission()) return;
-
-        if (grpcConnectionToggleSwitch.isChecked())
-        {
-            connectToGrpcServer();
-        } else
-        {
-            disconnectFromGrpcServer();
-        }
     }
 
     @Override
@@ -158,6 +146,24 @@ public class GrpcConnectionFragment extends Fragment implements View.OnClickList
         if (connectionState == ConnectionState.CONNECTED || connectionState == ConnectionState.CONNECTING)
         {
             startService(false);
+        }
+    }
+
+    /**
+     * Checks the current state of the connection toggle switch and initiates either the connection or disconnection.
+     *
+     * @since 0.1.1
+     */
+    private void onConnectionSwitchToggled()
+    {
+        if (!hasInternetPermission()) return;
+
+        if (grpcConnectionToggleSwitch.isChecked())
+        {
+            connectToGrpcServer();
+        } else
+        {
+            disconnectFromGrpcServer();
         }
     }
 

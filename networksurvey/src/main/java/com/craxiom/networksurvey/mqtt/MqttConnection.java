@@ -19,7 +19,6 @@ import org.eclipse.paho.client.mqttv3.IMqttDeliveryToken;
 import org.eclipse.paho.client.mqttv3.IMqttToken;
 import org.eclipse.paho.client.mqttv3.MqttCallbackExtended;
 import org.eclipse.paho.client.mqttv3.MqttConnectOptions;
-import org.eclipse.paho.client.mqttv3.MqttException;
 import org.eclipse.paho.client.mqttv3.MqttMessage;
 
 import java.util.List;
@@ -83,14 +82,6 @@ public class MqttConnection implements ISurveyRecordListener
     }
 
     /**
-     * @return True if the gRPC connection is active, false otherwise.
-     */
-    public boolean isConnected()
-    {
-        return connectionState == ConnectionState.CONNECTED;
-    }
-
-    /**
      * Adds an {@link IConnectionStateListener} so that it will be notified of all future MQTT connection state changes.
      *
      * @param connectionStateListener The listener to add.
@@ -114,7 +105,6 @@ public class MqttConnection implements ISurveyRecordListener
      * Connect to the MQTT Broker.
      *
      * @param applicationContext The context to use for the MQTT Android Client.
-     * @throws MqttException If something goes wrong while connecting to the broker.
      */
     public synchronized void connect(Context applicationContext, MqttBrokerConnectionInfo connectionInfo)
     {
@@ -148,8 +138,8 @@ public class MqttConnection implements ISurveyRecordListener
         {
             try
             {
-                mqttAndroidClient.disconnect(500L);
-            } catch (MqttException e)
+                if (mqttAndroidClient.isConnected()) mqttAndroidClient.disconnect(500L);
+            } catch (Exception e)
             {
                 Log.e(LOG_TAG, "Could not successfully disconnect from the MQTT broker");
             }
@@ -161,7 +151,7 @@ public class MqttConnection implements ISurveyRecordListener
     /**
      * Notify all the registered listeners of the new connection state.
      *
-     * @param newConnectionState The new gRPC connection state.
+     * @param newConnectionState The new MQTT connection state.
      */
     private synchronized void notifyConnectionStateChange(ConnectionState newConnectionState)
     {
@@ -205,9 +195,13 @@ public class MqttConnection implements ISurveyRecordListener
         }
     }
 
+    /**
+     * Listener for the overall MQTT client.  This listener gets notified for any events that happen such as connection
+     * success or lost events, message delivery receipts, or notifications of new incoming messages.
+     */
     private static class MyMqttCallbackExtended implements MqttCallbackExtended
     {
-        private MqttConnection mqttConnection;
+        private final MqttConnection mqttConnection;
 
         MyMqttCallbackExtended(MqttConnection mqttConnection)
         {
@@ -230,8 +224,12 @@ public class MqttConnection implements ISurveyRecordListener
         @Override
         public void connectionLost(Throwable cause)
         {
-            Log.e(LOG_TAG, "Connection lost: ", cause);
-            mqttConnection.notifyConnectionStateChange(ConnectionState.DISCONNECTED);
+            Log.w(LOG_TAG, "Connection lost: ", cause);
+
+            // As best I can tell, the connection lost method is called for all connection lost scenarios, including
+            // when the user manually stops the connection.  If the user manually stopped the connection the cause seems
+            // to be null, so don't indicate that we are trying to reconnect.
+            if (cause != null) mqttConnection.notifyConnectionStateChange(ConnectionState.CONNECTING);
         }
 
         @Override
@@ -243,14 +241,18 @@ public class MqttConnection implements ISurveyRecordListener
         @Override
         public void deliveryComplete(IMqttDeliveryToken token)
         {
-
         }
     }
 
+    /**
+     * Listener that can be used when connecting to the MQTT Broker.  We will get notified if the connection succeeds
+     * or fails.
+     * <p>
+     * Callbacks occur on the MQTT Client Thread, so don't do any long running operations in the listener methods.
+     */
     private static class MyMqttActionListener implements IMqttActionListener
     {
-        private MqttConnection mqttConnection;
-        // Callbacks occur on the MQTT Client Thread, so don't do any long running operations in the listener methods
+        private final MqttConnection mqttConnection;
 
         MyMqttActionListener(MqttConnection mqttConnection)
         {
@@ -260,7 +262,7 @@ public class MqttConnection implements ISurveyRecordListener
         @Override
         public void onSuccess(IMqttToken asyncActionToken)
         {
-            Log.i(LOG_TAG, "CONNECTED!!!!");
+            Log.i(LOG_TAG, "MQTT Broker Connected!!!!");
             mqttConnection.notifyConnectionStateChange(ConnectionState.CONNECTED);
         }
 
@@ -268,7 +270,6 @@ public class MqttConnection implements ISurveyRecordListener
         public void onFailure(IMqttToken asyncActionToken, Throwable exception)
         {
             Log.e(LOG_TAG, "Failed to connect", exception);
-            mqttConnection.notifyConnectionStateChange(ConnectionState.DISCONNECTED);
         }
     }
 }
