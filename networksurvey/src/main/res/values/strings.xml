@@ -118,7 +118,7 @@
         \n\nSteps for Connecting:
         \n\n1. Enter in the following information:
         \n     a. The MQTT broker IP Address or Hostname
-        \n     b. The MQTT broker Port Number (Default: 1883)
+        \n     b. The MQTT broker Port Number (Default: 1883 for plain text and 8883 for TLS)
         \n     c. If the server supports SSL/TLS, then turn on the TLS toggle switch
         \n     d. A name that is used to identify this device on the server
         \n     e. (Optional) The username and password used to authenticate with the MQTT Broker

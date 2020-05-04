@@ -133,6 +133,9 @@ public class MqttConnectionFragment extends Fragment implements IConnectionState
         passwordEdit.setText(mqttPassword);
 
         mdmOverrideToggleSwitch.setOnCheckedChangeListener((buttonView, isChecked) -> onMdmOverride(mdmOverrideToggleSwitch.isChecked()));
+        tlsToggleSwitch.setOnCheckedChangeListener((buttonView, isChecked) -> {
+            if (buttonView.isPressed()) onTlsSwitchToggled();
+        });
         mqttConnectionToggleSwitch.setOnCheckedChangeListener((buttonView, isChecked) -> {
             if (buttonView.isPressed()) onConnectionSwitchToggled();
         });
@@ -167,6 +170,20 @@ public class MqttConnectionFragment extends Fragment implements IConnectionState
     public void onConnectionStateChange(ConnectionState newConnectionState)
     {
         uiThreadHandler.post(() -> updateUiState(newConnectionState));
+    }
+
+    /**
+     * Checks the current state of the TLS toggle switch and updates the port number to reflect the selection.
+     */
+    private void onTlsSwitchToggled()
+    {
+        if (tlsToggleSwitch.isChecked())
+        {
+            mqttPortNumberEdit.setText(String.valueOf(NetworkSurveyConstants.MQTT_SSL_PORT));
+        } else
+        {
+            mqttPortNumberEdit.setText(String.valueOf(NetworkSurveyConstants.MQTT_PLAIN_TEXT_PORT));
+        }
     }
 
     /**
