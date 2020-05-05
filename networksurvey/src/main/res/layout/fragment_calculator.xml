@@ -1,94 +1,94 @@
 <?xml version="1.0" encoding="utf-8"?>
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
-        xmlns:tools="http://schemas.android.com/tools"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:orientation="vertical"
-        android:paddingTop="@dimen/fragment_padding_top"
-        tools:context="com.craxiom.networksurvey.NetworkSurveyActivity">
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:paddingTop="@dimen/fragment_padding_top"
+    tools:context="com.craxiom.networksurvey.NetworkSurveyActivity">
 
     <LinearLayout
-            android:layout_width="fill_parent"
-            android:layout_height="match_parent"
-            android:orientation="vertical"
-            android:padding="3dp">
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="3dp">
 
         <androidx.cardview.widget.CardView
-                android:id="@+id/cell_id_calculator_card_view"
-                style="?attr/cardStyle"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content">
+            android:id="@+id/cell_id_calculator_card_view"
+            style="?attr/cardStyle"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content">
 
             <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="@dimen/calculator_margin"
-                    android:layout_marginEnd="@dimen/calculator_margin"
-                    android:layout_marginBottom="@dimen/calculator_margin"
-                    android:gravity="top"
-                    android:orientation="vertical">
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="@dimen/calculator_margin"
+                android:layout_marginEnd="@dimen/calculator_margin"
+                android:layout_marginBottom="@dimen/calculator_margin"
+                android:gravity="top"
+                android:orientation="vertical">
 
                 <com.google.android.material.textfield.TextInputLayout
-                        android:id="@+id/lteCalculatorCellIdTextInputLayout"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:autofillHints="Enter in the Host address of the remote gRPC server"
-                        android:hint="@string/lte_cell_id_label">
+                    android:id="@+id/lteCalculatorCellIdTextInputLayout"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:autofillHints="Enter in the Host address of the remote gRPC server"
+                    android:hint="@string/lte_cell_id_label">
 
                     <com.google.android.material.textfield.TextInputEditText
-                            android:id="@+id/lteCalculatorCellId"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:autofillHints="Enter in the LTE Cell Id to calculate the eNodeB ID for."
-                            android:importantForAutofill="no"
-                            android:inputType="number"
-                            android:maxLines="1" />
+                        android:id="@+id/lteCalculatorCellId"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:autofillHints="Enter in the LTE Cell Id to calculate the eNodeB ID for."
+                        android:importantForAutofill="no"
+                        android:inputType="number"
+                        android:maxLines="1" />
 
                 </com.google.android.material.textfield.TextInputLayout>
 
                 <LinearLayout
-                        android:layout_width="match_parent"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="@dimen/calculator_margin"
+                    android:gravity="top"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:id="@+id/calculatedEnbId"
+                        style="@style/LabelStyle"
+                        android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_marginStart="@dimen/calculator_margin"
-                        android:gravity="top"
-                        android:orientation="horizontal">
+                        android:text="@string/enb_id_initial"
+                        android:textAppearance="@style/LabelText" />
 
                     <TextView
-                            android:id="@+id/calculatedEnbId"
-                            style="@style/LabelStyle"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="@string/enb_id_initial"
-                            android:textAppearance="@style/LabelText" />
-
-                    <TextView
-                            android:id="@+id/calculatedEnbIdValue"
-                            android:layout_width="150dp"
-                            android:layout_height="wrap_content"
-                            android:text=""
-                            android:textAppearance="@style/ValueText" />
+                        android:id="@+id/calculatedEnbIdValue"
+                        android:layout_width="150dp"
+                        android:layout_height="wrap_content"
+                        android:text=""
+                        android:textAppearance="@style/ValueText" />
                 </LinearLayout>
 
                 <LinearLayout
-                        android:layout_width="match_parent"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="@dimen/calculator_margin"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:id="@+id/calculatedSectorId"
+                        style="@style/LabelStyle"
+                        android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_marginStart="@dimen/calculator_margin"
-                        android:orientation="horizontal">
+                        android:text="@string/sector_id_initial"
+                        android:textAppearance="@style/LabelText" />
 
                     <TextView
-                            android:id="@+id/calculatedSectorId"
-                            style="@style/LabelStyle"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="@string/sector_id_initial"
-                            android:textAppearance="@style/LabelText" />
-
-                    <TextView
-                            android:id="@+id/calculatedSectorIdValue"
-                            android:layout_width="150dp"
-                            android:layout_height="wrap_content"
-                            android:text=""
-                            android:textAppearance="@style/ValueText" />
+                        android:id="@+id/calculatedSectorIdValue"
+                        android:layout_width="150dp"
+                        android:layout_height="wrap_content"
+                        android:text=""
+                        android:textAppearance="@style/ValueText" />
                 </LinearLayout>
 
             </LinearLayout>
@@ -96,86 +96,86 @@
         </androidx.cardview.widget.CardView>
 
         <Space
-                android:layout_width="match_parent"
-                android:layout_height="16dp" />
+            android:layout_width="match_parent"
+            android:layout_height="16dp" />
 
         <androidx.cardview.widget.CardView
-                android:id="@+id/pci_calculator_card_view"
-                style="?attr/cardStyle"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content">
+            android:id="@+id/pci_calculator_card_view"
+            style="?attr/cardStyle"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content">
 
             <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="@dimen/calculator_margin"
-                    android:layout_marginEnd="@dimen/calculator_margin"
-                    android:layout_marginBottom="@dimen/calculator_margin"
-                    android:gravity="top"
-                    android:orientation="vertical">
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="@dimen/calculator_margin"
+                android:layout_marginEnd="@dimen/calculator_margin"
+                android:layout_marginBottom="@dimen/calculator_margin"
+                android:gravity="top"
+                android:orientation="vertical">
 
                 <com.google.android.material.textfield.TextInputLayout
-                        android:id="@+id/lteCalculatorPciTextInputLayout"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:autofillHints="Enter in the Host address of the remote gRPC server"
-                        android:hint="@string/lte_pci_label">
+                    android:id="@+id/lteCalculatorPciTextInputLayout"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:autofillHints="Enter in the Host address of the remote gRPC server"
+                    android:hint="@string/lte_pci_label">
 
                     <com.google.android.material.textfield.TextInputEditText
-                            android:id="@+id/lteCalculatorPci"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:autofillHints="Enter in the LTE PCI to calculate the PSS and SSS for."
-                            android:importantForAutofill="no"
-                            android:inputType="number"
-                            android:maxLines="1" />
+                        android:id="@+id/lteCalculatorPci"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:autofillHints="Enter in the LTE PCI to calculate the PSS and SSS for."
+                        android:importantForAutofill="no"
+                        android:inputType="number"
+                        android:maxLines="1" />
 
                 </com.google.android.material.textfield.TextInputLayout>
 
                 <LinearLayout
-                        android:layout_width="match_parent"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="@dimen/calculator_margin"
+                    android:gravity="top"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:id="@+id/calculatedPss"
+                        style="@style/LabelStyle"
+                        android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_marginStart="@dimen/calculator_margin"
-                        android:gravity="top"
-                        android:orientation="horizontal">
+                        android:text="@string/pss_label"
+                        android:textAppearance="@style/LabelText" />
 
                     <TextView
-                            android:id="@+id/calculatedPss"
-                            style="@style/LabelStyle"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="@string/pss_label"
-                            android:textAppearance="@style/LabelText" />
-
-                    <TextView
-                            android:id="@+id/calculatedPssValue"
-                            android:layout_width="150dp"
-                            android:layout_height="wrap_content"
-                            android:text=""
-                            android:textAppearance="@style/ValueText" />
+                        android:id="@+id/calculatedPssValue"
+                        android:layout_width="150dp"
+                        android:layout_height="wrap_content"
+                        android:text=""
+                        android:textAppearance="@style/ValueText" />
                 </LinearLayout>
 
                 <LinearLayout
-                        android:layout_width="match_parent"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="@dimen/calculator_margin"
+                    android:gravity="top"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:id="@+id/calculatedSss"
+                        style="@style/LabelStyle"
+                        android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_marginStart="@dimen/calculator_margin"
-                        android:gravity="top"
-                        android:orientation="horizontal">
+                        android:text="@string/sss_label"
+                        android:textAppearance="@style/LabelText" />
 
                     <TextView
-                            android:id="@+id/calculatedSss"
-                            style="@style/LabelStyle"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="@string/sss_label"
-                            android:textAppearance="@style/LabelText" />
-
-                    <TextView
-                            android:id="@+id/calculatedSssValue"
-                            android:layout_width="150dp"
-                            android:layout_height="wrap_content"
-                            android:text=""
-                            android:textAppearance="@style/ValueText" />
+                        android:id="@+id/calculatedSssValue"
+                        android:layout_width="150dp"
+                        android:layout_height="wrap_content"
+                        android:text=""
+                        android:textAppearance="@style/ValueText" />
                 </LinearLayout>
 
             </LinearLayout>
