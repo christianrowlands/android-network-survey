@@ -20,7 +20,6 @@ import android.view.inputmethod.InputMethodManager;
 import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
-import android.widget.ToggleButton;
 
 import androidx.annotation.Nullable;
 import androidx.appcompat.widget.SwitchCompat;
@@ -34,6 +33,7 @@ import androidx.preference.PreferenceManager;
 import com.craxiom.networksurvey.ConnectionState;
 import com.craxiom.networksurvey.R;
 import com.craxiom.networksurvey.constants.NetworkSurveyConstants;
+import com.craxiom.networksurvey.listeners.HelpCardListener;
 import com.craxiom.networksurvey.listeners.IConnectionStateListener;
 import com.craxiom.networksurvey.mqtt.MqttBrokerConnectionInfo;
 import com.craxiom.networksurvey.services.NetworkSurveyService;
@@ -105,20 +105,8 @@ public class MqttConnectionFragment extends Fragment implements IConnectionState
         usernameEdit = view.findViewById(R.id.mqttUsername);
         passwordEdit = view.findViewById(R.id.mqttPassword);
 
-        helpCardView = view.findViewById(R.id.help_card_view);
-        helpCardView.setOnClickListener(v -> {
-            final ToggleButton expandArrow = view.findViewById(R.id.expand_toggle_button);
-            final TextView connectionDescriptionText = view.findViewById(R.id.mqtt_connection_description);
-            if (connectionDescriptionText.getVisibility() == View.VISIBLE)
-            {
-                connectionDescriptionText.setVisibility(View.GONE);
-                expandArrow.setChecked(false);
-            } else
-            {
-                connectionDescriptionText.setVisibility(View.VISIBLE);
-                expandArrow.setChecked(true);
-            }
-        });
+        final CardView helpCardView = view.findViewById(R.id.help_card_view);
+        helpCardView.setOnClickListener(new HelpCardListener(view, R.string.mqtt_connection_description));
 
         restoreConnectionParameters();
 

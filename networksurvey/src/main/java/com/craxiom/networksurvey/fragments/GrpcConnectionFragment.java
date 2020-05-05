@@ -19,7 +19,6 @@ import android.view.inputmethod.InputMethodManager;
 import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
-import android.widget.ToggleButton;
 
 import androidx.annotation.Nullable;
 import androidx.appcompat.widget.SwitchCompat;
@@ -33,6 +32,7 @@ import androidx.preference.PreferenceManager;
 import com.craxiom.networksurvey.ConnectionState;
 import com.craxiom.networksurvey.R;
 import com.craxiom.networksurvey.constants.NetworkSurveyConstants;
+import com.craxiom.networksurvey.listeners.HelpCardListener;
 import com.craxiom.networksurvey.listeners.IConnectionStateListener;
 import com.craxiom.networksurvey.services.GrpcConnectionService;
 
@@ -90,19 +90,7 @@ public class GrpcConnectionFragment extends Fragment implements IConnectionState
         deviceNameEdit = view.findViewById(R.id.deviceName);
 
         final CardView helpCardView = view.findViewById(R.id.help_card_view);
-        helpCardView.setOnClickListener(v -> {
-            final ToggleButton expandArrow = view.findViewById(R.id.expand_toggle_button);
-            final TextView connectionDescriptionText = view.findViewById(R.id.grpc_connection_description);
-            if (connectionDescriptionText.getVisibility() == View.VISIBLE)
-            {
-                connectionDescriptionText.setVisibility(View.GONE);
-                expandArrow.setChecked(false);
-            } else
-            {
-                connectionDescriptionText.setVisibility(View.VISIBLE);
-                expandArrow.setChecked(true);
-            }
-        });
+        helpCardView.setOnClickListener(new HelpCardListener(view, R.string.grpc_connection_description));
 
         restoreConnectionParameters();
         grpcHostAddressEdit.setText(host);
