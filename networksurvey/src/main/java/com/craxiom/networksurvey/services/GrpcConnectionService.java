@@ -22,14 +22,15 @@ import android.os.Looper;
 import android.util.Log;
 import android.widget.Toast;
 
+import androidx.core.app.NotificationCompat;
 import androidx.navigation.NavDeepLinkBuilder;
 
 import com.craxiom.networksurvey.ConnectionState;
 import com.craxiom.networksurvey.GpsListener;
 import com.craxiom.networksurvey.R;
 import com.craxiom.networksurvey.constants.NetworkSurveyConstants;
+import com.craxiom.networksurvey.listeners.IConnectionStateListener;
 import com.craxiom.networksurvey.listeners.IDeviceStatusListener;
-import com.craxiom.networksurvey.listeners.IGrpcConnectionStateListener;
 import com.craxiom.networksurvey.listeners.ISurveyRecordListener;
 import com.craxiom.networksurvey.messaging.CdmaRecord;
 import com.craxiom.networksurvey.messaging.CdmaSurveyResponse;
@@ -93,7 +94,7 @@ public class GrpcConnectionService extends Service implements IDeviceStatusListe
     private final BlockingQueue<UmtsRecord> umtsRecordBlockingQueue = new LinkedBlockingQueue<>();
     private final BlockingQueue<LteRecord> lteRecordBlockingQueue = new LinkedBlockingQueue<>();
 
-    private final List<IGrpcConnectionStateListener> grpcConnectionListeners = new CopyOnWriteArrayList<>();
+    private final List<IConnectionStateListener> grpcConnectionListeners = new CopyOnWriteArrayList<>();
 
     private GrpcTask<DeviceStatus, StatusUpdateReply> deviceStatusGrpcTask;
     private GrpcTask<GsmRecord, GsmSurveyResponse> gsmRecordGrpcTask;
@@ -277,21 +278,21 @@ public class GrpcConnectionService extends Service implements IDeviceStatusListe
     }
 
     /**
-     * Adds an {@link IGrpcConnectionStateListener} so that it will be notified of all future connection state changes.
+     * Adds an {@link IConnectionStateListener} so that it will be notified of all future connection state changes.
      *
      * @param connectionStateListener The listener to add.
      */
-    public void registerConnectionStateListener(IGrpcConnectionStateListener connectionStateListener)
+    public void registerConnectionStateListener(IConnectionStateListener connectionStateListener)
     {
         grpcConnectionListeners.add(connectionStateListener);
     }
 
     /**
-     * Removes an {@link IGrpcConnectionStateListener} so that it will no longer be notified of connection state changes.
+     * Removes an {@link IConnectionStateListener} so that it will no longer be notified of connection state changes.
      *
      * @param connectionStateListener The listener to remove.
      */
-    public void unregisterConnectionStateListener(IGrpcConnectionStateListener connectionStateListener)
+    public void unregisterConnectionStateListener(IConnectionStateListener connectionStateListener)
     {
         grpcConnectionListeners.remove(connectionStateListener);
     }
@@ -528,7 +529,7 @@ public class GrpcConnectionService extends Service implements IDeviceStatusListe
 
             final NotificationManager notificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
             //noinspection ConstantConditions
-            notificationManager.cancel(NetworkSurveyConstants.CONNECTION_NOTIFICATION_ID);
+            notificationManager.cancel(NetworkSurveyConstants.GRPC_CONNECTION_NOTIFICATION_ID);
 
             return;
         }
@@ -540,7 +541,7 @@ public class GrpcConnectionService extends Service implements IDeviceStatusListe
 
         final CharSequence notificationText = getNotificationText();
 
-        Notification notification = new Notification.Builder(this, NetworkSurveyConstants.NOTIFICATION_CHANNEL_ID)
+        Notification notification = new NotificationCompat.Builder(this, NetworkSurveyConstants.NOTIFICATION_CHANNEL_ID)
                 .setContentTitle(getText(R.string.connection_notification_title))
                 .setContentText(notificationText)
                 .setOngoing(true)
@@ -549,7 +550,7 @@ public class GrpcConnectionService extends Service implements IDeviceStatusListe
                 .setTicker(getText(R.string.connection_notification_title))
                 .build();
 
-        startForeground(NetworkSurveyConstants.CONNECTION_NOTIFICATION_ID, notification);
+        startForeground(NetworkSurveyConstants.GRPC_CONNECTION_NOTIFICATION_ID, notification);
     }
 
     /**
@@ -650,11 +651,11 @@ public class GrpcConnectionService extends Service implements IDeviceStatusListe
 
         updateConnectionNotification();
 
-        for (IGrpcConnectionStateListener listener : grpcConnectionListeners)
+        for (IConnectionStateListener listener : grpcConnectionListeners)
         {
             try
             {
-                listener.onGrpcConnectionStateChange(newConnectionState);
+                listener.onConnectionStateChange(newConnectionState);
             } catch (Exception e)
             {
                 Log.e(LOG_TAG, "Unable to notify a gRPC Connection State Listener because of an exception", e);

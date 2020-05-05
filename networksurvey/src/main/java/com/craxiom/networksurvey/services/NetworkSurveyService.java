@@ -7,6 +7,8 @@ import android.app.PendingIntent;
 import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
+import android.content.RestrictionsManager;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.location.GnssMeasurementsEvent;
 import android.location.GnssStatus;
@@ -15,6 +17,7 @@ import android.location.LocationManager;
 import android.os.AsyncTask;
 import android.os.Binder;
 import android.os.Build;
+import android.os.Bundle;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.IBinder;
@@ -27,15 +30,21 @@ import android.util.Log;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.core.app.ActivityCompat;
+import androidx.core.app.NotificationCompat;
 import androidx.core.content.ContextCompat;
+import androidx.preference.PreferenceManager;
 
 import com.craxiom.networksurvey.CalculationUtils;
+import com.craxiom.networksurvey.ConnectionState;
 import com.craxiom.networksurvey.GpsListener;
 import com.craxiom.networksurvey.NetworkSurveyActivity;
 import com.craxiom.networksurvey.R;
 import com.craxiom.networksurvey.SurveyRecordLogger;
 import com.craxiom.networksurvey.constants.NetworkSurveyConstants;
+import com.craxiom.networksurvey.listeners.IConnectionStateListener;
 import com.craxiom.networksurvey.listeners.ISurveyRecordListener;
+import com.craxiom.networksurvey.mqtt.MqttBrokerConnectionInfo;
+import com.craxiom.networksurvey.mqtt.MqttConnection;
 
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -44,7 +53,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * This service is responsible for getting access to the Android {@link TelephonyManager} and periodically getting the
  * list of cellular towers the phone can see.  It then notifies any listeners of the cellular survey records.
  */
-public class NetworkSurveyService extends Service
+public class NetworkSurveyService extends Service implements IConnectionStateListener
 {
     private static final String LOG_TAG = NetworkSurveyService.class.getSimpleName();
 
@@ -72,12 +81,14 @@ public class NetworkSurveyService extends Service
     private long firstGpsAcqTime = Long.MIN_VALUE;
     private boolean gnssRawSupportKnown = false;
     private boolean hasGnssRawFailureNagLaunched = false;
+    private MqttConnection mqttConnection;
 
     /**
      * Callback for receiving GNSS measurements from the location manager.
      */
     private final GnssMeasurementsEvent.Callback measurementListener = new GnssMeasurementsEvent.Callback()
     {
+        @Override
         public void onGnssMeasurementsReceived(GnssMeasurementsEvent event)
         {
             gnssRawSupportKnown = true;
@@ -90,6 +101,7 @@ public class NetworkSurveyService extends Service
      */
     private final GnssStatus.Callback statusListener = new GnssStatus.Callback()
     {
+        @Override
         public void onSatelliteStatusChanged(final GnssStatus status)
         {
             if (gnssGeoPackageRecorder != null) gnssGeoPackageRecorder.onSatelliteStatusChanged(status);
@@ -120,6 +132,8 @@ public class NetworkSurveyService extends Service
         initializeLocationListener();
         initializeSurveyRecordScanning();
 
+        initializeMqttConnection();
+
         updateServiceNotification();
     }
 
@@ -139,6 +153,11 @@ public class NetworkSurveyService extends Service
     public void onDestroy()
     {
         Log.i(LOG_TAG, "onDestroy");
+
+        if (mqttConnection != null)
+        {
+            disconnectFromMqttBroker();
+        }
         setDone();
         removeLocationListener();
         stopGnssLogging();
@@ -151,6 +170,77 @@ public class NetworkSurveyService extends Service
         serviceHandler = null;
         shutdownNotifications();
         super.onDestroy();
+    }
+
+    @Override
+    public void onConnectionStateChange(ConnectionState newConnectionState)
+    {
+        updateServiceNotification();
+    }
+
+    /**
+     * Creates the {@link MqttConnection} instance.
+     * <p>
+     * If connection information is specified for an MQTT Broker via the MDM Managed Configuration, then kick off an
+     * MQTT connection.
+     *
+     * @since 0.1.1
+     */
+    public void initializeMqttConnection()
+    {
+        mqttConnection = new MqttConnection();
+        mqttConnection.registerMqttConnectionStateListener(this);
+
+        attemptMqttConnectWithMdmConfig();
+    }
+
+    /**
+     * Connect to an MQTT broker.
+     *
+     * @param connectionInfo The information needed to connect to the MQTT broker.
+     * @since 0.1.1
+     */
+    public void connectToMqttBroker(MqttBrokerConnectionInfo connectionInfo)
+    {
+        mqttConnection.connect(getApplicationContext(), connectionInfo);
+        registerSurveyRecordListener(mqttConnection);
+    }
+
+    public void disconnectFromMqttBroker()
+    {
+        unregisterSurveyRecordListener(mqttConnection);
+        mqttConnection.disconnect();
+    }
+
+    /**
+     * @return The current connection state to the MQTT Broker.
+     * @since 0.1.1
+     */
+    public ConnectionState getMqttConnectionState()
+    {
+        if (mqttConnection != null) return mqttConnection.getConnectionState();
+
+        return ConnectionState.DISCONNECTED;
+    }
+
+    /**
+     * Adds an {@link IConnectionStateListener} so that it will be notified of all future MQTT connection state changes.
+     *
+     * @param connectionStateListener The listener to add.
+     */
+    public void registerMqttConnectionStateListener(IConnectionStateListener connectionStateListener)
+    {
+        mqttConnection.registerMqttConnectionStateListener(connectionStateListener);
+    }
+
+    /**
+     * Removes an {@link IConnectionStateListener} so that it will no longer be notified of MQTT connection state changes.
+     *
+     * @param connectionStateListener The listener to remove.
+     */
+    public void unregisterMqttConnectionStateListener(IConnectionStateListener connectionStateListener)
+    {
+        mqttConnection.unregisterMqttConnectionStateListener(connectionStateListener);
     }
 
     public GpsListener getGpsListener()
@@ -270,6 +360,7 @@ public class NetworkSurveyService extends Service
     {
         serviceHandler.postDelayed(new Runnable()
         {
+            @Override
             public void run()
             {
                 try
@@ -390,6 +481,7 @@ public class NetworkSurveyService extends Service
 
         serviceHandler.postDelayed(new Runnable()
         {
+            @Override
             public void run()
             {
                 try
@@ -467,20 +559,54 @@ public class NetworkSurveyService extends Service
     private synchronized Notification buildNotification()
     {
         final boolean logging = cellularLoggingEnabled.get() || gnssLoggingEnabled.get();
+        final ConnectionState connectionState = mqttConnection.getConnectionState();
+        final boolean mqttConnectionActive = connectionState == ConnectionState.CONNECTED || connectionState == ConnectionState.CONNECTING;
+        final CharSequence notificationTitle = getText(R.string.network_survey_notification_title);
+        final String notificationText = getNotificationText(logging, mqttConnectionActive, connectionState);
 
-        Intent notificationIntent = new Intent(this, NetworkSurveyActivity.class);
-        PendingIntent pendingIntent = PendingIntent.getActivity(this, 0, notificationIntent, 0);
+        final Intent notificationIntent = new Intent(this, NetworkSurveyActivity.class);
+        final PendingIntent pendingIntent = PendingIntent.getActivity(this, 0, notificationIntent, 0);
 
-        final CharSequence notificationTitle = getText(logging ? R.string.logging_notification_title : R.string.service_notification_title);
-
-        return new Notification.Builder(this, NetworkSurveyConstants.NOTIFICATION_CHANNEL_ID)
+        return new NotificationCompat.Builder(this, NetworkSurveyConstants.NOTIFICATION_CHANNEL_ID)
                 .setContentTitle(notificationTitle)
-                .setContentText(logging ? getText(R.string.logging_notification_text) : "")
                 .setOngoing(true)
-                .setSmallIcon(logging ? R.drawable.logging_thick_icon : R.drawable.gps_map_icon)
+                .setSmallIcon(mqttConnectionActive ? R.drawable.ic_cloud_connection : logging ? R.drawable.logging_thick_icon : R.drawable.gps_map_icon)
                 .setContentIntent(pendingIntent)
                 .setTicker(notificationTitle)
+                .setStyle(new NotificationCompat.BigTextStyle().bigText(notificationText))
                 .build();
+    }
+
+    /**
+     * Gets the text to use for the Network Survey Service Notification.
+     *
+     * @param logging              True if logging is active, false if disabled.
+     * @param mqttConnectionActive True if the MQTT connection is either in a connected or reconnecting state.
+     * @param connectionState      The actual connection state of the MQTT broker connection.
+     * @return The text that can be added to the service notification.
+     * @since 0.1.1
+     */
+    private String getNotificationText(boolean logging, boolean mqttConnectionActive, ConnectionState connectionState)
+    {
+        String notificationText = "";
+
+        if (logging)
+        {
+            notificationText = String.valueOf(getText(R.string.logging_notification_text)) + (mqttConnectionActive ? getText(R.string.and) : "");
+        }
+
+        switch (connectionState)
+        {
+            case CONNECTED:
+                notificationText += getText(R.string.mqtt_connection_notification_text);
+                break;
+            case CONNECTING:
+                notificationText += getText(R.string.mqtt_reconnecting_notification_text);
+                break;
+            default:
+        }
+
+        return notificationText;
     }
 
     /**
@@ -588,6 +714,63 @@ public class NetworkSurveyService extends Service
     private void shutdownNotifications()
     {
         stopForeground(true);
+    }
+
+    /**
+     * If connection information is specified for an MQTT Broker via the MDM Managed Configuration, then kick off an
+     * MQTT connection.
+     *
+     * @since 0.1.1
+     */
+    private void attemptMqttConnectWithMdmConfig()
+    {
+        final MqttBrokerConnectionInfo connectionInfo = getMqttBrokerConnectionInfo();
+
+        if (connectionInfo != null)
+        {
+            connectToMqttBroker(connectionInfo);
+        } else
+        {
+            Log.i(LOG_TAG, "Skipping the MQTT connection because no MQTT broker configuration has been set");
+        }
+    }
+
+    /**
+     * Get the MDM configured MQTT broker connection information to use to establish the connection.
+     * <p>
+     * If the user has specified to override the MDM connection config, then null is returned.
+     *
+     * @return The connection settings to use for the MQTT broker, or null if no connection information is present or
+     * the user has overrode the MDM config.
+     * @since 0.1.1
+     */
+    private MqttBrokerConnectionInfo getMqttBrokerConnectionInfo()
+    {
+        final SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
+        if (preferences.getBoolean(NetworkSurveyConstants.PROPERTY_MQTT_MDM_OVERRIDE, false)) return null;
+
+        final RestrictionsManager restrictionsManager = (RestrictionsManager) getSystemService(Context.RESTRICTIONS_SERVICE);
+        if (restrictionsManager != null)
+        {
+            final Bundle mdmProperties = restrictionsManager.getApplicationRestrictions();
+
+            final boolean hasBrokerUri = mdmProperties.containsKey(NetworkSurveyConstants.PROPERTY_MQTT_BROKER_URL);
+            if (!hasBrokerUri) return null;
+
+            final String mqttBrokerUri = mdmProperties.getString(NetworkSurveyConstants.PROPERTY_MQTT_BROKER_URL);
+            final String clientId = mdmProperties.getString(NetworkSurveyConstants.PROPERTY_MQTT_CLIENT_ID);
+            final String username = mdmProperties.getString(NetworkSurveyConstants.PROPERTY_MQTT_USERNAME);
+            final String password = mdmProperties.getString(NetworkSurveyConstants.PROPERTY_MQTT_PASSWORD);
+
+            if (mqttBrokerUri == null || clientId == null)
+            {
+                return null;
+            }
+
+            return new MqttBrokerConnectionInfo(mqttBrokerUri, clientId, username, password);
+        }
+
+        return null;
     }
 
     /**

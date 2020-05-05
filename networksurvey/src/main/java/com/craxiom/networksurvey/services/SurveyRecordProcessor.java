@@ -17,6 +17,7 @@ import android.telephony.CellSignalStrengthLte;
 import android.telephony.CellSignalStrengthWcdma;
 import android.telephony.TelephonyManager;
 import android.util.Log;
+import android.view.View;
 import android.widget.TextView;
 
 import com.craxiom.networksurvey.CalculationUtils;
@@ -795,7 +796,8 @@ public class SurveyRecordProcessor
     {
         if (networkSurveyActivity == null || !NetworkDetailsFragment.visible.get()) return;
 
-        ((TextView) networkSurveyActivity.findViewById(textViewId)).setText(networkSurveyActivity.getString(stringResourceId, text));
+        final View viewById = networkSurveyActivity.findViewById(textViewId);
+        if (viewById != null) ((TextView) viewById).setText(networkSurveyActivity.getString(stringResourceId, text));
     }
 
     /**

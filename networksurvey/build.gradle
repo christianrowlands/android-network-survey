@@ -30,19 +30,23 @@ dependencies {
     implementation 'com.google.android.material:material:1.1.0'
     implementation 'androidx.legacy:legacy-support-v4:1.0.0'
     implementation 'androidx.cardview:cardview:1.0.0'
-    implementation 'androidx.preference:preference:1.1.0'
+    implementation 'androidx.preference:preference:1.1.1'
     implementation "androidx.navigation:navigation-fragment:${navigationVersion}"
     implementation "androidx.navigation:navigation-ui:${navigationVersion}"
     implementation "androidx.viewpager2:viewpager2:1.0.0"
 
     implementation "io.grpc:grpc-stub:${grpcVersion}"
-    implementation "io.grpc:grpc-protobuf-lite:${grpcVersion}"
+    implementation "io.grpc:grpc-protobuf:${grpcVersion}"
     implementation "io.grpc:grpc-okhttp:${grpcVersion}"
     implementation "io.grpc:grpc-android:${grpcVersion}"
 
     implementation "com.craxiom:network-survey-messaging:${networkSurveyMessagingVersion}"
+    implementation "com.google.protobuf:protobuf-java-util:3.11.4"
 
     implementation "mil.nga.geopackage:geopackage-android:3.3.0"
+
+    implementation 'org.eclipse.paho:org.eclipse.paho.client.mqttv3:1.2.4'
+    implementation 'org.eclipse.paho:org.eclipse.paho.android.service:1.1.1'
 
     // QR Code reader for ground truth locations
     implementation 'com.google.zxing:android-integration:3.3.0'

@@ -4,9 +4,12 @@ import android.Manifest;
 import android.annotation.SuppressLint;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
+import android.content.BroadcastReceiver;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
+import android.content.RestrictionsManager;
 import android.content.ServiceConnection;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
@@ -74,6 +77,7 @@ public class NetworkSurveyActivity extends AppCompatActivity
     private boolean turnOnCellularLoggingOnNextServiceConnection = false;
     private boolean turnOnGnssLoggingOnNextServiceConnection = false;
     private AppBarConfiguration appBarConfiguration;
+    private BroadcastReceiver managedConfigurationListener;
 
     @Override
     protected void onCreate(Bundle savedInstanceState)
@@ -87,8 +91,8 @@ public class NetworkSurveyActivity extends AppCompatActivity
         PreferenceManager.setDefaultValues(this, R.xml.preferences, false);
 
         final SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
-        turnOnCellularLoggingOnNextServiceConnection = preferences.getBoolean(NetworkSurveyConstants.PROPERTY_AUTO_START_CELLULAR_LOGGING_KEY, false);
-        turnOnGnssLoggingOnNextServiceConnection = preferences.getBoolean(NetworkSurveyConstants.PROPERTY_AUTO_START_GNSS_LOGGING_KEY, false);
+        turnOnCellularLoggingOnNextServiceConnection = preferences.getBoolean(NetworkSurveyConstants.PROPERTY_AUTO_START_CELLULAR_LOGGING, false);
+        turnOnGnssLoggingOnNextServiceConnection = preferences.getBoolean(NetworkSurveyConstants.PROPERTY_AUTO_START_GNSS_LOGGING, false);
 
         setupNavigation();
 
@@ -119,6 +123,9 @@ public class NetworkSurveyActivity extends AppCompatActivity
 
         // All we need for the cellular information is the Manifest.permission.READ_PHONE_STATE permission.  Location is optional
         if (hasCellularPermission()) startAndBindToNetworkSurveyService();
+
+        readManagedConfiguration();
+        managedConfigurationListener = registerManagedConfigurationListener();
     }
 
     @Override
@@ -126,13 +133,17 @@ public class NetworkSurveyActivity extends AppCompatActivity
     {
         final Context applicationContext = getApplicationContext();
 
+        unregisterManagedConfigurationListener();
+
         if (networkSurveyService != null)
         {
             networkSurveyService.onUiHidden();
 
-            if (!networkSurveyService.isCellularLoggingEnabled() && GrpcConnectionService.getConnectedState() == ConnectionState.DISCONNECTED)
+            if (!networkSurveyService.isCellularLoggingEnabled()
+                    && networkSurveyService.getMqttConnectionState() == ConnectionState.DISCONNECTED
+                    && GrpcConnectionService.getConnectedState() == ConnectionState.DISCONNECTED)
             {
-                // We can safely shutdown the service since both logging and the connection are turned off
+                // We can safely shutdown the service since both logging and the connections are turned off
                 final Intent networkSurveyServiceIntent = new Intent(applicationContext, NetworkSurveyService.class);
                 final Intent connectionServiceIntent = new Intent(applicationContext, GrpcConnectionService.class);
                 stopService(networkSurveyServiceIntent);
@@ -215,6 +226,91 @@ public class NetworkSurveyActivity extends AppCompatActivity
         }
 
         return super.onOptionsItemSelected(item);
+    }
+
+    /**
+     * Reads the Sync Monkey Managed Configuration and loads the values into the App's Shared Preferences.
+     *
+     * @since 0.1.1
+     */
+    private void readManagedConfiguration()
+    {
+        try
+        {
+            final SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
+            final SharedPreferences.Editor edit = preferences.edit();
+
+            Log.i(LOG_TAG, "Reading in any MDM configured properties");
+            final RestrictionsManager restrictionsManager = (RestrictionsManager) getSystemService(Context.RESTRICTIONS_SERVICE);
+            if (restrictionsManager != null)
+            {
+                final Bundle mdmProperties = restrictionsManager.getApplicationRestrictions();
+
+                mdmProperties.keySet().forEach(key -> {
+                    final Object property = mdmProperties.get(key);
+                    if (property instanceof String)
+                    {
+                        edit.putString(key, (String) property);
+                    } else if (property instanceof Boolean)
+                    {
+                        edit.putBoolean(key, (Boolean) property);
+                    }
+                });
+            }
+
+            /*if (Log.isLoggable(LOG_TAG, Log.INFO))
+            {
+                Log.i(LOG_TAG, "The Properties after reading in the managed config: " + preferences.getAll().toString());
+            }*/
+
+            edit.apply();
+        } catch (Exception e)
+        {
+            Log.e(LOG_TAG, "Can't read the Sync Monkey managed configuration", e);
+        }
+    }
+
+    /**
+     * Register a listener so that if the Managed Config changes we will be notified of the new config.
+     *
+     * @since 0.1.1
+     */
+    private BroadcastReceiver registerManagedConfigurationListener()
+    {
+        final IntentFilter restrictionsFilter = new IntentFilter(Intent.ACTION_APPLICATION_RESTRICTIONS_CHANGED);
+
+        final BroadcastReceiver restrictionsReceiver = new BroadcastReceiver()
+        {
+            @Override
+            public void onReceive(Context context, Intent intent)
+            {
+                readManagedConfiguration();
+            }
+        };
+
+        registerReceiver(restrictionsReceiver, restrictionsFilter);
+
+        return restrictionsReceiver;
+    }
+
+    /**
+     * Remove the managed configuration listener.
+     *
+     * @since 0.1.1
+     */
+    private void unregisterManagedConfigurationListener()
+    {
+        if (managedConfigurationListener != null)
+        {
+            try
+            {
+                unregisterReceiver(managedConfigurationListener);
+            } catch (Exception e)
+            {
+                Log.e(LOG_TAG, "Unable to unregister the Managed Configuration Listener when pausing the app", e);
+            }
+            managedConfigurationListener = null;
+        }
     }
 
     /**
