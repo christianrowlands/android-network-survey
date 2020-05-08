@@ -243,9 +243,12 @@ public class MqttConnectionFragment extends Fragment implements IConnectionState
         setConnectionInputFieldsEditable(mdmOverride);
         setAllFieldsVisible(mdmOverride);
 
-        if (!mdmOverride && surveyService.getMqttConnectionState() == ConnectionState.CONNECTED)
+        // If the user is toggling off the MDM override option, we need to re-attempt a connection to the MDM configured
+        // MQTT broker.  In the event it does not work, we need to force a disconnect since the user could have
+        // connected to their own MQTT broker while the MDM override was enabled.
+        if (!mdmOverride)
         {
-            surveyService.disconnectFromMqttBroker();
+            surveyService.attemptMqttConnectWithMdmConfig(true);
         }
     }
 

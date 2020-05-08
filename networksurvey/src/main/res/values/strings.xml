@@ -119,7 +119,7 @@
         \n\n1. Enter in the following information:
         \n     a. The MQTT broker IP Address or Hostname
         \n     b. The MQTT broker Port Number (Default: 1883 for plain text and 8883 for TLS)
-        \n     c. If the server supports SSL/TLS, then turn on the TLS toggle switch
+        \n     c. If the server does not support SSL/TLS, then turn off the TLS toggle switch
         \n     d. A name that is used to identify this device on the server
         \n     e. (Optional) The username and password used to authenticate with the MQTT Broker
         \n\n2. Click the connect toggle switch</string>
@@ -133,6 +133,8 @@
     <string name="mqtt_username_description">The username to use when authenticating to the MQTT broker</string>
     <string name="mqtt_password_title">MQTT Broker Password</string>
     <string name="mqtt_password_description">The password to use when authenticating to the MQTT broker</string>
+    <string name="mqtt_start_on_boot_title">MQTT Start at Boot</string>
+    <string name="mqtt_start_on_boot_description">If true, when the phone boots an attempt will be made to connect to the MDM configured MQTT broker</string>
 
     <!-- User Preference Constants -->
     <string name="logging_config_title">Logging Config</string>

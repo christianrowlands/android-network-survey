@@ -4,12 +4,9 @@ import android.Manifest;
 import android.annotation.SuppressLint;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
-import android.content.BroadcastReceiver;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
-import android.content.IntentFilter;
-import android.content.RestrictionsManager;
 import android.content.ServiceConnection;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
@@ -77,12 +74,14 @@ public class NetworkSurveyActivity extends AppCompatActivity
     private boolean turnOnCellularLoggingOnNextServiceConnection = false;
     private boolean turnOnGnssLoggingOnNextServiceConnection = false;
     private AppBarConfiguration appBarConfiguration;
-    private BroadcastReceiver managedConfigurationListener;
 
     @Override
     protected void onCreate(Bundle savedInstanceState)
     {
         super.onCreate(savedInstanceState);
+
+        Log.i(LOG_TAG, "onCreate");
+
         AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_YES); // Force Dark Mode
         setContentView(R.layout.activity_network_details);
         setSupportActionBar(findViewById(R.id.toolbar));
@@ -115,6 +114,8 @@ public class NetworkSurveyActivity extends AppCompatActivity
     {
         super.onResume();
 
+        Log.i(LOG_TAG, "onResume");
+
         if (missingAnyPermissions()) showPermissionRationaleAndRequestPermissions();
 
         // If we have been granted the location permission, we want to check to see if the location service is enabled.
@@ -123,25 +124,20 @@ public class NetworkSurveyActivity extends AppCompatActivity
 
         // All we need for the cellular information is the Manifest.permission.READ_PHONE_STATE permission.  Location is optional
         if (hasCellularPermission()) startAndBindToNetworkSurveyService();
-
-        readManagedConfiguration();
-        managedConfigurationListener = registerManagedConfigurationListener();
     }
 
     @Override
     protected void onPause()
     {
-        final Context applicationContext = getApplicationContext();
+        Log.i(LOG_TAG, "onPause");
 
-        unregisterManagedConfigurationListener();
+        final Context applicationContext = getApplicationContext();
 
         if (networkSurveyService != null)
         {
             networkSurveyService.onUiHidden();
 
-            if (!networkSurveyService.isCellularLoggingEnabled()
-                    && networkSurveyService.getMqttConnectionState() == ConnectionState.DISCONNECTED
-                    && GrpcConnectionService.getConnectedState() == ConnectionState.DISCONNECTED)
+            if (!networkSurveyService.isBeingUsed())
             {
                 // We can safely shutdown the service since both logging and the connections are turned off
                 final Intent networkSurveyServiceIntent = new Intent(applicationContext, NetworkSurveyService.class);
@@ -154,12 +150,6 @@ public class NetworkSurveyActivity extends AppCompatActivity
         }
 
         super.onPause();
-    }
-
-    @Override
-    protected void onDestroy()
-    {
-        super.onDestroy();
     }
 
     @Override
@@ -217,100 +207,15 @@ public class NetworkSurveyActivity extends AppCompatActivity
         //noinspection SimplifiableIfStatement
         if (id == R.id.action_start_stop_cellular_logging)
         {
-            toggleCellularLogging();
+            toggleCellularLogging(!networkSurveyService.isCellularLoggingEnabled());
             return true;
         } else if (id == R.id.action_start_stop_gnss_logging)
         {
-            toggleGnssLogging();
+            toggleGnssLogging(!networkSurveyService.isGnssLoggingEnabled());
             return true;
         }
 
         return super.onOptionsItemSelected(item);
-    }
-
-    /**
-     * Reads the Sync Monkey Managed Configuration and loads the values into the App's Shared Preferences.
-     *
-     * @since 0.1.1
-     */
-    private void readManagedConfiguration()
-    {
-        try
-        {
-            final SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
-            final SharedPreferences.Editor edit = preferences.edit();
-
-            Log.i(LOG_TAG, "Reading in any MDM configured properties");
-            final RestrictionsManager restrictionsManager = (RestrictionsManager) getSystemService(Context.RESTRICTIONS_SERVICE);
-            if (restrictionsManager != null)
-            {
-                final Bundle mdmProperties = restrictionsManager.getApplicationRestrictions();
-
-                mdmProperties.keySet().forEach(key -> {
-                    final Object property = mdmProperties.get(key);
-                    if (property instanceof String)
-                    {
-                        edit.putString(key, (String) property);
-                    } else if (property instanceof Boolean)
-                    {
-                        edit.putBoolean(key, (Boolean) property);
-                    }
-                });
-            }
-
-            /*if (Log.isLoggable(LOG_TAG, Log.INFO))
-            {
-                Log.i(LOG_TAG, "The Properties after reading in the managed config: " + preferences.getAll().toString());
-            }*/
-
-            edit.apply();
-        } catch (Exception e)
-        {
-            Log.e(LOG_TAG, "Can't read the Sync Monkey managed configuration", e);
-        }
-    }
-
-    /**
-     * Register a listener so that if the Managed Config changes we will be notified of the new config.
-     *
-     * @since 0.1.1
-     */
-    private BroadcastReceiver registerManagedConfigurationListener()
-    {
-        final IntentFilter restrictionsFilter = new IntentFilter(Intent.ACTION_APPLICATION_RESTRICTIONS_CHANGED);
-
-        final BroadcastReceiver restrictionsReceiver = new BroadcastReceiver()
-        {
-            @Override
-            public void onReceive(Context context, Intent intent)
-            {
-                readManagedConfiguration();
-            }
-        };
-
-        registerReceiver(restrictionsReceiver, restrictionsFilter);
-
-        return restrictionsReceiver;
-    }
-
-    /**
-     * Remove the managed configuration listener.
-     *
-     * @since 0.1.1
-     */
-    private void unregisterManagedConfigurationListener()
-    {
-        if (managedConfigurationListener != null)
-        {
-            try
-            {
-                unregisterReceiver(managedConfigurationListener);
-            } catch (Exception e)
-            {
-                Log.e(LOG_TAG, "Unable to unregister the Managed Configuration Listener when pausing the app", e);
-            }
-            managedConfigurationListener = null;
-        }
     }
 
     /**
@@ -349,8 +254,7 @@ public class NetworkSurveyActivity extends AppCompatActivity
     {
         if (missingAnyPermissions())
         {
-            ActivityCompat.requestPermissions(NetworkSurveyActivity.this, PERMISSIONS,
-                    ACCESS_PERMISSION_REQUEST_ID);
+            ActivityCompat.requestPermissions(this, PERMISSIONS, ACCESS_PERMISSION_REQUEST_ID);
         }
     }
 
@@ -514,12 +418,14 @@ public class NetworkSurveyActivity extends AppCompatActivity
     }
 
     /**
-     * Starts or stops writing the log file based on the current state.
+     * Starts or stops writing the Cellular log file based on the specified parameter.
+     *
+     * @param enable True if logging should be enabled, false if it should be turned off.
      */
-    private void toggleCellularLogging()
+    private void toggleCellularLogging(boolean enable)
     {
         new ToggleLoggingTask(() -> {
-            if (networkSurveyService != null) return networkSurveyService.toggleCellularLogging();
+            if (networkSurveyService != null) return networkSurveyService.toggleCellularLogging(enable);
             return null;
         }, enabled -> {
             if (enabled == null) return getString(R.string.cellular_logging_toggle_failed);
@@ -529,12 +435,14 @@ public class NetworkSurveyActivity extends AppCompatActivity
     }
 
     /**
-     * Starts or stops writing the GNSS log file based on the current state.
+     * Starts or stops writing the GNSS log file based on the specified parameter.
+     *
+     * @param enable True if logging should be enabled, false if it should be turned off.
      */
-    private void toggleGnssLogging()
+    private void toggleGnssLogging(boolean enable)
     {
         new ToggleLoggingTask(() -> {
-            if (networkSurveyService != null) return networkSurveyService.toggleGnssLogging();
+            if (networkSurveyService != null) return networkSurveyService.toggleGnssLogging(enable);
             return null;
         }, enabled -> {
             if (enabled == null) return getString(R.string.gnss_logging_toggle_failed);
@@ -594,11 +502,13 @@ public class NetworkSurveyActivity extends AppCompatActivity
             this.postExecuteFunction = postExecuteFunction;
         }
 
+        @Override
         protected Boolean doInBackground(Void... nothing)
         {
             return toggleLoggingFunction.get();
         }
 
+        @Override
         protected void onPostExecute(Boolean enabled)
         {
             if (enabled == null)
@@ -613,7 +523,7 @@ public class NetworkSurveyActivity extends AppCompatActivity
     }
 
     /**
-     * A {@link ServiceConnection} implementation for binding to the {@link GrpcConnectionService}.
+     * A {@link ServiceConnection} implementation for binding to the {@link NetworkSurveyService}.
      */
     private class SurveyServiceConnection implements ServiceConnection
     {
@@ -628,7 +538,7 @@ public class NetworkSurveyActivity extends AppCompatActivity
             final boolean cellularLoggingEnabled = networkSurveyService.isCellularLoggingEnabled();
             if (turnOnCellularLoggingOnNextServiceConnection && !cellularLoggingEnabled)
             {
-                toggleCellularLogging();
+                toggleCellularLogging(true);
             } else
             {
                 updateCellularLoggingButton(cellularLoggingEnabled);
@@ -637,7 +547,7 @@ public class NetworkSurveyActivity extends AppCompatActivity
             final boolean gnssLoggingEnabled = networkSurveyService.isGnssLoggingEnabled();
             if (turnOnGnssLoggingOnNextServiceConnection && !gnssLoggingEnabled)
             {
-                toggleGnssLogging();
+                toggleGnssLogging(true);
             } else
             {
                 updateGnssLoggingButton(gnssLoggingEnabled);
