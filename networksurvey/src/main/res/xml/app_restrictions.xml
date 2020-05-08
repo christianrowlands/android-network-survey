@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<restrictions xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <restriction
+        android:defaultValue="false"
+        android:description="@string/mqtt_start_on_boot_description"
+        android:key="mqtt_start_on_boot"
+        android:restrictionType="bool"
+        android:title="@string/mqtt_start_on_boot_title" />
+
+    <restriction
+        android:defaultValue=""
+        android:description="@string/mqtt_broker_url_description"
+        android:key="mqtt_broker_url"
+        android:restrictionType="string"
+        android:title="@string/mqtt_broker_url_title" />
+
+    <restriction
+        android:defaultValue=""
+        android:description="@string/mqtt_client_id_description"
+        android:key="mqtt_client_id"
+        android:restrictionType="string"
+        android:title="@string/mqtt_client_id_title" />
+
+    <restriction
+        android:defaultValue=""
+        android:description="@string/mqtt_username_description"
+        android:key="mqtt_username"
+        android:restrictionType="string"
+        android:title="@string/mqtt_username_title" />
+
+    <restriction
+        android:defaultValue=""
+        android:description="@string/mqtt_password_description"
+        android:key="mqtt_password"
+        android:restrictionType="string"
+        android:title="@string/mqtt_password_title" />
+
+</restrictions>

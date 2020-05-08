@@ -32,23 +32,21 @@ import androidx.preference.PreferenceManager;
 import com.craxiom.networksurvey.ConnectionState;
 import com.craxiom.networksurvey.R;
 import com.craxiom.networksurvey.constants.NetworkSurveyConstants;
-import com.craxiom.networksurvey.listeners.IGrpcConnectionStateListener;
+import com.craxiom.networksurvey.listeners.HelpCardListener;
+import com.craxiom.networksurvey.listeners.IConnectionStateListener;
 import com.craxiom.networksurvey.services.GrpcConnectionService;
 
 /**
  * A fragment for allowing the user to connect to a remote gRPC based server.  This fragment handles
- * the UI portion ofmthe connection and delegates the actual connection logic to {@link GrpcConnectionService}.
+ * the UI portion of the connection and delegates the actual connection logic to {@link GrpcConnectionService}.
  *
  * @since 0.0.4
  */
-public class GrpcConnectionFragment extends Fragment implements View.OnClickListener, IGrpcConnectionStateListener
+public class GrpcConnectionFragment extends Fragment implements IConnectionStateListener
 {
     private static final String LOG_TAG = GrpcConnectionFragment.class.getSimpleName();
 
     private static final int ACCESS_PERMISSION_REQUEST_ID = 10;
-    private static final String NETWORK_SURVEY_CONNECTION_HOST = "connectionHost";
-    private static final String NETWORK_SURVEY_CONNECTION_PORT = "connectionPort";
-    private static final String NETWORK_SURVEY_DEVICE_NAME = "deviceName";
 
     private final Handler uiThreadHandler;
 
@@ -75,7 +73,7 @@ public class GrpcConnectionFragment extends Fragment implements View.OnClickList
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState)
     {
-        applicationContext = getActivity().getApplicationContext();
+        applicationContext = requireActivity().getApplicationContext();
         super.onCreate(savedInstanceState);
     }
 
@@ -91,17 +89,21 @@ public class GrpcConnectionFragment extends Fragment implements View.OnClickList
         grpcPortNumberEdit = view.findViewById(R.id.grpcPortNumber);
         deviceNameEdit = view.findViewById(R.id.deviceName);
 
+        final CardView helpCardView = view.findViewById(R.id.help_card_view);
+        helpCardView.setOnClickListener(new HelpCardListener(view, R.string.grpc_connection_description));
+
         restoreConnectionParameters();
         grpcHostAddressEdit.setText(host);
         grpcPortNumberEdit.setText(String.valueOf(portNumber));
         deviceNameEdit.setText(deviceName);
 
-        grpcConnectionToggleSwitch.setOnClickListener(this);
+        grpcConnectionToggleSwitch.setOnCheckedChangeListener((buttonView, isChecked) -> {
+            if (buttonView.isPressed()) onConnectionSwitchToggled();
+        });
 
         initializeFragmentBasedOnConnectionState();
 
-        ActivityCompat.requestPermissions(getActivity(), new String[]{
-                        Manifest.permission.INTERNET},
+        ActivityCompat.requestPermissions(requireActivity(), new String[]{Manifest.permission.INTERNET},
                 ACCESS_PERMISSION_REQUEST_ID);
 
         return view;
@@ -111,25 +113,12 @@ public class GrpcConnectionFragment extends Fragment implements View.OnClickList
     public void onDestroyView()
     {
         if (grpcConnectionService != null) grpcConnectionService.unregisterConnectionStateListener(this);
+        hideSoftInputFromWindow();
         super.onDestroyView();
     }
 
     @Override
-    public void onClick(View view)
-    {
-        if (!hasInternetPermission()) return;
-
-        if (grpcConnectionToggleSwitch.isChecked())
-        {
-            connectToGrpcServer();
-        } else
-        {
-            disconnectFromGrpcServer();
-        }
-    }
-
-    @Override
-    public void onGrpcConnectionStateChange(ConnectionState newConnectionState)
+    public void onConnectionStateChange(ConnectionState newConnectionState)
     {
         uiThreadHandler.post(() -> updateUiState(newConnectionState));
     }
@@ -149,6 +138,24 @@ public class GrpcConnectionFragment extends Fragment implements View.OnClickList
     }
 
     /**
+     * Checks the current state of the connection toggle switch and initiates either the connection or disconnection.
+     *
+     * @since 0.1.1
+     */
+    private void onConnectionSwitchToggled()
+    {
+        if (!hasInternetPermission()) return;
+
+        if (grpcConnectionToggleSwitch.isChecked())
+        {
+            connectToGrpcServer();
+        } else
+        {
+            disconnectFromGrpcServer();
+        }
+    }
+
+    /**
      * Checks to see if the Internet permission has been granted.  If it has not, false is returned, but a request is put in to get
      * access to the Internet permission.
      *
@@ -163,7 +170,7 @@ public class GrpcConnectionFragment extends Fragment implements View.OnClickList
 
         if (hasPermission) return true;
 
-        ActivityCompat.requestPermissions(getActivity(), new String[]{
+        ActivityCompat.requestPermissions(requireActivity(), new String[]{
                         Manifest.permission.INTERNET},
                 ACCESS_PERMISSION_REQUEST_ID);
         return false;
@@ -278,7 +285,7 @@ public class GrpcConnectionFragment extends Fragment implements View.OnClickList
 
         try
         {
-            final int portNumber = Integer.valueOf(grpcPortNumberEdit.getText().toString());
+            final int portNumber = Integer.parseInt(grpcPortNumberEdit.getText().toString());
             if (portNumber < 0 || portNumber > 65535)
             {
                 final String invalidPortNumberMessage = "Port number must be between 0 and 65535";
@@ -302,9 +309,9 @@ public class GrpcConnectionFragment extends Fragment implements View.OnClickList
     {
         final SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(applicationContext);
         final SharedPreferences.Editor edit = preferences.edit();
-        if (host != null) edit.putString(NETWORK_SURVEY_CONNECTION_HOST, host);
-        edit.putInt(NETWORK_SURVEY_CONNECTION_PORT, portNumber);
-        if (deviceName != null) edit.putString(NETWORK_SURVEY_DEVICE_NAME, deviceName);
+        if (host != null) edit.putString(NetworkSurveyConstants.PROPERTY_NETWORK_SURVEY_CONNECTION_HOST, host);
+        edit.putInt(NetworkSurveyConstants.PROPERTY_NETWORK_SURVEY_CONNECTION_PORT, portNumber);
+        if (deviceName != null) edit.putString(NetworkSurveyConstants.PROPERTY_NETWORK_SURVEY_DEVICE_NAME, deviceName);
         edit.apply();
     }
 
@@ -315,13 +322,13 @@ public class GrpcConnectionFragment extends Fragment implements View.OnClickList
     {
         final SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(applicationContext);
 
-        final String restoredHost = preferences.getString(NETWORK_SURVEY_CONNECTION_HOST, "");
+        final String restoredHost = preferences.getString(NetworkSurveyConstants.PROPERTY_NETWORK_SURVEY_CONNECTION_HOST, "");
         if (!restoredHost.isEmpty()) host = restoredHost;
 
-        final int restoredPortNumber = preferences.getInt(NETWORK_SURVEY_CONNECTION_PORT, NetworkSurveyConstants.DEFAULT_GRPC_PORT);
+        final int restoredPortNumber = preferences.getInt(NetworkSurveyConstants.PROPERTY_NETWORK_SURVEY_CONNECTION_PORT, NetworkSurveyConstants.DEFAULT_GRPC_PORT);
         if (restoredPortNumber != -1) portNumber = restoredPortNumber;
 
-        final String restoredDeviceName = preferences.getString(NETWORK_SURVEY_DEVICE_NAME, "");
+        final String restoredDeviceName = preferences.getString(NetworkSurveyConstants.PROPERTY_NETWORK_SURVEY_DEVICE_NAME, "");
         if (!restoredDeviceName.isEmpty()) deviceName = restoredDeviceName;
     }
 

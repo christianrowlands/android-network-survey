@@ -33,12 +33,17 @@ Install Android Studio to work on this code.
 
 ## Changelog
 
+##### [0.1.1](https://github.com/christianrowlands/android-network-survey/releases/tag/release-0.1.1) - 2020-05-08
+ * Added support for connecting to an MQTT broker and streaming cellular survey records
+ * Added support for allowing the MQTT broker connection information to be set via MDM
+ * Fixed a bug that caused the calculator text field to be covered on screens with low resolution and large font
+
 ##### [0.1.0](https://github.com/christianrowlands/android-network-survey/releases/tag/release-0.1.0) - 2020-03-24
  * Added support for logging GNSS information to a GeoPackage file
 
 ##### [0.0.9](https://github.com/christianrowlands/android-network-survey/releases/tag/release-0.0.9) - 2020-01-10
  * Moved the file logging and connection logic to foreground services to prevent the Android System from stopping them
- * The connection now supports sending GSM, CDMA, UMTS, and LTE survey records.
+ * The connection now supports sending GSM, CDMA, UMTS, and LTE survey records
  * Added a navigation drawer and put the calculators and connection in it
  * Added a settings UI
  * Other general improvements

@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="colorPrimary">#03A9F4</color>
-    <color name="colorAccent">#4CAF50</color>
+    <color name="colorPrimary">#4CAF50</color>
+    <color name="colorAccent">#03A9F4</color>
     <color name="colorCardDark">#161212</color>
 
     <color name="activeTabColor">#FFFFFF</color>
-    <color name="inactiveTabColor">#4E4E4E</color>
+    <color name="inactiveTabColor">#A2A2A2</color>
 
     <color name="connectionStatusDisconnected">#A21919</color>
     <color name="connectionStatusConnecting">#FF6D00</color>

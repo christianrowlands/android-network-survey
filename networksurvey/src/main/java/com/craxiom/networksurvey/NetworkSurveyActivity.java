@@ -79,6 +79,7 @@ public class NetworkSurveyActivity extends AppCompatActivity
     protected void onCreate(Bundle savedInstanceState)
     {
         super.onCreate(savedInstanceState);
+
         AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_YES); // Force Dark Mode
         setContentView(R.layout.activity_network_details);
         setSupportActionBar(findViewById(R.id.toolbar));
@@ -87,8 +88,8 @@ public class NetworkSurveyActivity extends AppCompatActivity
         PreferenceManager.setDefaultValues(this, R.xml.preferences, false);
 
         final SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
-        turnOnCellularLoggingOnNextServiceConnection = preferences.getBoolean(NetworkSurveyConstants.PROPERTY_AUTO_START_CELLULAR_LOGGING_KEY, false);
-        turnOnGnssLoggingOnNextServiceConnection = preferences.getBoolean(NetworkSurveyConstants.PROPERTY_AUTO_START_GNSS_LOGGING_KEY, false);
+        turnOnCellularLoggingOnNextServiceConnection = preferences.getBoolean(NetworkSurveyConstants.PROPERTY_AUTO_START_CELLULAR_LOGGING, false);
+        turnOnGnssLoggingOnNextServiceConnection = preferences.getBoolean(NetworkSurveyConstants.PROPERTY_AUTO_START_GNSS_LOGGING, false);
 
         setupNavigation();
 
@@ -130,9 +131,9 @@ public class NetworkSurveyActivity extends AppCompatActivity
         {
             networkSurveyService.onUiHidden();
 
-            if (!networkSurveyService.isCellularLoggingEnabled() && GrpcConnectionService.getConnectedState() == ConnectionState.DISCONNECTED)
+            if (!networkSurveyService.isBeingUsed())
             {
-                // We can safely shutdown the service since both logging and the connection are turned off
+                // We can safely shutdown the service since both logging and the connections are turned off
                 final Intent networkSurveyServiceIntent = new Intent(applicationContext, NetworkSurveyService.class);
                 final Intent connectionServiceIntent = new Intent(applicationContext, GrpcConnectionService.class);
                 stopService(networkSurveyServiceIntent);
@@ -143,12 +144,6 @@ public class NetworkSurveyActivity extends AppCompatActivity
         }
 
         super.onPause();
-    }
-
-    @Override
-    protected void onDestroy()
-    {
-        super.onDestroy();
     }
 
     @Override
@@ -206,11 +201,11 @@ public class NetworkSurveyActivity extends AppCompatActivity
         //noinspection SimplifiableIfStatement
         if (id == R.id.action_start_stop_cellular_logging)
         {
-            toggleCellularLogging();
+            toggleCellularLogging(!networkSurveyService.isCellularLoggingEnabled());
             return true;
         } else if (id == R.id.action_start_stop_gnss_logging)
         {
-            toggleGnssLogging();
+            toggleGnssLogging(!networkSurveyService.isGnssLoggingEnabled());
             return true;
         }
 
@@ -253,8 +248,7 @@ public class NetworkSurveyActivity extends AppCompatActivity
     {
         if (missingAnyPermissions())
         {
-            ActivityCompat.requestPermissions(NetworkSurveyActivity.this, PERMISSIONS,
-                    ACCESS_PERMISSION_REQUEST_ID);
+            ActivityCompat.requestPermissions(this, PERMISSIONS, ACCESS_PERMISSION_REQUEST_ID);
         }
     }
 
@@ -418,12 +412,14 @@ public class NetworkSurveyActivity extends AppCompatActivity
     }
 
     /**
-     * Starts or stops writing the log file based on the current state.
+     * Starts or stops writing the Cellular log file based on the specified parameter.
+     *
+     * @param enable True if logging should be enabled, false if it should be turned off.
      */
-    private void toggleCellularLogging()
+    private void toggleCellularLogging(boolean enable)
     {
         new ToggleLoggingTask(() -> {
-            if (networkSurveyService != null) return networkSurveyService.toggleCellularLogging();
+            if (networkSurveyService != null) return networkSurveyService.toggleCellularLogging(enable);
             return null;
         }, enabled -> {
             if (enabled == null) return getString(R.string.cellular_logging_toggle_failed);
@@ -433,12 +429,14 @@ public class NetworkSurveyActivity extends AppCompatActivity
     }
 
     /**
-     * Starts or stops writing the GNSS log file based on the current state.
+     * Starts or stops writing the GNSS log file based on the specified parameter.
+     *
+     * @param enable True if logging should be enabled, false if it should be turned off.
      */
-    private void toggleGnssLogging()
+    private void toggleGnssLogging(boolean enable)
     {
         new ToggleLoggingTask(() -> {
-            if (networkSurveyService != null) return networkSurveyService.toggleGnssLogging();
+            if (networkSurveyService != null) return networkSurveyService.toggleGnssLogging(enable);
             return null;
         }, enabled -> {
             if (enabled == null) return getString(R.string.gnss_logging_toggle_failed);
@@ -498,11 +496,13 @@ public class NetworkSurveyActivity extends AppCompatActivity
             this.postExecuteFunction = postExecuteFunction;
         }
 
+        @Override
         protected Boolean doInBackground(Void... nothing)
         {
             return toggleLoggingFunction.get();
         }
 
+        @Override
         protected void onPostExecute(Boolean enabled)
         {
             if (enabled == null)
@@ -517,7 +517,7 @@ public class NetworkSurveyActivity extends AppCompatActivity
     }
 
     /**
-     * A {@link ServiceConnection} implementation for binding to the {@link GrpcConnectionService}.
+     * A {@link ServiceConnection} implementation for binding to the {@link NetworkSurveyService}.
      */
     private class SurveyServiceConnection implements ServiceConnection
     {
@@ -532,7 +532,7 @@ public class NetworkSurveyActivity extends AppCompatActivity
             final boolean cellularLoggingEnabled = networkSurveyService.isCellularLoggingEnabled();
             if (turnOnCellularLoggingOnNextServiceConnection && !cellularLoggingEnabled)
             {
-                toggleCellularLogging();
+                toggleCellularLogging(true);
             } else
             {
                 updateCellularLoggingButton(cellularLoggingEnabled);
@@ -541,7 +541,7 @@ public class NetworkSurveyActivity extends AppCompatActivity
             final boolean gnssLoggingEnabled = networkSurveyService.isGnssLoggingEnabled();
             if (turnOnGnssLoggingOnNextServiceConnection && !gnssLoggingEnabled)
             {
-                toggleGnssLogging();
+                toggleGnssLogging(true);
             } else
             {
                 updateGnssLoggingButton(gnssLoggingEnabled);

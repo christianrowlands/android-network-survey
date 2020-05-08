@@ -68,15 +68,15 @@
     <string name="gnss_logging_toggle_failed">Failed to toggle the GNSS logging state</string>
 
     <string name="grpc_connection_title">Server Connection</string>
-    <string name="grpc_connection_description">Here you can connect to a remote server.  Once connected, all future survey results will be streamed to the server.
+    <string name="grpc_connection_description">Here you can connect to a Network Survey server.  Once connected, all future survey results will be streamed to the server.
         \n\nSteps for Connecting:
         \n\n1. Enter in the following information:
         \n     a. The Server IP Address or Hostname
         \n     b. The Server Port Number (Default: 2621)
         \n     c. A name that is used to identify this device on the server
         \n\n2. Click the connect toggle switch</string>
-    <string name="grpc_server_host_hint">Server Address</string>
-    <string name="gprc_server_port_hint">Port Number</string>
+    <string name="server_host_hint">Server Address</string>
+    <string name="server_port_hint">Port Number</string>
     <string name="device_name_hint">Device Name</string>
 
     <string name="status_disconnected">Disconnected</string>
@@ -95,12 +95,50 @@
     <string name="service_notification_title">GPS Active</string>
     <string name="logging_notification_title">Network Survey Logging Active</string>
     <string name="logging_notification_text">Writing to the GeoPackage log file</string>
+    <string name="and">" and "</string>
+    <string name="mqtt_connection_notification_text">Streaming records to an MQTT Broker</string>
+    <string name="mqtt_reconnecting_notification_text">Reconnecting to MQTT Broker</string>
+    <string name="network_survey_notification_title">Network Survey Active</string>
+    <string name="logging_and_mqtt_notification_text">Writing to the GeoPackage log file and streaming records to an MQTT Broker</string>
     <string name="connection_notification_title">Network Survey Server Connection</string>
     <string name="connection_notification_active_text">The Connection is Active</string>
     <string name="connection_notification_connecting_text">Attempting to Connect</string>
     <string name="title_activity_connection">ConnectionActivity</string>
 
+    <!-- MQTT Connection UI constants -->
+    <string name="mqtt_connection_title_full">MQTT Broker Connection</string>
+    <string name="mqtt_connection_title">MQTT Broker</string>
+    <string name="mqtt_mdm_override_description">Your MQTT connection settings have been set by a Mobile Device Management server.  Toggle the switch below to override those settings so you can specify your own MQTT Broker connection information.</string>
+    <string name="mqtt_mdm_override_title">Override MDM MQTT Settings</string>
+    <string name="tls">TLS</string>
+    <string name="username_hint">MQTT Username</string>
+    <string name="password_hint">MQTT Password</string>
+    <string name="help_title">Help?</string>
+    <string name="mqtt_connection_description">Here you can connect to an MQTT broker.  Once connected, all future survey results will be streamed to the server.
+        \n\nSteps for Connecting:
+        \n\n1. Enter in the following information:
+        \n     a. The MQTT broker IP Address or Hostname
+        \n     b. The MQTT broker Port Number (Default: 1883 for plain text and 8883 for TLS)
+        \n     c. If the server does not support SSL/TLS, then turn off the TLS toggle switch
+        \n     d. A name that is used to identify this device on the server
+        \n     e. (Optional) The username and password used to authenticate with the MQTT Broker
+        \n\n2. Click the connect toggle switch</string>
+
+    <!-- App Restriction Constants -->
+    <string name="mqtt_broker_url_title">MQTT Broker URL</string>
+    <string name="mqtt_broker_url_description">The full MQTT broker URL including the port number at the end</string>
+    <string name="mqtt_client_id_title">MQTT Client ID</string>
+    <string name="mqtt_client_id_description">The name this device should use to represent itself to the MQTT broker</string>
+    <string name="mqtt_username_title">MQTT Broker Username</string>
+    <string name="mqtt_username_description">The username to use when authenticating to the MQTT broker</string>
+    <string name="mqtt_password_title">MQTT Broker Password</string>
+    <string name="mqtt_password_description">The password to use when authenticating to the MQTT broker</string>
+    <string name="mqtt_start_on_boot_title">MQTT Start at Boot</string>
+    <string name="mqtt_start_on_boot_description">If true, when the phone boots an attempt will be made to connect to the MDM configured MQTT broker</string>
+
     <!-- User Preference Constants -->
+    <string name="logging_config_title">Logging Config</string>
+
     <string name="auto_start_cellular_logging_title">Auto Start Cellular Logging</string>
     <string name="auto_start_cellular_logging_summary_on">Cellular logging will be started upon app opening</string>
     <string name="auto_start_cellular_logging_summary_off">Cellular logging will only start when manually enabled</string>
@@ -108,6 +146,14 @@
     <string name="auto_start_gnss_logging_title">Auto Start GNSS Logging</string>
     <string name="auto_start_gnss_logging_summary_on">GNSS logging will be started upon app opening</string>
     <string name="auto_start_gnss_logging_summary_off">GNSS logging will only start when manually enabled</string>
+
+    <string name="mqtt_preference_category_title">MQTT Broker Settings</string>
+    <string name="mqtt_preference_category_summary">MQTT Live Stream Connection Settings</string>
+    <string name="mqtt_broker_connection_description">If an MQTT Broker is specified here, all the Network Survey records gathered from this app will be published to the MQTT Broker as long as either the Details screen is visible, or file logging is enabled.\n\nThe full MQTT broker URL including the port number at the end.</string>
+
+    <string name="mqtt_enable_title">Manual MQTT Connection</string>
+    <string name="mqtt_enable_summary_on">Cellular Records will be sent to the MQTT broker specified below</string>
+    <string name="mqtt_enable_summary_off">Cellular Records will not be sent to a custom MQTT broker</string>
 
     <string name="server_config_title">Connection Config</string>
     <string name="connection_timeout_title">Connection Timeout</string>

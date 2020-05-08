@@ -1,33 +1,27 @@
 <?xml version="1.0" encoding="utf-8"?>
 <PreferenceScreen xmlns:app="http://schemas.android.com/apk/res-auto">
 
-    <SwitchPreferenceCompat
-        app:defaultValue="false"
-        app:icon="@drawable/ic_cellular"
-        app:key="autoStartLogging"
-        app:summaryOff="@string/auto_start_cellular_logging_summary_off"
-        app:summaryOn="@string/auto_start_cellular_logging_summary_on"
-        app:title="@string/auto_start_cellular_logging_title" />
+    <PreferenceCategory
+        app:key="logging_config"
+        app:icon="@drawable/logging_thick_icon"
+        app:title="@string/logging_config_title">
 
-    <SwitchPreferenceCompat
-        app:defaultValue="false"
-        app:icon="@drawable/ic_gnss"
-        app:key="autoStartGnssLogging"
-        app:summaryOff="@string/auto_start_gnss_logging_summary_off"
-        app:summaryOn="@string/auto_start_gnss_logging_summary_on"
-        app:title="@string/auto_start_gnss_logging_title" />
+        <SwitchPreferenceCompat
+            app:defaultValue="true"
+            app:icon="@drawable/ic_cellular"
+            app:key="auto_start_logging"
+            app:summaryOff="@string/auto_start_cellular_logging_summary_off"
+            app:summaryOn="@string/auto_start_cellular_logging_summary_on"
+            app:title="@string/auto_start_cellular_logging_title" />
 
-    <!--    <PreferenceCategory
-            app:key="connectionConfig"
-            app:title="@string/server_config_title">
+        <SwitchPreferenceCompat
+            app:defaultValue="false"
+            app:icon="@drawable/ic_gnss"
+            app:key="auto_start_gnss_logging"
+            app:summaryOff="@string/auto_start_gnss_logging_summary_off"
+            app:summaryOn="@string/auto_start_gnss_logging_summary_on"
+            app:title="@string/auto_start_gnss_logging_title" />
 
-            <EditTextPreference
-                app:defaultValue="10"
-                app:dialogMessage="@string/connection_timeout_description"
-                app:key="connectionTimeout"
-                app:title="@string/connection_timeout_title"
-                app:useSimpleSummaryProvider="true" />
-
-        </PreferenceCategory>-->
+    </PreferenceCategory>
 
 </PreferenceScreen>

@@ -45,8 +45,6 @@ import mil.nga.sf.GeometryType;
 import mil.nga.sf.Point;
 import mil.nga.sf.proj.ProjectionConstants;
 
-import static mil.nga.geopackage.db.GeoPackageDataType.MEDIUMINT;
-
 /**
  * Responsible for taking Survey Records, and writing them to the GeoPackage log file.
  * <p>
@@ -109,6 +107,9 @@ public class SurveyRecordLogger implements ISurveyRecordListener
 
     /**
      * Sets up all the GeoPackage stuff so that the LTE records can be written to a log file.
+     * <p>
+     * If calling this method, it is assumed that the caller will add this {@link SurveyRecordLogger} as a listener for
+     * survey records.
      *
      * @param enable True if logging is being turned on, false if the log file should be closed.
      * @return True if the toggling action was successful, false if the request could not be completed.
@@ -117,8 +118,6 @@ public class SurveyRecordLogger implements ISurveyRecordListener
     {
         try
         {
-            networkSurveyService.unregisterSurveyRecordListener(this);
-
             if (!enable)
             {
                 if (loggingEnabled)
@@ -158,9 +157,8 @@ public class SurveyRecordLogger implements ISurveyRecordListener
                 return false;
             }
 
-            final SpatialReferenceSystem spatialReferenceSystem;
-            spatialReferenceSystem = geoPackage.getSpatialReferenceSystemDao()
-                    .getOrCreateCode(ProjectionConstants.AUTHORITY_EPSG, (long) ProjectionConstants.EPSG_WORLD_GEODETIC_SYSTEM);
+            final SpatialReferenceSystem spatialReferenceSystem = geoPackage.getSpatialReferenceSystemDao()
+                    .getOrCreateCode(ProjectionConstants.AUTHORITY_EPSG, ProjectionConstants.EPSG_WORLD_GEODETIC_SYSTEM);
 
             geoPackage.createGeometryColumnsTable();
             createGsmRecordTable(geoPackage, spatialReferenceSystem);
@@ -168,7 +166,6 @@ public class SurveyRecordLogger implements ISurveyRecordListener
             createUmtsRecordTable(geoPackage, spatialReferenceSystem);
             createLteRecordTable(geoPackage, spatialReferenceSystem);
 
-            networkSurveyService.registerSurveyRecordListener(this);
             return loggingEnabled = true;
         } catch (Exception e)
         {
@@ -299,8 +296,8 @@ public class SurveyRecordLogger implements ISurveyRecordListener
         tableColumns.add(FeatureColumn.createPrimaryKeyColumn(columnNumber++, MessageConstants.ID_COLUMN));
         tableColumns.add(FeatureColumn.createGeometryColumn(columnNumber++, MessageConstants.GEOMETRY_COLUMN, GeometryType.POINT, false, null));
         tableColumns.add(FeatureColumn.createColumn(columnNumber++, MessageConstants.TIME_COLUMN, GeoPackageDataType.INT, false, null));
-        tableColumns.add(FeatureColumn.createColumn(columnNumber++, MessageConstants.RECORD_NUMBER_COLUMN, MEDIUMINT, true, -1));
-        tableColumns.add(FeatureColumn.createColumn(columnNumber++, MessageConstants.GROUP_NUMBER_COLUMN, MEDIUMINT, true, -1));
+        tableColumns.add(FeatureColumn.createColumn(columnNumber++, MessageConstants.RECORD_NUMBER_COLUMN, GeoPackageDataType.MEDIUMINT, true, -1));
+        tableColumns.add(FeatureColumn.createColumn(columnNumber++, MessageConstants.GROUP_NUMBER_COLUMN, GeoPackageDataType.MEDIUMINT, true, -1));
         tableColumns.add(FeatureColumn.createColumn(columnNumber++, MessageConstants.SERVING_CELL_COLUMN, GeoPackageDataType.BOOLEAN, false, null));
         tableColumns.add(FeatureColumn.createColumn(columnNumber++, MessageConstants.PROVIDER_COLUMN, GeoPackageDataType.TEXT, false, null));
 

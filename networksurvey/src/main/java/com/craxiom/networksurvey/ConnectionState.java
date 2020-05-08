@@ -1,7 +1,7 @@
 package com.craxiom.networksurvey;
 
 /**
- * Represents the various states of the gRPC Connection.
+ * Represents the various states of the gRPC or MQTT Broker Connection.
  *
  * @since 0.0.4
  */

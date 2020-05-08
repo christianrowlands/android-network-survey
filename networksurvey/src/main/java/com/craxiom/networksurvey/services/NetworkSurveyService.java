@@ -5,8 +5,12 @@ import android.annotation.SuppressLint;
 import android.app.Notification;
 import android.app.PendingIntent;
 import android.app.Service;
+import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
+import android.content.RestrictionsManager;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.location.GnssMeasurementsEvent;
 import android.location.GnssStatus;
@@ -15,6 +19,7 @@ import android.location.LocationManager;
 import android.os.AsyncTask;
 import android.os.Binder;
 import android.os.Build;
+import android.os.Bundle;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.IBinder;
@@ -27,15 +32,21 @@ import android.util.Log;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.core.app.ActivityCompat;
+import androidx.core.app.NotificationCompat;
 import androidx.core.content.ContextCompat;
+import androidx.preference.PreferenceManager;
 
 import com.craxiom.networksurvey.CalculationUtils;
+import com.craxiom.networksurvey.ConnectionState;
 import com.craxiom.networksurvey.GpsListener;
 import com.craxiom.networksurvey.NetworkSurveyActivity;
 import com.craxiom.networksurvey.R;
 import com.craxiom.networksurvey.SurveyRecordLogger;
 import com.craxiom.networksurvey.constants.NetworkSurveyConstants;
+import com.craxiom.networksurvey.listeners.IConnectionStateListener;
 import com.craxiom.networksurvey.listeners.ISurveyRecordListener;
+import com.craxiom.networksurvey.mqtt.MqttBrokerConnectionInfo;
+import com.craxiom.networksurvey.mqtt.MqttConnection;
 
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -43,8 +54,12 @@ import java.util.concurrent.atomic.AtomicBoolean;
 /**
  * This service is responsible for getting access to the Android {@link TelephonyManager} and periodically getting the
  * list of cellular towers the phone can see.  It then notifies any listeners of the cellular survey records.
+ * <p>
+ * It also handles starting the MQTT broker connection if connection information is present.
+ *
+ * @since 0.0.9
  */
-public class NetworkSurveyService extends Service
+public class NetworkSurveyService extends Service implements IConnectionStateListener
 {
     private static final String LOG_TAG = NetworkSurveyService.class.getSimpleName();
 
@@ -61,7 +76,7 @@ public class NetworkSurveyService extends Service
     private final AtomicBoolean gnssLoggingEnabled = new AtomicBoolean(false);
     private final AtomicBoolean gnssStarted = new AtomicBoolean(false);
     private String deviceId;
-    private SurveyServiceBinder surveyServiceBinder;
+    private final SurveyServiceBinder surveyServiceBinder;
     private SurveyRecordProcessor surveyRecordProcessor;
     private GpsListener gpsListener;
     private SurveyRecordLogger surveyRecordLogger;
@@ -69,15 +84,18 @@ public class NetworkSurveyService extends Service
     private Looper serviceLooper;
     private Handler serviceHandler;
     private LocationManager locationManager = null;
-    private long firstGpsAcqTime = Long.MIN_VALUE;
+    private final long firstGpsAcqTime = Long.MIN_VALUE;
     private boolean gnssRawSupportKnown = false;
-    private boolean hasGnssRawFailureNagLaunched = false;
+    private final boolean hasGnssRawFailureNagLaunched = false;
+    private MqttConnection mqttConnection;
+    private BroadcastReceiver managedConfigurationListener;
 
     /**
      * Callback for receiving GNSS measurements from the location manager.
      */
     private final GnssMeasurementsEvent.Callback measurementListener = new GnssMeasurementsEvent.Callback()
     {
+        @Override
         public void onGnssMeasurementsReceived(GnssMeasurementsEvent event)
         {
             gnssRawSupportKnown = true;
@@ -90,6 +108,7 @@ public class NetworkSurveyService extends Service
      */
     private final GnssStatus.Callback statusListener = new GnssStatus.Callback()
     {
+        @Override
         public void onSatelliteStatusChanged(final GnssStatus status)
         {
             if (gnssGeoPackageRecorder != null) gnssGeoPackageRecorder.onSatelliteStatusChanged(status);
@@ -120,12 +139,29 @@ public class NetworkSurveyService extends Service
         initializeLocationListener();
         initializeSurveyRecordScanning();
 
+        initializeMqttConnection();
+
         updateServiceNotification();
     }
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId)
     {
+        // If we are started at boot, then that means the NetworkSurveyActivity was never run.  Therefore, to ensure we
+        // read and respect the auto start logging user preferences, we need to read them and start logging here.
+        final boolean startedAtBoot = intent.getBooleanExtra(NetworkSurveyConstants.EXTRA_STARTED_AT_BOOT, false);
+        if (startedAtBoot)
+        {
+            Log.i(LOG_TAG, "Received the startedAtBoot flag in the NetworkSurveyService. Reading the auto start logging preferences");
+            final SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
+
+            final boolean autoStartCellularLogging = preferences.getBoolean(NetworkSurveyConstants.PROPERTY_AUTO_START_CELLULAR_LOGGING, false);
+            if (autoStartCellularLogging && !cellularLoggingEnabled.get()) toggleCellularLogging(true);
+
+            final boolean autoStartGnssLogging = preferences.getBoolean(NetworkSurveyConstants.PROPERTY_AUTO_START_GNSS_LOGGING, false);
+            if (autoStartGnssLogging && !gnssLoggingEnabled.get()) toggleGnssLogging(true);
+        }
+
         return START_REDELIVER_INTENT;
     }
 
@@ -139,6 +175,14 @@ public class NetworkSurveyService extends Service
     public void onDestroy()
     {
         Log.i(LOG_TAG, "onDestroy");
+
+        unregisterManagedConfigurationListener();
+
+        if (mqttConnection != null)
+        {
+            unregisterMqttConnectionStateListener(this);
+            disconnectFromMqttBroker();
+        }
         setDone();
         removeLocationListener();
         stopGnssLogging();
@@ -151,6 +195,122 @@ public class NetworkSurveyService extends Service
         serviceHandler = null;
         shutdownNotifications();
         super.onDestroy();
+    }
+
+    @Override
+    public void onConnectionStateChange(ConnectionState newConnectionState)
+    {
+        updateServiceNotification();
+    }
+
+    /**
+     * Creates the {@link MqttConnection} instance.
+     * <p>
+     * If connection information is specified for an MQTT Broker via the MDM Managed Configuration, then kick off an
+     * MQTT connection.
+     *
+     * @since 0.1.1
+     */
+    public void initializeMqttConnection()
+    {
+        mqttConnection = new MqttConnection();
+        mqttConnection.registerMqttConnectionStateListener(this);
+
+        registerManagedConfigurationListener();
+
+        attemptMqttConnectWithMdmConfig(false);
+    }
+
+    /**
+     * Connect to an MQTT broker.
+     *
+     * @param connectionInfo The information needed to connect to the MQTT broker.
+     * @since 0.1.1
+     */
+    public void connectToMqttBroker(MqttBrokerConnectionInfo connectionInfo)
+    {
+        mqttConnection.connect(getApplicationContext(), connectionInfo);
+        registerSurveyRecordListener(mqttConnection);
+    }
+
+    /**
+     * Disconnect from the MQTT broker and also remove the MQTT survey record listener.
+     *
+     * @since 0.1.1
+     */
+    public void disconnectFromMqttBroker()
+    {
+        unregisterSurveyRecordListener(mqttConnection);
+        mqttConnection.disconnect();
+    }
+
+    /**
+     * If connection information is specified for an MQTT Broker via the MDM Managed Configuration, then kick off an
+     * MQTT connection.
+     *
+     * @param forceDisconnect Set to true so that the MQTT broker connection will be shutdown even if the MDM configured
+     *                        connection info is not present.  This flag is needed to stop an MQTT connection if it was
+     *                        previously configured via MDM, but the config has since been removed from the MDM.  In
+     *                        that case, the connection info will be null but we still want to disconnect from the MQTT
+     *                        broker.
+     * @since 0.1.1
+     */
+    public void attemptMqttConnectWithMdmConfig(boolean forceDisconnect)
+    {
+        if (isMqttMdmOverrideEnabled())
+        {
+            Log.i(LOG_TAG, "The MQTT MDM override is enabled, so no MDM configured MQTT connection will be attempted");
+            return;
+        }
+
+        final MqttBrokerConnectionInfo connectionInfo = getMqttBrokerConnectionInfo();
+
+        if (connectionInfo != null)
+        {
+            // Make sure there is not another connection active first, if there is, disconnect. Don't use the
+            // disconnectFromMqttBroker() method because it will cause the listener to get unregistered, which will
+            // cause the NetworkSurveyService to get stopped if it is the last listener/user of the service.  Since we
+            // are starting the connection right back up there is not a need to remove the listener.
+            mqttConnection.disconnect();
+
+            connectToMqttBroker(connectionInfo);
+        } else
+        {
+            Log.i(LOG_TAG, "Skipping the MQTT connection because no MQTT broker configuration has been set");
+
+            if (forceDisconnect) disconnectFromMqttBroker();
+        }
+    }
+
+    /**
+     * @return The current connection state to the MQTT Broker.
+     * @since 0.1.1
+     */
+    public ConnectionState getMqttConnectionState()
+    {
+        if (mqttConnection != null) return mqttConnection.getConnectionState();
+
+        return ConnectionState.DISCONNECTED;
+    }
+
+    /**
+     * Adds an {@link IConnectionStateListener} so that it will be notified of all future MQTT connection state changes.
+     *
+     * @param connectionStateListener The listener to add.
+     */
+    public void registerMqttConnectionStateListener(IConnectionStateListener connectionStateListener)
+    {
+        mqttConnection.registerMqttConnectionStateListener(connectionStateListener);
+    }
+
+    /**
+     * Removes an {@link IConnectionStateListener} so that it will no longer be notified of MQTT connection state changes.
+     *
+     * @param connectionStateListener The listener to remove.
+     */
+    public void unregisterMqttConnectionStateListener(IConnectionStateListener connectionStateListener)
+    {
+        mqttConnection.unregisterMqttConnectionStateListener(connectionStateListener);
     }
 
     public GpsListener getGpsListener()
@@ -174,7 +334,25 @@ public class NetworkSurveyService extends Service
 
         // Check to see if this service is still needed.  It is still needed if we are either logging, the UI is
         // visible, or a server connection is active.
-        if (!cellularLoggingEnabled.get() && !surveyRecordProcessor.isBeingUsed()) stopSelf();
+        if (!isBeingUsed()) stopSelf();
+    }
+
+    /**
+     * Used to check if this service is still needed.
+     * <p>
+     * This service is still needed if logging is enabled, if the UI is visible, or if a connection is active.  In other
+     * words, if there is an active consumer of the survey records.
+     *
+     * @return True if there is an active consumer of the survey records produced by this service, false otherwise.
+     * @since 0.1.1
+     */
+    public boolean isBeingUsed()
+    {
+        return cellularLoggingEnabled.get()
+                || gnssLoggingEnabled.get()
+                || getMqttConnectionState() != ConnectionState.DISCONNECTED
+                || GrpcConnectionService.getConnectedState() != ConnectionState.DISCONNECTED
+                || surveyRecordProcessor.isBeingUsed();
     }
 
     /**
@@ -196,22 +374,36 @@ public class NetworkSurveyService extends Service
     }
 
     /**
-     * Toggles the cellular logging setting.  If it is currently disabled, then an attempt will be made to enable
-     * logging.  If logging is already enabled then it will be turned off.
+     * Toggles the cellular logging setting.
      * <p>
-     * It is possible that an error occurs while trying to enable logging.  In that event false will be returned
-     * indicating that logging is still not enabled.
+     * It is possible that an error occurs while trying to enable or disable logging.  In that event null will be
+     * returned indicating that logging could not be toggled.
      *
+     * @param enable True if logging should be enabled, false if it should be turned off.
      * @return The new state of logging.  True if it is enabled, or false if it is disabled.  Null is returned if the
      * toggling was unsuccessful.
      */
-    public Boolean toggleCellularLogging()
+    public Boolean toggleCellularLogging(boolean enable)
     {
         synchronized (cellularLoggingEnabled)
         {
             final boolean originalLoggingState = cellularLoggingEnabled.get();
-            final boolean successful = surveyRecordLogger.enableLogging(!originalLoggingState);
-            if (successful) cellularLoggingEnabled.set(!originalLoggingState);
+            if (originalLoggingState == enable) return originalLoggingState;
+
+            Log.i(LOG_TAG, "Toggling cellular logging to " + enable);
+
+            final boolean successful = surveyRecordLogger.enableLogging(enable);
+            if (successful)
+            {
+                cellularLoggingEnabled.set(enable);
+                if (enable)
+                {
+                    registerSurveyRecordListener(surveyRecordLogger);
+                } else
+                {
+                    unregisterSurveyRecordListener(surveyRecordLogger);
+                }
+            }
             updateServiceNotification();
 
             final boolean newLoggingState = cellularLoggingEnabled.get();
@@ -232,27 +424,31 @@ public class NetworkSurveyService extends Service
     }
 
     /**
-     * Toggles the GNSS logging setting.  If it is currently disabled, then an attempt will be made to enable
-     * logging.  If logging is already enabled then it will be turned off.
+     * Toggles the GNSS logging setting.
      * <p>
-     * It is possible that an error occurs while trying to enable logging.  In that event false will be returned
-     * indicating that logging is still not enabled.
+     * It is possible that an error occurs while trying to enable or disable logging.  In that event null will be
+     * returned indicating that logging could not be toggled.
      *
+     * @param enable True if logging should be enabled, false if it should be turned off.
      * @return The new state of logging.  True if it is enabled, or false if it is disabled.  Null is returned if the
      * toggling was unsuccessful.
      */
-    public Boolean toggleGnssLogging()
+    public Boolean toggleGnssLogging(boolean enable)
     {
         synchronized (gnssLoggingEnabled)
         {
             final boolean originalLoggingState = gnssLoggingEnabled.get();
 
-            if (originalLoggingState)
-            {
-                stopGnssLogging();
-            } else
+            if (originalLoggingState == enable) return originalLoggingState;
+
+            Log.i(LOG_TAG, "Toggling GNSS logging to " + enable);
+
+            if (enable)
             {
                 startGnssLogging();
+            } else
+            {
+                stopGnssLogging();
             }
 
             updateServiceNotification();
@@ -270,6 +466,7 @@ public class NetworkSurveyService extends Service
     {
         serviceHandler.postDelayed(new Runnable()
         {
+            @Override
             public void run()
             {
                 try
@@ -324,7 +521,7 @@ public class NetworkSurveyService extends Service
     /**
      * Sets the atomic done flag so that any handler loops can be stopped.
      */
-    public void setDone()
+    private void setDone()
     {
         done.set(true);
     }
@@ -349,6 +546,7 @@ public class NetworkSurveyService extends Service
 
         if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED)
         {
+            Log.w(LOG_TAG, "ACCESS_FINE_LOCATION Permission not granted for the NetworkSurveyService");
             return;
         }
 
@@ -356,6 +554,9 @@ public class NetworkSurveyService extends Service
         if (locationManager != null)
         {
             locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, NETWORK_DATA_REFRESH_RATE_MS, 0f, gpsListener);
+        } else
+        {
+            Log.e(LOG_TAG, "The location manager was null when trying to request location updates for the NetworkSurveyService");
         }
     }
 
@@ -390,6 +591,7 @@ public class NetworkSurveyService extends Service
 
         serviceHandler.postDelayed(new Runnable()
         {
+            @Override
             public void run()
             {
                 try
@@ -450,10 +652,10 @@ public class NetworkSurveyService extends Service
     }
 
     /**
-     * A notification for this service that is started in the foreground so that we can continue to get GPS location updates while the phone is locked
-     * or the app is not in the foreground.
+     * A notification for this service that is started in the foreground so that we can continue to get GPS location
+     * updates while the phone is locked or the app is not in the foreground.
      */
-    private synchronized void updateServiceNotification()
+    private void updateServiceNotification()
     {
         startForeground(NetworkSurveyConstants.LOGGING_NOTIFICATION_ID, buildNotification());
     }
@@ -464,23 +666,65 @@ public class NetworkSurveyService extends Service
      *
      * @return A {@link Notification} that represents the current state of this service (e.g. if logging is enabled).
      */
-    private synchronized Notification buildNotification()
+    private Notification buildNotification()
     {
         final boolean logging = cellularLoggingEnabled.get() || gnssLoggingEnabled.get();
+        final ConnectionState connectionState = mqttConnection.getConnectionState();
+        final boolean mqttConnectionActive = connectionState == ConnectionState.CONNECTED || connectionState == ConnectionState.CONNECTING;
+        final CharSequence notificationTitle = getText(R.string.network_survey_notification_title);
+        final String notificationText = getNotificationText(logging, mqttConnectionActive, connectionState);
 
-        Intent notificationIntent = new Intent(this, NetworkSurveyActivity.class);
-        PendingIntent pendingIntent = PendingIntent.getActivity(this, 0, notificationIntent, 0);
+        final Intent notificationIntent = new Intent(this, NetworkSurveyActivity.class);
+        final PendingIntent pendingIntent = PendingIntent.getActivity(this, 0, notificationIntent, 0);
 
-        final CharSequence notificationTitle = getText(logging ? R.string.logging_notification_title : R.string.service_notification_title);
-
-        return new Notification.Builder(this, NetworkSurveyConstants.NOTIFICATION_CHANNEL_ID)
+        final NotificationCompat.Builder builder = new NotificationCompat.Builder(this, NetworkSurveyConstants.NOTIFICATION_CHANNEL_ID)
                 .setContentTitle(notificationTitle)
-                .setContentText(logging ? getText(R.string.logging_notification_text) : "")
                 .setOngoing(true)
-                .setSmallIcon(logging ? R.drawable.logging_thick_icon : R.drawable.gps_map_icon)
+                .setSmallIcon(mqttConnectionActive ? R.drawable.ic_cloud_connection : (logging ? R.drawable.logging_thick_icon : R.drawable.gps_map_icon))
                 .setContentIntent(pendingIntent)
                 .setTicker(notificationTitle)
-                .build();
+                .setContentText(notificationText)
+                .setStyle(new NotificationCompat.BigTextStyle().bigText(notificationText));
+
+        if (connectionState == ConnectionState.CONNECTING)
+        {
+            builder.setColor(getResources().getColor(R.color.connectionStatusConnecting, null));
+            builder.setColorized(true);
+        }
+
+        return builder.build();
+    }
+
+    /**
+     * Gets the text to use for the Network Survey Service Notification.
+     *
+     * @param logging              True if logging is active, false if disabled.
+     * @param mqttConnectionActive True if the MQTT connection is either in a connected or reconnecting state.
+     * @param connectionState      The actual connection state of the MQTT broker connection.
+     * @return The text that can be added to the service notification.
+     * @since 0.1.1
+     */
+    private String getNotificationText(boolean logging, boolean mqttConnectionActive, ConnectionState connectionState)
+    {
+        String notificationText = "";
+
+        if (logging)
+        {
+            notificationText = String.valueOf(getText(R.string.logging_notification_text)) + (mqttConnectionActive ? getText(R.string.and) : "");
+        }
+
+        switch (connectionState)
+        {
+            case CONNECTED:
+                notificationText += getText(R.string.mqtt_connection_notification_text);
+                break;
+            case CONNECTING:
+                notificationText += getText(R.string.mqtt_reconnecting_notification_text);
+                break;
+            default:
+        }
+
+        return notificationText;
     }
 
     /**
@@ -588,6 +832,92 @@ public class NetworkSurveyService extends Service
     private void shutdownNotifications()
     {
         stopForeground(true);
+    }
+
+    /**
+     * Register a listener so that if the Managed Config changes we will be notified of the new config and can restart
+     * the MQTT broker connection with the new parameters.
+     *
+     * @since 0.1.1
+     */
+    private void registerManagedConfigurationListener()
+    {
+        final IntentFilter restrictionsFilter = new IntentFilter(Intent.ACTION_APPLICATION_RESTRICTIONS_CHANGED);
+
+        managedConfigurationListener = new BroadcastReceiver()
+        {
+            @Override
+            public void onReceive(Context context, Intent intent)
+            {
+                attemptMqttConnectWithMdmConfig(true);
+            }
+        };
+
+        registerReceiver(managedConfigurationListener, restrictionsFilter);
+    }
+
+    /**
+     * Remove the managed configuration listener.
+     *
+     * @since 0.1.1
+     */
+    private void unregisterManagedConfigurationListener()
+    {
+        if (managedConfigurationListener != null)
+        {
+            try
+            {
+                unregisterReceiver(managedConfigurationListener);
+            } catch (Exception e)
+            {
+                Log.e(LOG_TAG, "Unable to unregister the Managed Configuration Listener when pausing the app", e);
+            }
+            managedConfigurationListener = null;
+        }
+    }
+
+    /**
+     * @return True if the MQTT MDM override has been enabled by the user.  False if the MDM config should still be employed.
+     */
+    private boolean isMqttMdmOverrideEnabled()
+    {
+        final SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
+        return preferences.getBoolean(NetworkSurveyConstants.PROPERTY_MQTT_MDM_OVERRIDE, false);
+    }
+
+    /**
+     * Get the MDM configured MQTT broker connection information to use to establish the connection.
+     * <p>
+     * If the user has specified to override the MDM connection config, then null is returned.
+     *
+     * @return The connection settings to use for the MQTT broker, or null if no connection information is present or
+     * the user has overrode the MDM config.
+     * @since 0.1.1
+     */
+    private MqttBrokerConnectionInfo getMqttBrokerConnectionInfo()
+    {
+        final RestrictionsManager restrictionsManager = (RestrictionsManager) getSystemService(Context.RESTRICTIONS_SERVICE);
+        if (restrictionsManager != null)
+        {
+            final Bundle mdmProperties = restrictionsManager.getApplicationRestrictions();
+
+            final boolean hasBrokerUri = mdmProperties.containsKey(NetworkSurveyConstants.PROPERTY_MQTT_BROKER_URL);
+            if (!hasBrokerUri) return null;
+
+            final String mqttBrokerUri = mdmProperties.getString(NetworkSurveyConstants.PROPERTY_MQTT_BROKER_URL);
+            final String clientId = mdmProperties.getString(NetworkSurveyConstants.PROPERTY_MQTT_CLIENT_ID);
+            final String username = mdmProperties.getString(NetworkSurveyConstants.PROPERTY_MQTT_USERNAME);
+            final String password = mdmProperties.getString(NetworkSurveyConstants.PROPERTY_MQTT_PASSWORD);
+
+            if (mqttBrokerUri == null || clientId == null)
+            {
+                return null;
+            }
+
+            return new MqttBrokerConnectionInfo(mqttBrokerUri, clientId, username, password);
+        }
+
+        return null;
     }
 
     /**

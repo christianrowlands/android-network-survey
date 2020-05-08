@@ -1,113 +1,113 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:orientation="vertical"
-    android:paddingTop="@dimen/fragment_padding_top">
+    android:layout_height="match_parent">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="horizontal">
-
-        <com.google.android.material.textfield.TextInputLayout
-            android:id="@+id/grpcHostAddressTextInputLayout"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="2"
-            android:autofillHints="Enter in the Host address of the remote gRPC server"
-            android:hint="@string/grpc_server_host_hint">
-
-            <com.google.android.material.textfield.TextInputEditText
-                android:id="@+id/grpcHostAddress"
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:inputType="textUri" />
-
-        </com.google.android.material.textfield.TextInputLayout>
-
-        <com.google.android.material.textfield.TextInputLayout
-            android:id="@+id/grpcPortNumberTextInputLayout"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:hint="@string/gprc_server_port_hint">
-
-            <com.google.android.material.textfield.TextInputEditText
-                android:id="@+id/grpcPortNumber"
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:inputType="numberDecimal" />
-
-        </com.google.android.material.textfield.TextInputLayout>
-
-    </LinearLayout>
-
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginBottom="6dp"
-        android:orientation="horizontal">
-
-        <com.google.android.material.textfield.TextInputLayout
-            android:id="@+id/deviceNameTextInputLayout"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="2"
-            android:autofillHints="Enter in a name to identify this device"
-            android:hint="@string/device_name_hint">
-
-            <com.google.android.material.textfield.TextInputEditText
-                android:id="@+id/deviceName"
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:inputType="textAutoComplete" />
-
-        </com.google.android.material.textfield.TextInputLayout>
-
-    </LinearLayout>
-
-    <androidx.cardview.widget.CardView
-        android:id="@+id/connection_status_card_view"
-        style="?attr/cardStyle"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content">
+        android:orientation="vertical">
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:elevation="4dp"
-            android:orientation="horizontal"
-            android:padding="5dp">
+            android:baselineAligned="false"
+            android:orientation="horizontal">
 
-            <TextView
-                android:id="@+id/connection_status_text"
-                style="@style/StatusText"
-                android:layout_width="wrap_content"
+            <com.google.android.material.textfield.TextInputLayout
+                android:id="@+id/grpcHostAddressTextInputLayout"
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
+                android:layout_margin="@dimen/small_margin"
+                android:layout_weight="2"
+                android:autofillHints="Enter in the Host address of the remote gRPC server"
+                android:hint="@string/server_host_hint">
+
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/grpcHostAddress"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:inputType="textUri" />
+
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <com.google.android.material.textfield.TextInputLayout
+                android:id="@+id/grpcPortNumberTextInputLayout"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_margin="@dimen/small_margin"
                 android:layout_weight="1"
-                android:text="Connecting ..." />
+                android:hint="@string/server_port_hint">
 
-            <androidx.appcompat.widget.SwitchCompat
-                android:id="@+id/grpcConnectToggleSwitch"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_gravity="center"
-                android:layout_weight="0" />
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/grpcPortNumber"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:inputType="numberDecimal" />
+
+            </com.google.android.material.textfield.TextInputLayout>
 
         </LinearLayout>
 
-    </androidx.cardview.widget.CardView>
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:baselineAligned="false"
+            android:orientation="horizontal">
 
-    <TextView
-        android:id="@+id/grpcConnectionDescription"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginStart="6dp"
-        android:layout_marginTop="6dp"
-        android:layout_marginEnd="6dp"
-        android:layout_marginBottom="20dp"
-        android:text="@string/grpc_connection_description"
-        android:textAppearance="@style/DescriptionText" />
+            <com.google.android.material.textfield.TextInputLayout
+                android:id="@+id/deviceNameTextInputLayout"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_margin="@dimen/small_margin"
+                android:layout_weight="2"
+                android:autofillHints="Enter in a name to identify this device"
+                android:hint="@string/device_name_hint">
 
-</LinearLayout>
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/deviceName"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:inputType="textAutoComplete" />
+
+            </com.google.android.material.textfield.TextInputLayout>
+
+        </LinearLayout>
+
+        <androidx.cardview.widget.CardView
+            android:id="@+id/connection_status_card_view"
+            style="?attr/cardStyle"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:elevation="4dp"
+                android:orientation="horizontal"
+                android:padding="5dp">
+
+                <TextView
+                    android:id="@+id/connection_status_text"
+                    style="@style/StatusText"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Connecting ..." />
+
+                <androidx.appcompat.widget.SwitchCompat
+                    android:id="@+id/grpcConnectToggleSwitch"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center"
+                    android:layout_weight="0"
+                    android:theme="@style/ConnectionSwitchStyle" />
+
+            </LinearLayout>
+
+        </androidx.cardview.widget.CardView>
+
+        <include layout="@layout/expandable_help_card" />
+
+    </LinearLayout>
+</ScrollView>
