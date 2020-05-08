@@ -1,5 +1,7 @@
 package com.craxiom.networksurvey.mqtt;
 
+import java.util.Objects;
+
 /**
  * Holds all the information for an MQTT Broker connection.
  *
@@ -11,6 +13,8 @@ public class MqttBrokerConnectionInfo
     private final String mqttClientId;
     private final String mqttUsername;
     private final String mqttPassword;
+
+    private final int hashCode;
 
     /**
      * Constructs this info object with all the information needed to connect to an MQTT Broker.
@@ -26,6 +30,32 @@ public class MqttBrokerConnectionInfo
         this.mqttClientId = mqttClientId;
         this.mqttUsername = mqttUsername;
         this.mqttPassword = mqttPassword;
+
+        int result = mqttServerUri != null ? mqttServerUri.hashCode() : 0;
+        result = 31 * result + (mqttClientId != null ? mqttClientId.hashCode() : 0);
+        result = 31 * result + (mqttUsername != null ? mqttUsername.hashCode() : 0);
+        result = 31 * result + (mqttPassword != null ? mqttPassword.hashCode() : 0);
+        hashCode = result;
+    }
+
+    @Override
+    public boolean equals(Object o)
+    {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        MqttBrokerConnectionInfo that = (MqttBrokerConnectionInfo) o;
+
+        if (!Objects.equals(mqttServerUri, that.mqttServerUri)) return false;
+        if (!Objects.equals(mqttClientId, that.mqttClientId)) return false;
+        if (!Objects.equals(mqttUsername, that.mqttUsername)) return false;
+        return Objects.equals(mqttPassword, that.mqttPassword);
+    }
+
+    @Override
+    public int hashCode()
+    {
+        return hashCode;
     }
 
     public String getMqttServerUri()

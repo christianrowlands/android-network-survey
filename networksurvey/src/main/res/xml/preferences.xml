@@ -7,7 +7,7 @@
         app:title="@string/logging_config_title">
 
         <SwitchPreferenceCompat
-            app:defaultValue="false"
+            app:defaultValue="true"
             app:icon="@drawable/ic_cellular"
             app:key="auto_start_logging"
             app:summaryOff="@string/auto_start_cellular_logging_summary_off"

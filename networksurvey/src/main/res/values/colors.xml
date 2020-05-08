@@ -5,7 +5,7 @@
     <color name="colorCardDark">#161212</color>
 
     <color name="activeTabColor">#FFFFFF</color>
-    <color name="inactiveTabColor">#4E4E4E</color>
+    <color name="inactiveTabColor">#A2A2A2</color>
 
     <color name="connectionStatusDisconnected">#A21919</color>
     <color name="connectionStatusConnecting">#FF6D00</color>

@@ -43,12 +43,21 @@ public class NetworkSurveyConstants
     public static final String LTE_CA = "LTE-CA";
     public static final String NR = "NR";
 
+    /**
+     * The key for the Intent extra that indicates the {@link com.craxiom.networksurvey.services.NetworkSurveyService}
+     * is being started at boot.
+     *
+     * @since 0.1.1
+     */
+    public static final String EXTRA_STARTED_AT_BOOT = "com.craxiom.networksurvey.extra.STARTED_AT_BOOT";
+
     // Preferences
     public static final String PROPERTY_AUTO_START_CELLULAR_LOGGING = "auto_start_logging";
     public static final String PROPERTY_AUTO_START_GNSS_LOGGING = "auto_start_gnss_logging";
     public static final String PROPERTY_CONNECTION_TIMEOUT = "connection_timeout";
     public static final String PROPERTY_MQTT_MDM_OVERRIDE = "mqtt_mdm_override";
-    // The following 4 keys are used in the app_restrictions.xml file as well.
+    // The following keys are used in the app_restrictions.xml file as well.
+    public static final String PROPERTY_MQTT_START_ON_BOOT = "mqtt_start_on_boot";
     public static final String PROPERTY_MQTT_BROKER_URL = "mqtt_broker_url";
     public static final String PROPERTY_MQTT_CLIENT_ID = "mqtt_client_id";
     public static final String PROPERTY_MQTT_USERNAME = "mqtt_username";
