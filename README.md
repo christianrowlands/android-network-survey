@@ -33,7 +33,7 @@ Install Android Studio to work on this code.
 
 ## Changelog
 
-##### [0.1.1](https://github.com/christianrowlands/android-network-survey/releases/tag/release-0.1.1) - 2020-05-05
+##### [0.1.1](https://github.com/christianrowlands/android-network-survey/releases/tag/release-0.1.1) - 2020-05-08
  * Added support for connecting to an MQTT broker and streaming cellular survey records
  * Added support for allowing the MQTT broker connection information to be set via MDM
  * Fixed a bug that caused the calculator text field to be covered on screens with low resolution and large font
