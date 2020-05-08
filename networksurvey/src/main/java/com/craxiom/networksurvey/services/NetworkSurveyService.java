@@ -377,7 +377,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
      * Toggles the cellular logging setting.
      * <p>
      * It is possible that an error occurs while trying to enable or disable logging.  In that event null will be
-     * * returned indicating that logging could not be toggled.
+     * returned indicating that logging could not be toggled.
      *
      * @param enable True if logging should be enabled, false if it should be turned off.
      * @return The new state of logging.  True if it is enabled, or false if it is disabled.  Null is returned if the
@@ -680,7 +680,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
         final NotificationCompat.Builder builder = new NotificationCompat.Builder(this, NetworkSurveyConstants.NOTIFICATION_CHANNEL_ID)
                 .setContentTitle(notificationTitle)
                 .setOngoing(true)
-                .setSmallIcon(mqttConnectionActive ? R.drawable.ic_cloud_connection : logging ? R.drawable.logging_thick_icon : R.drawable.gps_map_icon)
+                .setSmallIcon(mqttConnectionActive ? R.drawable.ic_cloud_connection : (logging ? R.drawable.logging_thick_icon : R.drawable.gps_map_icon))
                 .setContentIntent(pendingIntent)
                 .setTicker(notificationTitle)
                 .setContentText(notificationText)

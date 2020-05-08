@@ -80,8 +80,6 @@ public class NetworkSurveyActivity extends AppCompatActivity
     {
         super.onCreate(savedInstanceState);
 
-        Log.i(LOG_TAG, "onCreate");
-
         AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_YES); // Force Dark Mode
         setContentView(R.layout.activity_network_details);
         setSupportActionBar(findViewById(R.id.toolbar));
@@ -114,8 +112,6 @@ public class NetworkSurveyActivity extends AppCompatActivity
     {
         super.onResume();
 
-        Log.i(LOG_TAG, "onResume");
-
         if (missingAnyPermissions()) showPermissionRationaleAndRequestPermissions();
 
         // If we have been granted the location permission, we want to check to see if the location service is enabled.
@@ -129,8 +125,6 @@ public class NetworkSurveyActivity extends AppCompatActivity
     @Override
     protected void onPause()
     {
-        Log.i(LOG_TAG, "onPause");
-
         final Context applicationContext = getApplicationContext();
 
         if (networkSurveyService != null)
