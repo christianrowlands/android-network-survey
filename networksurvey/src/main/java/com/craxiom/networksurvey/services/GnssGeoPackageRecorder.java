@@ -10,12 +10,12 @@ import android.os.HandlerThread;
 import android.os.Looper;
 import android.util.Log;
 
+import com.craxiom.networksurvey.constants.NetworkSurveyConstants;
 import com.craxiom.networksurvey.util.Config;
 
 import java.io.File;
 import java.sql.SQLException;
-import java.text.SimpleDateFormat;
-import java.util.Locale;
+import java.time.LocalDateTime;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 
@@ -27,14 +27,11 @@ import java.util.function.Consumer;
 public class GnssGeoPackageRecorder extends HandlerThread
 {
     private static final String LOG_TAG = GnssGeoPackageRecorder.class.getSimpleName();
-    private static final String FILENAME_PREFIX = "gnss-networksurvey-";
 
-    @SuppressWarnings("SpellCheckingInspection")
-    private static final SimpleDateFormat FILENAME_FRIENDLY_TIME_FORMAT = new SimpleDateFormat("yyyyMMdd-HHmmss", Locale.US);
     private static final String JOURNAL_FILE_SUFFIX = "-journal";
 
     private final Context context;
-    private Looper serviceLooper;
+    private final Looper serviceLooper;
     private Handler handler;
     private final AtomicBoolean isDataRecorded = new AtomicBoolean(false);
     private final AtomicBoolean geoPackageOpen = new AtomicBoolean(false);
@@ -198,8 +195,8 @@ public class GnssGeoPackageRecorder extends HandlerThread
      */
     private String createGpkgFilename()
     {
-        String timestamp = FILENAME_FRIENDLY_TIME_FORMAT.format(System.currentTimeMillis());
-        return FILENAME_PREFIX + timestamp + ".gpkg";
+        final String timestamp = SurveyRecordProcessor.DATE_TIME_FORMATTER.format(LocalDateTime.now());
+        return NetworkSurveyConstants.GNSS_FILE_NAME_PREFIX + timestamp + ".gpkg";
     }
 
     /**

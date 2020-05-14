@@ -1,9 +1,10 @@
 # Network Survey Android App
 
-The Network Survey Android App provides a basic survey capability for Cellular networks and GNSS constellations.  
+The Network Survey Android App provides a basic survey capability for Cellular networks, Wi-Fi networks and GNSS constellations.  
 For cellular data, in its current state it can be used to examine the network details of the current LTE serving cell, and log 
-GSM, CDMA, UMTS, and LTE records to a GeoPackage file.  The App also supports connecting to a remote gRPC server and live 
-streaming the celluar records.  For GNSS data, it can display the latest information about the satellite vehicles and
+GSM, CDMA, UMTS, and LTE records to a GeoPackage file. Wi-Fi survey records can also be logged to a GeoPackage file, 
+and the current list of Wi-Fi networks in range is displayed in the UI. The App also supports connecting to a remote gRPC server and live 
+streaming the cellular and Wi-Fi records. For GNSS data, it can display the latest information about the satellite vehicles and
 also log the information to a GeoPackage file.
 
 ![App Screenshot](screenshots/network_survey_screenshot.png "The Network Survey App Main Screen")

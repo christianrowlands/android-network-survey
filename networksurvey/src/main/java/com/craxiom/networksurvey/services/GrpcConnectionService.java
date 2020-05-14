@@ -45,6 +45,8 @@ import com.craxiom.networksurvey.messaging.NetworkSurveyStatusGrpc;
 import com.craxiom.networksurvey.messaging.StatusUpdateReply;
 import com.craxiom.networksurvey.messaging.UmtsRecord;
 import com.craxiom.networksurvey.messaging.UmtsSurveyResponse;
+import com.craxiom.networksurvey.messaging.WifiBeaconRecord;
+import com.craxiom.networksurvey.messaging.WifiBeaconSurveyResponse;
 import com.craxiom.networksurvey.messaging.WirelessSurveyGrpc;
 
 import java.lang.ref.WeakReference;
@@ -93,6 +95,7 @@ public class GrpcConnectionService extends Service implements IDeviceStatusListe
     private final BlockingQueue<CdmaRecord> cdmaRecordBlockingQueue = new LinkedBlockingQueue<>();
     private final BlockingQueue<UmtsRecord> umtsRecordBlockingQueue = new LinkedBlockingQueue<>();
     private final BlockingQueue<LteRecord> lteRecordBlockingQueue = new LinkedBlockingQueue<>();
+    private final BlockingQueue<WifiBeaconRecord> wifiBeaconRecordBlockingQueue = new LinkedBlockingQueue<>();
 
     private final List<IConnectionStateListener> grpcConnectionListeners = new CopyOnWriteArrayList<>();
 
@@ -101,6 +104,7 @@ public class GrpcConnectionService extends Service implements IDeviceStatusListe
     private GrpcTask<CdmaRecord, CdmaSurveyResponse> cdmaRecordGrpcTask;
     private GrpcTask<UmtsRecord, UmtsSurveyResponse> umtsRecordGrpcTask;
     private GrpcTask<LteRecord, LteSurveyResponse> lteRecordGrpcTask;
+    private GrpcTask<WifiBeaconRecord, WifiBeaconSurveyResponse> wifiBeaconRecordGrpcTask;
     private ManagedChannel channel;
     private final AtomicInteger deviceStatusGeneratorTaskId = new AtomicInteger();
 
@@ -277,6 +281,12 @@ public class GrpcConnectionService extends Service implements IDeviceStatusListe
         if (isConnected() && lteRecord != null) lteRecordBlockingQueue.add(lteRecord);
     }
 
+    @Override
+    public void onWifiBeaconSurveyRecord(WifiBeaconRecord wifiBeaconRecord)
+    {
+        if (isConnected() && wifiBeaconRecord != null) wifiBeaconRecordBlockingQueue.add(wifiBeaconRecord);
+    }
+
     /**
      * Adds an {@link IConnectionStateListener} so that it will be notified of all future connection state changes.
      *
@@ -324,7 +334,7 @@ public class GrpcConnectionService extends Service implements IDeviceStatusListe
             Log.d(LOG_TAG, "Starting a connection to the gRPC server");
 
             this.host = host;
-            this.portNumber = port;
+            portNumber = port;
             this.deviceName = deviceName;
 
             notifyConnectionStateChange(ConnectionState.CONNECTING);
@@ -379,6 +389,10 @@ public class GrpcConnectionService extends Service implements IDeviceStatusListe
                 lteRecordGrpcTask = new GrpcTask<>(this, lteRecordBlockingQueue,
                         wirelessSurveyStub::streamLteSurvey);
                 lteRecordGrpcTask.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
+
+                wifiBeaconRecordGrpcTask = new GrpcTask<>(this, wifiBeaconRecordBlockingQueue,
+                        wirelessSurveyStub::streamWifiBeaconSurvey);
+                wifiBeaconRecordGrpcTask.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
             }).start();
         } catch (Throwable e)
         {
@@ -406,6 +420,7 @@ public class GrpcConnectionService extends Service implements IDeviceStatusListe
         if (cdmaRecordGrpcTask != null) cdmaRecordGrpcTask.cancel(true);
         if (umtsRecordGrpcTask != null) umtsRecordGrpcTask.cancel(true);
         if (lteRecordGrpcTask != null) lteRecordGrpcTask.cancel(true);
+        if (wifiBeaconRecordGrpcTask != null) wifiBeaconRecordGrpcTask.cancel(true);
 
         shutdownChannel(!stopService);
 
@@ -454,6 +469,7 @@ public class GrpcConnectionService extends Service implements IDeviceStatusListe
 
         deviceStatusReportHandler.postDelayed(new Runnable()
         {
+            @Override
             public void run()
             {
                 try
@@ -747,7 +763,7 @@ public class GrpcConnectionService extends Service implements IDeviceStatusListe
 
                         if (Log.isLoggable(LOG_TAG, Log.VERBOSE))
                         {
-                            Log.v(LOG_TAG, "Sending a message to the remote gRPC server: " + nextMessageToSend.toString());
+                            Log.v(LOG_TAG, "Sending a message to the remote gRPC server: " + nextMessageToSend);
                         }
 
                         outgoingMessageStream.onNext(nextMessageToSend);

@@ -2,8 +2,8 @@
 <PreferenceScreen xmlns:app="http://schemas.android.com/apk/res-auto">
 
     <PreferenceCategory
-        app:key="logging_config"
         app:icon="@drawable/logging_thick_icon"
+        app:key="logging_config"
         app:title="@string/logging_config_title">
 
         <SwitchPreferenceCompat
@@ -13,6 +13,14 @@
             app:summaryOff="@string/auto_start_cellular_logging_summary_off"
             app:summaryOn="@string/auto_start_cellular_logging_summary_on"
             app:title="@string/auto_start_cellular_logging_title" />
+
+        <SwitchPreferenceCompat
+            app:defaultValue="false"
+            app:icon="@drawable/ic_wifi"
+            app:key="auto_start_wifi_logging"
+            app:summaryOff="@string/auto_start_wifi_logging_summary_off"
+            app:summaryOn="@string/auto_start_wifi_logging_summary_on"
+            app:title="@string/auto_start_wifi_logging_title" />
 
         <SwitchPreferenceCompat
             app:defaultValue="false"

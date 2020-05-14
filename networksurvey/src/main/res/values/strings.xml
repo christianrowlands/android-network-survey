@@ -9,11 +9,16 @@
     <string name="action_start_cellular_logging">Start Cellular Logging</string>
     <string name="action_stop_cellular_logging">Stop Cellular Logging</string>
 
+    <string name="action_start_wifi_logging">Start Wi-Fi Logging</string>
+    <string name="action_stop_wifi_logging">Stop Wi-Fi Logging</string>
+
     <string name="action_start_gnss_logging">Start GNSS Logging</string>
     <string name="action_stop_gnss_logging">Stop GNSS Logging</string>
 
     <string name="no_gps_device">No GPS detected in device!</string>
     <string name="turn_on_gps">Please turn on GPS</string>
+
+    <string name="turn_on_wifi">Please turn on Wi-Fi</string>
 
     <string name="current_technology_initial">Current Technology: </string>
     <string name="carrier_initial">Carrier: </string>
@@ -63,6 +68,9 @@
     <string name="cellular_logging_start_toast">Started Writing the Cellular Log File</string>
     <string name="cellular_logging_stop_toast">Cellular Log File Closed</string>
     <string name="cellular_logging_toggle_failed">Failed to toggle the cellular logging state</string>
+    <string name="wifi_logging_start_toast">Started Writing the Wi-Fi Log File</string>
+    <string name="wifi_logging_stop_toast">Wi-Fi Log File Closed</string>
+    <string name="wifi_logging_toggle_failed">Failed to toggle the Wi-Fi logging state</string>
     <string name="gnss_logging_start_toast">Started Writing the GNSS Log File</string>
     <string name="gnss_logging_stop_toast">GNSS Log File Closed</string>
     <string name="gnss_logging_toggle_failed">Failed to toggle the GNSS logging state</string>
@@ -142,6 +150,10 @@
     <string name="auto_start_cellular_logging_title">Auto Start Cellular Logging</string>
     <string name="auto_start_cellular_logging_summary_on">Cellular logging will be started upon app opening</string>
     <string name="auto_start_cellular_logging_summary_off">Cellular logging will only start when manually enabled</string>
+
+    <string name="auto_start_wifi_logging_title">Auto Start Wi-Fi Logging</string>
+    <string name="auto_start_wifi_logging_summary_on">Wi-Fi logging will be started upon app opening</string>
+    <string name="auto_start_wifi_logging_summary_off">Wi-Fi logging will only start when manually enabled</string>
 
     <string name="auto_start_gnss_logging_title">Auto Start GNSS Logging</string>
     <string name="auto_start_gnss_logging_summary_on">GNSS logging will be started upon app opening</string>

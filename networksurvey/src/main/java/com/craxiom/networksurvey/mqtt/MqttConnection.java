@@ -10,6 +10,7 @@ import com.craxiom.networksurvey.messaging.CdmaRecord;
 import com.craxiom.networksurvey.messaging.GsmRecord;
 import com.craxiom.networksurvey.messaging.LteRecord;
 import com.craxiom.networksurvey.messaging.UmtsRecord;
+import com.craxiom.networksurvey.messaging.WifiBeaconRecord;
 import com.google.protobuf.MessageOrBuilder;
 import com.google.protobuf.util.JsonFormat;
 
@@ -37,6 +38,7 @@ public class MqttConnection implements ISurveyRecordListener
     private static final String MQTT_CDMA_MESSAGE_TOPIC = "CDMA_MESSAGE";
     private static final String MQTT_UMTS_MESSAGE_TOPIC = "UMTS_MESSAGE";
     private static final String MQTT_LTE_MESSAGE_TOPIC = "LTE_MESSAGE";
+    private static final String MQTT_WIFI_BEACON_MESSAGE_TOPIC = "80211_BEACON_MESSAGE";
 
     private final List<IConnectionStateListener> mqttConnectionListeners = new CopyOnWriteArrayList<>();
 
@@ -71,6 +73,12 @@ public class MqttConnection implements ISurveyRecordListener
     public void onLteSurveyRecord(LteRecord lteRecord)
     {
         publishMessage(MQTT_LTE_MESSAGE_TOPIC, lteRecord);
+    }
+
+    @Override
+    public void onWifiBeaconSurveyRecord(WifiBeaconRecord wifiBeaconRecord)
+    {
+        publishMessage(MQTT_WIFI_BEACON_MESSAGE_TOPIC, wifiBeaconRecord);
     }
 
     /**

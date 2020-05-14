@@ -16,6 +16,8 @@ import android.location.GnssMeasurementsEvent;
 import android.location.GnssStatus;
 import android.location.Location;
 import android.location.LocationManager;
+import android.net.wifi.ScanResult;
+import android.net.wifi.WifiManager;
 import android.os.AsyncTask;
 import android.os.Binder;
 import android.os.Build;
@@ -28,6 +30,7 @@ import android.provider.Settings;
 import android.telephony.CellInfo;
 import android.telephony.TelephonyManager;
 import android.util.Log;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -41,10 +44,11 @@ import com.craxiom.networksurvey.ConnectionState;
 import com.craxiom.networksurvey.GpsListener;
 import com.craxiom.networksurvey.NetworkSurveyActivity;
 import com.craxiom.networksurvey.R;
-import com.craxiom.networksurvey.SurveyRecordLogger;
 import com.craxiom.networksurvey.constants.NetworkSurveyConstants;
 import com.craxiom.networksurvey.listeners.IConnectionStateListener;
 import com.craxiom.networksurvey.listeners.ISurveyRecordListener;
+import com.craxiom.networksurvey.logging.CellularSurveyRecordLogger;
+import com.craxiom.networksurvey.logging.WifiSurveyRecordLogger;
 import com.craxiom.networksurvey.mqtt.MqttBrokerConnectionInfo;
 import com.craxiom.networksurvey.mqtt.MqttConnection;
 
@@ -69,17 +73,22 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
      */
     private static final long TIME_TO_WAIT_FOR_GNSS_RAW_BEFORE_FAILURE = 1000L * 15L;
     private static final int NETWORK_DATA_REFRESH_RATE_MS = 2_000;
+    private static final int WIFI_SCAN_RATE_MS = 2_000;
     private static final int PING_RATE_MS = 10_000;
 
-    private final AtomicBoolean done = new AtomicBoolean(false);
+    private final AtomicBoolean cellularScanningDone = new AtomicBoolean(false);
+    private final AtomicBoolean wifiScanningDone = new AtomicBoolean(false);
     private final AtomicBoolean cellularLoggingEnabled = new AtomicBoolean(false);
+    private final AtomicBoolean wifiLoggingEnabled = new AtomicBoolean(false);
     private final AtomicBoolean gnssLoggingEnabled = new AtomicBoolean(false);
     private final AtomicBoolean gnssStarted = new AtomicBoolean(false);
-    private String deviceId;
     private final SurveyServiceBinder surveyServiceBinder;
+    private final Handler uiThreadHandler;
+    private String deviceId;
     private SurveyRecordProcessor surveyRecordProcessor;
     private GpsListener gpsListener;
-    private SurveyRecordLogger surveyRecordLogger;
+    private CellularSurveyRecordLogger cellularSurveyRecordLogger;
+    private WifiSurveyRecordLogger wifiSurveyRecordLogger;
     private GnssGeoPackageRecorder gnssGeoPackageRecorder = null;
     private Looper serviceLooper;
     private Handler serviceHandler;
@@ -89,6 +98,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
     private final boolean hasGnssRawFailureNagLaunched = false;
     private MqttConnection mqttConnection;
     private BroadcastReceiver managedConfigurationListener;
+    private BroadcastReceiver wifiScanReceiver;
 
     /**
      * Callback for receiving GNSS measurements from the location manager.
@@ -118,6 +128,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
     public NetworkSurveyService()
     {
         surveyServiceBinder = new SurveyServiceBinder();
+        uiThreadHandler = new Handler(Looper.getMainLooper());
     }
 
     @Override
@@ -134,12 +145,15 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
         serviceHandler = new Handler(serviceLooper);
 
         deviceId = createDeviceId();
-        surveyRecordLogger = new SurveyRecordLogger(this, serviceLooper);
+        cellularSurveyRecordLogger = new CellularSurveyRecordLogger(this, serviceLooper);
+        wifiSurveyRecordLogger = new WifiSurveyRecordLogger(this, serviceLooper);
 
         initializeLocationListener();
         initializeSurveyRecordScanning();
 
         initializeMqttConnection();
+
+        initializeWifiRecordScanning();
 
         updateServiceNotification();
     }
@@ -157,6 +171,9 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
 
             final boolean autoStartCellularLogging = preferences.getBoolean(NetworkSurveyConstants.PROPERTY_AUTO_START_CELLULAR_LOGGING, false);
             if (autoStartCellularLogging && !cellularLoggingEnabled.get()) toggleCellularLogging(true);
+
+            final boolean autoStartWifiLogging = preferences.getBoolean(NetworkSurveyConstants.PROPERTY_AUTO_START_WIFI_LOGGING, false);
+            if (autoStartWifiLogging && !wifiLoggingEnabled.get()) toggleWifiLogging(true);
 
             final boolean autoStartGnssLogging = preferences.getBoolean(NetworkSurveyConstants.PROPERTY_AUTO_START_GNSS_LOGGING, false);
             if (autoStartGnssLogging && !gnssLoggingEnabled.get()) toggleGnssLogging(true);
@@ -350,6 +367,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
     {
         return cellularLoggingEnabled.get()
                 || gnssLoggingEnabled.get()
+                || wifiLoggingEnabled.get()
                 || getMqttConnectionState() != ConnectionState.DISCONNECTED
                 || GrpcConnectionService.getConnectedState() != ConnectionState.DISCONNECTED
                 || surveyRecordProcessor.isBeingUsed();
@@ -392,16 +410,16 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
 
             Log.i(LOG_TAG, "Toggling cellular logging to " + enable);
 
-            final boolean successful = surveyRecordLogger.enableLogging(enable);
+            final boolean successful = cellularSurveyRecordLogger.enableLogging(enable);
             if (successful)
             {
                 cellularLoggingEnabled.set(enable);
                 if (enable)
                 {
-                    registerSurveyRecordListener(surveyRecordLogger);
+                    registerSurveyRecordListener(cellularSurveyRecordLogger);
                 } else
                 {
-                    unregisterSurveyRecordListener(surveyRecordLogger);
+                    unregisterSurveyRecordListener(cellularSurveyRecordLogger);
                 }
             }
             updateServiceNotification();
@@ -413,9 +431,78 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
         }
     }
 
+    /**
+     * Toggles the wifi logging setting.
+     * <p>
+     * It is possible that an error occurs while trying to enable or disable logging.  In that event null will be
+     * returned indicating that logging could not be toggled.
+     *
+     * @param enable True if logging should be enabled, false if it should be turned off.
+     * @return The new state of logging.  True if it is enabled, or false if it is disabled.  Null is returned if the
+     * toggling was unsuccessful.
+     * @since 0.1.2
+     */
+    public Boolean toggleWifiLogging(boolean enable)
+    {
+        synchronized (wifiLoggingEnabled)
+        {
+            final boolean originalLoggingState = wifiLoggingEnabled.get();
+            if (originalLoggingState == enable) return originalLoggingState;
+
+            Log.i(LOG_TAG, "Toggling wifi logging to " + enable);
+
+            if (enable)
+            {
+                // First check to see if Wi-Fi is enabled
+                final WifiManager wifiManager = (WifiManager) getSystemService(Context.WIFI_SERVICE);
+                if (wifiManager != null && !wifiManager.isWifiEnabled())
+                {
+                    Log.i(LOG_TAG, "Wi-Fi is disabled, prompting the user to enable it");
+
+                    if (Build.VERSION.SDK_INT >= 29)
+                    {
+                        final Intent panelIntent = new Intent(Settings.Panel.ACTION_WIFI);
+                        startActivity(panelIntent);
+                    } else
+                    {
+                        // Open the Wi-Fi setting pages after a few seconds // TODO Is the delay needed?
+                        uiThreadHandler.post(() -> Toast.makeText(getApplicationContext(), getString(R.string.turn_on_wifi), Toast.LENGTH_SHORT).show());
+                        new Handler().postDelayed(() -> startActivity(new Intent(Settings.ACTION_WIFI_SETTINGS)), 3000);
+                    }
+
+                    return null;
+                }
+            }
+
+            final boolean successful = wifiSurveyRecordLogger.enableLogging(enable);
+            if (successful)
+            {
+                wifiLoggingEnabled.set(enable);
+                if (enable)
+                {
+                    startWifiRecordScanning();
+                } else
+                {
+                    stopWifiRecordScanning();
+                }
+            }
+            updateServiceNotification();
+
+            final boolean newLoggingState = wifiLoggingEnabled.get();
+            if (successful && newLoggingState) initializePing();
+
+            return successful ? newLoggingState : null;
+        }
+    }
+
     public boolean isCellularLoggingEnabled()
     {
         return cellularLoggingEnabled.get();
+    }
+
+    public boolean isWifiLoggingEnabled()
+    {
+        return wifiLoggingEnabled.get();
     }
 
     public boolean isGnssLoggingEnabled()
@@ -519,11 +606,12 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
     }
 
     /**
-     * Sets the atomic done flag so that any handler loops can be stopped.
+     * Sets the atomic done flags so that any handler loops can be stopped.
      */
     private void setDone()
     {
-        done.set(true);
+        cellularScanningDone.set(true);
+        wifiScanningDone.set(true);
     }
 
     /**
@@ -587,7 +675,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
             return;
         }
 
-        surveyRecordProcessor = new SurveyRecordProcessor(gpsListener, deviceId);
+        surveyRecordProcessor = new SurveyRecordProcessor(gpsListener, deviceId); // TODO Move this out of the cellular specific method?
 
         serviceHandler.postDelayed(new Runnable()
         {
@@ -596,7 +684,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
             {
                 try
                 {
-                    if (done.get())
+                    if (cellularScanningDone.get())
                     {
                         Log.i(LOG_TAG, "Stopping the handler that pulls the latest cellular information");
                         return;
@@ -649,6 +737,104 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
         {
             Log.e(LOG_TAG, "An exception occurred trying to send out a ping ", e);
         }
+    }
+
+    /**
+     * Create the Wi-Fi Scan broadcast receiver that will be notified of Wi-Fi scan events once
+     * {@link #startWifiRecordScanning()} is called.
+     *
+     * @since 0.1.2
+     */
+    private void initializeWifiRecordScanning()
+    {
+        final WifiManager wifiManager = (WifiManager) getSystemService(Context.WIFI_SERVICE);
+
+        if (wifiManager == null)
+        {
+            Log.e(LOG_TAG, "The WifiManager is null. Wi-Fi survey won't work");
+            return;
+        }
+
+        wifiScanReceiver = new BroadcastReceiver()
+        {
+            @Override
+            public void onReceive(Context c, Intent intent)
+            {
+                boolean success = intent.getBooleanExtra(WifiManager.EXTRA_RESULTS_UPDATED, false);
+                if (success)
+                {
+                    final List<ScanResult> results = wifiManager.getScanResults();
+                    if (results == null)
+                    {
+                        Log.d(LOG_TAG, "Null wifi scan results");
+                        return;
+                    }
+
+                    surveyRecordProcessor.onWifiScanUpdate(results);
+                } else
+                {
+                    // scan failure handling
+                    // TODO scanFailure();
+                }
+            }
+        };
+    }
+
+    /**
+     * Register a listener for Wi-Fi scans, and then kick off a scheduled Wi-Fi scan.
+     *
+     * @since 0.1.2
+     */
+    private void startWifiRecordScanning()
+    {
+        // TODO Check to make sure Wi-Fi is on
+
+        // TODO Check to see if throttling is turned off in developer options
+
+        final IntentFilter scanResultsIntentFilter = new IntentFilter();
+        scanResultsIntentFilter.addAction(WifiManager.SCAN_RESULTS_AVAILABLE_ACTION);
+        registerReceiver(wifiScanReceiver, scanResultsIntentFilter);
+
+        final WifiManager wifiManager = (WifiManager) getSystemService(Context.WIFI_SERVICE);
+
+        serviceHandler.postDelayed(new Runnable()
+        {
+            @Override
+            public void run()
+            {
+                try
+                {
+                    if (wifiScanningDone.get())
+                    {
+                        Log.i(LOG_TAG, "Stopping the handler that pulls the latest wifi information");
+                        return;
+                    }
+
+                    boolean success = wifiManager.startScan();
+                    if (!success)
+                    {
+                        // TODO scanFailure();
+                    }
+
+                    serviceHandler.postDelayed(this, WIFI_SCAN_RATE_MS);
+                } catch (Exception e)
+                {
+                    Log.e(LOG_TAG, "Could not get the required permissions to get the network details", e);
+                }
+            }
+        }, WIFI_SCAN_RATE_MS);
+    }
+
+    /**
+     * Unregister the Wi-Fi scan broadcast receiver and stop the scanning service handler.
+     *
+     * @since 0.1.2
+     */
+    private void stopWifiRecordScanning()
+    {
+        wifiScanningDone.set(true);
+
+        unregisterReceiver(wifiScanReceiver);
     }
 
     /**

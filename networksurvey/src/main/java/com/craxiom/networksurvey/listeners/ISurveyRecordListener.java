@@ -4,6 +4,7 @@ import com.craxiom.networksurvey.messaging.CdmaRecord;
 import com.craxiom.networksurvey.messaging.GsmRecord;
 import com.craxiom.networksurvey.messaging.LteRecord;
 import com.craxiom.networksurvey.messaging.UmtsRecord;
+import com.craxiom.networksurvey.messaging.WifiBeaconRecord;
 
 /**
  * Listener interface for those interested in being notified when a new Survey Record is ready.
@@ -42,4 +43,11 @@ public interface ISurveyRecordListener
      * @param lteRecord the LTE Record.
      */
     void onLteSurveyRecord(LteRecord lteRecord);
+
+    /**
+     * Called when a new 802.11 Beacon Survey Record is ready.
+     *
+     * @param wifiBeaconRecord the 802.11 Beacon Record.
+     */
+    void onWifiBeaconSurveyRecord(WifiBeaconRecord wifiBeaconRecord);
 }
