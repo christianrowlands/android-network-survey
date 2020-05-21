@@ -29,7 +29,8 @@ import com.craxiom.networksurvey.constants.LteMessageConstants;
 import com.craxiom.networksurvey.constants.NetworkSurveyConstants;
 import com.craxiom.networksurvey.constants.WifiBeaconMessageConstants;
 import com.craxiom.networksurvey.fragments.NetworkDetailsFragment;
-import com.craxiom.networksurvey.listeners.ISurveyRecordListener;
+import com.craxiom.networksurvey.listeners.ICellularSurveyRecordListener;
+import com.craxiom.networksurvey.listeners.IWifiSurveyRecordListener;
 import com.craxiom.networksurvey.messaging.CdmaRecord;
 import com.craxiom.networksurvey.messaging.EncryptionType;
 import com.craxiom.networksurvey.messaging.GsmRecord;
@@ -37,6 +38,7 @@ import com.craxiom.networksurvey.messaging.LteBandwidth;
 import com.craxiom.networksurvey.messaging.LteRecord;
 import com.craxiom.networksurvey.messaging.UmtsRecord;
 import com.craxiom.networksurvey.messaging.WifiBeaconRecord;
+import com.craxiom.networksurvey.model.WifiRecordWrapper;
 import com.craxiom.networksurvey.util.WifiCapabilitiesUtils;
 import com.google.protobuf.BoolValue;
 import com.google.protobuf.FloatValue;
@@ -49,6 +51,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArraySet;
+import java.util.stream.Collectors;
 
 /**
  * Responsible for consuming {@link CellInfo} objects, converting them to records specific to a protocol, and then notifying any listeners
@@ -64,7 +67,8 @@ public class SurveyRecordProcessor
     private static final String MISSION_ID_PREFIX = "NS ";
 
     private final GpsListener gpsListener;
-    private final Set<ISurveyRecordListener> surveyRecordListeners = new CopyOnWriteArraySet<>();
+    private final Set<ICellularSurveyRecordListener> cellularSurveyRecordListeners = new CopyOnWriteArraySet<>();
+    private final Set<IWifiSurveyRecordListener> wifiSurveyRecordListeners = new CopyOnWriteArraySet<>();
     private NetworkSurveyActivity networkSurveyActivity;
 
     private final String deviceId;
@@ -81,14 +85,24 @@ public class SurveyRecordProcessor
         missionId = MISSION_ID_PREFIX + deviceId + " " + DATE_TIME_FORMATTER.format(LocalDateTime.now());
     }
 
-    void registerSurveyRecordListener(ISurveyRecordListener surveyRecordListener)
+    void registerCellularSurveyRecordListener(ICellularSurveyRecordListener surveyRecordListener)
     {
-        surveyRecordListeners.add(surveyRecordListener);
+        cellularSurveyRecordListeners.add(surveyRecordListener);
     }
 
-    void unregisterSurveyRecordListener(ISurveyRecordListener surveyRecordListener)
+    void unregisterCellularSurveyRecordListener(ICellularSurveyRecordListener surveyRecordListener)
     {
-        surveyRecordListeners.remove(surveyRecordListener);
+        cellularSurveyRecordListeners.remove(surveyRecordListener);
+    }
+
+    void registerWifiSurveyRecordListener(IWifiSurveyRecordListener surveyRecordListener)
+    {
+        wifiSurveyRecordListeners.add(surveyRecordListener);
+    }
+
+    void unregisterWifiSurveyRecordListener(IWifiSurveyRecordListener surveyRecordListener)
+    {
+        wifiSurveyRecordListeners.remove(surveyRecordListener);
     }
 
     /**
@@ -115,7 +129,15 @@ public class SurveyRecordProcessor
      */
     synchronized boolean isBeingUsed()
     {
-        return networkSurveyActivity != null || !surveyRecordListeners.isEmpty();
+        return networkSurveyActivity != null || !cellularSurveyRecordListeners.isEmpty() || !wifiSurveyRecordListeners.isEmpty();
+    }
+
+    /**
+     * @return True if there are any registered Wi-Fi survey record listeners, false otherwise.
+     */
+    boolean isWifiBeingUsed()
+    {
+        return !wifiSurveyRecordListeners.isEmpty();
     }
 
     /**
@@ -135,7 +157,7 @@ public class SurveyRecordProcessor
                 Log.v(LOG_TAG, "currentTechnology=" + currentTechnology);
 
                 Log.v(LOG_TAG, "allCellInfo: ");
-                allCellInfo.forEach(cellInfo -> Log.i(LOG_TAG, cellInfo.toString()));
+                allCellInfo.forEach(cellInfo -> Log.v(LOG_TAG, cellInfo.toString()));
             }
             updateCurrentTechnologyUi(currentTechnology);
 
@@ -155,9 +177,22 @@ public class SurveyRecordProcessor
         }
     }
 
+    /**
+     * Notification for when a new set of Wi-Fi scan results are available to process.
+     *
+     * @param apScanResults The list of results coming from the Android wifi scanning API.
+     * @since 0.1.2
+     */
     synchronized void onWifiScanUpdate(List<ScanResult> apScanResults)
     {
-        apScanResults.forEach(this::processAccessPoint);
+        if (Log.isLoggable(LOG_TAG, Log.VERBOSE))
+        {
+            Log.v(LOG_TAG, "SCAN RESULTS:");
+            apScanResults.forEach(scanResult -> Log.v(LOG_TAG, scanResult.toString()));
+            Log.v(LOG_TAG, "");
+        }
+
+        processAccessPoints(apScanResults);
     }
 
     /**
@@ -174,7 +209,7 @@ public class SurveyRecordProcessor
 
         // We only want to take the time to process a record if we are going to do something with it.  Currently, that
         // means logging, sending to a server, or updating the UI with the latest LTE information.
-        if (!surveyRecordListeners.isEmpty() || (isServingCell && isLteRecord && NetworkDetailsFragment.visible.get()))
+        if (!cellularSurveyRecordListeners.isEmpty() || (isServingCell && isLteRecord && NetworkDetailsFragment.visible.get()))
         {
             if (isLteRecord)
             {
@@ -205,16 +240,17 @@ public class SurveyRecordProcessor
     }
 
     /**
-     * Given an 802.11 scan result, create the protobuf object from it and notify any listeners.
+     * Given a group of 802.11 scan results, create the protobuf objects from it and notify any listeners.
      *
-     * @param apScanResult The Scan Result.
+     * @param apScanResults The list of Scan Results.
      * @since 0.1.2
      */
-    private void processAccessPoint(ScanResult apScanResult)
+    private void processAccessPoints(List<ScanResult> apScanResults)
     {
-        final WifiBeaconRecord wifiBeaconRecord = generateWiFiBeaconSurveyRecord(apScanResult);
-
-        if (wifiBeaconRecord != null) notifyWifiBeaconRecordListeners(wifiBeaconRecord);
+        final List<WifiRecordWrapper> wifiBeaconRecords = apScanResults.stream()
+                .map(this::generateWiFiBeaconSurveyRecord)
+                .collect(Collectors.toList());
+        notifyWifiBeaconRecordListeners(wifiBeaconRecords);
     }
 
     /**
@@ -487,7 +523,7 @@ public class SurveyRecordProcessor
      * @return The Wi-Fi record to send to any listeners.
      * @since 0.1.2
      */
-    private WifiBeaconRecord generateWiFiBeaconSurveyRecord(ScanResult apScanResult)
+    private WifiRecordWrapper generateWiFiBeaconSurveyRecord(ScanResult apScanResult)
     {
         final String bssid = apScanResult.BSSID;
         final int signalStrength = apScanResult.level;
@@ -543,7 +579,7 @@ public class SurveyRecordProcessor
             builder.setWps(BoolValue.newBuilder().setValue(WifiCapabilitiesUtils.supportsWps(capabilities)).build());
         }
 
-        return builder.build();
+        return new WifiRecordWrapper(builder.build(), apScanResult.capabilities);
     }
 
     /**
@@ -729,14 +765,14 @@ public class SurveyRecordProcessor
     private void notifyGsmRecordListeners(GsmRecord gsmRecord)
     {
         if (gsmRecord == null) return;
-        for (ISurveyRecordListener listener : surveyRecordListeners)
+        for (ICellularSurveyRecordListener listener : cellularSurveyRecordListeners)
         {
             try
             {
                 listener.onGsmSurveyRecord(gsmRecord);
             } catch (Exception e)
             {
-                Log.e(LOG_TAG, "Unable to notify a Survey Record Listener because of an exception", e);
+                Log.e(LOG_TAG, "Unable to notify a Cellular Survey Record Listener because of an exception", e);
             }
         }
     }
@@ -749,14 +785,14 @@ public class SurveyRecordProcessor
     private void notifyCdmaRecordListeners(CdmaRecord cdmaRecord)
     {
         if (cdmaRecord == null) return;
-        for (ISurveyRecordListener listener : surveyRecordListeners)
+        for (ICellularSurveyRecordListener listener : cellularSurveyRecordListeners)
         {
             try
             {
                 listener.onCdmaSurveyRecord(cdmaRecord);
             } catch (Exception e)
             {
-                Log.e(LOG_TAG, "Unable to notify a Survey Record Listener because of an exception", e);
+                Log.e(LOG_TAG, "Unable to notify a Cellular Survey Record Listener because of an exception", e);
             }
         }
     }
@@ -769,14 +805,14 @@ public class SurveyRecordProcessor
     private void notifyUmtsRecordListeners(UmtsRecord umtsRecord)
     {
         if (umtsRecord == null) return;
-        for (ISurveyRecordListener listener : surveyRecordListeners)
+        for (ICellularSurveyRecordListener listener : cellularSurveyRecordListeners)
         {
             try
             {
                 listener.onUmtsSurveyRecord(umtsRecord);
             } catch (Exception e)
             {
-                Log.e(LOG_TAG, "Unable to notify a Survey Record Listener because of an exception", e);
+                Log.e(LOG_TAG, "Unable to notify a Cellular Survey Record Listener because of an exception", e);
             }
         }
     }
@@ -789,35 +825,36 @@ public class SurveyRecordProcessor
     private void notifyLteRecordListeners(LteRecord lteRecord)
     {
         if (lteRecord == null) return;
-        for (ISurveyRecordListener listener : surveyRecordListeners)
+        for (ICellularSurveyRecordListener listener : cellularSurveyRecordListeners)
         {
             try
             {
                 listener.onLteSurveyRecord(lteRecord);
             } catch (Exception e)
             {
-                Log.e(LOG_TAG, "Unable to notify a Survey Record Listener because of an exception", e);
+                Log.e(LOG_TAG, "Unable to notify a Cellular Survey Record Listener because of an exception", e);
             }
         }
     }
 
     /**
-     * Notify all the listeners that we have a new 802.11 Beacon Record available.
+     * Notify all the listeners that we have a new group of 802.11 Beacon Records available.
      *
-     * @param wifiBeaconRecord The new 802.11 Beacon Survey Record to send to the listeners.
+     * @param wifiBeaconRecords The new list 802.11 Beacon Survey Record to send to the listeners.
      * @since 0.1.2
      */
-    private void notifyWifiBeaconRecordListeners(WifiBeaconRecord wifiBeaconRecord)
+    private void notifyWifiBeaconRecordListeners(List<WifiRecordWrapper> wifiBeaconRecords)
     {
-        if (wifiBeaconRecord == null) return;
-        for (ISurveyRecordListener listener : surveyRecordListeners)
+        if (wifiBeaconRecords == null || wifiBeaconRecords.isEmpty()) return;
+
+        for (IWifiSurveyRecordListener listener : wifiSurveyRecordListeners)
         {
             try
             {
-                listener.onWifiBeaconSurveyRecord(wifiBeaconRecord);
+                listener.onWifiBeaconSurveyRecords(wifiBeaconRecords);
             } catch (Exception e)
             {
-                Log.e(LOG_TAG, "Unable to notify a Survey Record Listener because of an exception", e);
+                Log.e(LOG_TAG, "Unable to notify a Wi-Fi Survey Record Listener because of an exception", e);
             }
         }
     }

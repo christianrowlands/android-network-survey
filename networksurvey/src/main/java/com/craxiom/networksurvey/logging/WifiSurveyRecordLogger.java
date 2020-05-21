@@ -6,12 +6,10 @@ import android.util.Log;
 import com.craxiom.networksurvey.constants.LteMessageConstants;
 import com.craxiom.networksurvey.constants.NetworkSurveyConstants;
 import com.craxiom.networksurvey.constants.WifiBeaconMessageConstants;
-import com.craxiom.networksurvey.messaging.CdmaRecord;
+import com.craxiom.networksurvey.listeners.IWifiSurveyRecordListener;
 import com.craxiom.networksurvey.messaging.CipherSuite;
-import com.craxiom.networksurvey.messaging.GsmRecord;
-import com.craxiom.networksurvey.messaging.LteRecord;
-import com.craxiom.networksurvey.messaging.UmtsRecord;
 import com.craxiom.networksurvey.messaging.WifiBeaconRecord;
+import com.craxiom.networksurvey.model.WifiRecordWrapper;
 import com.craxiom.networksurvey.services.NetworkSurveyService;
 
 import java.sql.SQLException;
@@ -32,7 +30,7 @@ import mil.nga.sf.Point;
  *
  * @since 0.1.2
  */
-public class WifiSurveyRecordLogger extends SurveyRecordLogger
+public class WifiSurveyRecordLogger extends SurveyRecordLogger implements IWifiSurveyRecordListener
 {
     private static final String LOG_TAG = WifiSurveyRecordLogger.class.getSimpleName();
 
@@ -48,29 +46,9 @@ public class WifiSurveyRecordLogger extends SurveyRecordLogger
     }
 
     @Override
-    public void onGsmSurveyRecord(GsmRecord gsmRecord)
+    public void onWifiBeaconSurveyRecords(List<WifiRecordWrapper> wifiBeaconRecords)
     {
-    }
-
-    @Override
-    public void onCdmaSurveyRecord(CdmaRecord cdmaRecord)
-    {
-    }
-
-    @Override
-    public void onUmtsSurveyRecord(UmtsRecord umtsRecord)
-    {
-    }
-
-    @Override
-    public void onLteSurveyRecord(LteRecord lteRecord)
-    {
-    }
-
-    @Override
-    public void onWifiBeaconSurveyRecord(WifiBeaconRecord wifiBeaconRecord)
-    {
-        writeWifiBeaconRecordToLogFile(wifiBeaconRecord);
+        wifiBeaconRecords.forEach(this::writeWifiBeaconRecordToLogFile);
     }
 
     @Override
@@ -105,9 +83,9 @@ public class WifiSurveyRecordLogger extends SurveyRecordLogger
     /**
      * Given an 802.11 Beacon Record, write it to the GeoPackage log file.
      *
-     * @param wifiBeaconRecord The 802.11 Beacon Record to write to the log file.
+     * @param wifiRecordWrapper The 802.11 Beacon Record to write to the log file.
      */
-    private void writeWifiBeaconRecordToLogFile(final WifiBeaconRecord wifiBeaconRecord)
+    private void writeWifiBeaconRecordToLogFile(final WifiRecordWrapper wifiRecordWrapper)
     {
         if (!loggingEnabled)
         {
@@ -120,6 +98,7 @@ public class WifiSurveyRecordLogger extends SurveyRecordLogger
             {
                 if (geoPackage != null)
                 {
+                    final WifiBeaconRecord wifiBeaconRecord = wifiRecordWrapper.getWifiBeaconRecord();
                     FeatureDao featureDao = geoPackage.getFeatureDao(WifiBeaconMessageConstants.WIFI_BEACON_RECORDS_TABLE_NAME);
                     FeatureRow row = featureDao.newRow();
 

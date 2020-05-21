@@ -10,7 +10,6 @@ import android.widget.Toast;
 import com.craxiom.networksurvey.constants.CellularMessageConstants;
 import com.craxiom.networksurvey.constants.LteMessageConstants;
 import com.craxiom.networksurvey.constants.MessageConstants;
-import com.craxiom.networksurvey.listeners.ISurveyRecordListener;
 import com.craxiom.networksurvey.messaging.LteBandwidth;
 import com.craxiom.networksurvey.services.NetworkSurveyService;
 import com.craxiom.networksurvey.services.SurveyRecordProcessor;
@@ -44,7 +43,7 @@ import mil.nga.sf.proj.ProjectionConstants;
  *
  * @since 0.0.5
  */
-public abstract class SurveyRecordLogger implements ISurveyRecordListener
+public abstract class SurveyRecordLogger
 {
     private static final String LOG_TAG = SurveyRecordLogger.class.getSimpleName();
     private static final String LOG_DIRECTORY_NAME = "NetworkSurveyData";

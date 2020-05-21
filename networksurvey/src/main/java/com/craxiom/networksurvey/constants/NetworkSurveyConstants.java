@@ -77,4 +77,6 @@ public class NetworkSurveyConstants
     public static final String PROPERTY_MQTT_CONNECTION_PORT = "mqtt_connection_port";
     public static final String PROPERTY_MQTT_CONNECTION_TLS_ENABLED = "mqtt_tls_enabled";
     public static final String PROPERTY_MQTT_DEVICE_NAME = "mqtt_device_name";
+
+    public static final String PROPERTY_WIFI_NETWORKS_SORT_ORDER = "wifi_networks_sort_order";
 }

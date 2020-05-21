@@ -39,6 +39,8 @@ public class WifiBeaconMessageConstants extends MessageConstants
     public static final String NODE_TYPE_COLUMN = "Node Type";
     public static final String STANDARD_COLUMN = "Standard";
 
+    public static final String HIDDEN_SSID_PLACEHOLDER = "<Hidden SSID>";
+
     /**
      * Takes a frequency in MHz and converts it to an 802.11 channel number.  For example, a frequency of 2417 would
      * return a channel number of 2.  This method was developed using IEEE Std 802.11-2012.

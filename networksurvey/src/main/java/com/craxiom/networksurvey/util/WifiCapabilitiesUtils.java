@@ -12,6 +12,8 @@ public class WifiCapabilitiesUtils
 {
     /**
      * Given the {@link android.net.wifi.ScanResult#capabilities} string, return the appropriate {@link EncryptionType}.
+     * <p>
+     * Example capability strings can be found in the unit tests.
      *
      * @param capabilities The capabilities string that contains the encryption type.
      * @return The Encryption Type enum.
@@ -27,7 +29,7 @@ public class WifiCapabilitiesUtils
             return EncryptionType.ENC_WPA3;
         } else
         {
-            final boolean containsWpa = capabilities.contains("WPA]");
+            final boolean containsWpa = capabilities.contains("WPA]") || capabilities.contains("WPA-");
             final boolean containsWpa2 = capabilities.contains("WPA2");
             if (containsWpa && containsWpa2)
             {

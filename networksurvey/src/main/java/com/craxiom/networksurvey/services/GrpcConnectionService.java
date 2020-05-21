@@ -29,9 +29,10 @@ import com.craxiom.networksurvey.ConnectionState;
 import com.craxiom.networksurvey.GpsListener;
 import com.craxiom.networksurvey.R;
 import com.craxiom.networksurvey.constants.NetworkSurveyConstants;
+import com.craxiom.networksurvey.listeners.ICellularSurveyRecordListener;
 import com.craxiom.networksurvey.listeners.IConnectionStateListener;
 import com.craxiom.networksurvey.listeners.IDeviceStatusListener;
-import com.craxiom.networksurvey.listeners.ISurveyRecordListener;
+import com.craxiom.networksurvey.listeners.IWifiSurveyRecordListener;
 import com.craxiom.networksurvey.messaging.CdmaRecord;
 import com.craxiom.networksurvey.messaging.CdmaSurveyResponse;
 import com.craxiom.networksurvey.messaging.ConnectionReply;
@@ -48,6 +49,7 @@ import com.craxiom.networksurvey.messaging.UmtsSurveyResponse;
 import com.craxiom.networksurvey.messaging.WifiBeaconRecord;
 import com.craxiom.networksurvey.messaging.WifiBeaconSurveyResponse;
 import com.craxiom.networksurvey.messaging.WirelessSurveyGrpc;
+import com.craxiom.networksurvey.model.WifiRecordWrapper;
 
 import java.lang.ref.WeakReference;
 import java.net.ConnectException;
@@ -59,6 +61,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import io.grpc.ManagedChannel;
 import io.grpc.android.AndroidChannelBuilder;
@@ -69,7 +72,7 @@ import io.grpc.stub.StreamObserver;
  *
  * @since 0.0.9
  */
-public class GrpcConnectionService extends Service implements IDeviceStatusListener, ISurveyRecordListener
+public class GrpcConnectionService extends Service implements IDeviceStatusListener, ICellularSurveyRecordListener, IWifiSurveyRecordListener
 {
     public static final long RECONNECTION_ATTEMPT_BACKOFF_TIME = 10_000L;
     private static final String LOG_TAG = GrpcConnectionService.class.getSimpleName();
@@ -282,9 +285,13 @@ public class GrpcConnectionService extends Service implements IDeviceStatusListe
     }
 
     @Override
-    public void onWifiBeaconSurveyRecord(WifiBeaconRecord wifiBeaconRecord)
+    public void onWifiBeaconSurveyRecords(List<WifiRecordWrapper> wifiBeaconRecords)
     {
-        if (isConnected() && wifiBeaconRecord != null) wifiBeaconRecordBlockingQueue.add(wifiBeaconRecord);
+        if (isConnected())
+        {
+            wifiBeaconRecordBlockingQueue.addAll(
+                    wifiBeaconRecords.stream().map(WifiRecordWrapper::getWifiBeaconRecord).collect(Collectors.toList()));
+        }
     }
 
     /**
@@ -643,7 +650,8 @@ public class GrpcConnectionService extends Service implements IDeviceStatusListe
     {
         if (networkSurveyService != null)
         {
-            networkSurveyService.unregisterSurveyRecordListener(this);
+            networkSurveyService.unregisterCellularSurveyRecordListener(this);
+            networkSurveyService.unregisterWifiSurveyRecordListener(this);
         }
 
         Log.i(LOG_TAG, "About to call stopSelf for the GrpcConnectionService");
@@ -822,7 +830,8 @@ public class GrpcConnectionService extends Service implements IDeviceStatusListe
             networkSurveyService = binder.getService();
             deviceId = networkSurveyService.getDeviceId();
             gpsListener = networkSurveyService.getGpsListener();
-            networkSurveyService.registerSurveyRecordListener(GrpcConnectionService.this);
+            networkSurveyService.registerCellularSurveyRecordListener(GrpcConnectionService.this);
+            networkSurveyService.registerWifiSurveyRecordListener(GrpcConnectionService.this);
         }
 
         @Override

@@ -8,11 +8,11 @@ import com.craxiom.networksurvey.constants.GsmMessageConstants;
 import com.craxiom.networksurvey.constants.LteMessageConstants;
 import com.craxiom.networksurvey.constants.NetworkSurveyConstants;
 import com.craxiom.networksurvey.constants.UmtsMessageConstants;
+import com.craxiom.networksurvey.listeners.ICellularSurveyRecordListener;
 import com.craxiom.networksurvey.messaging.CdmaRecord;
 import com.craxiom.networksurvey.messaging.GsmRecord;
 import com.craxiom.networksurvey.messaging.LteRecord;
 import com.craxiom.networksurvey.messaging.UmtsRecord;
-import com.craxiom.networksurvey.messaging.WifiBeaconRecord;
 import com.craxiom.networksurvey.services.NetworkSurveyService;
 
 import java.sql.SQLException;
@@ -31,7 +31,7 @@ import mil.nga.sf.Point;
  *
  * @since 0.1.2
  */
-public class CellularSurveyRecordLogger extends SurveyRecordLogger
+public class CellularSurveyRecordLogger extends SurveyRecordLogger implements ICellularSurveyRecordListener
 {
     private static final String LOG_TAG = CellularSurveyRecordLogger.class.getSimpleName();
 
@@ -68,12 +68,6 @@ public class CellularSurveyRecordLogger extends SurveyRecordLogger
     public void onLteSurveyRecord(LteRecord lteRecord)
     {
         writeLteRecordToLogFile(lteRecord);
-    }
-
-    @Override
-    public void onWifiBeaconSurveyRecord(WifiBeaconRecord wifiBeaconRecord)
-    {
-        // no-op
     }
 
     @Override

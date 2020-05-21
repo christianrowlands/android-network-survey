@@ -389,7 +389,7 @@ public class NetworkSurveyActivity extends AppCompatActivity
 
         navController = Navigation.findNavController(this, R.id.main_content);
 
-        appBarConfiguration = new AppBarConfiguration.Builder(R.id.main_cellular_fragment, R.id.main_gnss_fragment)
+        appBarConfiguration = new AppBarConfiguration.Builder(R.id.main_cellular_fragment, R.id.main_wifi_fragment, R.id.main_gnss_fragment)
                 .setDrawerLayout(drawerLayout)
                 .build();
 
@@ -408,7 +408,9 @@ public class NetworkSurveyActivity extends AppCompatActivity
                 // code here to move this activity to the back stack.
                 final NavDestination currentDestination = navController.getCurrentDestination();
                 if (currentDestination != null &&
-                        (currentDestination.getId() == R.id.main_cellular_fragment || currentDestination.getId() == R.id.main_gnss_fragment))
+                        (currentDestination.getId() == R.id.main_cellular_fragment
+                                || currentDestination.getId() == R.id.main_wifi_fragment
+                                || currentDestination.getId() == R.id.main_gnss_fragment))
                 {
                     moveTaskToBack(true);
                 } else

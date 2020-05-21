@@ -4,13 +4,14 @@ import android.content.Context;
 import android.util.Log;
 
 import com.craxiom.networksurvey.ConnectionState;
+import com.craxiom.networksurvey.listeners.ICellularSurveyRecordListener;
 import com.craxiom.networksurvey.listeners.IConnectionStateListener;
-import com.craxiom.networksurvey.listeners.ISurveyRecordListener;
+import com.craxiom.networksurvey.listeners.IWifiSurveyRecordListener;
 import com.craxiom.networksurvey.messaging.CdmaRecord;
 import com.craxiom.networksurvey.messaging.GsmRecord;
 import com.craxiom.networksurvey.messaging.LteRecord;
 import com.craxiom.networksurvey.messaging.UmtsRecord;
-import com.craxiom.networksurvey.messaging.WifiBeaconRecord;
+import com.craxiom.networksurvey.model.WifiRecordWrapper;
 import com.google.protobuf.MessageOrBuilder;
 import com.google.protobuf.util.JsonFormat;
 
@@ -30,7 +31,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
  *
  * @since 0.1.1
  */
-public class MqttConnection implements ISurveyRecordListener
+public class MqttConnection implements ICellularSurveyRecordListener, IWifiSurveyRecordListener
 {
     private static final String LOG_TAG = MqttConnection.class.getSimpleName();
 
@@ -76,9 +77,9 @@ public class MqttConnection implements ISurveyRecordListener
     }
 
     @Override
-    public void onWifiBeaconSurveyRecord(WifiBeaconRecord wifiBeaconRecord)
+    public void onWifiBeaconSurveyRecords(List<WifiRecordWrapper> wifiBeaconRecords)
     {
-        publishMessage(MQTT_WIFI_BEACON_MESSAGE_TOPIC, wifiBeaconRecord);
+        wifiBeaconRecords.forEach(wifiRecord -> publishMessage(MQTT_WIFI_BEACON_MESSAGE_TOPIC, wifiRecord.getWifiBeaconRecord()));
     }
 
     /**

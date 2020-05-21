@@ -113,6 +113,21 @@
     <string name="connection_notification_connecting_text">Attempting to Connect</string>
     <string name="title_activity_connection">ConnectionActivity</string>
 
+    <!-- Wi-Fi Network List -->
+    <string name="wifi_scan_number">Scan #: %1$d</string>
+    <string name="wifi_aps_in_scan">APs In Scan: %1$d</string>
+    <string name="wifi_scan_status_scanning">Scanning …</string>
+    <string name="wifi_scan_status_paused">UI Paused</string>
+    <string name="wifi_scan_status_wifi_disabled">Wi-Fi Disabled</string>
+
+    <string name="wifi_dbm_value">%1$s dBm</string>
+    <string name="bssid_value">BSSID: %1$s</string>
+    <string name="wifi_frequency_value">%1$d MHz</string>
+    <string name="wifi_channel_value">CH %1$d</string>
+
+    <string name="content_description_sort_wifi_networks_button">Sort Wi-Fi Networks Button</string>
+    <string name="content_description_pause_wifi_network_scan_ui_updates">Pause Wi-Fi network scan UI updates</string>
+
     <!-- MQTT Connection UI constants -->
     <string name="mqtt_connection_title_full">MQTT Broker Connection</string>
     <string name="mqtt_connection_title">MQTT Broker</string>
@@ -189,8 +204,9 @@
     <string name="preferences_preferred_speed_units_option_miles_per_hour">Miles per hour</string>
 
     <!-- Bottom Navigation -->
-    <string name="nav_gnss">GNSS</string>
     <string name="nav_cellular">Cellular</string>
+    <string name="nav_wifi">Wi-Fi</string>
+    <string name="nav_gnss">GNSS</string>
 
     <!-- General GNSS Constants -->
     <string name="enable_gps_message">Location (GPS/GNSS) is disabled. It is required for tying cellular survey records to a location and to also get GNSS details.

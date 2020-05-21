@@ -41,4 +41,15 @@
         <item>What\'s New?</item>
         <item>About</item>
     </string-array>
+
+    <!-- CAUTION!!! The values in this array need to stay in sync with the code from
+    com.craxiom.networksurvey.fragments.WifiNetworksFragment.WifiRecordSortedListCallback -->
+    <string-array name="wifi_network_sort_options">
+        <item>Signal Strength</item>
+        <item>SSID</item>
+        <item>BSSID</item>
+        <item>Channel</item>
+        <item>Frequency</item>
+        <item>Security Type</item>
+    </string-array>
 </resources>

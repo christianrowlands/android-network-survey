@@ -45,8 +45,9 @@ import com.craxiom.networksurvey.GpsListener;
 import com.craxiom.networksurvey.NetworkSurveyActivity;
 import com.craxiom.networksurvey.R;
 import com.craxiom.networksurvey.constants.NetworkSurveyConstants;
+import com.craxiom.networksurvey.listeners.ICellularSurveyRecordListener;
 import com.craxiom.networksurvey.listeners.IConnectionStateListener;
-import com.craxiom.networksurvey.listeners.ISurveyRecordListener;
+import com.craxiom.networksurvey.listeners.IWifiSurveyRecordListener;
 import com.craxiom.networksurvey.logging.CellularSurveyRecordLogger;
 import com.craxiom.networksurvey.logging.WifiSurveyRecordLogger;
 import com.craxiom.networksurvey.mqtt.MqttBrokerConnectionInfo;
@@ -73,11 +74,11 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
      */
     private static final long TIME_TO_WAIT_FOR_GNSS_RAW_BEFORE_FAILURE = 1000L * 15L;
     private static final int NETWORK_DATA_REFRESH_RATE_MS = 2_000;
-    private static final int WIFI_SCAN_RATE_MS = 2_000;
+    private static final int WIFI_SCAN_RATE_MS = 3_000;
     private static final int PING_RATE_MS = 10_000;
 
     private final AtomicBoolean cellularScanningDone = new AtomicBoolean(false);
-    private final AtomicBoolean wifiScanningDone = new AtomicBoolean(false);
+    private final AtomicBoolean wifiScanningActive = new AtomicBoolean(false);
     private final AtomicBoolean cellularLoggingEnabled = new AtomicBoolean(false);
     private final AtomicBoolean wifiLoggingEnabled = new AtomicBoolean(false);
     private final AtomicBoolean gnssLoggingEnabled = new AtomicBoolean(false);
@@ -200,7 +201,8 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
             unregisterMqttConnectionStateListener(this);
             disconnectFromMqttBroker();
         }
-        setDone();
+        setCellularScanningDone();
+        stopWifiRecordScanning();
         removeLocationListener();
         stopGnssLogging();
         if (gnssGeoPackageRecorder != null)
@@ -247,7 +249,8 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
     public void connectToMqttBroker(MqttBrokerConnectionInfo connectionInfo)
     {
         mqttConnection.connect(getApplicationContext(), connectionInfo);
-        registerSurveyRecordListener(mqttConnection);
+        registerCellularSurveyRecordListener(mqttConnection);
+        registerWifiSurveyRecordListener(mqttConnection);
     }
 
     /**
@@ -257,7 +260,8 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
      */
     public void disconnectFromMqttBroker()
     {
-        unregisterSurveyRecordListener(mqttConnection);
+        unregisterCellularSurveyRecordListener(mqttConnection);
+        unregisterWifiSurveyRecordListener(mqttConnection);
         mqttConnection.disconnect();
     }
 
@@ -340,14 +344,80 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
         return deviceId;
     }
 
-    public void registerSurveyRecordListener(ISurveyRecordListener surveyRecordListener)
+    /**
+     * Registers a listener for notifications when new cellular survey records are available.
+     *
+     * @param surveyRecordListener The survey record listener to register.
+     */
+    public void registerCellularSurveyRecordListener(ICellularSurveyRecordListener surveyRecordListener)
     {
-        if (surveyRecordProcessor != null) surveyRecordProcessor.registerSurveyRecordListener(surveyRecordListener);
+        if (surveyRecordProcessor != null)
+        {
+            surveyRecordProcessor.registerCellularSurveyRecordListener(surveyRecordListener);
+        }
     }
 
-    public void unregisterSurveyRecordListener(ISurveyRecordListener surveyRecordListener)
+    /**
+     * Unregisters a cellular survey record listener.
+     * <p>
+     * If the listener being removed is the last listener and nothing else is using this {@link NetworkSurveyService},
+     * then this service is shutdown and will need to be restarted before it can be used again.
+     *
+     * @param surveyRecordListener The listener to unregister.
+     */
+    public void unregisterCellularSurveyRecordListener(ICellularSurveyRecordListener surveyRecordListener)
     {
-        if (surveyRecordProcessor != null) surveyRecordProcessor.unregisterSurveyRecordListener(surveyRecordListener);
+        if (surveyRecordProcessor != null)
+        {
+            surveyRecordProcessor.unregisterCellularSurveyRecordListener(surveyRecordListener);
+        }
+
+        // Check to see if this service is still needed.  It is still needed if we are either logging, the UI is
+        // visible, or a server connection is active.
+        if (!isBeingUsed()) stopSelf();
+    }
+
+    /**
+     * Registers a listener for notifications when new Wi-Fi survey records are available.
+     *
+     * @param surveyRecordListener The survey record listener to register.
+     * @since 0.1.2
+     */
+    public void registerWifiSurveyRecordListener(IWifiSurveyRecordListener surveyRecordListener)
+    {
+        synchronized (wifiScanningActive)
+        {
+            if (surveyRecordProcessor != null)
+            {
+                surveyRecordProcessor.registerWifiSurveyRecordListener(surveyRecordListener);
+            }
+
+            startWifiRecordScanning(); // Only starts scanning if it is not already active.
+        }
+    }
+
+    /**
+     * Unregisters a Wi-Fi survey record listener.
+     * <p>
+     * If the listener being removed is the last listener and nothing else is using this {@link NetworkSurveyService},
+     * then this service is shutdown and will need to be restarted before it can be used again.
+     * <p>
+     * If the service is still needed for other purposes (e.g. cellular survey records), but no longer for Wi-Fi
+     * scanning, then just the Wi-Fi scanning portion of this service is stopped.
+     *
+     * @param surveyRecordListener The listener to unregister.
+     * @since 0.1.2
+     */
+    public void unregisterWifiSurveyRecordListener(IWifiSurveyRecordListener surveyRecordListener)
+    {
+        synchronized (wifiScanningActive)
+        {
+            if (surveyRecordProcessor != null)
+            {
+                surveyRecordProcessor.unregisterWifiSurveyRecordListener(surveyRecordListener);
+                if (!surveyRecordProcessor.isWifiBeingUsed()) stopWifiRecordScanning();
+            }
+        }
 
         // Check to see if this service is still needed.  It is still needed if we are either logging, the UI is
         // visible, or a server connection is active.
@@ -363,6 +433,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
      * @return True if there is an active consumer of the survey records produced by this service, false otherwise.
      * @since 0.1.1
      */
+    @SuppressWarnings("BooleanMethodIsAlwaysInverted")
     public boolean isBeingUsed()
     {
         return cellularLoggingEnabled.get()
@@ -416,10 +487,10 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
                 cellularLoggingEnabled.set(enable);
                 if (enable)
                 {
-                    registerSurveyRecordListener(cellularSurveyRecordLogger);
+                    registerCellularSurveyRecordListener(cellularSurveyRecordLogger);
                 } else
                 {
-                    unregisterSurveyRecordListener(cellularSurveyRecordLogger);
+                    unregisterCellularSurveyRecordListener(cellularSurveyRecordLogger);
                 }
             }
             updateServiceNotification();
@@ -480,10 +551,10 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
                 wifiLoggingEnabled.set(enable);
                 if (enable)
                 {
-                    startWifiRecordScanning();
+                    registerWifiSurveyRecordListener(wifiSurveyRecordLogger);
                 } else
                 {
-                    stopWifiRecordScanning();
+                    unregisterWifiSurveyRecordListener(wifiSurveyRecordLogger);
                 }
             }
             updateServiceNotification();
@@ -606,12 +677,11 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
     }
 
     /**
-     * Sets the atomic done flags so that any handler loops can be stopped.
+     * Sets the atomic done flags so that any cellular specific handler loops can be stopped.
      */
-    private void setDone()
+    private void setCellularScanningDone()
     {
         cellularScanningDone.set(true);
-        wifiScanningDone.set(true);
     }
 
     /**
@@ -782,11 +852,15 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
 
     /**
      * Register a listener for Wi-Fi scans, and then kick off a scheduled Wi-Fi scan.
+     * <p>
+     * This method only starts scanning if the scan is not already active.
      *
      * @since 0.1.2
      */
     private void startWifiRecordScanning()
     {
+        if (wifiScanningActive.getAndSet(true)) return;
+
         // TODO Check to make sure Wi-Fi is on
 
         // TODO Check to see if throttling is turned off in developer options
@@ -804,7 +878,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
             {
                 try
                 {
-                    if (wifiScanningDone.get())
+                    if (!wifiScanningActive.get())
                     {
                         Log.i(LOG_TAG, "Stopping the handler that pulls the latest wifi information");
                         return;
@@ -822,7 +896,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
                     Log.e(LOG_TAG, "Could not get the required permissions to get the network details", e);
                 }
             }
-        }, WIFI_SCAN_RATE_MS);
+        }, 10); // 10 ms to start the Wi-Fi scanning almost instantly
     }
 
     /**
@@ -832,9 +906,18 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
      */
     private void stopWifiRecordScanning()
     {
-        wifiScanningDone.set(true);
+        wifiScanningActive.set(false);
 
-        unregisterReceiver(wifiScanReceiver);
+        try
+        {
+            unregisterReceiver(wifiScanReceiver);
+        } catch (Exception e)
+        {
+            // Because we are extra cautious and want to make sure that we unregister the receiver, when the service
+            // is shutdown we call this method to make sure we stop any active scan and unregister the receiver even if
+            // we don't have one registered.
+            Log.i(LOG_TAG, "Could not unregister the NetworkSurveyService Wi-Fi Scan Receiver", e);
+        }
     }
 
     /**

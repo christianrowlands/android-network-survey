@@ -55,6 +55,33 @@ public class WifiUtilsTest
     }
 
     @Test
+    public void validateLongFormWpa2Wps()
+    {
+        final String capabilities = "[WPA2-PSK-CCMP][RSN-PSK-CCMP][ESS][WPS]";
+
+        assertEquals(EncryptionType.ENC_WPA2, WifiCapabilitiesUtils.getEncryptionType(capabilities));
+        assertTrue(WifiCapabilitiesUtils.supportsWps(capabilities));
+    }
+
+    @Test
+    public void validateLongFormWpa2WpaWps()
+    {
+        final String capabilities = "[WPA2-PSK-CCMP][RSN-PSK-CCMP][WPA-PSK-CCMP][ESS][WPS]";
+
+        assertEquals(EncryptionType.ENC_WPA_WPA2, WifiCapabilitiesUtils.getEncryptionType(capabilities));
+        assertTrue(WifiCapabilitiesUtils.supportsWps(capabilities));
+    }
+
+    @Test
+    public void validateLongFormWpa2WpaCcmpAndTkip()
+    {
+        final String capabilities = "[WPA-PSK-CCMP+TKIP][WPA2-PSK-CCMP+TKIP][RSN-PSK-CCMP+TKIP][ESS]";
+
+        assertEquals(EncryptionType.ENC_WPA_WPA2, WifiCapabilitiesUtils.getEncryptionType(capabilities));
+        assertTrue(WifiCapabilitiesUtils.supportsWps(capabilities));
+    }
+
+    @Test
     public void validateEncryptionTypeString()
     {
         assertEquals("Unknown", WifiBeaconMessageConstants.getEncryptionTypeString(EncryptionType.ENC_UNKNOWN));
