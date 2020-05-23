@@ -6,6 +6,8 @@
         \n\n2. <b>Access this Device\'s Location</b>:  This app creates a log file which includes the location the cellular record was captured at and to display GNSS details.
         \n\n3. <b>Access Photos, Media, and Files on Your Device</b>:  This permission allows the log file to be written.</string>
 
+    <string name="app_version">v%1$s</string>
+
     <string name="action_start_cellular_logging">Start Cellular Logging</string>
     <string name="action_stop_cellular_logging">Stop Cellular Logging</string>
 

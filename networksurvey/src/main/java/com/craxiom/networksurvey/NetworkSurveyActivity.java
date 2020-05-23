@@ -9,6 +9,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
 import android.content.SharedPreferences;
+import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.content.res.ColorStateList;
 import android.graphics.Color;
@@ -21,6 +22,7 @@ import android.provider.Settings;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.activity.OnBackPressedCallback;
@@ -95,6 +97,9 @@ public class NetworkSurveyActivity extends AppCompatActivity
         turnOnGnssLoggingOnNextServiceConnection = preferences.getBoolean(NetworkSurveyConstants.PROPERTY_AUTO_START_GNSS_LOGGING, false);
 
         setupNavigation();
+
+        // Set the version number at the bottom of the navigation drawer
+        setAppVersionNumber();
 
         surveyServiceConnection = new SurveyServiceConnection();
 
@@ -420,6 +425,24 @@ public class NetworkSurveyActivity extends AppCompatActivity
             }
         };
         getOnBackPressedDispatcher().addCallback(this, callback);
+    }
+
+    /**
+     * Get the app version number and set it at the bottom of the navigation drawer.
+     *
+     * @since 0.1.2
+     */
+    private void setAppVersionNumber()
+    {
+        try
+        {
+            PackageInfo info = getPackageManager().getPackageInfo(getPackageName(), 0);
+            final TextView appVersionView = findViewById(R.id.app_version_name);
+            appVersionView.setText(getString(R.string.app_version, info.versionName));
+        } catch (Exception e)
+        {
+            Log.wtf(LOG_TAG, "Could not set the app version number", e);
+        }
     }
 
     /**
