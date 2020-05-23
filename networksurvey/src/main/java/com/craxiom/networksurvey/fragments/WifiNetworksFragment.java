@@ -5,14 +5,19 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
 import android.content.SharedPreferences;
+import android.net.wifi.WifiManager;
+import android.os.Build;
 import android.os.Bundle;
+import android.os.Handler;
 import android.os.IBinder;
+import android.provider.Settings;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageButton;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.appcompat.app.AlertDialog;
 import androidx.fragment.app.Fragment;
@@ -28,6 +33,7 @@ import com.craxiom.networksurvey.constants.WifiBeaconMessageConstants;
 import com.craxiom.networksurvey.listeners.IWifiSurveyRecordListener;
 import com.craxiom.networksurvey.model.WifiRecordWrapper;
 import com.craxiom.networksurvey.services.NetworkSurveyService;
+import com.google.android.material.snackbar.Snackbar;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -55,6 +61,8 @@ public class WifiNetworksFragment extends Fragment implements IWifiSurveyRecordL
 
     private int scanNumber = 0;
     private int sortByIndex = 0;
+    private long lastScanTime = 0;
+    private boolean throttlingNotificationShown = false;
 
     /**
      * Mandatory empty constructor for the fragment manager to instantiate the fragment (e.g. upon screen orientation changes).
@@ -108,6 +116,11 @@ public class WifiNetworksFragment extends Fragment implements IWifiSurveyRecordL
     {
         super.onResume();
 
+        checkWifiEnabled();
+
+        // Update the last scan time so that we don't trigger a false positive alert on the scan time interval.
+        lastScanTime = System.currentTimeMillis();
+
         startAndBindToNetworkSurveyService();
     }
 
@@ -123,6 +136,8 @@ public class WifiNetworksFragment extends Fragment implements IWifiSurveyRecordL
     public void onWifiBeaconSurveyRecords(List<WifiRecordWrapper> wifiBeaconRecords)
     {
         if (updatesPaused) return;
+
+        checkForScanThrottling();
 
         final Context context = requireContext();
         scanNumberView.setText(context.getString(R.string.wifi_scan_number, ++scanNumber));
@@ -165,6 +180,11 @@ public class WifiNetworksFragment extends Fragment implements IWifiSurveyRecordL
     {
         scanStatusView.setText(requireContext().getString(updatesPaused ? R.string.wifi_scan_status_scanning : R.string.wifi_scan_status_paused));
         view.setBackgroundResource(updatesPaused ? R.drawable.ic_pause : R.drawable.ic_play);
+
+        // If we are transitioning to un-pause scan updates, then artificially reset the last scan time so that we don't
+        // think that scans are being throttled by the Android OS.
+        if (updatesPaused) lastScanTime = System.currentTimeMillis();
+
         //noinspection NonAtomicOperationOnVolatileField
         updatesPaused = !updatesPaused;
     }
@@ -227,6 +247,108 @@ public class WifiNetworksFragment extends Fragment implements IWifiSurveyRecordL
 
             if (wifiNetworkRecyclerViewAdapter != null) wifiNetworkRecyclerViewAdapter.notifyDataSetChanged();
         }
+    }
+
+    /**
+     * Checks to see if the Wi-Fi manager is present, and if Wi-Fi is enabled.
+     * <p>
+     * After the check to see if Wi-Fi is enabled, if Wi-Fi is currently disabled the user is then prompted to turn on
+     * Wi-Fi.
+     */
+    private void checkWifiEnabled()
+    {
+        final WifiManager wifiManager = (WifiManager) requireContext().getSystemService(Context.WIFI_SERVICE);
+
+        if (wifiManager != null && !wifiManager.isWifiEnabled())
+        {
+            Log.i(LOG_TAG, "Wi-Fi is disabled, prompting the user to enable it");
+
+            if (Build.VERSION.SDK_INT >= 29)
+            {
+                final Intent panelIntent = new Intent(Settings.Panel.ACTION_WIFI);
+                panelIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                startActivity(panelIntent);
+            } else
+            {
+                // Open the Wi-Fi setting pages after a few seconds
+                Toast.makeText(requireContext(), getString(R.string.turn_on_wifi), Toast.LENGTH_SHORT).show();
+                new Handler().postDelayed(() -> {
+                    final Intent wifiSettingIntent = new Intent(Settings.ACTION_WIFI_SETTINGS);
+                    wifiSettingIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                    startActivity(wifiSettingIntent);
+                }, 3000);
+            }
+        }
+    }
+
+    /**
+     * Check to see if we can notice that scan throttling is enabled.  I wish we could grab this straight from the
+     * OS settings, but it seems that the Android API does not exposes this OS setting.  Therefore, we check to see if
+     * the scan interval is significantly longer than what we are requesting it to be.
+     * <p>
+     * If we do determine that scan throttling is enabled, then alert the user.  Note that the alert should be
+     * different for Android 9 vs 10.
+     * <p>
+     * We have to make sure to handle pausing the UI updates in {@link #onPauseUiUpdatesToggle(View)} so we don't
+     * artificially trigger this alert.
+     */
+    private void checkForScanThrottling()
+    {
+        // Scan throttling is new as of Android 9
+        if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.O_MR1) return;
+
+        if (lastScanTime == 0)
+        {
+            // First time scanning, so initialize the last scan time.
+            lastScanTime = System.currentTimeMillis();
+            return;
+        }
+
+        // Don't keep annoying the user with the prompts. Notify them once.
+        if (throttlingNotificationShown) return;
+
+        final long newScanTime = System.currentTimeMillis();
+        final boolean devOptionsEnabled = areDeveloperOptionsEnabled();
+
+        if (!devOptionsEnabled || newScanTime - lastScanTime > NetworkSurveyService.WIFI_SCAN_RATE_MS * 3)
+        {
+            String snackbarMessage;
+
+            // It appears we are not getting scan results as frequently as we are asking for them. It is possible that
+            // the Wi-Fi scan rate is being throttled by the Android OS. https://developer.android.com/guide/topics/connectivity/wifi-scan#wifi-scan-throttling
+            // Inform the user that they can disable scan throttling in Developer Options
+            if (Build.VERSION.SDK_INT == Build.VERSION_CODES.P)
+            {
+                snackbarMessage = getString(R.string.android_9_throttling_information);
+            } else //if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q)
+            {
+                snackbarMessage = getString(R.string.android_10_throttling_information);
+                if (!devOptionsEnabled) snackbarMessage += "\n\n" + getString(R.string.enable_developer_options);
+            }
+
+            final Snackbar snackbar = Snackbar.make(requireView(), snackbarMessage, Snackbar.LENGTH_INDEFINITE)
+                    .setAction("Open", v -> startActivity(new Intent(devOptionsEnabled ? Settings.ACTION_APPLICATION_DEVELOPMENT_SETTINGS : Settings.ACTION_DEVICE_INFO_SETTINGS)))
+                    .setBackgroundTint(getResources().getColor(R.color.alert_red, null));
+
+            if (snackbar.isShown()) return;
+
+            TextView snackTextView = snackbar.getView().findViewById(com.google.android.material.R.id.snackbar_text);
+            snackTextView.setMaxLines(12);
+
+            snackbar.show();
+
+            throttlingNotificationShown = true;
+        }
+
+        lastScanTime = newScanTime;
+    }
+
+    /**
+     * @return True if the developer options are enabled, false otherwise.
+     */
+    private boolean areDeveloperOptionsEnabled()
+    {
+        return Settings.Secure.getInt(requireContext().getContentResolver(), Settings.Global.DEVELOPMENT_SETTINGS_ENABLED, 0) != 0;
     }
 
     /**

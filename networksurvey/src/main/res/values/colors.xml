@@ -16,6 +16,8 @@
     <color name="body_text_2_light">#8a000000</color>
     <color name="body_text_1_dark">#deffffff</color>
 
+    <color name="alert_red">#A21919</color>
+
     <!-- Wi-Fi RSSI color ranges -->
     <color name="wifi_rssi_green">#388E3C</color>
     <color name="wifi_rssi_yellow">#FBC02D</color>

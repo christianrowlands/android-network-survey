@@ -77,6 +77,13 @@ public class SurveyRecordProcessor
     private int recordNumber = 0;
     private int groupNumber = -1; // This will be incremented to 0 the first time it is used.
 
+    /**
+     * Creates a new processor that can consume the raw survey records in Android format and convert them to the
+     * protobuf defined formats.
+     *
+     * @param gpsListener The GPS Listener that is used to retrieve the latest location.
+     * @param deviceId    The Device ID associated with this phone.
+     */
     SurveyRecordProcessor(GpsListener gpsListener, String deviceId)
     {
         this.gpsListener = gpsListener;

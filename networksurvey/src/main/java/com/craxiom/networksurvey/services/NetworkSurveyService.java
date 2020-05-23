@@ -74,7 +74,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
      */
     private static final long TIME_TO_WAIT_FOR_GNSS_RAW_BEFORE_FAILURE = 1000L * 15L;
     private static final int NETWORK_DATA_REFRESH_RATE_MS = 2_000;
-    private static final int WIFI_SCAN_RATE_MS = 3_000;
+    public static final int WIFI_SCAN_RATE_MS = 3_000;
     private static final int PING_RATE_MS = 10_000;
 
     private final AtomicBoolean cellularScanningDone = new AtomicBoolean(false);
@@ -150,6 +150,9 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
         wifiSurveyRecordLogger = new WifiSurveyRecordLogger(this, serviceLooper);
 
         initializeLocationListener();
+
+        surveyRecordProcessor = new SurveyRecordProcessor(gpsListener, deviceId);
+
         initializeSurveyRecordScanning();
 
         initializeMqttConnection();
@@ -525,24 +528,8 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
             if (enable)
             {
                 // First check to see if Wi-Fi is enabled
-                final WifiManager wifiManager = (WifiManager) getSystemService(Context.WIFI_SERVICE);
-                if (wifiManager != null && !wifiManager.isWifiEnabled())
-                {
-                    Log.i(LOG_TAG, "Wi-Fi is disabled, prompting the user to enable it");
-
-                    if (Build.VERSION.SDK_INT >= 29)
-                    {
-                        final Intent panelIntent = new Intent(Settings.Panel.ACTION_WIFI);
-                        startActivity(panelIntent);
-                    } else
-                    {
-                        // Open the Wi-Fi setting pages after a few seconds // TODO Is the delay needed?
-                        uiThreadHandler.post(() -> Toast.makeText(getApplicationContext(), getString(R.string.turn_on_wifi), Toast.LENGTH_SHORT).show());
-                        new Handler().postDelayed(() -> startActivity(new Intent(Settings.ACTION_WIFI_SETTINGS)), 3000);
-                    }
-
-                    return null;
-                }
+                final boolean wifiEnabled = isWifiEnabled(true);
+                if (!wifiEnabled) return null;
             }
 
             final boolean successful = wifiSurveyRecordLogger.enableLogging(enable);
@@ -745,8 +732,6 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
             return;
         }
 
-        surveyRecordProcessor = new SurveyRecordProcessor(gpsListener, deviceId); // TODO Move this out of the cellular specific method?
-
         serviceHandler.postDelayed(new Runnable()
         {
             @Override
@@ -843,8 +828,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
                     surveyRecordProcessor.onWifiScanUpdate(results);
                 } else
                 {
-                    // scan failure handling
-                    // TODO scanFailure();
+                    Log.e(LOG_TAG, "A Wi-Fi scan failed, ignoring the results.");
                 }
             }
         };
@@ -861,15 +845,17 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
     {
         if (wifiScanningActive.getAndSet(true)) return;
 
-        // TODO Check to make sure Wi-Fi is on
-
-        // TODO Check to see if throttling is turned off in developer options
-
         final IntentFilter scanResultsIntentFilter = new IntentFilter();
         scanResultsIntentFilter.addAction(WifiManager.SCAN_RESULTS_AVAILABLE_ACTION);
         registerReceiver(wifiScanReceiver, scanResultsIntentFilter);
 
         final WifiManager wifiManager = (WifiManager) getSystemService(Context.WIFI_SERVICE);
+
+        if (wifiManager == null)
+        {
+            Log.wtf(LOG_TAG, "The Wi-Fi manager is null, can't start scanning for Wi-Fi networks.");
+            return;
+        }
 
         serviceHandler.postDelayed(new Runnable()
         {
@@ -885,10 +871,8 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
                     }
 
                     boolean success = wifiManager.startScan();
-                    if (!success)
-                    {
-                        // TODO scanFailure();
-                    }
+
+                    if (!success) Log.e(LOG_TAG, "Kicking off a Wi-Fi scan failed");
 
                     serviceHandler.postDelayed(this, WIFI_SCAN_RATE_MS);
                 } catch (Exception e)
@@ -1187,6 +1171,54 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
         }
 
         return null;
+    }
+
+    /**
+     * Checks to see if the Wi-Fi manager is present, and if Wi-Fi is enabled.
+     * <p>
+     * After the check to see if Wi-Fi is enabled, if Wi-Fi is currently disabled and {@code promptEnable} is true, the
+     * user is then prompted to turn on Wi-Fi.  Even if the user turns on Wi-Fi, this method will still return false
+     * since the call to enable Wi-Fi is asynchronous.
+     *
+     * @param promptEnable If true, and Wi-Fi is currently disabled, the user will be presented with a UI to turn on Wi-Fi.
+     * @return True if Wi-Fi is enabled, false if it is not.
+     * @since 0.1.2
+     */
+    private boolean isWifiEnabled(boolean promptEnable)
+    {
+        boolean isEnabled = true;
+
+        final WifiManager wifiManager = (WifiManager) getSystemService(Context.WIFI_SERVICE);
+
+        if (wifiManager == null) isEnabled = false;
+
+        if (wifiManager != null && !wifiManager.isWifiEnabled())
+        {
+            isEnabled = false;
+
+            if (promptEnable)
+            {
+                Log.i(LOG_TAG, "Wi-Fi is disabled, prompting the user to enable it");
+
+                if (Build.VERSION.SDK_INT >= 29)
+                {
+                    final Intent panelIntent = new Intent(Settings.Panel.ACTION_WIFI);
+                    panelIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                    startActivity(panelIntent);
+                } else
+                {
+                    // Open the Wi-Fi setting pages after a few seconds
+                    uiThreadHandler.post(() -> Toast.makeText(getApplicationContext(), getString(R.string.turn_on_wifi), Toast.LENGTH_SHORT).show());
+                    new Handler().postDelayed(() -> {
+                        final Intent wifiSettingIntent = new Intent(Settings.ACTION_WIFI_SETTINGS);
+                        wifiSettingIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                        startActivity(wifiSettingIntent);
+                    }, 3000);
+                }
+            }
+        }
+
+        return isEnabled;
     }
 
     /**
