@@ -263,6 +263,8 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
      */
     public void disconnectFromMqttBroker()
     {
+        Log.i(LOG_TAG, "Disconnecting from the MQTT Broker");
+
         unregisterCellularSurveyRecordListener(mqttConnection);
         unregisterWifiSurveyRecordListener(mqttConnection);
         mqttConnection.disconnect();

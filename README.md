@@ -32,7 +32,26 @@ Install Android Studio to work on this code.
 
 [IzzyOnDroid F-Droid](https://apt.izzysoft.de/fdroid/index/apk/com.craxiom.networksurvey)
 
+## MQTT Broker Survey Record Streaming
+
+Currently, GSM, CDMA, UMTS, LTE, and 802.11 survey records are sent to a connected MQTT broker. They
+are published on the following MQTT Topics:
+
+ * GSM_MESSAGE
+ * CDMA_MESSAGE
+ * UMTS_MESSAGE
+ * LTE_MESSAGE
+ * 80211_BEACON_MESSAGE
+ 
+The MQTT Broker connection supports both plain text and TLS/SSL connections.
+
 ## Changelog
+
+##### [0.1.2](https://github.com/christianrowlands/android-network-survey/releases/tag/release-0.1.2) - 2020-05-28
+ * Wi-Fi beacon survey records can now be logged to a GeoPackage file, and sent over the connections
+ * Added support for displaying the list of visible Wi-Fi networks
+ * Improved the stability of the MQTT connection
+ * The app's version number is now displayed in the navigation drawer
 
 ##### [0.1.1](https://github.com/christianrowlands/android-network-survey/releases/tag/release-0.1.1) - 2020-05-08
  * Added support for connecting to an MQTT broker and streaming cellular survey records

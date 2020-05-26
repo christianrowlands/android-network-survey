@@ -41,6 +41,11 @@ public class MqttConnection implements ICellularSurveyRecordListener, IWifiSurve
     private static final String MQTT_LTE_MESSAGE_TOPIC = "LTE_MESSAGE";
     private static final String MQTT_WIFI_BEACON_MESSAGE_TOPIC = "80211_BEACON_MESSAGE";
 
+    /**
+     * The amount of time to wait for a proper disconnection to occur before we force kill it.
+     */
+    private static final long DISCONNECT_TIMEOUT = 250L;
+
     private final List<IConnectionStateListener> mqttConnectionListeners = new CopyOnWriteArrayList<>();
 
     private MqttAndroidClient mqttAndroidClient;
@@ -112,6 +117,8 @@ public class MqttConnection implements ICellularSurveyRecordListener, IWifiSurve
 
     /**
      * Connect to the MQTT Broker.
+     * <p>
+     * Synchronize so that we don't mess with the connection client while creating a new connection.
      *
      * @param applicationContext The context to use for the MQTT Android Client.
      */
@@ -140,6 +147,8 @@ public class MqttConnection implements ICellularSurveyRecordListener, IWifiSurve
 
     /**
      * Disconnect from the MQTT Broker.
+     * <p>
+     * This method is synchronized so that we don't try connecting while a disconnect is in progress.
      */
     public synchronized void disconnect()
     {
@@ -147,10 +156,11 @@ public class MqttConnection implements ICellularSurveyRecordListener, IWifiSurve
         {
             try
             {
-                if (mqttAndroidClient.isConnected()) mqttAndroidClient.disconnect(500L);
+                final IMqttToken token = mqttAndroidClient.disconnect(DISCONNECT_TIMEOUT);
+                token.waitForCompletion(DISCONNECT_TIMEOUT);  // Wait for completion so that we don't initiate a new connection while waiting for this disconnect.
             } catch (Exception e)
             {
-                Log.e(LOG_TAG, "Could not successfully disconnect from the MQTT broker");
+                Log.e(LOG_TAG, "An exception occurred when disconnecting from the MQTT broker", e);
             }
         }
 
@@ -162,7 +172,7 @@ public class MqttConnection implements ICellularSurveyRecordListener, IWifiSurve
      *
      * @param newConnectionState The new MQTT connection state.
      */
-    private synchronized void notifyConnectionStateChange(ConnectionState newConnectionState)
+    private void notifyConnectionStateChange(ConnectionState newConnectionState)
     {
         if (Log.isLoggable(LOG_TAG, Log.INFO))
         {
