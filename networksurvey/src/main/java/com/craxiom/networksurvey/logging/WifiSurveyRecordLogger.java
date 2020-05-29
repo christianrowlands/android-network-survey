@@ -3,11 +3,11 @@ package com.craxiom.networksurvey.logging;
 import android.os.Looper;
 import android.util.Log;
 
-import com.craxiom.networksurvey.constants.LteMessageConstants;
 import com.craxiom.networksurvey.constants.NetworkSurveyConstants;
 import com.craxiom.networksurvey.constants.WifiBeaconMessageConstants;
 import com.craxiom.networksurvey.listeners.IWifiSurveyRecordListener;
 import com.craxiom.networksurvey.messaging.CipherSuite;
+import com.craxiom.networksurvey.messaging.EncryptionType;
 import com.craxiom.networksurvey.messaging.WifiBeaconRecord;
 import com.craxiom.networksurvey.model.WifiRecordWrapper;
 import com.craxiom.networksurvey.services.NetworkSurveyService;
@@ -66,7 +66,7 @@ public class WifiSurveyRecordLogger extends SurveyRecordLogger implements IWifiS
      */
     private void createWifiBeaconRecordTable(GeoPackage geoPackage, SpatialReferenceSystem srs) throws SQLException
     {
-        createTable(LteMessageConstants.LTE_RECORDS_TABLE_NAME, geoPackage, srs, false, (tableColumns, columnNumber) -> {
+        createTable(WifiBeaconMessageConstants.WIFI_BEACON_RECORDS_TABLE_NAME, geoPackage, srs, false, (tableColumns, columnNumber) -> {
             tableColumns.add(FeatureColumn.createColumn(columnNumber++, WifiBeaconMessageConstants.BSSID_COLUMN, GeoPackageDataType.TEXT, false, null));
             tableColumns.add(FeatureColumn.createColumn(columnNumber++, WifiBeaconMessageConstants.SSID_COLUMN, GeoPackageDataType.TEXT, false, null));
             tableColumns.add(FeatureColumn.createColumn(columnNumber++, WifiBeaconMessageConstants.CHANNEL_COLUMN, GeoPackageDataType.SMALLINT, false, null));
@@ -124,6 +124,11 @@ public class WifiSurveyRecordLogger extends SurveyRecordLogger implements IWifiS
                     final String ssid = wifiBeaconRecord.getSsid();
                     if (!ssid.isEmpty()) row.setValue(WifiBeaconMessageConstants.SSID_COLUMN, ssid);
 
+                    if (wifiBeaconRecord.hasSignalStrength())
+                    {
+                        row.setValue(WifiBeaconMessageConstants.SIGNAL_STRENGTH_COLUMN, wifiBeaconRecord.getSignalStrength().getValue());
+                    }
+
                     if (wifiBeaconRecord.hasChannel())
                     {
                         setShortValue(row, WifiBeaconMessageConstants.CHANNEL_COLUMN, wifiBeaconRecord.getChannel().getValue());
@@ -132,6 +137,17 @@ public class WifiSurveyRecordLogger extends SurveyRecordLogger implements IWifiS
                     if (wifiBeaconRecord.hasFrequency())
                     {
                         setIntValue(row, WifiBeaconMessageConstants.FREQUENCY_MHZ_COLUMN, wifiBeaconRecord.getFrequency().getValue());
+                    }
+
+                    final EncryptionType encryptionType = wifiBeaconRecord.getEncryptionType();
+                    if (encryptionType != EncryptionType.ENC_UNKNOWN)
+                    {
+                        row.setValue(WifiBeaconMessageConstants.ENCRYPTION_TYPE_COLUMN, WifiBeaconMessageConstants.getEncryptionTypeString(encryptionType));
+                    }
+
+                    if (wifiBeaconRecord.hasWps())
+                    {
+                        row.setValue(WifiBeaconMessageConstants.WPS_COLUMN, wifiBeaconRecord.getWps().getValue());
                     }
 
                     final List<CipherSuite> cipherSuitesList = wifiBeaconRecord.getCipherSuitesList();
