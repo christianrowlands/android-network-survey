@@ -4,6 +4,8 @@
     <color name="colorAccent">#03A9F4</color>
     <color name="colorCardDark">#161212</color>
 
+    <color name="colorAccentFaded">#6603A9F4</color>
+
     <color name="activeTabColor">#FFFFFF</color>
     <color name="inactiveTabColor">#A2A2A2</color>
 
@@ -13,6 +15,15 @@
 
     <color name="body_text_2_light">#8a000000</color>
     <color name="body_text_1_dark">#deffffff</color>
+
+    <color name="alert_red">#A21919</color>
+
+    <!-- Wi-Fi RSSI color ranges -->
+    <color name="wifi_rssi_green">#388E3C</color>
+    <color name="wifi_rssi_yellow">#FBC02D</color>
+    <color name="wifi_rssi_orange">#F57C00</color>
+    <color name="wifi_rssi_red">#D32F2F</color>
+    <color name="wifi_rssi_deep_red">#D50000</color>
 
     <!-- GNSS Sky View -->
     <color name="not_in_view_sat">#DDFFFFFF</color>

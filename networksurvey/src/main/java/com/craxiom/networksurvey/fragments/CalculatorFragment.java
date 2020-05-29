@@ -23,14 +23,14 @@ import com.craxiom.networksurvey.R;
  */
 public class CalculatorFragment extends Fragment
 {
+    private static final String LOG_TAG = CalculatorFragment.class.getSimpleName();
     static final String TITLE = "Calculators";
     private static final String INVALID_CELL_ID_MESSAGE = "Invalid Cell ID.  Valid Range is 0 - 268435455";
     private static final String INVALID_PCI_MESSAGE = "Invalid PCI.  Valid Range is 0 - 503";
-    private final String LOG_TAG = CalculatorFragment.class.getSimpleName();
 
     private View view;
 
-    private TextWatcher lteCellIdTextWatcher = new TextWatcher()
+    private final TextWatcher lteCellIdTextWatcher = new TextWatcher()
     {
         @Override
         public void onTextChanged(CharSequence s, int start, int before, int count)
@@ -89,7 +89,7 @@ public class CalculatorFragment extends Fragment
         }
     };
 
-    private TextWatcher ltePciTextWatcher = new TextWatcher()
+    private final TextWatcher ltePciTextWatcher = new TextWatcher()
     {
         @Override
         public void onTextChanged(CharSequence s, int start, int before, int count)

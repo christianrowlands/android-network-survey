@@ -9,7 +9,7 @@ import com.craxiom.networksurvey.messaging.LteBandwidth;
  *
  * @since 0.0.5
  */
-public class LteMessageConstants extends MessageConstants
+public class LteMessageConstants extends CellularMessageConstants
 {
     private LteMessageConstants()
     {

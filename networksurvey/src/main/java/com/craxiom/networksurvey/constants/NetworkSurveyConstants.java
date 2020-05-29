@@ -22,7 +22,11 @@ public class NetworkSurveyConstants
     public static final int GRPC_CONNECTION_NOTIFICATION_ID = 3;
     public static final int LOGGING_NOTIFICATION_ID = 1;
 
-    public static final String GPRS = "GRPS";
+    public static final String CELLULAR_FILE_NAME_PREFIX = "craxiom-cellular-";
+    public static final String WIFI_FILE_NAME_PREFIX = "craxiom-wifi-";
+    public static final String GNSS_FILE_NAME_PREFIX = "craxiom-gnss-";
+
+    public static final String GPRS = "GPRS";
     public static final String EDGE = "EDGE";
     public static final String UMTS = "UMTS";
     public static final String CDMA = "CDMA";
@@ -53,6 +57,7 @@ public class NetworkSurveyConstants
 
     // Preferences
     public static final String PROPERTY_AUTO_START_CELLULAR_LOGGING = "auto_start_logging";
+    public static final String PROPERTY_AUTO_START_WIFI_LOGGING = "auto_start_wifi_logging";
     public static final String PROPERTY_AUTO_START_GNSS_LOGGING = "auto_start_gnss_logging";
     public static final String PROPERTY_CONNECTION_TIMEOUT = "connection_timeout";
     public static final String PROPERTY_MQTT_MDM_OVERRIDE = "mqtt_mdm_override";
@@ -72,4 +77,6 @@ public class NetworkSurveyConstants
     public static final String PROPERTY_MQTT_CONNECTION_PORT = "mqtt_connection_port";
     public static final String PROPERTY_MQTT_CONNECTION_TLS_ENABLED = "mqtt_tls_enabled";
     public static final String PROPERTY_MQTT_DEVICE_NAME = "mqtt_device_name";
+
+    public static final String PROPERTY_WIFI_NETWORKS_SORT_ORDER = "wifi_networks_sort_order";
 }

@@ -81,10 +81,10 @@ public class CalculationUtilsUnitTest
     @Test
     public void getSSS_isCorrect()
     {
-        assertEquals(0, CalculationUtils.getPrimarySyncSequence(0));
-        assertEquals(0, CalculationUtils.getPrimarySyncSequence(1));
-        assertEquals(82, CalculationUtils.getPrimarySyncSequence(248));
-        assertEquals(167, CalculationUtils.getPrimarySyncSequence(503));
+        assertEquals(0, CalculationUtils.getSecondarySyncSequence(0));
+        assertEquals(0, CalculationUtils.getSecondarySyncSequence(1));
+        assertEquals(82, CalculationUtils.getSecondarySyncSequence(248));
+        assertEquals(167, CalculationUtils.getSecondarySyncSequence(503));
     }
 
     @Test
@@ -103,15 +103,15 @@ public class CalculationUtilsUnitTest
         assertEquals("CDMA", CalculationUtils.getNetworkType(4));
         assertEquals("EVDO 0", CalculationUtils.getNetworkType(5));
         assertEquals("EVDO A", CalculationUtils.getNetworkType(6));
-        assertEquals("1xRTT", CalculationUtils.getNetworkType(7));
+        assertEquals("CDMA - 1xRTT", CalculationUtils.getNetworkType(7));
         assertEquals("HSDPA", CalculationUtils.getNetworkType(8));
         assertEquals("HSUPA", CalculationUtils.getNetworkType(9));
         assertEquals("HSPA", CalculationUtils.getNetworkType(10));
         assertEquals("IDEN", CalculationUtils.getNetworkType(11));
-        assertEquals("EVDO", CalculationUtils.getNetworkType(12));
+        assertEquals("EVDO B", CalculationUtils.getNetworkType(12));
         assertEquals("LTE", CalculationUtils.getNetworkType(13));
-        assertEquals("EHRPD", CalculationUtils.getNetworkType(14));
-        assertEquals("HSPAP", CalculationUtils.getNetworkType(15));
+        assertEquals("CDMA - eHRPD", CalculationUtils.getNetworkType(14));
+        assertEquals("HSPA+", CalculationUtils.getNetworkType(15));
         assertEquals("GSM", CalculationUtils.getNetworkType(16));
         assertEquals("TD-SCDMA", CalculationUtils.getNetworkType(17));
         assertEquals("IWLAN", CalculationUtils.getNetworkType(18));

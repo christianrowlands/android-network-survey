@@ -6,6 +6,7 @@ import android.location.LocationManager;
 import android.os.Bundle;
 import android.util.Log;
 
+import com.craxiom.networksurvey.logging.SurveyRecordLogger;
 import com.craxiom.networksurvey.services.NetworkSurveyService;
 
 /**

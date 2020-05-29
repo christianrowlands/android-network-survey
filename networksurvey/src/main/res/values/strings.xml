@@ -6,14 +6,21 @@
         \n\n2. <b>Access this Device\'s Location</b>:  This app creates a log file which includes the location the cellular record was captured at and to display GNSS details.
         \n\n3. <b>Access Photos, Media, and Files on Your Device</b>:  This permission allows the log file to be written.</string>
 
+    <string name="app_version">v%1$s</string>
+
     <string name="action_start_cellular_logging">Start Cellular Logging</string>
     <string name="action_stop_cellular_logging">Stop Cellular Logging</string>
+
+    <string name="action_start_wifi_logging">Start Wi-Fi Logging</string>
+    <string name="action_stop_wifi_logging">Stop Wi-Fi Logging</string>
 
     <string name="action_start_gnss_logging">Start GNSS Logging</string>
     <string name="action_stop_gnss_logging">Stop GNSS Logging</string>
 
     <string name="no_gps_device">No GPS detected in device!</string>
     <string name="turn_on_gps">Please turn on GPS</string>
+
+    <string name="turn_on_wifi">Please turn on Wi-Fi</string>
 
     <string name="current_technology_initial">Current Technology: </string>
     <string name="carrier_initial">Carrier: </string>
@@ -63,6 +70,9 @@
     <string name="cellular_logging_start_toast">Started Writing the Cellular Log File</string>
     <string name="cellular_logging_stop_toast">Cellular Log File Closed</string>
     <string name="cellular_logging_toggle_failed">Failed to toggle the cellular logging state</string>
+    <string name="wifi_logging_start_toast">Started Writing the Wi-Fi Log File</string>
+    <string name="wifi_logging_stop_toast">Wi-Fi Log File Closed</string>
+    <string name="wifi_logging_toggle_failed">Failed to toggle the Wi-Fi logging state</string>
     <string name="gnss_logging_start_toast">Started Writing the GNSS Log File</string>
     <string name="gnss_logging_stop_toast">GNSS Log File Closed</string>
     <string name="gnss_logging_toggle_failed">Failed to toggle the GNSS logging state</string>
@@ -105,12 +115,32 @@
     <string name="connection_notification_connecting_text">Attempting to Connect</string>
     <string name="title_activity_connection">ConnectionActivity</string>
 
+    <!-- Wi-Fi Network List -->
+    <string name="wifi_scan_number">Scan #: %1$d</string>
+    <string name="wifi_aps_in_scan">APs In Scan: %1$d</string>
+    <string name="wifi_scan_status_scanning">Scanning …</string>
+    <string name="wifi_scan_status_paused">UI Paused</string>
+    <string name="wifi_scan_status_wifi_disabled">Wi-Fi Disabled</string>
+
+    <string name="wifi_dbm_value">%1$s dBm</string>
+    <string name="bssid_value">BSSID: %1$s</string>
+    <string name="wifi_frequency_value">%1$d MHz</string>
+    <string name="wifi_channel_value">CH %1$d</string>
+
+    <string name="content_description_sort_wifi_networks_button">Sort Wi-Fi Networks Button</string>
+    <string name="content_description_pause_wifi_network_scan_ui_updates">Pause Wi-Fi network scan UI updates</string>
+
+    <string name="android_9_throttling_information">Android 9 throttles Wi-Fi scans to 2 per minute. Upgrade Android if possible.</string>
+    <string name="android_10_throttling_information">Android 10 throttles Wi-Fi scans. To disable throttling: System -> Advanced -> Developer options -> WiFi scan throttling to off.</string>
+    <string name="enable_developer_options">To enable Developer Options: Settings -> About Phone -> Tap Build Number 7 times.</string>
+
     <!-- MQTT Connection UI constants -->
     <string name="mqtt_connection_title_full">MQTT Broker Connection</string>
     <string name="mqtt_connection_title">MQTT Broker</string>
     <string name="mqtt_mdm_override_description">Your MQTT connection settings have been set by a Mobile Device Management server.  Toggle the switch below to override those settings so you can specify your own MQTT Broker connection information.</string>
     <string name="mqtt_mdm_override_title">Override MDM MQTT Settings</string>
     <string name="tls">TLS</string>
+    <string name="client_id_hint">Client ID</string>
     <string name="username_hint">MQTT Username</string>
     <string name="password_hint">MQTT Password</string>
     <string name="help_title">Help?</string>
@@ -120,7 +150,7 @@
         \n     a. The MQTT broker IP Address or Hostname
         \n     b. The MQTT broker Port Number (Default: 1883 for plain text and 8883 for TLS)
         \n     c. If the server does not support SSL/TLS, then turn off the TLS toggle switch
-        \n     d. A name that is used to identify this device on the server
+        \n     d. A client id that is used to identify this device on the server
         \n     e. (Optional) The username and password used to authenticate with the MQTT Broker
         \n\n2. Click the connect toggle switch</string>
 
@@ -142,6 +172,10 @@
     <string name="auto_start_cellular_logging_title">Auto Start Cellular Logging</string>
     <string name="auto_start_cellular_logging_summary_on">Cellular logging will be started upon app opening</string>
     <string name="auto_start_cellular_logging_summary_off">Cellular logging will only start when manually enabled</string>
+
+    <string name="auto_start_wifi_logging_title">Auto Start Wi-Fi Logging</string>
+    <string name="auto_start_wifi_logging_summary_on">Wi-Fi logging will be started upon app opening</string>
+    <string name="auto_start_wifi_logging_summary_off">Wi-Fi logging will only start when manually enabled</string>
 
     <string name="auto_start_gnss_logging_title">Auto Start GNSS Logging</string>
     <string name="auto_start_gnss_logging_summary_on">GNSS logging will be started upon app opening</string>
@@ -177,8 +211,9 @@
     <string name="preferences_preferred_speed_units_option_miles_per_hour">Miles per hour</string>
 
     <!-- Bottom Navigation -->
-    <string name="nav_gnss">GNSS</string>
     <string name="nav_cellular">Cellular</string>
+    <string name="nav_wifi">Wi-Fi</string>
+    <string name="nav_gnss">GNSS</string>
 
     <!-- General GNSS Constants -->
     <string name="enable_gps_message">Location (GPS/GNSS) is disabled. It is required for tying cellular survey records to a location and to also get GNSS details.

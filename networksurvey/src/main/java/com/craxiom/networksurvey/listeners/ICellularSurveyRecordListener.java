@@ -6,11 +6,11 @@ import com.craxiom.networksurvey.messaging.LteRecord;
 import com.craxiom.networksurvey.messaging.UmtsRecord;
 
 /**
- * Listener interface for those interested in being notified when a new Survey Record is ready.
+ * Listener interface for those interested in being notified when a new cellular Survey Record is ready.
  *
  * @since 0.0.4
  */
-public interface ISurveyRecordListener
+public interface ICellularSurveyRecordListener
 {
     /**
      * Called when a new GSM Survey Record is ready.

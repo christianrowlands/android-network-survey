@@ -9,6 +9,12 @@
         android:icon="@drawable/ic_cellular"
         app:showAsAction="ifRoom" />
     <item
+        android:id="@+id/action_start_stop_wifi_logging"
+        android:orderInCategory="100"
+        android:title="@string/action_start_wifi_logging"
+        android:icon="@drawable/ic_wifi"
+        app:showAsAction="ifRoom" />
+    <item
         android:id="@+id/action_start_stop_gnss_logging"
         android:orderInCategory="100"
         android:title="@string/action_start_gnss_logging"

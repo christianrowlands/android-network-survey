@@ -29,9 +29,10 @@ import com.craxiom.networksurvey.ConnectionState;
 import com.craxiom.networksurvey.GpsListener;
 import com.craxiom.networksurvey.R;
 import com.craxiom.networksurvey.constants.NetworkSurveyConstants;
+import com.craxiom.networksurvey.listeners.ICellularSurveyRecordListener;
 import com.craxiom.networksurvey.listeners.IConnectionStateListener;
 import com.craxiom.networksurvey.listeners.IDeviceStatusListener;
-import com.craxiom.networksurvey.listeners.ISurveyRecordListener;
+import com.craxiom.networksurvey.listeners.IWifiSurveyRecordListener;
 import com.craxiom.networksurvey.messaging.CdmaRecord;
 import com.craxiom.networksurvey.messaging.CdmaSurveyResponse;
 import com.craxiom.networksurvey.messaging.ConnectionReply;
@@ -45,7 +46,10 @@ import com.craxiom.networksurvey.messaging.NetworkSurveyStatusGrpc;
 import com.craxiom.networksurvey.messaging.StatusUpdateReply;
 import com.craxiom.networksurvey.messaging.UmtsRecord;
 import com.craxiom.networksurvey.messaging.UmtsSurveyResponse;
+import com.craxiom.networksurvey.messaging.WifiBeaconRecord;
+import com.craxiom.networksurvey.messaging.WifiBeaconSurveyResponse;
 import com.craxiom.networksurvey.messaging.WirelessSurveyGrpc;
+import com.craxiom.networksurvey.model.WifiRecordWrapper;
 
 import java.lang.ref.WeakReference;
 import java.net.ConnectException;
@@ -57,6 +61,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import io.grpc.ManagedChannel;
 import io.grpc.android.AndroidChannelBuilder;
@@ -67,7 +72,7 @@ import io.grpc.stub.StreamObserver;
  *
  * @since 0.0.9
  */
-public class GrpcConnectionService extends Service implements IDeviceStatusListener, ISurveyRecordListener
+public class GrpcConnectionService extends Service implements IDeviceStatusListener, ICellularSurveyRecordListener, IWifiSurveyRecordListener
 {
     public static final long RECONNECTION_ATTEMPT_BACKOFF_TIME = 10_000L;
     private static final String LOG_TAG = GrpcConnectionService.class.getSimpleName();
@@ -93,6 +98,7 @@ public class GrpcConnectionService extends Service implements IDeviceStatusListe
     private final BlockingQueue<CdmaRecord> cdmaRecordBlockingQueue = new LinkedBlockingQueue<>();
     private final BlockingQueue<UmtsRecord> umtsRecordBlockingQueue = new LinkedBlockingQueue<>();
     private final BlockingQueue<LteRecord> lteRecordBlockingQueue = new LinkedBlockingQueue<>();
+    private final BlockingQueue<WifiBeaconRecord> wifiBeaconRecordBlockingQueue = new LinkedBlockingQueue<>();
 
     private final List<IConnectionStateListener> grpcConnectionListeners = new CopyOnWriteArrayList<>();
 
@@ -101,6 +107,7 @@ public class GrpcConnectionService extends Service implements IDeviceStatusListe
     private GrpcTask<CdmaRecord, CdmaSurveyResponse> cdmaRecordGrpcTask;
     private GrpcTask<UmtsRecord, UmtsSurveyResponse> umtsRecordGrpcTask;
     private GrpcTask<LteRecord, LteSurveyResponse> lteRecordGrpcTask;
+    private GrpcTask<WifiBeaconRecord, WifiBeaconSurveyResponse> wifiBeaconRecordGrpcTask;
     private ManagedChannel channel;
     private final AtomicInteger deviceStatusGeneratorTaskId = new AtomicInteger();
 
@@ -277,6 +284,16 @@ public class GrpcConnectionService extends Service implements IDeviceStatusListe
         if (isConnected() && lteRecord != null) lteRecordBlockingQueue.add(lteRecord);
     }
 
+    @Override
+    public void onWifiBeaconSurveyRecords(List<WifiRecordWrapper> wifiBeaconRecords)
+    {
+        if (isConnected())
+        {
+            wifiBeaconRecordBlockingQueue.addAll(
+                    wifiBeaconRecords.stream().map(WifiRecordWrapper::getWifiBeaconRecord).collect(Collectors.toList()));
+        }
+    }
+
     /**
      * Adds an {@link IConnectionStateListener} so that it will be notified of all future connection state changes.
      *
@@ -324,7 +341,7 @@ public class GrpcConnectionService extends Service implements IDeviceStatusListe
             Log.d(LOG_TAG, "Starting a connection to the gRPC server");
 
             this.host = host;
-            this.portNumber = port;
+            portNumber = port;
             this.deviceName = deviceName;
 
             notifyConnectionStateChange(ConnectionState.CONNECTING);
@@ -379,6 +396,10 @@ public class GrpcConnectionService extends Service implements IDeviceStatusListe
                 lteRecordGrpcTask = new GrpcTask<>(this, lteRecordBlockingQueue,
                         wirelessSurveyStub::streamLteSurvey);
                 lteRecordGrpcTask.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
+
+                wifiBeaconRecordGrpcTask = new GrpcTask<>(this, wifiBeaconRecordBlockingQueue,
+                        wirelessSurveyStub::streamWifiBeaconSurvey);
+                wifiBeaconRecordGrpcTask.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
             }).start();
         } catch (Throwable e)
         {
@@ -406,6 +427,7 @@ public class GrpcConnectionService extends Service implements IDeviceStatusListe
         if (cdmaRecordGrpcTask != null) cdmaRecordGrpcTask.cancel(true);
         if (umtsRecordGrpcTask != null) umtsRecordGrpcTask.cancel(true);
         if (lteRecordGrpcTask != null) lteRecordGrpcTask.cancel(true);
+        if (wifiBeaconRecordGrpcTask != null) wifiBeaconRecordGrpcTask.cancel(true);
 
         shutdownChannel(!stopService);
 
@@ -454,6 +476,7 @@ public class GrpcConnectionService extends Service implements IDeviceStatusListe
 
         deviceStatusReportHandler.postDelayed(new Runnable()
         {
+            @Override
             public void run()
             {
                 try
@@ -627,7 +650,8 @@ public class GrpcConnectionService extends Service implements IDeviceStatusListe
     {
         if (networkSurveyService != null)
         {
-            networkSurveyService.unregisterSurveyRecordListener(this);
+            networkSurveyService.unregisterCellularSurveyRecordListener(this);
+            networkSurveyService.unregisterWifiSurveyRecordListener(this);
         }
 
         Log.i(LOG_TAG, "About to call stopSelf for the GrpcConnectionService");
@@ -747,7 +771,7 @@ public class GrpcConnectionService extends Service implements IDeviceStatusListe
 
                         if (Log.isLoggable(LOG_TAG, Log.VERBOSE))
                         {
-                            Log.v(LOG_TAG, "Sending a message to the remote gRPC server: " + nextMessageToSend.toString());
+                            Log.v(LOG_TAG, "Sending a message to the remote gRPC server: " + nextMessageToSend);
                         }
 
                         outgoingMessageStream.onNext(nextMessageToSend);
@@ -806,7 +830,8 @@ public class GrpcConnectionService extends Service implements IDeviceStatusListe
             networkSurveyService = binder.getService();
             deviceId = networkSurveyService.getDeviceId();
             gpsListener = networkSurveyService.getGpsListener();
-            networkSurveyService.registerSurveyRecordListener(GrpcConnectionService.this);
+            networkSurveyService.registerCellularSurveyRecordListener(GrpcConnectionService.this);
+            networkSurveyService.registerWifiSurveyRecordListener(GrpcConnectionService.this);
         }
 
         @Override

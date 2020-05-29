@@ -22,6 +22,22 @@
     </fragment>
 
     <fragment
+        android:id="@+id/main_wifi_fragment"
+        android:name="com.craxiom.networksurvey.fragments.WifiNetworksFragment"
+        android:label="Wi-Fi"
+        tools:layout="@layout/fragment_wifi_networks_list">
+        <action
+            android:id="@+id/action_main_wifi_to_connection"
+            app:destination="@id/connection_fragment" />
+        <action
+            android:id="@+id/action_main_wifi_to_mqtt_connection"
+            app:destination="@id/mqtt_connection_fragment" />
+        <action
+            android:id="@+id/action_main_wifi_to_settings"
+            app:destination="@id/settings_fragment" />
+    </fragment>
+
+    <fragment
         android:id="@+id/main_gnss_fragment"
         android:name="com.craxiom.networksurvey.fragments.MainGnssFragment"
         android:label="GNSS"
@@ -30,7 +46,7 @@
             android:id="@+id/action_main_gnss_to_connection"
             app:destination="@id/connection_fragment" />
         <action
-            android:id="@+id/action_main_to_mqtt_connection"
+            android:id="@+id/action_main_gnss_to_mqtt_connection"
             app:destination="@id/mqtt_connection_fragment" />
         <action
             android:id="@+id/action_main_gnss_to_settings"

@@ -5,6 +5,10 @@
         android:icon="@drawable/ic_cellular"
         android:title="@string/nav_cellular" />
     <item
+        android:id="@+id/main_wifi_fragment"
+        android:icon="@drawable/ic_wifi"
+        android:title="@string/nav_wifi" />
+    <item
         android:id="@+id/main_gnss_fragment"
         android:icon="@drawable/ic_gnss"
         android:title="@string/nav_gnss" />
