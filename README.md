@@ -47,7 +47,7 @@ The MQTT Broker connection supports both plain text and TLS/SSL connections.
 
 ## Changelog
 
-##### [0.1.2](https://github.com/christianrowlands/android-network-survey/releases/tag/release-0.1.2) - 2020-05-28
+##### [0.1.2](https://github.com/christianrowlands/android-network-survey/releases/tag/release-0.1.2) - 2020-05-29
  * Wi-Fi beacon survey records can now be logged to a GeoPackage file, and sent over the connections
  * Added support for displaying the list of visible Wi-Fi networks
  * Improved the stability of the MQTT connection
