@@ -1209,13 +1209,13 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
                     startActivity(panelIntent);
                 } else
                 {
-                    // Open the Wi-Fi setting pages after a few seconds
+                    // Open the Wi-Fi setting pages after a couple seconds
                     uiThreadHandler.post(() -> Toast.makeText(getApplicationContext(), getString(R.string.turn_on_wifi), Toast.LENGTH_SHORT).show());
-                    new Handler().postDelayed(() -> {
+                    serviceHandler.postDelayed(() -> {
                         final Intent wifiSettingIntent = new Intent(Settings.ACTION_WIFI_SETTINGS);
                         wifiSettingIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
                         startActivity(wifiSettingIntent);
-                    }, 3000);
+                    }, 2000);
                 }
             }
         }

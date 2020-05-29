@@ -270,13 +270,13 @@ public class WifiNetworksFragment extends Fragment implements IWifiSurveyRecordL
                 startActivity(panelIntent);
             } else
             {
-                // Open the Wi-Fi setting pages after a few seconds
+                // Open the Wi-Fi setting pages after a couple seconds
                 Toast.makeText(requireContext(), getString(R.string.turn_on_wifi), Toast.LENGTH_SHORT).show();
                 new Handler().postDelayed(() -> {
                     final Intent wifiSettingIntent = new Intent(Settings.ACTION_WIFI_SETTINGS);
                     wifiSettingIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
                     startActivity(wifiSettingIntent);
-                }, 3000);
+                }, 2000);
             }
         }
     }
