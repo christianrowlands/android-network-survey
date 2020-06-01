@@ -1,6 +1,7 @@
 package com.craxiom.networksurvey.fragments;
 
 import android.Manifest;
+import android.annotation.SuppressLint;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
@@ -14,6 +15,7 @@ import android.os.IBinder;
 import android.os.Looper;
 import android.util.Log;
 import android.view.LayoutInflater;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.inputmethod.InputMethodManager;
@@ -88,6 +90,7 @@ public class MqttConnectionFragment extends Fragment implements IConnectionState
         super.onCreate(savedInstanceState);
     }
 
+    @SuppressLint("ClickableViewAccessibility")
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState)
     {
@@ -124,9 +127,15 @@ public class MqttConnectionFragment extends Fragment implements IConnectionState
         tlsToggleSwitch.setOnCheckedChangeListener((buttonView, isChecked) -> {
             if (buttonView.isPressed()) onTlsSwitchToggled();
         });
-        mqttConnectionToggleSwitch.setOnCheckedChangeListener((buttonView, isChecked) -> {
+
+        // Adding the OnTouchListener as well so that we can reject drag events since those are much harder to deal with
+        // Also checking for buttonView.isPressed() so that we don't trigger the onConnectionSwitchToggled call when we
+        // programmatically set the toggle switch position.
+        mqttConnectionToggleSwitch.setOnClickListener((buttonView) -> {
             if (buttonView.isPressed()) onConnectionSwitchToggled();
         });
+        mqttConnectionToggleSwitch.setOnTouchListener((buttonView, motionEvent) ->
+                motionEvent.getActionMasked() == MotionEvent.ACTION_MOVE);
 
         return view;
     }

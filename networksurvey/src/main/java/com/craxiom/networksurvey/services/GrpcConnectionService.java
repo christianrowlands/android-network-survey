@@ -64,6 +64,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import io.grpc.ManagedChannel;
+import io.grpc.StatusRuntimeException;
 import io.grpc.android.AndroidChannelBuilder;
 import io.grpc.stub.StreamObserver;
 
@@ -160,6 +161,8 @@ public class GrpcConnectionService extends Service implements IDeviceStatusListe
      */
     public static void connectToGrpcServer(Context context, String host, int port, String deviceName)
     {
+        Log.d(LOG_TAG, "Creating the ACTION_CONNECT intent to kick off the gRPC connection");
+
         Intent intent = new Intent(context, GrpcConnectionService.class);
         intent.setAction(ACTION_CONNECT);
         intent.putExtra(HOST_PARAMETER, host);
@@ -611,6 +614,8 @@ public class GrpcConnectionService extends Service implements IDeviceStatusListe
             Log.e(LOG_TAG, "Can't reconnect to the last gRPC server because the host or port is null");
         }
 
+        Log.i(LOG_TAG, "Reconnecting to the gRPC server");
+
         connectToGrpcServer(host, portNumber, deviceName, true);
     }
 
@@ -795,7 +800,12 @@ public class GrpcConnectionService extends Service implements IDeviceStatusListe
                     throw new RuntimeException("Could not finish rpc within 1 minute, the server is likely down");
                 }
 
-                return failed != null;
+                if (failed instanceof StatusRuntimeException)
+                {
+                    return ((StatusRuntimeException) failed).getStatus().getCode() == io.grpc.Status.Code.UNIMPLEMENTED;
+                }
+
+                return false;
             } catch (Throwable e)
             {
                 Log.e(LOG_TAG, "The connection to the remote gRPC server closed with an exception", e);
@@ -803,10 +813,17 @@ public class GrpcConnectionService extends Service implements IDeviceStatusListe
             }
         }
 
+        /**
+         * @param unimplemented True if the remote procedure call (RPC) associated with this async task is unimplemented
+         *                      on the remote server. In that event, we don't want to attempt a reconnect.
+         */
         @Override
-        protected void onPostExecute(Boolean reconnect)
+        protected void onPostExecute(Boolean unimplemented)
         {
-            Log.i(LOG_TAG, "Completed a gRPC Task, should reconnect= " + !userCanceled);
+            Log.i(LOG_TAG, "Completed a gRPC Task, userCanceled=" + userCanceled + ", unimplemented=" + unimplemented);
+
+            if (unimplemented) return;
+
             GrpcConnectionService grpcConnectionService = serviceWeakReference.get();
             if (grpcConnectionService != null)
             {
