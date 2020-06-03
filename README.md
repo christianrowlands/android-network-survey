@@ -7,7 +7,9 @@ and the current list of Wi-Fi networks in range is displayed in the UI. The App 
 streaming the cellular and Wi-Fi records. For GNSS data, it can display the latest information about the satellite vehicles and
 also log the information to a GeoPackage file.
 
-![App Screenshot](screenshots/network_survey_screenshot.png "The Network Survey App Main Screen")
+![Cellular Details](screenshots/cellular_details_logging_all.png "The Network Survey App Main Screen")
+![Wi-Fi Details](screenshots/wi-fi_logging.png "Wi-Fi Scan Results")
+![GNSS Details](screenshots/gnss_details.png "GNSS Details")
 
 ## Getting Started
 
@@ -47,7 +49,7 @@ The MQTT Broker connection supports both plain text and TLS/SSL connections.
 
 ## Changelog
 
-##### [0.1.2](https://github.com/christianrowlands/android-network-survey/releases/tag/release-0.1.2) - 2020-05-29
+##### [0.1.2](https://github.com/christianrowlands/android-network-survey/releases/tag/release-0.1.2) - 2020-06-03
  * Wi-Fi beacon survey records can now be logged to a GeoPackage file, and sent over the connections
  * Added support for displaying the list of visible Wi-Fi networks
  * Improved the stability of the MQTT connection
