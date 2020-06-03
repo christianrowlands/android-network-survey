@@ -100,8 +100,6 @@ public class GrpcConnectionFragment extends Fragment implements IConnectionState
         grpcPortNumberEdit.setText(String.valueOf(portNumber));
         deviceNameEdit.setText(deviceName);
 
-        initializeFragmentBasedOnConnectionState();
-
         // Adding the OnTouchListener as well so that we can reject drag events since those are much harder to deal with
         // Also checking for buttonView.isPressed() so that we don't trigger the onConnectionSwitchToggled call when we
         // programmatically set the toggle switch position.
@@ -115,6 +113,22 @@ public class GrpcConnectionFragment extends Fragment implements IConnectionState
                 ACCESS_PERMISSION_REQUEST_ID);
 
         return view;
+    }
+
+    @Override
+    public void onResume()
+    {
+        super.onResume();
+
+        initializeFragmentBasedOnConnectionState();
+    }
+
+    @Override
+    public void onPause()
+    {
+        if (grpcConnectionService != null) grpcConnectionService.unregisterConnectionStateListener(this);
+
+        super.onPause();
     }
 
     @Override
@@ -192,6 +206,10 @@ public class GrpcConnectionFragment extends Fragment implements IConnectionState
     private synchronized void updateUiState(ConnectionState connectionState)
     {
         Log.d(LOG_TAG, "Updating the UI state for: " + connectionState);
+
+        // It is possible that the user has switched away from the view during a connection attempt, and in that event
+        // the view will be refreshed in the onResume method.
+        if (!isVisible()) return;
 
         switch (connectionState)
         {

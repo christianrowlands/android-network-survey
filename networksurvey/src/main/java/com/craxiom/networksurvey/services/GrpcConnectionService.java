@@ -267,7 +267,7 @@ public class GrpcConnectionService extends Service implements IDeviceStatusListe
     @Override
     public void onDeviceStatus(DeviceStatus deviceStatus)
     {
-        if (deviceStatus != null && deviceStatusGrpcTask.getStatus() != AsyncTask.Status.FINISHED)
+        if (deviceStatus != null && deviceStatusGrpcTask != null && deviceStatusGrpcTask.getStatus() != AsyncTask.Status.FINISHED)
         {
             deviceStatusQueue.add(deviceStatus);
         }
@@ -276,7 +276,7 @@ public class GrpcConnectionService extends Service implements IDeviceStatusListe
     @Override
     public void onGsmSurveyRecord(GsmRecord gsmRecord)
     {
-        if (isConnected() && gsmRecord != null && gsmRecordGrpcTask.getStatus() != AsyncTask.Status.FINISHED)
+        if (isConnected() && gsmRecord != null && gsmRecordGrpcTask != null && gsmRecordGrpcTask.getStatus() != AsyncTask.Status.FINISHED)
         {
             gsmRecordQueue.add(gsmRecord);
         }
@@ -285,7 +285,7 @@ public class GrpcConnectionService extends Service implements IDeviceStatusListe
     @Override
     public void onCdmaSurveyRecord(CdmaRecord cdmaRecord)
     {
-        if (isConnected() && cdmaRecord != null && cdmaRecordGrpcTask.getStatus() != AsyncTask.Status.FINISHED)
+        if (isConnected() && cdmaRecord != null && cdmaRecordGrpcTask != null && cdmaRecordGrpcTask.getStatus() != AsyncTask.Status.FINISHED)
         {
             cdmaRecordQueue.add(cdmaRecord);
         }
@@ -294,7 +294,7 @@ public class GrpcConnectionService extends Service implements IDeviceStatusListe
     @Override
     public void onUmtsSurveyRecord(UmtsRecord umtsRecord)
     {
-        if (isConnected() && umtsRecord != null && umtsRecordGrpcTask.getStatus() != AsyncTask.Status.FINISHED)
+        if (isConnected() && umtsRecord != null && umtsRecordGrpcTask != null && umtsRecordGrpcTask.getStatus() != AsyncTask.Status.FINISHED)
         {
             umtsRecordQueue.add(umtsRecord);
         }
@@ -303,7 +303,7 @@ public class GrpcConnectionService extends Service implements IDeviceStatusListe
     @Override
     public void onLteSurveyRecord(LteRecord lteRecord)
     {
-        if (isConnected() && lteRecord != null && lteRecordGrpcTask.getStatus() != AsyncTask.Status.FINISHED)
+        if (isConnected() && lteRecord != null && lteRecordGrpcTask != null && lteRecordGrpcTask.getStatus() != AsyncTask.Status.FINISHED)
         {
             lteRecordQueue.add(lteRecord);
         }
@@ -312,7 +312,7 @@ public class GrpcConnectionService extends Service implements IDeviceStatusListe
     @Override
     public void onWifiBeaconSurveyRecords(List<WifiRecordWrapper> wifiBeaconRecords)
     {
-        if (isConnected() && wifiBeaconRecordGrpcTask.getStatus() != AsyncTask.Status.FINISHED)
+        if (isConnected() && wifiBeaconRecordGrpcTask != null && wifiBeaconRecordGrpcTask.getStatus() != AsyncTask.Status.FINISHED)
         {
             wifiBeaconRecordQueue.addAll(
                     wifiBeaconRecords.stream().map(WifiRecordWrapper::getWifiBeaconRecord).collect(Collectors.toList()));
