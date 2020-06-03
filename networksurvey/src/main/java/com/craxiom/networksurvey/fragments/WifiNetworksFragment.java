@@ -65,6 +65,11 @@ public class WifiNetworksFragment extends Fragment implements IWifiSurveyRecordL
     private boolean throttlingNotificationShown = false;
 
     /**
+     * Only show the prompt to enable Wi-Fi one time per instance of this Wi-Fi fragment.
+     */
+    private boolean promptedToEnableWifi = false;
+
+    /**
      * Mandatory empty constructor for the fragment manager to instantiate the fragment (e.g. upon screen orientation changes).
      */
     public WifiNetworksFragment()
@@ -254,30 +259,42 @@ public class WifiNetworksFragment extends Fragment implements IWifiSurveyRecordL
      * <p>
      * After the check to see if Wi-Fi is enabled, if Wi-Fi is currently disabled the user is then prompted to turn on
      * Wi-Fi.
+     * <p>
+     * The prompt to enable Wi-Fi is only shown once per creation of this fragment.
      */
     private void checkWifiEnabled()
     {
-        final WifiManager wifiManager = (WifiManager) requireContext().getSystemService(Context.WIFI_SERVICE);
+        if (promptedToEnableWifi) return;
 
-        if (wifiManager != null && !wifiManager.isWifiEnabled())
+        try
         {
-            Log.i(LOG_TAG, "Wi-Fi is disabled, prompting the user to enable it");
+            final WifiManager wifiManager = (WifiManager) requireContext().getSystemService(Context.WIFI_SERVICE);
 
-            if (Build.VERSION.SDK_INT >= 29)
+            if (wifiManager != null && !wifiManager.isWifiEnabled())
             {
-                final Intent panelIntent = new Intent(Settings.Panel.ACTION_WIFI);
-                panelIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-                startActivity(panelIntent);
-            } else
-            {
-                // Open the Wi-Fi setting pages after a couple seconds
-                Toast.makeText(requireContext(), getString(R.string.turn_on_wifi), Toast.LENGTH_SHORT).show();
-                new Handler().postDelayed(() -> {
-                    final Intent wifiSettingIntent = new Intent(Settings.ACTION_WIFI_SETTINGS);
-                    wifiSettingIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-                    startActivity(wifiSettingIntent);
-                }, 2000);
+                Log.i(LOG_TAG, "Wi-Fi is disabled, prompting the user to enable it");
+
+                promptedToEnableWifi = true;
+
+                if (Build.VERSION.SDK_INT >= 29)
+                {
+                    final Intent panelIntent = new Intent(Settings.Panel.ACTION_WIFI);
+                    panelIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                    startActivity(panelIntent);
+                } else
+                {
+                    // Open the Wi-Fi setting pages after a couple seconds
+                    Toast.makeText(requireContext(), getString(R.string.turn_on_wifi), Toast.LENGTH_SHORT).show();
+                    new Handler().postDelayed(() -> {
+                        final Intent wifiSettingIntent = new Intent(Settings.ACTION_WIFI_SETTINGS);
+                        wifiSettingIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                        startActivity(wifiSettingIntent);
+                    }, 2000);
+                }
             }
+        } catch (Exception e)
+        {
+            Log.e(LOG_TAG, "Something went wrong when trying to prompt the user to enable wifi", e);
         }
     }
 

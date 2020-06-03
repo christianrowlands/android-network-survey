@@ -54,10 +54,11 @@ import com.craxiom.networksurvey.model.WifiRecordWrapper;
 import java.lang.ref.WeakReference;
 import java.net.ConnectException;
 import java.util.List;
-import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
@@ -78,6 +79,8 @@ public class GrpcConnectionService extends Service implements IDeviceStatusListe
     public static final long RECONNECTION_ATTEMPT_BACKOFF_TIME = 10_000L;
     private static final String LOG_TAG = GrpcConnectionService.class.getSimpleName();
     private static final int DEVICE_STATUS_REFRESH_RATE_MS = 15_000;
+    private static final int NUMBER_OF_QUEUES_TO_PROCESS = 6;
+    private static final int QUEUE_PROCESSING_SLEEP_TIME = 1_000;
 
     private static ConnectionState connectionState = ConnectionState.DISCONNECTED;
 
@@ -94,12 +97,14 @@ public class GrpcConnectionService extends Service implements IDeviceStatusListe
     private NetworkSurveyService networkSurveyService;
     private GpsListener gpsListener;
 
-    private final BlockingQueue<DeviceStatus> deviceStatusBlockingQueue = new LinkedBlockingQueue<>();
-    private final BlockingQueue<GsmRecord> gsmRecordBlockingQueue = new LinkedBlockingQueue<>();
-    private final BlockingQueue<CdmaRecord> cdmaRecordBlockingQueue = new LinkedBlockingQueue<>();
-    private final BlockingQueue<UmtsRecord> umtsRecordBlockingQueue = new LinkedBlockingQueue<>();
-    private final BlockingQueue<LteRecord> lteRecordBlockingQueue = new LinkedBlockingQueue<>();
-    private final BlockingQueue<WifiBeaconRecord> wifiBeaconRecordBlockingQueue = new LinkedBlockingQueue<>();
+    private final ScheduledExecutorService executorService;
+
+    private final ConcurrentLinkedQueue<DeviceStatus> deviceStatusQueue = new ConcurrentLinkedQueue<>();
+    private final ConcurrentLinkedQueue<GsmRecord> gsmRecordQueue = new ConcurrentLinkedQueue<>();
+    private final ConcurrentLinkedQueue<CdmaRecord> cdmaRecordQueue = new ConcurrentLinkedQueue<>();
+    private final ConcurrentLinkedQueue<UmtsRecord> umtsRecordQueue = new ConcurrentLinkedQueue<>();
+    private final ConcurrentLinkedQueue<LteRecord> lteRecordQueue = new ConcurrentLinkedQueue<>();
+    private final ConcurrentLinkedQueue<WifiBeaconRecord> wifiBeaconRecordQueue = new ConcurrentLinkedQueue<>();
 
     private final List<IConnectionStateListener> grpcConnectionListeners = new CopyOnWriteArrayList<>();
 
@@ -133,6 +138,8 @@ public class GrpcConnectionService extends Service implements IDeviceStatusListe
         uiThreadHandler = new Handler(Looper.getMainLooper());
 
         surveyServiceConnection = new SurveyServiceConnection();
+
+        executorService = Executors.newScheduledThreadPool(NUMBER_OF_QUEUES_TO_PROCESS);
     }
 
     /**
@@ -260,39 +267,54 @@ public class GrpcConnectionService extends Service implements IDeviceStatusListe
     @Override
     public void onDeviceStatus(DeviceStatus deviceStatus)
     {
-        if (deviceStatus != null) deviceStatusBlockingQueue.add(deviceStatus);
+        if (deviceStatus != null && deviceStatusGrpcTask.getStatus() != AsyncTask.Status.FINISHED)
+        {
+            deviceStatusQueue.add(deviceStatus);
+        }
     }
 
     @Override
     public void onGsmSurveyRecord(GsmRecord gsmRecord)
     {
-        if (isConnected() && gsmRecord != null) gsmRecordBlockingQueue.add(gsmRecord);
+        if (isConnected() && gsmRecord != null && gsmRecordGrpcTask.getStatus() != AsyncTask.Status.FINISHED)
+        {
+            gsmRecordQueue.add(gsmRecord);
+        }
     }
 
     @Override
     public void onCdmaSurveyRecord(CdmaRecord cdmaRecord)
     {
-        if (isConnected() && cdmaRecord != null) cdmaRecordBlockingQueue.add(cdmaRecord);
+        if (isConnected() && cdmaRecord != null && cdmaRecordGrpcTask.getStatus() != AsyncTask.Status.FINISHED)
+        {
+            cdmaRecordQueue.add(cdmaRecord);
+        }
     }
 
     @Override
     public void onUmtsSurveyRecord(UmtsRecord umtsRecord)
     {
-        if (isConnected() && umtsRecord != null) umtsRecordBlockingQueue.add(umtsRecord);
+        if (isConnected() && umtsRecord != null && umtsRecordGrpcTask.getStatus() != AsyncTask.Status.FINISHED)
+        {
+            umtsRecordQueue.add(umtsRecord);
+        }
     }
 
     @Override
     public void onLteSurveyRecord(LteRecord lteRecord)
     {
-        if (isConnected() && lteRecord != null) lteRecordBlockingQueue.add(lteRecord);
+        if (isConnected() && lteRecord != null && lteRecordGrpcTask.getStatus() != AsyncTask.Status.FINISHED)
+        {
+            lteRecordQueue.add(lteRecord);
+        }
     }
 
     @Override
     public void onWifiBeaconSurveyRecords(List<WifiRecordWrapper> wifiBeaconRecords)
     {
-        if (isConnected())
+        if (isConnected() && wifiBeaconRecordGrpcTask.getStatus() != AsyncTask.Status.FINISHED)
         {
-            wifiBeaconRecordBlockingQueue.addAll(
+            wifiBeaconRecordQueue.addAll(
                     wifiBeaconRecords.stream().map(WifiRecordWrapper::getWifiBeaconRecord).collect(Collectors.toList()));
         }
     }
@@ -378,31 +400,26 @@ public class GrpcConnectionService extends Service implements IDeviceStatusListe
                 Log.i(LOG_TAG, message);
                 uiThreadHandler.post(() -> Toast.makeText(applicationContext, message, Toast.LENGTH_SHORT).show());
 
-                deviceStatusGrpcTask = new GrpcTask<>(this, deviceStatusBlockingQueue,
+                deviceStatusGrpcTask = new GrpcTask<>(this, deviceStatusQueue,
                         statusUpdateReplyStreamObserver -> NetworkSurveyStatusGrpc.newStub(channel).statusUpdate(statusUpdateReplyStreamObserver));
-                deviceStatusGrpcTask.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
+                deviceStatusGrpcTask.executeOnExecutor(executorService);
 
                 final WirelessSurveyGrpc.WirelessSurveyStub wirelessSurveyStub = WirelessSurveyGrpc.newStub(channel);
 
-                gsmRecordGrpcTask = new GrpcTask<>(this, gsmRecordBlockingQueue,
-                        wirelessSurveyStub::streamGsmSurvey);
-                gsmRecordGrpcTask.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
+                gsmRecordGrpcTask = new GrpcTask<>(this, gsmRecordQueue, wirelessSurveyStub::streamGsmSurvey);
+                gsmRecordGrpcTask.executeOnExecutor(executorService);
 
-                cdmaRecordGrpcTask = new GrpcTask<>(this, cdmaRecordBlockingQueue,
-                        wirelessSurveyStub::streamCdmaSurvey);
-                cdmaRecordGrpcTask.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
+                cdmaRecordGrpcTask = new GrpcTask<>(this, cdmaRecordQueue, wirelessSurveyStub::streamCdmaSurvey);
+                cdmaRecordGrpcTask.executeOnExecutor(executorService);
 
-                umtsRecordGrpcTask = new GrpcTask<>(this, umtsRecordBlockingQueue,
-                        wirelessSurveyStub::streamUmtsSurvey);
-                umtsRecordGrpcTask.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
+                umtsRecordGrpcTask = new GrpcTask<>(this, umtsRecordQueue, wirelessSurveyStub::streamUmtsSurvey);
+                umtsRecordGrpcTask.executeOnExecutor(executorService);
 
-                lteRecordGrpcTask = new GrpcTask<>(this, lteRecordBlockingQueue,
-                        wirelessSurveyStub::streamLteSurvey);
-                lteRecordGrpcTask.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
+                lteRecordGrpcTask = new GrpcTask<>(this, lteRecordQueue, wirelessSurveyStub::streamLteSurvey);
+                lteRecordGrpcTask.executeOnExecutor(executorService);
 
-                wifiBeaconRecordGrpcTask = new GrpcTask<>(this, wifiBeaconRecordBlockingQueue,
-                        wirelessSurveyStub::streamWifiBeaconSurvey);
-                wifiBeaconRecordGrpcTask.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
+                wifiBeaconRecordGrpcTask = new GrpcTask<>(this, wifiBeaconRecordQueue, wirelessSurveyStub::streamWifiBeaconSurvey);
+                wifiBeaconRecordGrpcTask.executeOnExecutor(executorService);
             }).start();
         } catch (Throwable e)
         {
@@ -714,16 +731,16 @@ public class GrpcConnectionService extends Service implements IDeviceStatusListe
     private class GrpcTask<MessageType, Reply> extends AsyncTask<Void, Void, Boolean>
     {
         private final WeakReference<GrpcConnectionService> serviceWeakReference;
-        private final BlockingQueue<MessageType> messageBlockingQueue;
+        private final ConcurrentLinkedQueue<MessageType> messageQueue;
         private final Function<StreamObserver<Reply>, StreamObserver<MessageType>> asyncStubCall;
 
         private Throwable failed;
 
-        private GrpcTask(GrpcConnectionService serviceWeakReference, BlockingQueue<MessageType> messageBlockingQueue,
+        private GrpcTask(GrpcConnectionService serviceWeakReference, ConcurrentLinkedQueue<MessageType> queue,
                          Function<StreamObserver<Reply>, StreamObserver<MessageType>> asyncStubCall)
         {
             this.serviceWeakReference = new WeakReference<>(serviceWeakReference);
-            this.messageBlockingQueue = messageBlockingQueue;
+            messageQueue = queue;
             this.asyncStubCall = asyncStubCall;
         }
 
@@ -770,9 +787,20 @@ public class GrpcConnectionService extends Service implements IDeviceStatusListe
                             break;
                         }
 
-                        final MessageType nextMessageToSend = messageBlockingQueue.poll(60, TimeUnit.SECONDS);
+                        final MessageType nextMessageToSend = messageQueue.poll();
 
-                        if (nextMessageToSend == null) continue;
+                        // I know Thread.sleep() is bad, but after working through a couple different solutions using a
+                        // scheduled executor service, I found that solution to be a bit more complicated than I wanted.
+                        // Eventually, we could get away from using an error in the gRPC stream to indicate that the
+                        // remote server is no longer reachable, but when I added a listener for state changes via
+                        // channel.notifyWhenStateChanged(), I seemed to have run into a bug because that call was
+                        // actually changing the channel connection state. Therefore, until we can reliable come up with
+                        // a way to know when the connection drops, this sleep seems like the best approach.
+                        if (nextMessageToSend == null)
+                        {
+                            Thread.sleep(QUEUE_PROCESSING_SLEEP_TIME);
+                            continue;
+                        }
 
                         if (Log.isLoggable(LOG_TAG, Log.VERBOSE))
                         {
