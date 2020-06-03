@@ -1,6 +1,7 @@
 package com.craxiom.networksurvey.fragments;
 
 import android.Manifest;
+import android.annotation.SuppressLint;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
@@ -13,6 +14,7 @@ import android.os.IBinder;
 import android.os.Looper;
 import android.util.Log;
 import android.view.LayoutInflater;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.inputmethod.InputMethodManager;
@@ -77,6 +79,7 @@ public class GrpcConnectionFragment extends Fragment implements IConnectionState
         super.onCreate(savedInstanceState);
     }
 
+    @SuppressLint("ClickableViewAccessibility")
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState)
     {
@@ -97,16 +100,35 @@ public class GrpcConnectionFragment extends Fragment implements IConnectionState
         grpcPortNumberEdit.setText(String.valueOf(portNumber));
         deviceNameEdit.setText(deviceName);
 
-        grpcConnectionToggleSwitch.setOnCheckedChangeListener((buttonView, isChecked) -> {
+        // Adding the OnTouchListener as well so that we can reject drag events since those are much harder to deal with
+        // Also checking for buttonView.isPressed() so that we don't trigger the onConnectionSwitchToggled call when we
+        // programmatically set the toggle switch position.
+        grpcConnectionToggleSwitch.setOnClickListener((buttonView) -> {
             if (buttonView.isPressed()) onConnectionSwitchToggled();
         });
-
-        initializeFragmentBasedOnConnectionState();
+        grpcConnectionToggleSwitch.setOnTouchListener((buttonView, motionEvent) ->
+                motionEvent.getActionMasked() == MotionEvent.ACTION_MOVE);
 
         ActivityCompat.requestPermissions(requireActivity(), new String[]{Manifest.permission.INTERNET},
                 ACCESS_PERMISSION_REQUEST_ID);
 
         return view;
+    }
+
+    @Override
+    public void onResume()
+    {
+        super.onResume();
+
+        initializeFragmentBasedOnConnectionState();
+    }
+
+    @Override
+    public void onPause()
+    {
+        if (grpcConnectionService != null) grpcConnectionService.unregisterConnectionStateListener(this);
+
+        super.onPause();
     }
 
     @Override
@@ -185,6 +207,10 @@ public class GrpcConnectionFragment extends Fragment implements IConnectionState
     {
         Log.d(LOG_TAG, "Updating the UI state for: " + connectionState);
 
+        // It is possible that the user has switched away from the view during a connection attempt, and in that event
+        // the view will be refreshed in the onResume method.
+        if (!isVisible()) return;
+
         switch (connectionState)
         {
             case DISCONNECTED:
@@ -230,6 +256,8 @@ public class GrpcConnectionFragment extends Fragment implements IConnectionState
      */
     private void connectToGrpcServer()
     {
+        Log.d(LOG_TAG, "Attempting to connect to a gRPC server");
+
         try
         {
             if (!areConnectionParametersValid())

@@ -5,7 +5,7 @@ package com.craxiom.networksurvey.constants;
  *
  * @since 0.0.5
  */
-public final class UmtsMessageConstants extends MessageConstants
+public final class UmtsMessageConstants extends CellularMessageConstants
 {
     private UmtsMessageConstants()
     {

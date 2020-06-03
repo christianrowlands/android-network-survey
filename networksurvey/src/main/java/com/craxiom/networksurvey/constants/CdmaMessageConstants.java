@@ -5,7 +5,7 @@ package com.craxiom.networksurvey.constants;
  *
  * @since 0.0.5
  */
-public final class CdmaMessageConstants extends MessageConstants
+public final class CdmaMessageConstants extends CellularMessageConstants
 {
     private CdmaMessageConstants()
     {

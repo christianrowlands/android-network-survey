@@ -57,9 +57,12 @@
                 android:id="@+id/app_version_name"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:layout_margin="@dimen/x_small_margin"
                 android:gravity="center"
                 android:text="" />
+
         </LinearLayout>
+
     </com.google.android.material.navigation.NavigationView>
 
 </androidx.drawerlayout.widget.DrawerLayout>

@@ -4,12 +4,14 @@ import android.content.Context;
 import android.util.Log;
 
 import com.craxiom.networksurvey.ConnectionState;
+import com.craxiom.networksurvey.listeners.ICellularSurveyRecordListener;
 import com.craxiom.networksurvey.listeners.IConnectionStateListener;
-import com.craxiom.networksurvey.listeners.ISurveyRecordListener;
+import com.craxiom.networksurvey.listeners.IWifiSurveyRecordListener;
 import com.craxiom.networksurvey.messaging.CdmaRecord;
 import com.craxiom.networksurvey.messaging.GsmRecord;
 import com.craxiom.networksurvey.messaging.LteRecord;
 import com.craxiom.networksurvey.messaging.UmtsRecord;
+import com.craxiom.networksurvey.model.WifiRecordWrapper;
 import com.google.protobuf.MessageOrBuilder;
 import com.google.protobuf.util.JsonFormat;
 
@@ -29,7 +31,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
  *
  * @since 0.1.1
  */
-public class MqttConnection implements ISurveyRecordListener
+public class MqttConnection implements ICellularSurveyRecordListener, IWifiSurveyRecordListener
 {
     private static final String LOG_TAG = MqttConnection.class.getSimpleName();
 
@@ -37,6 +39,12 @@ public class MqttConnection implements ISurveyRecordListener
     private static final String MQTT_CDMA_MESSAGE_TOPIC = "CDMA_MESSAGE";
     private static final String MQTT_UMTS_MESSAGE_TOPIC = "UMTS_MESSAGE";
     private static final String MQTT_LTE_MESSAGE_TOPIC = "LTE_MESSAGE";
+    private static final String MQTT_WIFI_BEACON_MESSAGE_TOPIC = "80211_BEACON_MESSAGE";
+
+    /**
+     * The amount of time to wait for a proper disconnection to occur before we force kill it.
+     */
+    private static final long DISCONNECT_TIMEOUT = 250L;
 
     private final List<IConnectionStateListener> mqttConnectionListeners = new CopyOnWriteArrayList<>();
 
@@ -73,6 +81,12 @@ public class MqttConnection implements ISurveyRecordListener
         publishMessage(MQTT_LTE_MESSAGE_TOPIC, lteRecord);
     }
 
+    @Override
+    public void onWifiBeaconSurveyRecords(List<WifiRecordWrapper> wifiBeaconRecords)
+    {
+        wifiBeaconRecords.forEach(wifiRecord -> publishMessage(MQTT_WIFI_BEACON_MESSAGE_TOPIC, wifiRecord.getWifiBeaconRecord()));
+    }
+
     /**
      * @return The current {@link ConnectionState} of the connection to the MQTT Broker.
      */
@@ -103,6 +117,8 @@ public class MqttConnection implements ISurveyRecordListener
 
     /**
      * Connect to the MQTT Broker.
+     * <p>
+     * Synchronize so that we don't mess with the connection client while creating a new connection.
      *
      * @param applicationContext The context to use for the MQTT Android Client.
      */
@@ -131,6 +147,8 @@ public class MqttConnection implements ISurveyRecordListener
 
     /**
      * Disconnect from the MQTT Broker.
+     * <p>
+     * This method is synchronized so that we don't try connecting while a disconnect is in progress.
      */
     public synchronized void disconnect()
     {
@@ -138,10 +156,11 @@ public class MqttConnection implements ISurveyRecordListener
         {
             try
             {
-                if (mqttAndroidClient.isConnected()) mqttAndroidClient.disconnect(500L);
+                final IMqttToken token = mqttAndroidClient.disconnect(DISCONNECT_TIMEOUT);
+                token.waitForCompletion(DISCONNECT_TIMEOUT);  // Wait for completion so that we don't initiate a new connection while waiting for this disconnect.
             } catch (Exception e)
             {
-                Log.e(LOG_TAG, "Could not successfully disconnect from the MQTT broker");
+                Log.e(LOG_TAG, "An exception occurred when disconnecting from the MQTT broker", e);
             }
         }
 
@@ -153,7 +172,7 @@ public class MqttConnection implements ISurveyRecordListener
      *
      * @param newConnectionState The new MQTT connection state.
      */
-    private synchronized void notifyConnectionStateChange(ConnectionState newConnectionState)
+    private void notifyConnectionStateChange(ConnectionState newConnectionState)
     {
         if (Log.isLoggable(LOG_TAG, Log.INFO))
         {

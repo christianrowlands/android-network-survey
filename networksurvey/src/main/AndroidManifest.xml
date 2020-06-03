@@ -9,9 +9,21 @@
     <uses-permission android:name="android.permission.READ_PHONE_STATE" /> <!-- For the IMEI / MEID -->
     <uses-permission android:name="android.permission.INTERNET" /> <!-- To connect to a remote gRPC server -->
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" /> <!-- To monitor changes to the network state -->
+    <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" /> <!-- Access a Wi-Fi Scan -->
+    <uses-permission android:name="android.permission.CHANGE_WIFI_STATE" /> <!-- Trigger a Wi-Fi Scan -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.WAKE_LOCK" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+
+    <uses-feature
+        android:name="android.hardware.location.gps"
+        android:required="false" />
+    <uses-feature
+        android:name="android.hardware.telephony"
+        android:required="false" />
+    <uses-feature
+        android:name="android.hardware.wifi"
+        android:required="false" />
 
     <application
         android:name=".Application"

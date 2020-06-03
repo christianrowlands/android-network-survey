@@ -98,7 +98,7 @@
                 android:layout_margin="@dimen/small_margin"
                 android:layout_weight="2"
                 android:autofillHints="Enter in a name to identify this device"
-                android:hint="@string/device_name_hint">
+                android:hint="@string/client_id_hint">
 
                 <com.google.android.material.textfield.TextInputEditText
                     android:id="@+id/deviceName"

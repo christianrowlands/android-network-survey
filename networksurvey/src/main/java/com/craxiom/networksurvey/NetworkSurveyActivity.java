@@ -9,6 +9,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
 import android.content.SharedPreferences;
+import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.content.res.ColorStateList;
 import android.graphics.Color;
@@ -21,6 +22,7 @@ import android.provider.Settings;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.activity.OnBackPressedCallback;
@@ -67,11 +69,13 @@ public class NetworkSurveyActivity extends AppCompatActivity
     public NavController navController;
 
     private MenuItem startStopCellularLoggingMenuItem;
+    private MenuItem startStopWifiLoggingMenuItem;
     private MenuItem startStopGnssLoggingMenuItem;
 
     private SurveyServiceConnection surveyServiceConnection;
     private NetworkSurveyService networkSurveyService;
     private boolean turnOnCellularLoggingOnNextServiceConnection = false;
+    private boolean turnOnWifiLoggingOnNextServiceConnection = false;
     private boolean turnOnGnssLoggingOnNextServiceConnection = false;
     private AppBarConfiguration appBarConfiguration;
 
@@ -89,9 +93,13 @@ public class NetworkSurveyActivity extends AppCompatActivity
 
         final SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
         turnOnCellularLoggingOnNextServiceConnection = preferences.getBoolean(NetworkSurveyConstants.PROPERTY_AUTO_START_CELLULAR_LOGGING, false);
+        turnOnWifiLoggingOnNextServiceConnection = preferences.getBoolean(NetworkSurveyConstants.PROPERTY_AUTO_START_WIFI_LOGGING, false);
         turnOnGnssLoggingOnNextServiceConnection = preferences.getBoolean(NetworkSurveyConstants.PROPERTY_AUTO_START_GNSS_LOGGING, false);
 
         setupNavigation();
+
+        // Set the version number at the bottom of the navigation drawer
+        setAppVersionNumber();
 
         surveyServiceConnection = new SurveyServiceConnection();
 
@@ -182,11 +190,13 @@ public class NetworkSurveyActivity extends AppCompatActivity
         // Inflate the menu; this adds items to the action bar if it is present.
         getMenuInflater().inflate(R.menu.menu_network_details, menu);
         startStopCellularLoggingMenuItem = menu.findItem(R.id.action_start_stop_cellular_logging);
+        startStopWifiLoggingMenuItem = menu.findItem(R.id.action_start_stop_wifi_logging);
         startStopGnssLoggingMenuItem = menu.findItem(R.id.action_start_stop_gnss_logging);
 
         if (networkSurveyService != null)
         {
             updateCellularLoggingButton(networkSurveyService.isCellularLoggingEnabled());
+            updateWifiLoggingButton(networkSurveyService.isWifiLoggingEnabled());
             updateGnssLoggingButton(networkSurveyService.isGnssLoggingEnabled());
         }
 
@@ -202,6 +212,10 @@ public class NetworkSurveyActivity extends AppCompatActivity
         if (id == R.id.action_start_stop_cellular_logging)
         {
             toggleCellularLogging(!networkSurveyService.isCellularLoggingEnabled());
+            return true;
+        } else if (id == R.id.action_start_stop_wifi_logging)
+        {
+            toggleWifiLogging(!networkSurveyService.isWifiLoggingEnabled());
             return true;
         } else if (id == R.id.action_start_stop_gnss_logging)
         {
@@ -380,7 +394,7 @@ public class NetworkSurveyActivity extends AppCompatActivity
 
         navController = Navigation.findNavController(this, R.id.main_content);
 
-        appBarConfiguration = new AppBarConfiguration.Builder(R.id.main_cellular_fragment, R.id.main_gnss_fragment)
+        appBarConfiguration = new AppBarConfiguration.Builder(R.id.main_cellular_fragment, R.id.main_wifi_fragment, R.id.main_gnss_fragment)
                 .setDrawerLayout(drawerLayout)
                 .build();
 
@@ -399,7 +413,9 @@ public class NetworkSurveyActivity extends AppCompatActivity
                 // code here to move this activity to the back stack.
                 final NavDestination currentDestination = navController.getCurrentDestination();
                 if (currentDestination != null &&
-                        (currentDestination.getId() == R.id.main_cellular_fragment || currentDestination.getId() == R.id.main_gnss_fragment))
+                        (currentDestination.getId() == R.id.main_cellular_fragment
+                                || currentDestination.getId() == R.id.main_wifi_fragment
+                                || currentDestination.getId() == R.id.main_gnss_fragment))
                 {
                     moveTaskToBack(true);
                 } else
@@ -409,6 +425,24 @@ public class NetworkSurveyActivity extends AppCompatActivity
             }
         };
         getOnBackPressedDispatcher().addCallback(this, callback);
+    }
+
+    /**
+     * Get the app version number and set it at the bottom of the navigation drawer.
+     *
+     * @since 0.1.2
+     */
+    private void setAppVersionNumber()
+    {
+        try
+        {
+            PackageInfo info = getPackageManager().getPackageInfo(getPackageName(), 0);
+            final TextView appVersionView = findViewById(R.id.app_version_name);
+            appVersionView.setText(getString(R.string.app_version, info.versionName));
+        } catch (Exception e)
+        {
+            Log.wtf(LOG_TAG, "Could not set the app version number", e);
+        }
     }
 
     /**
@@ -425,6 +459,24 @@ public class NetworkSurveyActivity extends AppCompatActivity
             if (enabled == null) return getString(R.string.cellular_logging_toggle_failed);
             updateCellularLoggingButton(enabled);
             return getString(enabled ? R.string.cellular_logging_start_toast : R.string.cellular_logging_stop_toast);
+        }).executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
+    }
+
+    /**
+     * Starts or stops writing the Wi-Fi log file based on the specified parameter.
+     *
+     * @param enable True if logging should be enabled, false if it should be turned off.
+     * @since 0.1.2
+     */
+    private void toggleWifiLogging(boolean enable)
+    {
+        new ToggleLoggingTask(() -> {
+            if (networkSurveyService != null) return networkSurveyService.toggleWifiLogging(enable);
+            return null;
+        }, enabled -> {
+            if (enabled == null) return getString(R.string.wifi_logging_toggle_failed);
+            updateWifiLoggingButton(enabled);
+            return getString(enabled ? R.string.wifi_logging_start_toast : R.string.wifi_logging_stop_toast);
         }).executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
     }
 
@@ -461,6 +513,25 @@ public class NetworkSurveyActivity extends AppCompatActivity
         if (enabled) colorStateList = ColorStateList.valueOf(Color.GREEN);
 
         startStopCellularLoggingMenuItem.setIconTintList(colorStateList);
+    }
+
+    /**
+     * Updates the Wi-Fi logging button based on the specified logging state.
+     *
+     * @param enabled True if logging is currently enabled, false otherwise.
+     * @since 0.1.2
+     */
+    private void updateWifiLoggingButton(boolean enabled)
+    {
+        if (startStopWifiLoggingMenuItem == null) return;
+
+        final String menuTitle = getString(enabled ? R.string.action_stop_wifi_logging : R.string.action_start_wifi_logging);
+        startStopWifiLoggingMenuItem.setTitle(menuTitle);
+
+        ColorStateList colorStateList = null;
+        if (enabled) colorStateList = ColorStateList.valueOf(Color.GREEN);
+
+        startStopWifiLoggingMenuItem.setIconTintList(colorStateList);
     }
 
     /**
@@ -538,6 +609,15 @@ public class NetworkSurveyActivity extends AppCompatActivity
                 updateCellularLoggingButton(cellularLoggingEnabled);
             }
 
+            final boolean wifiLoggingEnabled = networkSurveyService.isWifiLoggingEnabled();
+            if (turnOnWifiLoggingOnNextServiceConnection && !wifiLoggingEnabled)
+            {
+                toggleWifiLogging(true);
+            } else
+            {
+                updateWifiLoggingButton(wifiLoggingEnabled);
+            }
+
             final boolean gnssLoggingEnabled = networkSurveyService.isGnssLoggingEnabled();
             if (turnOnGnssLoggingOnNextServiceConnection && !gnssLoggingEnabled)
             {
@@ -548,6 +628,7 @@ public class NetworkSurveyActivity extends AppCompatActivity
             }
 
             turnOnCellularLoggingOnNextServiceConnection = false;
+            turnOnWifiLoggingOnNextServiceConnection = false;
             turnOnGnssLoggingOnNextServiceConnection = false;
         }
 

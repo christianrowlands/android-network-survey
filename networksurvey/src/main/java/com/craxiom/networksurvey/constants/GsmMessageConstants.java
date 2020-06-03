@@ -5,7 +5,7 @@ package com.craxiom.networksurvey.constants;
  *
  * @since 0.0.5
  */
-public final class GsmMessageConstants extends MessageConstants
+public final class GsmMessageConstants extends CellularMessageConstants
 {
     private GsmMessageConstants()
     {
