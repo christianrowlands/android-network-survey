@@ -30,7 +30,7 @@ import androidx.core.content.FileProvider;
 import com.craxiom.networksurvey.Application;
 import com.craxiom.networksurvey.BuildConfig;
 import com.craxiom.networksurvey.R;
-import com.google.zxing.integration.android.IntentIntegrator;
+//import com.google.zxing.integration.android.IntentIntegrator;
 
 import java.io.File;
 
@@ -153,8 +153,8 @@ public class IOUtils
     public static void openQrCodeReader(AppCompatActivity activity)
     {
         // Open ZXing to scan GEO URI from QR Code
-        IntentIntegrator integrator = new IntentIntegrator(activity);
-        integrator.initiateScan();
+        //IntentIntegrator integrator = new IntentIntegrator(activity);
+        //integrator.initiateScan();
     }
 
     /**

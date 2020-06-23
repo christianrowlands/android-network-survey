@@ -26,6 +26,7 @@ android {
     lintOptions {
         abortOnError false
     }
+    buildToolsVersion '29.0.3'
 }
 
 dependencies {
@@ -52,7 +53,7 @@ dependencies {
     implementation 'org.eclipse.paho:org.eclipse.paho.android.service:1.1.1'
 
     // QR Code reader for ground truth locations
-    implementation 'com.google.zxing:android-integration:3.3.0'
+    //implementation 'com.google.zxing:android-integration:3.3.0'
 
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:$kotlin_version"
 
