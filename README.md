@@ -1,5 +1,8 @@
 # Network Survey Android App
 
+[![Build Status](https://travis-ci.com/christianrowlands/android-network-survey.svg?branch=develop)](https://travis-ci.com/github/christianrowlands/android-network-survey)
+[![License](https://img.shields.io/badge/license-Apache%202-green.svg?style=flat)](https://github.com/christianrowlands/android-network-survey/blob/develop/LICENSE)
+
 The Network Survey Android App provides a basic survey capability for Cellular networks, Wi-Fi networks and GNSS constellations.  
 For cellular data, in its current state it can be used to examine the network details of the current LTE serving cell, and log 
 GSM, CDMA, UMTS, and LTE records to a GeoPackage file. Wi-Fi survey records can also be logged to a GeoPackage file, 
