@@ -15,7 +15,6 @@ android:
 
   components:
     - tools
-    - tools
     - platform-tools
 
     # The BuildTools version used by your project
