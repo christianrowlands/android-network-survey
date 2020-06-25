@@ -78,7 +78,7 @@ public class WifiUtilsTest
         final String capabilities = "[WPA-PSK-CCMP+TKIP][WPA2-PSK-CCMP+TKIP][RSN-PSK-CCMP+TKIP][ESS]";
 
         assertEquals(EncryptionType.ENC_WPA_WPA2, WifiCapabilitiesUtils.getEncryptionType(capabilities));
-        assertTrue(WifiCapabilitiesUtils.supportsWps(capabilities));
+        assertFalse(WifiCapabilitiesUtils.supportsWps(capabilities));
     }
 
     @Test
