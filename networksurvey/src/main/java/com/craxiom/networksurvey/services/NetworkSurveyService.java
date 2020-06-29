@@ -1156,20 +1156,22 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
         {
             final Bundle mdmProperties = restrictionsManager.getApplicationRestrictions();
 
-            final boolean hasBrokerUri = mdmProperties.containsKey(NetworkSurveyConstants.PROPERTY_MQTT_BROKER_URL);
-            if (!hasBrokerUri) return null;
+            final boolean hasBrokerHost = mdmProperties.containsKey(NetworkSurveyConstants.PROPERTY_MQTT_CONNECTION_HOST);
+            if (!hasBrokerHost) return null;
 
-            final String mqttBrokerUri = mdmProperties.getString(NetworkSurveyConstants.PROPERTY_MQTT_BROKER_URL);
+            final String mqttBrokerHost = mdmProperties.getString(NetworkSurveyConstants.PROPERTY_MQTT_CONNECTION_HOST);
+            final int portNumber = mdmProperties.getInt(NetworkSurveyConstants.PROPERTY_MQTT_CONNECTION_PORT, NetworkSurveyConstants.DEFAULT_MQTT_PORT);
+            final boolean tlsEnabled = mdmProperties.getBoolean(NetworkSurveyConstants.PROPERTY_MQTT_CONNECTION_TLS_ENABLED, NetworkSurveyConstants.DEFAULT_MQTT_TLS_SETTING);
             final String clientId = mdmProperties.getString(NetworkSurveyConstants.PROPERTY_MQTT_CLIENT_ID);
             final String username = mdmProperties.getString(NetworkSurveyConstants.PROPERTY_MQTT_USERNAME);
             final String password = mdmProperties.getString(NetworkSurveyConstants.PROPERTY_MQTT_PASSWORD);
 
-            if (mqttBrokerUri == null || clientId == null)
+            if (mqttBrokerHost == null || clientId == null)
             {
                 return null;
             }
 
-            return new MqttBrokerConnectionInfo(mqttBrokerUri, clientId, username, password);
+            return new MqttBrokerConnectionInfo(mqttBrokerHost, portNumber, tlsEnabled, clientId, username, password);
         }
 
         return null;

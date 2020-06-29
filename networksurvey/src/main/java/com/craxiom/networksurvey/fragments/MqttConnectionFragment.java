@@ -66,10 +66,10 @@ public class MqttConnectionFragment extends Fragment implements IConnectionState
     private EditText deviceNameEdit;
     private EditText usernameEdit;
     private EditText passwordEdit;
-    private CardView helpCardView;
 
     private NetworkSurveyService surveyService;
 
+    private boolean mdmConfigPresent;
     private boolean mdmOverride = false;
     private String host = "";
     private Integer portNumber = NetworkSurveyConstants.DEFAULT_MQTT_PORT;
@@ -113,7 +113,18 @@ public class MqttConnectionFragment extends Fragment implements IConnectionState
 
         restoreConnectionParameters();
 
-        if (isMdmConfigPresent()) mdmOverrideCard.setVisibility(View.VISIBLE);
+        mdmConfigPresent = isMdmConfigPresent();
+        if (mdmConfigPresent)
+        {
+            mdmOverrideCard.setVisibility(View.VISIBLE);
+
+            // Must use this mdmOverride flag after calling restoreConnectionParameters() above
+            if (!mdmOverride)
+            {
+                readMdmConfig();
+                setConnectionInputFieldsEditable(false, true);
+            }
+        }
 
         mdmOverrideToggleSwitch.setChecked(mdmOverride);
         mqttHostAddressEdit.setText(host);
@@ -229,16 +240,43 @@ public class MqttConnectionFragment extends Fragment implements IConnectionState
         {
             final Bundle mdmProperties = restrictionsManager.getApplicationRestrictions();
 
-            final boolean hasBrokerUri = mdmProperties.containsKey(NetworkSurveyConstants.PROPERTY_MQTT_BROKER_URL);
-            if (!hasBrokerUri) return false;
+            final boolean hasBrokerHost = mdmProperties.containsKey(NetworkSurveyConstants.PROPERTY_MQTT_CONNECTION_HOST);
+            if (!hasBrokerHost) return false;
 
-            final String mqttBrokerUri = mdmProperties.getString(NetworkSurveyConstants.PROPERTY_MQTT_BROKER_URL);
+            final String mqttBrokerHost = mdmProperties.getString(NetworkSurveyConstants.PROPERTY_MQTT_CONNECTION_HOST);
             final String clientId = mdmProperties.getString(NetworkSurveyConstants.PROPERTY_MQTT_CLIENT_ID);
 
-            return mqttBrokerUri != null && clientId != null;
+            return mqttBrokerHost != null && clientId != null;
         }
 
         return false;
+    }
+
+    /**
+     * Reads the MDM configuration from the restrictions manager. This method assumes that {@link #isMdmConfigPresent()}
+     * has already been called to validate if the MDM config should be restored. Calling this method overrides the user
+     * entered values, so it should only be called if an actual valid MDM config is present, and if the user has not
+     * overridden the MDM config {@link NetworkSurveyConstants#PROPERTY_MQTT_MDM_OVERRIDE}.
+     *
+     * @since 0.1.3
+     */
+    private void readMdmConfig()
+    {
+        final RestrictionsManager restrictionsManager = (RestrictionsManager) requireActivity().getSystemService(Context.RESTRICTIONS_SERVICE);
+        if (restrictionsManager == null)
+        {
+            Log.wtf(LOG_TAG, "The MDM config was indicated as present but the restrictions manager is null");
+            return;
+        }
+
+        final Bundle mdmProperties = restrictionsManager.getApplicationRestrictions();
+
+        host = mdmProperties.getString(NetworkSurveyConstants.PROPERTY_MQTT_CONNECTION_HOST);
+        portNumber = mdmProperties.getInt(NetworkSurveyConstants.PROPERTY_MQTT_CONNECTION_PORT, NetworkSurveyConstants.DEFAULT_MQTT_PORT);
+        deviceName = mdmProperties.getString(NetworkSurveyConstants.PROPERTY_MQTT_CLIENT_ID, "");
+        tlsEnabled = mdmProperties.getBoolean(NetworkSurveyConstants.PROPERTY_MQTT_CONNECTION_TLS_ENABLED, NetworkSurveyConstants.DEFAULT_MQTT_TLS_SETTING);
+        mqttUsername = mdmProperties.getString(NetworkSurveyConstants.PROPERTY_MQTT_USERNAME);
+        mqttPassword = mdmProperties.getString(NetworkSurveyConstants.PROPERTY_MQTT_PASSWORD);
     }
 
     /**
@@ -249,14 +287,14 @@ public class MqttConnectionFragment extends Fragment implements IConnectionState
     private void onMdmOverride(boolean mdmOverride)
     {
         this.mdmOverride = mdmOverride;
-        setConnectionInputFieldsEditable(mdmOverride);
-        setAllFieldsVisible(mdmOverride);
+        setConnectionInputFieldsEditable(mdmOverride, true);
 
         // If the user is toggling off the MDM override option, we need to re-attempt a connection to the MDM configured
         // MQTT broker.  In the event it does not work, we need to force a disconnect since the user could have
         // connected to their own MQTT broker while the MDM override was enabled.
         if (!mdmOverride)
         {
+            readMdmConfig(); // Read the MDM config back into the UI since the user has returned control back to the MDM server
             surveyService.attemptMqttConnectWithMdmConfig(true);
         }
     }
@@ -277,7 +315,7 @@ public class MqttConnectionFragment extends Fragment implements IConnectionState
                 connectionStatusText.setText(getString(R.string.status_disconnected));
                 mqttConnectionToggleSwitch.setEnabled(true);
                 mqttConnectionToggleSwitch.setChecked(false);
-                setConnectionInputFieldsEditable(true);
+                setConnectionInputFieldsEditable(true, false);
                 break;
 
             case CONNECTING:
@@ -285,7 +323,7 @@ public class MqttConnectionFragment extends Fragment implements IConnectionState
                 connectionStatusText.setText(getString(R.string.status_connecting));
                 mqttConnectionToggleSwitch.setEnabled(true);
                 mqttConnectionToggleSwitch.setChecked(true);
-                setConnectionInputFieldsEditable(false);
+                setConnectionInputFieldsEditable(false, false);
                 break;
 
             case CONNECTED:
@@ -293,7 +331,7 @@ public class MqttConnectionFragment extends Fragment implements IConnectionState
                 connectionStatusText.setText(getString(R.string.status_connected));
                 mqttConnectionToggleSwitch.setEnabled(true);
                 mqttConnectionToggleSwitch.setChecked(true);
-                setConnectionInputFieldsEditable(false);
+                setConnectionInputFieldsEditable(false, false);
                 break;
 
             case DISCONNECTING:
@@ -301,7 +339,7 @@ public class MqttConnectionFragment extends Fragment implements IConnectionState
                 connectionStatusText.setText(getString(R.string.status_disconnecting));
                 mqttConnectionToggleSwitch.setEnabled(false);
                 mqttConnectionToggleSwitch.setChecked(true);
-                setConnectionInputFieldsEditable(false);
+                setConnectionInputFieldsEditable(false, false);
                 break;
         }
     }
@@ -402,7 +440,7 @@ public class MqttConnectionFragment extends Fragment implements IConnectionState
         if (host != null) edit.putString(NetworkSurveyConstants.PROPERTY_MQTT_CONNECTION_HOST, host);
         edit.putInt(NetworkSurveyConstants.PROPERTY_MQTT_CONNECTION_PORT, portNumber);
         edit.putBoolean(NetworkSurveyConstants.PROPERTY_MQTT_CONNECTION_TLS_ENABLED, tlsEnabled);
-        if (deviceName != null) edit.putString(NetworkSurveyConstants.PROPERTY_MQTT_DEVICE_NAME, deviceName);
+        if (deviceName != null) edit.putString(NetworkSurveyConstants.PROPERTY_MQTT_CLIENT_ID, deviceName);
         if (mqttUsername != null) edit.putString(NetworkSurveyConstants.PROPERTY_MQTT_USERNAME, mqttUsername);
         if (mqttPassword != null) edit.putString(NetworkSurveyConstants.PROPERTY_MQTT_PASSWORD, mqttPassword);
 
@@ -426,7 +464,7 @@ public class MqttConnectionFragment extends Fragment implements IConnectionState
 
         tlsEnabled = preferences.getBoolean(NetworkSurveyConstants.PROPERTY_MQTT_CONNECTION_TLS_ENABLED, NetworkSurveyConstants.DEFAULT_MQTT_TLS_SETTING);
 
-        final String restoredDeviceName = preferences.getString(NetworkSurveyConstants.PROPERTY_MQTT_DEVICE_NAME, "");
+        final String restoredDeviceName = preferences.getString(NetworkSurveyConstants.PROPERTY_MQTT_CLIENT_ID, "");
         if (!restoredDeviceName.isEmpty()) deviceName = restoredDeviceName;
 
         final String restoredUsername = preferences.getString(NetworkSurveyConstants.PROPERTY_MQTT_USERNAME, "");
@@ -447,11 +485,7 @@ public class MqttConnectionFragment extends Fragment implements IConnectionState
      */
     private MqttBrokerConnectionInfo getMqttBrokerConnectionInfo()
     {
-        final String uriPrefix = tlsEnabled ? "ssl://" : "tcp://";
-        final String mqttBrokerUri = uriPrefix + host + ":" + portNumber;
-        final String clientId = deviceName;
-
-        return new MqttBrokerConnectionInfo(mqttBrokerUri, clientId, mqttUsername, mqttPassword);
+        return new MqttBrokerConnectionInfo(host, portNumber, tlsEnabled, deviceName, mqttUsername, mqttPassword);
     }
 
     /**
@@ -464,37 +498,25 @@ public class MqttConnectionFragment extends Fragment implements IConnectionState
 
     /**
      * Sets all the connection settings input fields as either editable or disable.
+     * <p>
+     * There is an edge case for this method where calling it will not update the editable status of the UI elements
+     * because the UI is under MDM control. In that case, the UI will remain disabled until MDM control is released or
+     * the MDM override toggle switch is enabled.
      *
      * @param editable True if the connection parameter fields should be editable, false otherwise.
+     * @param force    Force the updating of the input fields regardless of the current MDM status.
      */
-    private void setConnectionInputFieldsEditable(boolean editable)
+    private void setConnectionInputFieldsEditable(boolean editable, boolean force)
     {
+        // Skip updating the UI elements if this device is under MDM control and the user has not turned on the MDM override option.
+        if (!force && mdmConfigPresent && !mdmOverride) return;
+
         mqttHostAddressEdit.setEnabled(editable);
         mqttPortNumberEdit.setEnabled(editable);
-        tlsToggleSwitch.setEnabled(editable);
         deviceNameEdit.setEnabled(editable);
+        tlsToggleSwitch.setEnabled(editable);
         usernameEdit.setEnabled(editable);
         passwordEdit.setEnabled(editable);
-    }
-
-    /**
-     * Sets all the UI elements as either visible or hidden.
-     *
-     * @param visible True if the UI elements should be visible, false otherwise.
-     */
-    private void setAllFieldsVisible(boolean visible)
-    {
-        final int visibility = visible ? View.VISIBLE : View.GONE;
-
-        final View view = requireView();
-        view.findViewById(R.id.mqttHostAddressTextInputLayout).setVisibility(visibility);
-        view.findViewById(R.id.mqttPortNumberTextInputLayout).setVisibility(visibility);
-        view.findViewById(R.id.deviceNameTextInputLayout).setVisibility(visibility);
-        tlsToggleSwitch.setVisibility(visibility);
-        view.findViewById(R.id.usernameTextInputLayout).setVisibility(visibility);
-        view.findViewById(R.id.passwordTextInputLayout).setVisibility(visibility);
-        connectionStatusCardView.setVisibility(visibility);
-        helpCardView.setVisibility(visibility);
     }
 
     /**

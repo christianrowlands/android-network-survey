@@ -155,16 +155,20 @@
         \n\n2. Click the connect toggle switch</string>
 
     <!-- App Restriction Constants -->
-    <string name="mqtt_broker_url_title">MQTT Broker URL</string>
-    <string name="mqtt_broker_url_description">The full MQTT broker URL including the port number at the end</string>
+    <string name="mqtt_start_on_boot_title">MQTT Start at Boot</string>
+    <string name="mqtt_start_on_boot_description">If true, when the phone boots an attempt will be made to connect to the MDM configured MQTT broker</string>
+    <string name="mqtt_connection_host_title">MQTT Connection Host</string>
+    <string name="mqtt_connection_host_description">The MQTT broker hostname (e.g. mqtt.example.com)</string>
+    <string name="mqtt_connection_port_title">MQTT Connection Port</string>
+    <string name="mqtt_connection_port_description">The port number to use when connecting to the MQTT broker (e.g. 8883)</string>
+    <string name="mqtt_tls_enabled_title">MQTT TLS Enabled</string>
+    <string name="mqtt_tls_enabled_description">True to use SSL/TLS for the MQTT connection, false to use a plaintext connection</string>
     <string name="mqtt_client_id_title">MQTT Client ID</string>
     <string name="mqtt_client_id_description">The name this device should use to represent itself to the MQTT broker</string>
     <string name="mqtt_username_title">MQTT Broker Username</string>
     <string name="mqtt_username_description">The username to use when authenticating to the MQTT broker</string>
     <string name="mqtt_password_title">MQTT Broker Password</string>
     <string name="mqtt_password_description">The password to use when authenticating to the MQTT broker</string>
-    <string name="mqtt_start_on_boot_title">MQTT Start at Boot</string>
-    <string name="mqtt_start_on_boot_description">If true, when the phone boots an attempt will be made to connect to the MDM configured MQTT broker</string>
 
     <!-- User Preference Constants -->
     <string name="logging_config_title">Logging Config</string>

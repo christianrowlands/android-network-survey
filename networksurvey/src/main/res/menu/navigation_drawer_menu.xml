@@ -3,7 +3,9 @@
     xmlns:tools="http://schemas.android.com/tools"
     tools:showIn="navigation_view">
 
-    <group android:checkableBehavior="single">
+    <group
+        android:id="@+id/main"
+        android:checkableBehavior="single">
 
         <item
             android:id="@+id/connection_fragment"
