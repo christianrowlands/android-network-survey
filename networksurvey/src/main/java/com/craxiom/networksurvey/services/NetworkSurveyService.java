@@ -170,7 +170,10 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
         final boolean startedAtBoot = intent.getBooleanExtra(NetworkSurveyConstants.EXTRA_STARTED_AT_BOOT, false);
         if (startedAtBoot)
         {
-            Log.i(LOG_TAG, "Received the startedAtBoot flag in the NetworkSurveyService. Reading the auto start logging preferences");
+            Log.i(LOG_TAG, "Received the startedAtBoot flag in the NetworkSurveyService. Reading the auto start preferences");
+
+            attemptMqttConnectionAtBoot();
+
             final SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
 
             final boolean autoStartCellularLogging = preferences.getBoolean(NetworkSurveyConstants.PROPERTY_AUTO_START_CELLULAR_LOGGING, false);
@@ -239,8 +242,6 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
         mqttConnection.registerMqttConnectionStateListener(this);
 
         registerManagedConfigurationListener();
-
-        attemptMqttConnectWithMdmConfig(false);
     }
 
     /**
@@ -289,7 +290,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
             return;
         }
 
-        final MqttBrokerConnectionInfo connectionInfo = getMqttBrokerConnectionInfo();
+        final MqttBrokerConnectionInfo connectionInfo = getMdmMqttBrokerConnectionInfo();
 
         if (connectionInfo != null)
         {
@@ -302,7 +303,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
             connectToMqttBroker(connectionInfo);
         } else
         {
-            Log.i(LOG_TAG, "Skipping the MQTT connection because no MQTT broker configuration has been set");
+            Log.i(LOG_TAG, "Skipping the MQTT connection because no MDN MQTT broker configuration has been set");
 
             if (forceDisconnect) disconnectFromMqttBroker();
         }
@@ -797,6 +798,57 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
     }
 
     /**
+     * Tries to establish an MQTT broker connection after the phone is first started up.
+     * <p>
+     * This method only applies to creating the MQTT connection at boot for two reasons. First, it checks the start
+     * MQTT at boot preference before creating the connection, and secondly, it does not first disconnect any existing
+     * connections because it assumes this method is being called from a fresh start of the Android phone.
+     * <p>
+     * First, it tries to create a connection using the MDM configured MQTT parameters as long as the user has not
+     * toggled the MDM override option. In that case, this method will jump straight to using the user provided MQTT
+     * connection information.
+     * <p>
+     * If the MDM override option is enabled, or if the MDM connection information could not be found then this method
+     * attempts to use the user provided MQTT connection information.
+     *
+     * @since 0.1.3
+     */
+    private void attemptMqttConnectionAtBoot()
+    {
+        // First try to use the MDM settings. The only exception to this is if the user has overridden the MDM settings
+        // which is checked in the mdm connect method
+        boolean mdmConnection = false;
+        if (!isMqttMdmOverrideEnabled())
+        {
+            final RestrictionsManager restrictionsManager = (RestrictionsManager) getSystemService(Context.RESTRICTIONS_SERVICE);
+            if (restrictionsManager != null)
+            {
+                final Bundle mdmProperties = restrictionsManager.getApplicationRestrictions();
+                if (mdmProperties.getBoolean(NetworkSurveyConstants.PROPERTY_MQTT_START_ON_BOOT, false))
+                {
+                    final MqttBrokerConnectionInfo connectionInfo = getMdmMqttBrokerConnectionInfo();
+                    if (connectionInfo != null)
+                    {
+                        mdmConnection = true;
+                        connectToMqttBroker(connectionInfo);
+                    }
+                }
+            }
+        }
+
+        if (!mdmConnection)
+        {
+            final SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
+
+            if (preferences.getBoolean(NetworkSurveyConstants.PROPERTY_MQTT_START_ON_BOOT, false))
+            {
+                final MqttBrokerConnectionInfo userMqttBrokerConnectionInfo = getUserMqttBrokerConnectionInfo();
+                if (userMqttBrokerConnectionInfo != null) connectToMqttBroker(userMqttBrokerConnectionInfo);
+            }
+        }
+    }
+
+    /**
      * Create the Wi-Fi Scan broadcast receiver that will be notified of Wi-Fi scan events once
      * {@link #startWifiRecordScanning()} is called.
      *
@@ -1149,7 +1201,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
      * the user has overrode the MDM config.
      * @since 0.1.1
      */
-    private MqttBrokerConnectionInfo getMqttBrokerConnectionInfo()
+    private MqttBrokerConnectionInfo getMdmMqttBrokerConnectionInfo()
     {
         final RestrictionsManager restrictionsManager = (RestrictionsManager) getSystemService(Context.RESTRICTIONS_SERVICE);
         if (restrictionsManager != null)
@@ -1175,6 +1227,33 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
         }
 
         return null;
+    }
+
+    /**
+     * Get the user configured MQTT broker connection information to use to establish the connection.
+     * <p>
+     * If no user defined MQTT broker connection information is present, then null is returned.
+     *
+     * @return The connection settings to use for the MQTT broker, or null if no connection information is present.
+     * @since 0.1.3
+     */
+    private MqttBrokerConnectionInfo getUserMqttBrokerConnectionInfo()
+    {
+        final SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
+
+        final String mqttBrokerHost = preferences.getString(NetworkSurveyConstants.PROPERTY_MQTT_CONNECTION_HOST, "");
+        if (mqttBrokerHost.isEmpty()) return null;
+
+        final String clientId = preferences.getString(NetworkSurveyConstants.PROPERTY_MQTT_CLIENT_ID, "");
+        if (clientId.isEmpty()) return null;
+
+        final int portNumber = preferences.getInt(NetworkSurveyConstants.PROPERTY_MQTT_CONNECTION_PORT, NetworkSurveyConstants.DEFAULT_MQTT_PORT);
+        final boolean tlsEnabled = preferences.getBoolean(NetworkSurveyConstants.PROPERTY_MQTT_CONNECTION_TLS_ENABLED, NetworkSurveyConstants.DEFAULT_MQTT_TLS_SETTING);
+
+        final String username = preferences.getString(NetworkSurveyConstants.PROPERTY_MQTT_USERNAME, "");
+        final String password = preferences.getString(NetworkSurveyConstants.PROPERTY_MQTT_PASSWORD, "");
+
+        return new MqttBrokerConnectionInfo(mqttBrokerHost, portNumber, tlsEnabled, clientId, username, password);
     }
 
     /**
