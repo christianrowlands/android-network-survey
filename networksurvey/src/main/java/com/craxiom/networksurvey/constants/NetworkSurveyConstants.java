@@ -61,10 +61,13 @@ public class NetworkSurveyConstants
     public static final String PROPERTY_AUTO_START_GNSS_LOGGING = "auto_start_gnss_logging";
     public static final String PROPERTY_CONNECTION_TIMEOUT = "connection_timeout";
     public static final String PROPERTY_MQTT_MDM_OVERRIDE = "mqtt_mdm_override";
-    // The following keys are used in the app_restrictions.xml file as well.
+
+    // The following keys are used in the app_restrictions.xml file and also are settings stored in the app's shared preferences
     public static final String PROPERTY_MQTT_START_ON_BOOT = "mqtt_start_on_boot";
-    public static final String PROPERTY_MQTT_BROKER_URL = "mqtt_broker_url";
+    public static final String PROPERTY_MQTT_CONNECTION_HOST = "mqtt_connection_host";
+    public static final String PROPERTY_MQTT_CONNECTION_PORT = "mqtt_connection_port";
     public static final String PROPERTY_MQTT_CLIENT_ID = "mqtt_client_id";
+    public static final String PROPERTY_MQTT_CONNECTION_TLS_ENABLED = "mqtt_tls_enabled";
     public static final String PROPERTY_MQTT_USERNAME = "mqtt_username";
     public static final String PROPERTY_MQTT_PASSWORD = "mqtt_password";
 
@@ -72,11 +75,6 @@ public class NetworkSurveyConstants
     public static final String PROPERTY_NETWORK_SURVEY_CONNECTION_HOST = "connection_host";
     public static final String PROPERTY_NETWORK_SURVEY_CONNECTION_PORT = "connection_port";
     public static final String PROPERTY_NETWORK_SURVEY_DEVICE_NAME = "device_name";
-
-    public static final String PROPERTY_MQTT_CONNECTION_HOST = "mqtt_connection_host";
-    public static final String PROPERTY_MQTT_CONNECTION_PORT = "mqtt_connection_port";
-    public static final String PROPERTY_MQTT_CONNECTION_TLS_ENABLED = "mqtt_tls_enabled";
-    public static final String PROPERTY_MQTT_DEVICE_NAME = "mqtt_device_name";
 
     public static final String PROPERTY_WIFI_NETWORKS_SORT_ORDER = "wifi_networks_sort_order";
 }

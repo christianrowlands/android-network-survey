@@ -11,6 +11,7 @@ import com.craxiom.networksurvey.messaging.CdmaRecord;
 import com.craxiom.networksurvey.messaging.GsmRecord;
 import com.craxiom.networksurvey.messaging.LteRecord;
 import com.craxiom.networksurvey.messaging.UmtsRecord;
+import com.craxiom.networksurvey.messaging.WifiBeaconRecord;
 import com.craxiom.networksurvey.model.WifiRecordWrapper;
 import com.google.protobuf.MessageOrBuilder;
 import com.google.protobuf.util.JsonFormat;
@@ -51,6 +52,7 @@ public class MqttConnection implements ICellularSurveyRecordListener, IWifiSurve
     private MqttAndroidClient mqttAndroidClient;
     private volatile ConnectionState connectionState = ConnectionState.DISCONNECTED;
     private final JsonFormat.Printer jsonFormatter;
+    private String mqttClientId;
 
     public MqttConnection()
     {
@@ -60,31 +62,47 @@ public class MqttConnection implements ICellularSurveyRecordListener, IWifiSurve
     @Override
     public void onGsmSurveyRecord(GsmRecord gsmRecord)
     {
+        // Set the device name to the user entered value in the MQTT connection UI (or the value provided via MDM)
+        if (mqttClientId != null) gsmRecord = gsmRecord.toBuilder().setDeviceName(mqttClientId).build();
+
         publishMessage(MQTT_GSM_MESSAGE_TOPIC, gsmRecord);
     }
 
     @Override
     public void onCdmaSurveyRecord(CdmaRecord cdmaRecord)
     {
+        // Set the device name to the user entered value in the MQTT connection UI (or the value provided via MDM)
+        if (mqttClientId != null) cdmaRecord = cdmaRecord.toBuilder().setDeviceName(mqttClientId).build();
+
         publishMessage(MQTT_CDMA_MESSAGE_TOPIC, cdmaRecord);
     }
 
     @Override
     public void onUmtsSurveyRecord(UmtsRecord umtsRecord)
     {
+        // Set the device name to the user entered value in the MQTT connection UI (or the value provided via MDM)
+        if (mqttClientId != null) umtsRecord = umtsRecord.toBuilder().setDeviceName(mqttClientId).build();
+
         publishMessage(MQTT_UMTS_MESSAGE_TOPIC, umtsRecord);
     }
 
     @Override
     public void onLteSurveyRecord(LteRecord lteRecord)
     {
+        // Set the device name to the user entered value in the MQTT connection UI (or the value provided via MDM)
+        if (mqttClientId != null) lteRecord = lteRecord.toBuilder().setDeviceName(mqttClientId).build();
+
         publishMessage(MQTT_LTE_MESSAGE_TOPIC, lteRecord);
     }
 
     @Override
     public void onWifiBeaconSurveyRecords(List<WifiRecordWrapper> wifiBeaconRecords)
     {
-        wifiBeaconRecords.forEach(wifiRecord -> publishMessage(MQTT_WIFI_BEACON_MESSAGE_TOPIC, wifiRecord.getWifiBeaconRecord()));
+        wifiBeaconRecords.forEach(wifiRecord -> {
+            WifiBeaconRecord wifiBeaconRecord = wifiRecord.getWifiBeaconRecord();
+            if (mqttClientId != null) wifiBeaconRecord = wifiBeaconRecord.toBuilder().setDeviceName(mqttClientId).build();
+            publishMessage(MQTT_WIFI_BEACON_MESSAGE_TOPIC, wifiBeaconRecord);
+        });
     }
 
     /**
@@ -126,7 +144,8 @@ public class MqttConnection implements ICellularSurveyRecordListener, IWifiSurve
     {
         try
         {
-            mqttAndroidClient = new MqttAndroidClient(applicationContext, connectionInfo.getMqttServerUri(), connectionInfo.getMqttClientId());
+            mqttClientId = connectionInfo.getMqttClientId();
+            mqttAndroidClient = new MqttAndroidClient(applicationContext, connectionInfo.getMqttServerUri(), mqttClientId);
             mqttAndroidClient.setCallback(new MyMqttCallbackExtended(this));
 
             final String username = connectionInfo.getMqttUsername();

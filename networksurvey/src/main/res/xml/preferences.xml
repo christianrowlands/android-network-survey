@@ -32,4 +32,19 @@
 
     </PreferenceCategory>
 
+    <PreferenceCategory
+        app:icon="@drawable/ic_cloud_connection"
+        app:key="mqtt_connection_config"
+        app:title="@string/mqtt_connection_config_title">
+
+        <SwitchPreferenceCompat
+            app:defaultValue="false"
+            app:icon="@drawable/ic_power"
+            app:key="mqtt_start_on_boot"
+            app:summaryOff="@string/auto_start_mqtt_summary_off"
+            app:summaryOn="@string/auto_start_mqtt_summary_on"
+            app:title="@string/mqtt_start_on_boot_title" />
+
+    </PreferenceCategory>
+
 </PreferenceScreen>
