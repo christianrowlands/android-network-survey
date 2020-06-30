@@ -37,6 +37,13 @@ Install Android Studio to work on this code.
 
 [IzzyOnDroid F-Droid](https://apt.izzysoft.de/fdroid/index/apk/com.craxiom.networksurvey)
 
+## gRPC Survey Record Streaming
+
+The Network Survey app supports streaming GSM, CDMA, UMTS, LTE, and 802.11 survey records to a gRPC
+server. More specifically, the [Network Survey Messaging](https://github.com/christianrowlands/network-survey-messaging)
+library can be used to stand up a gRPC server. From there it is up to the implementation to handle
+the incoming survey messages.
+
 ## MQTT Broker Survey Record Streaming
 
 Currently, GSM, CDMA, UMTS, LTE, and 802.11 survey records are sent to a connected MQTT broker. They
@@ -50,28 +57,36 @@ are published on the following MQTT Topics:
  
 The MQTT Broker connection supports both plain text and TLS/SSL connections.
 
+The survey messages are sent in JSON format following the protobuf definitions from the [Network Survey Messaging](https://github.com/christianrowlands/network-survey-messaging)
+library.
+
 ## Changelog
 
+##### [0.1.3](https://github.com/christianrowlands/android-network-survey/releases/tag/release-0.1.3) - 2020-06-30
+ * Added the user entered device name to the outgoing MQTT messages.
+ * When the MQTT connection is configured via MDM, the configuration is now displayed in the MQTT connection UI.
+ * Added a user preference to auto start the MQTT connection when the phone is booted.
+
 ##### [0.1.2](https://github.com/christianrowlands/android-network-survey/releases/tag/release-0.1.2) - 2020-06-03
- * Wi-Fi beacon survey records can now be logged to a GeoPackage file, and sent over the connections
- * Added support for displaying the list of visible Wi-Fi networks
- * Improved the stability of the MQTT connection
- * The app's version number is now displayed in the navigation drawer
+ * Wi-Fi beacon survey records can now be logged to a GeoPackage file, and sent over the connections.
+ * Added support for displaying the list of visible Wi-Fi networks.
+ * Improved the stability of the MQTT connection.
+ * The app's version number is now displayed in the navigation drawer.
 
 ##### [0.1.1](https://github.com/christianrowlands/android-network-survey/releases/tag/release-0.1.1) - 2020-05-08
- * Added support for connecting to an MQTT broker and streaming cellular survey records
- * Added support for allowing the MQTT broker connection information to be set via MDM
- * Fixed a bug that caused the calculator text field to be covered on screens with low resolution and large font
+ * Added support for connecting to an MQTT broker and streaming cellular survey records.
+ * Added support for allowing the MQTT broker connection information to be set via MDM.
+ * Fixed a bug that caused the calculator text field to be covered on screens with low resolution and large font.
 
 ##### [0.1.0](https://github.com/christianrowlands/android-network-survey/releases/tag/release-0.1.0) - 2020-03-24
- * Added support for logging GNSS information to a GeoPackage file
+ * Added support for logging GNSS information to a GeoPackage file.
 
 ##### [0.0.9](https://github.com/christianrowlands/android-network-survey/releases/tag/release-0.0.9) - 2020-01-10
- * Moved the file logging and connection logic to foreground services to prevent the Android System from stopping them
- * The connection now supports sending GSM, CDMA, UMTS, and LTE survey records
- * Added a navigation drawer and put the calculators and connection in it
- * Added a settings UI
- * Other general improvements
+ * Moved the file logging and connection logic to foreground services to prevent the Android System from stopping them.
+ * The connection now supports sending GSM, CDMA, UMTS, and LTE survey records.
+ * Added a navigation drawer and put the calculators and connection in it.
+ * Added a settings UI.
+ * Other general improvements.
 
 ## Contact
 
