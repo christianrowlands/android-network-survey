@@ -4,8 +4,11 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.RestrictionsManager;
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.util.Log;
+
+import androidx.preference.PreferenceManager;
 
 import com.craxiom.networksurvey.constants.NetworkSurveyConstants;
 import com.craxiom.networksurvey.services.NetworkSurveyService;
@@ -36,12 +39,34 @@ public class StartAtBootReceiver extends BroadcastReceiver
         final Bundle mdmProperties = restrictionsManager.getApplicationRestrictions();
         if (mdmProperties.getBoolean(NetworkSurveyConstants.PROPERTY_MQTT_START_ON_BOOT, false))
         {
-            Log.i(LOG_TAG, "Auto starting the Network Survey Service");
+            Log.i(LOG_TAG, "Auto starting the Network Survey Service based on the MDM MQTT auto start preference");
 
-            final Context applicationContext = context.getApplicationContext();
-            final Intent startServiceIntent = new Intent(applicationContext, NetworkSurveyService.class);
-            startServiceIntent.putExtra(NetworkSurveyConstants.EXTRA_STARTED_AT_BOOT, true);
-            context.startForegroundService(startServiceIntent);
+            startNetworkSurveyService(context);
+        } else
+        {
+            final SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(context);
+
+            if (preferences.getBoolean(NetworkSurveyConstants.PROPERTY_MQTT_START_ON_BOOT, false))
+            {
+                Log.i(LOG_TAG, "Auto starting the Network Survey Service based on the settings MQTT auto start preference");
+
+                startNetworkSurveyService(context);
+            }
         }
+    }
+
+    /**
+     * Kick off the {@link NetworkSurveyService} using an intent. The {@link NetworkSurveyConstants#EXTRA_STARTED_AT_BOOT}
+     * flag is used so that the {@link NetworkSurveyService} can handle being started at boot instead of when the app is
+     * opened by the user.
+     *
+     * @since 0.1.3
+     */
+    private void startNetworkSurveyService(Context context)
+    {
+        final Context applicationContext = context.getApplicationContext();
+        final Intent startServiceIntent = new Intent(applicationContext, NetworkSurveyService.class);
+        startServiceIntent.putExtra(NetworkSurveyConstants.EXTRA_STARTED_AT_BOOT, true);
+        context.startForegroundService(startServiceIntent);
     }
 }

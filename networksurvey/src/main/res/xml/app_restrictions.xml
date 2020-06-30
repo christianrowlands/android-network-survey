@@ -10,10 +10,24 @@
 
     <restriction
         android:defaultValue=""
-        android:description="@string/mqtt_broker_url_description"
-        android:key="mqtt_broker_url"
+        android:description="@string/mqtt_connection_host_description"
+        android:key="mqtt_connection_host"
         android:restrictionType="string"
-        android:title="@string/mqtt_broker_url_title" />
+        android:title="@string/mqtt_connection_host_title" />
+
+    <restriction
+        android:defaultValue="8883"
+        android:description="@string/mqtt_connection_port_description"
+        android:key="mqtt_connection_port"
+        android:restrictionType="integer"
+        android:title="@string/mqtt_connection_port_title" />
+
+    <restriction
+        android:defaultValue="true"
+        android:description="@string/mqtt_tls_enabled_description"
+        android:key="mqtt_tls_enabled"
+        android:restrictionType="string"
+        android:title="@string/mqtt_tls_enabled_title" />
 
     <restriction
         android:defaultValue=""
