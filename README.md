@@ -62,6 +62,9 @@ library.
 
 ## Changelog
 
+##### [0.1.4](https://github.com/christianrowlands/android-network-survey/releases/tag/release-0.1.4) - 2020-07-02
+ * Changed the TLS Enabled MDM setting from a string to a boolean.
+
 ##### [0.1.3](https://github.com/christianrowlands/android-network-survey/releases/tag/release-0.1.3) - 2020-06-30
  * Added the user entered device name to the outgoing MQTT messages.
  * When the MQTT connection is configured via MDM, the configuration is now displayed in the MQTT connection UI.
