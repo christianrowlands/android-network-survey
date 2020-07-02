@@ -116,6 +116,8 @@ public class MqttConnectionFragment extends Fragment implements IConnectionState
         mdmConfigPresent = isMdmConfigPresent();
         if (mdmConfigPresent)
         {
+            Log.i(LOG_TAG, "MDM Configuration is present");
+
             mdmOverrideCard.setVisibility(View.VISIBLE);
 
             // Must use this mdmOverride flag after calling restoreConnectionParameters() above
@@ -262,6 +264,8 @@ public class MqttConnectionFragment extends Fragment implements IConnectionState
      */
     private void readMdmConfig()
     {
+        Log.d(LOG_TAG, "Reading the MDM Config from the RestrictionsManager");
+
         final RestrictionsManager restrictionsManager = (RestrictionsManager) requireActivity().getSystemService(Context.RESTRICTIONS_SERVICE);
         if (restrictionsManager == null)
         {
@@ -404,7 +408,7 @@ public class MqttConnectionFragment extends Fragment implements IConnectionState
 
         if (deviceNameEdit.getText().toString().isEmpty())
         {
-            final String deviceNameEmptyMessage = "A device name must be specified";
+            final String deviceNameEmptyMessage = "A client ID must be specified";
             uiThreadHandler.post(() -> Toast.makeText(applicationContext, deviceNameEmptyMessage, Toast.LENGTH_SHORT).show());
             return false;
         }

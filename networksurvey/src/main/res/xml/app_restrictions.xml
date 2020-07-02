@@ -26,7 +26,7 @@
         android:defaultValue="true"
         android:description="@string/mqtt_tls_enabled_description"
         android:key="mqtt_tls_enabled"
-        android:restrictionType="string"
+        android:restrictionType="bool"
         android:title="@string/mqtt_tls_enabled_title" />
 
     <restriction
