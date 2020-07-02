@@ -9,8 +9,8 @@ android {
         applicationId "com.craxiom.networksurvey"
         minSdkVersion 26
         targetSdkVersion 29
-        versionCode 16
-        versionName "0.1.4-SNAPSHOT"
+        versionCode 17
+        versionName "0.1.4"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }
     buildTypes {
