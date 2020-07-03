@@ -62,6 +62,9 @@ library.
 
 ## Changelog
 
+##### [0.1.5](https://github.com/christianrowlands/android-network-survey/releases/tag/release-0.1.5) - 2020-07-02
+ * Fixed a bug where the MDM override setting was not being saved.
+
 ##### [0.1.4](https://github.com/christianrowlands/android-network-survey/releases/tag/release-0.1.4) - 2020-07-02
  * Changed the TLS Enabled MDM setting from a string to a boolean.
 

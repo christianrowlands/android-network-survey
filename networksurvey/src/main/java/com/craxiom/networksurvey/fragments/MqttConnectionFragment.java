@@ -128,13 +128,7 @@ public class MqttConnectionFragment extends Fragment implements IConnectionState
             }
         }
 
-        mdmOverrideToggleSwitch.setChecked(mdmOverride);
-        mqttHostAddressEdit.setText(host);
-        mqttPortNumberEdit.setText(String.valueOf(portNumber));
-        tlsToggleSwitch.setChecked(tlsEnabled);
-        deviceNameEdit.setText(deviceName);
-        usernameEdit.setText(mqttUsername);
-        passwordEdit.setText(mqttPassword);
+        updateUiFieldsFromStoredValues();
 
         mdmOverrideToggleSwitch.setOnCheckedChangeListener((buttonView, isChecked) -> onMdmOverride(mdmOverrideToggleSwitch.isChecked()));
         tlsToggleSwitch.setOnCheckedChangeListener((buttonView, isChecked) -> {
@@ -151,6 +145,22 @@ public class MqttConnectionFragment extends Fragment implements IConnectionState
                 motionEvent.getActionMasked() == MotionEvent.ACTION_MOVE);
 
         return view;
+    }
+
+    /**
+     * Update the UI fields from the instance variables in this class.
+     *
+     * @since 0.1.5
+     */
+    private void updateUiFieldsFromStoredValues()
+    {
+        mdmOverrideToggleSwitch.setChecked(mdmOverride);
+        mqttHostAddressEdit.setText(host);
+        mqttPortNumberEdit.setText(String.valueOf(portNumber));
+        tlsToggleSwitch.setChecked(tlsEnabled);
+        deviceNameEdit.setText(deviceName);
+        usernameEdit.setText(mqttUsername);
+        passwordEdit.setText(mqttPassword);
     }
 
     @Override
@@ -291,6 +301,7 @@ public class MqttConnectionFragment extends Fragment implements IConnectionState
     private void onMdmOverride(boolean mdmOverride)
     {
         this.mdmOverride = mdmOverride;
+        storeMdmOverrideParameter();
         setConnectionInputFieldsEditable(mdmOverride, true);
 
         // If the user is toggling off the MDM override option, we need to re-attempt a connection to the MDM configured
@@ -299,6 +310,7 @@ public class MqttConnectionFragment extends Fragment implements IConnectionState
         if (!mdmOverride)
         {
             readMdmConfig(); // Read the MDM config back into the UI since the user has returned control back to the MDM server
+            updateUiFieldsFromStoredValues();
             surveyService.attemptMqttConnectWithMdmConfig(true);
         }
     }
@@ -430,6 +442,21 @@ public class MqttConnectionFragment extends Fragment implements IConnectionState
         }
 
         return true;
+    }
+
+    /**
+     * Store the MDM override option to the shared preferences.
+     *
+     * @since 0.1.5
+     */
+    private void storeMdmOverrideParameter()
+    {
+        final SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(applicationContext);
+        final SharedPreferences.Editor edit = preferences.edit();
+
+        edit.putBoolean(NetworkSurveyConstants.PROPERTY_MQTT_MDM_OVERRIDE, mdmOverride);
+
+        edit.apply();
     }
 
     /**
