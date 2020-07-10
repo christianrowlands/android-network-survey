@@ -62,24 +62,24 @@ library.
 
 ## Changelog
 
-##### [0.1.5](https://github.com/christianrowlands/android-network-survey/releases/tag/release-0.1.5) - 2020-07-02
+##### [0.1.5](https://github.com/christianrowlands/android-network-survey/releases/tag/v0.1.5) - 2020-07-02
  * Fixed a bug where the MDM override setting was not being saved.
 
-##### [0.1.4](https://github.com/christianrowlands/android-network-survey/releases/tag/release-0.1.4) - 2020-07-02
+##### [0.1.4](https://github.com/christianrowlands/android-network-survey/releases/tag/v0.1.4) - 2020-07-02
  * Changed the TLS Enabled MDM setting from a string to a boolean.
 
-##### [0.1.3](https://github.com/christianrowlands/android-network-survey/releases/tag/release-0.1.3) - 2020-06-30
+##### [0.1.3](https://github.com/christianrowlands/android-network-survey/releases/tag/v0.1.3) - 2020-06-30
  * Added the user entered device name to the outgoing MQTT messages.
  * When the MQTT connection is configured via MDM, the configuration is now displayed in the MQTT connection UI.
  * Added a user preference to auto start the MQTT connection when the phone is booted.
 
-##### [0.1.2](https://github.com/christianrowlands/android-network-survey/releases/tag/release-0.1.2) - 2020-06-03
+##### [0.1.2](https://github.com/christianrowlands/android-network-survey/releases/tag/v0.1.2) - 2020-06-03
  * Wi-Fi beacon survey records can now be logged to a GeoPackage file, and sent over the connections.
  * Added support for displaying the list of visible Wi-Fi networks.
  * Improved the stability of the MQTT connection.
  * The app's version number is now displayed in the navigation drawer.
 
-##### [0.1.1](https://github.com/christianrowlands/android-network-survey/releases/tag/release-0.1.1) - 2020-05-08
+##### [0.1.1](https://github.com/christianrowlands/android-network-survey/releases/tag/v0.1.1) - 2020-05-08
  * Added support for connecting to an MQTT broker and streaming cellular survey records.
  * Added support for allowing the MQTT broker connection information to be set via MDM.
  * Fixed a bug that caused the calculator text field to be covered on screens with low resolution and large font.
