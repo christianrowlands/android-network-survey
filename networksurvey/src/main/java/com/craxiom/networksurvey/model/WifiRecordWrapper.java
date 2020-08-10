@@ -1,9 +1,9 @@
 package com.craxiom.networksurvey.model;
 
-import com.craxiom.networksurvey.messaging.WifiBeaconRecord;
+import com.craxiom.messaging.WifiBeaconRecord;
 
 /**
- * Wraps the {@link com.craxiom.networksurvey.messaging.WifiBeaconRecord} so that we can include the Android Specific
+ * Wraps the {@link com.craxiom.messaging.WifiBeaconRecord} so that we can include the Android Specific
  * {@link android.net.wifi.ScanResult#capabilities} string.  This allow us to display the capabilities string in the UI.
  *
  * @since 0.1.2

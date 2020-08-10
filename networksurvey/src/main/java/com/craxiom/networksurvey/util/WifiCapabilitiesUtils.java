@@ -1,6 +1,6 @@
 package com.craxiom.networksurvey.util;
 
-import com.craxiom.networksurvey.messaging.EncryptionType;
+import com.craxiom.messaging.wifi.EncryptionType;
 
 /**
  * A few pieces of information come packaged in the {@link android.net.wifi.ScanResult#capabilities} string.  This class
@@ -22,31 +22,31 @@ public class WifiCapabilitiesUtils
     {
         if (capabilities.contains("WEP"))
         {
-            return EncryptionType.ENC_WEP;
+            return EncryptionType.WEP;
         }
         if (capabilities.contains("WPA3"))
         {
-            return EncryptionType.ENC_WPA3;
+            return EncryptionType.WPA3;
         } else
         {
             final boolean containsWpa = capabilities.contains("WPA]") || capabilities.contains("WPA-");
             final boolean containsWpa2 = capabilities.contains("WPA2");
             if (containsWpa && containsWpa2)
             {
-                return EncryptionType.ENC_WPA_WPA2;
+                return EncryptionType.WPA_WPA2;
             } else if (containsWpa2)
             {
-                return EncryptionType.ENC_WPA2;
+                return EncryptionType.WPA2;
             } else if (containsWpa)
             {
-                return EncryptionType.ENC_WPA;
+                return EncryptionType.WPA;
             } else if (!capabilities.contains("RSN"))
             {
                 // If RSN is not present then the network is open
-                return EncryptionType.ENC_OPEN;
+                return EncryptionType.OPEN;
             } else
             {
-                return EncryptionType.ENC_UNKNOWN;
+                return EncryptionType.UNKNOWN;
             }
         }
     }

@@ -11,9 +11,10 @@ import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 import androidx.recyclerview.widget.SortedList;
 
+import com.craxiom.messaging.WifiBeaconRecord;
+import com.craxiom.messaging.WifiBeaconRecordData;
 import com.craxiom.networksurvey.R;
 import com.craxiom.networksurvey.constants.WifiBeaconMessageConstants;
-import com.craxiom.networksurvey.messaging.WifiBeaconRecord;
 import com.craxiom.networksurvey.model.WifiRecordWrapper;
 
 /**
@@ -49,7 +50,8 @@ public class MyWifiNetworkRecyclerViewAdapter extends RecyclerView.Adapter<MyWif
 
         final WifiBeaconRecord wifiBeaconRecord = wifiRecordWrapper.getWifiBeaconRecord();
         holder.wifiRecord = wifiBeaconRecord;
-        final String ssid = wifiBeaconRecord.getSsid();
+        final WifiBeaconRecordData data = wifiBeaconRecord.getData();
+        final String ssid = data.getSsid();
         if (ssid.isEmpty())
         {
             holder.ssid.setText(WifiBeaconMessageConstants.HIDDEN_SSID_PLACEHOLDER);
@@ -60,9 +62,9 @@ public class MyWifiNetworkRecyclerViewAdapter extends RecyclerView.Adapter<MyWif
             holder.ssid.setTextColor(context.getResources().getColor(R.color.colorAccent, null));
         }
 
-        if (wifiBeaconRecord.hasSignalStrength())
+        if (data.hasSignalStrength())
         {
-            final float signalStrength = wifiBeaconRecord.getSignalStrength().getValue();
+            final float signalStrength = data.getSignalStrength().getValue();
             holder.signalStrength.setText(context.getString(R.string.wifi_dbm_value, String.valueOf(signalStrength)));
             holder.signalStrength.setTextColor(context.getResources().getColor(getColorForSignalStrength(signalStrength), null));
         } else
@@ -70,10 +72,10 @@ public class MyWifiNetworkRecyclerViewAdapter extends RecyclerView.Adapter<MyWif
             holder.signalStrength.setText("");
         }
 
-        holder.bssid.setText(context.getString(R.string.bssid_value, wifiBeaconRecord.getBssid()));
-        holder.encryptionType.setText(WifiBeaconMessageConstants.getEncryptionTypeString(wifiBeaconRecord.getEncryptionType()));
-        holder.frequency.setText(wifiBeaconRecord.hasFrequency() ? context.getString(R.string.wifi_frequency_value, wifiBeaconRecord.getFrequency().getValue()) : "");
-        holder.channel.setText(wifiBeaconRecord.hasChannel() ? context.getString(R.string.wifi_channel_value, wifiBeaconRecord.getChannel().getValue()) : "");
+        holder.bssid.setText(context.getString(R.string.bssid_value, data.getBssid()));
+        holder.encryptionType.setText(WifiBeaconMessageConstants.getEncryptionTypeString(data.getEncryptionType()));
+        holder.frequency.setText(data.hasFrequencyMhz() ? context.getString(R.string.wifi_frequency_value, data.getFrequencyMhz().getValue()) : "");
+        holder.channel.setText(data.hasChannel() ? context.getString(R.string.wifi_channel_value, data.getChannel().getValue()) : "");
         holder.capabilities.setText(wifiRecordWrapper.getCapabilitiesString());
     }
 

@@ -11,6 +11,7 @@ public final class UmtsMessageConstants extends CellularMessageConstants
     {
     }
 
+    public static final String UMTS_RECORD_MESSAGE_TYPE = "UmtsRecord";
     public static final String UMTS_RECORDS_TABLE_NAME = "UMTS_MESSAGE";
 
     public static final String MCC_COLUMN = "MCC";

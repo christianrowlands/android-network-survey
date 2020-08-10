@@ -3,16 +3,20 @@ package com.craxiom.networksurvey.logging;
 import android.os.Looper;
 import android.util.Log;
 
+import com.craxiom.messaging.CdmaRecord;
+import com.craxiom.messaging.CdmaRecordData;
+import com.craxiom.messaging.GsmRecord;
+import com.craxiom.messaging.GsmRecordData;
+import com.craxiom.messaging.LteRecord;
+import com.craxiom.messaging.LteRecordData;
+import com.craxiom.messaging.UmtsRecord;
+import com.craxiom.messaging.UmtsRecordData;
 import com.craxiom.networksurvey.constants.CdmaMessageConstants;
 import com.craxiom.networksurvey.constants.GsmMessageConstants;
 import com.craxiom.networksurvey.constants.LteMessageConstants;
 import com.craxiom.networksurvey.constants.NetworkSurveyConstants;
 import com.craxiom.networksurvey.constants.UmtsMessageConstants;
 import com.craxiom.networksurvey.listeners.ICellularSurveyRecordListener;
-import com.craxiom.networksurvey.messaging.CdmaRecord;
-import com.craxiom.networksurvey.messaging.GsmRecord;
-import com.craxiom.networksurvey.messaging.LteRecord;
-import com.craxiom.networksurvey.messaging.UmtsRecord;
 import com.craxiom.networksurvey.services.NetworkSurveyService;
 
 import java.sql.SQLException;
@@ -191,54 +195,56 @@ public class CellularSurveyRecordLogger extends SurveyRecordLogger implements IC
                     FeatureDao featureDao = geoPackage.getFeatureDao(GsmMessageConstants.GSM_RECORDS_TABLE_NAME);
                     FeatureRow row = featureDao.newRow();
 
-                    Point fix = new Point(gsmRecord.getLongitude(), gsmRecord.getLatitude(), (double) gsmRecord.getAltitude());
+                    final GsmRecordData data = gsmRecord.getData();
+
+                    Point fix = new Point(data.getLongitude(), data.getLatitude(), (double) data.getAltitude());
 
                     GeoPackageGeometryData geomData = new GeoPackageGeometryData(WGS84_SRS);
                     geomData.setGeometry(fix);
 
                     row.setGeometry(geomData);
 
-                    row.setValue(GsmMessageConstants.TIME_COLUMN, gsmRecord.getDeviceTime());
-                    row.setValue(GsmMessageConstants.RECORD_NUMBER_COLUMN, gsmRecord.getRecordNumber());
-                    row.setValue(GsmMessageConstants.GROUP_NUMBER_COLUMN, gsmRecord.getGroupNumber());
-                    if (gsmRecord.hasServingCell())
+                    row.setValue(GsmMessageConstants.TIME_COLUMN, data.getDeviceTime());
+                    row.setValue(GsmMessageConstants.RECORD_NUMBER_COLUMN, data.getRecordNumber());
+                    row.setValue(GsmMessageConstants.GROUP_NUMBER_COLUMN, data.getGroupNumber());
+                    if (data.hasServingCell())
                     {
-                        row.setValue(GsmMessageConstants.SERVING_CELL_COLUMN, gsmRecord.getServingCell().getValue());
+                        row.setValue(GsmMessageConstants.SERVING_CELL_COLUMN, data.getServingCell().getValue());
                     }
-                    final String provider = gsmRecord.getProvider();
+                    final String provider = data.getProvider();
                     if (!provider.isEmpty()) row.setValue(GsmMessageConstants.PROVIDER_COLUMN, provider);
 
-                    if (gsmRecord.hasMcc())
+                    if (data.hasMcc())
                     {
-                        setShortValue(row, GsmMessageConstants.MCC_COLUMN, gsmRecord.getMcc().getValue());
+                        setShortValue(row, GsmMessageConstants.MCC_COLUMN, data.getMcc().getValue());
                     }
-                    if (gsmRecord.hasMnc())
+                    if (data.hasMnc())
                     {
-                        setShortValue(row, GsmMessageConstants.MNC_COLUMN, gsmRecord.getMnc().getValue());
+                        setShortValue(row, GsmMessageConstants.MNC_COLUMN, data.getMnc().getValue());
                     }
-                    if (gsmRecord.hasLac())
+                    if (data.hasLac())
                     {
-                        setIntValue(row, GsmMessageConstants.LAC_COLUMN, gsmRecord.getLac().getValue());
+                        setIntValue(row, GsmMessageConstants.LAC_COLUMN, data.getLac().getValue());
                     }
-                    if (gsmRecord.hasCi())
+                    if (data.hasCi())
                     {
-                        setIntValue(row, GsmMessageConstants.CID_COLUMN, gsmRecord.getCi().getValue());
+                        setIntValue(row, GsmMessageConstants.CID_COLUMN, data.getCi().getValue());
                     }
-                    if (gsmRecord.hasArfcn())
+                    if (data.hasArfcn())
                     {
-                        setShortValue(row, GsmMessageConstants.ARFCN_COLUMN, gsmRecord.getArfcn().getValue());
+                        setShortValue(row, GsmMessageConstants.ARFCN_COLUMN, data.getArfcn().getValue());
                     }
-                    if (gsmRecord.hasBsic())
+                    if (data.hasBsic())
                     {
-                        setShortValue(row, GsmMessageConstants.BSIC_COLUMN, gsmRecord.getBsic().getValue());
+                        setShortValue(row, GsmMessageConstants.BSIC_COLUMN, data.getBsic().getValue());
                     }
-                    if (gsmRecord.hasSignalStrength())
+                    if (data.hasSignalStrength())
                     {
-                        row.setValue(GsmMessageConstants.SIGNAL_STRENGTH_COLUMN, gsmRecord.getSignalStrength().getValue());
+                        row.setValue(GsmMessageConstants.SIGNAL_STRENGTH_COLUMN, data.getSignalStrength().getValue());
                     }
-                    if (gsmRecord.hasTa())
+                    if (data.hasTa())
                     {
-                        setShortValue(row, GsmMessageConstants.TA_COLUMN, gsmRecord.getTa().getValue());
+                        setShortValue(row, GsmMessageConstants.TA_COLUMN, data.getTa().getValue());
                     }
 
                     featureDao.insert(row);
@@ -271,46 +277,48 @@ public class CellularSurveyRecordLogger extends SurveyRecordLogger implements IC
                     FeatureDao featureDao = geoPackage.getFeatureDao(CdmaMessageConstants.CDMA_RECORDS_TABLE_NAME);
                     FeatureRow row = featureDao.newRow();
 
-                    Point fix = new Point(cdmaRecord.getLongitude(), cdmaRecord.getLatitude(), (double) cdmaRecord.getAltitude());
+                    final CdmaRecordData data = cdmaRecord.getData();
+
+                    Point fix = new Point(data.getLongitude(), data.getLatitude(), (double) data.getAltitude());
 
                     GeoPackageGeometryData geomData = new GeoPackageGeometryData(WGS84_SRS);
                     geomData.setGeometry(fix);
 
                     row.setGeometry(geomData);
 
-                    row.setValue(CdmaMessageConstants.TIME_COLUMN, cdmaRecord.getDeviceTime());
-                    row.setValue(CdmaMessageConstants.RECORD_NUMBER_COLUMN, cdmaRecord.getRecordNumber());
-                    row.setValue(CdmaMessageConstants.GROUP_NUMBER_COLUMN, cdmaRecord.getGroupNumber());
-                    if (cdmaRecord.hasServingCell())
+                    row.setValue(CdmaMessageConstants.TIME_COLUMN, data.getDeviceTime());
+                    row.setValue(CdmaMessageConstants.RECORD_NUMBER_COLUMN, data.getRecordNumber());
+                    row.setValue(CdmaMessageConstants.GROUP_NUMBER_COLUMN, data.getGroupNumber());
+                    if (data.hasServingCell())
                     {
-                        row.setValue(CdmaMessageConstants.SERVING_CELL_COLUMN, cdmaRecord.getServingCell().getValue());
+                        row.setValue(CdmaMessageConstants.SERVING_CELL_COLUMN, data.getServingCell().getValue());
                     }
-                    final String provider = cdmaRecord.getProvider();
+                    final String provider = data.getProvider();
                     if (!provider.isEmpty()) row.setValue(CdmaMessageConstants.PROVIDER_COLUMN, provider);
 
-                    if (cdmaRecord.hasSid())
+                    if (data.hasSid())
                     {
-                        setIntValue(row, CdmaMessageConstants.SID_COLUMN, cdmaRecord.getSid().getValue());
+                        setIntValue(row, CdmaMessageConstants.SID_COLUMN, data.getSid().getValue());
                     }
-                    if (cdmaRecord.hasNid())
+                    if (data.hasNid())
                     {
-                        setIntValue(row, CdmaMessageConstants.NID_COLUMN, cdmaRecord.getNid().getValue());
+                        setIntValue(row, CdmaMessageConstants.NID_COLUMN, data.getNid().getValue());
                     }
-                    if (cdmaRecord.hasBsid())
+                    if (data.hasBsid())
                     {
-                        setIntValue(row, CdmaMessageConstants.BSID_COLUMN, cdmaRecord.getBsid().getValue());
+                        setIntValue(row, CdmaMessageConstants.BSID_COLUMN, data.getBsid().getValue());
                     }
-                    if (cdmaRecord.hasPnOffset())
+                    if (data.hasPnOffset())
                     {
-                        setShortValue(row, CdmaMessageConstants.PN_OFFSET_COLUMN, cdmaRecord.getPnOffset().getValue());
+                        setShortValue(row, CdmaMessageConstants.PN_OFFSET_COLUMN, data.getPnOffset().getValue());
                     }
-                    if (cdmaRecord.hasSignalStrength())
+                    if (data.hasSignalStrength())
                     {
-                        row.setValue(CdmaMessageConstants.SIGNAL_STRENGTH_COLUMN, cdmaRecord.getSignalStrength().getValue());
+                        row.setValue(CdmaMessageConstants.SIGNAL_STRENGTH_COLUMN, data.getSignalStrength().getValue());
                     }
-                    if (cdmaRecord.hasEcio())
+                    if (data.hasEcio())
                     {
-                        row.setValue(CdmaMessageConstants.ECIO_COLUMN, cdmaRecord.getEcio().getValue());
+                        row.setValue(CdmaMessageConstants.ECIO_COLUMN, data.getEcio().getValue());
                     }
 
                     featureDao.insert(row);
@@ -343,54 +351,56 @@ public class CellularSurveyRecordLogger extends SurveyRecordLogger implements IC
                     FeatureDao featureDao = geoPackage.getFeatureDao(UmtsMessageConstants.UMTS_RECORDS_TABLE_NAME);
                     FeatureRow row = featureDao.newRow();
 
-                    Point fix = new Point(umtsRecord.getLongitude(), umtsRecord.getLatitude(), (double) umtsRecord.getAltitude());
+                    final UmtsRecordData data = umtsRecord.getData();
+
+                    Point fix = new Point(data.getLongitude(), data.getLatitude(), (double) data.getAltitude());
 
                     GeoPackageGeometryData geomData = new GeoPackageGeometryData(WGS84_SRS);
                     geomData.setGeometry(fix);
 
                     row.setGeometry(geomData);
 
-                    row.setValue(UmtsMessageConstants.TIME_COLUMN, umtsRecord.getDeviceTime());
-                    row.setValue(UmtsMessageConstants.RECORD_NUMBER_COLUMN, umtsRecord.getRecordNumber());
-                    row.setValue(UmtsMessageConstants.GROUP_NUMBER_COLUMN, umtsRecord.getGroupNumber());
-                    if (umtsRecord.hasServingCell())
+                    row.setValue(UmtsMessageConstants.TIME_COLUMN, data.getDeviceTime());
+                    row.setValue(UmtsMessageConstants.RECORD_NUMBER_COLUMN, data.getRecordNumber());
+                    row.setValue(UmtsMessageConstants.GROUP_NUMBER_COLUMN, data.getGroupNumber());
+                    if (data.hasServingCell())
                     {
-                        row.setValue(UmtsMessageConstants.SERVING_CELL_COLUMN, umtsRecord.getServingCell().getValue());
+                        row.setValue(UmtsMessageConstants.SERVING_CELL_COLUMN, data.getServingCell().getValue());
                     }
-                    final String provider = umtsRecord.getProvider();
+                    final String provider = data.getProvider();
                     if (!provider.isEmpty()) row.setValue(UmtsMessageConstants.PROVIDER_COLUMN, provider);
 
-                    if (umtsRecord.hasMcc())
+                    if (data.hasMcc())
                     {
-                        setShortValue(row, UmtsMessageConstants.MCC_COLUMN, umtsRecord.getMcc().getValue());
+                        setShortValue(row, UmtsMessageConstants.MCC_COLUMN, data.getMcc().getValue());
                     }
-                    if (umtsRecord.hasMnc())
+                    if (data.hasMnc())
                     {
-                        setShortValue(row, UmtsMessageConstants.MNC_COLUMN, umtsRecord.getMnc().getValue());
+                        setShortValue(row, UmtsMessageConstants.MNC_COLUMN, data.getMnc().getValue());
                     }
-                    if (umtsRecord.hasLac())
+                    if (data.hasLac())
                     {
-                        setIntValue(row, UmtsMessageConstants.LAC_COLUMN, umtsRecord.getLac().getValue());
+                        setIntValue(row, UmtsMessageConstants.LAC_COLUMN, data.getLac().getValue());
                     }
-                    if (umtsRecord.hasCi())
+                    if (data.hasCid())
                     {
-                        setIntValue(row, UmtsMessageConstants.CELL_ID_COLUMN, umtsRecord.getCi().getValue());
+                        setIntValue(row, UmtsMessageConstants.CELL_ID_COLUMN, data.getCid().getValue());
                     }
-                    if (umtsRecord.hasUarfcn())
+                    if (data.hasUarfcn())
                     {
-                        setShortValue(row, UmtsMessageConstants.UARFCN_COLUMN, umtsRecord.getUarfcn().getValue());
+                        setShortValue(row, UmtsMessageConstants.UARFCN_COLUMN, data.getUarfcn().getValue());
                     }
-                    if (umtsRecord.hasPsc())
+                    if (data.hasPsc())
                     {
-                        setShortValue(row, UmtsMessageConstants.PSC_COLUMN, umtsRecord.getPsc().getValue());
+                        setShortValue(row, UmtsMessageConstants.PSC_COLUMN, data.getPsc().getValue());
                     }
-                    if (umtsRecord.hasSignalStrength())
+                    if (data.hasSignalStrength())
                     {
-                        row.setValue(UmtsMessageConstants.SIGNAL_STRENGTH_COLUMN, umtsRecord.getSignalStrength().getValue());
+                        row.setValue(UmtsMessageConstants.SIGNAL_STRENGTH_COLUMN, data.getSignalStrength().getValue());
                     }
-                    if (umtsRecord.hasRscp())
+                    if (data.hasRscp())
                     {
-                        row.setValue(UmtsMessageConstants.RSCP_COLUMN, umtsRecord.getRscp().getValue());
+                        row.setValue(UmtsMessageConstants.RSCP_COLUMN, data.getRscp().getValue());
                     }
 
                     featureDao.insert(row);
@@ -423,62 +433,64 @@ public class CellularSurveyRecordLogger extends SurveyRecordLogger implements IC
                     FeatureDao featureDao = geoPackage.getFeatureDao(LteMessageConstants.LTE_RECORDS_TABLE_NAME);
                     FeatureRow row = featureDao.newRow();
 
-                    Point fix = new Point(lteRecord.getLongitude(), lteRecord.getLatitude(), (double) lteRecord.getAltitude());
+                    final LteRecordData data = lteRecord.getData();
+
+                    Point fix = new Point(data.getLongitude(), data.getLatitude(), (double) data.getAltitude());
 
                     GeoPackageGeometryData geomData = new GeoPackageGeometryData(WGS84_SRS);
                     geomData.setGeometry(fix);
 
                     row.setGeometry(geomData);
 
-                    row.setValue(LteMessageConstants.TIME_COLUMN, lteRecord.getDeviceTime());
-                    row.setValue(LteMessageConstants.RECORD_NUMBER_COLUMN, lteRecord.getRecordNumber());
-                    row.setValue(LteMessageConstants.GROUP_NUMBER_COLUMN, lteRecord.getGroupNumber());
+                    row.setValue(LteMessageConstants.TIME_COLUMN, data.getDeviceTime());
+                    row.setValue(LteMessageConstants.RECORD_NUMBER_COLUMN, data.getRecordNumber());
+                    row.setValue(LteMessageConstants.GROUP_NUMBER_COLUMN, data.getGroupNumber());
 
-                    if (lteRecord.hasMcc())
+                    if (data.hasMcc())
                     {
-                        setShortValue(row, LteMessageConstants.MCC_COLUMN, lteRecord.getMcc().getValue());
+                        setShortValue(row, LteMessageConstants.MCC_COLUMN, data.getMcc().getValue());
                     }
-                    if (lteRecord.hasMnc())
+                    if (data.hasMnc())
                     {
-                        setShortValue(row, LteMessageConstants.MNC_COLUMN, lteRecord.getMnc().getValue());
+                        setShortValue(row, LteMessageConstants.MNC_COLUMN, data.getMnc().getValue());
                     }
-                    if (lteRecord.hasTac())
+                    if (data.hasTac())
                     {
-                        setIntValue(row, LteMessageConstants.TAC_COLUMN, lteRecord.getTac().getValue());
+                        setIntValue(row, LteMessageConstants.TAC_COLUMN, data.getTac().getValue());
                     }
-                    if (lteRecord.hasCi())
+                    if (data.hasEci())
                     {
-                        setIntValue(row, LteMessageConstants.CI_COLUMN, lteRecord.getCi().getValue());
+                        setIntValue(row, LteMessageConstants.CI_COLUMN, data.getEci().getValue());
                     }
-                    if (lteRecord.hasEarfcn())
+                    if (data.hasEarfcn())
                     {
-                        setIntValue(row, LteMessageConstants.EARFCN_COLUMN, lteRecord.getEarfcn().getValue());
+                        setIntValue(row, LteMessageConstants.EARFCN_COLUMN, data.getEarfcn().getValue());
                     }
-                    if (lteRecord.hasPci())
+                    if (data.hasPci())
                     {
-                        setShortValue(row, LteMessageConstants.PCI_COLUMN, lteRecord.getPci().getValue());
+                        setShortValue(row, LteMessageConstants.PCI_COLUMN, data.getPci().getValue());
                     }
-                    if (lteRecord.hasRsrp())
+                    if (data.hasRsrp())
                     {
-                        row.setValue(LteMessageConstants.RSRP_COLUMN, lteRecord.getRsrp().getValue());
+                        row.setValue(LteMessageConstants.RSRP_COLUMN, data.getRsrp().getValue());
                     }
-                    if (lteRecord.hasRsrq())
+                    if (data.hasRsrq())
                     {
-                        row.setValue(LteMessageConstants.RSRQ_COLUMN, lteRecord.getRsrq().getValue());
+                        row.setValue(LteMessageConstants.RSRQ_COLUMN, data.getRsrq().getValue());
                     }
-                    if (lteRecord.hasTa())
+                    if (data.hasTa())
                     {
-                        setShortValue(row, LteMessageConstants.TA_COLUMN, lteRecord.getTa().getValue());
+                        setShortValue(row, LteMessageConstants.TA_COLUMN, data.getTa().getValue());
                     }
-                    if (lteRecord.hasServingCell())
+                    if (data.hasServingCell())
                     {
-                        row.setValue(LteMessageConstants.SERVING_CELL_COLUMN, lteRecord.getServingCell().getValue());
+                        row.setValue(LteMessageConstants.SERVING_CELL_COLUMN, data.getServingCell().getValue());
                     }
 
-                    final String provider = lteRecord.getProvider();
+                    final String provider = data.getProvider();
                     if (!provider.isEmpty()) row.setValue(LteMessageConstants.PROVIDER_COLUMN, provider);
 
-                    setLteBandwidth(row, lteRecord.getLteBandwidth());
+                    setLteBandwidth(row, data.getLteBandwidth());
 
                     featureDao.insert(row);
                 }

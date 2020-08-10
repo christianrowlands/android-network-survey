@@ -1,6 +1,6 @@
 package com.craxiom.networksurvey.constants;
 
-import com.craxiom.networksurvey.messaging.LteBandwidth;
+import com.craxiom.messaging.LteBandwidth;
 
 /**
  * The constants associated with the LTE table in the GeoPackage file.
@@ -15,6 +15,7 @@ public class LteMessageConstants extends CellularMessageConstants
     {
     }
 
+    public static final String LTE_RECORD_MESSAGE_TYPE = "LteRecord";
     public static final String LTE_RECORDS_TABLE_NAME = "LTE_MESSAGE";
 
     public static final String MCC_COLUMN = "MCC";
