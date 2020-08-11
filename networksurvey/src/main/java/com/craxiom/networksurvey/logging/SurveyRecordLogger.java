@@ -7,10 +7,10 @@ import android.os.Looper;
 import android.util.Log;
 import android.widget.Toast;
 
+import com.craxiom.messaging.LteBandwidth;
 import com.craxiom.networksurvey.constants.CellularMessageConstants;
 import com.craxiom.networksurvey.constants.LteMessageConstants;
 import com.craxiom.networksurvey.constants.MessageConstants;
-import com.craxiom.networksurvey.messaging.LteBandwidth;
 import com.craxiom.networksurvey.services.NetworkSurveyService;
 import com.craxiom.networksurvey.services.SurveyRecordProcessor;
 
@@ -212,7 +212,7 @@ public abstract class SurveyRecordLogger
     /**
      * Converts the LTE Bandwidth to a float and sets it on the provided row.
      *
-     * @param featureRow   The row of the GeoPackage file to set the LTE Bandwith on.
+     * @param featureRow   The row of the GeoPackage file to set the LTE Bandwidth on.
      * @param lteBandwidth The LTE Bandwidth enum to convert to a float.
      */
     void setLteBandwidth(FeatureRow featureRow, LteBandwidth lteBandwidth)

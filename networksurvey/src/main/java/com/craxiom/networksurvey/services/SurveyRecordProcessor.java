@@ -21,23 +21,32 @@ import android.util.Log;
 import android.view.View;
 import android.widget.TextView;
 
+import com.craxiom.messaging.CdmaRecord;
+import com.craxiom.messaging.CdmaRecordData;
+import com.craxiom.messaging.GsmRecord;
+import com.craxiom.messaging.GsmRecordData;
+import com.craxiom.messaging.LteBandwidth;
+import com.craxiom.messaging.LteRecord;
+import com.craxiom.messaging.LteRecordData;
+import com.craxiom.messaging.UmtsRecord;
+import com.craxiom.messaging.UmtsRecordData;
+import com.craxiom.messaging.WifiBeaconRecord;
+import com.craxiom.messaging.WifiBeaconRecordData;
+import com.craxiom.messaging.wifi.EncryptionType;
 import com.craxiom.networksurvey.CalculationUtils;
 import com.craxiom.networksurvey.GpsListener;
 import com.craxiom.networksurvey.NetworkSurveyActivity;
 import com.craxiom.networksurvey.R;
+import com.craxiom.networksurvey.constants.CdmaMessageConstants;
+import com.craxiom.networksurvey.constants.GsmMessageConstants;
 import com.craxiom.networksurvey.constants.LteMessageConstants;
+import com.craxiom.networksurvey.constants.MessageConstants;
 import com.craxiom.networksurvey.constants.NetworkSurveyConstants;
+import com.craxiom.networksurvey.constants.UmtsMessageConstants;
 import com.craxiom.networksurvey.constants.WifiBeaconMessageConstants;
 import com.craxiom.networksurvey.fragments.NetworkDetailsFragment;
 import com.craxiom.networksurvey.listeners.ICellularSurveyRecordListener;
 import com.craxiom.networksurvey.listeners.IWifiSurveyRecordListener;
-import com.craxiom.networksurvey.messaging.CdmaRecord;
-import com.craxiom.networksurvey.messaging.EncryptionType;
-import com.craxiom.networksurvey.messaging.GsmRecord;
-import com.craxiom.networksurvey.messaging.LteBandwidth;
-import com.craxiom.networksurvey.messaging.LteRecord;
-import com.craxiom.networksurvey.messaging.UmtsRecord;
-import com.craxiom.networksurvey.messaging.WifiBeaconRecord;
 import com.craxiom.networksurvey.model.WifiRecordWrapper;
 import com.craxiom.networksurvey.util.WifiCapabilitiesUtils;
 import com.google.protobuf.BoolValue;
@@ -175,12 +184,12 @@ public class SurveyRecordProcessor
                 allCellInfo.forEach(this::processCellInfo);
             } else
             {
-                updateUi(LteRecord.getDefaultInstance());
+                updateUi(LteRecord.getDefaultInstance().getData());
             }
         } catch (Exception e)
         {
             Log.e(LOG_TAG, "Unable to display and log an LTE Survey Record", e);
-            updateUi(LteRecord.getDefaultInstance());
+            updateUi(LteRecord.getDefaultInstance().getData());
         }
     }
 
@@ -224,11 +233,11 @@ public class SurveyRecordProcessor
                 if (lteSurveyRecord == null)
                 {
                     Log.w(LOG_TAG, "Could not generate a Server LteRecord from the CellInfoLte");
-                    if (isServingCell) updateUi(LteRecord.getDefaultInstance());
+                    if (isServingCell) updateUi(LteRecord.getDefaultInstance().getData());
                     return;
                 }
 
-                if (isServingCell) updateUi(lteSurveyRecord);
+                if (isServingCell) updateUi(lteSurveyRecord.getData());
                 notifyLteRecordListeners(lteSurveyRecord);
             } else if (cellInfo instanceof CellInfoGsm)
             {
@@ -289,43 +298,48 @@ public class SurveyRecordProcessor
         // Validate that the required fields are present before proceeding further
         if (!validateGsmFields(arfcn, bsic, signalStrength)) return null;
 
-        final GsmRecord.Builder recordBuilder = GsmRecord.newBuilder();
+        final GsmRecordData.Builder dataBuilder = GsmRecordData.newBuilder();
 
         if (gpsListener != null)
         {
             @SuppressLint("MissingPermission") final Location lastKnownLocation = gpsListener.getLatestLocation();
             if (lastKnownLocation != null)
             {
-                recordBuilder.setLatitude(lastKnownLocation.getLatitude());
-                recordBuilder.setLongitude(lastKnownLocation.getLongitude());
-                recordBuilder.setAltitude((float) lastKnownLocation.getAltitude());
+                dataBuilder.setLatitude(lastKnownLocation.getLatitude());
+                dataBuilder.setLongitude(lastKnownLocation.getLongitude());
+                dataBuilder.setAltitude((float) lastKnownLocation.getAltitude());
             }
         }
 
-        recordBuilder.setDeviceSerialNumber(deviceId);
-        recordBuilder.setDeviceTime(System.currentTimeMillis());
-        recordBuilder.setMissionId(missionId);
-        recordBuilder.setRecordNumber(recordNumber++);
-        recordBuilder.setGroupNumber(groupNumber);
-        recordBuilder.setServingCell(BoolValue.newBuilder().setValue(cellInfoGsm.isRegistered()).build());
-        if (provider != null) recordBuilder.setProvider(provider.toString());
+        dataBuilder.setDeviceSerialNumber(deviceId);
+        dataBuilder.setDeviceTime(System.currentTimeMillis());
+        dataBuilder.setMissionId(missionId);
+        dataBuilder.setRecordNumber(recordNumber++);
+        dataBuilder.setGroupNumber(groupNumber);
+        dataBuilder.setServingCell(BoolValue.newBuilder().setValue(cellInfoGsm.isRegistered()).build());
+        if (provider != null) dataBuilder.setProvider(provider.toString());
 
         // Even though the Android Javadocs indicate that an unset value is represented by Integer.MAX_VALUE, I found that a -1 is sometimes used for TA and CID.
         // I also found that 0 is used as unset for MCC, MNC, LAC, ARFCN, and BSIC.
 
-        if (mcc != Integer.MAX_VALUE && mcc != 0) recordBuilder.setMcc(Int32Value.newBuilder().setValue(mcc).build());
-        if (mnc != Integer.MAX_VALUE && mnc != 0) recordBuilder.setMnc(Int32Value.newBuilder().setValue(mnc).build());
-        if (lac != Integer.MAX_VALUE && lac != 0) recordBuilder.setLac(Int32Value.newBuilder().setValue(lac).build());
-        if (cid != Integer.MAX_VALUE && cid != -1) recordBuilder.setCi(Int32Value.newBuilder().setValue(cid).build());
+        if (mcc != Integer.MAX_VALUE && mcc != 0) dataBuilder.setMcc(Int32Value.newBuilder().setValue(mcc).build());
+        if (mnc != Integer.MAX_VALUE && mnc != 0) dataBuilder.setMnc(Int32Value.newBuilder().setValue(mnc).build());
+        if (lac != Integer.MAX_VALUE && lac != 0) dataBuilder.setLac(Int32Value.newBuilder().setValue(lac).build());
+        if (cid != Integer.MAX_VALUE && cid != -1) dataBuilder.setCi(Int32Value.newBuilder().setValue(cid).build());
 
-        recordBuilder.setArfcn(Int32Value.newBuilder().setValue(arfcn).build());
-        recordBuilder.setBsic(Int32Value.newBuilder().setValue(bsic).build());
-        recordBuilder.setSignalStrength(FloatValue.newBuilder().setValue(signalStrength).build());
+        dataBuilder.setArfcn(Int32Value.newBuilder().setValue(arfcn).build());
+        dataBuilder.setBsic(Int32Value.newBuilder().setValue(bsic).build());
+        dataBuilder.setSignalStrength(FloatValue.newBuilder().setValue(signalStrength).build());
 
         if (timingAdvance != Integer.MAX_VALUE && timingAdvance != -1)
         {
-            recordBuilder.setTa(Int32Value.newBuilder().setValue(timingAdvance).build());
+            dataBuilder.setTa(Int32Value.newBuilder().setValue(timingAdvance).build());
         }
+
+        final GsmRecord.Builder recordBuilder = GsmRecord.newBuilder();
+        recordBuilder.setMessageType(GsmMessageConstants.GSM_RECORD_MESSAGE_TYPE);
+        recordBuilder.setVersion(MessageConstants.API_VERSION);
+        recordBuilder.setData(dataBuilder);
 
         return recordBuilder.build();
     }
@@ -360,33 +374,38 @@ public class SurveyRecordProcessor
         // Convert the Ec/Io to the actual value.  The Android Javadocs indicate:  "Get the CDMA Ec/Io value in dB*10".  So we need to divide by 10.
         final float ecioFloat = ecio / 10.0f;
 
-        final CdmaRecord.Builder recordBuilder = CdmaRecord.newBuilder();
+        final CdmaRecordData.Builder dataBuilder = CdmaRecordData.newBuilder();
 
         if (gpsListener != null)
         {
             @SuppressLint("MissingPermission") final Location lastKnownLocation = gpsListener.getLatestLocation();
             if (lastKnownLocation != null)
             {
-                recordBuilder.setLatitude(lastKnownLocation.getLatitude());
-                recordBuilder.setLongitude(lastKnownLocation.getLongitude());
-                recordBuilder.setAltitude((float) lastKnownLocation.getAltitude());
+                dataBuilder.setLatitude(lastKnownLocation.getLatitude());
+                dataBuilder.setLongitude(lastKnownLocation.getLongitude());
+                dataBuilder.setAltitude((float) lastKnownLocation.getAltitude());
             }
         }
 
-        recordBuilder.setDeviceSerialNumber(deviceId);
-        recordBuilder.setDeviceTime(System.currentTimeMillis());
-        recordBuilder.setMissionId(missionId);
-        recordBuilder.setRecordNumber(recordNumber++);
-        recordBuilder.setGroupNumber(groupNumber);
-        recordBuilder.setServingCell(BoolValue.newBuilder().setValue(cellInfoCdma.isRegistered()).build());
-        if (provider != null) recordBuilder.setProvider(provider.toString());
+        dataBuilder.setDeviceSerialNumber(deviceId);
+        dataBuilder.setDeviceTime(System.currentTimeMillis());
+        dataBuilder.setMissionId(missionId);
+        dataBuilder.setRecordNumber(recordNumber++);
+        dataBuilder.setGroupNumber(groupNumber);
+        dataBuilder.setServingCell(BoolValue.newBuilder().setValue(cellInfoCdma.isRegistered()).build());
+        if (provider != null) dataBuilder.setProvider(provider.toString());
 
-        if (sid != Integer.MAX_VALUE) recordBuilder.setSid(Int32Value.newBuilder().setValue(sid).build());
-        if (nid != Integer.MAX_VALUE) recordBuilder.setNid(Int32Value.newBuilder().setValue(nid).build());
-        if (bsid != Integer.MAX_VALUE) recordBuilder.setBsid(Int32Value.newBuilder().setValue(bsid).build());
+        if (sid != Integer.MAX_VALUE) dataBuilder.setSid(Int32Value.newBuilder().setValue(sid).build());
+        if (nid != Integer.MAX_VALUE) dataBuilder.setNid(Int32Value.newBuilder().setValue(nid).build());
+        if (bsid != Integer.MAX_VALUE) dataBuilder.setBsid(Int32Value.newBuilder().setValue(bsid).build());
 
-        recordBuilder.setSignalStrength(FloatValue.newBuilder().setValue(signalStrength).build());
-        recordBuilder.setEcio(FloatValue.newBuilder().setValue(ecioFloat).build());
+        dataBuilder.setSignalStrength(FloatValue.newBuilder().setValue(signalStrength).build());
+        dataBuilder.setEcio(FloatValue.newBuilder().setValue(ecioFloat).build());
+
+        final CdmaRecord.Builder recordBuilder = CdmaRecord.newBuilder();
+        recordBuilder.setMessageType(CdmaMessageConstants.CDMA_RECORD_MESSAGE_TYPE);
+        recordBuilder.setVersion(MessageConstants.API_VERSION);
+        recordBuilder.setData(dataBuilder);
 
         return recordBuilder.build();
     }
@@ -419,35 +438,40 @@ public class SurveyRecordProcessor
         // Validate that the required fields are present before proceeding further
         if (!validateUmtsFields(uarfcn, psc, signalStrength)) return null;
 
-        final UmtsRecord.Builder recordBuilder = UmtsRecord.newBuilder();
+        final UmtsRecordData.Builder dataBuilder = UmtsRecordData.newBuilder();
 
         if (gpsListener != null)
         {
             @SuppressLint("MissingPermission") final Location lastKnownLocation = gpsListener.getLatestLocation();
             if (lastKnownLocation != null)
             {
-                recordBuilder.setLatitude(lastKnownLocation.getLatitude());
-                recordBuilder.setLongitude(lastKnownLocation.getLongitude());
-                recordBuilder.setAltitude((float) lastKnownLocation.getAltitude());
+                dataBuilder.setLatitude(lastKnownLocation.getLatitude());
+                dataBuilder.setLongitude(lastKnownLocation.getLongitude());
+                dataBuilder.setAltitude((float) lastKnownLocation.getAltitude());
             }
         }
 
-        recordBuilder.setDeviceSerialNumber(deviceId);
-        recordBuilder.setDeviceTime(System.currentTimeMillis());
-        recordBuilder.setMissionId(missionId);
-        recordBuilder.setRecordNumber(recordNumber++);
-        recordBuilder.setGroupNumber(groupNumber);
-        recordBuilder.setServingCell(BoolValue.newBuilder().setValue(cellInfoWcdma.isRegistered()).build());
-        if (provider != null) recordBuilder.setProvider(provider.toString());
+        dataBuilder.setDeviceSerialNumber(deviceId);
+        dataBuilder.setDeviceTime(System.currentTimeMillis());
+        dataBuilder.setMissionId(missionId);
+        dataBuilder.setRecordNumber(recordNumber++);
+        dataBuilder.setGroupNumber(groupNumber);
+        dataBuilder.setServingCell(BoolValue.newBuilder().setValue(cellInfoWcdma.isRegistered()).build());
+        if (provider != null) dataBuilder.setProvider(provider.toString());
 
-        if (mcc != Integer.MAX_VALUE) recordBuilder.setMcc(Int32Value.newBuilder().setValue(mcc).build());
-        if (mnc != Integer.MAX_VALUE) recordBuilder.setMnc(Int32Value.newBuilder().setValue(mnc).build());
-        if (lac != Integer.MAX_VALUE) recordBuilder.setLac(Int32Value.newBuilder().setValue(lac).build());
-        if (ci != Integer.MAX_VALUE) recordBuilder.setCi(Int32Value.newBuilder().setValue(ci).build());
+        if (mcc != Integer.MAX_VALUE) dataBuilder.setMcc(Int32Value.newBuilder().setValue(mcc).build());
+        if (mnc != Integer.MAX_VALUE) dataBuilder.setMnc(Int32Value.newBuilder().setValue(mnc).build());
+        if (lac != Integer.MAX_VALUE) dataBuilder.setLac(Int32Value.newBuilder().setValue(lac).build());
+        if (ci != Integer.MAX_VALUE) dataBuilder.setCid(Int32Value.newBuilder().setValue(ci).build());
 
-        recordBuilder.setUarfcn(Int32Value.newBuilder().setValue(uarfcn).build());
-        recordBuilder.setPsc(Int32Value.newBuilder().setValue(psc).build());
-        recordBuilder.setSignalStrength(FloatValue.newBuilder().setValue(signalStrength).build());
+        dataBuilder.setUarfcn(Int32Value.newBuilder().setValue(uarfcn).build());
+        dataBuilder.setPsc(Int32Value.newBuilder().setValue(psc).build());
+        dataBuilder.setSignalStrength(FloatValue.newBuilder().setValue(signalStrength).build());
+
+        final UmtsRecord.Builder recordBuilder = UmtsRecord.newBuilder();
+        recordBuilder.setMessageType(UmtsMessageConstants.UMTS_RECORD_MESSAGE_TYPE);
+        recordBuilder.setVersion(MessageConstants.API_VERSION);
+        recordBuilder.setData(dataBuilder);
 
         return recordBuilder.build();
     }
@@ -482,45 +506,50 @@ public class SurveyRecordProcessor
         // Validate that the required fields are present before proceeding further
         if (!validateLteFields(earfcn, pci, rsrp)) return null;
 
-        final LteRecord.Builder lteRecordBuilder = LteRecord.newBuilder();
+        final LteRecordData.Builder dataBuilder = LteRecordData.newBuilder();
 
         if (gpsListener != null)
         {
             @SuppressLint("MissingPermission") final Location lastKnownLocation = gpsListener.getLatestLocation();
             if (lastKnownLocation != null)
             {
-                lteRecordBuilder.setLatitude(lastKnownLocation.getLatitude());
-                lteRecordBuilder.setLongitude(lastKnownLocation.getLongitude());
-                lteRecordBuilder.setAltitude((float) lastKnownLocation.getAltitude());
+                dataBuilder.setLatitude(lastKnownLocation.getLatitude());
+                dataBuilder.setLongitude(lastKnownLocation.getLongitude());
+                dataBuilder.setAltitude((float) lastKnownLocation.getAltitude());
             }
         }
 
-        lteRecordBuilder.setDeviceSerialNumber(deviceId);
-        lteRecordBuilder.setDeviceTime(System.currentTimeMillis());
-        lteRecordBuilder.setMissionId(missionId);
-        lteRecordBuilder.setRecordNumber(recordNumber++);
-        lteRecordBuilder.setGroupNumber(groupNumber);
-        lteRecordBuilder.setServingCell(BoolValue.newBuilder().setValue(cellInfoLte.isRegistered()).build());
-        if (provider != null) lteRecordBuilder.setProvider(provider.toString());
+        dataBuilder.setDeviceSerialNumber(deviceId);
+        dataBuilder.setDeviceTime(System.currentTimeMillis());
+        dataBuilder.setMissionId(missionId);
+        dataBuilder.setRecordNumber(recordNumber++);
+        dataBuilder.setGroupNumber(groupNumber);
+        dataBuilder.setServingCell(BoolValue.newBuilder().setValue(cellInfoLte.isRegistered()).build());
+        if (provider != null) dataBuilder.setProvider(provider.toString());
 
-        if (mcc != Integer.MAX_VALUE) lteRecordBuilder.setMcc(Int32Value.newBuilder().setValue(mcc).build());
-        if (mnc != Integer.MAX_VALUE) lteRecordBuilder.setMnc(Int32Value.newBuilder().setValue(mnc).build());
-        if (tac != Integer.MAX_VALUE) lteRecordBuilder.setTac(Int32Value.newBuilder().setValue(tac).build());
-        if (ci != Integer.MAX_VALUE) lteRecordBuilder.setCi(Int32Value.newBuilder().setValue(ci).build());
+        if (mcc != Integer.MAX_VALUE) dataBuilder.setMcc(Int32Value.newBuilder().setValue(mcc).build());
+        if (mnc != Integer.MAX_VALUE) dataBuilder.setMnc(Int32Value.newBuilder().setValue(mnc).build());
+        if (tac != Integer.MAX_VALUE) dataBuilder.setTac(Int32Value.newBuilder().setValue(tac).build());
+        if (ci != Integer.MAX_VALUE) dataBuilder.setEci(Int32Value.newBuilder().setValue(ci).build());
 
-        lteRecordBuilder.setEarfcn(Int32Value.newBuilder().setValue(earfcn).build());
-        lteRecordBuilder.setPci(Int32Value.newBuilder().setValue(pci).build());
-        lteRecordBuilder.setRsrp(FloatValue.newBuilder().setValue(rsrp).build());
+        dataBuilder.setEarfcn(Int32Value.newBuilder().setValue(earfcn).build());
+        dataBuilder.setPci(Int32Value.newBuilder().setValue(pci).build());
+        dataBuilder.setRsrp(FloatValue.newBuilder().setValue(rsrp).build());
 
-        if (rsrq != Integer.MAX_VALUE) lteRecordBuilder.setRsrq(FloatValue.newBuilder().setValue(rsrq).build());
+        if (rsrq != Integer.MAX_VALUE) dataBuilder.setRsrq(FloatValue.newBuilder().setValue(rsrq).build());
         if (timingAdvance != Integer.MAX_VALUE)
         {
-            lteRecordBuilder.setTa(Int32Value.newBuilder().setValue(timingAdvance).build());
+            dataBuilder.setTa(Int32Value.newBuilder().setValue(timingAdvance).build());
         }
 
-        setBandwidth(lteRecordBuilder, cellIdentity);
+        setBandwidth(dataBuilder, cellIdentity);
 
-        return lteRecordBuilder.build();
+        final LteRecord.Builder recordBuilder = LteRecord.newBuilder();
+        recordBuilder.setMessageType(LteMessageConstants.LTE_RECORD_MESSAGE_TYPE);
+        recordBuilder.setVersion(MessageConstants.API_VERSION);
+        recordBuilder.setData(dataBuilder);
+
+        return recordBuilder.build();
     }
 
     /**
@@ -538,40 +567,39 @@ public class SurveyRecordProcessor
         // Validate that the required fields are present before proceeding further
         if (!validateWifiBeaconFields(bssid, signalStrength)) return null;
 
-        final WifiBeaconRecord.Builder builder = WifiBeaconRecord.newBuilder();
+        final WifiBeaconRecordData.Builder dataBuilder = WifiBeaconRecordData.newBuilder();
 
         if (gpsListener != null)
         {
             @SuppressLint("MissingPermission") final Location lastKnownLocation = gpsListener.getLatestLocation();
             if (lastKnownLocation != null)
             {
-                builder.setLatitude(lastKnownLocation.getLatitude());
-                builder.setLongitude(lastKnownLocation.getLongitude());
-                builder.setAltitude((float) lastKnownLocation.getAltitude());
+                dataBuilder.setLatitude(lastKnownLocation.getLatitude());
+                dataBuilder.setLongitude(lastKnownLocation.getLongitude());
+                dataBuilder.setAltitude((float) lastKnownLocation.getAltitude());
             }
         }
 
-        builder.setDeviceSerialNumber(deviceId);
+        dataBuilder.setDeviceSerialNumber(deviceId);
         /*final long timestampUs = apScanResult.timestamp;
-        builder.setDeviceTime(timestampUs > 0 ? timestampUs / 1000 : System.currentTimeMillis());*/
-        builder.setDeviceTime(System.currentTimeMillis());
-        builder.setMissionId(missionId);
-        builder.setRecordNumber(recordNumber++);
+        dataBuilder.setDeviceTime(timestampUs > 0 ? timestampUs / 1000 : System.currentTimeMillis());*/
+        dataBuilder.setDeviceTime(System.currentTimeMillis());
+        dataBuilder.setMissionId(missionId);
+        dataBuilder.setRecordNumber(recordNumber++);
 
-        builder.setBssid(bssid);
-        builder.setSignalStrength(FloatValue.newBuilder().setValue(signalStrength).build());
+        dataBuilder.setBssid(bssid);
+        dataBuilder.setSignalStrength(FloatValue.newBuilder().setValue(signalStrength).build());
 
         final String ssid = apScanResult.SSID;
-        if (ssid != null) builder.setSsid(ssid);
+        if (ssid != null) dataBuilder.setSsid(ssid);
 
-        // TODO Set the channel (Do we convert it from frequency?)
         final short channel = WifiBeaconMessageConstants.convertFrequencyToChannelNumber(apScanResult.frequency);
-        if (channel != -1) builder.setChannel(Int32Value.newBuilder().setValue(channel).build());
+        if (channel != -1) dataBuilder.setChannel(Int32Value.newBuilder().setValue(channel).build());
 
         final int frequency = apScanResult.frequency;
         if (frequency != -1 && frequency != 0)
         {
-            builder.setFrequency(Int32Value.newBuilder().setValue(frequency).build());
+            dataBuilder.setFrequencyMhz(Int32Value.newBuilder().setValue(frequency).build());
         }
 
         final String capabilities = apScanResult.capabilities;
@@ -581,12 +609,17 @@ public class SurveyRecordProcessor
             //  enough information for that.
 
             final EncryptionType encryptionType = WifiCapabilitiesUtils.getEncryptionType(capabilities);
-            if (encryptionType != EncryptionType.ENC_UNKNOWN) builder.setEncryptionType(encryptionType);
+            if (encryptionType != EncryptionType.UNKNOWN) dataBuilder.setEncryptionType(encryptionType);
 
-            builder.setWps(BoolValue.newBuilder().setValue(WifiCapabilitiesUtils.supportsWps(capabilities)).build());
+            dataBuilder.setWps(BoolValue.newBuilder().setValue(WifiCapabilitiesUtils.supportsWps(capabilities)).build());
         }
 
-        return new WifiRecordWrapper(builder.build(), apScanResult.capabilities);
+        final WifiBeaconRecord.Builder recordBuilder = WifiBeaconRecord.newBuilder();
+        recordBuilder.setMessageType(WifiBeaconMessageConstants.WIFI_BEACON_RECORD_MESSAGE_TYPE);
+        recordBuilder.setVersion(MessageConstants.API_VERSION);
+        recordBuilder.setData(dataBuilder);
+
+        return new WifiRecordWrapper(recordBuilder.build(), apScanResult.capabilities);
     }
 
     /**
@@ -595,7 +628,7 @@ public class SurveyRecordProcessor
      * @param lteRecordBuilder The builder to set the bandwidth on.
      * @param cellIdentity     The {@link CellIdentityLte} to pull the bandwidth from.
      */
-    private void setBandwidth(LteRecord.Builder lteRecordBuilder, CellIdentityLte cellIdentity)
+    private void setBandwidth(LteRecordData.Builder lteRecordBuilder, CellIdentityLte cellIdentity)
     {
         if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.P)
         {
@@ -882,7 +915,7 @@ public class SurveyRecordProcessor
         // Clear out the UI if the technology is not LTE
         if (!NetworkSurveyConstants.LTE.equals(currentTechnology) && !NetworkSurveyConstants.LTE_CA.equals(currentTechnology))
         {
-            updateUi(LteRecord.getDefaultInstance());
+            updateUi(LteRecord.getDefaultInstance().getData());
         }
 
         synchronized (this)
@@ -902,7 +935,7 @@ public class SurveyRecordProcessor
      *
      * @param lteSurveyRecord The latest LTE serving cell record.
      */
-    private synchronized void updateUi(LteRecord lteSurveyRecord)
+    private synchronized void updateUi(LteRecordData lteSurveyRecord)
     {
         if (networkSurveyActivity == null || !NetworkDetailsFragment.visible.get())
         {
@@ -919,9 +952,9 @@ public class SurveyRecordProcessor
             setText(R.id.mnc, R.string.mnc_label, lteSurveyRecord.hasMnc() ? String.valueOf(lteSurveyRecord.getMnc().getValue()) : "");
             setText(R.id.tac, R.string.tac_label, lteSurveyRecord.hasTac() ? String.valueOf(lteSurveyRecord.getTac().getValue()) : "");
 
-            if (lteSurveyRecord.hasCi())
+            if (lteSurveyRecord.hasEci())
             {
-                final int ci = lteSurveyRecord.getCi().getValue();
+                final int ci = lteSurveyRecord.getEci().getValue();
                 setText(R.id.cid, R.string.cid_label, String.valueOf(ci));
 
                 // The Cell Identity is 28 bits long. The first 20 bits represent the Macro eNodeB ID. The last 8 bits
@@ -984,7 +1017,7 @@ public class SurveyRecordProcessor
      *
      * @param lteRecord The LTE Record to check and see if it has a valid location.
      */
-    private void checkAndSetLocation(LteRecord lteRecord)
+    private void checkAndSetLocation(LteRecordData lteRecord)
     {
         final double latitude = lteRecord.getLatitude();
         final double longitude = lteRecord.getLongitude();

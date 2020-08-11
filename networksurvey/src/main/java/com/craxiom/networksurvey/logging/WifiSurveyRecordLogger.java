@@ -3,12 +3,12 @@ package com.craxiom.networksurvey.logging;
 import android.os.Looper;
 import android.util.Log;
 
+import com.craxiom.messaging.WifiBeaconRecordData;
+import com.craxiom.messaging.wifi.CipherSuite;
+import com.craxiom.messaging.wifi.EncryptionType;
 import com.craxiom.networksurvey.constants.NetworkSurveyConstants;
 import com.craxiom.networksurvey.constants.WifiBeaconMessageConstants;
 import com.craxiom.networksurvey.listeners.IWifiSurveyRecordListener;
-import com.craxiom.networksurvey.messaging.CipherSuite;
-import com.craxiom.networksurvey.messaging.EncryptionType;
-import com.craxiom.networksurvey.messaging.WifiBeaconRecord;
 import com.craxiom.networksurvey.model.WifiRecordWrapper;
 import com.craxiom.networksurvey.services.NetworkSurveyService;
 
@@ -98,59 +98,59 @@ public class WifiSurveyRecordLogger extends SurveyRecordLogger implements IWifiS
             {
                 if (geoPackage != null)
                 {
-                    final WifiBeaconRecord wifiBeaconRecord = wifiRecordWrapper.getWifiBeaconRecord();
+                    final WifiBeaconRecordData data = wifiRecordWrapper.getWifiBeaconRecord().getData();
                     FeatureDao featureDao = geoPackage.getFeatureDao(WifiBeaconMessageConstants.WIFI_BEACON_RECORDS_TABLE_NAME);
                     FeatureRow row = featureDao.newRow();
 
-                    Point fix = new Point(wifiBeaconRecord.getLongitude(), wifiBeaconRecord.getLatitude(), (double) wifiBeaconRecord.getAltitude());
+                    Point fix = new Point(data.getLongitude(), data.getLatitude(), (double) data.getAltitude());
 
                     GeoPackageGeometryData geomData = new GeoPackageGeometryData(WGS84_SRS);
                     geomData.setGeometry(fix);
 
                     row.setGeometry(geomData);
 
-                    row.setValue(WifiBeaconMessageConstants.TIME_COLUMN, wifiBeaconRecord.getDeviceTime());
-                    row.setValue(WifiBeaconMessageConstants.RECORD_NUMBER_COLUMN, wifiBeaconRecord.getRecordNumber());
+                    row.setValue(WifiBeaconMessageConstants.TIME_COLUMN, data.getDeviceTime());
+                    row.setValue(WifiBeaconMessageConstants.RECORD_NUMBER_COLUMN, data.getRecordNumber());
 
-                    final String sourceAddress = wifiBeaconRecord.getSourceAddress();
+                    final String sourceAddress = data.getSourceAddress();
                     if (!sourceAddress.isEmpty())
                     {
                         row.setValue(WifiBeaconMessageConstants.SOURCE_ADDRESS_COLUMN, sourceAddress);
                     }
 
-                    final String bssid = wifiBeaconRecord.getBssid();
+                    final String bssid = data.getBssid();
                     if (!bssid.isEmpty()) row.setValue(WifiBeaconMessageConstants.BSSID_COLUMN, bssid);
 
-                    final String ssid = wifiBeaconRecord.getSsid();
+                    final String ssid = data.getSsid();
                     if (!ssid.isEmpty()) row.setValue(WifiBeaconMessageConstants.SSID_COLUMN, ssid);
 
-                    if (wifiBeaconRecord.hasSignalStrength())
+                    if (data.hasSignalStrength())
                     {
-                        row.setValue(WifiBeaconMessageConstants.SIGNAL_STRENGTH_COLUMN, wifiBeaconRecord.getSignalStrength().getValue());
+                        row.setValue(WifiBeaconMessageConstants.SIGNAL_STRENGTH_COLUMN, data.getSignalStrength().getValue());
                     }
 
-                    if (wifiBeaconRecord.hasChannel())
+                    if (data.hasChannel())
                     {
-                        setShortValue(row, WifiBeaconMessageConstants.CHANNEL_COLUMN, wifiBeaconRecord.getChannel().getValue());
+                        setShortValue(row, WifiBeaconMessageConstants.CHANNEL_COLUMN, data.getChannel().getValue());
                     }
 
-                    if (wifiBeaconRecord.hasFrequency())
+                    if (data.hasFrequencyMhz())
                     {
-                        setIntValue(row, WifiBeaconMessageConstants.FREQUENCY_MHZ_COLUMN, wifiBeaconRecord.getFrequency().getValue());
+                        setIntValue(row, WifiBeaconMessageConstants.FREQUENCY_MHZ_COLUMN, data.getFrequencyMhz().getValue());
                     }
 
-                    final EncryptionType encryptionType = wifiBeaconRecord.getEncryptionType();
-                    if (encryptionType != EncryptionType.ENC_UNKNOWN)
+                    final EncryptionType encryptionType = data.getEncryptionType();
+                    if (encryptionType != EncryptionType.UNKNOWN)
                     {
                         row.setValue(WifiBeaconMessageConstants.ENCRYPTION_TYPE_COLUMN, WifiBeaconMessageConstants.getEncryptionTypeString(encryptionType));
                     }
 
-                    if (wifiBeaconRecord.hasWps())
+                    if (data.hasWps())
                     {
-                        row.setValue(WifiBeaconMessageConstants.WPS_COLUMN, wifiBeaconRecord.getWps().getValue());
+                        row.setValue(WifiBeaconMessageConstants.WPS_COLUMN, data.getWps().getValue());
                     }
 
-                    final List<CipherSuite> cipherSuitesList = wifiBeaconRecord.getCipherSuitesList();
+                    final List<CipherSuite> cipherSuitesList = data.getCipherSuitesList();
                     if (!cipherSuitesList.isEmpty())
                     {
                         row.setValue(WifiBeaconMessageConstants.CIPHER_SUITES_COLUMN,

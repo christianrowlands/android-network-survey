@@ -11,6 +11,7 @@ public final class GsmMessageConstants extends CellularMessageConstants
     {
     }
 
+    public static final String GSM_RECORD_MESSAGE_TYPE = "GsmRecord";
     public static final String GSM_RECORDS_TABLE_NAME = "GSM_MESSAGE";
 
     public static final String MCC_COLUMN = "MCC";

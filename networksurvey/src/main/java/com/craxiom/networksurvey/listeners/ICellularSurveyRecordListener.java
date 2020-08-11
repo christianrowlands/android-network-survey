@@ -1,9 +1,9 @@
 package com.craxiom.networksurvey.listeners;
 
-import com.craxiom.networksurvey.messaging.CdmaRecord;
-import com.craxiom.networksurvey.messaging.GsmRecord;
-import com.craxiom.networksurvey.messaging.LteRecord;
-import com.craxiom.networksurvey.messaging.UmtsRecord;
+import com.craxiom.messaging.CdmaRecord;
+import com.craxiom.messaging.GsmRecord;
+import com.craxiom.messaging.LteRecord;
+import com.craxiom.messaging.UmtsRecord;
 
 /**
  * Listener interface for those interested in being notified when a new cellular Survey Record is ready.
