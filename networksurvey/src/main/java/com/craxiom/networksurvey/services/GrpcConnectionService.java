@@ -666,7 +666,7 @@ public class GrpcConnectionService extends Service implements IDeviceStatusListe
                     Log.e(LOG_TAG, "Could not get the required permissions to generate a device status message", e);
                 }
             }
-        }, 200L);
+        }, 1000L);
     }
 
     /**

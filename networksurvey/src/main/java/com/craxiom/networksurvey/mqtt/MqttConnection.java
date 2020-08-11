@@ -180,7 +180,7 @@ public class MqttConnection implements ICellularSurveyRecordListener, IWifiSurve
             mqttAndroidClient.connect(mqttConnectOptions, null, new MyMqttActionListener(this));
         } catch (Exception e)
         {
-            Log.e(LOG_TAG, "Unable to create the connection to the MQTT broker");
+            Log.e(LOG_TAG, "Unable to create the connection to the MQTT broker", e);
         }
     }
 
@@ -211,7 +211,7 @@ public class MqttConnection implements ICellularSurveyRecordListener, IWifiSurve
      *
      * @param newConnectionState The new MQTT connection state.
      */
-    private void notifyConnectionStateChange(ConnectionState newConnectionState)
+    private synchronized void notifyConnectionStateChange(ConnectionState newConnectionState)
     {
         if (Log.isLoggable(LOG_TAG, Log.INFO))
         {
@@ -328,6 +328,7 @@ public class MqttConnection implements ICellularSurveyRecordListener, IWifiSurve
         public void onFailure(IMqttToken asyncActionToken, Throwable exception)
         {
             Log.e(LOG_TAG, "Failed to connect", exception);
+            mqttConnection.notifyConnectionStateChange(ConnectionState.CONNECTING);
         }
     }
 }
