@@ -36,11 +36,11 @@ public class MqttConnection implements ICellularSurveyRecordListener, IWifiSurve
 {
     private static final String LOG_TAG = MqttConnection.class.getSimpleName();
 
-    private static final String MQTT_GSM_MESSAGE_TOPIC = "GSM_MESSAGE";
-    private static final String MQTT_CDMA_MESSAGE_TOPIC = "CDMA_MESSAGE";
-    private static final String MQTT_UMTS_MESSAGE_TOPIC = "UMTS_MESSAGE";
-    private static final String MQTT_LTE_MESSAGE_TOPIC = "LTE_MESSAGE";
-    private static final String MQTT_WIFI_BEACON_MESSAGE_TOPIC = "80211_BEACON_MESSAGE";
+    private static final String MQTT_GSM_MESSAGE_TOPIC = "gsm_message";
+    private static final String MQTT_CDMA_MESSAGE_TOPIC = "cdma_message";
+    private static final String MQTT_UMTS_MESSAGE_TOPIC = "umts_message";
+    private static final String MQTT_LTE_MESSAGE_TOPIC = "lte_message";
+    private static final String MQTT_WIFI_BEACON_MESSAGE_TOPIC = "80211_beacon_message";
 
     /**
      * The amount of time to wait for a proper disconnection to occur before we force kill it.
