@@ -1,7 +1,7 @@
 package com.craxiom.networksurvey.constants;
 
-import com.craxiom.networksurvey.messaging.CipherSuite;
-import com.craxiom.networksurvey.messaging.EncryptionType;
+import com.craxiom.messaging.wifi.CipherSuite;
+import com.craxiom.messaging.wifi.EncryptionType;
 
 /**
  * The constants associated with the LTE table in the GeoPackage file.
@@ -16,6 +16,7 @@ public class WifiBeaconMessageConstants extends MessageConstants
     {
     }
 
+    public static final String WIFI_BEACON_RECORD_MESSAGE_TYPE = "WifiBeaconRecord";
     public static final String WIFI_BEACON_RECORDS_TABLE_NAME = "80211_BEACON_MESSAGE";
 
     public static final String SOURCE_ADDRESS_COLUMN = "Source_Address";
@@ -96,25 +97,25 @@ public class WifiBeaconMessageConstants extends MessageConstants
     {
         switch (encryptionType)
         {
-            case ENC_UNKNOWN:
+            case UNKNOWN:
                 return "Unknown";
 
-            case ENC_OPEN:
+            case OPEN:
                 return "Open";
 
-            case ENC_WEP:
+            case WEP:
                 return "WEP";
 
-            case ENC_WPA:
+            case WPA:
                 return "WPA";
 
-            case ENC_WPA_WPA2:
+            case WPA_WPA2:
                 return "WPA/WPA2";
 
-            case ENC_WPA2:
+            case WPA2:
                 return "WPA2";
 
-            case ENC_WPA3:
+            case WPA3:
                 return "WPA3";
 
             case UNRECOGNIZED:
@@ -135,25 +136,25 @@ public class WifiBeaconMessageConstants extends MessageConstants
     {
         switch (cipherSuite)
         {
-            case CIPHER_UNKNOWN:
+            case UNKNOWN:
                 return "Unknown";
 
-            case CIPHER_WEP_40:
+            case WEP_40:
                 return "WEP-40";
 
-            case CIPHER_TKIP:
+            case TKIP:
                 return "TKIP";
 
-            case CIPHER_CCMP:
+            case CCMP:
                 return "CCMP";
 
-            case CIPHER_WEP_104:
+            case WEP_104:
                 return "WEP-104";
 
-            case CIPHER_OPEN:
+            case OPEN:
                 return "Open";
 
-            case CIPHER_WEP:
+            case WEP:
                 return "WEP";
 
             case UNRECOGNIZED:

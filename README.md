@@ -49,18 +49,22 @@ the incoming survey messages.
 Currently, GSM, CDMA, UMTS, LTE, and 802.11 survey records are sent to a connected MQTT broker. They
 are published on the following MQTT Topics:
 
- * GSM_MESSAGE
- * CDMA_MESSAGE
- * UMTS_MESSAGE
- * LTE_MESSAGE
- * 80211_BEACON_MESSAGE
+ * gsm_message
+ * cdma_message
+ * umts_message
+ * lte_message
+ * 80211_beacon_message
  
 The MQTT Broker connection supports both plain text and TLS/SSL connections.
 
 The survey messages are sent in JSON format following the protobuf definitions from the [Network Survey Messaging](https://github.com/christianrowlands/network-survey-messaging)
-library.
+library. [The API documentation is published to a web page here](https://messaging.networksurvey.app/).
 
 ## Changelog
+
+##### [0.2.0](https://github.com/christianrowlands/android-network-survey/releases/tag/v0.2.0) - 2020-08-11
+ * Updated to use the new Network Survey Messaging connection library.
+ * Updated to use the new Network Survey Messaging format for the MQTT messages.
 
 ##### [0.1.5](https://github.com/christianrowlands/android-network-survey/releases/tag/v0.1.5) - 2020-07-02
  * Fixed a bug where the MDM override setting was not being saved.

@@ -1,6 +1,6 @@
 package com.craxiom.networksurvey.listeners;
 
-import com.craxiom.networksurvey.messaging.DeviceStatus;
+import com.craxiom.messaging.DeviceStatus;
 
 /**
  * Listener interface for those interested in being notified whenever a new Device Status message is ready.

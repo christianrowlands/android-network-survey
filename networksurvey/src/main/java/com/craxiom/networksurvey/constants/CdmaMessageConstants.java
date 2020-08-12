@@ -11,6 +11,7 @@ public final class CdmaMessageConstants extends CellularMessageConstants
     {
     }
 
+    public static final String CDMA_RECORD_MESSAGE_TYPE = "CdmaRecord";
     public static final String CDMA_RECORDS_TABLE_NAME = "CDMA_MESSAGE";
 
     public static final String SID_COLUMN = "SID";

@@ -380,25 +380,25 @@ public class WifiNetworksFragment extends Fragment implements IWifiSurveyRecordL
             switch (sortByIndex)
             {
                 case 1: // SSID
-                    return record1.getWifiBeaconRecord().getSsid().compareTo(record2.getWifiBeaconRecord().getSsid());
+                    return record1.getWifiBeaconRecord().getData().getSsid().compareTo(record2.getWifiBeaconRecord().getData().getSsid());
 
                 case 2: // BSSID
-                    return record1.getWifiBeaconRecord().getBssid().compareTo(record2.getWifiBeaconRecord().getBssid());
+                    return record1.getWifiBeaconRecord().getData().getBssid().compareTo(record2.getWifiBeaconRecord().getData().getBssid());
 
                 case 3: // Channel
-                    return Integer.compare(record1.getWifiBeaconRecord().getChannel().getValue(), record2.getWifiBeaconRecord().getChannel().getValue());
+                    return Integer.compare(record1.getWifiBeaconRecord().getData().getChannel().getValue(), record2.getWifiBeaconRecord().getData().getChannel().getValue());
 
                 case 4: // Frequency
-                    return Integer.compare(record1.getWifiBeaconRecord().getFrequency().getValue(), record2.getWifiBeaconRecord().getFrequency().getValue());
+                    return Integer.compare(record1.getWifiBeaconRecord().getData().getFrequencyMhz().getValue(), record2.getWifiBeaconRecord().getData().getFrequencyMhz().getValue());
 
                 case 5: // Security Type
-                    return WifiBeaconMessageConstants.getEncryptionTypeString(record1.getWifiBeaconRecord().getEncryptionType())
-                            .compareTo(WifiBeaconMessageConstants.getEncryptionTypeString(record2.getWifiBeaconRecord().getEncryptionType()));
+                    return WifiBeaconMessageConstants.getEncryptionTypeString(record1.getWifiBeaconRecord().getData().getEncryptionType())
+                            .compareTo(WifiBeaconMessageConstants.getEncryptionTypeString(record2.getWifiBeaconRecord().getData().getEncryptionType()));
 
                 default: // Signal Strength
                     // Signal Strength is index 0 in the array, but we also use it as the default case
                     // Invert the sort so that the strongest records are at the top (descending)
-                    return -1 * Float.compare(record1.getWifiBeaconRecord().getSignalStrength().getValue(), record2.getWifiBeaconRecord().getSignalStrength().getValue());
+                    return -1 * Float.compare(record1.getWifiBeaconRecord().getData().getSignalStrength().getValue(), record2.getWifiBeaconRecord().getData().getSignalStrength().getValue());
             }
         }
 

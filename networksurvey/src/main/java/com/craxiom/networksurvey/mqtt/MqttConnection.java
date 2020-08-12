@@ -3,15 +3,15 @@ package com.craxiom.networksurvey.mqtt;
 import android.content.Context;
 import android.util.Log;
 
+import com.craxiom.messaging.CdmaRecord;
+import com.craxiom.messaging.GsmRecord;
+import com.craxiom.messaging.LteRecord;
+import com.craxiom.messaging.UmtsRecord;
+import com.craxiom.messaging.WifiBeaconRecord;
 import com.craxiom.networksurvey.ConnectionState;
 import com.craxiom.networksurvey.listeners.ICellularSurveyRecordListener;
 import com.craxiom.networksurvey.listeners.IConnectionStateListener;
 import com.craxiom.networksurvey.listeners.IWifiSurveyRecordListener;
-import com.craxiom.networksurvey.messaging.CdmaRecord;
-import com.craxiom.networksurvey.messaging.GsmRecord;
-import com.craxiom.networksurvey.messaging.LteRecord;
-import com.craxiom.networksurvey.messaging.UmtsRecord;
-import com.craxiom.networksurvey.messaging.WifiBeaconRecord;
 import com.craxiom.networksurvey.model.WifiRecordWrapper;
 import com.google.protobuf.MessageOrBuilder;
 import com.google.protobuf.util.JsonFormat;
@@ -36,11 +36,11 @@ public class MqttConnection implements ICellularSurveyRecordListener, IWifiSurve
 {
     private static final String LOG_TAG = MqttConnection.class.getSimpleName();
 
-    private static final String MQTT_GSM_MESSAGE_TOPIC = "GSM_MESSAGE";
-    private static final String MQTT_CDMA_MESSAGE_TOPIC = "CDMA_MESSAGE";
-    private static final String MQTT_UMTS_MESSAGE_TOPIC = "UMTS_MESSAGE";
-    private static final String MQTT_LTE_MESSAGE_TOPIC = "LTE_MESSAGE";
-    private static final String MQTT_WIFI_BEACON_MESSAGE_TOPIC = "80211_BEACON_MESSAGE";
+    private static final String MQTT_GSM_MESSAGE_TOPIC = "gsm_message";
+    private static final String MQTT_CDMA_MESSAGE_TOPIC = "cdma_message";
+    private static final String MQTT_UMTS_MESSAGE_TOPIC = "umts_message";
+    private static final String MQTT_LTE_MESSAGE_TOPIC = "lte_message";
+    private static final String MQTT_WIFI_BEACON_MESSAGE_TOPIC = "80211_beacon_message";
 
     /**
      * The amount of time to wait for a proper disconnection to occur before we force kill it.
@@ -63,7 +63,11 @@ public class MqttConnection implements ICellularSurveyRecordListener, IWifiSurve
     public void onGsmSurveyRecord(GsmRecord gsmRecord)
     {
         // Set the device name to the user entered value in the MQTT connection UI (or the value provided via MDM)
-        if (mqttClientId != null) gsmRecord = gsmRecord.toBuilder().setDeviceName(mqttClientId).build();
+        if (mqttClientId != null)
+        {
+            final GsmRecord.Builder recordBuilder = gsmRecord.toBuilder();
+            gsmRecord = recordBuilder.setData(recordBuilder.getDataBuilder().setDeviceName(mqttClientId)).build();
+        }
 
         publishMessage(MQTT_GSM_MESSAGE_TOPIC, gsmRecord);
     }
@@ -72,7 +76,11 @@ public class MqttConnection implements ICellularSurveyRecordListener, IWifiSurve
     public void onCdmaSurveyRecord(CdmaRecord cdmaRecord)
     {
         // Set the device name to the user entered value in the MQTT connection UI (or the value provided via MDM)
-        if (mqttClientId != null) cdmaRecord = cdmaRecord.toBuilder().setDeviceName(mqttClientId).build();
+        if (mqttClientId != null)
+        {
+            final CdmaRecord.Builder recordBuilder = cdmaRecord.toBuilder();
+            cdmaRecord = recordBuilder.setData(recordBuilder.getDataBuilder().setDeviceName(mqttClientId)).build();
+        }
 
         publishMessage(MQTT_CDMA_MESSAGE_TOPIC, cdmaRecord);
     }
@@ -81,7 +89,11 @@ public class MqttConnection implements ICellularSurveyRecordListener, IWifiSurve
     public void onUmtsSurveyRecord(UmtsRecord umtsRecord)
     {
         // Set the device name to the user entered value in the MQTT connection UI (or the value provided via MDM)
-        if (mqttClientId != null) umtsRecord = umtsRecord.toBuilder().setDeviceName(mqttClientId).build();
+        if (mqttClientId != null)
+        {
+            final UmtsRecord.Builder recordBuilder = umtsRecord.toBuilder();
+            umtsRecord = recordBuilder.setData(recordBuilder.getDataBuilder().setDeviceName(mqttClientId)).build();
+        }
 
         publishMessage(MQTT_UMTS_MESSAGE_TOPIC, umtsRecord);
     }
@@ -90,7 +102,11 @@ public class MqttConnection implements ICellularSurveyRecordListener, IWifiSurve
     public void onLteSurveyRecord(LteRecord lteRecord)
     {
         // Set the device name to the user entered value in the MQTT connection UI (or the value provided via MDM)
-        if (mqttClientId != null) lteRecord = lteRecord.toBuilder().setDeviceName(mqttClientId).build();
+        if (mqttClientId != null)
+        {
+            final LteRecord.Builder recordBuilder = lteRecord.toBuilder();
+            lteRecord = recordBuilder.setData(recordBuilder.getDataBuilder().setDeviceName(mqttClientId)).build();
+        }
 
         publishMessage(MQTT_LTE_MESSAGE_TOPIC, lteRecord);
     }
@@ -100,7 +116,11 @@ public class MqttConnection implements ICellularSurveyRecordListener, IWifiSurve
     {
         wifiBeaconRecords.forEach(wifiRecord -> {
             WifiBeaconRecord wifiBeaconRecord = wifiRecord.getWifiBeaconRecord();
-            if (mqttClientId != null) wifiBeaconRecord = wifiBeaconRecord.toBuilder().setDeviceName(mqttClientId).build();
+            if (mqttClientId != null)
+            {
+                final WifiBeaconRecord.Builder recordBuilder = wifiBeaconRecord.toBuilder();
+                wifiBeaconRecord = recordBuilder.setData(recordBuilder.getDataBuilder().setDeviceName(mqttClientId)).build();
+            }
             publishMessage(MQTT_WIFI_BEACON_MESSAGE_TOPIC, wifiBeaconRecord);
         });
     }
@@ -160,7 +180,7 @@ public class MqttConnection implements ICellularSurveyRecordListener, IWifiSurve
             mqttAndroidClient.connect(mqttConnectOptions, null, new MyMqttActionListener(this));
         } catch (Exception e)
         {
-            Log.e(LOG_TAG, "Unable to create the connection to the MQTT broker");
+            Log.e(LOG_TAG, "Unable to create the connection to the MQTT broker", e);
         }
     }
 
@@ -191,7 +211,7 @@ public class MqttConnection implements ICellularSurveyRecordListener, IWifiSurve
      *
      * @param newConnectionState The new MQTT connection state.
      */
-    private void notifyConnectionStateChange(ConnectionState newConnectionState)
+    private synchronized void notifyConnectionStateChange(ConnectionState newConnectionState)
     {
         if (Log.isLoggable(LOG_TAG, Log.INFO))
         {
@@ -308,6 +328,7 @@ public class MqttConnection implements ICellularSurveyRecordListener, IWifiSurve
         public void onFailure(IMqttToken asyncActionToken, Throwable exception)
         {
             Log.e(LOG_TAG, "Failed to connect", exception);
+            mqttConnection.notifyConnectionStateChange(ConnectionState.CONNECTING);
         }
     }
 }
