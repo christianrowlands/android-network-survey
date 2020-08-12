@@ -63,7 +63,7 @@ library. [The API documentation is published to a web page here](https://messagi
 ## Changelog
 
 ##### [0.2.0](https://github.com/christianrowlands/android-network-survey/releases/tag/v0.2.0) - 2020-08-11
- * Updated to use the new Netowrk Survey Messaging connection library.
+ * Updated to use the new Network Survey Messaging connection library.
  * Updated to use the new Network Survey Messaging format for the MQTT messages.
 
 ##### [0.1.5](https://github.com/christianrowlands/android-network-survey/releases/tag/v0.1.5) - 2020-07-02
