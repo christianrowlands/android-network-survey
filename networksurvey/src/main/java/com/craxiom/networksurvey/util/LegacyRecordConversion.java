@@ -1,7 +1,5 @@
 package com.craxiom.networksurvey.util;
 
-import android.util.Log;
-
 import com.craxiom.messaging.CdmaRecord;
 import com.craxiom.messaging.CdmaRecordData;
 import com.craxiom.messaging.DeviceStatus;
@@ -15,8 +13,7 @@ import com.craxiom.messaging.UmtsRecordData;
 import com.craxiom.networksurvey.messaging.Error;
 import com.craxiom.networksurvey.messaging.LteBandwidth;
 
-import java.time.ZonedDateTime;
-import java.time.format.DateTimeFormatter;
+import static com.craxiom.networksurvey.util.IOUtils.getEpochFromRfc3339;
 
 /**
  * Utility methods to help with converting the newer survey record protobuf objects to the old format. This class should
@@ -192,22 +189,5 @@ public final class LegacyRecordConversion
         builder.setProvider(data.getProvider());
 
         return builder.build();
-    }
-
-    /**
-     * @param dateTimeString The date time string in {@link DateTimeFormatter#ISO_OFFSET_DATE_TIME} format.
-     * @return The Unix Epoch time in milliseconds.
-     * @since 0.2.1
-     */
-    private static long getEpochFromRfc3339(String dateTimeString)
-    {
-        try
-        {
-            return ZonedDateTime.parse(dateTimeString, DateTimeFormatter.ISO_OFFSET_DATE_TIME).toInstant().toEpochMilli();
-        } catch (Exception e)
-        {
-            Log.e("LegacyRecordConversion", "Could not convert the String date/time to Epoch", e);
-            return 0;
-        }
     }
 }

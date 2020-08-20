@@ -508,9 +508,12 @@ public class GrpcConnectionService extends Service implements IDeviceStatusListe
         } catch (Throwable e)
         {
             Log.e(LOG_TAG, "An exception occurred when trying to connect to the remote gRPC server", e);
-            disconnectFromGrpcServer(!reconnectOnFailure);
 
-            if (reconnectOnFailure)
+            final boolean attemptReconnect = !userCanceled && reconnectOnFailure;
+
+            disconnectFromGrpcServer(!attemptReconnect);
+
+            if (attemptReconnect)
             {
                 uiThreadHandler.postDelayed(this::reconnectToGrpcServer, RECONNECTION_ATTEMPT_BACKOFF_TIME);
             }
