@@ -43,11 +43,11 @@ import com.craxiom.messaging.grpc.StatusUpdateReply;
 import com.craxiom.messaging.grpc.UmtsSurveyResponse;
 import com.craxiom.messaging.grpc.WifiBeaconSurveyResponse;
 import com.craxiom.messaging.grpc.WirelessSurveyGrpc;
+import com.craxiom.networksurvey.BuildConfig;
 import com.craxiom.networksurvey.ConnectionState;
 import com.craxiom.networksurvey.GpsListener;
 import com.craxiom.networksurvey.R;
 import com.craxiom.networksurvey.constants.DeviceStatusMessageConstants;
-import com.craxiom.networksurvey.constants.MessageConstants;
 import com.craxiom.networksurvey.constants.NetworkSurveyConstants;
 import com.craxiom.networksurvey.listeners.ICellularSurveyRecordListener;
 import com.craxiom.networksurvey.listeners.IConnectionStateListener;
@@ -55,11 +55,13 @@ import com.craxiom.networksurvey.listeners.IDeviceStatusListener;
 import com.craxiom.networksurvey.listeners.IWifiSurveyRecordListener;
 import com.craxiom.networksurvey.messaging.NetworkSurveyStatusGrpc;
 import com.craxiom.networksurvey.model.WifiRecordWrapper;
+import com.craxiom.networksurvey.util.IOUtils;
 import com.craxiom.networksurvey.util.LegacyRecordConversion;
 import com.google.protobuf.Int32Value;
 
 import java.lang.ref.WeakReference;
 import java.net.ConnectException;
+import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -679,7 +681,7 @@ public class GrpcConnectionService extends Service implements IDeviceStatusListe
         final DeviceStatusData.Builder dataBuilder = DeviceStatusData.newBuilder();
         dataBuilder.setDeviceSerialNumber(deviceId)
                 .setDeviceName(deviceName)
-                .setDeviceTime(System.currentTimeMillis());
+                .setDeviceTime(IOUtils.getRfc3339String(ZonedDateTime.now()));
 
         if (gpsListener != null)
         {
@@ -704,7 +706,7 @@ public class GrpcConnectionService extends Service implements IDeviceStatusListe
 
         final DeviceStatus.Builder statusBuilder = DeviceStatus.newBuilder();
         statusBuilder.setMessageType(DeviceStatusMessageConstants.DEVICE_STATUS_MESSAGE_TYPE);
-        statusBuilder.setVersion(MessageConstants.API_VERSION);
+        statusBuilder.setVersion(BuildConfig.MESSAGING_API_VERSION);
         statusBuilder.setData(dataBuilder);
 
         return statusBuilder.build();

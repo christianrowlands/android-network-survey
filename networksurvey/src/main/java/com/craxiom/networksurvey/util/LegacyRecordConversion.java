@@ -1,5 +1,7 @@
 package com.craxiom.networksurvey.util;
 
+import android.util.Log;
+
 import com.craxiom.messaging.CdmaRecord;
 import com.craxiom.messaging.CdmaRecordData;
 import com.craxiom.messaging.DeviceStatus;
@@ -12,6 +14,9 @@ import com.craxiom.messaging.UmtsRecord;
 import com.craxiom.messaging.UmtsRecordData;
 import com.craxiom.networksurvey.messaging.Error;
 import com.craxiom.networksurvey.messaging.LteBandwidth;
+
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
 
 /**
  * Utility methods to help with converting the newer survey record protobuf objects to the old format. This class should
@@ -36,7 +41,7 @@ public final class LegacyRecordConversion
         final com.craxiom.networksurvey.messaging.DeviceStatus.Builder builder = com.craxiom.networksurvey.messaging.DeviceStatus.newBuilder();
         final DeviceStatusData data = deviceStatus.getData();
         builder.setDeviceSerialNumber(data.getDeviceSerialNumber());
-        builder.setDeviceTime(data.getDeviceTime());
+        builder.setDeviceTime(getEpochFromRfc3339(data.getDeviceTime()));
         builder.setLatitude(data.getLatitude());
         builder.setLongitude(data.getLongitude());
         builder.setAltitude(data.getAltitude());
@@ -62,7 +67,7 @@ public final class LegacyRecordConversion
         final com.craxiom.networksurvey.messaging.GsmRecord.Builder builder = com.craxiom.networksurvey.messaging.GsmRecord.newBuilder();
         final GsmRecordData data = gsmRecord.getData();
         builder.setDeviceSerialNumber(data.getDeviceSerialNumber());
-        builder.setDeviceTime(data.getDeviceTime());
+        builder.setDeviceTime(getEpochFromRfc3339(data.getDeviceTime()));
         builder.setLatitude(data.getLatitude());
         builder.setLongitude(data.getLongitude());
         builder.setAltitude(data.getAltitude());
@@ -96,7 +101,7 @@ public final class LegacyRecordConversion
         final com.craxiom.networksurvey.messaging.CdmaRecord.Builder builder = com.craxiom.networksurvey.messaging.CdmaRecord.newBuilder();
         final CdmaRecordData data = cdmaRecord.getData();
         builder.setDeviceSerialNumber(data.getDeviceSerialNumber());
-        builder.setDeviceTime(data.getDeviceTime());
+        builder.setDeviceTime(getEpochFromRfc3339(data.getDeviceTime()));
         builder.setLatitude(data.getLatitude());
         builder.setLongitude(data.getLongitude());
         builder.setAltitude(data.getAltitude());
@@ -130,7 +135,7 @@ public final class LegacyRecordConversion
         final com.craxiom.networksurvey.messaging.UmtsRecord.Builder builder = com.craxiom.networksurvey.messaging.UmtsRecord.newBuilder();
         final UmtsRecordData data = umtsRecord.getData();
         builder.setDeviceSerialNumber(data.getDeviceSerialNumber());
-        builder.setDeviceTime(data.getDeviceTime());
+        builder.setDeviceTime(getEpochFromRfc3339(data.getDeviceTime()));
         builder.setLatitude(data.getLatitude());
         builder.setLongitude(data.getLongitude());
         builder.setAltitude(data.getAltitude());
@@ -164,7 +169,7 @@ public final class LegacyRecordConversion
         final com.craxiom.networksurvey.messaging.LteRecord.Builder builder = com.craxiom.networksurvey.messaging.LteRecord.newBuilder();
         final LteRecordData data = lteRecord.getData();
         builder.setDeviceSerialNumber(data.getDeviceSerialNumber());
-        builder.setDeviceTime(data.getDeviceTime());
+        builder.setDeviceTime(getEpochFromRfc3339(data.getDeviceTime()));
         builder.setLatitude(data.getLatitude());
         builder.setLongitude(data.getLongitude());
         builder.setAltitude(data.getAltitude());
@@ -187,5 +192,22 @@ public final class LegacyRecordConversion
         builder.setProvider(data.getProvider());
 
         return builder.build();
+    }
+
+    /**
+     * @param dateTimeString The date time string in {@link DateTimeFormatter#ISO_OFFSET_DATE_TIME} format.
+     * @return The Unix Epoch time in milliseconds.
+     * @since 0.2.1
+     */
+    private static long getEpochFromRfc3339(String dateTimeString)
+    {
+        try
+        {
+            return ZonedDateTime.parse(dateTimeString, DateTimeFormatter.ISO_OFFSET_DATE_TIME).toInstant().toEpochMilli();
+        } catch (Exception e)
+        {
+            Log.e("LegacyRecordConversion", "Could not convert the String date/time to Epoch", e);
+            return 0;
+        }
     }
 }
