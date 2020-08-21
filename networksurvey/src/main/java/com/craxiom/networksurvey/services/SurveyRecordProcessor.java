@@ -33,6 +33,7 @@ import com.craxiom.messaging.UmtsRecordData;
 import com.craxiom.messaging.WifiBeaconRecord;
 import com.craxiom.messaging.WifiBeaconRecordData;
 import com.craxiom.messaging.wifi.EncryptionType;
+import com.craxiom.networksurvey.BuildConfig;
 import com.craxiom.networksurvey.CalculationUtils;
 import com.craxiom.networksurvey.GpsListener;
 import com.craxiom.networksurvey.NetworkSurveyActivity;
@@ -40,7 +41,6 @@ import com.craxiom.networksurvey.R;
 import com.craxiom.networksurvey.constants.CdmaMessageConstants;
 import com.craxiom.networksurvey.constants.GsmMessageConstants;
 import com.craxiom.networksurvey.constants.LteMessageConstants;
-import com.craxiom.networksurvey.constants.MessageConstants;
 import com.craxiom.networksurvey.constants.NetworkSurveyConstants;
 import com.craxiom.networksurvey.constants.UmtsMessageConstants;
 import com.craxiom.networksurvey.constants.WifiBeaconMessageConstants;
@@ -48,6 +48,7 @@ import com.craxiom.networksurvey.fragments.NetworkDetailsFragment;
 import com.craxiom.networksurvey.listeners.ICellularSurveyRecordListener;
 import com.craxiom.networksurvey.listeners.IWifiSurveyRecordListener;
 import com.craxiom.networksurvey.model.WifiRecordWrapper;
+import com.craxiom.networksurvey.util.IOUtils;
 import com.craxiom.networksurvey.util.WifiCapabilitiesUtils;
 import com.google.protobuf.BoolValue;
 import com.google.protobuf.FloatValue;
@@ -55,6 +56,7 @@ import com.google.protobuf.Int32Value;
 
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Locale;
@@ -312,7 +314,7 @@ public class SurveyRecordProcessor
         }
 
         dataBuilder.setDeviceSerialNumber(deviceId);
-        dataBuilder.setDeviceTime(System.currentTimeMillis());
+        dataBuilder.setDeviceTime(IOUtils.getRfc3339String(ZonedDateTime.now()));
         dataBuilder.setMissionId(missionId);
         dataBuilder.setRecordNumber(recordNumber++);
         dataBuilder.setGroupNumber(groupNumber);
@@ -338,7 +340,7 @@ public class SurveyRecordProcessor
 
         final GsmRecord.Builder recordBuilder = GsmRecord.newBuilder();
         recordBuilder.setMessageType(GsmMessageConstants.GSM_RECORD_MESSAGE_TYPE);
-        recordBuilder.setVersion(MessageConstants.API_VERSION);
+        recordBuilder.setVersion(BuildConfig.MESSAGING_API_VERSION);
         recordBuilder.setData(dataBuilder);
 
         return recordBuilder.build();
@@ -388,7 +390,7 @@ public class SurveyRecordProcessor
         }
 
         dataBuilder.setDeviceSerialNumber(deviceId);
-        dataBuilder.setDeviceTime(System.currentTimeMillis());
+        dataBuilder.setDeviceTime(IOUtils.getRfc3339String(ZonedDateTime.now()));
         dataBuilder.setMissionId(missionId);
         dataBuilder.setRecordNumber(recordNumber++);
         dataBuilder.setGroupNumber(groupNumber);
@@ -404,7 +406,7 @@ public class SurveyRecordProcessor
 
         final CdmaRecord.Builder recordBuilder = CdmaRecord.newBuilder();
         recordBuilder.setMessageType(CdmaMessageConstants.CDMA_RECORD_MESSAGE_TYPE);
-        recordBuilder.setVersion(MessageConstants.API_VERSION);
+        recordBuilder.setVersion(BuildConfig.MESSAGING_API_VERSION);
         recordBuilder.setData(dataBuilder);
 
         return recordBuilder.build();
@@ -452,7 +454,7 @@ public class SurveyRecordProcessor
         }
 
         dataBuilder.setDeviceSerialNumber(deviceId);
-        dataBuilder.setDeviceTime(System.currentTimeMillis());
+        dataBuilder.setDeviceTime(IOUtils.getRfc3339String(ZonedDateTime.now()));
         dataBuilder.setMissionId(missionId);
         dataBuilder.setRecordNumber(recordNumber++);
         dataBuilder.setGroupNumber(groupNumber);
@@ -470,7 +472,7 @@ public class SurveyRecordProcessor
 
         final UmtsRecord.Builder recordBuilder = UmtsRecord.newBuilder();
         recordBuilder.setMessageType(UmtsMessageConstants.UMTS_RECORD_MESSAGE_TYPE);
-        recordBuilder.setVersion(MessageConstants.API_VERSION);
+        recordBuilder.setVersion(BuildConfig.MESSAGING_API_VERSION);
         recordBuilder.setData(dataBuilder);
 
         return recordBuilder.build();
@@ -520,7 +522,7 @@ public class SurveyRecordProcessor
         }
 
         dataBuilder.setDeviceSerialNumber(deviceId);
-        dataBuilder.setDeviceTime(System.currentTimeMillis());
+        dataBuilder.setDeviceTime(IOUtils.getRfc3339String(ZonedDateTime.now()));
         dataBuilder.setMissionId(missionId);
         dataBuilder.setRecordNumber(recordNumber++);
         dataBuilder.setGroupNumber(groupNumber);
@@ -546,7 +548,7 @@ public class SurveyRecordProcessor
 
         final LteRecord.Builder recordBuilder = LteRecord.newBuilder();
         recordBuilder.setMessageType(LteMessageConstants.LTE_RECORD_MESSAGE_TYPE);
-        recordBuilder.setVersion(MessageConstants.API_VERSION);
+        recordBuilder.setVersion(BuildConfig.MESSAGING_API_VERSION);
         recordBuilder.setData(dataBuilder);
 
         return recordBuilder.build();
@@ -581,9 +583,7 @@ public class SurveyRecordProcessor
         }
 
         dataBuilder.setDeviceSerialNumber(deviceId);
-        /*final long timestampUs = apScanResult.timestamp;
-        dataBuilder.setDeviceTime(timestampUs > 0 ? timestampUs / 1000 : System.currentTimeMillis());*/
-        dataBuilder.setDeviceTime(System.currentTimeMillis());
+        dataBuilder.setDeviceTime(IOUtils.getRfc3339String(ZonedDateTime.now()));
         dataBuilder.setMissionId(missionId);
         dataBuilder.setRecordNumber(recordNumber++);
 
@@ -616,7 +616,7 @@ public class SurveyRecordProcessor
 
         final WifiBeaconRecord.Builder recordBuilder = WifiBeaconRecord.newBuilder();
         recordBuilder.setMessageType(WifiBeaconMessageConstants.WIFI_BEACON_RECORD_MESSAGE_TYPE);
-        recordBuilder.setVersion(MessageConstants.API_VERSION);
+        recordBuilder.setVersion(BuildConfig.MESSAGING_API_VERSION);
         recordBuilder.setData(dataBuilder);
 
         return new WifiRecordWrapper(recordBuilder.build(), apScanResult.capabilities);

@@ -7,8 +7,6 @@ package com.craxiom.networksurvey.constants;
  */
 public abstract class MessageConstants
 {
-    public static final String API_VERSION = "0.2.0";
-
     public static final String ID_COLUMN = "id";
     public static final String GEOMETRY_COLUMN = "geom";
     public static final String TIME_COLUMN = "Time";

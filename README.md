@@ -62,6 +62,10 @@ library. [The API documentation is published to a web page here](https://messagi
 
 ## Changelog
 
+##### [0.2.1](https://github.com/christianrowlands/android-network-survey/releases/tag/v0.2.1) - 2020-08-21
+ * Updated the device time field to use RFC 3339 instead of Unix Epoch time.
+ * Fixed a bug where the connection would not stop if the server shutdown before the client.
+
 ##### [0.2.0](https://github.com/christianrowlands/android-network-survey/releases/tag/v0.2.0) - 2020-08-11
  * Updated to use the new Network Survey Messaging connection library.
  * Updated to use the new Network Survey Messaging format for the MQTT messages.
