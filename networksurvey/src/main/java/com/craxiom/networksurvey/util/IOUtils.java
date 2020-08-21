@@ -30,9 +30,10 @@ import androidx.core.content.FileProvider;
 import com.craxiom.networksurvey.Application;
 import com.craxiom.networksurvey.BuildConfig;
 import com.craxiom.networksurvey.R;
-//import com.google.zxing.integration.android.IntentIntegrator;
 
 import java.io.File;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
 
 import static com.craxiom.networksurvey.util.LocationUtils.isValidLatitude;
 import static com.craxiom.networksurvey.util.LocationUtils.isValidLongitude;
@@ -44,6 +45,38 @@ public class IOUtils
 {
 
     public static final String TAG = "IOUtils";
+
+    /**
+     * Return an ISO 8601 combined date and time string for specified date/time.
+     *
+     * @param date The date object to use when generating the timestamp.
+     * @return String with format {@link DateTimeFormatter#ISO_OFFSET_DATE_TIME} (e.g. "2020-08-19T18:13:22.548+00:00")
+     * @since 0.2.1
+     */
+    public static String getRfc3339String(ZonedDateTime date)
+    {
+        return DateTimeFormatter.ISO_OFFSET_DATE_TIME.format(date);
+    }
+
+    /**
+     * Converts an RFC3339 formatted timestamp to Unix Epoch time. More specifically, it converts a date time string in
+     * the {@link DateTimeFormatter#ISO_OFFSET_DATE_TIME} format to Unix Epoch time.
+     *
+     * @param dateTimeString The date time string in {@link DateTimeFormatter#ISO_OFFSET_DATE_TIME} format.
+     * @return The Unix Epoch time in milliseconds.
+     * @since 0.2.1
+     */
+    public static long getEpochFromRfc3339(String dateTimeString)
+    {
+        try
+        {
+            return ZonedDateTime.parse(dateTimeString, DateTimeFormatter.ISO_OFFSET_DATE_TIME).toInstant().toEpochMilli();
+        } catch (Exception e)
+        {
+            Log.e("LegacyRecordConversion", "Could not convert the String date/time to Epoch", e);
+            return 0;
+        }
+    }
 
     /**
      * Returns the ground truth location encapsulated in the Intent if the provided Intent has a

@@ -20,7 +20,7 @@ import com.craxiom.networksurvey.services.NetworkSurveyService;
 public class GpsListener implements LocationListener
 {
     private static final String LOG_TAG = GpsListener.class.getSimpleName();
-    private static final float MIN_DISTANCE_ACCURACY = 32f; // This is the number that WiGLE Wi-Fi uses.
+    private static final float MIN_DISTANCE_ACCURACY = 40f; // WiGLE Wi-Fi uses 32
 
     private Location latestLocation;
     private NetworkSurveyService networkSurveyService;

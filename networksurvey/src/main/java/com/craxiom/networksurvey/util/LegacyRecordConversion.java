@@ -13,6 +13,8 @@ import com.craxiom.messaging.UmtsRecordData;
 import com.craxiom.networksurvey.messaging.Error;
 import com.craxiom.networksurvey.messaging.LteBandwidth;
 
+import static com.craxiom.networksurvey.util.IOUtils.getEpochFromRfc3339;
+
 /**
  * Utility methods to help with converting the newer survey record protobuf objects to the old format. This class should
  * only exist for a short amount of time while usages of the old protobuf records are removed from other code bases.
@@ -36,7 +38,7 @@ public final class LegacyRecordConversion
         final com.craxiom.networksurvey.messaging.DeviceStatus.Builder builder = com.craxiom.networksurvey.messaging.DeviceStatus.newBuilder();
         final DeviceStatusData data = deviceStatus.getData();
         builder.setDeviceSerialNumber(data.getDeviceSerialNumber());
-        builder.setDeviceTime(data.getDeviceTime());
+        builder.setDeviceTime(getEpochFromRfc3339(data.getDeviceTime()));
         builder.setLatitude(data.getLatitude());
         builder.setLongitude(data.getLongitude());
         builder.setAltitude(data.getAltitude());
@@ -62,7 +64,7 @@ public final class LegacyRecordConversion
         final com.craxiom.networksurvey.messaging.GsmRecord.Builder builder = com.craxiom.networksurvey.messaging.GsmRecord.newBuilder();
         final GsmRecordData data = gsmRecord.getData();
         builder.setDeviceSerialNumber(data.getDeviceSerialNumber());
-        builder.setDeviceTime(data.getDeviceTime());
+        builder.setDeviceTime(getEpochFromRfc3339(data.getDeviceTime()));
         builder.setLatitude(data.getLatitude());
         builder.setLongitude(data.getLongitude());
         builder.setAltitude(data.getAltitude());
@@ -96,7 +98,7 @@ public final class LegacyRecordConversion
         final com.craxiom.networksurvey.messaging.CdmaRecord.Builder builder = com.craxiom.networksurvey.messaging.CdmaRecord.newBuilder();
         final CdmaRecordData data = cdmaRecord.getData();
         builder.setDeviceSerialNumber(data.getDeviceSerialNumber());
-        builder.setDeviceTime(data.getDeviceTime());
+        builder.setDeviceTime(getEpochFromRfc3339(data.getDeviceTime()));
         builder.setLatitude(data.getLatitude());
         builder.setLongitude(data.getLongitude());
         builder.setAltitude(data.getAltitude());
@@ -130,7 +132,7 @@ public final class LegacyRecordConversion
         final com.craxiom.networksurvey.messaging.UmtsRecord.Builder builder = com.craxiom.networksurvey.messaging.UmtsRecord.newBuilder();
         final UmtsRecordData data = umtsRecord.getData();
         builder.setDeviceSerialNumber(data.getDeviceSerialNumber());
-        builder.setDeviceTime(data.getDeviceTime());
+        builder.setDeviceTime(getEpochFromRfc3339(data.getDeviceTime()));
         builder.setLatitude(data.getLatitude());
         builder.setLongitude(data.getLongitude());
         builder.setAltitude(data.getAltitude());
@@ -164,7 +166,7 @@ public final class LegacyRecordConversion
         final com.craxiom.networksurvey.messaging.LteRecord.Builder builder = com.craxiom.networksurvey.messaging.LteRecord.newBuilder();
         final LteRecordData data = lteRecord.getData();
         builder.setDeviceSerialNumber(data.getDeviceSerialNumber());
-        builder.setDeviceTime(data.getDeviceTime());
+        builder.setDeviceTime(getEpochFromRfc3339(data.getDeviceTime()));
         builder.setLatitude(data.getLatitude());
         builder.setLongitude(data.getLongitude());
         builder.setAltitude(data.getAltitude());

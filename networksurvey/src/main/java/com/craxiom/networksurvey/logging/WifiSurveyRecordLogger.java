@@ -11,6 +11,7 @@ import com.craxiom.networksurvey.constants.WifiBeaconMessageConstants;
 import com.craxiom.networksurvey.listeners.IWifiSurveyRecordListener;
 import com.craxiom.networksurvey.model.WifiRecordWrapper;
 import com.craxiom.networksurvey.services.NetworkSurveyService;
+import com.craxiom.networksurvey.util.IOUtils;
 
 import java.sql.SQLException;
 import java.util.List;
@@ -109,7 +110,7 @@ public class WifiSurveyRecordLogger extends SurveyRecordLogger implements IWifiS
 
                     row.setGeometry(geomData);
 
-                    row.setValue(WifiBeaconMessageConstants.TIME_COLUMN, data.getDeviceTime());
+                    row.setValue(WifiBeaconMessageConstants.TIME_COLUMN, IOUtils.getEpochFromRfc3339(data.getDeviceTime()));
                     row.setValue(WifiBeaconMessageConstants.RECORD_NUMBER_COLUMN, data.getRecordNumber());
 
                     final String sourceAddress = data.getSourceAddress();
