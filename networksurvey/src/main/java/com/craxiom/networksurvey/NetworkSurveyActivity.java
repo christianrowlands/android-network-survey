@@ -133,10 +133,10 @@ public class NetworkSurveyActivity extends AppCompatActivity
     @Override
     protected void onPause()
     {
-        final Context applicationContext = getApplicationContext();
-
         if (networkSurveyService != null)
         {
+            final Context applicationContext = getApplicationContext();
+
             networkSurveyService.onUiHidden();
 
             if (!networkSurveyService.isBeingUsed())
