@@ -48,7 +48,7 @@ public class CellularSurveyRecordLogger extends SurveyRecordLogger implements IC
      */
     public CellularSurveyRecordLogger(NetworkSurveyService networkSurveyService, Looper serviceLooper)
     {
-        super(networkSurveyService, serviceLooper, NetworkSurveyConstants.CELLULAR_FILE_NAME_PREFIX);
+        super(networkSurveyService, serviceLooper, NetworkSurveyConstants.LOG_DIRECTORY_NAME, NetworkSurveyConstants.CELLULAR_FILE_NAME_PREFIX);
     }
 
     @Override
@@ -182,11 +182,7 @@ public class CellularSurveyRecordLogger extends SurveyRecordLogger implements IC
      */
     private void writeGsmRecordToLogFile(final GsmRecord gsmRecord)
     {
-        if (!loggingEnabled)
-        {
-            Log.v(LOG_TAG, "Not writing the log file because logging is turned off");
-            return;
-        }
+        if (!loggingEnabled) return;
 
         handler.post(() -> {
             try
@@ -264,11 +260,7 @@ public class CellularSurveyRecordLogger extends SurveyRecordLogger implements IC
      */
     private void writeCdmaRecordToLogFile(final CdmaRecord cdmaRecord)
     {
-        if (!loggingEnabled)
-        {
-            Log.v(LOG_TAG, "Not writing the log file because logging is turned off");
-            return;
-        }
+        if (!loggingEnabled) return;
 
         handler.post(() -> {
             try
@@ -338,11 +330,7 @@ public class CellularSurveyRecordLogger extends SurveyRecordLogger implements IC
      */
     private void writeUmtsRecordToLogFile(final UmtsRecord umtsRecord)
     {
-        if (!loggingEnabled)
-        {
-            Log.v(LOG_TAG, "Not writing the log file because logging is turned off");
-            return;
-        }
+        if (!loggingEnabled) return;
 
         handler.post(() -> {
             try
@@ -420,11 +408,7 @@ public class CellularSurveyRecordLogger extends SurveyRecordLogger implements IC
      */
     private void writeLteRecordToLogFile(final LteRecord lteRecord)
     {
-        if (!loggingEnabled)
-        {
-            Log.v(LOG_TAG, "Not writing the log file because logging is turned off");
-            return;
-        }
+        if (!loggingEnabled) return;
 
         handler.post(() -> {
             try

@@ -67,6 +67,7 @@ public class GpsListener implements LocationListener
      */
     public void addLocationListener(NetworkSurveyService networkSurveyService)
     {
+        // TODO Delete me
         this.networkSurveyService = networkSurveyService;
     }
 

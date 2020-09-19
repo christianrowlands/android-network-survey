@@ -47,8 +47,10 @@ import com.craxiom.networksurvey.R;
 import com.craxiom.networksurvey.constants.NetworkSurveyConstants;
 import com.craxiom.networksurvey.listeners.ICellularSurveyRecordListener;
 import com.craxiom.networksurvey.listeners.IConnectionStateListener;
+import com.craxiom.networksurvey.listeners.IGnssSurveyRecordListener;
 import com.craxiom.networksurvey.listeners.IWifiSurveyRecordListener;
 import com.craxiom.networksurvey.logging.CellularSurveyRecordLogger;
+import com.craxiom.networksurvey.logging.GnssRecordLogger;
 import com.craxiom.networksurvey.logging.WifiSurveyRecordLogger;
 import com.craxiom.networksurvey.mqtt.MqttBrokerConnectionInfo;
 import com.craxiom.networksurvey.mqtt.MqttConnection;
@@ -90,7 +92,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
     private GpsListener gpsListener;
     private CellularSurveyRecordLogger cellularSurveyRecordLogger;
     private WifiSurveyRecordLogger wifiSurveyRecordLogger;
-    private GnssGeoPackageRecorder gnssGeoPackageRecorder = null;
+    private GnssRecordLogger gnssRecordLogger;
     private Looper serviceLooper;
     private Handler serviceHandler;
     private LocationManager locationManager = null;
@@ -100,31 +102,8 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
     private MqttConnection mqttConnection;
     private BroadcastReceiver managedConfigurationListener;
     private BroadcastReceiver wifiScanReceiver;
-
-    /**
-     * Callback for receiving GNSS measurements from the location manager.
-     */
-    private final GnssMeasurementsEvent.Callback measurementListener = new GnssMeasurementsEvent.Callback()
-    {
-        @Override
-        public void onGnssMeasurementsReceived(GnssMeasurementsEvent event)
-        {
-            gnssRawSupportKnown = true;
-            if (gnssGeoPackageRecorder != null) gnssGeoPackageRecorder.onGnssMeasurementsReceived(event);
-        }
-    };
-
-    /**
-     * Callback for receiving GNSS status from the location manager.
-     */
-    private final GnssStatus.Callback statusListener = new GnssStatus.Callback()
-    {
-        @Override
-        public void onSatelliteStatusChanged(final GnssStatus status)
-        {
-            if (gnssGeoPackageRecorder != null) gnssGeoPackageRecorder.onSatelliteStatusChanged(status);
-        }
-    };
+    private GnssMeasurementsEvent.Callback measurementListener;
+    private GnssStatus.Callback statusListener;
 
     public NetworkSurveyService()
     {
@@ -148,6 +127,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
         deviceId = createDeviceId();
         cellularSurveyRecordLogger = new CellularSurveyRecordLogger(this, serviceLooper);
         wifiSurveyRecordLogger = new WifiSurveyRecordLogger(this, serviceLooper);
+        gnssRecordLogger = new GnssRecordLogger(this, serviceLooper);
 
         initializeLocationListener();
 
@@ -157,7 +137,9 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
 
         initializeMqttConnection();
 
-        initializeWifiRecordScanning();
+        initializeWifiScanningResources();
+
+        initializeGnssScanningResources();
 
         updateServiceNotification();
     }
@@ -192,6 +174,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
     @Override
     public IBinder onBind(Intent intent)
     {
+        //noinspection ReturnOfInnerClass
         return surveyServiceBinder;
     }
 
@@ -210,12 +193,13 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
         setCellularScanningDone();
         stopWifiRecordScanning();
         removeLocationListener();
-        stopGnssLogging();
-        if (gnssGeoPackageRecorder != null)
+        stopGnssRecordScanning();
+        stopAllLogging();
+        /* TODO Delete me if (gnssGeoPackageRecorder != null)
         {
             gnssGeoPackageRecorder.shutdown();
             gnssGeoPackageRecorder = null;
-        }
+        }*/
         serviceLooper.quitSafely();
         serviceHandler = null;
         shutdownNotifications();
@@ -431,6 +415,53 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
     }
 
     /**
+     * Registers a listener for notifications when new GNSS survey records are available.
+     *
+     * @param surveyRecordListener The survey record listener to register.
+     * @since 0.3.0
+     */
+    public void registerGnssSurveyRecordListener(IGnssSurveyRecordListener surveyRecordListener)
+    {
+        synchronized (gnssStarted)
+        {
+            if (surveyRecordProcessor != null)
+            {
+                surveyRecordProcessor.registerGnssSurveyRecordListener(surveyRecordListener);
+            }
+
+            startGnssRecordScanning(); // Only starts scanning if it is not already active.
+        }
+    }
+
+    /**
+     * Unregisters a GNSS survey record listener.
+     * <p>
+     * If the listener being removed is the last listener and nothing else is using this {@link NetworkSurveyService},
+     * then this service is shutdown and will need to be restarted before it can be used again.
+     * <p>
+     * If the service is still needed for other purposes (e.g. cellular survey records), but no longer for GNSS
+     * scanning, then just the GNSS scanning portion of this service is stopped.
+     *
+     * @param surveyRecordListener The listener to unregister.
+     * @since 0.3.0
+     */
+    public void unregisterGnssSurveyRecordListener(IGnssSurveyRecordListener surveyRecordListener)
+    {
+        synchronized (gnssStarted)
+        {
+            if (surveyRecordProcessor != null)
+            {
+                surveyRecordProcessor.unregisterGnssSurveyRecordListener(surveyRecordListener);
+                if (!surveyRecordProcessor.isGnssBeingUsed()) stopGnssRecordScanning();
+            }
+        }
+
+        // Check to see if this service is still needed.  It is still needed if we are either logging, the UI is
+        // visible, or a server connection is active.
+        if (!isBeingUsed()) stopSelf();
+    }
+
+    /**
      * Used to check if this service is still needed.
      * <p>
      * This service is still needed if logging is enabled, if the UI is visible, or if a connection is active.  In other
@@ -550,7 +581,6 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
             updateServiceNotification();
 
             final boolean newLoggingState = wifiLoggingEnabled.get();
-            if (successful && newLoggingState) initializePing();
 
             return successful ? newLoggingState : null;
         }
@@ -586,23 +616,28 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
         synchronized (gnssLoggingEnabled)
         {
             final boolean originalLoggingState = gnssLoggingEnabled.get();
-
             if (originalLoggingState == enable) return originalLoggingState;
 
             Log.i(LOG_TAG, "Toggling GNSS logging to " + enable);
 
-            if (enable)
+            final boolean successful = gnssRecordLogger.enableLogging(enable);
+            if (successful)
             {
-                startGnssLogging();
-            } else
-            {
-                stopGnssLogging();
+                gnssLoggingEnabled.set(enable);
+                if (enable)
+                {
+                    registerGnssSurveyRecordListener(gnssRecordLogger);
+                } else
+                {
+                    unregisterGnssSurveyRecordListener(gnssRecordLogger);
+                }
             }
 
             updateServiceNotification();
 
             final boolean newLoggingState = gnssLoggingEnabled.get();
-            return newLoggingState == originalLoggingState ? null : newLoggingState;
+
+            return successful ? newLoggingState : null;
         }
     }
 
@@ -641,7 +676,8 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
      */
     public void updateLocation(final Location location)
     {
-        if (gnssGeoPackageRecorder != null) gnssGeoPackageRecorder.onLocationChanged(location);
+        // TODO Update this call
+        //if (gnssGeoPackageRecorder != null) gnssGeoPackageRecorder.onLocationChanged(location);
 
         // TODO Add this back in when we can test on a device that does not support GNSS
         /*if (!gnssRawSupportKnown && !hasGnssRawFailureNagLaunched)
@@ -854,7 +890,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
      *
      * @since 0.1.2
      */
-    private void initializeWifiRecordScanning()
+    private void initializeWifiScanningResources()
     {
         final WifiManager wifiManager = (WifiManager) getSystemService(Context.WIFI_SERVICE);
 
@@ -884,6 +920,35 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
                 {
                     Log.e(LOG_TAG, "A Wi-Fi scan failed, ignoring the results.");
                 }
+            }
+        };
+    }
+
+    /**
+     * Create the callbacks for the {@link GnssMeasurementsEvent} and the {@link GnssStatus} that will be notified of
+     * events from the location manager once {@link #startGnssRecordScanning()} is called.
+     *
+     * @since 0.3.0
+     */
+    private void initializeGnssScanningResources()
+    {
+        measurementListener = new GnssMeasurementsEvent.Callback()
+        {
+            @Override
+            public void onGnssMeasurementsReceived(GnssMeasurementsEvent event)
+            {
+                gnssRawSupportKnown = true;
+                if (surveyRecordProcessor != null) surveyRecordProcessor.onGnssMeasurements(event);
+            }
+        };
+
+        // TODO Delete me
+        statusListener = new GnssStatus.Callback()
+        {
+            @Override
+            public void onSatelliteStatusChanged(final GnssStatus status)
+            {
+                if (surveyRecordProcessor != null) surveyRecordProcessor.onSatelliteStatusChanged(status);
             }
         };
     }
@@ -1035,50 +1100,13 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
     }
 
     /**
-     * Starts GNSS logging if the {@link GnssGeoPackageRecorder} is not already initialized and started.
+     * Starts GNSS record scanning if it is not already started.
      * <p>
-     * This method also handles registering the GNSS listeners with Android so we get notified of updates.
-     * <p>
-     * This method is not thread safe, so make sure to call this method from a synchronized block.
-     */
-    private void startGnssLogging()
-    {
-        if (gnssGeoPackageRecorder == null)
-        {
-            Log.i(LOG_TAG, "Starting GNSS Logging");
-
-            gnssGeoPackageRecorder = new GnssGeoPackageRecorder(this, serviceLooper);
-            gnssGeoPackageRecorder.start();
-
-            gnssLoggingEnabled.set(gnssGeoPackageRecorder.openGeoPackageDatabase() && registerGnssListeners());
-        }
-    }
-
-    /**
-     * Stops GNSS logging, removes the GNSS listeners from the Android system, and closes the GeoPackage file if it is
-     * open.
+     * This method handles registering the GNSS listeners with Android so we get notified of updates.
      * <p>
      * This method is not thread safe, so make sure to call this method from a synchronized block.
      */
-    private void stopGnssLogging()
-    {
-        unregisterGnssListeners();
-        if (gnssGeoPackageRecorder != null)
-        {
-            Log.i(LOG_TAG, "Stopping GNSS Logging");
-
-            gnssGeoPackageRecorder.shutdown();
-            gnssGeoPackageRecorder = null;
-        }
-        gnssLoggingEnabled.set(false);
-    }
-
-    /**
-     * Registers for GPS/GNSS updates.
-     *
-     * @return True if the listeners are registered successfully, false if something went wrong or
-     */
-    private boolean registerGnssListeners()
+    private boolean startGnssRecordScanning()
     {
         if (gnssStarted.getAndSet(true)) return true;
 
@@ -1097,14 +1125,14 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
                 if (locationManager != null)
                 {
                     locationManager.registerGnssMeasurementsCallback(measurementListener);
-                    locationManager.registerGnssStatusCallback(statusListener, serviceHandler);
+                    // TODO Delete me locationManager.registerGnssStatusCallback(statusListener, serviceHandler);
                     Log.i(LOG_TAG, "Successfully registered the GNSS listeners");
                 }
 
                 gpsListener.addLocationListener(this);
             } else
             {
-                Log.w(LOG_TAG, "The location manager was not null when registering the GNSS listeners");
+                Log.w(LOG_TAG, "The location manager was null when registering the GNSS listeners");
             }
 
             success = true;
@@ -1114,23 +1142,35 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
     }
 
     /**
-     * Unregisters from GPS/GNSS updates.
+     * Unregisters from GPS/GNSS updates from the Android OS.
+     * <p>
+     * This method is not thread safe, so make sure to call this method from a synchronized block.
      */
-    private void unregisterGnssListeners()
+    private void stopGnssRecordScanning()
     {
         if (!gnssStarted.getAndSet(false)) return;
 
         if (locationManager != null)
         {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O)
-            {
-                locationManager.unregisterGnssMeasurementsCallback(measurementListener);
-                locationManager.unregisterGnssStatusCallback(statusListener);
-            }
+            locationManager.unregisterGnssMeasurementsCallback(measurementListener);
+            // TODO Delete me locationManager.unregisterGnssStatusCallback(statusListener);
 
             gpsListener.removeLocationListener();
             locationManager = null;
         }
+    }
+
+    /**
+     * If any of the loggers are still active, this stops them all just to be safe. If they are not active then nothing
+     * changes.
+     *
+     * @since 0.3.0
+     */
+    private void stopAllLogging()
+    {
+        if (cellularSurveyRecordLogger != null) cellularSurveyRecordLogger.enableLogging(false);
+        if (wifiSurveyRecordLogger != null) wifiSurveyRecordLogger.enableLogging(false);
+        if (gnssRecordLogger != null) gnssRecordLogger.enableLogging(false);
     }
 
     /**
