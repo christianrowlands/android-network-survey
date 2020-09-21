@@ -26,17 +26,12 @@ import static com.craxiom.networksurvey.constants.GnssMessageConstants.AGC_DB;
 import static com.craxiom.networksurvey.constants.GnssMessageConstants.ALTITUDE_STD_DEV_M;
 import static com.craxiom.networksurvey.constants.GnssMessageConstants.CARRIER_FREQUENCY_HZ;
 import static com.craxiom.networksurvey.constants.GnssMessageConstants.CARRIER_TO_NOISE_DENSITY_DB_HZ;
-import static com.craxiom.networksurvey.constants.GnssMessageConstants.CLOCK_OFFSET;
 import static com.craxiom.networksurvey.constants.GnssMessageConstants.CONSTELLATION;
 import static com.craxiom.networksurvey.constants.GnssMessageConstants.GNSS_RECORDS_TABLE_NAME;
 import static com.craxiom.networksurvey.constants.GnssMessageConstants.GROUP_NUMBER_COLUMN;
-import static com.craxiom.networksurvey.constants.GnssMessageConstants.HDOP;
 import static com.craxiom.networksurvey.constants.GnssMessageConstants.LATITUDE_STD_DEV_M;
 import static com.craxiom.networksurvey.constants.GnssMessageConstants.LONGITUDE_STD_DEV_M;
 import static com.craxiom.networksurvey.constants.GnssMessageConstants.SPACE_VEHICLE_ID;
-import static com.craxiom.networksurvey.constants.GnssMessageConstants.UNDULATION_M;
-import static com.craxiom.networksurvey.constants.GnssMessageConstants.USED_IN_SOLUTION;
-import static com.craxiom.networksurvey.constants.GnssMessageConstants.VDOP;
 import static com.craxiom.networksurvey.constants.GnssMessageConstants.getConstellationString;
 import static com.craxiom.networksurvey.constants.MessageConstants.RECORD_NUMBER_COLUMN;
 import static com.craxiom.networksurvey.constants.MessageConstants.TIME_COLUMN;
@@ -88,17 +83,12 @@ public class GnssRecordLogger extends SurveyRecordLogger implements IGnssSurveyR
             tableColumns.add(FeatureColumn.createColumn(columnNumber++, CONSTELLATION, GeoPackageDataType.TEXT, true, null));
             tableColumns.add(FeatureColumn.createColumn(columnNumber++, SPACE_VEHICLE_ID, GeoPackageDataType.MEDIUMINT, true, null));
             tableColumns.add(FeatureColumn.createColumn(columnNumber++, CARRIER_FREQUENCY_HZ, GeoPackageDataType.INT, true, null));
-            //tableColumns.add(FeatureColumn.createColumn(columnNumber++, CLOCK_OFFSET, GeoPackageDataType.DOUBLE, true, null));
-            //tableColumns.add(FeatureColumn.createColumn(columnNumber++, USED_IN_SOLUTION, GeoPackageDataType.BOOLEAN, true, null));
-            //tableColumns.add(FeatureColumn.createColumn(columnNumber++, UNDULATION_M, GeoPackageDataType.FLOAT, true, null));
             tableColumns.add(FeatureColumn.createColumn(columnNumber++, LATITUDE_STD_DEV_M, GeoPackageDataType.FLOAT, true, null));
             tableColumns.add(FeatureColumn.createColumn(columnNumber++, LONGITUDE_STD_DEV_M, GeoPackageDataType.FLOAT, true, null));
             tableColumns.add(FeatureColumn.createColumn(columnNumber++, ALTITUDE_STD_DEV_M, GeoPackageDataType.FLOAT, true, null));
             tableColumns.add(FeatureColumn.createColumn(columnNumber++, AGC_DB, GeoPackageDataType.FLOAT, true, null));
             //noinspection UnusedAssignment
             tableColumns.add(FeatureColumn.createColumn(columnNumber++, CARRIER_TO_NOISE_DENSITY_DB_HZ, GeoPackageDataType.FLOAT, true, null));
-            //tableColumns.add(FeatureColumn.createColumn(columnNumber++, HDOP, GeoPackageDataType.FLOAT, true, null));
-            //tableColumns.add(FeatureColumn.createColumn(columnNumber++, VDOP, GeoPackageDataType.FLOAT, true, null));
         });
     }
 
@@ -141,12 +131,6 @@ public class GnssRecordLogger extends SurveyRecordLogger implements IGnssSurveyR
 
                     if (data.hasCarrierFreqHz()) row.setValue(CARRIER_FREQUENCY_HZ, data.getCarrierFreqHz().getValue());
 
-                    if (data.hasClockOffset()) row.setValue(CLOCK_OFFSET, data.getClockOffset().getValue());
-
-                    if (data.hasUsedInSolution()) row.setValue(USED_IN_SOLUTION, data.getUsedInSolution().getValue());
-
-                    if (data.hasUndulationM()) row.setValue(UNDULATION_M, data.getUndulationM().getValue());
-
                     if (data.hasLatitudeStdDevM())
                     {
                         row.setValue(LATITUDE_STD_DEV_M, data.getLatitudeStdDevM().getValue());
@@ -165,10 +149,6 @@ public class GnssRecordLogger extends SurveyRecordLogger implements IGnssSurveyR
                     if (data.hasAgcDb()) row.setValue(AGC_DB, data.getAgcDb().getValue());
 
                     if (data.hasCn0DbHz()) row.setValue(CARRIER_TO_NOISE_DENSITY_DB_HZ, data.getCn0DbHz().getValue());
-
-                    if (data.hasHdop()) row.setValue(HDOP, data.getHdop().getValue());
-
-                    if (data.hasVdop()) row.setValue(VDOP, data.getVdop().getValue());
 
                     featureDao.insert(row);
                 }
