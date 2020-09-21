@@ -25,6 +25,12 @@ public class SettingsFragment extends PreferenceFragmentCompat
         // Inflate the preferences XML resource
         setPreferencesFromResource(R.xml.preferences, rootKey);
 
+        final EditTextPreference gnssScanIntervalPreference = findPreference(NetworkSurveyConstants.PROPERTY_GNSS_SCAN_INTERVAL_SECONDS);
+        if (gnssScanIntervalPreference != null)
+        {
+            gnssScanIntervalPreference.setOnBindEditTextListener(editText -> editText.setInputType(InputType.TYPE_CLASS_NUMBER));
+        }
+
         final EditTextPreference mqttPasswordPreference = findPreference(NetworkSurveyConstants.PROPERTY_MQTT_PASSWORD);
 
         if (mqttPasswordPreference != null)

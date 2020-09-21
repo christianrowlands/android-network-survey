@@ -58,6 +58,8 @@ import com.craxiom.networksurvey.mqtt.MqttConnection;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import timber.log.Timber;
+
 /**
  * This service is responsible for getting access to the Android {@link TelephonyManager} and periodically getting the
  * list of cellular towers the phone can see.  It then notifies any listeners of the cellular survey records.
@@ -103,7 +105,6 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
     private BroadcastReceiver managedConfigurationListener;
     private BroadcastReceiver wifiScanReceiver;
     private GnssMeasurementsEvent.Callback measurementListener;
-    private GnssStatus.Callback statusListener;
 
     public NetworkSurveyService()
     {
@@ -131,7 +132,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
 
         initializeLocationListener();
 
-        surveyRecordProcessor = new SurveyRecordProcessor(gpsListener, deviceId);
+        surveyRecordProcessor = new SurveyRecordProcessor(gpsListener, deviceId, getApplicationContext());
 
         initializeSurveyRecordScanning();
 
@@ -181,7 +182,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
     @Override
     public void onDestroy()
     {
-        Log.i(LOG_TAG, "onDestroy");
+        Timber.i("onDestroy");
 
         unregisterManagedConfigurationListener();
 
@@ -195,11 +196,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
         removeLocationListener();
         stopGnssRecordScanning();
         stopAllLogging();
-        /* TODO Delete me if (gnssGeoPackageRecorder != null)
-        {
-            gnssGeoPackageRecorder.shutdown();
-            gnssGeoPackageRecorder = null;
-        }*/
+
         serviceLooper.quitSafely();
         serviceHandler = null;
         shutdownNotifications();
@@ -676,9 +673,6 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
      */
     public void updateLocation(final Location location)
     {
-        // TODO Update this call
-        //if (gnssGeoPackageRecorder != null) gnssGeoPackageRecorder.onLocationChanged(location);
-
         // TODO Add this back in when we can test on a device that does not support GNSS
         /*if (!gnssRawSupportKnown && !hasGnssRawFailureNagLaunched)
         {
@@ -941,16 +935,6 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
                 if (surveyRecordProcessor != null) surveyRecordProcessor.onGnssMeasurements(event);
             }
         };
-
-        // TODO Delete me
-        statusListener = new GnssStatus.Callback()
-        {
-            @Override
-            public void onSatelliteStatusChanged(final GnssStatus status)
-            {
-                if (surveyRecordProcessor != null) surveyRecordProcessor.onSatelliteStatusChanged(status);
-            }
-        };
     }
 
     /**
@@ -1125,11 +1109,8 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
                 if (locationManager != null)
                 {
                     locationManager.registerGnssMeasurementsCallback(measurementListener);
-                    // TODO Delete me locationManager.registerGnssStatusCallback(statusListener, serviceHandler);
                     Log.i(LOG_TAG, "Successfully registered the GNSS listeners");
                 }
-
-                gpsListener.addLocationListener(this);
             } else
             {
                 Log.w(LOG_TAG, "The location manager was null when registering the GNSS listeners");
@@ -1153,9 +1134,6 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
         if (locationManager != null)
         {
             locationManager.unregisterGnssMeasurementsCallback(measurementListener);
-            // TODO Delete me locationManager.unregisterGnssStatusCallback(statusListener);
-
-            gpsListener.removeLocationListener();
             locationManager = null;
         }
     }
