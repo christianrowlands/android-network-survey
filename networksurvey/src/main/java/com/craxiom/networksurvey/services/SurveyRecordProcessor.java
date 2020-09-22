@@ -257,13 +257,9 @@ public class SurveyRecordProcessor implements SharedPreferences.OnSharedPreferen
     {
         try
         {
-            /*if (Log.isLoggable(LOG_TAG, Log.VERBOSE))
-            {
-                Log.v(LOG_TAG, "currentTechnology=" + currentTechnology);
-
-                Log.v(LOG_TAG, "allCellInfo: ");
-                allCellInfo.forEach(cellInfo -> Log.v(LOG_TAG, cellInfo.toString()));
-            }*/
+            /* Timber.v("currentTechnology=%s", currentTechnology);
+            Timber.v("allCellInfo: ");
+            allCellInfo.forEach(cellInfo -> Timber.v(cellInfo.toString()));*/
             updateCurrentTechnologyUi(currentTechnology);
 
             if (allCellInfo != null && !allCellInfo.isEmpty())
@@ -290,12 +286,9 @@ public class SurveyRecordProcessor implements SharedPreferences.OnSharedPreferen
      */
     synchronized void onWifiScanUpdate(List<ScanResult> apScanResults)
     {
-        /*if (Log.isLoggable(LOG_TAG, Log.VERBOSE))
-        {
-            Log.v(LOG_TAG, "SCAN RESULTS:");
-            apScanResults.forEach(scanResult -> Log.v(LOG_TAG, scanResult.toString()));
-            Log.v(LOG_TAG, "");
-        }*/
+        /*Timber.v("SCAN RESULTS:");
+        apScanResults.forEach(scanResult -> Timber.v(scanResult.toString()));
+        Timber.v("");*/
 
         processAccessPoints(apScanResults);
     }

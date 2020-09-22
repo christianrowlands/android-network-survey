@@ -16,17 +16,20 @@
 package com.craxiom.networksurvey.util;
 
 import android.text.TextUtils;
-import android.util.Log;
 
 import com.craxiom.networksurvey.model.DilutionOfPrecision;
+
+import timber.log.Timber;
 
 /**
  * Originally from the GPS Test open source Android app.  https://github.com/barbeau/gpstest
  */
 public class NmeaUtils
 {
-
-    private static final String TAG = "NmeaUtils";
+    private static final int PDOP_INDEX = 15;
+    private static final int HDOP_INDEX = 16;
+    private static final int VDOP_INDEX = 17;
+    private static final int ALTITUDE_INDEX = 9;
 
     /**
      * Given a $GPGGA, $GNGNS, or $GNGGA NMEA sentence, return the altitude above mean sea level (geoid
@@ -49,7 +52,6 @@ public class NmeaUtils
      */
     public static Double getAltitudeMeanSeaLevel(String nmeaSentence)
     {
-        final int ALTITUDE_INDEX = 9;
         String[] tokens = nmeaSentence.split(",");
 
         if (nmeaSentence.startsWith("$GPGGA") || nmeaSentence.startsWith("$GNGNS") || nmeaSentence.startsWith("$GNGGA"))
@@ -60,7 +62,7 @@ public class NmeaUtils
                 altitude = tokens[ALTITUDE_INDEX];
             } catch (ArrayIndexOutOfBoundsException e)
             {
-                Log.e(TAG, "Bad NMEA sentence for geoid altitude - " + nmeaSentence + " :" + e);
+                Timber.e(e, "Bad NMEA sentence for geoid altitude - %s", nmeaSentence);
                 return null;
             }
             if (!TextUtils.isEmpty(altitude))
@@ -71,17 +73,17 @@ public class NmeaUtils
                     altitudeParsed = Double.parseDouble(altitude);
                 } catch (NumberFormatException e)
                 {
-                    Log.e(TAG, "Bad geoid altitude value of '" + altitude + "' in NMEA sentence " + nmeaSentence + " :" + e);
+                    Timber.e(e, "Bad geoid altitude value of '%s' in NMEA sentence: %s", altitude, nmeaSentence);
                 }
                 return altitudeParsed;
             } else
             {
-                Log.w(TAG, "Couldn't parse geoid altitude from NMEA: " + nmeaSentence);
+                Timber.w("Couldn't parse geoid altitude from NMEA: %s", nmeaSentence);
                 return null;
             }
         } else
         {
-            Log.w(TAG, "Input must be $GPGGA, $GNGNS, or $GNGGA NMEA: " + nmeaSentence);
+            Timber.w("Input must be $GPGGA, $GNGNS, or $GNGGA NMEA: %s", nmeaSentence);
             return null;
         }
     }
@@ -102,14 +104,13 @@ public class NmeaUtils
      */
     public static DilutionOfPrecision getDop(String nmeaSentence)
     {
-        final int PDOP_INDEX = 15;
-        final int HDOP_INDEX = 16;
-        final int VDOP_INDEX = 17;
         String[] tokens = nmeaSentence.split(",");
 
         if (nmeaSentence.startsWith("$GNGSA") || nmeaSentence.startsWith("$GPGSA"))
         {
-            String pdop, hdop, vdop;
+            String pdop;
+            String hdop;
+            String vdop;
             try
             {
                 pdop = tokens[PDOP_INDEX];
@@ -117,7 +118,7 @@ public class NmeaUtils
                 vdop = tokens[VDOP_INDEX];
             } catch (ArrayIndexOutOfBoundsException e)
             {
-                Log.e(TAG, "Bad NMEA message for parsing DOP - " + nmeaSentence + " :" + e);
+                Timber.e(e, "Bad NMEA message for parsing DOP - %s", nmeaSentence);
                 return null;
             }
 
@@ -132,22 +133,22 @@ public class NmeaUtils
                 DilutionOfPrecision dop = null;
                 try
                 {
-                    dop = new DilutionOfPrecision(Double.valueOf(pdop), Double.valueOf(hdop),
-                            Double.valueOf(vdop));
+                    dop = new DilutionOfPrecision(Double.parseDouble(pdop), Double.parseDouble(hdop),
+                            Double.parseDouble(vdop));
                 } catch (NumberFormatException e)
                 {
                     // See https://github.com/barbeau/gpstest/issues/71#issuecomment-263169174
-                    Log.e(TAG, "Invalid DOP values in NMEA: " + nmeaSentence);
+                    Timber.e("Invalid DOP values in NMEA: %s", nmeaSentence);
                 }
                 return dop;
             } else
             {
-                Log.w(TAG, "Empty DOP values in NMEA: " + nmeaSentence);
+                Timber.w("Empty DOP values in NMEA: %s", nmeaSentence);
                 return null;
             }
         } else
         {
-            Log.w(TAG, "Input must be a $GNGSA NMEA: " + nmeaSentence);
+            Timber.w("Input must be a $GNGSA NMEA: %s", nmeaSentence);
             return null;
         }
     }

@@ -1,7 +1,6 @@
 package com.craxiom.networksurvey.logging;
 
 import android.os.Looper;
-import android.util.Log;
 
 import com.craxiom.messaging.GnssRecord;
 import com.craxiom.messaging.GnssRecordData;
@@ -21,6 +20,7 @@ import mil.nga.geopackage.features.user.FeatureDao;
 import mil.nga.geopackage.features.user.FeatureRow;
 import mil.nga.geopackage.geom.GeoPackageGeometryData;
 import mil.nga.sf.Point;
+import timber.log.Timber;
 
 import static com.craxiom.networksurvey.constants.GnssMessageConstants.AGC_DB;
 import static com.craxiom.networksurvey.constants.GnssMessageConstants.ALTITUDE_STD_DEV_M;
@@ -43,8 +43,6 @@ import static com.craxiom.networksurvey.constants.MessageConstants.TIME_COLUMN;
  */
 public class GnssRecordLogger extends SurveyRecordLogger implements IGnssSurveyRecordListener
 {
-    private static final String LOG_TAG = GnssRecordLogger.class.getSimpleName();
-
     /**
      * Constructs a Logger that writes GNSS Survey records to a GeoPackage SQLite database.
      *
@@ -154,7 +152,7 @@ public class GnssRecordLogger extends SurveyRecordLogger implements IGnssSurveyR
                 }
             } catch (Exception e)
             {
-                Log.e(LOG_TAG, "Something went wrong when trying to write a GNSS survey record", e);
+                Timber.e(e, "Something went wrong when trying to write a GNSS survey record");
             }
         });
     }

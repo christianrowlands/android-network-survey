@@ -1,7 +1,6 @@
 package com.craxiom.networksurvey.logging;
 
 import android.os.Looper;
-import android.util.Log;
 
 import com.craxiom.messaging.WifiBeaconRecordData;
 import com.craxiom.messaging.wifi.CipherSuite;
@@ -25,6 +24,7 @@ import mil.nga.geopackage.features.user.FeatureDao;
 import mil.nga.geopackage.features.user.FeatureRow;
 import mil.nga.geopackage.geom.GeoPackageGeometryData;
 import mil.nga.sf.Point;
+import timber.log.Timber;
 
 /**
  * Responsible for taking 802.11 survey records, and writing them to the GeoPackage log file.
@@ -33,8 +33,6 @@ import mil.nga.sf.Point;
  */
 public class WifiSurveyRecordLogger extends SurveyRecordLogger implements IWifiSurveyRecordListener
 {
-    private static final String LOG_TAG = WifiSurveyRecordLogger.class.getSimpleName();
-
     /**
      * Constructs a Logger that writes 802.11 Survey records to a GeoPackage SQLite database.
      *
@@ -159,7 +157,7 @@ public class WifiSurveyRecordLogger extends SurveyRecordLogger implements IWifiS
                 }
             } catch (Exception e)
             {
-                Log.e(LOG_TAG, "Something went wrong when trying to write a Wi-Fi survey record", e);
+                Timber.e(e, "Something went wrong when trying to write a Wi-Fi survey record");
             }
         });
     }

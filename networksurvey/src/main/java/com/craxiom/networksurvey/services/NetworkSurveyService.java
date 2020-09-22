@@ -29,7 +29,6 @@ import android.os.Looper;
 import android.provider.Settings;
 import android.telephony.CellInfo;
 import android.telephony.TelephonyManager;
-import android.util.Log;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
@@ -70,8 +69,6 @@ import timber.log.Timber;
  */
 public class NetworkSurveyService extends Service implements IConnectionStateListener
 {
-    private static final String LOG_TAG = NetworkSurveyService.class.getSimpleName();
-
     /**
      * Time to wait between first location measurement received before considering this device does
      * not likely support raw GNSS collection.
@@ -117,9 +114,9 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
     {
         super.onCreate();
 
-        Log.i(LOG_TAG, "Creating the Network Survey Service");
+        Timber.i("Creating the Network Survey Service");
 
-        final HandlerThread handlerThread = new HandlerThread(LOG_TAG);
+        final HandlerThread handlerThread = new HandlerThread("NetworkSurveyService");
         handlerThread.start();
 
         serviceLooper = handlerThread.getLooper();
@@ -153,7 +150,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
         final boolean startedAtBoot = intent.getBooleanExtra(NetworkSurveyConstants.EXTRA_STARTED_AT_BOOT, false);
         if (startedAtBoot)
         {
-            Log.i(LOG_TAG, "Received the startedAtBoot flag in the NetworkSurveyService. Reading the auto start preferences");
+            Timber.i("Received the startedAtBoot flag in the NetworkSurveyService. Reading the auto start preferences");
 
             attemptMqttConnectionAtBoot();
 
@@ -245,7 +242,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
      */
     public void disconnectFromMqttBroker()
     {
-        Log.i(LOG_TAG, "Disconnecting from the MQTT Broker");
+        Timber.i("Disconnecting from the MQTT Broker");
 
         unregisterCellularSurveyRecordListener(mqttConnection);
         unregisterWifiSurveyRecordListener(mqttConnection);
@@ -267,7 +264,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
     {
         if (isMqttMdmOverrideEnabled())
         {
-            Log.i(LOG_TAG, "The MQTT MDM override is enabled, so no MDM configured MQTT connection will be attempted");
+            Timber.i("The MQTT MDM override is enabled, so no MDM configured MQTT connection will be attempted");
             return;
         }
 
@@ -284,7 +281,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
             connectToMqttBroker(connectionInfo);
         } else
         {
-            Log.i(LOG_TAG, "Skipping the MQTT connection because no MDN MQTT broker configuration has been set");
+            Timber.i("Skipping the MQTT connection because no MDN MQTT broker configuration has been set");
 
             if (forceDisconnect) disconnectFromMqttBroker();
         }
@@ -513,7 +510,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
             final boolean originalLoggingState = cellularLoggingEnabled.get();
             if (originalLoggingState == enable) return originalLoggingState;
 
-            Log.i(LOG_TAG, "Toggling cellular logging to " + enable);
+            Timber.i("Toggling cellular logging to %s", enable);
 
             final boolean successful = cellularSurveyRecordLogger.enableLogging(enable);
             if (successful)
@@ -554,7 +551,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
             final boolean originalLoggingState = wifiLoggingEnabled.get();
             if (originalLoggingState == enable) return originalLoggingState;
 
-            Log.i(LOG_TAG, "Toggling wifi logging to " + enable);
+            Timber.i("Toggling wifi logging to " + enable);
 
             if (enable)
             {
@@ -615,7 +612,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
             final boolean originalLoggingState = gnssLoggingEnabled.get();
             if (originalLoggingState == enable) return originalLoggingState;
 
-            Log.i(LOG_TAG, "Toggling GNSS logging to " + enable);
+            Timber.i("Toggling GNSS logging to " + enable);
 
             final boolean successful = gnssRecordLogger.enableLogging(enable);
             if (successful)
@@ -658,7 +655,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
                     serviceHandler.postDelayed(this, PING_RATE_MS);
                 } catch (Exception e)
                 {
-                    Log.e(LOG_TAG, "An exception occurred trying to send out a ping", e);
+                    Timber.e(e, "An exception occurred trying to send out a ping");
                 }
             }
         }, NETWORK_DATA_REFRESH_RATE_MS);
@@ -724,7 +721,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
 
         if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED)
         {
-            Log.w(LOG_TAG, "ACCESS_FINE_LOCATION Permission not granted for the NetworkSurveyService");
+            Timber.w("ACCESS_FINE_LOCATION Permission not granted for the NetworkSurveyService");
             return;
         }
 
@@ -734,7 +731,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
             locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, NETWORK_DATA_REFRESH_RATE_MS, 0f, gpsListener);
         } else
         {
-            Log.e(LOG_TAG, "The location manager was null when trying to request location updates for the NetworkSurveyService");
+            Timber.e("The location manager was null when trying to request location updates for the NetworkSurveyService");
         }
     }
 
@@ -761,7 +758,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
 
         if (telephonyManager == null || !getPackageManager().hasSystemFeature(PackageManager.FEATURE_TELEPHONY))
         {
-            Log.w(LOG_TAG, "Unable to get access to the Telephony Manager.  No network information will be displayed");
+            Timber.w("Unable to get access to the Telephony Manager.  No network information will be displayed");
             return;
         }
 
@@ -774,7 +771,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
                 {
                     if (cellularScanningDone.get())
                     {
-                        Log.i(LOG_TAG, "Stopping the handler that pulls the latest cellular information");
+                        Timber.i("Stopping the handler that pulls the latest cellular information");
                         return;
                     }
 
@@ -792,7 +789,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
                             public void onError(int errorCode, @Nullable Throwable detail)
                             {
                                 super.onError(errorCode, detail);
-                                Log.w(LOG_TAG, "Received an error from the Telephony Manager when requesting a cell info update; errorCode=" + errorCode, detail);
+                                Timber.w(detail, "Received an error from the Telephony Manager when requesting a cell info update; errorCode=%s", errorCode);
                             }
                         };
                         telephonyManager.requestCellInfoUpdate(AsyncTask.THREAD_POOL_EXECUTOR, cellInfoCallback);
@@ -804,7 +801,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
                     serviceHandler.postDelayed(this, NETWORK_DATA_REFRESH_RATE_MS);
                 } catch (SecurityException e)
                 {
-                    Log.e(LOG_TAG, "Could not get the required permissions to get the network details", e);
+                    Timber.e(e, "Could not get the required permissions to get the network details");
                 }
             }
         }, NETWORK_DATA_REFRESH_RATE_MS);
@@ -820,10 +817,10 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
             Runtime runtime = Runtime.getRuntime();
             Process ipAddressProcess = runtime.exec("/system/bin/ping -c 1 8.8.8.8");
             int exitValue = ipAddressProcess.waitFor();
-            if (Log.isLoggable(LOG_TAG, Log.VERBOSE)) Log.v(LOG_TAG, "Ping Exit Value: " + exitValue);
+            Timber.v("Ping Exit Value: %s", exitValue);
         } catch (Exception e)
         {
-            Log.e(LOG_TAG, "An exception occurred trying to send out a ping ", e);
+            Timber.e(e, "An exception occurred trying to send out a ping ");
         }
     }
 
@@ -890,7 +887,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
 
         if (wifiManager == null)
         {
-            Log.e(LOG_TAG, "The WifiManager is null. Wi-Fi survey won't work");
+            Timber.e("The WifiManager is null. Wi-Fi survey won't work");
             return;
         }
 
@@ -905,14 +902,14 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
                     final List<ScanResult> results = wifiManager.getScanResults();
                     if (results == null)
                     {
-                        Log.d(LOG_TAG, "Null wifi scan results");
+                        Timber.d("Null wifi scan results");
                         return;
                     }
 
                     surveyRecordProcessor.onWifiScanUpdate(results);
                 } else
                 {
-                    Log.e(LOG_TAG, "A Wi-Fi scan failed, ignoring the results.");
+                    Timber.e("A Wi-Fi scan failed, ignoring the results.");
                 }
             }
         };
@@ -956,7 +953,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
 
         if (wifiManager == null)
         {
-            Log.wtf(LOG_TAG, "The Wi-Fi manager is null, can't start scanning for Wi-Fi networks.");
+            Timber.wtf("The Wi-Fi manager is null, can't start scanning for Wi-Fi networks.");
             return;
         }
 
@@ -969,18 +966,18 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
                 {
                     if (!wifiScanningActive.get())
                     {
-                        Log.i(LOG_TAG, "Stopping the handler that pulls the latest wifi information");
+                        Timber.i("Stopping the handler that pulls the latest wifi information");
                         return;
                     }
 
                     boolean success = wifiManager.startScan();
 
-                    if (!success) Log.e(LOG_TAG, "Kicking off a Wi-Fi scan failed");
+                    if (!success) Timber.e("Kicking off a Wi-Fi scan failed");
 
                     serviceHandler.postDelayed(this, WIFI_SCAN_RATE_MS);
                 } catch (Exception e)
                 {
-                    Log.e(LOG_TAG, "Could not get the required permissions to get the network details", e);
+                    Timber.e(e, "Could not get the required permissions to get the network details");
                 }
             }
         }, 10); // 10 ms to start the Wi-Fi scanning almost instantly
@@ -1003,7 +1000,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
             // Because we are extra cautious and want to make sure that we unregister the receiver, when the service
             // is shutdown we call this method to make sure we stop any active scan and unregister the receiver even if
             // we don't have one registered.
-            Log.i(LOG_TAG, "Could not unregister the NetworkSurveyService Wi-Fi Scan Receiver", e);
+            Timber.i(e, "Could not unregister the NetworkSurveyService Wi-Fi Scan Receiver");
         }
     }
 
@@ -1109,11 +1106,11 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
                 if (locationManager != null)
                 {
                     locationManager.registerGnssMeasurementsCallback(measurementListener);
-                    Log.i(LOG_TAG, "Successfully registered the GNSS listeners");
+                    Timber.i("Successfully registered the GNSS listeners");
                 }
             } else
             {
-                Log.w(LOG_TAG, "The location manager was null when registering the GNSS listeners");
+                Timber.w("The location manager was null when registering the GNSS listeners");
             }
 
             success = true;
@@ -1195,7 +1192,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
                 unregisterReceiver(managedConfigurationListener);
             } catch (Exception e)
             {
-                Log.e(LOG_TAG, "Unable to unregister the Managed Configuration Listener when pausing the app", e);
+                Timber.e(e, "Unable to unregister the Managed Configuration Listener when pausing the app");
             }
             managedConfigurationListener = null;
         }
@@ -1299,7 +1296,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
 
             if (promptEnable)
             {
-                Log.i(LOG_TAG, "Wi-Fi is disabled, prompting the user to enable it");
+                Timber.i("Wi-Fi is disabled, prompting the user to enable it");
 
                 if (Build.VERSION.SDK_INT >= 29)
                 {

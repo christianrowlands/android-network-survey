@@ -19,14 +19,11 @@ import android.location.Location;
 import android.os.Build;
 import android.os.SystemClock;
 
-import java.text.NumberFormat;
-
 /**
  * Originally from the GPS Test open source Android app.  https://github.com/barbeau/gpstest
  */
 public class LocationUtils
 {
-
     /**
      * Returns the human-readable details of a Location (provider, lat/long, accuracy, timestamp)
      *
@@ -68,84 +65,5 @@ public class LocationUtils
         sb.append(String.format("%.0f", timeDiffSec) + " second(s) ago");
 
         return sb.toString();
-    }
-
-    /**
-     * Returns true if the provided string is a valid latitude value, false if it is not
-     *
-     * @param latitude the latitude value to validate
-     * @return true if the provided string is a valid latitude value, false if it is not
-     */
-    public static boolean isValidLatitude(String latitude)
-    {
-        double latitudeDouble;
-        try
-        {
-            latitudeDouble = NumberFormat.getInstance().parse(latitude).doubleValue();
-        } catch (Exception e)
-        {
-            return false;
-        }
-        return isValidLatitude(latitudeDouble);
-    }
-
-    /**
-     * Returns true if the provided latitude is a valid latitude value, false if it is not
-     *
-     * @param latitude the latitude value to validate
-     * @return true if the provided latitude is a valid latitude value, false if it is not
-     */
-    public static boolean isValidLatitude(double latitude)
-    {
-        return latitude >= -90.0d && latitude <= 90.0d;
-    }
-
-    /**
-     * Returns true if the provided string is a valid longitude value, false if it is not
-     *
-     * @param longitude the longitude value to validate
-     * @return true if the provided string is a valid longitude value, false if it is not
-     */
-    public static boolean isValidLongitude(String longitude)
-    {
-        double longitudeDouble;
-        try
-        {
-            longitudeDouble = NumberFormat.getInstance().parse(longitude).doubleValue();
-        } catch (Exception e)
-        {
-            return false;
-        }
-        return isValidLongitude(longitudeDouble);
-    }
-
-    /**
-     * Returns true if the provided longitude is a valid longitude value, false if it is not
-     *
-     * @param longitude the longitude value to validate
-     * @return true if the provided longitude is a valid longitude value, false if it is not
-     */
-    public static boolean isValidLongitude(double longitude)
-    {
-        return longitude >= -180.0d && longitude <= 180.0d;
-    }
-
-    /**
-     * Returns true if the provided string is a valid altitude value, false if it is not
-     *
-     * @param altitude the altitude value to validate
-     * @return true if the provided string is a valid altitude value, false if it is not
-     */
-    public static boolean isValidAltitude(String altitude)
-    {
-        double altitudeDouble;
-        try
-        {
-            altitudeDouble = NumberFormat.getInstance().parse(altitude).doubleValue();
-        } catch (Exception e)
-        {
-            return false;
-        }
-        return true;
     }
 }

@@ -4,7 +4,8 @@ import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
 import android.os.Bundle;
-import android.util.Log;
+
+import timber.log.Timber;
 
 /**
  * A GPS Listener that is registered with the Android Location Service so that we are notified of Location updates.
@@ -16,7 +17,6 @@ import android.util.Log;
  */
 public class GpsListener implements LocationListener
 {
-    private static final String LOG_TAG = GpsListener.class.getSimpleName();
     private static final float MIN_DISTANCE_ACCURACY = 40f; // WiGLE Wi-Fi uses 32
 
     private Location latestLocation;
@@ -36,13 +36,13 @@ public class GpsListener implements LocationListener
     @Override
     public void onProviderEnabled(String provider)
     {
-        Log.i(LOG_TAG, "Location Provider (" + provider + ") has been enabled");
+        Timber.i("Location Provider (%s) has been enabled", provider);
     }
 
     @Override
     public void onProviderDisabled(String provider)
     {
-        Log.i(LOG_TAG, "Location Provider (" + provider + ") has been disabled");
+        Timber.i("Location Provider (%s) has been disabled", provider);
 
         if (LocationManager.GPS_PROVIDER.equals(provider)) latestLocation = null;
     }
@@ -65,7 +65,7 @@ public class GpsListener implements LocationListener
             latestLocation = newLocation;
         } else
         {
-            Log.d(LOG_TAG, "The accuracy of the last GPS location is less than the required minimum");
+            Timber.d("The accuracy of the last GPS location is less than the required minimum");
             latestLocation = null;
         }
     }

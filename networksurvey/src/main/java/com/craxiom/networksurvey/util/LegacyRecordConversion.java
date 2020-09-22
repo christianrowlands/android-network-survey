@@ -21,6 +21,7 @@ import static com.craxiom.networksurvey.util.IOUtils.getEpochFromRfc3339;
  *
  * @since 0.2.0
  */
+@SuppressWarnings("deprecation")
 public final class LegacyRecordConversion
 {
     private LegacyRecordConversion()

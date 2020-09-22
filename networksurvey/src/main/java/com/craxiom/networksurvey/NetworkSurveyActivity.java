@@ -19,7 +19,6 @@ import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.provider.Settings;
-import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.TextView;
@@ -49,6 +48,8 @@ import com.google.android.material.navigation.NavigationView;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
+import timber.log.Timber;
+
 /**
  * The main activity for the Network Survey App.  This app is used to pull LTE Network Survey
  * details, display them to a user, and also (optionally) write them to a file.
@@ -57,8 +58,6 @@ import java.util.function.Supplier;
  */
 public class NetworkSurveyActivity extends AppCompatActivity
 {
-    private static final String LOG_TAG = NetworkSurveyActivity.class.getSimpleName();
-
     private static final int ACCESS_PERMISSION_REQUEST_ID = 1;
     public static final String[] PERMISSIONS = {
             Manifest.permission.ACCESS_FINE_LOCATION,
@@ -111,7 +110,7 @@ public class NetworkSurveyActivity extends AppCompatActivity
             notificationManager.createNotificationChannel(channel);
         } else
         {
-            Log.e(LOG_TAG, "The Notification Manager could not be retrieved to add the Network Survey notification channel");
+            Timber.e("The Notification Manager could not be retrieved to add the Network Survey notification channel");
         }
     }
 
@@ -177,7 +176,7 @@ public class NetworkSurveyActivity extends AppCompatActivity
                         startAndBindToNetworkSurveyService();
                     } else
                     {
-                        Log.w(LOG_TAG, "The ACCESS_FINE_LOCATION Permission was denied.");
+                        Timber.w("The ACCESS_FINE_LOCATION Permission was denied.");
                     }
                 }
             }
@@ -238,7 +237,7 @@ public class NetworkSurveyActivity extends AppCompatActivity
                 || ActivityCompat.shouldShowRequestPermissionRationale(this, Manifest.permission.WRITE_EXTERNAL_STORAGE)
                 || ActivityCompat.shouldShowRequestPermissionRationale(this, Manifest.permission.READ_PHONE_STATE))
         {
-            Log.d(LOG_TAG, "Showing the permissions rationale dialog");
+            Timber.d("Showing the permissions rationale dialog");
 
             AlertDialog.Builder alertBuilder = new AlertDialog.Builder(this);
             alertBuilder.setCancelable(true);
@@ -280,7 +279,7 @@ public class NetworkSurveyActivity extends AppCompatActivity
         final LocationManager locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
         if (locationManager == null)
         {
-            Log.w(LOG_TAG, "Could not get the location manager.  Skipping checking the location provider");
+            Timber.w("Could not get the location manager.  Skipping checking the location provider");
             return false;
         }
 
@@ -288,14 +287,14 @@ public class NetworkSurveyActivity extends AppCompatActivity
         if (locationProvider == null)
         {
             final String noGpsMessage = getString(R.string.no_gps_device);
-            Log.w(LOG_TAG, noGpsMessage);
+            Timber.w(noGpsMessage);
             Toast.makeText(getApplicationContext(), noGpsMessage, Toast.LENGTH_LONG).show();
             return false;
         } else if (!locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER))
         {
             // gps exists, but isn't on
             final String turnOnGpsMessage = getString(R.string.turn_on_gps);
-            Log.w(LOG_TAG, turnOnGpsMessage);
+            Timber.w(turnOnGpsMessage);
             Toast.makeText(getApplicationContext(), turnOnGpsMessage, Toast.LENGTH_LONG).show();
 
             promptEnableGps();
@@ -334,7 +333,7 @@ public class NetworkSurveyActivity extends AppCompatActivity
         {
             if (ContextCompat.checkSelfPermission(this, permission) != PackageManager.PERMISSION_GRANTED)
             {
-                Log.i(LOG_TAG, "Missing the permission: " + permission);
+                Timber.i("Missing the permission: %s", permission);
                 return true;
             }
         }
@@ -349,7 +348,7 @@ public class NetworkSurveyActivity extends AppCompatActivity
     {
         if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED)
         {
-            Log.w(LOG_TAG, "The ACCESS_FINE_LOCATION permission has not been granted");
+            Timber.w("The ACCESS_FINE_LOCATION permission has not been granted");
             return false;
         }
 
@@ -363,7 +362,7 @@ public class NetworkSurveyActivity extends AppCompatActivity
     {
         if (ActivityCompat.checkSelfPermission(this, Manifest.permission.READ_PHONE_STATE) != PackageManager.PERMISSION_GRANTED)
         {
-            Log.w(LOG_TAG, "The READ_PHONE_STATE permission has not been granted");
+            Timber.w("The READ_PHONE_STATE permission has not been granted");
             return false;
         }
 
@@ -387,7 +386,7 @@ public class NetworkSurveyActivity extends AppCompatActivity
 
         final Intent serviceIntent = new Intent(applicationContext, NetworkSurveyService.class);
         final boolean bound = applicationContext.bindService(serviceIntent, surveyServiceConnection, Context.BIND_ABOVE_CLIENT);
-        Log.i(LOG_TAG, "NetworkSurveyService bound in the NetworkSurveyActivity: " + bound);
+        Timber.i("NetworkSurveyService bound in the NetworkSurveyActivity: %s", bound);
     }
 
     /**
@@ -404,7 +403,7 @@ public class NetworkSurveyActivity extends AppCompatActivity
         navController = Navigation.findNavController(this, R.id.main_content);
 
         appBarConfiguration = new AppBarConfiguration.Builder(R.id.main_cellular_fragment, R.id.main_wifi_fragment, R.id.main_gnss_fragment)
-                .setDrawerLayout(drawerLayout)
+                .setOpenableLayout(drawerLayout)
                 .build();
 
         NavigationUI.setupActionBarWithNavController(this, navController, appBarConfiguration);
@@ -450,7 +449,7 @@ public class NetworkSurveyActivity extends AppCompatActivity
             appVersionView.setText(getString(R.string.app_version, info.versionName));
         } catch (Exception e)
         {
-            Log.wtf(LOG_TAG, "Could not set the app version number", e);
+            Timber.wtf(e, "Could not set the app version number");
         }
     }
 
@@ -605,7 +604,7 @@ public class NetworkSurveyActivity extends AppCompatActivity
         @Override
         public void onServiceConnected(final ComponentName name, final IBinder iBinder)
         {
-            Log.i(LOG_TAG, name + " service connected");
+            Timber.i("%s service connected", name);
             final NetworkSurveyService.SurveyServiceBinder binder = (NetworkSurveyService.SurveyServiceBinder) iBinder;
             networkSurveyService = binder.getService();
             networkSurveyService.onUiVisible(NetworkSurveyActivity.this);
@@ -646,7 +645,7 @@ public class NetworkSurveyActivity extends AppCompatActivity
         public void onServiceDisconnected(final ComponentName name)
         {
             networkSurveyService = null;
-            Log.i(LOG_TAG, name + " service disconnected");
+            Timber.i("%s service disconnected", name);
         }
     }
 }

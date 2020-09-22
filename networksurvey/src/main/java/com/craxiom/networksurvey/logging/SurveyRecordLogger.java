@@ -4,7 +4,6 @@ import android.content.Context;
 import android.os.Environment;
 import android.os.Handler;
 import android.os.Looper;
-import android.util.Log;
 import android.widget.Toast;
 
 import com.craxiom.messaging.LteBandwidth;
@@ -36,6 +35,7 @@ import mil.nga.geopackage.features.user.FeatureRow;
 import mil.nga.geopackage.features.user.FeatureTable;
 import mil.nga.sf.GeometryType;
 import mil.nga.sf.proj.ProjectionConstants;
+import timber.log.Timber;
 
 /**
  * Abstract base class for logging survey records to a GeoPackage file.
@@ -46,7 +46,6 @@ import mil.nga.sf.proj.ProjectionConstants;
  */
 public abstract class SurveyRecordLogger
 {
-    private static final String LOG_TAG = SurveyRecordLogger.class.getSimpleName();
     private static final String JOURNAL_FILE_SUFFIX = "-journal";
     static final long WGS84_SRS = 4326;
 
@@ -118,7 +117,7 @@ public abstract class SurveyRecordLogger
 
             final String loggingFile = createPublicStorageFilePath();
 
-            Log.i(LOG_TAG, "Creating the log file: " + loggingFile);
+            Timber.i("Creating the log file: %s", loggingFile);
 
             final boolean created = geoPackageManager.create(loggingFile);
             final Context applicationContext = networkSurveyService.getApplicationContext();
@@ -126,7 +125,7 @@ public abstract class SurveyRecordLogger
             if (!created)
             {
                 final String errorMessage = "Error: Unable to create the GeoPackage file.  No logging will be recorded.";
-                Log.e(LOG_TAG, errorMessage);
+                Timber.e(errorMessage);
                 Toast.makeText(applicationContext, errorMessage, Toast.LENGTH_SHORT).show();
                 return false;
             }
@@ -135,7 +134,7 @@ public abstract class SurveyRecordLogger
             if (geoPackage == null)
             {
                 final String errorMessage = "Error: Unable to open the GeoPackage file.  No logging will be recorded.";
-                Log.e(LOG_TAG, errorMessage);
+                Timber.e(errorMessage);
                 Toast.makeText(applicationContext, errorMessage, Toast.LENGTH_SHORT).show();
                 return false;
             }
@@ -149,7 +148,7 @@ public abstract class SurveyRecordLogger
             return loggingEnabled = true;
         } catch (Exception e)
         {
-            Log.e(LOG_TAG, "Caught an exception when trying to close the GeoPackage file in the onDestroy call", e);
+            Timber.e(e, "Caught an exception when trying to close the GeoPackage file in the onDestroy call");
             if (geoPackage != null)
             {
                 geoPackage.close();
