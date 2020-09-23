@@ -2,7 +2,6 @@ package com.craxiom.networksurvey.services;
 
 import android.annotation.SuppressLint;
 import android.content.Context;
-import android.content.SharedPreferences;
 import android.location.GnssMeasurement;
 import android.location.GnssMeasurementsEvent;
 import android.location.Location;
@@ -23,8 +22,6 @@ import android.telephony.CellSignalStrengthWcdma;
 import android.telephony.TelephonyManager;
 import android.view.View;
 import android.widget.TextView;
-
-import androidx.preference.PreferenceManager;
 
 import com.craxiom.messaging.CdmaRecord;
 import com.craxiom.messaging.CdmaRecordData;
@@ -59,6 +56,7 @@ import com.craxiom.networksurvey.listeners.IGnssSurveyRecordListener;
 import com.craxiom.networksurvey.listeners.IWifiSurveyRecordListener;
 import com.craxiom.networksurvey.model.WifiRecordWrapper;
 import com.craxiom.networksurvey.util.IOUtils;
+import com.craxiom.networksurvey.util.PreferenceUtils;
 import com.craxiom.networksurvey.util.WifiCapabilitiesUtils;
 import com.google.protobuf.BoolValue;
 import com.google.protobuf.FloatValue;
@@ -85,7 +83,7 @@ import timber.log.Timber;
  *
  * @since 0.0.2
  */
-public class SurveyRecordProcessor implements SharedPreferences.OnSharedPreferenceChangeListener
+public class SurveyRecordProcessor
 {
     public static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyyMMdd-HHmmss").withZone(ZoneId.systemDefault());
     private static final String MISSION_ID_PREFIX = "NS ";
@@ -108,7 +106,7 @@ public class SurveyRecordProcessor implements SharedPreferences.OnSharedPreferen
     private int gnssGroupNumber = 0; // This will be incremented to 1 the first time it is used.
 
     private long lastGnssLogTimeMs;
-    private int gnssScanIntervalMs = NetworkSurveyConstants.DEFAULT_GNSS_SCAN_INTERVAL_SECONDS * 1_000;
+    private int gnssScanRateMs;
 
     /**
      * Creates a new processor that can consume the raw survey records in Android format and convert them to the
@@ -121,40 +119,12 @@ public class SurveyRecordProcessor implements SharedPreferences.OnSharedPreferen
     SurveyRecordProcessor(GpsListener gpsListener, String deviceId, Context context)
     {
         this.gpsListener = gpsListener;
-
         this.deviceId = deviceId;
+
         missionId = MISSION_ID_PREFIX + deviceId + " " + DATE_TIME_FORMATTER.format(LocalDateTime.now());
 
-        final SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(context);
-        preferences.registerOnSharedPreferenceChangeListener(this);
-
-        final String gnssScanInterval = preferences.getString(NetworkSurveyConstants.PROPERTY_GNSS_SCAN_INTERVAL_SECONDS,
-                String.valueOf(NetworkSurveyConstants.DEFAULT_GNSS_SCAN_INTERVAL_SECONDS));
-        try
-        {
-            gnssScanIntervalMs = Integer.parseInt(gnssScanInterval) * 1_000;
-        } catch (Exception e)
-        {
-            Timber.e(e, "Could not convert the GNSS scan interval user preference (%s) to an int", gnssScanInterval);
-        }
-    }
-
-    @Override
-    public void onSharedPreferenceChanged(SharedPreferences preferences, String key)
-    {
-        if (NetworkSurveyConstants.PROPERTY_GNSS_SCAN_INTERVAL_SECONDS.equals(key))
-        {
-            final String gnssScanInterval = preferences.getString(NetworkSurveyConstants.PROPERTY_GNSS_SCAN_INTERVAL_SECONDS,
-                    String.valueOf(NetworkSurveyConstants.DEFAULT_GNSS_SCAN_INTERVAL_SECONDS));
-
-            try
-            {
-                gnssScanIntervalMs = Integer.parseInt(gnssScanInterval) * 1_000;
-            } catch (Exception e)
-            {
-                Timber.e(e, "Could not convert the GNSS scan interval user preference (%s) to an int", gnssScanInterval);
-            }
-        }
+        gnssScanRateMs = PreferenceUtils.getScanRatePreferenceMs(NetworkSurveyConstants.PROPERTY_GNSS_SCAN_INTERVAL_SECONDS,
+                NetworkSurveyConstants.DEFAULT_GNSS_SCAN_INTERVAL_SECONDS, context);
     }
 
     void registerCellularSurveyRecordListener(ICellularSurveyRecordListener surveyRecordListener)
@@ -230,6 +200,15 @@ public class SurveyRecordProcessor implements SharedPreferences.OnSharedPreferen
     }
 
     /**
+     * @return True if there are any registered Cellular survey record listeners, false otherwise.
+     * @since 0.3.0
+     */
+    boolean isCellularBeingUsed()
+    {
+        return !cellularSurveyRecordListeners.isEmpty() || networkSurveyActivity != null;
+    }
+
+    /**
      * @return True if there are any registered Wi-Fi survey record listeners, false otherwise.
      */
     boolean isWifiBeingUsed()
@@ -239,6 +218,7 @@ public class SurveyRecordProcessor implements SharedPreferences.OnSharedPreferen
 
     /**
      * @return True if there are any registered GNSS survey record listeners, false otherwise.
+     * @since 0.3.0
      */
     boolean isGnssBeingUsed()
     {
@@ -302,6 +282,18 @@ public class SurveyRecordProcessor implements SharedPreferences.OnSharedPreferen
     synchronized void onGnssMeasurements(GnssMeasurementsEvent event)
     {
         processGnssMeasurements(event);
+    }
+
+    /**
+     * Sets the GNSS scan interval so that we can control how often this processor creates {@link GnssRecord}s from the
+     * incoming GNSS events.
+     *
+     * @param gnssScanIntervalMs The new GNSS Scan rate in milliseconds.
+     * @since 0.3.0
+     */
+    void setGnssScanRateMs(int gnssScanIntervalMs)
+    {
+        gnssScanRateMs = gnssScanIntervalMs;
     }
 
     /**
@@ -376,7 +368,7 @@ public class SurveyRecordProcessor implements SharedPreferences.OnSharedPreferen
     {
         // Ideally we would tell the Android OS that we only want GNSS Measurement Events every n seconds, but since
         // there does not seem to be any option for that we simply ignore any updates until the interval has been reached
-        if (lastGnssLogTimeMs + gnssScanIntervalMs < System.currentTimeMillis()) return;
+        if (lastGnssLogTimeMs + gnssScanRateMs > System.currentTimeMillis()) return;
 
         lastGnssLogTimeMs = System.currentTimeMillis();
 

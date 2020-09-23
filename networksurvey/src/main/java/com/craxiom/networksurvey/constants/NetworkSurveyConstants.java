@@ -58,6 +58,8 @@ public class NetworkSurveyConstants
      */
     public static final String EXTRA_STARTED_AT_BOOT = "com.craxiom.networksurvey.extra.STARTED_AT_BOOT";
 
+    public static final int DEFAULT_CELLULAR_SCAN_INTERVAL_SECONDS = 5;
+    public static final int DEFAULT_WIFI_SCAN_INTERVAL_SECONDS = 10;
     public static final int DEFAULT_GNSS_SCAN_INTERVAL_SECONDS = 10;
 
     // Preferences

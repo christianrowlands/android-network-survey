@@ -16,12 +16,19 @@
 package com.craxiom.networksurvey.util;
 
 import android.annotation.TargetApi;
+import android.content.Context;
+import android.content.RestrictionsManager;
 import android.content.SharedPreferences;
 import android.content.res.Resources;
 import android.os.Build;
+import android.os.Bundle;
+
+import androidx.preference.PreferenceManager;
 
 import com.craxiom.networksurvey.Application;
 import com.craxiom.networksurvey.R;
+
+import timber.log.Timber;
 
 /**
  * A class containing utility methods related to preferences.
@@ -30,6 +37,51 @@ import com.craxiom.networksurvey.R;
  */
 public class PreferenceUtils
 {
+    /**
+     * Gets the scan rate preference associated with the provide preference key.
+     * <p>
+     * First, this method tries to pull the MQM provided scan rate. If it is not set (either because the device is not
+     * under MDM control, or if that specific value is not set by the MDM administrator) then the value is pulled from
+     * the Android Shared Preferences (aka from the user settings). If it is not set there then the provided default
+     * value is used.
+     *
+     * @param scanRatePreferenceKey  The preference key to use when pulling the scan rate from MDM and Shared Preferences.
+     * @param defaultScanRateSeconds The default scan rate to fall back on if the scan rate could not be found.
+     * @param context                The context to use when getting the Shared Preferences and Restriction Manager
+     * @return The scan rate to use.
+     * @since 0.3.0
+     */
+    public static int getScanRatePreferenceMs(String scanRatePreferenceKey, int defaultScanRateSeconds, Context context)
+    {
+        final RestrictionsManager restrictionsManager = (RestrictionsManager) context.getSystemService(Context.RESTRICTIONS_SERVICE);
+
+        // First try to use the MDM provided value.
+        if (restrictionsManager != null)
+        {
+            final Bundle mdmProperties = restrictionsManager.getApplicationRestrictions();
+
+            final int scanRateSeconds = mdmProperties.getInt(scanRatePreferenceKey);
+            if (scanRateSeconds > 0)
+            {
+                return scanRateSeconds * 1_000;
+            }
+        }
+
+        final SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(context);
+
+        // Next, try to use the value from user preferences.
+        final String gnssScanInterval = preferences.getString(scanRatePreferenceKey,
+                String.valueOf(defaultScanRateSeconds));
+        try
+        {
+            return Integer.parseInt(gnssScanInterval) * 1_000;
+        } catch (Exception e)
+        {
+            Timber.e(e, "Could not convert the GNSS scan interval user preference (%s) to an int", gnssScanInterval);
+            return defaultScanRateSeconds * 1_000;
+        }
+    }
+
     @TargetApi(9)
     public static void saveString(SharedPreferences prefs, String key, String value)
     {

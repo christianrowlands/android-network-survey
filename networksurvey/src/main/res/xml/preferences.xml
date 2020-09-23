@@ -30,10 +30,30 @@
             app:summaryOn="@string/auto_start_gnss_logging_summary_on"
             app:title="@string/auto_start_gnss_logging_title" />
 
+    </PreferenceCategory>
+
+    <PreferenceCategory
+        app:icon="@drawable/ic_interval"
+        app:key="scan_interval_config"
+        app:title="@string/scan_interval_config_title">
+
+        <EditTextPreference
+            app:defaultValue="5"
+            app:dialogMessage="@string/cellular_scan_interval_description"
+            app:key="cellular_scan_interval_seconds"
+            app:title="@string/cellular_scan_interval_title"
+            app:useSimpleSummaryProvider="true" />
+
+        <EditTextPreference
+            app:defaultValue="10"
+            app:dialogMessage="@string/wifi_scan_interval_description"
+            app:key="wifi_scan_interval_seconds"
+            app:title="@string/wifi_scan_interval_title"
+            app:useSimpleSummaryProvider="true" />
+
         <EditTextPreference
             app:defaultValue="10"
             app:dialogMessage="@string/gnss_scan_interval_description"
-            app:icon="@drawable/ic_interval"
             app:key="gnss_scan_interval_seconds"
             app:title="@string/gnss_scan_interval_title"
             app:useSimpleSummaryProvider="true" />
