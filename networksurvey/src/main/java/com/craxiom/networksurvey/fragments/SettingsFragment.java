@@ -10,6 +10,8 @@ import androidx.preference.PreferenceManager;
 import com.craxiom.networksurvey.R;
 import com.craxiom.networksurvey.constants.NetworkSurveyConstants;
 
+import timber.log.Timber;
+
 /**
  * A Settings Fragment to inflate the Preferences XML resource so the user can interact with the App's settings.
  *
@@ -25,11 +27,9 @@ public class SettingsFragment extends PreferenceFragmentCompat
         // Inflate the preferences XML resource
         setPreferencesFromResource(R.xml.preferences, rootKey);
 
-        final EditTextPreference gnssScanIntervalPreference = findPreference(NetworkSurveyConstants.PROPERTY_GNSS_SCAN_INTERVAL_SECONDS);
-        if (gnssScanIntervalPreference != null)
-        {
-            gnssScanIntervalPreference.setOnBindEditTextListener(editText -> editText.setInputType(InputType.TYPE_CLASS_NUMBER));
-        }
+        setPreferenceAsIntegerOnly(findPreference(NetworkSurveyConstants.PROPERTY_CELLULAR_SCAN_INTERVAL_SECONDS));
+        setPreferenceAsIntegerOnly(findPreference(NetworkSurveyConstants.PROPERTY_WIFI_SCAN_INTERVAL_SECONDS));
+        setPreferenceAsIntegerOnly(findPreference(NetworkSurveyConstants.PROPERTY_GNSS_SCAN_INTERVAL_SECONDS));
 
         final EditTextPreference mqttPasswordPreference = findPreference(NetworkSurveyConstants.PROPERTY_MQTT_PASSWORD);
 
@@ -64,5 +64,22 @@ public class SettingsFragment extends PreferenceFragmentCompat
             sb.append("*");
         }
         return sb.toString();
+    }
+
+    /**
+     * Sets {@link InputType#TYPE_CLASS_NUMBER} flag on the provided {@link EditTextPreference}.
+     *
+     * @param preference The preference to update.
+     * @since 0.3.0
+     */
+    private void setPreferenceAsIntegerOnly(EditTextPreference preference)
+    {
+        if (preference != null)
+        {
+            preference.setOnBindEditTextListener(editText -> editText.setInputType(InputType.TYPE_CLASS_NUMBER));
+        } else
+        {
+            Timber.e("Could not find the preference to set it as integer numbers only.");
+        }
     }
 }

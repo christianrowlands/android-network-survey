@@ -59,8 +59,7 @@ public class GpsListener implements LocationListener
      */
     private void updateLocation(Location newLocation)
     {
-        if (newLocation != null && LocationManager.GPS_PROVIDER.equals(newLocation.getProvider())
-                && newLocation.getAccuracy() <= MIN_DISTANCE_ACCURACY)
+        if (newLocation != null && newLocation.getAccuracy() <= MIN_DISTANCE_ACCURACY)
         {
             latestLocation = newLocation;
         } else

@@ -78,15 +78,15 @@ public class GnssRecordLogger extends SurveyRecordLogger implements IGnssSurveyR
         createTable(GNSS_RECORDS_TABLE_NAME, geoPackage, srs, false, (tableColumns, columnNumber) -> {
             tableColumns.add(FeatureColumn.createColumn(columnNumber++, GROUP_NUMBER_COLUMN, GeoPackageDataType.MEDIUMINT, true, -1));
 
-            tableColumns.add(FeatureColumn.createColumn(columnNumber++, CONSTELLATION, GeoPackageDataType.TEXT, true, null));
-            tableColumns.add(FeatureColumn.createColumn(columnNumber++, SPACE_VEHICLE_ID, GeoPackageDataType.MEDIUMINT, true, null));
-            tableColumns.add(FeatureColumn.createColumn(columnNumber++, CARRIER_FREQUENCY_HZ, GeoPackageDataType.INT, true, null));
-            tableColumns.add(FeatureColumn.createColumn(columnNumber++, LATITUDE_STD_DEV_M, GeoPackageDataType.FLOAT, true, null));
-            tableColumns.add(FeatureColumn.createColumn(columnNumber++, LONGITUDE_STD_DEV_M, GeoPackageDataType.FLOAT, true, null));
-            tableColumns.add(FeatureColumn.createColumn(columnNumber++, ALTITUDE_STD_DEV_M, GeoPackageDataType.FLOAT, true, null));
-            tableColumns.add(FeatureColumn.createColumn(columnNumber++, AGC_DB, GeoPackageDataType.FLOAT, true, null));
+            tableColumns.add(FeatureColumn.createColumn(columnNumber++, CONSTELLATION, GeoPackageDataType.TEXT, false, null));
+            tableColumns.add(FeatureColumn.createColumn(columnNumber++, SPACE_VEHICLE_ID, GeoPackageDataType.MEDIUMINT, false, null));
+            tableColumns.add(FeatureColumn.createColumn(columnNumber++, CARRIER_FREQUENCY_HZ, GeoPackageDataType.INT, false, null));
+            tableColumns.add(FeatureColumn.createColumn(columnNumber++, LATITUDE_STD_DEV_M, GeoPackageDataType.FLOAT, false, null));
+            tableColumns.add(FeatureColumn.createColumn(columnNumber++, LONGITUDE_STD_DEV_M, GeoPackageDataType.FLOAT, false, null));
+            tableColumns.add(FeatureColumn.createColumn(columnNumber++, ALTITUDE_STD_DEV_M, GeoPackageDataType.FLOAT, false, null));
+            tableColumns.add(FeatureColumn.createColumn(columnNumber++, AGC_DB, GeoPackageDataType.FLOAT, false, null));
             //noinspection UnusedAssignment
-            tableColumns.add(FeatureColumn.createColumn(columnNumber++, CARRIER_TO_NOISE_DENSITY_DB_HZ, GeoPackageDataType.FLOAT, true, null));
+            tableColumns.add(FeatureColumn.createColumn(columnNumber++, CARRIER_TO_NOISE_DENSITY_DB_HZ, GeoPackageDataType.FLOAT, false, null));
         });
     }
 

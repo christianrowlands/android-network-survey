@@ -363,7 +363,7 @@ public class WifiNetworksFragment extends Fragment implements IWifiSurveyRecordL
      */
     private boolean areDeveloperOptionsEnabled()
     {
-        return Settings.Secure.getInt(requireContext().getContentResolver(), Settings.Global.DEVELOPMENT_SETTINGS_ENABLED, 0) != 0;
+        return Settings.Global.getInt(requireContext().getContentResolver(), Settings.Global.DEVELOPMENT_SETTINGS_ENABLED, 0) != 0;
     }
 
     /**

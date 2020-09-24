@@ -761,6 +761,8 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
                 NetworkSurveyConstants.DEFAULT_GNSS_SCAN_INTERVAL_SECONDS, applicationContext);
 
         surveyRecordProcessor.setGnssScanRateMs(gnssScanRateMs);
+
+        updateLocationListener();
     }
 
     /**
@@ -805,7 +807,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
 
             Timber.d("Setting the location update rate to %d", smallestScanRate);
 
-            locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, smallestScanRate, 0f, gpsListener);
+            locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, smallestScanRate, 0f, gpsListener, serviceLooper);
         } else
         {
             Timber.e("The location manager was null when trying to request location updates for the NetworkSurveyService");
