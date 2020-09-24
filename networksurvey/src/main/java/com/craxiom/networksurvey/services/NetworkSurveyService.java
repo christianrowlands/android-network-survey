@@ -122,9 +122,6 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
 
         final Context context = getApplicationContext();
 
-        setScanRateValues();
-        PreferenceManager.getDefaultSharedPreferences(context).registerOnSharedPreferenceChangeListener(this);
-
         final HandlerThread handlerThread = new HandlerThread("NetworkSurveyService");
         handlerThread.start();
 
@@ -136,9 +133,12 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
         wifiSurveyRecordLogger = new WifiSurveyRecordLogger(this, serviceLooper);
         gnssRecordLogger = new GnssRecordLogger(this, serviceLooper);
 
-        updateLocationListener();
+        gpsListener = new GpsListener();
 
         surveyRecordProcessor = new SurveyRecordProcessor(gpsListener, deviceId, context);
+
+        setScanRateValues();
+        PreferenceManager.getDefaultSharedPreferences(context).registerOnSharedPreferenceChangeListener(this);
 
         // Must register for MDM updates AFTER initializing the MQTT connection because we try to make an MQTT connection if the MDM settings change
         initializeMqttConnection();
@@ -693,6 +693,11 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
         }, PING_RATE_MS);
     }
 
+    public int getWifiScanRateMs()
+    {
+        return wifiScanRateMs;
+    }
+
     /**
      * Updates the location in the GNSS GeoPackage recorder if it is not null.
      * <p>
@@ -772,7 +777,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
     {
         if (!isBeingUsed()) return;
 
-        if (gpsListener == null) gpsListener = new GpsListener();
+        Timber.d("Registering the location listener");
 
         if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED)
         {
@@ -797,6 +802,9 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
 
             // Use the smallest scan rate set by the user for the active scanning types
             if (smallestScanRate > 10_000) smallestScanRate = smallestScanRate / 2;
+
+            Timber.d("Setting the location update rate to %d", smallestScanRate);
+
             locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, smallestScanRate, 0f, gpsListener);
         } else
         {

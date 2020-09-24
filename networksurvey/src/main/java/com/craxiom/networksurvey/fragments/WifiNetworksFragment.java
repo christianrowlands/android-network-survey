@@ -325,7 +325,7 @@ public class WifiNetworksFragment extends Fragment implements IWifiSurveyRecordL
         final long newScanTime = System.currentTimeMillis();
         final boolean devOptionsEnabled = areDeveloperOptionsEnabled();
 
-        if (!devOptionsEnabled || newScanTime - lastScanTime > NetworkSurveyService.WIFI_SCAN_RATE_MS * 3)
+        if (!devOptionsEnabled || newScanTime - lastScanTime > surveyService.getWifiScanRateMs() * 3L)
         {
             String snackbarMessage;
 
