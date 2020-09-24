@@ -70,14 +70,15 @@ public class PreferenceUtils
         final SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(context);
 
         // Next, try to use the value from user preferences.
-        final String gnssScanInterval = preferences.getString(scanRatePreferenceKey,
+        final String scanInterval = preferences.getString(scanRatePreferenceKey,
                 String.valueOf(defaultScanRateSeconds));
         try
         {
-            return Integer.parseInt(gnssScanInterval) * 1_000;
+            final int scanRateSeconds = Integer.parseInt(scanInterval);
+            return scanRateSeconds > 0 ? scanRateSeconds * 1_000 : defaultScanRateSeconds * 1_000;
         } catch (Exception e)
         {
-            Timber.e(e, "Could not convert the GNSS scan interval user preference (%s) to an int", gnssScanInterval);
+            Timber.e(e, "Could not convert the GNSS scan interval user preference (%s) to an int", scanInterval);
             return defaultScanRateSeconds * 1_000;
         }
     }

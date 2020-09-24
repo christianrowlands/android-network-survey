@@ -51,7 +51,7 @@ public class GnssRecordLogger extends SurveyRecordLogger implements IGnssSurveyR
      */
     public GnssRecordLogger(NetworkSurveyService networkSurveyService, Looper serviceLooper)
     {
-        super(networkSurveyService, serviceLooper, NetworkSurveyConstants.GNSS_LOG_DIRECTORY_NAME, NetworkSurveyConstants.GNSS_FILE_NAME_PREFIX);
+        super(networkSurveyService, serviceLooper, NetworkSurveyConstants.LOG_DIRECTORY_NAME, NetworkSurveyConstants.GNSS_FILE_NAME_PREFIX);
     }
 
     @Override

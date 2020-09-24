@@ -226,6 +226,22 @@ public class NetworkSurveyActivity extends AppCompatActivity
     }
 
     /**
+     * Sets the cellular details UI ({@link com.craxiom.networksurvey.fragments.NetworkDetailsFragment}) as visible.
+     *
+     * @since 0.3.0
+     */
+    public void runSingleScan()
+    {
+        if (networkSurveyService != null)
+        {
+            networkSurveyService.runSingleCellularScan();
+        } else
+        {
+            Timber.e("Could not run the single scan because the service is null");
+        }
+    }
+
+    /**
      * Check to see if we should show the rationale for any of the permissions.  If so, then display a dialog that
      * explains what permissions we need for this app to work properly.
      * <p>

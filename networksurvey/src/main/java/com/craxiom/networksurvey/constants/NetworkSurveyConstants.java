@@ -22,7 +22,6 @@ public class NetworkSurveyConstants
     public static final int GRPC_CONNECTION_NOTIFICATION_ID = 3;
     public static final int LOGGING_NOTIFICATION_ID = 1;
 
-    public static final String GNSS_LOG_DIRECTORY_NAME = "GNSSData";
     public static final String LOG_DIRECTORY_NAME = "NetworkSurveyData";
 
     public static final String CELLULAR_FILE_NAME_PREFIX = "craxiom-cellular-";

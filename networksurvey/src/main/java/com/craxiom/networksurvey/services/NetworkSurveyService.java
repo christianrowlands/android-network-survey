@@ -104,6 +104,8 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
     private final boolean hasGnssRawFailureNagLaunched = false;
     private MqttConnection mqttConnection;
     private BroadcastReceiver managedConfigurationListener;
+
+    private TelephonyManager.CellInfoCallback cellInfoCallback;
     private BroadcastReceiver wifiScanReceiver;
     private GnssMeasurementsEvent.Callback measurementListener;
 
@@ -144,8 +146,8 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
         initializeMqttConnection();
         registerManagedConfigurationListener();
 
+        initializeCellularScanningResources();
         initializeWifiScanningResources();
-
         initializeGnssScanningResources();
 
         updateServiceNotification();
@@ -827,6 +829,38 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
     }
 
     /**
+     * Runs one cellular scan. This is used to prime the UI in the event that the scan interval is really long.
+     *
+     * @since 0.3.0
+     */
+    public void runSingleCellularScan()
+    {
+        final TelephonyManager telephonyManager = (TelephonyManager) getSystemService(Context.TELEPHONY_SERVICE);
+
+        if (telephonyManager == null || !getPackageManager().hasSystemFeature(PackageManager.FEATURE_TELEPHONY))
+        {
+            Timber.w("Unable to get access to the Telephony Manager.  No network information will be displayed");
+            return;
+        }
+
+        serviceHandler.postDelayed(() -> {
+            try
+            {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q)
+                {
+                    telephonyManager.requestCellInfoUpdate(AsyncTask.THREAD_POOL_EXECUTOR, cellInfoCallback);
+                } else
+                {
+                    surveyRecordProcessor.onCellInfoUpdate(telephonyManager.getAllCellInfo(), CalculationUtils.getNetworkType(telephonyManager.getNetworkType()));
+                }
+            } catch (SecurityException e)
+            {
+                Timber.e(e, "Could not get the required permissions to get the network details");
+            }
+        }, 1_000);
+    }
+
+    /**
      * Gets the {@link TelephonyManager}, and then starts a regular poll of cellular records.
      * <p>
      * This method only starts scanning if the scan is not already active.
@@ -858,21 +892,6 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
 
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q)
                     {
-                        final TelephonyManager.CellInfoCallback cellInfoCallback = new TelephonyManager.CellInfoCallback()
-                        {
-                            @Override
-                            public void onCellInfo(@NonNull List<CellInfo> cellInfo)
-                            {
-                                surveyRecordProcessor.onCellInfoUpdate(cellInfo, CalculationUtils.getNetworkType(telephonyManager.getNetworkType()));
-                            }
-
-                            @Override
-                            public void onError(int errorCode, @Nullable Throwable detail)
-                            {
-                                super.onError(errorCode, detail);
-                                Timber.w(detail, "Received an error from the Telephony Manager when requesting a cell info update; errorCode=%s", errorCode);
-                            }
-                        };
                         telephonyManager.requestCellInfoUpdate(AsyncTask.THREAD_POOL_EXECUTOR, cellInfoCallback);
                     } else
                     {
@@ -897,6 +916,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
      */
     private void stopCellularRecordScanning()
     {
+        Timber.d("Setting the cellular scanning active flag to false");
         cellularScanningActive.set(false);
 
         updateLocationListener();
@@ -967,6 +987,42 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
                 final MqttBrokerConnectionInfo userMqttBrokerConnectionInfo = getUserMqttBrokerConnectionInfo();
                 if (userMqttBrokerConnectionInfo != null) connectToMqttBroker(userMqttBrokerConnectionInfo);
             }
+        }
+    }
+
+    /**
+     * Create the Cellular Scan callback that will be notified of Cellular scan events once
+     * {@link #startCellularRecordScanning()} is called.
+     *
+     * @since 0.3.0
+     */
+    private void initializeCellularScanningResources()
+    {
+        final TelephonyManager telephonyManager = (TelephonyManager) getSystemService(Context.TELEPHONY_SERVICE);
+
+        if (telephonyManager == null)
+        {
+            Timber.e("Unable to get access to the Telephony Manager.  No network information will be displayed");
+            return;
+        }
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q)
+        {
+            cellInfoCallback = new TelephonyManager.CellInfoCallback()
+            {
+                @Override
+                public void onCellInfo(@NonNull List<CellInfo> cellInfo)
+                {
+                    surveyRecordProcessor.onCellInfoUpdate(cellInfo, CalculationUtils.getNetworkType(telephonyManager.getNetworkType()));
+                }
+
+                @Override
+                public void onError(int errorCode, @Nullable Throwable detail)
+                {
+                    super.onError(errorCode, detail);
+                    Timber.w(detail, "Received an error from the Telephony Manager when requesting a cell info update; errorCode=%s", errorCode);
+                }
+            };
         }
     }
 
@@ -1075,7 +1131,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
                     Timber.e(e, "Could not get the required permissions to get the network details");
                 }
             }
-        }, 50); // 50 ms to start the Wi-Fi scanning almost instantly
+        }, 2_000);
 
         updateLocationListener();
     }

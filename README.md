@@ -62,6 +62,11 @@ library. [The API documentation is published to a web page here](https://messagi
 
 ## Changelog
 
+##### [0.2.2](https://github.com/christianrowlands/android-network-survey/releases/tag/v0.2.2) - 2020-09-25
+ * Reduced the GNSS GeoPackage file size by around 100x.
+ * Changed the GNSS GeoPackage table format.
+ * Added scan rate interval user preferences for Cellular, Wi-Fi, and GNSS.
+
 ##### [0.2.1](https://github.com/christianrowlands/android-network-survey/releases/tag/v0.2.1) - 2020-08-21
  * Updated the device time field to use RFC 3339 instead of Unix Epoch time.
  * Fixed a bug where the connection would not stop if the server shutdown before the client.
