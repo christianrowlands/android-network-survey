@@ -12,7 +12,6 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.Looper;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
@@ -38,6 +37,8 @@ import com.craxiom.networksurvey.listeners.HelpCardListener;
 import com.craxiom.networksurvey.listeners.IConnectionStateListener;
 import com.craxiom.networksurvey.services.GrpcConnectionService;
 
+import timber.log.Timber;
+
 /**
  * A fragment for allowing the user to connect to a remote gRPC based server.  This fragment handles
  * the UI portion of the connection and delegates the actual connection logic to {@link GrpcConnectionService}.
@@ -46,8 +47,6 @@ import com.craxiom.networksurvey.services.GrpcConnectionService;
  */
 public class GrpcConnectionFragment extends Fragment implements IConnectionStateListener
 {
-    private static final String LOG_TAG = GrpcConnectionFragment.class.getSimpleName();
-
     private static final int ACCESS_PERMISSION_REQUEST_ID = 10;
 
     private final Handler uiThreadHandler;
@@ -188,7 +187,7 @@ public class GrpcConnectionFragment extends Fragment implements IConnectionState
         final boolean hasPermission = ContextCompat.checkSelfPermission(applicationContext, Manifest.permission.INTERNET)
                 == PackageManager.PERMISSION_GRANTED;
 
-        Log.d(LOG_TAG, "Has Internet permission: " + hasPermission);
+        Timber.d("Has Internet permission: %s", hasPermission);
 
         if (hasPermission) return true;
 
@@ -205,7 +204,7 @@ public class GrpcConnectionFragment extends Fragment implements IConnectionState
      */
     private synchronized void updateUiState(ConnectionState connectionState)
     {
-        Log.d(LOG_TAG, "Updating the UI state for: " + connectionState);
+        Timber.d("Updating the UI state for: %s", connectionState);
 
         // It is possible that the user has switched away from the view during a connection attempt, and in that event
         // the view will be refreshed in the onResume method.
@@ -256,14 +255,14 @@ public class GrpcConnectionFragment extends Fragment implements IConnectionState
      */
     private void connectToGrpcServer()
     {
-        Log.d(LOG_TAG, "Attempting to connect to a gRPC server");
+        Timber.d("Attempting to connect to a gRPC server");
 
         try
         {
             if (!areConnectionParametersValid())
             {
                 updateUiState(ConnectionState.DISCONNECTED);
-                Log.w(LOG_TAG, "Can't connect because one ore more of the connection parameters are invalid");
+                Timber.w("Can't connect because one ore more of the connection parameters are invalid");
                 return;
             }
 
@@ -281,7 +280,7 @@ public class GrpcConnectionFragment extends Fragment implements IConnectionState
             startService(true);
         } catch (Exception e)
         {
-            Log.e(LOG_TAG, "An exception occurred when trying to connect to the remote gRPC server");
+            Timber.e("An exception occurred when trying to connect to the remote gRPC server");
             updateUiState(ConnectionState.DISCONNECTED);
         }
     }
@@ -388,7 +387,7 @@ public class GrpcConnectionFragment extends Fragment implements IConnectionState
         final FragmentActivity activity = getActivity();
         if (activity == null)
         {
-            Log.e(LOG_TAG, "Unable to get the activity from the gRPC Connection Fragment");
+            Timber.e("Unable to get the activity from the gRPC Connection Fragment");
         } else
         {
             final InputMethodManager inputMethodManager = (InputMethodManager) activity.getSystemService(Context.INPUT_METHOD_SERVICE);
@@ -409,14 +408,14 @@ public class GrpcConnectionFragment extends Fragment implements IConnectionState
     private synchronized void startService(boolean connect)
     {
         // Start the service
-        Log.i(LOG_TAG, "Starting the gRPC Connection Service");
+        Timber.i("Starting the gRPC Connection Service");
         final Intent serviceIntent = new Intent(applicationContext, GrpcConnectionService.class);
         applicationContext.startService(serviceIntent);
 
         // Bind to the service
         ServiceConnection serviceConnection = new GrpcServiceConnection(connect);
         final boolean bound = applicationContext.bindService(serviceIntent, serviceConnection, Context.BIND_ABOVE_CLIENT);
-        Log.i(LOG_TAG, "GrpcConnectionService bound: " + bound);
+        Timber.i("GrpcConnectionService bound: %s", bound);
     }
 
     /**
@@ -438,7 +437,7 @@ public class GrpcConnectionFragment extends Fragment implements IConnectionState
         @Override
         public void onServiceConnected(final ComponentName name, final IBinder iBinder)
         {
-            Log.i(LOG_TAG, name + " service connected");
+            Timber.i("%s service connected", name);
             final GrpcConnectionService.ConnectionServiceBinder binder = (GrpcConnectionService.ConnectionServiceBinder) iBinder;
             grpcConnectionService = binder.getService();
             grpcConnectionService.registerConnectionStateListener(GrpcConnectionFragment.this);
@@ -457,7 +456,7 @@ public class GrpcConnectionFragment extends Fragment implements IConnectionState
         @Override
         public void onServiceDisconnected(final ComponentName name)
         {
-            Log.i(LOG_TAG, name + " service disconnected");
+            Timber.i("%s service disconnected", name);
             grpcConnectionService = null;
         }
     }

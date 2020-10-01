@@ -50,4 +50,22 @@
         android:restrictionType="string"
         android:title="@string/mqtt_password_title" />
 
+    <restriction
+        android:description="@string/cellular_scan_interval_description"
+        android:key="cellular_scan_interval_seconds"
+        android:restrictionType="integer"
+        android:title="@string/cellular_scan_interval_title" />
+
+    <restriction
+        android:description="@string/wifi_scan_interval_description"
+        android:key="wifi_scan_interval_seconds"
+        android:restrictionType="integer"
+        android:title="@string/wifi_scan_interval_title" />
+
+    <restriction
+        android:description="@string/gnss_scan_interval_description"
+        android:key="gnss_scan_interval_seconds"
+        android:restrictionType="integer"
+        android:title="@string/gnss_scan_interval_title" />
+
 </restrictions>

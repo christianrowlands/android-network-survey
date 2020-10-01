@@ -9,7 +9,6 @@ import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
 import android.os.Bundle;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -30,6 +29,8 @@ import com.google.android.material.tabs.TabLayoutMediator;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArraySet;
 
+import timber.log.Timber;
+
 /**
  * The primary fragment to use for the GNSS page of the bottom navigation component.  This fragment view contains tabs
  * which represent the different GNSS views (e.g. Status, Sky View, ...)
@@ -38,14 +39,11 @@ import java.util.concurrent.CopyOnWriteArraySet;
  */
 public class MainGnssFragment extends Fragment
 {
-    private static final String LOG_TAG = MainGnssFragment.class.getSimpleName();
-
     private static final int LOCATION_REFRESH_RATE_MS = 2_000;
 
     private LocationListener locationListener;
     private GnssStatus.Callback gnssStatusListener;
     private final Set<IGnssListener> gnssListeners = new CopyOnWriteArraySet<>();
-    private FragmentActivity fragmentActivity;
     private LocationManager locationManager;
 
     @Override
@@ -53,13 +51,13 @@ public class MainGnssFragment extends Fragment
     {
         super.onCreate(savedInstanceState);
 
-        fragmentActivity = getActivity(); // Must be set before the call to initGnss()
+        FragmentActivity fragmentActivity = getActivity();
         if (fragmentActivity != null)
         {
             locationManager = fragmentActivity.getSystemService(LocationManager.class);
         }
 
-        if (locationManager == null) Log.e(LOG_TAG, "The Location Manager is null. Unable to get GNSS information");
+        if (locationManager == null) Timber.e("The Location Manager is null. Unable to get GNSS information");
     }
 
     @Nullable
@@ -129,7 +127,7 @@ public class MainGnssFragment extends Fragment
         final Context context = getContext();
         if (context != null && ActivityCompat.checkSelfPermission(context.getApplicationContext(), Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED)
         {
-            Log.w(LOG_TAG, "The ACCESS_FINE_LOCATION permission has not been granted");
+            Timber.w("The ACCESS_FINE_LOCATION permission has not been granted");
             return false;
         }
 
@@ -144,7 +142,7 @@ public class MainGnssFragment extends Fragment
     {
         if (locationManager == null)
         {
-            Log.e(LOG_TAG, "The location manager is null.  Unable to register a location listener");
+            Timber.e("The location manager is null.  Unable to register a location listener");
             return;
         }
 
@@ -178,7 +176,7 @@ public class MainGnssFragment extends Fragment
             };
         } else
         {
-            Log.w(LOG_TAG, "When trying to add a new location listener, the old one was not null.");
+            Timber.w("When trying to add a new location listener, the old one was not null.");
         }
 
         locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, LOCATION_REFRESH_RATE_MS, 0f, locationListener);
@@ -191,7 +189,7 @@ public class MainGnssFragment extends Fragment
     {
         if (locationManager == null)
         {
-            Log.e(LOG_TAG, "The location manager is null.  Unable to remove a location listener");
+            Timber.e("The location manager is null.  Unable to remove a location listener");
             return;
         }
 
@@ -207,7 +205,7 @@ public class MainGnssFragment extends Fragment
     {
         if (locationManager == null)
         {
-            Log.e(LOG_TAG, "The location manager is null.  Unable to register a GNSS status listener");
+            Timber.e("The location manager is null.  Unable to register a GNSS status listener");
             return;
         }
 
@@ -263,7 +261,7 @@ public class MainGnssFragment extends Fragment
     {
         if (locationManager == null)
         {
-            Log.e(LOG_TAG, "The location manager is null.  Unable to unregister a GNSS status listener");
+            Timber.e("The location manager is null.  Unable to unregister a GNSS status listener");
             return;
         }
 
@@ -287,7 +285,7 @@ public class MainGnssFragment extends Fragment
                 return GnssSkyFragment.TITLE;
 
             default:
-                Log.wtf(LOG_TAG, "No title specified for the GNSS tab.  Using a default");
+                Timber.wtf("No title specified for the GNSS tab.  Using a default");
                 return "";
         }
     }
@@ -297,7 +295,7 @@ public class MainGnssFragment extends Fragment
      */
     public static class GnssCollectionAdapter extends FragmentStateAdapter
     {
-        private MainGnssFragment mainGnssFragment;
+        private final MainGnssFragment mainGnssFragment;
 
         GnssCollectionAdapter(MainGnssFragment fragment)
         {
@@ -318,7 +316,7 @@ public class MainGnssFragment extends Fragment
                     return new GnssSkyFragment(mainGnssFragment);
 
                 default:
-                    Log.wtf(LOG_TAG, "A fragment has not been specified for one of the tabs in the GNSS UI.");
+                    Timber.wtf("A fragment has not been specified for one of the tabs in the GNSS UI.");
                     return new GnssStatusFragment(mainGnssFragment);
             }
         }

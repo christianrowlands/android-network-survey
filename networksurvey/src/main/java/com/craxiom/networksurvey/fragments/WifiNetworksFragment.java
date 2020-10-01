@@ -11,7 +11,6 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.IBinder;
 import android.provider.Settings;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -38,6 +37,8 @@ import com.google.android.material.snackbar.Snackbar;
 import java.util.ArrayList;
 import java.util.List;
 
+import timber.log.Timber;
+
 /**
  * The fragment that displays a list of Wi-Fi networks returned from the scan.
  *
@@ -45,13 +46,10 @@ import java.util.List;
  */
 public class WifiNetworksFragment extends Fragment implements IWifiSurveyRecordListener
 {
-    private static final String LOG_TAG = WifiNetworksFragment.class.getSimpleName();
-
     private final SortedList<WifiRecordWrapper> wifiRecordSortedList = new SortedList<>(WifiRecordWrapper.class, new WifiRecordSortedListCallback());
 
     private Context applicationContext;
     private NetworkSurveyService surveyService;
-    private RecyclerView recyclerView;
     private MyWifiNetworkRecyclerViewAdapter wifiNetworkRecyclerViewAdapter;
     private TextView scanStatusView;
     private TextView scanNumberView;
@@ -91,7 +89,7 @@ public class WifiNetworksFragment extends Fragment implements IWifiSurveyRecordL
     {
         final View view = inflater.inflate(R.layout.fragment_wifi_networks_list, container, false);
 
-        recyclerView = view.findViewById(R.id.wifi_network_list);
+        RecyclerView recyclerView = view.findViewById(R.id.wifi_network_list);
         recyclerView.setLayoutManager(new LinearLayoutManager(view.getContext()));
         wifiNetworkRecyclerViewAdapter = new MyWifiNetworkRecyclerViewAdapter(wifiRecordSortedList, getContext());
         recyclerView.setAdapter(wifiNetworkRecyclerViewAdapter);
@@ -165,14 +163,14 @@ public class WifiNetworksFragment extends Fragment implements IWifiSurveyRecordL
     private void startAndBindToNetworkSurveyService()
     {
         // Start the service
-        Log.i(LOG_TAG, "Binding to the Network Survey Service");
+        Timber.i("Binding to the Network Survey Service");
         final Intent serviceIntent = new Intent(applicationContext, NetworkSurveyService.class);
         applicationContext.startService(serviceIntent);
 
         // Bind to the service
         ServiceConnection surveyServiceConnection = new SurveyServiceConnection();
         final boolean bound = applicationContext.bindService(serviceIntent, surveyServiceConnection, Context.BIND_ABOVE_CLIENT);
-        Log.i(LOG_TAG, "NetworkSurveyService bound in the MqttConnectionFragment: " + bound);
+        Timber.i("NetworkSurveyService bound in the MqttConnectionFragment: %s", bound);
     }
 
     /**
@@ -202,7 +200,7 @@ public class WifiNetworksFragment extends Fragment implements IWifiSurveyRecordL
         final FragmentActivity activity = getActivity();
         if (activity == null)
         {
-            Log.wtf(LOG_TAG, "The Activity is null so we are unable to show the sorting dialog.");
+            Timber.wtf("The Activity is null so we are unable to show the sorting dialog.");
             return;
         }
 
@@ -272,7 +270,7 @@ public class WifiNetworksFragment extends Fragment implements IWifiSurveyRecordL
 
             if (wifiManager != null && !wifiManager.isWifiEnabled())
             {
-                Log.i(LOG_TAG, "Wi-Fi is disabled, prompting the user to enable it");
+                Timber.i("Wi-Fi is disabled, prompting the user to enable it");
 
                 promptedToEnableWifi = true;
 
@@ -294,7 +292,7 @@ public class WifiNetworksFragment extends Fragment implements IWifiSurveyRecordL
             }
         } catch (Exception e)
         {
-            Log.e(LOG_TAG, "Something went wrong when trying to prompt the user to enable wifi", e);
+            Timber.e(e, "Something went wrong when trying to prompt the user to enable wifi");
         }
     }
 
@@ -327,7 +325,7 @@ public class WifiNetworksFragment extends Fragment implements IWifiSurveyRecordL
         final long newScanTime = System.currentTimeMillis();
         final boolean devOptionsEnabled = areDeveloperOptionsEnabled();
 
-        if (!devOptionsEnabled || newScanTime - lastScanTime > NetworkSurveyService.WIFI_SCAN_RATE_MS * 3)
+        if (!devOptionsEnabled || newScanTime - lastScanTime > surveyService.getWifiScanRateMs() * 3L)
         {
             String snackbarMessage;
 
@@ -365,7 +363,7 @@ public class WifiNetworksFragment extends Fragment implements IWifiSurveyRecordL
      */
     private boolean areDeveloperOptionsEnabled()
     {
-        return Settings.Secure.getInt(requireContext().getContentResolver(), Settings.Global.DEVELOPMENT_SETTINGS_ENABLED, 0) != 0;
+        return Settings.Global.getInt(requireContext().getContentResolver(), Settings.Global.DEVELOPMENT_SETTINGS_ENABLED, 0) != 0;
     }
 
     /**
@@ -449,7 +447,7 @@ public class WifiNetworksFragment extends Fragment implements IWifiSurveyRecordL
         @Override
         public void onServiceConnected(final ComponentName name, final IBinder binder)
         {
-            Log.i(LOG_TAG, name + " service connected");
+            Timber.i("%s service connected", name);
             surveyService = ((NetworkSurveyService.SurveyServiceBinder) binder).getService();
             surveyService.registerWifiSurveyRecordListener(WifiNetworksFragment.this);
         }
@@ -457,7 +455,7 @@ public class WifiNetworksFragment extends Fragment implements IWifiSurveyRecordL
         @Override
         public void onServiceDisconnected(final ComponentName name)
         {
-            Log.i(LOG_TAG, name + " service disconnected");
+            Timber.i("%s service disconnected", name);
             surveyService = null;
         }
     }

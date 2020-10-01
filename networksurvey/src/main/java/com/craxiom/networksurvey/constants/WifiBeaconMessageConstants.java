@@ -4,7 +4,7 @@ import com.craxiom.messaging.wifi.CipherSuite;
 import com.craxiom.messaging.wifi.EncryptionType;
 
 /**
- * The constants associated with the LTE table in the GeoPackage file.
+ * The constants associated with the Wi-Fi table in the GeoPackage file.
  * <p>
  * Also contains any utility methods to help with converting any of the values.
  *

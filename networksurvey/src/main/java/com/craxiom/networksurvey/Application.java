@@ -23,9 +23,11 @@ import android.preference.PreferenceManager;
 
 import com.craxiom.networksurvey.lang.LocaleManager;
 
+import timber.log.Timber;
+
 /**
  * Holds application-wide state.
- *
+ * <p>
  * TODO: This class was pulled from the GPS Test app and needs to be removed once all the usages of this class are updated/removed
  *
  * @author Sean J. Barbeau
@@ -57,6 +59,9 @@ public class Application extends android.app.Application
     public void onCreate()
     {
         super.onCreate();
+
+        // If this is a debug apk, then we enable logging. If it is a release apk we don't want to output any logs.
+        if (BuildConfig.DEBUG) Timber.plant(new Timber.DebugTree());
 
         mApp = this;
         mPrefs = PreferenceManager.getDefaultSharedPreferences(this);

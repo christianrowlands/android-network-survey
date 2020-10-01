@@ -1,7 +1,6 @@
 package com.craxiom.networksurvey.mqtt;
 
 import android.content.Context;
-import android.util.Log;
 
 import com.craxiom.messaging.CdmaRecord;
 import com.craxiom.messaging.GsmRecord;
@@ -27,6 +26,8 @@ import org.eclipse.paho.client.mqttv3.MqttMessage;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
+import timber.log.Timber;
+
 /**
  * Class for creating a connection to an MQTT server.
  *
@@ -34,8 +35,6 @@ import java.util.concurrent.CopyOnWriteArrayList;
  */
 public class MqttConnection implements ICellularSurveyRecordListener, IWifiSurveyRecordListener
 {
-    private static final String LOG_TAG = MqttConnection.class.getSimpleName();
-
     private static final String MQTT_GSM_MESSAGE_TOPIC = "gsm_message";
     private static final String MQTT_CDMA_MESSAGE_TOPIC = "cdma_message";
     private static final String MQTT_UMTS_MESSAGE_TOPIC = "umts_message";
@@ -180,7 +179,7 @@ public class MqttConnection implements ICellularSurveyRecordListener, IWifiSurve
             mqttAndroidClient.connect(mqttConnectOptions, null, new MyMqttActionListener(this));
         } catch (Exception e)
         {
-            Log.e(LOG_TAG, "Unable to create the connection to the MQTT broker", e);
+            Timber.e(e, "Unable to create the connection to the MQTT broker");
         }
     }
 
@@ -199,7 +198,7 @@ public class MqttConnection implements ICellularSurveyRecordListener, IWifiSurve
                 token.waitForCompletion(DISCONNECT_TIMEOUT);  // Wait for completion so that we don't initiate a new connection while waiting for this disconnect.
             } catch (Exception e)
             {
-                Log.e(LOG_TAG, "An exception occurred when disconnecting from the MQTT broker", e);
+                Timber.e(e, "An exception occurred when disconnecting from the MQTT broker");
             }
         }
 
@@ -213,10 +212,7 @@ public class MqttConnection implements ICellularSurveyRecordListener, IWifiSurve
      */
     private synchronized void notifyConnectionStateChange(ConnectionState newConnectionState)
     {
-        if (Log.isLoggable(LOG_TAG, Log.INFO))
-        {
-            Log.i(LOG_TAG, "MQTT Connection State Changed.  oldConnectionState=" + connectionState + ", newConnectionState=" + newConnectionState);
-        }
+        Timber.i("MQTT Connection State Changed.  oldConnectionState=%s, newConnectionState=%s", connectionState, newConnectionState);
 
         connectionState = newConnectionState;
 
@@ -227,7 +223,7 @@ public class MqttConnection implements ICellularSurveyRecordListener, IWifiSurve
                 listener.onConnectionStateChange(newConnectionState);
             } catch (Exception e)
             {
-                Log.e(LOG_TAG, "Unable to notify a MQTT Connection State Listener because of an exception", e);
+                Timber.e(e, "Unable to notify a MQTT Connection State Listener because of an exception");
             }
         }
     }
@@ -249,7 +245,7 @@ public class MqttConnection implements ICellularSurveyRecordListener, IWifiSurve
             mqttAndroidClient.publish(mqttMessageTopic, new MqttMessage(messageJson.getBytes()));
         } catch (Exception e)
         {
-            Log.e(LOG_TAG, "Caught an exception when trying to send an MQTT message");
+            Timber.e(e, "Caught an exception when trying to send an MQTT message");
         }
     }
 
@@ -272,17 +268,17 @@ public class MqttConnection implements ICellularSurveyRecordListener, IWifiSurve
             mqttConnection.notifyConnectionStateChange(ConnectionState.CONNECTED);
             if (reconnect)
             {
-                Log.i(LOG_TAG, "Reconnect to: " + serverURI);
+                Timber.i("Reconnect to: %s", serverURI);
             } else
             {
-                Log.i(LOG_TAG, "Connected to: " + serverURI);
+                Timber.i("Connected to: %s", serverURI);
             }
         }
 
         @Override
         public void connectionLost(Throwable cause)
         {
-            Log.w(LOG_TAG, "Connection lost: ", cause);
+            Timber.w(cause, "Connection lost: ");
 
             // As best I can tell, the connection lost method is called for all connection lost scenarios, including
             // when the user manually stops the connection.  If the user manually stopped the connection the cause seems
@@ -293,7 +289,7 @@ public class MqttConnection implements ICellularSurveyRecordListener, IWifiSurve
         @Override
         public void messageArrived(String topic, MqttMessage message)
         {
-            Log.i(LOG_TAG, "Message arrived: Topic=" + topic + "MQTT Message=" + message);
+            Timber.i("Message arrived: Topic=%s, MQTT Message=%s", topic, message);
         }
 
         @Override
@@ -320,14 +316,14 @@ public class MqttConnection implements ICellularSurveyRecordListener, IWifiSurve
         @Override
         public void onSuccess(IMqttToken asyncActionToken)
         {
-            Log.i(LOG_TAG, "MQTT Broker Connected!!!!");
+            Timber.i("MQTT Broker Connected!!!!");
             mqttConnection.notifyConnectionStateChange(ConnectionState.CONNECTED);
         }
 
         @Override
         public void onFailure(IMqttToken asyncActionToken, Throwable exception)
         {
-            Log.e(LOG_TAG, "Failed to connect", exception);
+            Timber.e(exception, "Failed to connect");
             mqttConnection.notifyConnectionStateChange(ConnectionState.CONNECTING);
         }
     }

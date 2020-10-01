@@ -78,9 +78,6 @@ public final class CalculationUtils
     {
         switch (networkType)
         {
-            case 0:
-                return "Unknown";
-
             case 1:
                 return NetworkSurveyConstants.GPRS;
 
@@ -141,6 +138,7 @@ public final class CalculationUtils
             case 20:
                 return NetworkSurveyConstants.NR;
 
+            case 0:
             default:
                 return "Unknown";
         }

@@ -4,7 +4,6 @@ import android.content.Context;
 import android.os.Environment;
 import android.os.Handler;
 import android.os.Looper;
-import android.util.Log;
 import android.widget.Toast;
 
 import com.craxiom.messaging.LteBandwidth;
@@ -14,6 +13,7 @@ import com.craxiom.networksurvey.constants.MessageConstants;
 import com.craxiom.networksurvey.services.NetworkSurveyService;
 import com.craxiom.networksurvey.services.SurveyRecordProcessor;
 
+import java.io.File;
 import java.sql.SQLException;
 import java.time.LocalDateTime;
 import java.util.LinkedList;
@@ -35,6 +35,7 @@ import mil.nga.geopackage.features.user.FeatureRow;
 import mil.nga.geopackage.features.user.FeatureTable;
 import mil.nga.sf.GeometryType;
 import mil.nga.sf.proj.ProjectionConstants;
+import timber.log.Timber;
 
 /**
  * Abstract base class for logging survey records to a GeoPackage file.
@@ -45,29 +46,32 @@ import mil.nga.sf.proj.ProjectionConstants;
  */
 public abstract class SurveyRecordLogger
 {
-    private static final String LOG_TAG = SurveyRecordLogger.class.getSimpleName();
-    private static final String LOG_DIRECTORY_NAME = "NetworkSurveyData";
+    private static final String JOURNAL_FILE_SUFFIX = "-journal";
     static final long WGS84_SRS = 4326;
 
     private final NetworkSurveyService networkSurveyService;
     final Handler handler;
+    private final String logDirectoryName;
     private final String fileNamePrefix;
     private final GeoPackageManager geoPackageManager;
 
     GeoPackage geoPackage;
     volatile boolean loggingEnabled;
+    private String logFileDirectoryPath;
 
     /**
      * Constructs a Logger that writes Survey records to a GeoPackage SQLite database.
      *
      * @param networkSurveyService The Service instance that is running this logger.
      * @param serviceLooper        The Looper associated with the service that can be used to do any background processing.
+     * @param logDirectoryName     The parent directory name to write all the files in.
      * @param fileNamePrefix       The prefix to use for the GeoPackage file name.
      */
-    SurveyRecordLogger(NetworkSurveyService networkSurveyService, Looper serviceLooper, String fileNamePrefix)
+    SurveyRecordLogger(NetworkSurveyService networkSurveyService, Looper serviceLooper, String logDirectoryName, String fileNamePrefix)
     {
         this.networkSurveyService = networkSurveyService;
         handler = new Handler(serviceLooper);
+        this.logDirectoryName = logDirectoryName;
         this.fileNamePrefix = fileNamePrefix;
 
         geoPackageManager = GeoPackageFactory.getManager(networkSurveyService.getApplicationContext());
@@ -102,6 +106,7 @@ public abstract class SurveyRecordLogger
                     loggingEnabled = false;
                     geoPackage.close();
                     geoPackage = null;
+                    removeTempFiles();
                     return true;
                 }
 
@@ -112,7 +117,7 @@ public abstract class SurveyRecordLogger
 
             final String loggingFile = createPublicStorageFilePath();
 
-            Log.i(LOG_TAG, "Creating the log file: " + loggingFile);
+            Timber.i("Creating the log file: %s", loggingFile);
 
             final boolean created = geoPackageManager.create(loggingFile);
             final Context applicationContext = networkSurveyService.getApplicationContext();
@@ -120,7 +125,7 @@ public abstract class SurveyRecordLogger
             if (!created)
             {
                 final String errorMessage = "Error: Unable to create the GeoPackage file.  No logging will be recorded.";
-                Log.e(LOG_TAG, errorMessage);
+                Timber.e(errorMessage);
                 Toast.makeText(applicationContext, errorMessage, Toast.LENGTH_SHORT).show();
                 return false;
             }
@@ -129,7 +134,7 @@ public abstract class SurveyRecordLogger
             if (geoPackage == null)
             {
                 final String errorMessage = "Error: Unable to open the GeoPackage file.  No logging will be recorded.";
-                Log.e(LOG_TAG, errorMessage);
+                Timber.e(errorMessage);
                 Toast.makeText(applicationContext, errorMessage, Toast.LENGTH_SHORT).show();
                 return false;
             }
@@ -143,7 +148,7 @@ public abstract class SurveyRecordLogger
             return loggingEnabled = true;
         } catch (Exception e)
         {
-            Log.e(LOG_TAG, "Caught an exception when trying to close the GeoPackage file in the onDestroy call", e);
+            Timber.e(e, "Caught an exception when trying to close the GeoPackage file in the onDestroy call");
             if (geoPackage != null)
             {
                 geoPackage.close();
@@ -249,6 +254,42 @@ public abstract class SurveyRecordLogger
     }
 
     /**
+     * Deletes any temporary journal files in the save directory.
+     *
+     * @since 0.3.0
+     */
+    void removeTempFiles()
+    {
+        try
+        {
+            if (logFileDirectoryPath != null)
+            {
+                File dir = new File(logFileDirectoryPath);
+                if (dir.exists())
+                {
+                    // If the file is not a directory, null will be returned
+                    File[] files = dir.listFiles();
+
+                    if ((files != null) && (files.length > 0))
+                    {
+                        for (File file : files)
+                        {
+                            String fileName = file.getName();
+                            if (fileName.endsWith(JOURNAL_FILE_SUFFIX))
+                            {
+                                //noinspection ResultOfMethodCallIgnored
+                                file.delete();
+                            }
+                        }
+                    }
+                }
+            }
+        } catch (Exception ignore)
+        {
+        }
+    }
+
+    /**
      * Checks to see if we can write to the external storage area.  It might be unavailable if the
      * storage is connected to a computer.
      *
@@ -259,10 +300,18 @@ public abstract class SurveyRecordLogger
         return Environment.MEDIA_MOUNTED.equals(Environment.getExternalStorageState());
     }
 
+    /**
+     * Creates the absolute path to the log file that this class writes to.
+     * <p>
+     * Also, as a side effect, this class creates and sets the {@link #logFileDirectoryPath} instance variable.
+     *
+     * @return The full path to the GeoPackage log file.
+     */
     private String createPublicStorageFilePath()
     {
-        return Environment.getExternalStoragePublicDirectory(
-                Environment.DIRECTORY_DOWNLOADS) + "/" + LOG_DIRECTORY_NAME + "/" +
+        logFileDirectoryPath = Environment.getExternalStoragePublicDirectory(
+                Environment.DIRECTORY_DOWNLOADS) + "/" + logDirectoryName + "/";
+        return logFileDirectoryPath +
                 fileNamePrefix + SurveyRecordProcessor.DATE_TIME_FORMATTER.format(LocalDateTime.now()) + ".gpkg";
     }
 }

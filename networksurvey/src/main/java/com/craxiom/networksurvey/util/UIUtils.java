@@ -15,21 +15,12 @@
  */
 package com.craxiom.networksurvey.util;
 
-import android.app.Activity;
-import android.app.Dialog;
 import android.content.Context;
-import android.content.pm.ActivityInfo;
-import android.content.pm.PackageManager;
 import android.location.Location;
-import android.os.Build;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.CheckBox;
 import android.widget.TextView;
 
-import androidx.appcompat.app.AlertDialog;
-import androidx.appcompat.app.AppCompatActivity;
-import androidx.constraintlayout.widget.ConstraintLayout;
 import androidx.fragment.app.Fragment;
 
 import com.craxiom.networksurvey.Application;
@@ -40,8 +31,6 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.concurrent.TimeUnit;
 
-import static android.content.pm.PackageManager.GET_META_DATA;
-import static android.text.TextUtils.isEmpty;
 import static com.craxiom.networksurvey.view.GnssSkyView.MAX_VALUE_CN0;
 import static com.craxiom.networksurvey.view.GnssSkyView.MAX_VALUE_SNR;
 import static com.craxiom.networksurvey.view.GnssSkyView.MIN_VALUE_CN0;
@@ -59,20 +48,6 @@ public class UIUtils
     public static final String COORDINATE_LONGITUDE = "lon";
 
     /**
-     * Formats a view so it is ignored for accessible access
-     */
-    public static void setAccessibilityIgnore(View view)
-    {
-        view.setClickable(false);
-        view.setFocusable(false);
-        view.setContentDescription("");
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN)
-        {
-            view.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
-        }
-    }
-
-    /**
      * Converts screen dimension units from dp to pixels, based on algorithm defined in
      * http://developer.android.com/guide/practices/screens_support.html#dips-pels
      *
@@ -88,35 +63,12 @@ public class UIUtils
     }
 
     /**
-     * Returns true if the activity is still active and dialogs can be managed (i.e., displayed
-     * or dismissed), or false if it is not
-     *
-     * @param activity Activity to check for displaying/dismissing a dialog
-     * @return true if the activity is still active and dialogs can be managed, or false if it is
-     * not
-     */
-    public static boolean canManageDialog(Activity activity)
-    {
-        if (activity == null)
-        {
-            return false;
-        }
-
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR1)
-        {
-            return !activity.isFinishing() && !activity.isDestroyed();
-        } else
-        {
-            return !activity.isFinishing();
-        }
-    }
-
-    /**
      * Returns true if the fragment is attached to the activity, or false if it is not attached
      *
      * @param f fragment to be tested
      * @return true if the fragment is attached to the activity, or false if it is not attached
      */
+    @SuppressWarnings("BooleanMethodIsAlwaysInverted")
     public static boolean isFragmentAttached(Fragment f)
     {
         return f.getActivity() != null && f.isAdded();
@@ -230,18 +182,18 @@ public class UIUtils
         BigDecimal seconds = minTemp.subtract(minutes).multiply(new BigDecimal(60)).setScale(2, RoundingMode.HALF_UP);
 
         String hemisphere;
-        int output_string;
-        if (latOrLon.equals(UIUtils.COORDINATE_LATITUDE))
+        int outputString;
+        if (latOrLon.equals(COORDINATE_LATITUDE))
         {
             hemisphere = (coordinate < 0 ? "S" : "N");
-            output_string = R.string.gps_lat_dms_value;
+            outputString = R.string.gps_lat_dms_value;
         } else
         {
             hemisphere = (coordinate < 0 ? "W" : "E");
-            output_string = R.string.gps_lon_dms_value;
+            outputString = R.string.gps_lon_dms_value;
         }
 
-        return context.getString(output_string, hemisphere, degrees.abs().intValue(), minutes.intValue(), seconds.floatValue());
+        return context.getString(outputString, hemisphere, degrees.abs().intValue(), minutes.intValue(), seconds.floatValue());
     }
 
     /**
@@ -257,17 +209,17 @@ public class UIUtils
         BigDecimal degrees = loc.setScale(0, RoundingMode.DOWN);
         BigDecimal minutes = loc.subtract(degrees).multiply((new BigDecimal(60))).abs().setScale(3, RoundingMode.HALF_UP);
         String hemisphere;
-        int output_string;
+        int outputString;
         if (latOrLon.equals(COORDINATE_LATITUDE))
         {
             hemisphere = (coordinate < 0 ? "S" : "N");
-            output_string = R.string.gps_lat_ddm_value;
+            outputString = R.string.gps_lat_ddm_value;
         } else
         {
             hemisphere = (coordinate < 0 ? "W" : "E");
-            output_string = R.string.gps_lon_ddm_value;
+            outputString = R.string.gps_lon_ddm_value;
         }
-        return context.getString(output_string, hemisphere, degrees.abs().intValue(), minutes.floatValue());
+        return context.getString(outputString, hemisphere, degrees.abs().intValue(), minutes.floatValue());
     }
 
     /**
@@ -304,99 +256,6 @@ public class UIUtils
     }
 
     /**
-     * Sets the vertical bias for a provided view that is within a ConstraintLayout
-     *
-     * @param view view within a ConstraintLayout
-     * @param bias vertical bias to be used
-     */
-    public static void setVerticalBias(View view, float bias)
-    {
-        ConstraintLayout.LayoutParams params = (ConstraintLayout.LayoutParams) view.getLayoutParams();
-        params.verticalBias = bias;
-        view.setLayoutParams(params);
-    }
-
-    /**
-     * Tests to see if the provided text latitude, longitude, and altitude values are valid, and if
-     * not shows an error dialog and returns false, or if yes then returns true
-     *
-     * @param activity
-     * @param lat      latitude to validate
-     * @param lon      longitude to validate
-     * @param alt      altitude to validate
-     * @return true if the latitude, longitude, and latitude are valid, false if any of them are not
-     */
-    public static boolean isValidLocationWithErrorDialog(AppCompatActivity activity, String lat, String lon, String alt)
-    {
-        String dialogTitle = Application.get().getString(R.string.ground_truth_invalid_location_title);
-        String dialogMessage;
-
-        if (!LocationUtils.isValidLatitude(lat))
-        {
-            dialogMessage = Application.get().getString(R.string.ground_truth_invalid_lat);
-            UIUtils.showLocationErrorDialog(activity, dialogTitle, dialogMessage);
-            return false;
-        }
-        if (!LocationUtils.isValidLongitude(lon))
-        {
-            dialogMessage = Application.get().getString(R.string.ground_truth_invalid_long);
-            UIUtils.showLocationErrorDialog(activity, dialogTitle, dialogMessage);
-            return false;
-        }
-        if (!isEmpty(alt) && !LocationUtils.isValidAltitude(alt))
-        {
-            dialogMessage = Application.get().getString(R.string.ground_truth_invalid_alt);
-            UIUtils.showLocationErrorDialog(activity, dialogTitle, dialogMessage);
-            return false;
-        }
-        return true;
-    }
-
-    /**
-     * Shows an error dialog for an incorrectly entered latitude, longitude, or altitude
-     *
-     * @param activity
-     * @param title    title of the error dialog
-     * @param message  message body of the error dialog
-     */
-    private static void showLocationErrorDialog(AppCompatActivity activity, String title, String message)
-    {
-        AlertDialog.Builder builder = new AlertDialog.Builder(activity);
-        builder.setTitle(title)
-                .setMessage(message)
-                .setPositiveButton(R.string.ok, (dialog, id) -> {
-                })
-                .create()
-                .show();
-    }
-
-    public static Dialog createQrCodeDialog(AppCompatActivity activity)
-    {
-        View view = activity.getLayoutInflater().inflate(R.layout.qr_code_instructions, null);
-        CheckBox neverShowDialog = view.findViewById(R.id.qr_code_never_show_again);
-
-        neverShowDialog.setOnCheckedChangeListener((compoundButton, isChecked) -> {
-            // Save the preference
-            PreferenceUtils.saveBoolean(Application.get().getString(R.string.pref_key_never_show_qr_code_instructions), isChecked);
-        });
-
-        AlertDialog.Builder builder = new AlertDialog.Builder(activity)
-                .setTitle(R.string.qr_code_instructions_title)
-                .setCancelable(false)
-                .setView(view)
-                .setPositiveButton(R.string.ok,
-                        (dialog, which) -> {
-                            IOUtils.openQrCodeReader(activity);
-                        }
-                ).setNegativeButton(R.string.not_now,
-                        (dialog, which) -> {
-                            // No op
-                        }
-                );
-        return builder.create();
-    }
-
-    /**
      * Returns the provided location based on the provided coordinate format, and sets the provided Views (locationValue, chips) accordingly if views are provided,
      * and returns the string value.
      *
@@ -423,26 +282,29 @@ public class UIUtils
                     chipDecimalDegrees.setChecked(true);
                 }
                 break;
+
             case "dms":
                 // Degrees minutes seconds
-                formattedLocation = IOUtils.createLocationShare(UIUtils.getDMSFromLocation(Application.get(), location.getLatitude(), UIUtils.COORDINATE_LATITUDE),
-                        UIUtils.getDMSFromLocation(Application.get(), location.getLongitude(), UIUtils.COORDINATE_LONGITUDE),
+                formattedLocation = IOUtils.createLocationShare(getDMSFromLocation(Application.get(), location.getLatitude(), COORDINATE_LATITUDE),
+                        getDMSFromLocation(Application.get(), location.getLongitude(), COORDINATE_LONGITUDE),
                         (location.hasAltitude() && includeAltitude) ? Double.toString(location.getAltitude()) : null);
                 if (chipDMS != null)
                 {
                     chipDMS.setChecked(true);
                 }
                 break;
+
             case "ddm":
                 // Degrees decimal minutes
-                formattedLocation = IOUtils.createLocationShare(UIUtils.getDDMFromLocation(Application.get(), location.getLatitude(), UIUtils.COORDINATE_LATITUDE),
-                        UIUtils.getDDMFromLocation(Application.get(), location.getLongitude(), UIUtils.COORDINATE_LONGITUDE),
+                formattedLocation = IOUtils.createLocationShare(getDDMFromLocation(Application.get(), location.getLatitude(), COORDINATE_LATITUDE),
+                        getDDMFromLocation(Application.get(), location.getLongitude(), COORDINATE_LONGITUDE),
                         (location.hasAltitude() && includeAltitude) ? Double.toString(location.getAltitude()) : null);
                 if (chipDegreesDecimalMin != null)
                 {
                     chipDegreesDecimalMin.setChecked(true);
                 }
                 break;
+
             default:
                 // Decimal degrees
                 formattedLocation = IOUtils.createLocationShare(location, includeAltitude);
@@ -457,25 +319,5 @@ public class UIUtils
             locationValue.setText(formattedLocation);
         }
         return formattedLocation;
-    }
-
-    /**
-     * Resets the activity title so the locale is updated
-     *
-     * @param a the activity to reset the title for
-     */
-    public static void resetActivityTitle(Activity a)
-    {
-        try
-        {
-            ActivityInfo info = a.getPackageManager().getActivityInfo(a.getComponentName(), GET_META_DATA);
-            if (info.labelRes != 0)
-            {
-                a.setTitle(info.labelRes);
-            }
-        } catch (PackageManager.NameNotFoundException e)
-        {
-            e.printStackTrace();
-        }
     }
 }
