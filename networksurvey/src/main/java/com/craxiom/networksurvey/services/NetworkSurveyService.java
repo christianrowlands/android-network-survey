@@ -29,7 +29,6 @@ import android.os.Looper;
 import android.provider.Settings;
 import android.telephony.CellInfo;
 import android.telephony.TelephonyManager;
-import android.util.Log;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
@@ -47,14 +46,19 @@ import com.craxiom.networksurvey.R;
 import com.craxiom.networksurvey.constants.NetworkSurveyConstants;
 import com.craxiom.networksurvey.listeners.ICellularSurveyRecordListener;
 import com.craxiom.networksurvey.listeners.IConnectionStateListener;
+import com.craxiom.networksurvey.listeners.IGnssSurveyRecordListener;
 import com.craxiom.networksurvey.listeners.IWifiSurveyRecordListener;
 import com.craxiom.networksurvey.logging.CellularSurveyRecordLogger;
+import com.craxiom.networksurvey.logging.GnssRecordLogger;
 import com.craxiom.networksurvey.logging.WifiSurveyRecordLogger;
 import com.craxiom.networksurvey.mqtt.MqttBrokerConnectionInfo;
 import com.craxiom.networksurvey.mqtt.MqttConnection;
+import com.craxiom.networksurvey.util.PreferenceUtils;
 
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
+
+import timber.log.Timber;
 
 /**
  * This service is responsible for getting access to the Android {@link TelephonyManager} and periodically getting the
@@ -64,20 +68,16 @@ import java.util.concurrent.atomic.AtomicBoolean;
  *
  * @since 0.0.9
  */
-public class NetworkSurveyService extends Service implements IConnectionStateListener
+public class NetworkSurveyService extends Service implements IConnectionStateListener, SharedPreferences.OnSharedPreferenceChangeListener
 {
-    private static final String LOG_TAG = NetworkSurveyService.class.getSimpleName();
-
     /**
      * Time to wait between first location measurement received before considering this device does
      * not likely support raw GNSS collection.
      */
     private static final long TIME_TO_WAIT_FOR_GNSS_RAW_BEFORE_FAILURE = 1000L * 15L;
-    private static final int NETWORK_DATA_REFRESH_RATE_MS = 2_000;
-    public static final int WIFI_SCAN_RATE_MS = 3_000;
     private static final int PING_RATE_MS = 10_000;
 
-    private final AtomicBoolean cellularScanningDone = new AtomicBoolean(false);
+    private final AtomicBoolean cellularScanningActive = new AtomicBoolean(false);
     private final AtomicBoolean wifiScanningActive = new AtomicBoolean(false);
     private final AtomicBoolean cellularLoggingEnabled = new AtomicBoolean(false);
     private final AtomicBoolean wifiLoggingEnabled = new AtomicBoolean(false);
@@ -85,12 +85,17 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
     private final AtomicBoolean gnssStarted = new AtomicBoolean(false);
     private final SurveyServiceBinder surveyServiceBinder;
     private final Handler uiThreadHandler;
+
+    private volatile int cellularScanRateMs;
+    private volatile int wifiScanRateMs;
+    private volatile int gnssScanRateMs;
+
     private String deviceId;
     private SurveyRecordProcessor surveyRecordProcessor;
     private GpsListener gpsListener;
     private CellularSurveyRecordLogger cellularSurveyRecordLogger;
     private WifiSurveyRecordLogger wifiSurveyRecordLogger;
-    private GnssGeoPackageRecorder gnssGeoPackageRecorder = null;
+    private GnssRecordLogger gnssRecordLogger;
     private Looper serviceLooper;
     private Handler serviceHandler;
     private LocationManager locationManager = null;
@@ -99,32 +104,10 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
     private final boolean hasGnssRawFailureNagLaunched = false;
     private MqttConnection mqttConnection;
     private BroadcastReceiver managedConfigurationListener;
+
+    private TelephonyManager.CellInfoCallback cellInfoCallback;
     private BroadcastReceiver wifiScanReceiver;
-
-    /**
-     * Callback for receiving GNSS measurements from the location manager.
-     */
-    private final GnssMeasurementsEvent.Callback measurementListener = new GnssMeasurementsEvent.Callback()
-    {
-        @Override
-        public void onGnssMeasurementsReceived(GnssMeasurementsEvent event)
-        {
-            gnssRawSupportKnown = true;
-            if (gnssGeoPackageRecorder != null) gnssGeoPackageRecorder.onGnssMeasurementsReceived(event);
-        }
-    };
-
-    /**
-     * Callback for receiving GNSS status from the location manager.
-     */
-    private final GnssStatus.Callback statusListener = new GnssStatus.Callback()
-    {
-        @Override
-        public void onSatelliteStatusChanged(final GnssStatus status)
-        {
-            if (gnssGeoPackageRecorder != null) gnssGeoPackageRecorder.onSatelliteStatusChanged(status);
-        }
-    };
+    private GnssMeasurementsEvent.Callback measurementListener;
 
     public NetworkSurveyService()
     {
@@ -137,9 +120,11 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
     {
         super.onCreate();
 
-        Log.i(LOG_TAG, "Creating the Network Survey Service");
+        Timber.i("Creating the Network Survey Service");
 
-        final HandlerThread handlerThread = new HandlerThread(LOG_TAG);
+        final Context context = getApplicationContext();
+
+        final HandlerThread handlerThread = new HandlerThread("NetworkSurveyService");
         handlerThread.start();
 
         serviceLooper = handlerThread.getLooper();
@@ -148,16 +133,22 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
         deviceId = createDeviceId();
         cellularSurveyRecordLogger = new CellularSurveyRecordLogger(this, serviceLooper);
         wifiSurveyRecordLogger = new WifiSurveyRecordLogger(this, serviceLooper);
+        gnssRecordLogger = new GnssRecordLogger(this, serviceLooper);
 
-        initializeLocationListener();
+        gpsListener = new GpsListener();
 
-        surveyRecordProcessor = new SurveyRecordProcessor(gpsListener, deviceId);
+        surveyRecordProcessor = new SurveyRecordProcessor(gpsListener, deviceId, context);
 
-        initializeSurveyRecordScanning();
+        setScanRateValues();
+        PreferenceManager.getDefaultSharedPreferences(context).registerOnSharedPreferenceChangeListener(this);
 
+        // Must register for MDM updates AFTER initializing the MQTT connection because we try to make an MQTT connection if the MDM settings change
         initializeMqttConnection();
+        registerManagedConfigurationListener();
 
-        initializeWifiRecordScanning();
+        initializeCellularScanningResources();
+        initializeWifiScanningResources();
+        initializeGnssScanningResources();
 
         updateServiceNotification();
     }
@@ -170,7 +161,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
         final boolean startedAtBoot = intent.getBooleanExtra(NetworkSurveyConstants.EXTRA_STARTED_AT_BOOT, false);
         if (startedAtBoot)
         {
-            Log.i(LOG_TAG, "Received the startedAtBoot flag in the NetworkSurveyService. Reading the auto start preferences");
+            Timber.i("Received the startedAtBoot flag in the NetworkSurveyService. Reading the auto start preferences");
 
             attemptMqttConnectionAtBoot();
 
@@ -192,13 +183,14 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
     @Override
     public IBinder onBind(Intent intent)
     {
+        //noinspection ReturnOfInnerClass
         return surveyServiceBinder;
     }
 
     @Override
     public void onDestroy()
     {
-        Log.i(LOG_TAG, "onDestroy");
+        Timber.i("onDestroy");
 
         unregisterManagedConfigurationListener();
 
@@ -207,15 +199,13 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
             unregisterMqttConnectionStateListener(this);
             disconnectFromMqttBroker();
         }
-        setCellularScanningDone();
+
+        stopCellularRecordScanning();
         stopWifiRecordScanning();
         removeLocationListener();
-        stopGnssLogging();
-        if (gnssGeoPackageRecorder != null)
-        {
-            gnssGeoPackageRecorder.shutdown();
-            gnssGeoPackageRecorder = null;
-        }
+        stopGnssRecordScanning();
+        stopAllLogging();
+
         serviceLooper.quitSafely();
         serviceHandler = null;
         shutdownNotifications();
@@ -226,6 +216,21 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
     public void onConnectionStateChange(ConnectionState newConnectionState)
     {
         updateServiceNotification();
+    }
+
+    @Override
+    public void onSharedPreferenceChanged(SharedPreferences preferences, String key)
+    {
+        switch (key)
+        {
+            case NetworkSurveyConstants.PROPERTY_CELLULAR_SCAN_INTERVAL_SECONDS:
+            case NetworkSurveyConstants.PROPERTY_WIFI_NETWORKS_SORT_ORDER:
+            case NetworkSurveyConstants.PROPERTY_GNSS_SCAN_INTERVAL_SECONDS:
+                setScanRateValues();
+                break;
+
+            default:
+        }
     }
 
     /**
@@ -240,8 +245,6 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
     {
         mqttConnection = new MqttConnection();
         mqttConnection.registerMqttConnectionStateListener(this);
-
-        registerManagedConfigurationListener();
     }
 
     /**
@@ -264,7 +267,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
      */
     public void disconnectFromMqttBroker()
     {
-        Log.i(LOG_TAG, "Disconnecting from the MQTT Broker");
+        Timber.i("Disconnecting from the MQTT Broker");
 
         unregisterCellularSurveyRecordListener(mqttConnection);
         unregisterWifiSurveyRecordListener(mqttConnection);
@@ -286,7 +289,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
     {
         if (isMqttMdmOverrideEnabled())
         {
-            Log.i(LOG_TAG, "The MQTT MDM override is enabled, so no MDM configured MQTT connection will be attempted");
+            Timber.i("The MQTT MDM override is enabled, so no MDM configured MQTT connection will be attempted");
             return;
         }
 
@@ -303,7 +306,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
             connectToMqttBroker(connectionInfo);
         } else
         {
-            Log.i(LOG_TAG, "Skipping the MQTT connection because no MDN MQTT broker configuration has been set");
+            Timber.i("Skipping the MQTT connection because no MDN MQTT broker configuration has been set");
 
             if (forceDisconnect) disconnectFromMqttBroker();
         }
@@ -361,6 +364,8 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
         {
             surveyRecordProcessor.registerCellularSurveyRecordListener(surveyRecordListener);
         }
+
+        startCellularRecordScanning(); // Only starts scanning if it is not already active.
     }
 
     /**
@@ -376,6 +381,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
         if (surveyRecordProcessor != null)
         {
             surveyRecordProcessor.unregisterCellularSurveyRecordListener(surveyRecordListener);
+            if (!surveyRecordProcessor.isCellularBeingUsed()) stopCellularRecordScanning();
         }
 
         // Check to see if this service is still needed.  It is still needed if we are either logging, the UI is
@@ -431,6 +437,53 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
     }
 
     /**
+     * Registers a listener for notifications when new GNSS survey records are available.
+     *
+     * @param surveyRecordListener The survey record listener to register.
+     * @since 0.3.0
+     */
+    public void registerGnssSurveyRecordListener(IGnssSurveyRecordListener surveyRecordListener)
+    {
+        synchronized (gnssStarted)
+        {
+            if (surveyRecordProcessor != null)
+            {
+                surveyRecordProcessor.registerGnssSurveyRecordListener(surveyRecordListener);
+            }
+
+            startGnssRecordScanning(); // Only starts scanning if it is not already active.
+        }
+    }
+
+    /**
+     * Unregisters a GNSS survey record listener.
+     * <p>
+     * If the listener being removed is the last listener and nothing else is using this {@link NetworkSurveyService},
+     * then this service is shutdown and will need to be restarted before it can be used again.
+     * <p>
+     * If the service is still needed for other purposes (e.g. cellular survey records), but no longer for GNSS
+     * scanning, then just the GNSS scanning portion of this service is stopped.
+     *
+     * @param surveyRecordListener The listener to unregister.
+     * @since 0.3.0
+     */
+    public void unregisterGnssSurveyRecordListener(IGnssSurveyRecordListener surveyRecordListener)
+    {
+        synchronized (gnssStarted)
+        {
+            if (surveyRecordProcessor != null)
+            {
+                surveyRecordProcessor.unregisterGnssSurveyRecordListener(surveyRecordListener);
+                if (!surveyRecordProcessor.isGnssBeingUsed()) stopGnssRecordScanning();
+            }
+        }
+
+        // Check to see if this service is still needed.  It is still needed if we are either logging, the UI is
+        // visible, or a server connection is active.
+        if (!isBeingUsed()) stopSelf();
+    }
+
+    /**
      * Used to check if this service is still needed.
      * <p>
      * This service is still needed if logging is enabled, if the UI is visible, or if a connection is active.  In other
@@ -458,6 +511,8 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
     public void onUiVisible(NetworkSurveyActivity networkSurveyActivity)
     {
         if (surveyRecordProcessor != null) surveyRecordProcessor.onUiVisible(networkSurveyActivity);
+
+        startCellularRecordScanning();
     }
 
     /**
@@ -465,7 +520,11 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
      */
     public void onUiHidden()
     {
-        if (surveyRecordProcessor != null) surveyRecordProcessor.onUiHidden();
+        if (surveyRecordProcessor != null)
+        {
+            surveyRecordProcessor.onUiHidden();
+            if (!surveyRecordProcessor.isCellularBeingUsed()) stopCellularRecordScanning();
+        }
     }
 
     /**
@@ -485,7 +544,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
             final boolean originalLoggingState = cellularLoggingEnabled.get();
             if (originalLoggingState == enable) return originalLoggingState;
 
-            Log.i(LOG_TAG, "Toggling cellular logging to " + enable);
+            Timber.i("Toggling cellular logging to %s", enable);
 
             final boolean successful = cellularSurveyRecordLogger.enableLogging(enable);
             if (successful)
@@ -526,7 +585,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
             final boolean originalLoggingState = wifiLoggingEnabled.get();
             if (originalLoggingState == enable) return originalLoggingState;
 
-            Log.i(LOG_TAG, "Toggling wifi logging to " + enable);
+            Timber.i("Toggling wifi logging to %s", enable);
 
             if (enable)
             {
@@ -550,7 +609,6 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
             updateServiceNotification();
 
             final boolean newLoggingState = wifiLoggingEnabled.get();
-            if (successful && newLoggingState) initializePing();
 
             return successful ? newLoggingState : null;
         }
@@ -586,23 +644,28 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
         synchronized (gnssLoggingEnabled)
         {
             final boolean originalLoggingState = gnssLoggingEnabled.get();
-
             if (originalLoggingState == enable) return originalLoggingState;
 
-            Log.i(LOG_TAG, "Toggling GNSS logging to " + enable);
+            Timber.i("Toggling GNSS logging to %s", enable);
 
-            if (enable)
+            final boolean successful = gnssRecordLogger.enableLogging(enable);
+            if (successful)
             {
-                startGnssLogging();
-            } else
-            {
-                stopGnssLogging();
+                gnssLoggingEnabled.set(enable);
+                if (enable)
+                {
+                    registerGnssSurveyRecordListener(gnssRecordLogger);
+                } else
+                {
+                    unregisterGnssSurveyRecordListener(gnssRecordLogger);
+                }
             }
 
             updateServiceNotification();
 
             final boolean newLoggingState = gnssLoggingEnabled.get();
-            return newLoggingState == originalLoggingState ? null : newLoggingState;
+
+            return successful ? newLoggingState : null;
         }
     }
 
@@ -626,10 +689,15 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
                     serviceHandler.postDelayed(this, PING_RATE_MS);
                 } catch (Exception e)
                 {
-                    Log.e(LOG_TAG, "An exception occurred trying to send out a ping", e);
+                    Timber.e(e, "An exception occurred trying to send out a ping");
                 }
             }
-        }, NETWORK_DATA_REFRESH_RATE_MS);
+        }, PING_RATE_MS);
+    }
+
+    public int getWifiScanRateMs()
+    {
+        return wifiScanRateMs;
     }
 
     /**
@@ -641,8 +709,6 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
      */
     public void updateLocation(final Location location)
     {
-        if (gnssGeoPackageRecorder != null) gnssGeoPackageRecorder.onLocationChanged(location);
-
         // TODO Add this back in when we can test on a device that does not support GNSS
         /*if (!gnssRawSupportKnown && !hasGnssRawFailureNagLaunched)
         {
@@ -667,14 +733,6 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
     }
 
     /**
-     * Sets the atomic done flags so that any cellular specific handler loops can be stopped.
-     */
-    private void setCellularScanningDone()
-    {
-        cellularScanningDone.set(true);
-    }
-
-    /**
      * @return The Android ID associated with this device and app.
      */
     @SuppressLint("HardwareIds")
@@ -684,27 +742,77 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
     }
 
     /**
-     * Registers with the Android {@link LocationManager} for location updates.
+     * Triggers a read of the scan rate values and stores them in instance variables.
+     * <p>
+     * The approach for reading the scan rates is to first use the MDM provided values. If those are not
+     * set then the user preference values are employed. Finally, the default values are used as a fallback.
+     *
+     * @since 0.3.0
      */
-    private void initializeLocationListener()
+    private void setScanRateValues()
     {
-        if (gpsListener != null) return;
+        final Context applicationContext = getApplicationContext();
 
-        gpsListener = new GpsListener();
+        cellularScanRateMs = PreferenceUtils.getScanRatePreferenceMs(NetworkSurveyConstants.PROPERTY_CELLULAR_SCAN_INTERVAL_SECONDS,
+                NetworkSurveyConstants.DEFAULT_CELLULAR_SCAN_INTERVAL_SECONDS, applicationContext);
+
+        wifiScanRateMs = PreferenceUtils.getScanRatePreferenceMs(NetworkSurveyConstants.PROPERTY_WIFI_SCAN_INTERVAL_SECONDS,
+                NetworkSurveyConstants.DEFAULT_WIFI_SCAN_INTERVAL_SECONDS, applicationContext);
+
+        gnssScanRateMs = PreferenceUtils.getScanRatePreferenceMs(NetworkSurveyConstants.PROPERTY_GNSS_SCAN_INTERVAL_SECONDS,
+                NetworkSurveyConstants.DEFAULT_GNSS_SCAN_INTERVAL_SECONDS, applicationContext);
+
+        surveyRecordProcessor.setGnssScanRateMs(gnssScanRateMs);
+
+        updateLocationListener();
+    }
+
+    /**
+     * Creates a new {@link GpsListener} if necessary, and Registers with the Android {@link LocationManager} for
+     * location updates.
+     * <p>
+     * It is necessary to call this method after any of the scanning services are updated. This is needed because the
+     * location update rate depends on which scanners are active, and which of those has the shortest scan interval. So
+     * if any of that changes we need to update the rate at which we request location updates.
+     * <p>
+     * If none of the scanning is active, then this method does nothing an returns immediately.
+     */
+    private void updateLocationListener()
+    {
+        if (!isBeingUsed()) return;
+
+        Timber.d("Registering the location listener");
 
         if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED)
         {
-            Log.w(LOG_TAG, "ACCESS_FINE_LOCATION Permission not granted for the NetworkSurveyService");
+            Timber.w("ACCESS_FINE_LOCATION Permission not granted for the NetworkSurveyService");
             return;
         }
 
         final LocationManager locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
         if (locationManager != null)
         {
-            locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, NETWORK_DATA_REFRESH_RATE_MS, 0f, gpsListener);
+            // Find the smallest scan rate for all the scanning types that are active as a starting point
+            int smallestScanRate = Math.max(cellularScanRateMs, Math.max(wifiScanRateMs, gnssScanRateMs));
+
+            if (cellularScanningActive.get() && cellularScanRateMs < smallestScanRate)
+            {
+                smallestScanRate = cellularScanRateMs;
+            }
+
+            if (wifiScanningActive.get() && wifiScanRateMs < smallestScanRate) smallestScanRate = wifiScanRateMs;
+
+            if (gnssStarted.get() && gnssScanRateMs < smallestScanRate) smallestScanRate = gnssScanRateMs;
+
+            // Use the smallest scan rate set by the user for the active scanning types
+            if (smallestScanRate > 10_000) smallestScanRate = smallestScanRate / 2;
+
+            Timber.d("Setting the location update rate to %d", smallestScanRate);
+
+            locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, smallestScanRate, 0f, gpsListener, serviceLooper);
         } else
         {
-            Log.e(LOG_TAG, "The location manager was null when trying to request location updates for the NetworkSurveyService");
+            Timber.e("The location manager was null when trying to request location updates for the NetworkSurveyService");
         }
     }
 
@@ -721,17 +829,51 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
     }
 
     /**
-     * Gets the {@link TelephonyManager}, and then creates the
-     * {@link SurveyRecordProcessor} instance.  If something goes wrong getting access to the manager
-     * then the {@link SurveyRecordProcessor} instance will not be created.
+     * Runs one cellular scan. This is used to prime the UI in the event that the scan interval is really long.
+     *
+     * @since 0.3.0
      */
-    private void initializeSurveyRecordScanning()
+    public void runSingleCellularScan()
     {
         final TelephonyManager telephonyManager = (TelephonyManager) getSystemService(Context.TELEPHONY_SERVICE);
 
         if (telephonyManager == null || !getPackageManager().hasSystemFeature(PackageManager.FEATURE_TELEPHONY))
         {
-            Log.w(LOG_TAG, "Unable to get access to the Telephony Manager.  No network information will be displayed");
+            Timber.w("Unable to get access to the Telephony Manager.  No network information will be displayed");
+            return;
+        }
+
+        serviceHandler.postDelayed(() -> {
+            try
+            {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q)
+                {
+                    telephonyManager.requestCellInfoUpdate(AsyncTask.THREAD_POOL_EXECUTOR, cellInfoCallback);
+                } else
+                {
+                    surveyRecordProcessor.onCellInfoUpdate(telephonyManager.getAllCellInfo(), CalculationUtils.getNetworkType(telephonyManager.getNetworkType()));
+                }
+            } catch (SecurityException e)
+            {
+                Timber.e(e, "Could not get the required permissions to get the network details");
+            }
+        }, 1_000);
+    }
+
+    /**
+     * Gets the {@link TelephonyManager}, and then starts a regular poll of cellular records.
+     * <p>
+     * This method only starts scanning if the scan is not already active.
+     */
+    private void startCellularRecordScanning()
+    {
+        if (cellularScanningActive.getAndSet(true)) return;
+
+        final TelephonyManager telephonyManager = (TelephonyManager) getSystemService(Context.TELEPHONY_SERVICE);
+
+        if (telephonyManager == null || !getPackageManager().hasSystemFeature(PackageManager.FEATURE_TELEPHONY))
+        {
+            Timber.w("Unable to get access to the Telephony Manager.  No network information will be displayed");
             return;
         }
 
@@ -742,42 +884,42 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
             {
                 try
                 {
-                    if (cellularScanningDone.get())
+                    if (!cellularScanningActive.get())
                     {
-                        Log.i(LOG_TAG, "Stopping the handler that pulls the latest cellular information");
+                        Timber.i("Stopping the handler that pulls the latest cellular information");
                         return;
                     }
 
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q)
                     {
-                        final TelephonyManager.CellInfoCallback cellInfoCallback = new TelephonyManager.CellInfoCallback()
-                        {
-                            @Override
-                            public void onCellInfo(@NonNull List<CellInfo> cellInfo)
-                            {
-                                surveyRecordProcessor.onCellInfoUpdate(cellInfo, CalculationUtils.getNetworkType(telephonyManager.getNetworkType()));
-                            }
-
-                            @Override
-                            public void onError(int errorCode, @Nullable Throwable detail)
-                            {
-                                super.onError(errorCode, detail);
-                                Log.w(LOG_TAG, "Received an error from the Telephony Manager when requesting a cell info update; errorCode=" + errorCode, detail);
-                            }
-                        };
                         telephonyManager.requestCellInfoUpdate(AsyncTask.THREAD_POOL_EXECUTOR, cellInfoCallback);
                     } else
                     {
                         surveyRecordProcessor.onCellInfoUpdate(telephonyManager.getAllCellInfo(), CalculationUtils.getNetworkType(telephonyManager.getNetworkType()));
                     }
 
-                    serviceHandler.postDelayed(this, NETWORK_DATA_REFRESH_RATE_MS);
+                    serviceHandler.postDelayed(this, cellularScanRateMs);
                 } catch (SecurityException e)
                 {
-                    Log.e(LOG_TAG, "Could not get the required permissions to get the network details", e);
+                    Timber.e(e, "Could not get the required permissions to get the network details");
                 }
             }
-        }, NETWORK_DATA_REFRESH_RATE_MS);
+        }, 1_000);
+
+        updateLocationListener();
+    }
+
+    /**
+     * Stop polling for cellular scan updates.
+     *
+     * @since 0.3.0
+     */
+    private void stopCellularRecordScanning()
+    {
+        Timber.d("Setting the cellular scanning active flag to false");
+        cellularScanningActive.set(false);
+
+        updateLocationListener();
     }
 
     /**
@@ -790,10 +932,10 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
             Runtime runtime = Runtime.getRuntime();
             Process ipAddressProcess = runtime.exec("/system/bin/ping -c 1 8.8.8.8");
             int exitValue = ipAddressProcess.waitFor();
-            if (Log.isLoggable(LOG_TAG, Log.VERBOSE)) Log.v(LOG_TAG, "Ping Exit Value: " + exitValue);
+            Timber.v("Ping Exit Value: %s", exitValue);
         } catch (Exception e)
         {
-            Log.e(LOG_TAG, "An exception occurred trying to send out a ping ", e);
+            Timber.e(e, "An exception occurred trying to send out a ping ");
         }
     }
 
@@ -849,18 +991,54 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
     }
 
     /**
+     * Create the Cellular Scan callback that will be notified of Cellular scan events once
+     * {@link #startCellularRecordScanning()} is called.
+     *
+     * @since 0.3.0
+     */
+    private void initializeCellularScanningResources()
+    {
+        final TelephonyManager telephonyManager = (TelephonyManager) getSystemService(Context.TELEPHONY_SERVICE);
+
+        if (telephonyManager == null)
+        {
+            Timber.e("Unable to get access to the Telephony Manager.  No network information will be displayed");
+            return;
+        }
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q)
+        {
+            cellInfoCallback = new TelephonyManager.CellInfoCallback()
+            {
+                @Override
+                public void onCellInfo(@NonNull List<CellInfo> cellInfo)
+                {
+                    surveyRecordProcessor.onCellInfoUpdate(cellInfo, CalculationUtils.getNetworkType(telephonyManager.getNetworkType()));
+                }
+
+                @Override
+                public void onError(int errorCode, @Nullable Throwable detail)
+                {
+                    super.onError(errorCode, detail);
+                    Timber.w(detail, "Received an error from the Telephony Manager when requesting a cell info update; errorCode=%s", errorCode);
+                }
+            };
+        }
+    }
+
+    /**
      * Create the Wi-Fi Scan broadcast receiver that will be notified of Wi-Fi scan events once
      * {@link #startWifiRecordScanning()} is called.
      *
      * @since 0.1.2
      */
-    private void initializeWifiRecordScanning()
+    private void initializeWifiScanningResources()
     {
         final WifiManager wifiManager = (WifiManager) getSystemService(Context.WIFI_SERVICE);
 
         if (wifiManager == null)
         {
-            Log.e(LOG_TAG, "The WifiManager is null. Wi-Fi survey won't work");
+            Timber.e("The WifiManager is null. Wi-Fi survey won't work");
             return;
         }
 
@@ -875,15 +1053,34 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
                     final List<ScanResult> results = wifiManager.getScanResults();
                     if (results == null)
                     {
-                        Log.d(LOG_TAG, "Null wifi scan results");
+                        Timber.d("Null wifi scan results");
                         return;
                     }
 
                     surveyRecordProcessor.onWifiScanUpdate(results);
                 } else
                 {
-                    Log.e(LOG_TAG, "A Wi-Fi scan failed, ignoring the results.");
+                    Timber.e("A Wi-Fi scan failed, ignoring the results.");
                 }
+            }
+        };
+    }
+
+    /**
+     * Create the callbacks for the {@link GnssMeasurementsEvent} and the {@link GnssStatus} that will be notified of
+     * events from the location manager once {@link #startGnssRecordScanning()} is called.
+     *
+     * @since 0.3.0
+     */
+    private void initializeGnssScanningResources()
+    {
+        measurementListener = new GnssMeasurementsEvent.Callback()
+        {
+            @Override
+            public void onGnssMeasurementsReceived(GnssMeasurementsEvent event)
+            {
+                gnssRawSupportKnown = true;
+                if (surveyRecordProcessor != null) surveyRecordProcessor.onGnssMeasurements(event);
             }
         };
     }
@@ -907,7 +1104,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
 
         if (wifiManager == null)
         {
-            Log.wtf(LOG_TAG, "The Wi-Fi manager is null, can't start scanning for Wi-Fi networks.");
+            Timber.wtf("The Wi-Fi manager is null, can't start scanning for Wi-Fi networks.");
             return;
         }
 
@@ -920,21 +1117,23 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
                 {
                     if (!wifiScanningActive.get())
                     {
-                        Log.i(LOG_TAG, "Stopping the handler that pulls the latest wifi information");
+                        Timber.i("Stopping the handler that pulls the latest wifi information");
                         return;
                     }
 
                     boolean success = wifiManager.startScan();
 
-                    if (!success) Log.e(LOG_TAG, "Kicking off a Wi-Fi scan failed");
+                    if (!success) Timber.e("Kicking off a Wi-Fi scan failed");
 
-                    serviceHandler.postDelayed(this, WIFI_SCAN_RATE_MS);
+                    serviceHandler.postDelayed(this, wifiScanRateMs);
                 } catch (Exception e)
                 {
-                    Log.e(LOG_TAG, "Could not get the required permissions to get the network details", e);
+                    Timber.e(e, "Could not get the required permissions to get the network details");
                 }
             }
-        }, 10); // 10 ms to start the Wi-Fi scanning almost instantly
+        }, 2_000);
+
+        updateLocationListener();
     }
 
     /**
@@ -954,8 +1153,10 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
             // Because we are extra cautious and want to make sure that we unregister the receiver, when the service
             // is shutdown we call this method to make sure we stop any active scan and unregister the receiver even if
             // we don't have one registered.
-            Log.i(LOG_TAG, "Could not unregister the NetworkSurveyService Wi-Fi Scan Receiver", e);
+            Timber.i(e, "Could not unregister the NetworkSurveyService Wi-Fi Scan Receiver");
         }
+
+        updateLocationListener();
     }
 
     /**
@@ -1035,50 +1236,13 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
     }
 
     /**
-     * Starts GNSS logging if the {@link GnssGeoPackageRecorder} is not already initialized and started.
+     * Starts GNSS record scanning if it is not already started.
      * <p>
-     * This method also handles registering the GNSS listeners with Android so we get notified of updates.
-     * <p>
-     * This method is not thread safe, so make sure to call this method from a synchronized block.
-     */
-    private void startGnssLogging()
-    {
-        if (gnssGeoPackageRecorder == null)
-        {
-            Log.i(LOG_TAG, "Starting GNSS Logging");
-
-            gnssGeoPackageRecorder = new GnssGeoPackageRecorder(this, serviceLooper);
-            gnssGeoPackageRecorder.start();
-
-            gnssLoggingEnabled.set(gnssGeoPackageRecorder.openGeoPackageDatabase() && registerGnssListeners());
-        }
-    }
-
-    /**
-     * Stops GNSS logging, removes the GNSS listeners from the Android system, and closes the GeoPackage file if it is
-     * open.
+     * This method handles registering the GNSS listeners with Android so we get notified of updates.
      * <p>
      * This method is not thread safe, so make sure to call this method from a synchronized block.
      */
-    private void stopGnssLogging()
-    {
-        unregisterGnssListeners();
-        if (gnssGeoPackageRecorder != null)
-        {
-            Log.i(LOG_TAG, "Stopping GNSS Logging");
-
-            gnssGeoPackageRecorder.shutdown();
-            gnssGeoPackageRecorder = null;
-        }
-        gnssLoggingEnabled.set(false);
-    }
-
-    /**
-     * Registers for GPS/GNSS updates.
-     *
-     * @return True if the listeners are registered successfully, false if something went wrong or
-     */
-    private boolean registerGnssListeners()
+    private boolean startGnssRecordScanning()
     {
         if (gnssStarted.getAndSet(true)) return true;
 
@@ -1097,40 +1261,50 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
                 if (locationManager != null)
                 {
                     locationManager.registerGnssMeasurementsCallback(measurementListener);
-                    locationManager.registerGnssStatusCallback(statusListener, serviceHandler);
-                    Log.i(LOG_TAG, "Successfully registered the GNSS listeners");
+                    Timber.i("Successfully registered the GNSS listeners");
                 }
-
-                gpsListener.addLocationListener(this);
             } else
             {
-                Log.w(LOG_TAG, "The location manager was not null when registering the GNSS listeners");
+                Timber.w("The location manager was null when registering the GNSS listeners");
             }
 
             success = true;
         }
 
+        updateLocationListener();
+
         return success;
     }
 
     /**
-     * Unregisters from GPS/GNSS updates.
+     * Unregisters from GPS/GNSS updates from the Android OS.
+     * <p>
+     * This method is not thread safe, so make sure to call this method from a synchronized block.
      */
-    private void unregisterGnssListeners()
+    private void stopGnssRecordScanning()
     {
         if (!gnssStarted.getAndSet(false)) return;
 
         if (locationManager != null)
         {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O)
-            {
-                locationManager.unregisterGnssMeasurementsCallback(measurementListener);
-                locationManager.unregisterGnssStatusCallback(statusListener);
-            }
-
-            gpsListener.removeLocationListener();
+            locationManager.unregisterGnssMeasurementsCallback(measurementListener);
             locationManager = null;
         }
+
+        updateLocationListener();
+    }
+
+    /**
+     * If any of the loggers are still active, this stops them all just to be safe. If they are not active then nothing
+     * changes.
+     *
+     * @since 0.3.0
+     */
+    private void stopAllLogging()
+    {
+        if (cellularSurveyRecordLogger != null) cellularSurveyRecordLogger.enableLogging(false);
+        if (wifiSurveyRecordLogger != null) wifiSurveyRecordLogger.enableLogging(false);
+        if (gnssRecordLogger != null) gnssRecordLogger.enableLogging(false);
     }
 
     /**
@@ -1156,6 +1330,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
             @Override
             public void onReceive(Context context, Intent intent)
             {
+                setScanRateValues();
                 attemptMqttConnectWithMdmConfig(true);
             }
         };
@@ -1177,7 +1352,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
                 unregisterReceiver(managedConfigurationListener);
             } catch (Exception e)
             {
-                Log.e(LOG_TAG, "Unable to unregister the Managed Configuration Listener when pausing the app", e);
+                Timber.e(e, "Unable to unregister the Managed Configuration Listener when pausing the app");
             }
             managedConfigurationListener = null;
         }
@@ -1281,7 +1456,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
 
             if (promptEnable)
             {
-                Log.i(LOG_TAG, "Wi-Fi is disabled, prompting the user to enable it");
+                Timber.i("Wi-Fi is disabled, prompting the user to enable it");
 
                 if (Build.VERSION.SDK_INT >= 29)
                 {

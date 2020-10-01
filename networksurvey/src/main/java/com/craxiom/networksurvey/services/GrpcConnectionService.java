@@ -19,7 +19,6 @@ import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.IBinder;
 import android.os.Looper;
-import android.util.Log;
 import android.widget.Toast;
 
 import androidx.core.app.NotificationCompat;
@@ -78,6 +77,7 @@ import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
 import io.grpc.android.AndroidChannelBuilder;
 import io.grpc.stub.StreamObserver;
+import timber.log.Timber;
 
 /**
  * This connection service is used to create a connection to a remote gRPC server.
@@ -87,7 +87,6 @@ import io.grpc.stub.StreamObserver;
 public class GrpcConnectionService extends Service implements IDeviceStatusListener, ICellularSurveyRecordListener, IWifiSurveyRecordListener
 {
     public static final long RECONNECTION_ATTEMPT_BACKOFF_TIME = 10_000L;
-    private static final String LOG_TAG = GrpcConnectionService.class.getSimpleName();
     private static final int DEVICE_STATUS_REFRESH_RATE_MS = 15_000;
     private static final int NUMBER_OF_QUEUES_TO_PROCESS = 6;
     private static final int QUEUE_PROCESSING_SLEEP_TIME = 1_000;
@@ -199,7 +198,7 @@ public class GrpcConnectionService extends Service implements IDeviceStatusListe
      */
     public static void connectToGrpcServer(Context context, String host, int port, String deviceName)
     {
-        Log.d(LOG_TAG, "Creating the ACTION_CONNECT intent to kick off the gRPC connection");
+        Timber.d("Creating the ACTION_CONNECT intent to kick off the gRPC connection");
 
         Intent intent = new Intent(context, GrpcConnectionService.class);
         intent.setAction(ACTION_CONNECT);
@@ -236,7 +235,7 @@ public class GrpcConnectionService extends Service implements IDeviceStatusListe
         final Context applicationContext = getApplicationContext();
         final Intent serviceIntent = new Intent(applicationContext, NetworkSurveyService.class);
         final boolean bound = applicationContext.bindService(serviceIntent, surveyServiceConnection, Context.BIND_ABOVE_CLIENT);
-        Log.i(LOG_TAG, "NetworkSurveyService bound in the GrpcConnectionService: " + bound);
+        Timber.i("NetworkSurveyService bound in the GrpcConnectionService: %s", bound);
     }
 
     @Override
@@ -247,7 +246,7 @@ public class GrpcConnectionService extends Service implements IDeviceStatusListe
             final String action = intent.getAction();
             if (action == null || action.isEmpty())
             {
-                Log.i(LOG_TAG, "No action to perform, so just starting the connection service");
+                Timber.i("No action to perform, so just starting the connection service");
             } else if (ACTION_CONNECT.equals(action))
             {
                 final String host = intent.getStringExtra(HOST_PARAMETER);
@@ -255,7 +254,7 @@ public class GrpcConnectionService extends Service implements IDeviceStatusListe
                 final String deviceName = intent.getStringExtra(DEVICE_NAME_PARAMETER);
                 if (host == null || port == -1 || deviceName == null)
                 {
-                    Log.e(LOG_TAG, "A valid hostname {} and port {} is required to connect to a gRPC server: " + host + ":" + port);
+                    Timber.e("A valid hostname (%s) and port (%d) is required to connect to a gRPC server", host, port);
                 } else
                 {
                     userCanceled = false;
@@ -280,7 +279,7 @@ public class GrpcConnectionService extends Service implements IDeviceStatusListe
     @Override
     public void onDestroy()
     {
-        Log.i(LOG_TAG, "Destroying the Connection Service");
+        Timber.i("Destroying the Connection Service");
 
         if (surveyServiceConnection != null) getApplicationContext().unbindService(surveyServiceConnection);
 
@@ -424,7 +423,7 @@ public class GrpcConnectionService extends Service implements IDeviceStatusListe
     {
         try
         {
-            Log.d(LOG_TAG, "Starting a connection to the gRPC server");
+            Timber.d("Starting a connection to the gRPC server");
 
             this.host = host;
             portNumber = port;
@@ -445,7 +444,7 @@ public class GrpcConnectionService extends Service implements IDeviceStatusListe
                 if (!startConnection())
                 {
                     final String errorMessage = "Unable to connect to the Network Survey Server";
-                    Log.w(LOG_TAG, errorMessage);
+                    Timber.w(errorMessage);
                     uiThreadHandler.post(() -> Toast.makeText(applicationContext, errorMessage, Toast.LENGTH_SHORT).show());
                     final boolean attemptReconnection = !userCanceled && reconnectOnFailure;
                     disconnectFromGrpcServer(!attemptReconnection);
@@ -458,7 +457,7 @@ public class GrpcConnectionService extends Service implements IDeviceStatusListe
 
                 notifyConnectionStateChange(ConnectionState.CONNECTED);
                 final String message = "Connected to the Network Survey Server!";
-                Log.i(LOG_TAG, message);
+                Timber.i(message);
                 uiThreadHandler.post(() -> Toast.makeText(applicationContext, message, Toast.LENGTH_SHORT).show());
 
                 if (oldConnectionApproach)
@@ -507,7 +506,7 @@ public class GrpcConnectionService extends Service implements IDeviceStatusListe
             }).start();
         } catch (Throwable e)
         {
-            Log.e(LOG_TAG, "An exception occurred when trying to connect to the remote gRPC server", e);
+            Timber.e(e, "An exception occurred when trying to connect to the remote gRPC server");
 
             final boolean attemptReconnect = !userCanceled && reconnectOnFailure;
 
@@ -629,10 +628,10 @@ public class GrpcConnectionService extends Service implements IDeviceStatusListe
                 }
             } else if (e.getCause() instanceof ConnectException)
             {
-                Log.w(LOG_TAG, "Could not connect to the remote gRPC Server because: " + e.getCause().getMessage(), e);
+                Timber.w(e, "Could not connect to the remote gRPC Server because: ");
             } else
             {
-                Log.e(LOG_TAG, "Could not connect to the remote gRPC Server due to an Exception", e);
+                Timber.e(e, "Could not connect to the remote gRPC Server due to an Exception");
             }
         }
 
@@ -659,7 +658,7 @@ public class GrpcConnectionService extends Service implements IDeviceStatusListe
                 {
                     if (handlerTaskId != deviceStatusGeneratorTaskId.get())
                     {
-                        Log.d(LOG_TAG, "Stopping the device status report because the task ID has changed");
+                        Timber.d("Stopping the device status report because the task ID has changed");
                         return;
                     }
 
@@ -668,7 +667,7 @@ public class GrpcConnectionService extends Service implements IDeviceStatusListe
                     deviceStatusReportHandler.postDelayed(this, DEVICE_STATUS_REFRESH_RATE_MS);
                 } catch (SecurityException e)
                 {
-                    Log.e(LOG_TAG, "Could not get the required permissions to generate a device status message", e);
+                    Timber.e(e, "Could not get the required permissions to generate a device status message");
                 }
             }
         }, 1000L);
@@ -729,7 +728,7 @@ public class GrpcConnectionService extends Service implements IDeviceStatusListe
 
         if (connectionState == ConnectionState.DISCONNECTED)
         {
-            Log.i(LOG_TAG, "Removing the connection notification");
+            Timber.i("Removing the connection notification");
 
             final NotificationManager notificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
             //noinspection ConstantConditions
@@ -789,10 +788,10 @@ public class GrpcConnectionService extends Service implements IDeviceStatusListe
     {
         if (host == null || portNumber == null)
         {
-            Log.e(LOG_TAG, "Can't reconnect to the last gRPC server because the host or port is null");
+            Timber.e("Can't reconnect to the last gRPC server because the host or port is null");
         }
 
-        Log.i(LOG_TAG, "Reconnecting to the gRPC server");
+        Timber.i("Reconnecting to the gRPC server");
 
         connectToGrpcServer(host, portNumber, deviceName, true);
     }
@@ -815,7 +814,7 @@ public class GrpcConnectionService extends Service implements IDeviceStatusListe
                 channel.shutdown().awaitTermination(1, TimeUnit.SECONDS);
             } catch (Exception e)
             {
-                Log.w(LOG_TAG, "An exception occurred while trying to shutdown the gRPC Channel", e);
+                Timber.w(e, "An exception occurred while trying to shutdown the gRPC Channel");
             } finally
             {
                 channel = null;
@@ -837,7 +836,7 @@ public class GrpcConnectionService extends Service implements IDeviceStatusListe
             networkSurveyService.unregisterWifiSurveyRecordListener(this);
         }
 
-        Log.i(LOG_TAG, "About to call stopSelf for the GrpcConnectionService");
+        Timber.i("About to call stopSelf for the GrpcConnectionService");
 
         stopSelf();
     }
@@ -849,10 +848,7 @@ public class GrpcConnectionService extends Service implements IDeviceStatusListe
      */
     private synchronized void notifyConnectionStateChange(ConnectionState newConnectionState)
     {
-        if (Log.isLoggable(LOG_TAG, Log.INFO))
-        {
-            Log.i(LOG_TAG, "gRPC Connection State Changed.  oldConnectionState=" + connectionState + ", newConnectionState=" + newConnectionState);
-        }
+        Timber.i("gRPC Connection State Changed.  oldConnectionState=%s, newConnectionState=%s", connectionState, newConnectionState);
 
         connectionState = newConnectionState;
 
@@ -865,7 +861,7 @@ public class GrpcConnectionService extends Service implements IDeviceStatusListe
                 listener.onConnectionStateChange(newConnectionState);
             } catch (Exception e)
             {
-                Log.e(LOG_TAG, "Unable to notify a gRPC Connection State Listener because of an exception", e);
+                Timber.e(e, "Unable to notify a gRPC Connection State Listener because of an exception");
             }
         }
     }
@@ -923,14 +919,14 @@ public class GrpcConnectionService extends Service implements IDeviceStatusListe
                     public void onError(Throwable t)
                     {
                         failed = t;
-                        Log.e(LOG_TAG, "An error occurred in a gRPC stream", t);
+                        Timber.e(t, "An error occurred in a gRPC stream");
                         finishLatch.countDown();
                     }
 
                     @Override
                     public void onCompleted()
                     {
-                        Log.i(LOG_TAG, "Completed a gRPC stream");
+                        Timber.i("Completed a gRPC stream");
                         finishLatch.countDown();
                     }
                 };
@@ -963,16 +959,13 @@ public class GrpcConnectionService extends Service implements IDeviceStatusListe
                             continue;
                         }
 
-                        if (Log.isLoggable(LOG_TAG, Log.VERBOSE))
-                        {
-                            Log.v(LOG_TAG, "Sending a message to the remote gRPC server: " + nextMessageToSend);
-                        }
+                        Timber.v("Sending a message to the remote gRPC server: %s", nextMessageToSend);
 
                         outgoingMessageStream.onNext(nextMessageToSend);
                     }
                 } catch (InterruptedException ignore)
                 {
-                    Log.i(LOG_TAG, "The gRPC task was interrupted");
+                    Timber.i("The gRPC task was interrupted");
                 } catch (RuntimeException e)
                 {
                     // Cancel RPC
@@ -997,7 +990,7 @@ public class GrpcConnectionService extends Service implements IDeviceStatusListe
                 return false;
             } catch (Throwable e)
             {
-                Log.e(LOG_TAG, "The connection to the remote gRPC server closed with an exception", e);
+                Timber.e(e, "The connection to the remote gRPC server closed with an exception");
                 return true;
             }
         }
@@ -1009,7 +1002,7 @@ public class GrpcConnectionService extends Service implements IDeviceStatusListe
         @Override
         protected void onPostExecute(Boolean unimplemented)
         {
-            Log.i(LOG_TAG, "Completed a gRPC Task, userCanceled=" + userCanceled + ", unimplemented=" + unimplemented);
+            Timber.i("Completed a gRPC Task, userCanceled=%s, unimplemented=%s", userCanceled, unimplemented);
 
             if (unimplemented) return;
 
@@ -1031,7 +1024,7 @@ public class GrpcConnectionService extends Service implements IDeviceStatusListe
         @Override
         public void onServiceConnected(final ComponentName name, final IBinder iBinder)
         {
-            Log.i(LOG_TAG, name + " service connected");
+            Timber.i("%s service connected", name);
             final NetworkSurveyService.SurveyServiceBinder binder = (NetworkSurveyService.SurveyServiceBinder) iBinder;
             networkSurveyService = binder.getService();
             deviceId = networkSurveyService.getDeviceId();
@@ -1043,7 +1036,7 @@ public class GrpcConnectionService extends Service implements IDeviceStatusListe
         @Override
         public void onServiceDisconnected(final ComponentName name)
         {
-            Log.i(LOG_TAG, name + " service disconnected");
+            Timber.i("%s service disconnected", name);
         }
     }
 }

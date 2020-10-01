@@ -1,7 +1,6 @@
 package com.craxiom.networksurvey.logging;
 
 import android.os.Looper;
-import android.util.Log;
 
 import com.craxiom.messaging.CdmaRecord;
 import com.craxiom.messaging.CdmaRecordData;
@@ -30,6 +29,7 @@ import mil.nga.geopackage.features.user.FeatureDao;
 import mil.nga.geopackage.features.user.FeatureRow;
 import mil.nga.geopackage.geom.GeoPackageGeometryData;
 import mil.nga.sf.Point;
+import timber.log.Timber;
 
 /**
  * Responsible for taking cellular survey records, and writing them to the GeoPackage log file.
@@ -38,8 +38,6 @@ import mil.nga.sf.Point;
  */
 public class CellularSurveyRecordLogger extends SurveyRecordLogger implements ICellularSurveyRecordListener
 {
-    private static final String LOG_TAG = CellularSurveyRecordLogger.class.getSimpleName();
-
     /**
      * Constructs a Logger that writes Cellular Survey records to a GeoPackage SQLite database.
      *
@@ -48,7 +46,7 @@ public class CellularSurveyRecordLogger extends SurveyRecordLogger implements IC
      */
     public CellularSurveyRecordLogger(NetworkSurveyService networkSurveyService, Looper serviceLooper)
     {
-        super(networkSurveyService, serviceLooper, NetworkSurveyConstants.CELLULAR_FILE_NAME_PREFIX);
+        super(networkSurveyService, serviceLooper, NetworkSurveyConstants.LOG_DIRECTORY_NAME, NetworkSurveyConstants.CELLULAR_FILE_NAME_PREFIX);
     }
 
     @Override
@@ -182,11 +180,7 @@ public class CellularSurveyRecordLogger extends SurveyRecordLogger implements IC
      */
     private void writeGsmRecordToLogFile(final GsmRecord gsmRecord)
     {
-        if (!loggingEnabled)
-        {
-            Log.v(LOG_TAG, "Not writing the log file because logging is turned off");
-            return;
-        }
+        if (!loggingEnabled) return;
 
         handler.post(() -> {
             try
@@ -252,7 +246,7 @@ public class CellularSurveyRecordLogger extends SurveyRecordLogger implements IC
                 }
             } catch (Exception e)
             {
-                Log.e(LOG_TAG, "Something went wrong when trying to write a GSM survey record", e);
+                Timber.e(e, "Something went wrong when trying to write a GSM survey record");
             }
         });
     }
@@ -264,11 +258,7 @@ public class CellularSurveyRecordLogger extends SurveyRecordLogger implements IC
      */
     private void writeCdmaRecordToLogFile(final CdmaRecord cdmaRecord)
     {
-        if (!loggingEnabled)
-        {
-            Log.v(LOG_TAG, "Not writing the log file because logging is turned off");
-            return;
-        }
+        if (!loggingEnabled) return;
 
         handler.post(() -> {
             try
@@ -326,7 +316,7 @@ public class CellularSurveyRecordLogger extends SurveyRecordLogger implements IC
                 }
             } catch (Exception e)
             {
-                Log.e(LOG_TAG, "Something went wrong when trying to write a CDMA survey record", e);
+                Timber.e(e, "Something went wrong when trying to write a CDMA survey record");
             }
         });
     }
@@ -338,11 +328,7 @@ public class CellularSurveyRecordLogger extends SurveyRecordLogger implements IC
      */
     private void writeUmtsRecordToLogFile(final UmtsRecord umtsRecord)
     {
-        if (!loggingEnabled)
-        {
-            Log.v(LOG_TAG, "Not writing the log file because logging is turned off");
-            return;
-        }
+        if (!loggingEnabled) return;
 
         handler.post(() -> {
             try
@@ -408,7 +394,7 @@ public class CellularSurveyRecordLogger extends SurveyRecordLogger implements IC
                 }
             } catch (Exception e)
             {
-                Log.e(LOG_TAG, "Something went wrong when trying to write an UMTS survey record", e);
+                Timber.e(e, "Something went wrong when trying to write an UMTS survey record");
             }
         });
     }
@@ -420,11 +406,7 @@ public class CellularSurveyRecordLogger extends SurveyRecordLogger implements IC
      */
     private void writeLteRecordToLogFile(final LteRecord lteRecord)
     {
-        if (!loggingEnabled)
-        {
-            Log.v(LOG_TAG, "Not writing the log file because logging is turned off");
-            return;
-        }
+        if (!loggingEnabled) return;
 
         handler.post(() -> {
             try
@@ -497,7 +479,7 @@ public class CellularSurveyRecordLogger extends SurveyRecordLogger implements IC
                 }
             } catch (Exception e)
             {
-                Log.e(LOG_TAG, "Something went wrong when trying to write an LTE survey record", e);
+                Timber.e(e, "Something went wrong when trying to write an LTE survey record");
             }
         });
     }

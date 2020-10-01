@@ -43,7 +43,7 @@ public class GnssSkyView extends View implements IGnssListener
 
     private static final float PRN_TEXT_SCALE = 0.7f;
 
-    private static int SAT_RADIUS;
+    private int satRadius;
 
     private float[] snrThresholds;
 
@@ -57,9 +57,17 @@ public class GnssSkyView extends View implements IGnssListener
 
     WindowManager windowManager;
 
-    private Paint horizonActiveFillPaint, horizonInactiveFillPaint, horizonStrokePaint,
-            gridStrokePaint, satelliteFillPaint, satelliteStrokePaint, satelliteUsedStrokePaint,
-            northPaint, northFillPaint, prnIdPaint, notInViewPaint;
+    private Paint horizonActiveFillPaint;
+    private Paint horizonInactiveFillPaint;
+    private Paint horizonStrokePaint;
+    private Paint gridStrokePaint;
+    private Paint satelliteFillPaint;
+    private Paint satelliteStrokePaint;
+    private Paint satelliteUsedStrokePaint;
+    private Paint northPaint;
+    private Paint northFillPaint;
+    private Paint prnIdPaint;
+    private Paint notInViewPaint;
 
     private double orientation = 0.0;
 
@@ -100,7 +108,7 @@ public class GnssSkyView extends View implements IGnssListener
     {
         this.context = context;
         windowManager = (WindowManager) this.context.getSystemService(Context.WINDOW_SERVICE);
-        SAT_RADIUS = UIUtils.dpToPixels(context, 5);
+        satRadius = UIUtils.dpToPixels(context, 5);
 
         horizonActiveFillPaint = new Paint();
         horizonActiveFillPaint.setColor(Color.WHITE);
@@ -168,7 +176,7 @@ public class GnssSkyView extends View implements IGnssListener
         prnIdPaint.setColor(Color.BLACK);
         prnIdPaint.setStyle(Paint.Style.STROKE);
         prnIdPaint
-                .setTextSize(UIUtils.dpToPixels(getContext(), SAT_RADIUS * PRN_TEXT_SCALE));
+                .setTextSize(UIUtils.dpToPixels(getContext(), satRadius * PRN_TEXT_SCALE));
         prnIdPaint.setAntiAlias(true);
 
         notInViewPaint = new Paint();
@@ -213,13 +221,13 @@ public class GnssSkyView extends View implements IGnssListener
              * https://developer.android.com/reference/android/location/GnssStatus.html#getSvid(int)
              * 255 should be enough to contain all known satellites world-wide.
              */
-            final int MAX_LENGTH = 255;
-            prns = new int[MAX_LENGTH];
-            snrCn0s = new float[MAX_LENGTH];
-            elevs = new float[MAX_LENGTH];
-            azims = new float[MAX_LENGTH];
-            constellationType = new int[MAX_LENGTH];
-            usedInFix = new boolean[MAX_LENGTH];
+            final int maxLength = 255;
+            prns = new int[maxLength];
+            snrCn0s = new float[maxLength];
+            elevs = new float[maxLength];
+            azims = new float[maxLength];
+            constellationType = new int[maxLength];
+            usedInFix = new boolean[maxLength];
         }
 
         int length = status.getSatelliteCount();
@@ -304,20 +312,18 @@ public class GnssSkyView extends View implements IGnssListener
     private void drawNorthIndicator(Canvas c, int s)
     {
         float radius = s / 2f;
-        final float ARROW_HEIGHT_SCALE = 0.05f;
-        final float ARROW_WIDTH_SCALE = 0.1f;
+        final float arrowHeightScale = 0.05f;
+        final float arrowWidthScale = 0.1f;
 
-        float x1, y1;  // Tip of arrow
-        x1 = radius;
-        y1 = elevationToRadius(s, 90.0f);
+        // Tip of arrow
+        float x1 = radius;
+        float y1 = elevationToRadius(s, 90.0f);
 
-        float x2, y2;
-        x2 = x1 + radius * ARROW_HEIGHT_SCALE;
-        y2 = y1 + radius * ARROW_WIDTH_SCALE;
+        float x2 = x1 + radius * arrowHeightScale;
+        float y2 = y1 + radius * arrowWidthScale;
 
-        float x3, y3;
-        x3 = x1 - radius * ARROW_HEIGHT_SCALE;
-        y3 = y1 + radius * ARROW_WIDTH_SCALE;
+        float x3 = x1 - radius * arrowHeightScale;
+        float y3 = y1 + radius * arrowWidthScale;
 
         Path path = new Path();
         path.setFillType(Path.FillType.EVEN_ODD);
@@ -339,11 +345,9 @@ public class GnssSkyView extends View implements IGnssListener
     private void drawSatellite(Canvas c, int s, float elev, float azim, float snrCn0, int prn,
                                int constellationType, boolean usedInFix)
     {
-        double radius, angle;
-        float x, y;
         // Place PRN text slightly below drawn satellite
-        final double PRN_X_SCALE = 1.4;
-        final double PRN_Y_SCALE = 3.8;
+        final double prnXScale = 1.4;
+        final double prnYScale = 3.8;
 
         Paint fillPaint;
         if (snrCn0 == 0.0f)
@@ -365,12 +369,12 @@ public class GnssSkyView extends View implements IGnssListener
             strokePaint = satelliteStrokePaint;
         }
 
-        radius = elevationToRadius(s, elev);
+        final double radius = elevationToRadius(s, elev);
         azim -= orientation;
-        angle = (float) Math.toRadians(azim);
+        final double angle = (float) Math.toRadians(azim);
 
-        x = (float) ((s / 2) + (radius * Math.sin(angle)));
-        y = (float) ((s / 2) - (radius * Math.cos(angle)));
+        final float x = (float) ((s / 2) + (radius * Math.sin(angle)));
+        final float y = (float) ((s / 2) - (radius * Math.cos(angle)));
 
         // Change shape based on satellite operator
         final GnssType operator = GpsTestUtil.getGnssConstellationType(constellationType);
@@ -378,13 +382,13 @@ public class GnssSkyView extends View implements IGnssListener
         switch (operator)
         {
             case NAVSTAR:
-                c.drawCircle(x, y, SAT_RADIUS, fillPaint);
-                c.drawCircle(x, y, SAT_RADIUS, strokePaint);
+                c.drawCircle(x, y, satRadius, fillPaint);
+                c.drawCircle(x, y, satRadius, strokePaint);
                 break;
             case GLONASS:
-                c.drawRect(x - SAT_RADIUS, y - SAT_RADIUS, x + SAT_RADIUS, y + SAT_RADIUS,
+                c.drawRect(x - satRadius, y - satRadius, x + satRadius, y + satRadius,
                         fillPaint);
-                c.drawRect(x - SAT_RADIUS, y - SAT_RADIUS, x + SAT_RADIUS, y + SAT_RADIUS,
+                c.drawRect(x - satRadius, y - satRadius, x + satRadius, y + satRadius,
                         strokePaint);
                 break;
             case QZSS:
@@ -433,28 +437,28 @@ public class GnssSkyView extends View implements IGnssListener
 //                break;
         }
 
-        c.drawText(String.valueOf(prn), x - (int) (SAT_RADIUS * PRN_X_SCALE),
-                y + (int) (SAT_RADIUS * PRN_Y_SCALE), prnIdPaint);
+        c.drawText(String.valueOf(prn), x - (int) (satRadius * prnXScale),
+                y + (int) (satRadius * prnYScale), prnIdPaint);
     }
 
     private float elevationToRadius(int s, float elev)
     {
-        return ((s / 2f) - SAT_RADIUS) * (1.0f - (elev / 90.0f));
+        return ((s / 2f) - satRadius) * (1.0f - (elev / 90.0f));
     }
 
     private void drawTriangle(Canvas c, float x, float y, Paint fillPaint, Paint strokePaint)
     {
-        float x1, y1;  // Top
-        x1 = x;
-        y1 = y - SAT_RADIUS;
+        // Top
+        float x1 = x;
+        float y1 = y - satRadius;
 
-        float x2, y2; // Lower left
-        x2 = x - SAT_RADIUS;
-        y2 = y + SAT_RADIUS;
+        // Lower left
+        float x2 = x - satRadius;
+        float y2 = y + satRadius;
 
-        float x3, y3; // Lower right
-        x3 = x + SAT_RADIUS;
-        y3 = y + SAT_RADIUS;
+        // Lower right
+        float x3 = x + satRadius;
+        float y3 = y + satRadius;
 
         Path path = new Path();
         path.setFillType(Path.FillType.EVEN_ODD);
@@ -471,10 +475,10 @@ public class GnssSkyView extends View implements IGnssListener
     private void drawDiamond(Canvas c, float x, float y, Paint fillPaint, Paint strokePaint)
     {
         Path path = new Path();
-        path.moveTo(x, y - SAT_RADIUS);
-        path.lineTo(x - SAT_RADIUS * 1.5f, y);
-        path.lineTo(x, y + SAT_RADIUS);
-        path.lineTo(x + SAT_RADIUS * 1.5f, y);
+        path.moveTo(x, y - satRadius);
+        path.lineTo(x - satRadius * 1.5f, y);
+        path.lineTo(x, y + satRadius);
+        path.lineTo(x + satRadius * 1.5f, y);
         path.close();
 
         c.drawPath(path, fillPaint);
@@ -484,11 +488,11 @@ public class GnssSkyView extends View implements IGnssListener
     private void drawPentagon(Canvas c, float x, float y, Paint fillPaint, Paint strokePaint)
     {
         Path path = new Path();
-        path.moveTo(x, y - SAT_RADIUS);
-        path.lineTo(x - SAT_RADIUS, y - (SAT_RADIUS / 3f));
-        path.lineTo(x - 2 * (SAT_RADIUS / 3f), y + SAT_RADIUS);
-        path.lineTo(x + 2 * (SAT_RADIUS / 3f), y + SAT_RADIUS);
-        path.lineTo(x + SAT_RADIUS, y - (SAT_RADIUS / 3f));
+        path.moveTo(x, y - satRadius);
+        path.lineTo(x - satRadius, y - (satRadius / 3f));
+        path.lineTo(x - 2 * (satRadius / 3f), y + satRadius);
+        path.lineTo(x + 2 * (satRadius / 3f), y + satRadius);
+        path.lineTo(x + satRadius, y - (satRadius / 3f));
         path.close();
 
         c.drawPath(path, fillPaint);
@@ -497,20 +501,20 @@ public class GnssSkyView extends View implements IGnssListener
 
     private void drawHexagon(Canvas c, float x, float y, Paint fillPaint, Paint strokePaint)
     {
-        final float MULTIPLIER = 0.6f;
-        final float SIDE_MULTIPLIER = 1.4f;
+        final float multiplier = 0.6f;
+        final float sideMultiplier = 1.4f;
         Path path = new Path();
         // Top-left
-        path.moveTo(x - SAT_RADIUS * MULTIPLIER, y - SAT_RADIUS);
+        path.moveTo(x - satRadius * multiplier, y - satRadius);
         // Left
-        path.lineTo(x - SAT_RADIUS * SIDE_MULTIPLIER, y);
+        path.lineTo(x - satRadius * sideMultiplier, y);
         // Bottom
-        path.lineTo(x - SAT_RADIUS * MULTIPLIER, y + SAT_RADIUS);
-        path.lineTo(x + SAT_RADIUS * MULTIPLIER, y + SAT_RADIUS);
+        path.lineTo(x - satRadius * multiplier, y + satRadius);
+        path.lineTo(x + satRadius * multiplier, y + satRadius);
         // Right
-        path.lineTo(x + SAT_RADIUS * SIDE_MULTIPLIER, y);
+        path.lineTo(x + satRadius * sideMultiplier, y);
         // Top-right
-        path.lineTo(x + SAT_RADIUS * MULTIPLIER, y - SAT_RADIUS);
+        path.lineTo(x + satRadius * multiplier, y - satRadius);
         path.close();
 
         c.drawPath(path, fillPaint);
@@ -519,7 +523,7 @@ public class GnssSkyView extends View implements IGnssListener
 
     private void drawOval(Canvas c, float x, float y, Paint fillPaint, Paint strokePaint)
     {
-        RectF rect = new RectF(x - SAT_RADIUS * 1.5f, y - SAT_RADIUS, x + SAT_RADIUS * 1.5f, y + SAT_RADIUS);
+        RectF rect = new RectF(x - satRadius * 1.5f, y - satRadius, x + satRadius * 1.5f, y + satRadius);
 
         c.drawOval(rect, fillPaint);
         c.drawOval(rect, strokePaint);
@@ -527,8 +531,7 @@ public class GnssSkyView extends View implements IGnssListener
 
     private Paint getSatellitePaint(Paint base, float snrCn0)
     {
-        Paint newPaint;
-        newPaint = new Paint(base);
+        final Paint newPaint = new Paint(base);
         newPaint.setColor(getSatelliteColor(snrCn0));
         return newPaint;
     }
@@ -576,27 +579,23 @@ public class GnssSkyView extends View implements IGnssListener
             float nextThreshold = thresholds[i + 1];
             if (snrCn0 >= threshold && snrCn0 <= nextThreshold)
             {
-                int c1, r1, g1, b1, c2, r2, g2, b2, c3, r3, g3, b3;
-                float f;
+                int c1 = colors[i];
+                int r1 = Color.red(c1);
+                int g1 = Color.green(c1);
+                int b1 = Color.blue(c1);
 
-                c1 = colors[i];
-                r1 = Color.red(c1);
-                g1 = Color.green(c1);
-                b1 = Color.blue(c1);
+                int c2 = colors[i + 1];
+                int r2 = Color.red(c2);
+                int g2 = Color.green(c2);
+                int b2 = Color.blue(c2);
 
-                c2 = colors[i + 1];
-                r2 = Color.red(c2);
-                g2 = Color.green(c2);
-                b2 = Color.blue(c2);
+                float f = (snrCn0 - threshold) / (nextThreshold - threshold);
 
-                f = (snrCn0 - threshold) / (nextThreshold - threshold);
+                int r3 = (int) (r2 * f + r1 * (1.0f - f));
+                int g3 = (int) (g2 * f + g1 * (1.0f - f));
+                int b3 = (int) (b2 * f + b1 * (1.0f - f));
 
-                r3 = (int) (r2 * f + r1 * (1.0f - f));
-                g3 = (int) (g2 * f + g1 * (1.0f - f));
-                b3 = (int) (b2 * f + b1 * (1.0f - f));
-                c3 = Color.rgb(r3, g3, b3);
-
-                return c3;
+                return Color.rgb(r3, g3, b3);
             }
         }
         return Color.MAGENTA;
@@ -605,9 +604,7 @@ public class GnssSkyView extends View implements IGnssListener
     @Override
     protected void onDraw(Canvas canvas)
     {
-        int minScreenDimen;
-
-        minScreenDimen = Math.min(width, height);
+        int minScreenDimen = Math.min(width, height);
 
         drawHorizon(canvas, minScreenDimen);
 
@@ -644,35 +641,9 @@ public class GnssSkyView extends View implements IGnssListener
         invalidate();
     }
 
-    @Override
-    public void gpsStart()
-    {
-    }
-
-    @Override
-    public void gpsStop()
-    {
-    }
-
-    @Override
-    public void onGnssFirstFix(int ttffMillis)
-    {
-
-    }
-
     @RequiresApi(api = Build.VERSION_CODES.N)
     @Override
     public void onSatelliteStatusChanged(GnssStatus status)
-    {
-    }
-
-    @Override
-    public void onGnssStarted()
-    {
-    }
-
-    @Override
-    public void onGnssStopped()
     {
     }
 
@@ -681,11 +652,6 @@ public class GnssSkyView extends View implements IGnssListener
     public void onGnssMeasurementsReceived(GnssMeasurementsEvent event)
     {
 
-    }
-
-    @Override
-    public void onNmeaMessage(String message, long timestamp)
-    {
     }
 
     @Override

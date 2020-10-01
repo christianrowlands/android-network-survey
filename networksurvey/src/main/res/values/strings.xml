@@ -185,6 +185,17 @@
     <string name="auto_start_gnss_logging_summary_on">GNSS logging will be started upon app opening</string>
     <string name="auto_start_gnss_logging_summary_off">GNSS logging will only start when manually enabled</string>
 
+    <string name="scan_interval_config_title">Scanning Rate</string>
+
+    <string name="cellular_scan_interval_title">Cellular Scan Interval</string>
+    <string name="cellular_scan_interval_description">The rate at which Cellular towers will be scanned for in seconds. Smaller values will decrease battery life.</string>
+
+    <string name="wifi_scan_interval_title">Wi-Fi Scan Interval</string>
+    <string name="wifi_scan_interval_description">The rate at which Wi-Fi networks will be scanned for in seconds. Smaller values will decrease battery life.</string>
+
+    <string name="gnss_scan_interval_title">GNSS Scan Interval</string>
+    <string name="gnss_scan_interval_description">The rate at which GNSS satellites will be scanned for in seconds. Smaller values will decrease battery life.</string>
+
     <string name="mqtt_connection_config_title">MQTT Connection Config</string>
 
     <string name="auto_start_mqtt_summary_on">The MQTT connection will be started when the phone is booted (Note that a valid MQTT broker must be configured in the connection UI)</string>

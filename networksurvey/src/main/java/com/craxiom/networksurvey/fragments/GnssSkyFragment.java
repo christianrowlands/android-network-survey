@@ -58,10 +58,9 @@ import java.util.Locale;
  */
 public class GnssSkyFragment extends Fragment implements IGnssListener
 {
-    private static final String LOG_TAG = GnssSkyFragment.class.getSimpleName();
     static final String TITLE = "Sky View";
 
-    private MainGnssFragment mainGnssFragment;
+    private final MainGnssFragment mainGnssFragment;
 
     private GnssSkyView skyView;
 
@@ -69,12 +68,23 @@ public class GnssSkyFragment extends Fragment implements IGnssListener
 
     private List<ImageView> legendShapes;
 
-    private TextView legendCn0Title, legendCn0Units, legendCn0LeftText, legendCn0LeftCenterText,
-            legendCn0CenterText, legendCn0RightCenterText, legendCn0RightText, snrCn0InViewAvgText, snrCn0UsedAvgText;
+    private TextView legendCn0Title;
+    private TextView legendCn0Units;
+    private TextView legendCn0LeftText;
+    private TextView legendCn0LeftCenterText;
+    private TextView legendCn0CenterText;
+    private TextView legendCn0RightCenterText;
+    private TextView legendCn0RightText;
+    private TextView snrCn0InViewAvgText;
+    private TextView snrCn0UsedAvgText;
 
-    private ImageView snrCn0InViewAvg, snrCn0UsedAvg;
+    private ImageView snrCn0InViewAvg;
+    private ImageView snrCn0UsedAvg;
 
-    private Animation snrCn0InViewAvgAnimation, snrCn0UsedAvgAnimation, snrCn0InViewAvgAnimationTextView, snrCn0UsedAvgAnimationTextView;
+    private Animation snrCn0InViewAvgAnimation;
+    private Animation snrCn0UsedAvgAnimation;
+    private Animation snrCn0InViewAvgAnimationTextView;
+    private Animation snrCn0UsedAvgAnimationTextView;
 
     private boolean useLegacyGnssApi = false;
 
@@ -131,34 +141,24 @@ public class GnssSkyFragment extends Fragment implements IGnssListener
         }
     }
 
+    @Override
     public void onLocationChanged(Location loc)
     {
     }
 
+    @Override
     public void onStatusChanged(String provider, int status, Bundle extras)
     {
     }
 
+    @Override
     public void onProviderEnabled(String provider)
     {
     }
 
+    @Override
     public void onProviderDisabled(String provider)
     {
-    }
-
-    public void gpsStart()
-    {
-    }
-
-    public void gpsStop()
-    {
-    }
-
-    @Override
-    public void onGnssFirstFix(int ttffMillis)
-    {
-
     }
 
     @RequiresApi(api = Build.VERSION_CODES.N)
@@ -203,11 +203,6 @@ public class GnssSkyFragment extends Fragment implements IGnssListener
         {
             skyView.onOrientationChanged(orientation, tilt);
         }
-    }
-
-    @Override
-    public void onNmeaMessage(String message, long timestamp)
-    {
     }
 
     /**
@@ -342,7 +337,7 @@ public class GnssSkyFragment extends Fragment implements IGnssListener
         int maxTextViewMarginPx = meterWidthPx + minTextViewMarginPx;
 
         // When both "in view" and "used" indicators and TextViews are shown, slide the "in view" TextView by this amount to the left to avoid overlap
-        float TEXTVIEW_NON_OVERLAP_OFFSET_DP = -16.0f;
+        float textviewNonOverlapOffsetDp = -16.0f;
 
         // Calculate normal offsets for avg in view satellite SNR or C/N0 value TextViews
         Integer leftInViewTextViewMarginPx = null;
@@ -381,7 +376,7 @@ public class GnssSkyFragment extends Fragment implements IGnssListener
         // See if we need to apply the offset margin to try and keep the two TextViews from overlapping by shifting one of the two left
         if (leftInViewTextViewMarginPx != null && leftUsedTextViewMarginPx != null)
         {
-            int offset = UIUtils.dpToPixels(Application.get(), TEXTVIEW_NON_OVERLAP_OFFSET_DP);
+            int offset = UIUtils.dpToPixels(Application.get(), textviewNonOverlapOffsetDp);
             if (leftInViewTextViewMarginPx <= leftUsedTextViewMarginPx)
             {
                 leftInViewTextViewMarginPx += offset;

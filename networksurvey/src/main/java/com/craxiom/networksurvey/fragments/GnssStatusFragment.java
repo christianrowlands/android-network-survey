@@ -28,7 +28,6 @@ import android.location.Location;
 import android.os.Build;
 import android.os.Bundle;
 import android.text.format.DateFormat;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -68,6 +67,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
+import timber.log.Timber;
+
 import static android.util.TypedValue.COMPLEX_UNIT_DIP;
 import static android.util.TypedValue.COMPLEX_UNIT_PX;
 import static com.craxiom.networksurvey.model.ConstellationType.GNSS;
@@ -82,7 +83,6 @@ import static com.craxiom.networksurvey.model.ConstellationType.SBAS;
  */
 public class GnssStatusFragment extends Fragment implements IGnssListener
 {
-    private static final String LOG_TAG = GnssStatusFragment.class.getSimpleName();
     static final String TITLE = "Details";
 
     private static final String EMPTY_LAT_LONG = "             ";
@@ -128,13 +128,19 @@ public class GnssStatusFragment extends Fragment implements IGnssListener
 
     private boolean navigating;
 
-    private Drawable flagUsa, flagRussia, flagJapan, flagChina, flagIndia, flagEu, flagIcao;
+    private Drawable flagUsa;
+    private Drawable flagRussia;
+    private Drawable flagJapan;
+    private Drawable flagChina;
+    private Drawable flagIndia;
+    private Drawable flagEu;
+    private Drawable flagIcao;
 
     private String ttff = "";
 
     private String prefDistanceUnits;
     private String prefSpeedUnits;
-    private MainGnssFragment mainGnssFragment;
+    private final MainGnssFragment mainGnssFragment;
 
     /**
      * Constructs this fragment.
@@ -251,7 +257,7 @@ public class GnssStatusFragment extends Fragment implements IGnssListener
     @Override
     public void onResume()
     {
-        Log.d(LOG_TAG, "Resuming the GNSS Status Fragment");
+        Timber.d("Resuming the GNSS Status Fragment");
 
         super.onResume();
 
@@ -263,7 +269,7 @@ public class GnssStatusFragment extends Fragment implements IGnssListener
     @Override
     public void onPause()
     {
-        Log.d(LOG_TAG, "Pausing the GNSS Status Fragment");
+        Timber.d("Pausing the GNSS Status Fragment");
 
         mainGnssFragment.unregisterGnssListener(this);
 
@@ -325,11 +331,6 @@ public class GnssStatusFragment extends Fragment implements IGnssListener
     }
 
     @Override
-    public void onOrientationChanged(double orientation, double tilt)
-    {
-    }
-
-    @Override
     public void onNmeaMessage(String message, long timestamp)
     {
         if (!isAdded())
@@ -365,6 +366,7 @@ public class GnssStatusFragment extends Fragment implements IGnssListener
         }
     }
 
+    @Override
     public void onLocationChanged(Location location)
     {
         if (!UIUtils.isFragmentAttached(this))
@@ -445,14 +447,17 @@ public class GnssStatusFragment extends Fragment implements IGnssListener
         updateFixTime();
     }
 
+    @Override
     public void onStatusChanged(String provider, int status, Bundle extras)
     {
     }
 
+    @Override
     public void onProviderEnabled(String provider)
     {
     }
 
+    @Override
     public void onProviderDisabled(String provider)
     {
     }
@@ -739,7 +744,7 @@ public class GnssStatusFragment extends Fragment implements IGnssListener
         final FragmentActivity activity = getActivity();
         if (activity == null)
         {
-            Log.wtf(LOG_TAG, "The Activity is null so we are unable to show the sorting dialog.");
+            Timber.wtf("The Activity is null so we are unable to show the sorting dialog.");
             return;
         }
 

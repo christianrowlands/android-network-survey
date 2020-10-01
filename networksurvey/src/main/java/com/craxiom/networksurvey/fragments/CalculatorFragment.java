@@ -3,7 +3,6 @@ package com.craxiom.networksurvey.fragments;
 import android.os.Bundle;
 import android.text.Editable;
 import android.text.TextWatcher;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -16,6 +15,8 @@ import androidx.fragment.app.Fragment;
 import com.craxiom.networksurvey.CalculationUtils;
 import com.craxiom.networksurvey.R;
 
+import timber.log.Timber;
+
 /**
  * A fragment to hold the LTE eNodeB ID calculator.
  *
@@ -23,7 +24,6 @@ import com.craxiom.networksurvey.R;
  */
 public class CalculatorFragment extends Fragment
 {
-    private static final String LOG_TAG = CalculatorFragment.class.getSimpleName();
     static final String TITLE = "Calculators";
     private static final String INVALID_CELL_ID_MESSAGE = "Invalid Cell ID.  Valid Range is 0 - 268435455";
     private static final String INVALID_PCI_MESSAGE = "Invalid PCI.  Valid Range is 0 - 503";
@@ -40,7 +40,7 @@ public class CalculatorFragment extends Fragment
             {
                 if (enteredText.isEmpty())
                 {
-                    Log.v(LOG_TAG, "The entered text for the LTE Cell ID is empty.  Can't calculate the eNodeB ID.");
+                    Timber.v("The entered text for the LTE Cell ID is empty.  Can't calculate the eNodeB ID.");
                     clearCellIdCalculatedValues();
                     return;
                 }
@@ -72,7 +72,7 @@ public class CalculatorFragment extends Fragment
                 ((TextView) view.findViewById(R.id.calculatedSectorIdValue)).setText(String.valueOf(sectorId));
             } catch (Exception e)
             {
-                Log.w(LOG_TAG, "Unable to parse the provide LTE Cell ID as an Integer:" + enteredText, e);
+                Timber.w(e, "Unable to parse the provide LTE Cell ID as an Integer:%s", enteredText);
             }
         }
 
@@ -99,7 +99,7 @@ public class CalculatorFragment extends Fragment
             {
                 if (enteredText.isEmpty())
                 {
-                    Log.v(LOG_TAG, "The entered text for the LTE PCI is empty.  Can't calculate the PSS and SSS.");
+                    Timber.v("The entered text for the LTE PCI is empty.  Can't calculate the PSS and SSS.");
                     clearPciCalculatedValues();
                     return;
                 }
@@ -129,7 +129,7 @@ public class CalculatorFragment extends Fragment
                 ((TextView) view.findViewById(R.id.calculatedSssValue)).setText(String.valueOf(secondarySyncSequence));
             } catch (Exception e)
             {
-                Log.w(LOG_TAG, "Unable to parse the provide LTE PCI as an Integer:" + enteredText, e);
+                Timber.w(e, "Unable to parse the provide LTE PCI as an Integer:%s", enteredText);
             }
         }
 
@@ -194,7 +194,7 @@ public class CalculatorFragment extends Fragment
      */
     private void showToast(String toastMessage)
     {
-        Log.d(LOG_TAG, toastMessage);
+        Timber.d(toastMessage);
         Toast.makeText(getActivity(), toastMessage, Toast.LENGTH_SHORT).show();
     }
 }

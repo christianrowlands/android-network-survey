@@ -33,6 +33,34 @@
     </PreferenceCategory>
 
     <PreferenceCategory
+        app:icon="@drawable/ic_interval"
+        app:key="scan_interval_config"
+        app:title="@string/scan_interval_config_title">
+
+        <EditTextPreference
+            app:defaultValue="5"
+            app:dialogMessage="@string/cellular_scan_interval_description"
+            app:key="cellular_scan_interval_seconds"
+            app:title="@string/cellular_scan_interval_title"
+            app:useSimpleSummaryProvider="true" />
+
+        <EditTextPreference
+            app:defaultValue="5"
+            app:dialogMessage="@string/wifi_scan_interval_description"
+            app:key="wifi_scan_interval_seconds"
+            app:title="@string/wifi_scan_interval_title"
+            app:useSimpleSummaryProvider="true" />
+
+        <EditTextPreference
+            app:defaultValue="8"
+            app:dialogMessage="@string/gnss_scan_interval_description"
+            app:key="gnss_scan_interval_seconds"
+            app:title="@string/gnss_scan_interval_title"
+            app:useSimpleSummaryProvider="true" />
+
+    </PreferenceCategory>
+
+    <PreferenceCategory
         app:icon="@drawable/ic_cloud_connection"
         app:key="mqtt_connection_config"
         app:title="@string/mqtt_connection_config_title">

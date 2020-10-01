@@ -22,6 +22,8 @@ public class NetworkSurveyConstants
     public static final int GRPC_CONNECTION_NOTIFICATION_ID = 3;
     public static final int LOGGING_NOTIFICATION_ID = 1;
 
+    public static final String LOG_DIRECTORY_NAME = "NetworkSurveyData";
+
     public static final String CELLULAR_FILE_NAME_PREFIX = "craxiom-cellular-";
     public static final String WIFI_FILE_NAME_PREFIX = "craxiom-wifi-";
     public static final String GNSS_FILE_NAME_PREFIX = "craxiom-gnss-";
@@ -55,10 +57,17 @@ public class NetworkSurveyConstants
      */
     public static final String EXTRA_STARTED_AT_BOOT = "com.craxiom.networksurvey.extra.STARTED_AT_BOOT";
 
+    public static final int DEFAULT_CELLULAR_SCAN_INTERVAL_SECONDS = 5;
+    public static final int DEFAULT_WIFI_SCAN_INTERVAL_SECONDS = 5;
+    public static final int DEFAULT_GNSS_SCAN_INTERVAL_SECONDS = 8;
+
     // Preferences
     public static final String PROPERTY_AUTO_START_CELLULAR_LOGGING = "auto_start_logging";
     public static final String PROPERTY_AUTO_START_WIFI_LOGGING = "auto_start_wifi_logging";
     public static final String PROPERTY_AUTO_START_GNSS_LOGGING = "auto_start_gnss_logging";
+    public static final String PROPERTY_CELLULAR_SCAN_INTERVAL_SECONDS = "cellular_scan_interval_seconds";
+    public static final String PROPERTY_WIFI_SCAN_INTERVAL_SECONDS = "wifi_scan_interval_seconds";
+    public static final String PROPERTY_GNSS_SCAN_INTERVAL_SECONDS = "gnss_scan_interval_seconds";
     public static final String PROPERTY_CONNECTION_TIMEOUT = "connection_timeout";
     public static final String PROPERTY_MQTT_MDM_OVERRIDE = "mqtt_mdm_override";
 

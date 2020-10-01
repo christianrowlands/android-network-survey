@@ -21,13 +21,10 @@ import android.content.Context;
 import android.content.res.Configuration;
 import android.hardware.Sensor;
 import android.hardware.SensorManager;
-import android.location.GnssMeasurement;
-import android.location.GnssNavigationMessage;
 import android.location.GnssStatus;
 import android.location.Location;
 import android.location.LocationManager;
 import android.os.Build;
-import android.util.Log;
 
 import androidx.annotation.RequiresApi;
 
@@ -37,6 +34,8 @@ import com.craxiom.networksurvey.model.SatelliteName;
 import com.craxiom.networksurvey.model.SbasType;
 
 import java.lang.reflect.InvocationTargetException;
+
+import timber.log.Timber;
 
 import static com.craxiom.networksurvey.model.GnssType.BEIDOU;
 import static com.craxiom.networksurvey.model.GnssType.GALILEO;
@@ -52,17 +51,6 @@ import static com.craxiom.networksurvey.model.GnssType.UNKNOWN;
  */
 public class GpsTestUtil
 {
-
-    private static final String TAG = "GpsTestUtil";
-
-    private static final String NMEA_OUTPUT_TAG = "GpsOutputNmea";
-
-    private static final String MEASURE_OUTPUT_TAG = "GpsOutputMeasure";
-
-    private static final String NM_OUTPUT_TAG = "GpsOutputNav";
-
-    private static StringBuilder mNmeaOutput = new StringBuilder();
-
     private static final int CONSTELLATION_IRNSS_TEMP = 7;
 
     /**
@@ -284,16 +272,6 @@ public class GpsTestUtil
     }
 
     /**
-     * Returns true if the device supports the Gnss status listener, false if it does not
-     *
-     * @return true if the device supports the Gnss status listener, false if it does not
-     */
-    public static boolean isGnssStatusListenerSupported()
-    {
-        return Build.VERSION.SDK_INT >= Build.VERSION_CODES.N;
-    }
-
-    /**
      * Returns true if the platform supports providing carrier frequencies for each satellite, false if it does not
      *
      * @return true if the platform supports providing carrier frequencies for each satellite, false if it does not
@@ -334,44 +312,7 @@ public class GpsTestUtil
      */
     public static String createGnssSatelliteKey(int svid, int constellationType)
     {
-        return String.valueOf(svid) + " " + String.valueOf(constellationType);
-    }
-
-    /**
-     * Outputs the provided nmea message and timestamp to log
-     *
-     * @param timestamp timestamp to write to the log, or Long.MIN_VALUE to not write a timestamp
-     *                  to
-     *                  log
-     */
-    public static void writeNmeaToAndroidStudio(String nmea, long timestamp)
-    {
-        mNmeaOutput.setLength(0);
-        if (timestamp != Long.MIN_VALUE)
-        {
-            mNmeaOutput.append(timestamp);
-            mNmeaOutput.append(",");
-        }
-        mNmeaOutput.append(nmea);
-        Log.d(NMEA_OUTPUT_TAG, mNmeaOutput.toString());
-    }
-
-    /**
-     * Outputs the provided GNSS navigation message to log
-     */
-    @RequiresApi(api = Build.VERSION_CODES.N)
-    public static void writeNavMessageToAndroidStudio(GnssNavigationMessage message)
-    {
-        Log.d(NM_OUTPUT_TAG, message.toString());
-    }
-
-    /**
-     * Outputs the provided GNSS measurement to log
-     */
-    @RequiresApi(api = Build.VERSION_CODES.N)
-    public static void writeGnssMeasurementToAndroidStudio(GnssMeasurement measurement)
-    {
-        Log.d(MEASURE_OUTPUT_TAG, measurement.toString());
+        return svid + " " + constellationType;
     }
 
     /**
@@ -396,13 +337,13 @@ public class GpsTestUtil
             }
         } catch (NoSuchMethodException e)
         {
-            Log.e(TAG, "No such method exception: ", e);
+            Timber.e(e, "No such method exception: ");
         } catch (IllegalAccessException e)
         {
-            Log.e(TAG, "Illegal Access exception: ", e);
+            Timber.e(e, "Illegal Access exception: ");
         } catch (InvocationTargetException e)
         {
-            Log.e(TAG, "Invocation Target Exception: ", e);
+            Timber.e(e, "Invocation Target Exception: ");
         }
         return null;
     }

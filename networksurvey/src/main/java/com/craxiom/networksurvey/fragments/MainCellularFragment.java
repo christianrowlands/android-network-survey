@@ -1,7 +1,6 @@
 package com.craxiom.networksurvey.fragments;
 
 import android.os.Bundle;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -16,6 +15,8 @@ import com.craxiom.networksurvey.R;
 import com.google.android.material.tabs.TabLayout;
 import com.google.android.material.tabs.TabLayoutMediator;
 
+import timber.log.Timber;
+
 /**
  * The primary fragment to use for the Cellular page of the bottom navigation component.
  *
@@ -23,8 +24,6 @@ import com.google.android.material.tabs.TabLayoutMediator;
  */
 public class MainCellularFragment extends Fragment
 {
-    private static final String LOG_TAG = MainCellularFragment.class.getSimpleName();
-
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container,
@@ -67,7 +66,7 @@ public class MainCellularFragment extends Fragment
                     return new CalculatorFragment();
 
                 default:
-                    Log.wtf(LOG_TAG, "A fragment has not been specified for one of the tabs in the Cellular UI.");
+                    Timber.wtf("A fragment has not been specified for one of the tabs in the Cellular UI.");
                     return new NetworkDetailsFragment();
             }
         }
@@ -96,7 +95,7 @@ public class MainCellularFragment extends Fragment
                 return CalculatorFragment.TITLE;
 
             default:
-                Log.wtf(LOG_TAG, "No title specified for the Cellular tab.  Using a default");
+                Timber.wtf("No title specified for the Cellular tab.  Using a default");
                 return "";
         }
     }

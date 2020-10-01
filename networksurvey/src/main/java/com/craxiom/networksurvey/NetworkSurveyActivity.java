@@ -19,7 +19,6 @@ import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.provider.Settings;
-import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.TextView;
@@ -49,6 +48,8 @@ import com.google.android.material.navigation.NavigationView;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
+import timber.log.Timber;
+
 /**
  * The main activity for the Network Survey App.  This app is used to pull LTE Network Survey
  * details, display them to a user, and also (optionally) write them to a file.
@@ -57,8 +58,6 @@ import java.util.function.Supplier;
  */
 public class NetworkSurveyActivity extends AppCompatActivity
 {
-    private static final String LOG_TAG = NetworkSurveyActivity.class.getSimpleName();
-
     private static final int ACCESS_PERMISSION_REQUEST_ID = 1;
     public static final String[] PERMISSIONS = {
             Manifest.permission.ACCESS_FINE_LOCATION,
@@ -111,7 +110,7 @@ public class NetworkSurveyActivity extends AppCompatActivity
             notificationManager.createNotificationChannel(channel);
         } else
         {
-            Log.e(LOG_TAG, "The Notification Manager could not be retrieved to add the Network Survey notification channel");
+            Timber.e("The Notification Manager could not be retrieved to add the Network Survey notification channel");
         }
     }
 
@@ -177,7 +176,7 @@ public class NetworkSurveyActivity extends AppCompatActivity
                         startAndBindToNetworkSurveyService();
                     } else
                     {
-                        Log.w(LOG_TAG, "The ACCESS_FINE_LOCATION Permission was denied.");
+                        Timber.w("The ACCESS_FINE_LOCATION Permission was denied.");
                     }
                 }
             }
@@ -227,6 +226,22 @@ public class NetworkSurveyActivity extends AppCompatActivity
     }
 
     /**
+     * Sets the cellular details UI ({@link com.craxiom.networksurvey.fragments.NetworkDetailsFragment}) as visible.
+     *
+     * @since 0.3.0
+     */
+    public void runSingleScan()
+    {
+        if (networkSurveyService != null)
+        {
+            networkSurveyService.runSingleCellularScan();
+        } else
+        {
+            Timber.e("Could not run the single scan because the service is null");
+        }
+    }
+
+    /**
      * Check to see if we should show the rationale for any of the permissions.  If so, then display a dialog that
      * explains what permissions we need for this app to work properly.
      * <p>
@@ -238,7 +253,7 @@ public class NetworkSurveyActivity extends AppCompatActivity
                 || ActivityCompat.shouldShowRequestPermissionRationale(this, Manifest.permission.WRITE_EXTERNAL_STORAGE)
                 || ActivityCompat.shouldShowRequestPermissionRationale(this, Manifest.permission.READ_PHONE_STATE))
         {
-            Log.d(LOG_TAG, "Showing the permissions rationale dialog");
+            Timber.d("Showing the permissions rationale dialog");
 
             AlertDialog.Builder alertBuilder = new AlertDialog.Builder(this);
             alertBuilder.setCancelable(true);
@@ -267,33 +282,42 @@ public class NetworkSurveyActivity extends AppCompatActivity
     }
 
     /**
-     * Checks that the location provider is enabled and that the location permission has been granted.  If GPS location
-     * is not enabled on this device, then the settings UI is opened so the user can enable it.
+     * Checks that the location provider is enabled.  If GPS location is not enabled on this device, then the settings
+     * UI is opened so the user can enable it.
+     * <p>
+     * If either the GPS device is not present, or if the GPS provider is disabled, an appropriate toast message is
+     * displayed.
+     *
+     * @return True if the device has GPS capabilities, and location services are enabled on the device. False otherwise.
      */
-    private void checkLocationProvider()
+    private boolean checkLocationProvider()
     {
         final LocationManager locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
         if (locationManager == null)
         {
-            Log.w(LOG_TAG, "Could not get the location manager.  Skipping checking the location provider");
-            return;
+            Timber.w("Could not get the location manager.  Skipping checking the location provider");
+            return false;
         }
 
         final LocationProvider locationProvider = locationManager.getProvider(LocationManager.GPS_PROVIDER);
         if (locationProvider == null)
         {
             final String noGpsMessage = getString(R.string.no_gps_device);
-            Log.w(LOG_TAG, noGpsMessage);
+            Timber.w(noGpsMessage);
             Toast.makeText(getApplicationContext(), noGpsMessage, Toast.LENGTH_LONG).show();
+            return false;
         } else if (!locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER))
         {
             // gps exists, but isn't on
             final String turnOnGpsMessage = getString(R.string.turn_on_gps);
-            Log.w(LOG_TAG, turnOnGpsMessage);
+            Timber.w(turnOnGpsMessage);
             Toast.makeText(getApplicationContext(), turnOnGpsMessage, Toast.LENGTH_LONG).show();
 
             promptEnableGps();
+            return false;
         }
+
+        return true;
     }
 
     /**
@@ -325,7 +349,7 @@ public class NetworkSurveyActivity extends AppCompatActivity
         {
             if (ContextCompat.checkSelfPermission(this, permission) != PackageManager.PERMISSION_GRANTED)
             {
-                Log.i(LOG_TAG, "Missing the permission: " + permission);
+                Timber.i("Missing the permission: %s", permission);
                 return true;
             }
         }
@@ -340,7 +364,7 @@ public class NetworkSurveyActivity extends AppCompatActivity
     {
         if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED)
         {
-            Log.w(LOG_TAG, "The ACCESS_FINE_LOCATION permission has not been granted");
+            Timber.w("The ACCESS_FINE_LOCATION permission has not been granted");
             return false;
         }
 
@@ -354,7 +378,7 @@ public class NetworkSurveyActivity extends AppCompatActivity
     {
         if (ActivityCompat.checkSelfPermission(this, Manifest.permission.READ_PHONE_STATE) != PackageManager.PERMISSION_GRANTED)
         {
-            Log.w(LOG_TAG, "The READ_PHONE_STATE permission has not been granted");
+            Timber.w("The READ_PHONE_STATE permission has not been granted");
             return false;
         }
 
@@ -378,7 +402,7 @@ public class NetworkSurveyActivity extends AppCompatActivity
 
         final Intent serviceIntent = new Intent(applicationContext, NetworkSurveyService.class);
         final boolean bound = applicationContext.bindService(serviceIntent, surveyServiceConnection, Context.BIND_ABOVE_CLIENT);
-        Log.i(LOG_TAG, "NetworkSurveyService bound in the NetworkSurveyActivity: " + bound);
+        Timber.i("NetworkSurveyService bound in the NetworkSurveyActivity: %s", bound);
     }
 
     /**
@@ -395,7 +419,7 @@ public class NetworkSurveyActivity extends AppCompatActivity
         navController = Navigation.findNavController(this, R.id.main_content);
 
         appBarConfiguration = new AppBarConfiguration.Builder(R.id.main_cellular_fragment, R.id.main_wifi_fragment, R.id.main_gnss_fragment)
-                .setDrawerLayout(drawerLayout)
+                .setOpenableLayout(drawerLayout)
                 .build();
 
         NavigationUI.setupActionBarWithNavController(this, navController, appBarConfiguration);
@@ -441,7 +465,7 @@ public class NetworkSurveyActivity extends AppCompatActivity
             appVersionView.setText(getString(R.string.app_version, info.versionName));
         } catch (Exception e)
         {
-            Log.wtf(LOG_TAG, "Could not set the app version number", e);
+            Timber.wtf(e, "Could not set the app version number");
         }
     }
 
@@ -488,6 +512,7 @@ public class NetworkSurveyActivity extends AppCompatActivity
     private void toggleGnssLogging(boolean enable)
     {
         new ToggleLoggingTask(() -> {
+            if (!checkLocationProvider()) return null;
             if (networkSurveyService != null) return networkSurveyService.toggleGnssLogging(enable);
             return null;
         }, enabled -> {
@@ -595,7 +620,7 @@ public class NetworkSurveyActivity extends AppCompatActivity
         @Override
         public void onServiceConnected(final ComponentName name, final IBinder iBinder)
         {
-            Log.i(LOG_TAG, name + " service connected");
+            Timber.i("%s service connected", name);
             final NetworkSurveyService.SurveyServiceBinder binder = (NetworkSurveyService.SurveyServiceBinder) iBinder;
             networkSurveyService = binder.getService();
             networkSurveyService.onUiVisible(NetworkSurveyActivity.this);
@@ -636,7 +661,7 @@ public class NetworkSurveyActivity extends AppCompatActivity
         public void onServiceDisconnected(final ComponentName name)
         {
             networkSurveyService = null;
-            Log.i(LOG_TAG, name + " service disconnected");
+            Timber.i("%s service disconnected", name);
         }
     }
 }

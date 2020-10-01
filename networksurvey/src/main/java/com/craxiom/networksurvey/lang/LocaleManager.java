@@ -5,28 +5,24 @@
 
 package com.craxiom.networksurvey.lang;
 
-import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.content.res.Configuration;
 import android.content.res.Resources;
 import android.preference.PreferenceManager;
 
-import com.craxiom.networksurvey.Application;
 import com.craxiom.networksurvey.R;
 import com.craxiom.networksurvey.util.LocaleUtils;
 
 import java.util.Locale;
 
 import static android.os.Build.VERSION_CODES.JELLY_BEAN_MR1;
-import static android.os.Build.VERSION_CODES.N;
 
 /**
  * Dynamically changes the app locale
  */
 public class LocaleManager
 {
-
     private final SharedPreferences prefs;
 
     public LocaleManager(Context context)
@@ -44,26 +40,13 @@ public class LocaleManager
         return updateResources(c, getLanguage(c));
     }
 
-    public Context setNewLocale(Context c, String language)
-    {
-        persistLanguage(language);
-        return updateResources(c, language);
-    }
-
     String getLanguage(Context c)
     {
         return prefs.getString(c.getString(R.string.pref_key_language),
                 c.getResources().getStringArray(R.array.language_values)[0]); // Default is English
     }
 
-    @SuppressLint("ApplySharedPref")
-    private void persistLanguage(String language)
-    {
-        // use commit() instead of apply(), because sometimes we kill the application process immediately
-        // which will prevent apply() to finish
-        prefs.edit().putString(Application.get().getString(R.string.pref_key_language), language).commit();
-    }
-
+    @SuppressWarnings("deprecation")
     private Context updateResources(Context context, String language)
     {
         Locale locale = new Locale(language);
@@ -81,11 +64,5 @@ public class LocaleManager
             res.updateConfiguration(config, res.getDisplayMetrics());
         }
         return context;
-    }
-
-    public static Locale getLocale(Resources res)
-    {
-        Configuration config = res.getConfiguration();
-        return LocaleUtils.isAtLeastVersion(N) ? config.getLocales().get(0) : config.locale;
     }
 }

@@ -2,6 +2,7 @@ package com.craxiom.networksurvey.fragments;
 
 import androidx.fragment.app.Fragment;
 
+import com.craxiom.networksurvey.NetworkSurveyActivity;
 import com.craxiom.networksurvey.R;
 
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -25,6 +26,9 @@ public class NetworkDetailsFragment extends Fragment
         super.onResume();
 
         visible.set(true);
+
+        final NetworkSurveyActivity activity = (NetworkSurveyActivity) getActivity();
+        if (activity != null) activity.runSingleScan();
     }
 
     @Override

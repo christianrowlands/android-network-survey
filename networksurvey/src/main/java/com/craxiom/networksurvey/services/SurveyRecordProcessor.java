@@ -1,6 +1,9 @@
 package com.craxiom.networksurvey.services;
 
 import android.annotation.SuppressLint;
+import android.content.Context;
+import android.location.GnssMeasurement;
+import android.location.GnssMeasurementsEvent;
 import android.location.Location;
 import android.net.wifi.ScanResult;
 import android.telephony.CellIdentityCdma;
@@ -17,12 +20,13 @@ import android.telephony.CellSignalStrengthGsm;
 import android.telephony.CellSignalStrengthLte;
 import android.telephony.CellSignalStrengthWcdma;
 import android.telephony.TelephonyManager;
-import android.util.Log;
 import android.view.View;
 import android.widget.TextView;
 
 import com.craxiom.messaging.CdmaRecord;
 import com.craxiom.messaging.CdmaRecordData;
+import com.craxiom.messaging.GnssRecord;
+import com.craxiom.messaging.GnssRecordData;
 import com.craxiom.messaging.GsmRecord;
 import com.craxiom.messaging.GsmRecordData;
 import com.craxiom.messaging.LteBandwidth;
@@ -32,6 +36,7 @@ import com.craxiom.messaging.UmtsRecord;
 import com.craxiom.messaging.UmtsRecordData;
 import com.craxiom.messaging.WifiBeaconRecord;
 import com.craxiom.messaging.WifiBeaconRecordData;
+import com.craxiom.messaging.gnss.Constellation;
 import com.craxiom.messaging.wifi.EncryptionType;
 import com.craxiom.networksurvey.BuildConfig;
 import com.craxiom.networksurvey.CalculationUtils;
@@ -39,6 +44,7 @@ import com.craxiom.networksurvey.GpsListener;
 import com.craxiom.networksurvey.NetworkSurveyActivity;
 import com.craxiom.networksurvey.R;
 import com.craxiom.networksurvey.constants.CdmaMessageConstants;
+import com.craxiom.networksurvey.constants.GnssMessageConstants;
 import com.craxiom.networksurvey.constants.GsmMessageConstants;
 import com.craxiom.networksurvey.constants.LteMessageConstants;
 import com.craxiom.networksurvey.constants.NetworkSurveyConstants;
@@ -46,23 +52,30 @@ import com.craxiom.networksurvey.constants.UmtsMessageConstants;
 import com.craxiom.networksurvey.constants.WifiBeaconMessageConstants;
 import com.craxiom.networksurvey.fragments.NetworkDetailsFragment;
 import com.craxiom.networksurvey.listeners.ICellularSurveyRecordListener;
+import com.craxiom.networksurvey.listeners.IGnssSurveyRecordListener;
 import com.craxiom.networksurvey.listeners.IWifiSurveyRecordListener;
 import com.craxiom.networksurvey.model.WifiRecordWrapper;
 import com.craxiom.networksurvey.util.IOUtils;
+import com.craxiom.networksurvey.util.PreferenceUtils;
 import com.craxiom.networksurvey.util.WifiCapabilitiesUtils;
 import com.google.protobuf.BoolValue;
 import com.google.protobuf.FloatValue;
 import com.google.protobuf.Int32Value;
+import com.google.protobuf.UInt32Value;
+import com.google.protobuf.UInt64Value;
 
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.Collection;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.stream.Collectors;
+
+import timber.log.Timber;
 
 /**
  * Responsible for consuming {@link CellInfo} objects, converting them to records specific to a protocol, and then notifying any listeners
@@ -72,21 +85,28 @@ import java.util.stream.Collectors;
  */
 public class SurveyRecordProcessor
 {
-    private static final String LOG_TAG = SurveyRecordProcessor.class.getSimpleName();
-
     public static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyyMMdd-HHmmss").withZone(ZoneId.systemDefault());
     private static final String MISSION_ID_PREFIX = "NS ";
 
     private final GpsListener gpsListener;
     private final Set<ICellularSurveyRecordListener> cellularSurveyRecordListeners = new CopyOnWriteArraySet<>();
     private final Set<IWifiSurveyRecordListener> wifiSurveyRecordListeners = new CopyOnWriteArraySet<>();
+    private final Set<IGnssSurveyRecordListener> gnssSurveyRecordListeners = new CopyOnWriteArraySet<>();
     private NetworkSurveyActivity networkSurveyActivity;
 
     private final String deviceId;
     private final String missionId;
 
-    private int recordNumber = 0;
-    private int groupNumber = -1; // This will be incremented to 0 the first time it is used.
+    private int recordNumber = 1;
+    private int groupNumber = 0; // This will be incremented to 0 the first time it is used.
+
+    private int wifiRecordNumber = 1;
+
+    private int gnssRecordNumber = 1;
+    private int gnssGroupNumber = 0; // This will be incremented to 1 the first time it is used.
+
+    private long lastGnssLogTimeMs;
+    private int gnssScanRateMs;
 
     /**
      * Creates a new processor that can consume the raw survey records in Android format and convert them to the
@@ -94,13 +114,17 @@ public class SurveyRecordProcessor
      *
      * @param gpsListener The GPS Listener that is used to retrieve the latest location.
      * @param deviceId    The Device ID associated with this phone.
+     * @param context     The context that is used to get the app's default shared preferences.
      */
-    SurveyRecordProcessor(GpsListener gpsListener, String deviceId)
+    SurveyRecordProcessor(GpsListener gpsListener, String deviceId, Context context)
     {
         this.gpsListener = gpsListener;
-
         this.deviceId = deviceId;
+
         missionId = MISSION_ID_PREFIX + deviceId + " " + DATE_TIME_FORMATTER.format(LocalDateTime.now());
+
+        gnssScanRateMs = PreferenceUtils.getScanRatePreferenceMs(NetworkSurveyConstants.PROPERTY_GNSS_SCAN_INTERVAL_SECONDS,
+                NetworkSurveyConstants.DEFAULT_GNSS_SCAN_INTERVAL_SECONDS, context);
     }
 
     void registerCellularSurveyRecordListener(ICellularSurveyRecordListener surveyRecordListener)
@@ -121,6 +145,28 @@ public class SurveyRecordProcessor
     void unregisterWifiSurveyRecordListener(IWifiSurveyRecordListener surveyRecordListener)
     {
         wifiSurveyRecordListeners.remove(surveyRecordListener);
+    }
+
+    /**
+     * Adds a listener that will be notified of new GNSS Survey records whenever this class processes a new GNSS record.
+     *
+     * @param surveyRecordListener The listener to add.
+     * @since 0.3.0
+     */
+    void registerGnssSurveyRecordListener(IGnssSurveyRecordListener surveyRecordListener)
+    {
+        gnssSurveyRecordListeners.add(surveyRecordListener);
+    }
+
+    /**
+     * Removes a listener of GNSS records.
+     *
+     * @param surveyRecordListener The listener to remove.
+     * @since 0.3.0
+     */
+    void unregisterGnssSurveyRecordListener(IGnssSurveyRecordListener surveyRecordListener)
+    {
+        gnssSurveyRecordListeners.remove(surveyRecordListener);
     }
 
     /**
@@ -147,7 +193,19 @@ public class SurveyRecordProcessor
      */
     synchronized boolean isBeingUsed()
     {
-        return networkSurveyActivity != null || !cellularSurveyRecordListeners.isEmpty() || !wifiSurveyRecordListeners.isEmpty();
+        return networkSurveyActivity != null
+                || !cellularSurveyRecordListeners.isEmpty()
+                || !wifiSurveyRecordListeners.isEmpty()
+                || !gnssSurveyRecordListeners.isEmpty();
+    }
+
+    /**
+     * @return True if there are any registered Cellular survey record listeners, false otherwise.
+     * @since 0.3.0
+     */
+    boolean isCellularBeingUsed()
+    {
+        return !cellularSurveyRecordListeners.isEmpty() || networkSurveyActivity != null;
     }
 
     /**
@@ -156,6 +214,15 @@ public class SurveyRecordProcessor
     boolean isWifiBeingUsed()
     {
         return !wifiSurveyRecordListeners.isEmpty();
+    }
+
+    /**
+     * @return True if there are any registered GNSS survey record listeners, false otherwise.
+     * @since 0.3.0
+     */
+    boolean isGnssBeingUsed()
+    {
+        return !gnssSurveyRecordListeners.isEmpty();
     }
 
     /**
@@ -170,13 +237,9 @@ public class SurveyRecordProcessor
     {
         try
         {
-            if (Log.isLoggable(LOG_TAG, Log.VERBOSE))
-            {
-                Log.v(LOG_TAG, "currentTechnology=" + currentTechnology);
-
-                Log.v(LOG_TAG, "allCellInfo: ");
-                allCellInfo.forEach(cellInfo -> Log.v(LOG_TAG, cellInfo.toString()));
-            }
+            /* Timber.v("currentTechnology=%s", currentTechnology);
+            Timber.v("allCellInfo: ");
+            allCellInfo.forEach(cellInfo -> Timber.v(cellInfo.toString()));*/
             updateCurrentTechnologyUi(currentTechnology);
 
             if (allCellInfo != null && !allCellInfo.isEmpty())
@@ -190,7 +253,7 @@ public class SurveyRecordProcessor
             }
         } catch (Exception e)
         {
-            Log.e(LOG_TAG, "Unable to display and log an LTE Survey Record", e);
+            Timber.e(e, "Unable to display and log an LTE Survey Record");
             updateUi(LteRecord.getDefaultInstance().getData());
         }
     }
@@ -203,19 +266,39 @@ public class SurveyRecordProcessor
      */
     synchronized void onWifiScanUpdate(List<ScanResult> apScanResults)
     {
-        if (Log.isLoggable(LOG_TAG, Log.VERBOSE))
-        {
-            Log.v(LOG_TAG, "SCAN RESULTS:");
-            apScanResults.forEach(scanResult -> Log.v(LOG_TAG, scanResult.toString()));
-            Log.v(LOG_TAG, "");
-        }
+        /*Timber.v("SCAN RESULTS:");
+        apScanResults.forEach(scanResult -> Timber.v(scanResult.toString()));
+        Timber.v("");*/
 
         processAccessPoints(apScanResults);
     }
 
     /**
-     * Given a {@link CellInfo} record, convert it to the appropriate ProtoBuf defined message.  Then, notify any listeners so it can be written to a log file
-     * and/or sent to any servers if those services are enabled.
+     * Notification for when the latest set of GNSS measurements are available to process.
+     *
+     * @param event The latest set of GNSS measurements.
+     * @since 0.3.0
+     */
+    synchronized void onGnssMeasurements(GnssMeasurementsEvent event)
+    {
+        processGnssMeasurements(event);
+    }
+
+    /**
+     * Sets the GNSS scan interval so that we can control how often this processor creates {@link GnssRecord}s from the
+     * incoming GNSS events.
+     *
+     * @param gnssScanIntervalMs The new GNSS Scan rate in milliseconds.
+     * @since 0.3.0
+     */
+    void setGnssScanRateMs(int gnssScanIntervalMs)
+    {
+        gnssScanRateMs = gnssScanIntervalMs;
+    }
+
+    /**
+     * Given a {@link CellInfo} record, convert it to the appropriate ProtoBuf defined message.  Then, notify any
+     * listeners so it can be written to a log file and/or sent to any servers if those services are enabled.
      *
      * @param cellInfo The Cell Info object with the details.
      * @since 0.0.5
@@ -234,7 +317,7 @@ public class SurveyRecordProcessor
                 final LteRecord lteSurveyRecord = generateLteSurveyRecord((CellInfoLte) cellInfo);
                 if (lteSurveyRecord == null)
                 {
-                    Log.w(LOG_TAG, "Could not generate a Server LteRecord from the CellInfoLte");
+                    Timber.w("Could not generate a Server LteRecord from the CellInfoLte");
                     if (isServingCell) updateUi(LteRecord.getDefaultInstance().getData());
                     return;
                 }
@@ -269,6 +352,35 @@ public class SurveyRecordProcessor
                 .map(this::generateWiFiBeaconSurveyRecord)
                 .collect(Collectors.toList());
         notifyWifiBeaconRecordListeners(wifiBeaconRecords);
+    }
+
+    /**
+     * Given a {@link GnssMeasurementsEvent}, convert it to the appropriate ProtoBuf defined message.  Then,
+     * notify any listeners so it can be written to a log file and/or sent to any servers if those services are enabled.
+     * <p>
+     * This method does nothing if the user preference defined GNSS Scan Interval time has not elapsed since the last
+     * log time.
+     *
+     * @param event The event that contains all the GNSS measurement information.
+     * @since 0.3.0
+     */
+    private void processGnssMeasurements(GnssMeasurementsEvent event)
+    {
+        // Ideally we would tell the Android OS that we only want GNSS Measurement Events every n seconds, but since
+        // there does not seem to be any option for that we simply ignore any updates until the interval has been reached
+        if (lastGnssLogTimeMs + gnssScanRateMs > System.currentTimeMillis()) return;
+
+        lastGnssLogTimeMs = System.currentTimeMillis();
+
+        final Collection<GnssMeasurement> gnssMeasurements = event.getMeasurements();
+
+        gnssGroupNumber++; // Group all the records found in this scan iteration.
+
+        for (final GnssMeasurement gnssMeasurement : gnssMeasurements)
+        {
+            final GnssRecord gnssRecord = generateGnssSurveyRecord(gnssMeasurement);
+            notifyGnssRecordListeners(gnssRecord);
+        }
     }
 
     /**
@@ -585,7 +697,7 @@ public class SurveyRecordProcessor
         dataBuilder.setDeviceSerialNumber(deviceId);
         dataBuilder.setDeviceTime(IOUtils.getRfc3339String(ZonedDateTime.now()));
         dataBuilder.setMissionId(missionId);
-        dataBuilder.setRecordNumber(recordNumber++);
+        dataBuilder.setRecordNumber(wifiRecordNumber++);
 
         dataBuilder.setBssid(bssid);
         dataBuilder.setSignalStrength(FloatValue.newBuilder().setValue(signalStrength).build());
@@ -623,6 +735,79 @@ public class SurveyRecordProcessor
     }
 
     /**
+     * Pull out the appropriate values from the {@link GnssMeasurement}, and create a {@link GnssRecord}.
+     *
+     * @param gnss The GNSS measurement object to pull the data from.
+     * @return The GNSS record to send to any listeners.
+     * @since 0.3.0
+     */
+    private GnssRecord generateGnssSurveyRecord(GnssMeasurement gnss)
+    {
+        final GnssRecordData.Builder dataBuilder = GnssRecordData.newBuilder();
+
+        if (gpsListener != null)
+        {
+            final Location lastKnownLocation = gpsListener.getLatestLocation();
+            if (lastKnownLocation != null)
+            {
+                dataBuilder.setLatitude(lastKnownLocation.getLatitude());
+                dataBuilder.setLongitude(lastKnownLocation.getLongitude());
+                dataBuilder.setAltitude((float) lastKnownLocation.getAltitude());
+
+                if (lastKnownLocation.hasAccuracy())
+                {
+                    final FloatValue.Builder accuracy = FloatValue.newBuilder().setValue(lastKnownLocation.getAccuracy());
+                    dataBuilder.setLatitudeStdDevM(accuracy);
+                    dataBuilder.setLongitudeStdDevM(accuracy);
+                }
+
+                if (lastKnownLocation.hasVerticalAccuracy())
+                {
+                    dataBuilder.setAltitudeStdDevM(FloatValue.newBuilder()
+                            .setValue(lastKnownLocation.getVerticalAccuracyMeters()));
+                }
+            }
+        }
+
+        dataBuilder.setDeviceSerialNumber(deviceId);
+        dataBuilder.setDeviceTime(IOUtils.getRfc3339String(ZonedDateTime.now()));
+        dataBuilder.setMissionId(missionId);
+        dataBuilder.setRecordNumber(gnssRecordNumber++);
+        dataBuilder.setGroupNumber(gnssGroupNumber);
+
+        final Constellation constellation = GnssMessageConstants.getProtobufConstellation(gnss.getConstellationType());
+        if (constellation != Constellation.UNKNOWN) dataBuilder.setConstellation(constellation);
+
+        dataBuilder.setSpaceVehicleId(UInt32Value.newBuilder().setValue(gnss.getSvid()));
+
+        if (gnss.hasCarrierFrequencyHz())
+        {
+            dataBuilder.setCarrierFreqHz(UInt64Value.newBuilder().setValue((long) gnss.getCarrierFrequencyHz()));
+        }
+
+        // TODO dataBuilder.setClockOffset(FloatValue.newBuilder().setValue());
+        // TODO Can get this from the Satellite Status Changed call dataBuilder.setUsedInSolution(FloatValue.newBuilder().setValue());
+        // TODO dataBuilder.setUndulationM(FloatValue.newBuilder().setValue());
+
+        if (gnss.hasAutomaticGainControlLevelDb())
+        {
+            dataBuilder.setAgcDb(FloatValue.newBuilder().setValue((float) gnss.getAutomaticGainControlLevelDb()));
+        }
+
+        dataBuilder.setCn0DbHz(FloatValue.newBuilder().setValue((float) gnss.getCn0DbHz()));
+
+        // TODO dataBuilder.setHdop(FloatValue.newBuilder().setValue());
+        // TODO dataBuilder.setVdop(FloatValue.newBuilder().setValue());
+
+        final GnssRecord.Builder recordBuilder = GnssRecord.newBuilder();
+        recordBuilder.setMessageType(GnssMessageConstants.GNSS_RECORD_MESSAGE_TYPE);
+        recordBuilder.setVersion(BuildConfig.MESSAGING_API_VERSION);
+        recordBuilder.setData(dataBuilder);
+
+        return recordBuilder.build();
+    }
+
+    /**
      * Sets the LTE bandwidth on the record if it is valid, and if the current android version supports it.
      *
      * @param lteRecordBuilder The builder to set the bandwidth on.
@@ -636,6 +821,7 @@ public class SurveyRecordProcessor
             if (bandwidth != Integer.MAX_VALUE)
             {
                 LteBandwidth lteBandwidth = null;
+                //noinspection SwitchStatementWithoutDefaultBranch
                 switch (bandwidth)
                 {
                     case 1_400:
@@ -677,19 +863,19 @@ public class SurveyRecordProcessor
     {
         if (arfcn == Integer.MAX_VALUE || arfcn == -1)
         {
-            Log.v(LOG_TAG, "The ARFCN is required to build a GSM Survey Record.");
+            Timber.v("The ARFCN is required to build a GSM Survey Record.");
             return false;
         }
 
         if (bsic == Integer.MAX_VALUE || bsic == -1)
         {
-            Log.v(LOG_TAG, "The BSIC is required to build a GSM Survey Record.");
+            Timber.v("The BSIC is required to build a GSM Survey Record.");
             return false;
         }
 
         if (signalStrength == Integer.MAX_VALUE)
         {
-            Log.v(LOG_TAG, "The Signal Strength is required to build a GSM Survey Record.");
+            Timber.v("The Signal Strength is required to build a GSM Survey Record.");
             return false;
         }
 
@@ -705,13 +891,13 @@ public class SurveyRecordProcessor
     {
         if (signalStrength == Integer.MAX_VALUE)
         {
-            Log.v(LOG_TAG, "The Signal Strength is required to build a CDMA Survey Record.");
+            Timber.v("The Signal Strength is required to build a CDMA Survey Record.");
             return false;
         }
 
         if (ecio == Integer.MAX_VALUE)
         {
-            Log.v(LOG_TAG, "The Ec/Io is required to build a CDMA Survey Record.");
+            Timber.v("The Ec/Io is required to build a CDMA Survey Record.");
             return false;
         }
 
@@ -727,19 +913,19 @@ public class SurveyRecordProcessor
     {
         if (uarfcn == Integer.MAX_VALUE || uarfcn == -1)
         {
-            Log.v(LOG_TAG, "The UARFCN is required to build a UMTS Survey Record.");
+            Timber.v("The UARFCN is required to build a UMTS Survey Record.");
             return false;
         }
 
         if (psc == Integer.MAX_VALUE || psc == -1)
         {
-            Log.v(LOG_TAG, "The PSC is required to build a UMTS Survey Record.");
+            Timber.v("The PSC is required to build a UMTS Survey Record.");
             return false;
         }
 
         if (signalStrength == Integer.MAX_VALUE)
         {
-            Log.v(LOG_TAG, "The Signal Strength is required to build a UMTS Survey Record.");
+            Timber.v("The Signal Strength is required to build a UMTS Survey Record.");
             return false;
         }
 
@@ -755,19 +941,19 @@ public class SurveyRecordProcessor
     {
         if (earfcn == Integer.MAX_VALUE || earfcn == -1)
         {
-            Log.v(LOG_TAG, "The EARFCN is required to build an LTE Survey Record.");
+            Timber.v("The EARFCN is required to build an LTE Survey Record.");
             return false;
         }
 
         if (pci == Integer.MAX_VALUE || pci == -1)
         {
-            Log.v(LOG_TAG, "The PCI is required to build an LTE Survey Record.");
+            Timber.v("The PCI is required to build an LTE Survey Record.");
             return false;
         }
 
         if (rsrp == Integer.MAX_VALUE)
         {
-            Log.v(LOG_TAG, "The RSRP is required to build an LTE Survey Record.");
+            Timber.v("The RSRP is required to build an LTE Survey Record.");
             return false;
         }
 
@@ -784,13 +970,13 @@ public class SurveyRecordProcessor
     {
         if (bssid == null || bssid.isEmpty())
         {
-            Log.v(LOG_TAG, "The BSSID is required to build a Wi-Fi Beacon Survey Record.");
+            Timber.v("The BSSID is required to build a Wi-Fi Beacon Survey Record.");
             return false;
         }
 
         if (signalStrength == Integer.MAX_VALUE)
         {
-            Log.v(LOG_TAG, "The Signal Strength is required to build a Wi-Fi Beacon Survey Record.");
+            Timber.v("The Signal Strength is required to build a Wi-Fi Beacon Survey Record.");
             return false;
         }
 
@@ -812,7 +998,7 @@ public class SurveyRecordProcessor
                 listener.onGsmSurveyRecord(gsmRecord);
             } catch (Exception e)
             {
-                Log.e(LOG_TAG, "Unable to notify a Cellular Survey Record Listener because of an exception", e);
+                Timber.e(e, "Unable to notify a Cellular Survey Record Listener because of an exception");
             }
         }
     }
@@ -832,7 +1018,7 @@ public class SurveyRecordProcessor
                 listener.onCdmaSurveyRecord(cdmaRecord);
             } catch (Exception e)
             {
-                Log.e(LOG_TAG, "Unable to notify a Cellular Survey Record Listener because of an exception", e);
+                Timber.e(e, "Unable to notify a Cellular Survey Record Listener because of an exception");
             }
         }
     }
@@ -852,7 +1038,7 @@ public class SurveyRecordProcessor
                 listener.onUmtsSurveyRecord(umtsRecord);
             } catch (Exception e)
             {
-                Log.e(LOG_TAG, "Unable to notify a Cellular Survey Record Listener because of an exception", e);
+                Timber.e(e, "Unable to notify a Cellular Survey Record Listener because of an exception");
             }
         }
     }
@@ -872,7 +1058,7 @@ public class SurveyRecordProcessor
                 listener.onLteSurveyRecord(lteRecord);
             } catch (Exception e)
             {
-                Log.e(LOG_TAG, "Unable to notify a Cellular Survey Record Listener because of an exception", e);
+                Timber.e(e, "Unable to notify a Cellular Survey Record Listener because of an exception");
             }
         }
     }
@@ -894,7 +1080,28 @@ public class SurveyRecordProcessor
                 listener.onWifiBeaconSurveyRecords(wifiBeaconRecords);
             } catch (Exception e)
             {
-                Log.e(LOG_TAG, "Unable to notify a Wi-Fi Survey Record Listener because of an exception", e);
+                Timber.e(e, "Unable to notify a Wi-Fi Survey Record Listener because of an exception");
+            }
+        }
+    }
+
+    /**
+     * Notify all the listeners that we have a new GNSS Record available.
+     *
+     * @param gnssRecord The new GNSS Survey Record to send to the listeners.
+     * @since 0.3.0
+     */
+    private void notifyGnssRecordListeners(GnssRecord gnssRecord)
+    {
+        if (gnssRecord == null) return;
+        for (IGnssSurveyRecordListener listener : gnssSurveyRecordListeners)
+        {
+            try
+            {
+                listener.onGnssSurveyRecord(gnssRecord);
+            } catch (Exception e)
+            {
+                Timber.e(e, "Unable to notify a GNSS Survey Record Listener because of an exception");
             }
         }
     }
@@ -908,7 +1115,7 @@ public class SurveyRecordProcessor
     {
         if (!NetworkDetailsFragment.visible.get())
         {
-            Log.v(LOG_TAG, "Skipping updating the Current Technology UI because it is not visible");
+            Timber.v("Skipping updating the Current Technology UI because it is not visible");
             return;
         }
 
@@ -939,7 +1146,7 @@ public class SurveyRecordProcessor
     {
         if (networkSurveyActivity == null || !NetworkDetailsFragment.visible.get())
         {
-            Log.v(LOG_TAG, "Skipping updating the Network Details UI because it is not visible");
+            Timber.v("Skipping updating the Network Details UI because it is not visible");
             return;
         }
 
