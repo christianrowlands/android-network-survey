@@ -62,7 +62,7 @@ library. [The API documentation is published to a web page here](https://messagi
 
 ## Changelog
 
-##### [0.2.2](https://github.com/christianrowlands/android-network-survey/releases/tag/v0.2.2) - 2020-09-25
+##### [0.3.0](https://github.com/christianrowlands/android-network-survey/releases/tag/v0.3.0) - 2020-10-01
  * Reduced the GNSS GeoPackage file size by around 100x.
  * Changed the GNSS GeoPackage table format.
  * Added scan rate interval user preferences for Cellular, Wi-Fi, and GNSS.
