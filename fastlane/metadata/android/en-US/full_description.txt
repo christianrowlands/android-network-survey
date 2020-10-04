@@ -1,0 +1,4 @@
+<p>The <i>Network Survey</i> app pulls the current LTE tower details, and displays them in a simple UI. It also has a calculator that converts an LTE Cell ID to the corresponding eNodeB ID and Sector ID, and a calculator that converts an LTE PCI to the corresponding Primary Sync Sequence (PSS) and Secondary Sync Sequence (SSS).</p>
+<p>A new feature is the capability to log GSM, CDMA, UMTS, and LTE information to a GeoPackage file. This file can be imported to any tool that supports the GeoPackage standard.</p>
+<p>This app is very basic and was built for my own use, but I decided to share it with others.</p>
+<p>Enjoy!</p>
