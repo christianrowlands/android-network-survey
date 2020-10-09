@@ -95,16 +95,15 @@ public abstract class SurveyRecordLogger
 
         geoPackageManager = GeoPackageFactory.getManager(networkSurveyService.getApplicationContext());
 
-        setupRolloverSettings();
+        registerPreferenceChangeListener();
     }
 
     /**
-     * Applies the current preferences to the {@link #rolloverWorker}. The {@link #preferenceChangeListener}
-     * is also registered here.
+     * Registers the {@link #preferenceChangeListener} to the default Shared Preferences.
      *
      * @since 0.3.0
      */
-    private void setupRolloverSettings()
+    private void registerPreferenceChangeListener()
     {
         preferenceChangeListener = (preferences, key) -> {
             final String rolloverPreferenceKey = applicationContext.getString(R.string.log_rollover_dropdown_key);
@@ -114,10 +113,7 @@ public abstract class SurveyRecordLogger
             }
         };
 
-        SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(applicationContext);
-        preferences.registerOnSharedPreferenceChangeListener(preferenceChangeListener);
-
-        updateRolloverWorker(); // Let's update from the first go, so that we have settings ready when logging is enabled.
+        PreferenceManager.getDefaultSharedPreferences(applicationContext).registerOnSharedPreferenceChangeListener(preferenceChangeListener);
     }
 
     /**
