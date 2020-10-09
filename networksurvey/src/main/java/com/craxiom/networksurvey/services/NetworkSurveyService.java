@@ -843,6 +843,9 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
             return;
         }
 
+        // The service handler can be null if this service has been stopped but the activity still has a reference to this old service
+        if (serviceHandler == null) return;
+
         serviceHandler.postDelayed(() -> {
             try
             {

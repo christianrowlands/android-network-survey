@@ -226,7 +226,9 @@ public class NetworkSurveyActivity extends AppCompatActivity
     }
 
     /**
-     * Sets the cellular details UI ({@link com.craxiom.networksurvey.fragments.NetworkDetailsFragment}) as visible.
+     * Runs one cellular scan. This is used to prime the UI in the event that the scan interval is really long.
+     * <p>
+     * If the service is null then nothing happens.
      *
      * @since 0.3.0
      */
