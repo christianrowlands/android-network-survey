@@ -52,25 +52,37 @@ public class CellularSurveyRecordLogger extends SurveyRecordLogger implements IC
     @Override
     public void onGsmSurveyRecord(GsmRecord gsmRecord)
     {
-        writeGsmRecordToLogFile(gsmRecord);
+        synchronized (geoPackageLock)
+        {
+            writeGsmRecordToLogFile(gsmRecord);
+        }
     }
 
     @Override
     public void onCdmaSurveyRecord(CdmaRecord cdmaRecord)
     {
-        writeCdmaRecordToLogFile(cdmaRecord);
+        synchronized (geoPackageLock)
+        {
+            writeCdmaRecordToLogFile(cdmaRecord);
+        }
     }
 
     @Override
     public void onUmtsSurveyRecord(UmtsRecord umtsRecord)
     {
-        writeUmtsRecordToLogFile(umtsRecord);
+        synchronized (geoPackageLock)
+        {
+            writeUmtsRecordToLogFile(umtsRecord);
+        }
     }
 
     @Override
     public void onLteSurveyRecord(LteRecord lteRecord)
     {
-        writeLteRecordToLogFile(lteRecord);
+        synchronized (geoPackageLock)
+        {
+            writeLteRecordToLogFile(lteRecord);
+        }
     }
 
     @Override
@@ -207,7 +219,10 @@ public class CellularSurveyRecordLogger extends SurveyRecordLogger implements IC
                         row.setValue(GsmMessageConstants.SERVING_CELL_COLUMN, data.getServingCell().getValue());
                     }
                     final String provider = data.getProvider();
-                    if (!provider.isEmpty()) row.setValue(GsmMessageConstants.PROVIDER_COLUMN, provider);
+                    if (!provider.isEmpty())
+                    {
+                        row.setValue(GsmMessageConstants.PROVIDER_COLUMN, provider);
+                    }
 
                     if (data.hasMcc())
                     {
@@ -243,6 +258,8 @@ public class CellularSurveyRecordLogger extends SurveyRecordLogger implements IC
                     }
 
                     featureDao.insert(row);
+
+                    incrementRecordCount();
                 }
             } catch (Exception e)
             {
@@ -285,7 +302,10 @@ public class CellularSurveyRecordLogger extends SurveyRecordLogger implements IC
                         row.setValue(CdmaMessageConstants.SERVING_CELL_COLUMN, data.getServingCell().getValue());
                     }
                     final String provider = data.getProvider();
-                    if (!provider.isEmpty()) row.setValue(CdmaMessageConstants.PROVIDER_COLUMN, provider);
+                    if (!provider.isEmpty())
+                    {
+                        row.setValue(CdmaMessageConstants.PROVIDER_COLUMN, provider);
+                    }
 
                     if (data.hasSid())
                     {
@@ -355,7 +375,10 @@ public class CellularSurveyRecordLogger extends SurveyRecordLogger implements IC
                         row.setValue(UmtsMessageConstants.SERVING_CELL_COLUMN, data.getServingCell().getValue());
                     }
                     final String provider = data.getProvider();
-                    if (!provider.isEmpty()) row.setValue(UmtsMessageConstants.PROVIDER_COLUMN, provider);
+                    if (!provider.isEmpty())
+                    {
+                        row.setValue(UmtsMessageConstants.PROVIDER_COLUMN, provider);
+                    }
 
                     if (data.hasMcc())
                     {
@@ -471,7 +494,10 @@ public class CellularSurveyRecordLogger extends SurveyRecordLogger implements IC
                     }
 
                     final String provider = data.getProvider();
-                    if (!provider.isEmpty()) row.setValue(LteMessageConstants.PROVIDER_COLUMN, provider);
+                    if (!provider.isEmpty())
+                    {
+                        row.setValue(LteMessageConstants.PROVIDER_COLUMN, provider);
+                    }
 
                     setLteBandwidth(row, data.getLteBandwidth());
 

@@ -1,12 +1,18 @@
 package com.craxiom.networksurvey.logging;
 
 import android.content.Context;
+import android.content.RestrictionsManager;
+import android.content.SharedPreferences;
+import android.os.Bundle;
 import android.os.Environment;
 import android.os.Handler;
 import android.os.Looper;
 import android.widget.Toast;
 
+import androidx.preference.PreferenceManager;
+
 import com.craxiom.messaging.LteBandwidth;
+import com.craxiom.networksurvey.R;
 import com.craxiom.networksurvey.constants.CellularMessageConstants;
 import com.craxiom.networksurvey.constants.LteMessageConstants;
 import com.craxiom.networksurvey.constants.MessageConstants;
@@ -18,6 +24,7 @@ import java.sql.SQLException;
 import java.time.LocalDateTime;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiConsumer;
 
 import mil.nga.geopackage.GeoPackage;
@@ -47,17 +54,28 @@ import timber.log.Timber;
 public abstract class SurveyRecordLogger
 {
     private static final String JOURNAL_FILE_SUFFIX = "-journal";
+    private static final int RECORD_COUNT_INTERVAL = 500;
     static final long WGS84_SRS = 4326;
 
     private final NetworkSurveyService networkSurveyService;
+    private final Context applicationContext;
     final Handler handler;
     private final String logDirectoryName;
     private final String fileNamePrefix;
     private final GeoPackageManager geoPackageManager;
+    private final RolloverWorker rolloverWorker = new RolloverWorker();
+
+    private SharedPreferences.OnSharedPreferenceChangeListener preferenceChangeListener;
 
     GeoPackage geoPackage;
     volatile boolean loggingEnabled;
     private String logFileDirectoryPath;
+
+    /**
+     * A lock to synchronize the writing of single records and the creation of a new GeoPackage file
+     * during rollover.
+     */
+    protected final Object geoPackageLock = new Object();
 
     /**
      * Constructs a Logger that writes Survey records to a GeoPackage SQLite database.
@@ -70,11 +88,49 @@ public abstract class SurveyRecordLogger
     SurveyRecordLogger(NetworkSurveyService networkSurveyService, Looper serviceLooper, String logDirectoryName, String fileNamePrefix)
     {
         this.networkSurveyService = networkSurveyService;
+        applicationContext = networkSurveyService.getApplicationContext();
         handler = new Handler(serviceLooper);
         this.logDirectoryName = logDirectoryName;
         this.fileNamePrefix = fileNamePrefix;
 
         geoPackageManager = GeoPackageFactory.getManager(networkSurveyService.getApplicationContext());
+
+        setupRolloverSettings();
+    }
+
+    /**
+     * Applies the current preferences to the {@link #rolloverWorker}. The {@link #preferenceChangeListener}
+     * is also registered here.
+     *
+     * @since 0.3.0
+     */
+    private void setupRolloverSettings()
+    {
+        preferenceChangeListener = (preferences, key) -> {
+            final String rolloverPreferenceKey = applicationContext.getString(R.string.log_rollover_dropdown_key);
+            if (key.equals(rolloverPreferenceKey))
+            {
+                updateRolloverWorker();
+            }
+        };
+
+        SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(applicationContext);
+        preferences.registerOnSharedPreferenceChangeListener(preferenceChangeListener);
+
+        updateRolloverWorker(); // Let's update from the first go, so that we have settings ready when logging is enabled.
+    }
+
+    /**
+     * Updates the rollover settings from the SharedPreferences.
+     *
+     * @since 0.3.0
+     */
+    private void updateRolloverWorker()
+    {
+        SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(applicationContext);
+        int logRolloverSize = Integer.parseInt(sharedPreferences.getString(applicationContext.getString(R.string.log_rollover_dropdown_key), RolloverWorker.DEFAULT_ROLLOVER_SIZE_MB));
+
+        rolloverWorker.update(logRolloverSize);
     }
 
     /**
@@ -107,6 +163,7 @@ public abstract class SurveyRecordLogger
                     geoPackage.close();
                     geoPackage = null;
                     removeTempFiles();
+                    rolloverWorker.reset();
                     return true;
                 }
 
@@ -115,40 +172,13 @@ public abstract class SurveyRecordLogger
 
             if (!isExternalStorageWritable()) return false;
 
-            final String loggingFile = createPublicStorageFilePath();
+            boolean fileCreated = prepareGeoPackageForLogging();
+            updateRolloverWorker();
 
-            Timber.i("Creating the log file: %s", loggingFile);
-
-            final boolean created = geoPackageManager.create(loggingFile);
-            final Context applicationContext = networkSurveyService.getApplicationContext();
-
-            if (!created)
-            {
-                final String errorMessage = "Error: Unable to create the GeoPackage file.  No logging will be recorded.";
-                Timber.e(errorMessage);
-                Toast.makeText(applicationContext, errorMessage, Toast.LENGTH_SHORT).show();
-                return false;
-            }
-
-            geoPackage = geoPackageManager.open(loggingFile);
-            if (geoPackage == null)
-            {
-                final String errorMessage = "Error: Unable to open the GeoPackage file.  No logging will be recorded.";
-                Timber.e(errorMessage);
-                Toast.makeText(applicationContext, errorMessage, Toast.LENGTH_SHORT).show();
-                return false;
-            }
-
-            final SpatialReferenceSystem spatialReferenceSystem = geoPackage.getSpatialReferenceSystemDao()
-                    .getOrCreateCode(ProjectionConstants.AUTHORITY_EPSG, ProjectionConstants.EPSG_WORLD_GEODETIC_SYSTEM);
-
-            geoPackage.createGeometryColumnsTable();
-            createTables(geoPackage, spatialReferenceSystem);
-
-            return loggingEnabled = true;
+            return loggingEnabled = fileCreated;
         } catch (Exception e)
         {
-            Timber.e(e, "Caught an exception when trying to close the GeoPackage file in the onDestroy call");
+            Timber.e(e, "Caught an exception when trying prepare GeoPackage file for logging");
             if (geoPackage != null)
             {
                 geoPackage.close();
@@ -156,6 +186,73 @@ public abstract class SurveyRecordLogger
             }
             return false;
         }
+    }
+
+    /**
+     * Creates and sets up a GeoPackage file to be ready for survey logging.
+     *
+     * @return True, if the operations were successful.
+     * @throws SQLException Thrown if database manipulations resulted in failure.
+     */
+    private boolean prepareGeoPackageForLogging() throws SQLException
+    {
+        final String loggingFile = createPublicStorageFilePath();
+
+        Timber.i("Creating the log file: %s", loggingFile);
+
+        final boolean created = geoPackageManager.create(loggingFile);
+        final Context applicationContext = networkSurveyService.getApplicationContext();
+
+        if (!created)
+        {
+            final String errorMessage = "Error: Unable to create the GeoPackage file.  No logging will be recorded.";
+            Timber.e(errorMessage);
+            Toast.makeText(applicationContext, errorMessage, Toast.LENGTH_SHORT).show();
+            return false;
+        }
+
+        geoPackage = geoPackageManager.open(loggingFile);
+        if (geoPackage == null)
+        {
+            final String errorMessage = "Error: Unable to open the GeoPackage file.  No logging will be recorded.";
+            Timber.e(errorMessage);
+            Toast.makeText(applicationContext, errorMessage, Toast.LENGTH_SHORT).show();
+            return false;
+        }
+
+        final SpatialReferenceSystem spatialReferenceSystem = geoPackage.getSpatialReferenceSystemDao()
+                .getOrCreateCode(ProjectionConstants.AUTHORITY_EPSG, ProjectionConstants.EPSG_WORLD_GEODETIC_SYSTEM);
+
+        geoPackage.createGeometryColumnsTable();
+        createTables(geoPackage, spatialReferenceSystem);
+
+        return true;
+    }
+
+    /**
+     * Increments the {@link #rolloverWorker}'s record count.
+     *
+     * @since 0.3.0
+     */
+    protected void incrementRecordCount()
+    {
+        rolloverWorker.incrementRecordCount();
+    }
+
+    /**
+     * Update the max log size if the preference has changed via MDM.
+     *
+     * @since 0.3.0
+     */
+    public void onMdmPreferenceChanged()
+    {
+        final RestrictionsManager restrictionsManager = (RestrictionsManager) applicationContext.getSystemService(Context.RESTRICTIONS_SERVICE);
+        if (restrictionsManager == null) return;
+
+        final Bundle mdmProperties = restrictionsManager.getApplicationRestrictions();
+        final int newRolloverSizeMb = mdmProperties.getInt(applicationContext.getString(R.string.log_rollover_dropdown_key));
+
+        rolloverWorker.update(newRolloverSizeMb);
     }
 
     /**
@@ -313,5 +410,114 @@ public abstract class SurveyRecordLogger
                 Environment.DIRECTORY_DOWNLOADS) + "/" + logDirectoryName + "/";
         return logFileDirectoryPath +
                 fileNamePrefix + SurveyRecordProcessor.DATE_TIME_FORMATTER.format(LocalDateTime.now()) + ".gpkg";
+    }
+
+    /**
+     * Private class that kicks off a rollover task when the max file size has been reached.
+     *
+     * @since 0.3.0
+     */
+    private class RolloverWorker
+    {
+        private static final int BYTES_TO_MEGABYTES = 1_000_000;
+        static final String DEFAULT_ROLLOVER_SIZE_MB = "5";
+
+        /**
+         * The max log size for a GeoPackage file before a new one is created. When this value is
+         * set to 0, rollover is de-activated.
+         */
+        private int logRolloverSizeMb = Integer.parseInt(DEFAULT_ROLLOVER_SIZE_MB);
+
+        /**
+         * A lock that synchronizes read and write operations on {@link #logRolloverSizeMb}. For
+         * instance, this lock protects against an update of 0 to the rollover size occurring after
+         * we check if the rollover indeed equals 0. That could potentially roll over the file when
+         * the user sets the rollover option to 'Never'.
+         */
+        private final Object rolloverSizeLock = new Object();
+
+        /**
+         * The record count since last reset, or last rollover.
+         */
+        private AtomicInteger recordCount = new AtomicInteger();
+
+        /**
+         * A task that closes the current GeoPackage file and creates a new one. This task is
+         * protected by the {@link #geoPackageLock} to prevent closing a file that is currently
+         * being logged to.
+         */
+        private Runnable rolloverTask = () -> {
+            synchronized (geoPackageLock)
+            {
+                try
+                {
+                    geoPackage.close();
+
+                    boolean fileCreated = prepareGeoPackageForLogging();
+                    if (!fileCreated)
+                    {
+                        Timber.e("Failed to create a new GeoPackage file");
+                    }
+                } catch (SQLException e)
+                {
+                    Timber.e(e, "Error occurred while trying to create a GeoPackage file");
+                }
+            }
+        };
+
+        /**
+         * Update the rollover worker with perhaps new values.
+         *
+         * @param logRolloverSizeMb The limit of each log file before it is rolled over, in MB
+         */
+        public void update(int logRolloverSizeMb)
+        {
+            synchronized (rolloverSizeLock)
+            {
+                Timber.i("Log Rollover Size updated to %s MB", logRolloverSizeMb);
+                handler.removeCallbacks(rolloverTask); // no matter the mode, we always want to clean up
+                this.logRolloverSizeMb = logRolloverSizeMb;
+            }
+        }
+
+        /**
+         * Increments record count. At the mark of {@link #RECORD_COUNT_INTERVAL} records, we check
+         * the GeoPackage file size. If the file size is equal to or greater than the size
+         * threshold, we roll over. If no rollover is enabled, the method immediately returns.
+         */
+        public void incrementRecordCount()
+        {
+            synchronized (rolloverSizeLock)
+            {
+                if (logRolloverSizeMb == 0)
+                {
+                    return; // A rollover of size 0 means rollover is not active
+                }
+
+                if (recordCount.compareAndSet(RECORD_COUNT_INTERVAL, 0))
+                {
+                    File file = geoPackageManager.getFile(geoPackage.getName());
+                    final long fileSizeBytes = file.length();
+
+                    Timber.i("Checking GeoPackage file size, currently at: %s bytes", fileSizeBytes);
+                    if (file.length() / BYTES_TO_MEGABYTES >= logRolloverSizeMb)
+                    {
+                        handler.post(rolloverTask);
+                    }
+
+                    return;
+                }
+            }
+
+            recordCount.getAndIncrement();
+        }
+
+        /**
+         * Resets the record count atomically.
+         */
+        public void reset()
+        {
+            recordCount.getAndIncrement();
+        }
     }
 }

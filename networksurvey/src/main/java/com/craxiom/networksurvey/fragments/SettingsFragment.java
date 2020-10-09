@@ -1,12 +1,16 @@
 package com.craxiom.networksurvey.fragments;
 
+import android.content.Context;
+import android.content.RestrictionsManager;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.text.InputType;
 
+import androidx.preference.DropDownPreference;
 import androidx.preference.EditTextPreference;
 import androidx.preference.PreferenceFragmentCompat;
 import androidx.preference.PreferenceManager;
+import androidx.preference.PreferenceScreen;
 
 import com.craxiom.networksurvey.R;
 import com.craxiom.networksurvey.constants.NetworkSurveyConstants;
@@ -49,6 +53,8 @@ public class SettingsFragment extends PreferenceFragmentCompat implements Shared
                         mqttPasswordPreference.setSummaryProvider(preference -> getAsterisks(editText.getText().toString().length()));
                     });
         }
+
+        updateUiForMdmIfNecessary();
     }
 
     @Override
@@ -126,5 +132,73 @@ public class SettingsFragment extends PreferenceFragmentCompat implements Shared
         {
             Timber.e("Could not find the preference to set it as integer numbers only.");
         }
+    }
+
+    /**
+     * Updates the UI if MDM values are available
+     *
+     * @since 0.3.0
+     */
+    private void updateUiForMdmIfNecessary()
+    {
+        if (!isUnderMdmControl()) return;
+
+        final RestrictionsManager restrictionsManager = (RestrictionsManager) requireContext().getSystemService(Context.RESTRICTIONS_SERVICE);
+        if (restrictionsManager != null)
+        {
+            final Bundle mdmProperties = restrictionsManager.getApplicationRestrictions();
+            final PreferenceScreen preferenceScreen = getPreferenceScreen();
+
+            updateIntPreferenceForMdm(preferenceScreen, getString(R.string.log_rollover_dropdown_key), mdmProperties);
+        }
+    }
+
+    /**
+     * Updates an int preference value with an MDM value, if it exists.
+     *
+     * @param preferenceScreen The preference screen
+     * @param preferenceKey    The key of the preference
+     * @param mdmProperties    The MDM properties
+     * @since 0.3.0
+     */
+    private void updateIntPreferenceForMdm(PreferenceScreen preferenceScreen, String preferenceKey, Bundle mdmProperties)
+    {
+        try
+        {
+            final DropDownPreference preference = preferenceScreen.findPreference(preferenceKey);
+
+            if (preference != null)
+            {
+                final int mdmIntProperty = mdmProperties.getInt(preferenceKey, 0);
+
+                preference.setEnabled(false);
+                preference.setSummaryProvider(pref -> mdmIntProperty == 0 ? "Never" : String.valueOf(mdmIntProperty));
+            }
+        } catch (Exception e)
+        {
+            Timber.wtf(e, "Could not find the int preference or update the UI component for %s", preferenceKey);
+        }
+    }
+
+    /**
+     * @return True, if the restrictions manager is non-null, and if MDM properties exist for certain
+     * preferences.
+     * @since 0.3.0
+     */
+    private boolean isUnderMdmControl()
+    {
+        final RestrictionsManager restrictionsManager = (RestrictionsManager) requireContext().getSystemService(Context.RESTRICTIONS_SERVICE);
+        if (restrictionsManager != null)
+        {
+            final Bundle mdmProperties = restrictionsManager.getApplicationRestrictions();
+
+            if (mdmProperties.getInt(getString(R.string.log_rollover_dropdown_key), 0) != 0)
+            {
+                Timber.i("Network Survey is under MDM control");
+                return true;
+            }
+        }
+
+        return false;
     }
 }

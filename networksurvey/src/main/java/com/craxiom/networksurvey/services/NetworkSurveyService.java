@@ -168,7 +168,10 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
             final SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
 
             final boolean autoStartCellularLogging = preferences.getBoolean(NetworkSurveyConstants.PROPERTY_AUTO_START_CELLULAR_LOGGING, false);
-            if (autoStartCellularLogging && !cellularLoggingEnabled.get()) toggleCellularLogging(true);
+            if (autoStartCellularLogging && !cellularLoggingEnabled.get())
+            {
+                toggleCellularLogging(true);
+            }
 
             final boolean autoStartWifiLogging = preferences.getBoolean(NetworkSurveyConstants.PROPERTY_AUTO_START_WIFI_LOGGING, false);
             if (autoStartWifiLogging && !wifiLoggingEnabled.get()) toggleWifiLogging(true);
@@ -800,9 +803,15 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
                 smallestScanRate = cellularScanRateMs;
             }
 
-            if (wifiScanningActive.get() && wifiScanRateMs < smallestScanRate) smallestScanRate = wifiScanRateMs;
+            if (wifiScanningActive.get() && wifiScanRateMs < smallestScanRate)
+            {
+                smallestScanRate = wifiScanRateMs;
+            }
 
-            if (gnssStarted.get() && gnssScanRateMs < smallestScanRate) smallestScanRate = gnssScanRateMs;
+            if (gnssStarted.get() && gnssScanRateMs < smallestScanRate)
+            {
+                smallestScanRate = gnssScanRateMs;
+            }
 
             // Use the smallest scan rate set by the user for the active scanning types
             if (smallestScanRate > 10_000) smallestScanRate = smallestScanRate / 2;
@@ -985,7 +994,10 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
             if (preferences.getBoolean(NetworkSurveyConstants.PROPERTY_MQTT_START_ON_BOOT, false))
             {
                 final MqttBrokerConnectionInfo userMqttBrokerConnectionInfo = getUserMqttBrokerConnectionInfo();
-                if (userMqttBrokerConnectionInfo != null) connectToMqttBroker(userMqttBrokerConnectionInfo);
+                if (userMqttBrokerConnectionInfo != null)
+                {
+                    connectToMqttBroker(userMqttBrokerConnectionInfo);
+                }
             }
         }
     }
@@ -1332,6 +1344,10 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
             {
                 setScanRateValues();
                 attemptMqttConnectWithMdmConfig(true);
+
+                cellularSurveyRecordLogger.onMdmPreferenceChanged();
+                wifiSurveyRecordLogger.onMdmPreferenceChanged();
+                gnssRecordLogger.onMdmPreferenceChanged();
             }
         };
 

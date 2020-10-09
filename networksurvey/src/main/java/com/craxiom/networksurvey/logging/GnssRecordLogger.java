@@ -31,10 +31,10 @@ import static com.craxiom.networksurvey.constants.GnssMessageConstants.GNSS_RECO
 import static com.craxiom.networksurvey.constants.GnssMessageConstants.GROUP_NUMBER_COLUMN;
 import static com.craxiom.networksurvey.constants.GnssMessageConstants.LATITUDE_STD_DEV_M;
 import static com.craxiom.networksurvey.constants.GnssMessageConstants.LONGITUDE_STD_DEV_M;
+import static com.craxiom.networksurvey.constants.GnssMessageConstants.RECORD_NUMBER_COLUMN;
 import static com.craxiom.networksurvey.constants.GnssMessageConstants.SPACE_VEHICLE_ID;
+import static com.craxiom.networksurvey.constants.GnssMessageConstants.TIME_COLUMN;
 import static com.craxiom.networksurvey.constants.GnssMessageConstants.getConstellationString;
-import static com.craxiom.networksurvey.constants.MessageConstants.RECORD_NUMBER_COLUMN;
-import static com.craxiom.networksurvey.constants.MessageConstants.TIME_COLUMN;
 
 /**
  * Responsible for taking GNSS survey records, and writing them to the GeoPackage log file.
@@ -100,59 +100,73 @@ public class GnssRecordLogger extends SurveyRecordLogger implements IGnssSurveyR
         if (!loggingEnabled) return;
 
         handler.post(() -> {
-            try
+            synchronized (geoPackageLock)
             {
-                if (geoPackage != null)
+                try
                 {
-                    final GnssRecordData data = gnssRecord.getData();
-                    FeatureDao featureDao = geoPackage.getFeatureDao(GNSS_RECORDS_TABLE_NAME);
-                    FeatureRow row = featureDao.newRow();
-
-                    Point fix = new Point(data.getLongitude(), data.getLatitude(), (double) data.getAltitude());
-
-                    GeoPackageGeometryData geomData = new GeoPackageGeometryData(WGS84_SRS);
-                    geomData.setGeometry(fix);
-
-                    row.setGeometry(geomData);
-
-                    row.setValue(TIME_COLUMN, IOUtils.getEpochFromRfc3339(data.getDeviceTime()));
-                    row.setValue(RECORD_NUMBER_COLUMN, data.getRecordNumber());
-                    row.setValue(GROUP_NUMBER_COLUMN, data.getGroupNumber());
-
-                    final Constellation constellation = data.getConstellation();
-                    if (constellation != Constellation.UNKNOWN)
+                    if (geoPackage != null)
                     {
-                        row.setValue(CONSTELLATION, getConstellationString(constellation));
+                        final GnssRecordData data = gnssRecord.getData();
+                        FeatureDao featureDao = geoPackage.getFeatureDao(GNSS_RECORDS_TABLE_NAME);
+                        FeatureRow row = featureDao.newRow();
+
+                        Point fix = new Point(data.getLongitude(), data.getLatitude(), (double) data.getAltitude());
+
+                        GeoPackageGeometryData geomData = new GeoPackageGeometryData(WGS84_SRS);
+                        geomData.setGeometry(fix);
+
+                        row.setGeometry(geomData);
+
+                        row.setValue(TIME_COLUMN, IOUtils.getEpochFromRfc3339(data.getDeviceTime()));
+                        row.setValue(RECORD_NUMBER_COLUMN, data.getRecordNumber());
+                        row.setValue(GROUP_NUMBER_COLUMN, data.getGroupNumber());
+
+                        final Constellation constellation = data.getConstellation();
+                        if (constellation != Constellation.UNKNOWN)
+                        {
+                            row.setValue(CONSTELLATION, getConstellationString(constellation));
+                        }
+
+                        if (data.hasSpaceVehicleId())
+                        {
+                            row.setValue(SPACE_VEHICLE_ID, data.getSpaceVehicleId().getValue());
+                        }
+
+                        if (data.hasCarrierFreqHz())
+                        {
+                            row.setValue(CARRIER_FREQUENCY_HZ, data.getCarrierFreqHz().getValue());
+                        }
+
+                        if (data.hasLatitudeStdDevM())
+                        {
+                            row.setValue(LATITUDE_STD_DEV_M, data.getLatitudeStdDevM().getValue());
+                        }
+
+                        if (data.hasLongitudeStdDevM())
+                        {
+                            row.setValue(LONGITUDE_STD_DEV_M, data.getLongitudeStdDevM().getValue());
+                        }
+
+                        if (data.hasAltitudeStdDevM())
+                        {
+                            row.setValue(ALTITUDE_STD_DEV_M, data.getAltitudeStdDevM().getValue());
+                        }
+
+                        if (data.hasAgcDb()) row.setValue(AGC_DB, data.getAgcDb().getValue());
+
+                        if (data.hasCn0DbHz())
+                        {
+                            row.setValue(CARRIER_TO_NOISE_DENSITY_DB_HZ, data.getCn0DbHz().getValue());
+                        }
+
+                        featureDao.insert(row);
+
+                        incrementRecordCount();
                     }
-
-                    if (data.hasSpaceVehicleId()) row.setValue(SPACE_VEHICLE_ID, data.getSpaceVehicleId().getValue());
-
-                    if (data.hasCarrierFreqHz()) row.setValue(CARRIER_FREQUENCY_HZ, data.getCarrierFreqHz().getValue());
-
-                    if (data.hasLatitudeStdDevM())
-                    {
-                        row.setValue(LATITUDE_STD_DEV_M, data.getLatitudeStdDevM().getValue());
-                    }
-
-                    if (data.hasLongitudeStdDevM())
-                    {
-                        row.setValue(LONGITUDE_STD_DEV_M, data.getLongitudeStdDevM().getValue());
-                    }
-
-                    if (data.hasAltitudeStdDevM())
-                    {
-                        row.setValue(ALTITUDE_STD_DEV_M, data.getAltitudeStdDevM().getValue());
-                    }
-
-                    if (data.hasAgcDb()) row.setValue(AGC_DB, data.getAgcDb().getValue());
-
-                    if (data.hasCn0DbHz()) row.setValue(CARRIER_TO_NOISE_DENSITY_DB_HZ, data.getCn0DbHz().getValue());
-
-                    featureDao.insert(row);
+                } catch (Exception e)
+                {
+                    Timber.e(e, "Something went wrong when trying to write a GNSS survey record");
                 }
-            } catch (Exception e)
-            {
-                Timber.e(e, "Something went wrong when trying to write a GNSS survey record");
             }
         });
     }
