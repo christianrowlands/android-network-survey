@@ -1,7 +1,5 @@
 package com.craxiom.networksurvey.fragments;
 
-import android.content.Context;
-import android.content.RestrictionsManager;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.text.InputType;
@@ -14,6 +12,7 @@ import androidx.preference.PreferenceScreen;
 
 import com.craxiom.networksurvey.R;
 import com.craxiom.networksurvey.constants.NetworkSurveyConstants;
+import com.craxiom.networksurvey.util.MdmUtils;
 
 import timber.log.Timber;
 
@@ -141,14 +140,16 @@ public class SettingsFragment extends PreferenceFragmentCompat implements Shared
      */
     private void updateUiForMdmIfNecessary()
     {
-        if (!isUnderMdmControl()) return;
-
-        final RestrictionsManager restrictionsManager = (RestrictionsManager) requireContext().getSystemService(Context.RESTRICTIONS_SERVICE);
-        if (restrictionsManager != null)
+        if (!MdmUtils.isUnderMdmControl(requireContext(), getString(R.string.log_rollover_dropdown_key)))
         {
-            final Bundle mdmProperties = restrictionsManager.getApplicationRestrictions();
-            final PreferenceScreen preferenceScreen = getPreferenceScreen();
+            return;
+        }
 
+        final Bundle mdmProperties = MdmUtils.getMdmProperties(requireContext(), getString(R.string.log_rollover_dropdown_key));
+
+        if (mdmProperties != null)
+        {
+            final PreferenceScreen preferenceScreen = getPreferenceScreen();
             updateIntPreferenceForMdm(preferenceScreen, getString(R.string.log_rollover_dropdown_key), mdmProperties);
         }
     }
@@ -172,33 +173,18 @@ public class SettingsFragment extends PreferenceFragmentCompat implements Shared
                 final int mdmIntProperty = mdmProperties.getInt(preferenceKey, 0);
 
                 preference.setEnabled(false);
-                preference.setSummaryProvider(pref -> mdmIntProperty == 0 ? "Never" : String.valueOf(mdmIntProperty));
+
+                final String mdmValue = mdmIntProperty == 0 ? "Never" : String.valueOf(mdmIntProperty);
+                preference.setSummaryProvider(pref -> mdmValue);
+
+                getPreferenceManager().getSharedPreferences()
+                        .edit()
+                        .putString(getString(R.string.log_rollover_dropdown_key), String.valueOf(mdmIntProperty))
+                        .apply();
             }
         } catch (Exception e)
         {
             Timber.wtf(e, "Could not find the int preference or update the UI component for %s", preferenceKey);
         }
-    }
-
-    /**
-     * @return True, if the restrictions manager is non-null, and if MDM properties exist for certain
-     * preferences.
-     * @since 0.3.0
-     */
-    private boolean isUnderMdmControl()
-    {
-        final RestrictionsManager restrictionsManager = (RestrictionsManager) requireContext().getSystemService(Context.RESTRICTIONS_SERVICE);
-        if (restrictionsManager != null)
-        {
-            final Bundle mdmProperties = restrictionsManager.getApplicationRestrictions();
-
-            if (mdmProperties.getInt(getString(R.string.log_rollover_dropdown_key), 0) != 0)
-            {
-                Timber.i("Network Survey is under MDM control");
-                return true;
-            }
-        }
-
-        return false;
     }
 }

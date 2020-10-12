@@ -18,6 +18,7 @@ import com.craxiom.networksurvey.constants.LteMessageConstants;
 import com.craxiom.networksurvey.constants.MessageConstants;
 import com.craxiom.networksurvey.services.NetworkSurveyService;
 import com.craxiom.networksurvey.services.SurveyRecordProcessor;
+import com.craxiom.networksurvey.util.MdmUtils;
 
 import java.io.File;
 import java.sql.SQLException;
@@ -117,14 +118,31 @@ public abstract class SurveyRecordLogger
     }
 
     /**
-     * Updates the rollover settings from the SharedPreferences.
+     * Updates the rollover settings from the SharedPreferences, or the MDM properties, if enabled.
      *
      * @since 0.3.0
      */
     private void updateRolloverWorker()
     {
-        SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(applicationContext);
-        int logRolloverSize = Integer.parseInt(sharedPreferences.getString(applicationContext.getString(R.string.log_rollover_dropdown_key), RolloverWorker.DEFAULT_ROLLOVER_SIZE_MB));
+        int logRolloverSize = 0;
+        final String rolloverPreferenceKey = applicationContext.getString(R.string.log_rollover_dropdown_key);
+
+        if (MdmUtils.isUnderMdmControl(applicationContext, rolloverPreferenceKey))
+        {
+            Bundle mdmProperties = MdmUtils.getMdmProperties(applicationContext, rolloverPreferenceKey);
+            if (mdmProperties != null)
+            {
+                logRolloverSize = mdmProperties.getInt(rolloverPreferenceKey);
+            }
+        } else
+        {
+            SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(applicationContext);
+            String rolloverPreferenceString = sharedPreferences.getString(rolloverPreferenceKey, RolloverWorker.DEFAULT_ROLLOVER_SIZE_MB);
+            if (rolloverPreferenceString != null)
+            {
+                logRolloverSize = Integer.parseInt(rolloverPreferenceString);
+            }
+        }
 
         rolloverWorker.update(logRolloverSize);
     }
