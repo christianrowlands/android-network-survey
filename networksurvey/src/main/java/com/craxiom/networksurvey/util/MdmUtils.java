@@ -13,7 +13,6 @@ import timber.log.Timber;
  */
 public class MdmUtils
 {
-
     /**
      * @return True, if the restrictions manager is non-null, and if MDM properties exist for certain
      * preferences.

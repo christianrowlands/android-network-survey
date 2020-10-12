@@ -1,7 +1,6 @@
 package com.craxiom.networksurvey.logging;
 
 import android.content.Context;
-import android.content.RestrictionsManager;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.os.Environment;
@@ -260,13 +259,12 @@ public abstract class SurveyRecordLogger
      */
     public void onMdmPreferenceChanged()
     {
-        final RestrictionsManager restrictionsManager = (RestrictionsManager) applicationContext.getSystemService(Context.RESTRICTIONS_SERVICE);
-        if (restrictionsManager == null) return;
-
-        final Bundle mdmProperties = restrictionsManager.getApplicationRestrictions();
-        final int newRolloverSizeMb = mdmProperties.getInt(applicationContext.getString(R.string.log_rollover_dropdown_key));
-
-        rolloverWorker.update(newRolloverSizeMb);
+        final String rolloverPreferenceKey = applicationContext.getString(R.string.log_rollover_dropdown_key);
+        final Bundle mdmProperties = MdmUtils.getMdmProperties(applicationContext, rolloverPreferenceKey);
+        if (mdmProperties != null)
+        {
+            rolloverWorker.update(mdmProperties.getInt(rolloverPreferenceKey));
+        }
     }
 
     /**
