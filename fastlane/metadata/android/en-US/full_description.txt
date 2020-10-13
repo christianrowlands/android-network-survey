@@ -1,4 +1,8 @@
-<p>The <i>Network Survey</i> app pulls the current LTE tower details, and displays them in a simple UI. It also has a calculator that converts an LTE Cell ID to the corresponding eNodeB ID and Sector ID, and a calculator that converts an LTE PCI to the corresponding Primary Sync Sequence (PSS) and Secondary Sync Sequence (SSS).</p>
-<p>A new feature is the capability to log GSM, CDMA, UMTS, and LTE information to a GeoPackage file. This file can be imported to any tool that supports the GeoPackage standard.</p>
-<p>This app is very basic and was built for my own use, but I decided to share it with others.</p>
-<p>Enjoy!</p>
+<p>The <i>Network Survey</i> app enables logging cellular, Wi-Fi, and/or GNSS information to a log file (GeoPackage format). For cellular records it supports logging GSM, CDMA, UMTS, and LTE records.</p>
+<p>The cellular logging feature logs several details about the current serving cell, and then some basic information about the neighbor cells. This app won't log all 4 cellular protocols at once. Instead, it will only log information about the protocols that are current connected. If logging for one specific protocol is desired, then the phone must be locked to that protocol (try using *#*#4636#*#* from the dial pad).</p>
+<p>The app also has a calculator that converts an LTE Cell ID to the corresponding eNodeB ID and Sector ID, and a calculator that converts an LTE PCI to the corresponding Primary Sync Sequence (PSS) and Secondary Sync Sequence (SSS).</p>
+<p>The cellular survey records can be streamed to either a gRPC server or a MQTT broker. This is not on by default and a gRPC server or MQTT Broker needs to be setup for this feature to work.</p>
+<p>See https://github.com/christianrowlands/network-survey-messaging for more details on setting up a network survey gRPC server.</p>
+<p>See https://mosquitto.org for information on setting up a MQTT Broker.</p>
+<p>This app is very basic and was built for my own use, but I decided to share it with others. Enjoy!</p>
+<p>The source code for this app lives here: https://github.com/christianrowlands/android-network-survey</p>
