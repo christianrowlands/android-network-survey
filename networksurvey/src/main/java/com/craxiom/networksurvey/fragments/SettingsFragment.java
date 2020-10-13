@@ -134,23 +134,23 @@ public class SettingsFragment extends PreferenceFragmentCompat implements Shared
     }
 
     /**
-     * Updates the UI if MDM values are available
+     * Updates the UI if MDM values are available.
      *
-     * @since 0.3.0
+     * @since 0.4.0
      */
     private void updateUiForMdmIfNecessary()
     {
-        if (!MdmUtils.isUnderMdmControl(requireContext(), getString(R.string.log_rollover_dropdown_key)))
+        if (!MdmUtils.isUnderMdmControl(requireContext(), NetworkSurveyConstants.PROPERTY_LOG_ROLLOVER_SIZE_MB))
         {
             return;
         }
 
-        final Bundle mdmProperties = MdmUtils.getMdmProperties(requireContext(), getString(R.string.log_rollover_dropdown_key));
+        final Bundle mdmProperties = MdmUtils.getMdmProperties(requireContext(), NetworkSurveyConstants.PROPERTY_LOG_ROLLOVER_SIZE_MB);
 
         if (mdmProperties != null)
         {
             final PreferenceScreen preferenceScreen = getPreferenceScreen();
-            updateIntPreferenceForMdm(preferenceScreen, getString(R.string.log_rollover_dropdown_key), mdmProperties);
+            updateIntPreferenceForMdm(preferenceScreen, NetworkSurveyConstants.PROPERTY_LOG_ROLLOVER_SIZE_MB, mdmProperties);
         }
     }
 
@@ -160,7 +160,7 @@ public class SettingsFragment extends PreferenceFragmentCompat implements Shared
      * @param preferenceScreen The preference screen
      * @param preferenceKey    The key of the preference
      * @param mdmProperties    The MDM properties
-     * @since 0.3.0
+     * @since 0.4.0
      */
     private void updateIntPreferenceForMdm(PreferenceScreen preferenceScreen, String preferenceKey, Bundle mdmProperties)
     {
@@ -179,7 +179,7 @@ public class SettingsFragment extends PreferenceFragmentCompat implements Shared
 
                 getPreferenceManager().getSharedPreferences()
                         .edit()
-                        .putString(getString(R.string.log_rollover_dropdown_key), String.valueOf(mdmIntProperty))
+                        .putString(preferenceKey, String.valueOf(mdmIntProperty))
                         .apply();
             }
         } catch (Exception e)

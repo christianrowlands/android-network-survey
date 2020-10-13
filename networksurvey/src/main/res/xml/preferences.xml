@@ -35,7 +35,7 @@
                 app:entries="@array/log_rollover_size_labels"
                 app:entryValues="@array/log_rollover_size_values"
                 app:isPreferenceVisible="true"
-                app:key="@string/log_rollover_dropdown_key"
+                app:key="log_rollover_size_mb"
                 app:title="@string/log_rollover_title"
                 app:useSimpleSummaryProvider="true" />
     </PreferenceCategory>

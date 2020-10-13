@@ -7,9 +7,9 @@ import android.os.Bundle;
 import timber.log.Timber;
 
 /**
- * Utilities for MDM properties
+ * Utilities for MDM properties.
  *
- * @since 0.3.0
+ * @since 0.4.0
  */
 public class MdmUtils
 {
@@ -30,7 +30,7 @@ public class MdmUtils
     }
 
     /**
-     * Get the MDM properties if a property specified by propertyKey exists
+     * Get the MDM properties if a property specified by propertyKey exists.
      *
      * @param context     The application context
      * @param propertyKey The property key in question

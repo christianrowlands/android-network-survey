@@ -173,7 +173,6 @@
     <!-- User Preference Constants -->
     <string name="logging_config_title">Logging Config</string>
 
-    <string name="log_rollover_dropdown_key">log_rollover_dropdown</string>
     <string name="log_rollover_description">File size limit before next rollover</string>
     <string name="log_rollover_title">Log Rollover Size (MB)</string>
 
