@@ -466,7 +466,7 @@ public abstract class SurveyRecordLogger
          * The max log size for a GeoPackage file before a new one is created, in bytes. When this
          * value is set to 0, rollover is de-activated.
          */
-        private int rolloverSizeBytes = Integer.parseInt(DEFAULT_ROLLOVER_SIZE_MB);
+        private int rolloverSizeBytes = Integer.parseInt(DEFAULT_ROLLOVER_SIZE_MB) * BYTES_TO_MEGABYTES;
 
         /**
          * Update the rollover worker with perhaps new values.
@@ -504,7 +504,7 @@ public abstract class SurveyRecordLogger
                     final long fileSizeBytes = file.length();
 
                     Timber.i("Checking GeoPackage file size, currently at: %s bytes", fileSizeBytes);
-                    if (file.length() >= rolloverSizeBytes)
+                    if (fileSizeBytes >= rolloverSizeBytes)
                     {
                         handler.post(rolloverTask);
                     }
