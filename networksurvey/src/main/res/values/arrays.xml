@@ -52,4 +52,26 @@
         <item>Frequency</item>
         <item>Security Type</item>
     </string-array>
+
+    <string-array name="log_rollover_size_labels">
+        <item>Never</item>
+        <item>1</item>
+        <item>5</item>
+        <item>10</item>
+        <item>50</item>
+        <item>100</item>
+        <item>250</item>
+        <item>1000</item>
+    </string-array>
+
+    <string-array name="log_rollover_size_values">
+        <item>0</item>
+        <item>1</item>
+        <item>5</item>
+        <item>10</item>
+        <item>50</item>
+        <item>100</item>
+        <item>250</item>
+        <item>1000</item>
+    </string-array>
 </resources>

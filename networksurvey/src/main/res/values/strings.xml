@@ -173,6 +173,9 @@
     <!-- User Preference Constants -->
     <string name="logging_config_title">Logging Config</string>
 
+    <string name="log_rollover_description">File size limit before next rollover</string>
+    <string name="log_rollover_title">Log Rollover Size (MB)</string>
+
     <string name="auto_start_cellular_logging_title">Auto Start Cellular Logging</string>
     <string name="auto_start_cellular_logging_summary_on">Cellular logging will be started upon app opening</string>
     <string name="auto_start_cellular_logging_summary_off">Cellular logging will only start when manually enabled</string>

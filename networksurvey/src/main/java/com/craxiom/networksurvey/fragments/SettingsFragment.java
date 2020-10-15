@@ -4,12 +4,15 @@ import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.text.InputType;
 
+import androidx.preference.DropDownPreference;
 import androidx.preference.EditTextPreference;
 import androidx.preference.PreferenceFragmentCompat;
 import androidx.preference.PreferenceManager;
+import androidx.preference.PreferenceScreen;
 
 import com.craxiom.networksurvey.R;
 import com.craxiom.networksurvey.constants.NetworkSurveyConstants;
+import com.craxiom.networksurvey.util.MdmUtils;
 
 import timber.log.Timber;
 
@@ -49,6 +52,8 @@ public class SettingsFragment extends PreferenceFragmentCompat implements Shared
                         mqttPasswordPreference.setSummaryProvider(preference -> getAsterisks(editText.getText().toString().length()));
                     });
         }
+
+        updateUiForMdmIfNecessary();
     }
 
     @Override
@@ -125,6 +130,61 @@ public class SettingsFragment extends PreferenceFragmentCompat implements Shared
         } else
         {
             Timber.e("Could not find the preference to set it as integer numbers only.");
+        }
+    }
+
+    /**
+     * Updates the UI if MDM values are available.
+     *
+     * @since 0.4.0
+     */
+    private void updateUiForMdmIfNecessary()
+    {
+        if (!MdmUtils.isUnderMdmControl(requireContext(), NetworkSurveyConstants.PROPERTY_LOG_ROLLOVER_SIZE_MB))
+        {
+            return;
+        }
+
+        final Bundle mdmProperties = MdmUtils.getMdmProperties(requireContext(), NetworkSurveyConstants.PROPERTY_LOG_ROLLOVER_SIZE_MB);
+
+        if (mdmProperties != null)
+        {
+            final PreferenceScreen preferenceScreen = getPreferenceScreen();
+            updateIntPreferenceForMdm(preferenceScreen, NetworkSurveyConstants.PROPERTY_LOG_ROLLOVER_SIZE_MB, mdmProperties);
+        }
+    }
+
+    /**
+     * Updates an int preference value with an MDM value, if it exists.
+     *
+     * @param preferenceScreen The preference screen
+     * @param preferenceKey    The key of the preference
+     * @param mdmProperties    The MDM properties
+     * @since 0.4.0
+     */
+    private void updateIntPreferenceForMdm(PreferenceScreen preferenceScreen, String preferenceKey, Bundle mdmProperties)
+    {
+        try
+        {
+            final DropDownPreference preference = preferenceScreen.findPreference(preferenceKey);
+
+            if (preference != null)
+            {
+                final int mdmIntProperty = mdmProperties.getInt(preferenceKey, 0);
+
+                preference.setEnabled(false);
+
+                final String mdmValue = mdmIntProperty == 0 ? "Never" : String.valueOf(mdmIntProperty);
+                preference.setSummaryProvider(pref -> mdmValue);
+
+                getPreferenceManager().getSharedPreferences()
+                        .edit()
+                        .putString(preferenceKey, String.valueOf(mdmIntProperty))
+                        .apply();
+            }
+        } catch (Exception e)
+        {
+            Timber.wtf(e, "Could not find the int preference or update the UI component for %s", preferenceKey);
         }
     }
 }
