@@ -140,6 +140,9 @@
     <string name="mqtt_mdm_override_description">Your MQTT connection settings have been set by a Mobile Device Management server.  Toggle the switch below to override those settings so you can specify your own MQTT Broker connection information.</string>
     <string name="mqtt_mdm_override_title">Override MDM MQTT Settings</string>
     <string name="tls">TLS</string>
+    <string name="stream_cellular_title">Stream Cellular:</string>
+    <string name="stream_wifi_title">Stream Wifi:</string>
+    <string name="stream_gnss_title">Stream GNSS:</string>
     <string name="client_id_hint">Client ID</string>
     <string name="username_hint">MQTT Username</string>
     <string name="password_hint">MQTT Password</string>

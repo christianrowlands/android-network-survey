@@ -168,7 +168,10 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
             final SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
 
             final boolean autoStartCellularLogging = preferences.getBoolean(NetworkSurveyConstants.PROPERTY_AUTO_START_CELLULAR_LOGGING, false);
-            if (autoStartCellularLogging && !cellularLoggingEnabled.get()) toggleCellularLogging(true);
+            if (autoStartCellularLogging && !cellularLoggingEnabled.get())
+            {
+                toggleCellularLogging(true);
+            }
 
             final boolean autoStartWifiLogging = preferences.getBoolean(NetworkSurveyConstants.PROPERTY_AUTO_START_WIFI_LOGGING, false);
             if (autoStartWifiLogging && !wifiLoggingEnabled.get()) toggleWifiLogging(true);
@@ -256,8 +259,19 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
     public void connectToMqttBroker(MqttBrokerConnectionInfo connectionInfo)
     {
         mqttConnection.connect(getApplicationContext(), connectionInfo);
-        registerCellularSurveyRecordListener(mqttConnection);
-        registerWifiSurveyRecordListener(mqttConnection);
+
+        if (connectionInfo.isCellularStreamEnabled())
+        {
+            registerCellularSurveyRecordListener(mqttConnection);
+        }
+        if (connectionInfo.isWifiStreamEnabled())
+        {
+            registerWifiSurveyRecordListener(mqttConnection);
+        }
+        if (connectionInfo.isGnssStreamEnabled())
+        {
+            registerGnssSurveyRecordListener(mqttConnection);
+        }
     }
 
     /**
@@ -800,9 +814,15 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
                 smallestScanRate = cellularScanRateMs;
             }
 
-            if (wifiScanningActive.get() && wifiScanRateMs < smallestScanRate) smallestScanRate = wifiScanRateMs;
+            if (wifiScanningActive.get() && wifiScanRateMs < smallestScanRate)
+            {
+                smallestScanRate = wifiScanRateMs;
+            }
 
-            if (gnssStarted.get() && gnssScanRateMs < smallestScanRate) smallestScanRate = gnssScanRateMs;
+            if (gnssStarted.get() && gnssScanRateMs < smallestScanRate)
+            {
+                smallestScanRate = gnssScanRateMs;
+            }
 
             // Use the smallest scan rate set by the user for the active scanning types
             if (smallestScanRate > 10_000) smallestScanRate = smallestScanRate / 2;
@@ -988,7 +1008,10 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
             if (preferences.getBoolean(NetworkSurveyConstants.PROPERTY_MQTT_START_ON_BOOT, false))
             {
                 final MqttBrokerConnectionInfo userMqttBrokerConnectionInfo = getUserMqttBrokerConnectionInfo();
-                if (userMqttBrokerConnectionInfo != null) connectToMqttBroker(userMqttBrokerConnectionInfo);
+                if (userMqttBrokerConnectionInfo != null)
+                {
+                    connectToMqttBroker(userMqttBrokerConnectionInfo);
+                }
             }
         }
     }
@@ -1395,13 +1418,16 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
             final String clientId = mdmProperties.getString(NetworkSurveyConstants.PROPERTY_MQTT_CLIENT_ID);
             final String username = mdmProperties.getString(NetworkSurveyConstants.PROPERTY_MQTT_USERNAME);
             final String password = mdmProperties.getString(NetworkSurveyConstants.PROPERTY_MQTT_PASSWORD);
+            final boolean cellularStreamEnabled = mdmProperties.getBoolean(NetworkSurveyConstants.PROPERTY_MQTT_CELLULAR_STREAM_ENABLED, NetworkSurveyConstants.DEFAULT_MQTT_CELLULAR_STREAM_SETTING);
+            final boolean wifiStreamEnabled = mdmProperties.getBoolean(NetworkSurveyConstants.PROPERTY_MQTT_WIFI_STREAM_ENABLED, NetworkSurveyConstants.DEFAULT_MQTT_WIFI_STREAM_SETTING);
+            final boolean gnssStreamEnabled = mdmProperties.getBoolean(NetworkSurveyConstants.PROPERTY_MQTT_GNSS_STREAM_ENABLED, NetworkSurveyConstants.DEFAULT_MQTT_GNSS_STREAM_SETTING);
 
             if (mqttBrokerHost == null || clientId == null)
             {
                 return null;
             }
 
-            return new MqttBrokerConnectionInfo(mqttBrokerHost, portNumber, tlsEnabled, clientId, username, password);
+            return new MqttBrokerConnectionInfo(mqttBrokerHost, portNumber, tlsEnabled, clientId, username, password, cellularStreamEnabled, wifiStreamEnabled, gnssStreamEnabled);
         }
 
         return null;
@@ -1430,8 +1456,11 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
 
         final String username = preferences.getString(NetworkSurveyConstants.PROPERTY_MQTT_USERNAME, "");
         final String password = preferences.getString(NetworkSurveyConstants.PROPERTY_MQTT_PASSWORD, "");
+        final boolean cellularStreamEnabled = preferences.getBoolean(NetworkSurveyConstants.PROPERTY_MQTT_CELLULAR_STREAM_ENABLED, NetworkSurveyConstants.DEFAULT_MQTT_CELLULAR_STREAM_SETTING);
+        final boolean wifiStreamEnabled = preferences.getBoolean(NetworkSurveyConstants.PROPERTY_MQTT_WIFI_STREAM_ENABLED, NetworkSurveyConstants.DEFAULT_MQTT_WIFI_STREAM_SETTING);
+        final boolean gnssStreamEnabled = preferences.getBoolean(NetworkSurveyConstants.PROPERTY_MQTT_GNSS_STREAM_ENABLED, NetworkSurveyConstants.DEFAULT_MQTT_GNSS_STREAM_SETTING);
 
-        return new MqttBrokerConnectionInfo(mqttBrokerHost, portNumber, tlsEnabled, clientId, username, password);
+        return new MqttBrokerConnectionInfo(mqttBrokerHost, portNumber, tlsEnabled, clientId, username, password, cellularStreamEnabled, wifiStreamEnabled, gnssStreamEnabled);
     }
 
     /**

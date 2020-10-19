@@ -16,39 +16,51 @@ public class MqttBrokerConnectionInfo
     private final String mqttClientId;
     private final String mqttUsername;
     private final String mqttPassword;
+    private final boolean cellularStreamEnabled;
+    private final boolean wifiStreamEnabled;
+    private final boolean gnssStreamEnabled;
 
     private final int hashCode;
 
     /**
      * Constructs this info object with all the information needed to connect to an MQTT Broker.
      *
-     * @param mqttBrokerHost The IP or hostname (hostname preferred) of the MQTT broker.
-     * @param portNumber     The port number of the MQTT broker (typically 8883 for TLS, and 1883 for plaintext).
-     * @param tlsEnabled     True if SSL/TLS should be used, false if the connection should be plaintext.
-     * @param mqttClientId   The client ID that is used to represent this client to the server.
-     * @param mqttUsername   The username used to authenticate to the MQTT Broker.
-     * @param mqttPassword   The password used to authenticate to the MQTT Broker.
+     * @param mqttBrokerHost        The IP or hostname (hostname preferred) of the MQTT broker.
+     * @param portNumber            The port number of the MQTT broker (typically 8883 for TLS, and 1883 for plaintext).
+     * @param tlsEnabled            True if SSL/TLS should be used, false if the connection should be plaintext.
+     * @param mqttClientId          The client ID that is used to represent this client to the server.
+     * @param mqttUsername          The username used to authenticate to the MQTT Broker.
+     * @param mqttPassword          The password used to authenticate to the MQTT Broker.
+     * @param cellularStreamEnabled True if cellular streaming is enabled.
+     * @param wifiStreamEnabled     True if WiFi streaming is enabled.
+     * @param gnssStreamEnabled     True if GNSS streaming is enabled.
      * @since 0.1.3
      */
-    public MqttBrokerConnectionInfo(String mqttBrokerHost, int portNumber, boolean tlsEnabled, String mqttClientId, String mqttUsername, String mqttPassword)
+    public MqttBrokerConnectionInfo(String mqttBrokerHost, int portNumber, boolean tlsEnabled, String mqttClientId, String mqttUsername, String mqttPassword, boolean cellularStreamEnabled, boolean wifiStreamEnabled, boolean gnssStreamEnabled)
     {
-        this(getMqttBrokerUriString(mqttBrokerHost, portNumber, tlsEnabled), mqttClientId, mqttUsername, mqttPassword);
+        this(getMqttBrokerUriString(mqttBrokerHost, portNumber, tlsEnabled), mqttClientId, mqttUsername, mqttPassword, cellularStreamEnabled, wifiStreamEnabled, gnssStreamEnabled);
     }
 
     /**
      * Constructs this info object with all the information needed to connect to an MQTT Broker.
      *
-     * @param mqttServerUri The full URI including the connection protocol (e.g. "ssl://") and the port number at the end.
-     * @param mqttClientId  The client ID that is used to represent this client to the server.
-     * @param mqttUsername  The username used to authenticate to the MQTT Broker.
-     * @param mqttPassword  The password used to authenticate to the MQTT Broker.
+     * @param mqttServerUri         The full URI including the connection protocol (e.g. "ssl://") and the port number at the end.
+     * @param mqttClientId          The client ID that is used to represent this client to the server.
+     * @param mqttUsername          The username used to authenticate to the MQTT Broker.
+     * @param mqttPassword          The password used to authenticate to the MQTT Broker.
+     * @param cellularStreamEnabled True if cellular streaming is enabled.
+     * @param wifiStreamEnabled     True if WiFi streaming is enabled.
+     * @param gnssStreamEnabled     True if GNSS streaming is enabled.
      */
-    public MqttBrokerConnectionInfo(String mqttServerUri, String mqttClientId, String mqttUsername, String mqttPassword)
+    public MqttBrokerConnectionInfo(String mqttServerUri, String mqttClientId, String mqttUsername, String mqttPassword, boolean cellularStreamEnabled, boolean wifiStreamEnabled, boolean gnssStreamEnabled)
     {
         this.mqttServerUri = mqttServerUri;
         this.mqttClientId = mqttClientId;
         this.mqttUsername = mqttUsername;
         this.mqttPassword = mqttPassword;
+        this.cellularStreamEnabled = cellularStreamEnabled;
+        this.wifiStreamEnabled = wifiStreamEnabled;
+        this.gnssStreamEnabled = gnssStreamEnabled;
 
         int result = mqttServerUri != null ? mqttServerUri.hashCode() : 0;
         result = 31 * result + (mqttClientId != null ? mqttClientId.hashCode() : 0);
@@ -95,6 +107,21 @@ public class MqttBrokerConnectionInfo
     public String getMqttPassword()
     {
         return mqttPassword;
+    }
+
+    public boolean isCellularStreamEnabled()
+    {
+        return cellularStreamEnabled;
+    }
+
+    public boolean isWifiStreamEnabled()
+    {
+        return wifiStreamEnabled;
+    }
+
+    public boolean isGnssStreamEnabled()
+    {
+        return gnssStreamEnabled;
     }
 
     /**

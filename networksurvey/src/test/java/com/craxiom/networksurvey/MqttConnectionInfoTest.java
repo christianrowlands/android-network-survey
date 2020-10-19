@@ -24,7 +24,7 @@ public class MqttConnectionInfoTest
         final String username = "bob";
         final String password = "bob's password";
 
-        final MqttBrokerConnectionInfo mqttBrokerConnectionInfo = new MqttBrokerConnectionInfo(host, port, tlsEnabled, clientId, username, password);
+        final MqttBrokerConnectionInfo mqttBrokerConnectionInfo = new MqttBrokerConnectionInfo(host, port, tlsEnabled, clientId, username, password, true, true, true);
 
         assertEquals("ssl://mqtt.example.com:8883", mqttBrokerConnectionInfo.getMqttServerUri());
         assertEquals(clientId, mqttBrokerConnectionInfo.getMqttClientId());
@@ -42,7 +42,7 @@ public class MqttConnectionInfoTest
         final String username = "bob";
         final String password = "bob's password";
 
-        final MqttBrokerConnectionInfo mqttBrokerConnectionInfo = new MqttBrokerConnectionInfo(host, port, tlsEnabled, clientId, username, password);
+        final MqttBrokerConnectionInfo mqttBrokerConnectionInfo = new MqttBrokerConnectionInfo(host, port, tlsEnabled, clientId, username, password, true, true, true);
 
         assertEquals("tcp://mqtt.example.com:1883", mqttBrokerConnectionInfo.getMqttServerUri());
         assertEquals(clientId, mqttBrokerConnectionInfo.getMqttClientId());
@@ -60,8 +60,8 @@ public class MqttConnectionInfoTest
         final String username = "bob";
         final String password = "bob's password";
 
-        final MqttBrokerConnectionInfo mqttBrokerConnectionInfo1 = new MqttBrokerConnectionInfo(host, port, tlsEnabled, clientId, username, password);
-        final MqttBrokerConnectionInfo mqttBrokerConnectionInfo2 = new MqttBrokerConnectionInfo(host, port, tlsEnabled, clientId, username, password);
+        final MqttBrokerConnectionInfo mqttBrokerConnectionInfo1 = new MqttBrokerConnectionInfo(host, port, tlsEnabled, clientId, username, password, true, true, true);
+        final MqttBrokerConnectionInfo mqttBrokerConnectionInfo2 = new MqttBrokerConnectionInfo(host, port, tlsEnabled, clientId, username, password, true, true, true);
 
         assertEquals(mqttBrokerConnectionInfo1, mqttBrokerConnectionInfo2);
     }
@@ -76,28 +76,28 @@ public class MqttConnectionInfoTest
         final String username = "bob";
         final String password = "bob's password";
 
-        MqttBrokerConnectionInfo connectionInfo1 = new MqttBrokerConnectionInfo("mqtt.example.com", port, tlsEnabled, clientId, username, password);
-        MqttBrokerConnectionInfo connectionInfo2 = new MqttBrokerConnectionInfo("craxiom.com", port, tlsEnabled, clientId, username, password);
+        MqttBrokerConnectionInfo connectionInfo1 = new MqttBrokerConnectionInfo("mqtt.example.com", port, tlsEnabled, clientId, username, password, true, true, true);
+        MqttBrokerConnectionInfo connectionInfo2 = new MqttBrokerConnectionInfo("craxiom.com", port, tlsEnabled, clientId, username, password, true, true, true);
         assertNotEquals(connectionInfo1, connectionInfo2);
 
-        connectionInfo1 = new MqttBrokerConnectionInfo(host, 123, tlsEnabled, clientId, username, password);
-        connectionInfo2 = new MqttBrokerConnectionInfo(host, 1234, tlsEnabled, clientId, username, password);
+        connectionInfo1 = new MqttBrokerConnectionInfo(host, 123, tlsEnabled, clientId, username, password, true, true, true);
+        connectionInfo2 = new MqttBrokerConnectionInfo(host, 1234, tlsEnabled, clientId, username, password, true, true, true);
         assertNotEquals(connectionInfo1, connectionInfo2);
 
-        connectionInfo1 = new MqttBrokerConnectionInfo(host, port, true, clientId, username, password);
-        connectionInfo2 = new MqttBrokerConnectionInfo(host, port, false, clientId, username, password);
+        connectionInfo1 = new MqttBrokerConnectionInfo(host, port, true, clientId, username, password, true, true, true);
+        connectionInfo2 = new MqttBrokerConnectionInfo(host, port, false, clientId, username, password, true, true, true);
         assertNotEquals(connectionInfo1, connectionInfo2);
 
-        connectionInfo1 = new MqttBrokerConnectionInfo(host, port, tlsEnabled, "Pixel4", username, password);
-        connectionInfo2 = new MqttBrokerConnectionInfo(host, port, tlsEnabled, "S20", username, password);
+        connectionInfo1 = new MqttBrokerConnectionInfo(host, port, tlsEnabled, "Pixel4", username, password, true, true, true);
+        connectionInfo2 = new MqttBrokerConnectionInfo(host, port, tlsEnabled, "S20", username, password, true, true, true);
         assertNotEquals(connectionInfo1, connectionInfo2);
 
-        connectionInfo1 = new MqttBrokerConnectionInfo(host, port, tlsEnabled, clientId, "john", password);
-        connectionInfo2 = new MqttBrokerConnectionInfo(host, port, tlsEnabled, clientId, "steve", password);
+        connectionInfo1 = new MqttBrokerConnectionInfo(host, port, tlsEnabled, clientId, "john", password, true, true, true);
+        connectionInfo2 = new MqttBrokerConnectionInfo(host, port, tlsEnabled, clientId, "steve", password, true, true, true);
         assertNotEquals(connectionInfo1, connectionInfo2);
 
-        connectionInfo1 = new MqttBrokerConnectionInfo(host, port, tlsEnabled, clientId, username, "bob's password");
-        connectionInfo2 = new MqttBrokerConnectionInfo(host, port, tlsEnabled, clientId, username, "bob's burgers");
+        connectionInfo1 = new MqttBrokerConnectionInfo(host, port, tlsEnabled, clientId, username, "bob's password", true, true, true);
+        connectionInfo2 = new MqttBrokerConnectionInfo(host, port, tlsEnabled, clientId, username, "bob's burgers", true, true, true);
         assertNotEquals(connectionInfo1, connectionInfo2);
     }
 }

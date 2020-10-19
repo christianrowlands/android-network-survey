@@ -17,6 +17,9 @@ public class NetworkSurveyConstants
     public static final int MQTT_SSL_PORT = 8883;
     public static final int DEFAULT_MQTT_PORT = MQTT_SSL_PORT;
     public static final boolean DEFAULT_MQTT_TLS_SETTING = true;
+    public static final boolean DEFAULT_MQTT_CELLULAR_STREAM_SETTING = true;
+    public static final boolean DEFAULT_MQTT_WIFI_STREAM_SETTING = true;
+    public static final boolean DEFAULT_MQTT_GNSS_STREAM_SETTING = true;
 
     public static final String NOTIFICATION_CHANNEL_ID = "network_survey_notification";
     public static final int GRPC_CONNECTION_NOTIFICATION_ID = 3;
@@ -79,6 +82,9 @@ public class NetworkSurveyConstants
     public static final String PROPERTY_MQTT_CONNECTION_TLS_ENABLED = "mqtt_tls_enabled";
     public static final String PROPERTY_MQTT_USERNAME = "mqtt_username";
     public static final String PROPERTY_MQTT_PASSWORD = "mqtt_password";
+    public static final String PROPERTY_MQTT_CELLULAR_STREAM_ENABLED = "cellular_stream_enabled";
+    public static final String PROPERTY_MQTT_WIFI_STREAM_ENABLED = "wifi_stream_enabled";
+    public static final String PROPERTY_MQTT_GNSS_STREAM_ENABLED = "gnss_stream_enabled";
 
     // Stored Preferences not exposed via the Settings UI
     public static final String PROPERTY_NETWORK_SURVEY_CONNECTION_HOST = "connection_host";
