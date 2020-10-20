@@ -285,6 +285,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
 
         unregisterCellularSurveyRecordListener(mqttConnection);
         unregisterWifiSurveyRecordListener(mqttConnection);
+        unregisterGnssSurveyRecordListener(mqttConnection);
         mqttConnection.disconnect();
     }
 
