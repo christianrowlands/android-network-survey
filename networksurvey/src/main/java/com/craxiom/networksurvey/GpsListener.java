@@ -5,6 +5,8 @@ import android.location.LocationListener;
 import android.location.LocationManager;
 import android.os.Bundle;
 
+import java.util.function.Consumer;
+
 import timber.log.Timber;
 
 /**
@@ -20,6 +22,23 @@ public class GpsListener implements LocationListener
     private static final float MIN_DISTANCE_ACCURACY = 40f; // WiGLE Wi-Fi uses 32
 
     private Location latestLocation;
+    private Consumer<Location> locationUpdateConsumer;
+
+    /**
+     * Adds a consumer for any location updates.
+     *
+     * @param locationUpdateConsumer The consumer.
+     * @since 0.4.0
+     */
+    public void addLocationUpdateAction(Consumer<Location> locationUpdateConsumer)
+    {
+        this.locationUpdateConsumer = locationUpdateConsumer;
+    }
+
+    public void clearLocationUpdateConsumer()
+    {
+        locationUpdateConsumer = null;
+    }
 
     @Override
     public void onLocationChanged(Location location)
@@ -62,6 +81,11 @@ public class GpsListener implements LocationListener
         if (newLocation != null && newLocation.getAccuracy() <= MIN_DISTANCE_ACCURACY)
         {
             latestLocation = newLocation;
+
+            if (locationUpdateConsumer != null)
+            {
+                locationUpdateConsumer.accept(newLocation);
+            }
         } else
         {
             Timber.d("The accuracy of the last GPS location is less than the required minimum");

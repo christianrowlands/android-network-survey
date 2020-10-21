@@ -38,6 +38,7 @@ import androidx.core.app.NotificationCompat;
 import androidx.core.content.ContextCompat;
 import androidx.preference.PreferenceManager;
 
+import com.craxiom.networksurvey.Application;
 import com.craxiom.networksurvey.CalculationUtils;
 import com.craxiom.networksurvey.ConnectionState;
 import com.craxiom.networksurvey.GpsListener;
@@ -46,6 +47,7 @@ import com.craxiom.networksurvey.R;
 import com.craxiom.networksurvey.constants.NetworkSurveyConstants;
 import com.craxiom.networksurvey.listeners.ICellularSurveyRecordListener;
 import com.craxiom.networksurvey.listeners.IConnectionStateListener;
+import com.craxiom.networksurvey.listeners.IGnssFailureListener;
 import com.craxiom.networksurvey.listeners.IGnssSurveyRecordListener;
 import com.craxiom.networksurvey.listeners.IWifiSurveyRecordListener;
 import com.craxiom.networksurvey.logging.CellularSurveyRecordLogger;
@@ -74,7 +76,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
      * Time to wait between first location measurement received before considering this device does
      * not likely support raw GNSS collection.
      */
-    private static final long TIME_TO_WAIT_FOR_GNSS_RAW_BEFORE_FAILURE = 1000L * 15L;
+    private static final long TIME_TO_WAIT_FOR_GNSS_RAW_BEFORE_FAILURE = 1000L * 5L;
     private static final int PING_RATE_MS = 10_000;
 
     private final AtomicBoolean cellularScanningActive = new AtomicBoolean(false);
@@ -93,15 +95,16 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
     private String deviceId;
     private SurveyRecordProcessor surveyRecordProcessor;
     private GpsListener gpsListener;
+    private IGnssFailureListener gnssFailureListener;
     private CellularSurveyRecordLogger cellularSurveyRecordLogger;
     private WifiSurveyRecordLogger wifiSurveyRecordLogger;
     private GnssRecordLogger gnssRecordLogger;
     private Looper serviceLooper;
     private Handler serviceHandler;
     private LocationManager locationManager = null;
-    private final long firstGpsAcqTime = Long.MIN_VALUE;
+    private long firstGpsAcqTime = Long.MIN_VALUE;
     private boolean gnssRawSupportKnown = false;
-    private final boolean hasGnssRawFailureNagLaunched = false;
+    private boolean hasGnssRawFailureNagLaunched = false;
     private MqttConnection mqttConnection;
     private BroadcastReceiver managedConfigurationListener;
 
@@ -212,6 +215,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
         serviceLooper.quitSafely();
         serviceHandler = null;
         shutdownNotifications();
+
         super.onDestroy();
     }
 
@@ -724,8 +728,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
      */
     public void updateLocation(final Location location)
     {
-        // TODO Add this back in when we can test on a device that does not support GNSS
-        /*if (!gnssRawSupportKnown && !hasGnssRawFailureNagLaunched)
+        if (!gnssRawSupportKnown && !hasGnssRawFailureNagLaunched)
         {
             if (firstGpsAcqTime < 0L)
             {
@@ -738,13 +741,13 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
                 // they do get some satellite status on this display. If that is the case,
                 // they can choose not to be nagged about this every time they launch the app.
                 boolean ignoreRawGnssFailure = PreferenceUtils.getBoolean(Application.get().getString(R.string.pref_key_ignore_raw_gnss_failure), false);
-                if (!ignoreRawGnssFailure)
+                if (!ignoreRawGnssFailure && gnssFailureListener != null)
                 {
-                    final GnssFailureDialogFragment gnssFailureDialogFragment = new GnssFailureDialogFragment();
-                    gnssFailureDialogFragment.show();
+                    gnssFailureListener.onGnssFailure();
+                    gpsListener.clearLocationUpdateConsumer(); // No need for location updates anymore
                 }
             }
-        }*/
+        }
     }
 
     /**
@@ -1288,6 +1291,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
                 if (locationManager != null)
                 {
                     locationManager.registerGnssMeasurementsCallback(measurementListener);
+                    gpsListener.addLocationUpdateAction(this::updateLocation);
                     Timber.i("Successfully registered the GNSS listeners");
                 }
             } else
@@ -1522,5 +1526,27 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
         {
             return NetworkSurveyService.this;
         }
+    }
+
+    /**
+     * Registers a listener any GNSS failures. This can include timing out before we received any
+     * GNSS measurements.
+     *
+     * @param gnssFailureListener The listener.
+     * @since 0.4.0
+     */
+    public void registerGnssFailureListener(IGnssFailureListener gnssFailureListener)
+    {
+        this.gnssFailureListener = gnssFailureListener;
+    }
+
+    /**
+     * Clears the GNSS failure listener.
+     *
+     * @since 0.4.0
+     */
+    public void clearGnssFailureListener()
+    {
+        gnssFailureListener = null;
     }
 }

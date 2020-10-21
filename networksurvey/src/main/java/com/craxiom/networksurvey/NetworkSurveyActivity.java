@@ -19,8 +19,11 @@ import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.provider.Settings;
+import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.View;
+import android.widget.CheckBox;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -40,8 +43,10 @@ import androidx.navigation.ui.NavigationUI;
 import androidx.preference.PreferenceManager;
 
 import com.craxiom.networksurvey.constants.NetworkSurveyConstants;
+import com.craxiom.networksurvey.listeners.IGnssFailureListener;
 import com.craxiom.networksurvey.services.GrpcConnectionService;
 import com.craxiom.networksurvey.services.NetworkSurveyService;
+import com.craxiom.networksurvey.util.PreferenceUtils;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.android.material.navigation.NavigationView;
 
@@ -77,6 +82,7 @@ public class NetworkSurveyActivity extends AppCompatActivity
     private boolean turnOnWifiLoggingOnNextServiceConnection = false;
     private boolean turnOnGnssLoggingOnNextServiceConnection = false;
     private AppBarConfiguration appBarConfiguration;
+    private IGnssFailureListener gnssFailureListener;
 
     @Override
     protected void onCreate(Bundle savedInstanceState)
@@ -112,6 +118,25 @@ public class NetworkSurveyActivity extends AppCompatActivity
         {
             Timber.e("The Notification Manager could not be retrieved to add the Network Survey notification channel");
         }
+
+        gnssFailureListener = () -> {
+            final View fragmentView = LayoutInflater.from(getApplicationContext()).inflate(R.layout.gnss_failure, null);
+
+            AlertDialog gnssFailureDialog = new AlertDialog.Builder(NetworkSurveyActivity.this, R.style.Theme_AppCompat_Light_Dialog)
+                    .setView(fragmentView)
+                    .setPositiveButton(R.string.ok, (dialog, id) -> {
+                        CheckBox rememberDecisionCheckBox = fragmentView.findViewById(R.id.failureRememberDecisionCheckBox);
+                        boolean checked = rememberDecisionCheckBox.isChecked();
+                        if (checked)
+                        {
+                            PreferenceUtils.saveBoolean(Application.get().getString(R.string.pref_key_ignore_raw_gnss_failure), true);
+                            networkSurveyService.clearGnssFailureListener(); // No need for GNSS failure updates anymore
+                        }
+                    })
+                    .create();
+
+            gnssFailureDialog.show();
+        };
     }
 
     @Override
@@ -623,9 +648,11 @@ public class NetworkSurveyActivity extends AppCompatActivity
         public void onServiceConnected(final ComponentName name, final IBinder iBinder)
         {
             Timber.i("%s service connected", name);
+
             final NetworkSurveyService.SurveyServiceBinder binder = (NetworkSurveyService.SurveyServiceBinder) iBinder;
             networkSurveyService = binder.getService();
             networkSurveyService.onUiVisible(NetworkSurveyActivity.this);
+            networkSurveyService.registerGnssFailureListener(gnssFailureListener);
 
             final boolean cellularLoggingEnabled = networkSurveyService.isCellularLoggingEnabled();
             if (turnOnCellularLoggingOnNextServiceConnection && !cellularLoggingEnabled)
