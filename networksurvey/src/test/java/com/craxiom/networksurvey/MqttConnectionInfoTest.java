@@ -6,6 +6,7 @@ import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertTrue;
 
 /**
  * Tests the {@link com.craxiom.networksurvey.mqtt.MqttBrokerConnectionInfo} class.
@@ -30,6 +31,9 @@ public class MqttConnectionInfoTest
         assertEquals(clientId, mqttBrokerConnectionInfo.getMqttClientId());
         assertEquals(username, mqttBrokerConnectionInfo.getMqttUsername());
         assertEquals(password, mqttBrokerConnectionInfo.getMqttPassword());
+        assertTrue(mqttBrokerConnectionInfo.isCellularStreamEnabled());
+        assertTrue(mqttBrokerConnectionInfo.isWifiStreamEnabled());
+        assertTrue(mqttBrokerConnectionInfo.isGnssStreamEnabled());
     }
 
     @Test
@@ -48,6 +52,9 @@ public class MqttConnectionInfoTest
         assertEquals(clientId, mqttBrokerConnectionInfo.getMqttClientId());
         assertEquals(username, mqttBrokerConnectionInfo.getMqttUsername());
         assertEquals(password, mqttBrokerConnectionInfo.getMqttPassword());
+        assertTrue(mqttBrokerConnectionInfo.isCellularStreamEnabled());
+        assertTrue(mqttBrokerConnectionInfo.isWifiStreamEnabled());
+        assertTrue(mqttBrokerConnectionInfo.isGnssStreamEnabled());
     }
 
     @Test
@@ -97,6 +104,21 @@ public class MqttConnectionInfoTest
         assertNotEquals(connectionInfo1, connectionInfo2);
 
         connectionInfo1 = new MqttBrokerConnectionInfo(host, port, tlsEnabled, clientId, username, "bob's password", true, true, true);
+        connectionInfo2 = new MqttBrokerConnectionInfo(host, port, tlsEnabled, clientId, username, "bob's burgers", true, true, true);
+        assertNotEquals(connectionInfo1, connectionInfo2);
+
+        // Test cellularStreamEnabled inequality
+        connectionInfo1 = new MqttBrokerConnectionInfo(host, port, tlsEnabled, clientId, username, "bob's password", false, true, true);
+        connectionInfo2 = new MqttBrokerConnectionInfo(host, port, tlsEnabled, clientId, username, "bob's burgers", true, true, true);
+        assertNotEquals(connectionInfo1, connectionInfo2);
+
+        // Test wifiStreamEnabled inequality
+        connectionInfo1 = new MqttBrokerConnectionInfo(host, port, tlsEnabled, clientId, username, "bob's password", true, false, true);
+        connectionInfo2 = new MqttBrokerConnectionInfo(host, port, tlsEnabled, clientId, username, "bob's burgers", true, true, true);
+        assertNotEquals(connectionInfo1, connectionInfo2);
+
+        // Test gnssStreamEnabled inequality
+        connectionInfo1 = new MqttBrokerConnectionInfo(host, port, tlsEnabled, clientId, username, "bob's password", true, true, false);
         connectionInfo2 = new MqttBrokerConnectionInfo(host, port, tlsEnabled, clientId, username, "bob's burgers", true, true, true);
         assertNotEquals(connectionInfo1, connectionInfo2);
     }

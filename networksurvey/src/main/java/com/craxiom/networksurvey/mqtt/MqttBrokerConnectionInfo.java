@@ -80,7 +80,10 @@ public class MqttBrokerConnectionInfo
         if (!Objects.equals(mqttServerUri, that.mqttServerUri)) return false;
         if (!Objects.equals(mqttClientId, that.mqttClientId)) return false;
         if (!Objects.equals(mqttUsername, that.mqttUsername)) return false;
-        return Objects.equals(mqttPassword, that.mqttPassword);
+        if (!Objects.equals(mqttPassword, that.mqttPassword)) return false;
+        if (!Objects.equals(cellularStreamEnabled, that.cellularStreamEnabled)) return false;
+        if (!Objects.equals(wifiStreamEnabled, that.wifiStreamEnabled)) return false;
+        return Objects.equals(gnssStreamEnabled, that.gnssStreamEnabled);
     }
 
     @Override
