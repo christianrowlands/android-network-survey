@@ -2,70 +2,87 @@
 <restrictions xmlns:android="http://schemas.android.com/apk/res/android">
 
     <restriction
-        android:defaultValue="false"
-        android:description="@string/mqtt_start_on_boot_description"
-        android:key="mqtt_start_on_boot"
-        android:restrictionType="bool"
-        android:title="@string/mqtt_start_on_boot_title" />
+            android:defaultValue="false"
+            android:description="@string/mqtt_start_on_boot_description"
+            android:key="mqtt_start_on_boot"
+            android:restrictionType="bool"
+            android:title="@string/mqtt_start_on_boot_title" />
 
     <restriction
-        android:defaultValue=""
-        android:description="@string/mqtt_connection_host_description"
-        android:key="mqtt_connection_host"
-        android:restrictionType="string"
-        android:title="@string/mqtt_connection_host_title" />
+            android:defaultValue=""
+            android:description="@string/mqtt_connection_host_description"
+            android:key="mqtt_connection_host"
+            android:restrictionType="string"
+            android:title="@string/mqtt_connection_host_title" />
 
     <restriction
-        android:defaultValue="8883"
-        android:description="@string/mqtt_connection_port_description"
-        android:key="mqtt_connection_port"
-        android:restrictionType="integer"
-        android:title="@string/mqtt_connection_port_title" />
+            android:defaultValue="8883"
+            android:description="@string/mqtt_connection_port_description"
+            android:key="mqtt_connection_port"
+            android:restrictionType="integer"
+            android:title="@string/mqtt_connection_port_title" />
 
     <restriction
-        android:defaultValue="true"
-        android:description="@string/mqtt_tls_enabled_description"
-        android:key="mqtt_tls_enabled"
-        android:restrictionType="bool"
-        android:title="@string/mqtt_tls_enabled_title" />
+            android:defaultValue="true"
+            android:description="@string/mqtt_tls_enabled_description"
+            android:key="mqtt_tls_enabled"
+            android:restrictionType="bool"
+            android:title="@string/mqtt_tls_enabled_title" />
 
     <restriction
-        android:defaultValue=""
-        android:description="@string/mqtt_client_id_description"
-        android:key="mqtt_client_id"
-        android:restrictionType="string"
-        android:title="@string/mqtt_client_id_title" />
+            android:defaultValue=""
+            android:description="@string/mqtt_client_id_description"
+            android:key="mqtt_client_id"
+            android:restrictionType="string"
+            android:title="@string/mqtt_client_id_title" />
 
     <restriction
-        android:defaultValue=""
-        android:description="@string/mqtt_username_description"
-        android:key="mqtt_username"
-        android:restrictionType="string"
-        android:title="@string/mqtt_username_title" />
+            android:defaultValue=""
+            android:description="@string/mqtt_username_description"
+            android:key="mqtt_username"
+            android:restrictionType="string"
+            android:title="@string/mqtt_username_title" />
 
     <restriction
-        android:defaultValue=""
-        android:description="@string/mqtt_password_description"
-        android:key="mqtt_password"
-        android:restrictionType="string"
-        android:title="@string/mqtt_password_title" />
+            android:defaultValue=""
+            android:description="@string/mqtt_password_description"
+            android:key="mqtt_password"
+            android:restrictionType="string"
+            android:title="@string/mqtt_password_title" />
 
     <restriction
-        android:description="@string/cellular_scan_interval_description"
-        android:key="cellular_scan_interval_seconds"
-        android:restrictionType="integer"
-        android:title="@string/cellular_scan_interval_title" />
+            android:description="@string/cellular_scan_interval_description"
+            android:key="cellular_scan_interval_seconds"
+            android:restrictionType="integer"
+            android:title="@string/cellular_scan_interval_title" />
 
     <restriction
-        android:description="@string/wifi_scan_interval_description"
-        android:key="wifi_scan_interval_seconds"
-        android:restrictionType="integer"
-        android:title="@string/wifi_scan_interval_title" />
+            android:description="@string/wifi_scan_interval_description"
+            android:key="wifi_scan_interval_seconds"
+            android:restrictionType="integer"
+            android:title="@string/wifi_scan_interval_title" />
 
     <restriction
-        android:description="@string/gnss_scan_interval_description"
-        android:key="gnss_scan_interval_seconds"
-        android:restrictionType="integer"
-        android:title="@string/gnss_scan_interval_title" />
+            android:description="@string/gnss_scan_interval_description"
+            android:key="gnss_scan_interval_seconds"
+            android:restrictionType="integer"
+            android:title="@string/gnss_scan_interval_title" />
 
+    <restriction
+            android:description="@string/cellular_stream_description"
+            android:key="cellular_stream_enabled"
+            android:restrictionType="bool"
+            android:title="@string/cellular_stream_title" />
+
+    <restriction
+            android:description="@string/wifi_stream_description"
+            android:key="wifi_stream_enabled"
+            android:restrictionType="bool"
+            android:title="@string/wifi_stream_title" />
+
+    <restriction
+            android:description="@string/gnss_stream_description"
+            android:key="gnss_stream_enabled"
+            android:restrictionType="bool"
+            android:title="@string/gnss_stream_title" />
 </restrictions>

@@ -172,6 +172,12 @@
     <string name="mqtt_username_description">The username to use when authenticating to the MQTT broker</string>
     <string name="mqtt_password_title">MQTT Broker Password</string>
     <string name="mqtt_password_description">The password to use when authenticating to the MQTT broker</string>
+    <string name="cellular_stream_title">Cellular Stream Enabled</string>
+    <string name="cellular_stream_description">True to stream cellular data, false otherwise</string>
+    <string name="wifi_stream_title">Wi-Fi Stream Enabled</string>
+    <string name="wifi_stream_description">True to stream Wi-Fi data, false otherwise</string>
+    <string name="gnss_stream_title">GNSS Stream Enabled</string>
+    <string name="gnss_stream_description">True to stream GNSS data, false otherwise</string>
 
     <!-- User Preference Constants -->
     <string name="logging_config_title">Logging Config</string>
