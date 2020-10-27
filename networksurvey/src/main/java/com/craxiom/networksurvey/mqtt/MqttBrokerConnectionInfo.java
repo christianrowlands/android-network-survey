@@ -66,6 +66,9 @@ public class MqttBrokerConnectionInfo
         result = 31 * result + (mqttClientId != null ? mqttClientId.hashCode() : 0);
         result = 31 * result + (mqttUsername != null ? mqttUsername.hashCode() : 0);
         result = 31 * result + (mqttPassword != null ? mqttPassword.hashCode() : 0);
+        result = 31 * result + Boolean.hashCode(cellularStreamEnabled);
+        result = 31 * result + Boolean.hashCode(wifiStreamEnabled);
+        result = 31 * result + Boolean.hashCode(gnssStreamEnabled);
         hashCode = result;
     }
 
@@ -112,16 +115,25 @@ public class MqttBrokerConnectionInfo
         return mqttPassword;
     }
 
+    /**
+     * @since 0.4.0
+     */
     public boolean isCellularStreamEnabled()
     {
         return cellularStreamEnabled;
     }
 
+    /**
+     * @since 0.4.0
+     */
     public boolean isWifiStreamEnabled()
     {
         return wifiStreamEnabled;
     }
 
+    /**
+     * @since 0.4.0
+     */
     public boolean isGnssStreamEnabled()
     {
         return gnssStreamEnabled;

@@ -50,8 +50,6 @@ import timber.log.Timber;
 public class MqttConnectionFragment extends Fragment implements IConnectionStateListener
 {
     private static final int ACCESS_PERMISSION_REQUEST_ID = 10;
-    private static final String OFF_STATUS = "OFF";
-    private static final String ON_STATUS = "ON";
 
     private final Handler uiThreadHandler;
 
@@ -67,9 +65,6 @@ public class MqttConnectionFragment extends Fragment implements IConnectionState
     private EditText deviceNameEdit;
     private EditText usernameEdit;
     private EditText passwordEdit;
-    private TextView cellularStreamStatusText;
-    private TextView wifiStreamStatusText;
-    private TextView gnssStreamStatusText;
     private SwitchCompat cellularStreamToggleSwitch;
     private SwitchCompat wifiStreamToggleSwitch;
     private SwitchCompat gnssStreamToggleSwitch;
@@ -120,9 +115,6 @@ public class MqttConnectionFragment extends Fragment implements IConnectionState
         cellularStreamToggleSwitch = view.findViewById(R.id.streamCellularToggleSwitch);
         wifiStreamToggleSwitch = view.findViewById(R.id.streamWifiToggleSwitch);
         gnssStreamToggleSwitch = view.findViewById(R.id.streamGnssToggleSwitch);
-        cellularStreamStatusText = view.findViewById(R.id.streamCellularStatusTextView);
-        wifiStreamStatusText = view.findViewById(R.id.streamWifiStatusTextView);
-        gnssStreamStatusText = view.findViewById(R.id.streamGnssStatusTextView);
 
         final CardView helpCardView = view.findViewById(R.id.help_card_view);
         helpCardView.setOnClickListener(new HelpCardListener(view, R.string.mqtt_connection_description));
@@ -160,19 +152,6 @@ public class MqttConnectionFragment extends Fragment implements IConnectionState
         mqttConnectionToggleSwitch.setOnTouchListener((buttonView, motionEvent) ->
                 motionEvent.getActionMasked() == MotionEvent.ACTION_MOVE);
 
-        cellularStreamToggleSwitch.setOnCheckedChangeListener((buttonView, isChecked) ->
-        {
-            cellularStreamStatusText.setText(isChecked ? ON_STATUS : OFF_STATUS);
-        });
-        wifiStreamToggleSwitch.setOnCheckedChangeListener((buttonView, isChecked) ->
-        {
-            wifiStreamStatusText.setText(isChecked ? ON_STATUS : OFF_STATUS);
-        });
-        gnssStreamToggleSwitch.setOnCheckedChangeListener((buttonView, isChecked) ->
-        {
-            gnssStreamStatusText.setText(isChecked ? ON_STATUS : OFF_STATUS);
-        });
-
         return view;
     }
 
@@ -193,9 +172,6 @@ public class MqttConnectionFragment extends Fragment implements IConnectionState
         cellularStreamToggleSwitch.setChecked(cellularStreamEnabled);
         wifiStreamToggleSwitch.setChecked(wifiStreamEnabled);
         gnssStreamToggleSwitch.setChecked(gnssStreamEnabled);
-        cellularStreamStatusText.setText(cellularStreamEnabled ? ON_STATUS : OFF_STATUS);
-        wifiStreamStatusText.setText(wifiStreamEnabled ? ON_STATUS : OFF_STATUS);
-        gnssStreamStatusText.setText(gnssStreamEnabled ? ON_STATUS : OFF_STATUS);
     }
 
     @Override
@@ -447,6 +423,7 @@ public class MqttConnectionFragment extends Fragment implements IConnectionState
      * For the host name, all non empty strings are 'valid'.
      * For the port number, all numeric numbers between 0 and 65535 are 'valid'.
      * For the device name, it must not be empty.
+     * For the message streaming options, at least one must be toggled on.
      *
      * @return True if all parameters are valid according to the above criteria.
      */
@@ -479,6 +456,13 @@ public class MqttConnectionFragment extends Fragment implements IConnectionState
         {
             final String portNotANumberMessage = "Port must be a number";
             uiThreadHandler.post(() -> Toast.makeText(applicationContext, portNotANumberMessage, Toast.LENGTH_SHORT).show());
+            return false;
+        }
+
+        if (!cellularStreamToggleSwitch.isChecked() && !wifiStreamToggleSwitch.isChecked() && !gnssStreamToggleSwitch.isChecked())
+        {
+            final String noOptionsMessage = "At least one stream option must be specified";
+            uiThreadHandler.post(() -> Toast.makeText(applicationContext, noOptionsMessage, Toast.LENGTH_SHORT).show());
             return false;
         }
 

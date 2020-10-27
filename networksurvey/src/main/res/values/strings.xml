@@ -140,9 +140,9 @@
     <string name="mqtt_mdm_override_description">Your MQTT connection settings have been set by a Mobile Device Management server.  Toggle the switch below to override those settings so you can specify your own MQTT Broker connection information.</string>
     <string name="mqtt_mdm_override_title">Override MDM MQTT Settings</string>
     <string name="tls">TLS</string>
-    <string name="stream_cellular_title">Stream Cellular:</string>
-    <string name="stream_wifi_title">Stream Wifi:</string>
-    <string name="stream_gnss_title">Stream GNSS:</string>
+    <string name="stream_cellular_title">Stream Cellular</string>
+    <string name="stream_wifi_title">Stream Wi-Fi</string>
+    <string name="stream_gnss_title">Stream GNSS</string>
     <string name="client_id_hint">Client ID</string>
     <string name="username_hint">MQTT Username</string>
     <string name="password_hint">MQTT Password</string>
@@ -239,7 +239,7 @@
     <!-- GNSS Failure Alert -->
     <string name="app_icon_description">App Icon</string>
     <string name="not_supported_title">GNSS Features May Not Work</string>
-    <string name="not_supported_description">Network Survey is not receiving raw GNSS measurements from the phone, which are required for generating GeoPackage files with useful data. You will still see some satellite status in the app, but any GeoPackage files generated will only contain basic location information. For more information and a list of devices that support raw GNSS, consult Android\'s <a href="https://developer.android.com/guide/topics/sensors/gnss">Raw GNSS Measurements</a> guide.</string>
+    <string name="not_supported_description">Network Survey is not receiving raw GNSS measurements from the phone, which are required for generating the GNSS GeoPackage files, or streaming GNSS records over MQTT. For more information and a list of devices that support raw GNSS, consult Android\'s <a href="https://developer.android.com/guide/topics/sensors/gnss">Raw GNSS Measurements</a> guide.</string>
     <string name="remember_my_decision">Don\'t ask me again</string>
 
     <!-- GNSS Status View -->

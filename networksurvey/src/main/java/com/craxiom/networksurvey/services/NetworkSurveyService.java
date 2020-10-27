@@ -76,7 +76,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
      * Time to wait between first location measurement received before considering this device does
      * not likely support raw GNSS collection.
      */
-    private static final long TIME_TO_WAIT_FOR_GNSS_RAW_BEFORE_FAILURE = 1000L * 5L;
+    private static final long TIME_TO_WAIT_FOR_GNSS_RAW_BEFORE_FAILURE = 1000L * 15L;
     private static final int PING_RATE_MS = 10_000;
 
     private final AtomicBoolean cellularScanningActive = new AtomicBoolean(false);

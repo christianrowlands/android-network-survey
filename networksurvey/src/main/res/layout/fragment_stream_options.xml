@@ -17,21 +17,11 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="@dimen/small_margin"
+                android:paddingStart="@dimen/small_margin"
+                android:paddingEnd="@dimen/small_margin"
                 android:text="@string/stream_cellular_title"
                 android:textSize="@dimen/medium_text_size"
-                app:layout_constraintRight_toLeftOf="@id/streamCellularStatusTextView"
-                app:layout_constraintTop_toTopOf="parent" />
-
-        <TextView
-                android:id="@+id/streamCellularStatusTextView"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="@dimen/small_margin"
-                android:layout_marginTop="@dimen/small_margin"
-                android:text="ON"
-                android:textColor="@color/gray"
-                android:textSize="@dimen/medium_text_size"
-                app:layout_constraintLeft_toRightOf="@id/streamCellularTextView"
+                app:layout_constraintLeft_toLeftOf="parent"
                 app:layout_constraintTop_toTopOf="parent" />
 
         <androidx.appcompat.widget.SwitchCompat
@@ -58,21 +48,11 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="@dimen/small_margin"
+                android:paddingStart="@dimen/small_margin"
+                android:paddingEnd="@dimen/small_margin"
                 android:text="@string/stream_wifi_title"
                 android:textSize="@dimen/medium_text_size"
-                app:layout_constraintRight_toLeftOf="@id/streamWifiStatusTextView"
-                app:layout_constraintTop_toTopOf="parent" />
-
-        <TextView
-                android:id="@+id/streamWifiStatusTextView"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="@dimen/small_margin"
-                android:layout_marginTop="@dimen/small_margin"
-                android:text="ON"
-                android:textColor="@color/gray"
-                android:textSize="@dimen/medium_text_size"
-                app:layout_constraintLeft_toRightOf="@id/streamWifiTextView"
+                app:layout_constraintLeft_toLeftOf="parent"
                 app:layout_constraintTop_toTopOf="parent" />
 
         <androidx.appcompat.widget.SwitchCompat
@@ -99,21 +79,11 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="@dimen/small_margin"
+                android:paddingStart="@dimen/small_margin"
+                android:paddingEnd="@dimen/small_margin"
                 android:text="@string/stream_gnss_title"
                 android:textSize="@dimen/medium_text_size"
-                app:layout_constraintRight_toLeftOf="@id/streamGnssStatusTextView"
-                app:layout_constraintTop_toTopOf="parent" />
-
-        <TextView
-                android:id="@+id/streamGnssStatusTextView"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="@dimen/small_margin"
-                android:layout_marginTop="@dimen/small_margin"
-                android:text="ON"
-                android:textColor="@color/gray"
-                android:textSize="@dimen/medium_text_size"
-                app:layout_constraintLeft_toRightOf="@id/streamGnssTextView"
+                app:layout_constraintLeft_toLeftOf="parent"
                 app:layout_constraintTop_toTopOf="parent" />
 
         <androidx.appcompat.widget.SwitchCompat
