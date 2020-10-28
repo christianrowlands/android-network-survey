@@ -14,6 +14,21 @@ import timber.log.Timber;
 public class MdmUtils
 {
     /**
+     * @return True, if the restrictions manager is non-null, and at least one MDM property is set.
+     */
+    public static boolean isUnderMdmControl(Context context, String... propertyKeys)
+    {
+        for (String propertyKey : propertyKeys)
+        {
+            if (isUnderMdmControl(context, propertyKey))
+            {
+                return true;
+            }
+        }
+        return true;
+    }
+
+    /**
      * @return True, if the restrictions manager is non-null, and if MDM properties exist for certain
      * preferences.
      */

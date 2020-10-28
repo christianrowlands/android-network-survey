@@ -75,4 +75,24 @@
             android:restrictionType="integer"
             android:title="@string/log_rollover_title" />
 
+    <restriction
+            android:defaultValue="true"
+            android:description="@string/auto_start_cellular_logging_description"
+            android:key="auto_start_logging"
+            android:restrictionType="bool"
+            android:title="@string/auto_start_cellular_logging_title" />
+
+    <restriction
+            android:defaultValue="false"
+            android:description="@string/auto_start_wifi_logging_description"
+            android:key="auto_start_wifi_logging"
+            android:restrictionType="bool"
+            android:title="@string/auto_start_wifi_logging_title" />
+
+    <restriction
+            android:defaultValue="false"
+            android:description="@string/auto_start_gnss_logging_description"
+            android:key="auto_start_gnss_logging"
+            android:restrictionType="bool"
+            android:title="@string/auto_start_gnss_logging_title" />
 </restrictions>

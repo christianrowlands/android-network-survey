@@ -169,6 +169,9 @@
     <string name="mqtt_username_description">The username to use when authenticating to the MQTT broker</string>
     <string name="mqtt_password_title">MQTT Broker Password</string>
     <string name="mqtt_password_description">The password to use when authenticating to the MQTT broker</string>
+    <string name="auto_start_cellular_logging_description">True to start cellular logging automatically, false otherwise</string>
+    <string name="auto_start_wifi_logging_description">True to start Wi-Fi logging automatically, false otherwise</string>
+    <string name="auto_start_gnss_logging_description">True to start GNSS logging automatically, false otherwise</string>
 
     <!-- User Preference Constants -->
     <string name="logging_config_title">Logging Config</string>
