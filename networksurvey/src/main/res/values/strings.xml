@@ -178,9 +178,15 @@
     <string name="wifi_stream_description">True to stream Wi-Fi data, false otherwise</string>
     <string name="gnss_stream_title">GNSS Stream Enabled</string>
     <string name="gnss_stream_description">True to stream GNSS data, false otherwise</string>
+    <string name="auto_start_cellular_logging_description">True to start cellular logging automatically, false otherwise</string>
+    <string name="auto_start_wifi_logging_description">True to start Wi-Fi logging automatically, false otherwise</string>
+    <string name="auto_start_gnss_logging_description">True to start GNSS logging automatically, false otherwise</string>
 
     <!-- User Preference Constants -->
     <string name="logging_config_title">Logging Config</string>
+
+    <string name="log_rollover_description">File size limit before next rollover</string>
+    <string name="log_rollover_title">Log Rollover Size (MB)</string>
 
     <string name="auto_start_cellular_logging_title">Auto Start Cellular Logging</string>
     <string name="auto_start_cellular_logging_summary_on">Cellular logging will be started upon app opening</string>

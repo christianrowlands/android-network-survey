@@ -85,4 +85,30 @@
         android:key="gnss_stream_enabled"
         android:restrictionType="bool"
         android:title="@string/gnss_stream_title" />
+
+    <restriction
+        android:defaultValue="5"
+        android:description="@string/log_rollover_description"
+        android:key="log_rollover_dropdown"
+        android:restrictionType="integer"
+        android:title="@string/log_rollover_title" />
+
+    <restriction
+        android:description="@string/auto_start_cellular_logging_description"
+        android:key="auto_start_logging"
+        android:restrictionType="bool"
+        android:title="@string/auto_start_cellular_logging_title" />
+
+    <restriction
+        android:description="@string/auto_start_wifi_logging_description"
+        android:key="auto_start_wifi_logging"
+        android:restrictionType="bool"
+        android:title="@string/auto_start_wifi_logging_title" />
+
+    <restriction
+        android:description="@string/auto_start_gnss_logging_description"
+        android:key="auto_start_gnss_logging"
+        android:restrictionType="bool"
+        android:title="@string/auto_start_gnss_logging_title" />
+
 </restrictions>

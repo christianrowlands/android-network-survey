@@ -73,6 +73,7 @@ public class NetworkSurveyConstants
     public static final String PROPERTY_GNSS_SCAN_INTERVAL_SECONDS = "gnss_scan_interval_seconds";
     public static final String PROPERTY_CONNECTION_TIMEOUT = "connection_timeout";
     public static final String PROPERTY_MQTT_MDM_OVERRIDE = "mqtt_mdm_override";
+    public static final String PROPERTY_LOG_ROLLOVER_SIZE_MB = "log_rollover_size_mb";
 
     // The following keys are used in the app_restrictions.xml file and also are settings stored in the app's shared preferences
     public static final String PROPERTY_MQTT_START_ON_BOOT = "mqtt_start_on_boot";

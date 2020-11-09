@@ -211,6 +211,8 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
         stopGnssRecordScanning();
         stopAllLogging();
 
+        PreferenceManager.getDefaultSharedPreferences(getApplicationContext()).unregisterOnSharedPreferenceChangeListener(this);
+
         serviceLooper.quitSafely();
         serviceHandler = null;
         shutdownNotifications();
@@ -229,6 +231,11 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
     {
         switch (key)
         {
+            case NetworkSurveyConstants.PROPERTY_LOG_ROLLOVER_SIZE_MB:
+                wifiSurveyRecordLogger.onSharedPreferenceChanged();
+                cellularSurveyRecordLogger.onSharedPreferenceChanged();
+                gnssRecordLogger.onSharedPreferenceChanged();
+                break;
             case NetworkSurveyConstants.PROPERTY_CELLULAR_SCAN_INTERVAL_SECONDS:
             case NetworkSurveyConstants.PROPERTY_WIFI_NETWORKS_SORT_ORDER:
             case NetworkSurveyConstants.PROPERTY_GNSS_SCAN_INTERVAL_SECONDS:
@@ -1363,6 +1370,10 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
             {
                 setScanRateValues();
                 attemptMqttConnectWithMdmConfig(true);
+
+                cellularSurveyRecordLogger.onMdmPreferenceChanged();
+                wifiSurveyRecordLogger.onMdmPreferenceChanged();
+                gnssRecordLogger.onMdmPreferenceChanged();
             }
         };
 

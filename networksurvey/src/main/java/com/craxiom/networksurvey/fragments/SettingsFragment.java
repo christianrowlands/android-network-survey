@@ -4,12 +4,16 @@ import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.text.InputType;
 
+import androidx.preference.DropDownPreference;
 import androidx.preference.EditTextPreference;
 import androidx.preference.PreferenceFragmentCompat;
 import androidx.preference.PreferenceManager;
+import androidx.preference.PreferenceScreen;
+import androidx.preference.SwitchPreferenceCompat;
 
 import com.craxiom.networksurvey.R;
 import com.craxiom.networksurvey.constants.NetworkSurveyConstants;
+import com.craxiom.networksurvey.util.MdmUtils;
 
 import timber.log.Timber;
 
@@ -21,6 +25,14 @@ import timber.log.Timber;
 public class SettingsFragment extends PreferenceFragmentCompat implements SharedPreferences.OnSharedPreferenceChangeListener
 {
     private static final String PASSWORD_NOT_SET_DISPLAY_TEXT = "not set";
+    private static final String[] PROPERTY_KEYS = {NetworkSurveyConstants.PROPERTY_AUTO_START_CELLULAR_LOGGING,
+            NetworkSurveyConstants.PROPERTY_AUTO_START_WIFI_LOGGING,
+            NetworkSurveyConstants.PROPERTY_AUTO_START_GNSS_LOGGING,
+            NetworkSurveyConstants.PROPERTY_LOG_ROLLOVER_SIZE_MB,
+            NetworkSurveyConstants.PROPERTY_CELLULAR_SCAN_INTERVAL_SECONDS,
+            NetworkSurveyConstants.PROPERTY_WIFI_SCAN_INTERVAL_SECONDS,
+            NetworkSurveyConstants.PROPERTY_GNSS_SCAN_INTERVAL_SECONDS,
+            NetworkSurveyConstants.PROPERTY_MQTT_START_ON_BOOT};
 
     @Override
     public void onCreatePreferences(Bundle savedInstanceState, String rootKey)
@@ -49,6 +61,8 @@ public class SettingsFragment extends PreferenceFragmentCompat implements Shared
                         mqttPasswordPreference.setSummaryProvider(preference -> getAsterisks(editText.getText().toString().length()));
                     });
         }
+
+        updateUiForMdmIfNecessary();
     }
 
     @Override
@@ -125,6 +139,133 @@ public class SettingsFragment extends PreferenceFragmentCompat implements Shared
         } else
         {
             Timber.e("Could not find the preference to set it as integer numbers only.");
+        }
+    }
+
+    /**
+     * Updates the UI if MDM values are available.
+     *
+     * @since 0.4.0
+     */
+    private void updateUiForMdmIfNecessary()
+    {
+        if (!MdmUtils.isUnderMdmControl(requireContext(), PROPERTY_KEYS))
+        {
+            return;
+        }
+
+        final PreferenceScreen preferenceScreen = getPreferenceScreen();
+
+        updateBooleanPreferenceForMdm(preferenceScreen, NetworkSurveyConstants.PROPERTY_AUTO_START_CELLULAR_LOGGING);
+        updateBooleanPreferenceForMdm(preferenceScreen, NetworkSurveyConstants.PROPERTY_AUTO_START_WIFI_LOGGING);
+        updateBooleanPreferenceForMdm(preferenceScreen, NetworkSurveyConstants.PROPERTY_AUTO_START_GNSS_LOGGING);
+        updateLogRolloverSizeFromMdm(preferenceScreen);
+        updateIntPreferenceForMdm(preferenceScreen, NetworkSurveyConstants.PROPERTY_CELLULAR_SCAN_INTERVAL_SECONDS);
+        updateIntPreferenceForMdm(preferenceScreen, NetworkSurveyConstants.PROPERTY_WIFI_SCAN_INTERVAL_SECONDS);
+        updateIntPreferenceForMdm(preferenceScreen, NetworkSurveyConstants.PROPERTY_GNSS_SCAN_INTERVAL_SECONDS);
+        updateBooleanPreferenceForMdm(preferenceScreen, NetworkSurveyConstants.PROPERTY_MQTT_START_ON_BOOT);
+    }
+
+    /**
+     * Updates a boolean preference with an MDM value, if it exists. The shared preferences are
+     * also updated, so that values are retained when MDM control is off.
+     *
+     * @param preferenceScreen The preference screen
+     * @param preferenceKey    The preference key
+     * @since 0.4.0
+     */
+    private void updateBooleanPreferenceForMdm(PreferenceScreen preferenceScreen, String preferenceKey)
+    {
+        try
+        {
+            final Bundle mdmProperties = MdmUtils.getMdmProperties(requireContext(), preferenceKey);
+            final SwitchPreferenceCompat preference = preferenceScreen.findPreference(preferenceKey);
+
+            if (preference != null && mdmProperties != null)
+            {
+                final boolean mdmBooleanProperty = mdmProperties.getBoolean(preferenceKey, false);
+
+                preference.setEnabled(false);
+                preference.setChecked(mdmBooleanProperty);
+
+                getPreferenceManager().getSharedPreferences()
+                        .edit()
+                        .putBoolean(preferenceKey, mdmBooleanProperty)
+                        .apply();
+            }
+        } catch (Exception e)
+        {
+            Timber.wtf(e, "Could not find the bool preferences or update the UI component for %s", preferenceKey);
+        }
+    }
+
+
+    /**
+     * Updates an integer preference with an MDM value, if it exists. The shared preferences are
+     * also updated, so that values are retained when MDM control is off.
+     *
+     * @param preferenceScreen The preference screen
+     * @param preferenceKey    The preference key
+     * @since 0.4.0
+     */
+    private void updateIntPreferenceForMdm(PreferenceScreen preferenceScreen, String preferenceKey)
+    {
+        try
+        {
+            final Bundle mdmProperties = MdmUtils.getMdmProperties(requireContext(), preferenceKey);
+            final EditTextPreference preference = preferenceScreen.findPreference(preferenceKey);
+
+            if (preference != null && mdmProperties != null)
+            {
+                final int mdmIntProperty = mdmProperties.getInt(preferenceKey, 0);
+
+                preference.setEnabled(false);
+
+                final String mdmValue = String.valueOf(mdmIntProperty);
+                preference.setSummaryProvider(pref -> mdmValue);
+
+                getPreferenceManager().getSharedPreferences()
+                        .edit()
+                        .putString(preferenceKey, String.valueOf(mdmIntProperty))
+                        .apply();
+            }
+        } catch (Exception e)
+        {
+            Timber.wtf(e, "Could not find the int preference or update the UI component for %s", preferenceKey);
+        }
+    }
+
+    /**
+     * Updates the log rollover preference with an MDM value, if it exists. The shared preferences
+     * is also updated, so that values are retained when MDM control is off.
+     *
+     * @param preferenceScreen The preference screen
+     * @since 0.4.0
+     */
+    private void updateLogRolloverSizeFromMdm(PreferenceScreen preferenceScreen)
+    {
+        try
+        {
+            final Bundle mdmProperties = MdmUtils.getMdmProperties(requireContext(), NetworkSurveyConstants.PROPERTY_LOG_ROLLOVER_SIZE_MB);
+            final DropDownPreference preference = preferenceScreen.findPreference(NetworkSurveyConstants.PROPERTY_LOG_ROLLOVER_SIZE_MB);
+
+            if (preference != null && mdmProperties != null)
+            {
+                final int mdmIntProperty = mdmProperties.getInt(NetworkSurveyConstants.PROPERTY_LOG_ROLLOVER_SIZE_MB, 0);
+
+                preference.setEnabled(false);
+
+                final String mdmValue = mdmIntProperty == 0 ? "Never" : String.valueOf(mdmIntProperty);
+                preference.setSummaryProvider(pref -> mdmValue);
+
+                getPreferenceManager().getSharedPreferences()
+                        .edit()
+                        .putString(NetworkSurveyConstants.PROPERTY_LOG_ROLLOVER_SIZE_MB, String.valueOf(mdmIntProperty))
+                        .apply();
+            }
+        } catch (Exception e)
+        {
+            Timber.wtf(e, "Could not find the int preference or update the UI component for %s", NetworkSurveyConstants.PROPERTY_LOG_ROLLOVER_SIZE_MB);
         }
     }
 }
