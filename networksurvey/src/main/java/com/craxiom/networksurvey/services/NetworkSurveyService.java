@@ -14,7 +14,6 @@ import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.location.GnssMeasurementsEvent;
 import android.location.GnssStatus;
-import android.location.Location;
 import android.location.LocationManager;
 import android.net.wifi.ScanResult;
 import android.net.wifi.WifiManager;
@@ -720,13 +719,11 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
     }
 
     /**
-     * Updates the location in the GNSS GeoPackage recorder if it is not null.
-     * <p>
-     * Also notifies the user if the RAW GNSS measurement timeout has expired.
-     *
-     * @param location The new location of this Android device.
+     * Checks to see if the GNSS timeout has occurred. If we have waited longer than {@link #TIME_TO_WAIT_FOR_GNSS_RAW_BEFORE_FAILURE}
+     * without any GNSS measurements coming in, we can assume that the device does not support raw GNSS measurements.
+     * If that is the case then present that information to the user so they know their device won't support it.
      */
-    public void updateLocation(final Location location)
+    public void checkForGnssTimeout()
     {
         if (!gnssRawSupportKnown && !hasGnssRawFailureNagLaunched)
         {
@@ -744,9 +741,12 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
                 if (!ignoreRawGnssFailure && gnssFailureListener != null)
                 {
                     gnssFailureListener.onGnssFailure();
-                    gpsListener.clearLocationUpdateConsumer(); // No need for location updates anymore
+                    gpsListener.clearGnssTimeoutCallback(); // No need for the callback anymore
                 }
             }
+        } else
+        {
+            gpsListener.clearGnssTimeoutCallback();
         }
     }
 
@@ -1291,7 +1291,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
                 if (locationManager != null)
                 {
                     locationManager.registerGnssMeasurementsCallback(measurementListener);
-                    gpsListener.addLocationUpdateAction(this::updateLocation);
+                    gpsListener.addGnssTimeoutCallback(this::checkForGnssTimeout);
                     Timber.i("Successfully registered the GNSS listeners");
                 }
             } else

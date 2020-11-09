@@ -5,8 +5,6 @@ import android.location.LocationListener;
 import android.location.LocationManager;
 import android.os.Bundle;
 
-import java.util.function.Consumer;
-
 import timber.log.Timber;
 
 /**
@@ -22,22 +20,28 @@ public class GpsListener implements LocationListener
     private static final float MIN_DISTANCE_ACCURACY = 40f; // WiGLE Wi-Fi uses 32
 
     private Location latestLocation;
-    private Consumer<Location> locationUpdateConsumer;
+    private Runnable gnssTimeoutCallback;
 
     /**
-     * Adds a consumer for any location updates.
+     * Adds a callback so that the the caller can check for a GNSS timeout. This will be called whenever a new location
+     * is received. This works out nicely because the timeout can start counting down once we know we have a good GPS
+     * fix, and then if the consumer does not receive any raw GNSS measurements in a predetermined amount of time then
+     * we can assume raw GNSS measurement is not supported on this device.
      *
-     * @param locationUpdateConsumer The consumer.
+     * @param callbackRunnable The runnable to execute anytime a location update is received.
      * @since 0.4.0
      */
-    public void addLocationUpdateAction(Consumer<Location> locationUpdateConsumer)
+    public void addGnssTimeoutCallback(Runnable callbackRunnable)
     {
-        this.locationUpdateConsumer = locationUpdateConsumer;
+        gnssTimeoutCallback = callbackRunnable;
     }
 
-    public void clearLocationUpdateConsumer()
+    /**
+     * Removes the GNSS timeout callback.
+     */
+    public void clearGnssTimeoutCallback()
     {
-        locationUpdateConsumer = null;
+        gnssTimeoutCallback = null;
     }
 
     @Override
@@ -82,9 +86,9 @@ public class GpsListener implements LocationListener
         {
             latestLocation = newLocation;
 
-            if (locationUpdateConsumer != null)
+            if (gnssTimeoutCallback != null)
             {
-                locationUpdateConsumer.accept(newLocation);
+                gnssTimeoutCallback.run();
             }
         } else
         {
