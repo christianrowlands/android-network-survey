@@ -4,8 +4,6 @@ import android.content.Context;
 import android.content.RestrictionsManager;
 import android.os.Bundle;
 
-import timber.log.Timber;
-
 /**
  * Utilities for MDM properties.
  *
@@ -14,51 +12,34 @@ import timber.log.Timber;
 public class MdmUtils
 {
     /**
-     * @return True, if the restrictions manager is non-null, and if MDM properties exist for certain
-     * preferences.
+     * @return True, if the restrictions manager is non-null, and at least one MDM property is set.
      */
-    public static boolean isUnderMdmControl(Context context, String propertyKey)
-    {
-        Bundle mdmProperties = checkAndGetMdmProperties(context, propertyKey);
-        if (mdmProperties != null)
-        {
-            Timber.i("Network Survey is under MDM control");
-            return true;
-        }
-
-        return false;
-    }
-
-    /**
-     * Get the MDM properties if a property specified by propertyKey exists.
-     *
-     * @param context     The application context
-     * @param propertyKey The property key in question
-     * @return The MDM properties. Null if the property cannot be found
-     */
-    public static Bundle getMdmProperties(Context context, String propertyKey)
-    {
-        Bundle mdmProperties = checkAndGetMdmProperties(context, propertyKey);
-        if (mdmProperties != null)
-        {
-            Timber.i("Property %s found!", propertyKey);
-            return mdmProperties;
-        }
-
-        return null;
-    }
-
-    private static Bundle checkAndGetMdmProperties(Context context, String propertyKey)
+    public static boolean isUnderMdmControl(Context context, String... propertyKeys)
     {
         final RestrictionsManager restrictionsManager = (RestrictionsManager) context.getSystemService(Context.RESTRICTIONS_SERVICE);
         if (restrictionsManager != null)
         {
             final Bundle mdmProperties = restrictionsManager.getApplicationRestrictions();
-            if (mdmProperties.getInt(propertyKey, 0) != 0)
+            for (String key : propertyKeys)
             {
-                return mdmProperties;
+                if (mdmProperties.containsKey(key)) return true;
             }
         }
-        return null;
+        return false;
+    }
+
+    /**
+     * @return True, if the restrictions manager is non-null, and if the MDM property exist for the specified key.
+     */
+    public static boolean isUnderMdmControl(Context context, String propertyKey)
+    {
+        final RestrictionsManager restrictionsManager = (RestrictionsManager) context.getSystemService(Context.RESTRICTIONS_SERVICE);
+        if (restrictionsManager != null)
+        {
+            final Bundle mdmProperties = restrictionsManager.getApplicationRestrictions();
+            return mdmProperties.containsKey(propertyKey);
+        }
+
+        return false;
     }
 }

@@ -19,6 +19,8 @@
     <dimen name="calculator_margin">10dp</dimen>
     <dimen name="fragment_padding_top">4dp</dimen>
 
+    <dimen name="medium_text_size">18sp</dimen>
+
     <!-- GNSS Status view -->
     <dimen name="status_label_right_margin">4dp</dimen>
     <dimen name="column_padding">3dp</dimen>

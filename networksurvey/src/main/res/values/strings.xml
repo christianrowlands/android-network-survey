@@ -140,6 +140,9 @@
     <string name="mqtt_mdm_override_description">Your MQTT connection settings have been set by a Mobile Device Management server.  Toggle the switch below to override those settings so you can specify your own MQTT Broker connection information.</string>
     <string name="mqtt_mdm_override_title">Override MDM MQTT Settings</string>
     <string name="tls">TLS</string>
+    <string name="stream_cellular_title">Stream Cellular</string>
+    <string name="stream_wifi_title">Stream Wi-Fi</string>
+    <string name="stream_gnss_title">Stream GNSS</string>
     <string name="client_id_hint">Client ID</string>
     <string name="username_hint">MQTT Username</string>
     <string name="password_hint">MQTT Password</string>
@@ -169,11 +172,24 @@
     <string name="mqtt_username_description">The username to use when authenticating to the MQTT broker</string>
     <string name="mqtt_password_title">MQTT Broker Password</string>
     <string name="mqtt_password_description">The password to use when authenticating to the MQTT broker</string>
+    <string name="cellular_stream_title">Cellular Stream Enabled</string>
+    <string name="cellular_stream_description">True to stream cellular data, false otherwise</string>
+    <string name="wifi_stream_title">Wi-Fi Stream Enabled</string>
+    <string name="wifi_stream_description">True to stream Wi-Fi data, false otherwise</string>
+    <string name="gnss_stream_title">GNSS Stream Enabled</string>
+    <string name="gnss_stream_description">True to stream GNSS data, false otherwise</string>
+    <string name="auto_start_cellular_logging_description">True to start cellular logging automatically, false otherwise</string>
+    <string name="auto_start_wifi_logging_description">True to start Wi-Fi logging automatically, false otherwise</string>
+    <string name="auto_start_gnss_logging_description">True to start GNSS logging automatically, false otherwise</string>
 
     <!-- User Preference Constants -->
+    <string name="mdm_override_title">MDM Override</string>
+    <string name="mdm_override_summary_on">Network Survey is controlled via MDM, but now some of the MDM settings can be overridden</string>
+    <string name="mdm_override_summary_off">Network Survey is controlled via MDM</string>
+
     <string name="logging_config_title">Logging Config</string>
 
-    <string name="log_rollover_description">File size limit before next rollover</string>
+    <string name="log_rollover_description">The maximum file size (in MB) before starting a new survey log file</string>
     <string name="log_rollover_title">Log Rollover Size (MB)</string>
 
     <string name="auto_start_cellular_logging_title">Auto Start Cellular Logging</string>
@@ -191,13 +207,13 @@
     <string name="scan_interval_config_title">Scanning Rate</string>
 
     <string name="cellular_scan_interval_title">Cellular Scan Interval</string>
-    <string name="cellular_scan_interval_description">The rate at which Cellular towers will be scanned for in seconds. Smaller values will decrease battery life.</string>
+    <string name="cellular_scan_interval_description">The rate at which Cellular towers will be scanned for in seconds. Smaller values will decrease battery life. The default value is 5 seconds.</string>
 
     <string name="wifi_scan_interval_title">Wi-Fi Scan Interval</string>
-    <string name="wifi_scan_interval_description">The rate at which Wi-Fi networks will be scanned for in seconds. Smaller values will decrease battery life.</string>
+    <string name="wifi_scan_interval_description">The rate at which Wi-Fi networks will be scanned for in seconds. Smaller values will decrease battery life. The default value is 5 seconds.</string>
 
     <string name="gnss_scan_interval_title">GNSS Scan Interval</string>
-    <string name="gnss_scan_interval_description">The rate at which GNSS satellites will be scanned for in seconds. Smaller values will decrease battery life.</string>
+    <string name="gnss_scan_interval_description">The rate at which GNSS satellites will be scanned for in seconds. Smaller values will decrease battery life. The default value is 8 seconds.</string>
 
     <string name="mqtt_connection_config_title">MQTT Connection Config</string>
 
@@ -239,7 +255,7 @@
     <!-- GNSS Failure Alert -->
     <string name="app_icon_description">App Icon</string>
     <string name="not_supported_title">GNSS Features May Not Work</string>
-    <string name="not_supported_description">Network Survey is not receiving raw GNSS measurements from the phone, which are required for generating GeoPackage files with useful data. You will still see some satellite status in the app, but any GeoPackage files generated will only contain basic location information. For more information and a list of devices that support raw GNSS, consult Android\'s <a href="https://developer.android.com/guide/topics/sensors/gnss">Raw GNSS Measurements</a> guide.</string>
+    <string name="not_supported_description">Network Survey is not receiving raw GNSS measurements from the phone, which are required for generating the GNSS GeoPackage files, or streaming GNSS records over MQTT. For more information and a list of devices that support raw GNSS, consult Android\'s <a href="https://developer.android.com/guide/topics/sensors/gnss">Raw GNSS Measurements</a> guide.</string>
     <string name="remember_my_decision">Don\'t ask me again</string>
 
     <!-- GNSS Status View -->

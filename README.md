@@ -46,7 +46,7 @@ the incoming survey messages.
 
 ## MQTT Broker Survey Record Streaming
 
-Currently, GSM, CDMA, UMTS, LTE, and 802.11 survey records are sent to a connected MQTT broker. They
+Currently, GSM, CDMA, UMTS, LTE, 802.11, and GNSS survey records are sent to a connected MQTT broker. They
 are published on the following MQTT Topics:
 
  * gsm_message
@@ -54,6 +54,7 @@ are published on the following MQTT Topics:
  * umts_message
  * lte_message
  * 80211_beacon_message
+ * gnss_message
  
 The MQTT Broker connection supports both plain text and TLS/SSL connections.
 

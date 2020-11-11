@@ -1,6 +1,7 @@
 package com.craxiom.networksurvey.logging;
 
 import android.content.Context;
+import android.content.RestrictionsManager;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.os.Environment;
@@ -64,8 +65,6 @@ public abstract class SurveyRecordLogger
     private final String fileNamePrefix;
     private final GeoPackageManager geoPackageManager;
     private final RolloverWorker rolloverWorker = new RolloverWorker();
-
-    private SharedPreferences.OnSharedPreferenceChangeListener preferenceChangeListener;
 
     GeoPackage geoPackage;
     volatile boolean loggingEnabled;
@@ -204,24 +203,22 @@ public abstract class SurveyRecordLogger
 
         if (MdmUtils.isUnderMdmControl(applicationContext, NetworkSurveyConstants.PROPERTY_LOG_ROLLOVER_SIZE_MB))
         {
-            Bundle mdmProperties = MdmUtils.getMdmProperties(applicationContext, NetworkSurveyConstants.PROPERTY_LOG_ROLLOVER_SIZE_MB);
-            if (mdmProperties != null)
+            final RestrictionsManager restrictionsManager = (RestrictionsManager) applicationContext.getSystemService(Context.RESTRICTIONS_SERVICE);
+            if (restrictionsManager != null)
             {
+                final Bundle mdmProperties = restrictionsManager.getApplicationRestrictions();
                 logRolloverSize = mdmProperties.getInt(NetworkSurveyConstants.PROPERTY_LOG_ROLLOVER_SIZE_MB);
             }
         } else
         {
             SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(applicationContext);
-            String rolloverPreferenceString = sharedPreferences.getString(NetworkSurveyConstants.PROPERTY_LOG_ROLLOVER_SIZE_MB, RolloverWorker.DEFAULT_ROLLOVER_SIZE_MB);
-            if (rolloverPreferenceString != null)
+            String rolloverPreferenceString = sharedPreferences.getString(NetworkSurveyConstants.PROPERTY_LOG_ROLLOVER_SIZE_MB, NetworkSurveyConstants.DEFAULT_ROLLOVER_SIZE_MB);
+            try
             {
-                try
-                {
-                    logRolloverSize = Integer.parseInt(rolloverPreferenceString);
-                } catch (Exception e)
-                {
-                    Timber.e(e, "Could not convert the max log size user preference (%s) to an int", rolloverPreferenceString);
-                }
+                logRolloverSize = Integer.parseInt(rolloverPreferenceString);
+            } catch (Exception e)
+            {
+                Timber.e(e, "Could not convert the max log size user preference (%s) to an int", rolloverPreferenceString);
             }
         }
 
@@ -423,7 +420,6 @@ public abstract class SurveyRecordLogger
     private class RolloverWorker
     {
         private static final int BYTES_TO_MEGABYTES = 1_048_576;
-        static final String DEFAULT_ROLLOVER_SIZE_MB = "5";
 
         /**
          * A lock that synchronizes read and write operations on {@link #rolloverSizeBytes}. For
@@ -466,7 +462,7 @@ public abstract class SurveyRecordLogger
          * The max log size for a GeoPackage file before a new one is created, in bytes. When this
          * value is set to 0, rollover is de-activated.
          */
-        private int rolloverSizeBytes = Integer.parseInt(DEFAULT_ROLLOVER_SIZE_MB) * BYTES_TO_MEGABYTES;
+        private int rolloverSizeBytes = Integer.parseInt(NetworkSurveyConstants.DEFAULT_ROLLOVER_SIZE_MB) * BYTES_TO_MEGABYTES;
 
         /**
          * Update the rollover worker with perhaps new values.
@@ -480,7 +476,7 @@ public abstract class SurveyRecordLogger
                 Timber.i("Log Rollover Size updated to %s MB", logRolloverSizeMb);
                 handler.removeCallbacks(rolloverTask); // no matter the mode, we always want to clean up
 
-                this.rolloverSizeBytes = logRolloverSizeMb * BYTES_TO_MEGABYTES;
+                rolloverSizeBytes = logRolloverSizeMb * BYTES_TO_MEGABYTES;
             }
         }
 

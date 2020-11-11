@@ -3,6 +3,7 @@ package com.craxiom.networksurvey.mqtt;
 import android.content.Context;
 
 import com.craxiom.messaging.CdmaRecord;
+import com.craxiom.messaging.GnssRecord;
 import com.craxiom.messaging.GsmRecord;
 import com.craxiom.messaging.LteRecord;
 import com.craxiom.messaging.UmtsRecord;
@@ -10,6 +11,7 @@ import com.craxiom.messaging.WifiBeaconRecord;
 import com.craxiom.networksurvey.ConnectionState;
 import com.craxiom.networksurvey.listeners.ICellularSurveyRecordListener;
 import com.craxiom.networksurvey.listeners.IConnectionStateListener;
+import com.craxiom.networksurvey.listeners.IGnssSurveyRecordListener;
 import com.craxiom.networksurvey.listeners.IWifiSurveyRecordListener;
 import com.craxiom.networksurvey.model.WifiRecordWrapper;
 import com.google.protobuf.MessageOrBuilder;
@@ -33,13 +35,14 @@ import timber.log.Timber;
  *
  * @since 0.1.1
  */
-public class MqttConnection implements ICellularSurveyRecordListener, IWifiSurveyRecordListener
+public class MqttConnection implements ICellularSurveyRecordListener, IWifiSurveyRecordListener, IGnssSurveyRecordListener
 {
     private static final String MQTT_GSM_MESSAGE_TOPIC = "gsm_message";
     private static final String MQTT_CDMA_MESSAGE_TOPIC = "cdma_message";
     private static final String MQTT_UMTS_MESSAGE_TOPIC = "umts_message";
     private static final String MQTT_LTE_MESSAGE_TOPIC = "lte_message";
     private static final String MQTT_WIFI_BEACON_MESSAGE_TOPIC = "80211_beacon_message";
+    private static final String MQTT_GNSS_MESSAGE_TOPIC = "gnss_message";
 
     /**
      * The amount of time to wait for a proper disconnection to occur before we force kill it.
@@ -122,6 +125,18 @@ public class MqttConnection implements ICellularSurveyRecordListener, IWifiSurve
             }
             publishMessage(MQTT_WIFI_BEACON_MESSAGE_TOPIC, wifiBeaconRecord);
         });
+    }
+
+    @Override
+    public void onGnssSurveyRecord(GnssRecord gnssRecord)
+    {
+        if (mqttClientId != null)
+        {
+            final GnssRecord.Builder gnssRecordBuilder = gnssRecord.toBuilder();
+            gnssRecord = gnssRecordBuilder.setData(gnssRecordBuilder.getDataBuilder().setDeviceName(mqttClientId)).build();
+        }
+
+        publishMessage(MQTT_GNSS_MESSAGE_TOPIC, gnssRecord);
     }
 
     /**
@@ -283,7 +298,10 @@ public class MqttConnection implements ICellularSurveyRecordListener, IWifiSurve
             // As best I can tell, the connection lost method is called for all connection lost scenarios, including
             // when the user manually stops the connection.  If the user manually stopped the connection the cause seems
             // to be null, so don't indicate that we are trying to reconnect.
-            if (cause != null) mqttConnection.notifyConnectionStateChange(ConnectionState.CONNECTING);
+            if (cause != null)
+            {
+                mqttConnection.notifyConnectionStateChange(ConnectionState.CONNECTING);
+            }
         }
 
         @Override

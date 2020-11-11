@@ -1,85 +1,94 @@
 <?xml version="1.0" encoding="utf-8"?>
 <PreferenceScreen xmlns:app="http://schemas.android.com/apk/res-auto">
 
+    <SwitchPreferenceCompat
+        app:defaultValue="false"
+        app:icon="@drawable/ic_mdm_control"
+        app:isPreferenceVisible="false"
+        app:key="mdm_override"
+        app:summaryOff="@string/mdm_override_summary_off"
+        app:summaryOn="@string/mdm_override_summary_on"
+        app:title="@string/mdm_override_title" />
+
     <PreferenceCategory
-            app:icon="@drawable/logging_thick_icon"
-            app:key="logging_config"
-            app:title="@string/logging_config_title">
+        app:icon="@drawable/logging_thick_icon"
+        app:key="logging_config"
+        app:title="@string/logging_config_title">
 
         <SwitchPreferenceCompat
-                app:defaultValue="true"
-                app:icon="@drawable/ic_cellular"
-                app:key="auto_start_logging"
-                app:summaryOff="@string/auto_start_cellular_logging_summary_off"
-                app:summaryOn="@string/auto_start_cellular_logging_summary_on"
-                app:title="@string/auto_start_cellular_logging_title" />
+            app:defaultValue="true"
+            app:icon="@drawable/ic_cellular"
+            app:key="auto_start_logging"
+            app:summaryOff="@string/auto_start_cellular_logging_summary_off"
+            app:summaryOn="@string/auto_start_cellular_logging_summary_on"
+            app:title="@string/auto_start_cellular_logging_title" />
 
         <SwitchPreferenceCompat
-                app:defaultValue="false"
-                app:icon="@drawable/ic_wifi"
-                app:key="auto_start_wifi_logging"
-                app:summaryOff="@string/auto_start_wifi_logging_summary_off"
-                app:summaryOn="@string/auto_start_wifi_logging_summary_on"
-                app:title="@string/auto_start_wifi_logging_title" />
+            app:defaultValue="false"
+            app:icon="@drawable/ic_wifi"
+            app:key="auto_start_wifi_logging"
+            app:summaryOff="@string/auto_start_wifi_logging_summary_off"
+            app:summaryOn="@string/auto_start_wifi_logging_summary_on"
+            app:title="@string/auto_start_wifi_logging_title" />
 
         <SwitchPreferenceCompat
-                app:defaultValue="false"
-                app:icon="@drawable/ic_gnss"
-                app:key="auto_start_gnss_logging"
-                app:summaryOff="@string/auto_start_gnss_logging_summary_off"
-                app:summaryOn="@string/auto_start_gnss_logging_summary_on"
-                app:title="@string/auto_start_gnss_logging_title" />
+            app:defaultValue="false"
+            app:icon="@drawable/ic_gnss"
+            app:key="auto_start_gnss_logging"
+            app:summaryOff="@string/auto_start_gnss_logging_summary_off"
+            app:summaryOn="@string/auto_start_gnss_logging_summary_on"
+            app:title="@string/auto_start_gnss_logging_title" />
 
         <DropDownPreference
-                app:icon="@drawable/log_rollover_icon"
-                app:entries="@array/log_rollover_size_labels"
-                app:entryValues="@array/log_rollover_size_values"
-                app:isPreferenceVisible="true"
-                app:key="log_rollover_size_mb"
-                app:title="@string/log_rollover_title"
-                app:useSimpleSummaryProvider="true" />
+            app:icon="@drawable/log_rollover_icon"
+            app:entries="@array/log_rollover_size_labels"
+            app:entryValues="@array/log_rollover_size_values"
+            app:isPreferenceVisible="true"
+            app:key="log_rollover_size_mb"
+            app:title="@string/log_rollover_title"
+            app:useSimpleSummaryProvider="true" />
     </PreferenceCategory>
 
     <PreferenceCategory
-            app:icon="@drawable/ic_interval"
-            app:key="scan_interval_config"
-            app:title="@string/scan_interval_config_title">
+        app:icon="@drawable/ic_interval"
+        app:key="scan_interval_config"
+        app:title="@string/scan_interval_config_title">
 
         <EditTextPreference
-                app:defaultValue="5"
-                app:dialogMessage="@string/cellular_scan_interval_description"
-                app:key="cellular_scan_interval_seconds"
-                app:title="@string/cellular_scan_interval_title"
-                app:useSimpleSummaryProvider="true" />
+            app:defaultValue="5"
+            app:dialogMessage="@string/cellular_scan_interval_description"
+            app:key="cellular_scan_interval_seconds"
+            app:title="@string/cellular_scan_interval_title"
+            app:useSimpleSummaryProvider="true" />
 
         <EditTextPreference
-                app:defaultValue="5"
-                app:dialogMessage="@string/wifi_scan_interval_description"
-                app:key="wifi_scan_interval_seconds"
-                app:title="@string/wifi_scan_interval_title"
-                app:useSimpleSummaryProvider="true" />
+            app:defaultValue="5"
+            app:dialogMessage="@string/wifi_scan_interval_description"
+            app:key="wifi_scan_interval_seconds"
+            app:title="@string/wifi_scan_interval_title"
+            app:useSimpleSummaryProvider="true" />
 
         <EditTextPreference
-                app:defaultValue="8"
-                app:dialogMessage="@string/gnss_scan_interval_description"
-                app:key="gnss_scan_interval_seconds"
-                app:title="@string/gnss_scan_interval_title"
-                app:useSimpleSummaryProvider="true" />
+            app:defaultValue="8"
+            app:dialogMessage="@string/gnss_scan_interval_description"
+            app:key="gnss_scan_interval_seconds"
+            app:title="@string/gnss_scan_interval_title"
+            app:useSimpleSummaryProvider="true" />
 
     </PreferenceCategory>
 
     <PreferenceCategory
-            app:icon="@drawable/ic_cloud_connection"
-            app:key="mqtt_connection_config"
-            app:title="@string/mqtt_connection_config_title">
+        app:icon="@drawable/ic_cloud_connection"
+        app:key="mqtt_connection_config"
+        app:title="@string/mqtt_connection_config_title">
 
         <SwitchPreferenceCompat
-                app:defaultValue="false"
-                app:icon="@drawable/ic_power"
-                app:key="mqtt_start_on_boot"
-                app:summaryOff="@string/auto_start_mqtt_summary_off"
-                app:summaryOn="@string/auto_start_mqtt_summary_on"
-                app:title="@string/mqtt_start_on_boot_title" />
+            app:defaultValue="false"
+            app:icon="@drawable/ic_power"
+            app:key="mqtt_start_on_boot"
+            app:summaryOff="@string/auto_start_mqtt_summary_off"
+            app:summaryOn="@string/auto_start_mqtt_summary_on"
+            app:title="@string/mqtt_start_on_boot_title" />
 
     </PreferenceCategory>
 
