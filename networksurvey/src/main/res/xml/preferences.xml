@@ -40,9 +40,10 @@
             app:title="@string/auto_start_gnss_logging_title" />
 
         <DropDownPreference
-            app:icon="@drawable/log_rollover_icon"
+            app:defaultValue="5"
             app:entries="@array/log_rollover_size_labels"
             app:entryValues="@array/log_rollover_size_values"
+            app:icon="@drawable/log_rollover_icon"
             app:isPreferenceVisible="true"
             app:key="log_rollover_size_mb"
             app:title="@string/log_rollover_title"

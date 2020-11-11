@@ -87,9 +87,8 @@
         android:title="@string/gnss_stream_title" />
 
     <restriction
-        android:defaultValue="5"
         android:description="@string/log_rollover_description"
-        android:key="log_rollover_dropdown"
+        android:key="log_rollover_size_mb"
         android:restrictionType="integer"
         android:title="@string/log_rollover_title" />
 
