@@ -75,7 +75,7 @@
     <string name="wifi_logging_toggle_failed">Failed to toggle the Wi-Fi logging state</string>
     <string name="gnss_logging_start_toast">Started Writing the GNSS Log File</string>
     <string name="gnss_logging_stop_toast">GNSS Log File Closed</string>
-    <string name="gnss_logging_toggle_failed">Failed to toggle the GNSS logging state</string>
+    <string name="gnss_logging_toggle_failed">Failed to toggle the GNSS logging state; is GPS turned on?</string>
 
     <string name="grpc_connection_title">Server Connection</string>
     <string name="grpc_connection_description">Here you can connect to a Network Survey server.  Once connected, all future survey results will be streamed to the server.

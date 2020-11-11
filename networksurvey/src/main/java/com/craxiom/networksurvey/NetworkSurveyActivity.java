@@ -122,7 +122,7 @@ public class NetworkSurveyActivity extends AppCompatActivity
         gnssFailureListener = () -> {
             final View fragmentView = LayoutInflater.from(getApplicationContext()).inflate(R.layout.gnss_failure, null);
 
-            AlertDialog gnssFailureDialog = new AlertDialog.Builder(NetworkSurveyActivity.this, R.style.Theme_AppCompat_Light_Dialog)
+            AlertDialog gnssFailureDialog = new AlertDialog.Builder(this, R.style.Theme_AppCompat_Light_Dialog)
                     .setView(fragmentView)
                     .setPositiveButton(R.string.ok, (dialog, id) -> {
                         CheckBox rememberDecisionCheckBox = fragmentView.findViewById(R.id.failureRememberDecisionCheckBox);
@@ -148,7 +148,7 @@ public class NetworkSurveyActivity extends AppCompatActivity
 
         // If we have been granted the location permission, we want to check to see if the location service is enabled.
         // If it is not, then this call will report that to the user and give them the option to enable it.
-        if (hasLocationPermission()) checkLocationProvider();
+        if (hasLocationPermission()) checkLocationProvider(true);
 
         // All we need for the cellular information is the Manifest.permission.READ_PHONE_STATE permission.  Location is optional
         if (hasCellularPermission()) startAndBindToNetworkSurveyService();
@@ -197,7 +197,7 @@ public class NetworkSurveyActivity extends AppCompatActivity
                 {
                     if (grantResults[index] == PackageManager.PERMISSION_GRANTED)
                     {
-                        checkLocationProvider();
+                        checkLocationProvider(true);
                         startAndBindToNetworkSurveyService();
                     } else
                     {
@@ -309,15 +309,17 @@ public class NetworkSurveyActivity extends AppCompatActivity
     }
 
     /**
-     * Checks that the location provider is enabled.  If GPS location is not enabled on this device, then the settings
-     * UI is opened so the user can enable it.
+     * Checks that the location provider is enabled.  If GPS location is not enabled on this device, and
+     * {@code informUser} is set to true, then the settings UI is opened so the user can enable it.
      * <p>
      * If either the GPS device is not present, or if the GPS provider is disabled, an appropriate toast message is
-     * displayed.
+     * displayed as long as the {@code informUser} parameter is set to true.
      *
+     * @param informUser If this method should display a toast and prompt the user to enable GPS set this to true,
+     *                   false otherwise.
      * @return True if the device has GPS capabilities, and location services are enabled on the device. False otherwise.
      */
-    private boolean checkLocationProvider()
+    private boolean checkLocationProvider(boolean informUser)
     {
         final LocationManager locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
         if (locationManager == null)
@@ -331,16 +333,19 @@ public class NetworkSurveyActivity extends AppCompatActivity
         {
             final String noGpsMessage = getString(R.string.no_gps_device);
             Timber.w(noGpsMessage);
-            Toast.makeText(getApplicationContext(), noGpsMessage, Toast.LENGTH_LONG).show();
+            if (informUser) Toast.makeText(getApplicationContext(), noGpsMessage, Toast.LENGTH_LONG).show();
             return false;
         } else if (!locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER))
         {
             // gps exists, but isn't on
             final String turnOnGpsMessage = getString(R.string.turn_on_gps);
             Timber.w(turnOnGpsMessage);
-            Toast.makeText(getApplicationContext(), turnOnGpsMessage, Toast.LENGTH_LONG).show();
+            if (informUser)
+            {
+                Toast.makeText(getApplicationContext(), turnOnGpsMessage, Toast.LENGTH_LONG).show();
 
-            promptEnableGps();
+                promptEnableGps();
+            }
             return false;
         }
 
@@ -539,7 +544,7 @@ public class NetworkSurveyActivity extends AppCompatActivity
     private void toggleGnssLogging(boolean enable)
     {
         new ToggleLoggingTask(() -> {
-            if (!checkLocationProvider()) return null;
+            if (!checkLocationProvider(false)) return null;
             if (networkSurveyService != null) return networkSurveyService.toggleGnssLogging(enable);
             return null;
         }, enabled -> {
@@ -628,14 +633,8 @@ public class NetworkSurveyActivity extends AppCompatActivity
         @Override
         protected void onPostExecute(Boolean enabled)
         {
-            if (enabled == null)
-            {
-                // An exception occurred or something went wrong, so don't do anything
-                Toast.makeText(getApplicationContext(), "Error: Could not enable Logging", Toast.LENGTH_LONG).show();
-                return;
-            }
-
-            Toast.makeText(getApplicationContext(), postExecuteFunction.apply(enabled), Toast.LENGTH_SHORT).show();
+            Toast.makeText(getApplicationContext(), postExecuteFunction.apply(enabled),
+                    enabled == null ? Toast.LENGTH_LONG : Toast.LENGTH_SHORT).show();
         }
     }
 

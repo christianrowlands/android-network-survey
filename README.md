@@ -63,6 +63,14 @@ library. [The API documentation is published to a web page here](https://messagi
 
 ## Changelog
 
+##### [0.4.0](https://github.com/christianrowlands/android-network-survey/releases/tag/v0.4.0) - 2020-11-10
+ * Fixed a bug that caused an app crash if it was opened, hidden, and reopened in short sequence.
+ * Fixed a bug where the app would crash if trying to enable GNSS logging with location services turned off.
+ * Added a survey log file rollover option to prevent the log file from growing too large.
+ * Added support for streaming GNSS records over an MQTT connection.
+ * Added a dialog to warn the user if the device does not support raw GNSS measurements.
+ * Added several more app restrictions to allow more control when the device is under MDM.
+
 ##### [0.3.0](https://github.com/christianrowlands/android-network-survey/releases/tag/v0.3.0) - 2020-10-01
  * Reduced the GNSS GeoPackage file size by around 100x.
  * Changed the GNSS GeoPackage table format.
