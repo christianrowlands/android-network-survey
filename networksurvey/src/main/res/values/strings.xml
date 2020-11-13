@@ -193,27 +193,27 @@
     <string name="log_rollover_title">Log Rollover Size (MB)</string>
 
     <string name="auto_start_cellular_logging_title">Auto Start Cellular Logging</string>
-    <string name="auto_start_cellular_logging_summary_on">Cellular logging will be started upon app opening</string>
+    <string name="auto_start_cellular_logging_summary_on">Cellular logging will be started upon app opening or when the phone is turned on</string>
     <string name="auto_start_cellular_logging_summary_off">Cellular logging will only start when manually enabled</string>
 
     <string name="auto_start_wifi_logging_title">Auto Start Wi-Fi Logging</string>
-    <string name="auto_start_wifi_logging_summary_on">Wi-Fi logging will be started upon app opening</string>
+    <string name="auto_start_wifi_logging_summary_on">Wi-Fi logging will be started upon app opening or when the phone is turned on</string>
     <string name="auto_start_wifi_logging_summary_off">Wi-Fi logging will only start when manually enabled</string>
 
     <string name="auto_start_gnss_logging_title">Auto Start GNSS Logging</string>
-    <string name="auto_start_gnss_logging_summary_on">GNSS logging will be started upon app opening</string>
+    <string name="auto_start_gnss_logging_summary_on">GNSS logging will be started upon app opening or when the phone is turned on</string>
     <string name="auto_start_gnss_logging_summary_off">GNSS logging will only start when manually enabled</string>
 
     <string name="scan_interval_config_title">Scanning Rate</string>
 
     <string name="cellular_scan_interval_title">Cellular Scan Interval</string>
-    <string name="cellular_scan_interval_description">The rate at which Cellular towers will be scanned for in seconds. Smaller values will decrease battery life. The default value is 5 seconds.</string>
+    <string name="cellular_scan_interval_description">The rate at which Cellular towers will be scanned for in seconds. Smaller values will decrease battery life.</string>
 
     <string name="wifi_scan_interval_title">Wi-Fi Scan Interval</string>
-    <string name="wifi_scan_interval_description">The rate at which Wi-Fi networks will be scanned for in seconds. Smaller values will decrease battery life. The default value is 5 seconds.</string>
+    <string name="wifi_scan_interval_description">The rate at which Wi-Fi networks will be scanned for in seconds. Smaller values will decrease battery life.</string>
 
     <string name="gnss_scan_interval_title">GNSS Scan Interval</string>
-    <string name="gnss_scan_interval_description">The rate at which GNSS satellites will be scanned for in seconds. Smaller values will decrease battery life. The default value is 8 seconds.</string>
+    <string name="gnss_scan_interval_description">The rate at which GNSS satellites will be scanned for in seconds. Smaller values will decrease battery life.</string>
 
     <string name="mqtt_connection_config_title">MQTT Connection Config</string>
 

@@ -8,7 +8,6 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
-import android.content.SharedPreferences;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.content.res.ColorStateList;
@@ -96,10 +95,10 @@ public class NetworkSurveyActivity extends AppCompatActivity
         // Install the defaults specified in the XML preferences file, this is only done the first time the app is opened
         PreferenceManager.setDefaultValues(this, R.xml.preferences, false);
 
-        final SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
-        turnOnCellularLoggingOnNextServiceConnection = preferences.getBoolean(NetworkSurveyConstants.PROPERTY_AUTO_START_CELLULAR_LOGGING, false);
-        turnOnWifiLoggingOnNextServiceConnection = preferences.getBoolean(NetworkSurveyConstants.PROPERTY_AUTO_START_WIFI_LOGGING, false);
-        turnOnGnssLoggingOnNextServiceConnection = preferences.getBoolean(NetworkSurveyConstants.PROPERTY_AUTO_START_GNSS_LOGGING, false);
+        final Context applicationContext = getApplicationContext();
+        turnOnCellularLoggingOnNextServiceConnection = PreferenceUtils.getAutoStartPreference(NetworkSurveyConstants.PROPERTY_AUTO_START_CELLULAR_LOGGING, false, applicationContext);
+        turnOnWifiLoggingOnNextServiceConnection = PreferenceUtils.getAutoStartPreference(NetworkSurveyConstants.PROPERTY_AUTO_START_WIFI_LOGGING, false, applicationContext);
+        turnOnGnssLoggingOnNextServiceConnection = PreferenceUtils.getAutoStartPreference(NetworkSurveyConstants.PROPERTY_AUTO_START_GNSS_LOGGING, false, applicationContext);
 
         setupNavigation();
 
@@ -120,7 +119,7 @@ public class NetworkSurveyActivity extends AppCompatActivity
         }
 
         gnssFailureListener = () -> {
-            final View fragmentView = LayoutInflater.from(getApplicationContext()).inflate(R.layout.gnss_failure, null);
+            final View fragmentView = LayoutInflater.from(applicationContext).inflate(R.layout.gnss_failure, null);
 
             AlertDialog gnssFailureDialog = new AlertDialog.Builder(this, R.style.Theme_AppCompat_Light_Dialog)
                     .setView(fragmentView)

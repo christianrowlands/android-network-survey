@@ -1,15 +1,10 @@
 package com.craxiom.networksurvey.logging;
 
 import android.content.Context;
-import android.content.RestrictionsManager;
-import android.content.SharedPreferences;
-import android.os.Bundle;
 import android.os.Environment;
 import android.os.Handler;
 import android.os.Looper;
 import android.widget.Toast;
-
-import androidx.preference.PreferenceManager;
 
 import com.craxiom.messaging.LteBandwidth;
 import com.craxiom.networksurvey.constants.CellularMessageConstants;
@@ -18,7 +13,7 @@ import com.craxiom.networksurvey.constants.MessageConstants;
 import com.craxiom.networksurvey.constants.NetworkSurveyConstants;
 import com.craxiom.networksurvey.services.NetworkSurveyService;
 import com.craxiom.networksurvey.services.SurveyRecordProcessor;
-import com.craxiom.networksurvey.util.MdmUtils;
+import com.craxiom.networksurvey.util.PreferenceUtils;
 
 import java.io.File;
 import java.sql.SQLException;
@@ -199,28 +194,7 @@ public abstract class SurveyRecordLogger
      */
     private void updateRolloverWorker()
     {
-        int logRolloverSize = 0;
-
-        if (MdmUtils.isUnderMdmControl(applicationContext, NetworkSurveyConstants.PROPERTY_LOG_ROLLOVER_SIZE_MB))
-        {
-            final RestrictionsManager restrictionsManager = (RestrictionsManager) applicationContext.getSystemService(Context.RESTRICTIONS_SERVICE);
-            if (restrictionsManager != null)
-            {
-                final Bundle mdmProperties = restrictionsManager.getApplicationRestrictions();
-                logRolloverSize = mdmProperties.getInt(NetworkSurveyConstants.PROPERTY_LOG_ROLLOVER_SIZE_MB);
-            }
-        } else
-        {
-            SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(applicationContext);
-            String rolloverPreferenceString = sharedPreferences.getString(NetworkSurveyConstants.PROPERTY_LOG_ROLLOVER_SIZE_MB, NetworkSurveyConstants.DEFAULT_ROLLOVER_SIZE_MB);
-            try
-            {
-                logRolloverSize = Integer.parseInt(rolloverPreferenceString);
-            } catch (Exception e)
-            {
-                Timber.e(e, "Could not convert the max log size user preference (%s) to an int", rolloverPreferenceString);
-            }
-        }
+        final int logRolloverSize = PreferenceUtils.getRolloverSizePreference(applicationContext);
 
         rolloverWorker.update(logRolloverSize);
     }

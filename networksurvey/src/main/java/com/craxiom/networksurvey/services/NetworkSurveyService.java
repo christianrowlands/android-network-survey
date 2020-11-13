@@ -167,18 +167,18 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
 
             attemptMqttConnectionAtBoot();
 
-            final SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
+            final Context applicationContext = getApplicationContext();
 
-            final boolean autoStartCellularLogging = preferences.getBoolean(NetworkSurveyConstants.PROPERTY_AUTO_START_CELLULAR_LOGGING, false);
+            final boolean autoStartCellularLogging = PreferenceUtils.getAutoStartPreference(NetworkSurveyConstants.PROPERTY_AUTO_START_CELLULAR_LOGGING, false, applicationContext);
             if (autoStartCellularLogging && !cellularLoggingEnabled.get())
             {
                 toggleCellularLogging(true);
             }
 
-            final boolean autoStartWifiLogging = preferences.getBoolean(NetworkSurveyConstants.PROPERTY_AUTO_START_WIFI_LOGGING, false);
+            final boolean autoStartWifiLogging = PreferenceUtils.getAutoStartPreference(NetworkSurveyConstants.PROPERTY_AUTO_START_WIFI_LOGGING, false, applicationContext);
             if (autoStartWifiLogging && !wifiLoggingEnabled.get()) toggleWifiLogging(true);
 
-            final boolean autoStartGnssLogging = preferences.getBoolean(NetworkSurveyConstants.PROPERTY_AUTO_START_GNSS_LOGGING, false);
+            final boolean autoStartGnssLogging = PreferenceUtils.getAutoStartPreference(NetworkSurveyConstants.PROPERTY_AUTO_START_GNSS_LOGGING, false, applicationContext);
             if (autoStartGnssLogging && !gnssLoggingEnabled.get()) toggleGnssLogging(true);
         }
 
@@ -991,38 +991,34 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
      */
     private void attemptMqttConnectionAtBoot()
     {
+        if (!PreferenceUtils.getMqttStartOnBootPreference(getApplicationContext()))
+        {
+            Timber.i("Skipping the mqtt auto-connect because the preference indicated as such");
+            return;
+        }
+
         // First try to use the MDM settings. The only exception to this is if the user has overridden the MDM settings
-        // which is checked in the mdm connect method
         boolean mdmConnection = false;
         if (!isMqttMdmOverrideEnabled())
         {
             final RestrictionsManager restrictionsManager = (RestrictionsManager) getSystemService(Context.RESTRICTIONS_SERVICE);
             if (restrictionsManager != null)
             {
-                final Bundle mdmProperties = restrictionsManager.getApplicationRestrictions();
-                if (mdmProperties.getBoolean(NetworkSurveyConstants.PROPERTY_MQTT_START_ON_BOOT, false))
+                final MqttBrokerConnectionInfo connectionInfo = getMdmMqttBrokerConnectionInfo();
+                if (connectionInfo != null)
                 {
-                    final MqttBrokerConnectionInfo connectionInfo = getMdmMqttBrokerConnectionInfo();
-                    if (connectionInfo != null)
-                    {
-                        mdmConnection = true;
-                        connectToMqttBroker(connectionInfo);
-                    }
+                    mdmConnection = true;
+                    connectToMqttBroker(connectionInfo);
                 }
             }
         }
 
         if (!mdmConnection)
         {
-            final SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
-
-            if (preferences.getBoolean(NetworkSurveyConstants.PROPERTY_MQTT_START_ON_BOOT, false))
+            final MqttBrokerConnectionInfo userMqttBrokerConnectionInfo = getUserMqttBrokerConnectionInfo();
+            if (userMqttBrokerConnectionInfo != null)
             {
-                final MqttBrokerConnectionInfo userMqttBrokerConnectionInfo = getUserMqttBrokerConnectionInfo();
-                if (userMqttBrokerConnectionInfo != null)
-                {
-                    connectToMqttBroker(userMqttBrokerConnectionInfo);
-                }
+                connectToMqttBroker(userMqttBrokerConnectionInfo);
             }
         }
     }
