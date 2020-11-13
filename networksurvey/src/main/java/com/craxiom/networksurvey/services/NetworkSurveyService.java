@@ -1322,6 +1322,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
         if (locationManager != null)
         {
             locationManager.unregisterGnssMeasurementsCallback(measurementListener);
+            gpsListener.clearGnssTimeoutCallback();
             locationManager = null;
         }
 
