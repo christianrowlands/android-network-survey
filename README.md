@@ -63,7 +63,7 @@ library. [The API documentation is published to a web page here](https://messagi
 
 ## Changelog
 
-##### [0.4.0](https://github.com/christianrowlands/android-network-survey/releases/tag/v0.4.0) - 2020-11-10
+##### [0.4.0](https://github.com/christianrowlands/android-network-survey/releases/tag/v0.4.0) - 2020-11-17
  * Fixed a bug that caused an app crash if it was opened, hidden, and reopened in short sequence.
  * Fixed a bug where the app would crash if trying to enable GNSS logging with location services turned off.
  * Added a survey log file rollover option to prevent the log file from growing too large.
