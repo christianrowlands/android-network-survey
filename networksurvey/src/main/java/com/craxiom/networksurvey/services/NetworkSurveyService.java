@@ -14,7 +14,6 @@ import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.location.GnssMeasurementsEvent;
 import android.location.GnssStatus;
-import android.location.Location;
 import android.location.LocationManager;
 import android.net.wifi.ScanResult;
 import android.net.wifi.WifiManager;
@@ -38,6 +37,7 @@ import androidx.core.app.NotificationCompat;
 import androidx.core.content.ContextCompat;
 import androidx.preference.PreferenceManager;
 
+import com.craxiom.networksurvey.Application;
 import com.craxiom.networksurvey.CalculationUtils;
 import com.craxiom.networksurvey.ConnectionState;
 import com.craxiom.networksurvey.GpsListener;
@@ -46,6 +46,7 @@ import com.craxiom.networksurvey.R;
 import com.craxiom.networksurvey.constants.NetworkSurveyConstants;
 import com.craxiom.networksurvey.listeners.ICellularSurveyRecordListener;
 import com.craxiom.networksurvey.listeners.IConnectionStateListener;
+import com.craxiom.networksurvey.listeners.IGnssFailureListener;
 import com.craxiom.networksurvey.listeners.IGnssSurveyRecordListener;
 import com.craxiom.networksurvey.listeners.IWifiSurveyRecordListener;
 import com.craxiom.networksurvey.logging.CellularSurveyRecordLogger;
@@ -93,15 +94,16 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
     private String deviceId;
     private SurveyRecordProcessor surveyRecordProcessor;
     private GpsListener gpsListener;
+    private IGnssFailureListener gnssFailureListener;
     private CellularSurveyRecordLogger cellularSurveyRecordLogger;
     private WifiSurveyRecordLogger wifiSurveyRecordLogger;
     private GnssRecordLogger gnssRecordLogger;
     private Looper serviceLooper;
     private Handler serviceHandler;
     private LocationManager locationManager = null;
-    private final long firstGpsAcqTime = Long.MIN_VALUE;
+    private long firstGpsAcqTime = Long.MIN_VALUE;
     private boolean gnssRawSupportKnown = false;
-    private final boolean hasGnssRawFailureNagLaunched = false;
+    private boolean hasGnssRawFailureNagLaunched = false;
     private MqttConnection mqttConnection;
     private BroadcastReceiver managedConfigurationListener;
 
@@ -165,15 +167,18 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
 
             attemptMqttConnectionAtBoot();
 
-            final SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
+            final Context applicationContext = getApplicationContext();
 
-            final boolean autoStartCellularLogging = preferences.getBoolean(NetworkSurveyConstants.PROPERTY_AUTO_START_CELLULAR_LOGGING, false);
-            if (autoStartCellularLogging && !cellularLoggingEnabled.get()) toggleCellularLogging(true);
+            final boolean autoStartCellularLogging = PreferenceUtils.getAutoStartPreference(NetworkSurveyConstants.PROPERTY_AUTO_START_CELLULAR_LOGGING, false, applicationContext);
+            if (autoStartCellularLogging && !cellularLoggingEnabled.get())
+            {
+                toggleCellularLogging(true);
+            }
 
-            final boolean autoStartWifiLogging = preferences.getBoolean(NetworkSurveyConstants.PROPERTY_AUTO_START_WIFI_LOGGING, false);
+            final boolean autoStartWifiLogging = PreferenceUtils.getAutoStartPreference(NetworkSurveyConstants.PROPERTY_AUTO_START_WIFI_LOGGING, false, applicationContext);
             if (autoStartWifiLogging && !wifiLoggingEnabled.get()) toggleWifiLogging(true);
 
-            final boolean autoStartGnssLogging = preferences.getBoolean(NetworkSurveyConstants.PROPERTY_AUTO_START_GNSS_LOGGING, false);
+            final boolean autoStartGnssLogging = PreferenceUtils.getAutoStartPreference(NetworkSurveyConstants.PROPERTY_AUTO_START_GNSS_LOGGING, false, applicationContext);
             if (autoStartGnssLogging && !gnssLoggingEnabled.get()) toggleGnssLogging(true);
         }
 
@@ -206,9 +211,12 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
         stopGnssRecordScanning();
         stopAllLogging();
 
+        PreferenceManager.getDefaultSharedPreferences(getApplicationContext()).unregisterOnSharedPreferenceChangeListener(this);
+
         serviceLooper.quitSafely();
         serviceHandler = null;
         shutdownNotifications();
+
         super.onDestroy();
     }
 
@@ -223,6 +231,11 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
     {
         switch (key)
         {
+            case NetworkSurveyConstants.PROPERTY_LOG_ROLLOVER_SIZE_MB:
+                wifiSurveyRecordLogger.onSharedPreferenceChanged();
+                cellularSurveyRecordLogger.onSharedPreferenceChanged();
+                gnssRecordLogger.onSharedPreferenceChanged();
+                break;
             case NetworkSurveyConstants.PROPERTY_CELLULAR_SCAN_INTERVAL_SECONDS:
             case NetworkSurveyConstants.PROPERTY_WIFI_NETWORKS_SORT_ORDER:
             case NetworkSurveyConstants.PROPERTY_GNSS_SCAN_INTERVAL_SECONDS:
@@ -256,8 +269,19 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
     public void connectToMqttBroker(MqttBrokerConnectionInfo connectionInfo)
     {
         mqttConnection.connect(getApplicationContext(), connectionInfo);
-        registerCellularSurveyRecordListener(mqttConnection);
-        registerWifiSurveyRecordListener(mqttConnection);
+
+        if (connectionInfo.isCellularStreamEnabled())
+        {
+            registerCellularSurveyRecordListener(mqttConnection);
+        }
+        if (connectionInfo.isWifiStreamEnabled())
+        {
+            registerWifiSurveyRecordListener(mqttConnection);
+        }
+        if (connectionInfo.isGnssStreamEnabled())
+        {
+            registerGnssSurveyRecordListener(mqttConnection);
+        }
     }
 
     /**
@@ -271,6 +295,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
 
         unregisterCellularSurveyRecordListener(mqttConnection);
         unregisterWifiSurveyRecordListener(mqttConnection);
+        unregisterGnssSurveyRecordListener(mqttConnection);
         mqttConnection.disconnect();
     }
 
@@ -701,16 +726,13 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
     }
 
     /**
-     * Updates the location in the GNSS GeoPackage recorder if it is not null.
-     * <p>
-     * Also notifies the user if the RAW GNSS measurement timeout has expired.
-     *
-     * @param location The new location of this Android device.
+     * Checks to see if the GNSS timeout has occurred. If we have waited longer than {@link #TIME_TO_WAIT_FOR_GNSS_RAW_BEFORE_FAILURE}
+     * without any GNSS measurements coming in, we can assume that the device does not support raw GNSS measurements.
+     * If that is the case then present that information to the user so they know their device won't support it.
      */
-    public void updateLocation(final Location location)
+    public void checkForGnssTimeout()
     {
-        // TODO Add this back in when we can test on a device that does not support GNSS
-        /*if (!gnssRawSupportKnown && !hasGnssRawFailureNagLaunched)
+        if (!gnssRawSupportKnown && !hasGnssRawFailureNagLaunched)
         {
             if (firstGpsAcqTime < 0L)
             {
@@ -723,13 +745,16 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
                 // they do get some satellite status on this display. If that is the case,
                 // they can choose not to be nagged about this every time they launch the app.
                 boolean ignoreRawGnssFailure = PreferenceUtils.getBoolean(Application.get().getString(R.string.pref_key_ignore_raw_gnss_failure), false);
-                if (!ignoreRawGnssFailure)
+                if (!ignoreRawGnssFailure && gnssFailureListener != null)
                 {
-                    final GnssFailureDialogFragment gnssFailureDialogFragment = new GnssFailureDialogFragment();
-                    gnssFailureDialogFragment.show();
+                    gnssFailureListener.onGnssFailure();
+                    gpsListener.clearGnssTimeoutCallback(); // No need for the callback anymore
                 }
             }
-        }*/
+        } else
+        {
+            gpsListener.clearGnssTimeoutCallback();
+        }
     }
 
     /**
@@ -800,9 +825,15 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
                 smallestScanRate = cellularScanRateMs;
             }
 
-            if (wifiScanningActive.get() && wifiScanRateMs < smallestScanRate) smallestScanRate = wifiScanRateMs;
+            if (wifiScanningActive.get() && wifiScanRateMs < smallestScanRate)
+            {
+                smallestScanRate = wifiScanRateMs;
+            }
 
-            if (gnssStarted.get() && gnssScanRateMs < smallestScanRate) smallestScanRate = gnssScanRateMs;
+            if (gnssStarted.get() && gnssScanRateMs < smallestScanRate)
+            {
+                smallestScanRate = gnssScanRateMs;
+            }
 
             // Use the smallest scan rate set by the user for the active scanning types
             if (smallestScanRate > 10_000) smallestScanRate = smallestScanRate / 2;
@@ -842,6 +873,9 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
             Timber.w("Unable to get access to the Telephony Manager.  No network information will be displayed");
             return;
         }
+
+        // The service handler can be null if this service has been stopped but the activity still has a reference to this old service
+        if (serviceHandler == null) return;
 
         serviceHandler.postDelayed(() -> {
             try
@@ -957,35 +991,34 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
      */
     private void attemptMqttConnectionAtBoot()
     {
+        if (!PreferenceUtils.getMqttStartOnBootPreference(getApplicationContext()))
+        {
+            Timber.i("Skipping the mqtt auto-connect because the preference indicated as such");
+            return;
+        }
+
         // First try to use the MDM settings. The only exception to this is if the user has overridden the MDM settings
-        // which is checked in the mdm connect method
         boolean mdmConnection = false;
         if (!isMqttMdmOverrideEnabled())
         {
             final RestrictionsManager restrictionsManager = (RestrictionsManager) getSystemService(Context.RESTRICTIONS_SERVICE);
             if (restrictionsManager != null)
             {
-                final Bundle mdmProperties = restrictionsManager.getApplicationRestrictions();
-                if (mdmProperties.getBoolean(NetworkSurveyConstants.PROPERTY_MQTT_START_ON_BOOT, false))
+                final MqttBrokerConnectionInfo connectionInfo = getMdmMqttBrokerConnectionInfo();
+                if (connectionInfo != null)
                 {
-                    final MqttBrokerConnectionInfo connectionInfo = getMdmMqttBrokerConnectionInfo();
-                    if (connectionInfo != null)
-                    {
-                        mdmConnection = true;
-                        connectToMqttBroker(connectionInfo);
-                    }
+                    mdmConnection = true;
+                    connectToMqttBroker(connectionInfo);
                 }
             }
         }
 
         if (!mdmConnection)
         {
-            final SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
-
-            if (preferences.getBoolean(NetworkSurveyConstants.PROPERTY_MQTT_START_ON_BOOT, false))
+            final MqttBrokerConnectionInfo userMqttBrokerConnectionInfo = getUserMqttBrokerConnectionInfo();
+            if (userMqttBrokerConnectionInfo != null)
             {
-                final MqttBrokerConnectionInfo userMqttBrokerConnectionInfo = getUserMqttBrokerConnectionInfo();
-                if (userMqttBrokerConnectionInfo != null) connectToMqttBroker(userMqttBrokerConnectionInfo);
+                connectToMqttBroker(userMqttBrokerConnectionInfo);
             }
         }
     }
@@ -1261,6 +1294,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
                 if (locationManager != null)
                 {
                     locationManager.registerGnssMeasurementsCallback(measurementListener);
+                    gpsListener.addGnssTimeoutCallback(this::checkForGnssTimeout);
                     Timber.i("Successfully registered the GNSS listeners");
                 }
             } else
@@ -1288,6 +1322,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
         if (locationManager != null)
         {
             locationManager.unregisterGnssMeasurementsCallback(measurementListener);
+            gpsListener.clearGnssTimeoutCallback();
             locationManager = null;
         }
 
@@ -1332,6 +1367,10 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
             {
                 setScanRateValues();
                 attemptMqttConnectWithMdmConfig(true);
+
+                cellularSurveyRecordLogger.onMdmPreferenceChanged();
+                wifiSurveyRecordLogger.onMdmPreferenceChanged();
+                gnssRecordLogger.onMdmPreferenceChanged();
             }
         };
 
@@ -1392,13 +1431,16 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
             final String clientId = mdmProperties.getString(NetworkSurveyConstants.PROPERTY_MQTT_CLIENT_ID);
             final String username = mdmProperties.getString(NetworkSurveyConstants.PROPERTY_MQTT_USERNAME);
             final String password = mdmProperties.getString(NetworkSurveyConstants.PROPERTY_MQTT_PASSWORD);
+            final boolean cellularStreamEnabled = mdmProperties.getBoolean(NetworkSurveyConstants.PROPERTY_MQTT_CELLULAR_STREAM_ENABLED, NetworkSurveyConstants.DEFAULT_MQTT_CELLULAR_STREAM_SETTING);
+            final boolean wifiStreamEnabled = mdmProperties.getBoolean(NetworkSurveyConstants.PROPERTY_MQTT_WIFI_STREAM_ENABLED, NetworkSurveyConstants.DEFAULT_MQTT_WIFI_STREAM_SETTING);
+            final boolean gnssStreamEnabled = mdmProperties.getBoolean(NetworkSurveyConstants.PROPERTY_MQTT_GNSS_STREAM_ENABLED, NetworkSurveyConstants.DEFAULT_MQTT_GNSS_STREAM_SETTING);
 
             if (mqttBrokerHost == null || clientId == null)
             {
                 return null;
             }
 
-            return new MqttBrokerConnectionInfo(mqttBrokerHost, portNumber, tlsEnabled, clientId, username, password);
+            return new MqttBrokerConnectionInfo(mqttBrokerHost, portNumber, tlsEnabled, clientId, username, password, cellularStreamEnabled, wifiStreamEnabled, gnssStreamEnabled);
         }
 
         return null;
@@ -1427,8 +1469,11 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
 
         final String username = preferences.getString(NetworkSurveyConstants.PROPERTY_MQTT_USERNAME, "");
         final String password = preferences.getString(NetworkSurveyConstants.PROPERTY_MQTT_PASSWORD, "");
+        final boolean cellularStreamEnabled = preferences.getBoolean(NetworkSurveyConstants.PROPERTY_MQTT_CELLULAR_STREAM_ENABLED, NetworkSurveyConstants.DEFAULT_MQTT_CELLULAR_STREAM_SETTING);
+        final boolean wifiStreamEnabled = preferences.getBoolean(NetworkSurveyConstants.PROPERTY_MQTT_WIFI_STREAM_ENABLED, NetworkSurveyConstants.DEFAULT_MQTT_WIFI_STREAM_SETTING);
+        final boolean gnssStreamEnabled = preferences.getBoolean(NetworkSurveyConstants.PROPERTY_MQTT_GNSS_STREAM_ENABLED, NetworkSurveyConstants.DEFAULT_MQTT_GNSS_STREAM_SETTING);
 
-        return new MqttBrokerConnectionInfo(mqttBrokerHost, portNumber, tlsEnabled, clientId, username, password);
+        return new MqttBrokerConnectionInfo(mqttBrokerHost, portNumber, tlsEnabled, clientId, username, password, cellularStreamEnabled, wifiStreamEnabled, gnssStreamEnabled);
     }
 
     /**
@@ -1489,5 +1534,27 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
         {
             return NetworkSurveyService.this;
         }
+    }
+
+    /**
+     * Registers a listener any GNSS failures. This can include timing out before we received any
+     * GNSS measurements.
+     *
+     * @param gnssFailureListener The listener.
+     * @since 0.4.0
+     */
+    public void registerGnssFailureListener(IGnssFailureListener gnssFailureListener)
+    {
+        this.gnssFailureListener = gnssFailureListener;
+    }
+
+    /**
+     * Clears the GNSS failure listener.
+     *
+     * @since 0.4.0
+     */
+    public void clearGnssFailureListener()
+    {
+        gnssFailureListener = null;
     }
 }

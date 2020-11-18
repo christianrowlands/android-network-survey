@@ -27,6 +27,7 @@ import androidx.preference.PreferenceManager;
 
 import com.craxiom.networksurvey.Application;
 import com.craxiom.networksurvey.R;
+import com.craxiom.networksurvey.constants.NetworkSurveyConstants;
 
 import timber.log.Timber;
 
@@ -40,14 +41,17 @@ public class PreferenceUtils
     /**
      * Gets the scan rate preference associated with the provide preference key.
      * <p>
-     * First, this method tries to pull the MQM provided scan rate. If it is not set (either because the device is not
+     * First, this method tries to pull the MDM provided scan rate. If it is not set (either because the device is not
      * under MDM control, or if that specific value is not set by the MDM administrator) then the value is pulled from
      * the Android Shared Preferences (aka from the user settings). If it is not set there then the provided default
      * value is used.
+     * <p>
+     * The only exception to this sequence is that if the user has toggled the MDM override switch in user settings,
+     * then the user preference value will be used instead of the MDM value.
      *
      * @param scanRatePreferenceKey  The preference key to use when pulling the scan rate from MDM and Shared Preferences.
      * @param defaultScanRateSeconds The default scan rate to fall back on if the scan rate could not be found.
-     * @param context                The context to use when getting the Shared Preferences and Restriction Manager
+     * @param context                The context to use when getting the Shared Preferences and Restriction Manager.
      * @return The scan rate to use.
      * @since 0.3.0
      */
@@ -55,8 +59,10 @@ public class PreferenceUtils
     {
         final RestrictionsManager restrictionsManager = (RestrictionsManager) context.getSystemService(Context.RESTRICTIONS_SERVICE);
 
+        final boolean mdmOverride = PreferenceManager.getDefaultSharedPreferences(context).getBoolean(NetworkSurveyConstants.PROPERTY_MDM_OVERRIDE_KEY, false);
+
         // First try to use the MDM provided value.
-        if (restrictionsManager != null)
+        if (restrictionsManager != null && !mdmOverride)
         {
             final Bundle mdmProperties = restrictionsManager.getApplicationRestrictions();
 
@@ -80,6 +86,134 @@ public class PreferenceUtils
         {
             Timber.e(e, "Could not convert the GNSS scan interval user preference (%s) to an int", scanInterval);
             return defaultScanRateSeconds * 1_000;
+        }
+    }
+
+    /**
+     * Gets the auto start preference associated with the provide preference key.
+     * <p>
+     * First, this method tries to pull the MDM provided auto start value. If it is not set (either because the device
+     * is not under MDM control, or if that specific value is not set by the MDM administrator) then the value is pulled
+     * from the Android Shared Preferences (aka from the user settings). If it is not set there then the provided default
+     * value is used.
+     * <p>
+     * The only exception to this sequence is that if the user has toggled the MDM override switch in user settings,
+     * then the user preference value will be used instead of the MDM value.
+     *
+     * @param autoStartPreferenceKey The preference key to use when pulling the value from MDM and Shared Preferences.
+     * @param defaultAutoStart       The default auto start value to fall back on if it could not be found.
+     * @param context                The context to use when getting the Shared Preferences and Restriction Manager.
+     * @return The auto start preference to use.
+     * @since 0.4.0
+     */
+    public static boolean getAutoStartPreference(String autoStartPreferenceKey, boolean defaultAutoStart, Context context)
+    {
+        final RestrictionsManager restrictionsManager = (RestrictionsManager) context.getSystemService(Context.RESTRICTIONS_SERVICE);
+
+        final boolean mdmOverride = PreferenceManager.getDefaultSharedPreferences(context).getBoolean(NetworkSurveyConstants.PROPERTY_MDM_OVERRIDE_KEY, false);
+
+        // First try to use the MDM provided value.
+        if (restrictionsManager != null && !mdmOverride)
+        {
+            final Bundle mdmProperties = restrictionsManager.getApplicationRestrictions();
+
+            if (mdmProperties.containsKey(autoStartPreferenceKey))
+            {
+                return mdmProperties.getBoolean(autoStartPreferenceKey);
+            }
+        }
+
+        final SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(context);
+
+        // Next, try to use the value from user preferences, with a default fallback
+        return preferences.getBoolean(autoStartPreferenceKey, defaultAutoStart);
+    }
+
+    /**
+     * Gets the maximum file size preference. Once this file size is reached, the log file should be closed and a new
+     * one started.
+     * <p>
+     * First, this method tries to pull the MDM provided rollover size. If it is not set (either because the device is
+     * not under MDM control, or if that specific value is not set by the MDM administrator) then the value is pulled
+     * from the Android Shared Preferences (aka from the user settings). If it is not set there then the default value
+     * is used.
+     * <p>
+     * The only exception to this sequence is that if the user has toggled the MDM override switch in user settings,
+     * then the user preference value will be used instead of the MDM value.
+     *
+     * @param context The context to use when getting the Shared Preferences and Restriction Manager.
+     * @return The maximum file size to use.
+     * @since 0.4.0
+     */
+    public static int getRolloverSizePreference(Context context)
+    {
+        final RestrictionsManager restrictionsManager = (RestrictionsManager) context.getSystemService(Context.RESTRICTIONS_SERVICE);
+
+        final boolean mdmOverride = PreferenceManager.getDefaultSharedPreferences(context).getBoolean(NetworkSurveyConstants.PROPERTY_MDM_OVERRIDE_KEY, false);
+
+        // First try to use the MDM provided value.
+        if (restrictionsManager != null && !mdmOverride)
+        {
+            final Bundle mdmProperties = restrictionsManager.getApplicationRestrictions();
+
+            if (mdmProperties.containsKey(NetworkSurveyConstants.PROPERTY_LOG_ROLLOVER_SIZE_MB))
+            {
+                final int logRolloverSizeMb = mdmProperties.getInt(NetworkSurveyConstants.PROPERTY_LOG_ROLLOVER_SIZE_MB);
+                if (logRolloverSizeMb >= 0) return logRolloverSizeMb;
+            }
+        }
+
+        final SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(context);
+
+        // Next, try to use the value from user preferences.
+        final String rolloverPreferenceString = preferences.getString(NetworkSurveyConstants.PROPERTY_LOG_ROLLOVER_SIZE_MB, NetworkSurveyConstants.DEFAULT_ROLLOVER_SIZE_MB);
+        try
+        {
+            final int logRolloverSizeMb = Integer.parseInt(rolloverPreferenceString);
+            if (logRolloverSizeMb >= 0) return logRolloverSizeMb;
+        } catch (Exception e)
+        {
+            Timber.e(e, "Could not convert the log rollover size user preference (%s) to an int", rolloverPreferenceString);
+        }
+
+        return Integer.parseInt(NetworkSurveyConstants.DEFAULT_ROLLOVER_SIZE_MB);
+    }
+
+    /**
+     * Gets the auto start MQTT connection preference.
+     * <p>
+     * First, this method tries to pull the MDM provided auto start MQTT value. If it is not set (either because the device
+     * is not under MDM control, or if that specific value is not set by the MDM administrator) then the value is pulled
+     * from the Android Shared Preferences (aka from the user settings). If it is not set there then the provided default
+     * value is used.
+     * <p>
+     * The only exception to this sequence is that if the user has toggled the MDM override switch in user settings,
+     * then the user preference value will be used instead of the MDM value.
+     *
+     * @param context The context to use when getting the Shared Preferences and Restriction Manager.
+     * @return True if the MQTT connection should be started when the phone is booted, false otherwise.
+     * @since 0.4.0
+     */
+    public static boolean getMqttStartOnBootPreference(Context context)
+    {
+        final SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context);
+        final boolean mdmOverride = sharedPreferences.getBoolean(NetworkSurveyConstants.PROPERTY_MDM_OVERRIDE_KEY, false);
+
+        final RestrictionsManager restrictionsManager = (RestrictionsManager) context.getSystemService(Context.RESTRICTIONS_SERVICE);
+        Bundle mdmProperties = null;
+        if (restrictionsManager != null) mdmProperties = restrictionsManager.getApplicationRestrictions();
+
+        if (!mdmOverride
+                && mdmProperties != null
+                && mdmProperties.containsKey(NetworkSurveyConstants.PROPERTY_MQTT_START_ON_BOOT))
+        {
+            Timber.i("Using the MDM MQTT auto start preference");
+            return mdmProperties.getBoolean(NetworkSurveyConstants.PROPERTY_MQTT_START_ON_BOOT);
+        } else
+        {
+            Timber.i("Using the user MQTT auto start preference");
+
+            return sharedPreferences.getBoolean(NetworkSurveyConstants.PROPERTY_MQTT_START_ON_BOOT, false);
         }
     }
 

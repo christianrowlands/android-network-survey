@@ -46,7 +46,7 @@ the incoming survey messages.
 
 ## MQTT Broker Survey Record Streaming
 
-Currently, GSM, CDMA, UMTS, LTE, and 802.11 survey records are sent to a connected MQTT broker. They
+Currently, GSM, CDMA, UMTS, LTE, 802.11, and GNSS survey records are sent to a connected MQTT broker. They
 are published on the following MQTT Topics:
 
  * gsm_message
@@ -54,6 +54,7 @@ are published on the following MQTT Topics:
  * umts_message
  * lte_message
  * 80211_beacon_message
+ * gnss_message
  
 The MQTT Broker connection supports both plain text and TLS/SSL connections.
 
@@ -61,6 +62,14 @@ The survey messages are sent in JSON format following the protobuf definitions f
 library. [The API documentation is published to a web page here](https://messaging.networksurvey.app/).
 
 ## Changelog
+
+##### [0.4.0](https://github.com/christianrowlands/android-network-survey/releases/tag/v0.4.0) - 2020-11-17
+ * Fixed a bug that caused an app crash if it was opened, hidden, and reopened in short sequence.
+ * Fixed a bug where the app would crash if trying to enable GNSS logging with location services turned off.
+ * Added a survey log file rollover option to prevent the log file from growing too large.
+ * Added support for streaming GNSS records over an MQTT connection.
+ * Added a dialog to warn the user if the device does not support raw GNSS measurements.
+ * Added several more app restrictions to allow more control when the device is under MDM.
 
 ##### [0.3.0](https://github.com/christianrowlands/android-network-survey/releases/tag/v0.3.0) - 2020-10-01
  * Reduced the GNSS GeoPackage file size by around 100x.

@@ -17,6 +17,9 @@ public class NetworkSurveyConstants
     public static final int MQTT_SSL_PORT = 8883;
     public static final int DEFAULT_MQTT_PORT = MQTT_SSL_PORT;
     public static final boolean DEFAULT_MQTT_TLS_SETTING = true;
+    public static final boolean DEFAULT_MQTT_CELLULAR_STREAM_SETTING = true;
+    public static final boolean DEFAULT_MQTT_WIFI_STREAM_SETTING = true;
+    public static final boolean DEFAULT_MQTT_GNSS_STREAM_SETTING = true;
 
     public static final String NOTIFICATION_CHANNEL_ID = "network_survey_notification";
     public static final int GRPC_CONNECTION_NOTIFICATION_ID = 3;
@@ -61,6 +64,10 @@ public class NetworkSurveyConstants
     public static final int DEFAULT_WIFI_SCAN_INTERVAL_SECONDS = 5;
     public static final int DEFAULT_GNSS_SCAN_INTERVAL_SECONDS = 8;
 
+    public static final String DEFAULT_ROLLOVER_SIZE_MB = "5";
+
+    public static final String PROPERTY_MDM_OVERRIDE_KEY = "mdm_override";
+
     // Preferences
     public static final String PROPERTY_AUTO_START_CELLULAR_LOGGING = "auto_start_logging";
     public static final String PROPERTY_AUTO_START_WIFI_LOGGING = "auto_start_wifi_logging";
@@ -68,7 +75,8 @@ public class NetworkSurveyConstants
     public static final String PROPERTY_CELLULAR_SCAN_INTERVAL_SECONDS = "cellular_scan_interval_seconds";
     public static final String PROPERTY_WIFI_SCAN_INTERVAL_SECONDS = "wifi_scan_interval_seconds";
     public static final String PROPERTY_GNSS_SCAN_INTERVAL_SECONDS = "gnss_scan_interval_seconds";
-    public static final String PROPERTY_CONNECTION_TIMEOUT = "connection_timeout";
+    public static final String PROPERTY_LOG_ROLLOVER_SIZE_MB = "log_rollover_size_mb";
+
     public static final String PROPERTY_MQTT_MDM_OVERRIDE = "mqtt_mdm_override";
 
     // The following keys are used in the app_restrictions.xml file and also are settings stored in the app's shared preferences
@@ -79,6 +87,9 @@ public class NetworkSurveyConstants
     public static final String PROPERTY_MQTT_CONNECTION_TLS_ENABLED = "mqtt_tls_enabled";
     public static final String PROPERTY_MQTT_USERNAME = "mqtt_username";
     public static final String PROPERTY_MQTT_PASSWORD = "mqtt_password";
+    public static final String PROPERTY_MQTT_CELLULAR_STREAM_ENABLED = "cellular_stream_enabled";
+    public static final String PROPERTY_MQTT_WIFI_STREAM_ENABLED = "wifi_stream_enabled";
+    public static final String PROPERTY_MQTT_GNSS_STREAM_ENABLED = "gnss_stream_enabled";
 
     // Stored Preferences not exposed via the Settings UI
     public static final String PROPERTY_NETWORK_SURVEY_CONNECTION_HOST = "connection_host";

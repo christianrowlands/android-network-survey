@@ -65,6 +65,9 @@ public class MqttConnectionFragment extends Fragment implements IConnectionState
     private EditText deviceNameEdit;
     private EditText usernameEdit;
     private EditText passwordEdit;
+    private SwitchCompat cellularStreamToggleSwitch;
+    private SwitchCompat wifiStreamToggleSwitch;
+    private SwitchCompat gnssStreamToggleSwitch;
 
     private NetworkSurveyService surveyService;
 
@@ -76,6 +79,9 @@ public class MqttConnectionFragment extends Fragment implements IConnectionState
     private String deviceName = "";
     private String mqttUsername = "";
     private String mqttPassword = "";
+    private boolean cellularStreamEnabled = true;
+    private boolean wifiStreamEnabled = true;
+    private boolean gnssStreamEnabled = true;
 
     public MqttConnectionFragment()
     {
@@ -106,6 +112,9 @@ public class MqttConnectionFragment extends Fragment implements IConnectionState
         deviceNameEdit = view.findViewById(R.id.deviceName);
         usernameEdit = view.findViewById(R.id.mqttUsername);
         passwordEdit = view.findViewById(R.id.mqttPassword);
+        cellularStreamToggleSwitch = view.findViewById(R.id.streamCellularToggleSwitch);
+        wifiStreamToggleSwitch = view.findViewById(R.id.streamWifiToggleSwitch);
+        gnssStreamToggleSwitch = view.findViewById(R.id.streamGnssToggleSwitch);
 
         final CardView helpCardView = view.findViewById(R.id.help_card_view);
         helpCardView.setOnClickListener(new HelpCardListener(view, R.string.mqtt_connection_description));
@@ -160,6 +169,9 @@ public class MqttConnectionFragment extends Fragment implements IConnectionState
         deviceNameEdit.setText(deviceName);
         usernameEdit.setText(mqttUsername);
         passwordEdit.setText(mqttPassword);
+        cellularStreamToggleSwitch.setChecked(cellularStreamEnabled);
+        wifiStreamToggleSwitch.setChecked(wifiStreamEnabled);
+        gnssStreamToggleSwitch.setChecked(gnssStreamEnabled);
     }
 
     @Override
@@ -290,6 +302,9 @@ public class MqttConnectionFragment extends Fragment implements IConnectionState
         tlsEnabled = mdmProperties.getBoolean(NetworkSurveyConstants.PROPERTY_MQTT_CONNECTION_TLS_ENABLED, NetworkSurveyConstants.DEFAULT_MQTT_TLS_SETTING);
         mqttUsername = mdmProperties.getString(NetworkSurveyConstants.PROPERTY_MQTT_USERNAME);
         mqttPassword = mdmProperties.getString(NetworkSurveyConstants.PROPERTY_MQTT_PASSWORD);
+        cellularStreamEnabled = mdmProperties.getBoolean(NetworkSurveyConstants.PROPERTY_MQTT_CELLULAR_STREAM_ENABLED, NetworkSurveyConstants.DEFAULT_MQTT_CELLULAR_STREAM_SETTING);
+        wifiStreamEnabled = mdmProperties.getBoolean(NetworkSurveyConstants.PROPERTY_MQTT_WIFI_STREAM_ENABLED, NetworkSurveyConstants.DEFAULT_MQTT_WIFI_STREAM_SETTING);
+        gnssStreamEnabled = mdmProperties.getBoolean(NetworkSurveyConstants.PROPERTY_MQTT_GNSS_STREAM_ENABLED, NetworkSurveyConstants.DEFAULT_MQTT_GNSS_STREAM_SETTING);
     }
 
     /**
@@ -386,6 +401,9 @@ public class MqttConnectionFragment extends Fragment implements IConnectionState
             deviceName = deviceNameEdit.getText().toString();
             mqttUsername = usernameEdit.getText().toString();
             mqttPassword = passwordEdit.getText().toString();
+            cellularStreamEnabled = cellularStreamToggleSwitch.isChecked();
+            wifiStreamEnabled = wifiStreamToggleSwitch.isChecked();
+            gnssStreamEnabled = gnssStreamToggleSwitch.isChecked();
 
             storeConnectionParameters();
 
@@ -405,6 +423,7 @@ public class MqttConnectionFragment extends Fragment implements IConnectionState
      * For the host name, all non empty strings are 'valid'.
      * For the port number, all numeric numbers between 0 and 65535 are 'valid'.
      * For the device name, it must not be empty.
+     * For the message streaming options, at least one must be toggled on.
      *
      * @return True if all parameters are valid according to the above criteria.
      */
@@ -440,6 +459,13 @@ public class MqttConnectionFragment extends Fragment implements IConnectionState
             return false;
         }
 
+        if (!cellularStreamToggleSwitch.isChecked() && !wifiStreamToggleSwitch.isChecked() && !gnssStreamToggleSwitch.isChecked())
+        {
+            final String noOptionsMessage = "At least one stream option must be specified";
+            uiThreadHandler.post(() -> Toast.makeText(applicationContext, noOptionsMessage, Toast.LENGTH_SHORT).show());
+            return false;
+        }
+
         return true;
     }
 
@@ -467,12 +493,27 @@ public class MqttConnectionFragment extends Fragment implements IConnectionState
         final SharedPreferences.Editor edit = preferences.edit();
 
         edit.putBoolean(NetworkSurveyConstants.PROPERTY_MQTT_MDM_OVERRIDE, mdmOverride);
-        if (host != null) edit.putString(NetworkSurveyConstants.PROPERTY_MQTT_CONNECTION_HOST, host);
+        if (host != null)
+        {
+            edit.putString(NetworkSurveyConstants.PROPERTY_MQTT_CONNECTION_HOST, host);
+        }
         edit.putInt(NetworkSurveyConstants.PROPERTY_MQTT_CONNECTION_PORT, portNumber);
         edit.putBoolean(NetworkSurveyConstants.PROPERTY_MQTT_CONNECTION_TLS_ENABLED, tlsEnabled);
-        if (deviceName != null) edit.putString(NetworkSurveyConstants.PROPERTY_MQTT_CLIENT_ID, deviceName);
-        if (mqttUsername != null) edit.putString(NetworkSurveyConstants.PROPERTY_MQTT_USERNAME, mqttUsername);
-        if (mqttPassword != null) edit.putString(NetworkSurveyConstants.PROPERTY_MQTT_PASSWORD, mqttPassword);
+        if (deviceName != null)
+        {
+            edit.putString(NetworkSurveyConstants.PROPERTY_MQTT_CLIENT_ID, deviceName);
+        }
+        if (mqttUsername != null)
+        {
+            edit.putString(NetworkSurveyConstants.PROPERTY_MQTT_USERNAME, mqttUsername);
+        }
+        if (mqttPassword != null)
+        {
+            edit.putString(NetworkSurveyConstants.PROPERTY_MQTT_PASSWORD, mqttPassword);
+        }
+        edit.putBoolean(NetworkSurveyConstants.PROPERTY_MQTT_CELLULAR_STREAM_ENABLED, cellularStreamEnabled);
+        edit.putBoolean(NetworkSurveyConstants.PROPERTY_MQTT_WIFI_STREAM_ENABLED, wifiStreamEnabled);
+        edit.putBoolean(NetworkSurveyConstants.PROPERTY_MQTT_GNSS_STREAM_ENABLED, gnssStreamEnabled);
 
         edit.apply();
     }
@@ -502,6 +543,10 @@ public class MqttConnectionFragment extends Fragment implements IConnectionState
 
         final String restoredPassword = preferences.getString(NetworkSurveyConstants.PROPERTY_MQTT_PASSWORD, "");
         if (!restoredPassword.isEmpty()) mqttPassword = restoredPassword;
+
+        cellularStreamEnabled = preferences.getBoolean(NetworkSurveyConstants.PROPERTY_MQTT_CELLULAR_STREAM_ENABLED, NetworkSurveyConstants.DEFAULT_MQTT_CELLULAR_STREAM_SETTING);
+        wifiStreamEnabled = preferences.getBoolean(NetworkSurveyConstants.PROPERTY_MQTT_WIFI_STREAM_ENABLED, NetworkSurveyConstants.DEFAULT_MQTT_WIFI_STREAM_SETTING);
+        gnssStreamEnabled = preferences.getBoolean(NetworkSurveyConstants.PROPERTY_MQTT_GNSS_STREAM_ENABLED, NetworkSurveyConstants.DEFAULT_MQTT_GNSS_STREAM_SETTING);
     }
 
     /**
@@ -515,7 +560,7 @@ public class MqttConnectionFragment extends Fragment implements IConnectionState
      */
     private MqttBrokerConnectionInfo getMqttBrokerConnectionInfo()
     {
-        return new MqttBrokerConnectionInfo(host, portNumber, tlsEnabled, deviceName, mqttUsername, mqttPassword);
+        return new MqttBrokerConnectionInfo(host, portNumber, tlsEnabled, deviceName, mqttUsername, mqttPassword, cellularStreamEnabled, wifiStreamEnabled, gnssStreamEnabled);
     }
 
     /**
@@ -547,6 +592,9 @@ public class MqttConnectionFragment extends Fragment implements IConnectionState
         tlsToggleSwitch.setEnabled(editable);
         usernameEdit.setEnabled(editable);
         passwordEdit.setEnabled(editable);
+        cellularStreamToggleSwitch.setEnabled(editable);
+        wifiStreamToggleSwitch.setEnabled(editable);
+        gnssStreamToggleSwitch.setEnabled(editable);
     }
 
     /**

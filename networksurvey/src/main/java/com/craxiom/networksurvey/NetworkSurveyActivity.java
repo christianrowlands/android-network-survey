@@ -8,7 +8,6 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
-import android.content.SharedPreferences;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.content.res.ColorStateList;
@@ -19,8 +18,11 @@ import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.provider.Settings;
+import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.View;
+import android.widget.CheckBox;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -40,8 +42,10 @@ import androidx.navigation.ui.NavigationUI;
 import androidx.preference.PreferenceManager;
 
 import com.craxiom.networksurvey.constants.NetworkSurveyConstants;
+import com.craxiom.networksurvey.listeners.IGnssFailureListener;
 import com.craxiom.networksurvey.services.GrpcConnectionService;
 import com.craxiom.networksurvey.services.NetworkSurveyService;
+import com.craxiom.networksurvey.util.PreferenceUtils;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.android.material.navigation.NavigationView;
 
@@ -77,6 +81,7 @@ public class NetworkSurveyActivity extends AppCompatActivity
     private boolean turnOnWifiLoggingOnNextServiceConnection = false;
     private boolean turnOnGnssLoggingOnNextServiceConnection = false;
     private AppBarConfiguration appBarConfiguration;
+    private IGnssFailureListener gnssFailureListener;
 
     @Override
     protected void onCreate(Bundle savedInstanceState)
@@ -90,10 +95,10 @@ public class NetworkSurveyActivity extends AppCompatActivity
         // Install the defaults specified in the XML preferences file, this is only done the first time the app is opened
         PreferenceManager.setDefaultValues(this, R.xml.preferences, false);
 
-        final SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
-        turnOnCellularLoggingOnNextServiceConnection = preferences.getBoolean(NetworkSurveyConstants.PROPERTY_AUTO_START_CELLULAR_LOGGING, false);
-        turnOnWifiLoggingOnNextServiceConnection = preferences.getBoolean(NetworkSurveyConstants.PROPERTY_AUTO_START_WIFI_LOGGING, false);
-        turnOnGnssLoggingOnNextServiceConnection = preferences.getBoolean(NetworkSurveyConstants.PROPERTY_AUTO_START_GNSS_LOGGING, false);
+        final Context applicationContext = getApplicationContext();
+        turnOnCellularLoggingOnNextServiceConnection = PreferenceUtils.getAutoStartPreference(NetworkSurveyConstants.PROPERTY_AUTO_START_CELLULAR_LOGGING, false, applicationContext);
+        turnOnWifiLoggingOnNextServiceConnection = PreferenceUtils.getAutoStartPreference(NetworkSurveyConstants.PROPERTY_AUTO_START_WIFI_LOGGING, false, applicationContext);
+        turnOnGnssLoggingOnNextServiceConnection = PreferenceUtils.getAutoStartPreference(NetworkSurveyConstants.PROPERTY_AUTO_START_GNSS_LOGGING, false, applicationContext);
 
         setupNavigation();
 
@@ -112,6 +117,25 @@ public class NetworkSurveyActivity extends AppCompatActivity
         {
             Timber.e("The Notification Manager could not be retrieved to add the Network Survey notification channel");
         }
+
+        gnssFailureListener = () -> {
+            final View fragmentView = LayoutInflater.from(applicationContext).inflate(R.layout.gnss_failure, null);
+
+            AlertDialog gnssFailureDialog = new AlertDialog.Builder(this, R.style.Theme_AppCompat_Light_Dialog)
+                    .setView(fragmentView)
+                    .setPositiveButton(R.string.ok, (dialog, id) -> {
+                        CheckBox rememberDecisionCheckBox = fragmentView.findViewById(R.id.failureRememberDecisionCheckBox);
+                        boolean checked = rememberDecisionCheckBox.isChecked();
+                        if (checked)
+                        {
+                            PreferenceUtils.saveBoolean(Application.get().getString(R.string.pref_key_ignore_raw_gnss_failure), true);
+                            networkSurveyService.clearGnssFailureListener(); // No need for GNSS failure updates anymore
+                        }
+                    })
+                    .create();
+
+            gnssFailureDialog.show();
+        };
     }
 
     @Override
@@ -123,7 +147,7 @@ public class NetworkSurveyActivity extends AppCompatActivity
 
         // If we have been granted the location permission, we want to check to see if the location service is enabled.
         // If it is not, then this call will report that to the user and give them the option to enable it.
-        if (hasLocationPermission()) checkLocationProvider();
+        if (hasLocationPermission()) checkLocationProvider(true);
 
         // All we need for the cellular information is the Manifest.permission.READ_PHONE_STATE permission.  Location is optional
         if (hasCellularPermission()) startAndBindToNetworkSurveyService();
@@ -172,7 +196,7 @@ public class NetworkSurveyActivity extends AppCompatActivity
                 {
                     if (grantResults[index] == PackageManager.PERMISSION_GRANTED)
                     {
-                        checkLocationProvider();
+                        checkLocationProvider(true);
                         startAndBindToNetworkSurveyService();
                     } else
                     {
@@ -226,7 +250,9 @@ public class NetworkSurveyActivity extends AppCompatActivity
     }
 
     /**
-     * Sets the cellular details UI ({@link com.craxiom.networksurvey.fragments.NetworkDetailsFragment}) as visible.
+     * Runs one cellular scan. This is used to prime the UI in the event that the scan interval is really long.
+     * <p>
+     * If the service is null then nothing happens.
      *
      * @since 0.3.0
      */
@@ -282,15 +308,17 @@ public class NetworkSurveyActivity extends AppCompatActivity
     }
 
     /**
-     * Checks that the location provider is enabled.  If GPS location is not enabled on this device, then the settings
-     * UI is opened so the user can enable it.
+     * Checks that the location provider is enabled.  If GPS location is not enabled on this device, and
+     * {@code informUser} is set to true, then the settings UI is opened so the user can enable it.
      * <p>
      * If either the GPS device is not present, or if the GPS provider is disabled, an appropriate toast message is
-     * displayed.
+     * displayed as long as the {@code informUser} parameter is set to true.
      *
+     * @param informUser If this method should display a toast and prompt the user to enable GPS set this to true,
+     *                   false otherwise.
      * @return True if the device has GPS capabilities, and location services are enabled on the device. False otherwise.
      */
-    private boolean checkLocationProvider()
+    private boolean checkLocationProvider(boolean informUser)
     {
         final LocationManager locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
         if (locationManager == null)
@@ -304,16 +332,19 @@ public class NetworkSurveyActivity extends AppCompatActivity
         {
             final String noGpsMessage = getString(R.string.no_gps_device);
             Timber.w(noGpsMessage);
-            Toast.makeText(getApplicationContext(), noGpsMessage, Toast.LENGTH_LONG).show();
+            if (informUser) Toast.makeText(getApplicationContext(), noGpsMessage, Toast.LENGTH_LONG).show();
             return false;
         } else if (!locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER))
         {
             // gps exists, but isn't on
             final String turnOnGpsMessage = getString(R.string.turn_on_gps);
             Timber.w(turnOnGpsMessage);
-            Toast.makeText(getApplicationContext(), turnOnGpsMessage, Toast.LENGTH_LONG).show();
+            if (informUser)
+            {
+                Toast.makeText(getApplicationContext(), turnOnGpsMessage, Toast.LENGTH_LONG).show();
 
-            promptEnableGps();
+                promptEnableGps();
+            }
             return false;
         }
 
@@ -512,7 +543,7 @@ public class NetworkSurveyActivity extends AppCompatActivity
     private void toggleGnssLogging(boolean enable)
     {
         new ToggleLoggingTask(() -> {
-            if (!checkLocationProvider()) return null;
+            if (!checkLocationProvider(false)) return null;
             if (networkSurveyService != null) return networkSurveyService.toggleGnssLogging(enable);
             return null;
         }, enabled -> {
@@ -601,14 +632,8 @@ public class NetworkSurveyActivity extends AppCompatActivity
         @Override
         protected void onPostExecute(Boolean enabled)
         {
-            if (enabled == null)
-            {
-                // An exception occurred or something went wrong, so don't do anything
-                Toast.makeText(getApplicationContext(), "Error: Could not enable Logging", Toast.LENGTH_LONG).show();
-                return;
-            }
-
-            Toast.makeText(getApplicationContext(), postExecuteFunction.apply(enabled), Toast.LENGTH_SHORT).show();
+            Toast.makeText(getApplicationContext(), postExecuteFunction.apply(enabled),
+                    enabled == null ? Toast.LENGTH_LONG : Toast.LENGTH_SHORT).show();
         }
     }
 
@@ -621,9 +646,11 @@ public class NetworkSurveyActivity extends AppCompatActivity
         public void onServiceConnected(final ComponentName name, final IBinder iBinder)
         {
             Timber.i("%s service connected", name);
+
             final NetworkSurveyService.SurveyServiceBinder binder = (NetworkSurveyService.SurveyServiceBinder) iBinder;
             networkSurveyService = binder.getService();
             networkSurveyService.onUiVisible(NetworkSurveyActivity.this);
+            networkSurveyService.registerGnssFailureListener(gnssFailureListener);
 
             final boolean cellularLoggingEnabled = networkSurveyService.isCellularLoggingEnabled();
             if (turnOnCellularLoggingOnNextServiceConnection && !cellularLoggingEnabled)
