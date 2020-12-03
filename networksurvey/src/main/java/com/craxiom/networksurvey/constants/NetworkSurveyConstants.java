@@ -13,7 +13,6 @@ public class NetworkSurveyConstants
 
     public static final int DEFAULT_GRPC_PORT = 2621;
 
-    public static final int MQTT_PLAIN_TEXT_PORT = 1883;
     public static final int MQTT_SSL_PORT = 8883;
     public static final int DEFAULT_MQTT_PORT = MQTT_SSL_PORT;
     public static final boolean DEFAULT_MQTT_TLS_SETTING = true;

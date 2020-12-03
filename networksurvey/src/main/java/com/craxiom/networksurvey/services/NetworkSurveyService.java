@@ -18,7 +18,6 @@ import android.location.LocationManager;
 import android.net.wifi.ScanResult;
 import android.net.wifi.WifiManager;
 import android.os.AsyncTask;
-import android.os.Binder;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
@@ -37,23 +36,27 @@ import androidx.core.app.NotificationCompat;
 import androidx.core.content.ContextCompat;
 import androidx.preference.PreferenceManager;
 
+import com.craxiom.mqttlibrary.IConnectionStateListener;
+import com.craxiom.mqttlibrary.IMqttService;
+import com.craxiom.mqttlibrary.connection.AMqttConnection;
+import com.craxiom.mqttlibrary.connection.BrokerConnectionInfo;
+import com.craxiom.mqttlibrary.connection.ConnectionState;
+import com.craxiom.mqttlibrary.ui.AConnectionFragment;
 import com.craxiom.networksurvey.Application;
 import com.craxiom.networksurvey.CalculationUtils;
-import com.craxiom.networksurvey.ConnectionState;
 import com.craxiom.networksurvey.GpsListener;
 import com.craxiom.networksurvey.NetworkSurveyActivity;
 import com.craxiom.networksurvey.R;
 import com.craxiom.networksurvey.constants.NetworkSurveyConstants;
 import com.craxiom.networksurvey.listeners.ICellularSurveyRecordListener;
-import com.craxiom.networksurvey.listeners.IConnectionStateListener;
 import com.craxiom.networksurvey.listeners.IGnssFailureListener;
 import com.craxiom.networksurvey.listeners.IGnssSurveyRecordListener;
 import com.craxiom.networksurvey.listeners.IWifiSurveyRecordListener;
 import com.craxiom.networksurvey.logging.CellularSurveyRecordLogger;
 import com.craxiom.networksurvey.logging.GnssRecordLogger;
 import com.craxiom.networksurvey.logging.WifiSurveyRecordLogger;
-import com.craxiom.networksurvey.mqtt.MqttBrokerConnectionInfo;
 import com.craxiom.networksurvey.mqtt.MqttConnection;
+import com.craxiom.networksurvey.mqtt.MqttConnectionInfo;
 import com.craxiom.networksurvey.util.PreferenceUtils;
 
 import java.util.List;
@@ -69,7 +72,7 @@ import timber.log.Timber;
  *
  * @since 0.0.9
  */
-public class NetworkSurveyService extends Service implements IConnectionStateListener, SharedPreferences.OnSharedPreferenceChangeListener
+public class NetworkSurveyService extends Service implements IConnectionStateListener, SharedPreferences.OnSharedPreferenceChangeListener, IMqttService
 {
     /**
      * Time to wait between first location measurement received before considering this device does
@@ -221,12 +224,6 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
     }
 
     @Override
-    public void onConnectionStateChange(ConnectionState newConnectionState)
-    {
-        updateServiceNotification();
-    }
-
-    @Override
     public void onSharedPreferenceChanged(SharedPreferences preferences, String key)
     {
         switch (key)
@@ -247,7 +244,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
     }
 
     /**
-     * Creates the {@link MqttConnection} instance.
+     * Creates the {@link AMqttConnection} instance.
      * <p>
      * If connection information is specified for an MQTT Broker via the MDM Managed Configuration, then kick off an
      * MQTT connection.
@@ -266,19 +263,21 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
      * @param connectionInfo The information needed to connect to the MQTT broker.
      * @since 0.1.1
      */
-    public void connectToMqttBroker(MqttBrokerConnectionInfo connectionInfo)
+    @Override
+    public void connectToMqttBroker(BrokerConnectionInfo connectionInfo)
     {
         mqttConnection.connect(getApplicationContext(), connectionInfo);
+        MqttConnectionInfo networkSurveyConnection = (MqttConnectionInfo) connectionInfo;
 
-        if (connectionInfo.isCellularStreamEnabled())
+        if (networkSurveyConnection.isCellularStreamEnabled())
         {
             registerCellularSurveyRecordListener(mqttConnection);
         }
-        if (connectionInfo.isWifiStreamEnabled())
+        if (networkSurveyConnection.isWifiStreamEnabled())
         {
             registerWifiSurveyRecordListener(mqttConnection);
         }
-        if (connectionInfo.isGnssStreamEnabled())
+        if (networkSurveyConnection.isGnssStreamEnabled())
         {
             registerGnssSurveyRecordListener(mqttConnection);
         }
@@ -289,6 +288,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
      *
      * @since 0.1.1
      */
+    @Override
     public void disconnectFromMqttBroker()
     {
         Timber.i("Disconnecting from the MQTT Broker");
@@ -310,6 +310,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
      *                        broker.
      * @since 0.1.1
      */
+    @Override
     public void attemptMqttConnectWithMdmConfig(boolean forceDisconnect)
     {
         if (isMqttMdmOverrideEnabled())
@@ -318,7 +319,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
             return;
         }
 
-        final MqttBrokerConnectionInfo connectionInfo = getMdmMqttBrokerConnectionInfo();
+        final BrokerConnectionInfo connectionInfo = getMdmBrokerConnectionInfo();
 
         if (connectionInfo != null)
         {
@@ -341,6 +342,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
      * @return The current connection state to the MQTT Broker.
      * @since 0.1.1
      */
+    @Override
     public ConnectionState getMqttConnectionState()
     {
         if (mqttConnection != null) return mqttConnection.getConnectionState();
@@ -353,6 +355,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
      *
      * @param connectionStateListener The listener to add.
      */
+    @Override
     public void registerMqttConnectionStateListener(IConnectionStateListener connectionStateListener)
     {
         mqttConnection.registerMqttConnectionStateListener(connectionStateListener);
@@ -363,6 +366,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
      *
      * @param connectionStateListener The listener to remove.
      */
+    @Override
     public void unregisterMqttConnectionStateListener(IConnectionStateListener connectionStateListener)
     {
         mqttConnection.unregisterMqttConnectionStateListener(connectionStateListener);
@@ -523,7 +527,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
         return cellularLoggingEnabled.get()
                 || gnssLoggingEnabled.get()
                 || wifiLoggingEnabled.get()
-                || getMqttConnectionState() != ConnectionState.DISCONNECTED
+                || getMqttConnectionState() != com.craxiom.mqttlibrary.connection.ConnectionState.DISCONNECTED.DISCONNECTED
                 || GrpcConnectionService.getConnectedState() != ConnectionState.DISCONNECTED
                 || surveyRecordProcessor.isBeingUsed();
     }
@@ -1004,7 +1008,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
             final RestrictionsManager restrictionsManager = (RestrictionsManager) getSystemService(Context.RESTRICTIONS_SERVICE);
             if (restrictionsManager != null)
             {
-                final MqttBrokerConnectionInfo connectionInfo = getMdmMqttBrokerConnectionInfo();
+                final BrokerConnectionInfo connectionInfo = getMdmBrokerConnectionInfo();
                 if (connectionInfo != null)
                 {
                     mdmConnection = true;
@@ -1015,10 +1019,10 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
 
         if (!mdmConnection)
         {
-            final MqttBrokerConnectionInfo userMqttBrokerConnectionInfo = getUserMqttBrokerConnectionInfo();
-            if (userMqttBrokerConnectionInfo != null)
+            final BrokerConnectionInfo userBrokerConnectionInfo = getUserBrokerConnectionInfo();
+            if (userBrokerConnectionInfo != null)
             {
-                connectToMqttBroker(userMqttBrokerConnectionInfo);
+                connectToMqttBroker(userBrokerConnectionInfo);
             }
         }
     }
@@ -1210,7 +1214,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
     private Notification buildNotification()
     {
         final boolean logging = cellularLoggingEnabled.get() || gnssLoggingEnabled.get();
-        final ConnectionState connectionState = mqttConnection.getConnectionState();
+        final com.craxiom.mqttlibrary.connection.ConnectionState connectionState = mqttConnection.getConnectionState();
         final boolean mqttConnectionActive = connectionState == ConnectionState.CONNECTED || connectionState == ConnectionState.CONNECTING;
         final CharSequence notificationTitle = getText(R.string.network_survey_notification_title);
         final String notificationText = getNotificationText(logging, mqttConnectionActive, connectionState);
@@ -1415,7 +1419,8 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
      * the user has overrode the MDM config.
      * @since 0.1.1
      */
-    private MqttBrokerConnectionInfo getMdmMqttBrokerConnectionInfo()
+
+    private BrokerConnectionInfo getMdmBrokerConnectionInfo()
     {
         final RestrictionsManager restrictionsManager = (RestrictionsManager) getSystemService(Context.RESTRICTIONS_SERVICE);
         if (restrictionsManager != null)
@@ -1440,7 +1445,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
                 return null;
             }
 
-            return new MqttBrokerConnectionInfo(mqttBrokerHost, portNumber, tlsEnabled, clientId, username, password, cellularStreamEnabled, wifiStreamEnabled, gnssStreamEnabled);
+            return new MqttConnectionInfo(mqttBrokerHost, portNumber, tlsEnabled, clientId, username, password, cellularStreamEnabled, wifiStreamEnabled, gnssStreamEnabled);
         }
 
         return null;
@@ -1454,7 +1459,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
      * @return The connection settings to use for the MQTT broker, or null if no connection information is present.
      * @since 0.1.3
      */
-    private MqttBrokerConnectionInfo getUserMqttBrokerConnectionInfo()
+    private BrokerConnectionInfo getUserBrokerConnectionInfo()
     {
         final SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
 
@@ -1473,7 +1478,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
         final boolean wifiStreamEnabled = preferences.getBoolean(NetworkSurveyConstants.PROPERTY_MQTT_WIFI_STREAM_ENABLED, NetworkSurveyConstants.DEFAULT_MQTT_WIFI_STREAM_SETTING);
         final boolean gnssStreamEnabled = preferences.getBoolean(NetworkSurveyConstants.PROPERTY_MQTT_GNSS_STREAM_ENABLED, NetworkSurveyConstants.DEFAULT_MQTT_GNSS_STREAM_SETTING);
 
-        return new MqttBrokerConnectionInfo(mqttBrokerHost, portNumber, tlsEnabled, clientId, username, password, cellularStreamEnabled, wifiStreamEnabled, gnssStreamEnabled);
+        return new MqttConnectionInfo(mqttBrokerHost, portNumber, tlsEnabled, clientId, username, password, cellularStreamEnabled, wifiStreamEnabled, gnssStreamEnabled);
     }
 
     /**
@@ -1524,13 +1529,20 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
         return isEnabled;
     }
 
+    @Override
+    public void onConnectionStateChange(ConnectionState connectionState)
+    {
+        updateServiceNotification();
+    }
+
     /**
      * Class used for the client Binder.  Because we know this service always runs in the same process as its clients,
      * we don't need to deal with IPC.
      */
-    public class SurveyServiceBinder extends Binder
+    public class SurveyServiceBinder extends AConnectionFragment.ServiceBinder
     {
-        public NetworkSurveyService getService()
+        @Override
+        public IMqttService getService()
         {
             return NetworkSurveyService.this;
         }

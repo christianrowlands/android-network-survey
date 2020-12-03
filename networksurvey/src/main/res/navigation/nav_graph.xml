@@ -61,9 +61,9 @@
 
     <fragment
         android:id="@+id/mqtt_connection_fragment"
-        android:name="com.craxiom.networksurvey.fragments.MqttConnectionFragment"
+        android:name="com.craxiom.networksurvey.fragments.MqttFragment"
         android:label="@string/mqtt_connection_title"
-        tools:layout="@layout/fragment_mqtt_connection" />
+        tools:layout="@layout/fragment_mqtt" />
 
     <fragment
         android:id="@+id/settings_fragment"

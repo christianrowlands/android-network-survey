@@ -30,11 +30,11 @@ import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentActivity;
 import androidx.preference.PreferenceManager;
 
-import com.craxiom.networksurvey.ConnectionState;
+import com.craxiom.mqttlibrary.IConnectionStateListener;
+import com.craxiom.mqttlibrary.connection.ConnectionState;
+import com.craxiom.mqttlibrary.ui.HelpCardListener;
 import com.craxiom.networksurvey.R;
 import com.craxiom.networksurvey.constants.NetworkSurveyConstants;
-import com.craxiom.networksurvey.listeners.HelpCardListener;
-import com.craxiom.networksurvey.listeners.IConnectionStateListener;
 import com.craxiom.networksurvey.services.GrpcConnectionService;
 
 import timber.log.Timber;
@@ -125,7 +125,10 @@ public class GrpcConnectionFragment extends Fragment implements IConnectionState
     @Override
     public void onPause()
     {
-        if (grpcConnectionService != null) grpcConnectionService.unregisterConnectionStateListener(this);
+        if (grpcConnectionService != null)
+        {
+            grpcConnectionService.unregisterConnectionStateListener(this);
+        }
 
         super.onPause();
     }
@@ -133,7 +136,10 @@ public class GrpcConnectionFragment extends Fragment implements IConnectionState
     @Override
     public void onDestroyView()
     {
-        if (grpcConnectionService != null) grpcConnectionService.unregisterConnectionStateListener(this);
+        if (grpcConnectionService != null)
+        {
+            grpcConnectionService.unregisterConnectionStateListener(this);
+        }
         hideSoftInputFromWindow();
         super.onDestroyView();
     }
@@ -336,9 +342,15 @@ public class GrpcConnectionFragment extends Fragment implements IConnectionState
     {
         final SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(applicationContext);
         final SharedPreferences.Editor edit = preferences.edit();
-        if (host != null) edit.putString(NetworkSurveyConstants.PROPERTY_NETWORK_SURVEY_CONNECTION_HOST, host);
+        if (host != null)
+        {
+            edit.putString(NetworkSurveyConstants.PROPERTY_NETWORK_SURVEY_CONNECTION_HOST, host);
+        }
         edit.putInt(NetworkSurveyConstants.PROPERTY_NETWORK_SURVEY_CONNECTION_PORT, portNumber);
-        if (deviceName != null) edit.putString(NetworkSurveyConstants.PROPERTY_NETWORK_SURVEY_DEVICE_NAME, deviceName);
+        if (deviceName != null)
+        {
+            edit.putString(NetworkSurveyConstants.PROPERTY_NETWORK_SURVEY_DEVICE_NAME, deviceName);
+        }
         edit.apply();
     }
 

@@ -150,7 +150,10 @@ public class WifiNetworksFragment extends Fragment implements IWifiSurveyRecordL
         {
             wifiRecordSortedList.clear();
             wifiRecordSortedList.addAll(wifiBeaconRecords);
-            if (wifiNetworkRecyclerViewAdapter != null) wifiNetworkRecyclerViewAdapter.notifyDataSetChanged();
+            if (wifiNetworkRecyclerViewAdapter != null)
+            {
+                wifiNetworkRecyclerViewAdapter.notifyDataSetChanged();
+            }
         }
     }
 
@@ -248,7 +251,10 @@ public class WifiNetworksFragment extends Fragment implements IWifiSurveyRecordL
 
             wifiRecordSortedList.endBatchedUpdates();
 
-            if (wifiNetworkRecyclerViewAdapter != null) wifiNetworkRecyclerViewAdapter.notifyDataSetChanged();
+            if (wifiNetworkRecyclerViewAdapter != null)
+            {
+                wifiNetworkRecyclerViewAdapter.notifyDataSetChanged();
+            }
         }
     }
 
@@ -338,7 +344,10 @@ public class WifiNetworksFragment extends Fragment implements IWifiSurveyRecordL
             } else //if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q)
             {
                 snackbarMessage = getString(R.string.android_10_throttling_information);
-                if (!devOptionsEnabled) snackbarMessage += "\n\n" + getString(R.string.enable_developer_options);
+                if (!devOptionsEnabled)
+                {
+                    snackbarMessage += "\n\n" + getString(R.string.enable_developer_options);
+                }
             }
 
             final Snackbar snackbar = Snackbar.make(requireView(), snackbarMessage, Snackbar.LENGTH_INDEFINITE)
@@ -448,7 +457,8 @@ public class WifiNetworksFragment extends Fragment implements IWifiSurveyRecordL
         public void onServiceConnected(final ComponentName name, final IBinder binder)
         {
             Timber.i("%s service connected", name);
-            surveyService = ((NetworkSurveyService.SurveyServiceBinder) binder).getService();
+            NetworkSurveyService.SurveyServiceBinder serviceBinder = (NetworkSurveyService.SurveyServiceBinder) binder;
+            surveyService = (NetworkSurveyService) serviceBinder.getService();
             surveyService.registerWifiSurveyRecordListener(WifiNetworksFragment.this);
         }
 

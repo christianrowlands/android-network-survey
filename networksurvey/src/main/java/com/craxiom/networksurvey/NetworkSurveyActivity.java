@@ -332,7 +332,10 @@ public class NetworkSurveyActivity extends AppCompatActivity
         {
             final String noGpsMessage = getString(R.string.no_gps_device);
             Timber.w(noGpsMessage);
-            if (informUser) Toast.makeText(getApplicationContext(), noGpsMessage, Toast.LENGTH_LONG).show();
+            if (informUser)
+            {
+                Toast.makeText(getApplicationContext(), noGpsMessage, Toast.LENGTH_LONG).show();
+            }
             return false;
         } else if (!locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER))
         {
@@ -508,7 +511,10 @@ public class NetworkSurveyActivity extends AppCompatActivity
     private void toggleCellularLogging(boolean enable)
     {
         new ToggleLoggingTask(() -> {
-            if (networkSurveyService != null) return networkSurveyService.toggleCellularLogging(enable);
+            if (networkSurveyService != null)
+            {
+                return networkSurveyService.toggleCellularLogging(enable);
+            }
             return null;
         }, enabled -> {
             if (enabled == null) return getString(R.string.cellular_logging_toggle_failed);
@@ -648,7 +654,7 @@ public class NetworkSurveyActivity extends AppCompatActivity
             Timber.i("%s service connected", name);
 
             final NetworkSurveyService.SurveyServiceBinder binder = (NetworkSurveyService.SurveyServiceBinder) iBinder;
-            networkSurveyService = binder.getService();
+            networkSurveyService = (NetworkSurveyService) binder.getService();
             networkSurveyService.onUiVisible(NetworkSurveyActivity.this);
             networkSurveyService.registerGnssFailureListener(gnssFailureListener);
 
