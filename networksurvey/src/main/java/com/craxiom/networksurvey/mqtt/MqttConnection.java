@@ -6,7 +6,7 @@ import com.craxiom.messaging.GsmRecord;
 import com.craxiom.messaging.LteRecord;
 import com.craxiom.messaging.UmtsRecord;
 import com.craxiom.messaging.WifiBeaconRecord;
-import com.craxiom.mqttlibrary.connection.AMqttConnection;
+import com.craxiom.mqttlibrary.connection.DefaultMqttConnection;
 import com.craxiom.networksurvey.listeners.ICellularSurveyRecordListener;
 import com.craxiom.networksurvey.listeners.IGnssSurveyRecordListener;
 import com.craxiom.networksurvey.listeners.IWifiSurveyRecordListener;
@@ -19,7 +19,7 @@ import java.util.List;
  *
  * @since 0.1.1
  */
-public class MqttConnection extends AMqttConnection implements ICellularSurveyRecordListener, IWifiSurveyRecordListener, IGnssSurveyRecordListener
+public class MqttConnection extends DefaultMqttConnection implements ICellularSurveyRecordListener, IWifiSurveyRecordListener, IGnssSurveyRecordListener
 {
     private static final String MQTT_GSM_MESSAGE_TOPIC = "gsm_message";
     private static final String MQTT_CDMA_MESSAGE_TOPIC = "cdma_message";

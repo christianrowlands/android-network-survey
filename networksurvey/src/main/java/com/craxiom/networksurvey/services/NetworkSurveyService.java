@@ -38,9 +38,9 @@ import androidx.preference.PreferenceManager;
 
 import com.craxiom.mqttlibrary.IConnectionStateListener;
 import com.craxiom.mqttlibrary.IMqttService;
-import com.craxiom.mqttlibrary.connection.AMqttConnection;
 import com.craxiom.mqttlibrary.connection.BrokerConnectionInfo;
 import com.craxiom.mqttlibrary.connection.ConnectionState;
+import com.craxiom.mqttlibrary.connection.DefaultMqttConnection;
 import com.craxiom.mqttlibrary.ui.AConnectionFragment;
 import com.craxiom.networksurvey.Application;
 import com.craxiom.networksurvey.CalculationUtils;
@@ -244,7 +244,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
     }
 
     /**
-     * Creates the {@link AMqttConnection} instance.
+     * Creates the {@link DefaultMqttConnection} instance.
      * <p>
      * If connection information is specified for an MQTT Broker via the MDM Managed Configuration, then kick off an
      * MQTT connection.
