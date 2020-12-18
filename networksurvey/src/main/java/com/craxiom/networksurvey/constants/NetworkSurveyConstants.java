@@ -13,9 +13,6 @@ public class NetworkSurveyConstants
 
     public static final int DEFAULT_GRPC_PORT = 2621;
 
-    public static final int MQTT_SSL_PORT = 8883;
-    public static final int DEFAULT_MQTT_PORT = MQTT_SSL_PORT;
-    public static final boolean DEFAULT_MQTT_TLS_SETTING = true;
     public static final boolean DEFAULT_MQTT_CELLULAR_STREAM_SETTING = true;
     public static final boolean DEFAULT_MQTT_WIFI_STREAM_SETTING = true;
     public static final boolean DEFAULT_MQTT_GNSS_STREAM_SETTING = true;
@@ -78,14 +75,9 @@ public class NetworkSurveyConstants
 
     public static final String PROPERTY_MQTT_MDM_OVERRIDE = "mqtt_mdm_override";
 
-    // The following keys are used in the app_restrictions.xml file and also are settings stored in the app's shared preferences
+    // The following key is used in the app_restrictions.xml file and in the app's shared preferences
     public static final String PROPERTY_MQTT_START_ON_BOOT = "mqtt_start_on_boot";
-    public static final String PROPERTY_MQTT_CONNECTION_HOST = "mqtt_connection_host";
-    public static final String PROPERTY_MQTT_CONNECTION_PORT = "mqtt_connection_port";
-    public static final String PROPERTY_MQTT_CLIENT_ID = "mqtt_client_id";
-    public static final String PROPERTY_MQTT_CONNECTION_TLS_ENABLED = "mqtt_tls_enabled";
-    public static final String PROPERTY_MQTT_USERNAME = "mqtt_username";
-    public static final String PROPERTY_MQTT_PASSWORD = "mqtt_password";
+
     public static final String PROPERTY_MQTT_CELLULAR_STREAM_ENABLED = "cellular_stream_enabled";
     public static final String PROPERTY_MQTT_WIFI_STREAM_ENABLED = "wifi_stream_enabled";
     public static final String PROPERTY_MQTT_GNSS_STREAM_ENABLED = "gnss_stream_enabled";

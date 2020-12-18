@@ -137,25 +137,9 @@
     <!-- MQTT Connection UI constants -->
     <string name="mqtt_connection_title_full">MQTT Broker Connection</string>
     <string name="mqtt_connection_title">MQTT Broker</string>
-    <string name="mqtt_mdm_override_description">Your MQTT connection settings have been set by a Mobile Device Management server.  Toggle the switch below to override those settings so you can specify your own MQTT Broker connection information.</string>
-    <string name="mqtt_mdm_override_title">Override MDM MQTT Settings</string>
-    <string name="tls">TLS</string>
     <string name="stream_cellular_title">Stream Cellular</string>
     <string name="stream_wifi_title">Stream Wi-Fi</string>
     <string name="stream_gnss_title">Stream GNSS</string>
-    <string name="client_id_hint">Client ID</string>
-    <string name="username_hint">MQTT Username</string>
-    <string name="password_hint">MQTT Password</string>
-    <string name="help_title">Help?</string>
-    <string name="mqtt_connection_description">Here you can connect to an MQTT broker.  Once connected, all future survey results will be streamed to the server.
-        \n\nSteps for Connecting:
-        \n\n1. Enter in the following information:
-        \n     a. The MQTT broker IP Address or Hostname
-        \n     b. The MQTT broker Port Number (Default: 1883 for plain text and 8883 for TLS)
-        \n     c. If the server does not support SSL/TLS, then turn off the TLS toggle switch
-        \n     d. A client id that is used to identify this device on the server
-        \n     e. (Optional) The username and password used to authenticate with the MQTT Broker
-        \n\n2. Click the connect toggle switch</string>
 
     <!-- App Restriction Constants -->
     <string name="mqtt_start_on_boot_title">MQTT Start at Boot</string>

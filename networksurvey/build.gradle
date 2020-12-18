@@ -52,10 +52,7 @@ dependencies {
 
     implementation "mil.nga.geopackage:geopackage-android:3.3.0"
 
-    implementation 'org.eclipse.paho:org.eclipse.paho.client.mqttv3:1.2.5'
-    implementation 'org.eclipse.paho:org.eclipse.paho.android.service:1.1.1'
-
-    implementation 'com.craxiom:mqttlibrary:0.1.0'
+    implementation 'com.craxiom:mqtt-library:0.1.0-SNAPSHOT'
 
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:$kotlin_version"
 
