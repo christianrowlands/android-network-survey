@@ -14,6 +14,9 @@
     <string name="action_start_wifi_logging">Start Wi-Fi Logging</string>
     <string name="action_stop_wifi_logging">Stop Wi-Fi Logging</string>
 
+    <string name="action_start_bluetooth_logging">Start Bluetooth Logging</string>
+    <string name="action_stop_bluetooth_logging">Stop Bluetooth Logging</string>
+
     <string name="action_start_gnss_logging">Start GNSS Logging</string>
     <string name="action_stop_gnss_logging">Stop GNSS Logging</string>
 
@@ -21,6 +24,7 @@
     <string name="turn_on_gps">Please turn on GPS</string>
 
     <string name="turn_on_wifi">Please turn on Wi-Fi</string>
+    <string name="turn_on_bluetooth">Please turn on Bluetooth</string>
 
     <string name="current_technology_initial">Current Technology: </string>
     <string name="carrier_initial">Carrier: </string>
@@ -73,6 +77,9 @@
     <string name="wifi_logging_start_toast">Started Writing the Wi-Fi Log File</string>
     <string name="wifi_logging_stop_toast">Wi-Fi Log File Closed</string>
     <string name="wifi_logging_toggle_failed">Failed to toggle the Wi-Fi logging state</string>
+    <string name="bluetooth_logging_start_toast">Started Writing the Bluetooth Log File</string>
+    <string name="bluetooth_logging_stop_toast">Bluetooth Log File Closed</string>
+    <string name="bluetooth_logging_toggle_failed">Failed to toggle the Bluetooth logging state</string>
     <string name="gnss_logging_start_toast">Started Writing the GNSS Log File</string>
     <string name="gnss_logging_stop_toast">GNSS Log File Closed</string>
     <string name="gnss_logging_toggle_failed">Failed to toggle the GNSS logging state; is GPS turned on?</string>
@@ -139,6 +146,7 @@
     <string name="mqtt_connection_title">MQTT Broker</string>
     <string name="stream_cellular_title">Stream Cellular</string>
     <string name="stream_wifi_title">Stream Wi-Fi</string>
+    <string name="stream_bluetooth_title">Stream Bluetooth</string>
     <string name="stream_gnss_title">Stream GNSS</string>
 
     <!-- App Restriction Constants -->

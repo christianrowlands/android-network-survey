@@ -5,6 +5,11 @@ import android.annotation.SuppressLint;
 import android.app.Notification;
 import android.app.PendingIntent;
 import android.app.Service;
+import android.bluetooth.BluetoothAdapter;
+import android.bluetooth.BluetoothManager;
+import android.bluetooth.le.BluetoothLeScanner;
+import android.bluetooth.le.ScanCallback;
+import android.bluetooth.le.ScanSettings;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -49,10 +54,12 @@ import com.craxiom.networksurvey.GpsListener;
 import com.craxiom.networksurvey.NetworkSurveyActivity;
 import com.craxiom.networksurvey.R;
 import com.craxiom.networksurvey.constants.NetworkSurveyConstants;
+import com.craxiom.networksurvey.listeners.IBluetoothSurveyRecordListener;
 import com.craxiom.networksurvey.listeners.ICellularSurveyRecordListener;
 import com.craxiom.networksurvey.listeners.IGnssFailureListener;
 import com.craxiom.networksurvey.listeners.IGnssSurveyRecordListener;
 import com.craxiom.networksurvey.listeners.IWifiSurveyRecordListener;
+import com.craxiom.networksurvey.logging.BluetoothSurveyRecordLogger;
 import com.craxiom.networksurvey.logging.CellularSurveyRecordLogger;
 import com.craxiom.networksurvey.logging.GnssRecordLogger;
 import com.craxiom.networksurvey.logging.WifiSurveyRecordLogger;
@@ -60,6 +67,7 @@ import com.craxiom.networksurvey.mqtt.MqttConnection;
 import com.craxiom.networksurvey.mqtt.MqttConnectionInfo;
 import com.craxiom.networksurvey.util.PreferenceUtils;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -84,8 +92,10 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
 
     private final AtomicBoolean cellularScanningActive = new AtomicBoolean(false);
     private final AtomicBoolean wifiScanningActive = new AtomicBoolean(false);
+    private final AtomicBoolean bluetoothScanningActive = new AtomicBoolean(false);
     private final AtomicBoolean cellularLoggingEnabled = new AtomicBoolean(false);
     private final AtomicBoolean wifiLoggingEnabled = new AtomicBoolean(false);
+    private final AtomicBoolean bluetoothLoggingEnabled = new AtomicBoolean(false);
     private final AtomicBoolean gnssLoggingEnabled = new AtomicBoolean(false);
     private final AtomicBoolean gnssStarted = new AtomicBoolean(false);
     private final SurveyServiceBinder surveyServiceBinder;
@@ -101,6 +111,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
     private IGnssFailureListener gnssFailureListener;
     private CellularSurveyRecordLogger cellularSurveyRecordLogger;
     private WifiSurveyRecordLogger wifiSurveyRecordLogger;
+    private BluetoothSurveyRecordLogger bluetoothSurveyRecordLogger;
     private GnssRecordLogger gnssRecordLogger;
     private Looper serviceLooper;
     private Handler serviceHandler;
@@ -113,6 +124,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
 
     private TelephonyManager.CellInfoCallback cellInfoCallback;
     private BroadcastReceiver wifiScanReceiver;
+    private ScanCallback bluetoothScanCallback;
     private GnssMeasurementsEvent.Callback measurementListener;
 
     public NetworkSurveyService()
@@ -139,6 +151,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
         deviceId = createDeviceId();
         cellularSurveyRecordLogger = new CellularSurveyRecordLogger(this, serviceLooper);
         wifiSurveyRecordLogger = new WifiSurveyRecordLogger(this, serviceLooper);
+        bluetoothSurveyRecordLogger = new BluetoothSurveyRecordLogger(this, serviceLooper);
         gnssRecordLogger = new GnssRecordLogger(this, serviceLooper);
 
         gpsListener = new GpsListener();
@@ -154,6 +167,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
 
         initializeCellularScanningResources();
         initializeWifiScanningResources();
+        initializeBluetoothScanningResources();
         initializeGnssScanningResources();
 
         updateServiceNotification();
@@ -181,6 +195,8 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
 
             final boolean autoStartWifiLogging = PreferenceUtils.getAutoStartPreference(NetworkSurveyConstants.PROPERTY_AUTO_START_WIFI_LOGGING, false, applicationContext);
             if (autoStartWifiLogging && !wifiLoggingEnabled.get()) toggleWifiLogging(true);
+
+            // TODO Add in Bluetooth
 
             final boolean autoStartGnssLogging = PreferenceUtils.getAutoStartPreference(NetworkSurveyConstants.PROPERTY_AUTO_START_GNSS_LOGGING, false, applicationContext);
             if (autoStartGnssLogging && !gnssLoggingEnabled.get()) toggleGnssLogging(true);
@@ -231,6 +247,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
         {
             case NetworkSurveyConstants.PROPERTY_LOG_ROLLOVER_SIZE_MB:
                 wifiSurveyRecordLogger.onSharedPreferenceChanged();
+                bluetoothSurveyRecordLogger.onSharedPreferenceChanged();
                 cellularSurveyRecordLogger.onSharedPreferenceChanged();
                 gnssRecordLogger.onSharedPreferenceChanged();
                 break;
@@ -278,6 +295,10 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
         {
             registerWifiSurveyRecordListener(mqttConnection);
         }
+        if (networkSurveyConnection.isBluetoothStreamEnabled())
+        {
+            registerBluetoothSurveyRecordListener(mqttConnection);
+        }
         if (networkSurveyConnection.isGnssStreamEnabled())
         {
             registerGnssSurveyRecordListener(mqttConnection);
@@ -296,6 +317,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
 
         unregisterCellularSurveyRecordListener(mqttConnection);
         unregisterWifiSurveyRecordListener(mqttConnection);
+        unregisterBluetoothSurveyRecordListener(mqttConnection);
         unregisterGnssSurveyRecordListener(mqttConnection);
         mqttConnection.disconnect();
     }
@@ -467,6 +489,53 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
     }
 
     /**
+     * Registers a listener for notifications when new Bluetooth survey records are available.
+     *
+     * @param surveyRecordListener The survey record listener to register.
+     * @since 1.0.0
+     */
+    public void registerBluetoothSurveyRecordListener(IBluetoothSurveyRecordListener surveyRecordListener)
+    {
+        synchronized (bluetoothScanningActive)
+        {
+            if (surveyRecordProcessor != null)
+            {
+                surveyRecordProcessor.registerBluetoothSurveyRecordListener(surveyRecordListener);
+            }
+
+            startBluetoothRecordScanning(); // Only starts scanning if it is not already active.
+        }
+    }
+
+    /**
+     * Unregisters a Bluetooth survey record listener.
+     * <p>
+     * If the listener being removed is the last listener and nothing else is using this {@link NetworkSurveyService},
+     * then this service is shutdown and will need to be restarted before it can be used again.
+     * <p>
+     * If the service is still needed for other purposes (e.g. cellular survey records), but no longer for Bluetooth
+     * scanning, then just the Bluetooth scanning portion of this service is stopped.
+     *
+     * @param surveyRecordListener The listener to unregister.
+     * @since 1.0.0
+     */
+    public void unregisterBluetoothSurveyRecordListener(IBluetoothSurveyRecordListener surveyRecordListener)
+    {
+        synchronized (bluetoothScanningActive)
+        {
+            if (surveyRecordProcessor != null)
+            {
+                surveyRecordProcessor.unregisterBluetoothSurveyRecordListener(surveyRecordListener);
+                if (!surveyRecordProcessor.isBluetoothBeingUsed()) stopBluetoothRecordScanning();
+            }
+        }
+
+        // Check to see if this service is still needed.  It is still needed if we are either logging, the UI is
+        // visible, or a server connection is active.
+        if (!isBeingUsed()) stopSelf();
+    }
+
+    /**
      * Registers a listener for notifications when new GNSS survey records are available.
      *
      * @param surveyRecordListener The survey record listener to register.
@@ -528,7 +597,8 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
         return cellularLoggingEnabled.get()
                 || gnssLoggingEnabled.get()
                 || wifiLoggingEnabled.get()
-                || getMqttConnectionState() != com.craxiom.mqttlibrary.connection.ConnectionState.DISCONNECTED.DISCONNECTED
+                || bluetoothLoggingEnabled.get()
+                || getMqttConnectionState() != ConnectionState.DISCONNECTED
                 || GrpcConnectionService.getConnectedState() != ConnectionState.DISCONNECTED
                 || surveyRecordProcessor.isBeingUsed();
     }
@@ -644,6 +714,53 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
         }
     }
 
+    /**
+     * Toggles the Bluetooth logging setting.
+     * <p>
+     * It is possible that an error occurs while trying to enable or disable logging.  In that event null will be
+     * returned indicating that logging could not be toggled.
+     *
+     * @param enable True if logging should be enabled, false if it should be turned off.
+     * @return The new state of logging.  True if it is enabled, or false if it is disabled.  Null is returned if the
+     * toggling was unsuccessful.
+     * @since 1.0.0
+     */
+    public Boolean toggleBluetoothLogging(boolean enable)
+    {
+        synchronized (bluetoothLoggingEnabled)
+        {
+            final boolean originalLoggingState = bluetoothLoggingEnabled.get();
+            if (originalLoggingState == enable) return originalLoggingState;
+
+            Timber.i("Toggling Bluetooth logging to %s", enable);
+
+            if (enable)
+            {
+                // First check to see if Bluetooth is enabled
+                final boolean bluetoothEnabled = isBluetoothEnabled(true);
+                if (!bluetoothEnabled) return null;
+            }
+
+            final boolean successful = bluetoothSurveyRecordLogger.enableLogging(enable);
+            if (successful)
+            {
+                bluetoothLoggingEnabled.set(enable);
+                if (enable)
+                {
+                    registerBluetoothSurveyRecordListener(bluetoothSurveyRecordLogger);
+                } else
+                {
+                    unregisterBluetoothSurveyRecordListener(bluetoothSurveyRecordLogger);
+                }
+            }
+            updateServiceNotification();
+
+            final boolean newLoggingState = bluetoothLoggingEnabled.get();
+
+            return successful ? newLoggingState : null;
+        }
+    }
+
     public boolean isCellularLoggingEnabled()
     {
         return cellularLoggingEnabled.get();
@@ -652,6 +769,11 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
     public boolean isWifiLoggingEnabled()
     {
         return wifiLoggingEnabled.get();
+    }
+
+    public boolean isBluetoothLoggingEnabled()
+    {
+        return bluetoothLoggingEnabled.get();
     }
 
     public boolean isGnssLoggingEnabled()
@@ -834,6 +956,12 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
             {
                 smallestScanRate = wifiScanRateMs;
             }
+
+            /* TODO Add this in?
+            if (bluetoothScanningActive.get() && bluetoothScanRateMs < smallestScanRate)
+            {
+                smallestScanRate = bluetoothScanRateMs;
+            }*/
 
             if (gnssStarted.get() && gnssScanRateMs < smallestScanRate)
             {
@@ -1048,6 +1176,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
         {
             cellInfoCallback = new TelephonyManager.CellInfoCallback()
             {
+                @SuppressLint("MissingPermission")
                 @Override
                 public void onCellInfo(@NonNull List<CellInfo> cellInfo)
                 {
@@ -1100,6 +1229,51 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
                 {
                     Timber.e("A Wi-Fi scan failed, ignoring the results.");
                 }
+            }
+        };
+    }
+
+    /**
+     * Create the Bluetooth Scan broadcast receiver that will be notified of Bluetooth scan events once
+     * {@link #startBluetoothRecordScanning()} is called.
+     *
+     * @since 1.0.0
+     */
+    private void initializeBluetoothScanningResources()
+    {
+        final BluetoothManager bluetoothManager = (BluetoothManager) getSystemService(Context.BLUETOOTH_SERVICE);
+
+        if (bluetoothManager == null)
+        {
+            Timber.e("The BluetoothManager is null. Bluetooth survey won't work");
+            return;
+        }
+
+        final BluetoothAdapter bluetoothAdapter = bluetoothManager.getAdapter();
+        if (bluetoothAdapter == null)
+        {
+            Timber.e("The BluetoothAdapter is null. Bluetooth survey won't work");
+            return;
+        }
+
+        bluetoothScanCallback = new ScanCallback()
+        {
+            @Override
+            public void onScanResult(int callbackType, android.bluetooth.le.ScanResult result)
+            {
+                surveyRecordProcessor.onBluetoothScanUpdate(result);
+            }
+
+            @Override
+            public void onBatchScanResults(List<android.bluetooth.le.ScanResult> results)
+            {
+                surveyRecordProcessor.onBluetoothScanUpdate(results);
+            }
+
+            @Override
+            public void onScanFailed(int errorCode)
+            {
+                Timber.e("A Bluetooth scan failed, ignoring the results.");
             }
         };
     }
@@ -1166,7 +1340,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
                     serviceHandler.postDelayed(this, wifiScanRateMs);
                 } catch (Exception e)
                 {
-                    Timber.e(e, "Could not get the required permissions to get the network details");
+                    Timber.e(e, "Could not run a Wi-Fi scan");
                 }
             }
         }, 2_000);
@@ -1198,6 +1372,98 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
     }
 
     /**
+     * Register a listener for Bluetooth scans, and then kick off a scheduled Bluetooth scan.
+     * <p>
+     * This method only starts scanning if the scan is not already active.
+     *
+     * @since 1.0.0
+     */
+    private void startBluetoothRecordScanning()
+    {
+        if (bluetoothScanningActive.getAndSet(true)) return;
+
+        final BluetoothAdapter bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
+        if (bluetoothAdapter == null)
+        {
+            Timber.e("The BluetoothAdapter is null. Bluetooth survey won't work");
+            return;
+        }
+
+        final BluetoothLeScanner bluetoothLeScanner = bluetoothAdapter.getBluetoothLeScanner();
+        if (bluetoothLeScanner == null)
+        {
+            Timber.e("The BluetoothLeScanner is null, unable to perform Bluetooth LE scans.");
+            return;
+        }
+
+        serviceHandler.postDelayed(new Runnable()
+        {
+            @Override
+            public void run()
+            {
+                try
+                {
+                    // TODO Is this needed?
+                    /*if (!bluetoothAdapter.isDiscovering())
+                    {
+                        bluetoothAdapter.startDiscovery();
+                    } else
+                    {
+                        Timber.d("Bluetooth discovery already in progress, not starting a new discovery.");
+                    }*/
+
+                    if (!bluetoothScanningActive.get())
+                    {
+                        Timber.i("Stopping the handler that pulls the latest Bluetooth information");
+                        return;
+                    }
+
+                    // FIXME Before kicking off a new scan, we should make sure we are not waiting on results from the previous scan similar to how WiGLE does it
+                    final ScanSettings.Builder scanSettingsBuilder = new ScanSettings.Builder();
+                    scanSettingsBuilder.setScanMode(ScanSettings.SCAN_MODE_LOW_POWER);
+                    scanSettingsBuilder.setReportDelay(15_000); // TODO Update this report batch delay value
+                    bluetoothLeScanner.startScan(Collections.emptyList(), scanSettingsBuilder.build(), bluetoothScanCallback);
+
+                    serviceHandler.postDelayed(this, 16_000); // TODO Update this scan rate
+                } catch (Exception e)
+                {
+                    Timber.e(e, "Could not run a Bluetooth scan");
+                }
+            }
+        }, 1_000);
+
+        updateLocationListener();
+    }
+
+    /**
+     * Unregister the Bluetooth scan callback and stop the scanning service handler.
+     *
+     * @since 1.0.0
+     */
+    private void stopBluetoothRecordScanning()
+    {
+        bluetoothScanningActive.set(false);
+
+        try
+        {
+            final BluetoothAdapter bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
+            if (bluetoothAdapter != null)
+            {
+                // TODO is this needed?
+                //bluetoothAdapter.cancelDiscovery();
+
+                final BluetoothLeScanner bluetoothLeScanner = bluetoothAdapter.getBluetoothLeScanner();
+                if (bluetoothLeScanner != null) bluetoothLeScanner.stopScan(bluetoothScanCallback);
+            }
+        } catch (Exception e)
+        {
+            Timber.i(e, "Could not stop the Bluetooth Scan Callback");
+        }
+
+        updateLocationListener();
+    }
+
+    /**
      * A notification for this service that is started in the foreground so that we can continue to get GPS location
      * updates while the phone is locked or the app is not in the foreground.
      */
@@ -1214,7 +1480,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
      */
     private Notification buildNotification()
     {
-        final boolean logging = cellularLoggingEnabled.get() || gnssLoggingEnabled.get();
+        final boolean logging = cellularLoggingEnabled.get() || wifiLoggingEnabled.get() || bluetoothLoggingEnabled.get() || gnssLoggingEnabled.get();
         final com.craxiom.mqttlibrary.connection.ConnectionState connectionState = mqttConnection.getConnectionState();
         final boolean mqttConnectionActive = connectionState == ConnectionState.CONNECTED || connectionState == ConnectionState.CONNECTING;
         final CharSequence notificationTitle = getText(R.string.network_survey_notification_title);
@@ -1344,6 +1610,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
     {
         if (cellularSurveyRecordLogger != null) cellularSurveyRecordLogger.enableLogging(false);
         if (wifiSurveyRecordLogger != null) wifiSurveyRecordLogger.enableLogging(false);
+        if (bluetoothSurveyRecordLogger != null) bluetoothSurveyRecordLogger.enableLogging(false);
         if (gnssRecordLogger != null) gnssRecordLogger.enableLogging(false);
     }
 
@@ -1375,6 +1642,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
 
                 cellularSurveyRecordLogger.onMdmPreferenceChanged();
                 wifiSurveyRecordLogger.onMdmPreferenceChanged();
+                bluetoothSurveyRecordLogger.onMdmPreferenceChanged();
                 gnssRecordLogger.onMdmPreferenceChanged();
             }
         };
@@ -1440,6 +1708,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
 
             final boolean cellularStreamEnabled = mdmProperties.getBoolean(NetworkSurveyConstants.PROPERTY_MQTT_CELLULAR_STREAM_ENABLED, NetworkSurveyConstants.DEFAULT_MQTT_CELLULAR_STREAM_SETTING);
             final boolean wifiStreamEnabled = mdmProperties.getBoolean(NetworkSurveyConstants.PROPERTY_MQTT_WIFI_STREAM_ENABLED, NetworkSurveyConstants.DEFAULT_MQTT_WIFI_STREAM_SETTING);
+            final boolean bluetoothStreamEnabled = mdmProperties.getBoolean(NetworkSurveyConstants.PROPERTY_MQTT_BLUETOOTH_STREAM_ENABLED, NetworkSurveyConstants.DEFAULT_MQTT_BLUETOOTH_STREAM_SETTING);
             final boolean gnssStreamEnabled = mdmProperties.getBoolean(NetworkSurveyConstants.PROPERTY_MQTT_GNSS_STREAM_ENABLED, NetworkSurveyConstants.DEFAULT_MQTT_GNSS_STREAM_SETTING);
 
             if (mqttBrokerHost == null || clientId == null)
@@ -1447,7 +1716,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
                 return null;
             }
 
-            return new MqttConnectionInfo(mqttBrokerHost, portNumber, tlsEnabled, clientId, username, password, cellularStreamEnabled, wifiStreamEnabled, gnssStreamEnabled);
+            return new MqttConnectionInfo(mqttBrokerHost, portNumber, tlsEnabled, clientId, username, password, cellularStreamEnabled, wifiStreamEnabled, bluetoothStreamEnabled, gnssStreamEnabled);
         }
 
         return null;
@@ -1478,9 +1747,10 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
 
         final boolean cellularStreamEnabled = preferences.getBoolean(NetworkSurveyConstants.PROPERTY_MQTT_CELLULAR_STREAM_ENABLED, NetworkSurveyConstants.DEFAULT_MQTT_CELLULAR_STREAM_SETTING);
         final boolean wifiStreamEnabled = preferences.getBoolean(NetworkSurveyConstants.PROPERTY_MQTT_WIFI_STREAM_ENABLED, NetworkSurveyConstants.DEFAULT_MQTT_WIFI_STREAM_SETTING);
+        final boolean bluetoothStreamEnabled = preferences.getBoolean(NetworkSurveyConstants.PROPERTY_MQTT_BLUETOOTH_STREAM_ENABLED, NetworkSurveyConstants.DEFAULT_MQTT_BLUETOOTH_STREAM_SETTING);
         final boolean gnssStreamEnabled = preferences.getBoolean(NetworkSurveyConstants.PROPERTY_MQTT_GNSS_STREAM_ENABLED, NetworkSurveyConstants.DEFAULT_MQTT_GNSS_STREAM_SETTING);
 
-        return new MqttConnectionInfo(mqttBrokerHost, portNumber, tlsEnabled, clientId, username, password, cellularStreamEnabled, wifiStreamEnabled, gnssStreamEnabled);
+        return new MqttConnectionInfo(mqttBrokerHost, portNumber, tlsEnabled, clientId, username, password, cellularStreamEnabled, wifiStreamEnabled, bluetoothStreamEnabled, gnssStreamEnabled);
     }
 
     /**
@@ -1525,6 +1795,46 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
                         startActivity(wifiSettingIntent);
                     }, 2000);
                 }
+            }
+        }
+
+        return isEnabled;
+    }
+
+    /**
+     * Checks to see if the Bluetooth adapter is present, and if Bluetooth is enabled.
+     * <p>
+     * After the check to see if Bluetooth is enabled, if Bluetooth is currently disabled and {@code promptEnable} is
+     * true, the user is then prompted to turn on Bluetooth.  Even if the user turns on Bluetooth, this method will
+     * still return false since the call to enable Wi-Fi is asynchronous.
+     *
+     * @param promptEnable If true, and Bluetooth is currently disabled, the user will be presented with a UI to turn on
+     *                     Bluetooth.
+     * @return True if Bluetooth is enabled, false if it is not.
+     * @since 1.0.0
+     */
+    private boolean isBluetoothEnabled(boolean promptEnable)
+    {
+        final BluetoothAdapter bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
+        if (bluetoothAdapter == null) return false;
+
+        boolean isEnabled = true;
+
+        if (!bluetoothAdapter.isEnabled())
+        {
+            isEnabled = false;
+
+            if (promptEnable)
+            {
+                Timber.i("Bluetooth is disabled, prompting the user to enable it");
+
+                // Open the Bluetooth setting pages after a couple seconds
+                uiThreadHandler.post(() -> Toast.makeText(getApplicationContext(), getString(R.string.turn_on_bluetooth), Toast.LENGTH_SHORT).show());
+                serviceHandler.post(() -> {
+                    final Intent enableBtIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
+                    enableBtIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                    startActivity(enableBtIntent);
+                });
             }
         }
 

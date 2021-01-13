@@ -1,5 +1,6 @@
 package com.craxiom.networksurvey.mqtt;
 
+import com.craxiom.messaging.BluetoothRecord;
 import com.craxiom.messaging.CdmaRecord;
 import com.craxiom.messaging.GnssRecord;
 import com.craxiom.messaging.GsmRecord;
@@ -7,6 +8,7 @@ import com.craxiom.messaging.LteRecord;
 import com.craxiom.messaging.UmtsRecord;
 import com.craxiom.messaging.WifiBeaconRecord;
 import com.craxiom.mqttlibrary.connection.DefaultMqttConnection;
+import com.craxiom.networksurvey.listeners.IBluetoothSurveyRecordListener;
 import com.craxiom.networksurvey.listeners.ICellularSurveyRecordListener;
 import com.craxiom.networksurvey.listeners.IGnssSurveyRecordListener;
 import com.craxiom.networksurvey.listeners.IWifiSurveyRecordListener;
@@ -19,13 +21,15 @@ import java.util.List;
  *
  * @since 0.1.1
  */
-public class MqttConnection extends DefaultMqttConnection implements ICellularSurveyRecordListener, IWifiSurveyRecordListener, IGnssSurveyRecordListener
+public class MqttConnection extends DefaultMqttConnection implements ICellularSurveyRecordListener, IWifiSurveyRecordListener,
+        IBluetoothSurveyRecordListener, IGnssSurveyRecordListener
 {
     private static final String MQTT_GSM_MESSAGE_TOPIC = "gsm_message";
     private static final String MQTT_CDMA_MESSAGE_TOPIC = "cdma_message";
     private static final String MQTT_UMTS_MESSAGE_TOPIC = "umts_message";
     private static final String MQTT_LTE_MESSAGE_TOPIC = "lte_message";
     private static final String MQTT_WIFI_BEACON_MESSAGE_TOPIC = "80211_beacon_message";
+    private static final String MQTT_BLUETOOTH_MESSAGE_TOPIC = "bluetooth_message";
     private static final String MQTT_GNSS_MESSAGE_TOPIC = "gnss_message";
 
     @Override
@@ -91,6 +95,19 @@ public class MqttConnection extends DefaultMqttConnection implements ICellularSu
                 wifiBeaconRecord = recordBuilder.setData(recordBuilder.getDataBuilder().setDeviceName(mqttClientId)).build();
             }
             publishMessage(MQTT_WIFI_BEACON_MESSAGE_TOPIC, wifiBeaconRecord);
+        });
+    }
+
+    @Override
+    public void onBluetoothSurveyRecords(List<BluetoothRecord> bluetoothRecords)
+    {
+        bluetoothRecords.forEach(bluetoothRecord -> {
+            if (mqttClientId != null)
+            {
+                final BluetoothRecord.Builder recordBuilder = bluetoothRecord.toBuilder();
+                bluetoothRecord = recordBuilder.setData(recordBuilder.getDataBuilder().setDeviceName(mqttClientId)).build();
+            }
+            publishMessage(MQTT_BLUETOOTH_MESSAGE_TOPIC, bluetoothRecord);
         });
     }
 

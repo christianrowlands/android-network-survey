@@ -15,6 +15,7 @@ public class NetworkSurveyConstants
 
     public static final boolean DEFAULT_MQTT_CELLULAR_STREAM_SETTING = true;
     public static final boolean DEFAULT_MQTT_WIFI_STREAM_SETTING = true;
+    public static final boolean DEFAULT_MQTT_BLUETOOTH_STREAM_SETTING = true;
     public static final boolean DEFAULT_MQTT_GNSS_STREAM_SETTING = true;
 
     public static final String NOTIFICATION_CHANNEL_ID = "network_survey_notification";
@@ -25,6 +26,7 @@ public class NetworkSurveyConstants
 
     public static final String CELLULAR_FILE_NAME_PREFIX = "craxiom-cellular-";
     public static final String WIFI_FILE_NAME_PREFIX = "craxiom-wifi-";
+    public static final String BLUETOOTH_FILE_NAME_PREFIX = "craxiom-bluetooth-";
     public static final String GNSS_FILE_NAME_PREFIX = "craxiom-gnss-";
 
     public static final String GPRS = "GPRS";
@@ -80,6 +82,7 @@ public class NetworkSurveyConstants
 
     public static final String PROPERTY_MQTT_CELLULAR_STREAM_ENABLED = "cellular_stream_enabled";
     public static final String PROPERTY_MQTT_WIFI_STREAM_ENABLED = "wifi_stream_enabled";
+    public static final String PROPERTY_MQTT_BLUETOOTH_STREAM_ENABLED = "bluetooth_stream_enabled";
     public static final String PROPERTY_MQTT_GNSS_STREAM_ENABLED = "gnss_stream_enabled";
 
     // Stored Preferences not exposed via the Settings UI

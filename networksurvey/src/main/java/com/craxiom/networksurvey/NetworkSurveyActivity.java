@@ -73,6 +73,7 @@ public class NetworkSurveyActivity extends AppCompatActivity
 
     private MenuItem startStopCellularLoggingMenuItem;
     private MenuItem startStopWifiLoggingMenuItem;
+    private MenuItem startStopBluetoothLoggingMenuItem;
     private MenuItem startStopGnssLoggingMenuItem;
 
     private SurveyServiceConnection surveyServiceConnection;
@@ -214,12 +215,14 @@ public class NetworkSurveyActivity extends AppCompatActivity
         getMenuInflater().inflate(R.menu.menu_network_details, menu);
         startStopCellularLoggingMenuItem = menu.findItem(R.id.action_start_stop_cellular_logging);
         startStopWifiLoggingMenuItem = menu.findItem(R.id.action_start_stop_wifi_logging);
+        startStopBluetoothLoggingMenuItem = menu.findItem(R.id.action_start_stop_bluetooth_logging);
         startStopGnssLoggingMenuItem = menu.findItem(R.id.action_start_stop_gnss_logging);
 
         if (networkSurveyService != null)
         {
             updateCellularLoggingButton(networkSurveyService.isCellularLoggingEnabled());
             updateWifiLoggingButton(networkSurveyService.isWifiLoggingEnabled());
+            updateBluetoothLoggingButton(networkSurveyService.isBluetoothLoggingEnabled());
             updateGnssLoggingButton(networkSurveyService.isGnssLoggingEnabled());
         }
 
@@ -239,6 +242,10 @@ public class NetworkSurveyActivity extends AppCompatActivity
         } else if (id == R.id.action_start_stop_wifi_logging)
         {
             toggleWifiLogging(!networkSurveyService.isWifiLoggingEnabled());
+            return true;
+        } else if (id == R.id.action_start_stop_bluetooth_logging)
+        {
+            toggleBluetoothLogging(!networkSurveyService.isBluetoothLoggingEnabled());
             return true;
         } else if (id == R.id.action_start_stop_gnss_logging)
         {
@@ -542,6 +549,24 @@ public class NetworkSurveyActivity extends AppCompatActivity
     }
 
     /**
+     * Starts or stops writing the Bluetooth log file based on the specified parameter.
+     *
+     * @param enable True if logging should be enabled, false if it should be turned off.
+     * @since 1.0.0
+     */
+    private void toggleBluetoothLogging(boolean enable)
+    {
+        new ToggleLoggingTask(() -> {
+            if (networkSurveyService != null) return networkSurveyService.toggleBluetoothLogging(enable);
+            return null;
+        }, enabled -> {
+            if (enabled == null) return getString(R.string.bluetooth_logging_toggle_failed);
+            updateBluetoothLoggingButton(enabled);
+            return getString(enabled ? R.string.bluetooth_logging_start_toast : R.string.bluetooth_logging_stop_toast);
+        }).executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
+    }
+
+    /**
      * Starts or stops writing the GNSS log file based on the specified parameter.
      *
      * @param enable True if logging should be enabled, false if it should be turned off.
@@ -594,6 +619,25 @@ public class NetworkSurveyActivity extends AppCompatActivity
         if (enabled) colorStateList = ColorStateList.valueOf(Color.GREEN);
 
         startStopWifiLoggingMenuItem.setIconTintList(colorStateList);
+    }
+
+    /**
+     * Updates the Bluetooth logging button based on the specified logging state.
+     *
+     * @param enabled True if logging is currently enabled, false otherwise.
+     * @since 1.0.0
+     */
+    private void updateBluetoothLoggingButton(boolean enabled)
+    {
+        if (startStopBluetoothLoggingMenuItem == null) return;
+
+        final String menuTitle = getString(enabled ? R.string.action_stop_bluetooth_logging : R.string.action_start_bluetooth_logging);
+        startStopBluetoothLoggingMenuItem.setTitle(menuTitle);
+
+        ColorStateList colorStateList = null;
+        if (enabled) colorStateList = ColorStateList.valueOf(Color.GREEN);
+
+        startStopBluetoothLoggingMenuItem.setIconTintList(colorStateList);
     }
 
     /**
