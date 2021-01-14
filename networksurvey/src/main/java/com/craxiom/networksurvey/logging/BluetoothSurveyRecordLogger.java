@@ -44,6 +44,12 @@ public class BluetoothSurveyRecordLogger extends SurveyRecordLogger implements I
     }
 
     @Override
+    public void onBluetoothSurveyRecord(BluetoothRecord bluetoothRecord)
+    {
+        writeBluetoothRecordToLogFile(bluetoothRecord);
+    }
+
+    @Override
     public void onBluetoothSurveyRecords(List<BluetoothRecord> bluetoothRecords)
     {
         bluetoothRecords.forEach(this::writeBluetoothRecordToLogFile);

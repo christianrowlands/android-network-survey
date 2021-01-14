@@ -6,6 +6,7 @@ import android.app.Notification;
 import android.app.PendingIntent;
 import android.app.Service;
 import android.bluetooth.BluetoothAdapter;
+import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothManager;
 import android.bluetooth.le.BluetoothLeScanner;
 import android.bluetooth.le.ScanCallback;
@@ -103,6 +104,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
 
     private volatile int cellularScanRateMs;
     private volatile int wifiScanRateMs;
+    private volatile int bluetoothScanRateMs;
     private volatile int gnssScanRateMs;
 
     private String deviceId;
@@ -125,6 +127,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
     private TelephonyManager.CellInfoCallback cellInfoCallback;
     private BroadcastReceiver wifiScanReceiver;
     private ScanCallback bluetoothScanCallback;
+    private BroadcastReceiver bluetoothBroadcastReceiver;
     private GnssMeasurementsEvent.Callback measurementListener;
 
     public NetworkSurveyService()
@@ -196,7 +199,8 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
             final boolean autoStartWifiLogging = PreferenceUtils.getAutoStartPreference(NetworkSurveyConstants.PROPERTY_AUTO_START_WIFI_LOGGING, false, applicationContext);
             if (autoStartWifiLogging && !wifiLoggingEnabled.get()) toggleWifiLogging(true);
 
-            // TODO Add in Bluetooth
+            final boolean autoStartBluetoothLogging = PreferenceUtils.getAutoStartPreference(NetworkSurveyConstants.PROPERTY_AUTO_START_BLUETOOTH_LOGGING, false, applicationContext);
+            if (autoStartBluetoothLogging && !bluetoothLoggingEnabled.get()) toggleBluetoothLogging(true);
 
             final boolean autoStartGnssLogging = PreferenceUtils.getAutoStartPreference(NetworkSurveyConstants.PROPERTY_AUTO_START_GNSS_LOGGING, false, applicationContext);
             if (autoStartGnssLogging && !gnssLoggingEnabled.get()) toggleGnssLogging(true);
@@ -911,6 +915,9 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
         wifiScanRateMs = PreferenceUtils.getScanRatePreferenceMs(NetworkSurveyConstants.PROPERTY_WIFI_SCAN_INTERVAL_SECONDS,
                 NetworkSurveyConstants.DEFAULT_WIFI_SCAN_INTERVAL_SECONDS, applicationContext);
 
+        bluetoothScanRateMs = PreferenceUtils.getScanRatePreferenceMs(NetworkSurveyConstants.PROPERTY_BLUETOOTH_SCAN_INTERVAL_SECONDS,
+                NetworkSurveyConstants.DEFAULT_BLUETOOTH_SCAN_INTERVAL_SECONDS, applicationContext);
+
         gnssScanRateMs = PreferenceUtils.getScanRatePreferenceMs(NetworkSurveyConstants.PROPERTY_GNSS_SCAN_INTERVAL_SECONDS,
                 NetworkSurveyConstants.DEFAULT_GNSS_SCAN_INTERVAL_SECONDS, applicationContext);
 
@@ -944,9 +951,10 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
         final LocationManager locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
         if (locationManager != null)
         {
-            // Find the smallest scan rate for all the scanning types that are active as a starting point
-            int smallestScanRate = Math.max(cellularScanRateMs, Math.max(wifiScanRateMs, gnssScanRateMs));
+            // Start with the highest value
+            int smallestScanRate = Math.max(cellularScanRateMs, Math.max(wifiScanRateMs, Math.max(bluetoothScanRateMs, gnssScanRateMs)));
 
+            // Find the smallest scan rate for all the scanning types that are active as a starting point
             if (cellularScanningActive.get() && cellularScanRateMs < smallestScanRate)
             {
                 smallestScanRate = cellularScanRateMs;
@@ -957,11 +965,10 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
                 smallestScanRate = wifiScanRateMs;
             }
 
-            /* TODO Add this in?
             if (bluetoothScanningActive.get() && bluetoothScanRateMs < smallestScanRate)
             {
                 smallestScanRate = bluetoothScanRateMs;
-            }*/
+            }
 
             if (gnssStarted.get() && gnssScanRateMs < smallestScanRate)
             {
@@ -1256,6 +1263,33 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
             return;
         }
 
+        bluetoothBroadcastReceiver = new BroadcastReceiver()
+        {
+            @Override
+            public void onReceive(Context context, Intent intent)
+            {
+                if (BluetoothDevice.ACTION_FOUND.equals(intent.getAction()))
+                {
+                    final BluetoothDevice device = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
+                    if (device == null)
+                    {
+                        Timber.e("Received a null BluetoothDevice in the broadcast action found call");
+                        return;
+                    }
+
+                    int rssi = Short.MIN_VALUE;
+                    if (intent.hasExtra(BluetoothDevice.EXTRA_RSSI))
+                    {
+                        rssi = intent.getShortExtra(BluetoothDevice.EXTRA_RSSI, Short.MIN_VALUE);
+                    }
+
+                    if (rssi == Short.MIN_VALUE) return;
+
+                    surveyRecordProcessor.onBluetoothClassicScanUpdate(device, rssi);
+                }
+            }
+        };
+
         bluetoothScanCallback = new ScanCallback()
         {
             @Override
@@ -1273,7 +1307,13 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
             @Override
             public void onScanFailed(int errorCode)
             {
-                Timber.e("A Bluetooth scan failed, ignoring the results.");
+                if (errorCode == SCAN_FAILED_ALREADY_STARTED)
+                {
+                    Timber.i("Bluetooth scan already started, so this scan failed");
+                } else
+                {
+                    Timber.e("A Bluetooth scan failed, ignoring the results.");
+                }
             }
         };
     }
@@ -1396,6 +1436,15 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
             return;
         }
 
+        final IntentFilter intentFilter = new IntentFilter(BluetoothDevice.ACTION_FOUND);
+        intentFilter.addAction(BluetoothAdapter.ACTION_DISCOVERY_FINISHED);
+        registerReceiver(bluetoothBroadcastReceiver, intentFilter);
+
+        final ScanSettings.Builder scanSettingsBuilder = new ScanSettings.Builder();
+        scanSettingsBuilder.setScanMode(ScanSettings.SCAN_MODE_LOW_POWER);
+        scanSettingsBuilder.setReportDelay(bluetoothScanRateMs);
+        bluetoothLeScanner.startScan(Collections.emptyList(), scanSettingsBuilder.build(), bluetoothScanCallback);
+
         serviceHandler.postDelayed(new Runnable()
         {
             @Override
@@ -1403,14 +1452,15 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
             {
                 try
                 {
-                    // TODO Is this needed?
-                    /*if (!bluetoothAdapter.isDiscovering())
+                    // Calling start Discovery scans for BT Classic (BR/EDR) devices as well. However, it also seems
+                    // it allows for getting some BLE devices as well, but we seem to get more with the BLE scanner above
+                    if (!bluetoothAdapter.isDiscovering())
                     {
                         bluetoothAdapter.startDiscovery();
                     } else
                     {
                         Timber.d("Bluetooth discovery already in progress, not starting a new discovery.");
-                    }*/
+                    }
 
                     if (!bluetoothScanningActive.get())
                     {
@@ -1418,13 +1468,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
                         return;
                     }
 
-                    // FIXME Before kicking off a new scan, we should make sure we are not waiting on results from the previous scan similar to how WiGLE does it
-                    final ScanSettings.Builder scanSettingsBuilder = new ScanSettings.Builder();
-                    scanSettingsBuilder.setScanMode(ScanSettings.SCAN_MODE_LOW_POWER);
-                    scanSettingsBuilder.setReportDelay(15_000); // TODO Update this report batch delay value
-                    bluetoothLeScanner.startScan(Collections.emptyList(), scanSettingsBuilder.build(), bluetoothScanCallback);
-
-                    serviceHandler.postDelayed(this, 16_000); // TODO Update this scan rate
+                    serviceHandler.postDelayed(this, bluetoothScanRateMs);
                 } catch (Exception e)
                 {
                     Timber.e(e, "Could not run a Bluetooth scan");
@@ -1449,12 +1493,12 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
             final BluetoothAdapter bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
             if (bluetoothAdapter != null)
             {
-                // TODO is this needed?
-                //bluetoothAdapter.cancelDiscovery();
+                bluetoothAdapter.cancelDiscovery();
 
                 final BluetoothLeScanner bluetoothLeScanner = bluetoothAdapter.getBluetoothLeScanner();
                 if (bluetoothLeScanner != null) bluetoothLeScanner.stopScan(bluetoothScanCallback);
             }
+            unregisterReceiver(bluetoothBroadcastReceiver);
         } catch (Exception e)
         {
             Timber.i(e, "Could not stop the Bluetooth Scan Callback");

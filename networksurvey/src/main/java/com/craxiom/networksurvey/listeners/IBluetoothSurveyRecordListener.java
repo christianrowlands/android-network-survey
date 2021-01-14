@@ -12,9 +12,16 @@ import java.util.List;
 public interface IBluetoothSurveyRecordListener
 {
     /**
-     * Called when a new collection of Bluetooth Survey Records are ready.
+     * Called when a new Bluetooth survey record is ready.
      *
-     * @param bluetoothRecords the list of Bluetooth Records.
+     * @param bluetoothRecord the Bluetooth record.
+     */
+    void onBluetoothSurveyRecord(BluetoothRecord bluetoothRecord);
+
+    /**
+     * Called when a new collection of Bluetooth survey records are ready.
+     *
+     * @param bluetoothRecords the list of Bluetooth records.
      */
     void onBluetoothSurveyRecords(List<BluetoothRecord> bluetoothRecords);
 }

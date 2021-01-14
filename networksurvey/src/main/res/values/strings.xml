@@ -172,6 +172,7 @@
     <string name="gnss_stream_description">True to stream GNSS data, false otherwise</string>
     <string name="auto_start_cellular_logging_description">True to start cellular logging automatically, false otherwise</string>
     <string name="auto_start_wifi_logging_description">True to start Wi-Fi logging automatically, false otherwise</string>
+    <string name="auto_start_bluetooth_logging_description">True to start Bluetooth logging automatically, false otherwise</string>
     <string name="auto_start_gnss_logging_description">True to start GNSS logging automatically, false otherwise</string>
 
     <!-- User Preference Constants -->
@@ -192,6 +193,10 @@
     <string name="auto_start_wifi_logging_summary_on">Wi-Fi logging will be started upon app opening or when the phone is turned on</string>
     <string name="auto_start_wifi_logging_summary_off">Wi-Fi logging will only start when manually enabled</string>
 
+    <string name="auto_start_bluetooth_logging_title">Auto Start Bluetooth Logging</string>
+    <string name="auto_start_bluetooth_logging_summary_on">Bluetooth logging will be started upon app opening or when the phone is turned on</string>
+    <string name="auto_start_bluetooth_logging_summary_off">Bluetooth logging will only start when manually enabled</string>
+
     <string name="auto_start_gnss_logging_title">Auto Start GNSS Logging</string>
     <string name="auto_start_gnss_logging_summary_on">GNSS logging will be started upon app opening or when the phone is turned on</string>
     <string name="auto_start_gnss_logging_summary_off">GNSS logging will only start when manually enabled</string>
@@ -203,6 +208,9 @@
 
     <string name="wifi_scan_interval_title">Wi-Fi Scan Interval</string>
     <string name="wifi_scan_interval_description">The rate at which Wi-Fi networks will be scanned for in seconds. Smaller values will decrease battery life.</string>
+
+    <string name="bluetooth_scan_interval_title">Bluetooth Scan Interval</string>
+    <string name="bluetooth_scan_interval_description">The rate at which Bluetooth devices will be scanned for in seconds. Smaller values will decrease battery life.</string>
 
     <string name="gnss_scan_interval_title">GNSS Scan Interval</string>
     <string name="gnss_scan_interval_description">The rate at which GNSS satellites will be scanned for in seconds. Smaller values will decrease battery life.</string>

@@ -80,6 +80,7 @@ public class NetworkSurveyActivity extends AppCompatActivity
     private NetworkSurveyService networkSurveyService;
     private boolean turnOnCellularLoggingOnNextServiceConnection = false;
     private boolean turnOnWifiLoggingOnNextServiceConnection = false;
+    private boolean turnOnBluetoothLoggingOnNextServiceConnection = false;
     private boolean turnOnGnssLoggingOnNextServiceConnection = false;
     private AppBarConfiguration appBarConfiguration;
     private IGnssFailureListener gnssFailureListener;
@@ -99,6 +100,7 @@ public class NetworkSurveyActivity extends AppCompatActivity
         final Context applicationContext = getApplicationContext();
         turnOnCellularLoggingOnNextServiceConnection = PreferenceUtils.getAutoStartPreference(NetworkSurveyConstants.PROPERTY_AUTO_START_CELLULAR_LOGGING, false, applicationContext);
         turnOnWifiLoggingOnNextServiceConnection = PreferenceUtils.getAutoStartPreference(NetworkSurveyConstants.PROPERTY_AUTO_START_WIFI_LOGGING, false, applicationContext);
+        turnOnBluetoothLoggingOnNextServiceConnection = PreferenceUtils.getAutoStartPreference(NetworkSurveyConstants.PROPERTY_AUTO_START_BLUETOOTH_LOGGING, false, applicationContext);
         turnOnGnssLoggingOnNextServiceConnection = PreferenceUtils.getAutoStartPreference(NetworkSurveyConstants.PROPERTY_AUTO_START_GNSS_LOGGING, false, applicationContext);
 
         setupNavigation();
@@ -720,6 +722,15 @@ public class NetworkSurveyActivity extends AppCompatActivity
                 updateWifiLoggingButton(wifiLoggingEnabled);
             }
 
+            final boolean bluetoothLoggingEnabled = networkSurveyService.isBluetoothLoggingEnabled();
+            if (turnOnBluetoothLoggingOnNextServiceConnection && !wifiLoggingEnabled)
+            {
+                toggleBluetoothLogging(true);
+            } else
+            {
+                updateBluetoothLoggingButton(bluetoothLoggingEnabled);
+            }
+
             final boolean gnssLoggingEnabled = networkSurveyService.isGnssLoggingEnabled();
             if (turnOnGnssLoggingOnNextServiceConnection && !gnssLoggingEnabled)
             {
@@ -731,6 +742,7 @@ public class NetworkSurveyActivity extends AppCompatActivity
 
             turnOnCellularLoggingOnNextServiceConnection = false;
             turnOnWifiLoggingOnNextServiceConnection = false;
+            turnOnBluetoothLoggingOnNextServiceConnection = false;
             turnOnGnssLoggingOnNextServiceConnection = false;
         }
 

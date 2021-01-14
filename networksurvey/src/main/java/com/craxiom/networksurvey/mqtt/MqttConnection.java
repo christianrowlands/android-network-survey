@@ -99,6 +99,19 @@ public class MqttConnection extends DefaultMqttConnection implements ICellularSu
     }
 
     @Override
+    public void onBluetoothSurveyRecord(BluetoothRecord bluetoothRecord)
+    {
+        // Set the device name to the user entered value in the MQTT connection UI (or the value provided via MDM)
+        if (mqttClientId != null)
+        {
+            final BluetoothRecord.Builder recordBuilder = bluetoothRecord.toBuilder();
+            bluetoothRecord = recordBuilder.setData(recordBuilder.getDataBuilder().setDeviceName(mqttClientId)).build();
+        }
+
+        publishMessage(MQTT_BLUETOOTH_MESSAGE_TOPIC, bluetoothRecord);
+    }
+
+    @Override
     public void onBluetoothSurveyRecords(List<BluetoothRecord> bluetoothRecords)
     {
         bluetoothRecords.forEach(bluetoothRecord -> {
