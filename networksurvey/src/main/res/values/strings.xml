@@ -122,14 +122,16 @@
     <string name="connection_notification_connecting_text">Attempting to Connect</string>
     <string name="title_activity_connection">ConnectionActivity</string>
 
+    <!-- Common for Wi-Fi and Bluetooth Lists -->
+    <string name="scan_number">Scan #: %1$d</string>
+    <string name="scan_status_scanning">Scanning …</string>
+    <string name="scan_status_paused">UI Paused</string>
+
     <!-- Wi-Fi Network List -->
-    <string name="wifi_scan_number">Scan #: %1$d</string>
     <string name="wifi_aps_in_scan">APs In Scan: %1$d</string>
-    <string name="wifi_scan_status_scanning">Scanning …</string>
-    <string name="wifi_scan_status_paused">UI Paused</string>
     <string name="wifi_scan_status_wifi_disabled">Wi-Fi Disabled</string>
 
-    <string name="wifi_dbm_value">%1$s dBm</string>
+    <string name="dbm_value">%1$s dBm</string>
     <string name="bssid_value">BSSID: %1$s</string>
     <string name="wifi_frequency_value">%1$d MHz</string>
     <string name="wifi_channel_value">CH %1$d</string>
@@ -140,6 +142,15 @@
     <string name="android_9_throttling_information">Android 9 throttles Wi-Fi scans to 2 per minute. Upgrade Android if possible.</string>
     <string name="android_10_throttling_information">Android 10 throttles Wi-Fi scans. To disable throttling: System -> Advanced -> Developer options -> WiFi scan throttling to off.</string>
     <string name="enable_developer_options">To enable Developer Options: Settings -> About Phone -> Tap Build Number 7 times.</string>
+
+    <!-- Bluetooth Device List -->
+    <string name="bluetooth_devices_in_scan"># of Devices: %1$d</string>
+    <string name="bluetooth_scan_status_wifi_disabled">Bluetooth Disabled</string>
+
+    <string name="content_description_sort_bluetooth_button">Sort Bluetooth Devices Button</string>
+    <string name="content_description_pause_bluetooth_scan_ui_updates">Pause Bluetooth scan UI updates</string>
+
+    <string name="ota_device_name_value">Device Name: %1$s</string>
 
     <!-- MQTT Connection UI constants -->
     <string name="mqtt_connection_title_full">MQTT Broker Connection</string>
@@ -168,6 +179,8 @@
     <string name="cellular_stream_description">True to stream cellular data, false otherwise</string>
     <string name="wifi_stream_title">Wi-Fi Stream Enabled</string>
     <string name="wifi_stream_description">True to stream Wi-Fi data, false otherwise</string>
+    <string name="bluetooth_stream_title">Bluetooth Stream Enabled</string>
+    <string name="bluetooth_stream_description">True to stream Bluetooth data, false otherwise</string>
     <string name="gnss_stream_title">GNSS Stream Enabled</string>
     <string name="gnss_stream_description">True to stream GNSS data, false otherwise</string>
     <string name="auto_start_cellular_logging_description">True to start cellular logging automatically, false otherwise</string>
@@ -244,6 +257,7 @@
     <!-- Bottom Navigation -->
     <string name="nav_cellular">Cellular</string>
     <string name="nav_wifi">Wi-Fi</string>
+    <string name="nav_bluetooth">Bluetooth</string>
     <string name="nav_gnss">GNSS</string>
 
     <!-- General GNSS Constants -->

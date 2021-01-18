@@ -256,7 +256,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
                 gnssRecordLogger.onSharedPreferenceChanged();
                 break;
             case NetworkSurveyConstants.PROPERTY_CELLULAR_SCAN_INTERVAL_SECONDS:
-            case NetworkSurveyConstants.PROPERTY_WIFI_NETWORKS_SORT_ORDER:
+            case NetworkSurveyConstants.PROPERTY_WIFI_SCAN_INTERVAL_SECONDS:
             case NetworkSurveyConstants.PROPERTY_GNSS_SCAN_INTERVAL_SECONDS:
                 setScanRateValues();
                 break;
@@ -1872,7 +1872,6 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
             {
                 Timber.i("Bluetooth is disabled, prompting the user to enable it");
 
-                // Open the Bluetooth setting pages after a couple seconds
                 uiThreadHandler.post(() -> Toast.makeText(getApplicationContext(), getString(R.string.turn_on_bluetooth), Toast.LENGTH_SHORT).show());
                 serviceHandler.post(() -> {
                     final Intent enableBtIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);

@@ -28,18 +28,11 @@
                 android:orientation="vertical">
 
                 <TextView
-                    android:id="@+id/scan_number"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="@string/scan_number"
-                    android:textSize="13sp" />
-
-                <TextView
-                    android:id="@+id/aps_in_scan"
+                    android:id="@+id/bt_devices_in_scan"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:gravity="end"
-                    android:text="@string/wifi_aps_in_scan"
+                    android:text="@string/bluetooth_devices_in_scan"
                     android:textSize="13sp" />
 
             </LinearLayout>
@@ -68,7 +61,7 @@
                     android:layout_gravity="bottom"
                     android:layout_margin="@dimen/action_button_margin"
                     android:background="@drawable/ic_sort"
-                    android:contentDescription="@string/content_description_sort_wifi_networks_button" />
+                    android:contentDescription="@string/content_description_sort_bluetooth_button" />
 
                 <ImageButton
                     android:id="@+id/pause_button"
@@ -77,7 +70,7 @@
                     android:layout_gravity="center_horizontal|center_vertical"
                     android:layout_margin="@dimen/action_button_margin"
                     android:background="@drawable/ic_pause"
-                    android:contentDescription="@string/content_description_pause_wifi_network_scan_ui_updates" />
+                    android:contentDescription="@string/content_description_pause_bluetooth_scan_ui_updates" />
 
             </LinearLayout>
 
@@ -91,16 +84,16 @@
             android:background="@color/colorAccentFaded" />
 
         <androidx.recyclerview.widget.RecyclerView xmlns:tools="http://schemas.android.com/tools"
-            android:id="@+id/wifi_network_list"
-            android:name="com.craxiom.networksurvey.fragments.WifiNetworksFragment"
+            android:id="@+id/bluetooth_device_list"
+            android:name="com.craxiom.networksurvey.fragments.BluetoothFragment"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:layout_marginStart="@dimen/x_small_margin"
             android:layout_marginEnd="@dimen/x_small_margin"
             android:scrollbars="vertical"
             app:layoutManager="LinearLayoutManager"
-            tools:context=".fragments.WifiNetworksFragment"
-            tools:listitem="@layout/fragment_wifi_network_item" />
+            tools:context=".fragments.BluetoothFragment"
+            tools:listitem="@layout/fragment_bluetooth_item" />
 
     </LinearLayout>
 

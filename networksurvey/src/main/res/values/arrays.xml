@@ -53,6 +53,15 @@
         <item>Security Type</item>
     </string-array>
 
+    <!-- CAUTION!!! The values in this array need to stay in sync with the code from
+    com.craxiom.networksurvey.fragments.BluetoothFragment.RecordSortedListCallback -->
+    <string-array name="bluetooth_sort_options">
+        <item>Signal Strength</item>
+        <item>Source Address</item>
+        <item>OTA Device Name</item>
+        <item>Supported Technologies</item>
+    </string-array>
+
     <string-array name="log_rollover_size_labels">
         <item>Never</item>
         <item>1</item>

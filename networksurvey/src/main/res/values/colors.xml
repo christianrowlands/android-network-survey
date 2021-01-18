@@ -18,12 +18,12 @@
 
     <color name="alert_red">#A21919</color>
 
-    <!-- Wi-Fi RSSI color ranges -->
-    <color name="wifi_rssi_green">#388E3C</color>
-    <color name="wifi_rssi_yellow">#FBC02D</color>
-    <color name="wifi_rssi_orange">#F57C00</color>
-    <color name="wifi_rssi_red">#D32F2F</color>
-    <color name="wifi_rssi_deep_red">#D50000</color>
+    <!-- Wi-Fi & Bluetooth RSSI color ranges -->
+    <color name="rssi_green">#388E3C</color>
+    <color name="rssi_yellow">#FBC02D</color>
+    <color name="rssi_orange">#F57C00</color>
+    <color name="rssi_red">#D32F2F</color>
+    <color name="rssi_deep_red">#D50000</color>
 
     <!-- GNSS Sky View -->
     <color name="not_in_view_sat">#DDFFFFFF</color>
