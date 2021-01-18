@@ -14,6 +14,9 @@
     <string name="action_start_wifi_logging">Start Wi-Fi Logging</string>
     <string name="action_stop_wifi_logging">Stop Wi-Fi Logging</string>
 
+    <string name="action_start_bluetooth_logging">Start Bluetooth Logging</string>
+    <string name="action_stop_bluetooth_logging">Stop Bluetooth Logging</string>
+
     <string name="action_start_gnss_logging">Start GNSS Logging</string>
     <string name="action_stop_gnss_logging">Stop GNSS Logging</string>
 
@@ -21,6 +24,7 @@
     <string name="turn_on_gps">Please turn on GPS</string>
 
     <string name="turn_on_wifi">Please turn on Wi-Fi</string>
+    <string name="turn_on_bluetooth">Please turn on Bluetooth</string>
 
     <string name="current_technology_initial">Current Technology: </string>
     <string name="carrier_initial">Carrier: </string>
@@ -73,6 +77,9 @@
     <string name="wifi_logging_start_toast">Started Writing the Wi-Fi Log File</string>
     <string name="wifi_logging_stop_toast">Wi-Fi Log File Closed</string>
     <string name="wifi_logging_toggle_failed">Failed to toggle the Wi-Fi logging state</string>
+    <string name="bluetooth_logging_start_toast">Started Writing the Bluetooth Log File</string>
+    <string name="bluetooth_logging_stop_toast">Bluetooth Log File Closed</string>
+    <string name="bluetooth_logging_toggle_failed">Failed to toggle the Bluetooth logging state</string>
     <string name="gnss_logging_start_toast">Started Writing the GNSS Log File</string>
     <string name="gnss_logging_stop_toast">GNSS Log File Closed</string>
     <string name="gnss_logging_toggle_failed">Failed to toggle the GNSS logging state; is GPS turned on?</string>
@@ -115,14 +122,16 @@
     <string name="connection_notification_connecting_text">Attempting to Connect</string>
     <string name="title_activity_connection">ConnectionActivity</string>
 
+    <!-- Common for Wi-Fi and Bluetooth Lists -->
+    <string name="scan_number">Scan #: %1$d</string>
+    <string name="scan_status_scanning">Scanning …</string>
+    <string name="scan_status_paused">UI Paused</string>
+
     <!-- Wi-Fi Network List -->
-    <string name="wifi_scan_number">Scan #: %1$d</string>
     <string name="wifi_aps_in_scan">APs In Scan: %1$d</string>
-    <string name="wifi_scan_status_scanning">Scanning …</string>
-    <string name="wifi_scan_status_paused">UI Paused</string>
     <string name="wifi_scan_status_wifi_disabled">Wi-Fi Disabled</string>
 
-    <string name="wifi_dbm_value">%1$s dBm</string>
+    <string name="dbm_value">%1$s dBm</string>
     <string name="bssid_value">BSSID: %1$s</string>
     <string name="wifi_frequency_value">%1$d MHz</string>
     <string name="wifi_channel_value">CH %1$d</string>
@@ -134,11 +143,21 @@
     <string name="android_10_throttling_information">Android 10 throttles Wi-Fi scans. To disable throttling: System -> Advanced -> Developer options -> WiFi scan throttling to off.</string>
     <string name="enable_developer_options">To enable Developer Options: Settings -> About Phone -> Tap Build Number 7 times.</string>
 
+    <!-- Bluetooth Device List -->
+    <string name="bluetooth_devices_in_scan"># of Devices: %1$d</string>
+    <string name="bluetooth_scan_status_wifi_disabled">Bluetooth Disabled</string>
+
+    <string name="content_description_sort_bluetooth_button">Sort Bluetooth Devices Button</string>
+    <string name="content_description_pause_bluetooth_scan_ui_updates">Pause Bluetooth scan UI updates</string>
+
+    <string name="ota_device_name_value">Device Name: %1$s</string>
+
     <!-- MQTT Connection UI constants -->
     <string name="mqtt_connection_title_full">MQTT Broker Connection</string>
     <string name="mqtt_connection_title">MQTT Broker</string>
     <string name="stream_cellular_title">Stream Cellular</string>
     <string name="stream_wifi_title">Stream Wi-Fi</string>
+    <string name="stream_bluetooth_title">Stream Bluetooth</string>
     <string name="stream_gnss_title">Stream GNSS</string>
 
     <!-- App Restriction Constants -->
@@ -160,10 +179,13 @@
     <string name="cellular_stream_description">True to stream cellular data, false otherwise</string>
     <string name="wifi_stream_title">Wi-Fi Stream Enabled</string>
     <string name="wifi_stream_description">True to stream Wi-Fi data, false otherwise</string>
+    <string name="bluetooth_stream_title">Bluetooth Stream Enabled</string>
+    <string name="bluetooth_stream_description">True to stream Bluetooth data, false otherwise</string>
     <string name="gnss_stream_title">GNSS Stream Enabled</string>
     <string name="gnss_stream_description">True to stream GNSS data, false otherwise</string>
     <string name="auto_start_cellular_logging_description">True to start cellular logging automatically, false otherwise</string>
     <string name="auto_start_wifi_logging_description">True to start Wi-Fi logging automatically, false otherwise</string>
+    <string name="auto_start_bluetooth_logging_description">True to start Bluetooth logging automatically, false otherwise</string>
     <string name="auto_start_gnss_logging_description">True to start GNSS logging automatically, false otherwise</string>
 
     <!-- User Preference Constants -->
@@ -184,6 +206,10 @@
     <string name="auto_start_wifi_logging_summary_on">Wi-Fi logging will be started upon app opening or when the phone is turned on</string>
     <string name="auto_start_wifi_logging_summary_off">Wi-Fi logging will only start when manually enabled</string>
 
+    <string name="auto_start_bluetooth_logging_title">Auto Start Bluetooth Logging</string>
+    <string name="auto_start_bluetooth_logging_summary_on">Bluetooth logging will be started upon app opening or when the phone is turned on</string>
+    <string name="auto_start_bluetooth_logging_summary_off">Bluetooth logging will only start when manually enabled</string>
+
     <string name="auto_start_gnss_logging_title">Auto Start GNSS Logging</string>
     <string name="auto_start_gnss_logging_summary_on">GNSS logging will be started upon app opening or when the phone is turned on</string>
     <string name="auto_start_gnss_logging_summary_off">GNSS logging will only start when manually enabled</string>
@@ -195,6 +221,9 @@
 
     <string name="wifi_scan_interval_title">Wi-Fi Scan Interval</string>
     <string name="wifi_scan_interval_description">The rate at which Wi-Fi networks will be scanned for in seconds. Smaller values will decrease battery life.</string>
+
+    <string name="bluetooth_scan_interval_title">Bluetooth Scan Interval</string>
+    <string name="bluetooth_scan_interval_description">The rate at which Bluetooth devices will be scanned for in seconds. Smaller values will decrease battery life.</string>
 
     <string name="gnss_scan_interval_title">GNSS Scan Interval</string>
     <string name="gnss_scan_interval_description">The rate at which GNSS satellites will be scanned for in seconds. Smaller values will decrease battery life.</string>
@@ -228,6 +257,7 @@
     <!-- Bottom Navigation -->
     <string name="nav_cellular">Cellular</string>
     <string name="nav_wifi">Wi-Fi</string>
+    <string name="nav_bluetooth">Bluetooth</string>
     <string name="nav_gnss">GNSS</string>
 
     <!-- General GNSS Constants -->

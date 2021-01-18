@@ -1,6 +1,7 @@
 package com.craxiom.networksurvey.services;
 
 import android.annotation.SuppressLint;
+import android.bluetooth.BluetoothDevice;
 import android.content.Context;
 import android.location.GnssMeasurement;
 import android.location.GnssMeasurementsEvent;
@@ -23,6 +24,8 @@ import android.telephony.TelephonyManager;
 import android.view.View;
 import android.widget.TextView;
 
+import com.craxiom.messaging.BluetoothRecord;
+import com.craxiom.messaging.BluetoothRecordData;
 import com.craxiom.messaging.CdmaRecord;
 import com.craxiom.messaging.CdmaRecordData;
 import com.craxiom.messaging.GnssRecord;
@@ -36,6 +39,7 @@ import com.craxiom.messaging.UmtsRecord;
 import com.craxiom.messaging.UmtsRecordData;
 import com.craxiom.messaging.WifiBeaconRecord;
 import com.craxiom.messaging.WifiBeaconRecordData;
+import com.craxiom.messaging.bluetooth.SupportedTechnologies;
 import com.craxiom.messaging.gnss.Constellation;
 import com.craxiom.messaging.wifi.EncryptionType;
 import com.craxiom.networksurvey.BuildConfig;
@@ -43,6 +47,7 @@ import com.craxiom.networksurvey.CalculationUtils;
 import com.craxiom.networksurvey.GpsListener;
 import com.craxiom.networksurvey.NetworkSurveyActivity;
 import com.craxiom.networksurvey.R;
+import com.craxiom.networksurvey.constants.BluetoothMessageConstants;
 import com.craxiom.networksurvey.constants.CdmaMessageConstants;
 import com.craxiom.networksurvey.constants.GnssMessageConstants;
 import com.craxiom.networksurvey.constants.GsmMessageConstants;
@@ -51,6 +56,7 @@ import com.craxiom.networksurvey.constants.NetworkSurveyConstants;
 import com.craxiom.networksurvey.constants.UmtsMessageConstants;
 import com.craxiom.networksurvey.constants.WifiBeaconMessageConstants;
 import com.craxiom.networksurvey.fragments.NetworkDetailsFragment;
+import com.craxiom.networksurvey.listeners.IBluetoothSurveyRecordListener;
 import com.craxiom.networksurvey.listeners.ICellularSurveyRecordListener;
 import com.craxiom.networksurvey.listeners.IGnssSurveyRecordListener;
 import com.craxiom.networksurvey.listeners.IWifiSurveyRecordListener;
@@ -87,10 +93,12 @@ public class SurveyRecordProcessor
 {
     public static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyyMMdd-HHmmss").withZone(ZoneId.systemDefault());
     private static final String MISSION_ID_PREFIX = "NS ";
+    private static final int UNSET_TX_POWER_LEVEL = 127;
 
     private final GpsListener gpsListener;
     private final Set<ICellularSurveyRecordListener> cellularSurveyRecordListeners = new CopyOnWriteArraySet<>();
     private final Set<IWifiSurveyRecordListener> wifiSurveyRecordListeners = new CopyOnWriteArraySet<>();
+    private final Set<IBluetoothSurveyRecordListener> bluetoothSurveyRecordListeners = new CopyOnWriteArraySet<>();
     private final Set<IGnssSurveyRecordListener> gnssSurveyRecordListeners = new CopyOnWriteArraySet<>();
     private NetworkSurveyActivity networkSurveyActivity;
 
@@ -101,6 +109,7 @@ public class SurveyRecordProcessor
     private int groupNumber = 0; // This will be incremented to 0 the first time it is used.
 
     private int wifiRecordNumber = 1;
+    private int bluetoothRecordNumber = 1;
 
     private int gnssRecordNumber = 1;
     private int gnssGroupNumber = 0; // This will be incremented to 1 the first time it is used.
@@ -145,6 +154,16 @@ public class SurveyRecordProcessor
     void unregisterWifiSurveyRecordListener(IWifiSurveyRecordListener surveyRecordListener)
     {
         wifiSurveyRecordListeners.remove(surveyRecordListener);
+    }
+
+    void registerBluetoothSurveyRecordListener(IBluetoothSurveyRecordListener surveyRecordListener)
+    {
+        bluetoothSurveyRecordListeners.add(surveyRecordListener);
+    }
+
+    void unregisterBluetoothSurveyRecordListener(IBluetoothSurveyRecordListener surveyRecordListener)
+    {
+        bluetoothSurveyRecordListeners.remove(surveyRecordListener);
     }
 
     /**
@@ -196,6 +215,7 @@ public class SurveyRecordProcessor
         return networkSurveyActivity != null
                 || !cellularSurveyRecordListeners.isEmpty()
                 || !wifiSurveyRecordListeners.isEmpty()
+                || !bluetoothSurveyRecordListeners.isEmpty()
                 || !gnssSurveyRecordListeners.isEmpty();
     }
 
@@ -214,6 +234,15 @@ public class SurveyRecordProcessor
     boolean isWifiBeingUsed()
     {
         return !wifiSurveyRecordListeners.isEmpty();
+    }
+
+    /**
+     * @return True if there are any registered Bluetooth survey record listeners, false otherwise.
+     * @since 1.0.0
+     */
+    boolean isBluetoothBeingUsed()
+    {
+        return !bluetoothSurveyRecordListeners.isEmpty();
     }
 
     /**
@@ -271,6 +300,44 @@ public class SurveyRecordProcessor
         Timber.v("");*/
 
         processAccessPoints(apScanResults);
+    }
+
+    /**
+     * Notification for when a new single Bluetooth Clasic scan result is available to process.
+     *
+     * @param device The Bluetooth device object associated with the scan.
+     * @param rssi   The RSSI value associated with the scan.
+     * @since 1.0.0
+     */
+    synchronized void onBluetoothClassicScanUpdate(BluetoothDevice device, int rssi)
+    {
+        processBluetoothClassicResult(device, rssi);
+    }
+
+    /**
+     * Notification for when a new single Bluetooth scan result is available to process.
+     *
+     * @param result A single Bluetooth scan result coming from the Android Bluetooth scanning API.
+     * @since 1.0.0
+     */
+    synchronized void onBluetoothScanUpdate(android.bluetooth.le.ScanResult result)
+    {
+        processBluetoothResult(result);
+    }
+
+    /**
+     * Notification for when a new set of Bluetooth scan results are available to process.
+     *
+     * @param results The list of results coming from the Android Bluetooth scanning API.
+     * @since 1.0.0
+     */
+    synchronized void onBluetoothScanUpdate(List<android.bluetooth.le.ScanResult> results)
+    {
+        /*Timber.v("SCAN RESULTS:");
+        results.forEach(scanResult -> Timber.v(scanResult.toString()));
+        Timber.v("");*/
+
+        processBluetoothResults(results);
     }
 
     /**
@@ -352,6 +419,43 @@ public class SurveyRecordProcessor
                 .map(this::generateWiFiBeaconSurveyRecord)
                 .collect(Collectors.toList());
         notifyWifiBeaconRecordListeners(wifiBeaconRecords);
+    }
+
+    /**
+     * Given a Bluetooth classic scan result, create the protobuf objects from it and notify any listeners.
+     *
+     * @param device The Bluetooth device object associated with the scan.
+     * @param rssi   The RSSI value associated with the scan.
+     * @since 1.0.0
+     */
+    private void processBluetoothClassicResult(BluetoothDevice device, int rssi)
+    {
+        notifyBluetoothRecordListeners(generateBluetoothSurveyRecord(device, rssi, UNSET_TX_POWER_LEVEL));
+    }
+
+    /**
+     * Given a single Bluetooth scan result, create the protobuf object from it and notify any listeners.
+     *
+     * @param result The Scan Results.
+     * @since 1.0.0
+     */
+    private void processBluetoothResult(android.bluetooth.le.ScanResult result)
+    {
+        notifyBluetoothRecordListeners(generateBluetoothSurveyRecord(result));
+    }
+
+    /**
+     * Given a group of Bluetooth scan results, create the protobuf objects from it and notify any listeners.
+     *
+     * @param results The list of Scan Results.
+     * @since 1.0.0
+     */
+    private void processBluetoothResults(List<android.bluetooth.le.ScanResult> results)
+    {
+        final List<BluetoothRecord> bluetoothRecords = results.stream()
+                .map(this::generateBluetoothSurveyRecord)
+                .collect(Collectors.toList());
+        notifyBluetoothRecordListeners(bluetoothRecords);
     }
 
     /**
@@ -735,6 +839,74 @@ public class SurveyRecordProcessor
     }
 
     /**
+     * Pull out the appropriate values from the {@link android.bluetooth.le.ScanResult}, and create a {@link BluetoothRecord}.
+     *
+     * @param result The scan result to pull the Bluetooth data from.
+     * @return The Bluetooth record to send to any listeners.
+     * @since 1.0.0
+     */
+    private BluetoothRecord generateBluetoothSurveyRecord(android.bluetooth.le.ScanResult result)
+    {
+        return generateBluetoothSurveyRecord(result.getDevice(), result.getRssi(), result.getTxPower());
+    }
+
+    /**
+     * Pull out the appropriate values, and create a {@link BluetoothRecord}.
+     *
+     * @return The Bluetooth record to send to any listeners.
+     * @since 1.0.0
+     */
+    private BluetoothRecord generateBluetoothSurveyRecord(BluetoothDevice device, int rssi, int txPowerLevel)
+    {
+        final String sourceAddress = device.getAddress();
+
+        // Validate that the required fields are present before proceeding further
+        if (!validateBluetoothFields(sourceAddress)) return null;
+
+        final BluetoothRecordData.Builder dataBuilder = BluetoothRecordData.newBuilder();
+
+        if (gpsListener != null)
+        {
+            @SuppressLint("MissingPermission") final Location lastKnownLocation = gpsListener.getLatestLocation();
+            if (lastKnownLocation != null)
+            {
+                dataBuilder.setLatitude(lastKnownLocation.getLatitude());
+                dataBuilder.setLongitude(lastKnownLocation.getLongitude());
+                dataBuilder.setAltitude((float) lastKnownLocation.getAltitude());
+            }
+        }
+
+        dataBuilder.setDeviceSerialNumber(deviceId);
+        dataBuilder.setDeviceTime(IOUtils.getRfc3339String(ZonedDateTime.now()));
+        dataBuilder.setMissionId(missionId);
+        dataBuilder.setRecordNumber(bluetoothRecordNumber++);
+
+        dataBuilder.setSourceAddress(sourceAddress);
+        dataBuilder.setSignalStrength(FloatValue.newBuilder().setValue(rssi).build());
+
+        // The TX Power seems to never be set (a value of 127 indicates unset). However, I am including
+        // the code here in case it starts being populated in a future version of Android, or if a specific phone model
+        // reports it.
+        if (txPowerLevel != UNSET_TX_POWER_LEVEL)
+        {
+            dataBuilder.setTxPower(FloatValue.newBuilder().setValue(txPowerLevel).build());
+        }
+
+        final String otaDeviceName = device.getName();
+        if (otaDeviceName != null) dataBuilder.setOtaDeviceName(otaDeviceName);
+
+        final SupportedTechnologies supportedTech = BluetoothMessageConstants.getSupportedTechnologies(device.getType());
+        if (supportedTech != SupportedTechnologies.UNKNOWN) dataBuilder.setSupportedTechnologies(supportedTech);
+
+        final BluetoothRecord.Builder recordBuilder = BluetoothRecord.newBuilder();
+        recordBuilder.setMessageType(BluetoothMessageConstants.BLUETOOTH_RECORD_MESSAGE_TYPE);
+        recordBuilder.setVersion(BuildConfig.MESSAGING_API_VERSION);
+        recordBuilder.setData(dataBuilder);
+
+        return recordBuilder.build();
+    }
+
+    /**
      * Pull out the appropriate values from the {@link GnssMeasurement}, and create a {@link GnssRecord}.
      *
      * @param gnss The GNSS measurement object to pull the data from.
@@ -984,6 +1156,23 @@ public class SurveyRecordProcessor
     }
 
     /**
+     * Validates the required fields.
+     *
+     * @return True if the provided fields are all valid, false if one or more is invalid.
+     * @since 1.0.0
+     */
+    private boolean validateBluetoothFields(String sourceAddress)
+    {
+        if (sourceAddress == null || sourceAddress.isEmpty())
+        {
+            Timber.v("The Source Address is required to build a Bluetooth Survey Record.");
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
      * Notify all the listeners that we have a new GSM Record available.
      *
      * @param gsmRecord The new GSM Survey Record to send to the listeners.
@@ -1066,7 +1255,7 @@ public class SurveyRecordProcessor
     /**
      * Notify all the listeners that we have a new group of 802.11 Beacon Records available.
      *
-     * @param wifiBeaconRecords The new list 802.11 Beacon Survey Record to send to the listeners.
+     * @param wifiBeaconRecords The new list 802.11 Beacon Survey Records to send to the listeners.
      * @since 0.1.2
      */
     private void notifyWifiBeaconRecordListeners(List<WifiRecordWrapper> wifiBeaconRecords)
@@ -1081,6 +1270,50 @@ public class SurveyRecordProcessor
             } catch (Exception e)
             {
                 Timber.e(e, "Unable to notify a Wi-Fi Survey Record Listener because of an exception");
+            }
+        }
+    }
+
+    /**
+     * Notify all the listeners that we have a new single Bluetooth Record available.
+     *
+     * @param bluetoothRecord The new Bluetooth Survey Record to send to the listeners.
+     * @since 1.0.0
+     */
+    private void notifyBluetoothRecordListeners(BluetoothRecord bluetoothRecord)
+    {
+        if (bluetoothRecord == null) return;
+
+        for (IBluetoothSurveyRecordListener listener : bluetoothSurveyRecordListeners)
+        {
+            try
+            {
+                listener.onBluetoothSurveyRecord(bluetoothRecord);
+            } catch (Exception e)
+            {
+                Timber.e(e, "Unable to notify a Bluetooth Survey Record Listener because of an exception");
+            }
+        }
+    }
+
+    /**
+     * Notify all the listeners that we have a new group of Bluetooth Records available.
+     *
+     * @param bluetoothRecords The new list Bluetooth Survey Records to send to the listeners.
+     * @since 1.0.0
+     */
+    private void notifyBluetoothRecordListeners(List<BluetoothRecord> bluetoothRecords)
+    {
+        if (bluetoothRecords == null || bluetoothRecords.isEmpty()) return;
+
+        for (IBluetoothSurveyRecordListener listener : bluetoothSurveyRecordListeners)
+        {
+            try
+            {
+                listener.onBluetoothSurveyRecords(bluetoothRecords);
+            } catch (Exception e)
+            {
+                Timber.e(e, "Unable to notify a Bluetooth Survey Record Listener because of an exception");
             }
         }
     }

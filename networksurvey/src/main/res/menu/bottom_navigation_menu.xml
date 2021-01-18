@@ -9,6 +9,10 @@
         android:icon="@drawable/ic_wifi"
         android:title="@string/nav_wifi" />
     <item
+        android:id="@+id/main_bluetooth_fragment"
+        android:icon="@drawable/ic_bluetooth"
+        android:title="@string/nav_bluetooth" />
+    <item
         android:id="@+id/main_gnss_fragment"
         android:icon="@drawable/ic_gnss"
         android:title="@string/nav_gnss" />

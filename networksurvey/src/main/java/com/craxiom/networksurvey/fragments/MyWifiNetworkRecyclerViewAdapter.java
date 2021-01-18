@@ -65,7 +65,7 @@ public class MyWifiNetworkRecyclerViewAdapter extends RecyclerView.Adapter<MyWif
         if (data.hasSignalStrength())
         {
             final float signalStrength = data.getSignalStrength().getValue();
-            holder.signalStrength.setText(context.getString(R.string.wifi_dbm_value, String.valueOf(signalStrength)));
+            holder.signalStrength.setText(context.getString(R.string.dbm_value, String.valueOf(signalStrength)));
             holder.signalStrength.setTextColor(context.getResources().getColor(getColorForSignalStrength(signalStrength), null));
         } else
         {
@@ -94,19 +94,19 @@ public class MyWifiNetworkRecyclerViewAdapter extends RecyclerView.Adapter<MyWif
         final int colorResourceId;
         if (signalStrength > -60)
         {
-            colorResourceId = R.color.wifi_rssi_green;
+            colorResourceId = R.color.rssi_green;
         } else if (signalStrength > -70)
         {
-            colorResourceId = R.color.wifi_rssi_yellow;
+            colorResourceId = R.color.rssi_yellow;
         } else if (signalStrength > -80)
         {
-            colorResourceId = R.color.wifi_rssi_orange;
+            colorResourceId = R.color.rssi_orange;
         } else if (signalStrength > -90)
         {
-            colorResourceId = R.color.wifi_rssi_red;
+            colorResourceId = R.color.rssi_red;
         } else
         {
-            colorResourceId = R.color.wifi_rssi_deep_red;
+            colorResourceId = R.color.rssi_deep_red;
         }
 
         return colorResourceId;

@@ -103,10 +103,10 @@ public class WifiNetworksFragment extends Fragment implements IWifiSurveyRecordL
         final Context context = requireContext();
 
         scanStatusView = view.findViewById(R.id.scan_status);
-        scanStatusView.setText(context.getString(R.string.wifi_scan_status_scanning));
+        scanStatusView.setText(context.getString(R.string.scan_status_scanning));
 
         scanNumberView = view.findViewById(R.id.scan_number);
-        scanNumberView.setText(context.getString(R.string.wifi_scan_number, scanNumber));
+        scanNumberView.setText(context.getString(R.string.scan_number, scanNumber));
 
         apsInScanView = view.findViewById(R.id.aps_in_scan);
         apsInScanView.setText(context.getString(R.string.wifi_aps_in_scan, 0));
@@ -143,7 +143,7 @@ public class WifiNetworksFragment extends Fragment implements IWifiSurveyRecordL
         checkForScanThrottling();
 
         final Context context = requireContext();
-        scanNumberView.setText(context.getString(R.string.wifi_scan_number, ++scanNumber));
+        scanNumberView.setText(context.getString(R.string.scan_number, ++scanNumber));
         apsInScanView.setText(requireContext().getString(R.string.wifi_aps_in_scan, wifiBeaconRecords.size()));
 
         synchronized (wifiRecordSortedList)
@@ -184,7 +184,7 @@ public class WifiNetworksFragment extends Fragment implements IWifiSurveyRecordL
      */
     private void onPauseUiUpdatesToggle(View view)
     {
-        scanStatusView.setText(requireContext().getString(updatesPaused ? R.string.wifi_scan_status_scanning : R.string.wifi_scan_status_paused));
+        scanStatusView.setText(requireContext().getString(updatesPaused ? R.string.scan_status_scanning : R.string.scan_status_paused));
         view.setBackgroundResource(updatesPaused ? R.drawable.ic_pause : R.drawable.ic_play);
 
         // If we are transitioning to un-pause scan updates, then artificially reset the last scan time so that we don't
