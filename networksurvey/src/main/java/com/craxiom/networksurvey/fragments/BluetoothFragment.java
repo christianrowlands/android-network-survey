@@ -32,6 +32,7 @@ import com.craxiom.networksurvey.listeners.IBluetoothSurveyRecordListener;
 import com.craxiom.networksurvey.model.SortedSet;
 import com.craxiom.networksurvey.services.NetworkSurveyService;
 import com.craxiom.networksurvey.util.IOUtils;
+import com.craxiom.networksurvey.util.PreferenceUtils;
 
 import java.util.ArrayList;
 import java.util.LinkedList;
@@ -58,6 +59,7 @@ public class BluetoothFragment extends Fragment implements IBluetoothSurveyRecor
     private volatile boolean updatesPaused = false;
 
     private int sortByIndex = 0;
+    private int bluetoothScanRateMs;
 
     /**
      * Only show the prompt to enable Bluetooth one time per instance of this fragment.
@@ -112,6 +114,9 @@ public class BluetoothFragment extends Fragment implements IBluetoothSurveyRecor
     public void onResume()
     {
         super.onResume();
+
+        bluetoothScanRateMs = PreferenceUtils.getScanRatePreferenceMs(NetworkSurveyConstants.PROPERTY_BLUETOOTH_SCAN_INTERVAL_SECONDS,
+                NetworkSurveyConstants.DEFAULT_BLUETOOTH_SCAN_INTERVAL_SECONDS, applicationContext);
 
         checkBluetoothEnabled();
 
@@ -187,7 +192,8 @@ public class BluetoothFragment extends Fragment implements IBluetoothSurveyRecor
             for (int i = 0; i < sortedListSize; ++i)
             {
                 final BluetoothRecord bluetoothRecord = bluetoothRecordSortedSet.get(i);
-                if (IOUtils.getEpochFromRfc3339(bluetoothRecord.getData().getDeviceTime()) + 20_000 < currentTimeMillis) // TODO Change 20_000 ms to a variable
+                // Adding 5_000 ms so that we have plenty of time for the next scan to return its results
+                if (IOUtils.getEpochFromRfc3339(bluetoothRecord.getData().getDeviceTime()) + bluetoothScanRateMs + 5_000 < currentTimeMillis)
                 {
                     itemsToRemove.add(bluetoothRecord);
                 }
