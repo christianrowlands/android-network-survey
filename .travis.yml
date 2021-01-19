@@ -6,6 +6,9 @@ env:
     - ANDROID_API_LEVEL=30
     - ANDROID_BUILD_TOOLS_VERSION=29.0.3
 
+before_install:
+  - yes | sdkmanager "platforms;android-30"
+
 android:
 
   licenses:
