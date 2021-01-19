@@ -321,7 +321,7 @@ public class BluetoothFragment extends Fragment implements IBluetoothSurveyRecor
             {
                 final String action = intent.getAction();
 
-                if (action.equals(BluetoothAdapter.ACTION_STATE_CHANGED))
+                if (BluetoothAdapter.ACTION_STATE_CHANGED.equals(action))
                 {
                     final int state = intent.getIntExtra(BluetoothAdapter.EXTRA_STATE, BluetoothAdapter.ERROR);
                     //noinspection SwitchStatementWithoutDefaultBranch
@@ -345,7 +345,7 @@ public class BluetoothFragment extends Fragment implements IBluetoothSurveyRecor
     }
 
     /**
-     * Unregisters th bluetooth receiver that is notified of bluetooth state changes (i.e. when Bluetooth is
+     * Unregisters the bluetooth receiver that is notified of bluetooth state changes (i.e. when Bluetooth is
      * turned on and off).
      */
     private void unregisterBluetoothBroadcastReceiver()

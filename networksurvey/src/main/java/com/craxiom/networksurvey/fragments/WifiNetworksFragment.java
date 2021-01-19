@@ -1,8 +1,10 @@
 package com.craxiom.networksurvey.fragments;
 
+import android.content.BroadcastReceiver;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.ServiceConnection;
 import android.content.SharedPreferences;
 import android.net.wifi.WifiManager;
@@ -67,6 +69,8 @@ public class WifiNetworksFragment extends Fragment implements IWifiSurveyRecordL
      */
     private boolean promptedToEnableWifi = false;
 
+    private BroadcastReceiver wifiBroadcastReceiver;
+
     /**
      * Mandatory empty constructor for the fragment manager to instantiate the fragment (e.g. upon screen orientation changes).
      */
@@ -119,10 +123,9 @@ public class WifiNetworksFragment extends Fragment implements IWifiSurveyRecordL
     {
         super.onResume();
 
-        checkWifiEnabled();
+        registerWifiBroadcastReceiver();
 
-        // Update the last scan time so that we don't trigger a false positive alert on the scan time interval.
-        lastScanTime = System.currentTimeMillis();
+        checkWifiEnabled();
 
         startAndBindToNetworkSurveyService();
     }
@@ -130,6 +133,8 @@ public class WifiNetworksFragment extends Fragment implements IWifiSurveyRecordL
     @Override
     public void onPause()
     {
+        unregisterWifiBroadcastReceiver();
+
         if (surveyService != null) surveyService.unregisterWifiSurveyRecordListener(this);
 
         super.onPause();
@@ -165,6 +170,9 @@ public class WifiNetworksFragment extends Fragment implements IWifiSurveyRecordL
      */
     private void startAndBindToNetworkSurveyService()
     {
+        // Update the last scan time so that we don't trigger a false positive alert on the scan time interval.
+        lastScanTime = System.currentTimeMillis();
+
         // Start the service
         Timber.i("Binding to the Network Survey Service");
         final Intent serviceIntent = new Intent(applicationContext, NetworkSurveyService.class);
@@ -256,6 +264,52 @@ public class WifiNetworksFragment extends Fragment implements IWifiSurveyRecordL
                 wifiNetworkRecyclerViewAdapter.notifyDataSetChanged();
             }
         }
+    }
+
+    /**
+     * Creates and registers a Wi-Fi receiver that is notified of Wi-Fi state changes (i.e. when Wi-Fi is
+     * turned on and off). This is used to update the UI status text, and to kick off the Network Survey Service.
+     *
+     * @since 1.0.0
+     */
+    private void registerWifiBroadcastReceiver()
+    {
+        wifiBroadcastReceiver = new BroadcastReceiver()
+        {
+            @Override
+            public void onReceive(Context context, Intent intent)
+            {
+                final String action = intent.getAction();
+
+                if (WifiManager.WIFI_STATE_CHANGED_ACTION.equals(action))
+                {
+                    final int state = intent.getIntExtra(WifiManager.EXTRA_WIFI_STATE, WifiManager.WIFI_STATE_UNKNOWN);
+                    //noinspection SwitchStatementWithoutDefaultBranch
+                    switch (state)
+                    {
+                        case WifiManager.WIFI_STATE_DISABLED:
+                            scanStatusView.setText(requireContext().getString(R.string.wifi_scan_status_disabled));
+                            break;
+                        case WifiManager.WIFI_STATE_ENABLED:
+                            scanStatusView.setText(requireContext().getString(updatesPaused ? R.string.scan_status_paused : R.string.scan_status_scanning));
+                            startAndBindToNetworkSurveyService();
+                            break;
+                    }
+                }
+            }
+        };
+
+        // Register for broadcasts on Wi-Fi state change
+        IntentFilter filter = new IntentFilter(WifiManager.WIFI_STATE_CHANGED_ACTION);
+        requireActivity().registerReceiver(wifiBroadcastReceiver, filter);
+    }
+
+    /**
+     * Unregisters the Wi-Fi receiver that is notified of state changes (i.e. when Wi-Fi is turned on and off).
+     */
+    private void unregisterWifiBroadcastReceiver()
+    {
+        if (wifiBroadcastReceiver != null) requireActivity().unregisterReceiver(wifiBroadcastReceiver);
     }
 
     /**
