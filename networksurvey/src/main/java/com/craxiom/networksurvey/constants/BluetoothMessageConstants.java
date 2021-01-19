@@ -21,7 +21,7 @@ public class BluetoothMessageConstants extends MessageConstants
     public static final String BLUETOOTH_RECORD_MESSAGE_TYPE = "BluetoothRecord";
     public static final String BLUETOOTH_RECORDS_TABLE_NAME = "BLUETOOTH_MESSAGE";
 
-    public static final String SOURCE_ADDRESS_COLUMN = "Source_Address";
+    public static final String SOURCE_ADDRESS_COLUMN = "Source Address";
     public static final String SIGNAL_STRENGTH_COLUMN = "Signal Strength";
     public static final String TX_POWER_COLUMN = "Tx Power";
     public static final String TECHNOLOGY_COLUMN = "Technology";

@@ -1357,6 +1357,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
         if (wifiManager == null)
         {
             Timber.wtf("The Wi-Fi manager is null, can't start scanning for Wi-Fi networks.");
+            wifiScanningActive.set(false);
             return;
         }
 
@@ -1426,6 +1427,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
         if (bluetoothAdapter == null)
         {
             Timber.e("The BluetoothAdapter is null. Bluetooth survey won't work");
+            bluetoothScanningActive.set(false);
             return;
         }
 
@@ -1433,6 +1435,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
         if (bluetoothLeScanner == null)
         {
             Timber.e("The BluetoothLeScanner is null, unable to perform Bluetooth LE scans.");
+            bluetoothScanningActive.set(false);
             return;
         }
 

@@ -1,9 +1,11 @@
 package com.craxiom.networksurvey.fragments;
 
 import android.bluetooth.BluetoothAdapter;
+import android.content.BroadcastReceiver;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.ServiceConnection;
 import android.content.SharedPreferences;
 import android.os.Bundle;
@@ -66,6 +68,8 @@ public class BluetoothFragment extends Fragment implements IBluetoothSurveyRecor
      */
     private boolean promptedToEnableBluetooth = false;
 
+    private BroadcastReceiver bluetoothBroadcastReceiver;
+
     /**
      * Mandatory empty constructor for the fragment manager to instantiate the fragment (e.g. upon screen orientation changes).
      */
@@ -118,6 +122,8 @@ public class BluetoothFragment extends Fragment implements IBluetoothSurveyRecor
         bluetoothScanRateMs = PreferenceUtils.getScanRatePreferenceMs(NetworkSurveyConstants.PROPERTY_BLUETOOTH_SCAN_INTERVAL_SECONDS,
                 NetworkSurveyConstants.DEFAULT_BLUETOOTH_SCAN_INTERVAL_SECONDS, applicationContext);
 
+        registerBluetoothBroadcastReceiver();
+
         checkBluetoothEnabled();
 
         startAndBindToNetworkSurveyService();
@@ -126,6 +132,8 @@ public class BluetoothFragment extends Fragment implements IBluetoothSurveyRecor
     @Override
     public void onPause()
     {
+        unregisterBluetoothBroadcastReceiver();
+
         if (surveyService != null) surveyService.unregisterBluetoothSurveyRecordListener(this);
 
         super.onPause();
@@ -301,35 +309,94 @@ public class BluetoothFragment extends Fragment implements IBluetoothSurveyRecor
     }
 
     /**
+     * Creates and registers a bluetooth receiver that is notified of bluetooth state changes (i.e. when Bluetooth is
+     * turned on and off). This is used to update the UI status text, and to kick off the Network Survey Service.
+     */
+    private void registerBluetoothBroadcastReceiver()
+    {
+        bluetoothBroadcastReceiver = new BroadcastReceiver()
+        {
+            @Override
+            public void onReceive(Context context, Intent intent)
+            {
+                final String action = intent.getAction();
+
+                if (action.equals(BluetoothAdapter.ACTION_STATE_CHANGED))
+                {
+                    final int state = intent.getIntExtra(BluetoothAdapter.EXTRA_STATE, BluetoothAdapter.ERROR);
+                    //noinspection SwitchStatementWithoutDefaultBranch
+                    switch (state)
+                    {
+                        case BluetoothAdapter.STATE_OFF:
+                            scanStatusView.setText(requireContext().getString(R.string.bluetooth_scan_status_disabled));
+                            break;
+                        case BluetoothAdapter.STATE_ON:
+                            scanStatusView.setText(requireContext().getString(updatesPaused ? R.string.scan_status_paused : R.string.scan_status_scanning));
+                            startAndBindToNetworkSurveyService();
+                            break;
+                    }
+                }
+            }
+        };
+
+        // Register for broadcasts on BluetoothAdapter state change
+        IntentFilter filter = new IntentFilter(BluetoothAdapter.ACTION_STATE_CHANGED);
+        requireActivity().registerReceiver(bluetoothBroadcastReceiver, filter);
+    }
+
+    /**
+     * Unregisters th bluetooth receiver that is notified of bluetooth state changes (i.e. when Bluetooth is
+     * turned on and off).
+     */
+    private void unregisterBluetoothBroadcastReceiver()
+    {
+        if (bluetoothBroadcastReceiver != null) requireActivity().unregisterReceiver(bluetoothBroadcastReceiver);
+    }
+
+    /**
      * Checks to see if the Bluetooth adapter is present, and if Bluetooth is enabled.
      * <p>
      * After the check to see if Bluetooth is enabled, if Bluetooth is currently disabled the user is then prompted to
      * turn on Bluetooth.
      * <p>
      * The prompt to enable Bluetooth is only shown once per creation of this fragment.
+     * <p>
+     * Also update the status UI with the current bluetooth enabled status.
      */
     private void checkBluetoothEnabled()
     {
-        if (promptedToEnableBluetooth) return;
-
         try
         {
             final BluetoothAdapter bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
-            if (bluetoothAdapter == null) return;
 
-            if (bluetoothAdapter != null && !bluetoothAdapter.isEnabled())
+            // First, update the status UI if bluetooth is disabled
+            if (bluetoothAdapter == null)
             {
-                Timber.i("Bluetooth is disabled, prompting the user to enable it");
+                scanStatusView.setText(requireContext().getString(R.string.bluetooth_scan_status_not_supported));
+            } else if (!bluetoothAdapter.isEnabled())
+            {
+                scanStatusView.setText(requireContext().getString(R.string.bluetooth_scan_status_disabled));
 
-                promptedToEnableBluetooth = true;
+                // Bluetooth is present, but disabled; prompt the user to enable it, but only ask the user once per app opening (per fragment instance)
+                if (promptedToEnableBluetooth) return;
 
-                // Open the Bluetooth prompt pages after a couple seconds
-                Toast.makeText(requireContext(), getString(R.string.turn_on_bluetooth), Toast.LENGTH_SHORT).show();
-                new Handler().post(() -> {
-                    final Intent enableBtIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
-                    enableBtIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-                    startActivity(enableBtIntent);
-                });
+                if (bluetoothAdapter != null && !bluetoothAdapter.isEnabled())
+                {
+                    Timber.i("Bluetooth is disabled, prompting the user to enable it");
+
+                    promptedToEnableBluetooth = true;
+
+                    // Open the Bluetooth prompt pages after a couple seconds
+                    Toast.makeText(requireContext(), getString(R.string.turn_on_bluetooth), Toast.LENGTH_SHORT).show();
+                    new Handler().post(() -> {
+                        final Intent enableBtIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
+                        enableBtIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                        startActivity(enableBtIntent);
+                    });
+                }
+            } else
+            {
+                scanStatusView.setText(requireContext().getString(updatesPaused ? R.string.scan_status_paused : R.string.scan_status_scanning));
             }
         } catch (Exception e)
         {
