@@ -33,6 +33,14 @@
 
         <SwitchPreferenceCompat
             app:defaultValue="false"
+            app:icon="@drawable/ic_bluetooth"
+            app:key="auto_start_bluetooth_logging"
+            app:summaryOff="@string/auto_start_bluetooth_logging_summary_off"
+            app:summaryOn="@string/auto_start_bluetooth_logging_summary_on"
+            app:title="@string/auto_start_bluetooth_logging_title" />
+
+        <SwitchPreferenceCompat
+            app:defaultValue="false"
             app:icon="@drawable/ic_gnss"
             app:key="auto_start_gnss_logging"
             app:summaryOff="@string/auto_start_gnss_logging_summary_off"
@@ -67,6 +75,13 @@
             app:dialogMessage="@string/wifi_scan_interval_description"
             app:key="wifi_scan_interval_seconds"
             app:title="@string/wifi_scan_interval_title"
+            app:useSimpleSummaryProvider="true" />
+
+        <EditTextPreference
+            app:defaultValue="15"
+            app:dialogMessage="@string/bluetooth_scan_interval_description"
+            app:key="bluetooth_scan_interval_seconds"
+            app:title="@string/bluetooth_scan_interval_title"
             app:useSimpleSummaryProvider="true" />
 
         <EditTextPreference

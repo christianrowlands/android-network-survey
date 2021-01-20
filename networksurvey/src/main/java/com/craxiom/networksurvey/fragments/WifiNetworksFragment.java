@@ -1,8 +1,10 @@
 package com.craxiom.networksurvey.fragments;
 
+import android.content.BroadcastReceiver;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.ServiceConnection;
 import android.content.SharedPreferences;
 import android.net.wifi.WifiManager;
@@ -67,6 +69,8 @@ public class WifiNetworksFragment extends Fragment implements IWifiSurveyRecordL
      */
     private boolean promptedToEnableWifi = false;
 
+    private BroadcastReceiver wifiBroadcastReceiver;
+
     /**
      * Mandatory empty constructor for the fragment manager to instantiate the fragment (e.g. upon screen orientation changes).
      */
@@ -103,10 +107,10 @@ public class WifiNetworksFragment extends Fragment implements IWifiSurveyRecordL
         final Context context = requireContext();
 
         scanStatusView = view.findViewById(R.id.scan_status);
-        scanStatusView.setText(context.getString(R.string.wifi_scan_status_scanning));
+        scanStatusView.setText(context.getString(R.string.scan_status_scanning));
 
         scanNumberView = view.findViewById(R.id.scan_number);
-        scanNumberView.setText(context.getString(R.string.wifi_scan_number, scanNumber));
+        scanNumberView.setText(context.getString(R.string.scan_number, scanNumber));
 
         apsInScanView = view.findViewById(R.id.aps_in_scan);
         apsInScanView.setText(context.getString(R.string.wifi_aps_in_scan, 0));
@@ -119,10 +123,9 @@ public class WifiNetworksFragment extends Fragment implements IWifiSurveyRecordL
     {
         super.onResume();
 
-        checkWifiEnabled();
+        registerWifiBroadcastReceiver();
 
-        // Update the last scan time so that we don't trigger a false positive alert on the scan time interval.
-        lastScanTime = System.currentTimeMillis();
+        checkWifiEnabled();
 
         startAndBindToNetworkSurveyService();
     }
@@ -130,6 +133,8 @@ public class WifiNetworksFragment extends Fragment implements IWifiSurveyRecordL
     @Override
     public void onPause()
     {
+        unregisterWifiBroadcastReceiver();
+
         if (surveyService != null) surveyService.unregisterWifiSurveyRecordListener(this);
 
         super.onPause();
@@ -143,14 +148,17 @@ public class WifiNetworksFragment extends Fragment implements IWifiSurveyRecordL
         checkForScanThrottling();
 
         final Context context = requireContext();
-        scanNumberView.setText(context.getString(R.string.wifi_scan_number, ++scanNumber));
+        scanNumberView.setText(context.getString(R.string.scan_number, ++scanNumber));
         apsInScanView.setText(requireContext().getString(R.string.wifi_aps_in_scan, wifiBeaconRecords.size()));
 
         synchronized (wifiRecordSortedList)
         {
             wifiRecordSortedList.clear();
             wifiRecordSortedList.addAll(wifiBeaconRecords);
-            if (wifiNetworkRecyclerViewAdapter != null) wifiNetworkRecyclerViewAdapter.notifyDataSetChanged();
+            if (wifiNetworkRecyclerViewAdapter != null)
+            {
+                wifiNetworkRecyclerViewAdapter.notifyDataSetChanged();
+            }
         }
     }
 
@@ -162,6 +170,9 @@ public class WifiNetworksFragment extends Fragment implements IWifiSurveyRecordL
      */
     private void startAndBindToNetworkSurveyService()
     {
+        // Update the last scan time so that we don't trigger a false positive alert on the scan time interval.
+        lastScanTime = System.currentTimeMillis();
+
         // Start the service
         Timber.i("Binding to the Network Survey Service");
         final Intent serviceIntent = new Intent(applicationContext, NetworkSurveyService.class);
@@ -181,7 +192,7 @@ public class WifiNetworksFragment extends Fragment implements IWifiSurveyRecordL
      */
     private void onPauseUiUpdatesToggle(View view)
     {
-        scanStatusView.setText(requireContext().getString(updatesPaused ? R.string.wifi_scan_status_scanning : R.string.wifi_scan_status_paused));
+        scanStatusView.setText(requireContext().getString(updatesPaused ? R.string.scan_status_scanning : R.string.scan_status_paused));
         view.setBackgroundResource(updatesPaused ? R.drawable.ic_pause : R.drawable.ic_play);
 
         // If we are transitioning to un-pause scan updates, then artificially reset the last scan time so that we don't
@@ -248,8 +259,57 @@ public class WifiNetworksFragment extends Fragment implements IWifiSurveyRecordL
 
             wifiRecordSortedList.endBatchedUpdates();
 
-            if (wifiNetworkRecyclerViewAdapter != null) wifiNetworkRecyclerViewAdapter.notifyDataSetChanged();
+            if (wifiNetworkRecyclerViewAdapter != null)
+            {
+                wifiNetworkRecyclerViewAdapter.notifyDataSetChanged();
+            }
         }
+    }
+
+    /**
+     * Creates and registers a Wi-Fi receiver that is notified of Wi-Fi state changes (i.e. when Wi-Fi is
+     * turned on and off). This is used to update the UI status text, and to kick off the Network Survey Service.
+     *
+     * @since 1.0.0
+     */
+    private void registerWifiBroadcastReceiver()
+    {
+        wifiBroadcastReceiver = new BroadcastReceiver()
+        {
+            @Override
+            public void onReceive(Context context, Intent intent)
+            {
+                final String action = intent.getAction();
+
+                if (WifiManager.WIFI_STATE_CHANGED_ACTION.equals(action))
+                {
+                    final int state = intent.getIntExtra(WifiManager.EXTRA_WIFI_STATE, WifiManager.WIFI_STATE_UNKNOWN);
+                    //noinspection SwitchStatementWithoutDefaultBranch
+                    switch (state)
+                    {
+                        case WifiManager.WIFI_STATE_DISABLED:
+                            scanStatusView.setText(requireContext().getString(R.string.wifi_scan_status_disabled));
+                            break;
+                        case WifiManager.WIFI_STATE_ENABLED:
+                            scanStatusView.setText(requireContext().getString(updatesPaused ? R.string.scan_status_paused : R.string.scan_status_scanning));
+                            startAndBindToNetworkSurveyService();
+                            break;
+                    }
+                }
+            }
+        };
+
+        // Register for broadcasts on Wi-Fi state change
+        IntentFilter filter = new IntentFilter(WifiManager.WIFI_STATE_CHANGED_ACTION);
+        requireActivity().registerReceiver(wifiBroadcastReceiver, filter);
+    }
+
+    /**
+     * Unregisters the Wi-Fi receiver that is notified of state changes (i.e. when Wi-Fi is turned on and off).
+     */
+    private void unregisterWifiBroadcastReceiver()
+    {
+        if (wifiBroadcastReceiver != null) requireActivity().unregisterReceiver(wifiBroadcastReceiver);
     }
 
     /**
@@ -338,7 +398,10 @@ public class WifiNetworksFragment extends Fragment implements IWifiSurveyRecordL
             } else //if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q)
             {
                 snackbarMessage = getString(R.string.android_10_throttling_information);
-                if (!devOptionsEnabled) snackbarMessage += "\n\n" + getString(R.string.enable_developer_options);
+                if (!devOptionsEnabled)
+                {
+                    snackbarMessage += "\n\n" + getString(R.string.enable_developer_options);
+                }
             }
 
             final Snackbar snackbar = Snackbar.make(requireView(), snackbarMessage, Snackbar.LENGTH_INDEFINITE)
@@ -448,7 +511,8 @@ public class WifiNetworksFragment extends Fragment implements IWifiSurveyRecordL
         public void onServiceConnected(final ComponentName name, final IBinder binder)
         {
             Timber.i("%s service connected", name);
-            surveyService = ((NetworkSurveyService.SurveyServiceBinder) binder).getService();
+            NetworkSurveyService.SurveyServiceBinder serviceBinder = (NetworkSurveyService.SurveyServiceBinder) binder;
+            surveyService = (NetworkSurveyService) serviceBinder.getService();
             surveyService.registerWifiSurveyRecordListener(WifiNetworksFragment.this);
         }
 

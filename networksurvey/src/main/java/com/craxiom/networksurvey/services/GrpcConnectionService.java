@@ -42,14 +42,14 @@ import com.craxiom.messaging.grpc.StatusUpdateReply;
 import com.craxiom.messaging.grpc.UmtsSurveyResponse;
 import com.craxiom.messaging.grpc.WifiBeaconSurveyResponse;
 import com.craxiom.messaging.grpc.WirelessSurveyGrpc;
+import com.craxiom.mqttlibrary.IConnectionStateListener;
+import com.craxiom.mqttlibrary.connection.ConnectionState;
 import com.craxiom.networksurvey.BuildConfig;
-import com.craxiom.networksurvey.ConnectionState;
 import com.craxiom.networksurvey.GpsListener;
 import com.craxiom.networksurvey.R;
 import com.craxiom.networksurvey.constants.DeviceStatusMessageConstants;
 import com.craxiom.networksurvey.constants.NetworkSurveyConstants;
 import com.craxiom.networksurvey.listeners.ICellularSurveyRecordListener;
-import com.craxiom.networksurvey.listeners.IConnectionStateListener;
 import com.craxiom.networksurvey.listeners.IDeviceStatusListener;
 import com.craxiom.networksurvey.listeners.IWifiSurveyRecordListener;
 import com.craxiom.networksurvey.messaging.NetworkSurveyStatusGrpc;
@@ -281,7 +281,10 @@ public class GrpcConnectionService extends Service implements IDeviceStatusListe
     {
         Timber.i("Destroying the Connection Service");
 
-        if (surveyServiceConnection != null) getApplicationContext().unbindService(surveyServiceConnection);
+        if (surveyServiceConnection != null)
+        {
+            getApplicationContext().unbindService(surveyServiceConnection);
+        }
 
         if (deviceStatusReportHandler != null)
         {
@@ -1026,7 +1029,7 @@ public class GrpcConnectionService extends Service implements IDeviceStatusListe
         {
             Timber.i("%s service connected", name);
             final NetworkSurveyService.SurveyServiceBinder binder = (NetworkSurveyService.SurveyServiceBinder) iBinder;
-            networkSurveyService = binder.getService();
+            networkSurveyService = (NetworkSurveyService) binder.getService();
             deviceId = networkSurveyService.getDeviceId();
             gpsListener = networkSurveyService.getGpsListener();
             networkSurveyService.registerCellularSurveyRecordListener(GrpcConnectionService.this);

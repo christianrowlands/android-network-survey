@@ -63,6 +63,11 @@ library. [The API documentation is published to a web page here](https://messagi
 
 ## Changelog
 
+##### [1.0.0](https://github.com/christianrowlands/android-network-survey/releases/tag/v1.0.0) - 2021-01-20
+ * Added Bluetooth survey support for streaming over an MQTT connection and logging to a GeoPackage file.
+ * Added a Bluetooth survey UI for viewing all Bluetooth devices within range.
+ * Updated the Wi-Fi Status UI to reflect when Wi-Fi is disabled.
+
 ##### [0.4.0](https://github.com/christianrowlands/android-network-survey/releases/tag/v0.4.0) - 2020-11-17
  * Fixed a bug that caused an app crash if it was opened, hidden, and reopened in short sequence.
  * Fixed a bug where the app would crash if trying to enable GNSS logging with location services turned off.
