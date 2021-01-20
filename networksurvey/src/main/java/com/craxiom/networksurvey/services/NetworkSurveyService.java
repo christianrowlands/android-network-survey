@@ -267,9 +267,6 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
 
     /**
      * Creates the {@link DefaultMqttConnection} instance.
-     * <p>
-     * If connection information is specified for an MQTT Broker via the MDM Managed Configuration, then kick off an
-     * MQTT connection.
      *
      * @since 0.1.1
      */
