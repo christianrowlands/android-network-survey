@@ -1,9 +1,10 @@
-package com.craxiom.networksurvey.helpers.geopackage;
+package com.craxiom.networksurvey.models;
 
 public enum SurveyTypes {
 
     WIFI_SURVEY("wifi"),
     GNSS_SURVEY("gnss"),
+    BLUETOOTH_SURVEY("bluetooth"),
     CELLULAR_SURVEY("cellular");
 
     private final String value;

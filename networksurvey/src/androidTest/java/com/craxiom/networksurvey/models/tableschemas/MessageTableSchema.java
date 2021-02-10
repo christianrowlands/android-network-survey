@@ -1,13 +1,13 @@
-package com.craxiom.networksurvey.helpers.models.tableschemas;
+package com.craxiom.networksurvey.models.tableschemas;
 
 import java.util.Objects;
 
-public class GnssTableSchemaModel {
+public class MessageTableSchema {
     private int cid;
 
     @Override
     public String toString() {
-        return "GnssTableSchemaModel{" +
+        return "MessageTableSchemaModel{" +
                 "cid=" + cid +
                 ", name='" + name + '\'' +
                 ", type='" + type + '\'' +
@@ -24,7 +24,7 @@ public class GnssTableSchemaModel {
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
-        GnssTableSchemaModel that = (GnssTableSchemaModel) o;
+        MessageTableSchema that = (MessageTableSchema) o;
         return cid == that.cid &&
                 notNull == that.notNull &&
                 defaultValue == that.defaultValue &&
@@ -91,7 +91,7 @@ public class GnssTableSchemaModel {
 
     private int primaryKey;
 
-    public static final class GnssTableSchemaModelBuilder {
+    public static final class MessageTableSchemaModelBuilder {
         private int cid;
         private String name;
         private String type;
@@ -99,52 +99,52 @@ public class GnssTableSchemaModel {
         private int defaultValue;
         private int primaryKey;
 
-        public GnssTableSchemaModelBuilder() {
+        public MessageTableSchemaModelBuilder() {
         }
 
-        public static GnssTableSchemaModelBuilder aGnssTableSchemaModel() {
-            return new GnssTableSchemaModelBuilder();
+        public static MessageTableSchemaModelBuilder messageTableSchemaModel() {
+            return new MessageTableSchemaModelBuilder();
         }
 
-        public GnssTableSchemaModelBuilder setCid(int cid) {
+        public MessageTableSchemaModelBuilder setCid(int cid) {
             this.cid = cid;
             return this;
         }
 
-        public GnssTableSchemaModelBuilder setName(String name) {
+        public MessageTableSchemaModelBuilder setName(String name) {
             this.name = name;
             return this;
         }
 
-        public GnssTableSchemaModelBuilder setType(String type) {
+        public MessageTableSchemaModelBuilder setType(String type) {
             this.type = type;
             return this;
         }
 
-        public GnssTableSchemaModelBuilder setNotNull(int notNull) {
+        public MessageTableSchemaModelBuilder setNotNull(int notNull) {
             this.notNull = notNull;
             return this;
         }
 
-        public GnssTableSchemaModelBuilder setDefaultValue(int defaultValue) {
+        public MessageTableSchemaModelBuilder setDefaultValue(int defaultValue) {
             this.defaultValue = defaultValue;
             return this;
         }
 
-        public GnssTableSchemaModelBuilder setPrimaryKey(int primaryKey) {
+        public MessageTableSchemaModelBuilder setPrimaryKey(int primaryKey) {
             this.primaryKey = primaryKey;
             return this;
         }
 
-        public GnssTableSchemaModel build() {
-            GnssTableSchemaModel gnssTableSchemaModel = new GnssTableSchemaModel();
-            gnssTableSchemaModel.setCid(cid);
-            gnssTableSchemaModel.setName(name);
-            gnssTableSchemaModel.setType(type);
-            gnssTableSchemaModel.setNotNull(notNull);
-            gnssTableSchemaModel.setDefaultValue(defaultValue);
-            gnssTableSchemaModel.setPrimaryKey(primaryKey);
-            return gnssTableSchemaModel;
+        public MessageTableSchema build() {
+            MessageTableSchema messageTableSchema = new MessageTableSchema();
+            messageTableSchema.setCid(cid);
+            messageTableSchema.setName(name);
+            messageTableSchema.setType(type);
+            messageTableSchema.setNotNull(notNull);
+            messageTableSchema.setDefaultValue(defaultValue);
+            messageTableSchema.setPrimaryKey(primaryKey);
+            return messageTableSchema;
         }
     }
 }

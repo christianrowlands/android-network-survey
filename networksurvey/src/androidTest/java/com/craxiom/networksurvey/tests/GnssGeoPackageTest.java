@@ -4,24 +4,18 @@ import androidx.test.ext.junit.runners.AndroidJUnit4;
 
 import com.craxiom.messaging.gnss.Constellation;
 import com.craxiom.networksurvey.TestBase;
-import com.craxiom.networksurvey.constants.GnssMessageConstants;
+import com.craxiom.networksurvey.dao.GnssDao;
 import com.craxiom.networksurvey.helpers.AndroidFiles;
-import com.craxiom.networksurvey.helpers.dao.GnssDao;
-import com.craxiom.networksurvey.helpers.dao.WifiBeaconDao;
-import com.craxiom.networksurvey.helpers.geopackage.SurveyTypes;
-import com.craxiom.networksurvey.helpers.models.message.GnssModel;
-import com.craxiom.networksurvey.helpers.models.message.WifiBeaconModel;
-import com.craxiom.networksurvey.helpers.models.tableschemas.GnssTableSchemaModel;
-import com.craxiom.networksurvey.model.ConstellationType;
+import com.craxiom.networksurvey.models.SurveyTypes;
+import com.craxiom.networksurvey.models.message.GnssModel;
+import com.craxiom.networksurvey.models.tableschemas.MessageTableSchema;
 import com.craxiom.networksurvey.screens.BottomMenuBar;
 import com.craxiom.networksurvey.screens.TopMenuBar;
 import com.google.common.collect.Range;
-import com.j256.ormlite.stmt.query.In;
 
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.junit.runner.manipulation.Ordering;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -37,9 +31,6 @@ import static com.schibsted.spain.barista.interaction.BaristaSleepInteractions.s
 
 @RunWith(AndroidJUnit4.class)
 public class GnssGeoPackageTest extends TestBase {
-    GeoPackage geoPackage;
-    GeoPackageManager geoPackageManager;
-
 
     @Before
     public void setUpGnssTest()
@@ -55,11 +46,14 @@ public class GnssGeoPackageTest extends TestBase {
         geoPackageManager = GeoPackageFactory.getManager(getContext());
     }
 
+    /*
+        MONKEY-T62
+     */
     @Test
     public void validateGnssMessageTableSchema()
     {
         //Given
-        ArrayList<GnssTableSchemaModel> results;
+        ArrayList<MessageTableSchema> results;
 
         //When
         geoPackage = geoPackageManager
@@ -69,59 +63,66 @@ public class GnssGeoPackageTest extends TestBase {
 
         results = GnssDao.getGnssTableSchema(geoPackage);
 
+        assertWithMessage("Results are not empty.")
+                .that(results)
+                .isNotEmpty();
+
         assertWithMessage("Validate ID column schema")
                 .that(results.get(0).toString())
-                .isEqualTo("GnssTableSchemaModel{cid=0, name='id', type='3', notNull=1, defaultValue=0, primaryKey=1}");
+                .isEqualTo("MessageTableSchemaModel{cid=0, name='id', type='3', notNull=1, defaultValue=0, primaryKey=1}");
 
         assertWithMessage("Validate GEOM column schema")
                 .that(results.get(1).toString())
-                .isEqualTo("GnssTableSchemaModel{cid=1, name='geom', type='3', notNull=0, defaultValue=0, primaryKey=0}");
+                .isEqualTo("MessageTableSchemaModel{cid=1, name='geom', type='3', notNull=0, defaultValue=0, primaryKey=0}");
 
         assertWithMessage("Validate Time column schema")
                 .that(results.get(2).toString())
-                .isEqualTo("GnssTableSchemaModel{cid=2, name='Time', type='3', notNull=0, defaultValue=0, primaryKey=0}");
+                .isEqualTo("MessageTableSchemaModel{cid=2, name='Time', type='3', notNull=0, defaultValue=0, primaryKey=0}");
 
         assertWithMessage("Validate Record Number column schema")
                 .that(results.get(3).toString())
-                .isEqualTo("GnssTableSchemaModel{cid=3, name='RecordNumber', type='3', notNull=1, defaultValue=-1, primaryKey=0}");
+                .isEqualTo("MessageTableSchemaModel{cid=3, name='RecordNumber', type='3', notNull=1, defaultValue=-1, primaryKey=0}");
 
         assertWithMessage("Validate Group Number column schema")
                 .that(results.get(4).toString())
-                .isEqualTo("GnssTableSchemaModel{cid=4, name='GroupNumber', type='3', notNull=1, defaultValue=-1, primaryKey=0}");
+                .isEqualTo("MessageTableSchemaModel{cid=4, name='GroupNumber', type='3', notNull=1, defaultValue=-1, primaryKey=0}");
 
         assertWithMessage("Validate Constellation column schema")
                 .that(results.get(5).toString())
-                .isEqualTo("GnssTableSchemaModel{cid=5, name='Constellation', type='3', notNull=0, defaultValue=0, primaryKey=0}");
+                .isEqualTo("MessageTableSchemaModel{cid=5, name='Constellation', type='3', notNull=0, defaultValue=0, primaryKey=0}");
 
         assertWithMessage("Validate Space Vehicle column schema")
                 .that(results.get(6).toString())
-                .isEqualTo("GnssTableSchemaModel{cid=6, name='Space Vehicle Id', type='3', notNull=0, defaultValue=0, primaryKey=0}");
+                .isEqualTo("MessageTableSchemaModel{cid=6, name='Space Vehicle Id', type='3', notNull=0, defaultValue=0, primaryKey=0}");
 
         assertWithMessage("Validate Carrier Frequency HZ column schema")
                 .that(results.get(7).toString())
-                .isEqualTo("GnssTableSchemaModel{cid=7, name='Carrier Frequency Hz', type='3', notNull=0, defaultValue=0, primaryKey=0}");
+                .isEqualTo("MessageTableSchemaModel{cid=7, name='Carrier Frequency Hz', type='3', notNull=0, defaultValue=0, primaryKey=0}");
 
         assertWithMessage("Validate Latitude Standard Deviation column schema")
                 .that(results.get(8).toString())
-                .isEqualTo("GnssTableSchemaModel{cid=8, name='Latitude Standard Deviation (m)', type='3', notNull=0, defaultValue=0, primaryKey=0}");
+                .isEqualTo("MessageTableSchemaModel{cid=8, name='Latitude Standard Deviation (m)', type='3', notNull=0, defaultValue=0, primaryKey=0}");
 
         assertWithMessage("Validate Longitude Standard Deviation column schema")
                 .that(results.get(9).toString())
-                .isEqualTo("GnssTableSchemaModel{cid=9, name='Longitude Standard Deviation (m)', type='3', notNull=0, defaultValue=0, primaryKey=0}");
+                .isEqualTo("MessageTableSchemaModel{cid=9, name='Longitude Standard Deviation (m)', type='3', notNull=0, defaultValue=0, primaryKey=0}");
 
         assertWithMessage("Validate Altitude Standard Deviation column schema")
                 .that(results.get(10).toString())
-                .isEqualTo("GnssTableSchemaModel{cid=10, name='Altitude Standard Deviation (m)', type='3', notNull=0, defaultValue=0, primaryKey=0}");
+                .isEqualTo("MessageTableSchemaModel{cid=10, name='Altitude Standard Deviation (m)', type='3', notNull=0, defaultValue=0, primaryKey=0}");
 
         assertWithMessage("Validate AGC dB column schema")
                 .that(results.get(11).toString())
-                .isEqualTo("GnssTableSchemaModel{cid=11, name='AGC dB', type='3', notNull=0, defaultValue=0, primaryKey=0}");
+                .isEqualTo("MessageTableSchemaModel{cid=11, name='AGC dB', type='3', notNull=0, defaultValue=0, primaryKey=0}");
 
         assertWithMessage("Validate C/N0 (dB-Hz) column schema")
                 .that(results.get(12).toString())
-                .isEqualTo("GnssTableSchemaModel{cid=12, name='C/N0 (dB-Hz)', type='3', notNull=0, defaultValue=0, primaryKey=0}");
+                .isEqualTo("MessageTableSchemaModel{cid=12, name='C/N0 (dB-Hz)', type='3', notNull=0, defaultValue=0, primaryKey=0}");
     }
 
+    /*
+        MONKEY-T63
+     */
     @Test
     public void gnssSurveyDataGeneratedUponTestRun()
     {
@@ -132,6 +133,9 @@ public class GnssGeoPackageTest extends TestBase {
                 .isGreaterThan(testRunStartTime.toEpochDay());
     }
 
+    /*
+        MONKEY-T64
+     */
     @Test
     public void gnssNotNullDataIsNotNull() {
         //Given
@@ -146,6 +150,9 @@ public class GnssGeoPackageTest extends TestBase {
                 .isTrue();
     }
 
+    /*
+        MONKEY-T65
+     */
     @Test
     public void gnssDataValuesAreOfExpectedTypesAndRanges()
     {

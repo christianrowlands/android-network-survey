@@ -12,4 +12,6 @@ public class BottomMenuBar {
     public static void clickGnssMenuOption() { clickOn(R.id.main_gnss_fragment); }
 
     public static void clickCellularMenuOption() { clickOn(R.id.main_cellular_fragment);}
+
+    public static void clickBluetoothMenuOption() { clickOn(R.id.main_bluetooth_fragment); }
 }

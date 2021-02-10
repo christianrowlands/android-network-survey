@@ -1,25 +1,25 @@
-package com.craxiom.networksurvey.helpers.dao;
+package com.craxiom.networksurvey.dao;
 
 import android.database.Cursor;
 
-import com.craxiom.networksurvey.helpers.models.message.GnssModel;
-import com.craxiom.networksurvey.helpers.models.tableschemas.GnssTableSchemaModel;
+import com.craxiom.networksurvey.models.message.GnssModel;
+import com.craxiom.networksurvey.models.tableschemas.MessageTableSchema;
 
 import java.util.ArrayList;
 
 import mil.nga.geopackage.GeoPackage;
 
 public class GnssDao {
-    public static ArrayList<GnssTableSchemaModel> getGnssTableSchema(GeoPackage geoPackage)
+    public static ArrayList<MessageTableSchema> getGnssTableSchema(GeoPackage geoPackage)
     {
-        ArrayList<GnssTableSchemaModel> results = new ArrayList<>();
+        ArrayList<MessageTableSchema> results = new ArrayList<>();
         Cursor cursor = geoPackage
                 .getConnection()
                 .rawQuery("PRAGMA table_info([GNSS_MESSAGE]);", null);
 
         if (cursor.moveToFirst()) {
             do {
-                GnssTableSchemaModel model = new GnssTableSchemaModel.GnssTableSchemaModelBuilder()
+                MessageTableSchema model = new MessageTableSchema.MessageTableSchemaModelBuilder()
                         .setCid(cursor.getInt(0))
                         .setName(cursor.getString(1))
                         .setType(String.valueOf(cursor.getType(2)))

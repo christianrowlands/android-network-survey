@@ -1,8 +1,9 @@
-package com.craxiom.networksurvey.helpers.dao;
+package com.craxiom.networksurvey.dao;
 
 import android.database.Cursor;
 
-import com.craxiom.networksurvey.helpers.models.message.WifiBeaconModel;
+import com.craxiom.networksurvey.models.message.WifiBeaconModel;
+import com.craxiom.networksurvey.models.tableschemas.MessageTableSchema;
 
 import java.util.ArrayList;
 
@@ -14,7 +15,7 @@ public class WifiBeaconDao {
 
         Cursor cursor = geoPackage
                 .getConnection()
-                .rawQuery("SELECT * FROM main.[80211_BEACON_MESSAGE];", null);
+                .rawQuery("SELECT * FROM [80211_BEACON_MESSAGE];", null);
 
         if (cursor.moveToFirst()) {
             do {
@@ -95,5 +96,28 @@ public class WifiBeaconDao {
             hit = false;
         }
         return hit;
+    }
+
+    public static ArrayList<MessageTableSchema> getWifiTableSchema(GeoPackage geoPackage)
+    {
+        ArrayList<MessageTableSchema> results = new ArrayList<>();
+        Cursor cursor = geoPackage
+                .getConnection()
+                .rawQuery("PRAGMA table_info([80211_BEACON_MESSAGE]);", null);
+
+        if (cursor.moveToFirst()) {
+            do {
+                MessageTableSchema model = new MessageTableSchema.MessageTableSchemaModelBuilder()
+                        .setCid(cursor.getInt(0))
+                        .setName(cursor.getString(1))
+                        .setType(String.valueOf(cursor.getType(2)))
+                        .setNotNull(cursor.getInt(3))
+                        .setDefaultValue(cursor.getInt(4))
+                        .setPrimaryKey(cursor.getInt(5))
+                        .build();
+                results.add(model);
+            } while (cursor.moveToNext());
+        }
+        return results;
     }
 }

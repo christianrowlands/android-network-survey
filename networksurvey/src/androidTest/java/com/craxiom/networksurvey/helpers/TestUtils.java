@@ -1,6 +1,7 @@
 package com.craxiom.networksurvey.helpers;
 
 import java.util.Random;
+import java.util.regex.Pattern;
 
 public class TestUtils {
 
@@ -14,4 +15,18 @@ public class TestUtils {
                     .getAsInt();
         }
     }
+
+    public static class Regex {
+
+        public static Pattern getMacAddressPattern() {
+            String regex = "^([0-9A-Fa-f]{2}[:-])"
+                    + "{5}([0-9A-Fa-f]{2})|"
+                    + "([0-9a-fA-F]{4}\\."
+                    + "[0-9a-fA-F]{4}\\."
+                    + "[0-9a-fA-F]{4})$";
+
+            return Pattern.compile(regex);
+        }
+    }
+
 }

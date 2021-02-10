@@ -1,4 +1,4 @@
-package com.craxiom.networksurvey.helpers.models.message;
+package com.craxiom.networksurvey.models.message;
 
 import java.util.Objects;
 

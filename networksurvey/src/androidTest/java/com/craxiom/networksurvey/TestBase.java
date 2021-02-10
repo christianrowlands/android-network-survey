@@ -16,6 +16,9 @@ import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.concurrent.TimeUnit;
 
+import mil.nga.geopackage.GeoPackage;
+import mil.nga.geopackage.GeoPackageManager;
+
 import static com.schibsted.spain.barista.interaction.BaristaSleepInteractions.sleep;
 
 public class TestBase
@@ -23,6 +26,8 @@ public class TestBase
     private static final String LOG_TAG = TestBase.class.getSimpleName();
     public static LocalDate testRunStartTime = LocalDate.now();
     public static String testRunDate;
+    public static GeoPackage geoPackage;
+    public static GeoPackageManager geoPackageManager;
 
     @Rule
     public ActivityScenarioRule<NetworkSurveyActivity> activityScenarioRule = new ActivityScenarioRule<>(NetworkSurveyActivity.class);

@@ -4,11 +4,11 @@ import androidx.test.ext.junit.runners.AndroidJUnit4;
 
 import com.craxiom.messaging.wifi.EncryptionType;
 import com.craxiom.networksurvey.TestBase;
+import com.craxiom.networksurvey.dao.WifiBeaconDao;
 import com.craxiom.networksurvey.helpers.AndroidFiles;
-import com.craxiom.networksurvey.helpers.dao.GnssDao;
-import com.craxiom.networksurvey.helpers.dao.WifiBeaconDao;
-import com.craxiom.networksurvey.helpers.geopackage.SurveyTypes;
-import com.craxiom.networksurvey.helpers.models.message.WifiBeaconModel;
+import com.craxiom.networksurvey.models.SurveyTypes;
+import com.craxiom.networksurvey.models.message.WifiBeaconModel;
+import com.craxiom.networksurvey.models.tableschemas.MessageTableSchema;
 import com.craxiom.networksurvey.screens.BottomMenuBar;
 import com.craxiom.networksurvey.screens.TopMenuBar;
 import com.google.common.collect.Range;
@@ -33,9 +33,6 @@ import static com.schibsted.spain.barista.interaction.BaristaSleepInteractions.s
 public class WifiGeoPackageTest extends TestBase
 {
 
-    GeoPackage geoPackage;
-    GeoPackageManager geoPackageManager;
-
     @Before
     public void setUpWifiTest()
     {
@@ -51,6 +48,9 @@ public class WifiGeoPackageTest extends TestBase
         geoPackageManager = GeoPackageFactory.getManager(getContext());
     }
 
+    /*
+        MONKEY-T66
+     */
     @Test
     public void wifiNotNullDataIsNotNull()
     {
@@ -66,6 +66,9 @@ public class WifiGeoPackageTest extends TestBase
                 .isTrue();
     }
 
+    /*
+        MONKEY-T67
+     */
     @Test
     public void wifiSurveyDataGeneratedUponTestRun()
     {
@@ -78,8 +81,14 @@ public class WifiGeoPackageTest extends TestBase
                 .isGreaterThan(testRunStartTime.toEpochDay());
     }
 
+    /*
+        MONKEY-T68
+     */
     @Test
     public void wifiDataValuesAreOfExpectedTypesAndRanges() {
+        /*
+           Note that I am not able to get the Ciper Suites and AKM suites columns to be populated
+         */
         //Given
         ArrayList<WifiBeaconModel> results;
 
@@ -114,5 +123,80 @@ public class WifiGeoPackageTest extends TestBase
             assertThat(row.getSignalStrength())
                     .isIn(Range.closed(-200f, 200f));
         }
+    }
+
+    /*
+        MONKEY-T69
+     */
+    @Test
+    public void validateWifiMessageTableSchema()
+    {
+        //Given
+        ArrayList<MessageTableSchema> results;
+
+        //When
+        geoPackage = geoPackageManager
+                .open(AndroidFiles
+                        .getLatestSurveyFile(testRunDate, SurveyTypes.WIFI_SURVEY.getValue())
+                        .getAbsolutePath(), false);
+
+        results = WifiBeaconDao.getWifiTableSchema(geoPackage);
+
+        assertWithMessage("Results are not empty.")
+                .that(results)
+                .isNotEmpty();
+
+        assertWithMessage("Validate ID column schema")
+                .that(results.get(0).toString())
+                .isEqualTo("MessageTableSchemaModel{cid=0, name='id', type='3', notNull=1, defaultValue=0, primaryKey=1}");
+
+        assertWithMessage("Validate GEOM column schema")
+                .that(results.get(1).toString())
+                .isEqualTo("MessageTableSchemaModel{cid=1, name='geom', type='3', notNull=0, defaultValue=0, primaryKey=0}");
+
+        assertWithMessage("Validate Time column schema")
+                .that(results.get(2).toString())
+                .isEqualTo("MessageTableSchemaModel{cid=2, name='Time', type='3', notNull=0, defaultValue=0, primaryKey=0}");
+
+        assertWithMessage("Validate Record Number column schema")
+                .that(results.get(3).toString())
+                .isEqualTo("MessageTableSchemaModel{cid=3, name='RecordNumber', type='3', notNull=1, defaultValue=-1, primaryKey=0}");
+
+        assertWithMessage("Validate BSSID column schema")
+                .that(results.get(4).toString())
+                .isEqualTo("MessageTableSchemaModel{cid=4, name='BSSID', type='3', notNull=0, defaultValue=0, primaryKey=0}");
+
+        assertWithMessage("Validate SSID column schema")
+                .that(results.get(5).toString())
+                .isEqualTo("MessageTableSchemaModel{cid=5, name='SSID', type='3', notNull=0, defaultValue=0, primaryKey=0}");
+
+        assertWithMessage("Validate Channel column schema")
+                .that(results.get(6).toString())
+                .isEqualTo("MessageTableSchemaModel{cid=6, name='Channel', type='3', notNull=0, defaultValue=0, primaryKey=0}");
+
+        assertWithMessage("Validate Frequency column schema")
+                .that(results.get(7).toString())
+                .isEqualTo("MessageTableSchemaModel{cid=7, name='Frequency', type='3', notNull=0, defaultValue=0, primaryKey=0}");
+
+        assertWithMessage("Validate Cipher Suites column schema")
+                .that(results.get(8).toString())
+                .isEqualTo("MessageTableSchemaModel{cid=8, name='Cipher_Suites', type='3', notNull=0, defaultValue=0, primaryKey=0}");
+
+        assertWithMessage("Validate AKM Suites column schema")
+                .that(results.get(9).toString())
+                .isEqualTo("MessageTableSchemaModel{cid=9, name='AKM_Suites', type='3', notNull=0, defaultValue=0, primaryKey=0}");
+
+        assertWithMessage("Validate Encryption Type column schema")
+                .that(results.get(10).toString())
+                .isEqualTo("MessageTableSchemaModel{cid=10, name='Encryption_Type', type='3', notNull=0, defaultValue=0, primaryKey=0}");
+
+        assertWithMessage("Validate WPS column schema")
+                .that(results.get(11).toString())
+                .isEqualTo("MessageTableSchemaModel{cid=11, name='WPS', type='3', notNull=0, defaultValue=0, primaryKey=0}");
+
+        assertWithMessage("Validate Signal Strength column schema")
+                .that(results.get(12).toString())
+                .isEqualTo("MessageTableSchemaModel{cid=12, name='Signal Strength', type='3', notNull=0, defaultValue=0, primaryKey=0}");
+
     }
 }
