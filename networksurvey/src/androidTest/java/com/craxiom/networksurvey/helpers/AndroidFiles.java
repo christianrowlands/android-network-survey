@@ -5,7 +5,8 @@ import android.os.Environment;
 import java.io.File;
 import java.io.FilenameFilter;
 
-public class AndroidFiles {
+public class AndroidFiles
+{
 
     public static File getDownloadDirectoryFiles()
     {
@@ -22,8 +23,6 @@ public class AndroidFiles {
     {
 
         long lastModifiedTime = Long.MIN_VALUE;
-
-
 
         File[] files = getNetworkSurveyDataFiles().listFiles(filenameFilter(date, type));
 

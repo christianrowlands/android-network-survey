@@ -2,12 +2,18 @@ package com.craxiom.networksurvey.models.message;
 
 import java.util.Objects;
 
-public class BluetoothModel {
+public class BluetoothModel
+{
     private int id;
     private String geom;
     private int time;
     private int recordNumber;
     private String sourceAddress;
+    private String otaDeviceName;
+    private String technology;
+    private String supportedTechnologies;
+    private float txPower;
+    private float signalStrength;
 
     @Override
     public String toString()
@@ -26,9 +32,6 @@ public class BluetoothModel {
                 '}';
     }
 
-    private String otaDeviceName;
-    private String technology;
-
     @Override
     public boolean equals(Object o)
     {
@@ -43,8 +46,6 @@ public class BluetoothModel {
     {
         return Objects.hash(id, geom, time, recordNumber, sourceAddress, otaDeviceName, technology, supportedTechnologies, txPower, signalStrength);
     }
-
-    private String supportedTechnologies;
 
     public int getId()
     {
@@ -146,9 +147,6 @@ public class BluetoothModel {
         this.signalStrength = signalStrength;
     }
 
-    private float txPower;
-    private float signalStrength;
-
     public static final class BluetoothTableSchemaModelBuilder
     {
         private int id;
@@ -247,5 +245,4 @@ public class BluetoothModel {
             return bluetoothModel;
         }
     }
-
 }

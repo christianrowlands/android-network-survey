@@ -3,12 +3,12 @@ package com.craxiom.networksurvey.helpers.espressohelpers;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.ViewParent;
-
 import org.hamcrest.Description;
 import org.hamcrest.Matcher;
 import org.hamcrest.TypeSafeMatcher;
 
-public class ChildAtPosition {
+public class ChildAtPosition
+{
     public static Matcher<View> childAtPosition(
             final Matcher<View> parentMatcher, final int position)
     {

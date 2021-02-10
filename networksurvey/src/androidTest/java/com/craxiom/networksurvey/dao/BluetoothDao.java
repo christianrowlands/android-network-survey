@@ -1,24 +1,26 @@
 package com.craxiom.networksurvey.dao;
 
 import android.database.Cursor;
-
 import com.craxiom.networksurvey.models.message.BluetoothModel;
 import com.craxiom.networksurvey.models.tableschemas.MessageTableSchema;
+import mil.nga.geopackage.GeoPackage;
 
 import java.util.ArrayList;
 
-import mil.nga.geopackage.GeoPackage;
-
-public class BluetoothDao {
-    public static ArrayList<BluetoothModel> getAllBluetoothRecords(GeoPackage geoPackage) {
+public class BluetoothDao
+{
+    public static ArrayList<BluetoothModel> getAllBluetoothRecords(GeoPackage geoPackage)
+    {
         ArrayList<BluetoothModel> results = new ArrayList<>();
 
         Cursor cursor = geoPackage
                 .getConnection()
                 .rawQuery("SELECT * FROM [BLUETOOTH_MESSAGE];", null);
 
-        if (cursor.moveToFirst()) {
-            do {
+        if (cursor.moveToFirst())
+        {
+            do
+            {
                 BluetoothModel model = new BluetoothModel.BluetoothTableSchemaModelBuilder()
                         .setId(cursor.getInt(0))
                         .setGeom(String.valueOf(cursor.getBlob(1)))
@@ -39,10 +41,12 @@ public class BluetoothDao {
 
     /**
      * Tx Power and Technology are omitted since I could not gather any data with those values included.
+     *
      * @param geoPackage GeoPackage supplied by the GeoPackage Manager
      * @return ArrayList of BluetoothModel results
      */
-    public static ArrayList<BluetoothModel> getAllBluetoothRecordsWithAllColumnsPopulated(GeoPackage geoPackage) {
+    public static ArrayList<BluetoothModel> getAllBluetoothRecordsWithAllColumnsPopulated(GeoPackage geoPackage)
+    {
         ArrayList<BluetoothModel> results = new ArrayList<>();
 
         String query = "SELECT * FROM [BLUETOOTH_MESSAGE]\n" +
@@ -57,8 +61,10 @@ public class BluetoothDao {
                 .getConnection()
                 .rawQuery(query, null);
 
-        if (cursor.moveToFirst()) {
-            do {
+        if (cursor.moveToFirst())
+        {
+            do
+            {
                 BluetoothModel model = new BluetoothModel.BluetoothTableSchemaModelBuilder()
                         .setId(cursor.getInt(0))
                         .setGeom(String.valueOf(cursor.getBlob(1)))
@@ -77,13 +83,15 @@ public class BluetoothDao {
         return results;
     }
 
-    public static boolean allNonNullColumnsArePopulated(GeoPackage geoPackage) {
+    public static boolean allNonNullColumnsArePopulated(GeoPackage geoPackage)
+    {
         Boolean hit = true;
         Cursor cursor = geoPackage
                 .getConnection()
                 .rawQuery("SELECT * FROM [BLUETOOTH_MESSAGE] WHERE id IS NULL OR RecordNumber IS NULL", null);
 
-        if (cursor.moveToFirst()) {
+        if (cursor.moveToFirst())
+        {
             hit = false;
         }
         return hit;
@@ -96,8 +104,10 @@ public class BluetoothDao {
                 .getConnection()
                 .rawQuery("PRAGMA table_info([BLUETOOTH_MESSAGE]);", null);
 
-        if (cursor.moveToFirst()) {
-            do {
+        if (cursor.moveToFirst())
+        {
+            do
+            {
                 MessageTableSchema model = new MessageTableSchema.MessageTableSchemaModelBuilder()
                         .setCid(cursor.getInt(0))
                         .setName(cursor.getString(1))

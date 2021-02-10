@@ -1,24 +1,26 @@
 package com.craxiom.networksurvey.dao;
 
 import android.database.Cursor;
-
 import com.craxiom.networksurvey.models.message.WifiBeaconModel;
 import com.craxiom.networksurvey.models.tableschemas.MessageTableSchema;
+import mil.nga.geopackage.GeoPackage;
 
 import java.util.ArrayList;
 
-import mil.nga.geopackage.GeoPackage;
-
-public class WifiBeaconDao {
-    public static ArrayList<WifiBeaconModel> getAllWifiBeaconRecords(GeoPackage geoPackage) {
+public class WifiBeaconDao
+{
+    public static ArrayList<WifiBeaconModel> getAllWifiBeaconRecords(GeoPackage geoPackage)
+    {
         ArrayList<WifiBeaconModel> results = new ArrayList<>();
 
         Cursor cursor = geoPackage
                 .getConnection()
                 .rawQuery("SELECT * FROM [80211_BEACON_MESSAGE];", null);
 
-        if (cursor.moveToFirst()) {
-            do {
+        if (cursor.moveToFirst())
+        {
+            do
+            {
                 WifiBeaconModel model = new WifiBeaconModel.WifiBeaconModelBuilder()
                         .setId(cursor.getInt(0))
                         .setGeom(String.valueOf(cursor.getBlob(1)))
@@ -42,10 +44,12 @@ public class WifiBeaconDao {
 
     /**
      * Ciper Suites and AKM suites are not included as we get those values less often
+     *
      * @param geoPackage GeoPackage supplied by the GeoPackage Manager
      * @return ArrayList of WifiBeaconModel results
      */
-    public static ArrayList<WifiBeaconModel> getAllWifiBeaconRecordsWithAllColumnsPopulated(GeoPackage geoPackage) {
+    public static ArrayList<WifiBeaconModel> getAllWifiBeaconRecordsWithAllColumnsPopulated(GeoPackage geoPackage)
+    {
         ArrayList<WifiBeaconModel> results = new ArrayList<>();
 
         String query = "SELECT * FROM [80211_BEACON_MESSAGE]\n" +
@@ -63,8 +67,10 @@ public class WifiBeaconDao {
                 .getConnection()
                 .rawQuery(query, null);
 
-        if (cursor.moveToFirst()) {
-            do {
+        if (cursor.moveToFirst())
+        {
+            do
+            {
                 WifiBeaconModel model = new WifiBeaconModel.WifiBeaconModelBuilder()
                         .setId(cursor.getInt(0))
                         .setGeom(String.valueOf(cursor.getBlob(1)))
@@ -86,13 +92,15 @@ public class WifiBeaconDao {
         return results;
     }
 
-    public static boolean allNonNullColumnsArePopulated(GeoPackage geoPackage) {
+    public static boolean allNonNullColumnsArePopulated(GeoPackage geoPackage)
+    {
         Boolean hit = true;
         Cursor cursor = geoPackage
                 .getConnection()
                 .rawQuery("SELECT * FROM [80211_BEACON_MESSAGE] WHERE id IS NULL OR RecordNumber IS NULL", null);
 
-        if (cursor.moveToFirst()) {
+        if (cursor.moveToFirst())
+        {
             hit = false;
         }
         return hit;
@@ -105,8 +113,10 @@ public class WifiBeaconDao {
                 .getConnection()
                 .rawQuery("PRAGMA table_info([80211_BEACON_MESSAGE]);", null);
 
-        if (cursor.moveToFirst()) {
-            do {
+        if (cursor.moveToFirst())
+        {
+            do
+            {
                 MessageTableSchema model = new MessageTableSchema.MessageTableSchemaModelBuilder()
                         .setCid(cursor.getInt(0))
                         .setName(cursor.getString(1))

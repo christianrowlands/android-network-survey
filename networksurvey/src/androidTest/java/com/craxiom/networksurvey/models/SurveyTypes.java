@@ -1,6 +1,7 @@
 package com.craxiom.networksurvey.models;
 
-public enum SurveyTypes {
+public enum SurveyTypes
+{
 
     WIFI_SURVEY("wifi"),
     GNSS_SURVEY("gnss"),

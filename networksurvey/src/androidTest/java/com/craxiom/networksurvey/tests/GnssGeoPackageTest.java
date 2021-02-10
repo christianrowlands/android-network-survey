@@ -1,7 +1,6 @@
 package com.craxiom.networksurvey.tests;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
-
 import com.craxiom.messaging.gnss.Constellation;
 import com.craxiom.networksurvey.TestBase;
 import com.craxiom.networksurvey.dao.GnssDao;
@@ -12,7 +11,7 @@ import com.craxiom.networksurvey.models.tableschemas.MessageTableSchema;
 import com.craxiom.networksurvey.screens.BottomMenuBar;
 import com.craxiom.networksurvey.screens.TopMenuBar;
 import com.google.common.collect.Range;
-
+import mil.nga.geopackage.factory.GeoPackageFactory;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -21,16 +20,12 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
 
-import mil.nga.geopackage.GeoPackage;
-import mil.nga.geopackage.GeoPackageManager;
-import mil.nga.geopackage.factory.GeoPackageFactory;
-
-import static com.google.common.truth.Truth.assertThat;
-import static com.google.common.truth.Truth.assertWithMessage;
-import static com.schibsted.spain.barista.interaction.BaristaSleepInteractions.sleep;
+import static com.google.common.truth.Truth.*;
+import static com.schibsted.spain.barista.interaction.BaristaSleepInteractions.*;
 
 @RunWith(AndroidJUnit4.class)
-public class GnssGeoPackageTest extends TestBase {
+public class GnssGeoPackageTest extends TestBase
+{
 
     @Before
     public void setUpGnssTest()
@@ -137,13 +132,13 @@ public class GnssGeoPackageTest extends TestBase {
         MONKEY-T64
      */
     @Test
-    public void gnssNotNullDataIsNotNull() {
+    public void gnssNotNullDataIsNotNull()
+    {
         //Given
         geoPackage = geoPackageManager
                 .open(AndroidFiles
                         .getLatestSurveyFile(testRunDate, SurveyTypes.GNSS_SURVEY.getValue())
                         .getAbsolutePath(), false);
-
 
         assertWithMessage("All Non-Null columns are populated")
                 .that(GnssDao.allNonNullColumnsArePopulated(geoPackage))
@@ -171,7 +166,8 @@ public class GnssGeoPackageTest extends TestBase {
                 .that(results)
                 .isNotEmpty();
 
-        for (GnssModel row : results) {
+        for (GnssModel row : results)
+        {
             assertThat(row.getId())
                     .isIn(Range.closed(1, Integer.MAX_VALUE));
             assertThat(row.getTime())
@@ -196,8 +192,6 @@ public class GnssGeoPackageTest extends TestBase {
                     .isIn(Range.closed(-50f, 50f));
             assertThat(row.getcN0())
                     .isIn(Range.closed(-100f, 100f));
-
         }
     }
-
 }

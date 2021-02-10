@@ -2,7 +2,8 @@ package com.craxiom.networksurvey.models.message;
 
 import java.util.Objects;
 
-public class GnssModel {
+public class GnssModel
+{
     private int id;
     private String geom;
     private int time;
@@ -11,9 +12,15 @@ public class GnssModel {
     private String constellation;
     private int spaceVehicleId;
     private int carrierFrequencyHz;
+    private float latitudeStandardDeviation;
+    private float longitudeStandardDeviation;
+    private float altitudeStandardDeviation;
+    private float agcDb;
+    private float cN0;
 
     @Override
-    public String toString() {
+    public String toString()
+    {
         return "GnssModel{" +
                 "id=" + id +
                 ", geom='" + geom + '\'' +
@@ -32,7 +39,8 @@ public class GnssModel {
     }
 
     @Override
-    public boolean equals(Object o) {
+    public boolean equals(Object o)
+    {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         GnssModel gnssModel = (GnssModel) o;
@@ -52,122 +60,143 @@ public class GnssModel {
     }
 
     @Override
-    public int hashCode() {
+    public int hashCode()
+    {
         return Objects.hash(id, geom, time, recordNumber, groupNumber, constellation, spaceVehicleId, carrierFrequencyHz, latitudeStandardDeviation, longitudeStandardDeviation, altitudeStandardDeviation, agcDb, cN0);
     }
 
-    private float latitudeStandardDeviation;
-    private float longitudeStandardDeviation;
-    private float altitudeStandardDeviation;
-
-    public int getId() {
+    public int getId()
+    {
         return id;
     }
 
-    public void setId(int id) {
+    public void setId(int id)
+    {
         this.id = id;
     }
 
-    public String getGeom() {
+    public String getGeom()
+    {
         return geom;
     }
 
-    public void setGeom(String geom) {
+    public void setGeom(String geom)
+    {
         this.geom = geom;
     }
 
-    public int getTime() {
+    public int getTime()
+    {
         return time;
     }
 
-    public void setTime(int time) {
+    public void setTime(int time)
+    {
         this.time = time;
     }
 
-    public int getRecordNumber() {
+    public int getRecordNumber()
+    {
         return recordNumber;
     }
 
-    public void setRecordNumber(int recordNumber) {
+    public void setRecordNumber(int recordNumber)
+    {
         this.recordNumber = recordNumber;
     }
 
-    public int getGroupNumber() {
+    public int getGroupNumber()
+    {
         return groupNumber;
     }
 
-    public void setGroupNumber(int groupNumber) {
+    public void setGroupNumber(int groupNumber)
+    {
         this.groupNumber = groupNumber;
     }
 
-    public String getConstellation() {
+    public String getConstellation()
+    {
         return constellation;
     }
 
-    public void setConstellation(String constellation) {
+    public void setConstellation(String constellation)
+    {
         this.constellation = constellation;
     }
 
-    public int getSpaceVehicleId() {
+    public int getSpaceVehicleId()
+    {
         return spaceVehicleId;
     }
 
-    public void setSpaceVehicleId(int spaceVehicleId) {
+    public void setSpaceVehicleId(int spaceVehicleId)
+    {
         this.spaceVehicleId = spaceVehicleId;
     }
 
-    public int getCarrierFrequencyHz() {
+    public int getCarrierFrequencyHz()
+    {
         return carrierFrequencyHz;
     }
 
-    public void setCarrierFrequencyHz(int carrierFrequencyHz) {
+    public void setCarrierFrequencyHz(int carrierFrequencyHz)
+    {
         this.carrierFrequencyHz = carrierFrequencyHz;
     }
 
-    public float getLatitudeStandardDeviation() {
+    public float getLatitudeStandardDeviation()
+    {
         return latitudeStandardDeviation;
     }
 
-    public void setLatitudeStandardDeviation(float latitudeStandardDeviation) {
+    public void setLatitudeStandardDeviation(float latitudeStandardDeviation)
+    {
         this.latitudeStandardDeviation = latitudeStandardDeviation;
     }
 
-    public float getLongitudeStandardDeviation() {
+    public float getLongitudeStandardDeviation()
+    {
         return longitudeStandardDeviation;
     }
 
-    public void setLongitudeStandardDeviation(float longitudeStandardDeviation) {
+    public void setLongitudeStandardDeviation(float longitudeStandardDeviation)
+    {
         this.longitudeStandardDeviation = longitudeStandardDeviation;
     }
 
-    public float getAltitudeStandardDeviation() {
+    public float getAltitudeStandardDeviation()
+    {
         return altitudeStandardDeviation;
     }
 
-    public void setAltitudeStandardDeviation(float altitudeStandardDeviation) {
+    public void setAltitudeStandardDeviation(float altitudeStandardDeviation)
+    {
         this.altitudeStandardDeviation = altitudeStandardDeviation;
     }
 
-    public float getAgcDb() {
+    public float getAgcDb()
+    {
         return agcDb;
     }
 
-    public void setAgcDb(float agcDb) {
+    public void setAgcDb(float agcDb)
+    {
         this.agcDb = agcDb;
     }
 
-    public float getcN0() {
+    public float getcN0()
+    {
         return cN0;
     }
 
-    public void setcN0(float cN0) {
+    public void setcN0(float cN0)
+    {
         this.cN0 = cN0;
     }
 
-    private float agcDb;
-    private float cN0;
-
-    public static final class GnssModelBuilder {
+    public static final class GnssModelBuilder
+    {
         private int id;
         private String geom;
         private int time;
@@ -182,79 +211,95 @@ public class GnssModel {
         private float agcDb;
         private float cN0;
 
-        public GnssModelBuilder() {
+        public GnssModelBuilder()
+        {
         }
 
-        public static GnssModelBuilder aGnssModel() {
+        public static GnssModelBuilder aGnssModel()
+        {
             return new GnssModelBuilder();
         }
 
-        public GnssModelBuilder setId(int id) {
+        public GnssModelBuilder setId(int id)
+        {
             this.id = id;
             return this;
         }
 
-        public GnssModelBuilder setGeom(String geom) {
+        public GnssModelBuilder setGeom(String geom)
+        {
             this.geom = geom;
             return this;
         }
 
-        public GnssModelBuilder setTime(int time) {
+        public GnssModelBuilder setTime(int time)
+        {
             this.time = time;
             return this;
         }
 
-        public GnssModelBuilder setRecordNumber(int recordNumber) {
+        public GnssModelBuilder setRecordNumber(int recordNumber)
+        {
             this.recordNumber = recordNumber;
             return this;
         }
 
-        public GnssModelBuilder setGroupNumber(int groupNumber) {
+        public GnssModelBuilder setGroupNumber(int groupNumber)
+        {
             this.groupNumber = groupNumber;
             return this;
         }
 
-        public GnssModelBuilder setConstellation(String constellation) {
+        public GnssModelBuilder setConstellation(String constellation)
+        {
             this.constellation = constellation;
             return this;
         }
 
-        public GnssModelBuilder setSpaceVehicleId(int spaceVehicleId) {
+        public GnssModelBuilder setSpaceVehicleId(int spaceVehicleId)
+        {
             this.spaceVehicleId = spaceVehicleId;
             return this;
         }
 
-        public GnssModelBuilder setCarrierFrequencyHz(int carrierFrequencyHz) {
+        public GnssModelBuilder setCarrierFrequencyHz(int carrierFrequencyHz)
+        {
             this.carrierFrequencyHz = carrierFrequencyHz;
             return this;
         }
 
-        public GnssModelBuilder setLatitudeStandardDeviation(float latitudeStandardDeviation) {
+        public GnssModelBuilder setLatitudeStandardDeviation(float latitudeStandardDeviation)
+        {
             this.latitudeStandardDeviation = latitudeStandardDeviation;
             return this;
         }
 
-        public GnssModelBuilder setLongitudeStandardDeviation(float longitudeStandardDeviation) {
+        public GnssModelBuilder setLongitudeStandardDeviation(float longitudeStandardDeviation)
+        {
             this.longitudeStandardDeviation = longitudeStandardDeviation;
             return this;
         }
 
-        public GnssModelBuilder setAltitudeStandardDeviation(float altitudeStandardDeviation) {
+        public GnssModelBuilder setAltitudeStandardDeviation(float altitudeStandardDeviation)
+        {
             this.altitudeStandardDeviation = altitudeStandardDeviation;
             return this;
         }
 
-        public GnssModelBuilder setAgcDb(float agcDb) {
+        public GnssModelBuilder setAgcDb(float agcDb)
+        {
             this.agcDb = agcDb;
             return this;
         }
 
-        public GnssModelBuilder setCN0(float cN0) {
+        public GnssModelBuilder setCN0(float cN0)
+        {
             this.cN0 = cN0;
             return this;
         }
 
-        public GnssModel build() {
+        public GnssModel build()
+        {
             GnssModel gnssModel = new GnssModel();
             gnssModel.setId(id);
             gnssModel.setGeom(geom);

@@ -2,68 +2,90 @@ package com.craxiom.networksurvey.models.message;
 
 import java.util.Objects;
 
-public class WifiBeaconModel {
- private int id;
+public class WifiBeaconModel
+{
+    private int id;
     private String geom;
     private int time;
     private int recordNumber;
     private String bssid;
     private String ssid;
+    private int channel;
+    private int frequency;
+    private String cipherSuites;
+    private String akmSuites;
+    private String encryptionType;
+    private Boolean wps;
+    private Float signalStrength;
 
-    public int getId() {
+    public int getId()
+    {
         return id;
     }
 
-    public String getGeom() {
+    public String getGeom()
+    {
         return geom;
     }
 
-    public int getTime() {
+    public int getTime()
+    {
         return time;
     }
 
-    public int getRecordNumber() {
+    public int getRecordNumber()
+    {
         return recordNumber;
     }
 
-    public String getBssid() {
+    public String getBssid()
+    {
         return bssid;
     }
 
-    public String getSsid() {
+    public String getSsid()
+    {
         return ssid;
     }
 
-    public int getChannel() {
+    public int getChannel()
+    {
         return channel;
     }
 
-    public int getFrequency() {
+    public int getFrequency()
+    {
         return frequency;
     }
 
-    public String getCipherSuites() {
+    public String getCipherSuites()
+    {
         return cipherSuites;
     }
 
-    public String getAkmSuites() {
+    public String getAkmSuites()
+    {
         return akmSuites;
     }
 
-    public String getEncryptionType() {
+    public String getEncryptionType()
+    {
         return encryptionType;
     }
 
-    public Boolean getWps() {
+    public Boolean getWps()
+    {
         return wps;
     }
 
-    public Float getSignalStrength() {
+    public Float getSignalStrength()
+    {
         return signalStrength;
     }
 
     @Override
-    public boolean equals(Object o) {
+    public boolean equals(Object o)
+    {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         WifiBeaconModel that = (WifiBeaconModel) o;
@@ -83,14 +105,14 @@ public class WifiBeaconModel {
     }
 
     @Override
-    public int hashCode() {
+    public int hashCode()
+    {
         return Objects.hash(id, geom, time, recordNumber, bssid, ssid, channel, frequency, cipherSuites, akmSuites, encryptionType, wps, signalStrength);
     }
 
-    private int channel;
-
     @Override
-    public String toString() {
+    public String toString()
+    {
         return "WifiBeaconModel{" +
                 "id=" + id +
                 ", geom='" + geom + '\'' +
@@ -108,67 +130,9 @@ public class WifiBeaconModel {
                 '}';
     }
 
-    private int frequency;
-    private String cipherSuites;
-    private String akmSuites;
-    private String encryptionType;
-    private Boolean wps;
-    private Float signalStrength;
-
     public static final class WifiBeaconModelBuilder
     {
         private int id;
-
-        public int getId()
-        {
-            return id;
-        }
-
-        public String getGeom()
-        {
-            return geom;
-        }
-
-        public int getTime()
-        {
-            return time;
-        }
-
-        public int getRecordNumber()
-        {
-            return recordNumber;
-        }
-
-        public String getBssid()
-        {
-            return bssid;
-        }
-
-        public String getSsid()
-        {
-            return ssid;
-        }
-
-        public int getChannel()
-        {
-            return channel;
-        }
-
-        public int getFrequency()
-        {
-            return frequency;
-        }
-
-        public String getCipherSuites()
-        {
-            return cipherSuites;
-        }
-
-        public String getAkmSuites()
-        {
-            return akmSuites;
-        }
-
         private String geom;
         private int time;
         private int recordNumber;
@@ -178,23 +142,9 @@ public class WifiBeaconModel {
         private int frequency;
         private String cipherSuites;
         private String akmSuites;
-
-        public String getEncryptionType() {
-            return encryptionType;
-        }
-
         private String encryptionType;
         private Boolean wps;
         private Float signalStrength;
-
-        public Boolean getWps() {
-            return wps;
-        }
-
-        public Float getSignalStrength() {
-            return signalStrength;
-        }
-
         public WifiBeaconModelBuilder()
         {
         }
@@ -204,10 +154,20 @@ public class WifiBeaconModel {
             return new WifiBeaconModelBuilder();
         }
 
+        public int getId()
+        {
+            return id;
+        }
+
         public WifiBeaconModelBuilder setId(int id)
         {
             this.id = id;
             return this;
+        }
+
+        public String getGeom()
+        {
+            return geom;
         }
 
         public WifiBeaconModelBuilder setGeom(String geom)
@@ -216,10 +176,20 @@ public class WifiBeaconModel {
             return this;
         }
 
+        public int getTime()
+        {
+            return time;
+        }
+
         public WifiBeaconModelBuilder setTime(int time)
         {
             this.time = time;
             return this;
+        }
+
+        public int getRecordNumber()
+        {
+            return recordNumber;
         }
 
         public WifiBeaconModelBuilder setRecordNumber(int recordNumber)
@@ -228,10 +198,20 @@ public class WifiBeaconModel {
             return this;
         }
 
+        public String getBssid()
+        {
+            return bssid;
+        }
+
         public WifiBeaconModelBuilder setBssid(String bssid)
         {
             this.bssid = bssid;
             return this;
+        }
+
+        public String getSsid()
+        {
+            return ssid;
         }
 
         public WifiBeaconModelBuilder setSsid(String ssid)
@@ -240,10 +220,20 @@ public class WifiBeaconModel {
             return this;
         }
 
+        public int getChannel()
+        {
+            return channel;
+        }
+
         public WifiBeaconModelBuilder setChannel(int channel)
         {
             this.channel = channel;
             return this;
+        }
+
+        public int getFrequency()
+        {
+            return frequency;
         }
 
         public WifiBeaconModelBuilder setFrequency(int frequency)
@@ -252,10 +242,20 @@ public class WifiBeaconModel {
             return this;
         }
 
+        public String getCipherSuites()
+        {
+            return cipherSuites;
+        }
+
         public WifiBeaconModelBuilder setCipherSuites(String cipherSuites)
         {
             this.cipherSuites = cipherSuites;
             return this;
+        }
+
+        public String getAkmSuites()
+        {
+            return akmSuites;
         }
 
         public WifiBeaconModelBuilder setAkmSuites(String akmSuites)
@@ -264,16 +264,31 @@ public class WifiBeaconModel {
             return this;
         }
 
+        public String getEncryptionType()
+        {
+            return encryptionType;
+        }
+
         public WifiBeaconModelBuilder setEncryptionType(String encryptionType)
         {
             this.encryptionType = encryptionType;
             return this;
         }
 
+        public Boolean getWps()
+        {
+            return wps;
+        }
+
         public WifiBeaconModelBuilder setWps(Boolean wps)
         {
             this.wps = wps;
             return this;
+        }
+
+        public Float getSignalStrength()
+        {
+            return signalStrength;
         }
 
         public WifiBeaconModelBuilder setSignalStrength(Float signalStrength)

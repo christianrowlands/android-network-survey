@@ -1,15 +1,14 @@
 package com.craxiom.networksurvey.dao;
 
 import android.database.Cursor;
-
 import com.craxiom.networksurvey.models.message.GnssModel;
 import com.craxiom.networksurvey.models.tableschemas.MessageTableSchema;
+import mil.nga.geopackage.GeoPackage;
 
 import java.util.ArrayList;
 
-import mil.nga.geopackage.GeoPackage;
-
-public class GnssDao {
+public class GnssDao
+{
     public static ArrayList<MessageTableSchema> getGnssTableSchema(GeoPackage geoPackage)
     {
         ArrayList<MessageTableSchema> results = new ArrayList<>();
@@ -17,8 +16,10 @@ public class GnssDao {
                 .getConnection()
                 .rawQuery("PRAGMA table_info([GNSS_MESSAGE]);", null);
 
-        if (cursor.moveToFirst()) {
-            do {
+        if (cursor.moveToFirst())
+        {
+            do
+            {
                 MessageTableSchema model = new MessageTableSchema.MessageTableSchemaModelBuilder()
                         .setCid(cursor.getInt(0))
                         .setName(cursor.getString(1))
@@ -40,8 +41,10 @@ public class GnssDao {
                 .getConnection()
                 .rawQuery("SELECT * FROM [GNSS_MESSAGE];", null);
 
-        if (cursor.moveToFirst()) {
-            do {
+        if (cursor.moveToFirst())
+        {
+            do
+            {
                 GnssModel model = new GnssModel.GnssModelBuilder()
                         .setId(cursor.getInt(0))
                         .setGeom(String.valueOf(cursor.getBlob(1)))
@@ -62,7 +65,6 @@ public class GnssDao {
         }
         return results;
     }
-
 
     public static ArrayList<GnssModel> getAllGnssRecordsWithAllColumnsPopulated(GeoPackage geoPackage)
     {
@@ -85,8 +87,10 @@ public class GnssDao {
                 .getConnection()
                 .rawQuery(query, null);
 
-        if (cursor.moveToFirst()) {
-            do {
+        if (cursor.moveToFirst())
+        {
+            do
+            {
                 GnssModel model = new GnssModel.GnssModelBuilder()
                         .setId(cursor.getInt(0))
                         .setGeom(String.valueOf(cursor.getBlob(1)))
@@ -108,7 +112,6 @@ public class GnssDao {
         return results;
     }
 
-
     public static Boolean allNonNullColumnsArePopulated(GeoPackage geoPackage)
     {
         Boolean hit = true;
@@ -116,7 +119,8 @@ public class GnssDao {
                 .getConnection()
                 .rawQuery("SELECT * FROM [GNSS_MESSAGE] WHERE id IS NULL OR RecordNumber IS NULL OR GroupNumber IS NULL", null);
 
-        if (cursor.moveToFirst()) {
+        if (cursor.moveToFirst())
+        {
             hit = false;
         }
         return hit;

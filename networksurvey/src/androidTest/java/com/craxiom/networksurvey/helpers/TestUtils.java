@@ -3,7 +3,8 @@ package com.craxiom.networksurvey.helpers;
 import java.util.Random;
 import java.util.regex.Pattern;
 
-public class TestUtils {
+public class TestUtils
+{
 
     public static class Data
     {
@@ -16,9 +17,11 @@ public class TestUtils {
         }
     }
 
-    public static class Regex {
+    public static class Regex
+    {
 
-        public static Pattern getMacAddressPattern() {
+        public static Pattern getMacAddressPattern()
+        {
             String regex = "^([0-9A-Fa-f]{2}[:-])"
                     + "{5}([0-9A-Fa-f]{2})|"
                     + "([0-9a-fA-F]{4}\\."
@@ -28,5 +31,4 @@ public class TestUtils {
             return Pattern.compile(regex);
         }
     }
-
 }

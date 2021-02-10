@@ -2,11 +2,18 @@ package com.craxiom.networksurvey.models.tableschemas;
 
 import java.util.Objects;
 
-public class MessageTableSchema {
+public class MessageTableSchema
+{
     private int cid;
+    private String name;
+    private String type;
+    private int notNull;
+    private int defaultValue;
+    private int primaryKey;
 
     @Override
-    public String toString() {
+    public String toString()
+    {
         return "MessageTableSchemaModel{" +
                 "cid=" + cid +
                 ", name='" + name + '\'' +
@@ -17,11 +24,9 @@ public class MessageTableSchema {
                 '}';
     }
 
-    private String name;
-    private String type;
-
     @Override
-    public boolean equals(Object o) {
+    public boolean equals(Object o)
+    {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         MessageTableSchema that = (MessageTableSchema) o;
@@ -34,64 +39,73 @@ public class MessageTableSchema {
     }
 
     @Override
-    public int hashCode() {
+    public int hashCode()
+    {
         return Objects.hash(cid, name, type, notNull, defaultValue, primaryKey);
     }
 
-    private int notNull;
-    private int defaultValue;
-
-    public int getCid() {
+    public int getCid()
+    {
         return cid;
     }
 
-    public void setCid(int cid) {
+    public void setCid(int cid)
+    {
         this.cid = cid;
     }
 
-    public String getName() {
+    public String getName()
+    {
         return name;
     }
 
-    public void setName(String name) {
+    public void setName(String name)
+    {
         this.name = name;
     }
 
-    public String getType() {
+    public String getType()
+    {
         return type;
     }
 
-    public void setType(String type) {
+    public void setType(String type)
+    {
         this.type = type;
     }
 
-    public int getNotNull() {
+    public int getNotNull()
+    {
         return notNull;
     }
 
-    public void setNotNull(int notNull) {
+    public void setNotNull(int notNull)
+    {
         this.notNull = notNull;
     }
 
-    public int getDefaultValue() {
+    public int getDefaultValue()
+    {
         return defaultValue;
     }
 
-    public void setDefaultValue(int defaultValue) {
+    public void setDefaultValue(int defaultValue)
+    {
         this.defaultValue = defaultValue;
     }
 
-    public int getPrimaryKey() {
+    public int getPrimaryKey()
+    {
         return primaryKey;
     }
 
-    public void setPrimaryKey(int primaryKey) {
+    public void setPrimaryKey(int primaryKey)
+    {
         this.primaryKey = primaryKey;
     }
 
-    private int primaryKey;
-
-    public static final class MessageTableSchemaModelBuilder {
+    public static final class MessageTableSchemaModelBuilder
+    {
         private int cid;
         private String name;
         private String type;
@@ -99,44 +113,53 @@ public class MessageTableSchema {
         private int defaultValue;
         private int primaryKey;
 
-        public MessageTableSchemaModelBuilder() {
+        public MessageTableSchemaModelBuilder()
+        {
         }
 
-        public static MessageTableSchemaModelBuilder messageTableSchemaModel() {
+        public static MessageTableSchemaModelBuilder messageTableSchemaModel()
+        {
             return new MessageTableSchemaModelBuilder();
         }
 
-        public MessageTableSchemaModelBuilder setCid(int cid) {
+        public MessageTableSchemaModelBuilder setCid(int cid)
+        {
             this.cid = cid;
             return this;
         }
 
-        public MessageTableSchemaModelBuilder setName(String name) {
+        public MessageTableSchemaModelBuilder setName(String name)
+        {
             this.name = name;
             return this;
         }
 
-        public MessageTableSchemaModelBuilder setType(String type) {
+        public MessageTableSchemaModelBuilder setType(String type)
+        {
             this.type = type;
             return this;
         }
 
-        public MessageTableSchemaModelBuilder setNotNull(int notNull) {
+        public MessageTableSchemaModelBuilder setNotNull(int notNull)
+        {
             this.notNull = notNull;
             return this;
         }
 
-        public MessageTableSchemaModelBuilder setDefaultValue(int defaultValue) {
+        public MessageTableSchemaModelBuilder setDefaultValue(int defaultValue)
+        {
             this.defaultValue = defaultValue;
             return this;
         }
 
-        public MessageTableSchemaModelBuilder setPrimaryKey(int primaryKey) {
+        public MessageTableSchemaModelBuilder setPrimaryKey(int primaryKey)
+        {
             this.primaryKey = primaryKey;
             return this;
         }
 
-        public MessageTableSchema build() {
+        public MessageTableSchema build()
+        {
             MessageTableSchema messageTableSchema = new MessageTableSchema();
             messageTableSchema.setCid(cid);
             messageTableSchema.setName(name);
