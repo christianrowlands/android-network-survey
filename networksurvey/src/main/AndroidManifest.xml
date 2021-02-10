@@ -4,13 +4,15 @@
     package="com.craxiom.networksurvey">
 
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
-    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" /> <!-- <uses-permission android:name="android.permission.MODIFY_PHONE_STATE" /> -->
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
     <uses-permission android:name="android.permission.READ_PHONE_STATE" /> <!-- For the IMEI / MEID -->
     <uses-permission android:name="android.permission.INTERNET" /> <!-- To connect to a remote gRPC server -->
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" /> <!-- To monitor changes to the network state -->
     <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" /> <!-- Access a Wi-Fi Scan -->
     <uses-permission android:name="android.permission.CHANGE_WIFI_STATE" /> <!-- Trigger a Wi-Fi Scan -->
+    <uses-permission android:name="android.permission.BLUETOOTH" />
+    <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.WAKE_LOCK" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
@@ -23,6 +25,12 @@
         android:required="false" />
     <uses-feature
         android:name="android.hardware.wifi"
+        android:required="false" />
+    <uses-feature
+        android:name="android.hardware.bluetooth"
+        android:required="false" />
+    <uses-feature
+        android:name="android.hardware.bluetooth_le"
         android:required="false" />
 
     <application

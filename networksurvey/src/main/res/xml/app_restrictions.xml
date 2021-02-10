@@ -64,6 +64,13 @@
 
     <restriction
         android:defaultValue="30"
+        android:description="@string/bluetooth_scan_interval_description"
+        android:key="bluetooth_scan_interval_seconds"
+        android:restrictionType="integer"
+        android:title="@string/bluetooth_scan_interval_title" />
+
+    <restriction
+        android:defaultValue="30"
         android:description="@string/gnss_scan_interval_description"
         android:key="gnss_scan_interval_seconds"
         android:restrictionType="integer"
@@ -80,6 +87,13 @@
         android:defaultValue="true"
         android:description="@string/wifi_stream_description"
         android:key="wifi_stream_enabled"
+        android:restrictionType="bool"
+        android:title="@string/wifi_stream_title" />
+
+    <restriction
+        android:defaultValue="false"
+        android:description="@string/bluetooth_stream_description"
+        android:key="bluetooth_stream_enabled"
         android:restrictionType="bool"
         android:title="@string/wifi_stream_title" />
 
@@ -110,6 +124,13 @@
         android:key="auto_start_wifi_logging"
         android:restrictionType="bool"
         android:title="@string/auto_start_wifi_logging_title" />
+
+    <restriction
+        android:defaultValue="false"
+        android:description="@string/auto_start_bluetooth_logging_description"
+        android:key="auto_start_bluetooth_logging"
+        android:restrictionType="bool"
+        android:title="@string/auto_start_bluetooth_logging_title" />
 
     <restriction
         android:defaultValue="false"
