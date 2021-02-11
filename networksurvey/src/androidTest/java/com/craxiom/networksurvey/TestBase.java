@@ -46,15 +46,6 @@ public class TestBase
         }
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyyMMdd");
         testRunDate = formatter.format(testRunStartTime);
-        int SLEEP_TIME = 5;
-        /*
-            The app crashes and logs ASYNC errors when you try to interact with the application
-            without a pause.
-            TODO: Find a better way to accomplish this
-         */
-
-        Log.i(LOG_TAG, "Sleeping for " + SLEEP_TIME + " seconds to allow app to start.");
-        //sleep(SLEEP_TIME, TimeUnit.SECONDS);
     }
 
     public Context getContext()
