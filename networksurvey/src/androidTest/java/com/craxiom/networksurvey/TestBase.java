@@ -2,12 +2,13 @@ package com.craxiom.networksurvey;
 
 import android.content.Context;
 import android.util.Log;
+
 import androidx.test.ext.junit.rules.ActivityScenarioRule;
 import androidx.test.platform.app.InstrumentationRegistry;
 import androidx.test.rule.GrantPermissionRule;
+
 import com.craxiom.networksurvey.screens.TopMenuBar;
-import mil.nga.geopackage.GeoPackage;
-import mil.nga.geopackage.GeoPackageManager;
+
 import org.junit.Before;
 import org.junit.Rule;
 
@@ -15,7 +16,10 @@ import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.concurrent.TimeUnit;
 
-import static com.schibsted.spain.barista.interaction.BaristaSleepInteractions.*;
+import mil.nga.geopackage.GeoPackage;
+import mil.nga.geopackage.GeoPackageManager;
+
+import static com.schibsted.spain.barista.interaction.BaristaSleepInteractions.sleep;
 
 public class TestBase
 {

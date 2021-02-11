@@ -1,8 +1,11 @@
 package com.craxiom.networksurvey.tests;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
+
 import com.craxiom.messaging.bluetooth.SupportedTechnologies;
 import com.craxiom.networksurvey.TestBase;
+import com.craxiom.networksurvey.constants.BluetoothMessageConstants;
+import com.craxiom.networksurvey.dao.BaseDao;
 import com.craxiom.networksurvey.dao.BluetoothDao;
 import com.craxiom.networksurvey.helpers.AndroidFiles;
 import com.craxiom.networksurvey.helpers.TestUtils;
@@ -12,7 +15,7 @@ import com.craxiom.networksurvey.models.tableschemas.MessageTableSchema;
 import com.craxiom.networksurvey.screens.BottomMenuBar;
 import com.craxiom.networksurvey.screens.TopMenuBar;
 import com.google.common.collect.Range;
-import mil.nga.geopackage.factory.GeoPackageFactory;
+
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -21,8 +24,11 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
 
-import static com.google.common.truth.Truth.*;
-import static com.schibsted.spain.barista.interaction.BaristaSleepInteractions.*;
+import mil.nga.geopackage.factory.GeoPackageFactory;
+
+import static com.google.common.truth.Truth.assertThat;
+import static com.google.common.truth.Truth.assertWithMessage;
+import static com.schibsted.spain.barista.interaction.BaristaSleepInteractions.sleep;
 
 @RunWith(AndroidJUnit4.class)
 public class BluetoothGeoPackageTest extends TestBase
@@ -57,7 +63,7 @@ public class BluetoothGeoPackageTest extends TestBase
                         .getLatestSurveyFile(testRunDate, SurveyTypes.BLUETOOTH_SURVEY.getValue())
                         .getAbsolutePath(), false);
 
-        results = BluetoothDao.getBluetoothTableSchema(geoPackage);
+        results = BaseDao.getTableSchema(geoPackage, BluetoothMessageConstants.BLUETOOTH_RECORDS_TABLE_NAME);
 
         assertWithMessage("Results are not empty.")
                 .that(results)
