@@ -8,8 +8,9 @@ import java.util.ArrayList;
 
 import mil.nga.geopackage.GeoPackage;
 
-public class BaseDao
+public class SchemaDao
 {
+
     public static ArrayList<MessageTableSchema> getTableSchema(GeoPackage geoPackage, String table)
     {
         ArrayList<MessageTableSchema> results = new ArrayList<>();

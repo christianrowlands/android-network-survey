@@ -2,50 +2,23 @@ package com.craxiom.networksurvey.models.message.cellular;
 
 import java.util.Objects;
 
-import mil.nga.sf.Point;
-
 public class LteModel {
 
     private int id;
-    private Point geom;
-    private int time;
+    private String geom;
+    private long time;
     private int recordNumber;
     private int groupNumber;
-    private Boolean servingCell;
+    private int servingCell;
     private String provider;
     private int mcc;
     private int mnc;
-    private int tac;
-    private int eci;
-    private int dlEarfcn;
-    private int physCellId;
-    private float rsrp;
-    private int ta;
-    private String dlBandwidth;
-    private LteModel(int id, Point geom, int time, int recordNumber, int groupNumber, Boolean servingCell, String provider, int mcc, int mnc, int tac, int eci, int dlEarfcn, int physCellId, float rsrp, int ta, String dlBandwidth) {
-        this.id = id;
-        this.geom = geom;
-        this.time = time;
-        this.recordNumber = recordNumber;
-        this.groupNumber = groupNumber;
-        this.servingCell = servingCell;
-        this.provider = provider;
-        this.mcc = mcc;
-        this.mnc = mnc;
-        this.tac = tac;
-        this.eci = eci;
-        this.dlEarfcn = dlEarfcn;
-        this.physCellId = physCellId;
-        this.rsrp = rsrp;
-        this.ta = ta;
-        this.dlBandwidth = dlBandwidth;
-    }
 
     @Override
     public String toString() {
         return "LteModel{" +
                 "id=" + id +
-                ", geom=" + geom +
+                ", geom='" + geom + '\'' +
                 ", time=" + time +
                 ", recordNumber=" + recordNumber +
                 ", groupNumber=" + groupNumber +
@@ -60,8 +33,13 @@ public class LteModel {
                 ", rsrp=" + rsrp +
                 ", ta=" + ta +
                 ", dlBandwidth='" + dlBandwidth + '\'' +
+                ", rsrq=" + rsrq +
                 '}';
     }
+
+    private int tac;
+    private int eci;
+    private int dlEarfcn;
 
     @Override
     public boolean equals(Object o) {
@@ -80,6 +58,7 @@ public class LteModel {
                 physCellId == lteModel.physCellId &&
                 Float.compare(lteModel.rsrp, rsrp) == 0 &&
                 ta == lteModel.ta &&
+                Float.compare(lteModel.rsrq, rsrq) == 0 &&
                 Objects.equals(geom, lteModel.geom) &&
                 Objects.equals(servingCell, lteModel.servingCell) &&
                 Objects.equals(provider, lteModel.provider) &&
@@ -88,145 +67,92 @@ public class LteModel {
 
     @Override
     public int hashCode() {
-        return Objects.hash(id, geom, time, recordNumber, groupNumber, servingCell, provider, mcc, mnc, tac, eci, dlEarfcn, physCellId, rsrp, ta, dlBandwidth);
+        return Objects.hash(id, geom, time, recordNumber, groupNumber, servingCell, provider, mcc, mnc, tac, eci, dlEarfcn, physCellId, rsrp, ta, dlBandwidth, rsrq);
     }
+
+    private int physCellId;
+    private float rsrp;
 
     public int getId() {
         return id;
     }
 
-    public void setId(int id) {
-        this.id = id;
-    }
-
-    public Point getGeom() {
+    public String getGeom() {
         return geom;
     }
 
-    public void setGeom(Point geom) {
-        this.geom = geom;
-    }
-
-    public int getTime() {
+    public long getTime() {
         return time;
-    }
-
-    public void setTime(int time) {
-        this.time = time;
     }
 
     public int getRecordNumber() {
         return recordNumber;
     }
 
-    public void setRecordNumber(int recordNumber) {
-        this.recordNumber = recordNumber;
-    }
-
     public int getGroupNumber() {
         return groupNumber;
     }
 
-    public void setGroupNumber(int groupNumber) {
-        this.groupNumber = groupNumber;
-    }
-
-    public Boolean getServingCell() {
+    public int getServingCell() {
         return servingCell;
-    }
-
-    public void setServingCell(Boolean servingCell) {
-        this.servingCell = servingCell;
     }
 
     public String getProvider() {
         return provider;
     }
 
-    public void setProvider(String provider) {
-        this.provider = provider;
-    }
-
     public int getMcc() {
         return mcc;
-    }
-
-    public void setMcc(int mcc) {
-        this.mcc = mcc;
     }
 
     public int getMnc() {
         return mnc;
     }
 
-    public void setMnc(int mnc) {
-        this.mnc = mnc;
-    }
-
     public int getTac() {
         return tac;
-    }
-
-    public void setTac(int tac) {
-        this.tac = tac;
     }
 
     public int getEci() {
         return eci;
     }
 
-    public void setEci(int eci) {
-        this.eci = eci;
-    }
-
     public int getDlEarfcn() {
         return dlEarfcn;
-    }
-
-    public void setDlEarfcn(int dlEarfcn) {
-        this.dlEarfcn = dlEarfcn;
     }
 
     public int getPhysCellId() {
         return physCellId;
     }
 
-    public void setPhysCellId(int physCellId) {
-        this.physCellId = physCellId;
-    }
-
     public float getRsrp() {
         return rsrp;
-    }
-
-    public void setRsrp(float rsrp) {
-        this.rsrp = rsrp;
     }
 
     public int getTa() {
         return ta;
     }
 
-    public void setTa(int ta) {
-        this.ta = ta;
-    }
-
     public String getDlBandwidth() {
         return dlBandwidth;
     }
 
-    public void setDlBandwidth(String dlBandwidth) {
-        this.dlBandwidth = dlBandwidth;
+    public float getRsrq() {
+        return rsrq;
     }
 
-    public static class LteModelBuilder {
+    private int ta;
+    private String dlBandwidth;
+
+    public static class LteModelBuilder
+    {
 
         private int id;
-        private Point geom;
-        private int time;
+        private String geom;
+        private long time;
         private int recordNumber;
         private int groupNumber;
-        private Boolean servingCell;
+        private int servingCell;
         private String provider;
         private int mcc;
         private int mnc;
@@ -237,18 +163,19 @@ public class LteModel {
         private float rsrp;
         private int ta;
         private String dlBandwidth;
+        private float rsrq;
 
         public LteModelBuilder setId(int id) {
             this.id = id;
             return this;
         }
 
-        public LteModelBuilder setGeom(Point geom) {
+        public LteModelBuilder setGeom(String geom) {
             this.geom = geom;
             return this;
         }
 
-        public LteModelBuilder setTime(int time) {
+        public LteModelBuilder setTime(long time) {
             this.time = time;
             return this;
         }
@@ -263,7 +190,7 @@ public class LteModel {
             return this;
         }
 
-        public LteModelBuilder setServingCell(Boolean servingCell) {
+        public LteModelBuilder setServingCell(int servingCell) {
             this.servingCell = servingCell;
             return this;
         }
@@ -318,8 +245,36 @@ public class LteModel {
             return this;
         }
 
+        public LteModelBuilder setRsrq(float rsrq) {
+            this.rsrq = rsrq;
+            return this;
+        }
+
         public LteModel build() {
-            return new LteModel(id, geom, time, recordNumber, groupNumber, servingCell, provider, mcc, mnc, tac, eci, dlEarfcn, physCellId, rsrp, ta, dlBandwidth);
+            return new LteModel(id, geom, time, recordNumber, groupNumber, servingCell, provider, mcc, mnc, tac, eci, dlEarfcn, physCellId, rsrp, ta, dlBandwidth, rsrq);
         }
     }
+
+    private LteModel(int id, String geom, long time, int recordNumber, int groupNumber, int servingCell, String provider, int mcc, int mnc, int tac, int eci, int dlEarfcn, int physCellId, float rsrp, int ta, String dlBandwidth, float rsrq) {
+        this.id = id;
+        this.geom = geom;
+        this.time = time;
+        this.recordNumber = recordNumber;
+        this.groupNumber = groupNumber;
+        this.servingCell = servingCell;
+        this.provider = provider;
+        this.mcc = mcc;
+        this.mnc = mnc;
+        this.tac = tac;
+        this.eci = eci;
+        this.dlEarfcn = dlEarfcn;
+        this.physCellId = physCellId;
+        this.rsrp = rsrp;
+        this.ta = ta;
+        this.dlBandwidth = dlBandwidth;
+        this.rsrq = rsrq;
+    }
+
+    private float rsrq;
+
 }

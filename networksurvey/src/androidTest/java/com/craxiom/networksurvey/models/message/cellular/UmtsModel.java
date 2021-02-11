@@ -8,7 +8,7 @@ public class UmtsModel
 {
     private int id;
     private Point geom;
-    private int time;
+    private long time;
     private int recordNumber;
     private int groupNumber;
     private Boolean servingCell;
@@ -86,11 +86,11 @@ public class UmtsModel
         this.geom = geom;
     }
 
-    public int getTime() {
+    public long getTime() {
         return time;
     }
 
-    public void setTime(int time) {
+    public void setTime(long time) {
         this.time = time;
     }
 
@@ -197,7 +197,7 @@ public class UmtsModel
 
         private int id;
         private Point geom;
-        private int time;
+        private long time;
         private int recordNumber;
         private int groupNumber;
         private Boolean servingCell;
@@ -221,7 +221,7 @@ public class UmtsModel
             return this;
         }
 
-        public UmtsModelBuilder setTime(int time) {
+        public UmtsModelBuilder setTime(long time) {
             this.time = time;
             return this;
         }
@@ -291,7 +291,7 @@ public class UmtsModel
         }
     }
 
-    private UmtsModel(int id, Point geom, int time, int recordNumber, int groupNumber, Boolean servingCell, String provider, int mcc, int mnc, int lac, int cellId, int uarfcn, int psc, float signalStrength, float rscp) {
+    private UmtsModel(int id, Point geom, long time, int recordNumber, int groupNumber, Boolean servingCell, String provider, int mcc, int mnc, int lac, int cellId, int uarfcn, int psc, float signalStrength, float rscp) {
         this.id = id;
         this.geom = geom;
         this.time = time;

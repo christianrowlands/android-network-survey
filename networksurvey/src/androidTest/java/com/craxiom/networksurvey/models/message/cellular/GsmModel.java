@@ -6,6 +6,15 @@ import mil.nga.sf.Point;
 
 public class GsmModel
 {
+
+    private int id;
+    private Point geom;
+    private long time;
+    private int recordNumber;
+    private int groupNumber;
+    private Boolean servingCell;
+    private String provider;
+
     @Override
     public String toString() {
         return "GsmModel{" +
@@ -27,9 +36,11 @@ public class GsmModel
                 '}';
     }
 
-    private int id;
-    private Point geom;
-    private int time;
+    private int mcc;
+    private int mnc;
+    private int lac;
+    private int cid;
+    private int arfcn;
 
     @Override
     public boolean equals(Object o) {
@@ -58,164 +69,14 @@ public class GsmModel
         return Objects.hash(id, geom, time, recordNumber, groupNumber, servingCell, provider, mcc, mnc, lac, cid, arfcn, bsic, signalStrength, ta);
     }
 
-    private int recordNumber;
-    private int groupNumber;
-    private Boolean servingCell;
-    private String provider;
-    private int mcc;
-    private int mnc;
-    private int lac;
-    private int cid;
-    private int arfcn;
     private int bsic;
-
-    private GsmModel(int id, Point geom, int time, int recordNumber, int groupNumber, Boolean servingCell, String provider, int mcc, int mnc, int lac, int cid, int arfcn, int bsic, float signalStrength, int ta) {
-        this.id = id;
-        this.geom = geom;
-        this.time = time;
-        this.recordNumber = recordNumber;
-        this.groupNumber = groupNumber;
-        this.servingCell = servingCell;
-        this.provider = provider;
-        this.mcc = mcc;
-        this.mnc = mnc;
-        this.lac = lac;
-        this.cid = cid;
-        this.arfcn = arfcn;
-        this.bsic = bsic;
-        this.signalStrength = signalStrength;
-        this.ta = ta;
-    }
-
-    public int getId() {
-        return id;
-    }
-
-    public void setId(int id) {
-        this.id = id;
-    }
-
-    public Point getGeom() {
-        return geom;
-    }
-
-    public void setGeom(Point geom) {
-        this.geom = geom;
-    }
-
-    public int getTime() {
-        return time;
-    }
-
-    public void setTime(int time) {
-        this.time = time;
-    }
-
-    public int getRecordNumber() {
-        return recordNumber;
-    }
-
-    public void setRecordNumber(int recordNumber) {
-        this.recordNumber = recordNumber;
-    }
-
-    public int getGroupNumber() {
-        return groupNumber;
-    }
-
-    public void setGroupNumber(int groupNumber) {
-        this.groupNumber = groupNumber;
-    }
-
-    public Boolean getServingCell() {
-        return servingCell;
-    }
-
-    public void setServingCell(Boolean servingCell) {
-        this.servingCell = servingCell;
-    }
-
-    public String getProvider() {
-        return provider;
-    }
-
-    public void setProvider(String provider) {
-        this.provider = provider;
-    }
-
-    public int getMcc() {
-        return mcc;
-    }
-
-    public void setMcc(int mcc) {
-        this.mcc = mcc;
-    }
-
-    public int getMnc() {
-        return mnc;
-    }
-
-    public void setMnc(int mnc) {
-        this.mnc = mnc;
-    }
-
-    public int getLac() {
-        return lac;
-    }
-
-    public void setLac(int lac) {
-        this.lac = lac;
-    }
-
-    public int getCid() {
-        return cid;
-    }
-
-    public void setCid(int cid) {
-        this.cid = cid;
-    }
-
-    public int getArfcn() {
-        return arfcn;
-    }
-
-    public void setArfcn(int arfcn) {
-        this.arfcn = arfcn;
-    }
-
-    public int getBsic() {
-        return bsic;
-    }
-
-    public void setBsic(int bsic) {
-        this.bsic = bsic;
-    }
-
-    public float getSignalStrength() {
-        return signalStrength;
-    }
-
-    public void setSignalStrength(float signalStrength) {
-        this.signalStrength = signalStrength;
-    }
-
-    public int getTa() {
-        return ta;
-    }
-
-    public void setTa(int ta) {
-        this.ta = ta;
-    }
-
-    private float signalStrength;
-    private int ta;
 
     public static class GsmModelBuilder
     {
 
         private int id;
         private Point geom;
-        private int time;
+        private long time;
         private int recordNumber;
         private int groupNumber;
         private Boolean servingCell;
@@ -239,7 +100,7 @@ public class GsmModel
             return this;
         }
 
-        public GsmModelBuilder setTime(int time) {
+        public GsmModelBuilder setTime(long time) {
             this.time = time;
             return this;
         }
@@ -304,8 +165,30 @@ public class GsmModel
             return this;
         }
 
-        public GsmModel createGsmModel() {
+        public GsmModel build() {
             return new GsmModel(id, geom, time, recordNumber, groupNumber, servingCell, provider, mcc, mnc, lac, cid, arfcn, bsic, signalStrength, ta);
         }
     }
+
+    private GsmModel(int id, Point geom, long time, int recordNumber, int groupNumber, Boolean servingCell, String provider, int mcc, int mnc, int lac, int cid, int arfcn, int bsic, float signalStrength, int ta) {
+        this.id = id;
+        this.geom = geom;
+        this.time = time;
+        this.recordNumber = recordNumber;
+        this.groupNumber = groupNumber;
+        this.servingCell = servingCell;
+        this.provider = provider;
+        this.mcc = mcc;
+        this.mnc = mnc;
+        this.lac = lac;
+        this.cid = cid;
+        this.arfcn = arfcn;
+        this.bsic = bsic;
+        this.signalStrength = signalStrength;
+        this.ta = ta;
+    }
+
+    private float signalStrength;
+    private int ta;
+
 }

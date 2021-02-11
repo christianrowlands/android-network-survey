@@ -16,11 +16,11 @@ public class CdmaModel
         this.geom = geom;
     }
 
-    public int getTime() {
+    public long getTime() {
         return time;
     }
 
-    public void setTime(int time) {
+    public void setTime(long time) {
         this.time = time;
     }
 
@@ -180,7 +180,7 @@ public class CdmaModel
         return Objects.hash(id, geom, time, recordNumber, groupNumber, servingCell, provider, sid, nid, bsid, channel, pnOffset, signalStrength, ecIo, baseLatitude, baseLongitude);
     }
 
-    private int time;
+    private long time;
     private int recordNumber;
     private int groupNumber;
     private Boolean servingCell;
@@ -199,7 +199,7 @@ public class CdmaModel
 
         private int id;
         private Point geom;
-        private int time;
+        private long time;
         private int recordNumber;
         private int groupNumber;
         private Boolean servingCell;
@@ -224,7 +224,7 @@ public class CdmaModel
             return this;
         }
 
-        public CdmaModelBuilder setTime(int time) {
+        public CdmaModelBuilder setTime(long time) {
             this.time = time;
             return this;
         }
@@ -299,7 +299,7 @@ public class CdmaModel
         }
     }
 
-    private CdmaModel(int id, Point geom, int time, int recordNumber, int groupNumber, Boolean servingCell, String provider, int sid, int nid, int bsid, int channel, int pnOffset, float signalStrength, float ecIo, double baseLatitude, double baseLongitude) {
+    private CdmaModel(int id, Point geom, long time, int recordNumber, int groupNumber, Boolean servingCell, String provider, int sid, int nid, int bsid, int channel, int pnOffset, float signalStrength, float ecIo, double baseLatitude, double baseLongitude) {
         this.id = id;
         this.geom = geom;
         this.time = time;

@@ -6,7 +6,7 @@ public class WifiBeaconModel
 {
     private int id;
     private String geom;
-    private int time;
+    private long time;
     private int recordNumber;
     private String bssid;
     private String ssid;
@@ -28,7 +28,7 @@ public class WifiBeaconModel
         return geom;
     }
 
-    public int getTime()
+    public long getTime()
     {
         return time;
     }
@@ -134,7 +134,7 @@ public class WifiBeaconModel
     {
         private int id;
         private String geom;
-        private int time;
+        private long time;
         private int recordNumber;
         private String bssid;
         private String ssid;
@@ -176,12 +176,12 @@ public class WifiBeaconModel
             return this;
         }
 
-        public int getTime()
+        public long getTime()
         {
             return time;
         }
 
-        public WifiBeaconModelBuilder setTime(int time)
+        public WifiBeaconModelBuilder setTime(long time)
         {
             this.time = time;
             return this;

@@ -2,8 +2,8 @@ package com.craxiom.networksurvey.dao;
 
 import android.database.Cursor;
 
+import com.craxiom.networksurvey.constants.BluetoothMessageConstants;
 import com.craxiom.networksurvey.models.message.BluetoothModel;
-import com.craxiom.networksurvey.models.tableschemas.MessageTableSchema;
 
 import java.util.ArrayList;
 
@@ -11,53 +11,10 @@ import mil.nga.geopackage.GeoPackage;
 
 public class BluetoothDao
 {
-    public static ArrayList<BluetoothModel> getAllBluetoothRecords(GeoPackage geoPackage)
+
+    public static ArrayList<BluetoothModel> baseQuery(GeoPackage geoPackage, String query)
     {
         ArrayList<BluetoothModel> results = new ArrayList<>();
-
-        Cursor cursor = geoPackage
-                .getConnection()
-                .rawQuery("SELECT * FROM [BLUETOOTH_MESSAGE];", null);
-
-        if (cursor.moveToFirst())
-        {
-            do
-            {
-                BluetoothModel model = new BluetoothModel.BluetoothTableSchemaModelBuilder()
-                        .setId(cursor.getInt(0))
-                        .setGeom(String.valueOf(cursor.getBlob(1)))
-                        .setTime(cursor.getInt(2))
-                        .setRecordNumber(cursor.getInt(3))
-                        .setSourceAddress(cursor.getString(4))
-                        .setOtaDeviceName(cursor.getString(5))
-                        .setTechnology(cursor.getString(6))
-                        .setSupportedTechnologies(cursor.getString(7))
-                        .setTxPower(cursor.getFloat(8))
-                        .setSignalStrength(cursor.getFloat(9))
-                        .build();
-                results.add(model);
-            } while (cursor.moveToNext());
-        }
-        return results;
-    }
-
-    /**
-     * Tx Power and Technology are omitted since I could not gather any data with those values included.
-     *
-     * @param geoPackage GeoPackage supplied by the GeoPackage Manager
-     * @return ArrayList of BluetoothModel results
-     */
-    public static ArrayList<BluetoothModel> getAllBluetoothRecordsWithAllColumnsPopulated(GeoPackage geoPackage)
-    {
-        ArrayList<BluetoothModel> results = new ArrayList<>();
-
-        String query = "SELECT * FROM [BLUETOOTH_MESSAGE]\n" +
-                "WHERE (geom IS NOT NULL)\n" +
-                "    AND (Time IS NOT NULL)\n" +
-                "    AND ([Source Address] IS NOT NULL)\n" +
-                "    AND ([OTA Device Name] IS NOT NULL)\n" +
-                "    AND ([Supported Technologies] IS NOT NULL)\n" +
-                "    AND ([Signal Strength] IS NOT NULL);";
 
         Cursor cursor = geoPackage
                 .getConnection()
@@ -68,16 +25,16 @@ public class BluetoothDao
             do
             {
                 BluetoothModel model = new BluetoothModel.BluetoothTableSchemaModelBuilder()
-                        .setId(cursor.getInt(0))
-                        .setGeom(String.valueOf(cursor.getBlob(1)))
-                        .setTime(cursor.getInt(2))
-                        .setRecordNumber(cursor.getInt(3))
-                        .setSourceAddress(cursor.getString(4))
-                        .setOtaDeviceName(cursor.getString(5))
-                        .setTechnology(cursor.getString(6))
-                        .setSupportedTechnologies(cursor.getString(7))
-                        .setTxPower(cursor.getFloat(8))
-                        .setSignalStrength(cursor.getFloat(9))
+                        .setId(cursor.getInt(cursor.getColumnIndex(BluetoothMessageConstants.ID_COLUMN)))
+                        .setGeom(String.valueOf(cursor.getBlob(cursor.getColumnIndex(BluetoothMessageConstants.GEOMETRY_COLUMN))))
+                        .setTime(cursor.getLong(cursor.getColumnIndex(BluetoothMessageConstants.TIME_COLUMN)))
+                        .setRecordNumber(cursor.getInt(cursor.getColumnIndex(BluetoothMessageConstants.RECORD_NUMBER_COLUMN)))
+                        .setSourceAddress(cursor.getString(cursor.getColumnIndex(BluetoothMessageConstants.SOURCE_ADDRESS_COLUMN)))
+                        .setOtaDeviceName(cursor.getString(cursor.getColumnIndex(BluetoothMessageConstants.OTA_DEVICE_NAME_COLUMN)))
+                        .setTechnology(cursor.getString(cursor.getColumnIndex(BluetoothMessageConstants.TECHNOLOGY_COLUMN)))
+                        .setSupportedTechnologies(cursor.getString(cursor.getColumnIndex(BluetoothMessageConstants.SUPPORTED_TECHNOLOGIES_COLUMN)))
+                        .setTxPower(cursor.getFloat(cursor.getColumnIndex(BluetoothMessageConstants.TX_POWER_COLUMN)))
+                        .setSignalStrength(cursor.getFloat(cursor.getColumnIndex(BluetoothMessageConstants.SIGNAL_STRENGTH_COLUMN)))
                         .build();
                 results.add(model);
             } while (cursor.moveToNext());
@@ -85,17 +42,35 @@ public class BluetoothDao
         return results;
     }
 
+    public static ArrayList<BluetoothModel> getAllRecords(GeoPackage geoPackage)
+    {
+        String query = String.format("SELECT * FROM [%s]", BluetoothMessageConstants.BLUETOOTH_RECORDS_TABLE_NAME);
+        return baseQuery(geoPackage, query);
+    }
+
+    /**
+     * Tx Power and Technology are omitted since I could not gather any data with those values included.
+     *
+     * @param geoPackage GeoPackage supplied by the GeoPackage Manager
+     * @return ArrayList of BluetoothModel results
+     */
+    public static ArrayList<BluetoothModel> getRecordsWithAllColumnsPopulated(GeoPackage geoPackage)
+    {
+
+        String query = String.format("SELECT * FROM [%s]\n" +
+                "WHERE (geom IS NOT NULL)\n" +
+                "    AND (Time IS NOT NULL)\n" +
+                "    AND ([Source Address] IS NOT NULL)\n" +
+                "    AND ([OTA Device Name] IS NOT NULL)\n" +
+                "    AND ([Supported Technologies] IS NOT NULL)\n" +
+                "    AND ([Signal Strength] IS NOT NULL);", BluetoothMessageConstants.BLUETOOTH_RECORDS_TABLE_NAME);
+
+       return baseQuery(geoPackage, query);
+    }
+
     public static boolean allNonNullColumnsArePopulated(GeoPackage geoPackage)
     {
-        Boolean hit = true;
-        Cursor cursor = geoPackage
-                .getConnection()
-                .rawQuery("SELECT * FROM [BLUETOOTH_MESSAGE] WHERE id IS NULL OR RecordNumber IS NULL", null);
-
-        if (cursor.moveToFirst())
-        {
-            hit = false;
-        }
-        return hit;
+        String query = String.format("SELECT * FROM [%s] WHERE id IS NULL OR RecordNumber IS NULL", BluetoothMessageConstants.BLUETOOTH_RECORDS_TABLE_NAME);
+        return CommonDao.allNonNullColumnsArePopulated(geoPackage, query);
     }
 }

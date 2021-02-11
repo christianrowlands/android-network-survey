@@ -6,7 +6,7 @@ public class BluetoothModel
 {
     private int id;
     private String geom;
-    private int time;
+    private long time;
     private int recordNumber;
     private String sourceAddress;
     private String otaDeviceName;
@@ -67,12 +67,12 @@ public class BluetoothModel
         this.geom = geom;
     }
 
-    public int getTime()
+    public long getTime()
     {
         return time;
     }
 
-    public void setTime(int time)
+    public void setTime(long time)
     {
         this.time = time;
     }
@@ -151,7 +151,7 @@ public class BluetoothModel
     {
         private int id;
         private String geom;
-        private int time;
+        private long time;
         private int recordNumber;
         private String sourceAddress;
         private String otaDeviceName;
@@ -181,7 +181,7 @@ public class BluetoothModel
             return this;
         }
 
-        public BluetoothTableSchemaModelBuilder setTime(int time)
+        public BluetoothTableSchemaModelBuilder setTime(long time)
         {
             this.time = time;
             return this;

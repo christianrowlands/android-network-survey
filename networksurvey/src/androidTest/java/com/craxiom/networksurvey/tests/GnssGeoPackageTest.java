@@ -1,12 +1,13 @@
 package com.craxiom.networksurvey.tests;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
+import androidx.test.filters.RequiresDevice;
 
 import com.craxiom.messaging.gnss.Constellation;
 import com.craxiom.networksurvey.TestBase;
 import com.craxiom.networksurvey.constants.GnssMessageConstants;
-import com.craxiom.networksurvey.dao.BaseDao;
 import com.craxiom.networksurvey.dao.GnssDao;
+import com.craxiom.networksurvey.dao.SchemaDao;
 import com.craxiom.networksurvey.helpers.AndroidFiles;
 import com.craxiom.networksurvey.models.SurveyTypes;
 import com.craxiom.networksurvey.models.message.GnssModel;
@@ -62,8 +63,9 @@ public class GnssGeoPackageTest extends TestBase
                         .getLatestSurveyFile(testRunDate, SurveyTypes.GNSS_SURVEY.getValue())
                         .getAbsolutePath(), false);
 
-        results = BaseDao.getTableSchema(geoPackage, GnssMessageConstants.GNSS_RECORDS_TABLE_NAME);
+        results = SchemaDao.getTableSchema(geoPackage, GnssMessageConstants.GNSS_RECORDS_TABLE_NAME);
 
+        //Then
         assertWithMessage("Results are not empty.")
                 .that(results)
                 .isNotEmpty();
@@ -127,8 +129,10 @@ public class GnssGeoPackageTest extends TestBase
     @Test
     public void gnssSurveyDataGeneratedUponTestRun()
     {
+        //Given
         Long fileDate = AndroidFiles.getLatestSurveyFile(testRunDate, SurveyTypes.GNSS_SURVEY.getValue()).lastModified();
 
+        //Then
         assertWithMessage("Latest GNSS survey file is newer than the beginning of the test run")
                 .that(fileDate)
                 .isGreaterThan(testRunStartTime.toEpochDay());
@@ -138,6 +142,7 @@ public class GnssGeoPackageTest extends TestBase
         MONKEY-T64
      */
     @Test
+    @RequiresDevice
     public void gnssNotNullDataIsNotNull()
     {
         //Given
@@ -146,6 +151,7 @@ public class GnssGeoPackageTest extends TestBase
                         .getLatestSurveyFile(testRunDate, SurveyTypes.GNSS_SURVEY.getValue())
                         .getAbsolutePath(), false);
 
+        //Then
         assertWithMessage("All Non-Null columns are populated")
                 .that(GnssDao.allNonNullColumnsArePopulated(geoPackage))
                 .isTrue();
@@ -155,6 +161,7 @@ public class GnssGeoPackageTest extends TestBase
         MONKEY-T65
      */
     @Test
+    @RequiresDevice
     public void gnssDataValuesAreOfExpectedTypesAndRanges()
     {
         //Given
@@ -166,8 +173,9 @@ public class GnssGeoPackageTest extends TestBase
                         .getAbsolutePath(), false);
 
         //When
-        results = GnssDao.getAllGnssRecordsWithAllColumnsPopulated(geoPackage);
+        results = GnssDao.getRecordsWithAllColumnsPopulated(geoPackage);
 
+        //Then
         assertWithMessage("We have results to use.")
                 .that(results)
                 .isNotEmpty();
@@ -176,8 +184,9 @@ public class GnssGeoPackageTest extends TestBase
         {
             assertThat(row.getId())
                     .isIn(Range.closed(1, Integer.MAX_VALUE));
-            assertThat(row.getTime())
-                    .isLessThan(Integer.MAX_VALUE);
+            assertWithMessage("Time column is within range")
+                    .that(row.getTime())
+                    .isIn(Range.closed(Long.MIN_VALUE, Long.MAX_VALUE));
             assertThat(row.getRecordNumber())
                     .isIn(Range.closed(1, Integer.MAX_VALUE));
             assertThat(row.getGroupNumber())

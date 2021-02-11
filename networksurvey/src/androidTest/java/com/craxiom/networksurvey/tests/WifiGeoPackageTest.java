@@ -1,11 +1,12 @@
 package com.craxiom.networksurvey.tests;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
+import androidx.test.filters.RequiresDevice;
 
 import com.craxiom.messaging.wifi.EncryptionType;
 import com.craxiom.networksurvey.TestBase;
 import com.craxiom.networksurvey.constants.WifiBeaconMessageConstants;
-import com.craxiom.networksurvey.dao.BaseDao;
+import com.craxiom.networksurvey.dao.SchemaDao;
 import com.craxiom.networksurvey.dao.WifiBeaconDao;
 import com.craxiom.networksurvey.helpers.AndroidFiles;
 import com.craxiom.networksurvey.models.SurveyTypes;
@@ -52,6 +53,7 @@ public class WifiGeoPackageTest extends TestBase
         MONKEY-T66
      */
     @Test
+    @RequiresDevice
     public void wifiNotNullDataIsNotNull()
     {
         //Given
@@ -59,7 +61,7 @@ public class WifiGeoPackageTest extends TestBase
                 .open(AndroidFiles
                         .getLatestSurveyFile(testRunDate, SurveyTypes.WIFI_SURVEY.getValue())
                         .getAbsolutePath(), false);
-
+        //Then
         assertWithMessage("All Non-Null columns are populated")
                 .that(WifiBeaconDao.allNonNullColumnsArePopulated(geoPackage))
                 .isTrue();
@@ -71,10 +73,11 @@ public class WifiGeoPackageTest extends TestBase
     @Test
     public void wifiSurveyDataGeneratedUponTestRun()
     {
+        //Given
         Long fileDate = AndroidFiles
                 .getLatestSurveyFile(testRunDate, SurveyTypes.WIFI_SURVEY.getValue())
                 .lastModified();
-
+        //Then
         assertWithMessage("Latest Wifi survey file is newer than the beginning of the test run")
                 .that(fileDate)
                 .isGreaterThan(testRunStartTime.toEpochDay());
@@ -84,6 +87,7 @@ public class WifiGeoPackageTest extends TestBase
         MONKEY-T68
      */
     @Test
+    @RequiresDevice
     public void wifiDataValuesAreOfExpectedTypesAndRanges()
     {
         /*
@@ -98,7 +102,7 @@ public class WifiGeoPackageTest extends TestBase
                         .getLatestSurveyFile(testRunDate, SurveyTypes.WIFI_SURVEY.getValue())
                         .getAbsolutePath(), false);
 
-        results = WifiBeaconDao.getAllWifiBeaconRecordsWithAllColumnsPopulated(geoPackage);
+        results = WifiBeaconDao.getRecordsWithAllColumnsPopulated(geoPackage);
 
         assertWithMessage("Result set is not empty")
                 .that(results)
@@ -109,8 +113,9 @@ public class WifiGeoPackageTest extends TestBase
         {
             assertThat(row.getId())
                     .isIn(Range.closed(1, Integer.MAX_VALUE));
-            assertThat(row.getTime())
-                    .isLessThan(Integer.MAX_VALUE);
+            assertWithMessage("Time column is within range")
+                    .that(row.getTime())
+                    .isIn(Range.closed(Long.MIN_VALUE, Long.MAX_VALUE));
             assertThat(row.getRecordNumber())
                     .isIn(Range.closed(1, Integer.MAX_VALUE));
             assertThat(row.getChannel())
@@ -141,8 +146,9 @@ public class WifiGeoPackageTest extends TestBase
                         .getLatestSurveyFile(testRunDate, SurveyTypes.WIFI_SURVEY.getValue())
                         .getAbsolutePath(), false);
 
-        results = BaseDao.getTableSchema(geoPackage, WifiBeaconMessageConstants.WIFI_BEACON_RECORDS_TABLE_NAME);
+        results = SchemaDao.getTableSchema(geoPackage, WifiBeaconMessageConstants.WIFI_BEACON_RECORDS_TABLE_NAME);
 
+        //Then
         assertWithMessage("Results are not empty.")
                 .that(results)
                 .isNotEmpty();

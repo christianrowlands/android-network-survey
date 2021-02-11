@@ -6,7 +6,7 @@ public class GnssModel
 {
     private int id;
     private String geom;
-    private int time;
+    private long time;
     private int recordNumber;
     private int groupNumber;
     private String constellation;
@@ -85,12 +85,12 @@ public class GnssModel
         this.geom = geom;
     }
 
-    public int getTime()
+    public long getTime()
     {
         return time;
     }
 
-    public void setTime(int time)
+    public void setTime(long time)
     {
         this.time = time;
     }
@@ -199,7 +199,7 @@ public class GnssModel
     {
         private int id;
         private String geom;
-        private int time;
+        private long time;
         private int recordNumber;
         private int groupNumber;
         private String constellation;
@@ -232,7 +232,7 @@ public class GnssModel
             return this;
         }
 
-        public GnssModelBuilder setTime(int time)
+        public GnssModelBuilder setTime(long time)
         {
             this.time = time;
             return this;

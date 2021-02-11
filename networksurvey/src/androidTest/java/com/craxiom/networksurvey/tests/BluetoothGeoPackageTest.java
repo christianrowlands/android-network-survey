@@ -5,8 +5,8 @@ import androidx.test.ext.junit.runners.AndroidJUnit4;
 import com.craxiom.messaging.bluetooth.SupportedTechnologies;
 import com.craxiom.networksurvey.TestBase;
 import com.craxiom.networksurvey.constants.BluetoothMessageConstants;
-import com.craxiom.networksurvey.dao.BaseDao;
 import com.craxiom.networksurvey.dao.BluetoothDao;
+import com.craxiom.networksurvey.dao.SchemaDao;
 import com.craxiom.networksurvey.helpers.AndroidFiles;
 import com.craxiom.networksurvey.helpers.TestUtils;
 import com.craxiom.networksurvey.models.SurveyTypes;
@@ -63,8 +63,9 @@ public class BluetoothGeoPackageTest extends TestBase
                         .getLatestSurveyFile(testRunDate, SurveyTypes.BLUETOOTH_SURVEY.getValue())
                         .getAbsolutePath(), false);
 
-        results = BaseDao.getTableSchema(geoPackage, BluetoothMessageConstants.BLUETOOTH_RECORDS_TABLE_NAME);
+        results = SchemaDao.getTableSchema(geoPackage, BluetoothMessageConstants.BLUETOOTH_RECORDS_TABLE_NAME);
 
+        //Then
         assertWithMessage("Results are not empty.")
                 .that(results)
                 .isNotEmpty();
@@ -116,8 +117,10 @@ public class BluetoothGeoPackageTest extends TestBase
     @Test
     public void bluetoothSurveyDataGeneratedUponTestRun()
     {
+        //Given
         Long fileDate = AndroidFiles.getLatestSurveyFile(testRunDate, SurveyTypes.BLUETOOTH_SURVEY.getValue()).lastModified();
 
+        //Then
         assertWithMessage("Latest Bluetooth survey file is newer than the beginning of the test run")
                 .that(fileDate)
                 .isGreaterThan(testRunStartTime.toEpochDay());
@@ -134,7 +137,7 @@ public class BluetoothGeoPackageTest extends TestBase
                 .open(AndroidFiles
                         .getLatestSurveyFile(testRunDate, SurveyTypes.BLUETOOTH_SURVEY.getValue())
                         .getAbsolutePath(), false);
-
+        //Then
         assertWithMessage("All Non-Null columns are populated")
                 .that(BluetoothDao.allNonNullColumnsArePopulated(geoPackage))
                 .isTrue();
@@ -159,8 +162,9 @@ public class BluetoothGeoPackageTest extends TestBase
                         .getAbsolutePath(), false);
 
         //When
-        results = BluetoothDao.getAllBluetoothRecordsWithAllColumnsPopulated(geoPackage);
+        results = BluetoothDao.getRecordsWithAllColumnsPopulated(geoPackage);
 
+        //Then
         assertWithMessage("We have results to use.")
                 .that(results)
                 .isNotEmpty();
@@ -169,8 +173,9 @@ public class BluetoothGeoPackageTest extends TestBase
         {
             assertThat(row.getId())
                     .isIn(Range.closed(1, Integer.MAX_VALUE));
-            assertThat(row.getTime())
-                    .isLessThan(Integer.MAX_VALUE);
+            assertWithMessage("Time column is within range")
+                    .that(row.getTime())
+                    .isIn(Range.closed(Long.MIN_VALUE, Long.MAX_VALUE));
             assertThat(row.getRecordNumber())
                     .isIn(Range.closed(1, Integer.MAX_VALUE));
             assertThat(row.getSourceAddress())
