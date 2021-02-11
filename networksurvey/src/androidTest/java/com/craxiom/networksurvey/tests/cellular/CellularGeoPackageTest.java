@@ -29,6 +29,9 @@ public class CellularGeoPackageTest extends TestBase
         geoPackageManager = GeoPackageFactory.getManager(getContext());
     }
 
+    /*
+        MONKEY-T70
+     */
     @Test
     public void cellularSurveyDataGeneratedUponTestRun()
     {

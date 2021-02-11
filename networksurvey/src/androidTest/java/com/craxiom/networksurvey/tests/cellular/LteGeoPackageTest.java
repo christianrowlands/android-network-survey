@@ -41,6 +41,9 @@ public class LteGeoPackageTest extends TestBase
         geoPackageManager = GeoPackageFactory.getManager(getContext());
     }
 
+    /*
+        MONKEY-T71
+     */
     @Test
     public void validateLteMessageTableSchema()
     {
@@ -128,6 +131,9 @@ public class LteGeoPackageTest extends TestBase
                 .isEqualTo("MessageTableSchemaModel{cid=16, name='DL_Bandwidth', type='3', notNull=0, defaultValue=0, primaryKey=0}");
     }
 
+    /*
+        MONKEY-T73
+     */
     @Test
     @RequiresDevice
     public void lteDataValuesAreOfExpectedTypesAndRanges()
@@ -212,6 +218,9 @@ public class LteGeoPackageTest extends TestBase
         }
     }
 
+    /*
+        MONKEY-T72
+     */
     @Test
     @RequiresDevice
     public void lteNotNullDataIsNotNull()

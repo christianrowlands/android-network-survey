@@ -36,6 +36,9 @@ public class CdmaGeoPackageTest extends TestBase
         geoPackageManager = GeoPackageFactory.getManager(getContext());
     }
 
+    /*
+        MONKEY-T77
+     */
     @Test
     public void validateCdmaMessageTableSchema()
     {
@@ -120,6 +123,9 @@ public class CdmaGeoPackageTest extends TestBase
                 .isEqualTo("MessageTableSchemaModel{cid=15, name='Base Longitude', type='3', notNull=0, defaultValue=0, primaryKey=0}");
     }
 
+    /*
+        MONKEY-T78
+     */
     @Test
     @RequiresDevice
     public void cdmaNotNullDataIsNotNull()

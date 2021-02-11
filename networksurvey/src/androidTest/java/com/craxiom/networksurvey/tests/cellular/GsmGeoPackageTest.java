@@ -36,6 +36,9 @@ public class GsmGeoPackageTest extends TestBase
         geoPackageManager = GeoPackageFactory.getManager(getContext());
     }
 
+    /*
+        MONKEY-T74
+     */
     @Test
     public void validateGsmMessageTableSchema()
     {
@@ -116,6 +119,9 @@ public class GsmGeoPackageTest extends TestBase
                 .isEqualTo("MessageTableSchemaModel{cid=14, name='TA', type='3', notNull=0, defaultValue=0, primaryKey=0}");
     }
 
+    /*
+        MONKEY-T75
+     */
     @Test
     @RequiresDevice
     public void gsmNotNullDataIsNotNull()

@@ -37,6 +37,9 @@ public class UmtsGeoPackageTest extends TestBase
         geoPackageManager = GeoPackageFactory.getManager(getContext());
     }
 
+    /*
+        MONKEY-T80
+     */
     @Test
     public void validateUmtsMessageTableSchema()
     {
@@ -117,6 +120,9 @@ public class UmtsGeoPackageTest extends TestBase
                 .isEqualTo("MessageTableSchemaModel{cid=14, name='RSCP', type='3', notNull=0, defaultValue=0, primaryKey=0}");
     }
 
+    /*
+        MONKEY-T81
+     */
     @Test
     @RequiresDevice
     public void umtsNotNullDataIsNotNull()
