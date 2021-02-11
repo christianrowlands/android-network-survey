@@ -1,5 +1,10 @@
 package com.craxiom.networksurvey.helpers;
 
+import android.os.Build;
+import android.provider.Settings;
+
+import androidx.test.platform.app.InstrumentationRegistry;
+
 import java.util.Random;
 import java.util.regex.Pattern;
 
@@ -29,6 +34,20 @@ public class TestUtils
                     + "[0-9a-fA-F]{4})$";
 
             return Pattern.compile(regex);
+        }
+    }
+
+    public static class System
+    {
+        public static boolean areSystemAnimationsEnabled() {
+            float duration, transition;
+            duration = Settings.Global.getFloat(
+                        InstrumentationRegistry.getInstrumentation().getContext().getContentResolver(),
+                        Settings.Global.ANIMATOR_DURATION_SCALE, 1);
+            transition = Settings.Global.getFloat(
+                        InstrumentationRegistry.getInstrumentation().getContext().getContentResolver(),
+                        Settings.Global.TRANSITION_ANIMATION_SCALE, 1);
+            return (duration != 0 && transition != 0);
         }
     }
 }

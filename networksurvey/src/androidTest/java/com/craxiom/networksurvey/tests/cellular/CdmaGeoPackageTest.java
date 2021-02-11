@@ -27,7 +27,6 @@ public class CdmaGeoPackageTest extends TestBase
     public void setUpCellularTest()
     {
         BottomMenuBar.clickCellularMenuOption();
-        TopMenuBar.clickCellLoggingEnableDisable();
         assertWithMessage("Cellular logging is enabled")
                 .that(TopMenuBar.isCellularLoggingEnabled())
                 .isTrue();

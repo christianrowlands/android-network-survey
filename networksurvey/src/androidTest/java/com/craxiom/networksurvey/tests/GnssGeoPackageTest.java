@@ -33,6 +33,7 @@ public class GnssGeoPackageTest extends TestBase
     @Before
     public void setUpGnssTest()
     {
+        TopMenuBar.clickCellLoggingEnableDisable();
         BottomMenuBar.clickGnssMenuOption();
         TopMenuBar.clickGnssLoggingEnableDisable();
         assertWithMessage("GNSS is enabled")
@@ -172,36 +173,58 @@ public class GnssGeoPackageTest extends TestBase
         results = GnssDao.getRecordsWithAllColumnsPopulated(geoPackage);
 
         //Then
-        assertWithMessage("We have results to use.")
+        assertWithMessage("Results are not empty")
                 .that(results)
                 .isNotEmpty();
 
         for (GnssModel row : results)
         {
-            assertThat(row.getId())
+            assertWithMessage("ID column is within range")
+                    .that(row.getId())
                     .isIn(Range.closed(1, Integer.MAX_VALUE));
+
             assertWithMessage("Time column is within range")
                     .that(row.getTime())
                     .isIn(Range.closed(Long.MIN_VALUE, Long.MAX_VALUE));
-            assertThat(row.getRecordNumber())
+
+            assertWithMessage("Record number column is within range")
+                    .that(row.getRecordNumber())
                     .isIn(Range.closed(1, Integer.MAX_VALUE));
-            assertThat(row.getGroupNumber())
+
+            assertWithMessage("Group number column is within range")
+                    .that(row.getGroupNumber())
                     .isIn(Range.closed(1, Integer.MAX_VALUE));
-            assertThat(row.getConstellation())
+
+            assertWithMessage("Constellation value is within range")
+                    .that(row.getConstellation())
                     .isIn(Arrays.asList(Constellation.BEIDOU.toString(), Constellation.GPS.toString(), Constellation.GALILEO.toString(), Constellation.GLONASS.toString(), Constellation.IRNSS.toString(), Constellation.QZSS.toString(), Constellation.SBAS.toString(), Constellation.UNKNOWN.toString(), Constellation.UNRECOGNIZED.toString()));
-            assertThat(row.getSpaceVehicleId())
+
+            assertWithMessage("Space Vehicle ID is within range")
+                    .that(row.getSpaceVehicleId())
                     .isIn(Range.closed(0, Integer.MAX_VALUE));
-            assertThat(row.getCarrierFrequencyHz())
+
+            assertWithMessage("Carrier Frequency Signal is within range")
+                    .that(row.getCarrierFrequencyHz())
                     .isIn(Range.closed(Integer.MIN_VALUE, Integer.MAX_VALUE));
-            assertThat(row.getLatitudeStandardDeviation())
+
+            assertWithMessage("Latitude Standard Deviation value is within range")
+                    .that(row.getLatitudeStandardDeviation())
                     .isAtLeast(0);
-            assertThat(row.getLongitudeStandardDeviation())
+
+            assertWithMessage("Longitude Standard Deviation value is within range")
+                    .that(row.getLongitudeStandardDeviation())
                     .isAtLeast(0);
-            assertThat(row.getAltitudeStandardDeviation())
+
+            assertWithMessage("Altitude Standard Deviation value is within range")
+                    .that(row.getAltitudeStandardDeviation())
                     .isAtLeast(0);
-            assertThat(row.getAgcDb())
+
+            assertWithMessage("Agc dB is within range")
+                    .that(row.getAgcDb())
                     .isIn(Range.closed(-50f, 50f));
-            assertThat(row.getcN0())
+
+            assertWithMessage("CN0 value is within range")
+                    .that(row.getcN0())
                     .isIn(Range.closed(-100f, 100f));
         }
     }

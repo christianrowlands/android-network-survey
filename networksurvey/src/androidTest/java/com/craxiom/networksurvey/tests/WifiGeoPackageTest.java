@@ -33,6 +33,7 @@ public class WifiGeoPackageTest extends TestBase
     @Before
     public void setUpWifiTest()
     {
+        TopMenuBar.clickCellLoggingEnableDisable();
         BottomMenuBar.clickWifiMenuOption();
         TopMenuBar.clickWifiLoggingEnableDisable();
         assertWithMessage("Wifi is enabled")
@@ -107,22 +108,36 @@ public class WifiGeoPackageTest extends TestBase
         //Then
         for (WifiBeaconModel row : results)
         {
-            assertThat(row.getId())
+            assertWithMessage("ID column is within range")
+                    .that(row.getId())
                     .isIn(Range.closed(1, Integer.MAX_VALUE));
+
             assertWithMessage("Time column is within range")
                     .that(row.getTime())
                     .isIn(Range.closed(Long.MIN_VALUE, Long.MAX_VALUE));
-            assertThat(row.getRecordNumber())
+
+            assertWithMessage("Record number column is within range")
+                    .that(row.getRecordNumber())
                     .isIn(Range.closed(1, Integer.MAX_VALUE));
-            assertThat(row.getChannel())
+
+            assertWithMessage("Channel value column is within range")
+                    .that(row.getChannel())
                     .isIn(Range.closed(1, Integer.MAX_VALUE));
-            assertThat(row.getFrequency())
+
+            assertWithMessage("Frequency value is within range")
+                    .that(row.getFrequency())
                     .isIn(Range.closed(1, Integer.MAX_VALUE));
-            assertThat(row.getEncryptionType())
+
+            assertWithMessage("Encryption Type value is within range")
+                    .that(row.getEncryptionType())
                     .isIn(Arrays.asList(EncryptionType.WPA.toString(), EncryptionType.WPA2.toString(), EncryptionType.WPA3.toString(), EncryptionType.WEP.toString(), EncryptionType.UNKNOWN.toString(), "WPA/WPA2"));
-            assertThat(row.getWps())
+
+            assertWithMessage("WPS value is 1 or 0")
+                    .that(row.getWps())
                     .isAnyOf(Boolean.TRUE, Boolean.FALSE);
-            assertThat(row.getSignalStrength())
+
+            assertWithMessage("Signal Strength value is within range")
+                    .that(row.getSignalStrength())
                     .isIn(Range.closed(-200f, 200f));
         }
     }

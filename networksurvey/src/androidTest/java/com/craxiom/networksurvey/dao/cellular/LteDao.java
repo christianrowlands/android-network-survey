@@ -1,6 +1,8 @@
 package com.craxiom.networksurvey.dao.cellular;
 
 import android.database.Cursor;
+
+import com.craxiom.networksurvey.constants.GnssMessageConstants;
 import com.craxiom.networksurvey.constants.LteMessageConstants;
 import com.craxiom.networksurvey.dao.CommonDao;
 import com.craxiom.networksurvey.models.message.cellular.LteModel;
@@ -56,6 +58,26 @@ public class LteDao
     public static ArrayList<LteModel> getAllRecords(GeoPackage geoPackage)
     {
         String query = String.format("SELECT * FROM [%s]", LteMessageConstants.LTE_RECORDS_TABLE_NAME);
+        return baseQuery(geoPackage, query);
+    }
+
+    public static ArrayList<LteModel> getRecordsWithAllColumnsPopulated(GeoPackage geoPackage)
+    {
+        String query = String.format("SELECT *\n" +
+                "FROM [%s]\n" +
+                "WHERE (geom IS NOT NULL)\n" +
+                "    AND (Time IS NOT NULL)\n" +
+                "    AND ([Serving Cell] IS NOT NULL)\n" +
+                "    AND (Provider IS NOT NULL)\n" +
+                "    AND (MCC IS NOT NULL)\n" +
+                "    AND (MNC IS NOT NULL)\n" +
+                "    AND (TAC IS NOT NULL)\n" +
+                "    AND (ECI IS NOT NULL)\n" +
+                "    AND ([DL_EARFCN] IS NOT NULL)\n" +
+                "    AND ([Phys_Cell_ID] IS NOT NULL)\n" +
+                "    AND (RSRP IS NOT NULL)\n" +
+                "    AND (RSRQ IS NOT NULL)\n" +
+                "    AND ([DL_Bandwidth] IS NOT NULL);", LteMessageConstants.LTE_RECORDS_TABLE_NAME);
         return baseQuery(geoPackage, query);
     }
 }

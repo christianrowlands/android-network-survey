@@ -5,6 +5,8 @@ import android.util.Log;
 import androidx.test.ext.junit.rules.ActivityScenarioRule;
 import androidx.test.platform.app.InstrumentationRegistry;
 import androidx.test.rule.GrantPermissionRule;
+
+import com.craxiom.networksurvey.helpers.TestUtils;
 import com.craxiom.networksurvey.screens.TopMenuBar;
 import mil.nga.geopackage.GeoPackage;
 import mil.nga.geopackage.GeoPackageManager;
@@ -38,6 +40,10 @@ public class TestBase
     @Before
     public void setUp()
     {
+        if (TestUtils.System.areSystemAnimationsEnabled()) {
+            Log.w(LOG_TAG, "For best test stability, please disable animations. " +
+                    "https://developer.android.com/training/testing/espresso/setup#set-up-environment");
+        }
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyyMMdd");
         testRunDate = formatter.format(testRunStartTime);
         int SLEEP_TIME = 5;
@@ -48,8 +54,7 @@ public class TestBase
          */
 
         Log.i(LOG_TAG, "Sleeping for " + SLEEP_TIME + " seconds to allow app to start.");
-        sleep(SLEEP_TIME, TimeUnit.SECONDS);
-        TopMenuBar.clickCellLoggingEnableDisable();
+        //sleep(SLEEP_TIME, TimeUnit.SECONDS);
     }
 
     public Context getContext()

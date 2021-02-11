@@ -1,5 +1,7 @@
 package com.craxiom.networksurvey.tests.cellular;
 
+import android.util.Log;
+
 import androidx.test.filters.RequiresDevice;
 import com.craxiom.networksurvey.TestBase;
 import com.craxiom.networksurvey.constants.LteMessageConstants;
@@ -25,12 +27,11 @@ import static com.schibsted.spain.barista.interaction.BaristaSleepInteractions.*
 
 public class LteGeoPackageTest extends TestBase
 {
-
+    private static final String LOG_TAG = LteGeoPackageTest.class.getSimpleName();
     @Before
     public void setUpCellularTest()
     {
         BottomMenuBar.clickCellularMenuOption();
-        TopMenuBar.clickCellLoggingEnableDisable();
         assertWithMessage("Cellular logging is enabled")
                 .that(TopMenuBar.isCellularLoggingEnabled())
                 .isTrue();
@@ -132,7 +133,7 @@ public class LteGeoPackageTest extends TestBase
     public void lteDataValuesAreOfExpectedTypesAndRanges()
     {
         /*
-            We do not consistently get TA values
+            We do not consistently get TA and DL_Bandwidth values
          */
 
         //Given
@@ -144,7 +145,7 @@ public class LteGeoPackageTest extends TestBase
                         .getAbsolutePath(), false);
 
         //When
-        results = LteDao.getAllRecords(geoPackage);
+        results = LteDao.getRecordsWithAllColumnsPopulated(geoPackage);
 
         //Then
         assertWithMessage("We have results to use.")

@@ -33,6 +33,7 @@ public class BluetoothGeoPackageTest extends TestBase
     @Before
     public void setUpBluetoothTest()
     {
+        TopMenuBar.clickCellLoggingEnableDisable();
         BottomMenuBar.clickBluetoothMenuOption();
         TopMenuBar.clickBluetoothLoggingEnableDisable();
         assertWithMessage("Bluetooth logging is enabled")
@@ -167,20 +168,32 @@ public class BluetoothGeoPackageTest extends TestBase
 
         for (BluetoothModel row : results)
         {
-            assertThat(row.getId())
+            assertWithMessage("ID column is within range")
+                    .that(row.getId())
                     .isIn(Range.closed(1, Integer.MAX_VALUE));
+
             assertWithMessage("Time column is within range")
                     .that(row.getTime())
                     .isIn(Range.closed(Long.MIN_VALUE, Long.MAX_VALUE));
-            assertThat(row.getRecordNumber())
+
+            assertWithMessage("Record number column is within range")
+                    .that(row.getRecordNumber())
                     .isIn(Range.closed(1, Integer.MAX_VALUE));
-            assertThat(row.getSourceAddress())
+
+            assertWithMessage("Source Address column is within range")
+                    .that(row.getSourceAddress())
                     .containsMatch(TestUtils.Regex.getMacAddressPattern());
-            assertThat(row.getOtaDeviceName())
+
+            assertWithMessage("OTA Device Name column is not empty")
+                    .that(row.getOtaDeviceName())
                     .isNotEmpty();
-            assertThat(row.getSupportedTechnologies())
+
+            assertWithMessage("Supported Technologies column is within range")
+                    .that(row.getSupportedTechnologies())
                     .isIn(Arrays.asList(SupportedTechnologies.BR_EDR.toString(), SupportedTechnologies.LE.toString(), SupportedTechnologies.DUAL.toString(), SupportedTechnologies.UNKNOWN.toString()));
-            assertThat(row.getSignalStrength())
+
+            assertWithMessage("Signal Strength column value is within range")
+                    .that(row.getSignalStrength())
                     .isIn(Range.closed(-200f, 200f));
         }
     }

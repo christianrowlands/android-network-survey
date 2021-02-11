@@ -20,7 +20,6 @@ public class CellularGeoPackageTest extends TestBase
     public void setUpCellularTest()
     {
         BottomMenuBar.clickCellularMenuOption();
-        TopMenuBar.clickCellLoggingEnableDisable();
         assertWithMessage("Cellular logging is enabled")
                 .that(TopMenuBar.isCellularLoggingEnabled())
                 .isTrue();

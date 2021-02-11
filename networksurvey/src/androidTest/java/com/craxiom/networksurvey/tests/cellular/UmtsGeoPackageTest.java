@@ -28,7 +28,6 @@ public class UmtsGeoPackageTest extends TestBase
     public void setUpCellularTest()
     {
         BottomMenuBar.clickCellularMenuOption();
-        TopMenuBar.clickCellLoggingEnableDisable();
         assertWithMessage("Cellular logging is enabled")
                 .that(TopMenuBar.isCellularLoggingEnabled())
                 .isTrue();
@@ -51,11 +50,6 @@ public class UmtsGeoPackageTest extends TestBase
                         .getAbsolutePath(), false);
 
         results = SchemaDao.getTableSchema(geoPackage, UmtsMessageConstants.UMTS_RECORDS_TABLE_NAME);
-
-        for (MessageTableSchema row : results)
-        {
-            Log.i("UMTSROW", row.toString());
-        }
 
         //Then
         assertWithMessage("Validate the results are not empty.")
