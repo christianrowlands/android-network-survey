@@ -238,7 +238,6 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
         PreferenceManager.getDefaultSharedPreferences(getApplicationContext()).unregisterOnSharedPreferenceChangeListener(this);
 
         serviceLooper.quitSafely();
-        serviceHandler = null;
         shutdownNotifications();
 
         super.onDestroy();
