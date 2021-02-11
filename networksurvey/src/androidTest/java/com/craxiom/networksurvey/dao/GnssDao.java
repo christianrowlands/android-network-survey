@@ -1,13 +1,11 @@
 package com.craxiom.networksurvey.dao;
 
 import android.database.Cursor;
-
 import com.craxiom.networksurvey.constants.GnssMessageConstants;
 import com.craxiom.networksurvey.models.message.GnssModel;
+import mil.nga.geopackage.GeoPackage;
 
 import java.util.ArrayList;
-
-import mil.nga.geopackage.GeoPackage;
 
 public class GnssDao
 {

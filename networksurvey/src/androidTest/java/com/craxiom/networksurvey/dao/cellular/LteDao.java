@@ -1,15 +1,12 @@
 package com.craxiom.networksurvey.dao.cellular;
 
 import android.database.Cursor;
-
-import com.craxiom.networksurvey.constants.BluetoothMessageConstants;
 import com.craxiom.networksurvey.constants.LteMessageConstants;
 import com.craxiom.networksurvey.dao.CommonDao;
 import com.craxiom.networksurvey.models.message.cellular.LteModel;
+import mil.nga.geopackage.GeoPackage;
 
 import java.util.ArrayList;
-
-import mil.nga.geopackage.GeoPackage;
 
 public class LteDao
 {
@@ -61,5 +58,4 @@ public class LteDao
         String query = String.format("SELECT * FROM [%s]", LteMessageConstants.LTE_RECORDS_TABLE_NAME);
         return baseQuery(geoPackage, query);
     }
-
 }

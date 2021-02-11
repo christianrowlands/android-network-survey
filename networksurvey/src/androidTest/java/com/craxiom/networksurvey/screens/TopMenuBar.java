@@ -1,23 +1,18 @@
 package com.craxiom.networksurvey.screens;
 
 import android.util.Log;
-
 import androidx.test.espresso.NoMatchingViewException;
-
 import com.craxiom.networksurvey.R;
 
 import java.util.concurrent.TimeUnit;
 
-import static androidx.test.espresso.Espresso.onView;
-import static androidx.test.espresso.action.ViewActions.click;
-import static androidx.test.espresso.matcher.ViewMatchers.isDisplayed;
-import static androidx.test.espresso.matcher.ViewMatchers.withContentDescription;
-import static androidx.test.espresso.matcher.ViewMatchers.withId;
-import static androidx.test.espresso.matcher.ViewMatchers.withText;
-import static com.craxiom.networksurvey.helpers.espressohelpers.ChildAtPosition.childAtPosition;
-import static com.schibsted.spain.barista.interaction.BaristaClickInteractions.clickOn;
-import static com.schibsted.spain.barista.interaction.BaristaSleepInteractions.sleep;
-import static org.hamcrest.Matchers.allOf;
+import static androidx.test.espresso.Espresso.*;
+import static androidx.test.espresso.action.ViewActions.*;
+import static androidx.test.espresso.matcher.ViewMatchers.*;
+import static com.craxiom.networksurvey.helpers.espressohelpers.ChildAtPosition.*;
+import static com.schibsted.spain.barista.interaction.BaristaClickInteractions.*;
+import static com.schibsted.spain.barista.interaction.BaristaSleepInteractions.*;
+import static org.hamcrest.Matchers.*;
 
 public class TopMenuBar
 {

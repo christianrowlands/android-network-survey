@@ -2,7 +2,6 @@ package com.craxiom.networksurvey.tests;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.RequiresDevice;
-
 import com.craxiom.messaging.wifi.EncryptionType;
 import com.craxiom.networksurvey.TestBase;
 import com.craxiom.networksurvey.constants.WifiBeaconMessageConstants;
@@ -15,7 +14,7 @@ import com.craxiom.networksurvey.models.tableschemas.MessageTableSchema;
 import com.craxiom.networksurvey.screens.BottomMenuBar;
 import com.craxiom.networksurvey.screens.TopMenuBar;
 import com.google.common.collect.Range;
-
+import mil.nga.geopackage.factory.GeoPackageFactory;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -24,11 +23,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
 
-import mil.nga.geopackage.factory.GeoPackageFactory;
-
-import static com.google.common.truth.Truth.assertThat;
-import static com.google.common.truth.Truth.assertWithMessage;
-import static com.schibsted.spain.barista.interaction.BaristaSleepInteractions.sleep;
+import static com.google.common.truth.Truth.*;
+import static com.schibsted.spain.barista.interaction.BaristaSleepInteractions.*;
 
 @RunWith(AndroidJUnit4.class)
 public class WifiGeoPackageTest extends TestBase

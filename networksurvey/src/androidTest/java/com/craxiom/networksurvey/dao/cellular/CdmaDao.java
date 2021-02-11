@@ -1,9 +1,7 @@
 package com.craxiom.networksurvey.dao.cellular;
 
 import com.craxiom.networksurvey.constants.CdmaMessageConstants;
-import com.craxiom.networksurvey.constants.GsmMessageConstants;
 import com.craxiom.networksurvey.dao.CommonDao;
-
 import mil.nga.geopackage.GeoPackage;
 
 public class CdmaDao

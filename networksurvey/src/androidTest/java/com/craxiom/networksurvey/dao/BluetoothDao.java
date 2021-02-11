@@ -1,13 +1,11 @@
 package com.craxiom.networksurvey.dao;
 
 import android.database.Cursor;
-
 import com.craxiom.networksurvey.constants.BluetoothMessageConstants;
 import com.craxiom.networksurvey.models.message.BluetoothModel;
+import mil.nga.geopackage.GeoPackage;
 
 import java.util.ArrayList;
-
-import mil.nga.geopackage.GeoPackage;
 
 public class BluetoothDao
 {
@@ -65,7 +63,7 @@ public class BluetoothDao
                 "    AND ([Supported Technologies] IS NOT NULL)\n" +
                 "    AND ([Signal Strength] IS NOT NULL);", BluetoothMessageConstants.BLUETOOTH_RECORDS_TABLE_NAME);
 
-       return baseQuery(geoPackage, query);
+        return baseQuery(geoPackage, query);
     }
 
     public static boolean allNonNullColumnsArePopulated(GeoPackage geoPackage)

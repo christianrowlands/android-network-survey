@@ -1,7 +1,6 @@
 package com.craxiom.networksurvey.tests.cellular;
 
 import androidx.test.filters.RequiresDevice;
-
 import com.craxiom.networksurvey.TestBase;
 import com.craxiom.networksurvey.constants.GsmMessageConstants;
 import com.craxiom.networksurvey.dao.SchemaDao;
@@ -11,17 +10,15 @@ import com.craxiom.networksurvey.models.SurveyTypes;
 import com.craxiom.networksurvey.models.tableschemas.MessageTableSchema;
 import com.craxiom.networksurvey.screens.BottomMenuBar;
 import com.craxiom.networksurvey.screens.TopMenuBar;
-
+import mil.nga.geopackage.factory.GeoPackageFactory;
 import org.junit.Before;
 import org.junit.Test;
 
 import java.util.ArrayList;
 import java.util.concurrent.TimeUnit;
 
-import mil.nga.geopackage.factory.GeoPackageFactory;
-
-import static com.google.common.truth.Truth.assertWithMessage;
-import static com.schibsted.spain.barista.interaction.BaristaSleepInteractions.sleep;
+import static com.google.common.truth.Truth.*;
+import static com.schibsted.spain.barista.interaction.BaristaSleepInteractions.*;
 
 public class GsmGeoPackageTest extends TestBase
 {

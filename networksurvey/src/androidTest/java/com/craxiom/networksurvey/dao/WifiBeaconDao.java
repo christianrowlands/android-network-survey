@@ -1,13 +1,11 @@
 package com.craxiom.networksurvey.dao;
 
 import android.database.Cursor;
-
 import com.craxiom.networksurvey.constants.WifiBeaconMessageConstants;
 import com.craxiom.networksurvey.models.message.WifiBeaconModel;
+import mil.nga.geopackage.GeoPackage;
 
 import java.util.ArrayList;
-
-import mil.nga.geopackage.GeoPackage;
 
 public class WifiBeaconDao
 {

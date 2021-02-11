@@ -1,12 +1,10 @@
 package com.craxiom.networksurvey.dao;
 
 import android.database.Cursor;
-
 import com.craxiom.networksurvey.models.tableschemas.MessageTableSchema;
+import mil.nga.geopackage.GeoPackage;
 
 import java.util.ArrayList;
-
-import mil.nga.geopackage.GeoPackage;
 
 public class SchemaDao
 {

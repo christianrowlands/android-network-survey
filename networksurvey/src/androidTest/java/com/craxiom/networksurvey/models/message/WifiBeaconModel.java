@@ -145,6 +145,7 @@ public class WifiBeaconModel
         private String encryptionType;
         private Boolean wps;
         private Float signalStrength;
+
         public WifiBeaconModelBuilder()
         {
         }

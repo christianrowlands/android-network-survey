@@ -1,8 +1,8 @@
 package com.craxiom.networksurvey.models.message.cellular;
 
-import java.util.Objects;
-
 import mil.nga.sf.Point;
+
+import java.util.Objects;
 
 public class UmtsModel
 {
@@ -13,9 +13,37 @@ public class UmtsModel
     private int groupNumber;
     private Boolean servingCell;
     private String provider;
+    private int mcc;
+    private int mnc;
+    private int lac;
+    private int cellId;
+    private int uarfcn;
+    private int psc;
+    private float signalStrength;
+    private float rscp;
+
+    private UmtsModel(int id, Point geom, long time, int recordNumber, int groupNumber, Boolean servingCell, String provider, int mcc, int mnc, int lac, int cellId, int uarfcn, int psc, float signalStrength, float rscp)
+    {
+        this.id = id;
+        this.geom = geom;
+        this.time = time;
+        this.recordNumber = recordNumber;
+        this.groupNumber = groupNumber;
+        this.servingCell = servingCell;
+        this.provider = provider;
+        this.mcc = mcc;
+        this.mnc = mnc;
+        this.lac = lac;
+        this.cellId = cellId;
+        this.uarfcn = uarfcn;
+        this.psc = psc;
+        this.signalStrength = signalStrength;
+        this.rscp = rscp;
+    }
 
     @Override
-    public String toString() {
+    public String toString()
+    {
         return "UmtsModel{" +
                 "id=" + id +
                 ", geom=" + geom +
@@ -35,14 +63,9 @@ public class UmtsModel
                 '}';
     }
 
-    private int mcc;
-    private int mnc;
-    private int lac;
-    private int cellId;
-    private int uarfcn;
-
     @Override
-    public boolean equals(Object o) {
+    public boolean equals(Object o)
+    {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         UmtsModel umtsModel = (UmtsModel) o;
@@ -64,133 +87,160 @@ public class UmtsModel
     }
 
     @Override
-    public int hashCode() {
+    public int hashCode()
+    {
         return Objects.hash(id, geom, time, recordNumber, groupNumber, servingCell, provider, mcc, mnc, lac, cellId, uarfcn, psc, signalStrength, rscp);
     }
 
-    private int psc;
-
-    public int getId() {
+    public int getId()
+    {
         return id;
     }
 
-    public void setId(int id) {
+    public void setId(int id)
+    {
         this.id = id;
     }
 
-    public Point getGeom() {
+    public Point getGeom()
+    {
         return geom;
     }
 
-    public void setGeom(Point geom) {
+    public void setGeom(Point geom)
+    {
         this.geom = geom;
     }
 
-    public long getTime() {
+    public long getTime()
+    {
         return time;
     }
 
-    public void setTime(long time) {
+    public void setTime(long time)
+    {
         this.time = time;
     }
 
-    public int getRecordNumber() {
+    public int getRecordNumber()
+    {
         return recordNumber;
     }
 
-    public void setRecordNumber(int recordNumber) {
+    public void setRecordNumber(int recordNumber)
+    {
         this.recordNumber = recordNumber;
     }
 
-    public int getGroupNumber() {
+    public int getGroupNumber()
+    {
         return groupNumber;
     }
 
-    public void setGroupNumber(int groupNumber) {
+    public void setGroupNumber(int groupNumber)
+    {
         this.groupNumber = groupNumber;
     }
 
-    public Boolean getServingCell() {
+    public Boolean getServingCell()
+    {
         return servingCell;
     }
 
-    public void setServingCell(Boolean servingCell) {
+    public void setServingCell(Boolean servingCell)
+    {
         this.servingCell = servingCell;
     }
 
-    public String getProvider() {
+    public String getProvider()
+    {
         return provider;
     }
 
-    public void setProvider(String provider) {
+    public void setProvider(String provider)
+    {
         this.provider = provider;
     }
 
-    public int getMcc() {
+    public int getMcc()
+    {
         return mcc;
     }
 
-    public void setMcc(int mcc) {
+    public void setMcc(int mcc)
+    {
         this.mcc = mcc;
     }
 
-    public int getMnc() {
+    public int getMnc()
+    {
         return mnc;
     }
 
-    public void setMnc(int mnc) {
+    public void setMnc(int mnc)
+    {
         this.mnc = mnc;
     }
 
-    public int getLac() {
+    public int getLac()
+    {
         return lac;
     }
 
-    public void setLac(int lac) {
+    public void setLac(int lac)
+    {
         this.lac = lac;
     }
 
-    public int getCellId() {
+    public int getCellId()
+    {
         return cellId;
     }
 
-    public void setCellId(int cellId) {
+    public void setCellId(int cellId)
+    {
         this.cellId = cellId;
     }
 
-    public int getUarfcn() {
+    public int getUarfcn()
+    {
         return uarfcn;
     }
 
-    public void setUarfcn(int uarfcn) {
+    public void setUarfcn(int uarfcn)
+    {
         this.uarfcn = uarfcn;
     }
 
-    public int getPsc() {
+    public int getPsc()
+    {
         return psc;
     }
 
-    public void setPsc(int psc) {
+    public void setPsc(int psc)
+    {
         this.psc = psc;
     }
 
-    public float getSignalStrength() {
+    public float getSignalStrength()
+    {
         return signalStrength;
     }
 
-    public void setSignalStrength(float signalStrength) {
+    public void setSignalStrength(float signalStrength)
+    {
         this.signalStrength = signalStrength;
     }
 
-    public float getRscp() {
+    public float getRscp()
+    {
         return rscp;
     }
 
-    public void setRscp(float rscp) {
+    public void setRscp(float rscp)
+    {
         this.rscp = rscp;
     }
-
-    private float signalStrength;
 
     public static class UmtsModelBuilder
     {
@@ -211,103 +261,99 @@ public class UmtsModel
         private float signalStrength;
         private float rscp;
 
-        public UmtsModelBuilder setId(int id) {
+        public UmtsModelBuilder setId(int id)
+        {
             this.id = id;
             return this;
         }
 
-        public UmtsModelBuilder setGeom(Point geom) {
+        public UmtsModelBuilder setGeom(Point geom)
+        {
             this.geom = geom;
             return this;
         }
 
-        public UmtsModelBuilder setTime(long time) {
+        public UmtsModelBuilder setTime(long time)
+        {
             this.time = time;
             return this;
         }
 
-        public UmtsModelBuilder setRecordNumber(int recordNumber) {
+        public UmtsModelBuilder setRecordNumber(int recordNumber)
+        {
             this.recordNumber = recordNumber;
             return this;
         }
 
-        public UmtsModelBuilder setGroupNumber(int groupNumber) {
+        public UmtsModelBuilder setGroupNumber(int groupNumber)
+        {
             this.groupNumber = groupNumber;
             return this;
         }
 
-        public UmtsModelBuilder setServingCell(Boolean servingCell) {
+        public UmtsModelBuilder setServingCell(Boolean servingCell)
+        {
             this.servingCell = servingCell;
             return this;
         }
 
-        public UmtsModelBuilder setProvider(String provider) {
+        public UmtsModelBuilder setProvider(String provider)
+        {
             this.provider = provider;
             return this;
         }
 
-        public UmtsModelBuilder setMcc(int mcc) {
+        public UmtsModelBuilder setMcc(int mcc)
+        {
             this.mcc = mcc;
             return this;
         }
 
-        public UmtsModelBuilder setMnc(int mnc) {
+        public UmtsModelBuilder setMnc(int mnc)
+        {
             this.mnc = mnc;
             return this;
         }
 
-        public UmtsModelBuilder setLac(int lac) {
+        public UmtsModelBuilder setLac(int lac)
+        {
             this.lac = lac;
             return this;
         }
 
-        public UmtsModelBuilder setCellId(int cellId) {
+        public UmtsModelBuilder setCellId(int cellId)
+        {
             this.cellId = cellId;
             return this;
         }
 
-        public UmtsModelBuilder setUarfcn(int uarfcn) {
+        public UmtsModelBuilder setUarfcn(int uarfcn)
+        {
             this.uarfcn = uarfcn;
             return this;
         }
 
-        public UmtsModelBuilder setPsc(int psc) {
+        public UmtsModelBuilder setPsc(int psc)
+        {
             this.psc = psc;
             return this;
         }
 
-        public UmtsModelBuilder setSignalStrength(float signalStrength) {
+        public UmtsModelBuilder setSignalStrength(float signalStrength)
+        {
             this.signalStrength = signalStrength;
             return this;
         }
 
-        public UmtsModelBuilder setRscp(float rscp) {
+        public UmtsModelBuilder setRscp(float rscp)
+        {
             this.rscp = rscp;
             return this;
         }
 
-        public UmtsModel createUmtsModel() {
+        public UmtsModel createUmtsModel()
+        {
             return new UmtsModel(id, geom, time, recordNumber, groupNumber, servingCell, provider, mcc, mnc, lac, cellId, uarfcn, psc, signalStrength, rscp);
         }
     }
-
-    private UmtsModel(int id, Point geom, long time, int recordNumber, int groupNumber, Boolean servingCell, String provider, int mcc, int mnc, int lac, int cellId, int uarfcn, int psc, float signalStrength, float rscp) {
-        this.id = id;
-        this.geom = geom;
-        this.time = time;
-        this.recordNumber = recordNumber;
-        this.groupNumber = groupNumber;
-        this.servingCell = servingCell;
-        this.provider = provider;
-        this.mcc = mcc;
-        this.mnc = mnc;
-        this.lac = lac;
-        this.cellId = cellId;
-        this.uarfcn = uarfcn;
-        this.psc = psc;
-        this.signalStrength = signalStrength;
-        this.rscp = rscp;
-    }
-
-    private float rscp;
 }
