@@ -2,13 +2,13 @@ package com.craxiom.networksurvey.dao.cellular;
 
 import android.database.Cursor;
 
-import com.craxiom.networksurvey.constants.GnssMessageConstants;
 import com.craxiom.networksurvey.constants.LteMessageConstants;
 import com.craxiom.networksurvey.dao.CommonDao;
 import com.craxiom.networksurvey.models.message.cellular.LteModel;
-import mil.nga.geopackage.GeoPackage;
 
 import java.util.ArrayList;
+
+import mil.nga.geopackage.GeoPackage;
 
 public class LteDao
 {

@@ -1,6 +1,7 @@
 apply plugin: 'com.android.application'
 apply plugin: "androidx.navigation.safeargs"
 apply plugin: 'kotlin-android'
+apply plugin: 'com.palantir.docker-compose'
 apply from: "../artifacts.gradle"
 
 android {
@@ -30,6 +31,9 @@ android {
         abortOnError false
     }
     buildToolsVersion '29.0.3'
+    testOptions {
+        animationsDisabled = true
+    }
 }
 
 dependencies {
@@ -71,4 +75,8 @@ dependencies {
     androidTestImplementation "com.craxiom:network-survey-messaging:${networkSurveyMessagingVersion}"
     androidTestImplementation "mil.nga.geopackage:geopackage-android:3.3.0"
 
+}
+
+dockerCompose {
+    dockerComposeFile 'src/androidTest/resources/docker/mqttBroker/docker-compose.yml'
 }

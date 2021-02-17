@@ -1,15 +1,17 @@
-package com.craxiom.networksurvey.tests.cellular;
+package com.craxiom.networksurvey.tests.geopackage.cellular;
 
 import com.craxiom.networksurvey.TestBase;
 import com.craxiom.networksurvey.helpers.AndroidFiles;
 import com.craxiom.networksurvey.models.SurveyTypes;
 import com.craxiom.networksurvey.screens.BottomMenuBar;
 import com.craxiom.networksurvey.screens.TopMenuBar;
-import mil.nga.geopackage.factory.GeoPackageFactory;
+
 import org.junit.Before;
 import org.junit.Test;
 
 import java.util.concurrent.TimeUnit;
+
+import mil.nga.geopackage.factory.GeoPackageFactory;
 
 import static com.google.common.truth.Truth.*;
 import static com.schibsted.spain.barista.interaction.BaristaSleepInteractions.*;

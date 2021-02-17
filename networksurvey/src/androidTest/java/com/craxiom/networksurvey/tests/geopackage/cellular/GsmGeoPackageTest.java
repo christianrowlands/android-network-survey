@@ -1,27 +1,29 @@
-package com.craxiom.networksurvey.tests.cellular;
+package com.craxiom.networksurvey.tests.geopackage.cellular;
 
-import android.util.Log;
 import androidx.test.filters.RequiresDevice;
+
 import com.craxiom.networksurvey.TestBase;
-import com.craxiom.networksurvey.constants.UmtsMessageConstants;
+import com.craxiom.networksurvey.constants.GsmMessageConstants;
 import com.craxiom.networksurvey.dao.SchemaDao;
-import com.craxiom.networksurvey.dao.cellular.UmtsDao;
+import com.craxiom.networksurvey.dao.cellular.GsmDao;
 import com.craxiom.networksurvey.helpers.AndroidFiles;
 import com.craxiom.networksurvey.models.SurveyTypes;
 import com.craxiom.networksurvey.models.tableschemas.MessageTableSchema;
 import com.craxiom.networksurvey.screens.BottomMenuBar;
 import com.craxiom.networksurvey.screens.TopMenuBar;
-import mil.nga.geopackage.factory.GeoPackageFactory;
+
 import org.junit.Before;
 import org.junit.Test;
 
 import java.util.ArrayList;
 import java.util.concurrent.TimeUnit;
 
+import mil.nga.geopackage.factory.GeoPackageFactory;
+
 import static com.google.common.truth.Truth.*;
 import static com.schibsted.spain.barista.interaction.BaristaSleepInteractions.*;
 
-public class UmtsGeoPackageTest extends TestBase
+public class GsmGeoPackageTest extends TestBase
 {
 
     @Before
@@ -38,10 +40,10 @@ public class UmtsGeoPackageTest extends TestBase
     }
 
     /*
-        MONKEY-T80
+        MONKEY-T74
      */
     @Test
-    public void validateUmtsMessageTableSchema()
+    public void validateGsmMessageTableSchema()
     {
         //Given
         ArrayList<MessageTableSchema> results;
@@ -52,7 +54,7 @@ public class UmtsGeoPackageTest extends TestBase
                         .getLatestSurveyFile(testRunDate, SurveyTypes.CELLULAR_SURVEY.getValue())
                         .getAbsolutePath(), false);
 
-        results = SchemaDao.getTableSchema(geoPackage, UmtsMessageConstants.UMTS_RECORDS_TABLE_NAME);
+        results = SchemaDao.getTableSchema(geoPackage, GsmMessageConstants.GSM_RECORDS_TABLE_NAME);
 
         //Then
         assertWithMessage("Validate the results are not empty.")
@@ -99,33 +101,33 @@ public class UmtsGeoPackageTest extends TestBase
                 .that(results.get(9).toString())
                 .isEqualTo("MessageTableSchemaModel{cid=9, name='LAC', type='3', notNull=0, defaultValue=0, primaryKey=0}");
 
-        assertWithMessage("Validate Cell ID column schema")
+        assertWithMessage("Validate CID column schema")
                 .that(results.get(10).toString())
-                .isEqualTo("MessageTableSchemaModel{cid=10, name='Cell ID', type='3', notNull=0, defaultValue=0, primaryKey=0}");
+                .isEqualTo("MessageTableSchemaModel{cid=10, name='CID', type='3', notNull=0, defaultValue=0, primaryKey=0}");
 
-        assertWithMessage("Validate UARFCN column schema")
+        assertWithMessage("Validate ARFCN column schema")
                 .that(results.get(11).toString())
-                .isEqualTo("MessageTableSchemaModel{cid=11, name='UARFCN', type='3', notNull=0, defaultValue=0, primaryKey=0}");
+                .isEqualTo("MessageTableSchemaModel{cid=11, name='ARFCN', type='3', notNull=0, defaultValue=0, primaryKey=0}");
 
-        assertWithMessage("Validate PSC column schema")
+        assertWithMessage("Validate BSIC column schema")
                 .that(results.get(12).toString())
-                .isEqualTo("MessageTableSchemaModel{cid=12, name='PSC', type='3', notNull=0, defaultValue=0, primaryKey=0}");
+                .isEqualTo("MessageTableSchemaModel{cid=12, name='BSIC', type='3', notNull=0, defaultValue=0, primaryKey=0}");
 
         assertWithMessage("Validate Signal Strength column schema")
                 .that(results.get(13).toString())
                 .isEqualTo("MessageTableSchemaModel{cid=13, name='Signal Strength', type='3', notNull=0, defaultValue=0, primaryKey=0}");
 
-        assertWithMessage("Validate RSCP column schema")
+        assertWithMessage("Validate TA column schema")
                 .that(results.get(14).toString())
-                .isEqualTo("MessageTableSchemaModel{cid=14, name='RSCP', type='3', notNull=0, defaultValue=0, primaryKey=0}");
+                .isEqualTo("MessageTableSchemaModel{cid=14, name='TA', type='3', notNull=0, defaultValue=0, primaryKey=0}");
     }
 
     /*
-        MONKEY-T81
+        MONKEY-T75
      */
     @Test
     @RequiresDevice
-    public void umtsNotNullDataIsNotNull()
+    public void gsmNotNullDataIsNotNull()
     {
         //Given
         geoPackage = geoPackageManager
@@ -134,7 +136,7 @@ public class UmtsGeoPackageTest extends TestBase
                         .getAbsolutePath(), false);
         //Then
         assertWithMessage("All Non-Null columns are populated")
-                .that(UmtsDao.allNonNullColumnsArePopulated(geoPackage))
+                .that(GsmDao.allNonNullColumnsArePopulated(geoPackage))
                 .isTrue();
     }
 }
