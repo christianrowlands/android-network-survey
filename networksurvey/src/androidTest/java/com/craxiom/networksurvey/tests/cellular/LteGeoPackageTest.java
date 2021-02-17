@@ -1,0 +1,238 @@
+package com.craxiom.networksurvey.tests.cellular;
+
+import android.util.Log;
+
+import androidx.test.filters.RequiresDevice;
+import com.craxiom.networksurvey.TestBase;
+import com.craxiom.networksurvey.constants.LteMessageConstants;
+import com.craxiom.networksurvey.dao.SchemaDao;
+import com.craxiom.networksurvey.dao.cellular.LteDao;
+import com.craxiom.networksurvey.helpers.AndroidFiles;
+import com.craxiom.networksurvey.models.SurveyTypes;
+import com.craxiom.networksurvey.models.message.cellular.LteModel;
+import com.craxiom.networksurvey.models.tableschemas.MessageTableSchema;
+import com.craxiom.networksurvey.screens.BottomMenuBar;
+import com.craxiom.networksurvey.screens.TopMenuBar;
+import com.google.common.collect.Range;
+import mil.nga.geopackage.factory.GeoPackageFactory;
+import org.junit.Before;
+import org.junit.Test;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.concurrent.TimeUnit;
+
+import static com.google.common.truth.Truth.*;
+import static com.schibsted.spain.barista.interaction.BaristaSleepInteractions.*;
+
+public class LteGeoPackageTest extends TestBase
+{
+    private static final String LOG_TAG = LteGeoPackageTest.class.getSimpleName();
+    @Before
+    public void setUpCellularTest()
+    {
+        BottomMenuBar.clickCellularMenuOption();
+        assertWithMessage("Cellular logging is enabled")
+                .that(TopMenuBar.isCellularLoggingEnabled())
+                .isTrue();
+        //Gather Cellular data
+        sleep(10, TimeUnit.SECONDS);
+        TopMenuBar.clickCellLoggingEnableDisable();
+        geoPackageManager = GeoPackageFactory.getManager(getContext());
+    }
+
+    /*
+        MONKEY-T71
+     */
+    @Test
+    public void validateLteMessageTableSchema()
+    {
+        //Given
+        ArrayList<MessageTableSchema> results;
+
+        //When
+        geoPackage = geoPackageManager
+                .open(AndroidFiles
+                        .getLatestSurveyFile(testRunDate, SurveyTypes.CELLULAR_SURVEY.getValue())
+                        .getAbsolutePath(), false);
+
+        results = SchemaDao.getTableSchema(geoPackage, LteMessageConstants.LTE_RECORDS_TABLE_NAME);
+
+        assertWithMessage("Validate the results are not empty.")
+                .that(results)
+                .isNotEmpty();
+
+        assertWithMessage("Validate ID column schema")
+                .that(results.get(0).toString())
+                .isEqualTo("MessageTableSchemaModel{cid=0, name='id', type='3', notNull=1, defaultValue=0, primaryKey=1}");
+
+        assertWithMessage("Validate GEOM column schema")
+                .that(results.get(1).toString())
+                .isEqualTo("MessageTableSchemaModel{cid=1, name='geom', type='3', notNull=0, defaultValue=0, primaryKey=0}");
+
+        assertWithMessage("Validate Time column schema")
+                .that(results.get(2).toString())
+                .isEqualTo("MessageTableSchemaModel{cid=2, name='Time', type='3', notNull=0, defaultValue=0, primaryKey=0}");
+
+        assertWithMessage("Validate Record Number column schema")
+                .that(results.get(3).toString())
+                .isEqualTo("MessageTableSchemaModel{cid=3, name='RecordNumber', type='3', notNull=1, defaultValue=-1, primaryKey=0}");
+
+        assertWithMessage("Validate Group Number column schema")
+                .that(results.get(4).toString())
+                .isEqualTo("MessageTableSchemaModel{cid=4, name='GroupNumber', type='3', notNull=1, defaultValue=-1, primaryKey=0}");
+
+        assertWithMessage("Validate Serving Cell column schema")
+                .that(results.get(5).toString())
+                .isEqualTo("MessageTableSchemaModel{cid=5, name='Serving Cell', type='3', notNull=0, defaultValue=0, primaryKey=0}");
+
+        assertWithMessage("Validate Provider column schema")
+                .that(results.get(6).toString())
+                .isEqualTo("MessageTableSchemaModel{cid=6, name='Provider', type='3', notNull=0, defaultValue=0, primaryKey=0}");
+
+        assertWithMessage("Validate MCC column schema")
+                .that(results.get(7).toString())
+                .isEqualTo("MessageTableSchemaModel{cid=7, name='MCC', type='3', notNull=0, defaultValue=0, primaryKey=0}");
+
+        assertWithMessage("Validate MNC column schema")
+                .that(results.get(8).toString())
+                .isEqualTo("MessageTableSchemaModel{cid=8, name='MNC', type='3', notNull=0, defaultValue=0, primaryKey=0}");
+
+        assertWithMessage("Validate TAC column schema")
+                .that(results.get(9).toString())
+                .isEqualTo("MessageTableSchemaModel{cid=9, name='TAC', type='3', notNull=0, defaultValue=0, primaryKey=0}");
+
+        assertWithMessage("Validate ECI column schema")
+                .that(results.get(10).toString())
+                .isEqualTo("MessageTableSchemaModel{cid=10, name='ECI', type='3', notNull=0, defaultValue=0, primaryKey=0}");
+
+        assertWithMessage("Validate DL_EARFCN column schema")
+                .that(results.get(11).toString())
+                .isEqualTo("MessageTableSchemaModel{cid=11, name='DL_EARFCN', type='3', notNull=0, defaultValue=0, primaryKey=0}");
+
+        assertWithMessage("Validate Phys_Cell_ID column schema")
+                .that(results.get(12).toString())
+                .isEqualTo("MessageTableSchemaModel{cid=12, name='Phys_Cell_ID', type='3', notNull=0, defaultValue=0, primaryKey=0}");
+
+        assertWithMessage("Validate RSRP column schema")
+                .that(results.get(13).toString())
+                .isEqualTo("MessageTableSchemaModel{cid=13, name='RSRP', type='3', notNull=0, defaultValue=0, primaryKey=0}");
+
+        assertWithMessage("Validate RSRQ column schema")
+                .that(results.get(14).toString())
+                .isEqualTo("MessageTableSchemaModel{cid=14, name='RSRQ', type='3', notNull=0, defaultValue=0, primaryKey=0}");
+
+        assertWithMessage("Validate RSRQ column schema")
+                .that(results.get(15).toString())
+                .isEqualTo("MessageTableSchemaModel{cid=15, name='TA', type='3', notNull=0, defaultValue=0, primaryKey=0}");
+
+        assertWithMessage("Validate RSRQ column schema")
+                .that(results.get(16).toString())
+                .isEqualTo("MessageTableSchemaModel{cid=16, name='DL_Bandwidth', type='3', notNull=0, defaultValue=0, primaryKey=0}");
+    }
+
+    /*
+        MONKEY-T73
+     */
+    @Test
+    @RequiresDevice
+    public void lteDataValuesAreOfExpectedTypesAndRanges()
+    {
+        /*
+            We do not consistently get TA and DL_Bandwidth values
+         */
+
+        //Given
+        ArrayList<LteModel> results;
+
+        geoPackage = geoPackageManager
+                .open(AndroidFiles
+                        .getLatestSurveyFile(testRunDate, SurveyTypes.CELLULAR_SURVEY.getValue())
+                        .getAbsolutePath(), false);
+
+        //When
+        results = LteDao.getRecordsWithAllColumnsPopulated(geoPackage);
+
+        //Then
+        assertWithMessage("We have results to use.")
+                .that(results)
+                .isNotEmpty();
+
+        for (LteModel row : results)
+        {
+            assertWithMessage("ID column in within range")
+                    .that(row.getId())
+                    .isIn(Range.closed(1, Integer.MAX_VALUE));
+
+            assertWithMessage("Time column is within range")
+                    .that(row.getTime())
+                    .isIn(Range.closed(Long.MIN_VALUE, Long.MAX_VALUE));
+
+            assertWithMessage("Record Number column is within range")
+                    .that(row.getRecordNumber())
+                    .isIn(Range.closed(1, Integer.MAX_VALUE));
+
+            assertWithMessage("Group Number column is within range")
+                    .that(row.getGroupNumber())
+                    .isIn(Range.closed(1, Integer.MAX_VALUE));
+
+            assertWithMessage("Serving Cell column is within range")
+                    .that(row.getServingCell())
+                    .isIn(Range.closed(0, 1));
+
+            assertWithMessage("MCC column is within range")
+                    .that(row.getMcc())
+                    .isIn(Range.closed(0, Integer.MAX_VALUE));
+
+            assertWithMessage("MNC column is within range")
+                    .that(row.getMnc())
+                    .isIn(Range.closed(0, Integer.MAX_VALUE));
+
+            assertWithMessage("TAC column is within range")
+                    .that(row.getTac())
+                    .isIn(Range.closed(0, 65535));
+
+            assertWithMessage("ECI column is within range")
+                    .that(row.getEci())
+                    .isIn(Range.closed(0, 268435455));
+
+            assertWithMessage("DL_EARFCN column is within range")
+                    .that(row.getDlEarfcn())
+                    .isIn(Range.closed(0, 262143));
+
+            assertWithMessage("Phys_Cell_Id column is within range")
+                    .that(row.getPhysCellId())
+                    .isIn(Range.closed(0, 503));
+
+            assertWithMessage("RSRP column is within range")
+                    .that(row.getRsrp())
+                    .isIn(Range.closed(-140f, 140f));
+
+            assertWithMessage("RSRQ column is within range")
+                    .that(row.getRsrq())
+                    .isIn(Range.closed(-19.5f, -3f));
+
+            assertWithMessage("DL Bandwidth column is within range")
+                    .that(row.getDlBandwidth())
+                    .isIn(Arrays.asList("1.4", "3", "5", "10", "15", "20"));
+        }
+    }
+
+    /*
+        MONKEY-T72
+     */
+    @Test
+    @RequiresDevice
+    public void lteNotNullDataIsNotNull()
+    {
+        //Given
+        geoPackage = geoPackageManager
+                .open(AndroidFiles
+                        .getLatestSurveyFile(testRunDate, SurveyTypes.CELLULAR_SURVEY.getValue())
+                        .getAbsolutePath(), false);
+        //Then
+        assertWithMessage("All Non-Null columns are populated")
+                .that(LteDao.allNonNullColumnsArePopulated(geoPackage))
+                .isTrue();
+    }
+}

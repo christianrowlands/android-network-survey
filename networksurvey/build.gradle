@@ -14,6 +14,7 @@ android {
         versionName "1.1.0-SNAPSHOT"
         setProperty("archivesBaseName", "$applicationName-$versionName")
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+        testInstrumentationRunnerArguments clearPackageData: 'true'
     }
     buildTypes {
         release {
@@ -58,9 +59,16 @@ dependencies {
 
     implementation 'androidx.constraintlayout:constraintlayout:2.0.4'
     implementation 'androidx.recyclerview:recyclerview:1.1.0'
-    testImplementation 'junit:junit:4.13.1'
-    androidTestImplementation 'androidx.test:runner:1.3.0'
-    androidTestImplementation 'androidx.test.espresso:espresso-core:3.3.0'
 
+    testImplementation 'junit:junit:4.13.1'
     implementation 'androidx.annotation:annotation:1.1.0'
+
+    androidTestImplementation 'androidx.test.ext:junit:1.1.2'
+    androidTestImplementation 'androidx.test:runner:1.3.0'
+    androidTestImplementation 'androidx.test:rules:1.3.0'
+    androidTestImplementation 'com.schibsted.spain:barista:3.7.0'
+    androidTestImplementation 'com.google.truth:truth:1.1.2'
+    androidTestImplementation "com.craxiom:network-survey-messaging:${networkSurveyMessagingVersion}"
+    androidTestImplementation "mil.nga.geopackage:geopackage-android:3.3.0"
+
 }
