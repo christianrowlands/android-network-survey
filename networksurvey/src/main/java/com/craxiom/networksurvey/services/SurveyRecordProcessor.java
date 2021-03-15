@@ -64,6 +64,7 @@ import com.craxiom.networksurvey.model.WifiRecordWrapper;
 import com.craxiom.networksurvey.util.IOUtils;
 import com.craxiom.networksurvey.util.PreferenceUtils;
 import com.craxiom.networksurvey.util.WifiCapabilitiesUtils;
+import com.google.common.annotations.VisibleForTesting;
 import com.google.protobuf.BoolValue;
 import com.google.protobuf.FloatValue;
 import com.google.protobuf.Int32Value;
@@ -493,7 +494,7 @@ public class SurveyRecordProcessor
      * @param cellInfoGsm The object that contains the GSM Cell info.  This can be a serving cell or a neighbor cell.
      * @return The survey record.
      */
-    private GsmRecord generateGsmSurveyRecord(CellInfoGsm cellInfoGsm)
+    GsmRecord generateGsmSurveyRecord(CellInfoGsm cellInfoGsm)
     {
         final CellIdentityGsm cellIdentity = cellInfoGsm.getCellIdentity();
         final int mcc = cellIdentity.getMcc();
@@ -568,7 +569,7 @@ public class SurveyRecordProcessor
      * @param cellInfoCdma The object that contains the GSM Cell info.  This can be a serving cell or a neighbor cell.
      * @return The survey record.
      */
-    private CdmaRecord generateCdmaSurveyRecord(CellInfoCdma cellInfoCdma)
+    CdmaRecord generateCdmaSurveyRecord(CellInfoCdma cellInfoCdma)
     {
         final CellIdentityCdma cellIdentity = cellInfoCdma.getCellIdentity();
         final int sid = cellIdentity.getSystemId();
@@ -634,7 +635,7 @@ public class SurveyRecordProcessor
      * @param cellInfoWcdma The object that contains the UMTS Cell info.  This can be a serving cell, or a neighbor cell.
      * @return The survey record.
      */
-    private UmtsRecord generateUmtsSurveyRecord(CellInfoWcdma cellInfoWcdma)
+    UmtsRecord generateUmtsSurveyRecord(CellInfoWcdma cellInfoWcdma)
     {
         final CellIdentityWcdma cellIdentity = cellInfoWcdma.getCellIdentity();
         final int mcc = cellIdentity.getMcc();
@@ -700,7 +701,7 @@ public class SurveyRecordProcessor
      * @param cellInfoLte The object that contains the LTE Cell info.  This can be a serving cell, or a neighbor cell.
      * @return The survey record.
      */
-    private LteRecord generateLteSurveyRecord(CellInfoLte cellInfoLte)
+    LteRecord generateLteSurveyRecord(CellInfoLte cellInfoLte)
     {
         final CellIdentityLte cellIdentity = cellInfoLte.getCellIdentity();
         final int mcc = cellIdentity.getMcc();
@@ -777,7 +778,7 @@ public class SurveyRecordProcessor
      * @return The Wi-Fi record to send to any listeners.
      * @since 0.1.2
      */
-    private WifiRecordWrapper generateWiFiBeaconSurveyRecord(ScanResult apScanResult)
+    WifiRecordWrapper generateWiFiBeaconSurveyRecord(ScanResult apScanResult)
     {
         final String bssid = apScanResult.BSSID;
         final int signalStrength = apScanResult.level;
@@ -856,7 +857,7 @@ public class SurveyRecordProcessor
      * @return The Bluetooth record to send to any listeners.
      * @since 1.0.0
      */
-    private BluetoothRecord generateBluetoothSurveyRecord(BluetoothDevice device, int rssi, int txPowerLevel)
+    BluetoothRecord generateBluetoothSurveyRecord(BluetoothDevice device, int rssi, int txPowerLevel)
     {
         final String sourceAddress = device.getAddress();
 
@@ -913,7 +914,7 @@ public class SurveyRecordProcessor
      * @return The GNSS record to send to any listeners.
      * @since 0.3.0
      */
-    private GnssRecord generateGnssSurveyRecord(GnssMeasurement gnss)
+    GnssRecord generateGnssSurveyRecord(GnssMeasurement gnss)
     {
         final GnssRecordData.Builder dataBuilder = GnssRecordData.newBuilder();
 

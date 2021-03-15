@@ -1,7 +1,9 @@
 package com.craxiom.networksurvey.screens;
 
 import android.util.Log;
+
 import androidx.test.espresso.NoMatchingViewException;
+
 import com.craxiom.networksurvey.R;
 
 import java.util.concurrent.TimeUnit;
@@ -175,5 +177,19 @@ public class TopMenuBar
             Log.i(LOG_TAG, "Cellular logging is disabled.");
             return false;
         }
+    }
+
+    public static void clickHamburgerMenu()
+    {
+        onView(
+                allOf(withContentDescription("Open navigation drawer"),
+                        childAtPosition(
+                                allOf(withId(R.id.toolbar),
+                                        childAtPosition(
+                                                withClassName(is("android.widget.LinearLayout")),
+                                                0)),
+                                1),
+                        isDisplayed()))
+                .perform(click());
     }
 }

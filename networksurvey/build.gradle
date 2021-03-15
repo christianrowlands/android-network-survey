@@ -1,6 +1,7 @@
 apply plugin: 'com.android.application'
 apply plugin: "androidx.navigation.safeargs"
 apply plugin: 'kotlin-android'
+apply plugin: 'com.palantir.docker-compose'
 apply from: "../artifacts.gradle"
 
 android {
@@ -30,8 +31,10 @@ android {
         abortOnError false
     }
     buildToolsVersion '29.0.3'
+    testOptions {
+        animationsDisabled = true
+    }
 }
-
 dependencies {
     implementation 'androidx.appcompat:appcompat:1.2.0'
     implementation 'com.jakewharton.timber:timber:4.7.1'
@@ -61,6 +64,10 @@ dependencies {
     implementation 'androidx.recyclerview:recyclerview:1.1.0'
 
     testImplementation 'junit:junit:4.13.1'
+    testImplementation  'org.mockito:mockito-core:3.7.7'
+    testImplementation 'org.assertj:assertj-core:3.19.0'
+
+
     implementation 'androidx.annotation:annotation:1.1.0'
 
     androidTestImplementation 'androidx.test.ext:junit:1.1.2'
@@ -71,4 +78,8 @@ dependencies {
     androidTestImplementation "com.craxiom:network-survey-messaging:${networkSurveyMessagingVersion}"
     androidTestImplementation "mil.nga.geopackage:geopackage-android:3.3.0"
 
+}
+
+dockerCompose {
+    dockerComposeFile 'src/androidTest/resources/docker/mqttBroker/docker-compose.yml'
 }

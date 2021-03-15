@@ -1,8 +1,8 @@
 package com.craxiom.networksurvey.models.message.cellular;
 
-import mil.nga.sf.Point;
-
 import java.util.Objects;
+
+import mil.nga.sf.Point;
 
 public class UmtsModel
 {

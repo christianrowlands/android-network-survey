@@ -1,11 +1,13 @@
 package com.craxiom.networksurvey.dao;
 
 import android.database.Cursor;
+
 import com.craxiom.networksurvey.constants.BluetoothMessageConstants;
 import com.craxiom.networksurvey.models.message.BluetoothModel;
-import mil.nga.geopackage.GeoPackage;
 
 import java.util.ArrayList;
+
+import mil.nga.geopackage.GeoPackage;
 
 public class BluetoothDao
 {

@@ -1,6 +1,7 @@
 package com.craxiom.networksurvey.dao;
 
 import android.database.Cursor;
+
 import mil.nga.geopackage.GeoPackage;
 
 public class CommonDao
