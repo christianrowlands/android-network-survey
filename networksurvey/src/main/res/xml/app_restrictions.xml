@@ -95,7 +95,7 @@
         android:description="@string/bluetooth_stream_description"
         android:key="bluetooth_stream_enabled"
         android:restrictionType="bool"
-        android:title="@string/wifi_stream_title" />
+        android:title="@string/bluetooth_stream_title" />
 
     <restriction
         android:defaultValue="false"
