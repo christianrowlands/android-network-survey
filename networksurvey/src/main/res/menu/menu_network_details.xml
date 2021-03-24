@@ -7,23 +7,23 @@
         android:orderInCategory="100"
         android:title="@string/action_start_cellular_logging"
         android:icon="@drawable/ic_cellular"
-        app:showAsAction="ifRoom" />
+        app:showAsAction="always" />
     <item
         android:id="@+id/action_start_stop_wifi_logging"
         android:orderInCategory="100"
         android:title="@string/action_start_wifi_logging"
         android:icon="@drawable/ic_wifi"
-        app:showAsAction="ifRoom" />
+        app:showAsAction="always" />
     <item
         android:id="@+id/action_start_stop_bluetooth_logging"
         android:orderInCategory="100"
         android:title="@string/action_start_bluetooth_logging"
         android:icon="@drawable/ic_bluetooth"
-        app:showAsAction="ifRoom" />
+        app:showAsAction="always" />
     <item
         android:id="@+id/action_start_stop_gnss_logging"
         android:orderInCategory="100"
         android:title="@string/action_start_gnss_logging"
         android:icon="@drawable/ic_gnss"
-        app:showAsAction="ifRoom" />
+        app:showAsAction="always" />
 </menu>
