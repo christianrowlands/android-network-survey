@@ -190,7 +190,10 @@ public class BluetoothGeoPackageTest extends TestBase
 
             assertWithMessage("Supported Technologies column is within range")
                     .that(row.getSupportedTechnologies())
-                    .isIn(Arrays.asList(SupportedTechnologies.BR_EDR.toString(), SupportedTechnologies.LE.toString(), SupportedTechnologies.DUAL.toString(), SupportedTechnologies.UNKNOWN.toString()));
+                    .isIn(Arrays.asList(BluetoothMessageConstants.getSupportedTechString(SupportedTechnologies.BR_EDR),
+                            BluetoothMessageConstants.getSupportedTechString(SupportedTechnologies.LE),
+                            BluetoothMessageConstants.getSupportedTechString(SupportedTechnologies.DUAL),
+                            BluetoothMessageConstants.getSupportedTechString(SupportedTechnologies.UNKNOWN)));
 
             assertWithMessage("Signal Strength column value is within range")
                     .that(row.getSignalStrength())

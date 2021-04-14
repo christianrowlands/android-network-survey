@@ -130,7 +130,13 @@ public class WifiGeoPackageTest extends TestBase
 
             assertWithMessage("Encryption Type value is within range")
                     .that(row.getEncryptionType())
-                    .isIn(Arrays.asList(EncryptionType.WPA.toString(), EncryptionType.WPA2.toString(), EncryptionType.WPA3.toString(), EncryptionType.WEP.toString(), EncryptionType.UNKNOWN.toString(), "WPA/WPA2"));
+                    .isIn(Arrays.asList(WifiBeaconMessageConstants.getEncryptionTypeString(EncryptionType.WPA),
+                            WifiBeaconMessageConstants.getEncryptionTypeString(EncryptionType.WPA2),
+                            WifiBeaconMessageConstants.getEncryptionTypeString(EncryptionType.WPA3),
+                            WifiBeaconMessageConstants.getEncryptionTypeString(EncryptionType.WEP),
+                            WifiBeaconMessageConstants.getEncryptionTypeString(EncryptionType.UNKNOWN),
+                            WifiBeaconMessageConstants.getEncryptionTypeString(EncryptionType.WPA_WPA2),
+                            WifiBeaconMessageConstants.getEncryptionTypeString(EncryptionType.OPEN)));
 
             assertWithMessage("WPS value is 1 or 0")
                     .that(row.getWps())
