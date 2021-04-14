@@ -40,6 +40,7 @@ public class SettingsFragment extends PreferenceFragmentCompat implements Shared
             NetworkSurveyConstants.PROPERTY_WIFI_SCAN_INTERVAL_SECONDS,
             NetworkSurveyConstants.PROPERTY_BLUETOOTH_SCAN_INTERVAL_SECONDS,
             NetworkSurveyConstants.PROPERTY_GNSS_SCAN_INTERVAL_SECONDS,
+            NetworkSurveyConstants.PROPERTY_DEVICE_STATUS_SCAN_INTERVAL_SECONDS,
             NetworkSurveyConstants.PROPERTY_MQTT_START_ON_BOOT};
 
     @Override
@@ -53,23 +54,7 @@ public class SettingsFragment extends PreferenceFragmentCompat implements Shared
         setPreferenceAsIntegerOnly(findPreference(NetworkSurveyConstants.PROPERTY_WIFI_SCAN_INTERVAL_SECONDS));
         setPreferenceAsIntegerOnly(findPreference(NetworkSurveyConstants.PROPERTY_BLUETOOTH_SCAN_INTERVAL_SECONDS));
         setPreferenceAsIntegerOnly(findPreference(NetworkSurveyConstants.PROPERTY_GNSS_SCAN_INTERVAL_SECONDS));
-
-        /*final EditTextPreference mqttPasswordPreference = findPreference(NetworkSurveyConstants.PROPERTY_MQTT_PASSWORD);
-
-        if (mqttPasswordPreference != null)
-        {
-            mqttPasswordPreference.setSummaryProvider(preference1 -> {
-                final String currentPassword = PreferenceManager.getDefaultSharedPreferences(requireContext()).getString(NetworkSurveyConstants.PROPERTY_MQTT_PASSWORD, "");
-
-                return getAsterisks(currentPassword.length());
-            });
-
-            mqttPasswordPreference.setOnBindEditTextListener(
-                    editText -> {
-                        editText.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_PASSWORD);
-                        mqttPasswordPreference.setSummaryProvider(preference -> getAsterisks(editText.getText().toString().length()));
-                    });
-        }*/
+        setPreferenceAsIntegerOnly(findPreference(NetworkSurveyConstants.PROPERTY_DEVICE_STATUS_SCAN_INTERVAL_SECONDS));
 
         updateUiForMdmIfNecessary();
     }
@@ -114,6 +99,10 @@ public class SettingsFragment extends PreferenceFragmentCompat implements Shared
 
             case NetworkSurveyConstants.PROPERTY_GNSS_SCAN_INTERVAL_SECONDS:
                 defaultValue = NetworkSurveyConstants.DEFAULT_GNSS_SCAN_INTERVAL_SECONDS;
+                break;
+
+            case NetworkSurveyConstants.PROPERTY_DEVICE_STATUS_SCAN_INTERVAL_SECONDS:
+                defaultValue = NetworkSurveyConstants.DEFAULT_DEVICE_STATUS_SCAN_INTERVAL_SECONDS;
                 break;
         }
 
@@ -215,6 +204,7 @@ public class SettingsFragment extends PreferenceFragmentCompat implements Shared
         updateIntPreferenceForMdm(preferenceScreen, mdmProperties, NetworkSurveyConstants.PROPERTY_WIFI_SCAN_INTERVAL_SECONDS);
         updateIntPreferenceForMdm(preferenceScreen, mdmProperties, NetworkSurveyConstants.PROPERTY_BLUETOOTH_SCAN_INTERVAL_SECONDS);
         updateIntPreferenceForMdm(preferenceScreen, mdmProperties, NetworkSurveyConstants.PROPERTY_GNSS_SCAN_INTERVAL_SECONDS);
+        updateIntPreferenceForMdm(preferenceScreen, mdmProperties, NetworkSurveyConstants.PROPERTY_DEVICE_STATUS_SCAN_INTERVAL_SECONDS);
         updateBooleanPreferenceForMdm(preferenceScreen, mdmProperties, NetworkSurveyConstants.PROPERTY_MQTT_START_ON_BOOT);
     }
 

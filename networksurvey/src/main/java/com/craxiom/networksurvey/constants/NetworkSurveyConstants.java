@@ -15,8 +15,9 @@ public class NetworkSurveyConstants
 
     public static final boolean DEFAULT_MQTT_CELLULAR_STREAM_SETTING = true;
     public static final boolean DEFAULT_MQTT_WIFI_STREAM_SETTING = true;
-    public static final boolean DEFAULT_MQTT_BLUETOOTH_STREAM_SETTING = true;
-    public static final boolean DEFAULT_MQTT_GNSS_STREAM_SETTING = true;
+    public static final boolean DEFAULT_MQTT_BLUETOOTH_STREAM_SETTING = false;
+    public static final boolean DEFAULT_MQTT_GNSS_STREAM_SETTING = false;
+    public static final boolean DEFAULT_MQTT_DEVICE_STATUS_STREAM_SETTING = true;
 
     public static final String NOTIFICATION_CHANNEL_ID = "network_survey_notification";
     public static final int GRPC_CONNECTION_NOTIFICATION_ID = 3;
@@ -62,6 +63,7 @@ public class NetworkSurveyConstants
     public static final int DEFAULT_WIFI_SCAN_INTERVAL_SECONDS = 5;
     public static final int DEFAULT_BLUETOOTH_SCAN_INTERVAL_SECONDS = 15;
     public static final int DEFAULT_GNSS_SCAN_INTERVAL_SECONDS = 8;
+    public static final int DEFAULT_DEVICE_STATUS_SCAN_INTERVAL_SECONDS = 120;
 
     public static final String DEFAULT_ROLLOVER_SIZE_MB = "5";
 
@@ -76,6 +78,7 @@ public class NetworkSurveyConstants
     public static final String PROPERTY_WIFI_SCAN_INTERVAL_SECONDS = "wifi_scan_interval_seconds";
     public static final String PROPERTY_BLUETOOTH_SCAN_INTERVAL_SECONDS = "bluetooth_scan_interval_seconds";
     public static final String PROPERTY_GNSS_SCAN_INTERVAL_SECONDS = "gnss_scan_interval_seconds";
+    public static final String PROPERTY_DEVICE_STATUS_SCAN_INTERVAL_SECONDS = "device_status_scan_interval_seconds";
     public static final String PROPERTY_LOG_ROLLOVER_SIZE_MB = "log_rollover_size_mb";
 
     public static final String PROPERTY_MQTT_MDM_OVERRIDE = "mqtt_mdm_override";
@@ -87,6 +90,7 @@ public class NetworkSurveyConstants
     public static final String PROPERTY_MQTT_WIFI_STREAM_ENABLED = "wifi_stream_enabled";
     public static final String PROPERTY_MQTT_BLUETOOTH_STREAM_ENABLED = "bluetooth_stream_enabled";
     public static final String PROPERTY_MQTT_GNSS_STREAM_ENABLED = "gnss_stream_enabled";
+    public static final String PROPERTY_MQTT_DEVICE_STATUS_STREAM_ENABLED = "device_status_stream_enabled";
 
     // Stored Preferences not exposed via the Settings UI
     public static final String PROPERTY_NETWORK_SURVEY_CONNECTION_HOST = "connection_host";
