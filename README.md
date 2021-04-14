@@ -63,7 +63,7 @@ library. [The API documentation is published to a web page here](https://messagi
 
 ## Changelog
 
-##### [1.0.0](https://github.com/christianrowlands/android-network-survey/releases/tag/v1.0.0) - 2021-04-15
+##### [1.1.0](https://github.com/christianrowlands/android-network-survey/releases/tag/v1.1.0) - 2021-04-15
  * Added support for streaming a Device Status message over an MQTT connection.
  * Fixed the logging buttons on the toolbar so that they are always visible.
 
