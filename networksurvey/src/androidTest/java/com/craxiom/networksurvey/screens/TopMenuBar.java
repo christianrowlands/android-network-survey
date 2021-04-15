@@ -62,32 +62,7 @@ public class TopMenuBar
 
     public static void clickGnssLoggingEnableDisable()
     {
-        clickKebab();
-        sleep(1, TimeUnit.SECONDS);
-        try
-        {
-            onView(
-                    allOf(withId(R.id.title), withText("Start GNSS Logging"),
-                            childAtPosition(
-                                    childAtPosition(
-                                            withId(R.id.content),
-                                            0),
-                                    0),
-                            isDisplayed()))
-                    .perform(click());
-        } catch (NoMatchingViewException e)
-        {
-            onView(
-                    allOf(withId(R.id.title), withText("Stop GNSS Logging"),
-                            childAtPosition(
-                                    childAtPosition(
-                                            withId(R.id.content),
-                                            0),
-                                    0),
-                            isDisplayed()))
-                    .perform(click());
-        }
-
+        clickOn(R.id.action_start_stop_gnss_logging);
         sleep(3, TimeUnit.SECONDS);
     }
 
@@ -110,32 +85,7 @@ public class TopMenuBar
 
     public static void clickBluetoothLoggingEnableDisable()
     {
-        clickKebab();
-        sleep(1, TimeUnit.SECONDS);
-        try
-        {
-            onView(
-                    allOf(withId(R.id.title), withText("Start Bluetooth Logging"),
-                            childAtPosition(
-                                    childAtPosition(
-                                            withId(R.id.content),
-                                            0),
-                                    0),
-                            isDisplayed()))
-                    .perform(click());
-        } catch (NoMatchingViewException e)
-        {
-            onView(
-                    allOf(withId(R.id.title), withText("Stop Bluetooth Logging"),
-                            childAtPosition(
-                                    childAtPosition(
-                                            withId(R.id.content),
-                                            0),
-                                    0),
-                            isDisplayed()))
-                    .perform(click());
-        }
-
+        clickOn(R.id.action_start_stop_bluetooth_logging);
         sleep(3, TimeUnit.SECONDS);
     }
 

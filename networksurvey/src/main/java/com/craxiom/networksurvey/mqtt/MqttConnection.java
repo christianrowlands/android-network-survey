@@ -2,6 +2,7 @@ package com.craxiom.networksurvey.mqtt;
 
 import com.craxiom.messaging.BluetoothRecord;
 import com.craxiom.messaging.CdmaRecord;
+import com.craxiom.messaging.DeviceStatus;
 import com.craxiom.messaging.GnssRecord;
 import com.craxiom.messaging.GsmRecord;
 import com.craxiom.messaging.LteRecord;
@@ -10,6 +11,7 @@ import com.craxiom.messaging.WifiBeaconRecord;
 import com.craxiom.mqttlibrary.connection.DefaultMqttConnection;
 import com.craxiom.networksurvey.listeners.IBluetoothSurveyRecordListener;
 import com.craxiom.networksurvey.listeners.ICellularSurveyRecordListener;
+import com.craxiom.networksurvey.listeners.IDeviceStatusListener;
 import com.craxiom.networksurvey.listeners.IGnssSurveyRecordListener;
 import com.craxiom.networksurvey.listeners.IWifiSurveyRecordListener;
 import com.craxiom.networksurvey.model.WifiRecordWrapper;
@@ -22,7 +24,7 @@ import java.util.List;
  * @since 0.1.1
  */
 public class MqttConnection extends DefaultMqttConnection implements ICellularSurveyRecordListener, IWifiSurveyRecordListener,
-        IBluetoothSurveyRecordListener, IGnssSurveyRecordListener
+        IBluetoothSurveyRecordListener, IGnssSurveyRecordListener, IDeviceStatusListener
 {
     private static final String MQTT_GSM_MESSAGE_TOPIC = "gsm_message";
     private static final String MQTT_CDMA_MESSAGE_TOPIC = "cdma_message";
@@ -31,6 +33,7 @@ public class MqttConnection extends DefaultMqttConnection implements ICellularSu
     private static final String MQTT_WIFI_BEACON_MESSAGE_TOPIC = "80211_beacon_message";
     private static final String MQTT_BLUETOOTH_MESSAGE_TOPIC = "bluetooth_message";
     private static final String MQTT_GNSS_MESSAGE_TOPIC = "gnss_message";
+    private static final String MQTT_DEVICE_STATUS_MESSAGE_TOPIC = "device_status_message";
 
     @Override
     public void onGsmSurveyRecord(GsmRecord gsmRecord)
@@ -134,5 +137,17 @@ public class MqttConnection extends DefaultMqttConnection implements ICellularSu
         }
 
         publishMessage(MQTT_GNSS_MESSAGE_TOPIC, gnssRecord);
+    }
+
+    @Override
+    public void onDeviceStatus(DeviceStatus deviceStatus)
+    {
+        if (mqttClientId != null)
+        {
+            final DeviceStatus.Builder deviceStatusBuilder = deviceStatus.toBuilder();
+            deviceStatus = deviceStatusBuilder.setData(deviceStatusBuilder.getDataBuilder().setDeviceName(mqttClientId)).build();
+        }
+
+        publishMessage(MQTT_DEVICE_STATUS_MESSAGE_TOPIC, deviceStatus);
     }
 }
