@@ -386,12 +386,19 @@ public class BluetoothFragment extends Fragment implements IBluetoothSurveyRecor
 
                     promptedToEnableBluetooth = true;
 
-                    // Open the Bluetooth prompt pages after a couple seconds
+                    // Open the Bluetooth enable prompt
                     Toast.makeText(requireContext(), getString(R.string.turn_on_bluetooth), Toast.LENGTH_SHORT).show();
                     new Handler().post(() -> {
-                        final Intent enableBtIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
-                        enableBtIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-                        startActivity(enableBtIntent);
+                        try
+                        {
+                            final Intent enableBtIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
+                            enableBtIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                            startActivity(enableBtIntent);
+                        } catch (Exception e)
+                        {
+                            // An IllegalStateException can occur when the fragment is no longer attached to the activity
+                            Timber.e(e, "Could not kick off the Bluetooth Enable Intent");
+                        }
                     });
                 }
             } else

@@ -1991,9 +1991,16 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
                     // Open the Wi-Fi setting pages after a couple seconds
                     uiThreadHandler.post(() -> Toast.makeText(getApplicationContext(), getString(R.string.turn_on_wifi), Toast.LENGTH_SHORT).show());
                     serviceHandler.postDelayed(() -> {
-                        final Intent wifiSettingIntent = new Intent(Settings.ACTION_WIFI_SETTINGS);
-                        wifiSettingIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-                        startActivity(wifiSettingIntent);
+                        try
+                        {
+                            final Intent wifiSettingIntent = new Intent(Settings.ACTION_WIFI_SETTINGS);
+                            wifiSettingIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                            startActivity(wifiSettingIntent);
+                        } catch (Exception e)
+                        {
+                            // An IllegalStateException can occur when the fragment is no longer attached to the activity
+                            Timber.e(e, "Could not kick off the Wifi Settings Intent for the older pre Android 10 setup");
+                        }
                     }, 2000);
                 }
             }
@@ -2031,9 +2038,16 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
 
                 uiThreadHandler.post(() -> Toast.makeText(getApplicationContext(), getString(R.string.turn_on_bluetooth), Toast.LENGTH_SHORT).show());
                 serviceHandler.post(() -> {
-                    final Intent enableBtIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
-                    enableBtIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-                    startActivity(enableBtIntent);
+                    try
+                    {
+                        final Intent enableBtIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
+                        enableBtIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                        startActivity(enableBtIntent);
+                    } catch (Exception e)
+                    {
+                        // An IllegalStateException can occur when the fragment is no longer attached to the activity
+                        Timber.e(e, "Could not kick off the Bluetooth Enable Intent");
+                    }
                 });
             }
         }
