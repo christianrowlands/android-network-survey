@@ -161,7 +161,7 @@ public class GnssRecordLogger extends SurveyRecordLogger implements IGnssSurveyR
 
                         featureDao.insert(row);
 
-                        incrementRecordCount();
+                        checkIfRolloverNeeded();
                     }
                 } catch (Exception e)
                 {
