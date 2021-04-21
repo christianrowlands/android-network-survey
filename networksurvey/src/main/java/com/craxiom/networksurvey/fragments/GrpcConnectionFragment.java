@@ -37,6 +37,8 @@ import com.craxiom.networksurvey.R;
 import com.craxiom.networksurvey.constants.NetworkSurveyConstants;
 import com.craxiom.networksurvey.services.GrpcConnectionService;
 
+import java.net.URI;
+
 import timber.log.Timber;
 
 /**
@@ -302,7 +304,8 @@ public class GrpcConnectionFragment extends Fragment implements IConnectionState
      */
     private boolean areConnectionParametersValid()
     {
-        if (grpcHostAddressEdit.getText().toString().isEmpty())
+        final String hostAddress = grpcHostAddressEdit.getText().toString();
+        if (hostAddress.isEmpty())
         {
             final String hostEmptyMessage = "Host address must be specified";
             uiThreadHandler.post(() -> Toast.makeText(applicationContext, hostEmptyMessage, Toast.LENGTH_SHORT).show());
@@ -316,9 +319,10 @@ public class GrpcConnectionFragment extends Fragment implements IConnectionState
             return false;
         }
 
+        final int portNumber;
         try
         {
-            final int portNumber = Integer.parseInt(grpcPortNumberEdit.getText().toString());
+            portNumber = Integer.parseInt(grpcPortNumberEdit.getText().toString());
             if (portNumber < 0 || portNumber > 65535)
             {
                 final String invalidPortNumberMessage = "Port number must be between 0 and 65535";
@@ -329,6 +333,16 @@ public class GrpcConnectionFragment extends Fragment implements IConnectionState
         {
             final String portNotANumberMessage = "Port must be a number";
             uiThreadHandler.post(() -> Toast.makeText(applicationContext, portNotANumberMessage, Toast.LENGTH_SHORT).show());
+            return false;
+        }
+
+        try
+        {
+            @SuppressWarnings("unused") final URI uri = new URI(null, null, hostAddress, portNumber, null, null, null);
+        } catch (Exception e)
+        {
+            final String hostInvalidMessage = "Host address must be in a valid format, usually just a domain name or an IP address";
+            uiThreadHandler.post(() -> Toast.makeText(applicationContext, hostInvalidMessage, Toast.LENGTH_SHORT).show());
             return false;
         }
 
