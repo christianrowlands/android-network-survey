@@ -344,9 +344,18 @@ public class WifiNetworksFragment extends Fragment implements IWifiSurveyRecordL
                     // Open the Wi-Fi setting pages after a couple seconds
                     Toast.makeText(requireContext(), getString(R.string.turn_on_wifi), Toast.LENGTH_SHORT).show();
                     new Handler().postDelayed(() -> {
-                        final Intent wifiSettingIntent = new Intent(Settings.ACTION_WIFI_SETTINGS);
-                        wifiSettingIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-                        startActivity(wifiSettingIntent);
+                        try
+                        {
+                            final Intent wifiSettingIntent = new Intent(Settings.ACTION_WIFI_SETTINGS);
+                            wifiSettingIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                            startActivity(wifiSettingIntent);
+                        } catch (Exception e)
+                        {
+                            // An IllegalStateException can occur when the fragment is no longer attached to the activity
+                            // This edge case can occur when the user switches away from the Wi-Fi fragment before this
+                            // delayed code is executed.
+                            Timber.e(e, "Could not kick off the Wifi Settings Intent for the older pre Android 10 setup");
+                        }
                     }, 2000);
                 }
             }
