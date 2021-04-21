@@ -110,44 +110,50 @@ public abstract class SurveyRecordLogger
      */
     public boolean enableLogging(boolean enable)
     {
-        try
+        synchronized (geoPackageLock)
         {
-            if (!enable)
+            try
             {
-                if (loggingEnabled)
+                if (!enable)
                 {
-                    loggingEnabled = false;
-                    geoPackage.close();
-                    geoPackage = null;
-                    removeTempFiles();
-                    rolloverWorker.reset();
-                    return true;
+                    if (loggingEnabled)
+                    {
+                        loggingEnabled = false;
+                        geoPackage.close();
+                        geoPackage = null;
+                        removeTempFiles();
+                        rolloverWorker.reset();
+                        return true;
+                    }
+
+                    return false;
                 }
 
+                if (!isExternalStorageWritable()) return false;
+
+                boolean fileCreated = prepareGeoPackageForLogging();
+
+                updateRolloverWorker();
+
+                return loggingEnabled = fileCreated;
+            } catch (Exception e)
+            {
+                Timber.e(e, "Caught an exception when trying prepare GeoPackage file for logging");
+                if (geoPackage != null)
+                {
+                    geoPackage.close();
+                    geoPackage = null;
+                }
                 return false;
             }
-
-            if (!isExternalStorageWritable()) return false;
-
-            boolean fileCreated = prepareGeoPackageForLogging();
-
-            updateRolloverWorker();
-
-            return loggingEnabled = fileCreated;
-        } catch (Exception e)
-        {
-            Timber.e(e, "Caught an exception when trying prepare GeoPackage file for logging");
-            if (geoPackage != null)
-            {
-                geoPackage.close();
-                geoPackage = null;
-            }
-            return false;
         }
     }
 
     /**
      * Creates and sets up a GeoPackage file to be ready for survey logging.
+     * <p>
+     * This method is NOT thread safe and it is assumed the caller has already gotten a lock on the
+     * {@link #geoPackageLock} before making a call to this method.
      *
      * @return True, if the operations were successful.
      * @throws SQLException Thrown if database manipulations resulted in failure.
