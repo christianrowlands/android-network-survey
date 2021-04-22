@@ -6,6 +6,9 @@
         \n\n2. <b>Access this Device\'s Location</b>:  This app creates a log file which includes the location the cellular record was captured at and to display GNSS details.
         \n\n3. <b>Access Photos, Media, and Files on Your Device</b>:  This permission allows the log file to be written.</string>
 
+    <string name="location_permission_rationale">Denying the location permission will result in pretty much all of the features of this app not working. The location permission is
+        needed to access Wi-Fi details, Cellular details, GNSS details, and also to write geo-relevant log files.\n\n Please enable the location permission in the Android OS settings for this app.</string>
+
     <string name="app_version">v%1$s</string>
 
     <string name="action_start_cellular_logging">Start Cellular Logging</string>

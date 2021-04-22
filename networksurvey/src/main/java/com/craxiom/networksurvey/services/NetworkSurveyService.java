@@ -1467,7 +1467,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
             // Because we are extra cautious and want to make sure that we unregister the receiver, when the service
             // is shutdown we call this method to make sure we stop any active scan and unregister the receiver even if
             // we don't have one registered.
-            Timber.i(e, "Could not unregister the NetworkSurveyService Wi-Fi Scan Receiver");
+            Timber.v(e, "Could not unregister the NetworkSurveyService Wi-Fi Scan Receiver");
         }
 
         updateLocationListener();
@@ -1565,7 +1565,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
             unregisterReceiver(bluetoothBroadcastReceiver);
         } catch (Exception e)
         {
-            Timber.i(e, "Could not stop the Bluetooth Scan Callback");
+            Timber.v(e, "Could not stop the Bluetooth Scan Callback");
         }
 
         updateLocationListener();

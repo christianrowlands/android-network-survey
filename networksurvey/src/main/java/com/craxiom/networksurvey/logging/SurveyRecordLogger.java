@@ -50,7 +50,7 @@ import timber.log.Timber;
 public abstract class SurveyRecordLogger
 {
     private static final String JOURNAL_FILE_SUFFIX = "-journal";
-    private static final int RECORD_COUNT_INTERVAL = 500;
+    private static final int RECORD_COUNT_INTERVAL = 5000;
     static final long WGS84_SRS = 4326;
 
     private final NetworkSurveyService networkSurveyService;
@@ -110,44 +110,50 @@ public abstract class SurveyRecordLogger
      */
     public boolean enableLogging(boolean enable)
     {
-        try
+        synchronized (geoPackageLock)
         {
-            if (!enable)
+            try
             {
-                if (loggingEnabled)
+                if (!enable)
                 {
-                    loggingEnabled = false;
-                    geoPackage.close();
-                    geoPackage = null;
-                    removeTempFiles();
-                    rolloverWorker.reset();
-                    return true;
+                    if (loggingEnabled)
+                    {
+                        loggingEnabled = false;
+                        geoPackage.close();
+                        geoPackage = null;
+                        removeTempFiles();
+                        rolloverWorker.reset();
+                        return true;
+                    }
+
+                    return false;
                 }
 
+                if (!isExternalStorageWritable()) return false;
+
+                boolean fileCreated = prepareGeoPackageForLogging();
+
+                updateRolloverWorker();
+
+                return loggingEnabled = fileCreated;
+            } catch (Exception e)
+            {
+                Timber.e(e, "Caught an exception when trying prepare GeoPackage file for logging");
+                if (geoPackage != null)
+                {
+                    geoPackage.close();
+                    geoPackage = null;
+                }
                 return false;
             }
-
-            if (!isExternalStorageWritable()) return false;
-
-            boolean fileCreated = prepareGeoPackageForLogging();
-
-            updateRolloverWorker();
-
-            return loggingEnabled = fileCreated;
-        } catch (Exception e)
-        {
-            Timber.e(e, "Caught an exception when trying prepare GeoPackage file for logging");
-            if (geoPackage != null)
-            {
-                geoPackage.close();
-                geoPackage = null;
-            }
-            return false;
         }
     }
 
     /**
      * Creates and sets up a GeoPackage file to be ready for survey logging.
+     * <p>
+     * This method is NOT thread safe and it is assumed the caller has already gotten a lock on the
+     * {@link #geoPackageLock} before making a call to this method.
      *
      * @return True, if the operations were successful.
      * @throws SQLException Thrown if database manipulations resulted in failure.
@@ -200,13 +206,13 @@ public abstract class SurveyRecordLogger
     }
 
     /**
-     * Increments the {@link #rolloverWorker}'s record count.
+     * Checks to see if the rollover worker needs to initiate the creation of a new log file.
      *
      * @since 0.4.0
      */
-    protected void incrementRecordCount()
+    protected void checkIfRolloverNeeded()
     {
-        rolloverWorker.incrementRecordCount();
+        rolloverWorker.incrementRolloverCounter();
     }
 
     /**
@@ -382,8 +388,24 @@ public abstract class SurveyRecordLogger
     {
         logFileDirectoryPath = Environment.getExternalStoragePublicDirectory(
                 Environment.DIRECTORY_DOWNLOADS) + "/" + logDirectoryName + "/";
-        return logFileDirectoryPath +
+
+        String filePath = logFileDirectoryPath +
                 fileNamePrefix + SurveyRecordProcessor.DATE_TIME_FORMATTER.format(LocalDateTime.now()) + ".gpkg";
+
+        // I have seen a couple times now that it is possible that the RolloverWorker can create two GeoPackage files
+        // within the same second. Both instances were bluetooth so I am thinking there were 500+ devices around which
+        // caused the rollover worker to be run twice in the same scan iteration. I also increased the rollover
+        // check to 5000 which should help prevent this error as well, but just in case it is best if we ensure the file
+        // path is unique.
+        int counter = 0;
+        while (new File(filePath).exists())
+        {
+            counter++;
+            filePath = logFileDirectoryPath + fileNamePrefix +
+                    SurveyRecordProcessor.DATE_TIME_FORMATTER.format(LocalDateTime.now()) + "-" + counter + ".gpkg";
+        }
+
+        return filePath;
     }
 
     /**
@@ -409,30 +431,6 @@ public abstract class SurveyRecordLogger
         private final AtomicInteger recordCount = new AtomicInteger();
 
         /**
-         * A task that closes the current GeoPackage file and creates a new one. This task is
-         * protected by the {@link #geoPackageLock} to prevent closing a file that is currently
-         * being logged to.
-         */
-        private final Runnable rolloverTask = () -> {
-            synchronized (geoPackageLock)
-            {
-                try
-                {
-                    geoPackage.close();
-
-                    boolean fileCreated = prepareGeoPackageForLogging();
-                    if (!fileCreated)
-                    {
-                        Timber.e("Failed to create a new GeoPackage file");
-                    }
-                } catch (SQLException e)
-                {
-                    Timber.e(e, "Error occurred while trying to create a GeoPackage file");
-                }
-            }
-        };
-
-        /**
          * The max log size for a GeoPackage file before a new one is created, in bytes. When this
          * value is set to 0, rollover is de-activated.
          */
@@ -448,18 +446,16 @@ public abstract class SurveyRecordLogger
             synchronized (rolloverSizeLock)
             {
                 Timber.i("Log Rollover Size updated to %s MB", logRolloverSizeMb);
-                handler.removeCallbacks(rolloverTask); // no matter the mode, we always want to clean up
-
                 rolloverSizeBytes = logRolloverSizeMb * BYTES_TO_MEGABYTES;
             }
         }
 
         /**
-         * Increments record count. At the mark of {@link #RECORD_COUNT_INTERVAL} records, we check
+         * Increments rollover record count. At the mark of {@link #RECORD_COUNT_INTERVAL} records, we check
          * the GeoPackage file size. If the file size is equal to or greater than the size
          * threshold, we roll over. If no rollover is enabled, the method immediately returns.
          */
-        public void incrementRecordCount()
+        public void incrementRolloverCounter()
         {
             synchronized (rolloverSizeLock)
             {
@@ -470,13 +466,35 @@ public abstract class SurveyRecordLogger
 
                 if (recordCount.compareAndSet(RECORD_COUNT_INTERVAL, 0))
                 {
-                    File file = geoPackageManager.getFile(geoPackage.getName());
+                    File file;
+                    // Need to synchronize so that we don't try to get the file while a new one is being created.
+                    synchronized (geoPackageLock)
+                    {
+                        file = geoPackageManager.getFile(geoPackage.getName());
+                    }
                     final long fileSizeBytes = file.length();
 
-                    Timber.i("Checking GeoPackage file size, currently at: %s bytes", fileSizeBytes);
+                    Timber.v("Checking GeoPackage file size, currently at: %s bytes", fileSizeBytes);
                     if (fileSizeBytes >= rolloverSizeBytes)
                     {
-                        handler.post(rolloverTask);
+                        // This task is protected by the {@link #geoPackageLock} to prevent closing a file that is
+                        // currently being logged to.
+                        synchronized (geoPackageLock)
+                        {
+                            try
+                            {
+                                geoPackage.close();
+
+                                boolean fileCreated = prepareGeoPackageForLogging();
+                                if (!fileCreated)
+                                {
+                                    Timber.e("Failed to create a new GeoPackage file");
+                                }
+                            } catch (Exception e)
+                            {
+                                Timber.e(e, "Error occurred while trying to create a GeoPackage file");
+                            }
+                        }
                     }
 
                     return;

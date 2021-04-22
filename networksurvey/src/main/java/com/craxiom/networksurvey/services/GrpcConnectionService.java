@@ -436,75 +436,89 @@ public class GrpcConnectionService extends Service implements IDeviceStatusListe
             initializeDeviceStatusReport(deviceStatusGeneratorTaskId.incrementAndGet());
 
             new Thread(() -> {
-
-                Thread.currentThread().setName("gRPC Connection Thread");
-                final Context applicationContext = getApplicationContext();
-                channel = AndroidChannelBuilder.forAddress(host, port)
-                        .usePlaintext()
-                        .context(applicationContext)
-                        .build();
-
-                if (!startConnection())
+                try
                 {
-                    final String errorMessage = "Unable to connect to the Network Survey Server";
-                    Timber.w(errorMessage);
-                    uiThreadHandler.post(() -> Toast.makeText(applicationContext, errorMessage, Toast.LENGTH_SHORT).show());
-                    final boolean attemptReconnection = !userCanceled && reconnectOnFailure;
-                    disconnectFromGrpcServer(!attemptReconnection);
-                    if (attemptReconnection)
+                    Thread.currentThread().setName("gRPC Connection Thread");
+                    final Context applicationContext = getApplicationContext();
+                    channel = AndroidChannelBuilder.forAddress(host, port)
+                            .usePlaintext()
+                            .context(applicationContext)
+                            .build();
+
+                    if (!startConnection())
+                    {
+                        final String errorMessage = "Unable to connect to the Network Survey Server";
+                        Timber.w(errorMessage);
+                        uiThreadHandler.post(() -> Toast.makeText(applicationContext, errorMessage, Toast.LENGTH_SHORT).show());
+                        final boolean attemptReconnection = !userCanceled && reconnectOnFailure;
+                        disconnectFromGrpcServer(!attemptReconnection);
+                        if (attemptReconnection)
+                        {
+                            uiThreadHandler.postDelayed(this::reconnectToGrpcServer, RECONNECTION_ATTEMPT_BACKOFF_TIME);
+                        }
+                        return;
+                    }
+
+                    notifyConnectionStateChange(ConnectionState.CONNECTED);
+                    final String message = "Connected to the Network Survey Server!";
+                    Timber.i(message);
+                    uiThreadHandler.post(() -> Toast.makeText(applicationContext, message, Toast.LENGTH_SHORT).show());
+
+                    if (oldConnectionApproach)
+                    {
+                        // TODO Delete all this old approach code once we have a chance to update any older gPRC code
+                        oldDeviceStatusGrpcTask = new GrpcTask<>(this, oldDeviceStatusQueue,
+                                statusUpdateReplyStreamObserver -> NetworkSurveyStatusGrpc.newStub(channel).statusUpdate(statusUpdateReplyStreamObserver));
+                        oldDeviceStatusGrpcTask.executeOnExecutor(executorService);
+
+                        final com.craxiom.networksurvey.messaging.WirelessSurveyGrpc.WirelessSurveyStub wirelessSurveyStub = com.craxiom.networksurvey.messaging.WirelessSurveyGrpc.newStub(channel);
+
+                        oldGsmRecordGrpcTask = new GrpcTask<>(this, oldGsmRecordQueue, wirelessSurveyStub::streamGsmSurvey);
+                        oldGsmRecordGrpcTask.executeOnExecutor(executorService);
+
+                        oldCdmaRecordGrpcTask = new GrpcTask<>(this, oldCdmaRecordQueue, wirelessSurveyStub::streamCdmaSurvey);
+                        oldCdmaRecordGrpcTask.executeOnExecutor(executorService);
+
+                        oldUmtsRecordGrpcTask = new GrpcTask<>(this, oldUmtsRecordQueue, wirelessSurveyStub::streamUmtsSurvey);
+                        oldUmtsRecordGrpcTask.executeOnExecutor(executorService);
+
+                        oldLteRecordGrpcTask = new GrpcTask<>(this, oldLteRecordQueue, wirelessSurveyStub::streamLteSurvey);
+                        oldLteRecordGrpcTask.executeOnExecutor(executorService);
+                    } else
+                    {
+                        deviceStatusGrpcTask = new GrpcTask<>(this, deviceStatusQueue,
+                                statusUpdateReplyStreamObserver -> DeviceStatusGrpc.newStub(channel).statusUpdate(statusUpdateReplyStreamObserver));
+                        deviceStatusGrpcTask.executeOnExecutor(executorService);
+
+                        final WirelessSurveyGrpc.WirelessSurveyStub wirelessSurveyStub = WirelessSurveyGrpc.newStub(channel);
+
+                        gsmRecordGrpcTask = new GrpcTask<>(this, gsmRecordQueue, wirelessSurveyStub::streamGsmSurvey);
+                        gsmRecordGrpcTask.executeOnExecutor(executorService);
+
+                        cdmaRecordGrpcTask = new GrpcTask<>(this, cdmaRecordQueue, wirelessSurveyStub::streamCdmaSurvey);
+                        cdmaRecordGrpcTask.executeOnExecutor(executorService);
+
+                        umtsRecordGrpcTask = new GrpcTask<>(this, umtsRecordQueue, wirelessSurveyStub::streamUmtsSurvey);
+                        umtsRecordGrpcTask.executeOnExecutor(executorService);
+
+                        lteRecordGrpcTask = new GrpcTask<>(this, lteRecordQueue, wirelessSurveyStub::streamLteSurvey);
+                        lteRecordGrpcTask.executeOnExecutor(executorService);
+
+                        wifiBeaconRecordGrpcTask = new GrpcTask<>(this, wifiBeaconRecordQueue, wirelessSurveyStub::streamWifiBeaconSurvey);
+                        wifiBeaconRecordGrpcTask.executeOnExecutor(executorService);
+                    }
+                } catch (Throwable t)
+                {
+                    Timber.e(t, "An exception occurred in the gRPC connection thread");
+
+                    final boolean attemptReconnect = !userCanceled && reconnectOnFailure;
+
+                    disconnectFromGrpcServer(!attemptReconnect);
+
+                    if (attemptReconnect)
                     {
                         uiThreadHandler.postDelayed(this::reconnectToGrpcServer, RECONNECTION_ATTEMPT_BACKOFF_TIME);
                     }
-                    return;
-                }
-
-                notifyConnectionStateChange(ConnectionState.CONNECTED);
-                final String message = "Connected to the Network Survey Server!";
-                Timber.i(message);
-                uiThreadHandler.post(() -> Toast.makeText(applicationContext, message, Toast.LENGTH_SHORT).show());
-
-                if (oldConnectionApproach)
-                {
-                    // TODO Delete all this old approach code once we have a chance to update any older gPRC code
-                    oldDeviceStatusGrpcTask = new GrpcTask<>(this, oldDeviceStatusQueue,
-                            statusUpdateReplyStreamObserver -> NetworkSurveyStatusGrpc.newStub(channel).statusUpdate(statusUpdateReplyStreamObserver));
-                    oldDeviceStatusGrpcTask.executeOnExecutor(executorService);
-
-                    final com.craxiom.networksurvey.messaging.WirelessSurveyGrpc.WirelessSurveyStub wirelessSurveyStub = com.craxiom.networksurvey.messaging.WirelessSurveyGrpc.newStub(channel);
-
-                    oldGsmRecordGrpcTask = new GrpcTask<>(this, oldGsmRecordQueue, wirelessSurveyStub::streamGsmSurvey);
-                    oldGsmRecordGrpcTask.executeOnExecutor(executorService);
-
-                    oldCdmaRecordGrpcTask = new GrpcTask<>(this, oldCdmaRecordQueue, wirelessSurveyStub::streamCdmaSurvey);
-                    oldCdmaRecordGrpcTask.executeOnExecutor(executorService);
-
-                    oldUmtsRecordGrpcTask = new GrpcTask<>(this, oldUmtsRecordQueue, wirelessSurveyStub::streamUmtsSurvey);
-                    oldUmtsRecordGrpcTask.executeOnExecutor(executorService);
-
-                    oldLteRecordGrpcTask = new GrpcTask<>(this, oldLteRecordQueue, wirelessSurveyStub::streamLteSurvey);
-                    oldLteRecordGrpcTask.executeOnExecutor(executorService);
-                } else
-                {
-                    deviceStatusGrpcTask = new GrpcTask<>(this, deviceStatusQueue,
-                            statusUpdateReplyStreamObserver -> DeviceStatusGrpc.newStub(channel).statusUpdate(statusUpdateReplyStreamObserver));
-                    deviceStatusGrpcTask.executeOnExecutor(executorService);
-
-                    final WirelessSurveyGrpc.WirelessSurveyStub wirelessSurveyStub = WirelessSurveyGrpc.newStub(channel);
-
-                    gsmRecordGrpcTask = new GrpcTask<>(this, gsmRecordQueue, wirelessSurveyStub::streamGsmSurvey);
-                    gsmRecordGrpcTask.executeOnExecutor(executorService);
-
-                    cdmaRecordGrpcTask = new GrpcTask<>(this, cdmaRecordQueue, wirelessSurveyStub::streamCdmaSurvey);
-                    cdmaRecordGrpcTask.executeOnExecutor(executorService);
-
-                    umtsRecordGrpcTask = new GrpcTask<>(this, umtsRecordQueue, wirelessSurveyStub::streamUmtsSurvey);
-                    umtsRecordGrpcTask.executeOnExecutor(executorService);
-
-                    lteRecordGrpcTask = new GrpcTask<>(this, lteRecordQueue, wirelessSurveyStub::streamLteSurvey);
-                    lteRecordGrpcTask.executeOnExecutor(executorService);
-
-                    wifiBeaconRecordGrpcTask = new GrpcTask<>(this, wifiBeaconRecordQueue, wirelessSurveyStub::streamWifiBeaconSurvey);
-                    wifiBeaconRecordGrpcTask.executeOnExecutor(executorService);
                 }
             }).start();
         } catch (Throwable e)
