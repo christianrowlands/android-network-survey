@@ -91,6 +91,13 @@
             app:title="@string/gnss_scan_interval_title"
             app:useSimpleSummaryProvider="true" />
 
+        <EditTextPreference
+            app:defaultValue="120"
+            app:dialogMessage="@string/device_status_scan_interval_description"
+            app:key="device_status_scan_interval_seconds"
+            app:title="@string/device_status_scan_interval_title"
+            app:useSimpleSummaryProvider="true" />
+
     </PreferenceCategory>
 
     <PreferenceCategory

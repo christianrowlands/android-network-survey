@@ -160,6 +160,7 @@
     <string name="stream_wifi_title">Stream Wi-Fi</string>
     <string name="stream_bluetooth_title">Stream Bluetooth</string>
     <string name="stream_gnss_title">Stream GNSS</string>
+    <string name="stream_device_status_title">Stream Device Status</string>
 
     <!-- App Restriction Constants -->
     <string name="mqtt_start_on_boot_title">MQTT Start at Boot</string>
@@ -184,6 +185,8 @@
     <string name="bluetooth_stream_description">True to stream Bluetooth data, false otherwise</string>
     <string name="gnss_stream_title">GNSS Stream Enabled</string>
     <string name="gnss_stream_description">True to stream GNSS data, false otherwise</string>
+    <string name="device_status_stream_title">Device Status Stream Enabled</string>
+    <string name="device_status_stream_description">True to stream Device Status messages over MQTT, false otherwise</string>
     <string name="auto_start_cellular_logging_description">True to start cellular logging automatically, false otherwise</string>
     <string name="auto_start_wifi_logging_description">True to start Wi-Fi logging automatically, false otherwise</string>
     <string name="auto_start_bluetooth_logging_description">True to start Bluetooth logging automatically, false otherwise</string>
@@ -228,6 +231,9 @@
 
     <string name="gnss_scan_interval_title">GNSS Scan Interval</string>
     <string name="gnss_scan_interval_description">The rate at which GNSS satellites will be scanned for in seconds. Smaller values will decrease battery life.</string>
+
+    <string name="device_status_scan_interval_title">Device Status Message Interval</string>
+    <string name="device_status_scan_interval_description">The rate at which Device Status messages will be generated in seconds.</string>
 
     <string name="mqtt_connection_config_title">MQTT Connection Config</string>
 

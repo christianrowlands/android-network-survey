@@ -28,6 +28,7 @@ import com.craxiom.messaging.BluetoothRecord;
 import com.craxiom.messaging.BluetoothRecordData;
 import com.craxiom.messaging.CdmaRecord;
 import com.craxiom.messaging.CdmaRecordData;
+import com.craxiom.messaging.DeviceStatus;
 import com.craxiom.messaging.GnssRecord;
 import com.craxiom.messaging.GnssRecordData;
 import com.craxiom.messaging.GsmRecord;
@@ -58,6 +59,7 @@ import com.craxiom.networksurvey.constants.WifiBeaconMessageConstants;
 import com.craxiom.networksurvey.fragments.NetworkDetailsFragment;
 import com.craxiom.networksurvey.listeners.IBluetoothSurveyRecordListener;
 import com.craxiom.networksurvey.listeners.ICellularSurveyRecordListener;
+import com.craxiom.networksurvey.listeners.IDeviceStatusListener;
 import com.craxiom.networksurvey.listeners.IGnssSurveyRecordListener;
 import com.craxiom.networksurvey.listeners.IWifiSurveyRecordListener;
 import com.craxiom.networksurvey.model.WifiRecordWrapper;
@@ -100,6 +102,7 @@ public class SurveyRecordProcessor
     private final Set<IWifiSurveyRecordListener> wifiSurveyRecordListeners = new CopyOnWriteArraySet<>();
     private final Set<IBluetoothSurveyRecordListener> bluetoothSurveyRecordListeners = new CopyOnWriteArraySet<>();
     private final Set<IGnssSurveyRecordListener> gnssSurveyRecordListeners = new CopyOnWriteArraySet<>();
+    private final Set<IDeviceStatusListener> deviceStatusListeners = new CopyOnWriteArraySet<>();
     private NetworkSurveyActivity networkSurveyActivity;
 
     private final String deviceId;
@@ -189,6 +192,28 @@ public class SurveyRecordProcessor
     }
 
     /**
+     * Adds a listener that will be notified of new device status messages.
+     *
+     * @param deviceStatusListener The listener to add.
+     * @since 1.1.0
+     */
+    void registerDeviceStatusListener(IDeviceStatusListener deviceStatusListener)
+    {
+        deviceStatusListeners.add(deviceStatusListener);
+    }
+
+    /**
+     * Removes a listener of Device Status messages.
+     *
+     * @param deviceStatusListener The listener to remove.
+     * @since 1.1.0
+     */
+    void unregisterDeviceStatusListener(IDeviceStatusListener deviceStatusListener)
+    {
+        deviceStatusListeners.remove(deviceStatusListener);
+    }
+
+    /**
      * Whenever the UI is visible, we need to pass information to it so it can be displayed to the user.
      *
      * @param networkSurveyActivity The activity that is now visible to the user.
@@ -216,7 +241,8 @@ public class SurveyRecordProcessor
                 || !cellularSurveyRecordListeners.isEmpty()
                 || !wifiSurveyRecordListeners.isEmpty()
                 || !bluetoothSurveyRecordListeners.isEmpty()
-                || !gnssSurveyRecordListeners.isEmpty();
+                || !gnssSurveyRecordListeners.isEmpty()
+                || !deviceStatusListeners.isEmpty();
     }
 
     /**
@@ -252,6 +278,15 @@ public class SurveyRecordProcessor
     boolean isGnssBeingUsed()
     {
         return !gnssSurveyRecordListeners.isEmpty();
+    }
+
+    /**
+     * @return True if there are any registered Device Status message listeners, false otherwise.
+     * @since 1.1.0
+     */
+    boolean isDeviceStatusBeingUsed()
+    {
+        return !deviceStatusListeners.isEmpty();
     }
 
     /**
@@ -349,6 +384,17 @@ public class SurveyRecordProcessor
     synchronized void onGnssMeasurements(GnssMeasurementsEvent event)
     {
         processGnssMeasurements(event);
+    }
+
+    /**
+     * Notification for when the latest device status is available to process.
+     *
+     * @param deviceStatus The latest device status.
+     * @since 1.1.0
+     */
+    synchronized void onDeviceStatus(DeviceStatus deviceStatus)
+    {
+        notifyDeviceStatusListeners(deviceStatus);
     }
 
     /**
@@ -1335,6 +1381,27 @@ public class SurveyRecordProcessor
             } catch (Exception e)
             {
                 Timber.e(e, "Unable to notify a GNSS Survey Record Listener because of an exception");
+            }
+        }
+    }
+
+    /**
+     * Notify all the listeners that we have a new GNSS Record available.
+     *
+     * @param deviceStatus The new Device Status Message to send to the listeners.
+     * @since 1.1.0
+     */
+    private void notifyDeviceStatusListeners(DeviceStatus deviceStatus)
+    {
+        if (deviceStatus == null) return;
+        for (IDeviceStatusListener listener : deviceStatusListeners)
+        {
+            try
+            {
+                listener.onDeviceStatus(deviceStatus);
+            } catch (Exception e)
+            {
+                Timber.e(e, "Unable to notify a Device Status Listener because of an exception");
             }
         }
     }

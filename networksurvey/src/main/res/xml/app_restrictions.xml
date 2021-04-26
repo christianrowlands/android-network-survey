@@ -77,6 +77,13 @@
         android:title="@string/gnss_scan_interval_title" />
 
     <restriction
+        android:defaultValue="120"
+        android:description="@string/device_status_scan_interval_description"
+        android:key="device_status_scan_interval_seconds"
+        android:restrictionType="integer"
+        android:title="@string/device_status_scan_interval_title" />
+
+    <restriction
         android:defaultValue="true"
         android:description="@string/cellular_stream_description"
         android:key="cellular_stream_enabled"
@@ -95,7 +102,7 @@
         android:description="@string/bluetooth_stream_description"
         android:key="bluetooth_stream_enabled"
         android:restrictionType="bool"
-        android:title="@string/wifi_stream_title" />
+        android:title="@string/bluetooth_stream_title" />
 
     <restriction
         android:defaultValue="false"
@@ -103,6 +110,13 @@
         android:key="gnss_stream_enabled"
         android:restrictionType="bool"
         android:title="@string/gnss_stream_title" />
+
+    <restriction
+        android:defaultValue="true"
+        android:description="@string/device_status_stream_description"
+        android:key="device_status_stream_enabled"
+        android:restrictionType="bool"
+        android:title="@string/device_status_stream_title" />
 
     <restriction
         android:defaultValue="5"

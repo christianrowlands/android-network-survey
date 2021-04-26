@@ -20,10 +20,12 @@ import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.location.GnssMeasurementsEvent;
 import android.location.GnssStatus;
+import android.location.Location;
 import android.location.LocationManager;
 import android.net.wifi.ScanResult;
 import android.net.wifi.WifiManager;
 import android.os.AsyncTask;
+import android.os.BatteryManager;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
@@ -42,6 +44,8 @@ import androidx.core.app.NotificationCompat;
 import androidx.core.content.ContextCompat;
 import androidx.preference.PreferenceManager;
 
+import com.craxiom.messaging.DeviceStatus;
+import com.craxiom.messaging.DeviceStatusData;
 import com.craxiom.mqttlibrary.IConnectionStateListener;
 import com.craxiom.mqttlibrary.IMqttService;
 import com.craxiom.mqttlibrary.MqttConstants;
@@ -50,13 +54,16 @@ import com.craxiom.mqttlibrary.connection.ConnectionState;
 import com.craxiom.mqttlibrary.connection.DefaultMqttConnection;
 import com.craxiom.mqttlibrary.ui.AConnectionFragment;
 import com.craxiom.networksurvey.Application;
+import com.craxiom.networksurvey.BuildConfig;
 import com.craxiom.networksurvey.CalculationUtils;
 import com.craxiom.networksurvey.GpsListener;
 import com.craxiom.networksurvey.NetworkSurveyActivity;
 import com.craxiom.networksurvey.R;
+import com.craxiom.networksurvey.constants.DeviceStatusMessageConstants;
 import com.craxiom.networksurvey.constants.NetworkSurveyConstants;
 import com.craxiom.networksurvey.listeners.IBluetoothSurveyRecordListener;
 import com.craxiom.networksurvey.listeners.ICellularSurveyRecordListener;
+import com.craxiom.networksurvey.listeners.IDeviceStatusListener;
 import com.craxiom.networksurvey.listeners.IGnssFailureListener;
 import com.craxiom.networksurvey.listeners.IGnssSurveyRecordListener;
 import com.craxiom.networksurvey.listeners.IWifiSurveyRecordListener;
@@ -66,8 +73,11 @@ import com.craxiom.networksurvey.logging.GnssRecordLogger;
 import com.craxiom.networksurvey.logging.WifiSurveyRecordLogger;
 import com.craxiom.networksurvey.mqtt.MqttConnection;
 import com.craxiom.networksurvey.mqtt.MqttConnectionInfo;
+import com.craxiom.networksurvey.util.IOUtils;
 import com.craxiom.networksurvey.util.PreferenceUtils;
+import com.google.protobuf.Int32Value;
 
+import java.time.ZonedDateTime;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -94,6 +104,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
     private final AtomicBoolean cellularScanningActive = new AtomicBoolean(false);
     private final AtomicBoolean wifiScanningActive = new AtomicBoolean(false);
     private final AtomicBoolean bluetoothScanningActive = new AtomicBoolean(false);
+    private final AtomicBoolean deviceStatusActive = new AtomicBoolean(false);
     private final AtomicBoolean cellularLoggingEnabled = new AtomicBoolean(false);
     private final AtomicBoolean wifiLoggingEnabled = new AtomicBoolean(false);
     private final AtomicBoolean bluetoothLoggingEnabled = new AtomicBoolean(false);
@@ -106,6 +117,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
     private volatile int wifiScanRateMs;
     private volatile int bluetoothScanRateMs;
     private volatile int gnssScanRateMs;
+    private volatile int deviceStatusScanRateMs;
 
     private String deviceId;
     private SurveyRecordProcessor surveyRecordProcessor;
@@ -238,7 +250,6 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
         PreferenceManager.getDefaultSharedPreferences(getApplicationContext()).unregisterOnSharedPreferenceChangeListener(this);
 
         serviceLooper.quitSafely();
-        serviceHandler = null;
         shutdownNotifications();
 
         super.onDestroy();
@@ -257,7 +268,9 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
                 break;
             case NetworkSurveyConstants.PROPERTY_CELLULAR_SCAN_INTERVAL_SECONDS:
             case NetworkSurveyConstants.PROPERTY_WIFI_SCAN_INTERVAL_SECONDS:
+            case NetworkSurveyConstants.PROPERTY_BLUETOOTH_SCAN_INTERVAL_SECONDS:
             case NetworkSurveyConstants.PROPERTY_GNSS_SCAN_INTERVAL_SECONDS:
+            case NetworkSurveyConstants.PROPERTY_DEVICE_STATUS_SCAN_INTERVAL_SECONDS:
                 setScanRateValues();
                 break;
 
@@ -304,6 +317,10 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
         {
             registerGnssSurveyRecordListener(mqttConnection);
         }
+        if (networkSurveyConnection.isDeviceStatusStreamEnabled())
+        {
+            registerDeviceStatusListener(mqttConnection);
+        }
     }
 
     /**
@@ -320,6 +337,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
         unregisterWifiSurveyRecordListener(mqttConnection);
         unregisterBluetoothSurveyRecordListener(mqttConnection);
         unregisterGnssSurveyRecordListener(mqttConnection);
+        unregisterDeviceStatusListener(mqttConnection);
         mqttConnection.disconnect();
     }
 
@@ -576,6 +594,44 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
                 surveyRecordProcessor.unregisterGnssSurveyRecordListener(surveyRecordListener);
                 if (!surveyRecordProcessor.isGnssBeingUsed()) stopGnssRecordScanning();
             }
+        }
+
+        // Check to see if this service is still needed.  It is still needed if we are either logging, the UI is
+        // visible, or a server connection is active.
+        if (!isBeingUsed()) stopSelf();
+    }
+
+    /**
+     * Registers a listener for notifications when new device status messages are available.
+     *
+     * @param deviceStatusListener The survey record listener to register.
+     * @since 1.1.0
+     */
+    public void registerDeviceStatusListener(IDeviceStatusListener deviceStatusListener)
+    {
+        if (surveyRecordProcessor != null)
+        {
+            surveyRecordProcessor.registerDeviceStatusListener(deviceStatusListener);
+        }
+
+        startDeviceStatusReport(); // Only starts scanning if it is not already active.
+    }
+
+    /**
+     * Unregisters a device status message listener.
+     * <p>
+     * If the listener being removed is the last listener and nothing else is using this {@link NetworkSurveyService},
+     * then this service is shutdown and will need to be restarted before it can be used again.
+     *
+     * @param deviceStatusListener The listener to unregister.
+     * @since 1.1.0
+     */
+    public void unregisterDeviceStatusListener(IDeviceStatusListener deviceStatusListener)
+    {
+        if (surveyRecordProcessor != null)
+        {
+            surveyRecordProcessor.unregisterDeviceStatusListener(deviceStatusListener);
+            if (!surveyRecordProcessor.isDeviceStatusBeingUsed()) stopDeviceStatusReport();
         }
 
         // Check to see if this service is still needed.  It is still needed if we are either logging, the UI is
@@ -918,6 +974,9 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
         gnssScanRateMs = PreferenceUtils.getScanRatePreferenceMs(NetworkSurveyConstants.PROPERTY_GNSS_SCAN_INTERVAL_SECONDS,
                 NetworkSurveyConstants.DEFAULT_GNSS_SCAN_INTERVAL_SECONDS, applicationContext);
 
+        deviceStatusScanRateMs = PreferenceUtils.getScanRatePreferenceMs(NetworkSurveyConstants.PROPERTY_DEVICE_STATUS_SCAN_INTERVAL_SECONDS,
+                NetworkSurveyConstants.DEFAULT_DEVICE_STATUS_SCAN_INTERVAL_SECONDS, applicationContext);
+
         surveyRecordProcessor.setGnssScanRateMs(gnssScanRateMs);
 
         updateLocationListener();
@@ -970,6 +1029,11 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
             if (gnssStarted.get() && gnssScanRateMs < smallestScanRate)
             {
                 smallestScanRate = gnssScanRateMs;
+            }
+
+            if (deviceStatusActive.get() && deviceStatusScanRateMs < smallestScanRate)
+            {
+                smallestScanRate = deviceStatusScanRateMs;
             }
 
             // Use the smallest scan rate set by the user for the active scanning types
@@ -1508,6 +1572,95 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
     }
 
     /**
+     * Initialize and start the handler that generates a periodic Device Status Message.
+     * <p>
+     * This method only starts scanning if the scan is not already active.
+     *
+     * @since 1.1.0
+     */
+    private void startDeviceStatusReport()
+    {
+        if (deviceStatusActive.getAndSet(true)) return;
+
+        serviceHandler.postDelayed(new Runnable()
+        {
+            @Override
+            public void run()
+            {
+                try
+                {
+                    if (!deviceStatusActive.get())
+                    {
+                        Timber.i("Stopping the handler that generates the device status message");
+                        return;
+                    }
+
+                    surveyRecordProcessor.onDeviceStatus(generateDeviceStatus());
+
+                    serviceHandler.postDelayed(this, deviceStatusScanRateMs);
+                } catch (SecurityException e)
+                {
+                    Timber.e(e, "Could not get the required permissions to generate a device status message");
+                }
+            }
+        }, 1000L);
+    }
+
+    /**
+     * Generate a device status message that can be sent to any remote servers.
+     *
+     * @return A Device Status message that can be sent to a remote server.
+     * @since 1.1.0
+     */
+    private DeviceStatus generateDeviceStatus()
+    {
+        final DeviceStatusData.Builder dataBuilder = DeviceStatusData.newBuilder();
+        dataBuilder.setDeviceSerialNumber(deviceId)
+                .setDeviceTime(IOUtils.getRfc3339String(ZonedDateTime.now()));
+
+        if (gpsListener != null)
+        {
+            final Location lastKnownLocation = gpsListener.getLatestLocation();
+            if (lastKnownLocation != null)
+            {
+                dataBuilder.setLatitude(lastKnownLocation.getLatitude());
+                dataBuilder.setLongitude(lastKnownLocation.getLongitude());
+                dataBuilder.setAltitude((float) lastKnownLocation.getAltitude());
+            }
+        }
+
+        final IntentFilter intentFilter = new IntentFilter(Intent.ACTION_BATTERY_CHANGED);
+        final Intent batteryStatus = registerReceiver(null, intentFilter);
+        if (batteryStatus != null)
+        {
+            int level = batteryStatus.getIntExtra(BatteryManager.EXTRA_LEVEL, -1);
+            int scale = batteryStatus.getIntExtra(BatteryManager.EXTRA_SCALE, -1);
+            final float batteryPercent = (level / (float) scale) * 100;
+            dataBuilder.setBatteryLevelPercent(Int32Value.of((int) batteryPercent));
+        }
+
+        final DeviceStatus.Builder statusBuilder = DeviceStatus.newBuilder();
+        statusBuilder.setMessageType(DeviceStatusMessageConstants.DEVICE_STATUS_MESSAGE_TYPE);
+        statusBuilder.setVersion(BuildConfig.MESSAGING_API_VERSION);
+        statusBuilder.setData(dataBuilder);
+
+        return statusBuilder.build();
+    }
+
+    /**
+     * Stop generating device status messages.
+     *
+     * @since 1.1.0
+     */
+    private void stopDeviceStatusReport()
+    {
+        Timber.d("Setting the device status active flag to false");
+        deviceStatusActive.set(false);
+
+        updateLocationListener();
+    }
+
+    /**
      * A notification for this service that is started in the foreground so that we can continue to get GPS location
      * updates while the phone is locked or the app is not in the foreground.
      */
@@ -1754,13 +1907,15 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
             final boolean wifiStreamEnabled = mdmProperties.getBoolean(NetworkSurveyConstants.PROPERTY_MQTT_WIFI_STREAM_ENABLED, NetworkSurveyConstants.DEFAULT_MQTT_WIFI_STREAM_SETTING);
             final boolean bluetoothStreamEnabled = mdmProperties.getBoolean(NetworkSurveyConstants.PROPERTY_MQTT_BLUETOOTH_STREAM_ENABLED, NetworkSurveyConstants.DEFAULT_MQTT_BLUETOOTH_STREAM_SETTING);
             final boolean gnssStreamEnabled = mdmProperties.getBoolean(NetworkSurveyConstants.PROPERTY_MQTT_GNSS_STREAM_ENABLED, NetworkSurveyConstants.DEFAULT_MQTT_GNSS_STREAM_SETTING);
+            final boolean deviceStatusStreamEnabled = mdmProperties.getBoolean(NetworkSurveyConstants.PROPERTY_MQTT_DEVICE_STATUS_STREAM_ENABLED, NetworkSurveyConstants.DEFAULT_MQTT_DEVICE_STATUS_STREAM_SETTING);
 
             if (mqttBrokerHost == null || clientId == null)
             {
                 return null;
             }
 
-            return new MqttConnectionInfo(mqttBrokerHost, portNumber, tlsEnabled, clientId, username, password, cellularStreamEnabled, wifiStreamEnabled, bluetoothStreamEnabled, gnssStreamEnabled);
+            return new MqttConnectionInfo(mqttBrokerHost, portNumber, tlsEnabled, clientId, username, password,
+                    cellularStreamEnabled, wifiStreamEnabled, bluetoothStreamEnabled, gnssStreamEnabled, deviceStatusStreamEnabled);
         }
 
         return null;
@@ -1793,8 +1948,10 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
         final boolean wifiStreamEnabled = preferences.getBoolean(NetworkSurveyConstants.PROPERTY_MQTT_WIFI_STREAM_ENABLED, NetworkSurveyConstants.DEFAULT_MQTT_WIFI_STREAM_SETTING);
         final boolean bluetoothStreamEnabled = preferences.getBoolean(NetworkSurveyConstants.PROPERTY_MQTT_BLUETOOTH_STREAM_ENABLED, NetworkSurveyConstants.DEFAULT_MQTT_BLUETOOTH_STREAM_SETTING);
         final boolean gnssStreamEnabled = preferences.getBoolean(NetworkSurveyConstants.PROPERTY_MQTT_GNSS_STREAM_ENABLED, NetworkSurveyConstants.DEFAULT_MQTT_GNSS_STREAM_SETTING);
+        final boolean deviceStatusStreamEnabled = preferences.getBoolean(NetworkSurveyConstants.PROPERTY_MQTT_DEVICE_STATUS_STREAM_ENABLED, NetworkSurveyConstants.DEFAULT_MQTT_DEVICE_STATUS_STREAM_SETTING);
 
-        return new MqttConnectionInfo(mqttBrokerHost, portNumber, tlsEnabled, clientId, username, password, cellularStreamEnabled, wifiStreamEnabled, bluetoothStreamEnabled, gnssStreamEnabled);
+        return new MqttConnectionInfo(mqttBrokerHost, portNumber, tlsEnabled, clientId, username, password,
+                cellularStreamEnabled, wifiStreamEnabled, bluetoothStreamEnabled, gnssStreamEnabled, deviceStatusStreamEnabled);
     }
 
     /**
