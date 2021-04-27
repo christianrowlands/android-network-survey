@@ -37,6 +37,7 @@ android {
 
     packagingOptions {
         exclude 'META-INF/INDEX.LIST'
+        exclude 'META-INF/io.netty.versions.properties'
     }
 }
 
@@ -57,11 +58,11 @@ dependencies {
     implementation "io.grpc:grpc-android:${grpcVersion}"
 
     implementation "com.craxiom:network-survey-messaging:${networkSurveyMessagingVersion}"
-    implementation "com.google.protobuf:protobuf-java-util:3.12.2"
+    implementation "com.google.protobuf:protobuf-java-util:3.15.3"
 
     implementation "mil.nga.geopackage:geopackage-android:3.3.0"
 
-    implementation 'com.craxiom:mqtt-library:0.1.0'
+    implementation 'com.craxiom:mqtt-library:0.2.0-SNAPSHOT'
 
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:$kotlin_version"
 
