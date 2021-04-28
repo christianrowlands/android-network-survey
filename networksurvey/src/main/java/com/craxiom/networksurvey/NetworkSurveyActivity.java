@@ -484,6 +484,20 @@ public class NetworkSurveyActivity extends AppCompatActivity
         NavigationUI.setupWithNavController(navigationView, navController);
         NavigationUI.setupWithNavController(bottomNav, navController);
 
+        navController.addOnDestinationChangedListener((controller, destination, arguments) -> {
+            final int destinationId = destination.getId();
+            if (destinationId == R.id.main_cellular_fragment
+                    || destinationId == R.id.main_wifi_fragment
+                    || destinationId == R.id.main_bluetooth_fragment
+                    || destinationId == R.id.main_gnss_fragment)
+            {
+                bottomNav.setVisibility(View.VISIBLE);
+            } else
+            {
+                bottomNav.setVisibility(View.GONE);
+            }
+        });
+
         OnBackPressedCallback callback = new OnBackPressedCallback(true)
         {
             @Override

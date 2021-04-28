@@ -238,13 +238,14 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
         if (mqttConnection != null)
         {
             unregisterMqttConnectionStateListener(this);
-            disconnectFromMqttBroker();
+            mqttConnection.disconnect();
         }
 
         stopCellularRecordScanning();
         stopWifiRecordScanning();
         removeLocationListener();
         stopGnssRecordScanning();
+        stopDeviceStatusReport();
         stopAllLogging();
 
         PreferenceManager.getDefaultSharedPreferences(getApplicationContext()).unregisterOnSharedPreferenceChangeListener(this);
@@ -333,12 +334,13 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
     {
         Timber.i("Disconnecting from the MQTT Broker");
 
+        mqttConnection.disconnect();
+
         unregisterCellularSurveyRecordListener(mqttConnection);
         unregisterWifiSurveyRecordListener(mqttConnection);
         unregisterBluetoothSurveyRecordListener(mqttConnection);
         unregisterGnssSurveyRecordListener(mqttConnection);
         unregisterDeviceStatusListener(mqttConnection);
-        mqttConnection.disconnect();
     }
 
     /**
