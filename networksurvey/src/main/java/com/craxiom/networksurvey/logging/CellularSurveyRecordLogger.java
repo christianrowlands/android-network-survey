@@ -249,7 +249,7 @@ public class CellularSurveyRecordLogger extends SurveyRecordLogger implements IC
 
                         featureDao.insert(row);
 
-                        incrementRecordCount();
+                        checkIfRolloverNeeded();
                     }
                 } catch (Exception e)
                 {
@@ -327,7 +327,7 @@ public class CellularSurveyRecordLogger extends SurveyRecordLogger implements IC
 
                         featureDao.insert(row);
 
-                        incrementRecordCount();
+                        checkIfRolloverNeeded();
                     }
                 } catch (Exception e)
                 {
@@ -413,7 +413,7 @@ public class CellularSurveyRecordLogger extends SurveyRecordLogger implements IC
 
                         featureDao.insert(row);
 
-                        incrementRecordCount();
+                        checkIfRolloverNeeded();
                     }
                 } catch (Exception e)
                 {
@@ -506,7 +506,7 @@ public class CellularSurveyRecordLogger extends SurveyRecordLogger implements IC
 
                         featureDao.insert(row);
 
-                        incrementRecordCount();
+                        checkIfRolloverNeeded();
                     }
                 } catch (Exception e)
                 {

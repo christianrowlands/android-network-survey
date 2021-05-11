@@ -81,6 +81,7 @@ import java.time.ZonedDateTime;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import timber.log.Timber;
 
@@ -110,6 +111,12 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
     private final AtomicBoolean bluetoothLoggingEnabled = new AtomicBoolean(false);
     private final AtomicBoolean gnssLoggingEnabled = new AtomicBoolean(false);
     private final AtomicBoolean gnssStarted = new AtomicBoolean(false);
+
+    private final AtomicInteger cellularScanningTaskId = new AtomicInteger();
+    private final AtomicInteger wifiScanningTaskId = new AtomicInteger();
+    private final AtomicInteger bluetoothScanningTaskId = new AtomicInteger();
+    private final AtomicInteger deviceStatusGeneratorTaskId = new AtomicInteger();
+
     private final SurveyServiceBinder surveyServiceBinder;
     private final Handler uiThreadHandler;
 
@@ -238,13 +245,14 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
         if (mqttConnection != null)
         {
             unregisterMqttConnectionStateListener(this);
-            disconnectFromMqttBroker();
+            mqttConnection.disconnect();
         }
 
         stopCellularRecordScanning();
         stopWifiRecordScanning();
         removeLocationListener();
         stopGnssRecordScanning();
+        stopDeviceStatusReport();
         stopAllLogging();
 
         PreferenceManager.getDefaultSharedPreferences(getApplicationContext()).unregisterOnSharedPreferenceChangeListener(this);
@@ -333,12 +341,13 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
     {
         Timber.i("Disconnecting from the MQTT Broker");
 
+        mqttConnection.disconnect();
+
         unregisterCellularSurveyRecordListener(mqttConnection);
         unregisterWifiSurveyRecordListener(mqttConnection);
         unregisterBluetoothSurveyRecordListener(mqttConnection);
         unregisterGnssSurveyRecordListener(mqttConnection);
         unregisterDeviceStatusListener(mqttConnection);
-        mqttConnection.disconnect();
     }
 
     /**
@@ -1112,6 +1121,8 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
             return;
         }
 
+        final int handlerTaskId = cellularScanningTaskId.incrementAndGet();
+
         serviceHandler.postDelayed(new Runnable()
         {
             @Override
@@ -1119,9 +1130,9 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
             {
                 try
                 {
-                    if (!cellularScanningActive.get())
+                    if (!cellularScanningActive.get() || cellularScanningTaskId.get() != handlerTaskId)
                     {
-                        Timber.i("Stopping the handler that pulls the latest cellular information");
+                        Timber.i("Stopping the handler that pulls the latest cellular information; taskId=%d", handlerTaskId);
                         return;
                     }
 
@@ -1422,6 +1433,8 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
             return;
         }
 
+        final int handlerTaskId = wifiScanningTaskId.incrementAndGet();
+
         serviceHandler.postDelayed(new Runnable()
         {
             @Override
@@ -1429,9 +1442,9 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
             {
                 try
                 {
-                    if (!wifiScanningActive.get())
+                    if (!wifiScanningActive.get() || wifiScanningTaskId.get() != handlerTaskId)
                     {
-                        Timber.i("Stopping the handler that pulls the latest wifi information");
+                        Timber.i("Stopping the handler that pulls the latest wifi information, taskId=%d", handlerTaskId);
                         return;
                     }
 
@@ -1467,7 +1480,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
             // Because we are extra cautious and want to make sure that we unregister the receiver, when the service
             // is shutdown we call this method to make sure we stop any active scan and unregister the receiver even if
             // we don't have one registered.
-            Timber.i(e, "Could not unregister the NetworkSurveyService Wi-Fi Scan Receiver");
+            Timber.v(e, "Could not unregister the NetworkSurveyService Wi-Fi Scan Receiver");
         }
 
         updateLocationListener();
@@ -1509,6 +1522,8 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
         scanSettingsBuilder.setReportDelay(bluetoothScanRateMs);
         bluetoothLeScanner.startScan(Collections.emptyList(), scanSettingsBuilder.build(), bluetoothScanCallback);
 
+        final int handlerTaskId = bluetoothScanningTaskId.incrementAndGet();
+
         serviceHandler.postDelayed(new Runnable()
         {
             @Override
@@ -1516,6 +1531,12 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
             {
                 try
                 {
+                    if (!bluetoothScanningActive.get() || bluetoothScanningTaskId.get() != handlerTaskId)
+                    {
+                        Timber.i("Stopping the handler that pulls the latest Bluetooth information; taskId=%d", handlerTaskId);
+                        return;
+                    }
+
                     // Calling start Discovery scans for BT Classic (BR/EDR) devices as well. However, it also seems
                     // it allows for getting some BLE devices as well, but we seem to get more with the BLE scanner above
                     if (!bluetoothAdapter.isDiscovering())
@@ -1524,12 +1545,6 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
                     } else
                     {
                         Timber.d("Bluetooth discovery already in progress, not starting a new discovery.");
-                    }
-
-                    if (!bluetoothScanningActive.get())
-                    {
-                        Timber.i("Stopping the handler that pulls the latest Bluetooth information");
-                        return;
                     }
 
                     serviceHandler.postDelayed(this, bluetoothScanRateMs);
@@ -1565,7 +1580,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
             unregisterReceiver(bluetoothBroadcastReceiver);
         } catch (Exception e)
         {
-            Timber.i(e, "Could not stop the Bluetooth Scan Callback");
+            Timber.v(e, "Could not stop the Bluetooth Scan Callback");
         }
 
         updateLocationListener();
@@ -1582,16 +1597,19 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
     {
         if (deviceStatusActive.getAndSet(true)) return;
 
+        final int handlerTaskId = deviceStatusGeneratorTaskId.incrementAndGet();
+
         serviceHandler.postDelayed(new Runnable()
         {
+
             @Override
             public void run()
             {
                 try
                 {
-                    if (!deviceStatusActive.get())
+                    if (!deviceStatusActive.get() || deviceStatusGeneratorTaskId.get() != handlerTaskId)
                     {
-                        Timber.i("Stopping the handler that generates the device status message");
+                        Timber.i("Stopping the handler that generates the device status message; taskId=%d", handlerTaskId);
                         return;
                     }
 
@@ -1991,9 +2009,16 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
                     // Open the Wi-Fi setting pages after a couple seconds
                     uiThreadHandler.post(() -> Toast.makeText(getApplicationContext(), getString(R.string.turn_on_wifi), Toast.LENGTH_SHORT).show());
                     serviceHandler.postDelayed(() -> {
-                        final Intent wifiSettingIntent = new Intent(Settings.ACTION_WIFI_SETTINGS);
-                        wifiSettingIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-                        startActivity(wifiSettingIntent);
+                        try
+                        {
+                            final Intent wifiSettingIntent = new Intent(Settings.ACTION_WIFI_SETTINGS);
+                            wifiSettingIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                            startActivity(wifiSettingIntent);
+                        } catch (Exception e)
+                        {
+                            // An IllegalStateException can occur when the fragment is no longer attached to the activity
+                            Timber.e(e, "Could not kick off the Wifi Settings Intent for the older pre Android 10 setup");
+                        }
                     }, 2000);
                 }
             }
@@ -2031,9 +2056,16 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
 
                 uiThreadHandler.post(() -> Toast.makeText(getApplicationContext(), getString(R.string.turn_on_bluetooth), Toast.LENGTH_SHORT).show());
                 serviceHandler.post(() -> {
-                    final Intent enableBtIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
-                    enableBtIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-                    startActivity(enableBtIntent);
+                    try
+                    {
+                        final Intent enableBtIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
+                        enableBtIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                        startActivity(enableBtIntent);
+                    } catch (Exception e)
+                    {
+                        // An IllegalStateException can occur when the fragment is no longer attached to the activity
+                        Timber.e(e, "Could not kick off the Bluetooth Enable Intent");
+                    }
                 });
             }
         }

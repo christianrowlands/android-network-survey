@@ -163,7 +163,7 @@ public class WifiSurveyRecordLogger extends SurveyRecordLogger implements IWifiS
 
                         featureDao.insert(row);
 
-                        incrementRecordCount();
+                        checkIfRolloverNeeded();
                     }
                 } catch (Exception e)
                 {

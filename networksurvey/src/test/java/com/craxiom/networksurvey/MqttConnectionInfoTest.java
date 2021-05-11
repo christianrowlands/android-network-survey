@@ -27,7 +27,6 @@ public class MqttConnectionInfoTest
 
         final MqttConnectionInfo mqttBrokerConnectionInfo = new MqttConnectionInfo(host, port, tlsEnabled, clientId, username, password, true, true, true, true, true);
 
-        assertEquals("ssl://mqtt.example.com:8883", mqttBrokerConnectionInfo.getMqttServerUri());
         assertEquals(clientId, mqttBrokerConnectionInfo.getMqttClientId());
         assertEquals(username, mqttBrokerConnectionInfo.getMqttUsername());
         assertEquals(password, mqttBrokerConnectionInfo.getMqttPassword());
@@ -48,7 +47,6 @@ public class MqttConnectionInfoTest
 
         final MqttConnectionInfo mqttBrokerConnectionInfo = new MqttConnectionInfo(host, port, tlsEnabled, clientId, username, password, true, true, true, true, true);
 
-        assertEquals("tcp://mqtt.example.com:1883", mqttBrokerConnectionInfo.getMqttServerUri());
         assertEquals(clientId, mqttBrokerConnectionInfo.getMqttClientId());
         assertEquals(username, mqttBrokerConnectionInfo.getMqttUsername());
         assertEquals(password, mqttBrokerConnectionInfo.getMqttPassword());

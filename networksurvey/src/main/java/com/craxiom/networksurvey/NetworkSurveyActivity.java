@@ -84,6 +84,7 @@ public class NetworkSurveyActivity extends AppCompatActivity
     private boolean turnOnGnssLoggingOnNextServiceConnection = false;
     private AppBarConfiguration appBarConfiguration;
     private IGnssFailureListener gnssFailureListener;
+    private boolean hasRequestedPermissions = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState)
@@ -298,7 +299,19 @@ public class NetworkSurveyActivity extends AppCompatActivity
 
             AlertDialog permissionsExplanationDialog = alertBuilder.create();
             permissionsExplanationDialog.show();
-        } else
+        } else if (!hasRequestedPermissions && !hasLocationPermission())
+        {
+            Timber.d("Showing the permissions rationale dialog");
+
+            AlertDialog.Builder alertBuilder = new AlertDialog.Builder(this);
+            alertBuilder.setCancelable(true);
+            alertBuilder.setTitle(getString(R.string.permissions_rationale_title));
+            alertBuilder.setMessage(getText(R.string.location_permission_rationale));
+            alertBuilder.setPositiveButton(android.R.string.yes, (dialog, which) -> requestPermissions());
+
+            AlertDialog permissionsExplanationDialog = alertBuilder.create();
+            permissionsExplanationDialog.show();
+        } else if (!hasRequestedPermissions)
         {
             requestPermissions();
         }
@@ -312,6 +325,7 @@ public class NetworkSurveyActivity extends AppCompatActivity
     {
         if (missingAnyPermissions())
         {
+            hasRequestedPermissions = true;
             ActivityCompat.requestPermissions(this, PERMISSIONS, ACCESS_PERMISSION_REQUEST_ID);
         }
     }
@@ -469,6 +483,20 @@ public class NetworkSurveyActivity extends AppCompatActivity
 
         NavigationUI.setupWithNavController(navigationView, navController);
         NavigationUI.setupWithNavController(bottomNav, navController);
+
+        navController.addOnDestinationChangedListener((controller, destination, arguments) -> {
+            final int destinationId = destination.getId();
+            if (destinationId == R.id.main_cellular_fragment
+                    || destinationId == R.id.main_wifi_fragment
+                    || destinationId == R.id.main_bluetooth_fragment
+                    || destinationId == R.id.main_gnss_fragment)
+            {
+                bottomNav.setVisibility(View.VISIBLE);
+            } else
+            {
+                bottomNav.setVisibility(View.GONE);
+            }
+        });
 
         OnBackPressedCallback callback = new OnBackPressedCallback(true)
         {

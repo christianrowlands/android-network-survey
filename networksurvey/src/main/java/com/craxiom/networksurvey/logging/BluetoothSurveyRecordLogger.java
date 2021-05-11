@@ -147,7 +147,7 @@ public class BluetoothSurveyRecordLogger extends SurveyRecordLogger implements I
 
                         featureDao.insert(row);
 
-                        incrementRecordCount();
+                        checkIfRolloverNeeded();
                     }
                 } catch (Exception e)
                 {
