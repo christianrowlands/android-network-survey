@@ -63,6 +63,9 @@ library. [The API documentation is published to a web page here](https://messagi
 
 ## Changelog
 
+##### [1.3.0](https://github.com/christianrowlands/android-network-survey/releases/tag/v1.3.0) - 2021-05-18
+ * Updated the permissions dialog with some extra details on why the background location is needed.
+
 ##### [1.2.0](https://github.com/christianrowlands/android-network-survey/releases/tag/v1.2.0) - 2021-04-29
  * Improved the MQTT Connection stability and fixed a few bugs that resulted in the app crashing.
 
