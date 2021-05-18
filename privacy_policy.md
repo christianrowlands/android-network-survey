@@ -4,9 +4,11 @@ Christian Rowlands built the Network Survey app as an Open Source app. This App 
 
 This page is used to inform visitors regarding my policies with the collection, use, and disclosure of Personal Information if anyone decided to use the App.
 
-WE DO NOT STORE ANY DATA.  PERIOD.
+If you installed this app from the Google Play store then Firebase Crashlytics and Analytics information is stored in Google Firebase. This data is anonoymous
+but data related to app crashes and general app usage is set to Google Firebase to improve the stability and functionality of this app.
 
-We physically can’t.  We have nowhere to store it.  We don’t even have a server database to store it.
+No other information is stored. All survey log files remain on the phone unless you, the user, moves the. All connections including MQTT and gRPC server connections
+are to servers have to be configured and initiated by the user, and a default server is not provided.
 
 **Log Data**
 
