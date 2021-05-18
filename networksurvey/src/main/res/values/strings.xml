@@ -7,7 +7,8 @@
         \n\n3. <b>Access Photos, Media, and Files on Your Device</b>:  This permission allows the log file to be written.</string>
 
     <string name="location_permission_rationale">Denying the location permission will result in pretty much all of the features of this app not working. The location permission is
-        needed to access Wi-Fi details, Cellular details, GNSS details, and also to write geo-relevant log files.\n\n Please enable the location permission in the Android OS settings for this app.</string>
+        needed to access Wi-Fi details, Cellular details, GNSS details, and also to write geo-relevant log files.\n\n Please enable the location permission in the Android OS settings for this app.
+        Background location is needed to start surveying at when the phone boots.</string>
 
     <string name="app_version">v%1$s</string>
 

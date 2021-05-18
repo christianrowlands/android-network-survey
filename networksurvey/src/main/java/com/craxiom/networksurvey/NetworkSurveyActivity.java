@@ -15,6 +15,7 @@ import android.graphics.Color;
 import android.location.LocationManager;
 import android.location.LocationProvider;
 import android.os.AsyncTask;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.provider.Settings;
@@ -49,6 +50,7 @@ import com.craxiom.networksurvey.util.PreferenceUtils;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.android.material.navigation.NavigationView;
 
+import java.util.Arrays;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
@@ -326,7 +328,15 @@ public class NetworkSurveyActivity extends AppCompatActivity
         if (missingAnyPermissions())
         {
             hasRequestedPermissions = true;
-            ActivityCompat.requestPermissions(this, PERMISSIONS, ACCESS_PERMISSION_REQUEST_ID);
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q)
+            {
+                String[] newPermissionsArray = Arrays.copyOf(PERMISSIONS, PERMISSIONS.length + 1);
+                System.arraycopy(new String[]{Manifest.permission.ACCESS_BACKGROUND_LOCATION}, 0, newPermissionsArray, PERMISSIONS.length, 1);
+                ActivityCompat.requestPermissions(this, newPermissionsArray, ACCESS_PERMISSION_REQUEST_ID);
+            } else
+            {
+                ActivityCompat.requestPermissions(this, PERMISSIONS, ACCESS_PERMISSION_REQUEST_ID);
+            }
         }
     }
 
@@ -407,6 +417,15 @@ public class NetworkSurveyActivity extends AppCompatActivity
             if (ContextCompat.checkSelfPermission(this, permission) != PackageManager.PERMISSION_GRANTED)
             {
                 Timber.i("Missing the permission: %s", permission);
+                return true;
+            }
+        }
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q)
+        {
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_BACKGROUND_LOCATION) != PackageManager.PERMISSION_GRANTED)
+            {
+                Timber.i("Missing the permission: %s", Manifest.permission.ACCESS_BACKGROUND_LOCATION);
                 return true;
             }
         }
