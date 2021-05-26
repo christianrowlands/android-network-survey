@@ -5,6 +5,7 @@ import android.os.Looper;
 import com.craxiom.messaging.GnssRecord;
 import com.craxiom.messaging.GnssRecordData;
 import com.craxiom.messaging.gnss.Constellation;
+import com.craxiom.networksurvey.constants.GnssMessageConstants;
 import com.craxiom.networksurvey.constants.NetworkSurveyConstants;
 import com.craxiom.networksurvey.listeners.IGnssSurveyRecordListener;
 import com.craxiom.networksurvey.services.NetworkSurveyService;
@@ -118,6 +119,7 @@ public class GnssRecordLogger extends SurveyRecordLogger implements IGnssSurveyR
                         row.setGeometry(geomData);
 
                         row.setValue(TIME_COLUMN, IOUtils.getEpochFromRfc3339(data.getDeviceTime()));
+                        row.setValue(GnssMessageConstants.MISSION_ID_COLUMN, data.getMissionId());
                         row.setValue(RECORD_NUMBER_COLUMN, data.getRecordNumber());
                         row.setValue(GROUP_NUMBER_COLUMN, data.getGroupNumber());
 

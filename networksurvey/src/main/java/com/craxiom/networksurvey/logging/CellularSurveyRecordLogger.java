@@ -202,6 +202,7 @@ public class CellularSurveyRecordLogger extends SurveyRecordLogger implements IC
                         row.setGeometry(geomData);
 
                         row.setValue(GsmMessageConstants.TIME_COLUMN, IOUtils.getEpochFromRfc3339(data.getDeviceTime()));
+                        row.setValue(GsmMessageConstants.MISSION_ID_COLUMN, data.getMissionId());
                         row.setValue(GsmMessageConstants.RECORD_NUMBER_COLUMN, data.getRecordNumber());
                         row.setValue(GsmMessageConstants.GROUP_NUMBER_COLUMN, data.getGroupNumber());
                         if (data.hasServingCell())
@@ -288,6 +289,7 @@ public class CellularSurveyRecordLogger extends SurveyRecordLogger implements IC
                         row.setGeometry(geomData);
 
                         row.setValue(CdmaMessageConstants.TIME_COLUMN, IOUtils.getEpochFromRfc3339(data.getDeviceTime()));
+                        row.setValue(CdmaMessageConstants.MISSION_ID_COLUMN, data.getMissionId());
                         row.setValue(CdmaMessageConstants.RECORD_NUMBER_COLUMN, data.getRecordNumber());
                         row.setValue(CdmaMessageConstants.GROUP_NUMBER_COLUMN, data.getGroupNumber());
                         if (data.hasServingCell())
@@ -366,6 +368,7 @@ public class CellularSurveyRecordLogger extends SurveyRecordLogger implements IC
                         row.setGeometry(geomData);
 
                         row.setValue(UmtsMessageConstants.TIME_COLUMN, IOUtils.getEpochFromRfc3339(data.getDeviceTime()));
+                        row.setValue(UmtsMessageConstants.MISSION_ID_COLUMN, data.getMissionId());
                         row.setValue(UmtsMessageConstants.RECORD_NUMBER_COLUMN, data.getRecordNumber());
                         row.setValue(UmtsMessageConstants.GROUP_NUMBER_COLUMN, data.getGroupNumber());
                         if (data.hasServingCell())
@@ -452,6 +455,7 @@ public class CellularSurveyRecordLogger extends SurveyRecordLogger implements IC
                         row.setGeometry(geomData);
 
                         row.setValue(LteMessageConstants.TIME_COLUMN, IOUtils.getEpochFromRfc3339(data.getDeviceTime()));
+                        row.setValue(LteMessageConstants.MISSION_ID_COLUMN, data.getMissionId());
                         row.setValue(LteMessageConstants.RECORD_NUMBER_COLUMN, data.getRecordNumber());
                         row.setValue(LteMessageConstants.GROUP_NUMBER_COLUMN, data.getGroupNumber());
 
