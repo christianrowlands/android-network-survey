@@ -22,6 +22,7 @@ public class GnssMessageConstants extends MessageConstants
     public static final String GNSS_RECORDS_TABLE_NAME = "GNSS_MESSAGE";
 
     public static final String GROUP_NUMBER_COLUMN = "GroupNumber";
+    public static final String DEVICE_MODEL_COLUMN = "DeviceModel";
 
     public static final String CONSTELLATION = "Constellation";
     public static final String SPACE_VEHICLE_ID = "Space Vehicle Id";
