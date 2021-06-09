@@ -7,6 +7,7 @@ import android.location.GnssMeasurement;
 import android.location.GnssMeasurementsEvent;
 import android.location.Location;
 import android.net.wifi.ScanResult;
+import android.os.Build;
 import android.telephony.CellIdentityCdma;
 import android.telephony.CellIdentityGsm;
 import android.telephony.CellIdentityLte;
@@ -992,6 +993,7 @@ public class SurveyRecordProcessor
         dataBuilder.setMissionId(missionId);
         dataBuilder.setRecordNumber(gnssRecordNumber++);
         dataBuilder.setGroupNumber(gnssGroupNumber);
+        dataBuilder.setDeviceModel(Build.MODEL);
 
         final Constellation constellation = GnssMessageConstants.getProtobufConstellation(gnss.getConstellationType());
         if (constellation != Constellation.UNKNOWN) dataBuilder.setConstellation(constellation);

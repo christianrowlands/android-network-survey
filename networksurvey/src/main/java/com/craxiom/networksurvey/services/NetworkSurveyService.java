@@ -1657,6 +1657,8 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
             dataBuilder.setBatteryLevelPercent(Int32Value.of((int) batteryPercent));
         }
 
+        dataBuilder.setDeviceModel(Build.MODEL);
+
         final DeviceStatus.Builder statusBuilder = DeviceStatus.newBuilder();
         statusBuilder.setMessageType(DeviceStatusMessageConstants.DEVICE_STATUS_MESSAGE_TYPE);
         statusBuilder.setVersion(BuildConfig.MESSAGING_API_VERSION);
