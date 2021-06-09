@@ -29,7 +29,7 @@ public class DeviceStatusMessageConstants extends MessageConstants
      * Given an Android defined Network Info Domain, return a Protocol Buffer defined {@link Domain}.
      *
      * @param domain The Android domain int to convert to protobuf.
-     * @return The user friendly Cipher Suite, or an empty String if it is unknown/could not be converted.
+     * @return The Protobuf defined {@link Domain} enum that lines up with the provided int.
      * @since 1.4.0
      */
     public static Domain convertDomain(int domain)

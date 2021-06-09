@@ -1,4 +1,4 @@
-package com.craxiom.networksurvey;
+package com.craxiom.networksurvey.util;
 
 import com.craxiom.networksurvey.util.ParserUtils;
 

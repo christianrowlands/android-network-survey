@@ -251,7 +251,15 @@ public class ParserUtils
         return regInfoBuilder.build();
     }
 
-    public static int extractRejectCause(String infoString)
+    /**
+     * Given a string, look for the key `rejectCause=`, take the value after it, convert it to an int, and return it.
+     * In other words, extract the reject cause value from the provided string.
+     *
+     * @param infoString The string to look for the reject cause in.
+     * @return {@link Integer#MAX_VALUE} if the reject cause could not be found, or the reject cause value if it could
+     * be extracted from the provided string.
+     */
+    protected static int extractRejectCause(String infoString)
     {
         try
         {
