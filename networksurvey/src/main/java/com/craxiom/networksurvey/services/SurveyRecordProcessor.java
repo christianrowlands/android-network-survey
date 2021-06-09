@@ -8,6 +8,7 @@ import android.location.GnssMeasurementsEvent;
 import android.location.Location;
 import android.net.wifi.ScanResult;
 import android.os.Build;
+import android.telephony.CellIdentity;
 import android.telephony.CellIdentityCdma;
 import android.telephony.CellIdentityGsm;
 import android.telephony.CellIdentityLte;
@@ -21,9 +22,12 @@ import android.telephony.CellSignalStrengthCdma;
 import android.telephony.CellSignalStrengthGsm;
 import android.telephony.CellSignalStrengthLte;
 import android.telephony.CellSignalStrengthWcdma;
+import android.telephony.ServiceState;
 import android.telephony.TelephonyManager;
 import android.view.View;
 import android.widget.TextView;
+
+import androidx.annotation.NonNull;
 
 import com.craxiom.messaging.BluetoothRecord;
 import com.craxiom.messaging.BluetoothRecordData;
@@ -37,12 +41,15 @@ import com.craxiom.messaging.GsmRecordData;
 import com.craxiom.messaging.LteBandwidth;
 import com.craxiom.messaging.LteRecord;
 import com.craxiom.messaging.LteRecordData;
+import com.craxiom.messaging.PhoneState;
+import com.craxiom.messaging.PhoneStateData;
 import com.craxiom.messaging.UmtsRecord;
 import com.craxiom.messaging.UmtsRecordData;
 import com.craxiom.messaging.WifiBeaconRecord;
 import com.craxiom.messaging.WifiBeaconRecordData;
 import com.craxiom.messaging.bluetooth.SupportedTechnologies;
 import com.craxiom.messaging.gnss.Constellation;
+import com.craxiom.messaging.phonestate.SimState;
 import com.craxiom.messaging.wifi.EncryptionType;
 import com.craxiom.networksurvey.BuildConfig;
 import com.craxiom.networksurvey.CalculationUtils;
@@ -51,6 +58,7 @@ import com.craxiom.networksurvey.NetworkSurveyActivity;
 import com.craxiom.networksurvey.R;
 import com.craxiom.networksurvey.constants.BluetoothMessageConstants;
 import com.craxiom.networksurvey.constants.CdmaMessageConstants;
+import com.craxiom.networksurvey.constants.DeviceStatusMessageConstants;
 import com.craxiom.networksurvey.constants.GnssMessageConstants;
 import com.craxiom.networksurvey.constants.GsmMessageConstants;
 import com.craxiom.networksurvey.constants.LteMessageConstants;
@@ -65,6 +73,7 @@ import com.craxiom.networksurvey.listeners.IGnssSurveyRecordListener;
 import com.craxiom.networksurvey.listeners.IWifiSurveyRecordListener;
 import com.craxiom.networksurvey.model.WifiRecordWrapper;
 import com.craxiom.networksurvey.util.IOUtils;
+import com.craxiom.networksurvey.util.ParserUtils;
 import com.craxiom.networksurvey.util.PreferenceUtils;
 import com.craxiom.networksurvey.util.WifiCapabilitiesUtils;
 import com.google.protobuf.BoolValue;
@@ -82,6 +91,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArraySet;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 import timber.log.Timber;
@@ -396,6 +406,87 @@ public class SurveyRecordProcessor
     synchronized void onDeviceStatus(DeviceStatus deviceStatus)
     {
         notifyDeviceStatusListeners(deviceStatus);
+    }
+
+    /**
+     * Notification that the cellular service state has changed.
+     *
+     * @param serviceState     The new service state.
+     * @param telephonyManager The Android telephony manager to get some more details from.
+     * @since 1.4.0
+     */
+    synchronized void onServiceStateChanged(ServiceState serviceState, TelephonyManager telephonyManager)
+    {
+        Timber.i("onServiceStateChanged: %s", serviceState);
+
+        notifyPhoneStateListeners(createPhoneStateMessage(telephonyManager,
+                builder -> serviceState.getNetworkRegistrationInfoList()
+                        .forEach(info -> builder.addNetworkRegistrationInfo(ParserUtils.convertNetworkInfo(info)))));
+    }
+
+    /**
+     * This javadoc has been taken and modified from
+     * {@link android.telephony.PhoneStateListener#onRegistrationFailed(CellIdentity, String, int, int, int)}.
+     * <p>
+     * Report that Registration or a Location/Routing/Tracking Area update has failed.
+     *
+     * <p>Indicate whenever a registration procedure, including a location, routing, or tracking
+     * area update fails. This includes procedures that do not necessarily result in a change of
+     * the modem's registration status.
+     *
+     * @param cellIdentity        the CellIdentity, which must include the globally unique identifier
+     *                            for the cell (for example, all components of the CGI or ECGI).
+     * @param domain              DOMAIN_CS, DOMAIN_PS or both in case of a combined procedure.
+     * @param causeCode           the primary failure cause code of the procedure.
+     *                            For GSM/UMTS (MM), values are in TS 24.008 Sec 10.5.95
+     *                            For GSM/UMTS (GMM), values are in TS 24.008 Sec 10.5.147
+     *                            For LTE (EMM), cause codes are TS 24.301 Sec 9.9.3.9
+     *                            For NR (5GMM), cause codes are TS 24.501 Sec 9.11.3.2
+     *                            Integer.MAX_VALUE if this value is unused.
+     * @param additionalCauseCode the cause code of any secondary/combined procedure if appropriate.
+     *                            For UMTS, if a combined attach succeeds for PS only, then the GMM cause code shall be
+     *                            included as an additionalCauseCode. For LTE (ESM), cause codes are in
+     *                            TS 24.301 9.9.4.4. Integer.MAX_VALUE if this value is unused.
+     * @since 1.4.0
+     */
+    synchronized void onRegistrationFailed(@NonNull CellIdentity cellIdentity, int domain,
+                                           int causeCode, int additionalCauseCode, TelephonyManager telephonyManager)
+    {
+        Timber.i("onRegistrationFailed: %s", cellIdentity);
+
+        notifyPhoneStateListeners(createPhoneStateMessage(telephonyManager,
+                builder -> builder.addNetworkRegistrationInfo(ParserUtils.convertNetworkInfo(cellIdentity, domain, causeCode))));
+    }
+
+    private PhoneState createPhoneStateMessage(TelephonyManager telephonyManager, Consumer<PhoneStateData.Builder> networkRegistrationInfoFunction)
+    {
+        final PhoneStateData.Builder dataBuilder = PhoneStateData.newBuilder();
+
+        if (gpsListener != null)
+        {
+            @SuppressLint("MissingPermission") final Location lastKnownLocation = gpsListener.getLatestLocation();
+            if (lastKnownLocation != null)
+            {
+                dataBuilder.setLatitude(lastKnownLocation.getLatitude());
+                dataBuilder.setLongitude(lastKnownLocation.getLongitude());
+                dataBuilder.setAltitude((float) lastKnownLocation.getAltitude());
+            }
+        }
+
+        dataBuilder.setDeviceSerialNumber(deviceId);
+        dataBuilder.setDeviceTime(IOUtils.getRfc3339String(ZonedDateTime.now()));
+
+        dataBuilder.setSimState(SimState.forNumber(telephonyManager.getSimState()));
+        dataBuilder.setSimOperator(telephonyManager.getSimOperator());
+
+        networkRegistrationInfoFunction.accept(dataBuilder);
+
+        final PhoneState.Builder messageBuilder = PhoneState.newBuilder();
+        messageBuilder.setMessageType(DeviceStatusMessageConstants.PHONE_STATE_MESSAGE_TYPE);
+        messageBuilder.setVersion(BuildConfig.MESSAGING_API_VERSION);
+        messageBuilder.setData(dataBuilder);
+
+        return messageBuilder.build();
     }
 
     /**
@@ -1388,7 +1479,7 @@ public class SurveyRecordProcessor
     }
 
     /**
-     * Notify all the listeners that we have a new GNSS Record available.
+     * Notify all the listeners that we have a new Device Status available.
      *
      * @param deviceStatus The new Device Status Message to send to the listeners.
      * @since 1.1.0
@@ -1404,6 +1495,27 @@ public class SurveyRecordProcessor
             } catch (Exception e)
             {
                 Timber.e(e, "Unable to notify a Device Status Listener because of an exception");
+            }
+        }
+    }
+
+    /**
+     * Notify all the listeners that we have a new Phone State available.
+     *
+     * @param phoneState The new Phone State Message to send to the listeners.
+     * @since 1.1.0
+     */
+    private void notifyPhoneStateListeners(PhoneState phoneState)
+    {
+        if (phoneState == null) return;
+        for (IDeviceStatusListener listener : deviceStatusListeners)
+        {
+            try
+            {
+                listener.onPhoneState(phoneState);
+            } catch (Exception e)
+            {
+                Timber.e(e, "Unable to notify a Phone State Listener because of an exception");
             }
         }
     }

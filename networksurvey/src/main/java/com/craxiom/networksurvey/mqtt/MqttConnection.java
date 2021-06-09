@@ -6,6 +6,7 @@ import com.craxiom.messaging.DeviceStatus;
 import com.craxiom.messaging.GnssRecord;
 import com.craxiom.messaging.GsmRecord;
 import com.craxiom.messaging.LteRecord;
+import com.craxiom.messaging.PhoneState;
 import com.craxiom.messaging.UmtsRecord;
 import com.craxiom.messaging.WifiBeaconRecord;
 import com.craxiom.mqttlibrary.connection.DefaultMqttConnection;
@@ -149,5 +150,17 @@ public class MqttConnection extends DefaultMqttConnection implements ICellularSu
         }
 
         publishMessage(MQTT_DEVICE_STATUS_MESSAGE_TOPIC, deviceStatus);
+    }
+
+    @Override
+    public void onPhoneState(PhoneState phoneState)
+    {
+        if (mqttClientId != null)
+        {
+            final PhoneState.Builder messageBuilder = phoneState.toBuilder();
+            phoneState = messageBuilder.setData(messageBuilder.getDataBuilder().setDeviceName(mqttClientId)).build();
+        }
+
+        publishMessage(MQTT_DEVICE_STATUS_MESSAGE_TOPIC, phoneState);
     }
 }

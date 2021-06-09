@@ -1,0 +1,274 @@
+package com.craxiom.networksurvey.util;
+
+import android.os.Build;
+import android.telephony.CellIdentity;
+import android.telephony.CellIdentityCdma;
+import android.telephony.CellIdentityGsm;
+import android.telephony.CellIdentityLte;
+import android.telephony.CellIdentityNr;
+import android.telephony.CellIdentityWcdma;
+import android.telephony.CellInfo;
+
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+
+import com.craxiom.messaging.NetworkRegistrationInfo;
+import com.craxiom.messaging.phonestate.Domain;
+import com.craxiom.messaging.phonestate.NetworkType;
+import com.craxiom.networksurvey.constants.DeviceStatusMessageConstants;
+import com.google.protobuf.BoolValue;
+import com.google.protobuf.Int32Value;
+import com.google.protobuf.Int64Value;
+
+import timber.log.Timber;
+
+/**
+ * Some basic utility methods to assist with parsing and converting the values used in this app.
+ *
+ * @since 1.4.0
+ */
+public class ParserUtils
+{
+    private ParserUtils()
+    {
+    }
+
+    /**
+     * Attempts to pull an int value from a String. The string is first checked to see if it is empty or null before
+     * attempting to use Integer.parseInt().
+     *
+     * @param value        The String value to parse as an int.
+     * @param defaultValue The return value of this method if an int could not be extracted from the String.
+     * @return Returns the provided {@code defaultValue} if the provided value is null or empty, or a
+     * NumberFormatException occurs while using the Integer.parseInt() method, otherwise, the int value is returned.
+     */
+    public static int parseInt(String value, int defaultValue)
+    {
+        if ((value != null) && (!value.isEmpty()))
+        {
+            try
+            {
+                return Integer.parseInt(value);
+            } catch (NumberFormatException ignored)
+            {
+            }
+        }
+        return defaultValue;
+    }
+
+    /**
+     * Given an Android created Network Registration Info object, create a NS Messaging API Network Registration Info
+     * object.
+     *
+     * @param info The Android object with all the registration info.
+     * @return The NS Messaging API Network Registration Info object.
+     */
+    public static NetworkRegistrationInfo convertNetworkInfo(android.telephony.NetworkRegistrationInfo info)
+    {
+        int rejectCause = extractRejectCause(info.toString());
+
+        return convertNetworkInfo(info.getCellIdentity(), info.getDomain(), rejectCause,
+                info.getAccessNetworkTechnology(), info.isRoaming());
+    }
+
+    /**
+     * This javadoc has been taken and modified from
+     * {@link android.telephony.PhoneStateListener#onRegistrationFailed(CellIdentity, String, int, int, int)}.
+     *
+     * @param cellIdentity the CellIdentity, which must include the globally unique identifier
+     *                     for the cell (for example, all components of the CGI or ECGI).
+     * @param domain       DOMAIN_CS, DOMAIN_PS or both in case of a combined procedure.
+     * @param causeCode    the primary failure cause code of the procedure.
+     *                     For GSM/UMTS (MM), values are in TS 24.008 Sec 10.5.95
+     *                     For GSM/UMTS (GMM), values are in TS 24.008 Sec 10.5.147
+     *                     For LTE (EMM), cause codes are TS 24.301 Sec 9.9.3.9
+     *                     For NR (5GMM), cause codes are TS 24.501 Sec 9.11.3.2
+     *                     Integer.MAX_VALUE if this value is unused.
+     */
+    public static NetworkRegistrationInfo convertNetworkInfo(@NonNull CellIdentity cellIdentity, int domain, int causeCode)
+    {
+        return convertNetworkInfo(cellIdentity, domain, causeCode, Integer.MAX_VALUE, null);
+    }
+
+    /**
+     * This javadoc has been taken and modified from
+     * {@link android.telephony.PhoneStateListener#onRegistrationFailed(CellIdentity, String, int, int, int)}.
+     *
+     * @param cellIdentity            the CellIdentity, which must include the globally unique identifier
+     *                                for the cell (for example, all components of the CGI or ECGI).
+     * @param domain                  DOMAIN_CS, DOMAIN_PS or both in case of a combined procedure.
+     * @param causeCode               the primary failure cause code of the procedure.
+     *                                For GSM/UMTS (MM), values are in TS 24.008 Sec 10.5.95
+     *                                For GSM/UMTS (GMM), values are in TS 24.008 Sec 10.5.147
+     *                                For LTE (EMM), cause codes are TS 24.301 Sec 9.9.3.9
+     *                                For NR (5GMM), cause codes are TS 24.501 Sec 9.11.3.2
+     *                                Integer.MAX_VALUE if this value is unused.
+     * @param accessNetworkTechnology The access network technology {@link NetworkType}. Integer.MAX_VALUE if this value is unused.
+     * @param roaming                 True if roaming, false if not roaming, and null if unknown.
+     */
+    private static NetworkRegistrationInfo convertNetworkInfo(CellIdentity cellIdentity, int domain,
+                                                              int causeCode, int accessNetworkTechnology, @Nullable Boolean roaming)
+    {
+        final NetworkRegistrationInfo.Builder regInfoBuilder = NetworkRegistrationInfo.newBuilder();
+
+        final Domain domainEnum = DeviceStatusMessageConstants.convertDomain(domain);
+        if (domainEnum != Domain.UNKNOWN) regInfoBuilder.setDomain(domainEnum);
+
+        if (accessNetworkTechnology != Integer.MAX_VALUE)
+        {
+            regInfoBuilder.setAccessNetworkTechnology(NetworkType.forNumber(accessNetworkTechnology));
+        }
+
+        if (roaming != null) regInfoBuilder.setRoaming(BoolValue.newBuilder().setValue(roaming).build());
+
+        if (causeCode != Integer.MAX_VALUE)
+        {
+            regInfoBuilder.setRejectCause(Int32Value.newBuilder().setValue(causeCode).build());
+        }
+
+        // For whatever reason, casting a cellIdentity object requires Android 8 or higher
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.P)
+        {
+            if (cellIdentity instanceof CellIdentityGsm)
+            {
+                final CellIdentityGsm cellIdentityGsm = (CellIdentityGsm) cellIdentity;
+
+                com.craxiom.messaging.CellIdentityGsm.Builder builder = com.craxiom.messaging.CellIdentityGsm.newBuilder();
+
+                final int mcc = parseInt(cellIdentityGsm.getMccString(), -1);
+                if (mcc != -1) builder.setMcc(Int32Value.newBuilder().setValue(mcc).build());
+
+                final int mnc = parseInt(cellIdentityGsm.getMncString(), -1);
+                if (mnc != -1) builder.setMnc(Int32Value.newBuilder().setValue(mnc).build());
+
+                final int lac = cellIdentityGsm.getLac();
+                if (lac != CellInfo.UNAVAILABLE) builder.setLac(Int32Value.newBuilder().setValue(lac).build());
+
+                final int cid = cellIdentityGsm.getCid();
+                if (cid != CellInfo.UNAVAILABLE) builder.setCi(Int32Value.newBuilder().setValue(cid).build());
+
+                final int arfcn = cellIdentityGsm.getArfcn();
+                if (arfcn != CellInfo.UNAVAILABLE) builder.setArfcn(Int32Value.newBuilder().setValue(arfcn).build());
+
+                final int bsic = cellIdentityGsm.getBsic();
+                if (bsic != CellInfo.UNAVAILABLE) builder.setBsic(Int32Value.newBuilder().setValue(bsic).build());
+
+                regInfoBuilder.setCellIdentityGsm(builder);
+            } else if (cellIdentity instanceof CellIdentityCdma)
+            {
+                final CellIdentityCdma cellIdentityCdma = (CellIdentityCdma) cellIdentity;
+
+                com.craxiom.messaging.CellIdentityCdma.Builder builder = com.craxiom.messaging.CellIdentityCdma.newBuilder();
+
+                final int sid = cellIdentityCdma.getSystemId();
+                if (sid != CellInfo.UNAVAILABLE) builder.setSid(Int32Value.newBuilder().setValue(sid).build());
+
+                final int nid = cellIdentityCdma.getNetworkId();
+                if (nid != CellInfo.UNAVAILABLE) builder.setNid(Int32Value.newBuilder().setValue(nid).build());
+
+                final int bsid = cellIdentityCdma.getBasestationId();
+                if (bsid != CellInfo.UNAVAILABLE) builder.setBsid(Int32Value.newBuilder().setValue(bsid).build());
+
+                regInfoBuilder.setCellIdentityCdma(builder);
+            } else if (cellIdentity instanceof CellIdentityWcdma)
+            {
+                final CellIdentityWcdma cellIdentityWcdma = (CellIdentityWcdma) cellIdentity;
+
+                com.craxiom.messaging.CellIdentityUmts.Builder builder = com.craxiom.messaging.CellIdentityUmts.newBuilder();
+
+                final int mcc = parseInt(cellIdentityWcdma.getMccString(), -1);
+                if (mcc != -1) builder.setMcc(Int32Value.newBuilder().setValue(mcc).build());
+
+                final int mnc = parseInt(cellIdentityWcdma.getMncString(), -1);
+                if (mnc != -1) builder.setMnc(Int32Value.newBuilder().setValue(mnc).build());
+
+                final int lac = cellIdentityWcdma.getLac();
+                if (lac != CellInfo.UNAVAILABLE) builder.setLac(Int32Value.newBuilder().setValue(lac).build());
+
+                final int cid = cellIdentityWcdma.getCid();
+                if (cid != CellInfo.UNAVAILABLE) builder.setCid(Int32Value.newBuilder().setValue(cid).build());
+
+                final int uarfcn = cellIdentityWcdma.getUarfcn();
+                if (uarfcn != CellInfo.UNAVAILABLE) builder.setUarfcn(Int32Value.newBuilder().setValue(uarfcn).build());
+
+                final int psc = cellIdentityWcdma.getPsc();
+                if (psc != CellInfo.UNAVAILABLE) builder.setPsc(Int32Value.newBuilder().setValue(psc).build());
+
+                regInfoBuilder.setCellIdentityUmts(builder);
+            } else if (cellIdentity instanceof CellIdentityLte)
+            {
+                final CellIdentityLte cellIdentityLte = (CellIdentityLte) cellIdentity;
+
+                com.craxiom.messaging.CellIdentityLte.Builder builder = com.craxiom.messaging.CellIdentityLte.newBuilder();
+
+                final int mcc = parseInt(cellIdentityLte.getMccString(), -1);
+                if (mcc != -1) builder.setMcc(Int32Value.newBuilder().setValue(mcc).build());
+
+                final int mnc = parseInt(cellIdentityLte.getMncString(), -1);
+                if (mnc != -1) builder.setMnc(Int32Value.newBuilder().setValue(mnc).build());
+
+                final int tac = cellIdentityLte.getTac();
+                if (tac != CellInfo.UNAVAILABLE) builder.setTac(Int32Value.newBuilder().setValue(tac).build());
+
+                final int eci = cellIdentityLte.getCi();
+                if (eci != CellInfo.UNAVAILABLE) builder.setEci(Int32Value.newBuilder().setValue(eci).build());
+
+                final int earfcn = cellIdentityLte.getEarfcn();
+                if (earfcn != CellInfo.UNAVAILABLE) builder.setEarfcn(Int32Value.newBuilder().setValue(earfcn).build());
+
+                final int pci = cellIdentityLte.getPci();
+                if (pci != CellInfo.UNAVAILABLE) builder.setPci(Int32Value.newBuilder().setValue(pci).build());
+
+                regInfoBuilder.setCellIdentityLte(builder);
+            } else if (android.os.Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q && cellIdentity instanceof CellIdentityNr)
+            {
+                final CellIdentityNr cellIdentityNr = (CellIdentityNr) cellIdentity;
+
+                com.craxiom.messaging.CellIdentityNr.Builder builder = com.craxiom.messaging.CellIdentityNr.newBuilder();
+
+                final int mcc = parseInt(cellIdentityNr.getMccString(), -1);
+                if (mcc != -1) builder.setMcc(Int32Value.newBuilder().setValue(mcc).build());
+
+                final int mnc = parseInt(cellIdentityNr.getMncString(), -1);
+                if (mnc != -1) builder.setMnc(Int32Value.newBuilder().setValue(mnc).build());
+
+                final int tac = cellIdentityNr.getTac();
+                if (tac != CellInfo.UNAVAILABLE) builder.setTac(Int32Value.newBuilder().setValue(tac).build());
+
+                final long nci = cellIdentityNr.getNci();
+                if (nci != CellInfo.UNAVAILABLE) builder.setNci(Int64Value.newBuilder().setValue(nci).build());
+
+                final int narfcn = cellIdentityNr.getNrarfcn();
+                if (narfcn != CellInfo.UNAVAILABLE) builder.setNarfcn(Int32Value.newBuilder().setValue(narfcn).build());
+
+                final int pci = cellIdentityNr.getPci();
+                if (pci != CellInfo.UNAVAILABLE) builder.setPci(Int32Value.newBuilder().setValue(pci).build());
+
+                regInfoBuilder.setCellIdentityNr(builder);
+            }
+        }
+
+        return regInfoBuilder.build();
+    }
+
+    public static int extractRejectCause(String infoString)
+    {
+        try
+        {
+            final String rejectCauseKey = "rejectCause=";
+            final int rejectCauseIndex = infoString.indexOf(rejectCauseKey);
+            if (rejectCauseIndex == -1) return Integer.MAX_VALUE;
+
+            final int endRejectCauseIndex = infoString.indexOf(' ', rejectCauseIndex);
+            if (endRejectCauseIndex == -1) return Integer.MAX_VALUE;
+
+            final String rejectCause = infoString.substring(rejectCauseIndex + rejectCauseKey.length(), endRejectCauseIndex);
+
+            return parseInt(rejectCause, Integer.MAX_VALUE);
+        } catch (Throwable t)
+        {
+            Timber.e(t, "Could not get the rejectCause from the NetworkRegistrationInfo toString method");
+            return Integer.MAX_VALUE;
+        }
+    }
+}
