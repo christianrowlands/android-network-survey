@@ -417,8 +417,6 @@ public class SurveyRecordProcessor
      */
     synchronized void onServiceStateChanged(ServiceState serviceState, TelephonyManager telephonyManager)
     {
-        Timber.i("onServiceStateChanged: %s", serviceState);
-
         notifyPhoneStateListeners(createPhoneStateMessage(telephonyManager,
                 builder -> serviceState.getNetworkRegistrationInfoList()
                         .forEach(info -> builder.addNetworkRegistrationInfo(ParserUtils.convertNetworkInfo(info)))));
@@ -452,8 +450,6 @@ public class SurveyRecordProcessor
     synchronized void onRegistrationFailed(@NonNull CellIdentity cellIdentity, int domain,
                                            int causeCode, int additionalCauseCode, TelephonyManager telephonyManager)
     {
-        Timber.i("onRegistrationFailed: %s", cellIdentity);
-
         notifyPhoneStateListeners(createPhoneStateMessage(telephonyManager,
                 builder -> builder.addNetworkRegistrationInfo(ParserUtils.convertNetworkInfo(cellIdentity, domain, causeCode))));
     }

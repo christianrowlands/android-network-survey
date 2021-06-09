@@ -1,15 +1,19 @@
 <resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
 
-    <string name="permissions_rationale_title">Network Survey Background Location</string>
+    <string name="permissions_rationale_title">Network Survey Permissions</string>
     <string name="permissions_rationale">The Network Survey app requires a few permissions to work.  Denying these permissions will result in the app not functioning properly.
         \n\n1. <b>Make and Manage Phone Calls</b>:  This app does not make or manage phone calls.  Instead, it needs this permission to get access to the current cellular connection type (e.g. LTE vs UMTS).
-        \n\n2. <b>Access this Device\'s Location</b>:  This app creates a log file which includes the location the cellular record was captured at and to display GNSS details.
+        \n\n2. <b>Access this Device\'s Location</b>:  The location permission is needed to access Wi-Fi details, Cellular details, GNSS details, and also to write geo-relevant log files.
         \n\n3. <b>Access Photos, Media, and Files on Your Device</b>:  This permission allows the log file to be written.</string>
 
-    <string name="location_permission_rationale">Network Survey collects location data to enable starting Cellular, Wi-Fi, Bluetooth, and GNSS survey at boot, even when the app is closed or not in use.
-        \n\nDenying the location permission will result in pretty much all of the features of this app not working. The location permission is
-        needed to access Wi-Fi details, Cellular details, GNSS details, and also to write geo-relevant log files.\n\n Please enable the location permission in the Android OS settings for this app.
-        Background location is needed to start surveying when the phone boots.</string>
+    <string name="location_permission_rationale_title">Location Permission</string>
+    <string name="location_permission_rationale">The location permission is needed to access Wi-Fi details, Cellular details, GNSS details,
+        and also to write geo-relevant log files.\n\nDenying the location permission will result in pretty much all of the features of this app not working.</string>
+
+    <string name="background_location_permission_rationale_title">Background Location</string>
+    <string name="background_location_permission_rationale">Network Survey collects location data to enable starting Cellular, Wi-Fi, Bluetooth, and GNSS survey at boot, even when the app is closed or not in use.
+        \n\nWithout the background location permission, this app will not be able to start surveying Cellular, Wi-Fi, or GNSS at boot.\n\nEnable the background location permission in the Android settings for this app by selecting <b>Allow all the time</b> on the next page.</string>
+    <string name="open_settings">Open Settings</string>
 
     <string name="app_version">v%1$s</string>
 
