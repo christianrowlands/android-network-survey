@@ -78,14 +78,14 @@
             app:useSimpleSummaryProvider="true" />
 
         <EditTextPreference
-            app:defaultValue="15"
+            app:defaultValue="30"
             app:dialogMessage="@string/bluetooth_scan_interval_description"
             app:key="bluetooth_scan_interval_seconds"
             app:title="@string/bluetooth_scan_interval_title"
             app:useSimpleSummaryProvider="true" />
 
         <EditTextPreference
-            app:defaultValue="8"
+            app:defaultValue="10"
             app:dialogMessage="@string/gnss_scan_interval_description"
             app:key="gnss_scan_interval_seconds"
             app:title="@string/gnss_scan_interval_title"
