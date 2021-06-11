@@ -149,7 +149,7 @@
     <string name="content_description_pause_wifi_network_scan_ui_updates">Pause Wi-Fi network scan UI updates</string>
 
     <string name="android_9_throttling_information">Android 9 throttles Wi-Fi scans to 2 per minute. Upgrade Android if possible.</string>
-    <string name="android_10_throttling_information">Android 10 throttles Wi-Fi scans. To disable throttling: System -> Advanced -> Developer options -> WiFi scan throttling to off.</string>
+    <string name="android_10_throttling_information">Android 10+ throttles Wi-Fi scans. To disable throttling: System -> Advanced -> Developer options -> WiFi scan throttling to off.</string>
     <string name="enable_developer_options">To enable Developer Options: Settings -> About Phone -> Tap Build Number 7 times.</string>
 
     <!-- Bluetooth Device List -->

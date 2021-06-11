@@ -11,6 +11,7 @@ import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.IBinder;
+import android.os.Looper;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -51,6 +52,7 @@ import timber.log.Timber;
 public class BluetoothFragment extends Fragment implements IBluetoothSurveyRecordListener
 {
     private final SortedSet<BluetoothRecord> bluetoothRecordSortedSet = new SortedSet<>(BluetoothRecord.class, new RecordSortedListCallback());
+    private final Handler uiThreadHandler;
 
     private Context applicationContext;
     private NetworkSurveyService surveyService;
@@ -75,6 +77,7 @@ public class BluetoothFragment extends Fragment implements IBluetoothSurveyRecor
      */
     public BluetoothFragment()
     {
+        uiThreadHandler = new Handler(Looper.getMainLooper());
     }
 
     @Override
@@ -144,19 +147,21 @@ public class BluetoothFragment extends Fragment implements IBluetoothSurveyRecor
     {
         if (updatesPaused) return;
 
-        synchronized (bluetoothRecordSortedSet)
-        {
-            bluetoothRecordSortedSet.add(bluetoothRecord);
-
-            checkAndRemoveStaleRecords();
-
-            if (bluetoothRecyclerViewAdapter != null)
+        uiThreadHandler.post(() -> {
+            synchronized (bluetoothRecordSortedSet)
             {
-                bluetoothRecyclerViewAdapter.notifyDataSetChanged();
-            }
+                bluetoothRecordSortedSet.add(bluetoothRecord);
 
-            devicesInScanView.setText(requireContext().getString(R.string.bluetooth_devices_in_scan, bluetoothRecordSortedSet.size()));
-        }
+                checkAndRemoveStaleRecords();
+
+                if (bluetoothRecyclerViewAdapter != null)
+                {
+                    bluetoothRecyclerViewAdapter.notifyDataSetChanged();
+                }
+
+                devicesInScanView.setText(requireContext().getString(R.string.bluetooth_devices_in_scan, bluetoothRecordSortedSet.size()));
+            }
+        });
     }
 
     @Override
@@ -164,21 +169,24 @@ public class BluetoothFragment extends Fragment implements IBluetoothSurveyRecor
     {
         if (updatesPaused) return;
 
-        synchronized (bluetoothRecordSortedSet)
-        {
-            // We can't use the SortedList#addAll method because we have not overridden that method in our custom
-            // SortedSet implementation of SortedList.
-            bluetoothRecords.forEach(bluetoothRecordSortedSet::add);
-
-            checkAndRemoveStaleRecords();
-
-            if (bluetoothRecyclerViewAdapter != null)
+        // Move this back to the UI thread since we are updating the UI
+        uiThreadHandler.post(() -> {
+            synchronized (bluetoothRecordSortedSet)
             {
-                bluetoothRecyclerViewAdapter.notifyDataSetChanged();
-            }
+                // We can't use the SortedList#addAll method because we have not overridden that method in our custom
+                // SortedSet implementation of SortedList.
+                bluetoothRecords.forEach(bluetoothRecordSortedSet::add);
 
-            devicesInScanView.setText(requireContext().getString(R.string.bluetooth_devices_in_scan, bluetoothRecordSortedSet.size()));
-        }
+                checkAndRemoveStaleRecords();
+
+                if (bluetoothRecyclerViewAdapter != null)
+                {
+                    bluetoothRecyclerViewAdapter.notifyDataSetChanged();
+                }
+
+                devicesInScanView.setText(requireContext().getString(R.string.bluetooth_devices_in_scan, bluetoothRecordSortedSet.size()));
+            }
+        });
     }
 
     /**
