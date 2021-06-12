@@ -19,6 +19,7 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.provider.Settings;
+import android.text.method.LinkMovementMethod;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -50,7 +51,6 @@ import com.craxiom.networksurvey.util.PreferenceUtils;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.android.material.navigation.NavigationView;
 
-import java.util.Arrays;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
@@ -69,6 +69,8 @@ public class NetworkSurveyActivity extends AppCompatActivity
             Manifest.permission.ACCESS_FINE_LOCATION,
             Manifest.permission.WRITE_EXTERNAL_STORAGE,
             Manifest.permission.READ_PHONE_STATE};
+
+    private static final int ACCESS_BACKGROUND_LOCATION_PERMISSION_REQUEST_ID = 2;
 
     public DrawerLayout drawerLayout;
     public NavController navController;
@@ -125,22 +127,31 @@ public class NetworkSurveyActivity extends AppCompatActivity
         }
 
         gnssFailureListener = () -> {
-            final View fragmentView = LayoutInflater.from(applicationContext).inflate(R.layout.gnss_failure, null);
+            try
+            {
+                final View fragmentView = LayoutInflater.from(this).inflate(R.layout.gnss_failure, null);
 
-            AlertDialog gnssFailureDialog = new AlertDialog.Builder(this, R.style.Theme_AppCompat_Light_Dialog)
-                    .setView(fragmentView)
-                    .setPositiveButton(R.string.ok, (dialog, id) -> {
-                        CheckBox rememberDecisionCheckBox = fragmentView.findViewById(R.id.failureRememberDecisionCheckBox);
-                        boolean checked = rememberDecisionCheckBox.isChecked();
-                        if (checked)
-                        {
-                            PreferenceUtils.saveBoolean(Application.get().getString(R.string.pref_key_ignore_raw_gnss_failure), true);
-                            networkSurveyService.clearGnssFailureListener(); // No need for GNSS failure updates anymore
-                        }
-                    })
-                    .create();
+                AlertDialog gnssFailureDialog = new AlertDialog.Builder(this)
+                        .setView(fragmentView)
+                        .setPositiveButton(R.string.ok, (dialog, id) -> {
+                            CheckBox rememberDecisionCheckBox = fragmentView.findViewById(R.id.failureRememberDecisionCheckBox);
+                            boolean checked = rememberDecisionCheckBox.isChecked();
+                            if (checked)
+                            {
+                                PreferenceUtils.saveBoolean(Application.get().getString(R.string.pref_key_ignore_raw_gnss_failure), true);
+                                // No need for GNSS failure updates anymore
+                                if (networkSurveyService != null) networkSurveyService.clearGnssFailureListener();
+                            }
+                        })
+                        .create();
 
-            gnssFailureDialog.show();
+                gnssFailureDialog.show();
+                final TextView viewById = gnssFailureDialog.findViewById(R.id.failureDescriptionTextView);
+                if (viewById != null) viewById.setMovementMethod(LinkMovementMethod.getInstance());
+            } catch (Throwable t)
+            {
+                Timber.e(t, "Something went wrong when trying to show the GNSS Failure Dialog");
+            }
         };
     }
 
@@ -149,11 +160,15 @@ public class NetworkSurveyActivity extends AppCompatActivity
     {
         super.onResume();
 
-        if (missingAnyPermissions()) showPermissionRationaleAndRequestPermissions();
+        if (missingAnyRegularPermissions()) showPermissionRationaleAndRequestPermissions();
 
         // If we have been granted the location permission, we want to check to see if the location service is enabled.
         // If it is not, then this call will report that to the user and give them the option to enable it.
         if (hasLocationPermission()) checkLocationProvider(true);
+
+        // As of Android 11, you have to request the Background location permission as a separate request, otherwise it
+        // fails: https://developer.android.com/about/versions/11/privacy/location#background-location
+        if (missingBackgroundLocationPermission()) showBackgroundLocationRationaleAndRequest();
 
         // All we need for the cellular information is the Manifest.permission.READ_PHONE_STATE permission.  Location is optional
         if (hasCellularPermission()) startAndBindToNetworkSurveyService();
@@ -280,7 +295,7 @@ public class NetworkSurveyActivity extends AppCompatActivity
     }
 
     /**
-     * Check to see if we should show the rationale for any of the permissions.  If so, then display a dialog that
+     * Check to see if we should show the rationale for any of the regular permissions. If so, then display a dialog that
      * explains what permissions we need for this app to work properly.
      * <p>
      * If we should not show the rationale, then just request the permissions.
@@ -297,19 +312,19 @@ public class NetworkSurveyActivity extends AppCompatActivity
             alertBuilder.setCancelable(true);
             alertBuilder.setTitle(getString(R.string.permissions_rationale_title));
             alertBuilder.setMessage(getText(R.string.permissions_rationale));
-            alertBuilder.setPositiveButton(android.R.string.yes, (dialog, which) -> requestPermissions());
+            alertBuilder.setPositiveButton(android.R.string.ok, (dialog, which) -> requestPermissions());
 
             AlertDialog permissionsExplanationDialog = alertBuilder.create();
             permissionsExplanationDialog.show();
         } else if (!hasRequestedPermissions && !hasLocationPermission())
         {
-            Timber.d("Showing the permissions rationale dialog");
+            Timber.d("Showing the location permissions rationale dialog");
 
             AlertDialog.Builder alertBuilder = new AlertDialog.Builder(this);
             alertBuilder.setCancelable(true);
-            alertBuilder.setTitle(getString(R.string.permissions_rationale_title));
+            alertBuilder.setTitle(getString(R.string.location_permission_rationale_title));
             alertBuilder.setMessage(getText(R.string.location_permission_rationale));
-            alertBuilder.setPositiveButton(android.R.string.yes, (dialog, which) -> requestPermissions());
+            alertBuilder.setPositiveButton(android.R.string.ok, (dialog, which) -> requestPermissions());
 
             AlertDialog permissionsExplanationDialog = alertBuilder.create();
             permissionsExplanationDialog.show();
@@ -320,22 +335,57 @@ public class NetworkSurveyActivity extends AppCompatActivity
     }
 
     /**
+     * Check to see if we should show the rationale for the background location permission.  If so, then display a
+     * dialog that explains why we need the background location permission.
+     * <p>
+     * We can only request the background location permission if the user has already granted the general location
+     * permission.
+     *
+     * @since 1.4.0
+     */
+    private void showBackgroundLocationRationaleAndRequest()
+    {
+        if (hasLocationPermission() && ActivityCompat.shouldShowRequestPermissionRationale(this, Manifest.permission.ACCESS_BACKGROUND_LOCATION))
+        {
+            Timber.d("Showing the background location permission rationale dialog");
+
+            AlertDialog.Builder alertBuilder = new AlertDialog.Builder(this);
+            alertBuilder.setCancelable(true);
+            alertBuilder.setTitle(getString(R.string.background_location_permission_rationale_title));
+            alertBuilder.setMessage(getText(R.string.background_location_permission_rationale));
+            alertBuilder.setPositiveButton(R.string.open_settings, (dialog, which) -> requestBackgroundLocationPermission());
+
+            AlertDialog permissionsExplanationDialog = alertBuilder.create();
+            permissionsExplanationDialog.show();
+        }
+    }
+
+    /**
      * Request the permissions needed for this app if any of them have not yet been granted.  If all of the permissions
      * are already granted then don't request anything.
      */
     private void requestPermissions()
     {
-        if (missingAnyPermissions())
+        if (missingAnyRegularPermissions())
         {
             hasRequestedPermissions = true;
+            ActivityCompat.requestPermissions(this, PERMISSIONS, ACCESS_PERMISSION_REQUEST_ID);
+        }
+    }
+
+    /**
+     * Request the background location permission, which presents the user with the App's location permission settings
+     * page.
+     *
+     * @since 1.4.0
+     */
+    private void requestBackgroundLocationPermission()
+    {
+        if (missingBackgroundLocationPermission())
+        {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q)
             {
-                String[] newPermissionsArray = Arrays.copyOf(PERMISSIONS, PERMISSIONS.length + 1);
-                System.arraycopy(new String[]{Manifest.permission.ACCESS_BACKGROUND_LOCATION}, 0, newPermissionsArray, PERMISSIONS.length, 1);
-                ActivityCompat.requestPermissions(this, newPermissionsArray, ACCESS_PERMISSION_REQUEST_ID);
-            } else
-            {
-                ActivityCompat.requestPermissions(this, PERMISSIONS, ACCESS_PERMISSION_REQUEST_ID);
+                ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.ACCESS_BACKGROUND_LOCATION}, ACCESS_BACKGROUND_LOCATION_PERMISSION_REQUEST_ID);
             }
         }
     }
@@ -410,7 +460,7 @@ public class NetworkSurveyActivity extends AppCompatActivity
     /**
      * @return True if any of the permissions for this app have been denied.  False if all the permissions have been granted.
      */
-    private boolean missingAnyPermissions()
+    private boolean missingAnyRegularPermissions()
     {
         for (String permission : PERMISSIONS)
         {
@@ -421,6 +471,15 @@ public class NetworkSurveyActivity extends AppCompatActivity
             }
         }
 
+        return false;
+    }
+
+    /**
+     * @return True if the background location permission for this app has been denied; false otherwise.
+     * @since 1.4.0
+     */
+    private boolean missingBackgroundLocationPermission()
+    {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q)
         {
             if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_BACKGROUND_LOCATION) != PackageManager.PERMISSION_GRANTED)
@@ -471,14 +530,23 @@ public class NetworkSurveyActivity extends AppCompatActivity
      */
     private void startAndBindToNetworkSurveyService()
     {
-        // Start and bind to the survey service
-        final Context applicationContext = getApplicationContext();
-        final Intent startServiceIntent = new Intent(applicationContext, NetworkSurveyService.class);
-        startService(startServiceIntent);
+        try
+        {
+            // Start and bind to the survey service
+            final Context applicationContext = getApplicationContext();
+            final Intent startServiceIntent = new Intent(applicationContext, NetworkSurveyService.class);
+            startService(startServiceIntent);
 
-        final Intent serviceIntent = new Intent(applicationContext, NetworkSurveyService.class);
-        final boolean bound = applicationContext.bindService(serviceIntent, surveyServiceConnection, Context.BIND_ABOVE_CLIENT);
-        Timber.i("NetworkSurveyService bound in the NetworkSurveyActivity: %s", bound);
+            final Intent serviceIntent = new Intent(applicationContext, NetworkSurveyService.class);
+            final boolean bound = applicationContext.bindService(serviceIntent, surveyServiceConnection, Context.BIND_ABOVE_CLIENT);
+            Timber.i("NetworkSurveyService bound in the NetworkSurveyActivity: %s", bound);
+        } catch (IllegalStateException e)
+        {
+            // It appears that an IllegalStateException will occur if the user opens this app but the then quickly
+            // switches away from it. The IllegalStateException indicates that we can't call startService while the
+            // app is in the background. We catch this here so that we can prevent the app from crashing.
+            Timber.w(e, "Could not start the Network Survey service.");
+        }
     }
 
     /**

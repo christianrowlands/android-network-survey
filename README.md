@@ -46,7 +46,7 @@ the incoming survey messages.
 
 ## MQTT Broker Survey Record Streaming
 
-Currently, GSM, CDMA, UMTS, LTE, 802.11, and GNSS survey records are sent to a connected MQTT broker. They
+Currently, GSM, CDMA, UMTS, LTE, 802.11, Bluetooth and GNSS survey records are sent to a connected MQTT broker. They
 are published on the following MQTT Topics:
 
  * gsm_message
@@ -54,7 +54,10 @@ are published on the following MQTT Topics:
  * umts_message
  * lte_message
  * 80211_beacon_message
+ * bluetooth_message
  * gnss_message
+
+There is also a DeviceStatus and a PhoneState message that is published on the `device_status_message` topic.
  
 The MQTT Broker connection supports both plain text and TLS/SSL connections.
 
@@ -62,6 +65,16 @@ The survey messages are sent in JSON format following the protobuf definitions f
 library. [The API documentation is published to a web page here](https://messaging.networksurvey.app/).
 
 ## Changelog
+
+##### [1.4.0](https://github.com/christianrowlands/android-network-survey/releases/tag/v1.4.0) - 2021-06-11
+ * Fixed a bug where permissions were not being requested on Android 11.
+ * Added support for streaming Phone State messages out over MQTT. The Phone State message is used to report some basic information about the phone such as the current serving cell, current technology, if a SIM is present, etc.
+ * Updated the default Bluetooth scan interval to 30 seconds because I kept seeing messages that the previous scan was not done when using 15 and 20 seconds as defaults.
+ * Updated the default GNSS scan interval to 10 seconds since 8 seconds seemed too often.
+ * Added a Device Model field to the GNSS and Device Status messages.
+ * Added the Mission ID field to the GeoPackage files.
+ * Improved the UX for error scenarios when connecting to an MQTT broker (e.g. notify the user of invalid username/password).
+ * Fixed the GNSS Raw Measurements information link.
 
 ##### [1.3.0](https://github.com/christianrowlands/android-network-survey/releases/tag/v1.3.0) - 2021-05-18
  * Updated the permissions dialog with some extra details on why the background location is needed.

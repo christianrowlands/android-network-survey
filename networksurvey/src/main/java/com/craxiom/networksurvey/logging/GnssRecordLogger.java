@@ -5,6 +5,7 @@ import android.os.Looper;
 import com.craxiom.messaging.GnssRecord;
 import com.craxiom.messaging.GnssRecordData;
 import com.craxiom.messaging.gnss.Constellation;
+import com.craxiom.networksurvey.constants.GnssMessageConstants;
 import com.craxiom.networksurvey.constants.NetworkSurveyConstants;
 import com.craxiom.networksurvey.listeners.IGnssSurveyRecordListener;
 import com.craxiom.networksurvey.services.NetworkSurveyService;
@@ -27,6 +28,7 @@ import static com.craxiom.networksurvey.constants.GnssMessageConstants.ALTITUDE_
 import static com.craxiom.networksurvey.constants.GnssMessageConstants.CARRIER_FREQUENCY_HZ;
 import static com.craxiom.networksurvey.constants.GnssMessageConstants.CARRIER_TO_NOISE_DENSITY_DB_HZ;
 import static com.craxiom.networksurvey.constants.GnssMessageConstants.CONSTELLATION;
+import static com.craxiom.networksurvey.constants.GnssMessageConstants.DEVICE_MODEL_COLUMN;
 import static com.craxiom.networksurvey.constants.GnssMessageConstants.GNSS_RECORDS_TABLE_NAME;
 import static com.craxiom.networksurvey.constants.GnssMessageConstants.GROUP_NUMBER_COLUMN;
 import static com.craxiom.networksurvey.constants.GnssMessageConstants.LATITUDE_STD_DEV_M;
@@ -85,8 +87,9 @@ public class GnssRecordLogger extends SurveyRecordLogger implements IGnssSurveyR
             tableColumns.add(FeatureColumn.createColumn(columnNumber++, LONGITUDE_STD_DEV_M, GeoPackageDataType.FLOAT, false, null));
             tableColumns.add(FeatureColumn.createColumn(columnNumber++, ALTITUDE_STD_DEV_M, GeoPackageDataType.FLOAT, false, null));
             tableColumns.add(FeatureColumn.createColumn(columnNumber++, AGC_DB, GeoPackageDataType.FLOAT, false, null));
-            //noinspection UnusedAssignment
             tableColumns.add(FeatureColumn.createColumn(columnNumber++, CARRIER_TO_NOISE_DENSITY_DB_HZ, GeoPackageDataType.FLOAT, false, null));
+            //noinspection UnusedAssignment
+            tableColumns.add(FeatureColumn.createColumn(columnNumber++, DEVICE_MODEL_COLUMN, GeoPackageDataType.TEXT, false, null));
         });
     }
 
@@ -118,8 +121,10 @@ public class GnssRecordLogger extends SurveyRecordLogger implements IGnssSurveyR
                         row.setGeometry(geomData);
 
                         row.setValue(TIME_COLUMN, IOUtils.getEpochFromRfc3339(data.getDeviceTime()));
+                        row.setValue(GnssMessageConstants.MISSION_ID_COLUMN, data.getMissionId());
                         row.setValue(RECORD_NUMBER_COLUMN, data.getRecordNumber());
                         row.setValue(GROUP_NUMBER_COLUMN, data.getGroupNumber());
+                        row.setValue(DEVICE_MODEL_COLUMN, data.getDeviceModel());
 
                         final Constellation constellation = data.getConstellation();
                         if (constellation != Constellation.UNKNOWN)

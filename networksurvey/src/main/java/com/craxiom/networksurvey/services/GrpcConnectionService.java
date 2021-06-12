@@ -29,6 +29,7 @@ import com.craxiom.messaging.DeviceStatus;
 import com.craxiom.messaging.DeviceStatusData;
 import com.craxiom.messaging.GsmRecord;
 import com.craxiom.messaging.LteRecord;
+import com.craxiom.messaging.PhoneState;
 import com.craxiom.messaging.UmtsRecord;
 import com.craxiom.messaging.WifiBeaconRecord;
 import com.craxiom.messaging.grpc.CdmaSurveyResponse;
@@ -310,6 +311,12 @@ public class GrpcConnectionService extends Service implements IDeviceStatusListe
                 oldDeviceStatusQueue.add(LegacyRecordConversion.convertDeviceStatus(deviceStatus));
             }
         }
+    }
+
+    @Override
+    public void onPhoneState(PhoneState phoneState)
+    {
+        // No-op... for now
     }
 
     @Override

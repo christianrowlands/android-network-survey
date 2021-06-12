@@ -11,4 +11,5 @@ public abstract class MessageConstants
     public static final String GEOMETRY_COLUMN = "geom";
     public static final String TIME_COLUMN = "Time";
     public static final String RECORD_NUMBER_COLUMN = "RecordNumber";
+    public static final String MISSION_ID_COLUMN = "MissionId";
 }

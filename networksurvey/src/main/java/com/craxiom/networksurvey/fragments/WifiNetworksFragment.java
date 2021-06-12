@@ -12,6 +12,7 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.IBinder;
+import android.os.Looper;
 import android.provider.Settings;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -49,6 +50,7 @@ import timber.log.Timber;
 public class WifiNetworksFragment extends Fragment implements IWifiSurveyRecordListener
 {
     private final SortedList<WifiRecordWrapper> wifiRecordSortedList = new SortedList<>(WifiRecordWrapper.class, new WifiRecordSortedListCallback());
+    private final Handler uiThreadHandler;
 
     private Context applicationContext;
     private NetworkSurveyService surveyService;
@@ -76,6 +78,7 @@ public class WifiNetworksFragment extends Fragment implements IWifiSurveyRecordL
      */
     public WifiNetworksFragment()
     {
+        uiThreadHandler = new Handler(Looper.getMainLooper());
     }
 
     @Override
@@ -128,6 +131,8 @@ public class WifiNetworksFragment extends Fragment implements IWifiSurveyRecordL
         checkWifiEnabled();
 
         startAndBindToNetworkSurveyService();
+
+        checkForScanThrottlingAndroid11();
     }
 
     @Override
@@ -145,21 +150,24 @@ public class WifiNetworksFragment extends Fragment implements IWifiSurveyRecordL
     {
         if (updatesPaused) return;
 
-        checkForScanThrottling();
+        // Move this back to the UI thread since we are updating the UI
+        uiThreadHandler.post(() -> {
+            checkForScanThrottling();
 
-        final Context context = requireContext();
-        scanNumberView.setText(context.getString(R.string.scan_number, ++scanNumber));
-        apsInScanView.setText(requireContext().getString(R.string.wifi_aps_in_scan, wifiBeaconRecords.size()));
+            final Context context = requireContext();
+            scanNumberView.setText(context.getString(R.string.scan_number, ++scanNumber));
+            apsInScanView.setText(requireContext().getString(R.string.wifi_aps_in_scan, wifiBeaconRecords.size()));
 
-        synchronized (wifiRecordSortedList)
-        {
-            wifiRecordSortedList.clear();
-            wifiRecordSortedList.addAll(wifiBeaconRecords);
-            if (wifiNetworkRecyclerViewAdapter != null)
+            synchronized (wifiRecordSortedList)
             {
-                wifiNetworkRecyclerViewAdapter.notifyDataSetChanged();
+                wifiRecordSortedList.clear();
+                wifiRecordSortedList.addAll(wifiBeaconRecords);
+                if (wifiNetworkRecyclerViewAdapter != null)
+                {
+                    wifiNetworkRecyclerViewAdapter.notifyDataSetChanged();
+                }
             }
-        }
+        });
     }
 
     /**
@@ -366,6 +374,24 @@ public class WifiNetworksFragment extends Fragment implements IWifiSurveyRecordL
     }
 
     /**
+     * Check to see if Scan throttling is enabled. This is a specific version of the method for Android 11 and higher
+     * since as of API level 30 there is the {@link WifiManager#isScanThrottleEnabled()} check.
+     */
+    private void checkForScanThrottlingAndroid11()
+    {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) return;
+
+        final WifiManager wifiManager = (WifiManager) requireContext().getSystemService(Context.WIFI_SERVICE);
+
+        if (wifiManager != null && wifiManager.isScanThrottleEnabled())
+        {
+            Timber.i("Wi-Fi scan throttling is enabled (via API call check), prompting the user to disable it");
+
+            showScanThrottlingSnackbar();
+        }
+    }
+
+    /**
      * Check to see if we can notice that scan throttling is enabled.  I wish we could grab this straight from the
      * OS settings, but it seems that the Android API does not exposes this OS setting.  Therefore, we check to see if
      * the scan interval is significantly longer than what we are requesting it to be.
@@ -380,6 +406,9 @@ public class WifiNetworksFragment extends Fragment implements IWifiSurveyRecordL
     {
         // Scan throttling is new as of Android 9
         if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.O_MR1) return;
+
+        // There is a better way to check for scan throttling as of API level 30 (see the other method)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) return;
 
         if (lastScanTime == 0)
         {
@@ -396,38 +425,53 @@ public class WifiNetworksFragment extends Fragment implements IWifiSurveyRecordL
 
         if (!devOptionsEnabled || newScanTime - lastScanTime > surveyService.getWifiScanRateMs() * 3L)
         {
-            String snackbarMessage;
-
-            // It appears we are not getting scan results as frequently as we are asking for them. It is possible that
-            // the Wi-Fi scan rate is being throttled by the Android OS. https://developer.android.com/guide/topics/connectivity/wifi-scan#wifi-scan-throttling
-            // Inform the user that they can disable scan throttling in Developer Options
-            if (Build.VERSION.SDK_INT == Build.VERSION_CODES.P)
-            {
-                snackbarMessage = getString(R.string.android_9_throttling_information);
-            } else //if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q)
-            {
-                snackbarMessage = getString(R.string.android_10_throttling_information);
-                if (!devOptionsEnabled)
-                {
-                    snackbarMessage += "\n\n" + getString(R.string.enable_developer_options);
-                }
-            }
-
-            final Snackbar snackbar = Snackbar.make(requireView(), snackbarMessage, Snackbar.LENGTH_INDEFINITE)
-                    .setAction("Open", v -> startActivity(new Intent(devOptionsEnabled ? Settings.ACTION_APPLICATION_DEVELOPMENT_SETTINGS : Settings.ACTION_DEVICE_INFO_SETTINGS)))
-                    .setBackgroundTint(getResources().getColor(R.color.alert_red, null));
-
-            if (snackbar.isShown()) return;
-
-            TextView snackTextView = snackbar.getView().findViewById(com.google.android.material.R.id.snackbar_text);
-            snackTextView.setMaxLines(12);
-
-            snackbar.show();
+            showScanThrottlingSnackbar();
 
             throttlingNotificationShown = true;
         }
 
         lastScanTime = newScanTime;
+    }
+
+    /**
+     * Show a Snackbar message to the user with some information about Wi-Fi throttling, and a link to the settings
+     * where they can disable throttling.
+     *
+     * @since 1.4.0
+     */
+    private void showScanThrottlingSnackbar()
+    {
+        // Scan throttling is new as of Android 9
+        if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.O_MR1) return;
+
+        String snackbarMessage;
+        final boolean devOptionsEnabled = areDeveloperOptionsEnabled();
+
+        // It appears we are not getting scan results as frequently as we are asking for them. It is possible that
+        // the Wi-Fi scan rate is being throttled by the Android OS. https://developer.android.com/guide/topics/connectivity/wifi-scan#wifi-scan-throttling
+        // Inform the user that they can disable scan throttling in Developer Options
+        if (Build.VERSION.SDK_INT == Build.VERSION_CODES.P)
+        {
+            snackbarMessage = getString(R.string.android_9_throttling_information);
+        } else //if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q)
+        {
+            snackbarMessage = getString(R.string.android_10_throttling_information);
+            if (!devOptionsEnabled)
+            {
+                snackbarMessage += "\n\n" + getString(R.string.enable_developer_options);
+            }
+        }
+
+        final Snackbar snackbar = Snackbar.make(requireView(), snackbarMessage, Snackbar.LENGTH_INDEFINITE)
+                .setAction("Open", v -> startActivity(new Intent(devOptionsEnabled ? Settings.ACTION_APPLICATION_DEVELOPMENT_SETTINGS : Settings.ACTION_DEVICE_INFO_SETTINGS)))
+                .setBackgroundTint(getResources().getColor(R.color.alert_red, null));
+
+        if (snackbar.isShown()) return;
+
+        TextView snackTextView = snackbar.getView().findViewById(com.google.android.material.R.id.snackbar_text);
+        snackTextView.setMaxLines(12);
+
+        snackbar.show();
     }
 
     /**
