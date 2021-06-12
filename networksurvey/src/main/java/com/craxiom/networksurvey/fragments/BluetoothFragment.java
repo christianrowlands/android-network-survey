@@ -52,7 +52,7 @@ import timber.log.Timber;
 public class BluetoothFragment extends Fragment implements IBluetoothSurveyRecordListener
 {
     private final SortedSet<BluetoothRecord> bluetoothRecordSortedSet = new SortedSet<>(BluetoothRecord.class, new RecordSortedListCallback());
-    private final Handler uiThreadHandler;
+    private Handler uiThreadHandler;
 
     private Context applicationContext;
     private NetworkSurveyService surveyService;
@@ -77,12 +77,12 @@ public class BluetoothFragment extends Fragment implements IBluetoothSurveyRecor
      */
     public BluetoothFragment()
     {
-        uiThreadHandler = new Handler(Looper.getMainLooper());
     }
 
     @Override
     public void onCreate(Bundle savedInstanceState)
     {
+        uiThreadHandler = new Handler(Looper.getMainLooper());
         applicationContext = requireActivity().getApplicationContext();
         super.onCreate(savedInstanceState);
 
