@@ -1836,7 +1836,13 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
                 locationManager = getSystemService(LocationManager.class);
                 if (locationManager != null)
                 {
-                    locationManager.registerGnssMeasurementsCallback(executorService, measurementListener);
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R)
+                    {
+                        locationManager.registerGnssMeasurementsCallback(executorService, measurementListener);
+                    } else
+                    {
+                        locationManager.registerGnssMeasurementsCallback(measurementListener);
+                    }
                     gpsListener.addGnssTimeoutCallback(this::checkForGnssTimeout);
                     Timber.i("Successfully registered the GNSS listeners");
                 }

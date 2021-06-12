@@ -68,6 +68,13 @@ library. [The API documentation is published to a web page here](https://messagi
 
 ##### [1.4.0](https://github.com/christianrowlands/android-network-survey/releases/tag/v1.4.0) - 2021-06-11
  * Fixed a bug where permissions were not being requested on Android 11.
+ * Added support for streaming Phone State messages out over MQTT. The Phone State message is used to report some basic information about the phone such as the current serving cell, current technology, if a SIM is present, etc.
+ * Updated the default Bluetooth scan interval to 30 seconds because I kept seeing messages that the previous scan was not done when using 15 and 20 seconds as defaults.
+ * Updated the default GNSS scan interval to 10 seconds since 8 seconds seemed too often.
+ * Added a Device Model field to the GNSS and Device Status messages.
+ * Added the Mission ID field to the GeoPackage files.
+ * Improved the UX for error scenarios when connecting to an MQTT broker (e.g. notify the user of invalid username/password).
+ * Fixed the GNSS Raw Measurements information link.
 
 ##### [1.3.0](https://github.com/christianrowlands/android-network-survey/releases/tag/v1.3.0) - 2021-05-18
  * Updated the permissions dialog with some extra details on why the background location is needed.
