@@ -19,6 +19,7 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.provider.Settings;
+import android.text.method.LinkMovementMethod;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -126,22 +127,31 @@ public class NetworkSurveyActivity extends AppCompatActivity
         }
 
         gnssFailureListener = () -> {
-            final View fragmentView = LayoutInflater.from(applicationContext).inflate(R.layout.gnss_failure, null);
+            try
+            {
+                final View fragmentView = LayoutInflater.from(this).inflate(R.layout.gnss_failure, null);
 
-            AlertDialog gnssFailureDialog = new AlertDialog.Builder(this, R.style.Theme_AppCompat_Light_Dialog)
-                    .setView(fragmentView)
-                    .setPositiveButton(R.string.ok, (dialog, id) -> {
-                        CheckBox rememberDecisionCheckBox = fragmentView.findViewById(R.id.failureRememberDecisionCheckBox);
-                        boolean checked = rememberDecisionCheckBox.isChecked();
-                        if (checked)
-                        {
-                            PreferenceUtils.saveBoolean(Application.get().getString(R.string.pref_key_ignore_raw_gnss_failure), true);
-                            networkSurveyService.clearGnssFailureListener(); // No need for GNSS failure updates anymore
-                        }
-                    })
-                    .create();
+                AlertDialog gnssFailureDialog = new AlertDialog.Builder(this)
+                        .setView(fragmentView)
+                        .setPositiveButton(R.string.ok, (dialog, id) -> {
+                            CheckBox rememberDecisionCheckBox = fragmentView.findViewById(R.id.failureRememberDecisionCheckBox);
+                            boolean checked = rememberDecisionCheckBox.isChecked();
+                            if (checked)
+                            {
+                                PreferenceUtils.saveBoolean(Application.get().getString(R.string.pref_key_ignore_raw_gnss_failure), true);
+                                // No need for GNSS failure updates anymore
+                                if (networkSurveyService != null) networkSurveyService.clearGnssFailureListener();
+                            }
+                        })
+                        .create();
 
-            gnssFailureDialog.show();
+                gnssFailureDialog.show();
+                final TextView viewById = gnssFailureDialog.findViewById(R.id.failureDescriptionTextView);
+                if (viewById != null) viewById.setMovementMethod(LinkMovementMethod.getInstance());
+            } catch (Throwable t)
+            {
+                Timber.e(t, "Something went wrong when trying to show the GNSS Failure Dialog");
+            }
         };
     }
 
@@ -520,14 +530,23 @@ public class NetworkSurveyActivity extends AppCompatActivity
      */
     private void startAndBindToNetworkSurveyService()
     {
-        // Start and bind to the survey service
-        final Context applicationContext = getApplicationContext();
-        final Intent startServiceIntent = new Intent(applicationContext, NetworkSurveyService.class);
-        startService(startServiceIntent);
+        try
+        {
+            // Start and bind to the survey service
+            final Context applicationContext = getApplicationContext();
+            final Intent startServiceIntent = new Intent(applicationContext, NetworkSurveyService.class);
+            startService(startServiceIntent);
 
-        final Intent serviceIntent = new Intent(applicationContext, NetworkSurveyService.class);
-        final boolean bound = applicationContext.bindService(serviceIntent, surveyServiceConnection, Context.BIND_ABOVE_CLIENT);
-        Timber.i("NetworkSurveyService bound in the NetworkSurveyActivity: %s", bound);
+            final Intent serviceIntent = new Intent(applicationContext, NetworkSurveyService.class);
+            final boolean bound = applicationContext.bindService(serviceIntent, surveyServiceConnection, Context.BIND_ABOVE_CLIENT);
+            Timber.i("NetworkSurveyService bound in the NetworkSurveyActivity: %s", bound);
+        } catch (IllegalStateException e)
+        {
+            // It appears that an IllegalStateException will occur if the user opens this app but the then quickly
+            // switches away from it. The IllegalStateException indicates that we can't call startService while the
+            // app is in the background. We catch this here so that we can prevent the app from crashing.
+            Timber.w(e, "Could not start the Network Survey service.");
+        }
     }
 
     /**

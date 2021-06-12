@@ -87,8 +87,9 @@ public class GnssRecordLogger extends SurveyRecordLogger implements IGnssSurveyR
             tableColumns.add(FeatureColumn.createColumn(columnNumber++, LONGITUDE_STD_DEV_M, GeoPackageDataType.FLOAT, false, null));
             tableColumns.add(FeatureColumn.createColumn(columnNumber++, ALTITUDE_STD_DEV_M, GeoPackageDataType.FLOAT, false, null));
             tableColumns.add(FeatureColumn.createColumn(columnNumber++, AGC_DB, GeoPackageDataType.FLOAT, false, null));
-            //noinspection UnusedAssignment
             tableColumns.add(FeatureColumn.createColumn(columnNumber++, CARRIER_TO_NOISE_DENSITY_DB_HZ, GeoPackageDataType.FLOAT, false, null));
+            //noinspection UnusedAssignment
+            tableColumns.add(FeatureColumn.createColumn(columnNumber++, DEVICE_MODEL_COLUMN, GeoPackageDataType.TEXT, false, null));
         });
     }
 
