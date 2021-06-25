@@ -1,19 +1,19 @@
 <?xml version="1.0" encoding="utf-8"?>
 <menu xmlns:android="http://schemas.android.com/apk/res/android">
     <item
-        android:id="@+id/main_cellular_fragment"
+        android:id="@+id/cellular"
         android:icon="@drawable/ic_cellular"
         android:title="@string/nav_cellular" />
     <item
-        android:id="@+id/main_wifi_fragment"
+        android:id="@+id/wifi"
         android:icon="@drawable/ic_wifi"
         android:title="@string/nav_wifi" />
     <item
-        android:id="@+id/main_bluetooth_fragment"
+        android:id="@+id/bluetooth"
         android:icon="@drawable/ic_bluetooth"
         android:title="@string/nav_bluetooth" />
     <item
-        android:id="@+id/main_gnss_fragment"
+        android:id="@+id/gnss"
         android:icon="@drawable/ic_gnss"
         android:title="@string/nav_gnss" />
 </menu>
