@@ -152,20 +152,29 @@ public class WifiNetworksFragment extends Fragment implements IWifiSurveyRecordL
 
         // Move this back to the UI thread since we are updating the UI
         uiThreadHandler.post(() -> {
-            checkForScanThrottling();
-
-            final Context context = requireContext();
-            scanNumberView.setText(context.getString(R.string.scan_number, ++scanNumber));
-            apsInScanView.setText(requireContext().getString(R.string.wifi_aps_in_scan, wifiBeaconRecords.size()));
-
-            synchronized (wifiRecordSortedList)
+            try
             {
-                wifiRecordSortedList.clear();
-                wifiRecordSortedList.addAll(wifiBeaconRecords);
-                if (wifiNetworkRecyclerViewAdapter != null)
+                checkForScanThrottling();
+
+                final Context context = requireContext();
+                scanNumberView.setText(context.getString(R.string.scan_number, ++scanNumber));
+                apsInScanView.setText(requireContext().getString(R.string.wifi_aps_in_scan, wifiBeaconRecords.size()));
+
+                synchronized (wifiRecordSortedList)
                 {
-                    wifiNetworkRecyclerViewAdapter.notifyDataSetChanged();
+                    wifiRecordSortedList.clear();
+                    wifiRecordSortedList.addAll(wifiBeaconRecords);
+                    if (wifiNetworkRecyclerViewAdapter != null)
+                    {
+                        wifiNetworkRecyclerViewAdapter.notifyDataSetChanged();
+                    }
                 }
+            } catch (Exception e)
+            {
+                // IllegalStateExceptions are happening because of the requireContext call. I am guessing this is due
+                // to the fact that the wifi results are coming back after the user has switched away from the fragment
+                // but the listener has not been removed yet. Basically a race condition. We can ignore these.
+                Timber.e(e, "Could not update the Wi-Fi Fragment UI due to an exception");
             }
         });
     }
