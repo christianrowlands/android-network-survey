@@ -164,7 +164,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
 
         // Used java.util.concurrent.Executors.newCachedThreadPool() except made some minor changes
         executorService = new ThreadPoolExecutor(1, 30,
-                60L, TimeUnit.SECONDS, new SynchronousQueue<>(true));
+                60L, TimeUnit.SECONDS, new SynchronousQueue<>(false));
     }
 
     @Override
