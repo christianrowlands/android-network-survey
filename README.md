@@ -66,6 +66,9 @@ library. [The API documentation is published to a web page here](https://messagi
 
 ## Changelog
 
+##### [1.4.1](https://github.com/christianrowlands/android-network-survey/releases/tag/v1.4.1) - 2021-06-28
+ * Fixed a bug where the MQTT connection would not reconnect when the phone dropped its data connection.
+
 ##### [1.4.0](https://github.com/christianrowlands/android-network-survey/releases/tag/v1.4.0) - 2021-06-11
  * Fixed a bug where permissions were not being requested on Android 11.
  * Added support for streaming Phone State messages out over MQTT. The Phone State message is used to report some basic information about the phone such as the current serving cell, current technology, if a SIM is present, etc.
