@@ -1272,11 +1272,16 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
         {
             cellInfoCallback = new TelephonyManager.CellInfoCallback()
             {
-                @SuppressLint("MissingPermission")
                 @Override
                 public void onCellInfo(@NonNull List<CellInfo> cellInfo)
                 {
-                    surveyRecordProcessor.onCellInfoUpdate(cellInfo, CalculationUtils.getNetworkType(telephonyManager.getDataNetworkType()));
+                    String networkType = "Missing Permission";
+                    if (ActivityCompat.checkSelfPermission(NetworkSurveyService.this, Manifest.permission.READ_PHONE_STATE) == PackageManager.PERMISSION_GRANTED)
+                    {
+                        networkType = CalculationUtils.getNetworkType(telephonyManager.getDataNetworkType());
+                    }
+
+                    surveyRecordProcessor.onCellInfoUpdate(cellInfo, networkType);
                 }
 
                 @Override
