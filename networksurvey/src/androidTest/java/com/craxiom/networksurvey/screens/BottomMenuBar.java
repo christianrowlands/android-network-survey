@@ -8,21 +8,21 @@ public class BottomMenuBar
 {
     public static void clickWifiMenuOption()
     {
-        clickOn(R.id.main_wifi_fragment);
+        clickOn(R.id.wifi);
     }
 
     public static void clickGnssMenuOption()
     {
-        clickOn(R.id.main_gnss_fragment);
+        clickOn(R.id.gnss);
     }
 
     public static void clickCellularMenuOption()
     {
-        clickOn(R.id.main_cellular_fragment);
+        clickOn(R.id.cellular);
     }
 
     public static void clickBluetoothMenuOption()
     {
-        clickOn(R.id.main_bluetooth_fragment);
+        clickOn(R.id.bluetooth);
     }
 }
