@@ -83,9 +83,7 @@ import java.time.ZonedDateTime;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.SynchronousQueue;
-import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -162,9 +160,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
         surveyServiceBinder = new SurveyServiceBinder();
         uiThreadHandler = new Handler(Looper.getMainLooper());
 
-        // Used java.util.concurrent.Executors.newCachedThreadPool() except made some minor changes
-        executorService = new ThreadPoolExecutor(1, 30,
-                60L, TimeUnit.SECONDS, new SynchronousQueue<>(false));
+        executorService = Executors.newFixedThreadPool(8);
     }
 
     @Override
@@ -260,6 +256,8 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
             mqttConnection.disconnect();
         }
 
+        PreferenceManager.getDefaultSharedPreferences(getApplicationContext()).unregisterOnSharedPreferenceChangeListener(this);
+
         stopCellularRecordScanning();
         stopWifiRecordScanning();
         removeLocationListener();
@@ -267,10 +265,9 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
         stopDeviceStatusReport();
         stopAllLogging();
 
-        PreferenceManager.getDefaultSharedPreferences(getApplicationContext()).unregisterOnSharedPreferenceChangeListener(this);
-
         serviceLooper.quitSafely();
         shutdownNotifications();
+        executorService.shutdown();
 
         super.onDestroy();
     }
