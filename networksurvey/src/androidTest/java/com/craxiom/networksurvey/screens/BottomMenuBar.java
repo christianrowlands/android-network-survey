@@ -2,7 +2,7 @@ package com.craxiom.networksurvey.screens;
 
 import com.craxiom.networksurvey.R;
 
-import static com.schibsted.spain.barista.interaction.BaristaClickInteractions.*;
+import static com.schibsted.spain.barista.interaction.BaristaClickInteractions.clickOn;
 
 public class BottomMenuBar
 {
