@@ -85,29 +85,29 @@ public class PhoneStateGeoPackageTest extends TestBase
                 .that(results.get(4).toString())
                 .isEqualTo("MessageTableSchemaModel{cid=4, name='RecordNumber', type='3', notNull=1, defaultValue=-1, primaryKey=0}");
 
-        assertWithMessage("Validate Latitude column schema")
+        assertWithMessage("Validate latitude column schema")
                 .that(results.get(5).toString())
-                .isEqualTo("MessageTableSchemaModel{cid=5, name='Latitude', type='3', notNull=0, defaultValue=0, primaryKey=0}");
+                .isEqualTo("MessageTableSchemaModel{cid=5, name='latitude', type='3', notNull=0, defaultValue=0, primaryKey=0}");
 
-        assertWithMessage("Validate Longitude column schema")
+        assertWithMessage("Validate longitude column schema")
                 .that(results.get(6).toString())
-                .isEqualTo("MessageTableSchemaModel{cid=6, name='Longitude', type='3', notNull=0, defaultValue=0, primaryKey=0}");
+                .isEqualTo("MessageTableSchemaModel{cid=6, name='longitude', type='3', notNull=0, defaultValue=0, primaryKey=0}");
 
-        assertWithMessage("Validate Altitude column schema")
+        assertWithMessage("Validate altitude column schema")
                 .that(results.get(7).toString())
-                .isEqualTo("MessageTableSchemaModel{cid=7, name='Altitude', type='3', notNull=0, defaultValue=0, primaryKey=0}");
+                .isEqualTo("MessageTableSchemaModel{cid=7, name='altitude', type='3', notNull=0, defaultValue=0, primaryKey=0}");
 
-        assertWithMessage("Validate Sim State column schema")
+        assertWithMessage("Validate simState column schema")
                 .that(results.get(8).toString())
-                .isEqualTo("MessageTableSchemaModel{cid=8, name='Sim State', type='3', notNull=0, defaultValue=0, primaryKey=0}");
+                .isEqualTo("MessageTableSchemaModel{cid=8, name='simState', type='3', notNull=0, defaultValue=0, primaryKey=0}");
 
-        assertWithMessage("Validate Sim Operator column schema")
+        assertWithMessage("Validate simOperator column schema")
                 .that(results.get(9).toString())
-                .isEqualTo("MessageTableSchemaModel{cid=9, name='Sim Operator', type='3', notNull=0, defaultValue=0, primaryKey=0}");
+                .isEqualTo("MessageTableSchemaModel{cid=9, name='simOperator', type='3', notNull=0, defaultValue=0, primaryKey=0}");
 
-        assertWithMessage("Validate Network Registration column schema")
+        assertWithMessage("Validate networkRegistrationInfo column schema")
                 .that(results.get(10).toString())
-                .isEqualTo("MessageTableSchemaModel{cid=10, name='Network Registration', type='3', notNull=0, defaultValue=0, primaryKey=0}");
+                .isEqualTo("MessageTableSchemaModel{cid=10, name='networkRegistrationInfo', type='3', notNull=0, defaultValue=0, primaryKey=0}");
     }
 
     @Test
@@ -171,35 +171,35 @@ public class PhoneStateGeoPackageTest extends TestBase
                     .that(row.getTime())
                     .isIn(Range.closed(Long.MIN_VALUE, Long.MAX_VALUE));
 
-            assertWithMessage("Record number column is within range")
+            assertWithMessage("recordNumber column is within range")
                     .that(row.getRecordNumber())
                     .isIn(Range.closed(1, Integer.MAX_VALUE));
 
-            assertWithMessage("Mission ID column is within range")
+            assertWithMessage("missionID column is within range")
                     .that(row.getMissionId())
                     .isNotEmpty();
 
-            assertWithMessage("Latitude value is within range")
+            assertWithMessage("latitude value is within range")
                     .that(row.getLatitude())
                     .isIn(Range.open(-90.0, 90.0));
 
-            assertWithMessage("Longitude value is within range")
+            assertWithMessage("longitude value is within range")
                     .that(row.getLongitude())
                     .isIn(Range.open(-180.0, 180.0));
 
-            assertWithMessage("Altitude value is within range")
+            assertWithMessage("altitude value is within range")
                     .that(row.getAltitude())
                     .isNotNaN();
 
-            assertWithMessage("Sim State column is within range")
+            assertWithMessage("simState column is within range")
                     .that(row.getSimState())
                     .isIn(getAllowableSimStates());
 
-            assertWithMessage("Sim Operator column is within range")
+            assertWithMessage("simOperator column is within range")
                     .that(row.getSimOperator())
                     .isNotEmpty();
 
-            assertWithMessage("Network Registration is within range")
+            assertWithMessage("networkRegistrationInfo is within range")
                     .that(row.getNetworkRegistration())
                     .isNotEmpty();
         }

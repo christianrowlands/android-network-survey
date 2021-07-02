@@ -27,12 +27,12 @@ public class PhoneStateDao
                 "    AND (Time IS NOT NULL)\n" +
                 "    AND (RecordNumber IS NOT NULL)\n" +
                 "    AND (MissionId IS NOT NULL)\n" +
-                "    AND (Latitude IS NOT NULL)\n" +
-                "    AND (Longitude IS NOT NULL)\n" +
-                "    AND (Altitude IS NOT NULL)\n" +
-                "    AND ([Sim State] IS NOT NULL)\n" +
-                "    AND ([Sim Operator] IS NOT NULL)\n" +
-                "    AND ([Network Registration] IS NOT NULL);", DeviceStatusMessageConstants.PHONE_STATE_TABLE_NAME);
+                "    AND (latitude IS NOT NULL)\n" +
+                "    AND (longitude IS NOT NULL)\n" +
+                "    AND (altitude IS NOT NULL)\n" +
+                "    AND (simState IS NOT NULL)\n" +
+                "    AND (simOperator IS NOT NULL)\n" +
+                "    AND (networkRegistrationInfo IS NOT NULL);", DeviceStatusMessageConstants.PHONE_STATE_TABLE_NAME);
 
         return baseQuery(geoPackage, query);
     }

@@ -26,12 +26,12 @@ public class DeviceStatusMessageConstants extends MessageConstants
     public static final String PHONE_STATE_MESSAGE_TYPE = "PhoneState";
 
     public static final String PHONE_STATE_TABLE_NAME = "PHONE_STATE_MESSAGE";
-    public static final String LATITUDE_COLUMN = "Latitude";
-    public static final String LONGITUDE_COLUMN = "Longitude";
-    public static final String ALTITUDE_COLUMN = "Altitude";
-    public static final String SIM_STATE_COLUMN = "Sim State";
-    public static final String SIM_OPERATOR_COLUMN = "Sim Operator";
-    public static final String NETWORK_REGISTRATION_COLUMN = "Network Registration";
+    public static final String LATITUDE_COLUMN = "latitude";
+    public static final String LONGITUDE_COLUMN = "longitude";
+    public static final String ALTITUDE_COLUMN = "altitude";
+    public static final String SIM_STATE_COLUMN = "simState";
+    public static final String SIM_OPERATOR_COLUMN = "simOperator";
+    public static final String NETWORK_REGISTRATION_COLUMN = "networkRegistrationInfo";
 
     /**
      * Given an Android defined Network Info Domain, return a Protocol Buffer defined {@link Domain}.
