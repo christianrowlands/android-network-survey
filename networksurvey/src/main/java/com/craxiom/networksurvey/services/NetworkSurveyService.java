@@ -737,16 +737,13 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
                     phoneStateRecordLogger.enableLogging(enable);
             if (successful)
             {
-                cellularLoggingEnabled.set(enable);
-                if (enable)
-                {
-                    registerCellularSurveyRecordListener(cellularSurveyRecordLogger);
-                    registerDeviceStatusListener(phoneStateRecordLogger);
-                } else
-                {
-                    unregisterCellularSurveyRecordListener(cellularSurveyRecordLogger);
-                    unregisterDeviceStatusListener(phoneStateRecordLogger);
-                }
+                toggleCellularConfig(enable);
+            } else {
+                // at least one of the loggers failed to toggle;
+                // disable both and set local config to false
+                cellularSurveyRecordLogger.enableLogging(false);
+                phoneStateRecordLogger.enableLogging(false);
+                toggleCellularConfig(false);
             }
             updateServiceNotification();
 
@@ -754,6 +751,25 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
             if (successful && newLoggingState) initializePing();
 
             return successful ? newLoggingState : null;
+        }
+    }
+
+    /**
+     * @param enable Value used to set {@code cellularLoggingEnabled}, and cellular and device
+     *               status listeners. If {@code true} listeners are registered, otherwise they
+     *               are unregistered.
+     */
+    private void toggleCellularConfig(boolean enable)
+    {
+        cellularLoggingEnabled.set(enable);
+        if (enable)
+        {
+            registerCellularSurveyRecordListener(cellularSurveyRecordLogger);
+            registerDeviceStatusListener(phoneStateRecordLogger);
+        } else
+        {
+            unregisterCellularSurveyRecordListener(cellularSurveyRecordLogger);
+            unregisterDeviceStatusListener(phoneStateRecordLogger);
         }
     }
 
