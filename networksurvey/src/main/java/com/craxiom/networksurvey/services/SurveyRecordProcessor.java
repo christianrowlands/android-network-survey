@@ -133,6 +133,8 @@ public class SurveyRecordProcessor
     private int gnssRecordNumber = 1;
     private int gnssGroupNumber = 0; // This will be incremented to 1 the first time it is used.
 
+    private int phoneStateRecordNumber = 1;
+
     private long lastGnssLogTimeMs;
     private int gnssScanRateMs;
 
@@ -492,6 +494,9 @@ public class SurveyRecordProcessor
 
         dataBuilder.setDeviceSerialNumber(deviceId);
         dataBuilder.setDeviceTime(IOUtils.getRfc3339String(ZonedDateTime.now()));
+
+        dataBuilder.setMissionId(missionId);
+        dataBuilder.setRecordNumber(phoneStateRecordNumber++);
 
         dataBuilder.setSimState(SimState.forNumber(telephonyManager.getSimState()));
         dataBuilder.setSimOperator(telephonyManager.getSimOperator());

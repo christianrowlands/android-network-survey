@@ -72,6 +72,7 @@ import com.craxiom.networksurvey.listeners.IWifiSurveyRecordListener;
 import com.craxiom.networksurvey.logging.BluetoothSurveyRecordLogger;
 import com.craxiom.networksurvey.logging.CellularSurveyRecordLogger;
 import com.craxiom.networksurvey.logging.GnssRecordLogger;
+import com.craxiom.networksurvey.logging.PhoneStateRecordLogger;
 import com.craxiom.networksurvey.logging.WifiSurveyRecordLogger;
 import com.craxiom.networksurvey.mqtt.MqttConnection;
 import com.craxiom.networksurvey.mqtt.MqttConnectionInfo;
@@ -139,6 +140,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
     private WifiSurveyRecordLogger wifiSurveyRecordLogger;
     private BluetoothSurveyRecordLogger bluetoothSurveyRecordLogger;
     private GnssRecordLogger gnssRecordLogger;
+    private PhoneStateRecordLogger phoneStateRecordLogger;
     private Looper serviceLooper;
     private Handler serviceHandler;
     private LocationManager locationManager = null;
@@ -183,6 +185,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
         wifiSurveyRecordLogger = new WifiSurveyRecordLogger(this, serviceLooper);
         bluetoothSurveyRecordLogger = new BluetoothSurveyRecordLogger(this, serviceLooper);
         gnssRecordLogger = new GnssRecordLogger(this, serviceLooper);
+        phoneStateRecordLogger = new PhoneStateRecordLogger(this, serviceLooper);
 
         gpsListener = new GpsListener();
 
@@ -282,6 +285,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
                 bluetoothSurveyRecordLogger.onSharedPreferenceChanged();
                 cellularSurveyRecordLogger.onSharedPreferenceChanged();
                 gnssRecordLogger.onSharedPreferenceChanged();
+                phoneStateRecordLogger.onSharedPreferenceChanged();
                 break;
             case NetworkSurveyConstants.PROPERTY_CELLULAR_SCAN_INTERVAL_SECONDS:
             case NetworkSurveyConstants.PROPERTY_WIFI_SCAN_INTERVAL_SECONDS:
@@ -726,17 +730,17 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
 
             Timber.i("Toggling cellular logging to %s", enable);
 
-            final boolean successful = cellularSurveyRecordLogger.enableLogging(enable);
+            final boolean successful = cellularSurveyRecordLogger.enableLogging(enable) &&
+                    phoneStateRecordLogger.enableLogging(enable);
             if (successful)
             {
-                cellularLoggingEnabled.set(enable);
-                if (enable)
-                {
-                    registerCellularSurveyRecordListener(cellularSurveyRecordLogger);
-                } else
-                {
-                    unregisterCellularSurveyRecordListener(cellularSurveyRecordLogger);
-                }
+                toggleCellularConfig(enable);
+            } else {
+                // at least one of the loggers failed to toggle;
+                // disable both and set local config to false
+                cellularSurveyRecordLogger.enableLogging(false);
+                phoneStateRecordLogger.enableLogging(false);
+                toggleCellularConfig(false);
             }
             updateServiceNotification();
 
@@ -744,6 +748,25 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
             if (successful && newLoggingState) initializePing();
 
             return successful ? newLoggingState : null;
+        }
+    }
+
+    /**
+     * @param enable Value used to set {@code cellularLoggingEnabled}, and cellular and device
+     *               status listeners. If {@code true} listeners are registered, otherwise they
+     *               are unregistered.
+     */
+    private void toggleCellularConfig(boolean enable)
+    {
+        cellularLoggingEnabled.set(enable);
+        if (enable)
+        {
+            registerCellularSurveyRecordListener(cellularSurveyRecordLogger);
+            registerDeviceStatusListener(phoneStateRecordLogger);
+        } else
+        {
+            unregisterCellularSurveyRecordListener(cellularSurveyRecordLogger);
+            unregisterDeviceStatusListener(phoneStateRecordLogger);
         }
     }
 
@@ -1620,7 +1643,6 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
 
         serviceHandler.postDelayed(new Runnable()
         {
-
             @Override
             public void run()
             {
@@ -1648,7 +1670,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
         {
             Timber.d("Adding the Telephony Manager Service State Listener");
 
-            phoneStateListener = new PhoneStateListener()
+            phoneStateListener = new PhoneStateListener(executorService)
             {
                 @Override
                 public void onServiceStateChanged(ServiceState serviceState)
@@ -1892,6 +1914,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
         if (wifiSurveyRecordLogger != null) wifiSurveyRecordLogger.enableLogging(false);
         if (bluetoothSurveyRecordLogger != null) bluetoothSurveyRecordLogger.enableLogging(false);
         if (gnssRecordLogger != null) gnssRecordLogger.enableLogging(false);
+        if (phoneStateRecordLogger != null) phoneStateRecordLogger.enableLogging(false);
     }
 
     /**
@@ -1924,6 +1947,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
                 wifiSurveyRecordLogger.onMdmPreferenceChanged();
                 bluetoothSurveyRecordLogger.onMdmPreferenceChanged();
                 gnssRecordLogger.onMdmPreferenceChanged();
+                phoneStateRecordLogger.onMdmPreferenceChanged();
             }
         };
 
