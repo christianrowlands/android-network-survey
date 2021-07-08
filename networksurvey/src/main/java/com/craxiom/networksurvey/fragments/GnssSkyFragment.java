@@ -60,7 +60,7 @@ public class GnssSkyFragment extends Fragment implements IGnssListener
 {
     static final String TITLE = "Sky View";
 
-    private final MainGnssFragment mainGnssFragment;
+    private MainGnssFragment mainGnssFragment;
 
     private GnssSkyView skyView;
 
@@ -90,12 +90,9 @@ public class GnssSkyFragment extends Fragment implements IGnssListener
 
     /**
      * Constructs this fragment.
-     *
-     * @param mainGnssFragment Used to register and unregister for updates to GNSS events.
      */
-    GnssSkyFragment(MainGnssFragment mainGnssFragment)
+    public GnssSkyFragment()
     {
-        this.mainGnssFragment = mainGnssFragment;
     }
 
     @Override
@@ -103,6 +100,8 @@ public class GnssSkyFragment extends Fragment implements IGnssListener
                              Bundle savedInstanceState)
     {
         View v = inflater.inflate(R.layout.gps_sky, container, false);
+
+        mainGnssFragment = (MainGnssFragment) getParentFragment();
 
         skyView = v.findViewById(R.id.sky_view);
 

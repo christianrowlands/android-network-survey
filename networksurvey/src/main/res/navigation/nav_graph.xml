@@ -3,71 +3,12 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/nav_graph"
-    app:startDestination="@id/main_cellular_fragment">
+    app:startDestination="@id/cellular">
 
-    <fragment
-        android:id="@+id/main_cellular_fragment"
-        android:name="com.craxiom.networksurvey.fragments.MainCellularFragment"
-        android:label="Cellular"
-        tools:layout="@layout/fragment_network_details">
-        <action
-            android:id="@+id/action_main_to_connection"
-            app:destination="@id/connection_fragment" />
-        <action
-            android:id="@+id/action_main_to_mqtt_connection"
-            app:destination="@id/mqtt_connection_fragment" />
-        <action
-            android:id="@+id/action_main_to_settings"
-            app:destination="@id/settings_fragment" />
-    </fragment>
-
-    <fragment
-        android:id="@+id/main_wifi_fragment"
-        android:name="com.craxiom.networksurvey.fragments.WifiNetworksFragment"
-        android:label="Wi-Fi"
-        tools:layout="@layout/fragment_wifi_networks_list">
-        <action
-            android:id="@+id/action_main_wifi_to_connection"
-            app:destination="@id/connection_fragment" />
-        <action
-            android:id="@+id/action_main_wifi_to_mqtt_connection"
-            app:destination="@id/mqtt_connection_fragment" />
-        <action
-            android:id="@+id/action_main_wifi_to_settings"
-            app:destination="@id/settings_fragment" />
-    </fragment>
-
-    <fragment
-        android:id="@+id/main_bluetooth_fragment"
-        android:name="com.craxiom.networksurvey.fragments.BluetoothFragment"
-        android:label="Bluetooth"
-        tools:layout="@layout/fragment_bluetooth_list">
-        <action
-            android:id="@+id/action_main_bluetooth_to_connection"
-            app:destination="@id/connection_fragment" />
-        <action
-            android:id="@+id/action_main_bluetooth_to_mqtt_connection"
-            app:destination="@id/mqtt_connection_fragment" />
-        <action
-            android:id="@+id/action_main_bluetooth_to_settings"
-            app:destination="@id/settings_fragment" />
-    </fragment>
-
-    <fragment
-        android:id="@+id/main_gnss_fragment"
-        android:name="com.craxiom.networksurvey.fragments.MainGnssFragment"
-        android:label="GNSS"
-        tools:layout="@layout/gps_status">
-        <action
-            android:id="@+id/action_main_gnss_to_connection"
-            app:destination="@id/connection_fragment" />
-        <action
-            android:id="@+id/action_main_gnss_to_mqtt_connection"
-            app:destination="@id/mqtt_connection_fragment" />
-        <action
-            android:id="@+id/action_main_gnss_to_settings"
-            app:destination="@id/settings_fragment" />
-    </fragment>
+    <include app:graph="@navigation/cellular" />
+    <include app:graph="@navigation/wifi" />
+    <include app:graph="@navigation/bluetooth" />
+    <include app:graph="@navigation/gnss" />
 
     <fragment
         android:id="@+id/connection_fragment"

@@ -18,13 +18,13 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content" />
 
-        <fragment
+        <androidx.fragment.app.FragmentContainerView
             android:id="@+id/main_content"
             android:name="androidx.navigation.fragment.NavHostFragment"
             android:layout_width="match_parent"
             android:layout_height="0dp"
             android:layout_weight="1"
-            app:defaultNavHost="false"
+            app:defaultNavHost="true"
             app:navGraph="@navigation/nav_graph" />
 
         <com.google.android.material.bottomnavigation.BottomNavigationView

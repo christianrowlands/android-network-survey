@@ -140,22 +140,21 @@ public class GnssStatusFragment extends Fragment implements IGnssListener
 
     private String prefDistanceUnits;
     private String prefSpeedUnits;
-    private final MainGnssFragment mainGnssFragment;
+    private MainGnssFragment mainGnssFragment;
 
     /**
      * Constructs this fragment.
-     *
-     * @param mainGnssFragment Used to register and unregister for updates to GNSS events.
      */
-    GnssStatusFragment(MainGnssFragment mainGnssFragment)
+    public GnssStatusFragment()
     {
-        this.mainGnssFragment = mainGnssFragment;
     }
 
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState)
     {
         super.onCreate(savedInstanceState);
+
+        mainGnssFragment = (MainGnssFragment) getParentFragment();
 
         dateFormat = new SimpleDateFormat(DateFormat.is24HourFormat(getContext()) ? "HH:mm:ss" : "hh:mm:ss a", Locale.getDefault());
     }

@@ -23,6 +23,12 @@ To build and install the project follow the steps below:
     3) Connect an Android Phone (make sure debugging is enabled on the device).
     4) Install and run the app by clicking the "Play" button in Android Studio.
 
+### Run Tests
+>NOTE: This requires a connected device (physical device or Android Emulator)
+```
+./gradlew connectedAndroidTest
+```
+
 ### Prerequisites
 
 Install Android Studio to work on this code.
@@ -65,6 +71,14 @@ The survey messages are sent in JSON format following the protobuf definitions f
 library. [The API documentation is published to a web page here](https://messaging.networksurvey.app/).
 
 ## Changelog
+
+##### [1.4.2](https://github.com/christianrowlands/android-network-survey/releases/tag/v1.4.2) - 2021-07-08
+ * Fixed a bug where the survey record queue would fill up and reject new records.
+ * Added the missionId and recordNumber fields to the Phone State message.
+ * Added support for logging the Phone State message to GeoPackage.
+
+##### [1.4.1](https://github.com/christianrowlands/android-network-survey/releases/tag/v1.4.1) - 2021-06-28
+ * Fixed a bug where the MQTT connection would not reconnect when the phone dropped its data connection.
 
 ##### [1.4.0](https://github.com/christianrowlands/android-network-survey/releases/tag/v1.4.0) - 2021-06-11
  * Fixed a bug where permissions were not being requested on Android 11.

@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<navigation xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/gnss"
+    app:startDestination="@+id/main_gnss_fragment">
+
+    <fragment
+        android:id="@+id/main_gnss_fragment"
+        android:name="com.craxiom.networksurvey.fragments.MainGnssFragment"
+        android:label="GNSS"
+        tools:layout="@layout/gps_status">
+        <action
+            android:id="@+id/action_main_gnss_to_connection"
+            app:destination="@id/connection_fragment" />
+        <action
+            android:id="@+id/action_main_gnss_to_mqtt_connection"
+            app:destination="@id/mqtt_connection_fragment" />
+        <action
+            android:id="@+id/action_main_gnss_to_settings"
+            app:destination="@id/settings_fragment" />
+    </fragment>
+
+</navigation>

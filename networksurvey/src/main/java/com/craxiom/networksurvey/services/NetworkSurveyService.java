@@ -32,7 +32,6 @@ import android.os.HandlerThread;
 import android.os.IBinder;
 import android.os.Looper;
 import android.provider.Settings;
-import android.telephony.CellIdentity;
 import android.telephony.CellInfo;
 import android.telephony.PhoneStateListener;
 import android.telephony.ServiceState;
@@ -72,6 +71,7 @@ import com.craxiom.networksurvey.listeners.IWifiSurveyRecordListener;
 import com.craxiom.networksurvey.logging.BluetoothSurveyRecordLogger;
 import com.craxiom.networksurvey.logging.CellularSurveyRecordLogger;
 import com.craxiom.networksurvey.logging.GnssRecordLogger;
+import com.craxiom.networksurvey.logging.PhoneStateRecordLogger;
 import com.craxiom.networksurvey.logging.WifiSurveyRecordLogger;
 import com.craxiom.networksurvey.mqtt.MqttConnection;
 import com.craxiom.networksurvey.mqtt.MqttConnectionInfo;
@@ -83,9 +83,7 @@ import java.time.ZonedDateTime;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.SynchronousQueue;
-import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -141,6 +139,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
     private WifiSurveyRecordLogger wifiSurveyRecordLogger;
     private BluetoothSurveyRecordLogger bluetoothSurveyRecordLogger;
     private GnssRecordLogger gnssRecordLogger;
+    private PhoneStateRecordLogger phoneStateRecordLogger;
     private Looper serviceLooper;
     private Handler serviceHandler;
     private LocationManager locationManager = null;
@@ -162,9 +161,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
         surveyServiceBinder = new SurveyServiceBinder();
         uiThreadHandler = new Handler(Looper.getMainLooper());
 
-        // Used java.util.concurrent.Executors.newCachedThreadPool() except made some minor changes
-        executorService = new ThreadPoolExecutor(1, 30,
-                60L, TimeUnit.SECONDS, new SynchronousQueue<>(true));
+        executorService = Executors.newFixedThreadPool(8);
     }
 
     @Override
@@ -187,6 +184,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
         wifiSurveyRecordLogger = new WifiSurveyRecordLogger(this, serviceLooper);
         bluetoothSurveyRecordLogger = new BluetoothSurveyRecordLogger(this, serviceLooper);
         gnssRecordLogger = new GnssRecordLogger(this, serviceLooper);
+        phoneStateRecordLogger = new PhoneStateRecordLogger(this, serviceLooper);
 
         gpsListener = new GpsListener();
 
@@ -260,6 +258,8 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
             mqttConnection.disconnect();
         }
 
+        PreferenceManager.getDefaultSharedPreferences(getApplicationContext()).unregisterOnSharedPreferenceChangeListener(this);
+
         stopCellularRecordScanning();
         stopWifiRecordScanning();
         removeLocationListener();
@@ -267,10 +267,9 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
         stopDeviceStatusReport();
         stopAllLogging();
 
-        PreferenceManager.getDefaultSharedPreferences(getApplicationContext()).unregisterOnSharedPreferenceChangeListener(this);
-
         serviceLooper.quitSafely();
         shutdownNotifications();
+        executorService.shutdown();
 
         super.onDestroy();
     }
@@ -285,6 +284,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
                 bluetoothSurveyRecordLogger.onSharedPreferenceChanged();
                 cellularSurveyRecordLogger.onSharedPreferenceChanged();
                 gnssRecordLogger.onSharedPreferenceChanged();
+                phoneStateRecordLogger.onSharedPreferenceChanged();
                 break;
             case NetworkSurveyConstants.PROPERTY_CELLULAR_SCAN_INTERVAL_SECONDS:
             case NetworkSurveyConstants.PROPERTY_WIFI_SCAN_INTERVAL_SECONDS:
@@ -729,17 +729,18 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
 
             Timber.i("Toggling cellular logging to %s", enable);
 
-            final boolean successful = cellularSurveyRecordLogger.enableLogging(enable);
+            final boolean successful = cellularSurveyRecordLogger.enableLogging(enable) &&
+                    phoneStateRecordLogger.enableLogging(enable);
             if (successful)
             {
-                cellularLoggingEnabled.set(enable);
-                if (enable)
-                {
-                    registerCellularSurveyRecordListener(cellularSurveyRecordLogger);
-                } else
-                {
-                    unregisterCellularSurveyRecordListener(cellularSurveyRecordLogger);
-                }
+                toggleCellularConfig(enable);
+            } else
+            {
+                // at least one of the loggers failed to toggle;
+                // disable both and set local config to false
+                cellularSurveyRecordLogger.enableLogging(false);
+                phoneStateRecordLogger.enableLogging(false);
+                toggleCellularConfig(false);
             }
             updateServiceNotification();
 
@@ -747,6 +748,25 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
             if (successful && newLoggingState) initializePing();
 
             return successful ? newLoggingState : null;
+        }
+    }
+
+    /**
+     * @param enable Value used to set {@code cellularLoggingEnabled}, and cellular and device
+     *               status listeners. If {@code true} listeners are registered, otherwise they
+     *               are unregistered.
+     */
+    private void toggleCellularConfig(boolean enable)
+    {
+        cellularLoggingEnabled.set(enable);
+        if (enable)
+        {
+            registerCellularSurveyRecordListener(cellularSurveyRecordLogger);
+            registerDeviceStatusListener(phoneStateRecordLogger);
+        } else
+        {
+            unregisterCellularSurveyRecordListener(cellularSurveyRecordLogger);
+            unregisterDeviceStatusListener(phoneStateRecordLogger);
         }
     }
 
@@ -1272,11 +1292,16 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
         {
             cellInfoCallback = new TelephonyManager.CellInfoCallback()
             {
-                @SuppressLint("MissingPermission")
                 @Override
                 public void onCellInfo(@NonNull List<CellInfo> cellInfo)
                 {
-                    surveyRecordProcessor.onCellInfoUpdate(cellInfo, CalculationUtils.getNetworkType(telephonyManager.getDataNetworkType()));
+                    String networkType = "Missing Permission";
+                    if (ActivityCompat.checkSelfPermission(NetworkSurveyService.this, Manifest.permission.READ_PHONE_STATE) == PackageManager.PERMISSION_GRANTED)
+                    {
+                        networkType = CalculationUtils.getNetworkType(telephonyManager.getDataNetworkType());
+                    }
+
+                    surveyRecordProcessor.onCellInfoUpdate(cellInfo, networkType);
                 }
 
                 @Override
@@ -1618,7 +1643,6 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
 
         serviceHandler.postDelayed(new Runnable()
         {
-
             @Override
             public void run()
             {
@@ -1646,24 +1670,29 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
         {
             Timber.d("Adding the Telephony Manager Service State Listener");
 
-            phoneStateListener = new PhoneStateListener()
-            {
-                @Override
-                public void onServiceStateChanged(ServiceState serviceState)
+            // Sadly we have to use the service handler for this because the PhoneStateListener constructor calls
+            // Looper.myLooper(), which needs to be run from a thread where the looper is prepared. The better option
+            // is to use the constructor that takes an executor service, but that is only supported in Android 10+.
+            serviceHandler.post(() -> {
+                phoneStateListener = new PhoneStateListener()
                 {
-                    executorService.execute(() -> surveyRecordProcessor.onServiceStateChanged(serviceState, telephonyManager));
-                }
+                    @Override
+                    public void onServiceStateChanged(ServiceState serviceState)
+                    {
+                        executorService.execute(() -> surveyRecordProcessor.onServiceStateChanged(serviceState, telephonyManager));
+                    }
 
-                // We can't use this because you have to be a system app to get the READ_PRECISE_PHONE_STATE permission.
-                // So this is unused for now, but maybe at some point in the future we can make use of it.
-                @Override
-                public void onRegistrationFailed(@NonNull CellIdentity cellIdentity, @NonNull String chosenPlmn, int domain, int causeCode, int additionalCauseCode)
-                {
-                    executorService.execute(() -> surveyRecordProcessor.onRegistrationFailed(cellIdentity, domain, causeCode, additionalCauseCode, telephonyManager));
-                }
-            };
+                    // We can't use this because you have to be a system app to get the READ_PRECISE_PHONE_STATE permission.
+                    // So this is unused for now, but maybe at some point in the future we can make use of it.
+                    /*@Override
+                    public void onRegistrationFailed(@NonNull CellIdentity cellIdentity, @NonNull String chosenPlmn, int domain, int causeCode, int additionalCauseCode)
+                    {
+                        executorService.execute(() -> surveyRecordProcessor.onRegistrationFailed(cellIdentity, domain, causeCode, additionalCauseCode, telephonyManager));
+                    }*/
+                };
 
-            telephonyManager.listen(phoneStateListener, PhoneStateListener.LISTEN_SERVICE_STATE);
+                telephonyManager.listen(phoneStateListener, PhoneStateListener.LISTEN_SERVICE_STATE);
+            });
         }
     }
 
@@ -1890,6 +1919,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
         if (wifiSurveyRecordLogger != null) wifiSurveyRecordLogger.enableLogging(false);
         if (bluetoothSurveyRecordLogger != null) bluetoothSurveyRecordLogger.enableLogging(false);
         if (gnssRecordLogger != null) gnssRecordLogger.enableLogging(false);
+        if (phoneStateRecordLogger != null) phoneStateRecordLogger.enableLogging(false);
     }
 
     /**
@@ -1922,6 +1952,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
                 wifiSurveyRecordLogger.onMdmPreferenceChanged();
                 bluetoothSurveyRecordLogger.onMdmPreferenceChanged();
                 gnssRecordLogger.onMdmPreferenceChanged();
+                phoneStateRecordLogger.onMdmPreferenceChanged();
             }
         };
 

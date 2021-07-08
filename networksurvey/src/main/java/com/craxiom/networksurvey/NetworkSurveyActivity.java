@@ -38,7 +38,7 @@ import androidx.core.content.ContextCompat;
 import androidx.drawerlayout.widget.DrawerLayout;
 import androidx.navigation.NavController;
 import androidx.navigation.NavDestination;
-import androidx.navigation.Navigation;
+import androidx.navigation.fragment.NavHostFragment;
 import androidx.navigation.ui.AppBarConfiguration;
 import androidx.navigation.ui.NavigationUI;
 import androidx.preference.PreferenceManager;
@@ -560,7 +560,8 @@ public class NetworkSurveyActivity extends AppCompatActivity
         BottomNavigationView bottomNav = findViewById(R.id.bottom_nav);
         final NavigationView navigationView = findViewById(R.id.navigation_view);
 
-        navController = Navigation.findNavController(this, R.id.main_content);
+        final NavHostFragment navHostFragment = (NavHostFragment) getSupportFragmentManager().findFragmentById(R.id.main_content);
+        navController = navHostFragment.getNavController();
 
         appBarConfiguration = new AppBarConfiguration.Builder(R.id.main_cellular_fragment, R.id.main_wifi_fragment, R.id.main_bluetooth_fragment, R.id.main_gnss_fragment)
                 .setOpenableLayout(drawerLayout)

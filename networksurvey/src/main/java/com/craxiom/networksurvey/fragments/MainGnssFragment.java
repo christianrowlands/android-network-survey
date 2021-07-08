@@ -46,6 +46,10 @@ public class MainGnssFragment extends Fragment
     private final Set<IGnssListener> gnssListeners = new CopyOnWriteArraySet<>();
     private LocationManager locationManager;
 
+    public MainGnssFragment()
+    {
+    }
+
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState)
     {
@@ -310,14 +314,14 @@ public class MainGnssFragment extends Fragment
             switch (position)
             {
                 case 0:
-                    return new GnssStatusFragment(mainGnssFragment);
+                    return new GnssStatusFragment();
 
                 case 1:
-                    return new GnssSkyFragment(mainGnssFragment);
+                    return new GnssSkyFragment();
 
                 default:
                     Timber.wtf("A fragment has not been specified for one of the tabs in the GNSS UI.");
-                    return new GnssStatusFragment(mainGnssFragment);
+                    return new GnssStatusFragment();
             }
         }
 
