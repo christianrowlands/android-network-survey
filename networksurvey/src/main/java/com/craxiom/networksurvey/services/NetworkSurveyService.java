@@ -32,7 +32,6 @@ import android.os.HandlerThread;
 import android.os.IBinder;
 import android.os.Looper;
 import android.provider.Settings;
-import android.telephony.CellIdentity;
 import android.telephony.CellInfo;
 import android.telephony.PhoneStateListener;
 import android.telephony.ServiceState;
@@ -735,7 +734,8 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
             if (successful)
             {
                 toggleCellularConfig(enable);
-            } else {
+            } else
+            {
                 // at least one of the loggers failed to toggle;
                 // disable both and set local config to false
                 cellularSurveyRecordLogger.enableLogging(false);
@@ -1670,24 +1670,29 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
         {
             Timber.d("Adding the Telephony Manager Service State Listener");
 
-            phoneStateListener = new PhoneStateListener(executorService)
-            {
-                @Override
-                public void onServiceStateChanged(ServiceState serviceState)
+            // Sadly we have to use the service handler for this because the PhoneStateListener constructor calls
+            // Looper.myLooper(), which needs to be run from a thread where the looper is prepared. The better option
+            // is to use the constructor that takes an executor service, but that is only supported in Android 10+.
+            serviceHandler.post(() -> {
+                phoneStateListener = new PhoneStateListener()
                 {
-                    executorService.execute(() -> surveyRecordProcessor.onServiceStateChanged(serviceState, telephonyManager));
-                }
+                    @Override
+                    public void onServiceStateChanged(ServiceState serviceState)
+                    {
+                        executorService.execute(() -> surveyRecordProcessor.onServiceStateChanged(serviceState, telephonyManager));
+                    }
 
-                // We can't use this because you have to be a system app to get the READ_PRECISE_PHONE_STATE permission.
-                // So this is unused for now, but maybe at some point in the future we can make use of it.
-                @Override
-                public void onRegistrationFailed(@NonNull CellIdentity cellIdentity, @NonNull String chosenPlmn, int domain, int causeCode, int additionalCauseCode)
-                {
-                    executorService.execute(() -> surveyRecordProcessor.onRegistrationFailed(cellIdentity, domain, causeCode, additionalCauseCode, telephonyManager));
-                }
-            };
+                    // We can't use this because you have to be a system app to get the READ_PRECISE_PHONE_STATE permission.
+                    // So this is unused for now, but maybe at some point in the future we can make use of it.
+                    /*@Override
+                    public void onRegistrationFailed(@NonNull CellIdentity cellIdentity, @NonNull String chosenPlmn, int domain, int causeCode, int additionalCauseCode)
+                    {
+                        executorService.execute(() -> surveyRecordProcessor.onRegistrationFailed(cellIdentity, domain, causeCode, additionalCauseCode, telephonyManager));
+                    }*/
+                };
 
-            telephonyManager.listen(phoneStateListener, PhoneStateListener.LISTEN_SERVICE_STATE);
+                telephonyManager.listen(phoneStateListener, PhoneStateListener.LISTEN_SERVICE_STATE);
+            });
         }
     }
 
