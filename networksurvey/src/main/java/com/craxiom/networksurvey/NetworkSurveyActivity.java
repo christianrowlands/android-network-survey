@@ -254,6 +254,13 @@ public class NetworkSurveyActivity extends AppCompatActivity
     {
         int id = item.getItemId();
 
+        if (networkSurveyService == null)
+        {
+            Timber.w("The Network Survey service was not ready when the user toggled on file logging");
+            Toast.makeText(getApplicationContext(), getString(R.string.logging_not_ready), Toast.LENGTH_LONG).show();
+            return true;
+        }
+
         //noinspection SimplifiableIfStatement
         if (id == R.id.action_start_stop_cellular_logging)
         {
