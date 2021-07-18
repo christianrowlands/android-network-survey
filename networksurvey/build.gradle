@@ -63,7 +63,7 @@ dependencies {
 
     implementation "mil.nga.geopackage:geopackage-android:3.3.0"
 
-    implementation 'com.craxiom:mqtt-library:0.4.2'
+    implementation 'com.craxiom:mqtt-library:0.4.3'
 
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:$kotlin_version"
 

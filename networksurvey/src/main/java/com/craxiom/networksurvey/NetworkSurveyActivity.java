@@ -192,7 +192,13 @@ public class NetworkSurveyActivity extends AppCompatActivity
                 stopService(connectionServiceIntent);
             }
 
-            applicationContext.unbindService(surveyServiceConnection);
+            try
+            {
+                applicationContext.unbindService(surveyServiceConnection);
+            } catch (IllegalArgumentException e)
+            {
+                Timber.e(e, "Could not unbind the service because it is not bound.");
+            }
         }
 
         super.onPause();
