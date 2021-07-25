@@ -125,7 +125,7 @@ public class SurveyRecordProcessor
     private final String missionId;
 
     private int recordNumber = 1;
-    private int groupNumber = 0; // This will be incremented to 0 the first time it is used.
+    private int groupNumber = 0; // This will be incremented to 1 the first time it is used.
 
     private int wifiRecordNumber = 1;
     private int bluetoothRecordNumber = 1;
