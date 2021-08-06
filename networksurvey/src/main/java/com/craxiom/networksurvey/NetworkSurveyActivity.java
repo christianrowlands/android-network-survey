@@ -2,8 +2,6 @@ package com.craxiom.networksurvey;
 
 import android.Manifest;
 import android.annotation.SuppressLint;
-import android.app.NotificationChannel;
-import android.app.NotificationManager;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
@@ -115,16 +113,7 @@ public class NetworkSurveyActivity extends AppCompatActivity
 
         surveyServiceConnection = new SurveyServiceConnection();
 
-        final NotificationManager notificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
-        if (notificationManager != null)
-        {
-            final NotificationChannel channel = new NotificationChannel(NetworkSurveyConstants.NOTIFICATION_CHANNEL_ID,
-                    getText(R.string.notification_channel_name), NotificationManager.IMPORTANCE_LOW);
-            notificationManager.createNotificationChannel(channel);
-        } else
-        {
-            Timber.e("The Notification Manager could not be retrieved to add the Network Survey notification channel");
-        }
+        Application.createNotificationChannel(this);
 
         gnssFailureListener = () -> {
             try

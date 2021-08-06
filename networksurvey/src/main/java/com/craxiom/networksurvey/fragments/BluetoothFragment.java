@@ -159,7 +159,7 @@ public class BluetoothFragment extends Fragment implements IBluetoothSurveyRecor
                     bluetoothRecyclerViewAdapter.notifyDataSetChanged();
                 }
 
-                devicesInScanView.setText(requireContext().getString(R.string.bluetooth_devices_in_scan, bluetoothRecordSortedSet.size()));
+                devicesInScanView.setText(getString(R.string.bluetooth_devices_in_scan, bluetoothRecordSortedSet.size()));
             }
         });
     }
