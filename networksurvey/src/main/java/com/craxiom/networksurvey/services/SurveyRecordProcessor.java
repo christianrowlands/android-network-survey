@@ -125,7 +125,7 @@ public class SurveyRecordProcessor
     private final String missionId;
 
     private int recordNumber = 1;
-    private int groupNumber = 0; // This will be incremented to 0 the first time it is used.
+    private int groupNumber = 0; // This will be incremented to 1 the first time it is used.
 
     private int wifiRecordNumber = 1;
     private int bluetoothRecordNumber = 1;
@@ -361,7 +361,7 @@ public class SurveyRecordProcessor
         apScanResults.forEach(scanResult -> Timber.v(scanResult.toString()));
         Timber.v("");*/
 
-        executorService.execute(() -> processAccessPoints(apScanResults));
+        execute(() -> processAccessPoints(apScanResults));
     }
 
     /**
@@ -373,7 +373,7 @@ public class SurveyRecordProcessor
      */
     void onBluetoothClassicScanUpdate(BluetoothDevice device, int rssi)
     {
-        executorService.execute(() -> processBluetoothClassicResult(device, rssi));
+        execute(() -> processBluetoothClassicResult(device, rssi));
     }
 
     /**
@@ -384,7 +384,7 @@ public class SurveyRecordProcessor
      */
     void onBluetoothScanUpdate(android.bluetooth.le.ScanResult result)
     {
-        executorService.execute(() -> processBluetoothResult(result));
+        execute(() -> processBluetoothResult(result));
     }
 
     /**
@@ -399,7 +399,7 @@ public class SurveyRecordProcessor
         results.forEach(scanResult -> Timber.v(scanResult.toString()));
         Timber.v("");*/
 
-        executorService.execute(() -> processBluetoothResults(results));
+        execute(() -> processBluetoothResults(results));
     }
 
     /**
@@ -410,7 +410,7 @@ public class SurveyRecordProcessor
      */
     void onGnssMeasurements(GnssMeasurementsEvent event)
     {
-        executorService.execute(() -> processGnssMeasurements(event));
+        execute(() -> processGnssMeasurements(event));
     }
 
     /**
@@ -421,7 +421,7 @@ public class SurveyRecordProcessor
      */
     void onDeviceStatus(DeviceStatus deviceStatus)
     {
-        executorService.execute(() -> notifyDeviceStatusListeners(deviceStatus));
+        execute(() -> notifyDeviceStatusListeners(deviceStatus));
     }
 
     /**
@@ -644,6 +644,26 @@ public class SurveyRecordProcessor
         {
             final GnssRecord gnssRecord = generateGnssSurveyRecord(gnssMeasurement);
             notifyGnssRecordListeners(gnssRecord);
+        }
+    }
+
+    /**
+     * Wraps the execute command for the executor service in a try catch to prevent the app from crashing if something
+     * goes wrong with submitting the runnable. The most common crash I am seeing seems to be from the executor service
+     * shutting down but some scan results are coming in. Hopefully that is the only case because otherwise we are
+     * losing some survey results.
+     *
+     * @param runnable The runnable to execute on the executor service.
+     * @since 1.5.0
+     */
+    private void execute(Runnable runnable)
+    {
+        try
+        {
+            executorService.execute(runnable);
+        } catch (Throwable t)
+        {
+            Timber.w(t, "Could not submit to the executor service");
         }
     }
 

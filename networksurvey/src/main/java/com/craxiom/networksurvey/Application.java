@@ -16,11 +16,14 @@
 
 package com.craxiom.networksurvey;
 
+import android.app.NotificationChannel;
+import android.app.NotificationManager;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.content.res.Configuration;
 import android.preference.PreferenceManager;
 
+import com.craxiom.networksurvey.constants.NetworkSurveyConstants;
 import com.craxiom.networksurvey.lang.LocaleManager;
 
 import timber.log.Timber;
@@ -86,5 +89,25 @@ public class Application extends android.app.Application
     {
         super.onConfigurationChanged(newConfig);
         mLocaleManager.setLocale(this);
+    }
+
+    /**
+     * Creates the notification Channel that is used by this Android app.
+     *
+     * @param context The context that is used to create the notification channel.
+     * @since 1.5.0
+     */
+    public static void createNotificationChannel(Context context)
+    {
+        final NotificationManager notificationManager = (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
+        if (notificationManager != null)
+        {
+            final NotificationChannel channel = new NotificationChannel(NetworkSurveyConstants.NOTIFICATION_CHANNEL_ID,
+                    context.getText(R.string.notification_channel_name), NotificationManager.IMPORTANCE_LOW);
+            notificationManager.createNotificationChannel(channel);
+        } else
+        {
+            Timber.wtf("The Notification Manager could not be retrieved to add the Network Survey notification channel");
+        }
     }
 }

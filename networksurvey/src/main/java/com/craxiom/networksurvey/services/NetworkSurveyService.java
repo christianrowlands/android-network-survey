@@ -1087,7 +1087,25 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
 
             Timber.d("Setting the location update rate to %d", smallestScanRate);
 
-            locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, smallestScanRate, 0f, gpsListener, serviceLooper);
+            try
+            {
+                final String provider;
+                if (locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER))
+                {
+                    provider = LocationManager.GPS_PROVIDER;
+                } else if (locationManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER))
+                {
+                    provider = LocationManager.NETWORK_PROVIDER;
+                } else
+                {
+                    provider = LocationManager.PASSIVE_PROVIDER;
+                }
+                locationManager.requestLocationUpdates(provider, smallestScanRate, 0f, gpsListener, serviceLooper);
+            } catch (Throwable t)
+            {
+                // An IllegalArgumentException was occurring on phones that don't have a GPS provider, so some defensive coding here
+                Timber.e(t, "Could not request location updates because of an exception.");
+            }
         } else
         {
             Timber.e("The location manager was null when trying to request location updates for the NetworkSurveyService");
@@ -1132,7 +1150,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
                     telephonyManager.requestCellInfoUpdate(executorService, cellInfoCallback);
                 } else
                 {
-                    executorService.execute(() -> surveyRecordProcessor.onCellInfoUpdate(telephonyManager.getAllCellInfo(), CalculationUtils.getNetworkType(telephonyManager.getDataNetworkType())));
+                    execute(() -> surveyRecordProcessor.onCellInfoUpdate(telephonyManager.getAllCellInfo(), CalculationUtils.getNetworkType(telephonyManager.getDataNetworkType())));
                 }
             } catch (SecurityException e)
             {
@@ -1178,7 +1196,15 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
                         telephonyManager.requestCellInfoUpdate(executorService, cellInfoCallback);
                     } else
                     {
-                        executorService.execute(() -> surveyRecordProcessor.onCellInfoUpdate(telephonyManager.getAllCellInfo(), CalculationUtils.getNetworkType(telephonyManager.getDataNetworkType())));
+                        execute(() -> {
+                            try
+                            {
+                                surveyRecordProcessor.onCellInfoUpdate(telephonyManager.getAllCellInfo(), CalculationUtils.getNetworkType(telephonyManager.getDataNetworkType()));
+                            } catch (Throwable t)
+                            {
+                                Timber.e(t, "Failed to pass the cellular info to the survey record processor");
+                            }
+                        });
                     }
 
                     serviceHandler.postDelayed(this, cellularScanRateMs);
@@ -1190,6 +1216,26 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
         }, 1_000);
 
         updateLocationListener();
+    }
+
+    /**
+     * Wraps the execute command for the executor service in a try catch to prevent the app from crashing if something
+     * goes wrong with submitting the runnable. The most common crash I am seeing seems to be from the executor service
+     * shutting down but some scan results are coming in. Hopefully that is the only case because otherwise we are
+     * losing some survey results.
+     *
+     * @param runnable The runnable to execute on the executor service.
+     * @since 1.5.0
+     */
+    private void execute(Runnable runnable)
+    {
+        try
+        {
+            executorService.execute(runnable);
+        } catch (Throwable t)
+        {
+            Timber.w(t, "Could not submit to the executor service");
+        }
     }
 
     /**
@@ -1679,7 +1725,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
                     @Override
                     public void onServiceStateChanged(ServiceState serviceState)
                     {
-                        executorService.execute(() -> surveyRecordProcessor.onServiceStateChanged(serviceState, telephonyManager));
+                        execute(() -> surveyRecordProcessor.onServiceStateChanged(serviceState, telephonyManager));
                     }
 
                     // We can't use this because you have to be a system app to get the READ_PRECISE_PHONE_STATE permission.
@@ -1687,7 +1733,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
                     /*@Override
                     public void onRegistrationFailed(@NonNull CellIdentity cellIdentity, @NonNull String chosenPlmn, int domain, int causeCode, int additionalCauseCode)
                     {
-                        executorService.execute(() -> surveyRecordProcessor.onRegistrationFailed(cellIdentity, domain, causeCode, additionalCauseCode, telephonyManager));
+                        execute(() -> surveyRecordProcessor.onRegistrationFailed(cellIdentity, domain, causeCode, additionalCauseCode, telephonyManager));
                     }*/
                 };
 
@@ -1781,6 +1827,8 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
      */
     private Notification buildNotification()
     {
+        Application.createNotificationChannel(this);
+
         final boolean logging = cellularLoggingEnabled.get() || wifiLoggingEnabled.get() || bluetoothLoggingEnabled.get() || gnssLoggingEnabled.get();
         final com.craxiom.mqttlibrary.connection.ConnectionState connectionState = mqttConnection.getConnectionState();
         final boolean mqttConnectionActive = connectionState == ConnectionState.CONNECTED || connectionState == ConnectionState.CONNECTING;

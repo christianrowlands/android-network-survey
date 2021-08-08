@@ -29,6 +29,8 @@
     <string name="action_start_gnss_logging">Start GNSS Logging</string>
     <string name="action_stop_gnss_logging">Stop GNSS Logging</string>
 
+    <string name="logging_not_ready">Could not turn on logging, the app is not ready</string>
+
     <string name="no_gps_device">No GPS detected in device!</string>
     <string name="turn_on_gps">Please turn on GPS</string>
 

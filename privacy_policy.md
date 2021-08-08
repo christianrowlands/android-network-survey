@@ -13,7 +13,7 @@ For a better experience, while using our Service, I may require you to provide u
 
 The app does use third party services that may collect information used to identify you.
 
-Link to privacy policy of third party service providers used by the app
+Links to the privacy policy of third party service providers used by the app
 
 *   [Google Play Services](https://www.google.com/policies/privacy/)
 *   [Google Analytics for Firebase](https://firebase.google.com/policies/analytics)
@@ -24,7 +24,7 @@ but data related to app crashes and general app usage is set to Google Firebase 
 or provided to any other 3rd party entities by Christian Rowlands or anyone working on the Network Survey Android project.
 
 No other information is stored external to the Network Survey Android app unless configured to by the user. All survey log files remain
-on the phone unless you, the user, moves the. All connections including MQTT and gRPC server connections are to servers have to be
+on the phone unless you, the user, moves the. All connections including MQTT and gRPC server connections have to be
 configured and initiated by the user, and a default server is not provided.
 
 **Background Location Permission**
@@ -43,7 +43,7 @@ follow on analysis of the Cellular, Wi-Fi, Bluetooth and GNSS survey records.
 The location data consumed by the Network Survey app is recorded to the GeoPackage log files, if logging is enabled. The
 location data is also sent over MQTT and gRPC to a remote server, if a remote server is configured. There is not a default
 remote server provided with the app, so it is necessary for the user of the Network Survey app to stand up their own
-server to receive that information. The lcoation data is used in any other way than defined above. The location data
+server to receive that information. The location data is not used in any other way than defined above. The location data
 is not shared with any 3rd parties, and is not accessable by anyone except for the user. Therefore, the location data
 is not collection, used, or shared by or with anyone that the user has not direclty handed the data to by uploading
 the recorded GeoPackage or sent to by connecting to someone elses MQTT or gRPC server.

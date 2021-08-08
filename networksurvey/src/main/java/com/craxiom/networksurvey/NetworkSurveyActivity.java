@@ -2,8 +2,6 @@ package com.craxiom.networksurvey;
 
 import android.Manifest;
 import android.annotation.SuppressLint;
-import android.app.NotificationChannel;
-import android.app.NotificationManager;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
@@ -115,16 +113,7 @@ public class NetworkSurveyActivity extends AppCompatActivity
 
         surveyServiceConnection = new SurveyServiceConnection();
 
-        final NotificationManager notificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
-        if (notificationManager != null)
-        {
-            final NotificationChannel channel = new NotificationChannel(NetworkSurveyConstants.NOTIFICATION_CHANNEL_ID,
-                    getText(R.string.notification_channel_name), NotificationManager.IMPORTANCE_LOW);
-            notificationManager.createNotificationChannel(channel);
-        } else
-        {
-            Timber.e("The Notification Manager could not be retrieved to add the Network Survey notification channel");
-        }
+        Application.createNotificationChannel(this);
 
         gnssFailureListener = () -> {
             try
@@ -192,7 +181,13 @@ public class NetworkSurveyActivity extends AppCompatActivity
                 stopService(connectionServiceIntent);
             }
 
-            applicationContext.unbindService(surveyServiceConnection);
+            try
+            {
+                applicationContext.unbindService(surveyServiceConnection);
+            } catch (IllegalArgumentException e)
+            {
+                Timber.e(e, "Could not unbind the service because it is not bound.");
+            }
         }
 
         super.onPause();
@@ -253,6 +248,13 @@ public class NetworkSurveyActivity extends AppCompatActivity
     public boolean onOptionsItemSelected(MenuItem item)
     {
         int id = item.getItemId();
+
+        if (networkSurveyService == null)
+        {
+            Timber.w("The Network Survey service was not ready when the user toggled on file logging");
+            Toast.makeText(getApplicationContext(), getString(R.string.logging_not_ready), Toast.LENGTH_LONG).show();
+            return true;
+        }
 
         //noinspection SimplifiableIfStatement
         if (id == R.id.action_start_stop_cellular_logging)

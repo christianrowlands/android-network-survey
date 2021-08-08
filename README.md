@@ -72,6 +72,9 @@ library. [The API documentation is published to a web page here](https://messagi
 
 ## Changelog
 
+##### [1.4.3](https://github.com/christianrowlands/android-network-survey/releases/tag/v1.4.3) - 2021-08-08
+ * Fixed several bugs that could cause the app to crash in various scenarios.
+
 ##### [1.4.2](https://github.com/christianrowlands/android-network-survey/releases/tag/v1.4.2) - 2021-07-08
  * Fixed a bug where the survey record queue would fill up and reject new records.
  * Added the missionId and recordNumber fields to the Phone State message.
