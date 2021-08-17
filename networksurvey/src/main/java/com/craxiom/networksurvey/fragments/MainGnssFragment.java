@@ -4,6 +4,8 @@ import android.Manifest;
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.pm.PackageManager;
+import android.location.GnssMeasurement;
+import android.location.GnssMeasurementsEvent;
 import android.location.GnssStatus;
 import android.location.Location;
 import android.location.LocationListener;
@@ -26,8 +28,13 @@ import com.craxiom.networksurvey.listeners.IGnssListener;
 import com.google.android.material.tabs.TabLayout;
 import com.google.android.material.tabs.TabLayoutMediator;
 
+import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArraySet;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 import timber.log.Timber;
 
@@ -41,8 +48,12 @@ public class MainGnssFragment extends Fragment
 {
     private static final int LOCATION_REFRESH_RATE_MS = 2_000;
 
+    // key is a hash code of GnssMeasurementWrapper's constellation type and svid
+    private final Map<Integer, GnssMeasurementWrapper> gnssMeasurements = new ConcurrentHashMap<>();
+
     private LocationListener locationListener;
     private GnssStatus.Callback gnssStatusListener;
+    private GnssMeasurementsEvent.Callback gnssMeasurementCallback;
     private final Set<IGnssListener> gnssListeners = new CopyOnWriteArraySet<>();
     private LocationManager locationManager;
 
@@ -62,6 +73,9 @@ public class MainGnssFragment extends Fragment
         }
 
         if (locationManager == null) Timber.e("The Location Manager is null. Unable to get GNSS information");
+
+        Executors.newSingleThreadScheduledExecutor().scheduleAtFixedRate(this::checkGnssMeasurementTimeouts,
+                0, GnssMeasurementWrapper.TIMEOUT_VALUE_NANOS, TimeUnit.MILLISECONDS);
     }
 
     @Nullable
@@ -254,8 +268,27 @@ public class MainGnssFragment extends Fragment
                 }
             };
         }
+        if(gnssMeasurementCallback == null)
+        {
+            gnssMeasurementCallback = new GnssMeasurementsEvent.Callback()
+            {
+                @Override
+                public void onGnssMeasurementsReceived(GnssMeasurementsEvent eventArgs)
+                {
+                    super.onGnssMeasurementsReceived(eventArgs);
+
+                    // update our gnssMeasurements
+                    eventArgs.getMeasurements().stream()
+                            .map(GnssMeasurementWrapper::new)
+                            .forEach(gnssWrapper -> gnssMeasurements.put(gnssWrapper.getId(), gnssWrapper));
+
+                    gnssListeners.forEach(l -> l.onGnssMeasurementsReceived(eventArgs));
+                }
+            };
+        }
 
         locationManager.registerGnssStatusCallback(gnssStatusListener);
+        locationManager.registerGnssMeasurementsCallback(gnssMeasurementCallback);
     }
 
     /**
@@ -270,6 +303,14 @@ public class MainGnssFragment extends Fragment
         }
 
         locationManager.unregisterGnssStatusCallback(gnssStatusListener);
+    }
+
+    private void checkGnssMeasurementTimeouts()
+    {
+        final long currentTimeout = System.nanoTime() - GnssMeasurementWrapper.TIMEOUT_VALUE_NANOS;
+        gnssMeasurements.values().stream()
+                .filter(measurement -> currentTimeout > measurement.receivedTimeNanos)
+                .forEach(GnssMeasurementWrapper::onTimeout);
     }
 
     /**
@@ -329,6 +370,67 @@ public class MainGnssFragment extends Fragment
         public int getItemCount()
         {
             return 2;
+        }
+    }
+
+    /**
+     *  Wrapper for {@link GnssMeasurement} as we have multiple listeners updating our unified model, {@link GnssStatus}
+     */
+    private static class GnssMeasurementWrapper
+    {
+        // 5 seconds in nanos
+        private static final long TIMEOUT_VALUE_NANOS = 5_000_000_000L;
+        // using a default value lets us avoid storing nulls in our records
+        private static final long TIMED_OUT = Long.MIN_VALUE;
+
+        private final int svId;
+        // lets us associate with measurement with satellite's nationality
+        private final int constellationType;
+
+        private long receivedTimeNanos;
+
+        private GnssMeasurementWrapper(GnssMeasurement measurement)
+        {
+            constellationType = measurement.getConstellationType();
+            receivedTimeNanos = measurement.getReceivedSvTimeNanos();
+            svId = measurement.getSvid();
+        }
+
+        private void setReceivedTimeNanos(long receivedTimeNanos)
+        {
+            this.receivedTimeNanos = receivedTimeNanos;
+        }
+
+        // Useful for getting an id for a hashmap in order to update a gnssMeasurement, allowing us
+        // to update treat this class as most up-to-date gnssMeasurement
+        private int getId()
+        {
+            return Objects.hash(svId, constellationType);
+        }
+
+        private void onTimeout()
+        {
+            receivedTimeNanos = TIMED_OUT;
+        }
+
+        private boolean isTimedOut()
+        {
+            return receivedTimeNanos == TIMED_OUT;
+        }
+
+        @Override
+        public boolean equals(Object o)
+        {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+            GnssMeasurementWrapper that = (GnssMeasurementWrapper) o;
+            return svId == that.svId && constellationType == that.constellationType && receivedTimeNanos == that.receivedTimeNanos;
+        }
+
+        @Override
+        public int hashCode()
+        {
+            return Objects.hash(svId, constellationType, receivedTimeNanos);
         }
     }
 }

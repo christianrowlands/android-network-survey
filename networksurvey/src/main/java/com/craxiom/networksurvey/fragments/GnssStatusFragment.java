@@ -17,6 +17,11 @@
 
 package com.craxiom.networksurvey.fragments;
 
+import static android.util.TypedValue.COMPLEX_UNIT_DIP;
+import static android.util.TypedValue.COMPLEX_UNIT_PX;
+import static com.craxiom.networksurvey.model.ConstellationType.GNSS;
+import static com.craxiom.networksurvey.model.ConstellationType.SBAS;
+
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.content.res.Resources;
@@ -68,11 +73,6 @@ import java.util.List;
 import java.util.Locale;
 
 import timber.log.Timber;
-
-import static android.util.TypedValue.COMPLEX_UNIT_DIP;
-import static android.util.TypedValue.COMPLEX_UNIT_PX;
-import static com.craxiom.networksurvey.model.ConstellationType.GNSS;
-import static com.craxiom.networksurvey.model.ConstellationType.SBAS;
 
 /**
  * A fragment for displaying the latest GNSS information to the user.
