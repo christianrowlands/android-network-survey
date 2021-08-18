@@ -67,14 +67,11 @@ import com.craxiom.networksurvey.util.PreferenceUtils;
 import com.craxiom.networksurvey.util.SortUtil;
 import com.craxiom.networksurvey.util.UIUtils;
 
-import java.lang.reflect.Type;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
 import java.util.function.BiConsumer;
-import java.util.function.Consumer;
 
 import timber.log.Timber;
 
@@ -99,6 +96,8 @@ public class GnssStatusFragment extends Fragment implements IGnssListener
     private static final String METERS = "1";
     private static final String METERS_PER_SECOND = "1";
     private static final String KILOMETERS_PER_HOUR = "2";
+
+    private final Object lock = new Object();
 
     private SimpleDateFormat dateFormat;
 
@@ -333,7 +332,29 @@ public class GnssStatusFragment extends Fragment implements IGnssListener
     @Override
     public void onGnssMeasurementsReceived(GnssMeasurementsEvent event)
     {
-        // No-op
+        BiConsumer<List<SatelliteStatus>, SatelliteStatusAdapter> updateAgc = (statuses, adapter) -> {
+
+                // start at 1 as 0th index is the column label header
+                for (int i = 1; i < adapter.getItemCount(); i++)
+                {
+                    SatelliteStatus s = statuses.get(i);
+                    MainGnssFragment.GnssMeasurementWrapper measurement = mainGnssFragment.getGnssMeasurement(s.getSvid(), s.getGnssType());
+                    // it's probably not timed out here because if we're here we just updated the record
+                    if (measurement != null && measurement.hasAgc() && !measurement.isTimedOut())
+                    {
+                        s.setAgc(measurement.getAgc());
+                        adapter.notifyItemChanged(i);
+                    }
+                }
+        };
+
+        // must sync here since updateGnssStatus clears/creates the SatelliteStatus records for our lists
+        synchronized (lock)
+        {
+            updateAgc.accept(gnssStatus, gnssAdapter);
+            updateAgc.accept(sbasStatus, sbasAdapter);
+            updateListVisibility();
+        }
     }
 
     @Override
@@ -609,46 +630,59 @@ public class GnssStatusFragment extends Fragment implements IGnssListener
         final int length = status.getSatelliteCount();
         svCount = 0;
         int usedInFixCount = 0;
-        gnssStatus.clear();
-        sbasStatus.clear();
-        while (svCount < length)
+
+        // must sync as onGnssMeasurementsReceived modifies the adapter record
+        synchronized (lock)
         {
-            SatelliteStatus satStatus = new SatelliteStatus(status.getSvid(svCount), GpsTestUtil.getGnssConstellationType(status.getConstellationType(svCount)),
-                    status.getCn0DbHz(svCount),
-                    status.hasAlmanacData(svCount),
-                    status.hasEphemerisData(svCount),
-                    status.usedInFix(svCount),
-                    status.getElevationDegrees(svCount),
-                    status.getAzimuthDegrees(svCount));
-            if (GpsTestUtil.isGnssCarrierFrequenciesSupported())
+            gnssStatus.clear();
+            sbasStatus.clear();
+            while (svCount < length)
             {
-                if (status.hasCarrierFrequencyHz(svCount))
+                GnssType gnssType = GpsTestUtil.getGnssConstellationType(status.getConstellationType(svCount));
+                SatelliteStatus satStatus = new SatelliteStatus(status.getSvid(svCount), gnssType,
+                        status.getCn0DbHz(svCount),
+                        status.hasAlmanacData(svCount),
+                        status.hasEphemerisData(svCount),
+                        status.usedInFix(svCount),
+                        status.getElevationDegrees(svCount),
+                        status.getAzimuthDegrees(svCount));
+
+                // update agc if we have it and it's not timed out
+                MainGnssFragment.GnssMeasurementWrapper measurement = mainGnssFragment.getGnssMeasurement(status.getSvid(svCount), gnssType);
+                satStatus.setAgc(!measurement.isTimedOut() && measurement.hasAgc()
+                        ? measurement.getAgc()
+                        : SatelliteStatus.NO_DATA_DOUBLE);
+
+                if (GpsTestUtil.isGnssCarrierFrequenciesSupported())
                 {
-                    satStatus.setHasCarrierFrequency(true);
-                    satStatus.setCarrierFrequencyHz(status.getCarrierFrequencyHz(svCount));
+                    if (status.hasCarrierFrequencyHz(svCount))
+                    {
+                        satStatus.setHasCarrierFrequency(true);
+                        satStatus.setCarrierFrequencyHz(status.getCarrierFrequencyHz(svCount));
+                    }
                 }
+
+                if (satStatus.getGnssType() == GnssType.SBAS)
+                {
+                    satStatus.setSbasType(GpsTestUtil.getSbasConstellationType(satStatus.getSvid()));
+                    sbasStatus.add(satStatus);
+                } else
+                {
+                    gnssStatus.add(satStatus);
+                }
+
+                if (satStatus.getUsedInFix())
+                {
+                    usedInFixCount++;
+                }
+
+                svCount++;
             }
 
-            if (satStatus.getGnssType() == GnssType.SBAS)
-            {
-                satStatus.setSbasType(GpsTestUtil.getSbasConstellationType(satStatus.getSvid()));
-                sbasStatus.add(satStatus);
-            } else
-            {
-                gnssStatus.add(satStatus);
-            }
+            numSats.setText(resources.getString(R.string.gps_num_sats_value, usedInFixCount, svCount));
 
-            if (satStatus.getUsedInFix())
-            {
-                usedInFixCount++;
-            }
-
-            svCount++;
+            refreshViews();
         }
-
-        numSats.setText(resources.getString(R.string.gps_num_sats_value, usedInFixCount, svCount));
-
-        refreshViews();
     }
 
     private void refreshViews()
@@ -849,7 +883,8 @@ public class GnssStatusFragment extends Fragment implements IGnssListener
                 return statusFlags;
             }
 
-            public TextView getAgc() {
+            public TextView getAgc()
+            {
                 return agc;
             }
         }
@@ -910,7 +945,7 @@ public class GnssStatusFragment extends Fragment implements IGnssListener
 
                 setTextAndBold.accept(v.getSignal(), snrCn0Title);
                 setTextAndBold.accept(v.getAgc(), agcTitle);
-                setTextAndBold.accept(v.getStatusFlags(),resources.getString(R.string.gps_flags_column_label));
+                setTextAndBold.accept(v.getStatusFlags(), resources.getString(R.string.gps_flags_column_label));
             } else
             {
                 // There is a header at 0, so the first data row will be at position - 1, etc.
