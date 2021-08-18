@@ -793,8 +793,6 @@ public class GnssStatusFragment extends Fragment implements IGnssListener
             private final LinearLayout gnssFlagLayout;
             private final TextView carrierFrequency;
             private final TextView signal;
-            private final TextView elevation;
-            private final TextView azimuth;
             private final TextView statusFlags;
 
             ViewHolder(View v)
@@ -806,8 +804,6 @@ public class GnssStatusFragment extends Fragment implements IGnssListener
                 gnssFlagLayout = v.findViewById(R.id.gnss_flag_layout);
                 carrierFrequency = v.findViewById(R.id.carrier_frequency);
                 signal = v.findViewById(R.id.signal);
-                elevation = v.findViewById(R.id.elevation);
-                azimuth = v.findViewById(R.id.azimuth);
                 statusFlags = v.findViewById(R.id.status_flags);
             }
 
@@ -839,16 +835,6 @@ public class GnssStatusFragment extends Fragment implements IGnssListener
             public TextView getSignal()
             {
                 return signal;
-            }
-
-            public TextView getElevation()
-            {
-                return elevation;
-            }
-
-            public TextView getAzimuth()
-            {
-                return azimuth;
             }
 
             public TextView getStatusFlags()
@@ -910,10 +896,6 @@ public class GnssStatusFragment extends Fragment implements IGnssListener
                 }
                 v.getSignal().setText(snrCn0Title);
                 v.getSignal().setTypeface(v.getSignal().getTypeface(), Typeface.BOLD);
-                v.getElevation().setText(resources.getString(R.string.gps_elevation_column_label));
-                v.getElevation().setTypeface(v.getElevation().getTypeface(), Typeface.BOLD);
-                v.getAzimuth().setText(resources.getString(R.string.gps_azimuth_column_label));
-                v.getAzimuth().setTypeface(v.getAzimuth().getTypeface(), Typeface.BOLD);
                 v.getStatusFlags().setText(resources.getString(R.string.gps_flags_column_label));
                 v.getStatusFlags().setTypeface(v.getStatusFlags().getTypeface(), Typeface.BOLD);
             } else
@@ -1013,24 +995,6 @@ public class GnssStatusFragment extends Fragment implements IGnssListener
                 } else
                 {
                     v.getSignal().setText("");
-                }
-
-                if (sats.get(dataRow).getElevationDegrees() != SatelliteStatus.NO_DATA)
-                {
-                    v.getElevation().setText(resources.getString(R.string.gps_elevation_column_value,
-                            sats.get(dataRow).getElevationDegrees()).replace(".0", "").replace(",0", ""));
-                } else
-                {
-                    v.getElevation().setText("");
-                }
-
-                if (sats.get(dataRow).getAzimuthDegrees() != SatelliteStatus.NO_DATA)
-                {
-                    v.getAzimuth().setText(resources.getString(R.string.gps_azimuth_column_value,
-                            sats.get(dataRow).getAzimuthDegrees()).replace(".0", "").replace(",0", ""));
-                } else
-                {
-                    v.getAzimuth().setText("");
                 }
 
                 char[] flags = new char[3];
