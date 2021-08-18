@@ -67,10 +67,14 @@ import com.craxiom.networksurvey.util.PreferenceUtils;
 import com.craxiom.networksurvey.util.SortUtil;
 import com.craxiom.networksurvey.util.UIUtils;
 
+import java.lang.reflect.Type;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
+import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 
 import timber.log.Timber;
 
@@ -123,6 +127,7 @@ public class GnssStatusFragment extends Fragment implements IGnssListener
     private int svCount;
 
     private String snrCn0Title;
+    private String agcTitle;
 
     private long fixTime;
 
@@ -243,6 +248,8 @@ public class GnssStatusFragment extends Fragment implements IGnssListener
         sbasStatusList.setLayoutManager(llmSbas);
         sbasStatusList.setNestedScrollingEnabled(false);
 
+        snrCn0Title = resources.getString(R.string.gps_cn0_column_label);
+        agcTitle = resources.getString(R.string.gps_agc_column_label);
         return v;
     }
 
@@ -599,8 +606,6 @@ public class GnssStatusFragment extends Fragment implements IGnssListener
             return;
         }
 
-        snrCn0Title = resources.getString(R.string.gps_cn0_column_label);
-
         final int length = status.getSatelliteCount();
         svCount = 0;
         int usedInFixCount = 0;
@@ -793,6 +798,7 @@ public class GnssStatusFragment extends Fragment implements IGnssListener
             private final LinearLayout gnssFlagLayout;
             private final TextView carrierFrequency;
             private final TextView signal;
+            private final TextView agc;
             private final TextView statusFlags;
 
             ViewHolder(View v)
@@ -804,6 +810,7 @@ public class GnssStatusFragment extends Fragment implements IGnssListener
                 gnssFlagLayout = v.findViewById(R.id.gnss_flag_layout);
                 carrierFrequency = v.findViewById(R.id.carrier_frequency);
                 signal = v.findViewById(R.id.signal);
+                agc = v.findViewById(R.id.status_row_agc);
                 statusFlags = v.findViewById(R.id.status_flags);
             }
 
@@ -841,6 +848,10 @@ public class GnssStatusFragment extends Fragment implements IGnssListener
             {
                 return statusFlags;
             }
+
+            public TextView getAgc() {
+                return agc;
+            }
         }
 
         @NonNull
@@ -870,14 +881,17 @@ public class GnssStatusFragment extends Fragment implements IGnssListener
         {
             if (position == 0)
             {
+                BiConsumer<TextView, String> setTextAndBold = (tv, str) -> {
+                    tv.setText(str);
+                    tv.setTypeface(tv.getTypeface(), Typeface.BOLD);
+                };
                 // Show the header field for the GNSS flag and hide the ImageView
                 v.getFlagHeader().setVisibility(View.VISIBLE);
                 v.getFlag().setVisibility(View.GONE);
                 v.getFlagLayout().setVisibility(View.GONE);
 
                 // Populate the header fields
-                v.getSvId().setText(resources.getString(R.string.gps_prn_column_label));
-                v.getSvId().setTypeface(v.getSvId().getTypeface(), Typeface.BOLD);
+                setTextAndBold.accept(v.getSvId(), resources.getString(R.string.gps_prn_column_label));
                 if (mConstellationType == GNSS)
                 {
                     v.getFlagHeader().setText(resources.getString(R.string.gnss_flag_image_label));
@@ -888,16 +902,15 @@ public class GnssStatusFragment extends Fragment implements IGnssListener
                 if (GpsTestUtil.isGnssCarrierFrequenciesSupported())
                 {
                     v.getCarrierFrequency().setVisibility(View.VISIBLE);
-                    v.getCarrierFrequency().setText(resources.getString(R.string.gps_carrier_column_label));
-                    v.getCarrierFrequency().setTypeface(v.getCarrierFrequency().getTypeface(), Typeface.BOLD);
+                    setTextAndBold.accept(v.getCarrierFrequency(), resources.getString(R.string.gps_carrier_column_label));
                 } else
                 {
                     v.getCarrierFrequency().setVisibility(View.GONE);
                 }
-                v.getSignal().setText(snrCn0Title);
-                v.getSignal().setTypeface(v.getSignal().getTypeface(), Typeface.BOLD);
-                v.getStatusFlags().setText(resources.getString(R.string.gps_flags_column_label));
-                v.getStatusFlags().setTypeface(v.getStatusFlags().getTypeface(), Typeface.BOLD);
+
+                setTextAndBold.accept(v.getSignal(), snrCn0Title);
+                setTextAndBold.accept(v.getAgc(), agcTitle);
+                setTextAndBold.accept(v.getStatusFlags(),resources.getString(R.string.gps_flags_column_label));
             } else
             {
                 // There is a header at 0, so the first data row will be at position - 1, etc.

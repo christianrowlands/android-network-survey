@@ -21,7 +21,7 @@
         android:layout_marginRight="@dimen/activity_horizontal_margin"
         android:gravity="center_vertical"
         android:orientation="horizontal"
-        tools:background="@color/black">
+        tools:background="@color/body_text_2_light">
 
     <TextView
             android:id="@+id/sv_id"
@@ -51,7 +51,8 @@
             android:minWidth="@dimen/min_column_width"
             android:layout_marginRight="@dimen/column_padding"
             android:layout_marginEnd="@dimen/column_padding"
-            android:visibility="gone">
+            android:visibility="gone"
+            tools:visibility="visible">
 
         <ImageView
                 android:id="@+id/gnss_flag"
@@ -59,7 +60,9 @@
                 android:layout_height="wrap_content"
                 android:background="@color/body_text_2_light"
                 android:padding="1dp"
-                android:visibility="gone" />
+                android:visibility="gone"
+                tools:visibility="visible"
+                tools:src="@drawable/ic_flag_usa"/>
     </LinearLayout>
 
     <TextView
@@ -82,6 +85,17 @@
             android:layout_marginEnd="@dimen/column_padding"
             android:textSize="@dimen/status_text_size"
             tools:text="CN0"
+            tools:textColor="@color/white"/>
+
+    <TextView
+            android:id="@+id/status_row_agc"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:minWidth="@dimen/min_column_width"
+            android:layout_marginRight="@dimen/column_padding"
+            android:layout_marginEnd="@dimen/column_padding"
+            android:textSize="@dimen/status_text_size"
+            tools:text="20 db"
             tools:textColor="@color/white"/>
 
     <TextView
