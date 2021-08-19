@@ -56,6 +56,7 @@ import com.craxiom.networksurvey.R;
 import com.craxiom.networksurvey.listeners.IGnssListener;
 import com.craxiom.networksurvey.model.ConstellationType;
 import com.craxiom.networksurvey.model.DilutionOfPrecision;
+import com.craxiom.networksurvey.model.GnssMeasurementWrapper;
 import com.craxiom.networksurvey.model.GnssType;
 import com.craxiom.networksurvey.model.SatelliteStatus;
 import com.craxiom.networksurvey.util.CarrierFreqUtils;
@@ -332,15 +333,14 @@ public class GnssStatusFragment extends Fragment implements IGnssListener
     @Override
     public void onGnssMeasurementsReceived(GnssMeasurementsEvent event)
     {
+        // updates statuses if there's a valid agc measurement corresponding to that statuses svid and constellation
         BiConsumer<List<SatelliteStatus>, SatelliteStatusAdapter> updateAgc = (statuses, adapter) -> {
-
                 // start at 1 as 0th index is the column label header
                 for (int i = 1; i < adapter.getItemCount(); i++)
                 {
                     SatelliteStatus s = statuses.get(i);
-                    MainGnssFragment.GnssMeasurementWrapper measurement = mainGnssFragment.getGnssMeasurement(s.getSvid(), s.getGnssType());
-                    // it's probably not timed out here because if we're here we just updated the record
-                    if (measurement != null && measurement.hasAgc() && !measurement.isTimedOut())
+                    GnssMeasurementWrapper measurement = mainGnssFragment.getGnssMeasurement(s.getSvid(), s.getGnssType());
+                    if (hasValidAgc(measurement))
                     {
                         s.setAgc(measurement.getAgc());
                         adapter.notifyItemChanged(i);
@@ -631,7 +631,7 @@ public class GnssStatusFragment extends Fragment implements IGnssListener
         svCount = 0;
         int usedInFixCount = 0;
 
-        // must sync as onGnssMeasurementsReceived modifies the adapter record
+        // must sync as onGnssMeasurementsReceived modifies the adapter records
         synchronized (lock)
         {
             gnssStatus.clear();
@@ -648,8 +648,8 @@ public class GnssStatusFragment extends Fragment implements IGnssListener
                         status.getAzimuthDegrees(svCount));
 
                 // update agc if we have it and it's not timed out
-                MainGnssFragment.GnssMeasurementWrapper measurement = mainGnssFragment.getGnssMeasurement(status.getSvid(svCount), gnssType);
-                satStatus.setAgc(!measurement.isTimedOut() && measurement.hasAgc()
+                GnssMeasurementWrapper measurement = mainGnssFragment.getGnssMeasurement(status.getSvid(svCount), gnssType);
+                satStatus.setAgc(hasValidAgc(measurement)
                         ? measurement.getAgc()
                         : SatelliteStatus.NO_DATA_DOUBLE);
 
@@ -814,6 +814,16 @@ public class GnssStatusFragment extends Fragment implements IGnssListener
                 sortOptions[index]);
     }
 
+    /**
+     * Convenience method for ensuring our GnssMeasurement has a valid AGC value
+     * @param measurement   Wrapper for {@link android.location.GnssMeasurement}
+     * @return              {@code true} if the measurement is not null or old, and has an AGC value
+     */
+    private boolean hasValidAgc(GnssMeasurementWrapper measurement)
+    {
+        return measurement != null && measurement.hasAgc() && !measurement.isTimedOut();
+    }
+
     private class SatelliteStatusAdapter extends RecyclerView.Adapter<SatelliteStatusAdapter.ViewHolder>
     {
         ConstellationType mConstellationType;
@@ -832,7 +842,7 @@ public class GnssStatusFragment extends Fragment implements IGnssListener
             private final LinearLayout gnssFlagLayout;
             private final TextView carrierFrequency;
             private final TextView signal;
-            private final TextView agc;
+            private final TextView agcTv;
             private final TextView statusFlags;
 
             ViewHolder(View v)
@@ -844,7 +854,7 @@ public class GnssStatusFragment extends Fragment implements IGnssListener
                 gnssFlagLayout = v.findViewById(R.id.gnss_flag_layout);
                 carrierFrequency = v.findViewById(R.id.carrier_frequency);
                 signal = v.findViewById(R.id.signal);
-                agc = v.findViewById(R.id.status_row_agc);
+                agcTv = v.findViewById(R.id.status_row_agc);
                 statusFlags = v.findViewById(R.id.status_flags);
             }
 
@@ -883,9 +893,18 @@ public class GnssStatusFragment extends Fragment implements IGnssListener
                 return statusFlags;
             }
 
-            public TextView getAgc()
+            public TextView getAgcTv()
             {
-                return agc;
+                return agcTv;
+            }
+
+            public void setAgcTv(Locale locale, double agc)
+            {
+
+                String agcText = agc != SatelliteStatus.NO_DATA_DOUBLE
+                        ? String.format(locale, "%.1f", agc)
+                        : "";
+                agcTv.setText(agcText);
             }
         }
 
@@ -944,7 +963,7 @@ public class GnssStatusFragment extends Fragment implements IGnssListener
                 }
 
                 setTextAndBold.accept(v.getSignal(), snrCn0Title);
-                setTextAndBold.accept(v.getAgc(), agcTitle);
+                setTextAndBold.accept(v.getAgcTv(), agcTitle);
                 setTextAndBold.accept(v.getStatusFlags(), resources.getString(R.string.gps_flags_column_label));
             } else
             {
@@ -1044,6 +1063,8 @@ public class GnssStatusFragment extends Fragment implements IGnssListener
                 {
                     v.getSignal().setText("");
                 }
+
+                v.setAgcTv(defaultLocale, sats.get(dataRow).getAgc());
 
                 char[] flags = new char[3];
                 flags[0] = !sats.get(dataRow).getHasAlmanac() ? ' ' : 'A';
