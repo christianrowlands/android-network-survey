@@ -40,6 +40,7 @@ import com.craxiom.messaging.grpc.ConnectionRequest;
 import com.craxiom.messaging.grpc.DeviceStatusGrpc;
 import com.craxiom.messaging.grpc.GsmSurveyResponse;
 import com.craxiom.messaging.grpc.LteSurveyResponse;
+import com.craxiom.messaging.grpc.NrSurveyResponse;
 import com.craxiom.messaging.grpc.StatusUpdateReply;
 import com.craxiom.messaging.grpc.UmtsSurveyResponse;
 import com.craxiom.messaging.grpc.WifiBeaconSurveyResponse;
@@ -63,6 +64,7 @@ import com.google.protobuf.Int32Value;
 import java.lang.ref.WeakReference;
 import java.net.ConnectException;
 import java.time.ZonedDateTime;
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -71,6 +73,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -115,6 +118,7 @@ public class GrpcConnectionService extends Service implements IDeviceStatusListe
     private final ConcurrentLinkedQueue<CdmaRecord> cdmaRecordQueue = new ConcurrentLinkedQueue<>();
     private final ConcurrentLinkedQueue<UmtsRecord> umtsRecordQueue = new ConcurrentLinkedQueue<>();
     private final ConcurrentLinkedQueue<LteRecord> lteRecordQueue = new ConcurrentLinkedQueue<>();
+    private final ConcurrentLinkedQueue<NrRecord> nrRecordQueue = new ConcurrentLinkedQueue<>();
     private final ConcurrentLinkedQueue<WifiBeaconRecord> wifiBeaconRecordQueue = new ConcurrentLinkedQueue<>();
 
     private final List<IConnectionStateListener> grpcConnectionListeners = new CopyOnWriteArrayList<>();
@@ -137,6 +141,7 @@ public class GrpcConnectionService extends Service implements IDeviceStatusListe
     private GrpcTask<CdmaRecord, CdmaSurveyResponse> cdmaRecordGrpcTask;
     private GrpcTask<UmtsRecord, UmtsSurveyResponse> umtsRecordGrpcTask;
     private GrpcTask<LteRecord, LteSurveyResponse> lteRecordGrpcTask;
+    private GrpcTask<NrRecord, NrSurveyResponse> nrRecordGrpcTask;
     private GrpcTask<WifiBeaconRecord, WifiBeaconSurveyResponse> wifiBeaconRecordGrpcTask;
     private ManagedChannel channel;
     private final AtomicInteger deviceStatusGeneratorTaskId = new AtomicInteger();
@@ -383,7 +388,10 @@ public class GrpcConnectionService extends Service implements IDeviceStatusListe
     @Override
     public void onNrSurveyRecord(NrRecord nrRecord)
     {
-
+        if (isConnected() && nrRecord != null && nrRecordGrpcTask.getStatus() != AsyncTask.Status.FINISHED)
+        {
+            nrRecordQueue.add(nrRecord);
+        }
     }
 
     @Override
@@ -518,6 +526,9 @@ public class GrpcConnectionService extends Service implements IDeviceStatusListe
                         lteRecordGrpcTask = new GrpcTask<>(this, lteRecordQueue, wirelessSurveyStub::streamLteSurvey);
                         lteRecordGrpcTask.executeOnExecutor(executorService);
 
+                        nrRecordGrpcTask = new GrpcTask<>(this, nrRecordQueue, wirelessSurveyStub::streamNrSurvey);
+                        nrRecordGrpcTask.executeOnExecutor(executorService);
+
                         wifiBeaconRecordGrpcTask = new GrpcTask<>(this, wifiBeaconRecordQueue, wirelessSurveyStub::streamWifiBeaconSurvey);
                         wifiBeaconRecordGrpcTask.executeOnExecutor(executorService);
                     }
@@ -609,6 +620,11 @@ public class GrpcConnectionService extends Service implements IDeviceStatusListe
         {
             lteRecordGrpcTask.cancel(true);
             lteRecordGrpcTask = null;
+        }
+        if (nrRecordGrpcTask != null)
+        {
+            nrRecordGrpcTask.cancel(true);
+            nrRecordGrpcTask = null;
         }
         if (wifiBeaconRecordGrpcTask != null)
         {
