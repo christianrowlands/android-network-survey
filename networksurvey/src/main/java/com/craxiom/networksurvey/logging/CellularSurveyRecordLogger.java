@@ -77,7 +77,7 @@ public class CellularSurveyRecordLogger extends SurveyRecordLogger implements IC
     @Override
     public void onNrSurveyRecord(NrRecord nrRecord)
     {
-
+        // TODO: 8/20/2021 writeNrRecordToLogFile
     }
 
     @Override
@@ -87,6 +87,7 @@ public class CellularSurveyRecordLogger extends SurveyRecordLogger implements IC
         createCdmaRecordTable(geoPackage, srs);
         createUmtsRecordTable(geoPackage, srs);
         createLteRecordTable(geoPackage, srs);
+        // TODO: 8/20/2021 create nr record table 
     }
 
     /**

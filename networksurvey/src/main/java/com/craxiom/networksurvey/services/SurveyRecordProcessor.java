@@ -985,7 +985,6 @@ public class SurveyRecordProcessor
         // TODO: 8/20/2021 Do we want any other values from cell identity?
         // Strings of Mcc and Mnc?
 
-
         // can't extract this to method due to API limitations
         CharSequence provider = null;
         if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.P)
