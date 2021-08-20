@@ -15,6 +15,7 @@ import com.craxiom.networksurvey.constants.CdmaMessageConstants;
 import com.craxiom.networksurvey.constants.GsmMessageConstants;
 import com.craxiom.networksurvey.constants.LteMessageConstants;
 import com.craxiom.networksurvey.constants.NetworkSurveyConstants;
+import com.craxiom.networksurvey.constants.NrMessageConstants;
 import com.craxiom.networksurvey.constants.UmtsMessageConstants;
 import com.craxiom.networksurvey.listeners.ICellularSurveyRecordListener;
 import com.craxiom.networksurvey.services.NetworkSurveyService;
@@ -87,7 +88,7 @@ public class CellularSurveyRecordLogger extends SurveyRecordLogger implements IC
         createCdmaRecordTable(geoPackage, srs);
         createUmtsRecordTable(geoPackage, srs);
         createLteRecordTable(geoPackage, srs);
-        // TODO: 8/20/2021 create nr record table 
+        createNrRecordTable(geoPackage, srs);
     }
 
     /**
@@ -178,6 +179,29 @@ public class CellularSurveyRecordLogger extends SurveyRecordLogger implements IC
             tableColumns.add(FeatureColumn.createColumn(columnNumber++, LteMessageConstants.TA_COLUMN, GeoPackageDataType.SMALLINT, false, null));
             //noinspection UnusedAssignment
             tableColumns.add(FeatureColumn.createColumn(columnNumber++, LteMessageConstants.BANDWIDTH_COLUMN, GeoPackageDataType.TEXT, false, null));
+        });
+    }
+
+    /**
+     * Creates an GeoPackage Table that can be populated with NR(New Radio 5G) Records.
+     *
+     * @param geoPackage The GeoPackage to create the table in.
+     * @param srs        The SRS to use for the table coordinates.
+     * @throws SQLException If there is a problem working with the GeoPackage SQLite DB.
+     */
+    private void createNrRecordTable(GeoPackage geoPackage, SpatialReferenceSystem srs) throws SQLException
+    {
+        createTable(NrMessageConstants.NR_RECORDS_TABLE_NAME, geoPackage, srs, true, (columns, columnNumber) ->{
+            columns.add(FeatureColumn.createColumn(columnNumber++, NrMessageConstants.NRARFCN_COLUMN, GeoPackageDataType.MEDIUMINT, false, null));
+            columns.add(FeatureColumn.createColumn(columnNumber++, NrMessageConstants.PCI_COLUMN, GeoPackageDataType.SMALLINT, false, null));
+            columns.add(FeatureColumn.createColumn(columnNumber++, NrMessageConstants.TAC_COLUMN, GeoPackageDataType.MEDIUMINT, false, null));
+            columns.add(FeatureColumn.createColumn(columnNumber++, NrMessageConstants.NCI_COLUMN, GeoPackageDataType.INT, false, null));
+            columns.add(FeatureColumn.createColumn(columnNumber++, NrMessageConstants.CSI_RSRP_COLUMN, GeoPackageDataType.FLOAT, false, null));
+            columns.add(FeatureColumn.createColumn(columnNumber++, NrMessageConstants.CSI_RSRQ_COLUMN, GeoPackageDataType.FLOAT, false, null));
+            columns.add(FeatureColumn.createColumn(columnNumber++, NrMessageConstants.CSI_SINR_COLUMN, GeoPackageDataType.FLOAT, false, null));
+            columns.add(FeatureColumn.createColumn(columnNumber++, NrMessageConstants.SS_RSRP_COLUMN, GeoPackageDataType.FLOAT, false, null));
+            columns.add(FeatureColumn.createColumn(columnNumber++, NrMessageConstants.SS_RSRQ_COLUMN, GeoPackageDataType.FLOAT, false, null));
+            columns.add(FeatureColumn.createColumn(columnNumber++, NrMessageConstants.SS_SINR_COLUMN, GeoPackageDataType.FLOAT, false, null));
         });
     }
 

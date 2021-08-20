@@ -9,7 +9,7 @@ public final class NrMessageConstants extends CellularMessageConstants
 {
     private NrMessageConstants(){}
 
-    public static final String NR_RECORD_MESSAGE_TYOE = "NrRecord";
+    public static final String NR_RECORD_MESSAGE_TYPE = "NrRecord";
     public static final String NR_RECORDS_TABLE_NAME = "NR_MESSAGE";
 
     // TODO: 8/20/2021 Include MCC, MNC, LAT, LONG, ALT?
