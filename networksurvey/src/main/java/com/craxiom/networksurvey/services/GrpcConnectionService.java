@@ -29,6 +29,7 @@ import com.craxiom.messaging.DeviceStatus;
 import com.craxiom.messaging.DeviceStatusData;
 import com.craxiom.messaging.GsmRecord;
 import com.craxiom.messaging.LteRecord;
+import com.craxiom.messaging.NrRecord;
 import com.craxiom.messaging.PhoneState;
 import com.craxiom.messaging.UmtsRecord;
 import com.craxiom.messaging.WifiBeaconRecord;
@@ -377,6 +378,12 @@ public class GrpcConnectionService extends Service implements IDeviceStatusListe
                 oldLteRecordQueue.add(LegacyRecordConversion.convertLteRecord(lteRecord));
             }
         }
+    }
+
+    @Override
+    public void onNrSurveyRecord(NrRecord nrRecord)
+    {
+
     }
 
     @Override

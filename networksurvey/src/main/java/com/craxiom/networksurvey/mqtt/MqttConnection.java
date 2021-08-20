@@ -6,6 +6,7 @@ import com.craxiom.messaging.DeviceStatus;
 import com.craxiom.messaging.GnssRecord;
 import com.craxiom.messaging.GsmRecord;
 import com.craxiom.messaging.LteRecord;
+import com.craxiom.messaging.NrRecord;
 import com.craxiom.messaging.PhoneState;
 import com.craxiom.messaging.UmtsRecord;
 import com.craxiom.messaging.WifiBeaconRecord;
@@ -86,6 +87,12 @@ public class MqttConnection extends DefaultMqttConnection implements ICellularSu
         }
 
         publishMessage(MQTT_LTE_MESSAGE_TOPIC, lteRecord);
+    }
+
+    @Override
+    public void onNrSurveyRecord(NrRecord nrRecord)
+    {
+
     }
 
     @Override

@@ -12,15 +12,18 @@ import android.telephony.CellIdentity;
 import android.telephony.CellIdentityCdma;
 import android.telephony.CellIdentityGsm;
 import android.telephony.CellIdentityLte;
+import android.telephony.CellIdentityNr;
 import android.telephony.CellIdentityWcdma;
 import android.telephony.CellInfo;
 import android.telephony.CellInfoCdma;
 import android.telephony.CellInfoGsm;
 import android.telephony.CellInfoLte;
+import android.telephony.CellInfoNr;
 import android.telephony.CellInfoWcdma;
 import android.telephony.CellSignalStrengthCdma;
 import android.telephony.CellSignalStrengthGsm;
 import android.telephony.CellSignalStrengthLte;
+import android.telephony.CellSignalStrengthNr;
 import android.telephony.CellSignalStrengthWcdma;
 import android.telephony.ServiceState;
 import android.telephony.TelephonyManager;
@@ -28,6 +31,7 @@ import android.view.View;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.RequiresApi;
 
 import com.craxiom.messaging.BluetoothRecord;
 import com.craxiom.messaging.BluetoothRecordData;
@@ -41,6 +45,8 @@ import com.craxiom.messaging.GsmRecordData;
 import com.craxiom.messaging.LteBandwidth;
 import com.craxiom.messaging.LteRecord;
 import com.craxiom.messaging.LteRecordData;
+import com.craxiom.messaging.NrRecord;
+import com.craxiom.messaging.NrRecordData;
 import com.craxiom.messaging.PhoneState;
 import com.craxiom.messaging.PhoneStateData;
 import com.craxiom.messaging.UmtsRecord;
@@ -79,6 +85,7 @@ import com.craxiom.networksurvey.util.WifiCapabilitiesUtils;
 import com.google.protobuf.BoolValue;
 import com.google.protobuf.FloatValue;
 import com.google.protobuf.Int32Value;
+import com.google.protobuf.Int64Value;
 import com.google.protobuf.UInt32Value;
 import com.google.protobuf.UInt64Value;
 
@@ -93,6 +100,8 @@ import java.util.Set;
 import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.ExecutorService;
 import java.util.function.Consumer;
+import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import timber.log.Timber;
@@ -431,6 +440,7 @@ public class SurveyRecordProcessor
      * @param telephonyManager The Android telephony manager to get some more details from.
      * @since 1.4.0
      */
+    @RequiresApi(api = Build.VERSION_CODES.R)
     void onServiceStateChanged(ServiceState serviceState, TelephonyManager telephonyManager)
     {
         notifyPhoneStateListeners(createPhoneStateMessage(telephonyManager,
@@ -563,7 +573,13 @@ public class SurveyRecordProcessor
             {
                 final UmtsRecord umtsRecord = generateUmtsSurveyRecord((CellInfoWcdma) cellInfo);
                 if (umtsRecord != null) notifyUmtsRecordListeners(umtsRecord);
+            } else if (android.os.Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q && cellInfo instanceof CellInfoNr)
+            {
+                // TODO: 8/20/2021 Do we want to update UI as well for 5G?
+                final NrRecord nrRecord = generateNrSurveyRecord((CellInfoNr) cellInfo);
+                if (nrRecord != null) notifyNrRecordListeners(nrRecord);
             }
+
         }
     }
 
@@ -951,6 +967,94 @@ public class SurveyRecordProcessor
     }
 
     /**
+     * Given a {@link CellInfoNr} object, pull out the values and generate a {@link NrRecord}.
+     *
+     * @param cellInfoNr The object that contains the NR(5G) Cell info.  This can be a serving cell, or a neighbor cell.
+     * @return The survey record.
+     */
+    @RequiresApi(api = Build.VERSION_CODES.Q)
+    private NrRecord generateNrSurveyRecord(CellInfoNr cellInfoNr)
+    {
+        // safe to cast as per: https://developer.android.com/reference/android/telephony/CellInfoNr#getCellIdentity()
+        final CellIdentityNr cellIdentity = (CellIdentityNr) cellInfoNr.getCellIdentity();
+
+        final int nrarfcn = cellIdentity.getNrarfcn();
+        final int pci = cellIdentity.getPci();
+        final int tac = cellIdentity.getTac();
+        final long nci = cellIdentity.getNci();
+        // TODO: 8/20/2021 Do we want any other values from cell identity?
+        // Strings of Mcc and Mnc?
+
+
+        // can't extract this to method due to API limitations
+        CharSequence provider = null;
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.P)
+        {
+            provider = cellIdentity.getOperatorAlphaLong();
+        }
+
+        CellSignalStrengthNr cellSignalStrength = (CellSignalStrengthNr) cellInfoNr.getCellSignalStrength();
+        final int csiRsrp = cellSignalStrength.getCsiRsrp();
+        final int csiRsrq = cellSignalStrength.getCsiRsrq();
+        final int csiSinr = cellSignalStrength.getCsiSinr();
+        final int ssRsrp = cellSignalStrength.getSsRsrp();
+        final int ssRsrq = cellSignalStrength.getSsRsrq();
+        final int ssSinr = cellSignalStrength.getSsSinr();
+
+        // TODO: 8/20/2021 validate fields
+        if (!validateNrFields()) return null;
+
+        final NrRecordData.Builder dataBuilder = NrRecordData.newBuilder();
+
+        if (gpsListener != null)
+        {
+            @SuppressLint("MissingPermission") final Location lastKnownLocation = gpsListener.getLatestLocation();
+            if (lastKnownLocation != null)
+            {
+                dataBuilder.setLatitude(lastKnownLocation.getLatitude());
+                dataBuilder.setLongitude(lastKnownLocation.getLongitude());
+                dataBuilder.setAltitude((float) lastKnownLocation.getAltitude());
+            }
+        }
+
+        dataBuilder.setDeviceSerialNumber(deviceId);
+        dataBuilder.setDeviceTime(IOUtils.getRfc3339String(ZonedDateTime.now()));
+        dataBuilder.setMissionId(missionId);
+        dataBuilder.setRecordNumber(recordNumber++);
+        dataBuilder.setGroupNumber(groupNumber);
+        dataBuilder.setServingCell(BoolValue.newBuilder().setValue(cellInfoNr.isRegistered()).build());
+        if (provider != null) dataBuilder.setProvider(provider.toString());
+
+        Function<Integer, FloatValue> getFloat = i -> FloatValue.newBuilder().setValue(i).build();
+        Function<Integer, Int32Value> getInt32 = i -> Int32Value.newBuilder().setValue(i).build();
+        Predicate<Integer> isAvail = i -> i != CellInfo.UNAVAILABLE;
+        // TODO: 8/20/2021 Should this setter be nrarfcn?
+        // vals from CellIdentity
+        if(isAvail.test(nrarfcn)) dataBuilder.setNarfcn(getInt32.apply(nrarfcn));
+        if(isAvail.test(pci)) dataBuilder.setPci(getInt32.apply(pci));
+        if(isAvail.test(tac)) dataBuilder.setTac(getInt32.apply(tac));
+        if(nci != CellInfo.UNAVAILABLE_LONG) dataBuilder.setNci(Int64Value.newBuilder().setValue(nci).build());
+
+        // vals from CellSignalStrength
+        if(isAvail.test(csiRsrp)) dataBuilder.setCsiRsrp(getFloat.apply(csiRsrp));
+        if(isAvail.test(csiRsrq)) dataBuilder.setCsiRsrq(getFloat.apply(csiRsrq));
+        if(isAvail.test(csiSinr)) dataBuilder.setCsiSinr(getFloat.apply(csiSinr));
+
+        if(isAvail.test(ssRsrp)) dataBuilder.setSsRsrp(getFloat.apply(ssRsrp));
+        if(isAvail.test(ssRsrq)) dataBuilder.setSsRsrq(getFloat.apply(ssRsrq));
+        if(isAvail.test(ssSinr)) dataBuilder.setSsSinr(getFloat.apply(ssSinr));
+
+        // TODO: 8/20/2021 Do we care about setting bandwidth?
+        final NrRecord.Builder recordBuilder = NrRecord.newBuilder();
+        // TODO: 8/20/2021 impl constants
+        //recordBuilder.setMessageType()
+        recordBuilder.setVersion(BuildConfig.MESSAGING_API_VERSION);
+        recordBuilder.setData(dataBuilder);
+
+        return recordBuilder.build();
+    }
+
+    /**
      * Pull out the appropriate values from the {@link ScanResult}, and create a {@link WifiBeaconRecord}.
      *
      * @param apScanResult The scan result to pull the Wi-Fi data from.
@@ -1313,6 +1417,13 @@ public class SurveyRecordProcessor
         return true;
     }
 
+    private boolean validateNrFields()
+    {
+        // TODO: 8/20/2021 required fields?
+        
+        return true;
+    }
+
     /**
      * Validates the required fields.
      *
@@ -1431,6 +1542,27 @@ public class SurveyRecordProcessor
                 Timber.e(e, "Unable to notify a Cellular Survey Record Listener because of an exception");
             }
         }
+    }
+
+    /**
+     * Notify {@link #cellularSurveyRecordListeners} of a new NR record
+     *
+     * @param nrRecord  The new NR Survey Record to send to the listeners
+     */
+    private void notifyNrRecordListeners(NrRecord nrRecord)
+    {
+        // TODO: 8/20/2021 do we care about logging null records?
+        if (nrRecord == null) return;
+
+        cellularSurveyRecordListeners.forEach(l -> {
+            try
+            {
+                l.onNrSurveyRecord(nrRecord);
+            } catch (Exception e)
+            {
+                Timber.e(e, "Unable to notify a Cellular Survey Record Listener because of an exception %s", e.getMessage());
+            }
+        });
     }
 
     /**

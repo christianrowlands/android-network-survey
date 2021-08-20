@@ -8,6 +8,7 @@ import com.craxiom.messaging.GsmRecord;
 import com.craxiom.messaging.GsmRecordData;
 import com.craxiom.messaging.LteRecord;
 import com.craxiom.messaging.LteRecordData;
+import com.craxiom.messaging.NrRecord;
 import com.craxiom.messaging.UmtsRecord;
 import com.craxiom.messaging.UmtsRecordData;
 import com.craxiom.networksurvey.constants.CdmaMessageConstants;
@@ -71,6 +72,12 @@ public class CellularSurveyRecordLogger extends SurveyRecordLogger implements IC
     public void onLteSurveyRecord(LteRecord lteRecord)
     {
         writeLteRecordToLogFile(lteRecord);
+    }
+
+    @Override
+    public void onNrSurveyRecord(NrRecord nrRecord)
+    {
+
     }
 
     @Override
