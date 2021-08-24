@@ -69,6 +69,7 @@ import com.craxiom.networksurvey.constants.GnssMessageConstants;
 import com.craxiom.networksurvey.constants.GsmMessageConstants;
 import com.craxiom.networksurvey.constants.LteMessageConstants;
 import com.craxiom.networksurvey.constants.NetworkSurveyConstants;
+import com.craxiom.networksurvey.constants.NrMessageConstants;
 import com.craxiom.networksurvey.constants.UmtsMessageConstants;
 import com.craxiom.networksurvey.constants.WifiBeaconMessageConstants;
 import com.craxiom.networksurvey.fragments.NetworkDetailsFragment;
@@ -99,6 +100,7 @@ import java.util.Locale;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.ExecutorService;
+import java.util.function.BiPredicate;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -575,11 +577,10 @@ public class SurveyRecordProcessor
                 if (umtsRecord != null) notifyUmtsRecordListeners(umtsRecord);
             } else if (android.os.Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q && cellInfo instanceof CellInfoNr)
             {
-                // TODO: 8/20/2021 Do we want to update UI as well for 5G?
+                // TODO: 8/20/2021 Update UI in a separate ticket
                 final NrRecord nrRecord = generateNrSurveyRecord((CellInfoNr) cellInfo);
                 if (nrRecord != null) notifyNrRecordListeners(nrRecord);
             }
-
         }
     }
 
@@ -736,10 +737,22 @@ public class SurveyRecordProcessor
         // Even though the Android Javadocs indicate that an unset value is represented by Integer.MAX_VALUE, I found that a -1 is sometimes used for TA and CID.
         // I also found that 0 is used as unset for MCC, MNC, LAC, ARFCN, and BSIC.
 
-        if (mcc != Integer.MAX_VALUE && mcc != 0) dataBuilder.setMcc(Int32Value.newBuilder().setValue(mcc).build());
-        if (mnc != Integer.MAX_VALUE && mnc != 0) dataBuilder.setMnc(Int32Value.newBuilder().setValue(mnc).build());
-        if (lac != Integer.MAX_VALUE && lac != 0) dataBuilder.setLac(Int32Value.newBuilder().setValue(lac).build());
-        if (cid != Integer.MAX_VALUE && cid != -1) dataBuilder.setCi(Int32Value.newBuilder().setValue(cid).build());
+        if (mcc != Integer.MAX_VALUE && mcc != 0)
+        {
+            dataBuilder.setMcc(Int32Value.newBuilder().setValue(mcc).build());
+        }
+        if (mnc != Integer.MAX_VALUE && mnc != 0)
+        {
+            dataBuilder.setMnc(Int32Value.newBuilder().setValue(mnc).build());
+        }
+        if (lac != Integer.MAX_VALUE && lac != 0)
+        {
+            dataBuilder.setLac(Int32Value.newBuilder().setValue(lac).build());
+        }
+        if (cid != Integer.MAX_VALUE && cid != -1)
+        {
+            dataBuilder.setCi(Int32Value.newBuilder().setValue(cid).build());
+        }
 
         dataBuilder.setArfcn(Int32Value.newBuilder().setValue(arfcn).build());
         dataBuilder.setBsic(Int32Value.newBuilder().setValue(bsic).build());
@@ -809,9 +822,18 @@ public class SurveyRecordProcessor
         dataBuilder.setServingCell(BoolValue.newBuilder().setValue(cellInfoCdma.isRegistered()).build());
         if (provider != null) dataBuilder.setProvider(provider.toString());
 
-        if (sid != Integer.MAX_VALUE) dataBuilder.setSid(Int32Value.newBuilder().setValue(sid).build());
-        if (nid != Integer.MAX_VALUE) dataBuilder.setNid(Int32Value.newBuilder().setValue(nid).build());
-        if (bsid != Integer.MAX_VALUE) dataBuilder.setBsid(Int32Value.newBuilder().setValue(bsid).build());
+        if (sid != Integer.MAX_VALUE)
+        {
+            dataBuilder.setSid(Int32Value.newBuilder().setValue(sid).build());
+        }
+        if (nid != Integer.MAX_VALUE)
+        {
+            dataBuilder.setNid(Int32Value.newBuilder().setValue(nid).build());
+        }
+        if (bsid != Integer.MAX_VALUE)
+        {
+            dataBuilder.setBsid(Int32Value.newBuilder().setValue(bsid).build());
+        }
 
         dataBuilder.setSignalStrength(FloatValue.newBuilder().setValue(signalStrength).build());
         dataBuilder.setEcio(FloatValue.newBuilder().setValue(ecioFloat).build());
@@ -873,10 +895,22 @@ public class SurveyRecordProcessor
         dataBuilder.setServingCell(BoolValue.newBuilder().setValue(cellInfoWcdma.isRegistered()).build());
         if (provider != null) dataBuilder.setProvider(provider.toString());
 
-        if (mcc != Integer.MAX_VALUE) dataBuilder.setMcc(Int32Value.newBuilder().setValue(mcc).build());
-        if (mnc != Integer.MAX_VALUE) dataBuilder.setMnc(Int32Value.newBuilder().setValue(mnc).build());
-        if (lac != Integer.MAX_VALUE) dataBuilder.setLac(Int32Value.newBuilder().setValue(lac).build());
-        if (ci != Integer.MAX_VALUE) dataBuilder.setCid(Int32Value.newBuilder().setValue(ci).build());
+        if (mcc != Integer.MAX_VALUE)
+        {
+            dataBuilder.setMcc(Int32Value.newBuilder().setValue(mcc).build());
+        }
+        if (mnc != Integer.MAX_VALUE)
+        {
+            dataBuilder.setMnc(Int32Value.newBuilder().setValue(mnc).build());
+        }
+        if (lac != Integer.MAX_VALUE)
+        {
+            dataBuilder.setLac(Int32Value.newBuilder().setValue(lac).build());
+        }
+        if (ci != Integer.MAX_VALUE)
+        {
+            dataBuilder.setCid(Int32Value.newBuilder().setValue(ci).build());
+        }
 
         dataBuilder.setUarfcn(Int32Value.newBuilder().setValue(uarfcn).build());
         dataBuilder.setPsc(Int32Value.newBuilder().setValue(psc).build());
@@ -941,16 +975,31 @@ public class SurveyRecordProcessor
         dataBuilder.setServingCell(BoolValue.newBuilder().setValue(cellInfoLte.isRegistered()).build());
         if (provider != null) dataBuilder.setProvider(provider.toString());
 
-        if (mcc != Integer.MAX_VALUE) dataBuilder.setMcc(Int32Value.newBuilder().setValue(mcc).build());
-        if (mnc != Integer.MAX_VALUE) dataBuilder.setMnc(Int32Value.newBuilder().setValue(mnc).build());
-        if (tac != Integer.MAX_VALUE) dataBuilder.setTac(Int32Value.newBuilder().setValue(tac).build());
-        if (ci != Integer.MAX_VALUE) dataBuilder.setEci(Int32Value.newBuilder().setValue(ci).build());
+        if (mcc != Integer.MAX_VALUE)
+        {
+            dataBuilder.setMcc(Int32Value.newBuilder().setValue(mcc).build());
+        }
+        if (mnc != Integer.MAX_VALUE)
+        {
+            dataBuilder.setMnc(Int32Value.newBuilder().setValue(mnc).build());
+        }
+        if (tac != Integer.MAX_VALUE)
+        {
+            dataBuilder.setTac(Int32Value.newBuilder().setValue(tac).build());
+        }
+        if (ci != Integer.MAX_VALUE)
+        {
+            dataBuilder.setEci(Int32Value.newBuilder().setValue(ci).build());
+        }
 
         dataBuilder.setEarfcn(Int32Value.newBuilder().setValue(earfcn).build());
         dataBuilder.setPci(Int32Value.newBuilder().setValue(pci).build());
         dataBuilder.setRsrp(FloatValue.newBuilder().setValue(rsrp).build());
 
-        if (rsrq != Integer.MAX_VALUE) dataBuilder.setRsrq(FloatValue.newBuilder().setValue(rsrq).build());
+        if (rsrq != Integer.MAX_VALUE)
+        {
+            dataBuilder.setRsrq(FloatValue.newBuilder().setValue(rsrq).build());
+        }
         if (timingAdvance != Integer.MAX_VALUE)
         {
             dataBuilder.setTa(Int32Value.newBuilder().setValue(timingAdvance).build());
@@ -978,12 +1027,13 @@ public class SurveyRecordProcessor
         // safe to cast as per: https://developer.android.com/reference/android/telephony/CellInfoNr#getCellIdentity()
         final CellIdentityNr cellIdentity = (CellIdentityNr) cellInfoNr.getCellIdentity();
 
+        // default to CellInfoNr.UNAVAILABLE for lambdas below and because it's the return value for the other int fields
+        final int mcc = ParserUtils.parseInt(cellIdentity.getMccString(), CellInfoNr.UNAVAILABLE);
+        final int mnc = ParserUtils.parseInt(cellIdentity.getMncString(), CellInfoNr.UNAVAILABLE);
         final int nrarfcn = cellIdentity.getNrarfcn();
         final int pci = cellIdentity.getPci();
         final int tac = cellIdentity.getTac();
         final long nci = cellIdentity.getNci();
-        // TODO: 8/20/2021 Do we want any other values from cell identity?
-        // Strings of Mcc and Mnc?
 
         // can't extract this to method due to API limitations
         CharSequence provider = null;
@@ -1000,8 +1050,7 @@ public class SurveyRecordProcessor
         final int ssRsrq = cellSignalStrength.getSsRsrq();
         final int ssSinr = cellSignalStrength.getSsSinr();
 
-        // TODO: 8/20/2021 validate fields
-        if (!validateNrFields()) return null;
+        if (!validateNrFields(nrarfcn, pci)) return null;
 
         final NrRecordData.Builder dataBuilder = NrRecordData.newBuilder();
 
@@ -1027,26 +1076,27 @@ public class SurveyRecordProcessor
         Function<Integer, FloatValue> getFloat = i -> FloatValue.newBuilder().setValue(i).build();
         Function<Integer, Int32Value> getInt32 = i -> Int32Value.newBuilder().setValue(i).build();
         Predicate<Integer> isAvail = i -> i != CellInfo.UNAVAILABLE;
-        // TODO: 8/20/2021 Should this setter be nrarfcn?
         // vals from CellIdentity
-        if(isAvail.test(nrarfcn)) dataBuilder.setNarfcn(getInt32.apply(nrarfcn));
-        if(isAvail.test(pci)) dataBuilder.setPci(getInt32.apply(pci));
-        if(isAvail.test(tac)) dataBuilder.setTac(getInt32.apply(tac));
-        if(nci != CellInfo.UNAVAILABLE_LONG) dataBuilder.setNci(Int64Value.newBuilder().setValue(nci).build());
+        if (isAvail.test(mcc)) dataBuilder.setMcc(getInt32.apply(mcc));
+        if (isAvail.test(mnc)) dataBuilder.setMnc(getInt32.apply(mnc));
+        if (isAvail.test(nrarfcn)) dataBuilder.setNarfcn(getInt32.apply(nrarfcn));
+        if (isAvail.test(pci)) dataBuilder.setPci(getInt32.apply(pci));
+        if (isAvail.test(tac)) dataBuilder.setTac(getInt32.apply(tac));
+        if (nci != CellInfo.UNAVAILABLE_LONG) dataBuilder.setNci(Int64Value.newBuilder().setValue(nci).build());
 
         // vals from CellSignalStrength
-        if(isAvail.test(csiRsrp)) dataBuilder.setCsiRsrp(getFloat.apply(csiRsrp));
-        if(isAvail.test(csiRsrq)) dataBuilder.setCsiRsrq(getFloat.apply(csiRsrq));
-        if(isAvail.test(csiSinr)) dataBuilder.setCsiSinr(getFloat.apply(csiSinr));
+        if (isAvail.test(csiRsrp)) dataBuilder.setCsiRsrp(getFloat.apply(csiRsrp));
+        if (isAvail.test(csiRsrq)) dataBuilder.setCsiRsrq(getFloat.apply(csiRsrq));
+        if (isAvail.test(csiSinr)) dataBuilder.setCsiSinr(getFloat.apply(csiSinr));
 
-        if(isAvail.test(ssRsrp)) dataBuilder.setSsRsrp(getFloat.apply(ssRsrp));
-        if(isAvail.test(ssRsrq)) dataBuilder.setSsRsrq(getFloat.apply(ssRsrq));
-        if(isAvail.test(ssSinr)) dataBuilder.setSsSinr(getFloat.apply(ssSinr));
+        if (isAvail.test(ssRsrp)) dataBuilder.setSsRsrp(getFloat.apply(ssRsrp));
+        if (isAvail.test(ssRsrq)) dataBuilder.setSsRsrq(getFloat.apply(ssRsrq));
+        if (isAvail.test(ssSinr)) dataBuilder.setSsSinr(getFloat.apply(ssSinr));
 
-        // TODO: 8/20/2021 Do we care about setting bandwidth?
+        // TODO: 8/20/2021 Do we care about setting bandwidth? Yes if we can
         final NrRecord.Builder recordBuilder = NrRecord.newBuilder();
-        // TODO: 8/20/2021 impl constants
-        //recordBuilder.setMessageType()
+
+        recordBuilder.setMessageType(NrMessageConstants.NR_RECORD_MESSAGE_TYPE);
         recordBuilder.setVersion(BuildConfig.MESSAGING_API_VERSION);
         recordBuilder.setData(dataBuilder);
 
@@ -1093,7 +1143,10 @@ public class SurveyRecordProcessor
         if (ssid != null) dataBuilder.setSsid(ssid);
 
         final short channel = WifiBeaconMessageConstants.convertFrequencyToChannelNumber(apScanResult.frequency);
-        if (channel != -1) dataBuilder.setChannel(Int32Value.newBuilder().setValue(channel).build());
+        if (channel != -1)
+        {
+            dataBuilder.setChannel(Int32Value.newBuilder().setValue(channel).build());
+        }
 
         final int frequency = apScanResult.frequency;
         if (frequency != -1 && frequency != 0)
@@ -1108,7 +1161,10 @@ public class SurveyRecordProcessor
             //  enough information for that.
 
             final EncryptionType encryptionType = WifiCapabilitiesUtils.getEncryptionType(capabilities);
-            if (encryptionType != EncryptionType.UNKNOWN) dataBuilder.setEncryptionType(encryptionType);
+            if (encryptionType != EncryptionType.UNKNOWN)
+            {
+                dataBuilder.setEncryptionType(encryptionType);
+            }
 
             dataBuilder.setWps(BoolValue.newBuilder().setValue(WifiCapabilitiesUtils.supportsWps(capabilities)).build());
         }
@@ -1179,7 +1235,10 @@ public class SurveyRecordProcessor
         if (otaDeviceName != null) dataBuilder.setOtaDeviceName(otaDeviceName);
 
         final SupportedTechnologies supportedTech = BluetoothMessageConstants.getSupportedTechnologies(device.getType());
-        if (supportedTech != SupportedTechnologies.UNKNOWN) dataBuilder.setSupportedTechnologies(supportedTech);
+        if (supportedTech != SupportedTechnologies.UNKNOWN)
+        {
+            dataBuilder.setSupportedTechnologies(supportedTech);
+        }
 
         final BluetoothRecord.Builder recordBuilder = BluetoothRecord.newBuilder();
         recordBuilder.setMessageType(BluetoothMessageConstants.BLUETOOTH_RECORD_MESSAGE_TYPE);
@@ -1416,11 +1475,22 @@ public class SurveyRecordProcessor
         return true;
     }
 
-    private boolean validateNrFields()
+    /**
+     * Validates the required arguments per:
+     * <a href="https://messaging.networksurvey.app/#operation-publish-nr_message">NR Message Requirements</a>
+     *
+     * @return {@code true} if the provided fields are all valid, false if one or more is invalid.
+     */
+    @RequiresApi(api = Build.VERSION_CODES.Q)
+    private boolean validateNrFields(int nrarfcn, int pci)
     {
-        // TODO: 8/20/2021 required fields?
-        
-        return true;
+        BiPredicate<Integer, String> isValid = (i, iType) -> {
+            boolean available = i != CellInfo.UNAVAILABLE;
+            if (!available) Timber.v("%s is required to build an NR survey record", iType);
+            return available;
+        };
+
+        return isValid.test(nrarfcn, "nrarfcn") && isValid.test(pci, "pci");
     }
 
     /**
@@ -1546,11 +1616,10 @@ public class SurveyRecordProcessor
     /**
      * Notify {@link #cellularSurveyRecordListeners} of a new NR record
      *
-     * @param nrRecord  The new NR Survey Record to send to the listeners
+     * @param nrRecord The new NR Survey Record to send to the listeners
      */
     private void notifyNrRecordListeners(NrRecord nrRecord)
     {
-        // TODO: 8/20/2021 do we care about logging null records?
         if (nrRecord == null) return;
 
         cellularSurveyRecordListeners.forEach(l -> {
@@ -1800,7 +1869,10 @@ public class SurveyRecordProcessor
         if (networkSurveyActivity == null || !NetworkDetailsFragment.visible.get()) return;
 
         final View viewById = networkSurveyActivity.findViewById(textViewId);
-        if (viewById != null) ((TextView) viewById).setText(networkSurveyActivity.getString(stringResourceId, text));
+        if (viewById != null)
+        {
+            ((TextView) viewById).setText(networkSurveyActivity.getString(stringResourceId, text));
+        }
     }
 
     /**

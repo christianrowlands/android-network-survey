@@ -12,7 +12,8 @@ public final class NrMessageConstants extends CellularMessageConstants
     public static final String NR_RECORD_MESSAGE_TYPE = "NrRecord";
     public static final String NR_RECORDS_TABLE_NAME = "NR_MESSAGE";
 
-    // TODO: 8/20/2021 Include MCC, MNC, LAT, LONG, ALT?
+    public static final String MCC_COLUMN = "MCC";
+    public static final String MNC_COLUMN = "MNC";
     public static final String NRARFCN_COLUMN = "NRARFCN";
     public static final String PCI_COLUMN = "Phys_cell_ID";
     public static final String TAC_COLUMN = "TAC";

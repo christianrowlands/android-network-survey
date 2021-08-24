@@ -9,6 +9,7 @@ import com.craxiom.messaging.GsmRecordData;
 import com.craxiom.messaging.LteRecord;
 import com.craxiom.messaging.LteRecordData;
 import com.craxiom.messaging.NrRecord;
+import com.craxiom.messaging.NrRecordData;
 import com.craxiom.messaging.UmtsRecord;
 import com.craxiom.messaging.UmtsRecordData;
 import com.craxiom.networksurvey.constants.CdmaMessageConstants;
@@ -20,8 +21,10 @@ import com.craxiom.networksurvey.constants.UmtsMessageConstants;
 import com.craxiom.networksurvey.listeners.ICellularSurveyRecordListener;
 import com.craxiom.networksurvey.services.NetworkSurveyService;
 import com.craxiom.networksurvey.util.IOUtils;
+import com.google.common.base.Strings;
 
 import java.sql.SQLException;
+import java.util.function.BiConsumer;
 
 import mil.nga.geopackage.GeoPackage;
 import mil.nga.geopackage.core.srs.SpatialReferenceSystem;
@@ -78,7 +81,7 @@ public class CellularSurveyRecordLogger extends SurveyRecordLogger implements IC
     @Override
     public void onNrSurveyRecord(NrRecord nrRecord)
     {
-        // TODO: 8/20/2021 writeNrRecordToLogFile
+        writeNrRecordToLogFile(nrRecord);
     }
 
     @Override
@@ -191,7 +194,9 @@ public class CellularSurveyRecordLogger extends SurveyRecordLogger implements IC
      */
     private void createNrRecordTable(GeoPackage geoPackage, SpatialReferenceSystem srs) throws SQLException
     {
-        createTable(NrMessageConstants.NR_RECORDS_TABLE_NAME, geoPackage, srs, true, (columns, columnNumber) ->{
+        createTable(NrMessageConstants.NR_RECORDS_TABLE_NAME, geoPackage, srs, true, (columns, columnNumber) -> {
+            columns.add(FeatureColumn.createColumn(columnNumber++, NrMessageConstants.MCC_COLUMN, GeoPackageDataType.SMALLINT, false, null));
+            columns.add(FeatureColumn.createColumn(columnNumber++, NrMessageConstants.MNC_COLUMN, GeoPackageDataType.SMALLINT, false, null));
             columns.add(FeatureColumn.createColumn(columnNumber++, NrMessageConstants.NRARFCN_COLUMN, GeoPackageDataType.MEDIUMINT, false, null));
             columns.add(FeatureColumn.createColumn(columnNumber++, NrMessageConstants.PCI_COLUMN, GeoPackageDataType.SMALLINT, false, null));
             columns.add(FeatureColumn.createColumn(columnNumber++, NrMessageConstants.TAC_COLUMN, GeoPackageDataType.MEDIUMINT, false, null));
@@ -201,6 +206,7 @@ public class CellularSurveyRecordLogger extends SurveyRecordLogger implements IC
             columns.add(FeatureColumn.createColumn(columnNumber++, NrMessageConstants.CSI_SINR_COLUMN, GeoPackageDataType.FLOAT, false, null));
             columns.add(FeatureColumn.createColumn(columnNumber++, NrMessageConstants.SS_RSRP_COLUMN, GeoPackageDataType.FLOAT, false, null));
             columns.add(FeatureColumn.createColumn(columnNumber++, NrMessageConstants.SS_RSRQ_COLUMN, GeoPackageDataType.FLOAT, false, null));
+            //noinspection UnusedAssignment
             columns.add(FeatureColumn.createColumn(columnNumber++, NrMessageConstants.SS_SINR_COLUMN, GeoPackageDataType.FLOAT, false, null));
         });
     }
@@ -547,6 +553,76 @@ public class CellularSurveyRecordLogger extends SurveyRecordLogger implements IC
                 } catch (Exception e)
                 {
                     Timber.e(e, "Something went wrong when trying to write an LTE survey record");
+                }
+            }
+        });
+    }
+
+    /**
+     * Given an NR Record, write it to the GeoPackage log file.
+     *
+     * @param nrRecord The NR Record to write to the log file.
+     */
+    private void writeNrRecordToLogFile(final NrRecord nrRecord)
+    {
+        if (!loggingEnabled) return;
+
+        handler.post(() -> {
+            synchronized (geoPackageLock)
+            {
+                try
+                {
+                    if (geoPackage != null)
+                    {
+                        FeatureDao featureDao = geoPackage.getFeatureDao(NrMessageConstants.NR_RECORDS_TABLE_NAME);
+                        FeatureRow row = featureDao.newRow();
+
+                        final NrRecordData data = nrRecord.getData();
+
+                        Point fix = new Point(data.getLongitude(), data.getLatitude(), (double) data.getAltitude());
+
+                        GeoPackageGeometryData geomData = new GeoPackageGeometryData(WGS84_SRS);
+                        geomData.setGeometry(fix);
+
+                        row.setGeometry(geomData);
+
+                        row.setValue(NrMessageConstants.TIME_COLUMN, IOUtils.getEpochFromRfc3339(data.getDeviceTime()));
+                        row.setValue(NrMessageConstants.MISSION_ID_COLUMN, data.getMissionId());
+                        row.setValue(NrMessageConstants.RECORD_NUMBER_COLUMN, data.getRecordNumber());
+                        row.setValue(NrMessageConstants.GROUP_NUMBER_COLUMN, data.getGroupNumber());
+
+                        BiConsumer<Boolean, Runnable> setRow = (dataAvailable, modifyRow) -> {
+                            if (dataAvailable)
+                            {
+                                modifyRow.run();
+                            }
+                        };
+
+                        setRow.accept(data.hasMcc(), () -> setShortValue(row, NrMessageConstants.MCC_COLUMN, data.getNarfcn().getValue()));
+                        setRow.accept(data.hasMcc(), () -> setShortValue(row, NrMessageConstants.MNC_COLUMN, data.getNarfcn().getValue()));
+                        setRow.accept(data.hasNarfcn(), () -> setIntValue(row, NrMessageConstants.NRARFCN_COLUMN, data.getNarfcn().getValue()));
+                        setRow.accept(data.hasPci(), () -> setShortValue(row, NrMessageConstants.PCI_COLUMN, data.getPci().getValue()));
+                        setRow.accept(data.hasTac(), () -> setIntValue(row, NrMessageConstants.TAC_COLUMN, data.getTac().getValue()));
+                        setRow.accept(data.hasNci(), () -> row.setValue(NrMessageConstants.NCI_COLUMN, data.getNci().getValue()));
+
+                        setRow.accept(data.hasCsiRsrp(), () -> row.setValue(NrMessageConstants.CSI_RSRP_COLUMN, data.getCsiRsrp().getValue()));
+                        setRow.accept(data.hasCsiRsrq(), () -> row.setValue(NrMessageConstants.CSI_RSRQ_COLUMN, data.getCsiRsrq().getValue()));
+                        setRow.accept(data.hasCsiSinr(), () -> row.setValue(NrMessageConstants.CSI_SINR_COLUMN, data.getCsiSinr().getValue()));
+
+                        setRow.accept(data.hasSsRsrp(), () -> row.setValue(NrMessageConstants.SS_RSRP_COLUMN, data.getSsRsrp().getValue()));
+                        setRow.accept(data.hasSsRsrq(), () -> row.setValue(NrMessageConstants.SS_RSRQ_COLUMN, data.getSsRsrq().getValue()));
+                        setRow.accept(data.hasSsSinr(), () -> row.setValue(NrMessageConstants.SS_SINR_COLUMN, data.getSsSinr().getValue()));
+
+                        final String provider = data.getProvider();
+                        setRow.accept(!Strings.isNullOrEmpty(provider), () -> row.setValue(NrMessageConstants.PROVIDER_COLUMN, provider));
+
+                        featureDao.insert(row);
+
+                        checkIfRolloverNeeded();
+                    }
+                } catch (Exception e)
+                {
+                    Timber.e(e, "Something went wrong when trying to write an NR survey record, %s", e.getMessage());
                 }
             }
         });
