@@ -1093,7 +1093,6 @@ public class SurveyRecordProcessor
         if (isAvail.test(ssRsrq)) dataBuilder.setSsRsrq(getFloat.apply(ssRsrq));
         if (isAvail.test(ssSinr)) dataBuilder.setSsSinr(getFloat.apply(ssSinr));
 
-        // TODO: 8/20/2021 Do we care about setting bandwidth? Yes if we can
         final NrRecord.Builder recordBuilder = NrRecord.newBuilder();
 
         recordBuilder.setMessageType(NrMessageConstants.NR_RECORD_MESSAGE_TYPE);
@@ -1490,7 +1489,7 @@ public class SurveyRecordProcessor
             return available;
         };
 
-        return isValid.test(nrarfcn, "nrarfcn") && isValid.test(pci, "pci");
+        return isValid.test(nrarfcn, "NRARFCN") && isValid.test(pci, "PCI");
     }
 
     /**

@@ -3,7 +3,7 @@ package com.craxiom.networksurvey.constants;
 /**
  * The constants associated with the NR (New Record for 5G) table in the GeoPackage file.
  *
- * @since 1.5.0-SNAPSHOT
+ * @since 1.5.0
  */
 public final class NrMessageConstants extends CellularMessageConstants
 {
