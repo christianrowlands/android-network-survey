@@ -191,6 +191,7 @@ public class CellularSurveyRecordLogger extends SurveyRecordLogger implements IC
      * @param geoPackage The GeoPackage to create the table in.
      * @param srs        The SRS to use for the table coordinates.
      * @throws SQLException If there is a problem working with the GeoPackage SQLite DB.
+     * @since 1.5.0
      */
     private void createNrRecordTable(GeoPackage geoPackage, SpatialReferenceSystem srs) throws SQLException
     {
@@ -562,6 +563,7 @@ public class CellularSurveyRecordLogger extends SurveyRecordLogger implements IC
      * Given an NR Record, write it to the GeoPackage log file.
      *
      * @param nrRecord The NR Record to write to the log file.
+     * @since 1.5.0
      */
     private void writeNrRecordToLogFile(final NrRecord nrRecord)
     {
@@ -622,7 +624,7 @@ public class CellularSurveyRecordLogger extends SurveyRecordLogger implements IC
                     }
                 } catch (Exception e)
                 {
-                    Timber.e(e, "Something went wrong when trying to write an NR survey record, %s", e.getMessage());
+                    Timber.e(e, "Something went wrong when trying to write an NR survey record");
                 }
             }
         });

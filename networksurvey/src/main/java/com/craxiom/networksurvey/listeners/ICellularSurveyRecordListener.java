@@ -48,6 +48,7 @@ public interface ICellularSurveyRecordListener
      * Called when a new NR Survey Record is ready.
      *
      * @param nrRecord  the New Radio (5G) record.
+     * @since 1.5.0
      */
     void onNrSurveyRecord(NrRecord nrRecord);
 }

@@ -1020,6 +1020,7 @@ public class SurveyRecordProcessor
      *
      * @param cellInfoNr The object that contains the NR(5G) Cell info.  This can be a serving cell, or a neighbor cell.
      * @return The survey record.
+     * @since 1.5.0
      */
     @RequiresApi(api = Build.VERSION_CODES.Q)
     private NrRecord generateNrSurveyRecord(CellInfoNr cellInfoNr)
@@ -1479,6 +1480,7 @@ public class SurveyRecordProcessor
      * <a href="https://messaging.networksurvey.app/#operation-publish-nr_message">NR Message Requirements</a>
      *
      * @return {@code true} if the provided fields are all valid, false if one or more is invalid.
+     * @since 1.5.0
      */
     @RequiresApi(api = Build.VERSION_CODES.Q)
     private boolean validateNrFields(int nrarfcn, int pci)
@@ -1616,6 +1618,7 @@ public class SurveyRecordProcessor
      * Notify {@link #cellularSurveyRecordListeners} of a new NR record
      *
      * @param nrRecord The new NR Survey Record to send to the listeners
+     * @since 1.5.0
      */
     private void notifyNrRecordListeners(NrRecord nrRecord)
     {
@@ -1627,7 +1630,7 @@ public class SurveyRecordProcessor
                 l.onNrSurveyRecord(nrRecord);
             } catch (Exception e)
             {
-                Timber.e(e, "Unable to notify a Cellular Survey Record Listener because of an exception %s", e.getMessage());
+                Timber.e(e, "Unable to notify a Cellular Survey Record Listener because of an exception");
             }
         });
     }
