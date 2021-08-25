@@ -100,10 +100,7 @@ import java.util.Locale;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.ExecutorService;
-import java.util.function.BiPredicate;
 import java.util.function.Consumer;
-import java.util.function.Function;
-import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import timber.log.Timber;
@@ -1065,34 +1062,67 @@ public class SurveyRecordProcessor
                 dataBuilder.setAltitude((float) lastKnownLocation.getAltitude());
             }
         }
-
-        dataBuilder.setDeviceSerialNumber(deviceId);
         dataBuilder.setDeviceTime(IOUtils.getRfc3339String(ZonedDateTime.now()));
         dataBuilder.setMissionId(missionId);
         dataBuilder.setRecordNumber(recordNumber++);
         dataBuilder.setGroupNumber(groupNumber);
         dataBuilder.setServingCell(BoolValue.newBuilder().setValue(cellInfoNr.isRegistered()).build());
-        if (provider != null) dataBuilder.setProvider(provider.toString());
+        if (provider != null)
+        {
+            dataBuilder.setProvider(provider.toString());
+        }
 
-        Function<Integer, FloatValue> getFloat = i -> FloatValue.newBuilder().setValue(i).build();
-        Function<Integer, Int32Value> getInt32 = i -> Int32Value.newBuilder().setValue(i).build();
-        Predicate<Integer> isAvail = i -> i != CellInfo.UNAVAILABLE;
         // vals from CellIdentity
-        if (isAvail.test(mcc)) dataBuilder.setMcc(getInt32.apply(mcc));
-        if (isAvail.test(mnc)) dataBuilder.setMnc(getInt32.apply(mnc));
-        if (isAvail.test(nrarfcn)) dataBuilder.setNarfcn(getInt32.apply(nrarfcn));
-        if (isAvail.test(pci)) dataBuilder.setPci(getInt32.apply(pci));
-        if (isAvail.test(tac)) dataBuilder.setTac(getInt32.apply(tac));
-        if (nci != CellInfo.UNAVAILABLE_LONG) dataBuilder.setNci(Int64Value.newBuilder().setValue(nci).build());
+        if (mcc != CellInfo.UNAVAILABLE)
+        {
+            dataBuilder.setMcc(Int32Value.newBuilder().setValue(mcc).build());
+        }
+        if (mnc != CellInfo.UNAVAILABLE)
+        {
+            dataBuilder.setMnc(Int32Value.newBuilder().setValue(mnc).build());
+        }
+        if (tac != CellInfo.UNAVAILABLE)
+        {
+            dataBuilder.setMcc(Int32Value.newBuilder().setValue(tac).build());
+        }
+        if (nci != CellInfo.UNAVAILABLE_LONG)
+        {
+            dataBuilder.setNci(Int64Value.newBuilder().setValue(nci).build());
+        }
+        if (nrarfcn != CellInfo.UNAVAILABLE)
+        {
+            dataBuilder.setNarfcn(Int32Value.newBuilder().setValue(nrarfcn).build());
+        }
+        if (pci != CellInfo.UNAVAILABLE)
+        {
+            dataBuilder.setMcc(Int32Value.newBuilder().setValue(pci).build());
+        }
 
         // vals from CellSignalStrength
-        if (isAvail.test(csiRsrp)) dataBuilder.setCsiRsrp(getFloat.apply(csiRsrp));
-        if (isAvail.test(csiRsrq)) dataBuilder.setCsiRsrq(getFloat.apply(csiRsrq));
-        if (isAvail.test(csiSinr)) dataBuilder.setCsiSinr(getFloat.apply(csiSinr));
-
-        if (isAvail.test(ssRsrp)) dataBuilder.setSsRsrp(getFloat.apply(ssRsrp));
-        if (isAvail.test(ssRsrq)) dataBuilder.setSsRsrq(getFloat.apply(ssRsrq));
-        if (isAvail.test(ssSinr)) dataBuilder.setSsSinr(getFloat.apply(ssSinr));
+        if (ssRsrp != CellInfo.UNAVAILABLE)
+        {
+            dataBuilder.setCsiRsrp(FloatValue.newBuilder().setValue(ssRsrp).build());
+        }
+        if (ssRsrq != CellInfo.UNAVAILABLE)
+        {
+            dataBuilder.setCsiRsrp(FloatValue.newBuilder().setValue(ssRsrq).build());
+        }
+        if (ssSinr != CellInfo.UNAVAILABLE)
+        {
+            dataBuilder.setCsiRsrp(FloatValue.newBuilder().setValue(ssSinr).build());
+        }
+        if (csiRsrp != CellInfo.UNAVAILABLE)
+        {
+            dataBuilder.setCsiRsrp(FloatValue.newBuilder().setValue(csiRsrp).build());
+        }
+        if (csiRsrq != CellInfo.UNAVAILABLE)
+        {
+            dataBuilder.setCsiRsrp(FloatValue.newBuilder().setValue(csiRsrq).build());
+        }
+        if (csiSinr != CellInfo.UNAVAILABLE)
+        {
+            dataBuilder.setCsiRsrp(FloatValue.newBuilder().setValue(csiSinr).build());
+        }
 
         final NrRecord.Builder recordBuilder = NrRecord.newBuilder();
 
@@ -1485,13 +1515,18 @@ public class SurveyRecordProcessor
     @RequiresApi(api = Build.VERSION_CODES.Q)
     private boolean validateNrFields(int nrarfcn, int pci)
     {
-        BiPredicate<Integer, String> isValid = (i, iType) -> {
-            boolean available = i != CellInfo.UNAVAILABLE;
-            if (!available) Timber.v("%s is required to build an NR survey record", iType);
-            return available;
-        };
+        if (nrarfcn == CellInfo.UNAVAILABLE)
+        {
+            Timber.v("NRARFCN is required to build an NR survey record");
+            return false;
+        }
+        if (pci == CellInfo.UNAVAILABLE)
+        {
+            Timber.v("PCI is required to build an NR survey record");
+            return false;
+        }
 
-        return isValid.test(nrarfcn, "NRARFCN") && isValid.test(pci, "PCI");
+        return true;
     }
 
     /**
