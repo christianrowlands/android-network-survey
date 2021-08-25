@@ -336,7 +336,8 @@ public class GnssStatusFragment extends Fragment implements IGnssListener
         // updates statuses if there's a valid agc measurement corresponding to that statuses svid and constellation
         BiConsumer<List<SatelliteStatus>, SatelliteStatusAdapter> updateAgc = (statuses, adapter) -> {
                 // start at 1 as 0th index is the column label header
-                for (int i = 1; i < adapter.getItemCount(); i++)
+                final int statusCount = adapter.getItemCount();
+                for (int i = 1; i < statusCount; i++)
                 {
                     SatelliteStatus s = statuses.get(i);
                     GnssMeasurementWrapper measurement = mainGnssFragment.getGnssMeasurement(s.getSvid(), s.getGnssType());
@@ -893,11 +894,17 @@ public class GnssStatusFragment extends Fragment implements IGnssListener
                 return statusFlags;
             }
 
+            /**
+             * @since 1.5.0
+             */
             public TextView getAgcTv()
             {
                 return agcTv;
             }
 
+            /**
+             * @since 1.5.0
+             */
             public void setAgcTv(Locale locale, double agc)
             {
 
@@ -986,11 +993,12 @@ public class GnssStatusFragment extends Fragment implements IGnssListener
 
                 final Locale defaultLocale = Locale.getDefault();
 
+                SatelliteStatus status = sats.get(dataRow);
                 // Populate status data for this row
-                v.getSvId().setText(String.format(defaultLocale, "%d", sats.get(dataRow).getSvid()));
+                v.getSvId().setText(String.format(defaultLocale, "%d", status.getSvid()));
                 v.getFlag().setScaleType(ImageView.ScaleType.FIT_START);
 
-                GnssType type = sats.get(dataRow).getGnssType();
+                GnssType type = status.getGnssType();
                 switch (type)
                 {
                     case NAVSTAR:
@@ -1018,7 +1026,7 @@ public class GnssStatusFragment extends Fragment implements IGnssListener
                         v.getFlag().setImageDrawable(flagIndia);
                         break;
                     case SBAS:
-                        setSbasFlag(sats.get(dataRow), v.getFlag());
+                        setSbasFlag(status, v.getFlag());
                         break;
                     case UNKNOWN:
                         v.getFlag().setVisibility(View.INVISIBLE);
@@ -1027,12 +1035,12 @@ public class GnssStatusFragment extends Fragment implements IGnssListener
 
                 if (GpsTestUtil.isGnssCarrierFrequenciesSupported())
                 {
-                    if (sats.get(dataRow).getCarrierFrequencyHz() != SatelliteStatus.NO_DATA)
+                    if (status.getCarrierFrequencyHz() != SatelliteStatus.NO_DATA)
                     {
                         // Convert Hz to MHz
-                        float carrierMhz = MathUtils.toMhz(sats.get(dataRow).getCarrierFrequencyHz());
-                        String carrierLabel = CarrierFreqUtils.getCarrierFrequencyLabel(sats.get(dataRow).getGnssType(),
-                                sats.get(dataRow).getSvid(),
+                        float carrierMhz = MathUtils.toMhz(status.getCarrierFrequencyHz());
+                        String carrierLabel = CarrierFreqUtils.getCarrierFrequencyLabel(status.getGnssType(),
+                                status.getSvid(),
                                 carrierMhz);
                         if (carrierLabel != null)
                         {
@@ -1056,20 +1064,20 @@ public class GnssStatusFragment extends Fragment implements IGnssListener
                 {
                     v.getCarrierFrequency().setVisibility(View.GONE);
                 }
-                if (sats.get(dataRow).getCn0DbHz() != SatelliteStatus.NO_DATA)
+                if (status.getCn0DbHz() != SatelliteStatus.NO_DATA)
                 {
-                    v.getSignal().setText(String.format(defaultLocale, "%.1f", sats.get(dataRow).getCn0DbHz()));
+                    v.getSignal().setText(String.format(defaultLocale, "%.1f", status.getCn0DbHz()));
                 } else
                 {
                     v.getSignal().setText("");
                 }
 
-                v.setAgcTv(defaultLocale, sats.get(dataRow).getAgc());
+                v.setAgcTv(defaultLocale, status.getAgc());
 
                 char[] flags = new char[3];
-                flags[0] = !sats.get(dataRow).getHasAlmanac() ? ' ' : 'A';
-                flags[1] = !sats.get(dataRow).getHasEphemeris() ? ' ' : 'E';
-                flags[2] = !sats.get(dataRow).getUsedInFix() ? ' ' : 'U';
+                flags[0] = !status.getHasAlmanac() ? ' ' : 'A';
+                flags[1] = !status.getHasEphemeris() ? ' ' : 'E';
+                flags[2] = !status.getUsedInFix() ? ' ' : 'U';
                 v.getStatusFlags().setText(new String(flags));
             }
         }

@@ -8,6 +8,8 @@ import java.util.Objects;
 
 /**
  *  Wrapper for {@link GnssMeasurement} as we have multiple listeners updating our unified model, {@link SatelliteStatus}
+ *
+ *  @since 1.5.0
  */
 public class GnssMeasurementWrapper
 {
@@ -24,12 +26,14 @@ public class GnssMeasurementWrapper
     private boolean hasAgc;
     private long receivedTimeNanos;
 
-
-    public GnssMeasurementWrapper(GnssMeasurement measurement)
+    /**
+     * @param svid              from {@link GnssMeasurement#getSvid()}
+     * @param constellation     from {@link GnssMeasurement#getConstellationType()}
+     */
+    public GnssMeasurementWrapper(int svid, int constellation)
     {
-        gnssType = GpsTestUtil.getGnssConstellationType(measurement.getConstellationType());
-        svId = measurement.getSvid();
-        updateMeasurement(measurement);
+        gnssType = GpsTestUtil.getGnssConstellationType(constellation);
+        svId = svid;
     }
 
     public boolean hasAgc()
@@ -97,10 +101,10 @@ public class GnssMeasurementWrapper
      * Generates an id for a hashmap allowing us to treat this class as an updatable record
      * @param svId  SvId from a Gnss record
      * @param type  Constellation value converted to GnssType
-     * @return      Hash of svId and type
+     * @return      Concatenation of svId and type
      */
-    public static Integer getId(int svId, GnssType type)
+    public static String getId(int svId, GnssType type)
     {
-        return Objects.hash(svId, type);
+        return svId + type.toString();
     }
 }

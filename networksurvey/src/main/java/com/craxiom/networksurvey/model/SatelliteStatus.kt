@@ -38,6 +38,6 @@ data class SatelliteStatus(
 
     companion object {
         const val NO_DATA = 0.0f
-        const val NO_DATA_DOUBLE = 0.0
+        const val NO_DATA_DOUBLE = Double.NEGATIVE_INFINITY;
     }
 }

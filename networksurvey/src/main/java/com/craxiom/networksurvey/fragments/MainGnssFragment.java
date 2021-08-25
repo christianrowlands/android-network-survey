@@ -50,8 +50,8 @@ public class MainGnssFragment extends Fragment
 {
     private static final int LOCATION_REFRESH_RATE_MS = 2_000;
 
-    // key is a hash code of GnssMeasurementWrapper's constellation type and svid
-    private final Map<Integer, GnssMeasurementWrapper> gnssMeasurements = new ConcurrentHashMap<>();
+    // key comes from the wrapper's getId()
+    private final Map<String, GnssMeasurementWrapper> gnssMeasurements = new ConcurrentHashMap<>();
     private final Set<IGnssListener> gnssListeners = new CopyOnWriteArraySet<>();
     private final ScheduledThreadPoolExecutor pool = new ScheduledThreadPoolExecutor(1);
 
@@ -125,12 +125,6 @@ public class MainGnssFragment extends Fragment
         removeGnssStatusListener();
 
         super.onPause();
-    }
-
-    @Override
-    public void onDestroy()
-    {
-        super.onDestroy();
     }
 
     @Override
@@ -303,8 +297,8 @@ public class MainGnssFragment extends Fragment
 
                     // update our gnssMeasurements
                     eventArgs.getMeasurements().forEach(m -> {
-                        Integer id = GnssMeasurementWrapper.getId(m.getSvid(), GpsTestUtil.getGnssConstellationType(m.getConstellationType()));
-                        GnssMeasurementWrapper measureWrap = gnssMeasurements.computeIfAbsent(id, v -> new GnssMeasurementWrapper(m));
+                        String id = GnssMeasurementWrapper.getId(m.getSvid(), GpsTestUtil.getGnssConstellationType(m.getConstellationType()));
+                        GnssMeasurementWrapper measureWrap = gnssMeasurements.computeIfAbsent(id, v -> new GnssMeasurementWrapper(m.getSvid(), m.getConstellationType()));
                         measureWrap.updateMeasurement(m);
                     });
 
@@ -333,6 +327,8 @@ public class MainGnssFragment extends Fragment
 
     /**
      * Checks if our {@link GnssMeasurementWrapper} are outdated based on {@link GnssMeasurementWrapper#TIMEOUT_VALUE_NANOS}
+     *
+     * @since 1.5.0
      */
     private void checkGnssMeasurementAge()
     {
@@ -344,13 +340,16 @@ public class MainGnssFragment extends Fragment
 
     /**
      * Gets a GnssMeasurementWrapper where svid and gnssType are used as identifiers
+     *
      * @param svid      Svid from a Gnss record
      * @param gnssType  Constellation from a Gnss record created by {@link GpsTestUtil#getGnssConstellationType(int)}
      * @return          The GnssMeasurementWrapper matching the svid and gnssType. {@code null} if the record doesn't exist
+     *
+     * @since 1.5.0
      */
     GnssMeasurementWrapper getGnssMeasurement(int svid, GnssType gnssType)
     {
-        Integer id = GnssMeasurementWrapper.getId(svid, gnssType);
+        String id = GnssMeasurementWrapper.getId(svid, gnssType);
         return gnssMeasurements.get(id);
     }
 
