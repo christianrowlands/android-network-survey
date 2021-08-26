@@ -694,6 +694,10 @@ public class CellularSurveyRecordLogger extends SurveyRecordLogger implements IC
                         {
                             row.setValue(NrMessageConstants.CSI_SINR_COLUMN, data.getCsiSinr().getValue());
                         }
+                        if (data.hasServingCell())
+                        {
+                            row.setValue(NrMessageConstants.SERVING_CELL_COLUMN, data.getServingCell().getValue());
+                        }
 
                         final String provider = data.getProvider();
                         if (!Strings.isNullOrEmpty(provider))
