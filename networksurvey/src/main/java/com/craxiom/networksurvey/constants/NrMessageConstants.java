@@ -32,7 +32,7 @@ public final class NrMessageConstants
     public static final String TAC_COLUMN = "nrTac";
     public static final String NCI_COLUMN = "nci";
     public static final String NARFCN_COLUMN = "narfcn";    // equivalent to nrarfcn
-    public static final String PCI_COLUMN = "nrPci";
+    public static final String PCI_COLUMN = "pci";
     public static final String SS_RSRP_COLUMN = "ssRsrp";
     public static final String SS_RSRQ_COLUMN = "ssRsrq";
     public static final String SS_SINR_COLUMN = "ssSinr";
