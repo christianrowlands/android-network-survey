@@ -4,6 +4,7 @@ import android.Manifest;
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.pm.PackageManager;
+import android.location.GnssMeasurementsEvent;
 import android.location.GnssStatus;
 import android.location.Location;
 import android.location.LocationListener;
@@ -23,11 +24,19 @@ import androidx.viewpager2.widget.ViewPager2;
 
 import com.craxiom.networksurvey.R;
 import com.craxiom.networksurvey.listeners.IGnssListener;
+import com.craxiom.networksurvey.model.GnssMeasurementWrapper;
+import com.craxiom.networksurvey.model.GnssType;
+import com.craxiom.networksurvey.util.GpsTestUtil;
 import com.google.android.material.tabs.TabLayout;
 import com.google.android.material.tabs.TabLayoutMediator;
 
+import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArraySet;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 
 import timber.log.Timber;
 
@@ -41,10 +50,16 @@ public class MainGnssFragment extends Fragment
 {
     private static final int LOCATION_REFRESH_RATE_MS = 2_000;
 
+    // key comes from the wrapper's getId()
+    private final Map<String, GnssMeasurementWrapper> gnssMeasurements = new ConcurrentHashMap<>();
+    private final Set<IGnssListener> gnssListeners = new CopyOnWriteArraySet<>();
+    private final ScheduledThreadPoolExecutor pool = new ScheduledThreadPoolExecutor(1);
+
     private LocationListener locationListener;
     private GnssStatus.Callback gnssStatusListener;
-    private final Set<IGnssListener> gnssListeners = new CopyOnWriteArraySet<>();
+    private GnssMeasurementsEvent.Callback gnssMeasurementCallback;
     private LocationManager locationManager;
+    private ScheduledFuture<?> timeoutChecker;
 
     public MainGnssFragment()
     {
@@ -84,6 +99,15 @@ public class MainGnssFragment extends Fragment
     }
 
     @Override
+    public void onStart()
+    {
+        super.onStart();
+        // putting this here reschedules task AFTER screen turns back on
+        timeoutChecker = pool.scheduleAtFixedRate(this::checkGnssMeasurementAge,
+                0, GnssMeasurementWrapper.TIMEOUT_VALUE_NANOS, TimeUnit.NANOSECONDS);
+    }
+
+    @Override
     public void onResume()
     {
         super.onResume();
@@ -101,6 +125,14 @@ public class MainGnssFragment extends Fragment
         removeGnssStatusListener();
 
         super.onPause();
+    }
+
+    @Override
+    public void onStop()
+    {
+        super.onStop();
+        // don't have to force an interrupt since it should be a fast enough process anyway
+        timeoutChecker.cancel(false);
     }
 
     /**
@@ -254,8 +286,29 @@ public class MainGnssFragment extends Fragment
                 }
             };
         }
+        if(gnssMeasurementCallback == null)
+        {
+            gnssMeasurementCallback = new GnssMeasurementsEvent.Callback()
+            {
+                @Override
+                public void onGnssMeasurementsReceived(GnssMeasurementsEvent eventArgs)
+                {
+                    super.onGnssMeasurementsReceived(eventArgs);
+
+                    // update our gnssMeasurements
+                    eventArgs.getMeasurements().forEach(m -> {
+                        String id = GnssMeasurementWrapper.getId(m.getSvid(), GpsTestUtil.getGnssConstellationType(m.getConstellationType()));
+                        GnssMeasurementWrapper measureWrap = gnssMeasurements.computeIfAbsent(id, v -> new GnssMeasurementWrapper(m.getSvid(), m.getConstellationType()));
+                        measureWrap.updateMeasurement(m);
+                    });
+
+                    gnssListeners.forEach(l -> l.onGnssMeasurementsReceived(eventArgs));
+                }
+            };
+        }
 
         locationManager.registerGnssStatusCallback(gnssStatusListener);
+        locationManager.registerGnssMeasurementsCallback(gnssMeasurementCallback);
     }
 
     /**
@@ -270,6 +323,34 @@ public class MainGnssFragment extends Fragment
         }
 
         locationManager.unregisterGnssStatusCallback(gnssStatusListener);
+    }
+
+    /**
+     * Checks if our {@link GnssMeasurementWrapper} are outdated based on {@link GnssMeasurementWrapper#TIMEOUT_VALUE_NANOS}
+     *
+     * @since 1.5.0
+     */
+    private void checkGnssMeasurementAge()
+    {
+        final long currentTimeout = System.nanoTime() - GnssMeasurementWrapper.TIMEOUT_VALUE_NANOS;
+        gnssMeasurements.values().stream()
+                .filter(measurement -> currentTimeout > measurement.getReceivedTimeNanos())
+                .forEach(GnssMeasurementWrapper::onTimeout);
+    }
+
+    /**
+     * Gets a GnssMeasurementWrapper where svid and gnssType are used as identifiers
+     *
+     * @param svid      Svid from a Gnss record
+     * @param gnssType  Constellation from a Gnss record created by {@link GpsTestUtil#getGnssConstellationType(int)}
+     * @return          The GnssMeasurementWrapper matching the svid and gnssType. {@code null} if the record doesn't exist
+     *
+     * @since 1.5.0
+     */
+    GnssMeasurementWrapper getGnssMeasurement(int svid, GnssType gnssType)
+    {
+        String id = GnssMeasurementWrapper.getId(svid, gnssType);
+        return gnssMeasurements.get(id);
     }
 
     /**

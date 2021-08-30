@@ -14,92 +14,98 @@
 ** limitations under the License.
 -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:layout_width="match_parent"
-    android:layout_height="wrap_content"
-    android:layout_marginLeft="@dimen/activity_horizontal_margin"
-    android:layout_marginRight="@dimen/activity_horizontal_margin"
-    android:gravity="center_vertical"
-    android:orientation="horizontal">
+        xmlns:tools="http://schemas.android.com/tools"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginLeft="@dimen/activity_horizontal_margin"
+        android:layout_marginRight="@dimen/activity_horizontal_margin"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        tools:background="@color/body_text_2_light">
 
     <TextView
-        android:id="@+id/sv_id"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:minWidth="36dp"
-        android:layout_marginRight="@dimen/column_padding"
-        android:layout_marginEnd="@dimen/column_padding"
-        android:textSize="@dimen/status_text_size" />
-
-    <TextView
-        android:id="@+id/gnss_flag_header"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:minWidth="@dimen/min_column_width"
-        android:layout_marginRight="@dimen/column_padding"
-        android:layout_marginEnd="@dimen/column_padding"
-        android:visibility="gone"
-        style="@style/info_label" />
-    <!-- We need the LinearLayout to draw a thin border around the flag image, but keep the minWidth for the column -->
-    <LinearLayout
-        android:id="@+id/gnss_flag_layout"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:minWidth="@dimen/min_column_width"
-        android:layout_marginRight="@dimen/column_padding"
-        android:layout_marginEnd="@dimen/column_padding"
-        android:visibility="gone">
-
-        <ImageView
-            android:id="@+id/gnss_flag"
+            android:id="@+id/sv_id"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:background="@color/body_text_2_light"
-            android:padding="1dp"
-            android:visibility="gone" />
+            android:minWidth="36dp"
+            android:layout_marginRight="@dimen/column_padding"
+            android:layout_marginEnd="@dimen/column_padding"
+            android:textSize="@dimen/status_text_size"
+            tools:text="13"
+            tools:textColor="@color/white"/>
+
+    <TextView
+            android:id="@+id/gnss_flag_header"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:minWidth="@dimen/min_column_width"
+            android:layout_marginRight="@dimen/column_padding"
+            android:layout_marginEnd="@dimen/column_padding"
+            android:visibility="gone"
+            style="@style/info_label" />
+    <!-- We need the LinearLayout to draw a thin border around the flag image, but keep the minWidth for the column -->
+    <LinearLayout
+            android:id="@+id/gnss_flag_layout"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:minWidth="@dimen/min_column_width"
+            android:layout_marginRight="@dimen/column_padding"
+            android:layout_marginEnd="@dimen/column_padding"
+            android:visibility="gone"
+            tools:visibility="visible">
+
+        <ImageView
+                android:id="@+id/gnss_flag"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:background="@color/body_text_2_light"
+                android:padding="1dp"
+                android:visibility="gone"
+                tools:visibility="visible"
+                tools:src="@drawable/ic_flag_usa"/>
     </LinearLayout>
 
     <TextView
-        android:id="@+id/carrier_frequency"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:minWidth="36dp"
-        android:layout_marginRight="@dimen/column_padding"
-        android:layout_marginEnd="@dimen/column_padding"
-        android:textSize="@dimen/status_text_size" />
+            android:id="@+id/carrier_frequency"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:minWidth="36dp"
+            android:layout_marginRight="@dimen/column_padding"
+            android:layout_marginEnd="@dimen/column_padding"
+            android:textSize="@dimen/status_text_size"
+            tools:text="400"
+            tools:textColor="@color/white"/>
 
     <TextView
-        android:id="@+id/signal"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:minWidth="@dimen/min_column_width"
-        android:layout_marginRight="@dimen/column_padding"
-        android:layout_marginEnd="@dimen/column_padding"
-        android:textSize="@dimen/status_text_size" />
+            android:id="@+id/signal"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:minWidth="@dimen/min_column_width"
+            android:layout_marginRight="@dimen/column_padding"
+            android:layout_marginEnd="@dimen/column_padding"
+            android:textSize="@dimen/status_text_size"
+            tools:text="CN0"
+            tools:textColor="@color/white"/>
 
     <TextView
-        android:id="@+id/status_flags"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:minWidth="@dimen/min_column_width"
-        android:layout_marginRight="@dimen/column_padding"
-        android:layout_marginEnd="@dimen/column_padding"
-        android:textSize="@dimen/status_text_size" />
+            android:id="@+id/status_row_agc"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:minWidth="@dimen/min_column_width"
+            android:layout_marginRight="@dimen/column_padding"
+            android:layout_marginEnd="@dimen/column_padding"
+            android:textSize="@dimen/status_text_size"
+            tools:text="20 db"
+            tools:textColor="@color/white"/>
 
     <TextView
-        android:id="@+id/elevation"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:minWidth="@dimen/min_column_width"
-        android:layout_marginRight="@dimen/column_padding"
-        android:layout_marginEnd="@dimen/column_padding"
-        android:textSize="@dimen/status_text_size" />
-
-    <TextView
-        android:id="@+id/azimuth"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:minWidth="@dimen/min_column_width"
-        android:layout_marginRight="@dimen/column_padding"
-        android:layout_marginEnd="@dimen/column_padding"
-        android:textSize="@dimen/status_text_size" />
+            android:id="@+id/status_flags"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:minWidth="@dimen/min_column_width"
+            android:layout_marginRight="@dimen/column_padding"
+            android:layout_marginEnd="@dimen/column_padding"
+            android:textSize="@dimen/status_text_size"
+            tools:text="A E"
+            tools:textColor="@color/white"/>
 </LinearLayout>
