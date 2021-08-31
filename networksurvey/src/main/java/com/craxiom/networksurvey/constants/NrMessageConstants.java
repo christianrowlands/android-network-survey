@@ -29,7 +29,7 @@ public final class NrMessageConstants
     // unique to new radio
     public static final String MCC_COLUMN = "mcc";
     public static final String MNC_COLUMN = "mnc";
-    public static final String TAC_COLUMN = "nrTac";
+    public static final String TAC_COLUMN = "tac";
     public static final String NCI_COLUMN = "nci";
     public static final String NARFCN_COLUMN = "narfcn";    // equivalent to nrarfcn
     public static final String PCI_COLUMN = "pci";
