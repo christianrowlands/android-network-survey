@@ -32,6 +32,8 @@ import android.location.GnssStatus;
 import android.location.Location;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.text.format.DateFormat;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -50,6 +52,7 @@ import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
+import androidx.recyclerview.widget.SimpleItemAnimator;
 
 import com.craxiom.networksurvey.Application;
 import com.craxiom.networksurvey.R;
@@ -73,6 +76,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 
 import timber.log.Timber;
 
@@ -99,6 +103,7 @@ public class GnssStatusFragment extends Fragment implements IGnssListener
     private static final String KILOMETERS_PER_HOUR = "2";
 
     private final Object lock = new Object();
+    private final Handler uiHandler = new Handler(Looper.getMainLooper());
 
     private SimpleDateFormat dateFormat;
 
@@ -248,6 +253,16 @@ public class GnssStatusFragment extends Fragment implements IGnssListener
         sbasStatusList.setLayoutManager(llmSbas);
         sbasStatusList.setNestedScrollingEnabled(false);
 
+
+        Consumer<RecyclerView.ItemAnimator> disableRefreshAnimation = a -> {
+            if (a instanceof SimpleItemAnimator)
+            {
+                ((SimpleItemAnimator) a).setSupportsChangeAnimations(false);
+            }
+        };
+        disableRefreshAnimation.accept(gnssStatusList.getItemAnimator());
+        disableRefreshAnimation.accept(sbasStatusList.getItemAnimator());
+
         snrCn0Title = resources.getString(R.string.gps_cn0_column_label);
         agcTitle = resources.getString(R.string.gps_agc_column_label);
         return v;
@@ -336,15 +351,17 @@ public class GnssStatusFragment extends Fragment implements IGnssListener
         // updates statuses if there's a valid agc measurement corresponding to that statuses svid and constellation
         BiConsumer<List<SatelliteStatus>, SatelliteStatusAdapter> updateAgc = (statuses, adapter) -> {
                 // start at 1 as 0th index is the column label header
-                final int statusCount = adapter.getItemCount();
-                for (int i = 1; i < statusCount; i++)
+                final int statusCount = statuses.size();
+                for (int i = 0; i < statusCount; i++)
                 {
                     SatelliteStatus s = statuses.get(i);
                     GnssMeasurementWrapper measurement = mainGnssFragment.getGnssMeasurement(s.getSvid(), s.getGnssType());
-                    if (hasValidAgc(measurement))
+                    // update ui only if we have a valid agc and it's a different value
+                    if (hasValidAgc(measurement) && s.getAgc() != measurement.getAgc())
                     {
                         s.setAgc(measurement.getAgc());
-                        adapter.notifyItemChanged(i);
+                        final int posChanged = i + 1;
+                        uiHandler.post(() -> adapter.notifyItemChanged(posChanged)); // has to be i + 1 as 0 is adapter's header item
                     }
                 }
         };
@@ -354,7 +371,7 @@ public class GnssStatusFragment extends Fragment implements IGnssListener
         {
             updateAgc.accept(gnssStatus, gnssAdapter);
             updateAgc.accept(sbasStatus, sbasAdapter);
-            updateListVisibility();
+            uiHandler.post(this::updateListVisibility);
         }
     }
 

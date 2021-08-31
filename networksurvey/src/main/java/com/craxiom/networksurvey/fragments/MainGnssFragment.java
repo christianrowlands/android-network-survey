@@ -323,6 +323,7 @@ public class MainGnssFragment extends Fragment
         }
 
         locationManager.unregisterGnssStatusCallback(gnssStatusListener);
+        locationManager.unregisterGnssMeasurementsCallback(gnssMeasurementCallback);
     }
 
     /**
