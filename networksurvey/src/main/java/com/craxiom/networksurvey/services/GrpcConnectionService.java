@@ -93,7 +93,8 @@ public class GrpcConnectionService extends Service implements IDeviceStatusListe
 {
     public static final long RECONNECTION_ATTEMPT_BACKOFF_TIME = 10_000L;
     private static final int DEVICE_STATUS_REFRESH_RATE_MS = 15_000;
-    private static final int NUMBER_OF_QUEUES_TO_PROCESS = 6;
+    // number of concurrent linked queues. Does not take into account the old queues
+    private static final int NUMBER_OF_QUEUES_TO_PROCESS = 7;
     private static final int QUEUE_PROCESSING_SLEEP_TIME = 1_000;
 
     private static ConnectionState connectionState = ConnectionState.DISCONNECTED;
