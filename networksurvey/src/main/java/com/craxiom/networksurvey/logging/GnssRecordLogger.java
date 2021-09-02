@@ -37,6 +37,7 @@ import static com.craxiom.networksurvey.constants.GnssMessageConstants.RECORD_NU
 import static com.craxiom.networksurvey.constants.GnssMessageConstants.SPACE_VEHICLE_ID;
 import static com.craxiom.networksurvey.constants.GnssMessageConstants.TIME_COLUMN;
 import static com.craxiom.networksurvey.constants.GnssMessageConstants.getConstellationString;
+import static com.craxiom.networksurvey.constants.MessageConstants.ACCURACY;
 
 /**
  * Responsible for taking GNSS survey records, and writing them to the GeoPackage log file.
@@ -125,6 +126,7 @@ public class GnssRecordLogger extends SurveyRecordLogger implements IGnssSurveyR
                         row.setValue(RECORD_NUMBER_COLUMN, data.getRecordNumber());
                         row.setValue(GROUP_NUMBER_COLUMN, data.getGroupNumber());
                         row.setValue(DEVICE_MODEL_COLUMN, data.getDeviceModel());
+                        row.setValue(ACCURACY, data.getAccuracy());
 
                         final Constellation constellation = data.getConstellation();
                         if (constellation != Constellation.UNKNOWN)

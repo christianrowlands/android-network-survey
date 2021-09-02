@@ -109,6 +109,7 @@ public class WifiSurveyRecordLogger extends SurveyRecordLogger implements IWifiS
                         row.setValue(WifiBeaconMessageConstants.TIME_COLUMN, IOUtils.getEpochFromRfc3339(data.getDeviceTime()));
                         row.setValue(WifiBeaconMessageConstants.MISSION_ID_COLUMN, data.getMissionId());
                         row.setValue(WifiBeaconMessageConstants.RECORD_NUMBER_COLUMN, data.getRecordNumber());
+                        row.setValue(WifiBeaconMessageConstants.ACCURACY, data.getAccuracy());
 
                         final String sourceAddress = data.getSourceAddress();
                         if (!sourceAddress.isEmpty())

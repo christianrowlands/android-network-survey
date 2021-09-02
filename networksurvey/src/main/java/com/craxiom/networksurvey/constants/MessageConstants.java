@@ -12,4 +12,5 @@ public abstract class MessageConstants
     public static final String TIME_COLUMN = "Time";
     public static final String RECORD_NUMBER_COLUMN = "RecordNumber";
     public static final String MISSION_ID_COLUMN = "MissionId";
+    public static final String ACCURACY = "accuracy";
 }

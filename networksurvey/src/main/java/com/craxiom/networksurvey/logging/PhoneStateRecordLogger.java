@@ -36,6 +36,7 @@ import static com.craxiom.networksurvey.constants.DeviceStatusMessageConstants.N
 import static com.craxiom.networksurvey.constants.DeviceStatusMessageConstants.PHONE_STATE_TABLE_NAME;
 import static com.craxiom.networksurvey.constants.DeviceStatusMessageConstants.SIM_OPERATOR_COLUMN;
 import static com.craxiom.networksurvey.constants.DeviceStatusMessageConstants.SIM_STATE_COLUMN;
+import static com.craxiom.networksurvey.constants.MessageConstants.ACCURACY;
 import static com.craxiom.networksurvey.constants.MessageConstants.MISSION_ID_COLUMN;
 import static com.craxiom.networksurvey.constants.MessageConstants.RECORD_NUMBER_COLUMN;
 import static com.craxiom.networksurvey.constants.MessageConstants.TIME_COLUMN;
@@ -98,6 +99,7 @@ public class PhoneStateRecordLogger extends SurveyRecordLogger implements IDevic
                         row.setValue(TIME_COLUMN, IOUtils.getEpochFromRfc3339(data.getDeviceTime()));
                         row.setValue(MISSION_ID_COLUMN, data.getMissionId());
                         row.setValue(RECORD_NUMBER_COLUMN, data.getRecordNumber());
+                        row.setValue(ACCURACY, data.getAccuracy());
 
                         row.setValue(SIM_STATE_COLUMN, readSimState(data));
                         row.setValue(SIM_OPERATOR_COLUMN, data.getSimOperator());

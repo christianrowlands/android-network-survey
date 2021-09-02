@@ -111,6 +111,7 @@ public class BluetoothSurveyRecordLogger extends SurveyRecordLogger implements I
                         row.setValue(BluetoothMessageConstants.TIME_COLUMN, IOUtils.getEpochFromRfc3339(data.getDeviceTime()));
                         row.setValue(BluetoothMessageConstants.MISSION_ID_COLUMN, data.getMissionId());
                         row.setValue(BluetoothMessageConstants.RECORD_NUMBER_COLUMN, data.getRecordNumber());
+                        row.setValue(BluetoothMessageConstants.ACCURACY, data.getAccuracy());
 
                         final String sourceAddress = data.getSourceAddress();
                         if (!sourceAddress.isEmpty())
