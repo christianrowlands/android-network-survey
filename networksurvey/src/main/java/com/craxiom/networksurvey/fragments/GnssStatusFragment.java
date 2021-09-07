@@ -355,11 +355,23 @@ public class GnssStatusFragment extends Fragment implements IGnssListener
                 for (int i = 0; i < statusCount; i++)
                 {
                     SatelliteStatus s = statuses.get(i);
-                    GnssMeasurementWrapper measurement = mainGnssFragment.getGnssMeasurement(s.getSvid(), s.getGnssType());
-                    // update ui only if we have a valid agc and it's a different value
-                    if (hasValidAgc(measurement) && s.getAgc() != measurement.getAgc())
+                    GnssMeasurementWrapper measurement = mainGnssFragment.getGnssMeasurement(s.getSvid(), s.getGnssType(), s.getCarrierFrequencyHz());
+                    boolean isChange = false;
+                    boolean isAgcValid = hasValidAgc(measurement);
+                    // update ui if we have a valid agc and it's a different value OR agc was invalidated
+                    if (isAgcValid && s.getAgc() != measurement.getAgc())
                     {
                         s.setAgc(measurement.getAgc());
+                        isChange = true;
+                    }
+                    else if(!isAgcValid && s.getAgc() != SatelliteStatus.NO_DATA_DOUBLE)
+                    {
+                        s.setAgc(SatelliteStatus.NO_DATA_DOUBLE);
+                        isChange = true;
+                    }
+
+                    if(isChange)
+                    {
                         final int posChanged = i + 1;
                         uiHandler.post(() -> adapter.notifyItemChanged(posChanged)); // has to be i + 1 as 0 is adapter's header item
                     }
@@ -666,7 +678,7 @@ public class GnssStatusFragment extends Fragment implements IGnssListener
                         status.getAzimuthDegrees(svCount));
 
                 // update agc if we have it and it's not timed out
-                GnssMeasurementWrapper measurement = mainGnssFragment.getGnssMeasurement(status.getSvid(svCount), gnssType);
+                GnssMeasurementWrapper measurement = mainGnssFragment.getGnssMeasurement(satStatus.getSvid(), gnssType, satStatus.getCarrierFrequencyHz());
                 satStatus.setAgc(hasValidAgc(measurement)
                         ? measurement.getAgc()
                         : SatelliteStatus.NO_DATA_DOUBLE);
@@ -1059,7 +1071,7 @@ public class GnssStatusFragment extends Fragment implements IGnssListener
                         String carrierLabel = CarrierFreqUtils.getCarrierFrequencyLabel(status.getGnssType(),
                                 status.getSvid(),
                                 carrierMhz);
-                        if (carrierLabel != null)
+                        if (!CarrierFreqUtils.CF_UNKNOWN.equals(carrierLabel))
                         {
                             // Make sure it's the normal text size (in case it's previously been
                             // resized to show raw number).  Use another TextView for default text size.

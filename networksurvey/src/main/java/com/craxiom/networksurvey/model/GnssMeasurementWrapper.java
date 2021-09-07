@@ -2,7 +2,7 @@ package com.craxiom.networksurvey.model;
 
 import android.location.GnssMeasurement;
 
-import com.craxiom.networksurvey.util.GpsTestUtil;
+import com.craxiom.networksurvey.util.CarrierFreqUtils;
 
 import java.util.Objects;
 
@@ -21,19 +21,23 @@ public class GnssMeasurementWrapper
     private final int svId;
     // lets us associate measurement with satellite's nationality
     private final GnssType gnssType;
+    private final String carrierFrequencyLabel;
 
     private double agc;
     private boolean hasAgc;
     private long receivedTimeNanos;
 
     /**
-     * @param svid              from {@link GnssMeasurement#getSvid()}
-     * @param constellation     from {@link GnssMeasurement#getConstellationType()}
+     * @param svid               from {@link GnssMeasurement#getSvid()}
+     * @param gnssType           from {@link GnssMeasurement#getConstellationType()} converted into GnssType
+     *                           via {@link com.craxiom.networksurvey.util.GpsTestUtil#getGnssConstellationType(int)}
+     * @param carrierFrequencyHz from {@link GnssMeasurement#getCarrierFrequencyHz()}
      */
-    public GnssMeasurementWrapper(int svid, int constellation)
+    public GnssMeasurementWrapper(int svid, GnssType gnssType, float carrierFrequencyHz)
     {
-        gnssType = GpsTestUtil.getGnssConstellationType(constellation);
+        this.gnssType = gnssType;
         svId = svid;
+        carrierFrequencyLabel = CarrierFreqUtils.getCarrierFrequencyLabel(gnssType, svid, carrierFrequencyHz);
     }
 
     public boolean hasAgc()
@@ -88,23 +92,29 @@ public class GnssMeasurementWrapper
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         GnssMeasurementWrapper that = (GnssMeasurementWrapper) o;
-        return svId == that.svId && gnssType == that.gnssType && receivedTimeNanos == that.receivedTimeNanos;
+        return svId == that.svId && Double.compare(that.agc, agc) == 0
+                && hasAgc == that.hasAgc
+                && receivedTimeNanos == that.receivedTimeNanos
+                && gnssType == that.gnssType
+                && Objects.equals(carrierFrequencyLabel, that.carrierFrequencyLabel);
     }
 
     @Override
     public int hashCode()
     {
-        return Objects.hash(svId, gnssType, receivedTimeNanos);
+        return Objects.hash(svId, gnssType, carrierFrequencyLabel, agc, hasAgc, receivedTimeNanos);
     }
 
     /**
      * Generates an id for a hashmap allowing us to treat this class as an updatable record
-     * @param svId  SvId from a Gnss record
-     * @param type  Constellation value converted to GnssType
-     * @return      Concatenation of svId and type
+     *
+     * @param svId               SvId from a GNSS record
+     * @param type               Constellation value converted to GnssType
+     * @param carrierFrequencyHz Carrier frequency from a GNSS record
+     * @return Concatenation of svId and type
      */
-    public static String getId(int svId, GnssType type)
+    public static String getId(int svId, GnssType type, float carrierFrequencyHz)
     {
-        return svId + type.toString();
+        return svId + type.toString() + CarrierFreqUtils.getCarrierFrequencyLabel(type, svId, carrierFrequencyHz);
     }
 }

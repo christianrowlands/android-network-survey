@@ -297,8 +297,11 @@ public class MainGnssFragment extends Fragment
 
                     // update our gnssMeasurements
                     eventArgs.getMeasurements().forEach(m -> {
-                        String id = GnssMeasurementWrapper.getId(m.getSvid(), GpsTestUtil.getGnssConstellationType(m.getConstellationType()));
-                        GnssMeasurementWrapper measureWrap = gnssMeasurements.computeIfAbsent(id, v -> new GnssMeasurementWrapper(m.getSvid(), m.getConstellationType()));
+                        int svid = m.getSvid();
+                        GnssType gnssType = GpsTestUtil.getGnssConstellationType(m.getConstellationType());
+                        float carrierFreq = m.getCarrierFrequencyHz();
+                        String id = GnssMeasurementWrapper.getId(svid, gnssType, carrierFreq);
+                        GnssMeasurementWrapper measureWrap = gnssMeasurements.computeIfAbsent(id, v -> new GnssMeasurementWrapper(svid, gnssType, carrierFreq));
                         measureWrap.updateMeasurement(m);
                     });
 
@@ -342,15 +345,15 @@ public class MainGnssFragment extends Fragment
     /**
      * Gets a GnssMeasurementWrapper where svid and gnssType are used as identifiers
      *
-     * @param svid      Svid from a Gnss record
-     * @param gnssType  Constellation from a Gnss record created by {@link GpsTestUtil#getGnssConstellationType(int)}
-     * @return          The GnssMeasurementWrapper matching the svid and gnssType. {@code null} if the record doesn't exist
-     *
+     * @param svid               Svid from a GNSS record
+     * @param gnssType           Constellation from a Gnss record created by {@link GpsTestUtil#getGnssConstellationType(int)}
+     * @param carrierFrequencyHz Carrier Frequency from a GNSS  record
+     * @return The GnssMeasurementWrapper matching the svid, gnssType, and carrierFrequency. {@code null} if the record doesn't exist
      * @since 1.5.0
      */
-    GnssMeasurementWrapper getGnssMeasurement(int svid, GnssType gnssType)
+    GnssMeasurementWrapper getGnssMeasurement(int svid, GnssType gnssType, float carrierFrequencyHz)
     {
-        String id = GnssMeasurementWrapper.getId(svid, gnssType);
+        String id = GnssMeasurementWrapper.getId(svid, gnssType, carrierFrequencyHz);
         return gnssMeasurements.get(id);
     }
 
