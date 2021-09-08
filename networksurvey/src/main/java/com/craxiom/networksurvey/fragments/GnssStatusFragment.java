@@ -253,7 +253,6 @@ public class GnssStatusFragment extends Fragment implements IGnssListener
         sbasStatusList.setLayoutManager(llmSbas);
         sbasStatusList.setNestedScrollingEnabled(false);
 
-
         Consumer<RecyclerView.ItemAnimator> disableRefreshAnimation = a -> {
             if (a instanceof SimpleItemAnimator)
             {
@@ -350,32 +349,31 @@ public class GnssStatusFragment extends Fragment implements IGnssListener
     {
         // updates statuses if there's a valid agc measurement corresponding to that statuses svid and constellation
         BiConsumer<List<SatelliteStatus>, SatelliteStatusAdapter> updateAgc = (statuses, adapter) -> {
-                // start at 1 as 0th index is the column label header
-                final int statusCount = statuses.size();
-                for (int i = 0; i < statusCount; i++)
+            // start at 1 as 0th index is the column label header
+            final int statusCount = statuses.size();
+            for (int i = 0; i < statusCount; i++)
+            {
+                SatelliteStatus s = statuses.get(i);
+                GnssMeasurementWrapper measurement = mainGnssFragment.getGnssMeasurement(s.getSvid(), s.getGnssType(), s.getCarrierFrequencyHz());
+                boolean isChange = false;
+                boolean isAgcValid = hasValidAgc(measurement);
+                // update ui if we have a valid agc and it's a different value OR agc was invalidated
+                if (isAgcValid && s.getAgc() != measurement.getAgc())
                 {
-                    SatelliteStatus s = statuses.get(i);
-                    GnssMeasurementWrapper measurement = mainGnssFragment.getGnssMeasurement(s.getSvid(), s.getGnssType(), s.getCarrierFrequencyHz());
-                    boolean isChange = false;
-                    boolean isAgcValid = hasValidAgc(measurement);
-                    // update ui if we have a valid agc and it's a different value OR agc was invalidated
-                    if (isAgcValid && s.getAgc() != measurement.getAgc())
-                    {
-                        s.setAgc(measurement.getAgc());
-                        isChange = true;
-                    }
-                    else if(!isAgcValid && s.getAgc() != SatelliteStatus.NO_DATA_DOUBLE)
-                    {
-                        s.setAgc(SatelliteStatus.NO_DATA_DOUBLE);
-                        isChange = true;
-                    }
-
-                    if(isChange)
-                    {
-                        final int posChanged = i + 1;
-                        uiHandler.post(() -> adapter.notifyItemChanged(posChanged)); // has to be i + 1 as 0 is adapter's header item
-                    }
+                    s.setAgc(measurement.getAgc());
+                    isChange = true;
+                } else if (!isAgcValid && s.getAgc() != SatelliteStatus.NO_DATA_DOUBLE)
+                {
+                    s.setAgc(SatelliteStatus.NO_DATA_DOUBLE);
+                    isChange = true;
                 }
+
+                if (isChange)
+                {
+                    final int posChanged = i + 1;
+                    uiHandler.post(() -> adapter.notifyItemChanged(posChanged)); // has to be i + 1 as 0 is adapter's header item
+                }
+            }
         };
 
         // must sync here since updateGnssStatus clears/creates the SatelliteStatus records for our lists
@@ -846,8 +844,9 @@ public class GnssStatusFragment extends Fragment implements IGnssListener
 
     /**
      * Convenience method for ensuring our GnssMeasurement has a valid AGC value
-     * @param measurement   Wrapper for {@link android.location.GnssMeasurement}
-     * @return              {@code true} if the measurement is not null or old, and has an AGC value
+     *
+     * @param measurement Wrapper for {@link android.location.GnssMeasurement}
+     * @return {@code true} if the measurement is not null or old, and has an AGC value
      */
     private boolean hasValidAgc(GnssMeasurementWrapper measurement)
     {

@@ -7,9 +7,9 @@ import com.craxiom.networksurvey.util.CarrierFreqUtils;
 import java.util.Objects;
 
 /**
- *  Wrapper for {@link GnssMeasurement} as we have multiple listeners updating our unified model, {@link SatelliteStatus}
+ * Wrapper for {@link GnssMeasurement} as we have multiple listeners updating our unified model, {@link SatelliteStatus}
  *
- *  @since 1.5.0
+ * @since 1.5.0
  */
 public class GnssMeasurementWrapper
 {
@@ -57,14 +57,15 @@ public class GnssMeasurementWrapper
 
     /**
      * Updates this measurement with new received time and agc values
-     * @param measurement   Source of our updated data
+     *
+     * @param measurement Source of our updated data
      */
     public void updateMeasurement(GnssMeasurement measurement)
     {
         receivedTimeNanos = measurement.getReceivedSvTimeNanos();
         hasAgc = measurement.hasAutomaticGainControlLevelDb();
 
-        if(hasAgc)
+        if (hasAgc)
         {
             agc = measurement.getAutomaticGainControlLevelDb();
         }

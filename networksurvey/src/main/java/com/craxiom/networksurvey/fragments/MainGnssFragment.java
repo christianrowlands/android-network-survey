@@ -286,7 +286,7 @@ public class MainGnssFragment extends Fragment
                 }
             };
         }
-        if(gnssMeasurementCallback == null)
+        if (gnssMeasurementCallback == null)
         {
             gnssMeasurementCallback = new GnssMeasurementsEvent.Callback()
             {
