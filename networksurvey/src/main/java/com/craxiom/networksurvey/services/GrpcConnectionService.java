@@ -59,12 +59,12 @@ import com.craxiom.networksurvey.messaging.NetworkSurveyStatusGrpc;
 import com.craxiom.networksurvey.model.WifiRecordWrapper;
 import com.craxiom.networksurvey.util.IOUtils;
 import com.craxiom.networksurvey.util.LegacyRecordConversion;
+import com.craxiom.networksurvey.util.MathUtils;
 import com.google.protobuf.Int32Value;
 
 import java.lang.ref.WeakReference;
 import java.net.ConnectException;
 import java.time.ZonedDateTime;
-import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -73,7 +73,6 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -740,7 +739,7 @@ public class GrpcConnectionService extends Service implements IDeviceStatusListe
                 dataBuilder.setLatitude(lastKnownLocation.getLatitude());
                 dataBuilder.setLongitude(lastKnownLocation.getLongitude());
                 dataBuilder.setAltitude((float) lastKnownLocation.getAltitude());
-                dataBuilder.setAccuracy(lastKnownLocation.getAccuracy());
+                dataBuilder.setAccuracy(MathUtils.roundAccuracy(lastKnownLocation.getAccuracy()));
             }
         }
 

@@ -1,28 +1,5 @@
 package com.craxiom.networksurvey.logging;
 
-import android.os.Looper;
-
-import com.craxiom.messaging.GnssRecord;
-import com.craxiom.messaging.GnssRecordData;
-import com.craxiom.messaging.gnss.Constellation;
-import com.craxiom.networksurvey.constants.GnssMessageConstants;
-import com.craxiom.networksurvey.constants.NetworkSurveyConstants;
-import com.craxiom.networksurvey.listeners.IGnssSurveyRecordListener;
-import com.craxiom.networksurvey.services.NetworkSurveyService;
-import com.craxiom.networksurvey.util.IOUtils;
-
-import java.sql.SQLException;
-
-import mil.nga.geopackage.GeoPackage;
-import mil.nga.geopackage.core.srs.SpatialReferenceSystem;
-import mil.nga.geopackage.db.GeoPackageDataType;
-import mil.nga.geopackage.features.user.FeatureColumn;
-import mil.nga.geopackage.features.user.FeatureDao;
-import mil.nga.geopackage.features.user.FeatureRow;
-import mil.nga.geopackage.geom.GeoPackageGeometryData;
-import mil.nga.sf.Point;
-import timber.log.Timber;
-
 import static com.craxiom.networksurvey.constants.GnssMessageConstants.AGC_DB;
 import static com.craxiom.networksurvey.constants.GnssMessageConstants.ALTITUDE_STD_DEV_M;
 import static com.craxiom.networksurvey.constants.GnssMessageConstants.CARRIER_FREQUENCY_HZ;
@@ -38,6 +15,30 @@ import static com.craxiom.networksurvey.constants.GnssMessageConstants.SPACE_VEH
 import static com.craxiom.networksurvey.constants.GnssMessageConstants.TIME_COLUMN;
 import static com.craxiom.networksurvey.constants.GnssMessageConstants.getConstellationString;
 import static com.craxiom.networksurvey.constants.MessageConstants.ACCURACY;
+
+import android.os.Looper;
+
+import com.craxiom.messaging.GnssRecord;
+import com.craxiom.messaging.GnssRecordData;
+import com.craxiom.messaging.gnss.Constellation;
+import com.craxiom.networksurvey.constants.GnssMessageConstants;
+import com.craxiom.networksurvey.constants.NetworkSurveyConstants;
+import com.craxiom.networksurvey.listeners.IGnssSurveyRecordListener;
+import com.craxiom.networksurvey.services.NetworkSurveyService;
+import com.craxiom.networksurvey.util.IOUtils;
+import com.craxiom.networksurvey.util.MathUtils;
+
+import java.sql.SQLException;
+
+import mil.nga.geopackage.GeoPackage;
+import mil.nga.geopackage.core.srs.SpatialReferenceSystem;
+import mil.nga.geopackage.db.GeoPackageDataType;
+import mil.nga.geopackage.features.user.FeatureColumn;
+import mil.nga.geopackage.features.user.FeatureDao;
+import mil.nga.geopackage.features.user.FeatureRow;
+import mil.nga.geopackage.geom.GeoPackageGeometryData;
+import mil.nga.sf.Point;
+import timber.log.Timber;
 
 /**
  * Responsible for taking GNSS survey records, and writing them to the GeoPackage log file.
@@ -126,7 +127,7 @@ public class GnssRecordLogger extends SurveyRecordLogger implements IGnssSurveyR
                         row.setValue(RECORD_NUMBER_COLUMN, data.getRecordNumber());
                         row.setValue(GROUP_NUMBER_COLUMN, data.getGroupNumber());
                         row.setValue(DEVICE_MODEL_COLUMN, data.getDeviceModel());
-                        row.setValue(ACCURACY, data.getAccuracy());
+                        row.setValue(ACCURACY, MathUtils.roundAccuracy(data.getAccuracy()));
 
                         final Constellation constellation = data.getConstellation();
                         if (constellation != Constellation.UNKNOWN)

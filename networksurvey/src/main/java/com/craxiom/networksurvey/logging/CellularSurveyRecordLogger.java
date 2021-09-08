@@ -22,6 +22,7 @@ import com.craxiom.networksurvey.constants.UmtsMessageConstants;
 import com.craxiom.networksurvey.listeners.ICellularSurveyRecordListener;
 import com.craxiom.networksurvey.services.NetworkSurveyService;
 import com.craxiom.networksurvey.util.IOUtils;
+import com.craxiom.networksurvey.util.MathUtils;
 import com.google.common.base.Strings;
 
 import java.sql.SQLException;
@@ -227,7 +228,7 @@ public class CellularSurveyRecordLogger extends SurveyRecordLogger implements IC
         tableColumns.add(FeatureColumn.createColumn(columnNumber++, NrMessageConstants.MISSION_ID_COLUMN, GeoPackageDataType.TEXT, false, null));
         tableColumns.add(FeatureColumn.createColumn(columnNumber++, NrMessageConstants.RECORD_NUMBER_COLUMN, GeoPackageDataType.MEDIUMINT, true, -1));
         tableColumns.add(FeatureColumn.createColumn(columnNumber++, NrMessageConstants.GROUP_NUMBER_COLUMN, GeoPackageDataType.MEDIUMINT, true, -1));
-        tableColumns.add(FeatureColumn.createColumn(columnNumber++, NrMessageConstants.ACCURACY, GeoPackageDataType.FLOAT, false, null));
+        tableColumns.add(FeatureColumn.createColumn(columnNumber++, NrMessageConstants.ACCURACY, GeoPackageDataType.INT, false, null));
 
         // nr record specific
         tableColumns.add(FeatureColumn.createColumn(columnNumber++, NrMessageConstants.MCC_COLUMN, GeoPackageDataType.SMALLINT, false, null));
@@ -296,7 +297,7 @@ public class CellularSurveyRecordLogger extends SurveyRecordLogger implements IC
                         row.setValue(GsmMessageConstants.MISSION_ID_COLUMN, data.getMissionId());
                         row.setValue(GsmMessageConstants.RECORD_NUMBER_COLUMN, data.getRecordNumber());
                         row.setValue(GsmMessageConstants.GROUP_NUMBER_COLUMN, data.getGroupNumber());
-                        row.setValue(GsmMessageConstants.ACCURACY, data.getAccuracy());
+                        row.setValue(GsmMessageConstants.ACCURACY, MathUtils.roundAccuracy(data.getAccuracy()));
 
                         if (data.hasServingCell())
                         {
@@ -385,7 +386,7 @@ public class CellularSurveyRecordLogger extends SurveyRecordLogger implements IC
                         row.setValue(CdmaMessageConstants.MISSION_ID_COLUMN, data.getMissionId());
                         row.setValue(CdmaMessageConstants.RECORD_NUMBER_COLUMN, data.getRecordNumber());
                         row.setValue(CdmaMessageConstants.GROUP_NUMBER_COLUMN, data.getGroupNumber());
-                        row.setValue(CdmaMessageConstants.ACCURACY, data.getAccuracy());
+                        row.setValue(CdmaMessageConstants.ACCURACY, MathUtils.roundAccuracy(data.getAccuracy()));
                         if (data.hasServingCell())
                         {
                             row.setValue(CdmaMessageConstants.SERVING_CELL_COLUMN, data.getServingCell().getValue());
@@ -465,7 +466,7 @@ public class CellularSurveyRecordLogger extends SurveyRecordLogger implements IC
                         row.setValue(UmtsMessageConstants.MISSION_ID_COLUMN, data.getMissionId());
                         row.setValue(UmtsMessageConstants.RECORD_NUMBER_COLUMN, data.getRecordNumber());
                         row.setValue(UmtsMessageConstants.GROUP_NUMBER_COLUMN, data.getGroupNumber());
-                        row.setValue(UmtsMessageConstants.ACCURACY, data.getAccuracy());
+                        row.setValue(UmtsMessageConstants.ACCURACY, MathUtils.roundAccuracy(data.getAccuracy()));
 
                         if (data.hasServingCell())
                         {
@@ -554,7 +555,7 @@ public class CellularSurveyRecordLogger extends SurveyRecordLogger implements IC
                         row.setValue(LteMessageConstants.MISSION_ID_COLUMN, data.getMissionId());
                         row.setValue(LteMessageConstants.RECORD_NUMBER_COLUMN, data.getRecordNumber());
                         row.setValue(LteMessageConstants.GROUP_NUMBER_COLUMN, data.getGroupNumber());
-                        row.setValue(LteMessageConstants.ACCURACY, data.getAccuracy());
+                        row.setValue(LteMessageConstants.ACCURACY, MathUtils.roundAccuracy(data.getAccuracy()));
 
                         if (data.hasMcc())
                         {
@@ -650,7 +651,7 @@ public class CellularSurveyRecordLogger extends SurveyRecordLogger implements IC
                         row.setValue(NrMessageConstants.MISSION_ID_COLUMN, data.getMissionId());
                         row.setValue(NrMessageConstants.RECORD_NUMBER_COLUMN, data.getRecordNumber());
                         row.setValue(NrMessageConstants.GROUP_NUMBER_COLUMN, data.getGroupNumber());
-                        row.setValue(NrMessageConstants.ACCURACY, data.getAccuracy());
+                        row.setValue(NrMessageConstants.ACCURACY, MathUtils.roundAccuracy(data.getAccuracy()));
 
                         if (data.hasMcc())
                         {

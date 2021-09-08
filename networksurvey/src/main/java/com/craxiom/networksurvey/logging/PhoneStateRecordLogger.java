@@ -1,5 +1,17 @@
 package com.craxiom.networksurvey.logging;
 
+import static com.craxiom.networksurvey.constants.DeviceStatusMessageConstants.ALTITUDE_COLUMN;
+import static com.craxiom.networksurvey.constants.DeviceStatusMessageConstants.LATITUDE_COLUMN;
+import static com.craxiom.networksurvey.constants.DeviceStatusMessageConstants.LONGITUDE_COLUMN;
+import static com.craxiom.networksurvey.constants.DeviceStatusMessageConstants.NETWORK_REGISTRATION_COLUMN;
+import static com.craxiom.networksurvey.constants.DeviceStatusMessageConstants.PHONE_STATE_TABLE_NAME;
+import static com.craxiom.networksurvey.constants.DeviceStatusMessageConstants.SIM_OPERATOR_COLUMN;
+import static com.craxiom.networksurvey.constants.DeviceStatusMessageConstants.SIM_STATE_COLUMN;
+import static com.craxiom.networksurvey.constants.MessageConstants.ACCURACY;
+import static com.craxiom.networksurvey.constants.MessageConstants.MISSION_ID_COLUMN;
+import static com.craxiom.networksurvey.constants.MessageConstants.RECORD_NUMBER_COLUMN;
+import static com.craxiom.networksurvey.constants.MessageConstants.TIME_COLUMN;
+
 import android.os.Looper;
 
 import com.craxiom.messaging.DeviceStatus;
@@ -10,6 +22,7 @@ import com.craxiom.networksurvey.constants.NetworkSurveyConstants;
 import com.craxiom.networksurvey.listeners.IDeviceStatusListener;
 import com.craxiom.networksurvey.services.NetworkSurveyService;
 import com.craxiom.networksurvey.util.IOUtils;
+import com.craxiom.networksurvey.util.MathUtils;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Strings;
@@ -28,18 +41,6 @@ import mil.nga.geopackage.features.user.FeatureRow;
 import mil.nga.geopackage.geom.GeoPackageGeometryData;
 import mil.nga.sf.Point;
 import timber.log.Timber;
-
-import static com.craxiom.networksurvey.constants.DeviceStatusMessageConstants.ALTITUDE_COLUMN;
-import static com.craxiom.networksurvey.constants.DeviceStatusMessageConstants.LATITUDE_COLUMN;
-import static com.craxiom.networksurvey.constants.DeviceStatusMessageConstants.LONGITUDE_COLUMN;
-import static com.craxiom.networksurvey.constants.DeviceStatusMessageConstants.NETWORK_REGISTRATION_COLUMN;
-import static com.craxiom.networksurvey.constants.DeviceStatusMessageConstants.PHONE_STATE_TABLE_NAME;
-import static com.craxiom.networksurvey.constants.DeviceStatusMessageConstants.SIM_OPERATOR_COLUMN;
-import static com.craxiom.networksurvey.constants.DeviceStatusMessageConstants.SIM_STATE_COLUMN;
-import static com.craxiom.networksurvey.constants.MessageConstants.ACCURACY;
-import static com.craxiom.networksurvey.constants.MessageConstants.MISSION_ID_COLUMN;
-import static com.craxiom.networksurvey.constants.MessageConstants.RECORD_NUMBER_COLUMN;
-import static com.craxiom.networksurvey.constants.MessageConstants.TIME_COLUMN;
 
 /**
  * Logs phone state messages to a Geopackage file defined by {@link NetworkSurveyConstants#PHONESTATE_FILE_NAME_PREFIX}.
@@ -99,7 +100,7 @@ public class PhoneStateRecordLogger extends SurveyRecordLogger implements IDevic
                         row.setValue(TIME_COLUMN, IOUtils.getEpochFromRfc3339(data.getDeviceTime()));
                         row.setValue(MISSION_ID_COLUMN, data.getMissionId());
                         row.setValue(RECORD_NUMBER_COLUMN, data.getRecordNumber());
-                        row.setValue(ACCURACY, data.getAccuracy());
+                        row.setValue(ACCURACY, MathUtils.roundAccuracy(data.getAccuracy()));
 
                         row.setValue(SIM_STATE_COLUMN, readSimState(data));
                         row.setValue(SIM_OPERATOR_COLUMN, data.getSimOperator());
