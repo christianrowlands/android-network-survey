@@ -70,6 +70,7 @@ import com.craxiom.networksurvey.util.NmeaUtils;
 import com.craxiom.networksurvey.util.PreferenceUtils;
 import com.craxiom.networksurvey.util.SortUtil;
 import com.craxiom.networksurvey.util.UIUtils;
+import com.google.common.math.DoubleMath;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -101,6 +102,7 @@ public class GnssStatusFragment extends Fragment implements IGnssListener
     private static final String METERS = "1";
     private static final String METERS_PER_SECOND = "1";
     private static final String KILOMETERS_PER_HOUR = "2";
+    private static final double EPSILON = 0.000001d; // for double comparisons
 
     private final Object lock = new Object();
     private final Handler uiHandler = new Handler(Looper.getMainLooper());
@@ -357,12 +359,13 @@ public class GnssStatusFragment extends Fragment implements IGnssListener
                 GnssMeasurementWrapper measurement = mainGnssFragment.getGnssMeasurement(s.getSvid(), s.getGnssType(), s.getCarrierFrequencyHz());
                 boolean isChange = false;
                 boolean isAgcValid = hasValidAgc(measurement);
+
                 // update ui if we have a valid agc and it's a different value OR agc was invalidated
-                if (isAgcValid && s.getAgc() != measurement.getAgc())
+                if (isAgcValid && !DoubleMath.fuzzyEquals(s.getAgc(), measurement.getAgc(), EPSILON))
                 {
                     s.setAgc(measurement.getAgc());
                     isChange = true;
-                } else if (!isAgcValid && s.getAgc() != SatelliteStatus.NO_DATA_DOUBLE)
+                } else if (!isAgcValid && !DoubleMath.fuzzyEquals(s.getAgc(), SatelliteStatus.NO_DATA_DOUBLE, EPSILON))
                 {
                     s.setAgc(SatelliteStatus.NO_DATA_DOUBLE);
                     isChange = true;
