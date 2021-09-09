@@ -136,7 +136,7 @@ public class MathUtils
      * we must return 1 as an accuracy of 0.0 implies no accuracy was available as per {@link Location#getAccuracy()}
      *
      * @param accuracy Location accuracy
-     * @return If accuracy >= 0.5, the location accuracy rounded to the nearest int. If accuracy > 0.0 and accuracy < 0.5, then 1.
+     * @return If accuracy >= 0.5, the location accuracy rounded to the nearest int. If 0.0 < accuracy < 0.5, then 1.
      */
     public static int roundAccuracy(float accuracy)
     {
