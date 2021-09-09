@@ -25,6 +25,7 @@ public final class NrMessageConstants
     public static final String GROUP_NUMBER_COLUMN = "groupNumber";
     public static final String SERVING_CELL_COLUMN = "servingCell";
     public static final String PROVIDER_COLUMN = "provider";
+    public static final String ACCURACY = "accuracy";
 
     // unique to new radio
     public static final String MCC_COLUMN = "mcc";

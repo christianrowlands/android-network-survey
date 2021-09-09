@@ -11,6 +11,7 @@ import com.craxiom.networksurvey.listeners.IWifiSurveyRecordListener;
 import com.craxiom.networksurvey.model.WifiRecordWrapper;
 import com.craxiom.networksurvey.services.NetworkSurveyService;
 import com.craxiom.networksurvey.util.IOUtils;
+import com.craxiom.networksurvey.util.MathUtils;
 
 import java.sql.SQLException;
 import java.util.List;
@@ -109,6 +110,7 @@ public class WifiSurveyRecordLogger extends SurveyRecordLogger implements IWifiS
                         row.setValue(WifiBeaconMessageConstants.TIME_COLUMN, IOUtils.getEpochFromRfc3339(data.getDeviceTime()));
                         row.setValue(WifiBeaconMessageConstants.MISSION_ID_COLUMN, data.getMissionId());
                         row.setValue(WifiBeaconMessageConstants.RECORD_NUMBER_COLUMN, data.getRecordNumber());
+                        row.setValue(WifiBeaconMessageConstants.ACCURACY, MathUtils.roundAccuracy(data.getAccuracy()));
 
                         final String sourceAddress = data.getSourceAddress();
                         if (!sourceAddress.isEmpty())

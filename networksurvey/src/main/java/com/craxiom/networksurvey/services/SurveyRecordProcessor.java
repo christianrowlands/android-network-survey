@@ -80,6 +80,7 @@ import com.craxiom.networksurvey.listeners.IGnssSurveyRecordListener;
 import com.craxiom.networksurvey.listeners.IWifiSurveyRecordListener;
 import com.craxiom.networksurvey.model.WifiRecordWrapper;
 import com.craxiom.networksurvey.util.IOUtils;
+import com.craxiom.networksurvey.util.MathUtils;
 import com.craxiom.networksurvey.util.ParserUtils;
 import com.craxiom.networksurvey.util.PreferenceUtils;
 import com.craxiom.networksurvey.util.WifiCapabilitiesUtils;
@@ -498,6 +499,7 @@ public class SurveyRecordProcessor
                 dataBuilder.setLatitude(lastKnownLocation.getLatitude());
                 dataBuilder.setLongitude(lastKnownLocation.getLongitude());
                 dataBuilder.setAltitude((float) lastKnownLocation.getAltitude());
+                dataBuilder.setAccuracy(MathUtils.roundAccuracy(lastKnownLocation.getAccuracy()));
             }
         }
 
@@ -720,6 +722,7 @@ public class SurveyRecordProcessor
                 dataBuilder.setLatitude(lastKnownLocation.getLatitude());
                 dataBuilder.setLongitude(lastKnownLocation.getLongitude());
                 dataBuilder.setAltitude((float) lastKnownLocation.getAltitude());
+                dataBuilder.setAccuracy(MathUtils.roundAccuracy(lastKnownLocation.getAccuracy()));
             }
         }
 
@@ -808,6 +811,7 @@ public class SurveyRecordProcessor
                 dataBuilder.setLatitude(lastKnownLocation.getLatitude());
                 dataBuilder.setLongitude(lastKnownLocation.getLongitude());
                 dataBuilder.setAltitude((float) lastKnownLocation.getAltitude());
+                dataBuilder.setAccuracy(MathUtils.roundAccuracy(lastKnownLocation.getAccuracy()));
             }
         }
 
@@ -881,6 +885,7 @@ public class SurveyRecordProcessor
                 dataBuilder.setLatitude(lastKnownLocation.getLatitude());
                 dataBuilder.setLongitude(lastKnownLocation.getLongitude());
                 dataBuilder.setAltitude((float) lastKnownLocation.getAltitude());
+                dataBuilder.setAccuracy(MathUtils.roundAccuracy(lastKnownLocation.getAccuracy()));
             }
         }
 
@@ -961,6 +966,7 @@ public class SurveyRecordProcessor
                 dataBuilder.setLatitude(lastKnownLocation.getLatitude());
                 dataBuilder.setLongitude(lastKnownLocation.getLongitude());
                 dataBuilder.setAltitude((float) lastKnownLocation.getAltitude());
+                dataBuilder.setAccuracy(MathUtils.roundAccuracy(lastKnownLocation.getAccuracy()));
             }
         }
 
@@ -1060,6 +1066,7 @@ public class SurveyRecordProcessor
                 dataBuilder.setLatitude(lastKnownLocation.getLatitude());
                 dataBuilder.setLongitude(lastKnownLocation.getLongitude());
                 dataBuilder.setAltitude((float) lastKnownLocation.getAltitude());
+                dataBuilder.setAccuracy(MathUtils.roundAccuracy(lastKnownLocation.getAccuracy()));
             }
         }
         dataBuilder.setDeviceTime(IOUtils.getRfc3339String(ZonedDateTime.now()));
@@ -1158,6 +1165,7 @@ public class SurveyRecordProcessor
                 dataBuilder.setLatitude(lastKnownLocation.getLatitude());
                 dataBuilder.setLongitude(lastKnownLocation.getLongitude());
                 dataBuilder.setAltitude((float) lastKnownLocation.getAltitude());
+                dataBuilder.setAccuracy(MathUtils.roundAccuracy(lastKnownLocation.getAccuracy()));
             }
         }
 
@@ -1242,6 +1250,7 @@ public class SurveyRecordProcessor
                 dataBuilder.setLatitude(lastKnownLocation.getLatitude());
                 dataBuilder.setLongitude(lastKnownLocation.getLongitude());
                 dataBuilder.setAltitude((float) lastKnownLocation.getAltitude());
+                dataBuilder.setAccuracy(MathUtils.roundAccuracy(lastKnownLocation.getAccuracy()));
             }
         }
 
@@ -1297,6 +1306,7 @@ public class SurveyRecordProcessor
                 dataBuilder.setLatitude(lastKnownLocation.getLatitude());
                 dataBuilder.setLongitude(lastKnownLocation.getLongitude());
                 dataBuilder.setAltitude((float) lastKnownLocation.getAltitude());
+                dataBuilder.setAccuracy(MathUtils.roundAccuracy(lastKnownLocation.getAccuracy()));
 
                 if (lastKnownLocation.hasAccuracy())
                 {

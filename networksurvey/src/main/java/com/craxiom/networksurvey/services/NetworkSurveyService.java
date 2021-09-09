@@ -76,6 +76,7 @@ import com.craxiom.networksurvey.logging.WifiSurveyRecordLogger;
 import com.craxiom.networksurvey.mqtt.MqttConnection;
 import com.craxiom.networksurvey.mqtt.MqttConnectionInfo;
 import com.craxiom.networksurvey.util.IOUtils;
+import com.craxiom.networksurvey.util.MathUtils;
 import com.craxiom.networksurvey.util.PreferenceUtils;
 import com.google.protobuf.Int32Value;
 
@@ -1762,6 +1763,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
                 dataBuilder.setLatitude(lastKnownLocation.getLatitude());
                 dataBuilder.setLongitude(lastKnownLocation.getLongitude());
                 dataBuilder.setAltitude((float) lastKnownLocation.getAltitude());
+                dataBuilder.setAccuracy(MathUtils.roundAccuracy(lastKnownLocation.getAccuracy()));
             }
         }
 
