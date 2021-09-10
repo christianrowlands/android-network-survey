@@ -3,6 +3,7 @@ package com.craxiom.networksurvey.model;
 import android.location.GnssMeasurement;
 
 import com.craxiom.networksurvey.util.CarrierFreqUtils;
+import com.craxiom.networksurvey.util.MathUtils;
 
 import java.util.Objects;
 
@@ -14,7 +15,7 @@ import java.util.Objects;
 public class GnssMeasurementWrapper
 {
     // 5 seconds in nanos
-    public static final long TIMEOUT_VALUE_NANOS = 5_000_000_000L;
+    public static final long TIMEOUT_VALUE_NANOS = 3_000_000_000L;
     // using a default value lets us avoid storing nulls in our records
     private static final long TIMED_OUT = Long.MIN_VALUE;
 
@@ -23,9 +24,9 @@ public class GnssMeasurementWrapper
     private final GnssType gnssType;
     private final String carrierFrequencyLabel;
 
-    private double agc;
-    private boolean hasAgc;
-    private long receivedTimeNanos;
+    private volatile double agc;
+    private volatile boolean hasAgc;
+    private volatile long receivedTimeNanos;
 
     /**
      * @param svid               from {@link GnssMeasurement#getSvid()}
@@ -37,7 +38,7 @@ public class GnssMeasurementWrapper
     {
         this.gnssType = gnssType;
         svId = svid;
-        carrierFrequencyLabel = CarrierFreqUtils.getCarrierFrequencyLabel(gnssType, svid, carrierFrequencyHz);
+        carrierFrequencyLabel = CarrierFreqUtils.getCarrierFrequencyLabel(gnssType, svid, MathUtils.toMhz(carrierFrequencyHz));
     }
 
     public boolean hasAgc()
@@ -107,15 +108,15 @@ public class GnssMeasurementWrapper
     }
 
     /**
-     * Generates an id for a hashmap allowing us to treat this class as an updatable record
+     * Generates an id for a hashmap allowing us to treat this class as an updatable record.
      *
      * @param svId               SvId from a GNSS record
      * @param type               Constellation value converted to GnssType
-     * @param carrierFrequencyHz Carrier frequency from a GNSS record
+     * @param carrierFrequencyHz Carrier frequency from a GNSS record in Hz
      * @return Concatenation of svId and type
      */
     public static String getId(int svId, GnssType type, float carrierFrequencyHz)
     {
-        return svId + type.toString() + CarrierFreqUtils.getCarrierFrequencyLabel(type, svId, carrierFrequencyHz);
+        return svId + type.toString() + CarrierFreqUtils.getCarrierFrequencyLabel(type, svId, MathUtils.toMhz(carrierFrequencyHz));
     }
 }

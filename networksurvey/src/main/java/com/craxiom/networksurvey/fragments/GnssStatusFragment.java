@@ -17,11 +17,6 @@
 
 package com.craxiom.networksurvey.fragments;
 
-import static android.util.TypedValue.COMPLEX_UNIT_DIP;
-import static android.util.TypedValue.COMPLEX_UNIT_PX;
-import static com.craxiom.networksurvey.model.ConstellationType.GNSS;
-import static com.craxiom.networksurvey.model.ConstellationType.SBAS;
-
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.content.res.Resources;
@@ -32,8 +27,6 @@ import android.location.GnssStatus;
 import android.location.Location;
 import android.os.Build;
 import android.os.Bundle;
-import android.os.Handler;
-import android.os.Looper;
 import android.text.format.DateFormat;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -70,16 +63,25 @@ import com.craxiom.networksurvey.util.NmeaUtils;
 import com.craxiom.networksurvey.util.PreferenceUtils;
 import com.craxiom.networksurvey.util.SortUtil;
 import com.craxiom.networksurvey.util.UIUtils;
-import com.google.common.math.DoubleMath;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
 import timber.log.Timber;
+
+import static android.util.TypedValue.COMPLEX_UNIT_DIP;
+import static android.util.TypedValue.COMPLEX_UNIT_PX;
+import static com.craxiom.networksurvey.model.ConstellationType.GNSS;
+import static com.craxiom.networksurvey.model.ConstellationType.SBAS;
 
 /**
  * A fragment for displaying the latest GNSS information to the user.
@@ -104,8 +106,10 @@ public class GnssStatusFragment extends Fragment implements IGnssListener
     private static final String KILOMETERS_PER_HOUR = "2";
     private static final double EPSILON = 0.000001d; // for double comparisons
 
-    private final Object lock = new Object();
-    private final Handler uiHandler = new Handler(Looper.getMainLooper());
+    // key comes from the wrapper's getId()
+    private final Map<String, GnssMeasurementWrapper> gnssMeasurements = new ConcurrentHashMap<>();
+    private final ScheduledThreadPoolExecutor pool = new ScheduledThreadPoolExecutor(1);
+    private ScheduledFuture<?> timeoutChecker;
 
     private SimpleDateFormat dateFormat;
 
@@ -277,6 +281,15 @@ public class GnssStatusFragment extends Fragment implements IGnssListener
     }
 
     @Override
+    public void onStart()
+    {
+        super.onStart();
+        // putting this here reschedules task AFTER screen turns back on
+        timeoutChecker = pool.scheduleAtFixedRate(this::checkGnssMeasurementAge,
+                0, GnssMeasurementWrapper.TIMEOUT_VALUE_NANOS, TimeUnit.NANOSECONDS);
+    }
+
+    @Override
     public void onResume()
     {
         Timber.d("Resuming the GNSS Status Fragment");
@@ -296,6 +309,14 @@ public class GnssStatusFragment extends Fragment implements IGnssListener
         mainGnssFragment.unregisterGnssListener(this);
 
         super.onPause();
+    }
+
+    @Override
+    public void onStop()
+    {
+        super.onStop();
+        // don't have to force an interrupt since it should be a fast enough process anyway
+        timeoutChecker.cancel(false);
     }
 
     /*TODO Should we add the menu for sorting?
@@ -349,43 +370,15 @@ public class GnssStatusFragment extends Fragment implements IGnssListener
     @Override
     public void onGnssMeasurementsReceived(GnssMeasurementsEvent event)
     {
-        // updates statuses if there's a valid agc measurement corresponding to that statuses svid and constellation
-        BiConsumer<List<SatelliteStatus>, SatelliteStatusAdapter> updateAgc = (statuses, adapter) -> {
-            // start at 1 as 0th index is the column label header
-            final int statusCount = statuses.size();
-            for (int i = 0; i < statusCount; i++)
-            {
-                SatelliteStatus s = statuses.get(i);
-                GnssMeasurementWrapper measurement = mainGnssFragment.getGnssMeasurement(s.getSvid(), s.getGnssType(), s.getCarrierFrequencyHz());
-                boolean isChange = false;
-                boolean isAgcValid = hasValidAgc(measurement);
-
-                // update ui if we have a valid agc and it's a different value OR agc was invalidated
-                if (isAgcValid && !DoubleMath.fuzzyEquals(s.getAgc(), measurement.getAgc(), EPSILON))
-                {
-                    s.setAgc(measurement.getAgc());
-                    isChange = true;
-                } else if (!isAgcValid && !DoubleMath.fuzzyEquals(s.getAgc(), SatelliteStatus.NO_DATA_DOUBLE, EPSILON))
-                {
-                    s.setAgc(SatelliteStatus.NO_DATA_DOUBLE);
-                    isChange = true;
-                }
-
-                if (isChange)
-                {
-                    final int posChanged = i + 1;
-                    uiHandler.post(() -> adapter.notifyItemChanged(posChanged)); // has to be i + 1 as 0 is adapter's header item
-                }
-            }
-        };
-
-        // must sync here since updateGnssStatus clears/creates the SatelliteStatus records for our lists
-        synchronized (lock)
-        {
-            updateAgc.accept(gnssStatus, gnssAdapter);
-            updateAgc.accept(sbasStatus, sbasAdapter);
-            uiHandler.post(this::updateListVisibility);
-        }
+        // update our gnssMeasurements
+        event.getMeasurements().forEach(m -> {
+            int svid = m.getSvid();
+            GnssType gnssType = GpsTestUtil.getGnssConstellationType(m.getConstellationType());
+            float carrierFreqHz = m.getCarrierFrequencyHz();
+            String id = GnssMeasurementWrapper.getId(svid, gnssType, carrierFreqHz);
+            GnssMeasurementWrapper measureWrap = gnssMeasurements.computeIfAbsent(id, v -> new GnssMeasurementWrapper(svid, gnssType, carrierFreqHz));
+            measureWrap.updateMeasurement(m);
+        });
     }
 
     @Override
@@ -662,58 +655,52 @@ public class GnssStatusFragment extends Fragment implements IGnssListener
         svCount = 0;
         int usedInFixCount = 0;
 
-        // must sync as onGnssMeasurementsReceived modifies the adapter records
-        synchronized (lock)
+        gnssStatus.clear();
+        sbasStatus.clear();
+        while (svCount < length)
         {
-            gnssStatus.clear();
-            sbasStatus.clear();
-            while (svCount < length)
+            GnssType gnssType = GpsTestUtil.getGnssConstellationType(status.getConstellationType(svCount));
+            SatelliteStatus satStatus = new SatelliteStatus(status.getSvid(svCount), gnssType,
+                    status.getCn0DbHz(svCount),
+                    status.hasAlmanacData(svCount),
+                    status.hasEphemerisData(svCount),
+                    status.usedInFix(svCount),
+                    status.getElevationDegrees(svCount),
+                    status.getAzimuthDegrees(svCount));
+
+            if (GpsTestUtil.isGnssCarrierFrequenciesSupported())
             {
-                GnssType gnssType = GpsTestUtil.getGnssConstellationType(status.getConstellationType(svCount));
-                SatelliteStatus satStatus = new SatelliteStatus(status.getSvid(svCount), gnssType,
-                        status.getCn0DbHz(svCount),
-                        status.hasAlmanacData(svCount),
-                        status.hasEphemerisData(svCount),
-                        status.usedInFix(svCount),
-                        status.getElevationDegrees(svCount),
-                        status.getAzimuthDegrees(svCount));
-
-                // update agc if we have it and it's not timed out
-                GnssMeasurementWrapper measurement = mainGnssFragment.getGnssMeasurement(satStatus.getSvid(), gnssType, satStatus.getCarrierFrequencyHz());
-                satStatus.setAgc(hasValidAgc(measurement)
-                        ? measurement.getAgc()
-                        : SatelliteStatus.NO_DATA_DOUBLE);
-
-                if (GpsTestUtil.isGnssCarrierFrequenciesSupported())
+                if (status.hasCarrierFrequencyHz(svCount))
                 {
-                    if (status.hasCarrierFrequencyHz(svCount))
-                    {
-                        satStatus.setHasCarrierFrequency(true);
-                        satStatus.setCarrierFrequencyHz(status.getCarrierFrequencyHz(svCount));
-                    }
+                    satStatus.setHasCarrierFrequency(true);
+                    satStatus.setCarrierFrequencyHz(status.getCarrierFrequencyHz(svCount));
                 }
-
-                if (satStatus.getGnssType() == GnssType.SBAS)
-                {
-                    satStatus.setSbasType(GpsTestUtil.getSbasConstellationType(satStatus.getSvid()));
-                    sbasStatus.add(satStatus);
-                } else
-                {
-                    gnssStatus.add(satStatus);
-                }
-
-                if (satStatus.getUsedInFix())
-                {
-                    usedInFixCount++;
-                }
-
-                svCount++;
             }
 
-            numSats.setText(resources.getString(R.string.gps_num_sats_value, usedInFixCount, svCount));
+            // update agc if we have it and it's not timed out
+            GnssMeasurementWrapper measurement = getGnssMeasurement(satStatus.getSvid(), gnssType, satStatus.getCarrierFrequencyHz());
+            satStatus.setAgc(hasValidAgc(measurement) ? measurement.getAgc() : SatelliteStatus.NO_DATA_DOUBLE);
 
-            refreshViews();
+            if (satStatus.getGnssType() == GnssType.SBAS)
+            {
+                satStatus.setSbasType(GpsTestUtil.getSbasConstellationType(satStatus.getSvid()));
+                sbasStatus.add(satStatus);
+            } else
+            {
+                gnssStatus.add(satStatus);
+            }
+
+            if (satStatus.getUsedInFix())
+            {
+                usedInFixCount++;
+            }
+
+            svCount++;
         }
+
+        numSats.setText(resources.getString(R.string.gps_num_sats_value, usedInFixCount, svCount));
+
+        refreshViews();
     }
 
     private void refreshViews()
@@ -846,6 +833,34 @@ public class GnssStatusFragment extends Fragment implements IGnssListener
     }
 
     /**
+     * Checks if our {@link GnssMeasurementWrapper} are outdated based on {@link GnssMeasurementWrapper#TIMEOUT_VALUE_NANOS}
+     *
+     * @since 1.5.0
+     */
+    private void checkGnssMeasurementAge()
+    {
+        final long currentTimeout = System.nanoTime() - GnssMeasurementWrapper.TIMEOUT_VALUE_NANOS;
+        gnssMeasurements.values().stream()
+                .filter(measurement -> currentTimeout > measurement.getReceivedTimeNanos())
+                .forEach(GnssMeasurementWrapper::onTimeout);
+    }
+
+    /**
+     * Gets a GnssMeasurementWrapper where svid and gnssType are used as identifiers
+     *
+     * @param svid               Svid from a GNSS record
+     * @param gnssType           Constellation from a Gnss record created by {@link GpsTestUtil#getGnssConstellationType(int)}
+     * @param carrierFrequencyHz Carrier Frequency from a GNSS  record
+     * @return The GnssMeasurementWrapper matching the svid, gnssType, and carrierFrequency. {@code null} if the record doesn't exist
+     * @since 1.5.0
+     */
+    GnssMeasurementWrapper getGnssMeasurement(int svid, GnssType gnssType, float carrierFrequencyHz)
+    {
+        String id = GnssMeasurementWrapper.getId(svid, gnssType, carrierFrequencyHz);
+        return gnssMeasurements.get(id);
+    }
+
+    /**
      * Convenience method for ensuring our GnssMeasurement has a valid AGC value
      *
      * @param measurement Wrapper for {@link android.location.GnssMeasurement}
@@ -938,7 +953,6 @@ public class GnssStatusFragment extends Fragment implements IGnssListener
              */
             public void setAgcTv(Locale locale, double agc)
             {
-
                 String agcText = agc != SatelliteStatus.NO_DATA_DOUBLE
                         ? String.format(locale, "%.1f", agc)
                         : "";
