@@ -2035,7 +2035,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
     private boolean isMqttMdmOverrideEnabled()
     {
         final SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
-        return preferences.getBoolean(NetworkSurveyConstants.PROPERTY_MQTT_MDM_OVERRIDE, false);
+        return preferences.getBoolean(MqttConstants.PROPERTY_MQTT_MDM_OVERRIDE, false);
     }
 
     /**
