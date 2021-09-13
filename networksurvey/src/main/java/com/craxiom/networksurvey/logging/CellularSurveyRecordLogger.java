@@ -8,26 +8,41 @@ import com.craxiom.messaging.GsmRecord;
 import com.craxiom.messaging.GsmRecordData;
 import com.craxiom.messaging.LteRecord;
 import com.craxiom.messaging.LteRecordData;
+import com.craxiom.messaging.NrRecord;
+import com.craxiom.messaging.NrRecordData;
 import com.craxiom.messaging.UmtsRecord;
 import com.craxiom.messaging.UmtsRecordData;
 import com.craxiom.networksurvey.constants.CdmaMessageConstants;
 import com.craxiom.networksurvey.constants.GsmMessageConstants;
 import com.craxiom.networksurvey.constants.LteMessageConstants;
+import com.craxiom.networksurvey.constants.MessageConstants;
 import com.craxiom.networksurvey.constants.NetworkSurveyConstants;
+import com.craxiom.networksurvey.constants.NrMessageConstants;
 import com.craxiom.networksurvey.constants.UmtsMessageConstants;
 import com.craxiom.networksurvey.listeners.ICellularSurveyRecordListener;
 import com.craxiom.networksurvey.services.NetworkSurveyService;
 import com.craxiom.networksurvey.util.IOUtils;
+import com.craxiom.networksurvey.util.MathUtils;
+import com.google.common.base.Strings;
 
 import java.sql.SQLException;
+import java.util.LinkedList;
+import java.util.List;
 
 import mil.nga.geopackage.GeoPackage;
+import mil.nga.geopackage.core.contents.Contents;
+import mil.nga.geopackage.core.contents.ContentsDao;
+import mil.nga.geopackage.core.contents.ContentsDataType;
 import mil.nga.geopackage.core.srs.SpatialReferenceSystem;
 import mil.nga.geopackage.db.GeoPackageDataType;
+import mil.nga.geopackage.features.columns.GeometryColumns;
+import mil.nga.geopackage.features.columns.GeometryColumnsDao;
 import mil.nga.geopackage.features.user.FeatureColumn;
 import mil.nga.geopackage.features.user.FeatureDao;
 import mil.nga.geopackage.features.user.FeatureRow;
+import mil.nga.geopackage.features.user.FeatureTable;
 import mil.nga.geopackage.geom.GeoPackageGeometryData;
+import mil.nga.sf.GeometryType;
 import mil.nga.sf.Point;
 import timber.log.Timber;
 
@@ -74,12 +89,19 @@ public class CellularSurveyRecordLogger extends SurveyRecordLogger implements IC
     }
 
     @Override
+    public void onNrSurveyRecord(NrRecord nrRecord)
+    {
+        writeNrRecordToLogFile(nrRecord);
+    }
+
+    @Override
     void createTables(GeoPackage geoPackage, SpatialReferenceSystem srs) throws SQLException
     {
         createGsmRecordTable(geoPackage, srs);
         createCdmaRecordTable(geoPackage, srs);
         createUmtsRecordTable(geoPackage, srs);
         createLteRecordTable(geoPackage, srs);
+        createNrRecordTable(geoPackage, srs);
     }
 
     /**
@@ -174,6 +196,76 @@ public class CellularSurveyRecordLogger extends SurveyRecordLogger implements IC
     }
 
     /**
+     * Creates an GeoPackage Table that can be populated with NR(New Radio 5G) Records.
+     *
+     * @param geoPackage The GeoPackage to create the table in.
+     * @param srs        The SRS to use for the table coordinates.
+     * @throws SQLException If there is a problem working with the GeoPackage SQLite DB.
+     * @since 1.5.0
+     */
+    private void createNrRecordTable(GeoPackage geoPackage, SpatialReferenceSystem srs) throws SQLException
+    {
+        // TODO: Should we move to a column schema that matches the MQTT messages, use this as the basis for rewriting SurveyRecordLogger#createTable
+        //  and NrMessageConstants for creating a new set of constants
+        ContentsDao contentsDao = geoPackage.getContentsDao();
+
+        Contents contents = new Contents();
+        contents.setTableName(NrMessageConstants.NR_RECORDS_TABLE_NAME);
+        contents.setDataType(ContentsDataType.FEATURES);
+        contents.setIdentifier(NrMessageConstants.NR_RECORDS_TABLE_NAME);
+        contents.setDescription(NrMessageConstants.NR_RECORDS_TABLE_NAME);
+        contents.setSrs(srs);
+
+        int columnNumber = 0;
+        List<FeatureColumn> tableColumns = new LinkedList<>();
+        tableColumns.add(FeatureColumn.createPrimaryKeyColumn(columnNumber++, MessageConstants.ID_COLUMN));
+        tableColumns.add(FeatureColumn.createGeometryColumn(columnNumber++, MessageConstants.GEOMETRY_COLUMN, GeometryType.POINT, false, null));
+
+        tableColumns.add(FeatureColumn.createColumn(columnNumber++, NrMessageConstants.DEVICE_TIME_COLUMN, GeoPackageDataType.INT, false, null));
+        tableColumns.add(FeatureColumn.createColumn(columnNumber++, NrMessageConstants.LATITUDE_COLUMN, GeoPackageDataType.DOUBLE, false, null));
+        tableColumns.add(FeatureColumn.createColumn(columnNumber++, NrMessageConstants.LONGITUDE_COLUMN, GeoPackageDataType.DOUBLE, false, null));
+        tableColumns.add(FeatureColumn.createColumn(columnNumber++, NrMessageConstants.ALTITUDE_COLUMN, GeoPackageDataType.FLOAT, false, null));
+        tableColumns.add(FeatureColumn.createColumn(columnNumber++, NrMessageConstants.MISSION_ID_COLUMN, GeoPackageDataType.TEXT, false, null));
+        tableColumns.add(FeatureColumn.createColumn(columnNumber++, NrMessageConstants.RECORD_NUMBER_COLUMN, GeoPackageDataType.MEDIUMINT, true, -1));
+        tableColumns.add(FeatureColumn.createColumn(columnNumber++, NrMessageConstants.GROUP_NUMBER_COLUMN, GeoPackageDataType.MEDIUMINT, true, -1));
+        tableColumns.add(FeatureColumn.createColumn(columnNumber++, NrMessageConstants.ACCURACY, GeoPackageDataType.INT, false, null));
+
+        // nr record specific
+        tableColumns.add(FeatureColumn.createColumn(columnNumber++, NrMessageConstants.MCC_COLUMN, GeoPackageDataType.SMALLINT, false, null));
+        tableColumns.add(FeatureColumn.createColumn(columnNumber++, NrMessageConstants.MNC_COLUMN, GeoPackageDataType.SMALLINT, false, null));
+        tableColumns.add(FeatureColumn.createColumn(columnNumber++, NrMessageConstants.TAC_COLUMN, GeoPackageDataType.MEDIUMINT, false, null));
+        tableColumns.add(FeatureColumn.createColumn(columnNumber++, NrMessageConstants.NCI_COLUMN, GeoPackageDataType.INT, false, null));
+        tableColumns.add(FeatureColumn.createColumn(columnNumber++, NrMessageConstants.NARFCN_COLUMN, GeoPackageDataType.MEDIUMINT, false, null));
+        tableColumns.add(FeatureColumn.createColumn(columnNumber++, NrMessageConstants.PCI_COLUMN, GeoPackageDataType.SMALLINT, false, null));
+        tableColumns.add(FeatureColumn.createColumn(columnNumber++, NrMessageConstants.SS_RSRP_COLUMN, GeoPackageDataType.FLOAT, false, null));
+        tableColumns.add(FeatureColumn.createColumn(columnNumber++, NrMessageConstants.SS_RSRQ_COLUMN, GeoPackageDataType.FLOAT, false, null));
+        tableColumns.add(FeatureColumn.createColumn(columnNumber++, NrMessageConstants.SS_SINR_COLUMN, GeoPackageDataType.FLOAT, false, null));
+        tableColumns.add(FeatureColumn.createColumn(columnNumber++, NrMessageConstants.CSI_RSRP_COLUMN, GeoPackageDataType.FLOAT, false, null));
+        tableColumns.add(FeatureColumn.createColumn(columnNumber++, NrMessageConstants.CSI_RSRQ_COLUMN, GeoPackageDataType.FLOAT, false, null));
+        tableColumns.add(FeatureColumn.createColumn(columnNumber++, NrMessageConstants.CSI_SINR_COLUMN, GeoPackageDataType.FLOAT, false, null));
+
+        // putting these here to match the MQTT message format exactly
+        tableColumns.add(FeatureColumn.createColumn(columnNumber++, NrMessageConstants.SERVING_CELL_COLUMN, GeoPackageDataType.BOOLEAN, false, null));
+        tableColumns.add(FeatureColumn.createColumn(columnNumber, NrMessageConstants.PROVIDER_COLUMN, GeoPackageDataType.TEXT, false, null));
+
+        FeatureTable table = new FeatureTable(NrMessageConstants.NR_RECORDS_TABLE_NAME, tableColumns);
+        geoPackage.createFeatureTable(table);
+
+        contentsDao.create(contents);
+
+        GeometryColumnsDao geometryColumnsDao = geoPackage.getGeometryColumnsDao();
+
+        GeometryColumns geometryColumns = new GeometryColumns();
+        geometryColumns.setContents(contents);
+        geometryColumns.setColumnName(MessageConstants.GEOMETRY_COLUMN);
+        geometryColumns.setGeometryType(GeometryType.POINT);
+        geometryColumns.setSrs(srs);
+        geometryColumns.setZ((byte) 0); // TODO I am not sure if all of this is right
+        geometryColumns.setM((byte) 0);
+        geometryColumnsDao.create(geometryColumns);
+    }
+
+    /**
      * Given a GSM Record, write it to the GeoPackage log file.
      *
      * @param gsmRecord The GSM Record to write to the log file.
@@ -205,6 +297,8 @@ public class CellularSurveyRecordLogger extends SurveyRecordLogger implements IC
                         row.setValue(GsmMessageConstants.MISSION_ID_COLUMN, data.getMissionId());
                         row.setValue(GsmMessageConstants.RECORD_NUMBER_COLUMN, data.getRecordNumber());
                         row.setValue(GsmMessageConstants.GROUP_NUMBER_COLUMN, data.getGroupNumber());
+                        row.setValue(GsmMessageConstants.ACCURACY, MathUtils.roundAccuracy(data.getAccuracy()));
+
                         if (data.hasServingCell())
                         {
                             row.setValue(GsmMessageConstants.SERVING_CELL_COLUMN, data.getServingCell().getValue());
@@ -292,6 +386,7 @@ public class CellularSurveyRecordLogger extends SurveyRecordLogger implements IC
                         row.setValue(CdmaMessageConstants.MISSION_ID_COLUMN, data.getMissionId());
                         row.setValue(CdmaMessageConstants.RECORD_NUMBER_COLUMN, data.getRecordNumber());
                         row.setValue(CdmaMessageConstants.GROUP_NUMBER_COLUMN, data.getGroupNumber());
+                        row.setValue(CdmaMessageConstants.ACCURACY, MathUtils.roundAccuracy(data.getAccuracy()));
                         if (data.hasServingCell())
                         {
                             row.setValue(CdmaMessageConstants.SERVING_CELL_COLUMN, data.getServingCell().getValue());
@@ -371,6 +466,8 @@ public class CellularSurveyRecordLogger extends SurveyRecordLogger implements IC
                         row.setValue(UmtsMessageConstants.MISSION_ID_COLUMN, data.getMissionId());
                         row.setValue(UmtsMessageConstants.RECORD_NUMBER_COLUMN, data.getRecordNumber());
                         row.setValue(UmtsMessageConstants.GROUP_NUMBER_COLUMN, data.getGroupNumber());
+                        row.setValue(UmtsMessageConstants.ACCURACY, MathUtils.roundAccuracy(data.getAccuracy()));
+
                         if (data.hasServingCell())
                         {
                             row.setValue(UmtsMessageConstants.SERVING_CELL_COLUMN, data.getServingCell().getValue());
@@ -458,6 +555,7 @@ public class CellularSurveyRecordLogger extends SurveyRecordLogger implements IC
                         row.setValue(LteMessageConstants.MISSION_ID_COLUMN, data.getMissionId());
                         row.setValue(LteMessageConstants.RECORD_NUMBER_COLUMN, data.getRecordNumber());
                         row.setValue(LteMessageConstants.GROUP_NUMBER_COLUMN, data.getGroupNumber());
+                        row.setValue(LteMessageConstants.ACCURACY, MathUtils.roundAccuracy(data.getAccuracy()));
 
                         if (data.hasMcc())
                         {
@@ -515,6 +613,114 @@ public class CellularSurveyRecordLogger extends SurveyRecordLogger implements IC
                 } catch (Exception e)
                 {
                     Timber.e(e, "Something went wrong when trying to write an LTE survey record");
+                }
+            }
+        });
+    }
+
+    /**
+     * Given an NR Record, write it to the GeoPackage log file.
+     *
+     * @param nrRecord The NR Record to write to the log file.
+     * @since 1.5.0
+     */
+    private void writeNrRecordToLogFile(final NrRecord nrRecord)
+    {
+        if (!loggingEnabled) return;
+
+        handler.post(() -> {
+            synchronized (geoPackageLock)
+            {
+                try
+                {
+                    if (geoPackage != null)
+                    {
+                        FeatureDao featureDao = geoPackage.getFeatureDao(NrMessageConstants.NR_RECORDS_TABLE_NAME);
+                        FeatureRow row = featureDao.newRow();
+
+                        final NrRecordData data = nrRecord.getData();
+
+                        Point fix = new Point(data.getLongitude(), data.getLatitude(), (double) data.getAltitude());
+
+                        GeoPackageGeometryData geomData = new GeoPackageGeometryData(WGS84_SRS);
+                        geomData.setGeometry(fix);
+
+                        row.setGeometry(geomData);
+
+                        row.setValue(NrMessageConstants.DEVICE_TIME_COLUMN, IOUtils.getEpochFromRfc3339(data.getDeviceTime()));
+                        row.setValue(NrMessageConstants.MISSION_ID_COLUMN, data.getMissionId());
+                        row.setValue(NrMessageConstants.RECORD_NUMBER_COLUMN, data.getRecordNumber());
+                        row.setValue(NrMessageConstants.GROUP_NUMBER_COLUMN, data.getGroupNumber());
+                        row.setValue(NrMessageConstants.ACCURACY, MathUtils.roundAccuracy(data.getAccuracy()));
+
+                        if (data.hasMcc())
+                        {
+                            setShortValue(row, NrMessageConstants.MCC_COLUMN, data.getMcc().getValue());
+                        }
+                        if (data.hasMnc())
+                        {
+                            setShortValue(row, NrMessageConstants.MNC_COLUMN, data.getMnc().getValue());
+                        }
+                        if (data.hasTac())
+                        {
+                            setIntValue(row, NrMessageConstants.TAC_COLUMN, data.getTac().getValue());
+                        }
+                        if (data.hasNci())
+                        {
+                            row.setValue(NrMessageConstants.NCI_COLUMN, data.getNci().getValue());
+                        }
+                        if (data.hasNarfcn())
+                        {
+                            setIntValue(row, NrMessageConstants.NARFCN_COLUMN, data.getNarfcn().getValue());
+                        }
+                        if (data.hasPci())
+                        {
+                            setShortValue(row, NrMessageConstants.PCI_COLUMN, data.getPci().getValue());
+                        }
+
+                        if (data.hasSsRsrp())
+                        {
+                            row.setValue(NrMessageConstants.SS_RSRP_COLUMN, data.getSsRsrp().getValue());
+                        }
+                        if (data.hasSsRsrq())
+                        {
+                            row.setValue(NrMessageConstants.SS_RSRQ_COLUMN, data.getSsRsrq().getValue());
+                        }
+                        if (data.hasSsSinr())
+                        {
+                            row.setValue(NrMessageConstants.SS_SINR_COLUMN, data.getSsSinr().getValue());
+                        }
+
+                        if (data.hasCsiRsrp())
+                        {
+                            row.setValue(NrMessageConstants.CSI_RSRP_COLUMN, data.getCsiRsrp().getValue());
+                        }
+                        if (data.hasCsiRsrq())
+                        {
+                            row.setValue(NrMessageConstants.CSI_RSRQ_COLUMN, data.getCsiRsrq().getValue());
+                        }
+                        if (data.hasCsiSinr())
+                        {
+                            row.setValue(NrMessageConstants.CSI_SINR_COLUMN, data.getCsiSinr().getValue());
+                        }
+                        if (data.hasServingCell())
+                        {
+                            row.setValue(NrMessageConstants.SERVING_CELL_COLUMN, data.getServingCell().getValue());
+                        }
+
+                        final String provider = data.getProvider();
+                        if (!Strings.isNullOrEmpty(provider))
+                        {
+                            row.setValue(NrMessageConstants.PROVIDER_COLUMN, provider);
+                        }
+
+                        featureDao.insert(row);
+
+                        checkIfRolloverNeeded();
+                    }
+                } catch (Exception e)
+                {
+                    Timber.e(e, "Something went wrong when trying to write an NR survey record");
                 }
             }
         });

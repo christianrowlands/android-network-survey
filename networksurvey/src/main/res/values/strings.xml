@@ -312,6 +312,7 @@
 
     <string name="gps_snr_column_label">SNR</string>
     <string name="gps_cn0_column_label">C/N0</string>
+    <string name="gps_agc_column_label">AGC</string>
     <string name="menu_option_sort_by">Sort by</string>
     <string name="gps_prn_column_label">ID</string>
     <string name="gnss_flag_image_label">GNSS</string>

@@ -16,6 +16,8 @@
  */
 package com.craxiom.networksurvey.util;
 
+import android.location.Location;
+
 /**
  * A utility class containing arithmetic and geometry helper methods.
  * <p>
@@ -127,5 +129,18 @@ public class MathUtils
     public static boolean isValidFloat(float value)
     {
         return value != 0.0f && !Float.isNaN(value);
+    }
+
+    /**
+     * Rounds location accuracy to the nearest int. If the accuracy is greater than 0, but less than 0.5,
+     * we must return 1 as an accuracy of 0.0 implies no accuracy was available as per {@link Location#getAccuracy()}
+     *
+     * @param accuracy Location accuracy
+     * @return If accuracy >= 0.5, the location accuracy rounded to the nearest int. If 0.0 < accuracy < 0.5, then 1.
+     */
+    public static int roundAccuracy(float accuracy)
+    {
+        boolean isEdgeCase = 0.0f < accuracy && accuracy < 0.5f;
+        return isEdgeCase ? 1 : Math.round(accuracy);
     }
 }

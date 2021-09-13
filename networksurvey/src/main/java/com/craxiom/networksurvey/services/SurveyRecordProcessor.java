@@ -12,15 +12,18 @@ import android.telephony.CellIdentity;
 import android.telephony.CellIdentityCdma;
 import android.telephony.CellIdentityGsm;
 import android.telephony.CellIdentityLte;
+import android.telephony.CellIdentityNr;
 import android.telephony.CellIdentityWcdma;
 import android.telephony.CellInfo;
 import android.telephony.CellInfoCdma;
 import android.telephony.CellInfoGsm;
 import android.telephony.CellInfoLte;
+import android.telephony.CellInfoNr;
 import android.telephony.CellInfoWcdma;
 import android.telephony.CellSignalStrengthCdma;
 import android.telephony.CellSignalStrengthGsm;
 import android.telephony.CellSignalStrengthLte;
+import android.telephony.CellSignalStrengthNr;
 import android.telephony.CellSignalStrengthWcdma;
 import android.telephony.ServiceState;
 import android.telephony.TelephonyManager;
@@ -28,6 +31,7 @@ import android.view.View;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.RequiresApi;
 
 import com.craxiom.messaging.BluetoothRecord;
 import com.craxiom.messaging.BluetoothRecordData;
@@ -41,6 +45,8 @@ import com.craxiom.messaging.GsmRecordData;
 import com.craxiom.messaging.LteBandwidth;
 import com.craxiom.messaging.LteRecord;
 import com.craxiom.messaging.LteRecordData;
+import com.craxiom.messaging.NrRecord;
+import com.craxiom.messaging.NrRecordData;
 import com.craxiom.messaging.PhoneState;
 import com.craxiom.messaging.PhoneStateData;
 import com.craxiom.messaging.UmtsRecord;
@@ -63,6 +69,7 @@ import com.craxiom.networksurvey.constants.GnssMessageConstants;
 import com.craxiom.networksurvey.constants.GsmMessageConstants;
 import com.craxiom.networksurvey.constants.LteMessageConstants;
 import com.craxiom.networksurvey.constants.NetworkSurveyConstants;
+import com.craxiom.networksurvey.constants.NrMessageConstants;
 import com.craxiom.networksurvey.constants.UmtsMessageConstants;
 import com.craxiom.networksurvey.constants.WifiBeaconMessageConstants;
 import com.craxiom.networksurvey.fragments.NetworkDetailsFragment;
@@ -73,12 +80,14 @@ import com.craxiom.networksurvey.listeners.IGnssSurveyRecordListener;
 import com.craxiom.networksurvey.listeners.IWifiSurveyRecordListener;
 import com.craxiom.networksurvey.model.WifiRecordWrapper;
 import com.craxiom.networksurvey.util.IOUtils;
+import com.craxiom.networksurvey.util.MathUtils;
 import com.craxiom.networksurvey.util.ParserUtils;
 import com.craxiom.networksurvey.util.PreferenceUtils;
 import com.craxiom.networksurvey.util.WifiCapabilitiesUtils;
 import com.google.protobuf.BoolValue;
 import com.google.protobuf.FloatValue;
 import com.google.protobuf.Int32Value;
+import com.google.protobuf.Int64Value;
 import com.google.protobuf.UInt32Value;
 import com.google.protobuf.UInt64Value;
 
@@ -431,6 +440,7 @@ public class SurveyRecordProcessor
      * @param telephonyManager The Android telephony manager to get some more details from.
      * @since 1.4.0
      */
+    @RequiresApi(api = Build.VERSION_CODES.R)
     void onServiceStateChanged(ServiceState serviceState, TelephonyManager telephonyManager)
     {
         notifyPhoneStateListeners(createPhoneStateMessage(telephonyManager,
@@ -489,6 +499,7 @@ public class SurveyRecordProcessor
                 dataBuilder.setLatitude(lastKnownLocation.getLatitude());
                 dataBuilder.setLongitude(lastKnownLocation.getLongitude());
                 dataBuilder.setAltitude((float) lastKnownLocation.getAltitude());
+                dataBuilder.setAccuracy(MathUtils.roundAccuracy(lastKnownLocation.getAccuracy()));
             }
         }
 
@@ -563,6 +574,11 @@ public class SurveyRecordProcessor
             {
                 final UmtsRecord umtsRecord = generateUmtsSurveyRecord((CellInfoWcdma) cellInfo);
                 if (umtsRecord != null) notifyUmtsRecordListeners(umtsRecord);
+            } else if (android.os.Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q && cellInfo instanceof CellInfoNr)
+            {
+                // TODO: 8/20/2021 Update UI in a separate ticket
+                final NrRecord nrRecord = generateNrSurveyRecord((CellInfoNr) cellInfo);
+                if (nrRecord != null) notifyNrRecordListeners(nrRecord);
             }
         }
     }
@@ -706,6 +722,7 @@ public class SurveyRecordProcessor
                 dataBuilder.setLatitude(lastKnownLocation.getLatitude());
                 dataBuilder.setLongitude(lastKnownLocation.getLongitude());
                 dataBuilder.setAltitude((float) lastKnownLocation.getAltitude());
+                dataBuilder.setAccuracy(MathUtils.roundAccuracy(lastKnownLocation.getAccuracy()));
             }
         }
 
@@ -720,10 +737,22 @@ public class SurveyRecordProcessor
         // Even though the Android Javadocs indicate that an unset value is represented by Integer.MAX_VALUE, I found that a -1 is sometimes used for TA and CID.
         // I also found that 0 is used as unset for MCC, MNC, LAC, ARFCN, and BSIC.
 
-        if (mcc != Integer.MAX_VALUE && mcc != 0) dataBuilder.setMcc(Int32Value.newBuilder().setValue(mcc).build());
-        if (mnc != Integer.MAX_VALUE && mnc != 0) dataBuilder.setMnc(Int32Value.newBuilder().setValue(mnc).build());
-        if (lac != Integer.MAX_VALUE && lac != 0) dataBuilder.setLac(Int32Value.newBuilder().setValue(lac).build());
-        if (cid != Integer.MAX_VALUE && cid != -1) dataBuilder.setCi(Int32Value.newBuilder().setValue(cid).build());
+        if (mcc != Integer.MAX_VALUE && mcc != 0)
+        {
+            dataBuilder.setMcc(Int32Value.newBuilder().setValue(mcc).build());
+        }
+        if (mnc != Integer.MAX_VALUE && mnc != 0)
+        {
+            dataBuilder.setMnc(Int32Value.newBuilder().setValue(mnc).build());
+        }
+        if (lac != Integer.MAX_VALUE && lac != 0)
+        {
+            dataBuilder.setLac(Int32Value.newBuilder().setValue(lac).build());
+        }
+        if (cid != Integer.MAX_VALUE && cid != -1)
+        {
+            dataBuilder.setCi(Int32Value.newBuilder().setValue(cid).build());
+        }
 
         dataBuilder.setArfcn(Int32Value.newBuilder().setValue(arfcn).build());
         dataBuilder.setBsic(Int32Value.newBuilder().setValue(bsic).build());
@@ -782,6 +811,7 @@ public class SurveyRecordProcessor
                 dataBuilder.setLatitude(lastKnownLocation.getLatitude());
                 dataBuilder.setLongitude(lastKnownLocation.getLongitude());
                 dataBuilder.setAltitude((float) lastKnownLocation.getAltitude());
+                dataBuilder.setAccuracy(MathUtils.roundAccuracy(lastKnownLocation.getAccuracy()));
             }
         }
 
@@ -793,9 +823,18 @@ public class SurveyRecordProcessor
         dataBuilder.setServingCell(BoolValue.newBuilder().setValue(cellInfoCdma.isRegistered()).build());
         if (provider != null) dataBuilder.setProvider(provider.toString());
 
-        if (sid != Integer.MAX_VALUE) dataBuilder.setSid(Int32Value.newBuilder().setValue(sid).build());
-        if (nid != Integer.MAX_VALUE) dataBuilder.setNid(Int32Value.newBuilder().setValue(nid).build());
-        if (bsid != Integer.MAX_VALUE) dataBuilder.setBsid(Int32Value.newBuilder().setValue(bsid).build());
+        if (sid != Integer.MAX_VALUE)
+        {
+            dataBuilder.setSid(Int32Value.newBuilder().setValue(sid).build());
+        }
+        if (nid != Integer.MAX_VALUE)
+        {
+            dataBuilder.setNid(Int32Value.newBuilder().setValue(nid).build());
+        }
+        if (bsid != Integer.MAX_VALUE)
+        {
+            dataBuilder.setBsid(Int32Value.newBuilder().setValue(bsid).build());
+        }
 
         dataBuilder.setSignalStrength(FloatValue.newBuilder().setValue(signalStrength).build());
         dataBuilder.setEcio(FloatValue.newBuilder().setValue(ecioFloat).build());
@@ -846,6 +885,7 @@ public class SurveyRecordProcessor
                 dataBuilder.setLatitude(lastKnownLocation.getLatitude());
                 dataBuilder.setLongitude(lastKnownLocation.getLongitude());
                 dataBuilder.setAltitude((float) lastKnownLocation.getAltitude());
+                dataBuilder.setAccuracy(MathUtils.roundAccuracy(lastKnownLocation.getAccuracy()));
             }
         }
 
@@ -857,10 +897,22 @@ public class SurveyRecordProcessor
         dataBuilder.setServingCell(BoolValue.newBuilder().setValue(cellInfoWcdma.isRegistered()).build());
         if (provider != null) dataBuilder.setProvider(provider.toString());
 
-        if (mcc != Integer.MAX_VALUE) dataBuilder.setMcc(Int32Value.newBuilder().setValue(mcc).build());
-        if (mnc != Integer.MAX_VALUE) dataBuilder.setMnc(Int32Value.newBuilder().setValue(mnc).build());
-        if (lac != Integer.MAX_VALUE) dataBuilder.setLac(Int32Value.newBuilder().setValue(lac).build());
-        if (ci != Integer.MAX_VALUE) dataBuilder.setCid(Int32Value.newBuilder().setValue(ci).build());
+        if (mcc != Integer.MAX_VALUE)
+        {
+            dataBuilder.setMcc(Int32Value.newBuilder().setValue(mcc).build());
+        }
+        if (mnc != Integer.MAX_VALUE)
+        {
+            dataBuilder.setMnc(Int32Value.newBuilder().setValue(mnc).build());
+        }
+        if (lac != Integer.MAX_VALUE)
+        {
+            dataBuilder.setLac(Int32Value.newBuilder().setValue(lac).build());
+        }
+        if (ci != Integer.MAX_VALUE)
+        {
+            dataBuilder.setCid(Int32Value.newBuilder().setValue(ci).build());
+        }
 
         dataBuilder.setUarfcn(Int32Value.newBuilder().setValue(uarfcn).build());
         dataBuilder.setPsc(Int32Value.newBuilder().setValue(psc).build());
@@ -914,6 +966,7 @@ public class SurveyRecordProcessor
                 dataBuilder.setLatitude(lastKnownLocation.getLatitude());
                 dataBuilder.setLongitude(lastKnownLocation.getLongitude());
                 dataBuilder.setAltitude((float) lastKnownLocation.getAltitude());
+                dataBuilder.setAccuracy(MathUtils.roundAccuracy(lastKnownLocation.getAccuracy()));
             }
         }
 
@@ -925,16 +978,31 @@ public class SurveyRecordProcessor
         dataBuilder.setServingCell(BoolValue.newBuilder().setValue(cellInfoLte.isRegistered()).build());
         if (provider != null) dataBuilder.setProvider(provider.toString());
 
-        if (mcc != Integer.MAX_VALUE) dataBuilder.setMcc(Int32Value.newBuilder().setValue(mcc).build());
-        if (mnc != Integer.MAX_VALUE) dataBuilder.setMnc(Int32Value.newBuilder().setValue(mnc).build());
-        if (tac != Integer.MAX_VALUE) dataBuilder.setTac(Int32Value.newBuilder().setValue(tac).build());
-        if (ci != Integer.MAX_VALUE) dataBuilder.setEci(Int32Value.newBuilder().setValue(ci).build());
+        if (mcc != Integer.MAX_VALUE)
+        {
+            dataBuilder.setMcc(Int32Value.newBuilder().setValue(mcc).build());
+        }
+        if (mnc != Integer.MAX_VALUE)
+        {
+            dataBuilder.setMnc(Int32Value.newBuilder().setValue(mnc).build());
+        }
+        if (tac != Integer.MAX_VALUE)
+        {
+            dataBuilder.setTac(Int32Value.newBuilder().setValue(tac).build());
+        }
+        if (ci != Integer.MAX_VALUE)
+        {
+            dataBuilder.setEci(Int32Value.newBuilder().setValue(ci).build());
+        }
 
         dataBuilder.setEarfcn(Int32Value.newBuilder().setValue(earfcn).build());
         dataBuilder.setPci(Int32Value.newBuilder().setValue(pci).build());
         dataBuilder.setRsrp(FloatValue.newBuilder().setValue(rsrp).build());
 
-        if (rsrq != Integer.MAX_VALUE) dataBuilder.setRsrq(FloatValue.newBuilder().setValue(rsrq).build());
+        if (rsrq != Integer.MAX_VALUE)
+        {
+            dataBuilder.setRsrq(FloatValue.newBuilder().setValue(rsrq).build());
+        }
         if (timingAdvance != Integer.MAX_VALUE)
         {
             dataBuilder.setTa(Int32Value.newBuilder().setValue(timingAdvance).build());
@@ -944,6 +1012,128 @@ public class SurveyRecordProcessor
 
         final LteRecord.Builder recordBuilder = LteRecord.newBuilder();
         recordBuilder.setMessageType(LteMessageConstants.LTE_RECORD_MESSAGE_TYPE);
+        recordBuilder.setVersion(BuildConfig.MESSAGING_API_VERSION);
+        recordBuilder.setData(dataBuilder);
+
+        return recordBuilder.build();
+    }
+
+    /**
+     * Given a {@link CellInfoNr} object, pull out the values and generate a {@link NrRecord}.
+     *
+     * @param cellInfoNr The object that contains the NR(5G) Cell info.  This can be a serving cell, or a neighbor cell.
+     * @return The survey record.
+     * @since 1.5.0
+     */
+    @RequiresApi(api = Build.VERSION_CODES.Q)
+    private NrRecord generateNrSurveyRecord(CellInfoNr cellInfoNr)
+    {
+        // safe to cast as per: https://developer.android.com/reference/android/telephony/CellInfoNr#getCellIdentity()
+        final CellIdentityNr cellIdentity = (CellIdentityNr) cellInfoNr.getCellIdentity();
+
+        // default to CellInfoNr.UNAVAILABLE for lambdas below and because it's the return value for the other int fields
+        final int mcc = ParserUtils.parseInt(cellIdentity.getMccString(), CellInfoNr.UNAVAILABLE);
+        final int mnc = ParserUtils.parseInt(cellIdentity.getMncString(), CellInfoNr.UNAVAILABLE);
+        final int nrarfcn = cellIdentity.getNrarfcn();
+        final int pci = cellIdentity.getPci();
+        final int tac = cellIdentity.getTac();
+        final long nci = cellIdentity.getNci();
+
+        // can't extract this to method due to API limitations
+        CharSequence provider = null;
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.P)
+        {
+            provider = cellIdentity.getOperatorAlphaLong();
+        }
+
+        CellSignalStrengthNr cellSignalStrength = (CellSignalStrengthNr) cellInfoNr.getCellSignalStrength();
+        final int csiRsrp = cellSignalStrength.getCsiRsrp();
+        final int csiRsrq = cellSignalStrength.getCsiRsrq();
+        final int csiSinr = cellSignalStrength.getCsiSinr();
+        final int ssRsrp = cellSignalStrength.getSsRsrp();
+        final int ssRsrq = cellSignalStrength.getSsRsrq();
+        final int ssSinr = cellSignalStrength.getSsSinr();
+
+        if (!validateNrFields(nrarfcn, pci)) return null;
+
+        final NrRecordData.Builder dataBuilder = NrRecordData.newBuilder();
+
+        if (gpsListener != null)
+        {
+            @SuppressLint("MissingPermission") final Location lastKnownLocation = gpsListener.getLatestLocation();
+            if (lastKnownLocation != null)
+            {
+                dataBuilder.setLatitude(lastKnownLocation.getLatitude());
+                dataBuilder.setLongitude(lastKnownLocation.getLongitude());
+                dataBuilder.setAltitude((float) lastKnownLocation.getAltitude());
+                dataBuilder.setAccuracy(MathUtils.roundAccuracy(lastKnownLocation.getAccuracy()));
+            }
+        }
+        dataBuilder.setDeviceTime(IOUtils.getRfc3339String(ZonedDateTime.now()));
+        dataBuilder.setMissionId(missionId);
+        dataBuilder.setRecordNumber(recordNumber++);
+        dataBuilder.setGroupNumber(groupNumber);
+        dataBuilder.setServingCell(BoolValue.newBuilder().setValue(cellInfoNr.isRegistered()).build());
+        if (provider != null)
+        {
+            dataBuilder.setProvider(provider.toString());
+        }
+
+        // vals from CellIdentity
+        if (mcc != CellInfo.UNAVAILABLE)
+        {
+            dataBuilder.setMcc(Int32Value.newBuilder().setValue(mcc).build());
+        }
+        if (mnc != CellInfo.UNAVAILABLE)
+        {
+            dataBuilder.setMnc(Int32Value.newBuilder().setValue(mnc).build());
+        }
+        if (tac != CellInfo.UNAVAILABLE)
+        {
+            dataBuilder.setMcc(Int32Value.newBuilder().setValue(tac).build());
+        }
+        if (nci != CellInfo.UNAVAILABLE_LONG)
+        {
+            dataBuilder.setNci(Int64Value.newBuilder().setValue(nci).build());
+        }
+        if (nrarfcn != CellInfo.UNAVAILABLE)
+        {
+            dataBuilder.setNarfcn(Int32Value.newBuilder().setValue(nrarfcn).build());
+        }
+        if (pci != CellInfo.UNAVAILABLE)
+        {
+            dataBuilder.setMcc(Int32Value.newBuilder().setValue(pci).build());
+        }
+
+        // vals from CellSignalStrength
+        if (ssRsrp != CellInfo.UNAVAILABLE)
+        {
+            dataBuilder.setCsiRsrp(FloatValue.newBuilder().setValue(ssRsrp).build());
+        }
+        if (ssRsrq != CellInfo.UNAVAILABLE)
+        {
+            dataBuilder.setCsiRsrp(FloatValue.newBuilder().setValue(ssRsrq).build());
+        }
+        if (ssSinr != CellInfo.UNAVAILABLE)
+        {
+            dataBuilder.setCsiRsrp(FloatValue.newBuilder().setValue(ssSinr).build());
+        }
+        if (csiRsrp != CellInfo.UNAVAILABLE)
+        {
+            dataBuilder.setCsiRsrp(FloatValue.newBuilder().setValue(csiRsrp).build());
+        }
+        if (csiRsrq != CellInfo.UNAVAILABLE)
+        {
+            dataBuilder.setCsiRsrp(FloatValue.newBuilder().setValue(csiRsrq).build());
+        }
+        if (csiSinr != CellInfo.UNAVAILABLE)
+        {
+            dataBuilder.setCsiRsrp(FloatValue.newBuilder().setValue(csiSinr).build());
+        }
+
+        final NrRecord.Builder recordBuilder = NrRecord.newBuilder();
+
+        recordBuilder.setMessageType(NrMessageConstants.NR_RECORD_MESSAGE_TYPE);
         recordBuilder.setVersion(BuildConfig.MESSAGING_API_VERSION);
         recordBuilder.setData(dataBuilder);
 
@@ -975,6 +1165,7 @@ public class SurveyRecordProcessor
                 dataBuilder.setLatitude(lastKnownLocation.getLatitude());
                 dataBuilder.setLongitude(lastKnownLocation.getLongitude());
                 dataBuilder.setAltitude((float) lastKnownLocation.getAltitude());
+                dataBuilder.setAccuracy(MathUtils.roundAccuracy(lastKnownLocation.getAccuracy()));
             }
         }
 
@@ -990,7 +1181,10 @@ public class SurveyRecordProcessor
         if (ssid != null) dataBuilder.setSsid(ssid);
 
         final short channel = WifiBeaconMessageConstants.convertFrequencyToChannelNumber(apScanResult.frequency);
-        if (channel != -1) dataBuilder.setChannel(Int32Value.newBuilder().setValue(channel).build());
+        if (channel != -1)
+        {
+            dataBuilder.setChannel(Int32Value.newBuilder().setValue(channel).build());
+        }
 
         final int frequency = apScanResult.frequency;
         if (frequency != -1 && frequency != 0)
@@ -1005,7 +1199,10 @@ public class SurveyRecordProcessor
             //  enough information for that.
 
             final EncryptionType encryptionType = WifiCapabilitiesUtils.getEncryptionType(capabilities);
-            if (encryptionType != EncryptionType.UNKNOWN) dataBuilder.setEncryptionType(encryptionType);
+            if (encryptionType != EncryptionType.UNKNOWN)
+            {
+                dataBuilder.setEncryptionType(encryptionType);
+            }
 
             dataBuilder.setWps(BoolValue.newBuilder().setValue(WifiCapabilitiesUtils.supportsWps(capabilities)).build());
         }
@@ -1053,6 +1250,7 @@ public class SurveyRecordProcessor
                 dataBuilder.setLatitude(lastKnownLocation.getLatitude());
                 dataBuilder.setLongitude(lastKnownLocation.getLongitude());
                 dataBuilder.setAltitude((float) lastKnownLocation.getAltitude());
+                dataBuilder.setAccuracy(MathUtils.roundAccuracy(lastKnownLocation.getAccuracy()));
             }
         }
 
@@ -1076,7 +1274,10 @@ public class SurveyRecordProcessor
         if (otaDeviceName != null) dataBuilder.setOtaDeviceName(otaDeviceName);
 
         final SupportedTechnologies supportedTech = BluetoothMessageConstants.getSupportedTechnologies(device.getType());
-        if (supportedTech != SupportedTechnologies.UNKNOWN) dataBuilder.setSupportedTechnologies(supportedTech);
+        if (supportedTech != SupportedTechnologies.UNKNOWN)
+        {
+            dataBuilder.setSupportedTechnologies(supportedTech);
+        }
 
         final BluetoothRecord.Builder recordBuilder = BluetoothRecord.newBuilder();
         recordBuilder.setMessageType(BluetoothMessageConstants.BLUETOOTH_RECORD_MESSAGE_TYPE);
@@ -1105,6 +1306,7 @@ public class SurveyRecordProcessor
                 dataBuilder.setLatitude(lastKnownLocation.getLatitude());
                 dataBuilder.setLongitude(lastKnownLocation.getLongitude());
                 dataBuilder.setAltitude((float) lastKnownLocation.getAltitude());
+                dataBuilder.setAccuracy(MathUtils.roundAccuracy(lastKnownLocation.getAccuracy()));
 
                 if (lastKnownLocation.hasAccuracy())
                 {
@@ -1314,6 +1516,30 @@ public class SurveyRecordProcessor
     }
 
     /**
+     * Validates the required arguments per:
+     * <a href="https://messaging.networksurvey.app/#operation-publish-nr_message">NR Message Requirements</a>
+     *
+     * @return {@code true} if the provided fields are all valid, false if one or more is invalid.
+     * @since 1.5.0
+     */
+    @RequiresApi(api = Build.VERSION_CODES.Q)
+    private boolean validateNrFields(int nrarfcn, int pci)
+    {
+        if (nrarfcn == CellInfo.UNAVAILABLE)
+        {
+            Timber.v("NRARFCN is required to build an NR survey record");
+            return false;
+        }
+        if (pci == CellInfo.UNAVAILABLE)
+        {
+            Timber.v("PCI is required to build an NR survey record");
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
      * Validates the required fields.
      *
      * @return True if the provided fields are all valid, false if one or more is invalid.
@@ -1431,6 +1657,27 @@ public class SurveyRecordProcessor
                 Timber.e(e, "Unable to notify a Cellular Survey Record Listener because of an exception");
             }
         }
+    }
+
+    /**
+     * Notify {@link #cellularSurveyRecordListeners} of a new NR record
+     *
+     * @param nrRecord The new NR Survey Record to send to the listeners
+     * @since 1.5.0
+     */
+    private void notifyNrRecordListeners(NrRecord nrRecord)
+    {
+        if (nrRecord == null) return;
+
+        cellularSurveyRecordListeners.forEach(l -> {
+            try
+            {
+                l.onNrSurveyRecord(nrRecord);
+            } catch (Exception e)
+            {
+                Timber.e(e, "Unable to notify a Cellular Survey Record Listener because of an exception");
+            }
+        });
     }
 
     /**
@@ -1669,7 +1916,10 @@ public class SurveyRecordProcessor
         if (networkSurveyActivity == null || !NetworkDetailsFragment.visible.get()) return;
 
         final View viewById = networkSurveyActivity.findViewById(textViewId);
-        if (viewById != null) ((TextView) viewById).setText(networkSurveyActivity.getString(stringResourceId, text));
+        if (viewById != null)
+        {
+            ((TextView) viewById).setText(networkSurveyActivity.getString(stringResourceId, text));
+        }
     }
 
     /**

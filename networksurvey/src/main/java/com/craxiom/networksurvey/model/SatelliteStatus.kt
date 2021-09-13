@@ -34,8 +34,10 @@ data class SatelliteStatus(
     var sbasType: SbasType = SbasType.UNKNOWN
     var hasCarrierFrequency: Boolean = false
     var carrierFrequencyHz: Float = NO_DATA
+    var agc: Double = NO_DATA_DOUBLE
 
     companion object {
         const val NO_DATA = 0.0f
+        const val NO_DATA_DOUBLE = Double.NEGATIVE_INFINITY;
     }
 }

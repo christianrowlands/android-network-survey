@@ -4,6 +4,7 @@ import android.Manifest;
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.pm.PackageManager;
+import android.location.GnssMeasurementsEvent;
 import android.location.GnssStatus;
 import android.location.Location;
 import android.location.LocationListener;
@@ -41,9 +42,11 @@ public class MainGnssFragment extends Fragment
 {
     private static final int LOCATION_REFRESH_RATE_MS = 2_000;
 
+    private final Set<IGnssListener> gnssListeners = new CopyOnWriteArraySet<>();
+
     private LocationListener locationListener;
     private GnssStatus.Callback gnssStatusListener;
-    private final Set<IGnssListener> gnssListeners = new CopyOnWriteArraySet<>();
+    private GnssMeasurementsEvent.Callback gnssMeasurementCallback;
     private LocationManager locationManager;
 
     public MainGnssFragment()
@@ -61,7 +64,10 @@ public class MainGnssFragment extends Fragment
             locationManager = fragmentActivity.getSystemService(LocationManager.class);
         }
 
-        if (locationManager == null) Timber.e("The Location Manager is null. Unable to get GNSS information");
+        if (locationManager == null)
+        {
+            Timber.e("The Location Manager is null. Unable to get GNSS information");
+        }
     }
 
     @Nullable
@@ -254,8 +260,20 @@ public class MainGnssFragment extends Fragment
                 }
             };
         }
+        if (gnssMeasurementCallback == null)
+        {
+            gnssMeasurementCallback = new GnssMeasurementsEvent.Callback()
+            {
+                @Override
+                public void onGnssMeasurementsReceived(GnssMeasurementsEvent eventArgs)
+                {
+                    gnssListeners.forEach(l -> l.onGnssMeasurementsReceived(eventArgs));
+                }
+            };
+        }
 
         locationManager.registerGnssStatusCallback(gnssStatusListener);
+        locationManager.registerGnssMeasurementsCallback(gnssMeasurementCallback);
     }
 
     /**
@@ -270,6 +288,7 @@ public class MainGnssFragment extends Fragment
         }
 
         locationManager.unregisterGnssStatusCallback(gnssStatusListener);
+        locationManager.unregisterGnssMeasurementsCallback(gnssMeasurementCallback);
     }
 
     /**

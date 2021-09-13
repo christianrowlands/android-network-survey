@@ -6,6 +6,7 @@ import com.craxiom.messaging.DeviceStatus;
 import com.craxiom.messaging.GnssRecord;
 import com.craxiom.messaging.GsmRecord;
 import com.craxiom.messaging.LteRecord;
+import com.craxiom.messaging.NrRecord;
 import com.craxiom.messaging.PhoneState;
 import com.craxiom.messaging.UmtsRecord;
 import com.craxiom.messaging.WifiBeaconRecord;
@@ -31,6 +32,7 @@ public class MqttConnection extends DefaultMqttConnection implements ICellularSu
     private static final String MQTT_CDMA_MESSAGE_TOPIC = "cdma_message";
     private static final String MQTT_UMTS_MESSAGE_TOPIC = "umts_message";
     private static final String MQTT_LTE_MESSAGE_TOPIC = "lte_message";
+    private static final String MQTT_NR_MESSAGE_TOPIC = "nr_message";
     private static final String MQTT_WIFI_BEACON_MESSAGE_TOPIC = "80211_beacon_message";
     private static final String MQTT_BLUETOOTH_MESSAGE_TOPIC = "bluetooth_message";
     private static final String MQTT_GNSS_MESSAGE_TOPIC = "gnss_message";
@@ -86,6 +88,18 @@ public class MqttConnection extends DefaultMqttConnection implements ICellularSu
         }
 
         publishMessage(MQTT_LTE_MESSAGE_TOPIC, lteRecord);
+    }
+
+    @Override
+    public void onNrSurveyRecord(NrRecord nrRecord)
+    {
+        if (mqttClientId != null)
+        {
+            final NrRecord.Builder recordBuilder = nrRecord.toBuilder();
+            nrRecord = recordBuilder.setData(recordBuilder.getDataBuilder().setDeviceName(mqttClientId)).build();
+        }
+
+        publishMessage(MQTT_NR_MESSAGE_TOPIC, nrRecord);
     }
 
     @Override

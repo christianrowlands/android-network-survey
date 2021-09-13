@@ -17,8 +17,6 @@ import timber.log.Timber;
  */
 public class GpsListener implements LocationListener
 {
-    private static final float MIN_DISTANCE_ACCURACY = 40f; // WiGLE Wi-Fi uses 32
-
     private Location latestLocation;
     private Runnable gnssTimeoutCallback;
 
@@ -82,7 +80,7 @@ public class GpsListener implements LocationListener
      */
     private void updateLocation(Location newLocation)
     {
-        if (newLocation != null && newLocation.getAccuracy() <= MIN_DISTANCE_ACCURACY)
+        if (newLocation != null)
         {
             latestLocation = newLocation;
 
@@ -90,10 +88,6 @@ public class GpsListener implements LocationListener
             {
                 gnssTimeoutCallback.run();
             }
-        } else
-        {
-            Timber.d("The accuracy of the last GPS location is less than the required minimum");
-            latestLocation = null;
         }
     }
 }

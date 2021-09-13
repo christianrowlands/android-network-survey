@@ -33,4 +33,8 @@
     <color name="green">#009d00</color>
 
     <color name="cn0_meter_border">@color/body_text_2_light</color>
+
+    <!-- Mostly for preview purposes using Android tools -->
+    <color name="black">#000000</color>
+    <color name="white">#FFFFFF</color>
 </resources>

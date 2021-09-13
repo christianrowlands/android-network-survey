@@ -23,14 +23,19 @@ import com.craxiom.networksurvey.model.GnssType;
 public class CarrierFreqUtils
 {
     /**
+     * An unknown carrier frequency that doesn't match any known frequencies
+     */
+    public static final String CF_UNKNOWN = "unknown";
+
+    /**
      * Returns the label that should be displayed for a given GNSS constellation, svid, and carrier
-     * frequency in MHz, or null if no carrier frequency label is found
+     * frequency in MHz, or {@link #CF_UNKNOWN} if no carrier frequency label is found
      *
      * @param gnssType            constellation type defined in GnssType
      * @param svid                identification number provided by the GnssStatus.getSvid() method
      * @param carrierFrequencyMhz carrier frequency for the signal in MHz
      * @return the label that should be displayed for a given GNSS constellation, svid, and carrier
-     * frequency in MHz or null if no carrier frequency label is found
+     * frequency in MHz or {@link #CF_UNKNOWN} if no carrier frequency label is found
      */
     public static String getCarrierFrequencyLabel(GnssType gnssType, int svid, float carrierFrequencyMhz)
     {
@@ -205,6 +210,6 @@ public class CarrierFreqUtils
                 break;
         }
         // Unknown carrier frequency for given constellation and svid
-        return null;
+        return CF_UNKNOWN;
     }
 }

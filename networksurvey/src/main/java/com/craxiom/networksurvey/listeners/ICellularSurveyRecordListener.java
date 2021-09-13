@@ -3,6 +3,7 @@ package com.craxiom.networksurvey.listeners;
 import com.craxiom.messaging.CdmaRecord;
 import com.craxiom.messaging.GsmRecord;
 import com.craxiom.messaging.LteRecord;
+import com.craxiom.messaging.NrRecord;
 import com.craxiom.messaging.UmtsRecord;
 
 /**
@@ -42,4 +43,12 @@ public interface ICellularSurveyRecordListener
      * @param lteRecord the LTE Record.
      */
     void onLteSurveyRecord(LteRecord lteRecord);
+
+    /**
+     * Called when a new NR Survey Record is ready.
+     *
+     * @param nrRecord  the New Radio (5G) record.
+     * @since 1.5.0
+     */
+    void onNrSurveyRecord(NrRecord nrRecord);
 }
