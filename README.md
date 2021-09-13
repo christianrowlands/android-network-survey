@@ -5,7 +5,7 @@
 
 The Network Survey Android App provides a basic survey capability for Cellular networks, Wi-Fi networks and GNSS constellations.  
 For cellular data, in its current state it can be used to examine the network details of the current LTE serving cell, and log 
-GSM, CDMA, UMTS, and LTE records to a GeoPackage file. Wi-Fi survey records can also be logged to a GeoPackage file, 
+GSM, CDMA, UMTS, LTE, and NR records to a GeoPackage file. Wi-Fi survey records can also be logged to a GeoPackage file,
 and the current list of Wi-Fi networks in range is displayed in the UI. The App also supports connecting to a remote gRPC server and live 
 streaming the cellular and Wi-Fi records. For GNSS data, it can display the latest information about the satellite vehicles and
 also log the information to a GeoPackage file.
@@ -52,13 +52,14 @@ the incoming survey messages.
 
 ## MQTT Broker Survey Record Streaming
 
-Currently, GSM, CDMA, UMTS, LTE, 802.11, Bluetooth and GNSS survey records are sent to a connected MQTT broker. They
+Currently, GSM, CDMA, UMTS, LTE, NR, 802.11, Bluetooth and GNSS survey records are sent to a connected MQTT broker. They
 are published on the following MQTT Topics:
 
  * gsm_message
  * cdma_message
  * umts_message
  * lte_message
+ * nr_message
  * 80211_beacon_message
  * bluetooth_message
  * gnss_message
@@ -71,6 +72,11 @@ The survey messages are sent in JSON format following the protobuf definitions f
 library. [The API documentation is published to a web page here](https://messaging.networksurvey.app/).
 
 ## Changelog
+
+##### [1.5.0](https://github.com/christianrowlands/android-network-survey/releases/tag/v1.5.0) - 2021-09-13
+ * Added support for 5G New Radio (NR) survey.
+ * Added the AGC to the GNSS Status Display.
+ * Added a location accuracy field to each message (both GeoPackage and MQTT).
 
 ##### [1.4.3](https://github.com/christianrowlands/android-network-survey/releases/tag/v1.4.3) - 2021-08-08
  * Fixed several bugs that could cause the app to crash in various scenarios.
