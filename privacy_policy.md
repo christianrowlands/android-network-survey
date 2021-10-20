@@ -44,8 +44,8 @@ The location data consumed by the Network Survey app is recorded to the GeoPacka
 location data is also sent over MQTT and gRPC to a remote server, if a remote server is configured. There is not a default
 remote server provided with the app, so it is necessary for the user of the Network Survey app to stand up their own
 server to receive that information. The location data is not used in any other way than defined above. The location data
-is not shared with any 3rd parties, and is not accessable by anyone except for the user. Therefore, the location data
-is not collection, used, or shared by or with anyone that the user has not direclty handed the data to by uploading
+is not shared with any 3rd parties, and is not accessible by anyone except for the user. Therefore, the location data
+is not collection, used, or shared by or with anyone that the user has not directly handed the data to by uploading
 the recorded GeoPackage or sent to by connecting to someone elses MQTT or gRPC server.
 
 **Log Data**
