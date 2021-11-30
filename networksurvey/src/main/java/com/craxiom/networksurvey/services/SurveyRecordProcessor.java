@@ -914,6 +914,15 @@ public class SurveyRecordProcessor
             dataBuilder.setCid(Int32Value.newBuilder().setValue(ci).build());
         }
 
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.R)
+        {
+            final int ecNo = cellSignalStrengthUmts.getEcNo();
+            if (ecNo != CellInfo.UNAVAILABLE)
+            {
+                dataBuilder.setEcno(FloatValue.newBuilder().setValue(ecNo).build());
+            }
+        }
+
         dataBuilder.setUarfcn(Int32Value.newBuilder().setValue(uarfcn).build());
         dataBuilder.setPsc(Int32Value.newBuilder().setValue(psc).build());
         dataBuilder.setSignalStrength(FloatValue.newBuilder().setValue(signalStrength).build());
@@ -1069,15 +1078,14 @@ public class SurveyRecordProcessor
                 dataBuilder.setAccuracy(MathUtils.roundAccuracy(lastKnownLocation.getAccuracy()));
             }
         }
+
+        dataBuilder.setDeviceSerialNumber(deviceId);
         dataBuilder.setDeviceTime(IOUtils.getRfc3339String(ZonedDateTime.now()));
         dataBuilder.setMissionId(missionId);
         dataBuilder.setRecordNumber(recordNumber++);
         dataBuilder.setGroupNumber(groupNumber);
         dataBuilder.setServingCell(BoolValue.newBuilder().setValue(cellInfoNr.isRegistered()).build());
-        if (provider != null)
-        {
-            dataBuilder.setProvider(provider.toString());
-        }
+        if (provider != null) dataBuilder.setProvider(provider.toString());
 
         // vals from CellIdentity
         if (mcc != CellInfo.UNAVAILABLE)
@@ -1090,7 +1098,7 @@ public class SurveyRecordProcessor
         }
         if (tac != CellInfo.UNAVAILABLE)
         {
-            dataBuilder.setMcc(Int32Value.newBuilder().setValue(tac).build());
+            dataBuilder.setTac(Int32Value.newBuilder().setValue(tac).build());
         }
         if (nci != CellInfo.UNAVAILABLE_LONG)
         {
@@ -1102,21 +1110,21 @@ public class SurveyRecordProcessor
         }
         if (pci != CellInfo.UNAVAILABLE)
         {
-            dataBuilder.setMcc(Int32Value.newBuilder().setValue(pci).build());
+            dataBuilder.setPci(Int32Value.newBuilder().setValue(pci).build());
         }
 
         // vals from CellSignalStrength
         if (ssRsrp != CellInfo.UNAVAILABLE)
         {
-            dataBuilder.setCsiRsrp(FloatValue.newBuilder().setValue(ssRsrp).build());
+            dataBuilder.setSsRsrp(FloatValue.newBuilder().setValue(ssRsrp).build());
         }
         if (ssRsrq != CellInfo.UNAVAILABLE)
         {
-            dataBuilder.setCsiRsrp(FloatValue.newBuilder().setValue(ssRsrq).build());
+            dataBuilder.setSsRsrq(FloatValue.newBuilder().setValue(ssRsrq).build());
         }
         if (ssSinr != CellInfo.UNAVAILABLE)
         {
-            dataBuilder.setCsiRsrp(FloatValue.newBuilder().setValue(ssSinr).build());
+            dataBuilder.setSsSinr(FloatValue.newBuilder().setValue(ssSinr).build());
         }
         if (csiRsrp != CellInfo.UNAVAILABLE)
         {
@@ -1124,11 +1132,11 @@ public class SurveyRecordProcessor
         }
         if (csiRsrq != CellInfo.UNAVAILABLE)
         {
-            dataBuilder.setCsiRsrp(FloatValue.newBuilder().setValue(csiRsrq).build());
+            dataBuilder.setCsiRsrq(FloatValue.newBuilder().setValue(csiRsrq).build());
         }
         if (csiSinr != CellInfo.UNAVAILABLE)
         {
-            dataBuilder.setCsiRsrp(FloatValue.newBuilder().setValue(csiSinr).build());
+            dataBuilder.setCsiSinr(FloatValue.newBuilder().setValue(csiSinr).build());
         }
 
         final NrRecord.Builder recordBuilder = NrRecord.newBuilder();
