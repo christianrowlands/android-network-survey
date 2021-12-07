@@ -12,6 +12,8 @@
     <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" /> <!-- Access a Wi-Fi Scan -->
     <uses-permission android:name="android.permission.CHANGE_WIFI_STATE" /> <!-- Trigger a Wi-Fi Scan -->
     <uses-permission android:name="android.permission.BLUETOOTH" />
+    <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
+    <uses-permission android:name="android.permission.BLUETOOTH_SCAN" />
     <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.WAKE_LOCK" />
@@ -51,7 +53,8 @@
             android:launchMode="singleTask"
             android:screenOrientation="portrait"
             android:theme="@style/NetworkSurveyTheme"
-            android:windowSoftInputMode="adjustPan">
+            android:windowSoftInputMode="adjustPan"
+            android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
@@ -76,7 +79,8 @@
 
         <receiver
             android:name=".StartAtBootReceiver"
-            android:label="StartAtBootReceiver">
+            android:label="StartAtBootReceiver"
+            android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.BOOT_COMPLETED" />
             </intent-filter>

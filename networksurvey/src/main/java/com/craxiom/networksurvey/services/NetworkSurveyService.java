@@ -230,7 +230,10 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
             if (autoStartWifiLogging && !wifiLoggingEnabled.get()) toggleWifiLogging(true);
 
             final boolean autoStartBluetoothLogging = PreferenceUtils.getAutoStartPreference(NetworkSurveyConstants.PROPERTY_AUTO_START_BLUETOOTH_LOGGING, false, applicationContext);
-            if (autoStartBluetoothLogging && !bluetoothLoggingEnabled.get()) toggleBluetoothLogging(true);
+            if (autoStartBluetoothLogging && !bluetoothLoggingEnabled.get())
+            {
+                toggleBluetoothLogging(true);
+            }
 
             final boolean autoStartGnssLogging = PreferenceUtils.getAutoStartPreference(NetworkSurveyConstants.PROPERTY_AUTO_START_GNSS_LOGGING, false, applicationContext);
             if (autoStartGnssLogging && !gnssLoggingEnabled.get()) toggleGnssLogging(true);
@@ -1576,14 +1579,35 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
     }
 
     /**
+     * @return True if the {@link Manifest.permission#BLUETOOTH_SCAN} permission has been granted. False otherwise.
+     * @since 1.6.0
+     */
+    private boolean hasBtScanPermission()
+    {
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.BLUETOOTH_SCAN) != PackageManager.PERMISSION_GRANTED)
+        {
+            Timber.w("The BLUETOOTH_SCAN permission has not been granted");
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
      * Register a listener for Bluetooth scans, and then kick off a scheduled Bluetooth scan.
      * <p>
-     * This method only starts scanning if the scan is not already active.
+     * This method only starts scanning if the scan is not already active and we have the required permissions.
      *
      * @since 1.0.0
      */
     private void startBluetoothRecordScanning()
     {
+        if (!hasBtScanPermission())
+        {
+            uiThreadHandler.post(() -> Toast.makeText(getApplicationContext(), getString(R.string.grant_bluetooth_scan_permission), Toast.LENGTH_LONG).show());
+            return;
+        }
+
         if (bluetoothScanningActive.getAndSet(true)) return;
 
         final BluetoothAdapter bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
@@ -1838,7 +1862,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
         final String notificationText = getNotificationText(logging, mqttConnectionActive, connectionState);
 
         final Intent notificationIntent = new Intent(this, NetworkSurveyActivity.class);
-        final PendingIntent pendingIntent = PendingIntent.getActivity(this, 0, notificationIntent, 0);
+        final PendingIntent pendingIntent = PendingIntent.getActivity(this, 0, notificationIntent, PendingIntent.FLAG_IMMUTABLE);
 
         final NotificationCompat.Builder builder = new NotificationCompat.Builder(this, NetworkSurveyConstants.NOTIFICATION_CHANNEL_ID)
                 .setContentTitle(notificationTitle)

@@ -1,5 +1,6 @@
 package com.craxiom.networksurvey.fragments;
 
+import android.Manifest;
 import android.bluetooth.BluetoothAdapter;
 import android.content.BroadcastReceiver;
 import android.content.ComponentName;
@@ -8,6 +9,8 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.ServiceConnection;
 import android.content.SharedPreferences;
+import android.content.pm.PackageManager;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.IBinder;
@@ -20,6 +23,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AlertDialog;
+import androidx.core.app.ActivityCompat;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentActivity;
 import androidx.preference.PreferenceManager;
@@ -51,6 +55,8 @@ import timber.log.Timber;
  */
 public class BluetoothFragment extends Fragment implements IBluetoothSurveyRecordListener
 {
+    private static final int ACCESS_SCAN_PERMISSION_REQUEST_ID = 11;
+
     private final SortedSet<BluetoothRecord> bluetoothRecordSortedSet = new SortedSet<>(BluetoothRecord.class, new RecordSortedListCallback());
     private Handler uiThreadHandler;
 
@@ -122,6 +128,24 @@ public class BluetoothFragment extends Fragment implements IBluetoothSurveyRecor
     {
         super.onResume();
 
+        // The BLUETOOTH_SCAN permission was added in Android 12
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S)
+        {
+            if (!hasBtScanPermission())
+            {
+                final Context context = getContext();
+                if (context != null)
+                {
+                    scanStatusView.setText(context.getString(R.string.scan_status_permission));
+                    Toast.makeText(context, getString(R.string.grant_bluetooth_scan_permission), Toast.LENGTH_LONG).show();
+
+                    ActivityCompat.requestPermissions(requireActivity(), new String[]{Manifest.permission.BLUETOOTH_SCAN},
+                            ACCESS_SCAN_PERMISSION_REQUEST_ID);
+                }
+            }
+            return;
+        }
+
         bluetoothScanRateMs = PreferenceUtils.getScanRatePreferenceMs(NetworkSurveyConstants.PROPERTY_BLUETOOTH_SCAN_INTERVAL_SECONDS,
                 NetworkSurveyConstants.DEFAULT_BLUETOOTH_SCAN_INTERVAL_SECONDS, applicationContext);
 
@@ -187,6 +211,37 @@ public class BluetoothFragment extends Fragment implements IBluetoothSurveyRecor
                 devicesInScanView.setText(requireContext().getString(R.string.bluetooth_devices_in_scan, bluetoothRecordSortedSet.size()));
             }
         });
+    }
+
+    /**
+     * @return True if the {@link Manifest.permission#BLUETOOTH_CONNECT} permission has been granted. False otherwise.
+     * @since 1.6.0
+     */
+    private boolean hasBtConnectPermission()
+    {
+        final Context context = getContext();
+        if (context == null || ActivityCompat.checkSelfPermission(context, Manifest.permission.BLUETOOTH_CONNECT) != PackageManager.PERMISSION_GRANTED)
+        {
+            Timber.w("The BLUETOOTH_CONNECT permission has not been granted");
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * @return True if the {@link Manifest.permission#BLUETOOTH_SCAN} permission has been granted. False otherwise.
+     * @since 1.6.0
+     */
+    private boolean hasBtScanPermission()
+    {
+        if (ActivityCompat.checkSelfPermission(requireContext(), Manifest.permission.BLUETOOTH_SCAN) != PackageManager.PERMISSION_GRANTED)
+        {
+            Timber.w("The BLUETOOTH_SCAN permission has not been granted");
+            return false;
+        }
+
+        return true;
     }
 
     /**
@@ -358,7 +413,10 @@ public class BluetoothFragment extends Fragment implements IBluetoothSurveyRecor
      */
     private void unregisterBluetoothBroadcastReceiver()
     {
-        if (bluetoothBroadcastReceiver != null) requireActivity().unregisterReceiver(bluetoothBroadcastReceiver);
+        if (bluetoothBroadcastReceiver != null)
+        {
+            requireActivity().unregisterReceiver(bluetoothBroadcastReceiver);
+        }
     }
 
     /**
@@ -375,6 +433,13 @@ public class BluetoothFragment extends Fragment implements IBluetoothSurveyRecor
     {
         try
         {
+            if (!hasBtConnectPermission())
+            {
+                // We don't really need the BLUETOOTH_CONNECT permission, but it makes it easier. If the user denied it, just show a toast.
+                Toast.makeText(requireContext(), getString(R.string.grant_bluetooth_scan_permission), Toast.LENGTH_LONG).show();
+                return;
+            }
+
             final BluetoothAdapter bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
 
             // First, update the status UI if bluetooth is disabled
@@ -388,7 +453,7 @@ public class BluetoothFragment extends Fragment implements IBluetoothSurveyRecor
                 // Bluetooth is present, but disabled; prompt the user to enable it, but only ask the user once per app opening (per fragment instance)
                 if (promptedToEnableBluetooth) return;
 
-                if (bluetoothAdapter != null && !bluetoothAdapter.isEnabled())
+                if (!bluetoothAdapter.isEnabled())
                 {
                     Timber.i("Bluetooth is disabled, prompting the user to enable it");
 

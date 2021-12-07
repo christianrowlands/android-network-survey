@@ -63,10 +63,27 @@ import timber.log.Timber;
 public class NetworkSurveyActivity extends AppCompatActivity
 {
     private static final int ACCESS_PERMISSION_REQUEST_ID = 1;
-    public static final String[] PERMISSIONS = {
-            Manifest.permission.ACCESS_FINE_LOCATION,
-            Manifest.permission.WRITE_EXTERNAL_STORAGE,
-            Manifest.permission.READ_PHONE_STATE};
+    public static final String[] PERMISSIONS;
+
+    static
+    {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S)
+        {
+            // Since we are running on the Android 12+, we need to ask for the BLUETOOTH_CONNECT and BLUETOOTH_SCAN permissions
+            PERMISSIONS = new String[]{
+                    Manifest.permission.ACCESS_FINE_LOCATION,
+                    Manifest.permission.WRITE_EXTERNAL_STORAGE,
+                    Manifest.permission.READ_PHONE_STATE,
+                    Manifest.permission.BLUETOOTH_CONNECT,
+                    Manifest.permission.BLUETOOTH_SCAN};
+        } else
+        {
+            PERMISSIONS = new String[]{
+                    Manifest.permission.ACCESS_FINE_LOCATION,
+                    Manifest.permission.WRITE_EXTERNAL_STORAGE,
+                    Manifest.permission.READ_PHONE_STATE};
+        }
+    }
 
     private static final int ACCESS_BACKGROUND_LOCATION_PERMISSION_REQUEST_ID = 2;
 
@@ -129,7 +146,10 @@ public class NetworkSurveyActivity extends AppCompatActivity
                             {
                                 PreferenceUtils.saveBoolean(Application.get().getString(R.string.pref_key_ignore_raw_gnss_failure), true);
                                 // No need for GNSS failure updates anymore
-                                if (networkSurveyService != null) networkSurveyService.clearGnssFailureListener();
+                                if (networkSurveyService != null)
+                                {
+                                    networkSurveyService.clearGnssFailureListener();
+                                }
                             }
                         })
                         .create();
@@ -678,7 +698,10 @@ public class NetworkSurveyActivity extends AppCompatActivity
     private void toggleBluetoothLogging(boolean enable)
     {
         new ToggleLoggingTask(() -> {
-            if (networkSurveyService != null) return networkSurveyService.toggleBluetoothLogging(enable);
+            if (networkSurveyService != null)
+            {
+                return networkSurveyService.toggleBluetoothLogging(enable);
+            }
             return null;
         }, enabled -> {
             if (enabled == null) return getString(R.string.bluetooth_logging_toggle_failed);
