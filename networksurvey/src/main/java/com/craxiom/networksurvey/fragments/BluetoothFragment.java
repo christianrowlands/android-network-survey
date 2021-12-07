@@ -142,8 +142,9 @@ public class BluetoothFragment extends Fragment implements IBluetoothSurveyRecor
                     ActivityCompat.requestPermissions(requireActivity(), new String[]{Manifest.permission.BLUETOOTH_SCAN},
                             ACCESS_SCAN_PERMISSION_REQUEST_ID);
                 }
+
+                return;
             }
-            return;
         }
 
         bluetoothScanRateMs = PreferenceUtils.getScanRatePreferenceMs(NetworkSurveyConstants.PROPERTY_BLUETOOTH_SCAN_INTERVAL_SECONDS,
