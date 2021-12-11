@@ -546,7 +546,7 @@ public class SurveyRecordProcessor
             if (cellInfo instanceof CellInfoLte)
             {
                 final LteRecord lteSurveyRecord = generateLteSurveyRecord((CellInfoLte) cellInfo);
-                if (lteSurveyRecord == null) notifyLteRecordListeners(lteSurveyRecord);
+                if (lteSurveyRecord != null) notifyLteRecordListeners(lteSurveyRecord);
             } else if (cellInfo instanceof CellInfoGsm)
             {
                 final GsmRecord gsmRecord = generateGsmSurveyRecord((CellInfoGsm) cellInfo);
