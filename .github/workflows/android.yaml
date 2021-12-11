@@ -34,8 +34,10 @@ jobs:
           java-version: 1.11
       - name: Build debug APK
         run: bash ./gradlew assembleDebug --stacktrace
+      - name: Get APK name
+        run: export BASE_NAME=`./gradlew :networksurvey:properties -q | grep 'archivesBaseName:' | awk '{print $2}'`
       - name: Upload APK
         uses: actions/upload-artifact@v1
         with:
           name: app
-          path: app/build/outputs/apk/debug
+          path: app/build/outputs/apk/debug/$BASE_NAME.apk

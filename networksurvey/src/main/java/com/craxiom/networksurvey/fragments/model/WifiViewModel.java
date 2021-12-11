@@ -80,11 +80,6 @@ public class WifiViewModel extends ViewModel
         return apsInLastScan;
     }
 
-    public void setScanNumber(int newScanNumber)
-    {
-        scanNumber.postValue(newScanNumber);
-    }
-
     public LiveData<Boolean> areUpdatesPaused()
     {
         return updatesPaused;

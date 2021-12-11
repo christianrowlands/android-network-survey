@@ -58,7 +58,7 @@
                         style="@style/LabelStyle"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="@string/enb_id_initial"
+                        android:text="@string/enb_id_label"
                         android:textAppearance="@style/LabelText" />
 
                     <TextView
@@ -80,7 +80,7 @@
                         style="@style/LabelStyle"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="@string/sector_id_initial"
+                        android:text="@string/sector_id_label"
                         android:textAppearance="@style/LabelText" />
 
                     <TextView

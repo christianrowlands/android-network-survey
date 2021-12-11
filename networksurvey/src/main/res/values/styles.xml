@@ -31,6 +31,11 @@
         <item name="colorControlActivated">@color/colorCardDark</item>
     </style>
 
+    <style name="CellularTitleText" parent="TextAppearance.AppCompat">
+        <item name="android:textSize">22sp</item>
+        <item name="android:textColor">@color/colorAccent</item>
+    </style>
+
     <style name="TitleText" parent="TextAppearance.AppCompat">
         <item name="android:textSize">22sp</item>
         <item name="android:textColor">#c2c1c1</item>
@@ -41,6 +46,21 @@
         <item name="android:textColor">#FFFFFF</item>
     </style>
 
+    <style name="StandardText" parent="TextAppearance.AppCompat">
+        <item name="android:autoSizeMaxTextSize">18sp</item>
+        <item name="android:autoSizeMinTextSize">6sp</item>
+        <item name="android:maxLines">1</item>
+        <item name="android:autoSizeTextType">uniform</item>
+        <item name="android:autoSizeStepGranularity">2sp</item>
+        <item name="android:textSize">18sp</item>
+        <item name="android:gravity">center</item>
+        <item name="android:textColor">@color/normalText</item>
+        <item name="android:layout_marginTop">@dimen/x_small_margin</item>
+        <item name="android:layout_marginBottom">@dimen/x_small_margin</item>
+        <item name="android:layout_marginStart">@dimen/small_margin</item>
+        <item name="android:layout_marginEnd">@dimen/small_margin</item>
+    </style>
+
     <style name="LabelText" parent="TextAppearance.AppCompat">
         <item name="android:textSize">18sp</item>
         <item name="android:textColor">#c2c1c1</item>
@@ -48,6 +68,18 @@
 
     <style name="DescriptionText" parent="TextAppearance.AppCompat">
         <item name="android:textSize">14sp</item>
+        <item name="android:textColor">#c2c1c1</item>
+    </style>
+
+    <style name="SmallLabelText" parent="TextAppearance.AppCompat">
+        <item name="android:textSize">12sp</item>
+        <item name="android:textColor">#c2c1c1</item>
+        <item name="android:gravity">center</item>
+    </style>
+
+    <style name="CardTitleStyle" parent="android:Widget.TextView">
+        <item name="android:textSize">18sp</item>
+        <item name="android:textStyle">bold</item>
         <item name="android:textColor">#c2c1c1</item>
     </style>
 

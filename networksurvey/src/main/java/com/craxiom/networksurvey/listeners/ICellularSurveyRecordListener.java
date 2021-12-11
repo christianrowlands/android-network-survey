@@ -47,8 +47,23 @@ public interface ICellularSurveyRecordListener
     /**
      * Called when a new NR Survey Record is ready.
      *
-     * @param nrRecord  the New Radio (5G) record.
+     * @param nrRecord the New Radio (5G) record.
      * @since 1.5.0
      */
     void onNrSurveyRecord(NrRecord nrRecord);
+
+    /**
+     * Notification of the current Data and Voice network types. This method is called even when the values have not
+     * changed.
+     * <p>
+     * See {@link com.craxiom.networksurvey.CalculationUtils#getNetworkType(int)} for the possible string values.
+     *
+     * @param dataNetworkType  The data network type (e.g. "LTE"), which might be different than the voice network type.
+     * @param voiceNetworkType The voice network type (e.g. "LTE").
+     * @since 1.6.0
+     */
+    default void onNetworkType(String dataNetworkType, String voiceNetworkType)
+    {
+
+    }
 }

@@ -27,8 +27,6 @@ import android.telephony.CellSignalStrengthNr;
 import android.telephony.CellSignalStrengthWcdma;
 import android.telephony.ServiceState;
 import android.telephony.TelephonyManager;
-import android.view.View;
-import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.RequiresApi;
@@ -58,10 +56,8 @@ import com.craxiom.messaging.gnss.Constellation;
 import com.craxiom.messaging.phonestate.SimState;
 import com.craxiom.messaging.wifi.EncryptionType;
 import com.craxiom.networksurvey.BuildConfig;
-import com.craxiom.networksurvey.CalculationUtils;
 import com.craxiom.networksurvey.GpsListener;
 import com.craxiom.networksurvey.NetworkSurveyActivity;
-import com.craxiom.networksurvey.R;
 import com.craxiom.networksurvey.constants.BluetoothMessageConstants;
 import com.craxiom.networksurvey.constants.CdmaMessageConstants;
 import com.craxiom.networksurvey.constants.DeviceStatusMessageConstants;
@@ -72,7 +68,6 @@ import com.craxiom.networksurvey.constants.NetworkSurveyConstants;
 import com.craxiom.networksurvey.constants.NrMessageConstants;
 import com.craxiom.networksurvey.constants.UmtsMessageConstants;
 import com.craxiom.networksurvey.constants.WifiBeaconMessageConstants;
-import com.craxiom.networksurvey.fragments.NetworkDetailsFragment;
 import com.craxiom.networksurvey.listeners.IBluetoothSurveyRecordListener;
 import com.craxiom.networksurvey.listeners.ICellularSurveyRecordListener;
 import com.craxiom.networksurvey.listeners.IDeviceStatusListener;
@@ -97,7 +92,6 @@ import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Collection;
 import java.util.List;
-import java.util.Locale;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.ExecutorService;
@@ -327,9 +321,11 @@ public class SurveyRecordProcessor
      * Process the updated list of {@link CellInfo} objects from the {@link TelephonyManager}.  This list is converted to the appropriate ProtoBuf defined
      * survey records and any listeners are notified of the new records.
      *
-     * @param allCellInfo The List of {@link CellInfo} records to convert to survey records.
+     * @param allCellInfo      The List of {@link CellInfo} records to convert to survey records.
+     * @param dataNetworkType  The data network type (e.g. "LTE"), which might be different than the voice network type.
+     * @param voiceNetworkType The voice network type (e.g. "LTE").
      */
-    void onCellInfoUpdate(List<CellInfo> allCellInfo, String currentTechnology) throws SecurityException
+    void onCellInfoUpdate(List<CellInfo> allCellInfo, String dataNetworkType, String voiceNetworkType) throws SecurityException
     {
         // synchronized to make sure that we are only processing one list of Cell Info objects at a time.
         synchronized (cellInfoProcessingLock)
@@ -339,7 +335,7 @@ public class SurveyRecordProcessor
                 /* Timber.v("currentTechnology=%s", currentTechnology);
                 Timber.v("allCellInfo: ");
                 allCellInfo.forEach(cellInfo -> Timber.v(cellInfo.toString()));*/
-                updateCurrentTechnologyUi(currentTechnology);
+                notifyNetworkTypeListeners(dataNetworkType, voiceNetworkType);
 
                 if (allCellInfo != null && !allCellInfo.isEmpty())
                 {
@@ -348,12 +344,12 @@ public class SurveyRecordProcessor
                     allCellInfo.forEach(this::processCellInfo);
                 } else
                 {
-                    updateUi(LteRecord.getDefaultInstance().getData());
+                    // TODO DO we want to clear out the UI updateUi(LteRecord.getDefaultInstance().getData());
                 }
             } catch (Exception e)
             {
                 Timber.e(e, "Unable to display and log an LTE Survey Record");
-                updateUi(LteRecord.getDefaultInstance().getData());
+                // TODO DO we want to clear out the UI updateUi(LteRecord.getDefaultInstance().getData());
             }
         }
     }
@@ -543,25 +539,14 @@ public class SurveyRecordProcessor
      */
     private void processCellInfo(CellInfo cellInfo)
     {
-        final boolean isServingCell = cellInfo.isRegistered();
-        final boolean isLteRecord = cellInfo instanceof CellInfoLte;
-
         // We only want to take the time to process a record if we are going to do something with it.  Currently, that
         // means logging, sending to a server, or updating the UI with the latest LTE information.
-        if (!cellularSurveyRecordListeners.isEmpty() || (isServingCell && isLteRecord && NetworkDetailsFragment.visible.get()))
+        if (!cellularSurveyRecordListeners.isEmpty())
         {
-            if (isLteRecord)
+            if (cellInfo instanceof CellInfoLte)
             {
                 final LteRecord lteSurveyRecord = generateLteSurveyRecord((CellInfoLte) cellInfo);
-                if (lteSurveyRecord == null)
-                {
-                    Timber.w("Could not generate a Server LteRecord from the CellInfoLte");
-                    if (isServingCell) updateUi(LteRecord.getDefaultInstance().getData());
-                    return;
-                }
-
-                if (isServingCell) updateUi(lteSurveyRecord.getData());
-                notifyLteRecordListeners(lteSurveyRecord);
+                if (lteSurveyRecord == null) notifyLteRecordListeners(lteSurveyRecord);
             } else if (cellInfo instanceof CellInfoGsm)
             {
                 final GsmRecord gsmRecord = generateGsmSurveyRecord((CellInfoGsm) cellInfo);
@@ -576,7 +561,6 @@ public class SurveyRecordProcessor
                 if (umtsRecord != null) notifyUmtsRecordListeners(umtsRecord);
             } else if (android.os.Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q && cellInfo instanceof CellInfoNr)
             {
-                // TODO: 8/20/2021 Update UI in a separate ticket
                 final NrRecord nrRecord = generateNrSurveyRecord((CellInfoNr) cellInfo);
                 if (nrRecord != null) notifyNrRecordListeners(nrRecord);
             }
@@ -1689,6 +1673,26 @@ public class SurveyRecordProcessor
     }
 
     /**
+     * Notify {@link #cellularSurveyRecordListeners} of a the current data and voice network types.
+     *
+     * @param dataNetworkType  The data network type (e.g. "LTE"), which might be different than the voice network type.
+     * @param voiceNetworkType The voice network type (e.g. "LTE").
+     * @since 1.6.0
+     */
+    private void notifyNetworkTypeListeners(String dataNetworkType, String voiceNetworkType)
+    {
+        cellularSurveyRecordListeners.forEach(l -> {
+            try
+            {
+                l.onNetworkType(dataNetworkType, voiceNetworkType);
+            } catch (Exception e)
+            {
+                Timber.e(e, "Unable to notify a Cellular Survey Record Listener because of an exception");
+            }
+        });
+    }
+
+    /**
      * Notify all the listeners that we have a new group of 802.11 Beacon Records available.
      *
      * @param wifiBeaconRecords The new list 802.11 Beacon Survey Records to send to the listeners.
@@ -1814,139 +1818,6 @@ public class SurveyRecordProcessor
             {
                 Timber.e(e, "Unable to notify a Phone State Listener because of an exception");
             }
-        }
-    }
-
-    /**
-     * Sets the provided String as the current technology in the UI.
-     *
-     * @param currentTechnology The {@link String} for the current serving cell.
-     */
-    private void updateCurrentTechnologyUi(String currentTechnology)
-    {
-        if (!NetworkDetailsFragment.visible.get())
-        {
-            Timber.v("Skipping updating the Current Technology UI because it is not visible");
-            return;
-        }
-
-        // Clear out the UI if the technology is not LTE
-        if (!NetworkSurveyConstants.LTE.equals(currentTechnology) && !NetworkSurveyConstants.LTE_CA.equals(currentTechnology))
-        {
-            updateUi(LteRecord.getDefaultInstance().getData());
-        }
-
-        synchronized (activityUpdateLock)
-        {
-            if (networkSurveyActivity != null && NetworkDetailsFragment.visible.get())
-            {
-                networkSurveyActivity.runOnUiThread(() -> setText(R.id.current_technology, R.string.current_technology_label, currentTechnology));
-            }
-        }
-    }
-
-    /**
-     * Updates the UI with the information from the latest survey record.
-     *
-     * @param lteSurveyRecord The latest LTE serving cell record.
-     */
-    private void updateUi(LteRecordData lteSurveyRecord)
-    {
-        synchronized (activityUpdateLock)
-        {
-            if (networkSurveyActivity == null || !NetworkDetailsFragment.visible.get())
-            {
-                Timber.v("Skipping updating the Network Details UI because it is not visible");
-                return;
-            }
-
-            networkSurveyActivity.runOnUiThread(() -> {
-
-                final String provider = lteSurveyRecord.getProvider();
-                setText(R.id.carrier, R.string.carrier_label, provider != null ? provider : "");
-
-                setText(R.id.mcc, R.string.mcc_label, lteSurveyRecord.hasMcc() ? String.valueOf(lteSurveyRecord.getMcc().getValue()) : "");
-                setText(R.id.mnc, R.string.mnc_label, lteSurveyRecord.hasMnc() ? String.valueOf(lteSurveyRecord.getMnc().getValue()) : "");
-                setText(R.id.tac, R.string.tac_label, lteSurveyRecord.hasTac() ? String.valueOf(lteSurveyRecord.getTac().getValue()) : "");
-
-                if (lteSurveyRecord.hasEci())
-                {
-                    final int ci = lteSurveyRecord.getEci().getValue();
-                    setText(R.id.cid, R.string.cid_label, String.valueOf(ci));
-
-                    // The Cell Identity is 28 bits long. The first 20 bits represent the Macro eNodeB ID. The last 8 bits
-                    // represent the sector.  Strip off the last 8 bits to get the Macro eNodeB ID.
-                    int eNodebId = CalculationUtils.getEnodebIdFromCellId(ci);
-                    setText(R.id.enbId, R.string.enb_id_label, String.valueOf(eNodebId));
-
-                    int sectorId = CalculationUtils.getSectorIdFromCellId(ci);
-                    setText(R.id.sectorId, R.string.sector_id_label, String.valueOf(sectorId));
-                } else
-                {
-                    setText(R.id.cid, R.string.cid_label, "");
-                    setText(R.id.enbId, R.string.enb_id_label, "");
-                    setText(R.id.sectorId, R.string.sector_id_label, "");
-                }
-
-                setText(R.id.earfcn, R.string.earfcn_label, lteSurveyRecord.hasEarfcn() ? String.valueOf(lteSurveyRecord.getEarfcn().getValue()) : "");
-
-                if (lteSurveyRecord.hasPci())
-                {
-                    final int pci = lteSurveyRecord.getPci().getValue();
-                    int primarySyncSequence = CalculationUtils.getPrimarySyncSequence(pci);
-                    int secondarySyncSequence = CalculationUtils.getSecondarySyncSequence(pci);
-                    setText(R.id.pci, R.string.pci_label, pci + " (" + primarySyncSequence + "/" + secondarySyncSequence + ")");
-                } else
-                {
-                    setText(R.id.pci, R.string.pci_label, "");
-                }
-
-                setText(R.id.bandwidth, R.string.bandwidth_label, LteMessageConstants.getLteBandwidth(lteSurveyRecord.getLteBandwidth()));
-
-                checkAndSetLocation(lteSurveyRecord);
-
-                setText(R.id.rsrp, R.string.rsrp_label, lteSurveyRecord.hasRsrp() ? String.valueOf(lteSurveyRecord.getRsrp().getValue()) : "");
-                setText(R.id.rsrq, R.string.rsrq_label, lteSurveyRecord.hasRsrq() ? String.valueOf(lteSurveyRecord.getRsrq().getValue()) : "");
-                setText(R.id.ta, R.string.ta_label, lteSurveyRecord.hasTa() ? String.valueOf(lteSurveyRecord.getTa().getValue()) : "");
-            });
-        }
-    }
-
-    /**
-     * Sets the provided text on the TextView with the provided Text View ID.
-     *
-     * @param textViewId       The ID that is used to lookup the TextView.
-     * @param stringResourceId The resource ID for the String to populate.
-     * @param text             The text to set on the text view.
-     */
-    private void setText(int textViewId, int stringResourceId, String text)
-    {
-        if (networkSurveyActivity == null || !NetworkDetailsFragment.visible.get()) return;
-
-        final View viewById = networkSurveyActivity.findViewById(textViewId);
-        if (viewById != null)
-        {
-            ((TextView) viewById).setText(networkSurveyActivity.getString(stringResourceId, text));
-        }
-    }
-
-    /**
-     * Checks to make sure the location is not null, and then updates the appropriate UI elements.
-     *
-     * @param lteRecord The LTE Record to check and see if it has a valid location.
-     */
-    private void checkAndSetLocation(LteRecordData lteRecord)
-    {
-        final double latitude = lteRecord.getLatitude();
-        final double longitude = lteRecord.getLongitude();
-        if (latitude == 0 && longitude == 0)
-        {
-            setText(R.id.latitude, R.string.latitude_label, "");
-            setText(R.id.longitude, R.string.longitude_label, "");
-        } else
-        {
-            setText(R.id.latitude, R.string.latitude_label, String.format(Locale.US, "%.7f", latitude));
-            setText(R.id.longitude, R.string.longitude_label, String.format(Locale.US, "%.7f", longitude));
         }
     }
 }

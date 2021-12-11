@@ -21,6 +21,7 @@ import android.content.pm.PackageManager;
 import android.location.GnssMeasurementsEvent;
 import android.location.GnssStatus;
 import android.location.Location;
+import android.location.LocationListener;
 import android.location.LocationManager;
 import android.net.wifi.ScanResult;
 import android.net.wifi.WifiManager;
@@ -447,6 +448,26 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
     public String getDeviceId()
     {
         return deviceId;
+    }
+
+    /**
+     * Registers a new listener for changes to the location information.
+     *
+     * @since 1.6.0
+     */
+    public void registerLocationListener(LocationListener locationListener)
+    {
+        gpsListener.registerListener(locationListener);
+    }
+
+    /**
+     * Unregisters a listener for changes to the location information.
+     *
+     * @since 1.6.0
+     */
+    public void unregisterLocationListener(LocationListener locationListener)
+    {
+        gpsListener.unregisterListener(locationListener);
     }
 
     /**
@@ -1154,7 +1175,9 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
                     telephonyManager.requestCellInfoUpdate(executorService, cellInfoCallback);
                 } else
                 {
-                    execute(() -> surveyRecordProcessor.onCellInfoUpdate(telephonyManager.getAllCellInfo(), CalculationUtils.getNetworkType(telephonyManager.getDataNetworkType())));
+                    execute(() -> surveyRecordProcessor.onCellInfoUpdate(telephonyManager.getAllCellInfo(),
+                            CalculationUtils.getNetworkType(telephonyManager.getDataNetworkType()),
+                            CalculationUtils.getNetworkType(telephonyManager.getVoiceNetworkType())));
                 }
             } catch (SecurityException e)
             {
@@ -1203,7 +1226,9 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
                         execute(() -> {
                             try
                             {
-                                surveyRecordProcessor.onCellInfoUpdate(telephonyManager.getAllCellInfo(), CalculationUtils.getNetworkType(telephonyManager.getDataNetworkType()));
+                                surveyRecordProcessor.onCellInfoUpdate(telephonyManager.getAllCellInfo(),
+                                        CalculationUtils.getNetworkType(telephonyManager.getDataNetworkType()),
+                                        CalculationUtils.getNetworkType(telephonyManager.getVoiceNetworkType()));
                             } catch (Throwable t)
                             {
                                 Timber.e(t, "Failed to pass the cellular info to the survey record processor");
@@ -1345,13 +1370,15 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
                 @Override
                 public void onCellInfo(@NonNull List<CellInfo> cellInfo)
                 {
-                    String networkType = "Missing Permission";
+                    String dataNetworkType = "Unknown";
+                    String voiceNetworkType = "Unknown";
                     if (ActivityCompat.checkSelfPermission(NetworkSurveyService.this, Manifest.permission.READ_PHONE_STATE) == PackageManager.PERMISSION_GRANTED)
                     {
-                        networkType = CalculationUtils.getNetworkType(telephonyManager.getDataNetworkType());
+                        dataNetworkType = CalculationUtils.getNetworkType(telephonyManager.getDataNetworkType());
+                        voiceNetworkType = CalculationUtils.getNetworkType(telephonyManager.getVoiceNetworkType());
                     }
 
-                    surveyRecordProcessor.onCellInfoUpdate(cellInfo, networkType);
+                    surveyRecordProcessor.onCellInfoUpdate(cellInfo, dataNetworkType, voiceNetworkType);
                 }
 
                 @Override
