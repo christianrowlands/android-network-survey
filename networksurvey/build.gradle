@@ -35,6 +35,10 @@ android {
         sourceCompatibility = '1.8'
         targetCompatibility = '1.8'
     }
+    buildFeatures {
+        viewBinding true
+        dataBinding true
+    }
     lintOptions {
         abortOnError false
     }
