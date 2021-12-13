@@ -5,6 +5,9 @@ import com.craxiom.messaging.GsmRecord;
 import com.craxiom.messaging.LteRecord;
 import com.craxiom.messaging.NrRecord;
 import com.craxiom.messaging.UmtsRecord;
+import com.craxiom.networksurvey.model.CellularRecordWrapper;
+
+import java.util.List;
 
 /**
  * Listener interface for those interested in being notified when a new cellular Survey Record is ready.
@@ -53,6 +56,22 @@ public interface ICellularSurveyRecordListener
     void onNrSurveyRecord(NrRecord nrRecord);
 
     /**
+     * Called when a new batch of cellular survey records are ready.
+     * <p>
+     * This method SHOULD NOT be used in addition to the individual protocol listener methods. It contains the full
+     * group (i.e. records with the same {@link com.craxiom.networksurvey.constants.CellularMessageConstants#GROUP_NUMBER_COLUMN})
+     * associated with a single cellular scan (not really a scan, but an snapshot in time of what towers the phone can
+     * see). The individual methods were used prior to this listener method being added and if a listener consumes from
+     * both types of methods, then it will receive duplicate records.
+     *
+     * @param cellularGroup the next group/batch of cellular survey records.
+     * @since 1.6.0
+     */
+    default void onCellularBatch(List<CellularRecordWrapper> cellularGroup)
+    {
+    }
+
+    /**
      * Notification of the current Data and Voice network types. This method is called even when the values have not
      * changed.
      * <p>
@@ -64,6 +83,5 @@ public interface ICellularSurveyRecordListener
      */
     default void onNetworkType(String dataNetworkType, String voiceNetworkType)
     {
-
     }
 }

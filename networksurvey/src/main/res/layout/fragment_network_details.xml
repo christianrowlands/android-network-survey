@@ -700,11 +700,10 @@
                 </LinearLayout>
 
                 <TableLayout
-                    android:id="@+id/lte_neighbors_table"
+                    android:id="@+id/lte_neighbors_table_headers"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="@dimen/small_margin"
-                    android:layout_marginBottom="@dimen/small_margin"
                     android:stretchColumns="*">
 
                     <TableRow tools:ignore="UselessParent">
@@ -739,6 +738,15 @@
                             android:layout_weight="1"
                             android:padding="3dip" />
                     </TableRow>
+                </TableLayout>
+
+                <TableLayout
+                    android:id="@+id/lte_neighbors_table"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="@dimen/small_margin"
+                    android:stretchColumns="*">
+
                 </TableLayout>
 
             </LinearLayout>

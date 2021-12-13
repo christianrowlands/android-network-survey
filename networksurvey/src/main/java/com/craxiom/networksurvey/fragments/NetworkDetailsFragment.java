@@ -38,14 +38,20 @@ import com.craxiom.networksurvey.databinding.FragmentNetworkDetailsBinding;
 import com.craxiom.networksurvey.fragments.model.CellularViewModel;
 import com.craxiom.networksurvey.fragments.model.LteNeighbor;
 import com.craxiom.networksurvey.listeners.ICellularSurveyRecordListener;
+import com.craxiom.networksurvey.model.CellularProtocol;
+import com.craxiom.networksurvey.model.CellularRecordWrapper;
 import com.craxiom.networksurvey.services.NetworkSurveyService;
 import com.craxiom.networksurvey.util.ColorUtils;
 import com.craxiom.networksurvey.util.MathUtils;
 
 import java.text.DecimalFormat;
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.List;
 import java.util.SortedSet;
+import java.util.TreeSet;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.stream.Collectors;
 
 import app.futured.donut.DonutProgressView;
 import app.futured.donut.DonutSection;
@@ -146,31 +152,32 @@ public class NetworkDetailsFragment extends AServiceDataFragment implements ICel
     @Override
     public void onGsmSurveyRecord(GsmRecord gsmRecord)
     {
-        // TODO Finish off all of these methods
     }
 
     @Override
     public void onCdmaSurveyRecord(CdmaRecord cdmaRecord)
     {
-
     }
 
     @Override
     public void onUmtsSurveyRecord(UmtsRecord umtsRecord)
     {
-
     }
 
     @Override
     public void onLteSurveyRecord(LteRecord lteRecord)
     {
-        processLteRecord(lteRecord);
     }
 
     @Override
     public void onNrSurveyRecord(NrRecord nrRecord)
     {
+    }
 
+    @Override
+    public void onCellularBatch(List<CellularRecordWrapper> cellularGroup)
+    {
+        processCellularGroup(cellularGroup);
     }
 
     @Override
@@ -340,35 +347,91 @@ public class NetworkDetailsFragment extends AServiceDataFragment implements ICel
         viewModel.getLteNeighbors().observe(viewLifecycleOwner, this::updateLteNeighborsView);
     }
 
-    private void processLteRecord(LteRecord record)
+    /**
+     * The method responsible for handling a new batch of cellular records.
+     *
+     * @param cellularGroup The new batch of cellular records.
+     * @since 1.6.0
+     */
+    private void processCellularGroup(List<CellularRecordWrapper> cellularGroup)
     {
-        final LteRecordData data = record.getData();
-
-        if (data.hasServingCell() && data.getServingCell().getValue())
+        CellularProtocol servingCellProtocol = null;
+        List<LteRecordData> lteNeighbors = new ArrayList<>();
+        for (CellularRecordWrapper cellularRecord : cellularGroup)
         {
-            viewModel.setCarrier(data.getProvider());
-            viewModel.setMcc(data.hasMcc() ? String.valueOf(data.getMcc().getValue()) : "");
-            viewModel.setMnc(data.hasMnc() ? String.valueOf(data.getMnc().getValue()) : "");
-            viewModel.setAreaCode(data.hasTac() ? String.valueOf(data.getTac().getValue()) : "");
-            viewModel.setCellId(data.hasEci() ? (long) data.getEci().getValue() : null);
-            viewModel.setChannelNumber(data.hasEarfcn() ? String.valueOf(data.getEarfcn().getValue()) : "");
-
-            if (data.hasPci())
+            switch (cellularRecord.cellularProtocol)
             {
-                final int pci = data.getPci().getValue();
-                int primarySyncSequence = CalculationUtils.getPrimarySyncSequence(pci);
-                int secondarySyncSequence = CalculationUtils.getSecondarySyncSequence(pci);
-                viewModel.setPci(pci + " (" + primarySyncSequence + "/" + secondarySyncSequence + ")");
-            } else
-            {
-                viewModel.setPci("");
+                // TODO Add the other protocols
+                case LTE:
+                    final LteRecordData lteData = ((LteRecord) cellularRecord.cellularRecord).getData();
+                    if (lteData.hasServingCell() && lteData.getServingCell().getValue())
+                    {
+                        processLteServingCell(lteData);
+                        servingCellProtocol = CellularProtocol.LTE;
+                    } else
+                    {
+                        lteNeighbors.add(lteData);
+                    }
+                    break;
             }
-            viewModel.setBandwidth(LteMessageConstants.getLteBandwidth(data.getLteBandwidth()));
-            viewModel.setTa(data.hasTa() ? String.valueOf(data.getTa().getValue()) : "");
-
-            viewModel.setRsrp(data.hasRsrp() ? (int) data.getRsrp().getValue() : null);
-            viewModel.setRsrq(data.hasRsrq() ? (int) data.getRsrq().getValue() : null);
         }
+
+        processLteNeighbors(lteNeighbors);
+    }
+
+    /**
+     * Takes in the LTE serving cell details and sets it in the view model so that it can be
+     * displayed in the UI.
+     *
+     * @param data The details for the LTE serving cell record.
+     * @since 1.6.0
+     */
+    private void processLteServingCell(LteRecordData data)
+    {
+        viewModel.setCarrier(data.getProvider());
+        viewModel.setMcc(data.hasMcc() ? String.valueOf(data.getMcc().getValue()) : "");
+        viewModel.setMnc(data.hasMnc() ? String.valueOf(data.getMnc().getValue()) : "");
+        viewModel.setAreaCode(data.hasTac() ? String.valueOf(data.getTac().getValue()) : "");
+        viewModel.setCellId(data.hasEci() ? (long) data.getEci().getValue() : null);
+        viewModel.setChannelNumber(data.hasEarfcn() ? String.valueOf(data.getEarfcn().getValue()) : "");
+
+        if (data.hasPci())
+        {
+            final int pci = data.getPci().getValue();
+            int primarySyncSequence = CalculationUtils.getPrimarySyncSequence(pci);
+            int secondarySyncSequence = CalculationUtils.getSecondarySyncSequence(pci);
+            viewModel.setPci(pci + " (" + primarySyncSequence + "/" + secondarySyncSequence + ")");
+        } else
+        {
+            viewModel.setPci("");
+        }
+        viewModel.setBandwidth(LteMessageConstants.getLteBandwidth(data.getLteBandwidth()));
+        viewModel.setTa(data.hasTa() ? String.valueOf(data.getTa().getValue()) : "");
+
+        viewModel.setRsrp(data.hasRsrp() ? (int) data.getRsrp().getValue() : null);
+        viewModel.setRsrq(data.hasRsrq() ? (int) data.getRsrq().getValue() : null);
+    }
+
+    /**
+     * Takes in the current group of LTE neighbors, converts them to a {@link LteNeighbor}, and then
+     * updates the view model.
+     *
+     * @param neighbors The current group of Lte Neighbors.
+     * @since 1.6.0
+     */
+    private void processLteNeighbors(List<LteRecordData> neighbors)
+    {
+        final TreeSet<LteNeighbor> lteNeighbors = neighbors.stream().map(data -> {
+            LteNeighbor.LteNeighborBuilder builder = LteNeighbor.builder();
+            if (data.hasEarfcn()) builder.earfcn(data.getEarfcn().getValue());
+            if (data.hasPci()) builder.pci(data.getPci().getValue());
+            if (data.hasRsrp()) builder.rsrp((int) data.getRsrp().getValue());
+            if (data.hasRsrq()) builder.rsrq((int) data.getRsrq().getValue());
+            if (data.hasTa()) builder.ta(data.getTa().getValue());
+            return builder.build();
+        }).sorted().collect(Collectors.toCollection(TreeSet::new));
+
+        viewModel.setLteNeighbors(lteNeighbors);
     }
 
     private void updateLteEci(Long ci)
@@ -430,6 +493,8 @@ public class NetworkDetailsFragment extends AServiceDataFragment implements ICel
 
         final TableLayout lteNeighborsTable = binding.lteNeighborsTable;
 
+        lteNeighborsTable.removeAllViews();
+
         for (LteNeighbor neighbor : neighbors)
         {
             final TableRow row = new TableRow(context);
@@ -465,7 +530,7 @@ public class NetworkDetailsFragment extends AServiceDataFragment implements ICel
             cellText = String.valueOf(value);
         }
 
-        final TextView view = new TextView(context, null, 0, R.style.StandardText);
+        final TextView view = new TextView(context, null, 0, R.style.TableText);
         view.setText(cellText);
         row.addView(view);
     }

@@ -61,6 +61,12 @@
         <item name="android:layout_marginEnd">@dimen/small_margin</item>
     </style>
 
+    <style name="TableText" parent="StandardText">
+        <item name="android:textSize">14sp</item>
+        <item name="android:autoSizeMaxTextSize">14sp</item>
+        <item name="android:autoSizeMinTextSize">2sp</item>
+    </style>
+
     <style name="LabelText" parent="TextAppearance.AppCompat">
         <item name="android:textSize">18sp</item>
         <item name="android:textColor">#c2c1c1</item>

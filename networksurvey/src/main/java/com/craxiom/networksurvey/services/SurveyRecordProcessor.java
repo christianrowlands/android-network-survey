@@ -73,6 +73,8 @@ import com.craxiom.networksurvey.listeners.ICellularSurveyRecordListener;
 import com.craxiom.networksurvey.listeners.IDeviceStatusListener;
 import com.craxiom.networksurvey.listeners.IGnssSurveyRecordListener;
 import com.craxiom.networksurvey.listeners.IWifiSurveyRecordListener;
+import com.craxiom.networksurvey.model.CellularProtocol;
+import com.craxiom.networksurvey.model.CellularRecordWrapper;
 import com.craxiom.networksurvey.model.WifiRecordWrapper;
 import com.craxiom.networksurvey.util.IOUtils;
 import com.craxiom.networksurvey.util.MathUtils;
@@ -90,6 +92,7 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Set;
@@ -340,8 +343,15 @@ public class SurveyRecordProcessor
                 if (allCellInfo != null && !allCellInfo.isEmpty())
                 {
                     groupNumber++; // Group all the records found in this scan iteration.
+                    final List<CellularRecordWrapper> cellularRecords = new ArrayList<>(allCellInfo.size());
 
-                    allCellInfo.forEach(this::processCellInfo);
+                    for (CellInfo cellInfo : allCellInfo)
+                    {
+                        final CellularRecordWrapper cellularRecord = processCellInfo(cellInfo);
+                        if (cellularRecord != null) cellularRecords.add(cellularRecord);
+                    }
+
+                    notifyCellularListeners(cellularRecords);
                 } else
                 {
                     // TODO DO we want to clear out the UI updateUi(LteRecord.getDefaultInstance().getData());
@@ -537,7 +547,7 @@ public class SurveyRecordProcessor
      * @param cellInfo The Cell Info object with the details.
      * @since 0.0.5
      */
-    private void processCellInfo(CellInfo cellInfo)
+    private CellularRecordWrapper processCellInfo(CellInfo cellInfo)
     {
         // We only want to take the time to process a record if we are going to do something with it.  Currently, that
         // means logging, sending to a server, or updating the UI with the latest LTE information.
@@ -546,7 +556,11 @@ public class SurveyRecordProcessor
             if (cellInfo instanceof CellInfoLte)
             {
                 final LteRecord lteSurveyRecord = generateLteSurveyRecord((CellInfoLte) cellInfo);
-                if (lteSurveyRecord != null) notifyLteRecordListeners(lteSurveyRecord);
+                if (lteSurveyRecord != null)
+                {
+                    notifyLteRecordListeners(lteSurveyRecord);
+                    return new CellularRecordWrapper(CellularProtocol.LTE, lteSurveyRecord);
+                }
             } else if (cellInfo instanceof CellInfoGsm)
             {
                 final GsmRecord gsmRecord = generateGsmSurveyRecord((CellInfoGsm) cellInfo);
@@ -565,6 +579,8 @@ public class SurveyRecordProcessor
                 if (nrRecord != null) notifyNrRecordListeners(nrRecord);
             }
         }
+
+        return null; // TODO Return the other record types as well
     }
 
     /**
@@ -1668,6 +1684,29 @@ public class SurveyRecordProcessor
             } catch (Exception e)
             {
                 Timber.e(e, "Unable to notify a Cellular Survey Record Listener because of an exception");
+            }
+        });
+    }
+
+    /**
+     * Notifies all the listeners of a new batch of cellular records. This batch represents a single scan of the
+     * towers this device can see. It can contain multiple technologies (e.g. NR and LTE), which is why it is a list of
+     * generic messages and not a specific cellular protocol message.
+     *
+     * @param cellularRecords The batch of cellular records.
+     * @since 1.6.0
+     */
+    private void notifyCellularListeners(List<CellularRecordWrapper> cellularRecords)
+    {
+        if (cellularRecords.isEmpty()) return;
+
+        cellularSurveyRecordListeners.forEach(l -> {
+            try
+            {
+                l.onCellularBatch(cellularRecords);
+            } catch (Throwable t)
+            {
+                Timber.e(t, "Unable to notify a Cellular Survey Record Listener because of an exception");
             }
         });
     }
