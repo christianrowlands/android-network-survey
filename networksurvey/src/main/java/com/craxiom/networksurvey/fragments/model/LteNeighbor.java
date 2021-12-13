@@ -17,10 +17,15 @@ public class LteNeighbor implements Comparable<LteNeighbor>
      */
     public static final int UNSET_VALUE = Integer.MAX_VALUE;
 
+    @Builder.Default
     public int earfcn = UNSET_VALUE;
+    @Builder.Default
     public int pci = UNSET_VALUE;
+    @Builder.Default
     public int rsrp = UNSET_VALUE;
+    @Builder.Default
     public int rsrq = UNSET_VALUE;
+    @Builder.Default
     public int ta = UNSET_VALUE;
 
     @Override

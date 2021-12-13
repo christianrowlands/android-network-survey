@@ -31,7 +31,6 @@ import com.craxiom.messaging.LteRecordData;
 import com.craxiom.messaging.NrRecord;
 import com.craxiom.messaging.UmtsRecord;
 import com.craxiom.networksurvey.CalculationUtils;
-import com.craxiom.networksurvey.NetworkSurveyActivity;
 import com.craxiom.networksurvey.R;
 import com.craxiom.networksurvey.constants.LteMessageConstants;
 import com.craxiom.networksurvey.databinding.FragmentNetworkDetailsBinding;
@@ -112,9 +111,6 @@ public class NetworkDetailsFragment extends AServiceDataFragment implements ICel
         // instead of recalling the initialize view method each time the fragment is resumed.
         initializeLocationTextView();
 
-        final NetworkSurveyActivity activity = (NetworkSurveyActivity) getActivity();
-        if (activity != null) activity.runSingleScan();
-
         startAndBindToService();
     }
 
@@ -140,6 +136,8 @@ public class NetworkDetailsFragment extends AServiceDataFragment implements ICel
     {
         service.registerLocationListener(this);
         service.registerCellularSurveyRecordListener(this);
+
+        service.runSingleCellularScan();
     }
 
     @Override

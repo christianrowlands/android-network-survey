@@ -58,7 +58,7 @@ public class ColorUtils
             int green = (int) (minGreen + stepGreen * i);
             int blue = (int) (minBlue + stepBlue * i);
 
-            colors[i] = lightenColor(Color.rgb(red, green, blue), 0.2f);
+            colors[i] = lightenColor(Color.rgb(red, green, blue), 0.1f);
         }
 
         // Add the max color to the list (since it was not added as part of the calculation)

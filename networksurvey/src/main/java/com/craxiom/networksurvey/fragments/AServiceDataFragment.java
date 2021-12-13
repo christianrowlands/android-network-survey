@@ -34,6 +34,14 @@ public abstract class AServiceDataFragment extends Fragment
     {
         if (service != null) unregisterDataListeners(service);
 
+        try
+        {
+            requireContext().getApplicationContext().unbindService(surveyServiceConnection);
+        } catch (Throwable t)
+        {
+            Timber.e(t, "Could not unbind the service because it is not bound.");
+        }
+
         super.onPause();
     }
 
@@ -101,7 +109,7 @@ public abstract class AServiceDataFragment extends Fragment
         @Override
         public void onServiceDisconnected(final ComponentName name)
         {
-            Timber.i("%s service disconnected", name);
+            Timber.e("%s service disconnected", name);
             service = null;
         }
     }
