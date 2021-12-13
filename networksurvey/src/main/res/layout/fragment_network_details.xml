@@ -600,7 +600,6 @@
 
                         </androidx.constraintlayout.widget.ConstraintLayout>
 
-
                         <androidx.constraintlayout.widget.ConstraintLayout
                             android:id="@+id/rsrq_group"
                             android:layout_width="wrap_content"
@@ -654,7 +653,94 @@
                         </androidx.constraintlayout.widget.ConstraintLayout>
 
                     </LinearLayout>
+
                 </LinearLayout>
+
+            </LinearLayout>
+
+        </androidx.cardview.widget.CardView>
+
+        <androidx.cardview.widget.CardView
+            android:id="@+id/neighbors_card_view"
+            style="?attr/cardStyle"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            card_view:contentPadding="0dp">
+
+            <LinearLayout
+                android:layout_width="fill_parent"
+                android:layout_height="match_parent"
+                android:orientation="vertical">
+
+                <LinearLayout
+                    android:layout_width="fill_parent"
+                    android:layout_height="match_parent"
+                    android:background="@drawable/card_title"
+                    android:padding="3dp"
+                    android:layout_marginBottom="3dp"
+                    android:orientation="horizontal">
+
+                    <ImageView
+                        android:id="@+id/neighbors_icon"
+                        android:layout_width="16dp"
+                        android:layout_height="16dp"
+                        android:layout_gravity="center"
+                        android:layout_marginStart="@dimen/small_margin"
+                        android:layout_marginEnd="@dimen/small_margin"
+                        android:contentDescription="@string/my_location_icon_description"
+                        android:src="@drawable/ic_weak_signal" />
+
+                    <TextView
+                        android:id="@+id/neighbors_title"
+                        style="@style/CardTitleStyle"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="@string/card_title_neighbors_lte" />
+
+                </LinearLayout>
+
+                <TableLayout
+                    android:id="@+id/lte_neighbors_table"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/small_margin"
+                    android:layout_marginBottom="@dimen/small_margin"
+                    android:stretchColumns="*">
+
+                    <TableRow tools:ignore="UselessParent">
+
+                        <TextView
+                            android:text="@string/earfcn_label"
+                            style="@style/SmallLabelText"
+                            android:layout_weight="1"
+                            android:padding="3dip" />
+
+                        <TextView
+                            android:text="@string/pci_label"
+                            style="@style/SmallLabelText"
+                            android:layout_weight="1"
+                            android:padding="3dip" />
+
+                        <TextView
+                            android:text="@string/rsrp_label"
+                            style="@style/SmallLabelText"
+                            android:layout_weight="1"
+                            android:padding="3dip" />
+
+                        <TextView
+                            android:text="@string/rsrq_label"
+                            style="@style/SmallLabelText"
+                            android:layout_weight="1"
+                            android:padding="3dip" />
+
+                        <TextView
+                            android:text="@string/ta_label"
+                            style="@style/SmallLabelText"
+                            android:layout_weight="1"
+                            android:padding="3dip" />
+                    </TableRow>
+                </TableLayout>
+
             </LinearLayout>
 
         </androidx.cardview.widget.CardView>

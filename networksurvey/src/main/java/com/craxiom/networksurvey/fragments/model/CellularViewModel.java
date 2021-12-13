@@ -6,6 +6,8 @@ import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
 import androidx.lifecycle.ViewModel;
 
+import java.util.SortedSet;
+
 /**
  * View model for notifying the {@link com.craxiom.networksurvey.fragments.NetworkDetailsFragment} of any data updates,
  * i.e. location updates, cellular scan updates, etc.
@@ -34,9 +36,9 @@ public class CellularViewModel extends ViewModel
     private final MutableLiveData<String> pci = new MutableLiveData<>();
     private final MutableLiveData<String> bandwidth = new MutableLiveData<>();
     private final MutableLiveData<String> ta = new MutableLiveData<>();
-
     private final MutableLiveData<Integer> rsrp = new MutableLiveData<>();
     private final MutableLiveData<Integer> rsrq = new MutableLiveData<>();
+    private final MutableLiveData<SortedSet<LteNeighbor>> lteNeighbors = new MutableLiveData<>();
 
     public LiveData<String> getDataNetworkType()
     {
@@ -186,5 +188,15 @@ public class CellularViewModel extends ViewModel
     public void setRsrq(Integer newRsrq)
     {
         rsrq.postValue(newRsrq);
+    }
+
+    public LiveData<SortedSet<LteNeighbor>> getLteNeighbors()
+    {
+        return lteNeighbors;
+    }
+
+    public void setLteNeighbors(SortedSet<LteNeighbor> newLteNeighbors)
+    {
+        lteNeighbors.postValue(newLteNeighbors);
     }
 }

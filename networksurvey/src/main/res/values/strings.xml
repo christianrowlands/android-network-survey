@@ -60,6 +60,12 @@
     <string name="card_title_cellular_details_lte">LTE Serving Cell Details</string>
     <string name="card_title_cellular_details_nr">NR Serving Cell Details</string>
     <string name="cellular_icon_description">Cellular Tower Icon</string>
+    <string name="card_title_neighbors_gsm">GSM Neighbors</string>
+    <string name="card_title_neighbors_cdma">CDMA Neighbors</string>
+    <string name="card_title_neighbors_umts">UMTS Neighbors</string>
+    <string name="card_title_neighbors_lte">LTE Neighbors</string>
+    <string name="card_title_neighbors_nr">NR Neighbors</string>
+    <string name="neighbors_icon_description">Neighbors Icon</string>
 
     <string name="missing_location_permission">Missing Location Permission</string>
     <string name="no_gps_device">No GPS detected in device!</string>

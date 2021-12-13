@@ -12,6 +12,8 @@ import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.TableLayout;
+import android.widget.TableRow;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
@@ -34,6 +36,7 @@ import com.craxiom.networksurvey.R;
 import com.craxiom.networksurvey.constants.LteMessageConstants;
 import com.craxiom.networksurvey.databinding.FragmentNetworkDetailsBinding;
 import com.craxiom.networksurvey.fragments.model.CellularViewModel;
+import com.craxiom.networksurvey.fragments.model.LteNeighbor;
 import com.craxiom.networksurvey.listeners.ICellularSurveyRecordListener;
 import com.craxiom.networksurvey.services.NetworkSurveyService;
 import com.craxiom.networksurvey.util.ColorUtils;
@@ -41,6 +44,7 @@ import com.craxiom.networksurvey.util.MathUtils;
 
 import java.text.DecimalFormat;
 import java.util.Collections;
+import java.util.SortedSet;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import app.futured.donut.DonutProgressView;
@@ -332,6 +336,8 @@ public class NetworkDetailsFragment extends AServiceDataFragment implements ICel
             binding.rsrqValue.setText(i != null ? String.valueOf(i) : "");
             setSignalStrength(binding.progressBarRsrq, i, LTE_MIN_RSRQ, LTE_MAX_NORMALIZED_RSRQ);
         });
+
+        viewModel.getLteNeighbors().observe(viewLifecycleOwner, this::updateLteNeighborsView);
     }
 
     private void processLteRecord(LteRecord record)
@@ -409,5 +415,58 @@ public class NetworkDetailsFragment extends AServiceDataFragment implements ICel
         final DonutSection fillSection = new DonutSection("fill", color, normalizedValue);
         signalStrengthBar.setCap(maxNormalizedValue);
         signalStrengthBar.submitData(Collections.singletonList(fillSection));
+    }
+
+    /**
+     * Given the newest set of LTE neighbors, update the neighbors table view.
+     *
+     * @param neighbors The latest batch of LTE neighbors.
+     * @since 1.6.0
+     */
+    private void updateLteNeighborsView(SortedSet<LteNeighbor> neighbors)
+    {
+        final Context context = getContext();
+        if (context == null) return;
+
+        final TableLayout lteNeighborsTable = binding.lteNeighborsTable;
+
+        for (LteNeighbor neighbor : neighbors)
+        {
+            final TableRow row = new TableRow(context);
+
+            addValueToRow(context, row, neighbor.earfcn);
+            addValueToRow(context, row, neighbor.pci);
+            addValueToRow(context, row, neighbor.rsrp);
+            addValueToRow(context, row, neighbor.rsrq);
+            addValueToRow(context, row, neighbor.ta);
+
+            lteNeighborsTable.addView(row);
+        }
+    }
+
+    /**
+     * Set the provided value in a TextView and then add it to the row.
+     *
+     * @param context The context to use for creating the TextView.
+     * @param row     The row to add the cell to.
+     * @param value   The value to place in the cell. If the value is {@link LteNeighbor#UNSET_VALUE},
+     *                then an empty strinig is placed in the cell.
+     * @since 1.6.0
+     */
+    private void addValueToRow(Context context, TableRow row, int value)
+    {
+        final String cellText;
+        if (value == LteNeighbor.UNSET_VALUE)
+        {
+            // We need to add an empty text view to make sure the columns align correctly
+            cellText = "";
+        } else
+        {
+            cellText = String.valueOf(value);
+        }
+
+        final TextView view = new TextView(context, null, 0, R.style.StandardText);
+        view.setText(cellText);
+        row.addView(view);
     }
 }
