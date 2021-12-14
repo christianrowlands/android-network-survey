@@ -41,6 +41,18 @@
     <string name="carrier_label">Carrier</string>
     <string name="voice_network_label">Voice Network</string>
 
+    <!-- GSM labels -->
+    <string name="arfcn_label">ARFCN</string>
+    <string name="bsic_label">BSIC</string>
+    <string name="rssi_label">RSSI</string>
+    <string name="lac_label">LAC</string>
+
+    <!-- UMTS labels -->
+    <string name="uarfcn_label">UARFCN</string>
+    <string name="psc_label">PSC</string>
+    <string name="rscp_label">RSCP</string>
+
+    <!-- LTE and Common labels -->
     <string name="mcc_label">MCC</string>
     <string name="mnc_label">MNC</string>
     <string name="tac_label">TAC</string>
@@ -51,15 +63,20 @@
     <string name="pci_label">PCI</string>
     <string name="bandwidth_label">Bandwidth</string>
     <string name="ta_label">TA</string>
+    <string name="rsrp_label">RSRP</string>
+    <string name="rsrq_label">RSRQ</string>
+
+    <!-- NR labels -->
+    <string name="narfcn_label">NARFCN</string>
+    <string name="ss_rsrp_label">SS_RSRP</string>
+    <string name="ss_rsrq_label">SS_RSRQ</string>
 
     <string name="card_title_location">Location</string>
     <string name="my_location_icon_description">My Location Icon</string>
-    <string name="card_title_cellular_details_gsm">GSM Serving Cell Details</string>
-    <string name="card_title_cellular_details_cmda">CDMA Serving Cell Details</string>
-    <string name="card_title_cellular_details_umts">UMTS Serving Cell Details</string>
-    <string name="card_title_cellular_details_lte">LTE Serving Cell Details</string>
-    <string name="card_title_cellular_details_nr">NR Serving Cell Details</string>
+    <string name="card_title_cellular_details_initial">Serving Cell Details</string>
+    <string name="card_title_cellular_details">%1$s Serving Cell Details</string>
     <string name="cellular_icon_description">Cellular Tower Icon</string>
+    <string name="card_title_neighbors">Neighbors</string>
     <string name="card_title_neighbors_gsm">GSM Neighbors</string>
     <string name="card_title_neighbors_cdma">CDMA Neighbors</string>
     <string name="card_title_neighbors_umts">UMTS Neighbors</string>
@@ -74,10 +91,6 @@
     <string name="low_gps_confidence">Low GPS Confidence</string>
     <string name="accuracy_initial">Accuracy: </string>
     <string name="accuracy_value">Accuracy: %1$s meters</string>
-
-    <string name="rssi_label">RSSI</string>
-    <string name="rsrp_label">RSRP</string>
-    <string name="rsrq_label">RSRQ</string>
 
     <string name="pss_label">PSS: </string>
     <string name="sss_label">SSS: </string>

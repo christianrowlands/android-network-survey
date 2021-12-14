@@ -1,6 +1,6 @@
 package com.craxiom.networksurvey.fragments.model;
 
-import android.telephony.CellInfo;
+import static com.craxiom.networksurvey.constants.NetworkSurveyConstants.UNSET_VALUE;
 
 import lombok.Builder;
 
@@ -12,11 +12,6 @@ import lombok.Builder;
 @Builder
 public class LteNeighbor implements Comparable<LteNeighbor>
 {
-    /**
-     * AKA {@link CellInfo#UNAVAILABLE}, but I am not using that because it was added in API level 29.
-     */
-    public static final int UNSET_VALUE = Integer.MAX_VALUE;
-
     @Builder.Default
     public int earfcn = UNSET_VALUE;
     @Builder.Default
@@ -35,7 +30,8 @@ public class LteNeighbor implements Comparable<LteNeighbor>
         int thisComparisonRsrp = rsrp == UNSET_VALUE ? Integer.MIN_VALUE : rsrp;
         int otherComparisonRsrp = neighbor.rsrp == UNSET_VALUE ? Integer.MIN_VALUE : neighbor.rsrp;
 
-        return Integer.compare(thisComparisonRsrp, otherComparisonRsrp);
+        // Invert the sorting so the strongest show up at the top
+        return -1 * Integer.compare(thisComparisonRsrp, otherComparisonRsrp);
     }
 
     @Override

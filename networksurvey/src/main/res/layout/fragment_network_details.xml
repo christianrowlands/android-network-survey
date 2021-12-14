@@ -232,7 +232,7 @@
                         style="@style/CardTitleStyle"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:text="@string/card_title_cellular_details_lte" />
+                        android:text="@string/card_title_cellular_details_initial" />
 
                 </LinearLayout>
 
@@ -369,8 +369,6 @@
                         <LinearLayout
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:layout_marginTop="@dimen/medium_margin"
-                            android:layout_marginBottom="@dimen/medium_margin"
                             android:orientation="horizontal"
                             android:baselineAligned="false">
 
@@ -378,6 +376,8 @@
                                 android:id="@+id/enb_id_group"
                                 android:layout_width="0dp"
                                 android:layout_height="wrap_content"
+                                android:layout_marginTop="@dimen/small_margin"
+                                android:layout_marginBottom="@dimen/small_margin"
                                 android:layout_weight="1">
 
                                 <TextView
@@ -402,6 +402,8 @@
                                 android:id="@+id/sector_id_group"
                                 android:layout_width="0dp"
                                 android:layout_height="wrap_content"
+                                android:layout_marginTop="@dimen/small_margin"
+                                android:layout_marginBottom="@dimen/small_margin"
                                 android:layout_weight="1">
 
                                 <TextView
@@ -427,8 +429,6 @@
                         <LinearLayout
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:layout_marginTop="@dimen/medium_margin"
-                            android:layout_marginBottom="@dimen/medium_margin"
                             android:orientation="horizontal"
                             android:baselineAligned="false">
 
@@ -436,6 +436,8 @@
                                 android:id="@+id/earfcn_group"
                                 android:layout_width="0dp"
                                 android:layout_height="wrap_content"
+                                android:layout_marginTop="@dimen/small_margin"
+                                android:layout_marginBottom="@dimen/small_margin"
                                 android:layout_weight="1">
 
                                 <TextView
@@ -460,6 +462,8 @@
                                 android:id="@+id/pci_group"
                                 android:layout_width="0dp"
                                 android:layout_height="wrap_content"
+                                android:layout_marginTop="@dimen/small_margin"
+                                android:layout_marginBottom="@dimen/small_margin"
                                 android:layout_weight="1">
 
                                 <TextView
@@ -485,8 +489,6 @@
                         <LinearLayout
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:layout_marginTop="@dimen/medium_margin"
-                            android:layout_marginBottom="@dimen/medium_margin"
                             android:orientation="horizontal"
                             android:baselineAligned="false">
 
@@ -494,6 +496,8 @@
                                 android:id="@+id/bandwidth_group"
                                 android:layout_width="0dp"
                                 android:layout_height="wrap_content"
+                                android:layout_marginTop="@dimen/small_margin"
+                                android:layout_marginBottom="@dimen/small_margin"
                                 android:layout_weight="1">
 
                                 <TextView
@@ -518,6 +522,8 @@
                                 android:id="@+id/ta_group"
                                 android:layout_width="0dp"
                                 android:layout_height="wrap_content"
+                                android:layout_marginTop="@dimen/small_margin"
+                                android:layout_marginBottom="@dimen/small_margin"
                                 android:layout_weight="1">
 
                                 <TextView
@@ -549,13 +555,13 @@
                         android:orientation="vertical">
 
                         <androidx.constraintlayout.widget.ConstraintLayout
-                            android:id="@+id/rsrp_group"
+                            android:id="@+id/signal_one_group"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:layout_gravity="end">
 
                             <app.futured.donut.DonutProgressView
-                                android:id="@+id/progress_bar_rsrp"
+                                android:id="@+id/progress_bar_signal_one"
                                 android:layout_width="100dp"
                                 android:layout_height="100dp"
                                 app:layout_constraintBottom_toBottomOf="parent"
@@ -578,22 +584,22 @@
                                 app:layout_constraintEnd_toEndOf="parent">
 
                                 <TextView
-                                    android:id="@+id/rsrp_value"
+                                    android:id="@+id/signal_one_value"
                                     style="@style/StandardText"
                                     android:layout_width="match_parent"
                                     android:layout_height="match_parent"
                                     android:gravity="center"
-                                    app:layout_constraintTop_toTopOf="@id/rsrp_group"
-                                    app:layout_constraintEnd_toEndOf="@id/progress_bar_rsrp" />
+                                    app:layout_constraintTop_toTopOf="@id/signal_one_group"
+                                    app:layout_constraintEnd_toEndOf="@id/progress_bar_signal_one" />
 
                                 <TextView
-                                    android:id="@+id/rsrp"
+                                    android:id="@+id/signal_one_label"
                                     style="@style/SmallLabelText"
                                     android:layout_width="match_parent"
                                     android:layout_height="match_parent"
                                     android:gravity="center"
-                                    app:layout_constraintTop_toTopOf="@id/rsrp_group"
-                                    app:layout_constraintEnd_toEndOf="@id/progress_bar_rsrp"
+                                    app:layout_constraintTop_toTopOf="@id/signal_one_group"
+                                    app:layout_constraintEnd_toEndOf="@id/progress_bar_signal_one"
                                     android:text="@string/rsrp_label" />
 
                             </LinearLayout>
@@ -601,13 +607,13 @@
                         </androidx.constraintlayout.widget.ConstraintLayout>
 
                         <androidx.constraintlayout.widget.ConstraintLayout
-                            android:id="@+id/rsrq_group"
+                            android:id="@+id/signal_two_group"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:layout_gravity="end">
 
                             <app.futured.donut.DonutProgressView
-                                android:id="@+id/progress_bar_rsrq"
+                                android:id="@+id/progress_bar_signal_two"
                                 android:layout_width="100dp"
                                 android:layout_height="100dp"
                                 app:layout_constraintBottom_toBottomOf="parent"
@@ -630,22 +636,22 @@
                                 app:layout_constraintEnd_toEndOf="parent">
 
                                 <TextView
-                                    android:id="@+id/rsrq_value"
+                                    android:id="@+id/signal_two_value"
                                     style="@style/StandardText"
                                     android:layout_width="match_parent"
                                     android:layout_height="match_parent"
                                     android:gravity="center"
-                                    app:layout_constraintTop_toTopOf="@id/rsrq_group"
-                                    app:layout_constraintEnd_toEndOf="@id/progress_bar_rsrq" />
+                                    app:layout_constraintTop_toTopOf="@id/signal_two_group"
+                                    app:layout_constraintEnd_toEndOf="@id/progress_bar_signal_two" />
 
                                 <TextView
-                                    android:id="@+id/rsrq"
+                                    android:id="@+id/signal_two_label"
                                     style="@style/SmallLabelText"
                                     android:layout_width="match_parent"
                                     android:layout_height="match_parent"
                                     android:gravity="center"
-                                    app:layout_constraintTop_toTopOf="@id/rsrq_group"
-                                    app:layout_constraintEnd_toEndOf="@id/progress_bar_rsrq"
+                                    app:layout_constraintTop_toTopOf="@id/signal_two_group"
+                                    app:layout_constraintEnd_toEndOf="@id/progress_bar_signal_two"
                                     android:text="@string/rsrq_label" />
 
                             </LinearLayout>
@@ -695,59 +701,228 @@
                         style="@style/CardTitleStyle"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:text="@string/card_title_neighbors_lte" />
+                        android:text="@string/card_title_neighbors" />
 
                 </LinearLayout>
 
-                <TableLayout
-                    android:id="@+id/lte_neighbors_table_headers"
+                <LinearLayout
+                    android:id="@+id/nr_neighbors_group"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="@dimen/small_margin"
-                    android:stretchColumns="*">
+                    android:orientation="vertical"
+                    android:visibility="gone">
 
-                    <TableRow tools:ignore="UselessParent">
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        style="@style/StandardText"
+                        android:text="@string/card_title_neighbors_nr" />
 
-                        <TextView
-                            android:text="@string/earfcn_label"
-                            style="@style/SmallLabelText"
-                            android:layout_weight="1"
-                            android:padding="3dip" />
+                    <TableLayout
+                        android:id="@+id/nr_neighbors_table_headers"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="@dimen/small_margin"
+                        android:stretchColumns="*">
 
-                        <TextView
-                            android:text="@string/pci_label"
-                            style="@style/SmallLabelText"
-                            android:layout_weight="1"
-                            android:padding="3dip" />
+                        <TableRow tools:ignore="UselessParent">
 
-                        <TextView
-                            android:text="@string/rsrp_label"
-                            style="@style/SmallLabelText"
-                            android:layout_weight="1"
-                            android:padding="3dip" />
+                            <TextView
+                                android:text="@string/narfcn_label"
+                                style="@style/SmallLabelText"
+                                android:layout_weight="1"
+                                android:padding="3dip" />
 
-                        <TextView
-                            android:text="@string/rsrq_label"
-                            style="@style/SmallLabelText"
-                            android:layout_weight="1"
-                            android:padding="3dip" />
+                            <TextView
+                                android:text="@string/pci_label"
+                                style="@style/SmallLabelText"
+                                android:layout_weight="1"
+                                android:padding="3dip" />
 
-                        <TextView
-                            android:text="@string/ta_label"
-                            style="@style/SmallLabelText"
-                            android:layout_weight="1"
-                            android:padding="3dip" />
-                    </TableRow>
-                </TableLayout>
+                            <TextView
+                                android:text="@string/ss_rsrp_label"
+                                style="@style/SmallLabelText"
+                                android:layout_weight="1"
+                                android:padding="3dip" />
 
-                <TableLayout
-                    android:id="@+id/lte_neighbors_table"
+                            <TextView
+                                android:text="@string/ss_rsrp_label"
+                                style="@style/SmallLabelText"
+                                android:layout_weight="1"
+                                android:padding="3dip" />
+                        </TableRow>
+                    </TableLayout>
+
+                    <TableLayout
+                        android:id="@+id/nr_neighbors_table"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginBottom="@dimen/small_margin"
+                        android:stretchColumns="*" />
+
+                </LinearLayout>
+
+                <LinearLayout
+                    android:id="@+id/lte_neighbors_group"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginBottom="@dimen/small_margin"
-                    android:stretchColumns="*">
+                    android:orientation="vertical"
+                    android:visibility="gone">
 
-                </TableLayout>
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        style="@style/StandardText"
+                        android:text="@string/card_title_neighbors_lte" />
+
+                    <TableLayout
+                        android:id="@+id/lte_neighbors_table_headers"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:stretchColumns="*">
+
+                        <TableRow tools:ignore="UselessParent">
+
+                            <TextView
+                                android:text="@string/earfcn_label"
+                                style="@style/SmallLabelText"
+                                android:layout_weight="1"
+                                android:padding="3dip" />
+
+                            <TextView
+                                android:text="@string/pci_label"
+                                style="@style/SmallLabelText"
+                                android:layout_weight="1"
+                                android:padding="3dip" />
+
+                            <TextView
+                                android:text="@string/rsrp_label"
+                                style="@style/SmallLabelText"
+                                android:layout_weight="1"
+                                android:padding="3dip" />
+
+                            <TextView
+                                android:text="@string/rsrq_label"
+                                style="@style/SmallLabelText"
+                                android:layout_weight="1"
+                                android:padding="3dip" />
+
+                            <TextView
+                                android:text="@string/ta_label"
+                                style="@style/SmallLabelText"
+                                android:layout_weight="1"
+                                android:padding="3dip" />
+                        </TableRow>
+                    </TableLayout>
+
+                    <TableLayout
+                        android:id="@+id/lte_neighbors_table"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginBottom="@dimen/small_margin"
+                        android:stretchColumns="*" />
+
+                </LinearLayout>
+
+                <LinearLayout
+                    android:id="@+id/umts_neighbors_group"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:visibility="gone">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        style="@style/StandardText"
+                        android:text="@string/card_title_neighbors_umts" />
+
+                    <TableLayout
+                        android:id="@+id/umts_neighbors_table_headers"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="@dimen/small_margin"
+                        android:stretchColumns="*">
+
+                        <TableRow tools:ignore="UselessParent">
+
+                            <TextView
+                                android:text="@string/uarfcn_label"
+                                style="@style/SmallLabelText"
+                                android:layout_weight="1"
+                                android:padding="3dip" />
+
+                            <TextView
+                                android:text="@string/psc_label"
+                                style="@style/SmallLabelText"
+                                android:layout_weight="1"
+                                android:padding="3dip" />
+
+                            <TextView
+                                android:text="@string/rscp_label"
+                                style="@style/SmallLabelText"
+                                android:layout_weight="1"
+                                android:padding="3dip" />
+                        </TableRow>
+                    </TableLayout>
+
+                    <TableLayout
+                        android:id="@+id/umts_neighbors_table"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginBottom="@dimen/small_margin"
+                        android:stretchColumns="*" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:id="@+id/gsm_neighbors_group"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:visibility="gone">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        style="@style/StandardText"
+                        android:text="@string/card_title_neighbors_gsm" />
+
+                    <TableLayout
+                        android:id="@+id/gsm_neighbors_table_headers"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="@dimen/small_margin"
+                        android:stretchColumns="*">
+
+                        <TableRow tools:ignore="UselessParent">
+
+                            <TextView
+                                android:text="@string/arfcn_label"
+                                style="@style/SmallLabelText"
+                                android:layout_weight="1"
+                                android:padding="3dip" />
+
+                            <TextView
+                                android:text="@string/bsic_label"
+                                style="@style/SmallLabelText"
+                                android:layout_weight="1"
+                                android:padding="3dip" />
+
+                            <TextView
+                                android:text="@string/rssi_label"
+                                style="@style/SmallLabelText"
+                                android:layout_weight="1"
+                                android:padding="3dip" />
+                        </TableRow>
+                    </TableLayout>
+
+                    <TableLayout
+                        android:id="@+id/gsm_neighbors_table"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginBottom="@dimen/small_margin"
+                        android:stretchColumns="*" />
+                </LinearLayout>
 
             </LinearLayout>
 

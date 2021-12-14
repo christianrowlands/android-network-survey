@@ -190,7 +190,6 @@ public class NetworkSurveyActivity extends AppCompatActivity
         {
             final Context applicationContext = getApplicationContext();
 
-            // TODO Remove the onUiHidden call
             networkSurveyService.onUiHidden();
 
             if (!networkSurveyService.isBeingUsed())
@@ -842,12 +841,8 @@ public class NetworkSurveyActivity extends AppCompatActivity
         {
             Timber.i("%s service connected", name);
 
-            // TODO Do something to keep the service active while the user switches between bottom nav fragments.
-            //   I don't want the service to stop and then start a few ms later
-
             final NetworkSurveyService.SurveyServiceBinder binder = (NetworkSurveyService.SurveyServiceBinder) iBinder;
             networkSurveyService = (NetworkSurveyService) binder.getService();
-            // TODO Remove the onUiVisible call
             networkSurveyService.onUiVisible(NetworkSurveyActivity.this);
             networkSurveyService.registerGnssFailureListener(gnssFailureListener);
 

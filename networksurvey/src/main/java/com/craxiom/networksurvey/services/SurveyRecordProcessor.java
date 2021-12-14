@@ -94,6 +94,7 @@ import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArraySet;
@@ -354,12 +355,12 @@ public class SurveyRecordProcessor
                     notifyCellularListeners(cellularRecords);
                 } else
                 {
-                    // TODO DO we want to clear out the UI updateUi(LteRecord.getDefaultInstance().getData());
+                    notifyCellularListeners(Collections.emptyList());
                 }
             } catch (Exception e)
             {
-                Timber.e(e, "Unable to display and log an LTE Survey Record");
-                // TODO DO we want to clear out the UI updateUi(LteRecord.getDefaultInstance().getData());
+                Timber.e(e, "Unable to display and log Survey Record(s)");
+                notifyCellularListeners(Collections.emptyList());
             }
         }
     }
@@ -564,23 +565,39 @@ public class SurveyRecordProcessor
             } else if (cellInfo instanceof CellInfoGsm)
             {
                 final GsmRecord gsmRecord = generateGsmSurveyRecord((CellInfoGsm) cellInfo);
-                if (gsmRecord != null) notifyGsmRecordListeners(gsmRecord);
+                if (gsmRecord != null)
+                {
+                    notifyGsmRecordListeners(gsmRecord);
+                    return new CellularRecordWrapper(CellularProtocol.GSM, gsmRecord);
+                }
             } else if (cellInfo instanceof CellInfoCdma)
             {
                 final CdmaRecord cdmaRecord = generateCdmaSurveyRecord((CellInfoCdma) cellInfo);
-                if (cdmaRecord != null) notifyCdmaRecordListeners(cdmaRecord);
+                if (cdmaRecord != null)
+                {
+                    notifyCdmaRecordListeners(cdmaRecord);
+                    return new CellularRecordWrapper(CellularProtocol.CDMA, cdmaRecord);
+                }
             } else if (cellInfo instanceof CellInfoWcdma)
             {
                 final UmtsRecord umtsRecord = generateUmtsSurveyRecord((CellInfoWcdma) cellInfo);
-                if (umtsRecord != null) notifyUmtsRecordListeners(umtsRecord);
+                if (umtsRecord != null)
+                {
+                    notifyUmtsRecordListeners(umtsRecord);
+                    return new CellularRecordWrapper(CellularProtocol.UMTS, umtsRecord);
+                }
             } else if (android.os.Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q && cellInfo instanceof CellInfoNr)
             {
                 final NrRecord nrRecord = generateNrSurveyRecord((CellInfoNr) cellInfo);
-                if (nrRecord != null) notifyNrRecordListeners(nrRecord);
+                if (nrRecord != null)
+                {
+                    notifyNrRecordListeners(nrRecord);
+                    return new CellularRecordWrapper(CellularProtocol.NR, nrRecord);
+                }
             }
         }
 
-        return null; // TODO Return the other record types as well
+        return null;
     }
 
     /**
@@ -869,11 +886,13 @@ public class SurveyRecordProcessor
             provider = cellIdentity.getOperatorAlphaLong();
         }
 
-        CellSignalStrengthWcdma cellSignalStrengthUmts = cellInfoWcdma.getCellSignalStrength();
-        final int signalStrength = cellSignalStrengthUmts.getDbm();
+        final CellSignalStrengthWcdma cellSignalStrengthUmts = cellInfoWcdma.getCellSignalStrength();
+
+        final int signalStrength = ParserUtils.extractIntFromToString(cellSignalStrengthUmts.toString(), ParserUtils.RSSI_KEY);
+        final int rscp = ParserUtils.extractIntFromToString(cellSignalStrengthUmts.toString(), ParserUtils.RSCP_KEY);
 
         // Validate that the required fields are present before proceeding further
-        if (!validateUmtsFields(uarfcn, psc, signalStrength)) return null;
+        if (!validateUmtsFields(uarfcn, psc)) return null;
 
         final UmtsRecordData.Builder dataBuilder = UmtsRecordData.newBuilder();
 
@@ -923,9 +942,17 @@ public class SurveyRecordProcessor
             }
         }
 
+        if (signalStrength != Integer.MAX_VALUE)
+        {
+            dataBuilder.setSignalStrength(FloatValue.newBuilder().setValue(signalStrength).build());
+        }
+        if (rscp != Integer.MAX_VALUE)
+        {
+            dataBuilder.setRscp(FloatValue.newBuilder().setValue(rscp).build());
+        }
+
         dataBuilder.setUarfcn(Int32Value.newBuilder().setValue(uarfcn).build());
         dataBuilder.setPsc(Int32Value.newBuilder().setValue(psc).build());
-        dataBuilder.setSignalStrength(FloatValue.newBuilder().setValue(signalStrength).build());
 
         final UmtsRecord.Builder recordBuilder = UmtsRecord.newBuilder();
         recordBuilder.setMessageType(UmtsMessageConstants.UMTS_RECORD_MESSAGE_TYPE);
@@ -1472,7 +1499,7 @@ public class SurveyRecordProcessor
      *
      * @return True if the provided fields are all valid, false if one or more is invalid.
      */
-    private boolean validateUmtsFields(int uarfcn, int psc, int signalStrength)
+    private boolean validateUmtsFields(int uarfcn, int psc)
     {
         if (uarfcn == Integer.MAX_VALUE || uarfcn == -1)
         {
@@ -1483,12 +1510,6 @@ public class SurveyRecordProcessor
         if (psc == Integer.MAX_VALUE || psc == -1)
         {
             Timber.v("The PSC is required to build a UMTS Survey Record.");
-            return false;
-        }
-
-        if (signalStrength == Integer.MAX_VALUE)
-        {
-            Timber.v("The Signal Strength is required to build a UMTS Survey Record.");
             return false;
         }
 
@@ -1698,8 +1719,6 @@ public class SurveyRecordProcessor
      */
     private void notifyCellularListeners(List<CellularRecordWrapper> cellularRecords)
     {
-        if (cellularRecords.isEmpty()) return;
-
         cellularSurveyRecordListeners.forEach(l -> {
             try
             {

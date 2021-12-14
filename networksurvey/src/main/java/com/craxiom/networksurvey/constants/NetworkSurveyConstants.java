@@ -1,5 +1,7 @@
 package com.craxiom.networksurvey.constants;
 
+import android.telephony.CellInfo;
+
 /**
  * Some constants used in the Network Survey App.
  *
@@ -51,6 +53,13 @@ public class NetworkSurveyConstants
     public static final String IWLAN = "IWLAN";
     public static final String LTE_CA = "LTE-CA";
     public static final String NR = "NR";
+
+    /**
+     * AKA {@link CellInfo#UNAVAILABLE}, but I am not using that because it was added in API level 29.
+     *
+     * @since 1.6.0
+     */
+    public static final int UNSET_VALUE = Integer.MAX_VALUE;
 
     /**
      * The key for the Intent extra that indicates the {@link com.craxiom.networksurvey.services.NetworkSurveyService}

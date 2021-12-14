@@ -26,22 +26,30 @@ import androidx.navigation.fragment.NavHostFragment;
 
 import com.craxiom.messaging.CdmaRecord;
 import com.craxiom.messaging.GsmRecord;
+import com.craxiom.messaging.GsmRecordData;
 import com.craxiom.messaging.LteRecord;
 import com.craxiom.messaging.LteRecordData;
 import com.craxiom.messaging.NrRecord;
+import com.craxiom.messaging.NrRecordData;
 import com.craxiom.messaging.UmtsRecord;
+import com.craxiom.messaging.UmtsRecordData;
 import com.craxiom.networksurvey.CalculationUtils;
 import com.craxiom.networksurvey.R;
 import com.craxiom.networksurvey.constants.LteMessageConstants;
+import com.craxiom.networksurvey.constants.NetworkSurveyConstants;
 import com.craxiom.networksurvey.databinding.FragmentNetworkDetailsBinding;
 import com.craxiom.networksurvey.fragments.model.CellularViewModel;
+import com.craxiom.networksurvey.fragments.model.GsmNeighbor;
 import com.craxiom.networksurvey.fragments.model.LteNeighbor;
+import com.craxiom.networksurvey.fragments.model.NrNeighbor;
+import com.craxiom.networksurvey.fragments.model.UmtsNeighbor;
 import com.craxiom.networksurvey.listeners.ICellularSurveyRecordListener;
 import com.craxiom.networksurvey.model.CellularProtocol;
 import com.craxiom.networksurvey.model.CellularRecordWrapper;
 import com.craxiom.networksurvey.services.NetworkSurveyService;
 import com.craxiom.networksurvey.util.ColorUtils;
 import com.craxiom.networksurvey.util.MathUtils;
+import com.craxiom.networksurvey.util.ParserUtils;
 
 import java.text.DecimalFormat;
 import java.util.ArrayList;
@@ -49,7 +57,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.SortedSet;
 import java.util.TreeSet;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
 import app.futured.donut.DonutProgressView;
@@ -58,24 +65,20 @@ import timber.log.Timber;
 
 /**
  * A fragment for displaying the latest cellular network details to the user.
+ *
+ * @since 1.6.0 (It really came earlier, but was minimal until the 1.6.0 rewrite.
  */
 public class NetworkDetailsFragment extends AServiceDataFragment implements ICellularSurveyRecordListener, LocationListener
 {
-    public static final AtomicBoolean visible = new AtomicBoolean(false); // TODO Delete me
     static final String TITLE = "Details";
 
-    private static final int GSM_MAX_NORMALIZED_RSSI = 50;
-    private static final int GSM_MIN_RSSI = -110;
-    private static final int UMTS_MAX_NORMALIZED_RSCP = 40;
-    private static final int UMTS_MIN_RSCP = -115;
-    private static final int LTE_MAX_NORMALIZED_RSRP = 35;
-    private static final int LTE_MIN_RSRP = -125;
-    private static final int LTE_MAX_NORMALIZED_RSRQ = 15;
-    private static final int LTE_MIN_RSRQ = -23;
-    private static final int NR_MAX_NORMALIZED_RSRP = 40;
-    private static final int NR_MIN_RSRP = -115;
-    private static final int NR_MAX_NORMALIZED_SS_RSRQ = 15;
-    private static final int NR_MIN_SS_RSRQ = -23;
+    // The next two values have been added because certain devices don't follow the Interger#MAX_VALUE approach defined
+    // in the Android API. The phone is supposed to report Interger#MAX_VALUE to indicate "Unknown/Unset" values, but
+    // Pixel devices seem to report -120 all the time for UMTS RSCP, and Samsung devics seem to report -24 for UMTS RSCP.
+    // These values are technically valid and filtering them out is an incorrect thing to do, but it is all I can think
+    // of right now to prevent invalid values from being reported.
+    private static final int RSCP_UNSET_VALUE_120 = -120;
+    private static final int RSCP_UNSET_VALUE_24 = -24;
 
     private final DecimalFormat locationFormat = new DecimalFormat("###.#####");
 
@@ -104,8 +107,6 @@ public class NetworkDetailsFragment extends AServiceDataFragment implements ICel
     {
         super.onResume();
 
-        visible.set(true); // TODO Delete me
-
         // In the edge case event where the user has just granted the location permission but has not restarted the app,
         // we need to update the UI to show the new location in this onResume method. There might be better approaches
         // instead of recalling the initialize view method each time the fragment is resumed.
@@ -115,18 +116,9 @@ public class NetworkDetailsFragment extends AServiceDataFragment implements ICel
     }
 
     @Override
-    public void onPause()
-    {
-        visible.set(false);
-
-        super.onPause();
-    }
-
-    @Override
     public void onDestroyView()
     {
-        final LifecycleOwner viewLifecycleOwner = getViewLifecycleOwner();
-        viewModel.getLocation().removeObservers(viewLifecycleOwner);
+        removeObservers();
 
         super.onDestroyView();
     }
@@ -204,9 +196,109 @@ public class NetworkDetailsFragment extends AServiceDataFragment implements ICel
     }
 
     /**
+     * Initialize the model view observers. These observers look for changes to the model view
+     * values, and then update the UI based on any changes.
+     */
+    private void initializeObservers()
+    {
+        final LifecycleOwner viewLifecycleOwner = getViewLifecycleOwner();
+
+        viewModel.getDataNetworkType().observe(viewLifecycleOwner, networkType -> binding.currentDataNetwork.setText(networkType));
+        viewModel.getCarrier().observe(viewLifecycleOwner, carrier -> binding.currentCarrier.setText(carrier));
+        viewModel.getVoiceNetworkType().observe(viewLifecycleOwner, networkType -> binding.currentVoiceNetwork.setText(networkType));
+
+        viewModel.getProviderEnabled().observe(viewLifecycleOwner, this::updateLocationProviderStatus);
+        viewModel.getLocation().observe(viewLifecycleOwner, this::updateLocationTextView);
+
+        viewModel.getServingCellProtocol().observe(viewLifecycleOwner, this::updateServingCellProtocol);
+
+        viewModel.getMcc().observe(viewLifecycleOwner, s -> binding.mcc.setText(s));
+        viewModel.getMnc().observe(viewLifecycleOwner, s -> binding.mnc.setText(s));
+        viewModel.getAreaCode().observe(viewLifecycleOwner, s -> binding.tac.setText(s));
+        viewModel.getCellId().observe(viewLifecycleOwner, this::updateCellIdentity);
+        viewModel.getChannelNumber().observe(viewLifecycleOwner, s -> binding.earfcn.setText(s));
+
+        viewModel.getPci().observe(viewLifecycleOwner, s -> binding.pci.setText(s));
+        viewModel.getBandwidth().observe(viewLifecycleOwner, s -> binding.bandwidth.setText(s));
+        viewModel.getTa().observe(viewLifecycleOwner, s -> binding.ta.setText(s));
+
+        viewModel.getSignalOne().observe(viewLifecycleOwner, this::updateSignalStrengthOne);
+        viewModel.getSignalTwo().observe(viewLifecycleOwner, this::updateSignalStrengthTwo);
+
+        viewModel.getNrNeighbors().observe(viewLifecycleOwner, this::updateNrNeighborsView);
+        viewModel.getLteNeighbors().observe(viewLifecycleOwner, this::updateLteNeighborsView);
+        viewModel.getUmtsNeighbors().observe(viewLifecycleOwner, this::updateUmtsNeighborsView);
+        viewModel.getGsmNeighbors().observe(viewLifecycleOwner, this::updateGsmNeighborsView);
+    }
+
+    /**
+     * Cleans up by removing all the view model observers.
+     */
+    private void removeObservers()
+    {
+        final LifecycleOwner viewLifecycleOwner = getViewLifecycleOwner();
+
+        viewModel.getDataNetworkType().removeObservers(viewLifecycleOwner);
+        viewModel.getCarrier().removeObservers(viewLifecycleOwner);
+        viewModel.getVoiceNetworkType().removeObservers(viewLifecycleOwner);
+
+        viewModel.getProviderEnabled().removeObservers(viewLifecycleOwner);
+        viewModel.getLocation().removeObservers(viewLifecycleOwner);
+
+        viewModel.getServingCellProtocol().removeObservers(viewLifecycleOwner);
+
+        viewModel.getMcc().removeObservers(viewLifecycleOwner);
+        viewModel.getMnc().removeObservers(viewLifecycleOwner);
+        viewModel.getAreaCode().removeObservers(viewLifecycleOwner);
+        viewModel.getCellId().removeObservers(viewLifecycleOwner);
+        viewModel.getChannelNumber().removeObservers(viewLifecycleOwner);
+
+        viewModel.getPci().removeObservers(viewLifecycleOwner);
+        viewModel.getBandwidth().removeObservers(viewLifecycleOwner);
+        viewModel.getTa().removeObservers(viewLifecycleOwner);
+
+        viewModel.getSignalOne().removeObservers(viewLifecycleOwner);
+        viewModel.getSignalTwo().removeObservers(viewLifecycleOwner);
+
+        viewModel.getNrNeighbors().removeObservers(viewLifecycleOwner);
+        viewModel.getLteNeighbors().removeObservers(viewLifecycleOwner);
+        viewModel.getUmtsNeighbors().removeObservers(viewLifecycleOwner);
+        viewModel.getGsmNeighbors().removeObservers(viewLifecycleOwner);
+    }
+
+    /**
+     * Clears out the UI, which is needed if the phone stops seeing towers or something else happens (e.g. airplane mode).
+     */
+    private void clearCellularUi()
+    {
+        // TODO Will this happen via the other listener?
+        /*viewModel.setDataNetworkType("");
+        viewModel.setCarrier("");
+        viewModel.setVoiceNetworkType("");*/
+
+        viewModel.setServingCellProtocol(CellularProtocol.NONE);
+
+        viewModel.setMcc("");
+        viewModel.setMnc("");
+        viewModel.setAreaCode("");
+        viewModel.setCellId(null);
+        viewModel.setChannelNumber("");
+
+        viewModel.setPci("");
+        viewModel.setBandwidth("");
+        viewModel.setTa("");
+
+        viewModel.setSignalOne(null);
+        viewModel.setSignalTwo(null);
+
+        viewModel.setNrNeighbors(Collections.emptySortedSet());
+        viewModel.setLteNeighbors(Collections.emptySortedSet());
+        viewModel.setUmtsNeighbors(Collections.emptySortedSet());
+        viewModel.setGsmNeighbors(Collections.emptySortedSet());
+    }
+
+    /**
      * Initialize the location text view based on the phone's state.
-     *
-     * @since 1.6.0
      */
     private void initializeLocationTextView()
     {
@@ -300,6 +392,86 @@ public class NetworkDetailsFragment extends AServiceDataFragment implements ICel
     }
 
     /**
+     * Updates the serving cell title for the serving cell card to reflect the technology being
+     * displayed in rest of the card.
+     * <p>
+     * This method also handles initializing the cellular details UI to handle this protocol.
+     *
+     * @param protocol The new protocol for the serving cell.
+     */
+    private void updateServingCellProtocol(CellularProtocol protocol)
+    {
+        final TextView titleTextView = binding.cellularDetailsTitle;
+        titleTextView.setText(getString(R.string.card_title_cellular_details, protocol));
+
+        // TODO We need to clear the values in the view model when switching between protocols
+
+        switch (protocol)
+        {
+            case NONE:
+                titleTextView.setText(R.string.card_title_cellular_details_initial);
+                break;
+
+            case GSM:
+                binding.tacLabel.setText(R.string.lac_label);
+                binding.enbIdGroup.setVisibility(View.GONE);
+                binding.sectorIdGroup.setVisibility(View.GONE);
+                binding.earfcnLabel.setText(R.string.arfcn_label);
+                binding.pciLabel.setText(R.string.bsic_label);
+                binding.bandwidthGroup.setVisibility(View.GONE);
+                binding.taGroup.setVisibility(View.GONE);
+                binding.signalOneLabel.setText(R.string.rssi_label);
+                binding.signalTwoGroup.setVisibility(View.GONE);
+                break;
+
+            case CDMA:
+                binding.enbIdGroup.setVisibility(View.GONE);
+                binding.sectorIdGroup.setVisibility(View.GONE);
+                binding.signalTwoGroup.setVisibility(View.GONE);
+                break;
+
+            case UMTS:
+                binding.tacLabel.setText(R.string.lac_label);
+                binding.enbIdGroup.setVisibility(View.GONE);
+                binding.sectorIdGroup.setVisibility(View.GONE);
+                binding.earfcnLabel.setText(R.string.uarfcn_label);
+                binding.pciLabel.setText(R.string.psc_label);
+                binding.bandwidthGroup.setVisibility(View.GONE);
+                binding.taGroup.setVisibility(View.GONE);
+                binding.signalOneLabel.setText(R.string.rssi_label);
+                binding.signalTwoLabel.setText(R.string.rscp_label);
+                binding.signalTwoGroup.setVisibility(View.VISIBLE);
+                break;
+
+            case LTE:
+                binding.tacLabel.setText(R.string.tac_label);
+                binding.enbIdGroup.setVisibility(View.VISIBLE);
+                binding.sectorIdGroup.setVisibility(View.VISIBLE);
+                binding.earfcnLabel.setText(R.string.earfcn_label);
+                binding.pciLabel.setText(R.string.pci_label);
+                binding.bandwidthGroup.setVisibility(View.VISIBLE);
+                binding.taGroup.setVisibility(View.VISIBLE);
+                binding.signalOneLabel.setText(R.string.rsrp_label);
+                binding.signalTwoLabel.setText(R.string.rsrq_label);
+                binding.signalTwoGroup.setVisibility(View.VISIBLE);
+                break;
+
+            case NR:
+                binding.tacLabel.setText(R.string.tac_label);
+                binding.enbIdGroup.setVisibility(View.GONE);
+                binding.sectorIdGroup.setVisibility(View.GONE);
+                binding.earfcnLabel.setText(R.string.narfcn_label);
+                binding.pciLabel.setText(R.string.pci_label);
+                binding.bandwidthGroup.setVisibility(View.GONE);
+                binding.taGroup.setVisibility(View.GONE);
+                binding.signalOneLabel.setText(R.string.ss_rsrp_label);
+                binding.signalTwoLabel.setText(R.string.ss_rsrq_label);
+                binding.signalTwoGroup.setVisibility(View.VISIBLE);
+                break;
+        }
+    }
+
+    /**
      * @return True if the {@link Manifest.permission#ACCESS_FINE_LOCATION} permission has been granted.  False otherwise.
      */
     private boolean hasLocationPermission()
@@ -313,68 +485,123 @@ public class NetworkDetailsFragment extends AServiceDataFragment implements ICel
         return true;
     }
 
-    private void initializeObservers()
-    {
-        final LifecycleOwner viewLifecycleOwner = getViewLifecycleOwner();
-        viewModel.getDataNetworkType().observe(viewLifecycleOwner, networkType -> binding.currentDataNetwork.setText(networkType));
-        viewModel.getCarrier().observe(viewLifecycleOwner, carrier -> binding.currentCarrier.setText(carrier));
-        viewModel.getVoiceNetworkType().observe(viewLifecycleOwner, networkType -> binding.currentVoiceNetwork.setText(networkType));
-
-        viewModel.getProviderEnabled().observe(viewLifecycleOwner, this::updateLocationProviderStatus);
-        viewModel.getLocation().observe(viewLifecycleOwner, this::updateLocationTextView);
-
-        viewModel.getMcc().observe(viewLifecycleOwner, s -> binding.mcc.setText(s));
-        viewModel.getMnc().observe(viewLifecycleOwner, s -> binding.mnc.setText(s));
-        viewModel.getAreaCode().observe(viewLifecycleOwner, s -> binding.tac.setText(s));
-        viewModel.getCellId().observe(viewLifecycleOwner, l -> updateLteEci(l));
-        viewModel.getChannelNumber().observe(viewLifecycleOwner, s -> binding.earfcn.setText(s));
-
-        viewModel.getPci().observe(viewLifecycleOwner, s -> binding.pci.setText(s));
-        viewModel.getBandwidth().observe(viewLifecycleOwner, s -> binding.bandwidth.setText(s));
-        viewModel.getTa().observe(viewLifecycleOwner, s -> binding.ta.setText(s));
-
-        viewModel.getRsrp().observe(viewLifecycleOwner, i -> {
-            binding.rsrpValue.setText(i != null ? String.valueOf(i) : "");
-            setSignalStrength(binding.progressBarRsrp, i, LTE_MIN_RSRP, LTE_MAX_NORMALIZED_RSRP);
-        });
-        viewModel.getRsrq().observe(viewLifecycleOwner, i -> {
-            binding.rsrqValue.setText(i != null ? String.valueOf(i) : "");
-            setSignalStrength(binding.progressBarRsrq, i, LTE_MIN_RSRQ, LTE_MAX_NORMALIZED_RSRQ);
-        });
-
-        viewModel.getLteNeighbors().observe(viewLifecycleOwner, this::updateLteNeighborsView);
-    }
-
     /**
      * The method responsible for handling a new batch of cellular records.
      *
      * @param cellularGroup The new batch of cellular records.
-     * @since 1.6.0
      */
     private void processCellularGroup(List<CellularRecordWrapper> cellularGroup)
     {
-        CellularProtocol servingCellProtocol = null;
-        List<LteRecordData> lteNeighbors = new ArrayList<>();
+        if (cellularGroup.isEmpty()) clearCellularUi();
+
+        final List<GsmRecordData> gsmNeighbors = new ArrayList<>();
+        final List<UmtsRecordData> umtsNeighbors = new ArrayList<>();
+        final List<LteRecordData> lteNeighbors = new ArrayList<>();
+        final List<NrRecordData> nrNeighbors = new ArrayList<>();
         for (CellularRecordWrapper cellularRecord : cellularGroup)
         {
             switch (cellularRecord.cellularProtocol)
             {
-                // TODO Add the other protocols
+                case NONE:
+                    return;
+
+                case GSM:
+                    final GsmRecordData gsmData = ((GsmRecord) cellularRecord.cellularRecord).getData();
+                    if (gsmData.hasServingCell() && gsmData.getServingCell().getValue())
+                    {
+                        viewModel.setServingCellProtocol(cellularRecord.cellularProtocol);
+                        processGsmServingCell(gsmData);
+                    } else
+                    {
+                        gsmNeighbors.add(gsmData);
+                    }
+                    break;
+
+                case CDMA:
+                    // TODO What do do about CDMA?
+                    break;
+
+                case UMTS:
+                    final UmtsRecordData umtsData = ((UmtsRecord) cellularRecord.cellularRecord).getData();
+                    if (umtsData.hasServingCell() && umtsData.getServingCell().getValue())
+                    {
+                        viewModel.setServingCellProtocol(cellularRecord.cellularProtocol);
+                        processUmtsServingCell(umtsData);
+                    } else
+                    {
+                        umtsNeighbors.add(umtsData);
+                    }
+                    break;
+
                 case LTE:
                     final LteRecordData lteData = ((LteRecord) cellularRecord.cellularRecord).getData();
                     if (lteData.hasServingCell() && lteData.getServingCell().getValue())
                     {
+                        viewModel.setServingCellProtocol(cellularRecord.cellularProtocol);
                         processLteServingCell(lteData);
-                        servingCellProtocol = CellularProtocol.LTE;
                     } else
                     {
                         lteNeighbors.add(lteData);
                     }
                     break;
+
+                case NR:
+                    final NrRecordData nrData = ((NrRecord) cellularRecord.cellularRecord).getData();
+                    if (nrData.hasServingCell() && nrData.getServingCell().getValue())
+                    {
+                        viewModel.setServingCellProtocol(cellularRecord.cellularProtocol);
+                        processNrServingCell(nrData);
+                    } else
+                    {
+                        nrNeighbors.add(nrData);
+                    }
+                    break;
             }
         }
 
+        processGsmNeighbors(gsmNeighbors);
+        processUmtsNeighbors(umtsNeighbors);
         processLteNeighbors(lteNeighbors);
+        processNrNeighbors(nrNeighbors);
+    }
+
+    /**
+     * Takes in the GSM serving cell details and sets it in the view model so that it can be
+     * displayed in the UI.
+     *
+     * @param data The details for the GSM serving cell record.
+     */
+    private void processGsmServingCell(GsmRecordData data)
+    {
+        viewModel.setCarrier(data.getProvider());
+        viewModel.setMcc(data.hasMcc() ? String.valueOf(data.getMcc().getValue()) : "");
+        viewModel.setMnc(data.hasMnc() ? String.valueOf(data.getMnc().getValue()) : "");
+        viewModel.setAreaCode(data.hasLac() ? String.valueOf(data.getLac().getValue()) : "");
+        viewModel.setCellId(data.hasCi() ? (long) data.getCi().getValue() : null);
+        viewModel.setChannelNumber(data.hasArfcn() ? String.valueOf(data.getArfcn().getValue()) : "");
+        viewModel.setPci(data.hasBsic() ? ParserUtils.bsicToString(data.getBsic().getValue()) : "");
+
+        viewModel.setSignalOne(data.hasSignalStrength() ? (int) data.getSignalStrength().getValue() : null);
+    }
+
+    /**
+     * Takes in the UMTS serving cell details and sets it in the view model so that it can be
+     * displayed in the UI.
+     *
+     * @param data The details for the UMTS serving cell record.
+     */
+    private void processUmtsServingCell(UmtsRecordData data)
+    {
+        viewModel.setCarrier(data.getProvider());
+        viewModel.setMcc(data.hasMcc() ? String.valueOf(data.getMcc().getValue()) : "");
+        viewModel.setMnc(data.hasMnc() ? String.valueOf(data.getMnc().getValue()) : "");
+        viewModel.setAreaCode(data.hasLac() ? String.valueOf(data.getLac().getValue()) : "");
+        viewModel.setCellId(data.hasCid() ? (long) data.getCid().getValue() : null);
+        viewModel.setChannelNumber(data.hasUarfcn() ? String.valueOf(data.getUarfcn().getValue()) : "");
+        viewModel.setPci(data.hasPsc() ? String.valueOf(data.getPsc().getValue()) : "");
+
+        viewModel.setSignalOne(data.hasSignalStrength() ? (int) data.getSignalStrength().getValue() : null);
+        viewModel.setSignalTwo(data.hasRscp() ? (int) data.getRscp().getValue() : null);
     }
 
     /**
@@ -382,7 +609,6 @@ public class NetworkDetailsFragment extends AServiceDataFragment implements ICel
      * displayed in the UI.
      *
      * @param data The details for the LTE serving cell record.
-     * @since 1.6.0
      */
     private void processLteServingCell(LteRecordData data)
     {
@@ -406,16 +632,84 @@ public class NetworkDetailsFragment extends AServiceDataFragment implements ICel
         viewModel.setBandwidth(LteMessageConstants.getLteBandwidth(data.getLteBandwidth()));
         viewModel.setTa(data.hasTa() ? String.valueOf(data.getTa().getValue()) : "");
 
-        viewModel.setRsrp(data.hasRsrp() ? (int) data.getRsrp().getValue() : null);
-        viewModel.setRsrq(data.hasRsrq() ? (int) data.getRsrq().getValue() : null);
+        viewModel.setSignalOne(data.hasRsrp() ? (int) data.getRsrp().getValue() : null);
+        viewModel.setSignalTwo(data.hasRsrq() ? (int) data.getRsrq().getValue() : null);
     }
 
     /**
-     * Takes in the current group of LTE neighbors, converts them to a {@link LteNeighbor}, and then
+     * Takes in the NR serving cell details and sets it in the view model so that it can be
+     * displayed in the UI.
+     *
+     * @param data The details for the NR serving cell record.
+     */
+    private void processNrServingCell(NrRecordData data)
+    {
+        viewModel.setCarrier(data.getProvider());
+        viewModel.setMcc(data.hasMcc() ? String.valueOf(data.getMcc().getValue()) : "");
+        viewModel.setMnc(data.hasMnc() ? String.valueOf(data.getMnc().getValue()) : "");
+        viewModel.setAreaCode(data.hasTac() ? String.valueOf(data.getTac().getValue()) : "");
+        viewModel.setCellId(data.hasNci() ? data.getNci().getValue() : null);
+        viewModel.setChannelNumber(data.hasNarfcn() ? String.valueOf(data.getNci().getValue()) : "");
+
+        if (data.hasPci())
+        {
+            final int pci = data.getPci().getValue();
+            int primarySyncSequence = CalculationUtils.getPrimarySyncSequence(pci);
+            int secondarySyncSequence = CalculationUtils.getSecondarySyncSequence(pci);
+            viewModel.setPci(pci + " (" + primarySyncSequence + "/" + secondarySyncSequence + ")");
+        } else
+        {
+            viewModel.setPci("");
+        }
+        viewModel.setTa(data.hasTa() ? String.valueOf(data.getTa().getValue()) : "");
+
+        viewModel.setSignalOne(data.hasSsRsrp() ? (int) data.getSsRsrp().getValue() : null);
+        viewModel.setSignalTwo(data.hasSsRsrq() ? (int) data.getSsRsrq().getValue() : null);
+    }
+
+    /**
+     * Takes in the current group of UMTS neighbors, converts them to a {@link UmtsNeighbor}, and then
      * updates the view model.
      *
      * @param neighbors The current group of Lte Neighbors.
-     * @since 1.6.0
+     */
+    private void processGsmNeighbors(List<GsmRecordData> neighbors)
+    {
+        final TreeSet<GsmNeighbor> gsmNeighbors = neighbors.stream().map(data -> {
+            GsmNeighbor.GsmNeighborBuilder builder = GsmNeighbor.builder();
+            if (data.hasArfcn()) builder.arfcn(data.getArfcn().getValue());
+            if (data.hasBsic()) builder.bsic(data.getBsic().getValue());
+            if (data.hasSignalStrength()) builder.rssi((int) data.getSignalStrength().getValue());
+            return builder.build();
+        }).sorted().collect(Collectors.toCollection(TreeSet::new));
+
+        viewModel.setGsmNeighbors(gsmNeighbors);
+    }
+
+    /**
+     * Takes in the current group of UMTS neighbors, converts them to a {@link UmtsNeighbor}, and then
+     * updates the view model.
+     *
+     * @param neighbors The current group of Lte Neighbors.
+     */
+    private void processUmtsNeighbors(List<UmtsRecordData> neighbors)
+    {
+        final TreeSet<UmtsNeighbor> umtsNeighbors = neighbors.stream().map(data -> {
+            UmtsNeighbor.UmtsNeighborBuilder builder = UmtsNeighbor.builder();
+            if (data.hasUarfcn()) builder.uarfcn(data.getUarfcn().getValue());
+            if (data.hasPsc()) builder.psc(data.getPsc().getValue());
+            if (data.hasRscp()) builder.rscp((int) data.getRscp().getValue());
+            return builder.build();
+        }).sorted().collect(Collectors.toCollection(TreeSet::new));
+
+        viewModel.setUmtsNeighbors(umtsNeighbors);
+    }
+
+    /**
+     * Takes in the current group of LTE neighbors, converts them to an {@link LteNeighbor}, and then
+     * updates the view model.
+     *
+     * @param neighbors The current group of Lte Neighbors.
      */
     private void processLteNeighbors(List<LteRecordData> neighbors)
     {
@@ -432,20 +726,50 @@ public class NetworkDetailsFragment extends AServiceDataFragment implements ICel
         viewModel.setLteNeighbors(lteNeighbors);
     }
 
-    private void updateLteEci(Long ci)
+    /**
+     * Takes in the current group of LTE neighbors, converts them to an {@link NrNeighbor}, and then
+     * updates the view model.
+     *
+     * @param neighbors The current group of Lte Neighbors.
+     */
+    private void processNrNeighbors(List<NrRecordData> neighbors)
     {
-        if (ci != null)
+        final TreeSet<NrNeighbor> nrNeighbors = neighbors.stream().map(data -> {
+            NrNeighbor.NrNeighborBuilder builder = NrNeighbor.builder();
+            if (data.hasNarfcn()) builder.narfcn(data.getNarfcn().getValue());
+            if (data.hasPci()) builder.pci(data.getPci().getValue());
+            if (data.hasSsRsrp()) builder.ssRsrp((int) data.getSsRsrp().getValue());
+            if (data.hasSsRsrq()) builder.ssRsrq((int) data.getSsRsrq().getValue());
+            return builder.build();
+        }).sorted().collect(Collectors.toCollection(TreeSet::new));
+
+        viewModel.setNrNeighbors(nrNeighbors);
+    }
+
+    /**
+     * Sets the Cell Identity.
+     * <p>
+     * For LTE, it also calculates and sets the  related fields.
+     *
+     * @param cellIdentity The cell identity to set and calculate the other values from.
+     */
+    private void updateCellIdentity(Long cellIdentity)
+    {
+        if (cellIdentity != null)
         {
-            int eci = ci.intValue();
-            binding.cid.setText(String.valueOf(eci));
+            final int ci = cellIdentity.intValue();
+            binding.cid.setText(String.valueOf(ci));
 
-            // The Cell Identity is 28 bits long. The first 20 bits represent the Macro eNodeB ID. The last 8 bits
-            // represent the sector.  Strip off the last 8 bits to get the Macro eNodeB ID.
-            int eNodebId = CalculationUtils.getEnodebIdFromCellId(eci);
-            binding.enbId.setText(String.valueOf(eNodebId));
+            if (viewModel.getServingCellProtocol().getValue() == CellularProtocol.LTE)
+            {
+                // The Cell Identity is 28 bits long. The first 20 bits represent the Macro eNodeB ID. The last 8 bits
+                // represent the sector.  Strip off the last 8 bits to get the Macro eNodeB ID.
+                int eNodebId = CalculationUtils.getEnodebIdFromCellId(ci);
+                binding.enbId.setText(String.valueOf(eNodebId));
 
-            int sectorId = CalculationUtils.getSectorIdFromCellId(eci);
-            binding.sectorId.setText(String.valueOf(sectorId));
+                int sectorId = CalculationUtils.getSectorIdFromCellId(ci);
+                binding.sectorId.setText(String.valueOf(sectorId));
+            }
         } else
         {
             binding.cid.setText("");
@@ -455,17 +779,55 @@ public class NetworkDetailsFragment extends AServiceDataFragment implements ICel
     }
 
     /**
+     * Sets the provided value on the first Signal Strength display, and handles configuring the display with the
+     * appropriate min and max value.
+     *
+     * @param signalValue The new signal value to set.
+     */
+    private void updateSignalStrengthOne(Integer signalValue)
+    {
+        final CellularProtocol protocol = viewModel.getServingCellProtocol().getValue();
+        if (protocol == null) return;
+
+        binding.signalOneGroup.setVisibility(signalValue == null ? View.GONE : View.VISIBLE);
+        binding.signalOneValue.setText(signalValue != null ? String.valueOf(signalValue) : "");
+        setSignalStrengthBar(binding.progressBarSignalOne, signalValue, protocol.getMinSignalOne(), protocol.getMaxNormalizedSignalOne());
+    }
+
+    /**
+     * Sets the provided value on the second Signal Strength display, and handles configuring the display with the
+     * appropriate min and max value.
+     *
+     * @param signalValue The new signal value to set.
+     */
+    private void updateSignalStrengthTwo(Integer signalValue)
+    {
+        final CellularProtocol protocol = viewModel.getServingCellProtocol().getValue();
+        if (protocol == null) return;
+
+        if (protocol == CellularProtocol.UMTS &&
+                (signalValue == null || signalValue == RSCP_UNSET_VALUE_120 || signalValue == RSCP_UNSET_VALUE_24))
+        {
+            // Special handling for UMTS RSCP because devices seem to report the wrong value for "Unset"
+            signalValue = null;
+        }
+
+        binding.signalTwoGroup.setVisibility(signalValue == null ? View.GONE : View.VISIBLE);
+        binding.signalTwoValue.setText(signalValue != null ? String.valueOf(signalValue) : "");
+        setSignalStrengthBar(binding.progressBarSignalTwo, signalValue, protocol.getMinSignalTwo(), protocol.getMaxNormalizedSignalTwo());
+    }
+
+    /**
      * Updates the first signal strength indicator UI element with the provided value. If the value is null, then
      * the current value is cleared and a blank UI element is show.
      *
      * @param signalValue The new signal value to set, or null if the current value should be cleared.
-     * @since 1.6.0
      */
-    private void setSignalStrength(DonutProgressView signalStrengthBar, Integer signalValue, int minValue, int maxNormalizedValue)
+    private void setSignalStrengthBar(DonutProgressView signalStrengthBar, Integer signalValue, int minValue, int maxNormalizedValue)
     {
         if (signalValue == null)
         {
-            binding.progressBarRsrq.clear();
+            signalStrengthBar.clear();
             return;
         }
 
@@ -479,15 +841,57 @@ public class NetworkDetailsFragment extends AServiceDataFragment implements ICel
     }
 
     /**
+     * Given the newest set of  r neighbors, update the neighbors table view.
+     *
+     * @param neighbors The latest batch of NR neighbors.
+     */
+    private void updateNrNeighborsView(SortedSet<NrNeighbor> neighbors)
+    {
+        final Context context = getContext();
+        if (context == null) return;
+
+        if (neighbors.isEmpty())
+        {
+            binding.nrNeighborsGroup.setVisibility(View.GONE);
+            return;
+        }
+
+        binding.nrNeighborsGroup.setVisibility(View.VISIBLE);
+
+        final TableLayout neighborsTable = binding.nrNeighborsTable;
+
+        neighborsTable.removeAllViews();
+
+        for (NrNeighbor neighbor : neighbors)
+        {
+            final TableRow row = new TableRow(context);
+
+            addValueToRow(context, row, neighbor.narfcn);
+            addValueToRow(context, row, neighbor.pci);
+            addValueToRow(context, row, neighbor.ssRsrp);
+            addValueToRow(context, row, neighbor.ssRsrq);
+
+            neighborsTable.addView(row);
+        }
+    }
+
+    /**
      * Given the newest set of LTE neighbors, update the neighbors table view.
      *
      * @param neighbors The latest batch of LTE neighbors.
-     * @since 1.6.0
      */
     private void updateLteNeighborsView(SortedSet<LteNeighbor> neighbors)
     {
         final Context context = getContext();
         if (context == null) return;
+
+        if (neighbors.isEmpty())
+        {
+            binding.lteNeighborsGroup.setVisibility(View.GONE);
+            return;
+        }
+
+        binding.lteNeighborsGroup.setVisibility(View.VISIBLE);
 
         final TableLayout lteNeighborsTable = binding.lteNeighborsTable;
 
@@ -508,18 +912,86 @@ public class NetworkDetailsFragment extends AServiceDataFragment implements ICel
     }
 
     /**
+     * Given the newest set of UMTS neighbors, update the neighbors table view.
+     *
+     * @param neighbors The latest batch of UMTS neighbors.
+     */
+    private void updateUmtsNeighborsView(SortedSet<UmtsNeighbor> neighbors)
+    {
+        final Context context = getContext();
+        if (context == null) return;
+
+        final TableLayout umtsNeighborsTable = binding.umtsNeighborsTable;
+
+        if (neighbors.isEmpty())
+        {
+            binding.umtsNeighborsGroup.setVisibility(View.GONE);
+            return;
+        }
+
+        binding.umtsNeighborsGroup.setVisibility(View.VISIBLE);
+
+        umtsNeighborsTable.removeAllViews();
+
+        for (UmtsNeighbor neighbor : neighbors)
+        {
+            final TableRow row = new TableRow(context);
+
+            addValueToRow(context, row, neighbor.uarfcn);
+            addValueToRow(context, row, neighbor.psc);
+            addValueToRow(context, row, neighbor.rscp);
+
+            umtsNeighborsTable.addView(row);
+        }
+    }
+
+    /**
+     * Given the newest set of GSM neighbors, update the neighbors table view.
+     *
+     * @param neighbors The latest batch of GSM neighbors.
+     */
+    private void updateGsmNeighborsView(SortedSet<GsmNeighbor> neighbors)
+    {
+        final Context context = getContext();
+        if (context == null) return;
+
+        final TableLayout gsmNeighborsTable = binding.gsmNeighborsTable;
+
+        if (neighbors.isEmpty())
+        {
+            binding.gsmNeighborsGroup.setVisibility(View.GONE);
+            return;
+        }
+
+        binding.gsmNeighborsGroup.setVisibility(View.VISIBLE);
+
+        gsmNeighborsTable.removeAllViews();
+
+        for (GsmNeighbor neighbor : neighbors)
+        {
+            final TableRow row = new TableRow(context);
+
+            addValueToRow(context, row, neighbor.arfcn);
+            addValueToRow(context, row, neighbor.bsic);
+            addValueToRow(context, row, neighbor.rssi);
+
+            gsmNeighborsTable.addView(row);
+        }
+    }
+
+    /**
      * Set the provided value in a TextView and then add it to the row.
      *
      * @param context The context to use for creating the TextView.
      * @param row     The row to add the cell to.
-     * @param value   The value to place in the cell. If the value is {@link LteNeighbor#UNSET_VALUE},
+     * @param value   The value to place in the cell. If the value is
+     *                {@link com.craxiom.networksurvey.constants.NetworkSurveyConstants#UNSET_VALUE},
      *                then an empty strinig is placed in the cell.
-     * @since 1.6.0
      */
     private void addValueToRow(Context context, TableRow row, int value)
     {
         final String cellText;
-        if (value == LteNeighbor.UNSET_VALUE)
+        if (value == NetworkSurveyConstants.UNSET_VALUE)
         {
             // We need to add an empty text view to make sure the columns align correctly
             cellText = "";
