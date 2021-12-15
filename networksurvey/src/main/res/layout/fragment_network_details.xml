@@ -676,6 +676,7 @@
             <LinearLayout
                 android:layout_width="fill_parent"
                 android:layout_height="match_parent"
+                android:layout_marginBottom="@dimen/x_small_margin"
                 android:orientation="vertical">
 
                 <LinearLayout
@@ -778,40 +779,29 @@
                     <TableLayout
                         android:id="@+id/lte_neighbors_table_headers"
                         android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:stretchColumns="*">
+                        android:layout_height="wrap_content">
 
                         <TableRow tools:ignore="UselessParent">
 
                             <TextView
                                 android:text="@string/earfcn_label"
-                                style="@style/SmallLabelText"
-                                android:layout_weight="1"
-                                android:padding="3dip" />
+                                style="@style/ColumnTitleText" />
 
                             <TextView
                                 android:text="@string/pci_label"
-                                style="@style/SmallLabelText"
-                                android:layout_weight="1"
-                                android:padding="3dip" />
+                                style="@style/ColumnTitleText" />
 
                             <TextView
                                 android:text="@string/rsrp_label"
-                                style="@style/SmallLabelText"
-                                android:layout_weight="1"
-                                android:padding="3dip" />
+                                style="@style/ColumnTitleText" />
 
                             <TextView
                                 android:text="@string/rsrq_label"
-                                style="@style/SmallLabelText"
-                                android:layout_weight="1"
-                                android:padding="3dip" />
+                                style="@style/ColumnTitleText" />
 
                             <TextView
                                 android:text="@string/ta_label"
-                                style="@style/SmallLabelText"
-                                android:layout_weight="1"
-                                android:padding="3dip" />
+                                style="@style/ColumnTitleText" />
                         </TableRow>
                     </TableLayout>
 
@@ -819,8 +809,7 @@
                         android:id="@+id/lte_neighbors_table"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_marginBottom="@dimen/small_margin"
-                        android:stretchColumns="*" />
+                        android:layout_marginBottom="@dimen/small_margin" />
 
                 </LinearLayout>
 
@@ -841,28 +830,21 @@
                         android:id="@+id/umts_neighbors_table_headers"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="@dimen/small_margin"
-                        android:stretchColumns="*">
+                        android:layout_marginTop="@dimen/small_margin">
 
                         <TableRow tools:ignore="UselessParent">
 
                             <TextView
                                 android:text="@string/uarfcn_label"
-                                style="@style/SmallLabelText"
-                                android:layout_weight="1"
-                                android:padding="3dip" />
+                                style="@style/ColumnTitleText" />
 
                             <TextView
                                 android:text="@string/psc_label"
-                                style="@style/SmallLabelText"
-                                android:layout_weight="1"
-                                android:padding="3dip" />
+                                style="@style/ColumnTitleText" />
 
                             <TextView
                                 android:text="@string/rscp_label"
-                                style="@style/SmallLabelText"
-                                android:layout_weight="1"
-                                android:padding="3dip" />
+                                style="@style/ColumnTitleText" />
                         </TableRow>
                     </TableLayout>
 
@@ -870,8 +852,7 @@
                         android:id="@+id/umts_neighbors_table"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_marginBottom="@dimen/small_margin"
-                        android:stretchColumns="*" />
+                        android:layout_marginBottom="@dimen/small_margin" />
                 </LinearLayout>
 
                 <LinearLayout
@@ -891,28 +872,21 @@
                         android:id="@+id/gsm_neighbors_table_headers"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="@dimen/small_margin"
-                        android:stretchColumns="*">
+                        android:layout_marginTop="@dimen/small_margin">
 
                         <TableRow tools:ignore="UselessParent">
 
                             <TextView
                                 android:text="@string/arfcn_label"
-                                style="@style/SmallLabelText"
-                                android:layout_weight="1"
-                                android:padding="3dip" />
+                                style="@style/ColumnTitleText" />
 
                             <TextView
                                 android:text="@string/bsic_label"
-                                style="@style/SmallLabelText"
-                                android:layout_weight="1"
-                                android:padding="3dip" />
+                                style="@style/ColumnTitleText" />
 
                             <TextView
                                 android:text="@string/rssi_label"
-                                style="@style/SmallLabelText"
-                                android:layout_weight="1"
-                                android:padding="3dip" />
+                                style="@style/ColumnTitleText" />
                         </TableRow>
                     </TableLayout>
 
@@ -920,8 +894,7 @@
                         android:id="@+id/gsm_neighbors_table"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_marginBottom="@dimen/small_margin"
-                        android:stretchColumns="*" />
+                        android:layout_marginBottom="@dimen/small_margin" />
                 </LinearLayout>
 
             </LinearLayout>

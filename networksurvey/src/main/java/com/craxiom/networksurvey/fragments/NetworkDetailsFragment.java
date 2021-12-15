@@ -126,8 +126,10 @@ public class NetworkDetailsFragment extends AServiceDataFragment implements ICel
     @Override
     protected void registerDataListeners(NetworkSurveyService service)
     {
-        service.registerLocationListener(this);
         service.registerCellularSurveyRecordListener(this);
+        service.registerLocationListener(this);
+        initializeLocationTextView(); // Refresh the location views because we might have missed something between the
+        // initial call and when we registered as a listener.
 
         service.runSingleCellularScan();
     }

@@ -61,10 +61,18 @@
         <item name="android:layout_marginEnd">@dimen/small_margin</item>
     </style>
 
+    <style name="ColumnTitleText" parent="SmallLabelText">
+        <item name="android:layout_width">0dp</item>
+        <item name="android:layout_weight">1</item>
+        <item name="android:padding">3dip</item>
+    </style>
+
     <style name="TableText" parent="StandardText">
         <item name="android:textSize">14sp</item>
         <item name="android:autoSizeMaxTextSize">14sp</item>
         <item name="android:autoSizeMinTextSize">2sp</item>
+        <item name="android:layout_width">0dp</item>
+        <item name="android:layout_weight">1</item>
     </style>
 
     <style name="LabelText" parent="TextAppearance.AppCompat">
