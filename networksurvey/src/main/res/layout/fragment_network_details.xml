@@ -674,7 +674,7 @@
             card_view:contentPadding="0dp">
 
             <LinearLayout
-                android:layout_width="fill_parent"
+                android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:layout_marginBottom="@dimen/x_small_margin"
                 android:orientation="vertical">
@@ -730,27 +730,19 @@
 
                             <TextView
                                 android:text="@string/narfcn_label"
-                                style="@style/SmallLabelText"
-                                android:layout_weight="1"
-                                android:padding="3dip" />
+                                style="@style/ColumnTitleText" />
 
                             <TextView
                                 android:text="@string/pci_label"
-                                style="@style/SmallLabelText"
-                                android:layout_weight="1"
-                                android:padding="3dip" />
+                                style="@style/ColumnTitleText" />
 
                             <TextView
                                 android:text="@string/ss_rsrp_label"
-                                style="@style/SmallLabelText"
-                                android:layout_weight="1"
-                                android:padding="3dip" />
+                                style="@style/ColumnTitleText" />
 
                             <TextView
                                 android:text="@string/ss_rsrp_label"
-                                style="@style/SmallLabelText"
-                                android:layout_weight="1"
-                                android:padding="3dip" />
+                                style="@style/ColumnTitleText" />
                         </TableRow>
                     </TableLayout>
 
@@ -779,7 +771,9 @@
                     <TableLayout
                         android:id="@+id/lte_neighbors_table_headers"
                         android:layout_width="match_parent"
-                        android:layout_height="wrap_content">
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="@dimen/small_margin"
+                        android:stretchColumns="*">
 
                         <TableRow tools:ignore="UselessParent">
 
@@ -809,7 +803,8 @@
                         android:id="@+id/lte_neighbors_table"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_marginBottom="@dimen/small_margin" />
+                        android:layout_marginBottom="@dimen/small_margin"
+                        android:stretchColumns="*" />
 
                 </LinearLayout>
 
@@ -830,7 +825,8 @@
                         android:id="@+id/umts_neighbors_table_headers"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="@dimen/small_margin">
+                        android:layout_marginTop="@dimen/small_margin"
+                        android:stretchColumns="*">
 
                         <TableRow tools:ignore="UselessParent">
 
@@ -852,7 +848,8 @@
                         android:id="@+id/umts_neighbors_table"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_marginBottom="@dimen/small_margin" />
+                        android:layout_marginBottom="@dimen/small_margin"
+                        android:stretchColumns="*" />
                 </LinearLayout>
 
                 <LinearLayout
@@ -872,7 +869,8 @@
                         android:id="@+id/gsm_neighbors_table_headers"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="@dimen/small_margin">
+                        android:layout_marginTop="@dimen/small_margin"
+                        android:stretchColumns="*">
 
                         <TableRow tools:ignore="UselessParent">
 
@@ -894,7 +892,8 @@
                         android:id="@+id/gsm_neighbors_table"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_marginBottom="@dimen/small_margin" />
+                        android:layout_marginBottom="@dimen/small_margin"
+                        android:stretchColumns="*" />
                 </LinearLayout>
 
             </LinearLayout>
