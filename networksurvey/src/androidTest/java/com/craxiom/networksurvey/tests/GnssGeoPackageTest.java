@@ -1,5 +1,8 @@
 package com.craxiom.networksurvey.tests;
 
+import static com.google.common.truth.Truth.assertWithMessage;
+import static com.schibsted.spain.barista.interaction.BaristaSleepInteractions.sleep;
+
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.RequiresDevice;
 
@@ -25,9 +28,6 @@ import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
 
 import mil.nga.geopackage.factory.GeoPackageFactory;
-
-import static com.google.common.truth.Truth.assertWithMessage;
-import static com.schibsted.spain.barista.interaction.BaristaSleepInteractions.sleep;
 
 @RunWith(AndroidJUnit4.class)
 public class GnssGeoPackageTest extends TestBase
@@ -66,43 +66,43 @@ public class GnssGeoPackageTest extends TestBase
         results = SchemaDao.getTableSchema(geoPackage, GnssMessageConstants.GNSS_RECORDS_TABLE_NAME);
 
         //Then
-        validateCommonTableSchema(results);
+        int index = validateCommonTableSchema(results);
 
         assertWithMessage("Validate Group Number column schema")
-                .that(results.get(5).toString())
-                .isEqualTo("MessageTableSchemaModel{cid=5, name='GroupNumber', type='3', notNull=1, defaultValue=-1, primaryKey=0}");
+                .that(results.get(index).toString())
+                .isEqualTo("MessageTableSchemaModel{cid=" + index++ + ", name='GroupNumber', type='3', notNull=1, defaultValue=-1, primaryKey=0}");
 
         assertWithMessage("Validate Constellation column schema")
-                .that(results.get(6).toString())
-                .isEqualTo("MessageTableSchemaModel{cid=6, name='Constellation', type='3', notNull=0, defaultValue=0, primaryKey=0}");
+                .that(results.get(index).toString())
+                .isEqualTo("MessageTableSchemaModel{cid=" + index++ + ", name='Constellation', type='3', notNull=0, defaultValue=0, primaryKey=0}");
 
         assertWithMessage("Validate Space Vehicle column schema")
-                .that(results.get(7).toString())
-                .isEqualTo("MessageTableSchemaModel{cid=7, name='Space Vehicle Id', type='3', notNull=0, defaultValue=0, primaryKey=0}");
+                .that(results.get(index).toString())
+                .isEqualTo("MessageTableSchemaModel{cid=" + index++ + ", name='Space Vehicle Id', type='3', notNull=0, defaultValue=0, primaryKey=0}");
 
         assertWithMessage("Validate Carrier Frequency HZ column schema")
-                .that(results.get(8).toString())
-                .isEqualTo("MessageTableSchemaModel{cid=8, name='Carrier Frequency Hz', type='3', notNull=0, defaultValue=0, primaryKey=0}");
+                .that(results.get(index).toString())
+                .isEqualTo("MessageTableSchemaModel{cid=" + index++ + ", name='Carrier Frequency Hz', type='3', notNull=0, defaultValue=0, primaryKey=0}");
 
         assertWithMessage("Validate Latitude Standard Deviation column schema")
-                .that(results.get(9).toString())
-                .isEqualTo("MessageTableSchemaModel{cid=9, name='Latitude Standard Deviation (m)', type='3', notNull=0, defaultValue=0, primaryKey=0}");
+                .that(results.get(index).toString())
+                .isEqualTo("MessageTableSchemaModel{cid=" + index++ + ", name='Latitude Standard Deviation (m)', type='3', notNull=0, defaultValue=0, primaryKey=0}");
 
         assertWithMessage("Validate Longitude Standard Deviation column schema")
-                .that(results.get(10).toString())
-                .isEqualTo("MessageTableSchemaModel{cid=10, name='Longitude Standard Deviation (m)', type='3', notNull=0, defaultValue=0, primaryKey=0}");
+                .that(results.get(index).toString())
+                .isEqualTo("MessageTableSchemaModel{cid=" + index++ + ", name='Longitude Standard Deviation (m)', type='3', notNull=0, defaultValue=0, primaryKey=0}");
 
         assertWithMessage("Validate Altitude Standard Deviation column schema")
-                .that(results.get(11).toString())
-                .isEqualTo("MessageTableSchemaModel{cid=11, name='Altitude Standard Deviation (m)', type='3', notNull=0, defaultValue=0, primaryKey=0}");
+                .that(results.get(index).toString())
+                .isEqualTo("MessageTableSchemaModel{cid=" + index++ + ", name='Altitude Standard Deviation (m)', type='3', notNull=0, defaultValue=0, primaryKey=0}");
 
         assertWithMessage("Validate AGC dB column schema")
-                .that(results.get(12).toString())
-                .isEqualTo("MessageTableSchemaModel{cid=12, name='AGC dB', type='3', notNull=0, defaultValue=0, primaryKey=0}");
+                .that(results.get(index).toString())
+                .isEqualTo("MessageTableSchemaModel{cid=" + index++ + ", name='AGC dB', type='3', notNull=0, defaultValue=0, primaryKey=0}");
 
         assertWithMessage("Validate C/N0 (dB-Hz) column schema")
-                .that(results.get(13).toString())
-                .isEqualTo("MessageTableSchemaModel{cid=13, name='C/N0 (dB-Hz)', type='3', notNull=0, defaultValue=0, primaryKey=0}");
+                .that(results.get(index).toString())
+                .isEqualTo("MessageTableSchemaModel{cid=" + index++ + ", name='C/N0 (dB-Hz)', type='3', notNull=0, defaultValue=0, primaryKey=0}");
     }
 
     /*

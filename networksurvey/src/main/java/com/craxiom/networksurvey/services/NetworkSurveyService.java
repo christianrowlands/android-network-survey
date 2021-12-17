@@ -1606,11 +1606,17 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
     }
 
     /**
+     * Note that the {@link Manifest.permission#BLUETOOTH_SCAN} permission was added in Android 12, so this method
+     * returns true for all older versions.
+     *
      * @return True if the {@link Manifest.permission#BLUETOOTH_SCAN} permission has been granted. False otherwise.
      * @since 1.6.0
      */
     private boolean hasBtScanPermission()
     {
+        // The BLUETOOTH_SCAN permission was added in Android 12
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) return true;
+
         if (ActivityCompat.checkSelfPermission(this, Manifest.permission.BLUETOOTH_SCAN) != PackageManager.PERMISSION_GRANTED)
         {
             Timber.w("The BLUETOOTH_SCAN permission has not been granted");

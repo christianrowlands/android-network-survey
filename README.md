@@ -25,6 +25,16 @@ To build and install the project follow the steps below:
     3) Connect an Android Phone (make sure debugging is enabled on the device).
     4) Install and run the app by clicking the "Play" button in Android Studio.
 
+If you want to build using the command line, the apk can be built and installed using the following
+commands. Make sure your phone is connected to your computer before running the install command.
+
+> NOTE: If building on Windows, replace `./gradlew` with `gradlew`
+
+```shell
+./gradlew assembleDebug
+./gradlew installDebug
+```
+
 ### Run Tests
 
 > NOTE: This requires a connected device (physical device or Android Emulator)

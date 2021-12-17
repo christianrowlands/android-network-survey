@@ -1,6 +1,7 @@
 package com.craxiom.networksurvey.fragments;
 
 import android.Manifest;
+import android.annotation.SuppressLint;
 import android.bluetooth.BluetoothAdapter;
 import android.content.BroadcastReceiver;
 import android.content.ComponentName;
@@ -123,28 +124,25 @@ public class BluetoothFragment extends Fragment implements IBluetoothSurveyRecor
         return view;
     }
 
+    @SuppressLint("InlinedApi")
     @Override
     public void onResume()
     {
         super.onResume();
 
-        // The BLUETOOTH_SCAN permission was added in Android 12
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S)
+        if (!hasBtScanPermission())
         {
-            if (!hasBtScanPermission())
+            final Context context = getContext();
+            if (context != null)
             {
-                final Context context = getContext();
-                if (context != null)
-                {
-                    scanStatusView.setText(context.getString(R.string.scan_status_permission));
-                    Toast.makeText(context, getString(R.string.grant_bluetooth_scan_permission), Toast.LENGTH_LONG).show();
+                scanStatusView.setText(context.getString(R.string.scan_status_permission));
+                Toast.makeText(context, getString(R.string.grant_bluetooth_scan_permission), Toast.LENGTH_LONG).show();
 
-                    ActivityCompat.requestPermissions(requireActivity(), new String[]{Manifest.permission.BLUETOOTH_SCAN},
-                            ACCESS_SCAN_PERMISSION_REQUEST_ID);
-                }
-
-                return;
+                ActivityCompat.requestPermissions(requireActivity(), new String[]{Manifest.permission.BLUETOOTH_SCAN},
+                        ACCESS_SCAN_PERMISSION_REQUEST_ID);
             }
+
+            return;
         }
 
         bluetoothScanRateMs = PreferenceUtils.getScanRatePreferenceMs(NetworkSurveyConstants.PROPERTY_BLUETOOTH_SCAN_INTERVAL_SECONDS,
@@ -215,11 +213,17 @@ public class BluetoothFragment extends Fragment implements IBluetoothSurveyRecor
     }
 
     /**
+     * Note that the {@link Manifest.permission#BLUETOOTH_CONNECT} permission was added in Android 12, so this method
+     * returns true for all older versions.
+     *
      * @return True if the {@link Manifest.permission#BLUETOOTH_CONNECT} permission has been granted. False otherwise.
      * @since 1.6.0
      */
     private boolean hasBtConnectPermission()
     {
+        // The BLUETOOTH_CONNECT permission was added in Android 12
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) return true;
+
         final Context context = getContext();
         if (context == null || ActivityCompat.checkSelfPermission(context, Manifest.permission.BLUETOOTH_CONNECT) != PackageManager.PERMISSION_GRANTED)
         {
@@ -231,11 +235,17 @@ public class BluetoothFragment extends Fragment implements IBluetoothSurveyRecor
     }
 
     /**
+     * Note that the {@link Manifest.permission#BLUETOOTH_SCAN} permission was added in Android 12, so this method
+     * returns true for all older versions.
+     *
      * @return True if the {@link Manifest.permission#BLUETOOTH_SCAN} permission has been granted. False otherwise.
      * @since 1.6.0
      */
     private boolean hasBtScanPermission()
     {
+        // The BLUETOOTH_SCAN permission was added in Android 12
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) return true;
+
         if (ActivityCompat.checkSelfPermission(requireContext(), Manifest.permission.BLUETOOTH_SCAN) != PackageManager.PERMISSION_GRANTED)
         {
             Timber.w("The BLUETOOTH_SCAN permission has not been granted");
