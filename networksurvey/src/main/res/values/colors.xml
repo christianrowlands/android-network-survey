@@ -3,11 +3,14 @@
     <color name="colorPrimary">#4CAF50</color>
     <color name="colorAccent">#03A9F4</color>
     <color name="colorCardDark">#161212</color>
+    <color name="colorCardDarkTitle">#6603A9F4</color>
 
     <color name="colorAccentFaded">#6603A9F4</color>
 
     <color name="activeTabColor">#FFFFFF</color>
     <color name="inactiveTabColor">#A2A2A2</color>
+    <color name="fadedGrayColor">#60A2A2A2</color>
+
 
     <color name="connectionStatusDisconnected">#A21919</color>
     <color name="connectionStatusConnecting">#FF6D00</color>
@@ -15,6 +18,8 @@
 
     <color name="body_text_2_light">#8a000000</color>
     <color name="body_text_1_dark">#deffffff</color>
+    <color name="normalText">#EFEFEF</color>
+    <color name="fadedText">#C2C1C1</color>
 
     <color name="alert_red">#A21919</color>
 
@@ -24,6 +29,12 @@
     <color name="rssi_orange">#F57C00</color>
     <color name="rssi_red">#D32F2F</color>
     <color name="rssi_deep_red">#D50000</color>
+
+    <!-- The Cellular RSSI color range -->
+    <color name="cellular_deep_green">#29682C</color>
+    <color name="cellular_green">#388E3C</color>
+    <color name="cellular_rssi_red">#D32F2F</color>
+    <color name="cellular_deep_red">#D50000</color>
 
     <!-- GNSS Sky View -->
     <color name="not_in_view_sat">#DDFFFFFF</color>

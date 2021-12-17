@@ -15,6 +15,11 @@
  */
 package com.craxiom.networksurvey.util;
 
+import static com.craxiom.networksurvey.view.GnssSkyView.MAX_VALUE_CN0;
+import static com.craxiom.networksurvey.view.GnssSkyView.MAX_VALUE_SNR;
+import static com.craxiom.networksurvey.view.GnssSkyView.MIN_VALUE_CN0;
+import static com.craxiom.networksurvey.view.GnssSkyView.MIN_VALUE_SNR;
+
 import android.content.Context;
 import android.location.Location;
 import android.view.View;
@@ -30,11 +35,6 @@ import com.google.android.material.chip.Chip;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.concurrent.TimeUnit;
-
-import static com.craxiom.networksurvey.view.GnssSkyView.MAX_VALUE_CN0;
-import static com.craxiom.networksurvey.view.GnssSkyView.MAX_VALUE_SNR;
-import static com.craxiom.networksurvey.view.GnssSkyView.MIN_VALUE_CN0;
-import static com.craxiom.networksurvey.view.GnssSkyView.MIN_VALUE_SNR;
 
 /**
  * Utilities for processing user interface elements.
