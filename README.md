@@ -92,6 +92,12 @@ library. [The API documentation is published to a web page here](https://messagi
 
 ## Changelog
 
+##### [1.6.0](https://github.com/christianrowlands/android-network-survey/releases/tag/v1.6.0) - 2021-12-18
+
+* The WiFi UI is saved when swapping between fragments, so you don’t have to wait for the next scan to see something.
+* The Cellular UI got a total overhaul, and now displays all protocols (except CDMA) and all neighbor cells as well.
+* Updated to compile against Android 12.
+
 ##### [1.5.1](https://github.com/christianrowlands/android-network-survey/releases/tag/v1.5.1) - 2021-11-30
 
 * Fixed a bug where incorrect 5G NR values were being reported.

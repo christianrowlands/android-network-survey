@@ -15,7 +15,7 @@ android {
         minSdkVersion 26
         targetSdkVersion 31
         versionCode 36
-        versionName "1.6.0-alpha02"
+        versionName "1.6.0"
         setProperty("archivesBaseName", "$applicationName-$versionName")
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         testInstrumentationRunnerArguments clearPackageData: 'true'
