@@ -12,8 +12,8 @@ displayed in the UI. The App also supports connecting to a remote gRPC server an
 cellular and Wi-Fi records. For GNSS data, it can display the latest information about the satellite
 vehicles and also log the information to a GeoPackage file.
 
-![Cellular Details](screenshots/cellular_details_logging_all.png "The Network Survey App Main Screen")
-![Wi-Fi Details](screenshots/wi-fi_logging.png "Wi-Fi Scan Results")
+![Cellular Details](screenshots/cellular_details.png "The Network Survey App Main Screen")
+![Wi-Fi Details](screenshots/wi-fi_details.png "Wi-Fi Scan Results")
 ![GNSS Details](screenshots/gnss_details.png "GNSS Details")
 
 ## Getting Started
