@@ -12,8 +12,8 @@ displayed in the UI. The App also supports connecting to a remote gRPC server an
 cellular and Wi-Fi records. For GNSS data, it can display the latest information about the satellite
 vehicles and also log the information to a GeoPackage file.
 
-![Cellular Details](screenshots/cellular_details_logging_all.png "The Network Survey App Main Screen")
-![Wi-Fi Details](screenshots/wi-fi_logging.png "Wi-Fi Scan Results")
+![Cellular Details](screenshots/cellular_details.png "The Network Survey App Main Screen")
+![Wi-Fi Details](screenshots/wi-fi_details.png "Wi-Fi Scan Results")
 ![GNSS Details](screenshots/gnss_details.png "GNSS Details")
 
 ## Getting Started
@@ -91,6 +91,12 @@ library. [The API documentation is published to a web page here](https://messagi
 .
 
 ## Changelog
+
+##### [1.6.0](https://github.com/christianrowlands/android-network-survey/releases/tag/v1.6.0) - 2021-12-18
+
+* The WiFi UI is saved when swapping between fragments, so you don’t have to wait for the next scan to see something.
+* The Cellular UI got a total overhaul, and now displays all protocols (except CDMA) and all neighbor cells as well.
+* Updated to compile against Android 12.
 
 ##### [1.5.1](https://github.com/christianrowlands/android-network-survey/releases/tag/v1.5.1) - 2021-11-30
 
