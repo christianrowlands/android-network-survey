@@ -1,5 +1,8 @@
 package com.craxiom.networksurvey.tests;
 
+import static com.google.common.truth.Truth.assertWithMessage;
+import static com.schibsted.spain.barista.interaction.BaristaSleepInteractions.sleep;
+
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.RequiresDevice;
 
@@ -25,9 +28,6 @@ import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
 
 import mil.nga.geopackage.factory.GeoPackageFactory;
-
-import static com.google.common.truth.Truth.assertWithMessage;
-import static com.schibsted.spain.barista.interaction.BaristaSleepInteractions.sleep;
 
 @RunWith(AndroidJUnit4.class)
 public class WifiGeoPackageTest extends TestBase
@@ -157,54 +157,51 @@ public class WifiGeoPackageTest extends TestBase
     @Test
     public void validateWifiMessageTableSchema()
     {
-        //Given
-        ArrayList<MessageTableSchema> results;
-
         //When
         geoPackage = geoPackageManager
                 .open(AndroidFiles
                         .getLatestSurveyFile(testRunDate, SurveyTypes.WIFI_SURVEY.getValue())
                         .getAbsolutePath(), false);
 
-        results = SchemaDao.getTableSchema(geoPackage, WifiBeaconMessageConstants.WIFI_BEACON_RECORDS_TABLE_NAME);
+        ArrayList<MessageTableSchema> results = SchemaDao.getTableSchema(geoPackage, WifiBeaconMessageConstants.WIFI_BEACON_RECORDS_TABLE_NAME);
 
         //Then
-        validateCommonTableSchema(results);
+        int index = validateCommonTableSchema(results);
 
         assertWithMessage("Validate BSSID column schema")
-                .that(results.get(5).toString())
-                .isEqualTo("MessageTableSchemaModel{cid=5, name='BSSID', type='3', notNull=0, defaultValue=0, primaryKey=0}");
+                .that(results.get(index).toString())
+                .isEqualTo("MessageTableSchemaModel{cid=" + index++ + ", name='BSSID', type='3', notNull=0, defaultValue=0, primaryKey=0}");
 
         assertWithMessage("Validate SSID column schema")
-                .that(results.get(6).toString())
-                .isEqualTo("MessageTableSchemaModel{cid=6, name='SSID', type='3', notNull=0, defaultValue=0, primaryKey=0}");
+                .that(results.get(index).toString())
+                .isEqualTo("MessageTableSchemaModel{cid=" + index++ + ", name='SSID', type='3', notNull=0, defaultValue=0, primaryKey=0}");
 
         assertWithMessage("Validate Channel column schema")
-                .that(results.get(7).toString())
-                .isEqualTo("MessageTableSchemaModel{cid=7, name='Channel', type='3', notNull=0, defaultValue=0, primaryKey=0}");
+                .that(results.get(index).toString())
+                .isEqualTo("MessageTableSchemaModel{cid=" + index++ + ", name='Channel', type='3', notNull=0, defaultValue=0, primaryKey=0}");
 
         assertWithMessage("Validate Frequency column schema")
-                .that(results.get(8).toString())
-                .isEqualTo("MessageTableSchemaModel{cid=8, name='Frequency', type='3', notNull=0, defaultValue=0, primaryKey=0}");
+                .that(results.get(index).toString())
+                .isEqualTo("MessageTableSchemaModel{cid=" + index++ + ", name='Frequency', type='3', notNull=0, defaultValue=0, primaryKey=0}");
 
         assertWithMessage("Validate Cipher Suites column schema")
-                .that(results.get(9).toString())
-                .isEqualTo("MessageTableSchemaModel{cid=9, name='Cipher_Suites', type='3', notNull=0, defaultValue=0, primaryKey=0}");
+                .that(results.get(index).toString())
+                .isEqualTo("MessageTableSchemaModel{cid=" + index++ + ", name='Cipher_Suites', type='3', notNull=0, defaultValue=0, primaryKey=0}");
 
         assertWithMessage("Validate AKM Suites column schema")
-                .that(results.get(10).toString())
-                .isEqualTo("MessageTableSchemaModel{cid=10, name='AKM_Suites', type='3', notNull=0, defaultValue=0, primaryKey=0}");
+                .that(results.get(index).toString())
+                .isEqualTo("MessageTableSchemaModel{cid=" + index++ + ", name='AKM_Suites', type='3', notNull=0, defaultValue=0, primaryKey=0}");
 
         assertWithMessage("Validate Encryption Type column schema")
-                .that(results.get(11).toString())
-                .isEqualTo("MessageTableSchemaModel{cid=11, name='Encryption_Type', type='3', notNull=0, defaultValue=0, primaryKey=0}");
+                .that(results.get(index).toString())
+                .isEqualTo("MessageTableSchemaModel{cid=" + index++ + ", name='Encryption_Type', type='3', notNull=0, defaultValue=0, primaryKey=0}");
 
         assertWithMessage("Validate WPS column schema")
-                .that(results.get(12).toString())
-                .isEqualTo("MessageTableSchemaModel{cid=12, name='WPS', type='3', notNull=0, defaultValue=0, primaryKey=0}");
+                .that(results.get(index).toString())
+                .isEqualTo("MessageTableSchemaModel{cid=" + index++ + ", name='WPS', type='3', notNull=0, defaultValue=0, primaryKey=0}");
 
         assertWithMessage("Validate Signal Strength column schema")
-                .that(results.get(13).toString())
-                .isEqualTo("MessageTableSchemaModel{cid=13, name='Signal Strength', type='3', notNull=0, defaultValue=0, primaryKey=0}");
+                .that(results.get(index).toString())
+                .isEqualTo("MessageTableSchemaModel{cid=" + index++ + ", name='Signal Strength', type='3', notNull=0, defaultValue=0, primaryKey=0}");
     }
 }

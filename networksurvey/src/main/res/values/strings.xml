@@ -2,9 +2,10 @@
 
     <string name="permissions_rationale_title">Network Survey Permissions</string>
     <string name="permissions_rationale">The Network Survey app requires a few permissions to work.  Denying these permissions will result in the app not functioning properly.
-        \n\n1. <b>Make and Manage Phone Calls</b>:  This app does not make or manage phone calls.  Instead, it needs this permission to get access to the current cellular connection type (e.g. LTE vs UMTS).
-        \n\n2. <b>Access this Device\'s Location</b>:  The location permission is needed to access Wi-Fi details, Cellular details, GNSS details, and also to write geo-relevant log files.
-        \n\n3. <b>Access Photos, Media, and Files on Your Device</b>:  This permission allows the log file to be written.</string>
+        \n\n1. <b>Find Nearby Devices</b>:  This app does not connect to nearby devices.  Instead, it needs this permission to perform a Bluetooth scan for survey.
+        \n\n2. <b>Make and Manage Phone Calls</b>:  This app does not make or manage phone calls.  Instead, it needs this permission to get access to the current cellular connection type (e.g. LTE vs UMTS).
+        \n\n3. <b>Access this Device\'s Location</b>:  The location permission is needed to access Wi-Fi details, Cellular details, GNSS details, and also to write geo-relevant log files.
+        \n\n4. <b>Access Photos, Media, and Files on Your Device</b>:  This permission allows the log file to be written.</string>
 
     <string name="location_permission_rationale_title">Location Permission</string>
     <string name="location_permission_rationale">The location permission is needed to access Wi-Fi details, Cellular details, GNSS details,
@@ -31,54 +32,72 @@
 
     <string name="logging_not_ready">Could not turn on logging, the app is not ready</string>
 
-    <string name="no_gps_device">No GPS detected in device!</string>
-    <string name="turn_on_gps">Please turn on GPS</string>
-
     <string name="turn_on_wifi">Please turn on Wi-Fi</string>
     <string name="turn_on_bluetooth">Please turn on Bluetooth</string>
+    <string name="check_bluetooth_is_on">Make sure Bluetooth is on</string>
+    <string name="grant_bluetooth_scan_permission">The Find Nearby Devices Permission is required for Bluetooth Survey</string>
 
-    <string name="current_technology_initial">Current Technology: </string>
-    <string name="carrier_initial">Carrier: </string>
-    <string name="mcc_initial">MCC: </string>
-    <string name="mnc_initial">MNC: </string>
-    <string name="tac_initial">TAC: </string>
-    <string name="cid_initial">CID: </string>
-    <string name="enb_id_initial">eNB ID: </string>
-    <string name="sector_id_initial">Sector ID: </string>
-    <string name="earfcn_initial">EARFCN: </string>
-    <string name="pci_initial">PCI: </string>
-    <string name="bandwidth_initial">Bandwidth: </string>
+    <string name="data_network_label">Data Network</string>
+    <string name="carrier_label">Carrier</string>
+    <string name="voice_network_label">Voice Network</string>
 
-    <string name="latitude_initial">Latitude: </string>
-    <string name="longitude_initial">Longitude: </string>
+    <!-- GSM labels -->
+    <string name="arfcn_label">ARFCN</string>
+    <string name="bsic_label">BSIC</string>
+    <string name="rssi_label">RSSI</string>
+    <string name="lac_label">LAC</string>
 
-    <string name="signal_strength_initial">Signal Strength: </string>
-    <string name="rsrp_initial">RSRP: </string>
-    <string name="rsrq_initial">RSRQ: </string>
-    <string name="ta_initial">TA: </string>
+    <!-- UMTS labels -->
+    <string name="uarfcn_label">UARFCN</string>
+    <string name="psc_label">PSC</string>
+    <string name="rscp_label">RSCP</string>
 
-    <string name="current_technology_label">Current Technology: %1$s</string>
-    <string name="carrier_label">Carrier: %1$s</string>
-    <string name="mcc_label">MCC: %1$s</string>
-    <string name="mnc_label">MNC: %1$s</string>
-    <string name="tac_label">TAC: %1$s</string>
-    <string name="cid_label">CID: %1$s</string>
+    <!-- LTE and Common labels -->
+    <string name="mcc_label">MCC</string>
+    <string name="mnc_label">MNC</string>
+    <string name="tac_label">TAC</string>
+    <string name="cid_label">CID</string>
+    <string name="enb_id_label">eNB ID</string>
+    <string name="sector_id_label">Sector ID</string>
+    <string name="earfcn_label">EARFCN</string>
+    <string name="pci_label">PCI</string>
+    <string name="bandwidth_label">Bandwidth</string>
+    <string name="ta_label">TA</string>
+    <string name="rsrp_label">RSRP</string>
+    <string name="rsrq_label">RSRQ</string>
 
-    <string name="enb_id_label">eNB ID: %1$s</string>
-    <string name="sector_id_label">Sector ID: %1$s</string>
-    <string name="earfcn_label">EARFCN: %1$s</string>
-    <string name="pci_label">PCI: %1$s</string>
+    <!-- NR labels -->
+    <string name="narfcn_label">NARFCN</string>
+    <string name="ss_rsrp_label">SS_RSRP</string>
+    <string name="ss_rsrq_label">SS_RSRQ</string>
+
+    <string name="card_title_location">Location</string>
+    <string name="my_location_icon_description">My Location Icon</string>
+    <string name="card_title_cellular_details_initial">Serving Cell Details</string>
+    <string name="card_title_cellular_details">%1$s Serving Cell Details</string>
+    <string name="cellular_icon_description">Cellular Tower Icon</string>
+    <string name="card_title_neighbors">Neighbors</string>
+    <string name="card_title_neighbors_gsm">GSM Neighbors</string>
+    <string name="card_title_neighbors_cdma">CDMA Neighbors</string>
+    <string name="card_title_neighbors_umts">UMTS Neighbors</string>
+    <string name="card_title_neighbors_lte">LTE Neighbors</string>
+    <string name="card_title_neighbors_nr">NR Neighbors</string>
+    <string name="neighbors_icon_description">Neighbors Icon</string>
+
+    <string name="missing_location_permission">Missing Location Permission</string>
+    <string name="no_gps_device">No GPS detected in device!</string>
+    <string name="turn_on_gps">Please turn on GPS</string>
+    <string name="searching_for_location">Searching for GPS …</string>
+    <string name="low_gps_confidence">Low GPS Confidence</string>
+    <string name="accuracy_initial">Accuracy: </string>
+    <string name="accuracy_value">Accuracy: %1$s meters</string>
+
     <string name="pss_label">PSS: </string>
     <string name="sss_label">SSS: </string>
-    <string name="bandwidth_label">Bandwidth: %1$s</string>
 
     <string name="latitude_label">Latitude: %1$s</string>
     <string name="longitude_label">Longitude: %1$s</string>
 
-    <string name="signal_strength_label">Signal Strength: %1$s</string>
-    <string name="rsrp_label">RSRP: %1$s</string>
-    <string name="rsrq_label">RSRQ: %1$s</string>
-    <string name="ta_label">TA: %1$s</string>
     <string name="lte_cell_id_label">&lt;LTE Cell ID&gt;</string>
     <string name="lte_pci_label">&lt;LTE PCI&gt;</string>
 
@@ -137,6 +156,7 @@
     <string name="scan_number">Scan #: %1$d</string>
     <string name="scan_status_scanning">Scanning …</string>
     <string name="scan_status_paused">UI Paused</string>
+    <string name="scan_status_permission">Missing Permission</string>
 
     <!-- Wi-Fi Network List -->
     <string name="wifi_aps_in_scan">APs In Scan: %1$d</string>

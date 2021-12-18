@@ -265,7 +265,7 @@ public abstract class SurveyRecordLogger
         tableColumns.add(FeatureColumn.createColumn(columnNumber++, MessageConstants.TIME_COLUMN, GeoPackageDataType.INT, false, null));
         tableColumns.add(FeatureColumn.createColumn(columnNumber++, MessageConstants.MISSION_ID_COLUMN, GeoPackageDataType.TEXT, false, null));
         tableColumns.add(FeatureColumn.createColumn(columnNumber++, MessageConstants.RECORD_NUMBER_COLUMN, GeoPackageDataType.MEDIUMINT, true, -1));
-        tableColumns.add(FeatureColumn.createColumn(columnNumber++, MessageConstants.ACCURACY, GeoPackageDataType.INT, false, null));
+        tableColumns.add(FeatureColumn.createColumn(columnNumber++, MessageConstants.ACCURACY, GeoPackageDataType.MEDIUMINT, false, null));
 
         if (addCellularColumns)
         {
@@ -288,7 +288,7 @@ public abstract class SurveyRecordLogger
         geometryColumns.setColumnName(MessageConstants.GEOMETRY_COLUMN);
         geometryColumns.setGeometryType(GeometryType.POINT);
         geometryColumns.setSrs(srs);
-        geometryColumns.setZ((byte) 0); // TODO I am not sure if all of this is right
+        geometryColumns.setZ((byte) 0);
         geometryColumns.setM((byte) 0);
         geometryColumnsDao.create(geometryColumns);
     }

@@ -2,6 +2,7 @@
 <androidx.core.widget.NestedScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
+    xmlns:card_view="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:paddingTop="@dimen/fragment_padding_top"
@@ -20,217 +21,120 @@
             android:layout_width="match_parent"
             android:layout_height="match_parent">
 
-            <RelativeLayout
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:elevation="4dp">
+            <LinearLayout
+                android:layout_width="fill_parent"
+                android:layout_height="match_parent"
+                android:orientation="horizontal"
+                android:baselineAligned="false">
 
-                <TextView
-                    android:id="@+id/current_technology"
-                    style="@style/TitleText"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="@string/current_technology_initial"
-                    android:textAppearance="@style/LabelText" />
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="match_parent"
+                    android:layout_weight="1"
+                    android:orientation="vertical">
 
-            </RelativeLayout>
+                    <androidx.constraintlayout.widget.ConstraintLayout
+                        android:id="@+id/data_network_group"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent">
 
-        </androidx.cardview.widget.CardView>
+                        <TextView
+                            android:id="@+id/current_data_network"
+                            style="@style/CellularTitleText"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:gravity="center"
+                            app:layout_constraintTop_toTopOf="@id/data_network_group"
+                            app:layout_constraintBottom_toTopOf="@id/current_data_network_label"
+                            android:text="" />
 
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:layout_margin="@dimen/status_margin"
-            android:orientation="horizontal"
-            android:padding="0dp"
-            android:weightSum="2">
+                        <TextView
+                            android:id="@+id/current_data_network_label"
+                            style="@style/SmallLabelText"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:gravity="center"
+                            android:text="@string/data_network_label"
+                            app:layout_constraintBottom_toBottomOf="@id/data_network_group" />
 
-            <androidx.cardview.widget.CardView xmlns:card_view="http://schemas.android.com/apk/res-auto"
-                android:id="@+id/carrier_card_view"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_gravity="start"
-                android:layout_marginStart="0dp"
-                android:layout_marginTop="0dp"
-                android:layout_marginEnd="@dimen/status_margin"
-                android:layout_marginBottom="0dp"
-                android:layout_weight="1"
-                card_view:cardCornerRadius="4dp"
-                card_view:contentPadding="3dp">
+                    </androidx.constraintlayout.widget.ConstraintLayout>
 
-                <RelativeLayout
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:elevation="4dp">
+                </LinearLayout>
 
-                    <TextView
-                        android:id="@+id/carrier"
-                        style="@style/LabelStyle"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="@string/carrier_initial"
-                        android:textAppearance="@style/LabelText" />
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="match_parent"
+                    android:layout_weight="1"
+                    android:orientation="vertical">
 
-                    <TextView
-                        android:id="@+id/mcc"
-                        style="@style/LabelStyle"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_below="@+id/carrier"
-                        android:text="@string/mcc_initial"
-                        android:textAppearance="@style/LabelText" />
+                    <androidx.constraintlayout.widget.ConstraintLayout
+                        android:id="@+id/carrier_group"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent">
 
-                    <TextView
-                        android:id="@+id/mnc"
-                        style="@style/LabelStyle"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_below="@+id/mcc"
-                        android:text="@string/mnc_initial"
-                        android:textAppearance="@style/LabelText" />
+                        <TextView
+                            android:id="@+id/current_carrier"
+                            style="@style/CellularTitleText"
+                            android:textColor="@color/fadedText"
+                            android:maxLines="1"
+                            android:autoSizeMaxTextSize="22sp"
+                            android:autoSizeStepGranularity="2sp"
+                            android:autoSizeTextType="uniform"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:gravity="center"
+                            app:layout_constraintTop_toTopOf="@id/carrier_group"
+                            app:layout_constraintBottom_toTopOf="@id/current_carrier_label"
+                            android:text="" />
 
-                </RelativeLayout>
+                        <TextView
+                            android:id="@+id/current_carrier_label"
+                            style="@style/SmallLabelText"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:gravity="center"
+                            android:text="@string/carrier_label"
+                            app:layout_constraintBottom_toBottomOf="@id/carrier_group" />
 
-            </androidx.cardview.widget.CardView>
+                    </androidx.constraintlayout.widget.ConstraintLayout>
 
-            <androidx.cardview.widget.CardView xmlns:card_view="http://schemas.android.com/apk/res-auto"
-                android:id="@+id/signal_card_view"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_gravity="start"
-                android:layout_marginStart="@dimen/status_margin"
-                android:layout_marginTop="0dp"
-                android:layout_marginEnd="0dp"
-                android:layout_marginBottom="0dp"
-                android:layout_weight="1"
-                card_view:cardCornerRadius="4dp"
-                card_view:contentPadding="3dp">
+                </LinearLayout>
 
-                <RelativeLayout
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:elevation="4dp">
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="match_parent"
+                    android:layout_weight="1"
+                    android:orientation="vertical">
 
-                    <TextView
-                        android:id="@+id/rsrp"
-                        style="@style/LabelStyle"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="@string/rsrp_initial"
-                        android:textAppearance="@style/LabelText" />
+                    <androidx.constraintlayout.widget.ConstraintLayout
+                        android:id="@+id/voice_network_group"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent">
 
-                    <TextView
-                        android:id="@+id/rsrq"
-                        style="@style/LabelStyle"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_below="@+id/rsrp"
-                        android:text="@string/rsrq_initial"
-                        android:textAppearance="@style/LabelText" />
+                        <TextView
+                            android:id="@+id/current_voice_network"
+                            style="@style/CellularTitleText"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:gravity="center"
+                            app:layout_constraintTop_toTopOf="@id/voice_network_group"
+                            app:layout_constraintBottom_toTopOf="@id/current_voice_network_label"
+                            android:text="" />
 
-                    <TextView
-                        android:id="@+id/ta"
-                        style="@style/LabelStyle"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_below="@+id/rsrq"
-                        android:text="@string/ta_initial"
-                        android:textAppearance="@style/LabelText" />
+                        <TextView
+                            android:id="@+id/current_voice_network_label"
+                            style="@style/SmallLabelText"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:gravity="center"
+                            android:text="@string/voice_network_label"
+                            app:layout_constraintBottom_toBottomOf="@id/voice_network_group" />
 
-                </RelativeLayout>
+                    </androidx.constraintlayout.widget.ConstraintLayout>
 
-            </androidx.cardview.widget.CardView>
+                </LinearLayout>
 
-        </LinearLayout>
-
-        <androidx.cardview.widget.CardView
-            android:id="@+id/tower_card_view"
-            style="?attr/cardStyle"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent">
-
-            <RelativeLayout
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:elevation="4dp">
-
-                <TextView
-                    android:id="@+id/tac"
-                    style="@style/LabelStyle"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="@string/tac_initial"
-                    android:textAppearance="@style/LabelText" />
-
-                <TextView
-                    android:id="@+id/cid"
-                    style="@style/LabelStyle"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_below="@+id/tac"
-                    android:text="@string/cid_initial"
-                    android:textAppearance="@style/LabelText" />
-
-                <TextView
-                    android:id="@+id/enbId"
-                    style="@style/LabelStyle"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_below="@+id/cid"
-                    android:text="@string/enb_id_initial"
-                    android:textAppearance="@style/LabelText" />
-
-                <TextView
-                    android:id="@+id/sectorId"
-                    style="@style/LabelStyle"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_below="@+id/enbId"
-                    android:text="@string/sector_id_initial"
-                    android:textAppearance="@style/LabelText" />
-
-            </RelativeLayout>
-
-        </androidx.cardview.widget.CardView>
-
-        <androidx.cardview.widget.CardView
-            android:id="@+id/frequency_card_view"
-            style="?attr/cardStyle"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent">
-
-            <RelativeLayout
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:elevation="4dp">
-
-                <TextView
-                    android:id="@+id/earfcn"
-                    style="@style/LabelStyle"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="@string/earfcn_initial"
-                    android:textAppearance="@style/LabelText" />
-
-                <TextView
-                    android:id="@+id/pci"
-                    style="@style/LabelStyle"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_below="@+id/earfcn"
-                    android:text="@string/pci_initial"
-                    android:textAppearance="@style/LabelText" />
-
-                <TextView
-                    android:id="@+id/bandwidth"
-                    style="@style/LabelStyle"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_below="@+id/pci"
-                    android:text="@string/bandwidth_initial"
-                    android:textAppearance="@style/LabelText" />
-
-            </RelativeLayout>
+            </LinearLayout>
 
         </androidx.cardview.widget.CardView>
 
@@ -238,31 +142,761 @@
             android:id="@+id/location_card_view"
             style="?attr/cardStyle"
             android:layout_width="match_parent"
-            android:layout_height="match_parent">
+            android:layout_height="match_parent"
+            card_view:contentPadding="0dp">
 
-            <RelativeLayout
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:elevation="4dp">
+            <LinearLayout
+                android:layout_width="fill_parent"
+                android:layout_height="match_parent"
+                android:orientation="vertical">
+
+                <LinearLayout
+                    android:layout_width="fill_parent"
+                    android:layout_height="match_parent"
+                    android:background="@drawable/card_title"
+                    android:padding="3dp"
+                    android:layout_marginBottom="3dp"
+                    android:orientation="horizontal">
+
+                    <ImageView
+                        android:id="@+id/my_location_icon"
+                        android:layout_width="16dp"
+                        android:layout_height="16dp"
+                        android:layout_gravity="center"
+                        android:layout_marginStart="@dimen/small_margin"
+                        android:layout_marginEnd="@dimen/small_margin"
+                        android:contentDescription="@string/my_location_icon_description"
+                        android:src="@drawable/ic_my_location" />
+
+                    <TextView
+                        android:id="@+id/location_title"
+                        style="@style/CardTitleStyle"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="@string/card_title_location" />
+
+                </LinearLayout>
 
                 <TextView
-                    android:id="@+id/latitude"
-                    style="@style/LabelStyle"
+                    android:id="@+id/location"
+                    style="@style/StandardText"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="@string/latitude_initial"
-                    android:textAppearance="@style/LabelText" />
+                    android:maxLines="1"
+                    android:autoSizeTextType="uniform"
+                    android:text="@string/searching_for_location" />
 
                 <TextView
-                    android:id="@+id/longitude"
-                    style="@style/LabelStyle"
+                    android:id="@+id/accuracy"
+                    style="@style/StandardText"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_below="@+id/latitude"
-                    android:text="@string/longitude_initial"
-                    android:textAppearance="@style/LabelText" />
+                    android:text="@string/accuracy_initial" />
 
-            </RelativeLayout>
+            </LinearLayout>
+
+        </androidx.cardview.widget.CardView>
+
+        <androidx.cardview.widget.CardView
+            android:id="@+id/cellular_details_card_view"
+            style="?attr/cardStyle"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            card_view:contentPadding="0dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:orientation="vertical">
+
+                <LinearLayout
+                    android:layout_width="fill_parent"
+                    android:layout_height="match_parent"
+                    android:background="@drawable/card_title"
+                    android:padding="3dp"
+                    android:layout_marginBottom="3dp"
+                    android:orientation="horizontal">
+
+                    <ImageView
+                        android:id="@+id/cellular_tower_icon"
+                        android:layout_width="16dp"
+                        android:layout_height="16dp"
+                        android:layout_gravity="center"
+                        android:layout_marginStart="@dimen/small_margin"
+                        android:layout_marginEnd="@dimen/small_margin"
+                        android:contentDescription="@string/cellular_icon_description"
+                        android:src="@drawable/ic_cellular" />
+
+                    <TextView
+                        android:id="@+id/cellular_details_title"
+                        style="@style/CardTitleStyle"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="@string/card_title_cellular_details_initial" />
+
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/xx_small_margin"
+                    android:orientation="horizontal"
+                    android:baselineAligned="false">
+
+                    <androidx.constraintlayout.widget.ConstraintLayout
+                        android:id="@+id/mcc_group"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1">
+
+                        <TextView
+                            android:id="@+id/mcc"
+                            style="@style/StandardText"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:gravity="center"
+                            app:layout_constraintTop_toTopOf="@id/mcc_group"
+                            app:layout_constraintBottom_toTopOf="@id/mcc_label" />
+
+                        <TextView
+                            android:id="@+id/mcc_label"
+                            style="@style/SmallLabelText"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:gravity="center"
+                            android:text="@string/mcc_label"
+                            app:layout_constraintBottom_toBottomOf="@id/mcc_group" />
+
+                    </androidx.constraintlayout.widget.ConstraintLayout>
+
+                    <androidx.constraintlayout.widget.ConstraintLayout
+                        android:id="@+id/mnc_group"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1">
+
+                        <TextView
+                            android:id="@+id/mnc"
+                            style="@style/StandardText"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:gravity="center"
+                            app:layout_constraintTop_toTopOf="@id/mnc_group"
+                            app:layout_constraintBottom_toTopOf="@id/mnc_label" />
+
+                        <TextView
+                            android:id="@+id/mnc_label"
+                            style="@style/SmallLabelText"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:gravity="center"
+                            android:text="@string/mnc_label"
+                            app:layout_constraintBottom_toBottomOf="@id/mnc_group" />
+
+                    </androidx.constraintlayout.widget.ConstraintLayout>
+
+                    <androidx.constraintlayout.widget.ConstraintLayout
+                        android:id="@+id/tac_group"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1">
+
+                        <TextView
+                            android:id="@+id/tac"
+                            style="@style/StandardText"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:maxLines="1"
+                            android:autoSizeTextType="uniform"
+                            android:gravity="center"
+                            app:layout_constraintTop_toTopOf="@id/tac_group"
+                            app:layout_constraintBottom_toTopOf="@id/tac_label" />
+
+                        <TextView
+                            android:id="@+id/tac_label"
+                            style="@style/SmallLabelText"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:gravity="center"
+                            android:text="@string/tac_label"
+                            app:layout_constraintBottom_toBottomOf="@id/tac_group" />
+
+                    </androidx.constraintlayout.widget.ConstraintLayout>
+
+                    <androidx.constraintlayout.widget.ConstraintLayout
+                        android:id="@+id/cid_group"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1">
+
+                        <TextView
+                            android:id="@+id/cid"
+                            style="@style/StandardText"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:maxLines="1"
+                            android:autoSizeTextType="uniform"
+                            android:gravity="center"
+                            app:layout_constraintTop_toTopOf="@id/cid_group"
+                            app:layout_constraintBottom_toTopOf="@id/cid_label" />
+
+                        <TextView
+                            android:id="@+id/cid_label"
+                            style="@style/SmallLabelText"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:gravity="center"
+                            android:text="@string/cid_label"
+                            app:layout_constraintBottom_toBottomOf="@id/cid_group" />
+
+                    </androidx.constraintlayout.widget.ConstraintLayout>
+
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:baselineAligned="false">
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="match_parent"
+                        android:layout_weight="1"
+                        android:layout_margin="@dimen/small_margin"
+                        android:orientation="vertical">
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="horizontal"
+                            android:baselineAligned="false">
+
+                            <androidx.constraintlayout.widget.ConstraintLayout
+                                android:id="@+id/enb_id_group"
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="@dimen/small_margin"
+                                android:layout_marginBottom="@dimen/small_margin"
+                                android:layout_weight="1">
+
+                                <TextView
+                                    android:id="@+id/enb_id"
+                                    style="@style/StandardText"
+                                    android:layout_width="match_parent"
+                                    android:layout_height="wrap_content"
+                                    app:layout_constraintTop_toTopOf="@id/enb_id_group"
+                                    app:layout_constraintBottom_toTopOf="@id/enb_id_label" />
+
+                                <TextView
+                                    android:id="@+id/enb_id_label"
+                                    style="@style/SmallLabelText"
+                                    android:layout_width="match_parent"
+                                    android:layout_height="wrap_content"
+                                    android:text="@string/enb_id_label"
+                                    app:layout_constraintBottom_toBottomOf="@id/enb_id_group" />
+
+                            </androidx.constraintlayout.widget.ConstraintLayout>
+
+                            <androidx.constraintlayout.widget.ConstraintLayout
+                                android:id="@+id/sector_id_group"
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="@dimen/small_margin"
+                                android:layout_marginBottom="@dimen/small_margin"
+                                android:layout_weight="1">
+
+                                <TextView
+                                    android:id="@+id/sector_id"
+                                    style="@style/StandardText"
+                                    android:layout_width="match_parent"
+                                    android:layout_height="wrap_content"
+                                    app:layout_constraintTop_toTopOf="@id/sector_id_group"
+                                    app:layout_constraintBottom_toTopOf="@id/sector_id_label" />
+
+                                <TextView
+                                    android:id="@+id/sector_id_label"
+                                    style="@style/SmallLabelText"
+                                    android:layout_width="match_parent"
+                                    android:layout_height="wrap_content"
+                                    android:text="@string/sector_id_label"
+                                    app:layout_constraintBottom_toBottomOf="@id/sector_id_group" />
+
+                            </androidx.constraintlayout.widget.ConstraintLayout>
+
+                        </LinearLayout>
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="horizontal"
+                            android:baselineAligned="false">
+
+                            <androidx.constraintlayout.widget.ConstraintLayout
+                                android:id="@+id/earfcn_group"
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="@dimen/small_margin"
+                                android:layout_marginBottom="@dimen/small_margin"
+                                android:layout_weight="1">
+
+                                <TextView
+                                    android:id="@+id/earfcn"
+                                    style="@style/StandardText"
+                                    android:layout_width="match_parent"
+                                    android:layout_height="wrap_content"
+                                    app:layout_constraintTop_toTopOf="@id/earfcn_group"
+                                    app:layout_constraintBottom_toTopOf="@id/earfcn_label" />
+
+                                <TextView
+                                    android:id="@+id/earfcn_label"
+                                    style="@style/SmallLabelText"
+                                    android:layout_width="match_parent"
+                                    android:layout_height="wrap_content"
+                                    android:text="@string/earfcn_label"
+                                    app:layout_constraintBottom_toBottomOf="@id/earfcn_group" />
+
+                            </androidx.constraintlayout.widget.ConstraintLayout>
+
+                            <androidx.constraintlayout.widget.ConstraintLayout
+                                android:id="@+id/pci_group"
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="@dimen/small_margin"
+                                android:layout_marginBottom="@dimen/small_margin"
+                                android:layout_weight="1">
+
+                                <TextView
+                                    android:id="@+id/pci"
+                                    style="@style/StandardText"
+                                    android:layout_width="match_parent"
+                                    android:layout_height="wrap_content"
+                                    app:layout_constraintTop_toTopOf="@id/pci_group"
+                                    app:layout_constraintBottom_toTopOf="@id/pci_label" />
+
+                                <TextView
+                                    android:id="@+id/pci_label"
+                                    style="@style/SmallLabelText"
+                                    android:layout_width="match_parent"
+                                    android:layout_height="wrap_content"
+                                    android:text="@string/pci_label"
+                                    app:layout_constraintBottom_toBottomOf="@id/pci_group" />
+
+                            </androidx.constraintlayout.widget.ConstraintLayout>
+
+                        </LinearLayout>
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="horizontal"
+                            android:baselineAligned="false">
+
+                            <androidx.constraintlayout.widget.ConstraintLayout
+                                android:id="@+id/bandwidth_group"
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="@dimen/small_margin"
+                                android:layout_marginBottom="@dimen/small_margin"
+                                android:layout_weight="1">
+
+                                <TextView
+                                    android:id="@+id/bandwidth"
+                                    style="@style/StandardText"
+                                    android:layout_width="match_parent"
+                                    android:layout_height="wrap_content"
+                                    app:layout_constraintTop_toTopOf="@id/bandwidth_group"
+                                    app:layout_constraintBottom_toTopOf="@id/bandwidth_label" />
+
+                                <TextView
+                                    android:id="@+id/bandwidth_label"
+                                    style="@style/SmallLabelText"
+                                    android:layout_width="match_parent"
+                                    android:layout_height="wrap_content"
+                                    android:text="@string/bandwidth_label"
+                                    app:layout_constraintBottom_toBottomOf="@id/bandwidth_group" />
+
+                            </androidx.constraintlayout.widget.ConstraintLayout>
+
+                            <androidx.constraintlayout.widget.ConstraintLayout
+                                android:id="@+id/ta_group"
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="@dimen/small_margin"
+                                android:layout_marginBottom="@dimen/small_margin"
+                                android:layout_weight="1">
+
+                                <TextView
+                                    android:id="@+id/ta"
+                                    style="@style/StandardText"
+                                    android:layout_width="match_parent"
+                                    android:layout_height="wrap_content"
+                                    app:layout_constraintTop_toTopOf="@id/ta_group"
+                                    app:layout_constraintBottom_toTopOf="@id/ta_label" />
+
+                                <TextView
+                                    android:id="@+id/ta_label"
+                                    style="@style/SmallLabelText"
+                                    android:layout_width="match_parent"
+                                    android:layout_height="wrap_content"
+                                    android:text="@string/ta_label"
+                                    app:layout_constraintBottom_toBottomOf="@id/ta_group" />
+
+                            </androidx.constraintlayout.widget.ConstraintLayout>
+
+                        </LinearLayout>
+
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:layout_width="wrap_content"
+                        android:layout_height="match_parent"
+                        android:layout_margin="@dimen/medium_margin"
+                        android:orientation="vertical">
+
+                        <androidx.constraintlayout.widget.ConstraintLayout
+                            android:id="@+id/signal_one_group"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_gravity="end">
+
+                            <app.futured.donut.DonutProgressView
+                                android:id="@+id/progress_bar_signal_one"
+                                android:layout_width="100dp"
+                                android:layout_height="100dp"
+                                app:layout_constraintBottom_toBottomOf="parent"
+                                app:layout_constraintLeft_toLeftOf="parent"
+                                app:layout_constraintRight_toRightOf="parent"
+                                app:layout_constraintTop_toTopOf="parent"
+                                app:donut_bgLineColor="@color/fadedGrayColor"
+                                app:donut_gapWidth="90"
+                                app:donut_gapAngle="90"
+                                app:donut_strokeWidth="8dp" />
+
+                            <LinearLayout
+                                android:layout_width="0dp"
+                                android:layout_height="match_parent"
+                                android:layout_weight="1"
+                                android:orientation="vertical"
+                                app:layout_constraintTop_toTopOf="parent"
+                                app:layout_constraintBottom_toBottomOf="parent"
+                                app:layout_constraintStart_toStartOf="parent"
+                                app:layout_constraintEnd_toEndOf="parent">
+
+                                <TextView
+                                    android:id="@+id/signal_one_value"
+                                    style="@style/StandardText"
+                                    android:layout_width="match_parent"
+                                    android:layout_height="match_parent"
+                                    android:gravity="center"
+                                    app:layout_constraintTop_toTopOf="@id/signal_one_group"
+                                    app:layout_constraintEnd_toEndOf="@id/progress_bar_signal_one" />
+
+                                <TextView
+                                    android:id="@+id/signal_one_label"
+                                    style="@style/SmallLabelText"
+                                    android:layout_width="match_parent"
+                                    android:layout_height="match_parent"
+                                    android:gravity="center"
+                                    app:layout_constraintTop_toTopOf="@id/signal_one_group"
+                                    app:layout_constraintEnd_toEndOf="@id/progress_bar_signal_one"
+                                    android:text="@string/rsrp_label" />
+
+                            </LinearLayout>
+
+                        </androidx.constraintlayout.widget.ConstraintLayout>
+
+                        <androidx.constraintlayout.widget.ConstraintLayout
+                            android:id="@+id/signal_two_group"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_gravity="end">
+
+                            <app.futured.donut.DonutProgressView
+                                android:id="@+id/progress_bar_signal_two"
+                                android:layout_width="100dp"
+                                android:layout_height="100dp"
+                                app:layout_constraintBottom_toBottomOf="parent"
+                                app:layout_constraintLeft_toLeftOf="parent"
+                                app:layout_constraintRight_toRightOf="parent"
+                                app:layout_constraintTop_toTopOf="parent"
+                                app:donut_bgLineColor="@color/fadedGrayColor"
+                                app:donut_gapWidth="90"
+                                app:donut_gapAngle="90"
+                                app:donut_strokeWidth="8dp" />
+
+                            <LinearLayout
+                                android:layout_width="0dp"
+                                android:layout_height="match_parent"
+                                android:layout_weight="1"
+                                android:orientation="vertical"
+                                app:layout_constraintTop_toTopOf="parent"
+                                app:layout_constraintBottom_toBottomOf="parent"
+                                app:layout_constraintStart_toStartOf="parent"
+                                app:layout_constraintEnd_toEndOf="parent">
+
+                                <TextView
+                                    android:id="@+id/signal_two_value"
+                                    style="@style/StandardText"
+                                    android:layout_width="match_parent"
+                                    android:layout_height="match_parent"
+                                    android:gravity="center"
+                                    app:layout_constraintTop_toTopOf="@id/signal_two_group"
+                                    app:layout_constraintEnd_toEndOf="@id/progress_bar_signal_two" />
+
+                                <TextView
+                                    android:id="@+id/signal_two_label"
+                                    style="@style/SmallLabelText"
+                                    android:layout_width="match_parent"
+                                    android:layout_height="match_parent"
+                                    android:gravity="center"
+                                    app:layout_constraintTop_toTopOf="@id/signal_two_group"
+                                    app:layout_constraintEnd_toEndOf="@id/progress_bar_signal_two"
+                                    android:text="@string/rsrq_label" />
+
+                            </LinearLayout>
+
+                        </androidx.constraintlayout.widget.ConstraintLayout>
+
+                    </LinearLayout>
+
+                </LinearLayout>
+
+            </LinearLayout>
+
+        </androidx.cardview.widget.CardView>
+
+        <androidx.cardview.widget.CardView
+            android:id="@+id/neighbors_card_view"
+            style="?attr/cardStyle"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            card_view:contentPadding="0dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:layout_marginBottom="@dimen/x_small_margin"
+                android:orientation="vertical">
+
+                <LinearLayout
+                    android:layout_width="fill_parent"
+                    android:layout_height="match_parent"
+                    android:background="@drawable/card_title"
+                    android:padding="3dp"
+                    android:layout_marginBottom="3dp"
+                    android:orientation="horizontal">
+
+                    <ImageView
+                        android:id="@+id/neighbors_icon"
+                        android:layout_width="16dp"
+                        android:layout_height="16dp"
+                        android:layout_gravity="center"
+                        android:layout_marginStart="@dimen/small_margin"
+                        android:layout_marginEnd="@dimen/small_margin"
+                        android:contentDescription="@string/my_location_icon_description"
+                        android:src="@drawable/ic_weak_signal" />
+
+                    <TextView
+                        android:id="@+id/neighbors_title"
+                        style="@style/CardTitleStyle"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="@string/card_title_neighbors" />
+
+                </LinearLayout>
+
+                <LinearLayout
+                    android:id="@+id/nr_neighbors_group"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:visibility="gone">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        style="@style/StandardText"
+                        android:text="@string/card_title_neighbors_nr" />
+
+                    <TableLayout
+                        android:id="@+id/nr_neighbors_table_headers"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="@dimen/small_margin"
+                        android:stretchColumns="*">
+
+                        <TableRow tools:ignore="UselessParent">
+
+                            <TextView
+                                android:text="@string/narfcn_label"
+                                style="@style/ColumnTitleText" />
+
+                            <TextView
+                                android:text="@string/pci_label"
+                                style="@style/ColumnTitleText" />
+
+                            <TextView
+                                android:text="@string/ss_rsrp_label"
+                                style="@style/ColumnTitleText" />
+
+                            <TextView
+                                android:text="@string/ss_rsrp_label"
+                                style="@style/ColumnTitleText" />
+                        </TableRow>
+                    </TableLayout>
+
+                    <TableLayout
+                        android:id="@+id/nr_neighbors_table"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginBottom="@dimen/small_margin"
+                        android:stretchColumns="*" />
+
+                </LinearLayout>
+
+                <LinearLayout
+                    android:id="@+id/lte_neighbors_group"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:visibility="gone">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        style="@style/StandardText"
+                        android:text="@string/card_title_neighbors_lte" />
+
+                    <TableLayout
+                        android:id="@+id/lte_neighbors_table_headers"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="@dimen/small_margin"
+                        android:stretchColumns="*">
+
+                        <TableRow tools:ignore="UselessParent">
+
+                            <TextView
+                                android:text="@string/earfcn_label"
+                                style="@style/ColumnTitleText" />
+
+                            <TextView
+                                android:text="@string/pci_label"
+                                style="@style/ColumnTitleText" />
+
+                            <TextView
+                                android:text="@string/rsrp_label"
+                                style="@style/ColumnTitleText" />
+
+                            <TextView
+                                android:text="@string/rsrq_label"
+                                style="@style/ColumnTitleText" />
+
+                            <TextView
+                                android:text="@string/ta_label"
+                                style="@style/ColumnTitleText" />
+                        </TableRow>
+                    </TableLayout>
+
+                    <TableLayout
+                        android:id="@+id/lte_neighbors_table"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginBottom="@dimen/small_margin"
+                        android:stretchColumns="*" />
+
+                </LinearLayout>
+
+                <LinearLayout
+                    android:id="@+id/umts_neighbors_group"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:visibility="gone">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        style="@style/StandardText"
+                        android:text="@string/card_title_neighbors_umts" />
+
+                    <TableLayout
+                        android:id="@+id/umts_neighbors_table_headers"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="@dimen/small_margin"
+                        android:stretchColumns="*">
+
+                        <TableRow tools:ignore="UselessParent">
+
+                            <TextView
+                                android:text="@string/uarfcn_label"
+                                style="@style/ColumnTitleText" />
+
+                            <TextView
+                                android:text="@string/psc_label"
+                                style="@style/ColumnTitleText" />
+
+                            <TextView
+                                android:text="@string/rscp_label"
+                                style="@style/ColumnTitleText" />
+                        </TableRow>
+                    </TableLayout>
+
+                    <TableLayout
+                        android:id="@+id/umts_neighbors_table"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginBottom="@dimen/small_margin"
+                        android:stretchColumns="*" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:id="@+id/gsm_neighbors_group"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:visibility="gone">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        style="@style/StandardText"
+                        android:text="@string/card_title_neighbors_gsm" />
+
+                    <TableLayout
+                        android:id="@+id/gsm_neighbors_table_headers"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="@dimen/small_margin"
+                        android:stretchColumns="*">
+
+                        <TableRow tools:ignore="UselessParent">
+
+                            <TextView
+                                android:text="@string/arfcn_label"
+                                style="@style/ColumnTitleText" />
+
+                            <TextView
+                                android:text="@string/bsic_label"
+                                style="@style/ColumnTitleText" />
+
+                            <TextView
+                                android:text="@string/rssi_label"
+                                style="@style/ColumnTitleText" />
+                        </TableRow>
+                    </TableLayout>
+
+                    <TableLayout
+                        android:id="@+id/gsm_neighbors_table"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginBottom="@dimen/small_margin"
+                        android:stretchColumns="*" />
+                </LinearLayout>
+
+            </LinearLayout>
 
         </androidx.cardview.widget.CardView>
 

@@ -29,6 +29,10 @@ import timber.log.Timber;
  */
 public class ParserUtils
 {
+    public static final String RSSI_KEY = "ss=";
+    public static final String RSCP_KEY = "rscp=";
+    public static final String REJECT_CAUSE_KEY = "rejectCause=";
+
     private ParserUtils()
     {
     }
@@ -65,7 +69,7 @@ public class ParserUtils
      */
     public static NetworkRegistrationInfo convertNetworkInfo(android.telephony.NetworkRegistrationInfo info)
     {
-        int rejectCause = extractRejectCause(info.toString());
+        int rejectCause = extractIntFromToString(info.toString(), REJECT_CAUSE_KEY);
 
         return convertNetworkInfo(info.getCellIdentity(), info.getDomain(), rejectCause,
                 info.getAccessNetworkTechnology(), info.isRoaming());
@@ -119,7 +123,10 @@ public class ParserUtils
             regInfoBuilder.setAccessNetworkTechnology(NetworkType.forNumber(accessNetworkTechnology));
         }
 
-        if (roaming != null) regInfoBuilder.setRoaming(BoolValue.newBuilder().setValue(roaming).build());
+        if (roaming != null)
+        {
+            regInfoBuilder.setRoaming(BoolValue.newBuilder().setValue(roaming).build());
+        }
 
         if (causeCode != Integer.MAX_VALUE)
         {
@@ -142,16 +149,28 @@ public class ParserUtils
                 if (mnc != -1) builder.setMnc(Int32Value.newBuilder().setValue(mnc).build());
 
                 final int lac = cellIdentityGsm.getLac();
-                if (lac != CellInfo.UNAVAILABLE) builder.setLac(Int32Value.newBuilder().setValue(lac).build());
+                if (lac != CellInfo.UNAVAILABLE)
+                {
+                    builder.setLac(Int32Value.newBuilder().setValue(lac).build());
+                }
 
                 final int cid = cellIdentityGsm.getCid();
-                if (cid != CellInfo.UNAVAILABLE) builder.setCi(Int32Value.newBuilder().setValue(cid).build());
+                if (cid != CellInfo.UNAVAILABLE)
+                {
+                    builder.setCi(Int32Value.newBuilder().setValue(cid).build());
+                }
 
                 final int arfcn = cellIdentityGsm.getArfcn();
-                if (arfcn != CellInfo.UNAVAILABLE) builder.setArfcn(Int32Value.newBuilder().setValue(arfcn).build());
+                if (arfcn != CellInfo.UNAVAILABLE)
+                {
+                    builder.setArfcn(Int32Value.newBuilder().setValue(arfcn).build());
+                }
 
                 final int bsic = cellIdentityGsm.getBsic();
-                if (bsic != CellInfo.UNAVAILABLE) builder.setBsic(Int32Value.newBuilder().setValue(bsic).build());
+                if (bsic != CellInfo.UNAVAILABLE)
+                {
+                    builder.setBsic(Int32Value.newBuilder().setValue(bsic).build());
+                }
 
                 regInfoBuilder.setCellIdentityGsm(builder);
             } else if (cellIdentity instanceof CellIdentityCdma)
@@ -161,13 +180,22 @@ public class ParserUtils
                 com.craxiom.messaging.CellIdentityCdma.Builder builder = com.craxiom.messaging.CellIdentityCdma.newBuilder();
 
                 final int sid = cellIdentityCdma.getSystemId();
-                if (sid != CellInfo.UNAVAILABLE) builder.setSid(Int32Value.newBuilder().setValue(sid).build());
+                if (sid != CellInfo.UNAVAILABLE)
+                {
+                    builder.setSid(Int32Value.newBuilder().setValue(sid).build());
+                }
 
                 final int nid = cellIdentityCdma.getNetworkId();
-                if (nid != CellInfo.UNAVAILABLE) builder.setNid(Int32Value.newBuilder().setValue(nid).build());
+                if (nid != CellInfo.UNAVAILABLE)
+                {
+                    builder.setNid(Int32Value.newBuilder().setValue(nid).build());
+                }
 
                 final int bsid = cellIdentityCdma.getBasestationId();
-                if (bsid != CellInfo.UNAVAILABLE) builder.setBsid(Int32Value.newBuilder().setValue(bsid).build());
+                if (bsid != CellInfo.UNAVAILABLE)
+                {
+                    builder.setBsid(Int32Value.newBuilder().setValue(bsid).build());
+                }
 
                 regInfoBuilder.setCellIdentityCdma(builder);
             } else if (cellIdentity instanceof CellIdentityWcdma)
@@ -183,16 +211,28 @@ public class ParserUtils
                 if (mnc != -1) builder.setMnc(Int32Value.newBuilder().setValue(mnc).build());
 
                 final int lac = cellIdentityWcdma.getLac();
-                if (lac != CellInfo.UNAVAILABLE) builder.setLac(Int32Value.newBuilder().setValue(lac).build());
+                if (lac != CellInfo.UNAVAILABLE)
+                {
+                    builder.setLac(Int32Value.newBuilder().setValue(lac).build());
+                }
 
                 final int cid = cellIdentityWcdma.getCid();
-                if (cid != CellInfo.UNAVAILABLE) builder.setCid(Int32Value.newBuilder().setValue(cid).build());
+                if (cid != CellInfo.UNAVAILABLE)
+                {
+                    builder.setCid(Int32Value.newBuilder().setValue(cid).build());
+                }
 
                 final int uarfcn = cellIdentityWcdma.getUarfcn();
-                if (uarfcn != CellInfo.UNAVAILABLE) builder.setUarfcn(Int32Value.newBuilder().setValue(uarfcn).build());
+                if (uarfcn != CellInfo.UNAVAILABLE)
+                {
+                    builder.setUarfcn(Int32Value.newBuilder().setValue(uarfcn).build());
+                }
 
                 final int psc = cellIdentityWcdma.getPsc();
-                if (psc != CellInfo.UNAVAILABLE) builder.setPsc(Int32Value.newBuilder().setValue(psc).build());
+                if (psc != CellInfo.UNAVAILABLE)
+                {
+                    builder.setPsc(Int32Value.newBuilder().setValue(psc).build());
+                }
 
                 regInfoBuilder.setCellIdentityUmts(builder);
             } else if (cellIdentity instanceof CellIdentityLte)
@@ -208,16 +248,28 @@ public class ParserUtils
                 if (mnc != -1) builder.setMnc(Int32Value.newBuilder().setValue(mnc).build());
 
                 final int tac = cellIdentityLte.getTac();
-                if (tac != CellInfo.UNAVAILABLE) builder.setTac(Int32Value.newBuilder().setValue(tac).build());
+                if (tac != CellInfo.UNAVAILABLE)
+                {
+                    builder.setTac(Int32Value.newBuilder().setValue(tac).build());
+                }
 
                 final int eci = cellIdentityLte.getCi();
-                if (eci != CellInfo.UNAVAILABLE) builder.setEci(Int32Value.newBuilder().setValue(eci).build());
+                if (eci != CellInfo.UNAVAILABLE)
+                {
+                    builder.setEci(Int32Value.newBuilder().setValue(eci).build());
+                }
 
                 final int earfcn = cellIdentityLte.getEarfcn();
-                if (earfcn != CellInfo.UNAVAILABLE) builder.setEarfcn(Int32Value.newBuilder().setValue(earfcn).build());
+                if (earfcn != CellInfo.UNAVAILABLE)
+                {
+                    builder.setEarfcn(Int32Value.newBuilder().setValue(earfcn).build());
+                }
 
                 final int pci = cellIdentityLte.getPci();
-                if (pci != CellInfo.UNAVAILABLE) builder.setPci(Int32Value.newBuilder().setValue(pci).build());
+                if (pci != CellInfo.UNAVAILABLE)
+                {
+                    builder.setPci(Int32Value.newBuilder().setValue(pci).build());
+                }
 
                 regInfoBuilder.setCellIdentityLte(builder);
             } else if (android.os.Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q && cellIdentity instanceof CellIdentityNr)
@@ -233,16 +285,28 @@ public class ParserUtils
                 if (mnc != -1) builder.setMnc(Int32Value.newBuilder().setValue(mnc).build());
 
                 final int tac = cellIdentityNr.getTac();
-                if (tac != CellInfo.UNAVAILABLE) builder.setTac(Int32Value.newBuilder().setValue(tac).build());
+                if (tac != CellInfo.UNAVAILABLE)
+                {
+                    builder.setTac(Int32Value.newBuilder().setValue(tac).build());
+                }
 
                 final long nci = cellIdentityNr.getNci();
-                if (nci != CellInfo.UNAVAILABLE) builder.setNci(Int64Value.newBuilder().setValue(nci).build());
+                if (nci != CellInfo.UNAVAILABLE)
+                {
+                    builder.setNci(Int64Value.newBuilder().setValue(nci).build());
+                }
 
                 final int narfcn = cellIdentityNr.getNrarfcn();
-                if (narfcn != CellInfo.UNAVAILABLE) builder.setNarfcn(Int32Value.newBuilder().setValue(narfcn).build());
+                if (narfcn != CellInfo.UNAVAILABLE)
+                {
+                    builder.setNarfcn(Int32Value.newBuilder().setValue(narfcn).build());
+                }
 
                 final int pci = cellIdentityNr.getPci();
-                if (pci != CellInfo.UNAVAILABLE) builder.setPci(Int32Value.newBuilder().setValue(pci).build());
+                if (pci != CellInfo.UNAVAILABLE)
+                {
+                    builder.setPci(Int32Value.newBuilder().setValue(pci).build());
+                }
 
                 regInfoBuilder.setCellIdentityNr(builder);
             }
@@ -263,7 +327,7 @@ public class ParserUtils
     {
         try
         {
-            final String rejectCauseKey = "rejectCause=";
+            final String rejectCauseKey = REJECT_CAUSE_KEY;
             final int rejectCauseIndex = infoString.indexOf(rejectCauseKey);
             if (rejectCauseIndex == -1) return Integer.MAX_VALUE;
 
@@ -278,5 +342,58 @@ public class ParserUtils
             Timber.e(t, "Could not get the rejectCause from the NetworkRegistrationInfo toString method");
             return Integer.MAX_VALUE;
         }
+    }
+
+    /**
+     * Given a string, look for the provided key, take the value after it, convert it to an int, and return it.
+     * In other words, extract the value of interest from the provided toString.
+     *
+     * @param toString The string to look for the value in.
+     * @return {@link Integer#MAX_VALUE} if the value could not be found, or the int value if it could
+     * be extracted from the provided string.
+     * @since 1.6.0
+     */
+    public static int extractIntFromToString(String toString, String valueKey)
+    {
+        try
+        {
+            final int rssiIndex = toString.indexOf(valueKey);
+            if (rssiIndex == -1) return Integer.MAX_VALUE;
+
+            final int endRssiIndex = toString.indexOf(' ', rssiIndex);
+            if (endRssiIndex == -1) return Integer.MAX_VALUE;
+
+            final String rssiString = toString.substring(rssiIndex + valueKey.length(), endRssiIndex);
+
+            return parseInt(rssiString, Integer.MAX_VALUE);
+        } catch (Throwable t)
+        {
+            Timber.e(t, "Could not get the rssi from the provided toString");
+            return Integer.MAX_VALUE;
+        }
+    }
+
+    /**
+     * Converts a BSIC in decimal form (0 to 63), and converts it to a String in the format of "NCC-BCC" (e.g. 35 is
+     * converted to "4-3").
+     *
+     * @param bsic The BSIC in decimal form to be converted to octal.
+     * @return The octal representation of the BSIC in the form of "NCC-BCC", or an empty string if the BSIC is out
+     * of range.
+     * @since 1.6.0
+     */
+    public static String bsicToString(int bsic)
+    {
+        if (bsic >= 0 && bsic < 64)
+        {
+            Timber.e("BSIC is not in the rage of 0 to 63 %s", bsic);
+            return "";
+        }
+
+        // BSIC is displayed as a base 8 number in the format X-X
+        int upperValue = bsic / 8;
+        int lowerValue = bsic % 8;
+
+        return upperValue + "-" + lowerValue;
     }
 }

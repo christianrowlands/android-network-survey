@@ -5,6 +5,13 @@ import android.location.LocationListener;
 import android.location.LocationManager;
 import android.os.Bundle;
 
+import androidx.annotation.NonNull;
+
+import com.craxiom.networksurvey.services.NetworkSurveyService;
+
+import java.util.Set;
+import java.util.concurrent.CopyOnWriteArraySet;
+
 import timber.log.Timber;
 
 /**
@@ -17,6 +24,8 @@ import timber.log.Timber;
  */
 public class GpsListener implements LocationListener
 {
+    private final Set<LocationListener> listeners = new CopyOnWriteArraySet<>();
+
     private Location latestLocation;
     private Runnable gnssTimeoutCallback;
 
@@ -42,6 +51,37 @@ public class GpsListener implements LocationListener
         gnssTimeoutCallback = null;
     }
 
+    /**
+     * Registers a listener for notifications when different location events occur.
+     *
+     * @param listener The location listener to register.
+     * @since 1.6.0
+     */
+    public void registerListener(LocationListener listener)
+    {
+        if (listener != null)
+        {
+            listeners.add(listener);
+        }
+    }
+
+    /**
+     * Unregisters a location listener.
+     * <p>
+     * If the listener being removed is the last listener and nothing else is using this {@link NetworkSurveyService},
+     * then this service is shutdown and will need to be restarted before it can be used again.
+     *
+     * @param listener The listener to unregister.
+     * @since 1.6.0
+     */
+    public void unregisterListener(LocationListener listener)
+    {
+        if (listener != null)
+        {
+            listeners.remove(listener);
+        }
+    }
+
     @Override
     public void onLocationChanged(Location location)
     {
@@ -51,21 +91,52 @@ public class GpsListener implements LocationListener
     @Override
     public void onStatusChanged(String provider, int status, Bundle extras)
     {
-
+        for (LocationListener listener : listeners)
+        {
+            try
+            {
+                listener.onStatusChanged(provider, status, extras);
+            } catch (Throwable t)
+            {
+                Timber.e(t, "Unable to notify a LocationListener because of an exception");
+            }
+        }
     }
 
     @Override
-    public void onProviderEnabled(String provider)
+    public void onProviderEnabled(@NonNull String provider)
     {
         Timber.i("Location Provider (%s) has been enabled", provider);
+
+        for (LocationListener listener : listeners)
+        {
+            try
+            {
+                listener.onProviderEnabled(provider);
+            } catch (Throwable t)
+            {
+                Timber.e(t, "Unable to notify a LocationListener because of an exception");
+            }
+        }
     }
 
     @Override
-    public void onProviderDisabled(String provider)
+    public void onProviderDisabled(@NonNull String provider)
     {
         Timber.i("Location Provider (%s) has been disabled", provider);
 
-        if (LocationManager.GPS_PROVIDER.equals(provider)) latestLocation = null;
+        if (LocationManager.GPS_PROVIDER.equals(provider)) updateLocation(null);
+
+        for (LocationListener listener : listeners)
+        {
+            try
+            {
+                listener.onProviderDisabled(provider);
+            } catch (Throwable t)
+            {
+                Timber.e(t, "Unable to notify a LocationListener because of an exception");
+            }
+        }
     }
 
     public Location getLatestLocation()
@@ -80,13 +151,24 @@ public class GpsListener implements LocationListener
      */
     private void updateLocation(Location newLocation)
     {
+        latestLocation = newLocation;
+
         if (newLocation != null)
         {
-            latestLocation = newLocation;
-
             if (gnssTimeoutCallback != null)
             {
                 gnssTimeoutCallback.run();
+            }
+        }
+
+        for (LocationListener listener : listeners)
+        {
+            try
+            {
+                listener.onLocationChanged(newLocation);
+            } catch (Throwable t)
+            {
+                Timber.e(t, "Unable to notify a LocationListener because of an exception");
             }
         }
     }

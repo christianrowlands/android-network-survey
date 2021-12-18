@@ -1,5 +1,7 @@
 package com.craxiom.networksurvey;
 
+import static com.google.common.truth.Truth.assertWithMessage;
+
 import android.content.Context;
 import android.util.Log;
 
@@ -19,8 +21,6 @@ import java.util.ArrayList;
 
 import mil.nga.geopackage.GeoPackage;
 import mil.nga.geopackage.GeoPackageManager;
-
-import static com.google.common.truth.Truth.assertWithMessage;
 
 public class TestBase
 {
@@ -62,35 +62,43 @@ public class TestBase
      * Validates the columns in the table schema that are common to all messages types.
      *
      * @param results The results that define the table schema to validate.
+     * @return The next index in the table schema to validate
      * @since 1.5.0
      */
-    public void validateCommonTableSchema(ArrayList<MessageTableSchema> results)
+    public int validateCommonTableSchema(ArrayList<MessageTableSchema> results)
     {
+        int index = 0;
         assertWithMessage("Results are not empty.")
                 .that(results)
                 .isNotEmpty();
 
         assertWithMessage("Validate ID column schema")
-                .that(results.get(0).toString())
-                .isEqualTo("MessageTableSchemaModel{cid=0, name='id', type='3', notNull=1, defaultValue=0, primaryKey=1}");
+                .that(results.get(index).toString())
+                .isEqualTo("MessageTableSchemaModel{cid=" + index++ + ", name='id', type='3', notNull=1, defaultValue=0, primaryKey=1}");
 
         assertWithMessage("Validate GEOM column schema")
-                .that(results.get(1).toString())
-                .isEqualTo("MessageTableSchemaModel{cid=1, name='geom', type='3', notNull=0, defaultValue=0, primaryKey=0}");
+                .that(results.get(index).toString())
+                .isEqualTo("MessageTableSchemaModel{cid=" + index++ + ", name='geom', type='3', notNull=0, defaultValue=0, primaryKey=0}");
 
         assertWithMessage("Validate Time column schema")
-                .that(results.get(2).toString())
-                .isEqualTo("MessageTableSchemaModel{cid=2, name='Time', type='3', notNull=0, defaultValue=0, primaryKey=0}");
+                .that(results.get(index).toString())
+                .isEqualTo("MessageTableSchemaModel{cid=" + index++ + ", name='Time', type='3', notNull=0, defaultValue=0, primaryKey=0}");
 
         assertWithMessage("Validate Mission ID column name")
-                .that(results.get(3).getName())
+                .that(results.get(index).getName())
                 .isEqualTo("MissionId");
         assertWithMessage("Validate Mission ID column type")
-                .that(results.get(3).getType())
+                .that(results.get(index++).getType())
                 .isEqualTo("3");
 
         assertWithMessage("Validate Record Number column schema")
-                .that(results.get(4).toString())
-                .isEqualTo("MessageTableSchemaModel{cid=4, name='RecordNumber', type='3', notNull=1, defaultValue=-1, primaryKey=0}");
+                .that(results.get(index).toString())
+                .isEqualTo("MessageTableSchemaModel{cid=" + index++ + ", name='RecordNumber', type='3', notNull=1, defaultValue=-1, primaryKey=0}");
+
+        assertWithMessage("Validate Accuracy column schema")
+                .that(results.get(index).toString())
+                .isEqualTo("MessageTableSchemaModel{cid=" + index++ + ", name='accuracy', type='3', notNull=0, defaultValue=0, primaryKey=0}");
+
+        return index;
     }
 }

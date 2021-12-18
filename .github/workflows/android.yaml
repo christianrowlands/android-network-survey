@@ -1,0 +1,95 @@
+name: Network Survey CI
+
+on:
+  pull_request:
+    branches:
+      - 'develop'
+  push:
+    branches:
+      - 'develop'
+
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout the code
+        uses: actions/checkout@v2
+
+      - name: Cache dependencies
+        uses: actions/cache@v2
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: ${{ runner.os }}-${{ hashFiles('**/*.gradle*') }}-${{ hashFiles('**/gradle/wrapper/gradle-wrapper.properties') }}-${{ hashFiles('**/buildSrc/**/*.kt') }}
+
+      - name: Set up JDK 11
+        uses: actions/setup-java@v2
+        with:
+          java-version: 11
+          distribution: 'adopt'
+
+      - name: Build the app
+        run: ./gradlew assembleDebug --stacktrace
+
+      - name: Get APK name
+        run: echo "base_name=`./gradlew :networksurvey:properties -q | grep 'archivesBaseName:' | awk '{print $2}'`" >> $GITHUB_ENV
+
+      - name: Upload apk
+        uses: actions/upload-artifact@v2
+        with:
+          name: debug apk
+          path: networksurvey/build/outputs/apk/debug/${{ env.base_name }}-debug.apk
+
+
+  test:
+    name: Run Tests
+    runs-on: macos-latest
+
+    strategy:
+      matrix:
+        api-level: [ 26, 31 ]
+        target: [ default, google_apis ]
+
+    steps:
+      - name: Checkout the code
+        uses: actions/checkout@v1
+
+      - name: Set up JDK 11
+        uses: actions/setup-java@v2
+        with:
+          java-version: 11
+          distribution: 'adopt'
+
+      - name: Cache dependencies
+        uses: actions/cache@v2
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: ${{ runner.os }}-${{ hashFiles('**/*.gradle*') }}-${{ hashFiles('**/gradle/wrapper/gradle-wrapper.properties') }}-${{ hashFiles('**/buildSrc/**/*.kt') }}
+
+      - name: Unit Tests
+        run: ./gradlew test --stacktrace
+
+# Need to work through a permissions error to get these working
+#      - name: Instrumentation Tests
+#        uses: reactivecircus/android-emulator-runner@v2
+#        with:
+#          api-level: ${{ matrix.api-level }}
+#          target: ${{ matrix.target }}
+#          arch: x86_64
+#          profile: Nexus 6
+#          script: ./gradlew test check connectedCheck -x lint --stacktrace
+
+      # Only upload the reports on failure
+      - name: Upload Reports
+        uses: actions/upload-artifact@v2
+        with:
+          name: Test-Reports
+          path: networksurvey/build/reports
+        if: failure()

@@ -260,7 +260,7 @@ public class CellularSurveyRecordLogger extends SurveyRecordLogger implements IC
         geometryColumns.setColumnName(MessageConstants.GEOMETRY_COLUMN);
         geometryColumns.setGeometryType(GeometryType.POINT);
         geometryColumns.setSrs(srs);
-        geometryColumns.setZ((byte) 0); // TODO I am not sure if all of this is right
+        geometryColumns.setZ((byte) 0);
         geometryColumns.setM((byte) 0);
         geometryColumnsDao.create(geometryColumns);
     }

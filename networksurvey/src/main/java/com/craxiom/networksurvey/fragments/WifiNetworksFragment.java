@@ -17,21 +17,24 @@ import android.provider.Settings;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.ImageButton;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AlertDialog;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentActivity;
+import androidx.lifecycle.LifecycleOwner;
+import androidx.lifecycle.ViewModelProvider;
+import androidx.lifecycle.ViewModelStoreOwner;
+import androidx.navigation.fragment.NavHostFragment;
 import androidx.preference.PreferenceManager;
-import androidx.recyclerview.widget.LinearLayoutManager;
-import androidx.recyclerview.widget.RecyclerView;
 import androidx.recyclerview.widget.SortedList;
 
 import com.craxiom.networksurvey.R;
 import com.craxiom.networksurvey.constants.NetworkSurveyConstants;
-import com.craxiom.networksurvey.constants.WifiBeaconMessageConstants;
+import com.craxiom.networksurvey.databinding.FragmentWifiNetworksListBinding;
+import com.craxiom.networksurvey.fragments.model.WifiViewModel;
 import com.craxiom.networksurvey.listeners.IWifiSurveyRecordListener;
 import com.craxiom.networksurvey.model.WifiRecordWrapper;
 import com.craxiom.networksurvey.services.NetworkSurveyService;
@@ -49,20 +52,16 @@ import timber.log.Timber;
  */
 public class WifiNetworksFragment extends Fragment implements IWifiSurveyRecordListener
 {
-    private final SortedList<WifiRecordWrapper> wifiRecordSortedList = new SortedList<>(WifiRecordWrapper.class, new WifiRecordSortedListCallback());
+    private FragmentWifiNetworksListBinding binding;
+    private SortedList<WifiRecordWrapper> wifiRecordSortedList;
     private final Handler uiThreadHandler;
+
+    private WifiViewModel viewModel;
 
     private Context applicationContext;
     private NetworkSurveyService surveyService;
     private MyWifiNetworkRecyclerViewAdapter wifiNetworkRecyclerViewAdapter;
-    private TextView scanStatusView;
-    private TextView scanNumberView;
-    private TextView apsInScanView;
 
-    private volatile boolean updatesPaused = false;
-
-    private int scanNumber = 0;
-    private int sortByIndex = 0;
     private long lastScanTime = 0;
     private boolean throttlingNotificationShown = false;
 
@@ -86,39 +85,54 @@ public class WifiNetworksFragment extends Fragment implements IWifiSurveyRecordL
     {
         applicationContext = requireActivity().getApplicationContext();
         super.onCreate(savedInstanceState);
-
-        final SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(applicationContext);
-        sortByIndex = preferences.getInt(NetworkSurveyConstants.PROPERTY_WIFI_NETWORKS_SORT_ORDER, 0);
     }
 
     @Override
-    public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState)
+    public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState)
     {
-        final View view = inflater.inflate(R.layout.fragment_wifi_networks_list, container, false);
+        binding = FragmentWifiNetworksListBinding.inflate(inflater);
 
-        RecyclerView recyclerView = view.findViewById(R.id.wifi_network_list);
-        recyclerView.setLayoutManager(new LinearLayoutManager(view.getContext()));
+        final ViewModelStoreOwner viewModelStoreOwner = NavHostFragment.findNavController(this).getViewModelStoreOwner(R.id.nav_graph);
+        final ViewModelProvider viewModelProvider = new ViewModelProvider(viewModelStoreOwner);
+        viewModel = viewModelProvider.get(getClass().getName(), WifiViewModel.class);
+
+        binding.setVm(viewModel);
+
+        wifiRecordSortedList = viewModel.getWifiList();
+
+        final SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(applicationContext);
+        viewModel.setSortByIndex(preferences.getInt(NetworkSurveyConstants.PROPERTY_WIFI_NETWORKS_SORT_ORDER, 0));
+
         wifiNetworkRecyclerViewAdapter = new MyWifiNetworkRecyclerViewAdapter(wifiRecordSortedList, getContext());
-        recyclerView.setAdapter(wifiNetworkRecyclerViewAdapter);
+        binding.wifiNetworkList.setAdapter(wifiNetworkRecyclerViewAdapter);
 
-        final ImageButton pauseButton = view.findViewById(R.id.pause_button);
-        pauseButton.setOnClickListener(this::onPauseUiUpdatesToggle);
+        binding.pauseButton.setOnClickListener(v -> viewModel.toggleUpdatesPaused(getContext()));
+        binding.sortButton.setOnClickListener(v -> showSortByDialog());
 
-        final ImageButton sortButton = view.findViewById(R.id.sort_button);
-        sortButton.setOnClickListener(v -> showSortByDialog());
+        initializeView();
 
         final Context context = requireContext();
 
-        scanStatusView = view.findViewById(R.id.scan_status);
-        scanStatusView.setText(context.getString(R.string.scan_status_scanning));
+        final LifecycleOwner viewLifecycleOwner = getViewLifecycleOwner();
+        viewModel.getScanStatusId().observe(viewLifecycleOwner,
+                scanStatusId -> binding.scanStatus.setText(context.getString(scanStatusId)));
 
-        scanNumberView = view.findViewById(R.id.scan_number);
-        scanNumberView.setText(context.getString(R.string.scan_number, scanNumber));
+        viewModel.getApsInLastScan().observe(viewLifecycleOwner,
+                apCount -> binding.apsInScan.setText(context.getString(R.string.wifi_aps_in_scan, apCount)));
 
-        apsInScanView = view.findViewById(R.id.aps_in_scan);
-        apsInScanView.setText(context.getString(R.string.wifi_aps_in_scan, 0));
+        viewModel.getScanNumber().observe(viewLifecycleOwner,
+                scanNumber -> binding.scanNumber.setText(context.getString(R.string.scan_number, scanNumber)));
 
-        return view;
+        viewModel.areUpdatesPaused().observe(viewLifecycleOwner,
+                paused -> {
+                    binding.pauseButton.setBackgroundResource(paused ? R.drawable.ic_play : R.drawable.ic_pause);
+
+                    // If we are transitioning to un-pause scan updates, then artificially reset the last scan time so that we don't
+                    // think that scans are being throttled by the Android OS.
+                    if (paused) lastScanTime = System.currentTimeMillis();
+                });
+
+        return binding.getRoot();
     }
 
     @Override
@@ -146,9 +160,22 @@ public class WifiNetworksFragment extends Fragment implements IWifiSurveyRecordL
     }
 
     @Override
+    public void onDestroyView()
+    {
+        final LifecycleOwner viewLifecycleOwner = getViewLifecycleOwner();
+        viewModel.getScanStatusId().removeObservers(viewLifecycleOwner);
+        viewModel.getApsInLastScan().removeObservers(viewLifecycleOwner);
+        viewModel.getScanNumber().removeObservers(viewLifecycleOwner);
+        viewModel.areUpdatesPaused().removeObservers(viewLifecycleOwner);
+
+        super.onDestroyView();
+    }
+
+    @Override
     public void onWifiBeaconSurveyRecords(List<WifiRecordWrapper> wifiBeaconRecords)
     {
-        if (updatesPaused) return;
+        //noinspection ConstantConditions
+        if (viewModel.areUpdatesPaused().getValue()) return;
 
         // Move this back to the UI thread since we are updating the UI
         uiThreadHandler.post(() -> {
@@ -157,8 +184,8 @@ public class WifiNetworksFragment extends Fragment implements IWifiSurveyRecordL
                 checkForScanThrottling();
 
                 final Context context = requireContext();
-                scanNumberView.setText(context.getString(R.string.scan_number, ++scanNumber));
-                apsInScanView.setText(requireContext().getString(R.string.wifi_aps_in_scan, wifiBeaconRecords.size()));
+                viewModel.incrementScanNumber();
+                viewModel.setApsInLastScan(wifiBeaconRecords.size());
 
                 synchronized (wifiRecordSortedList)
                 {
@@ -177,6 +204,34 @@ public class WifiNetworksFragment extends Fragment implements IWifiSurveyRecordL
                 Timber.e(e, "Could not update the Wi-Fi Fragment UI due to an exception");
             }
         });
+    }
+
+    /**
+     * Updates the view with the information stored in the view model.
+     *
+     * @since 1.6.0
+     */
+    private void initializeView()
+    {
+        final Context context = requireContext();
+
+        final Integer scanStatusId = viewModel.getScanStatusId().getValue();
+        if (scanStatusId != null)
+        {
+            binding.scanStatus.setText(context.getString(scanStatusId));
+        }
+
+        final Integer apCount = viewModel.getApsInLastScan().getValue();
+        if (apCount != null)
+        {
+            binding.apsInScan.setText(context.getString(R.string.wifi_aps_in_scan, apCount));
+        }
+
+        final Integer scanNumber = viewModel.getScanNumber().getValue();
+        if (scanNumber != null)
+        {
+            binding.scanNumber.setText(context.getString(R.string.scan_number, scanNumber));
+        }
     }
 
     /**
@@ -202,25 +257,6 @@ public class WifiNetworksFragment extends Fragment implements IWifiSurveyRecordL
     }
 
     /**
-     * Notification that UI updates have either been paused or resumed.  Toggle the paused state and update any UI
-     * elements.
-     *
-     * @param view The ImageButton to update the paused/play icon on.
-     */
-    private void onPauseUiUpdatesToggle(View view)
-    {
-        scanStatusView.setText(requireContext().getString(updatesPaused ? R.string.scan_status_scanning : R.string.scan_status_paused));
-        view.setBackgroundResource(updatesPaused ? R.drawable.ic_pause : R.drawable.ic_play);
-
-        // If we are transitioning to un-pause scan updates, then artificially reset the last scan time so that we don't
-        // think that scans are being throttled by the Android OS.
-        if (updatesPaused) lastScanTime = System.currentTimeMillis();
-
-        //noinspection NonAtomicOperationOnVolatileField
-        updatesPaused = !updatesPaused;
-    }
-
-    /**
      * Show the Sort Dialog so the user can pick how they want to sort the list of Wi-Fi networks.
      */
     private void showSortByDialog()
@@ -237,7 +273,7 @@ public class WifiNetworksFragment extends Fragment implements IWifiSurveyRecordL
 
         final SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(applicationContext);
 
-        builder.setSingleChoiceItems(R.array.wifi_network_sort_options, sortByIndex,
+        builder.setSingleChoiceItems(R.array.wifi_network_sort_options, viewModel.getSortByIndex(),
                 (dialog, index) -> {
                     onSortByChanged(preferences, index);
                     dialog.dismiss();
@@ -252,14 +288,14 @@ public class WifiNetworksFragment extends Fragment implements IWifiSurveyRecordL
      * then notifies the recycler view that the data has changed.
      *
      * @param preferences   The SharedPreferences to store the sort by index in.
-     * @param selectedIndex The newly selected sort by index (from arrays.xml)
+     * @param selectedIndex The newly selected sort by index (from arrays.xml).
      */
     private void onSortByChanged(SharedPreferences preferences, int selectedIndex)
     {
         synchronized (wifiRecordSortedList)
         {
             preferences.edit().putInt(NetworkSurveyConstants.PROPERTY_WIFI_NETWORKS_SORT_ORDER, selectedIndex).apply();
-            sortByIndex = selectedIndex;
+            viewModel.setSortByIndex(selectedIndex);
 
             wifiRecordSortedList.beginBatchedUpdates();
 
@@ -305,10 +341,11 @@ public class WifiNetworksFragment extends Fragment implements IWifiSurveyRecordL
                     switch (state)
                     {
                         case WifiManager.WIFI_STATE_DISABLED:
-                            scanStatusView.setText(requireContext().getString(R.string.wifi_scan_status_disabled));
+                            viewModel.setScanStatusId(R.string.wifi_scan_status_disabled);
                             break;
                         case WifiManager.WIFI_STATE_ENABLED:
-                            scanStatusView.setText(requireContext().getString(updatesPaused ? R.string.scan_status_paused : R.string.scan_status_scanning));
+                            //noinspection ConstantConditions
+                            viewModel.setScanStatusId(viewModel.areUpdatesPaused().getValue() ? R.string.scan_status_paused : R.string.scan_status_scanning);
                             startAndBindToNetworkSurveyService();
                             break;
                     }
@@ -326,7 +363,10 @@ public class WifiNetworksFragment extends Fragment implements IWifiSurveyRecordL
      */
     private void unregisterWifiBroadcastReceiver()
     {
-        if (wifiBroadcastReceiver != null) requireActivity().unregisterReceiver(wifiBroadcastReceiver);
+        if (wifiBroadcastReceiver != null)
+        {
+            requireActivity().unregisterReceiver(wifiBroadcastReceiver);
+        }
     }
 
     /**
@@ -408,8 +448,7 @@ public class WifiNetworksFragment extends Fragment implements IWifiSurveyRecordL
      * If we do determine that scan throttling is enabled, then alert the user.  Note that the alert should be
      * different for Android 9 vs 10.
      * <p>
-     * We have to make sure to handle pausing the UI updates in {@link #onPauseUiUpdatesToggle(View)} so we don't
-     * artificially trigger this alert.
+     * We have to make sure to handle pausing the UI updates so we don't artificially trigger this alert.
      */
     private void checkForScanThrottling()
     {
@@ -489,77 +528,6 @@ public class WifiNetworksFragment extends Fragment implements IWifiSurveyRecordL
     private boolean areDeveloperOptionsEnabled()
     {
         return Settings.Global.getInt(requireContext().getContentResolver(), Settings.Global.DEVELOPMENT_SETTINGS_ENABLED, 0) != 0;
-    }
-
-    /**
-     * A Sorted list callback for controlling the behavior of the Wi-Fi records sorted list.
-     */
-    private class WifiRecordSortedListCallback extends SortedList.Callback<WifiRecordWrapper>
-    {
-        @Override
-        public int compare(WifiRecordWrapper record1, WifiRecordWrapper record2)
-        {
-            // CAUTION!!! The switch statement here needs to be kept in sync with the values from wifi_network_sort_options in arrays.xml
-            switch (sortByIndex)
-            {
-                case 1: // SSID
-                    return record1.getWifiBeaconRecord().getData().getSsid().compareTo(record2.getWifiBeaconRecord().getData().getSsid());
-
-                case 2: // BSSID
-                    return record1.getWifiBeaconRecord().getData().getBssid().compareTo(record2.getWifiBeaconRecord().getData().getBssid());
-
-                case 3: // Channel
-                    return Integer.compare(record1.getWifiBeaconRecord().getData().getChannel().getValue(), record2.getWifiBeaconRecord().getData().getChannel().getValue());
-
-                case 4: // Frequency
-                    return Integer.compare(record1.getWifiBeaconRecord().getData().getFrequencyMhz().getValue(), record2.getWifiBeaconRecord().getData().getFrequencyMhz().getValue());
-
-                case 5: // Security Type
-                    return WifiBeaconMessageConstants.getEncryptionTypeString(record1.getWifiBeaconRecord().getData().getEncryptionType())
-                            .compareTo(WifiBeaconMessageConstants.getEncryptionTypeString(record2.getWifiBeaconRecord().getData().getEncryptionType()));
-
-                default: // Signal Strength
-                    // Signal Strength is index 0 in the array, but we also use it as the default case
-                    // Invert the sort so that the strongest records are at the top (descending)
-                    return -1 * Float.compare(record1.getWifiBeaconRecord().getData().getSignalStrength().getValue(), record2.getWifiBeaconRecord().getData().getSignalStrength().getValue());
-            }
-        }
-
-        @Override
-        public void onChanged(int position, int count)
-        {
-
-        }
-
-        @Override
-        public boolean areContentsTheSame(WifiRecordWrapper oldRecord, WifiRecordWrapper newRecord)
-        {
-            return false;
-        }
-
-        @Override
-        public boolean areItemsTheSame(WifiRecordWrapper record1, WifiRecordWrapper record2)
-        {
-            return false;
-        }
-
-        @Override
-        public void onInserted(int position, int count)
-        {
-
-        }
-
-        @Override
-        public void onRemoved(int position, int count)
-        {
-
-        }
-
-        @Override
-        public void onMoved(int fromPosition, int toPosition)
-        {
-
-        }
     }
 
     /**

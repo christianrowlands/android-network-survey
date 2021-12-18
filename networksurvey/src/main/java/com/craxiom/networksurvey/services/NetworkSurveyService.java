@@ -21,6 +21,7 @@ import android.content.pm.PackageManager;
 import android.location.GnssMeasurementsEvent;
 import android.location.GnssStatus;
 import android.location.Location;
+import android.location.LocationListener;
 import android.location.LocationManager;
 import android.net.wifi.ScanResult;
 import android.net.wifi.WifiManager;
@@ -230,7 +231,10 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
             if (autoStartWifiLogging && !wifiLoggingEnabled.get()) toggleWifiLogging(true);
 
             final boolean autoStartBluetoothLogging = PreferenceUtils.getAutoStartPreference(NetworkSurveyConstants.PROPERTY_AUTO_START_BLUETOOTH_LOGGING, false, applicationContext);
-            if (autoStartBluetoothLogging && !bluetoothLoggingEnabled.get()) toggleBluetoothLogging(true);
+            if (autoStartBluetoothLogging && !bluetoothLoggingEnabled.get())
+            {
+                toggleBluetoothLogging(true);
+            }
 
             final boolean autoStartGnssLogging = PreferenceUtils.getAutoStartPreference(NetworkSurveyConstants.PROPERTY_AUTO_START_GNSS_LOGGING, false, applicationContext);
             if (autoStartGnssLogging && !gnssLoggingEnabled.get()) toggleGnssLogging(true);
@@ -444,6 +448,26 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
     public String getDeviceId()
     {
         return deviceId;
+    }
+
+    /**
+     * Registers a new listener for changes to the location information.
+     *
+     * @since 1.6.0
+     */
+    public void registerLocationListener(LocationListener locationListener)
+    {
+        gpsListener.registerListener(locationListener);
+    }
+
+    /**
+     * Unregisters a listener for changes to the location information.
+     *
+     * @since 1.6.0
+     */
+    public void unregisterLocationListener(LocationListener locationListener)
+    {
+        gpsListener.unregisterListener(locationListener);
     }
 
     /**
@@ -1151,7 +1175,9 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
                     telephonyManager.requestCellInfoUpdate(executorService, cellInfoCallback);
                 } else
                 {
-                    execute(() -> surveyRecordProcessor.onCellInfoUpdate(telephonyManager.getAllCellInfo(), CalculationUtils.getNetworkType(telephonyManager.getDataNetworkType())));
+                    execute(() -> surveyRecordProcessor.onCellInfoUpdate(telephonyManager.getAllCellInfo(),
+                            CalculationUtils.getNetworkType(telephonyManager.getDataNetworkType()),
+                            CalculationUtils.getNetworkType(telephonyManager.getVoiceNetworkType())));
                 }
             } catch (SecurityException e)
             {
@@ -1200,7 +1226,9 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
                         execute(() -> {
                             try
                             {
-                                surveyRecordProcessor.onCellInfoUpdate(telephonyManager.getAllCellInfo(), CalculationUtils.getNetworkType(telephonyManager.getDataNetworkType()));
+                                surveyRecordProcessor.onCellInfoUpdate(telephonyManager.getAllCellInfo(),
+                                        CalculationUtils.getNetworkType(telephonyManager.getDataNetworkType()),
+                                        CalculationUtils.getNetworkType(telephonyManager.getVoiceNetworkType()));
                             } catch (Throwable t)
                             {
                                 Timber.e(t, "Failed to pass the cellular info to the survey record processor");
@@ -1342,13 +1370,15 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
                 @Override
                 public void onCellInfo(@NonNull List<CellInfo> cellInfo)
                 {
-                    String networkType = "Missing Permission";
+                    String dataNetworkType = "Unknown";
+                    String voiceNetworkType = "Unknown";
                     if (ActivityCompat.checkSelfPermission(NetworkSurveyService.this, Manifest.permission.READ_PHONE_STATE) == PackageManager.PERMISSION_GRANTED)
                     {
-                        networkType = CalculationUtils.getNetworkType(telephonyManager.getDataNetworkType());
+                        dataNetworkType = CalculationUtils.getNetworkType(telephonyManager.getDataNetworkType());
+                        voiceNetworkType = CalculationUtils.getNetworkType(telephonyManager.getVoiceNetworkType());
                     }
 
-                    surveyRecordProcessor.onCellInfoUpdate(cellInfo, networkType);
+                    surveyRecordProcessor.onCellInfoUpdate(cellInfo, dataNetworkType, voiceNetworkType);
                 }
 
                 @Override
@@ -1576,14 +1606,41 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
     }
 
     /**
+     * Note that the {@link Manifest.permission#BLUETOOTH_SCAN} permission was added in Android 12, so this method
+     * returns true for all older versions.
+     *
+     * @return True if the {@link Manifest.permission#BLUETOOTH_SCAN} permission has been granted. False otherwise.
+     * @since 1.6.0
+     */
+    private boolean hasBtScanPermission()
+    {
+        // The BLUETOOTH_SCAN permission was added in Android 12
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) return true;
+
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.BLUETOOTH_SCAN) != PackageManager.PERMISSION_GRANTED)
+        {
+            Timber.w("The BLUETOOTH_SCAN permission has not been granted");
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
      * Register a listener for Bluetooth scans, and then kick off a scheduled Bluetooth scan.
      * <p>
-     * This method only starts scanning if the scan is not already active.
+     * This method only starts scanning if the scan is not already active and we have the required permissions.
      *
      * @since 1.0.0
      */
     private void startBluetoothRecordScanning()
     {
+        if (!hasBtScanPermission())
+        {
+            uiThreadHandler.post(() -> Toast.makeText(getApplicationContext(), getString(R.string.grant_bluetooth_scan_permission), Toast.LENGTH_LONG).show());
+            return;
+        }
+
         if (bluetoothScanningActive.getAndSet(true)) return;
 
         final BluetoothAdapter bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
@@ -1838,7 +1895,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
         final String notificationText = getNotificationText(logging, mqttConnectionActive, connectionState);
 
         final Intent notificationIntent = new Intent(this, NetworkSurveyActivity.class);
-        final PendingIntent pendingIntent = PendingIntent.getActivity(this, 0, notificationIntent, 0);
+        final PendingIntent pendingIntent = PendingIntent.getActivity(this, 0, notificationIntent, PendingIntent.FLAG_IMMUTABLE);
 
         final NotificationCompat.Builder builder = new NotificationCompat.Builder(this, NetworkSurveyConstants.NOTIFICATION_CHANNEL_ID)
                 .setContentTitle(notificationTitle)

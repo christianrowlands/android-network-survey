@@ -1,5 +1,8 @@
 package com.craxiom.networksurvey.tests;
 
+import static com.google.common.truth.Truth.assertWithMessage;
+import static com.schibsted.spain.barista.interaction.BaristaSleepInteractions.sleep;
+
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 
 import com.craxiom.messaging.bluetooth.SupportedTechnologies;
@@ -26,9 +29,6 @@ import java.util.concurrent.TimeUnit;
 
 import mil.nga.geopackage.factory.GeoPackageFactory;
 
-import static com.google.common.truth.Truth.assertWithMessage;
-import static com.schibsted.spain.barista.interaction.BaristaSleepInteractions.sleep;
-
 @RunWith(AndroidJUnit4.class)
 public class BluetoothGeoPackageTest extends TestBase
 {
@@ -54,43 +54,40 @@ public class BluetoothGeoPackageTest extends TestBase
     @Test
     public void validateBluetoothMessageTableSchema()
     {
-        //Given
-        ArrayList<MessageTableSchema> results;
-
         //When
         geoPackage = geoPackageManager
                 .open(AndroidFiles
                         .getLatestSurveyFile(testRunDate, SurveyTypes.BLUETOOTH_SURVEY.getValue())
                         .getAbsolutePath(), false);
 
-        results = SchemaDao.getTableSchema(geoPackage, BluetoothMessageConstants.BLUETOOTH_RECORDS_TABLE_NAME);
+        ArrayList<MessageTableSchema> results = SchemaDao.getTableSchema(geoPackage, BluetoothMessageConstants.BLUETOOTH_RECORDS_TABLE_NAME);
 
         //Then
-        validateCommonTableSchema(results);
+        int index = validateCommonTableSchema(results);
 
         assertWithMessage("Validate Source Address column schema")
-                .that(results.get(5).toString())
-                .isEqualTo("MessageTableSchemaModel{cid=5, name='Source Address', type='3', notNull=0, defaultValue=0, primaryKey=0}");
+                .that(results.get(index).toString())
+                .isEqualTo("MessageTableSchemaModel{cid=" + index++ + ", name='Source Address', type='3', notNull=0, defaultValue=0, primaryKey=0}");
 
         assertWithMessage("Validate OTA Device Name column schema")
-                .that(results.get(6).toString())
-                .isEqualTo("MessageTableSchemaModel{cid=6, name='OTA Device Name', type='3', notNull=0, defaultValue=0, primaryKey=0}");
+                .that(results.get(index).toString())
+                .isEqualTo("MessageTableSchemaModel{cid=" + index++ + ", name='OTA Device Name', type='3', notNull=0, defaultValue=0, primaryKey=0}");
 
         assertWithMessage("Validate Technology column schema")
-                .that(results.get(7).toString())
-                .isEqualTo("MessageTableSchemaModel{cid=7, name='Technology', type='3', notNull=0, defaultValue=0, primaryKey=0}");
+                .that(results.get(index).toString())
+                .isEqualTo("MessageTableSchemaModel{cid=" + index++ + ", name='Technology', type='3', notNull=0, defaultValue=0, primaryKey=0}");
 
         assertWithMessage("Validate Supported Technologies column schema")
-                .that(results.get(8).toString())
-                .isEqualTo("MessageTableSchemaModel{cid=8, name='Supported Technologies', type='3', notNull=0, defaultValue=0, primaryKey=0}");
+                .that(results.get(index).toString())
+                .isEqualTo("MessageTableSchemaModel{cid=" + index++ + ", name='Supported Technologies', type='3', notNull=0, defaultValue=0, primaryKey=0}");
 
         assertWithMessage("Validate Tx Power column schema")
-                .that(results.get(9).toString())
-                .isEqualTo("MessageTableSchemaModel{cid=9, name='Tx Power', type='3', notNull=0, defaultValue=0, primaryKey=0}");
+                .that(results.get(index).toString())
+                .isEqualTo("MessageTableSchemaModel{cid=" + index++ + ", name='Tx Power', type='3', notNull=0, defaultValue=0, primaryKey=0}");
 
         assertWithMessage("Validate Signal Strength column schema")
-                .that(results.get(10).toString())
-                .isEqualTo("MessageTableSchemaModel{cid=10, name='Signal Strength', type='3', notNull=0, defaultValue=0, primaryKey=0}");
+                .that(results.get(index).toString())
+                .isEqualTo("MessageTableSchemaModel{cid=" + index++ + ", name='Signal Strength', type='3', notNull=0, defaultValue=0, primaryKey=0}");
     }
 
     /*
@@ -136,15 +133,13 @@ public class BluetoothGeoPackageTest extends TestBase
          */
 
         //Given
-        ArrayList<BluetoothModel> results;
-
         geoPackage = geoPackageManager
                 .open(AndroidFiles
                         .getLatestSurveyFile(testRunDate, SurveyTypes.BLUETOOTH_SURVEY.getValue())
                         .getAbsolutePath(), false);
 
         //When
-        results = BluetoothDao.getRecordsWithAllColumnsPopulated(geoPackage);
+        ArrayList<BluetoothModel> results = BluetoothDao.getRecordsWithAllColumnsPopulated(geoPackage);
 
         //Then
         assertWithMessage("We have results to use.")

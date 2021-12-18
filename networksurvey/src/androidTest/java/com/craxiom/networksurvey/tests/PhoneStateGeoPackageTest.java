@@ -1,5 +1,8 @@
 package com.craxiom.networksurvey.tests;
 
+import static com.google.common.truth.Truth.assertWithMessage;
+import static com.schibsted.spain.barista.interaction.BaristaSleepInteractions.sleep;
+
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.RequiresDevice;
 
@@ -27,9 +30,6 @@ import java.util.concurrent.TimeUnit;
 
 import mil.nga.geopackage.factory.GeoPackageFactory;
 
-import static com.google.common.truth.Truth.assertWithMessage;
-import static com.schibsted.spain.barista.interaction.BaristaSleepInteractions.sleep;
-
 @RunWith(AndroidJUnit4.class)
 public class PhoneStateGeoPackageTest extends TestBase
 {
@@ -49,65 +49,40 @@ public class PhoneStateGeoPackageTest extends TestBase
     @Test
     public void validatePhoneStateMessageTableSchema()
     {
-        //Given
-        ArrayList<MessageTableSchema> results;
-
         //When
         geoPackage = geoPackageManager
                 .open(AndroidFiles
                         .getLatestSurveyFile(testRunDate, SurveyTypes.PHONE_STATE_SURVEY.getValue())
                         .getAbsolutePath(), false);
 
-        results = SchemaDao.getTableSchema(geoPackage, DeviceStatusMessageConstants.PHONE_STATE_TABLE_NAME);
+        ArrayList<MessageTableSchema> results = SchemaDao.getTableSchema(geoPackage, DeviceStatusMessageConstants.PHONE_STATE_TABLE_NAME);
 
         //Then
-        assertWithMessage("Results are not empty.")
-                .that(results)
-                .isNotEmpty();
-
-        assertWithMessage("Validate ID column schema")
-                .that(results.get(0).toString())
-                .isEqualTo("MessageTableSchemaModel{cid=0, name='id', type='3', notNull=1, defaultValue=0, primaryKey=1}");
-
-        assertWithMessage("Validate GEOM column schema")
-                .that(results.get(1).toString())
-                .isEqualTo("MessageTableSchemaModel{cid=1, name='geom', type='3', notNull=0, defaultValue=0, primaryKey=0}");
-
-        assertWithMessage("Validate Time column schema")
-                .that(results.get(2).toString())
-                .isEqualTo("MessageTableSchemaModel{cid=2, name='Time', type='3', notNull=0, defaultValue=0, primaryKey=0}");
-
-        assertWithMessage("Validate Mission ID column schema")
-                .that(results.get(3).toString())
-                .isEqualTo("MessageTableSchemaModel{cid=3, name='MissionId', type='3', notNull=0, defaultValue=0, primaryKey=0}");
-
-        assertWithMessage("Validate Record Number column schema")
-                .that(results.get(4).toString())
-                .isEqualTo("MessageTableSchemaModel{cid=4, name='RecordNumber', type='3', notNull=1, defaultValue=-1, primaryKey=0}");
+        int index = validateCommonTableSchema(results);
 
         assertWithMessage("Validate latitude column schema")
-                .that(results.get(5).toString())
-                .isEqualTo("MessageTableSchemaModel{cid=5, name='latitude', type='3', notNull=0, defaultValue=0, primaryKey=0}");
+                .that(results.get(index).toString())
+                .isEqualTo("MessageTableSchemaModel{cid=" + index++ + ", name='latitude', type='3', notNull=0, defaultValue=0, primaryKey=0}");
 
         assertWithMessage("Validate longitude column schema")
-                .that(results.get(6).toString())
-                .isEqualTo("MessageTableSchemaModel{cid=6, name='longitude', type='3', notNull=0, defaultValue=0, primaryKey=0}");
+                .that(results.get(index).toString())
+                .isEqualTo("MessageTableSchemaModel{cid=" + index++ + ", name='longitude', type='3', notNull=0, defaultValue=0, primaryKey=0}");
 
         assertWithMessage("Validate altitude column schema")
-                .that(results.get(7).toString())
-                .isEqualTo("MessageTableSchemaModel{cid=7, name='altitude', type='3', notNull=0, defaultValue=0, primaryKey=0}");
+                .that(results.get(index).toString())
+                .isEqualTo("MessageTableSchemaModel{cid=" + index++ + ", name='altitude', type='3', notNull=0, defaultValue=0, primaryKey=0}");
 
         assertWithMessage("Validate simState column schema")
-                .that(results.get(8).toString())
-                .isEqualTo("MessageTableSchemaModel{cid=8, name='simState', type='3', notNull=0, defaultValue=0, primaryKey=0}");
+                .that(results.get(index).toString())
+                .isEqualTo("MessageTableSchemaModel{cid=" + index++ + ", name='simState', type='3', notNull=0, defaultValue=0, primaryKey=0}");
 
         assertWithMessage("Validate simOperator column schema")
-                .that(results.get(9).toString())
-                .isEqualTo("MessageTableSchemaModel{cid=9, name='simOperator', type='3', notNull=0, defaultValue=0, primaryKey=0}");
+                .that(results.get(index).toString())
+                .isEqualTo("MessageTableSchemaModel{cid=" + index++ + ", name='simOperator', type='3', notNull=0, defaultValue=0, primaryKey=0}");
 
         assertWithMessage("Validate networkRegistrationInfo column schema")
-                .that(results.get(10).toString())
-                .isEqualTo("MessageTableSchemaModel{cid=10, name='networkRegistrationInfo', type='3', notNull=0, defaultValue=0, primaryKey=0}");
+                .that(results.get(index).toString())
+                .isEqualTo("MessageTableSchemaModel{cid=" + index++ + ", name='networkRegistrationInfo', type='3', notNull=0, defaultValue=0, primaryKey=0}");
     }
 
     @Test
