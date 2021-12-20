@@ -78,6 +78,7 @@ dependencies {
 
     implementation 'app.futured.donut:donut:2.2.0'
 
+    compileOnly 'org.projectlombok:lombok:1.18.22'
     annotationProcessor 'org.projectlombok:lombok:1.18.22'
 
     testImplementation 'junit:junit:4.13.2'
