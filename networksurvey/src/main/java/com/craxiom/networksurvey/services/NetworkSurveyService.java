@@ -1175,9 +1175,17 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
                     telephonyManager.requestCellInfoUpdate(executorService, cellInfoCallback);
                 } else
                 {
-                    execute(() -> surveyRecordProcessor.onCellInfoUpdate(telephonyManager.getAllCellInfo(),
-                            CalculationUtils.getNetworkType(telephonyManager.getDataNetworkType()),
-                            CalculationUtils.getNetworkType(telephonyManager.getVoiceNetworkType())));
+                    execute(() -> {
+                        try
+                        {
+                            surveyRecordProcessor.onCellInfoUpdate(telephonyManager.getAllCellInfo(),
+                                    CalculationUtils.getNetworkType(telephonyManager.getDataNetworkType()),
+                                    CalculationUtils.getNetworkType(telephonyManager.getVoiceNetworkType()));
+                        } catch (Throwable t)
+                        {
+                            Timber.e(t, "Something went wrong when trying to get the cell info for a single scan");
+                        }
+                    });
                 }
             } catch (SecurityException e)
             {
