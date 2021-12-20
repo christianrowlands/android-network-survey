@@ -71,7 +71,7 @@
     <string name="ss_rsrp_label">SS_RSRP</string>
     <string name="ss_rsrq_label">SS_RSRQ</string>
 
-    <string name="card_title_location">Location</string>
+    <string name="card_title_location">My Location</string>
     <string name="my_location_icon_description">My Location Icon</string>
     <string name="card_title_cellular_details_initial">Serving Cell Details</string>
     <string name="card_title_cellular_details">%1$s Serving Cell Details</string>

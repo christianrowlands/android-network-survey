@@ -14,8 +14,8 @@ android {
         applicationId "com.craxiom.networksurvey"
         minSdkVersion 26
         targetSdkVersion 31
-        versionCode 36
-        versionName "1.6.0"
+        versionCode 37
+        versionName "1.7.0-SNAPSHOT"
         setProperty("archivesBaseName", "$applicationName-$versionName")
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         testInstrumentationRunnerArguments clearPackageData: 'true'
@@ -78,7 +78,6 @@ dependencies {
 
     implementation 'app.futured.donut:donut:2.2.0'
 
-    compileOnly 'org.projectlombok:lombok:1.18.22'
     annotationProcessor 'org.projectlombok:lombok:1.18.22'
 
     testImplementation 'junit:junit:4.13.2'
