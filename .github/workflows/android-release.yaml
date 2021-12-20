@@ -1,0 +1,108 @@
+name: Network Survey CI
+
+on:
+  pull_request:
+    branches:
+      - 'master'
+  push:
+    branches:
+      - 'master'
+
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+
+jobs:
+  test:
+    name: Run Tests
+    runs-on: macos-latest
+
+    strategy:
+      matrix:
+        api-level: [ 26, 31 ]
+        target: [ default, google_apis ]
+
+    steps:
+      - name: Checkout the code
+        uses: actions/checkout@v1
+
+      - name: Set up JDK 11
+        uses: actions/setup-java@v2
+        with:
+          java-version: 11
+          distribution: 'adopt'
+
+      - name: Cache dependencies
+        uses: actions/cache@v2
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: ${{ runner.os }}-${{ hashFiles('**/*.gradle*') }}-${{ hashFiles('**/gradle/wrapper/gradle-wrapper.properties') }}-${{ hashFiles('**/buildSrc/**/*.kt') }}
+
+      - name: Unit Tests
+        run: ./gradlew test --stacktrace
+
+      # Need to work through a permissions error to get these working
+      #      - name: Instrumentation Tests
+      #        uses: reactivecircus/android-emulator-runner@v2
+      #        with:
+      #          api-level: ${{ matrix.api-level }}
+      #          target: ${{ matrix.target }}
+      #          arch: x86_64
+      #          profile: Nexus 6
+      #          script: ./gradlew test check connectedCheck -x lint --stacktrace
+
+      # Only upload the reports on failure
+      - name: Upload Reports
+        uses: actions/upload-artifact@v2
+        with:
+          name: Test-Reports
+          path: networksurvey/build/reports
+        if: failure()
+
+
+  buildReleaseApk:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout the code
+        uses: actions/checkout@v2
+
+      - name: Cache dependencies
+        uses: actions/cache@v2
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: ${{ runner.os }}-${{ hashFiles('**/*.gradle*') }}-${{ hashFiles('**/gradle/wrapper/gradle-wrapper.properties') }}-${{ hashFiles('**/buildSrc/**/*.kt') }}
+
+      - name: Set up JDK 11
+        uses: actions/setup-java@v2
+        with:
+          java-version: 11
+          distribution: 'adopt'
+
+      - name: Save Keystore
+        env:
+          $KEYSTORE_FILE: ${{ secrets.KEYSTORE_FILE }}
+        run: echo $KEYSTORE_FILE | base64 -d > my.keystore
+
+      - name: Build the app
+        env:
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+        run: ./gradlew assembleRelease
+          -Pandroid.injected.signing.store.file=$(pwd)/my.keystore
+          -Pandroid.injected.signing.store.password=$KEYSTORE_PASSWORD
+          -Pandroid.injected.signing.key.alias=$KEY_ALIAS
+          -Pandroid.injected.signing.key.password=$KEY_PASSWORD
+
+      - name: Get APK name
+        run: echo "base_name=`./gradlew :networksurvey:properties -q | grep 'archivesBaseName:' | awk '{print $2}'`" >> $GITHUB_ENV
+
+      - name: Upload apk
+        uses: actions/upload-artifact@v2
+        with:
+          name: Network Surveuy release apk
+          path: networksurvey/release/${{ env.base_name }}-release.apk
