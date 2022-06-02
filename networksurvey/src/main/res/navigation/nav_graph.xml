@@ -20,11 +20,26 @@
         android:id="@+id/mqtt_connection_fragment"
         android:name="com.craxiom.networksurvey.fragments.MqttFragment"
         android:label="@string/mqtt_connection_title"
-        tools:layout="@layout/fragment_mqtt" />
+        tools:layout="@layout/fragment_mqtt" >
+        <action
+            android:id="@+id/action_mqtt_connection_fragment_to_scanner_fragment"
+            app:destination="@id/scanner_fragment" />
+    </fragment>
 
     <fragment
         android:id="@+id/settings_fragment"
         android:name="com.craxiom.networksurvey.fragments.SettingsFragment"
         android:label="@string/settings" />
+
+    <fragment
+        android:id="@+id/scanner_fragment"
+        android:name="com.craxiom.networksurvey.fragments.CodeScannerFragment"
+        android:label="@string/code_scanner" >
+        <action
+            android:id="@+id/action_scanner_fragment_to_mqtt_connection_fragment"
+            app:destination="@id/mqtt_connection_fragment"
+            app:launchSingleTop="true"
+            app:popUpTo="@+id/mqtt_connection_fragment" />
+    </fragment>
 
 </navigation>

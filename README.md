@@ -87,10 +87,17 @@ The MQTT Broker connection supports both plain text and TLS/SSL connections.
 
 The survey messages are sent in JSON format following the protobuf definitions from
 the [Network Survey Messaging](https://github.com/christianrowlands/network-survey-messaging)
-library. [The API documentation is published to a web page here](https://messaging.networksurvey.app/)
-.
+library. [The API documentation is published to a web page here](https://messaging.networksurvey.app/).
+
+QR Code for MQTT Broker connection setting needs to provide a JSON string with the following fields.
+```json
+{"mqtt_username":"auser","mqtt_password":"apassword","mqtt_host":"cloud.azure.com","mqtt_port":8883,"mqtt_client":"aclient","mqtt_tls":true}
+```
 
 ## Changelog
+
+##### [1.7.0](https://github.com/christianrowlands/android-network-survey/releases/tag/v1.7.0) - 2022-06-02
+* Scan QR Code for configuring MQTT Broker connection
 
 ##### [1.6.0](https://github.com/christianrowlands/android-network-survey/releases/tag/v1.6.0) - 2021-12-18
 

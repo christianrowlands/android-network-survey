@@ -387,4 +387,7 @@
     <string name="notification">Network Survey is surveying GNSS data…</string>
     <string name="notification_historical">Network Survey is reviewing old GNSS data…</string>
 
+    <string name="scan_button_title">Auto Configure With QR Code</string>
+    <string name="code_scanner">QR Code Scanner</string>
+
 </resources>

@@ -6,8 +6,10 @@ import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewStub;
+import android.widget.Button;
 
 import androidx.appcompat.widget.SwitchCompat;
+import androidx.navigation.Navigation;
 
 import com.craxiom.mqttlibrary.connection.BrokerConnectionInfo;
 import com.craxiom.mqttlibrary.ui.AConnectionFragment;
@@ -47,6 +49,13 @@ public class MqttFragment extends AConnectionFragment<NetworkSurveyService.Surve
         bluetoothStreamToggleSwitch = inflatedStub.findViewById(R.id.streamBluetoothToggleSwitch);
         gnssStreamToggleSwitch = inflatedStub.findViewById(R.id.streamGnssToggleSwitch);
         deviceStatusStreamToggleSwitch = inflatedStub.findViewById(R.id.streamDeviceStatusToggleSwitch);
+
+        Button scanCodeButton = inflatedStub.findViewById(R.id.code_scan_button);
+        scanCodeButton.setVisibility(View.VISIBLE);
+        scanCodeButton.setOnClickListener(v -> {
+                Navigation.findNavController(requireActivity(), getId())
+                        .navigate(MqttFragmentDirections.actionMqttConnectionFragmentToScannerFragment());
+        });
     }
 
     @Override
@@ -60,6 +69,7 @@ public class MqttFragment extends AConnectionFragment<NetworkSurveyService.Surve
     {
         return NetworkSurveyService.class;
     }
+
 
     @Override
     protected void readMdmConfigAdditionalProperties(Bundle mdmProperties)
