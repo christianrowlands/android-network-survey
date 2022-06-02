@@ -21,7 +21,7 @@ import com.google.gson.Gson;
  * Fragment responsible for QR code scanning. Leverages an open source code scanning library from
  * Yuriy Budiev.
  *
- * @since 0.2.5
+ * @since 1.7.0
  */
 public class CodeScannerFragment extends Fragment
 {

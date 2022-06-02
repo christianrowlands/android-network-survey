@@ -2,6 +2,11 @@ package com.craxiom.networksurvey.fragments.model;
 
 import com.google.gson.annotations.SerializedName;
 
+/**
+ * Holds the MQTT Broker connection settings scanned from a QR Code
+ *
+ * @since 1.7.0
+ */
 public class ScannedSettings
 {
     @SerializedName("mqtt_host")
@@ -24,51 +29,63 @@ public class ScannedSettings
 
     public ScannedSettings(){}
 
-    public String getHost() {
+    public String getHost()
+    {
         return host;
     }
 
-    public void setHost(String host) {
+    public void setHost(String host)
+    {
         this.host = host;
     }
 
-    public int getPort() {
+    public int getPort()
+    {
         return port;
     }
 
-    public void setPort(int port) {
+    public void setPort(int port)
+    {
         this.port = port;
     }
 
-    public Boolean getTlsEnabled() {
+    public Boolean getTlsEnabled()
+    {
         return tlsEnabled;
     }
 
-    public void setTlsEnabled(Boolean tlsEnabled) {
+    public void setTlsEnabled(Boolean tlsEnabled)
+    {
         this.tlsEnabled = tlsEnabled;
     }
 
-    public String getDeviceName() {
+    public String getDeviceName()
+    {
         return deviceName;
     }
 
-    public void setDeviceName(String deviceName) {
+    public void setDeviceName(String deviceName)
+    {
         this.deviceName = deviceName;
     }
 
-    public String getMqttUsername() {
+    public String getMqttUsername()
+    {
         return mqttUsername;
     }
 
-    public void setMqttUsername(String mqttUsername) {
+    public void setMqttUsername(String mqttUsername)
+    {
         this.mqttUsername = mqttUsername;
     }
 
-    public String getMqttPassword() {
+    public String getMqttPassword()
+    {
         return mqttPassword;
     }
 
-    public void setMqttPassword(String mqttPassword) {
+    public void setMqttPassword(String mqttPassword)
+    {
         this.mqttPassword = mqttPassword;
     }
 }
