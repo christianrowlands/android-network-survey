@@ -166,6 +166,6 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="@string/scan_button_title"
-        android:visibility="gone" />
+        android:visibility="visible" />
 
 </LinearLayout>

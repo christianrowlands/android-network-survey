@@ -71,7 +71,6 @@ public class NetworkSurveyActivity extends AppCompatActivity
         {
             // Since we are running on the Android 12+, we need to ask for the BLUETOOTH_CONNECT and BLUETOOTH_SCAN permissions
             PERMISSIONS = new String[]{
-                    Manifest.permission.CAMERA,
                     Manifest.permission.ACCESS_FINE_LOCATION,
                     Manifest.permission.WRITE_EXTERNAL_STORAGE,
                     Manifest.permission.READ_PHONE_STATE,

@@ -1,11 +1,14 @@
 package com.craxiom.networksurvey.fragments;
 
+import static com.craxiom.mqttlibrary.MqttConstants.*;
+
 import android.app.Activity;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Toast;
 
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
@@ -43,38 +46,48 @@ public class CodeScannerFragment extends Fragment
             {
                 SharedPreferences preferences = android.preference.PreferenceManager.getDefaultSharedPreferences(getContext());
                 SharedPreferences.Editor edit = preferences.edit();
-                edit.putBoolean("mqtt_mdm_override", true);
-                final ScannedSettings scannedSettings = new Gson().fromJson(result.getText(), ScannedSettings.class);
+                edit.putBoolean(PROPERTY_MQTT_MDM_OVERRIDE, true);
 
-                if (scannedSettings.getHost() != null)
+                try
                 {
-                    edit.putString("mqtt_connection_host", scannedSettings.getHost());
-                }
-                if (scannedSettings.getPort() != 0)
-                {
-                    edit.putInt("mqtt_connection_port", scannedSettings.getPort());
-                }
-                if (scannedSettings.getTlsEnabled() != null)
-                {
-                    edit.putBoolean("mqtt_tls_enabled", scannedSettings.getTlsEnabled());
-                }
-                if (scannedSettings.getDeviceName() != null)
-                {
-                    edit.putString("mqtt_client_id", scannedSettings.getDeviceName());
-                }
-                if (scannedSettings.getMqttUsername() != null)
-                {
-                    edit.putString("mqtt_username", scannedSettings.getMqttUsername());
-                }
-                if (scannedSettings.getMqttPassword() != null)
-                {
-                    edit.putString("mqtt_password", scannedSettings.getMqttPassword());
-                }
+                    ScannedSettings scannedSettings = new Gson().fromJson(result.getText(), ScannedSettings.class);
+                    if (scannedSettings.getHost() != null)
+                    {
+                        edit.putString(PROPERTY_MQTT_CONNECTION_HOST, scannedSettings.getHost());
+                    }
+                    if (scannedSettings.getPort() != 0)
+                    {
+                        edit.putInt(PROPERTY_MQTT_CONNECTION_PORT, scannedSettings.getPort());
+                    }
+                    if (scannedSettings.getTlsEnabled() != null)
+                    {
+                        edit.putBoolean(PROPERTY_MQTT_CONNECTION_TLS_ENABLED, scannedSettings.getTlsEnabled());
+                    }
+                    if (scannedSettings.getDeviceName() != null)
+                    {
+                        edit.putString(PROPERTY_MQTT_CLIENT_ID, scannedSettings.getDeviceName());
+                    }
+                    if (scannedSettings.getMqttUsername() != null)
+                    {
+                        edit.putString(PROPERTY_MQTT_USERNAME, scannedSettings.getMqttUsername());
+                    }
+                    if (scannedSettings.getMqttPassword() != null)
+                    {
+                        edit.putString(PROPERTY_MQTT_PASSWORD, scannedSettings.getMqttPassword());
+                    }
 
-                edit.apply();
+                    edit.apply();
 
-                Navigation.findNavController(requireActivity(), getId())
-                        .navigate(CodeScannerFragmentDirections.actionScannerFragmentToMqttConnectionFragment());
+                    final String scanSuccess = "Successfully scanned the MQTT settings";
+                    Toast.makeText(getContext(), scanSuccess, Toast.LENGTH_SHORT).show();
+
+                    Navigation.findNavController(requireActivity(), getId())
+                            .navigate(CodeScannerFragmentDirections.actionScannerFragmentToMqttConnectionFragment());
+                } catch (Exception e)
+                {
+                    final String scanFailed = "Failed to read the MQTT settings";
+                    Toast.makeText(getContext(), scanFailed, Toast.LENGTH_SHORT).show();
+                }
             }
         }));
 
