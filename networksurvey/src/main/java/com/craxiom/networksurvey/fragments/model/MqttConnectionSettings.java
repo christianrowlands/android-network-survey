@@ -2,12 +2,21 @@ package com.craxiom.networksurvey.fragments.model;
 
 import com.google.gson.annotations.SerializedName;
 
+import java.io.Serializable;
+
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.NoArgsConstructor;
+
 /**
  * Holds the MQTT Broker connection settings scanned from a QR Code
  *
  * @since 1.7.0
  */
-public class ScannedSettings
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+public class MqttConnectionSettings implements Serializable
 {
     @SerializedName("mqtt_host")
     private String host;
@@ -26,8 +35,6 @@ public class ScannedSettings
 
     @SerializedName("mqtt_password")
     private String mqttPassword;
-
-    public ScannedSettings(){}
 
     public String getHost()
     {

@@ -15,6 +15,13 @@
  */
 package com.craxiom.networksurvey.util;
 
+import static com.craxiom.mqttlibrary.MqttConstants.PROPERTY_MQTT_CLIENT_ID;
+import static com.craxiom.mqttlibrary.MqttConstants.PROPERTY_MQTT_CONNECTION_HOST;
+import static com.craxiom.mqttlibrary.MqttConstants.PROPERTY_MQTT_CONNECTION_PORT;
+import static com.craxiom.mqttlibrary.MqttConstants.PROPERTY_MQTT_CONNECTION_TLS_ENABLED;
+import static com.craxiom.mqttlibrary.MqttConstants.PROPERTY_MQTT_PASSWORD;
+import static com.craxiom.mqttlibrary.MqttConstants.PROPERTY_MQTT_USERNAME;
+
 import android.annotation.TargetApi;
 import android.content.Context;
 import android.content.RestrictionsManager;
@@ -28,6 +35,7 @@ import androidx.preference.PreferenceManager;
 import com.craxiom.networksurvey.Application;
 import com.craxiom.networksurvey.R;
 import com.craxiom.networksurvey.constants.NetworkSurveyConstants;
+import com.craxiom.networksurvey.fragments.model.MqttConnectionSettings;
 
 import timber.log.Timber;
 
@@ -412,5 +420,37 @@ public class PreferenceUtils
     {
         SharedPreferences.Editor edit = Application.getPrefs().edit();
         edit.remove(key).apply();
+    }
+
+    public static void populatePrefsFromMqttConnectionSettings(MqttConnectionSettings mqttConnectionSettings, Context context)
+    {
+        SharedPreferences preferences = android.preference.PreferenceManager.getDefaultSharedPreferences(context);
+        SharedPreferences.Editor edit = preferences.edit();
+        if (mqttConnectionSettings.getHost() != null)
+        {
+            edit.putString(PROPERTY_MQTT_CONNECTION_HOST, mqttConnectionSettings.getHost());
+        }
+        if (mqttConnectionSettings.getPort() != 0)
+        {
+            edit.putInt(PROPERTY_MQTT_CONNECTION_PORT, mqttConnectionSettings.getPort());
+        }
+        if (mqttConnectionSettings.getTlsEnabled() != null)
+        {
+            edit.putBoolean(PROPERTY_MQTT_CONNECTION_TLS_ENABLED, mqttConnectionSettings.getTlsEnabled());
+        }
+        if (mqttConnectionSettings.getDeviceName() != null)
+        {
+            edit.putString(PROPERTY_MQTT_CLIENT_ID, mqttConnectionSettings.getDeviceName());
+        }
+        if (mqttConnectionSettings.getMqttUsername() != null)
+        {
+            edit.putString(PROPERTY_MQTT_USERNAME, mqttConnectionSettings.getMqttUsername());
+        }
+        if (mqttConnectionSettings.getMqttPassword() != null)
+        {
+            edit.putString(PROPERTY_MQTT_PASSWORD, mqttConnectionSettings.getMqttPassword());
+        }
+
+        edit.apply();
     }
 }

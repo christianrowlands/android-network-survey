@@ -1,5 +1,13 @@
 package com.craxiom.networksurvey.fragments;
 
+import static com.craxiom.mqttlibrary.MqttConstants.PROPERTY_MQTT_CLIENT_ID;
+import static com.craxiom.mqttlibrary.MqttConstants.PROPERTY_MQTT_CONNECTION_HOST;
+import static com.craxiom.mqttlibrary.MqttConstants.PROPERTY_MQTT_CONNECTION_PORT;
+import static com.craxiom.mqttlibrary.MqttConstants.PROPERTY_MQTT_CONNECTION_TLS_ENABLED;
+import static com.craxiom.mqttlibrary.MqttConstants.PROPERTY_MQTT_PASSWORD;
+import static com.craxiom.mqttlibrary.MqttConstants.PROPERTY_MQTT_USERNAME;
+import static com.craxiom.networksurvey.util.PreferenceUtils.populatePrefsFromMqttConnectionSettings;
+
 import android.Manifest;
 import android.content.Context;
 import android.content.SharedPreferences;
@@ -7,6 +15,7 @@ import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
+import android.view.ViewGroup;
 import android.view.ViewStub;
 import android.widget.Button;
 import android.widget.Toast;
@@ -21,6 +30,7 @@ import com.craxiom.mqttlibrary.connection.BrokerConnectionInfo;
 import com.craxiom.mqttlibrary.ui.AConnectionFragment;
 import com.craxiom.networksurvey.R;
 import com.craxiom.networksurvey.constants.NetworkSurveyConstants;
+import com.craxiom.networksurvey.fragments.model.MqttConnectionSettings;
 import com.craxiom.networksurvey.mqtt.MqttConnectionInfo;
 import com.craxiom.networksurvey.services.NetworkSurveyService;
 
@@ -51,12 +61,27 @@ public class MqttFragment extends AConnectionFragment<NetworkSurveyService.Surve
                 if (isGranted)
                 {
                     Navigation.findNavController(requireActivity(), getId())
-                           .navigate(MqttFragmentDirections.actionMqttConnectionFragmentToScannerFragment());
+                           .navigate(MqttFragmentDirections.actionMqttConnectionFragmentToScannerFragment()
+                                   .setMqttConnectionSettings(getCurrentMqttConnectionSettings()));
                 } else
                 {
                     Toast.makeText(getContext(), getString(R.string.grant_camera_permission), Toast.LENGTH_LONG).show();
                 }
     });
+
+    @Override
+    public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState)
+    {
+        MqttConnectionSettings mqttConnectionSettings =
+                MqttFragmentArgs.fromBundle(getArguments()).getMqttConnectionSettings();
+
+        if (mqttConnectionSettings != null)
+        {
+            populatePrefsFromMqttConnectionSettings(mqttConnectionSettings, getContext());
+        }
+
+        return super.onCreateView(inflater, container, savedInstanceState);
+    }
 
     @Override
     protected void inflateAdditionalFieldsViewStub(LayoutInflater layoutInflater, ViewStub viewStub)
@@ -75,7 +100,8 @@ public class MqttFragment extends AConnectionFragment<NetworkSurveyService.Surve
             if (hasCameraPermission())
             {
                 Navigation.findNavController(requireActivity(), getId())
-                        .navigate(MqttFragmentDirections.actionMqttConnectionFragmentToScannerFragment());
+                        .navigate(MqttFragmentDirections.actionMqttConnectionFragmentToScannerFragment()
+                                .setMqttConnectionSettings(getCurrentMqttConnectionSettings()));
             } else
             {
                 cameraPermissionRequestLauncher.launch(Manifest.permission.CAMERA);
@@ -94,7 +120,6 @@ public class MqttFragment extends AConnectionFragment<NetworkSurveyService.Surve
     {
         return NetworkSurveyService.class;
     }
-
 
     @Override
     protected void readMdmConfigAdditionalProperties(Bundle mdmProperties)
@@ -179,6 +204,24 @@ public class MqttFragment extends AConnectionFragment<NetworkSurveyService.Surve
                 bluetoothStreamEnabled,
                 gnssStreamEnabled,
                 deviceStatusStreamEnabled);
+    }
+
+    /**
+     * Read current values from the MQTT Connection Fragment and return an instance of {@link MqttConnectionSettings}
+     * object with those values.
+     *
+     * @since 1.7.0
+     */
+    private MqttConnectionSettings getCurrentMqttConnectionSettings()
+    {
+        return MqttConnectionSettings.builder()
+                .host(mqttHostAddressEdit.getText().toString())
+                .port(Integer.parseInt(mqttPortNumberEdit.getText().toString()))
+                .tlsEnabled(tlsToggleSwitch.isChecked())
+                .deviceName(deviceNameEdit.getText().toString())
+                .mqttUsername(usernameEdit.getText().toString())
+                .mqttPassword(passwordEdit.getText().toString())
+                .build();
     }
 
     /**
