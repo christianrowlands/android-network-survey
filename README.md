@@ -98,8 +98,8 @@ QR Code for MQTT Broker connection setting needs to provide a JSON string with t
 
 ## Changelog
 
-##### [1.7.0](https://github.com/christianrowlands/android-network-survey/releases/tag/v1.7.0) - 2022-06-02
-* Scan QR Code for configuring MQTT Broker connection
+##### [1.7.0](https://github.com/christianrowlands/android-network-survey/releases/tag/v1.7.0) - 2022-07-03
+* Scan QR Code for configuring the MQTT Broker connection information. (Thanks [dtufekcic](https://github.com/dtufekcic)!)
 
 ##### [1.6.0](https://github.com/christianrowlands/android-network-survey/releases/tag/v1.6.0) - 2021-12-18
 
