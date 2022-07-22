@@ -22,14 +22,23 @@
 #
 steps:
   - name: gcr.io/cloud-builders/gsutil
+    volumes:
+      - name: 'vol1'
+        path: '/persistent_volume'
     # we use rsync and not cp so that the step does not fail the first time it is run
     args: ['rsync', 'gs://gradle_cache_android-network-survey/', '.']
 
   - name: 'gcr.io/android-network-survey/android-builder'
+    volumes:
+      - name: 'vol1'
+        path: '/persistent_volume'
     entrypoint: 'gradle-build'
     args: ['-g', '.gradle', 'assembleDebug']
 
   - name: gcr.io/cloud-builders/gsutil
+    volumes:
+      - name: 'vol1'
+        path: '/persistent_volume'
     args: ['cp', 'cache.zip', 'gs://gradle_cache_android-network-survey/cache.zip']
 
   # Push the APK Output from vol1 to your GCS Bucket with Short Commit SHA.
