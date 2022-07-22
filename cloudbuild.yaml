@@ -28,7 +28,7 @@ steps:
     # we use rsync and not cp so that the step does not fail the first time it is run
     args: ['rsync', 'gs://gradle_cache_android-network-survey/', '.']
 
-  - name: 'registry.hub.docker.com/library/alvrme/alpine-android:android-31-jdk11'
+  - name: 'gcr.io/android-network-survey/android-builder'
     volumes:
       - name: 'vol1'
         path: '/persistent_volume'
