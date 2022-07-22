@@ -1,17 +1,36 @@
+#steps:
+#  # Set a persistent volume according to /cloud-build/docs/build-config (search for volumes)
+#  - name: 'ubuntu'
+#    volumes:
+#      - name: 'vol1'
+#        path: '/persistent_volume'
+#    args: ['cp', '-a', '.', '/persistent_volume']
+#
+#  # Build APK with Gradle Image from mounted /persistent_volume using name: vol1
+#  - name: 'gcr.io/cloud-builders/docker'
+#    volumes:
+#      - name: 'vol1'
+#        path: '/persistent_volume'
+#    args: ['run', '-v', 'vol1:/home/networksurvey', '--rm', 'gcr.io/fullstackgcp/gradle', '/bin/sh', '-c', 'cd /home/networksurvey && ./gradlew clean assembleDebug']
+#
+#  # Push the APK Output from vol1 to your GCS Bucket with Short Commit SHA.
+#  - name: 'gcr.io/cloud-builders/gsutil'
+#    volumes:
+#      - name: 'vol1'
+#        path: '/persistent_volume'
+#    args: ['cp', '/persistent_volume/networksurvey/build/outputs/apk/debug/*', 'gs://network-survey-builds/']
+#
 steps:
-  # Set a persistent volume according to /cloud-build/docs/build-config (search for volumes)
-  - name: 'ubuntu'
-    volumes:
-      - name: 'vol1'
-        path: '/persistent_volume'
-    args: ['cp', '-a', '.', '/persistent_volume']
+  - name: gcr.io/cloud-builders/gsutil
+    # we use rsync and not cp so that the step does not fail the first time it is run
+    args: ['rsync', 'gs://gradle_cache_android-network-survey/', '.']
 
-  # Build APK with Gradle Image from mounted /persistent_volume using name: vol1
-  - name: 'gcr.io/cloud-builders/docker'
-    volumes:
-      - name: 'vol1'
-        path: '/persistent_volume'
-    args: ['run', '-v', 'vol1:/home/networksurvey', '--rm', 'gcr.io/fullstackgcp/gradle', '/bin/sh', '-c', 'cd /home/networksurvey && ./gradlew clean assembleDebug']
+  - name: 'gcr.io/android-network-survey/android-builder'
+    entrypoint: 'gradle-build'
+    args: ['-g', '.gradle', 'assembleDebug']
+
+  - name: gcr.io/cloud-builders/gsutil
+    args: ['cp', 'cache.zip', 'gs://gradle_cache_android-network-survey/cache.zip']
 
   # Push the APK Output from vol1 to your GCS Bucket with Short Commit SHA.
   - name: 'gcr.io/cloud-builders/gsutil'
