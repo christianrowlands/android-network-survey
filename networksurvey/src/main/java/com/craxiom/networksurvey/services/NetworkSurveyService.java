@@ -1,5 +1,7 @@
 package com.craxiom.networksurvey.services;
 
+import static com.craxiom.networksurvey.util.GpsTestUtil.getGnssTimeoutIntervalMs;
+
 import android.Manifest;
 import android.annotation.SuppressLint;
 import android.app.Notification;
@@ -131,7 +133,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
     private volatile int cellularScanRateMs;
     private volatile int wifiScanRateMs;
     private volatile int bluetoothScanRateMs;
-    private static volatile int gnssScanRateMs;
+    private volatile int gnssScanRateMs;
     private volatile int deviceStatusScanRateMs;
 
     private String deviceId;
@@ -1054,15 +1056,6 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
         updateLocationListener();
     }
 
-    /**
-     * @return The time duration, in milliseconds, during which we expect to receive at least one GNSS measurement
-     *
-     * @since 1.8.0
-     */
-    public static long getGnssTimeoutIntervalMs()
-    {
-        return gnssScanRateMs * 2L;
-    }
 
     /**
      * Creates a new {@link GpsListener} if necessary, and Registers with the Android {@link LocationManager} for
@@ -2023,13 +2016,13 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
 
                         surveyRecordProcessor.checkForMissedGnssMeasurement();
 
-                        serviceHandler.postDelayed(this, getGnssTimeoutIntervalMs());
+                        serviceHandler.postDelayed(this, getGnssTimeoutIntervalMs(gnssScanRateMs));
                     } catch (SecurityException e)
                     {
                         Timber.e(e, "Could not get the required permissions to check for missed GNSS measurement");
                     }
                 }
-            }, getGnssTimeoutIntervalMs());
+            }, getGnssTimeoutIntervalMs(gnssScanRateMs));
 
             success = true;
         }

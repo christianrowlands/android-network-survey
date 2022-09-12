@@ -347,4 +347,15 @@ public class GpsTestUtil
         }
         return null;
     }
+
+    /**
+     * @return The time duration, in milliseconds, during which we expect to receive at least one GNSS measurement
+     *
+     * @since 1.8.0
+     */
+    public static long getGnssTimeoutIntervalMs(final long gnssScanRateMs)
+    {
+        return gnssScanRateMs * 2L;
+    }
+
 }

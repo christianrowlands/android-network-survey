@@ -1,5 +1,7 @@
 package com.craxiom.networksurvey.services;
 
+import static com.craxiom.networksurvey.util.GpsTestUtil.getGnssTimeoutIntervalMs;
+
 import android.Manifest;
 import android.annotation.SuppressLint;
 import android.bluetooth.BluetoothDevice;
@@ -689,13 +691,13 @@ public class SurveyRecordProcessor
     /**
      * Generates an empty GNSS message in cases where the Location Provider is enabled, we are given
      * permissions to access the device location, but we don't receive a location update within the GNSS Timeout
-     * interval as defined in {@link NetworkSurveyService#getGnssTimeoutIntervalMs()}.
+     * interval as defined in {@link com.craxiom.networksurvey.util.GpsTestUtil#getGnssTimeoutIntervalMs(long)}.
      *
      * @since 1.8.0
      */
     public void checkForMissedGnssMeasurement()
     {
-        if (isLocationAllowed() && lastGnssLogTimeMs < System.currentTimeMillis() - NetworkSurveyService.getGnssTimeoutIntervalMs())
+        if (isLocationAllowed() && lastGnssLogTimeMs < System.currentTimeMillis() - getGnssTimeoutIntervalMs(gnssScanRateMs))
         {
             Timber.d("Generating an empty GNSS message");
             final GnssRecord gnssRecord = generateEmptyGnssSurveyRecord();
