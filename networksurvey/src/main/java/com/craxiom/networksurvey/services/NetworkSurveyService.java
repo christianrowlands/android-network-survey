@@ -1,5 +1,7 @@
 package com.craxiom.networksurvey.services;
 
+import static com.craxiom.networksurvey.util.GpsTestUtil.getGnssTimeoutIntervalMs;
+
 import android.Manifest;
 import android.annotation.SuppressLint;
 import android.app.Notification;
@@ -122,6 +124,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
     private final AtomicInteger wifiScanningTaskId = new AtomicInteger();
     private final AtomicInteger bluetoothScanningTaskId = new AtomicInteger();
     private final AtomicInteger deviceStatusGeneratorTaskId = new AtomicInteger();
+    private final AtomicInteger gnssScanningTaskId = new AtomicInteger();
 
     private final SurveyServiceBinder surveyServiceBinder;
     private final Handler uiThreadHandler;
@@ -1053,6 +1056,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
         updateLocationListener();
     }
 
+
     /**
      * Creates a new {@link GpsListener} if necessary, and Registers with the Android {@link LocationManager} for
      * location updates.
@@ -1968,6 +1972,8 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
 
         boolean success = false;
 
+        final int handlerTaskId = gnssScanningTaskId.incrementAndGet();
+
         boolean hasPermissions = ContextCompat.checkSelfPermission(this,
                 Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED;
         hasPermissions = hasPermissions && ContextCompat.checkSelfPermission(this,
@@ -1994,6 +2000,29 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
             {
                 Timber.w("The location manager was null when registering the GNSS listeners");
             }
+
+            serviceHandler.postDelayed(new Runnable()
+            {
+                @Override
+                public void run()
+                {
+                    try
+                    {
+                        if (!gnssStarted.get() || gnssScanningTaskId.get() != handlerTaskId)
+                        {
+                            Timber.i("Stopping the handler that checks for missed GNSS measurements");
+                            return;
+                        }
+
+                        surveyRecordProcessor.checkForMissedGnssMeasurement();
+
+                        serviceHandler.postDelayed(this, getGnssTimeoutIntervalMs(gnssScanRateMs));
+                    } catch (SecurityException e)
+                    {
+                        Timber.e(e, "Could not get the required permissions to check for missed GNSS measurement");
+                    }
+                }
+            }, getGnssTimeoutIntervalMs(gnssScanRateMs));
 
             success = true;
         }

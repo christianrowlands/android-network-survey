@@ -1,11 +1,16 @@
 package com.craxiom.networksurvey.services;
 
+import static com.craxiom.networksurvey.util.GpsTestUtil.getGnssTimeoutIntervalMs;
+
+import android.Manifest;
 import android.annotation.SuppressLint;
 import android.bluetooth.BluetoothDevice;
 import android.content.Context;
+import android.content.pm.PackageManager;
 import android.location.GnssMeasurement;
 import android.location.GnssMeasurementsEvent;
 import android.location.Location;
+import android.location.LocationManager;
 import android.net.wifi.ScanResult;
 import android.os.Build;
 import android.telephony.CellIdentity;
@@ -30,6 +35,7 @@ import android.telephony.TelephonyManager;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.RequiresApi;
+import androidx.core.app.ActivityCompat;
 
 import com.craxiom.messaging.BluetoothRecord;
 import com.craxiom.messaging.BluetoothRecordData;
@@ -130,6 +136,7 @@ public class SurveyRecordProcessor
     private final ExecutorService executorService;
     private final String deviceId;
     private final String missionId;
+    private final Context context;
 
     private int recordNumber = 1;
     private int groupNumber = 0; // This will be incremented to 1 the first time it is used.
@@ -158,6 +165,7 @@ public class SurveyRecordProcessor
         this.gpsListener = gpsListener;
         this.deviceId = deviceId;
         this.executorService = executorService;
+        this.context = context;
 
         missionId = MISSION_ID_PREFIX + deviceId + " " + DATE_TIME_FORMATTER.format(LocalDateTime.now());
 
@@ -679,6 +687,35 @@ public class SurveyRecordProcessor
             notifyGnssRecordListeners(gnssRecord);
         }
     }
+
+    /**
+     * Generates an empty GNSS message in cases where the Location Provider is enabled, we are given
+     * permissions to access the device location, but we don't receive a location update within the GNSS Timeout
+     * interval as defined in {@link com.craxiom.networksurvey.util.GpsTestUtil#getGnssTimeoutIntervalMs(long)}.
+     *
+     * @since 1.8.0
+     */
+    public void checkForMissedGnssMeasurement()
+    {
+        if (isLocationAllowed() && lastGnssLogTimeMs < System.currentTimeMillis() - getGnssTimeoutIntervalMs(gnssScanRateMs))
+        {
+            Timber.d("Generating an empty GNSS message");
+            final GnssRecord gnssRecord = generateEmptyGnssSurveyRecord();
+            notifyGnssRecordListeners(gnssRecord);
+        }
+    }
+
+    /**
+     * @return True if the {@link Manifest.permission#ACCESS_FINE_LOCATION} permission has been granted and location
+     * provider is enabled.  False otherwise.
+     */
+    private boolean isLocationAllowed()
+    {
+        LocationManager locationManager = (LocationManager)context.getSystemService(Context.LOCATION_SERVICE);
+        return locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER) &&
+                ActivityCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED;
+    }
+
 
     /**
      * Wraps the execute command for the executor service in a try catch to prevent the app from crashing if something
@@ -1388,6 +1425,56 @@ public class SurveyRecordProcessor
 
         // TODO dataBuilder.setHdop(FloatValue.newBuilder().setValue());
         // TODO dataBuilder.setVdop(FloatValue.newBuilder().setValue());
+
+        final GnssRecord.Builder recordBuilder = GnssRecord.newBuilder();
+        recordBuilder.setMessageType(GnssMessageConstants.GNSS_RECORD_MESSAGE_TYPE);
+        recordBuilder.setVersion(BuildConfig.MESSAGING_API_VERSION);
+        recordBuilder.setData(dataBuilder);
+
+        return recordBuilder.build();
+    }
+
+    /**
+     * Pull out the appropriate values from the cached location, and create a {@link GnssRecord}.
+     *
+     * @return The empty GNSS record to send to any listeners.
+     * @since 1.8.0
+     */
+    private GnssRecord generateEmptyGnssSurveyRecord()
+    {
+        final GnssRecordData.Builder dataBuilder = GnssRecordData.newBuilder();
+
+        if (gpsListener != null)
+        {
+            final Location lastKnownLocation = gpsListener.getLatestLocation();
+            if (lastKnownLocation != null)
+            {
+                dataBuilder.setLatitude(lastKnownLocation.getLatitude());
+                dataBuilder.setLongitude(lastKnownLocation.getLongitude());
+                dataBuilder.setAltitude((float) lastKnownLocation.getAltitude());
+                dataBuilder.setAccuracy(MathUtils.roundAccuracy(lastKnownLocation.getAccuracy()));
+
+                if (lastKnownLocation.hasAccuracy())
+                {
+                    final FloatValue.Builder accuracy = FloatValue.newBuilder().setValue(lastKnownLocation.getAccuracy());
+                    dataBuilder.setLatitudeStdDevM(accuracy);
+                    dataBuilder.setLongitudeStdDevM(accuracy);
+                }
+
+                if (lastKnownLocation.hasVerticalAccuracy())
+                {
+                    dataBuilder.setAltitudeStdDevM(FloatValue.newBuilder()
+                            .setValue(lastKnownLocation.getVerticalAccuracyMeters()));
+                }
+            }
+        }
+
+        dataBuilder.setDeviceSerialNumber(deviceId);
+        dataBuilder.setDeviceTime(IOUtils.getRfc3339String(ZonedDateTime.now()));
+        dataBuilder.setMissionId(missionId);
+        dataBuilder.setRecordNumber(gnssRecordNumber++);
+        dataBuilder.setGroupNumber(gnssGroupNumber);
+        dataBuilder.setDeviceModel(Build.MODEL);
 
         final GnssRecord.Builder recordBuilder = GnssRecord.newBuilder();
         recordBuilder.setMessageType(GnssMessageConstants.GNSS_RECORD_MESSAGE_TYPE);
