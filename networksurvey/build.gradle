@@ -40,15 +40,17 @@ android {
         viewBinding true
         dataBinding true
     }
-    lintOptions {
+    buildToolsVersion '30.0.3'
+    packagingOptions {
+        resources {
+            excludes += ['META-INF/INDEX.LIST', 'META-INF/io.netty.versions.properties']
+        }
+    }
+
+    lint {
         abortOnError false
     }
-    buildToolsVersion '30.0.3'
-
-    packagingOptions {
-        exclude 'META-INF/INDEX.LIST'
-        exclude 'META-INF/io.netty.versions.properties'
-    }
+    namespace 'com.craxiom.networksurvey'
 }
 
 dependencies {
