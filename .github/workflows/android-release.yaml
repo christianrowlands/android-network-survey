@@ -60,8 +60,8 @@ jobs:
           path: networksurvey/build/reports
         if: failure()
 
-
   buildReleaseApk:
+    needs: test
     runs-on: ubuntu-latest
 
     steps:
@@ -84,10 +84,10 @@ jobs:
 
       - name: Save Keystore
         env:
-          $KEYSTORE_FILE: ${{ secrets.KEYSTORE_FILE }}
+          KEYSTORE_FILE: ${{ secrets.KEYSTORE_FILE }}
         run: echo $KEYSTORE_FILE | base64 -d > my.keystore
 
-      - name: Build the app
+      - name: Build Release APK
         env:
           KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
           KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
@@ -102,7 +102,7 @@ jobs:
         run: echo "base_name=`./gradlew :networksurvey:properties -q | grep 'archivesBaseName:' | awk '{print $2}'`" >> $GITHUB_ENV
 
       - name: Upload apk
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: Network Surveuy release apk
-          path: networksurvey/release/${{ env.base_name }}-release.apk
+          path: networksurvey/build/outputs/apk/release/${{ env.base_name }}-release.apk

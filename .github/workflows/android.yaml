@@ -40,7 +40,7 @@ jobs:
         run: echo "base_name=`./gradlew :networksurvey:properties -q | grep 'archivesBaseName:' | awk '{print $2}'`" >> $GITHUB_ENV
 
       - name: Upload apk
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: Network Surveuy debug apk
           path: networksurvey/build/outputs/apk/debug/${{ env.base_name }}-debug.apk
