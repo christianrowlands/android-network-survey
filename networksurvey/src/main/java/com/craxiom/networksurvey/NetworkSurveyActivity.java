@@ -67,6 +67,16 @@ public class NetworkSurveyActivity extends AppCompatActivity
 
     static
     {
+        // Android 13+ (SDK 33) requires permission for push notifications
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            PERMISSIONS = new String[]{
+                    Manifest.permission.ACCESS_FINE_LOCATION,
+                    Manifest.permission.WRITE_EXTERNAL_STORAGE,
+                    Manifest.permission.READ_PHONE_STATE,
+                    Manifest.permission.BLUETOOTH_CONNECT,
+                    Manifest.permission.BLUETOOTH_SCAN,
+                    Manifest.permission.POST_NOTIFICATIONS};
+        } else
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S)
         {
             // Since we are running on the Android 12+, we need to ask for the BLUETOOTH_CONNECT and BLUETOOTH_SCAN permissions

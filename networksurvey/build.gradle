@@ -1,5 +1,7 @@
 apply plugin: 'com.android.application'
 apply plugin: "androidx.navigation.safeargs"
+apply plugin: "com.google.gms.google-services"
+apply plugin: "com.google.firebase.crashlytics"
 apply plugin: 'kotlin-android'
 apply plugin: 'androidx.navigation.safeargs'
 
@@ -7,15 +9,15 @@ apply plugin: 'androidx.navigation.safeargs'
 ext.androidVersion = '28.0.0'
 ext.grpcVersion = '1.42.0'
 ext.networkSurveyMessagingVersion = '0.8.0'
-ext.navigationVersion = '2.5.0-rc01'
+ext.navigationVersion = '2.5.3'
 
 android {
-    compileSdkVersion 31
+    compileSdkVersion 33
     defaultConfig {
         buildConfigField "String", "MESSAGING_API_VERSION", "\"${networkSurveyMessagingVersion}\""
         applicationId "com.craxiom.networksurvey"
         minSdkVersion 26
-        targetSdkVersion 31
+        targetSdkVersion 33
         versionCode 40
         versionName "1.9.0-SNAPSHOT"
         setProperty("archivesBaseName", "$applicationName-$versionName")
@@ -54,9 +56,9 @@ android {
 }
 
 dependencies {
-    implementation 'androidx.appcompat:appcompat:1.4.2'
+    implementation 'androidx.appcompat:appcompat:1.5.1'
     implementation 'com.jakewharton.timber:timber:5.0.1'
-    implementation 'com.google.android.material:material:1.6.1'
+    implementation 'com.google.android.material:material:1.7.0'
     implementation 'androidx.legacy:legacy-support-v4:1.0.0'
     implementation 'androidx.cardview:cardview:1.0.0'
     implementation 'androidx.preference:preference-ktx:1.2.0'
@@ -75,7 +77,7 @@ dependencies {
 
     implementation "mil.nga.geopackage:geopackage-android:3.3.0"
 
-    implementation 'com.craxiom:mqtt-library:0.4.5'
+    implementation 'com.craxiom:mqtt-library:0.5.0-SNAPSHOT'
 
     implementation 'androidx.constraintlayout:constraintlayout:2.1.4'
     implementation 'androidx.recyclerview:recyclerview:1.2.1'
@@ -87,8 +89,13 @@ dependencies {
     implementation 'org.projectlombok:lombok:1.18.24'
     annotationProcessor 'org.projectlombok:lombok:1.18.24'
 
+    // Import the Firebase BoM
+    implementation platform('com.google.firebase:firebase-bom:31.0.1')
+    implementation 'com.google.firebase:firebase-analytics'
+    implementation 'com.google.firebase:firebase-crashlytics'
+
     testImplementation 'junit:junit:4.13.2'
-    implementation 'androidx.annotation:annotation:1.3.0'
+    implementation 'androidx.annotation:annotation:1.5.0'
 
     androidTestImplementation 'androidx.test.ext:junit:1.1.3'
     androidTestImplementation 'androidx.test:runner:1.4.0'

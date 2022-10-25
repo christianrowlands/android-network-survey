@@ -33,6 +33,7 @@ import com.craxiom.networksurvey.constants.NetworkSurveyConstants;
 import com.craxiom.networksurvey.fragments.model.MqttConnectionSettings;
 import com.craxiom.networksurvey.mqtt.MqttConnectionInfo;
 import com.craxiom.networksurvey.services.NetworkSurveyService;
+import com.craxiom.networksurvey.util.AnalyticsUtils;
 
 import timber.log.Timber;
 
@@ -204,6 +205,15 @@ public class MqttFragment extends AConnectionFragment<NetworkSurveyService.Surve
                 bluetoothStreamEnabled,
                 gnssStreamEnabled,
                 deviceStatusStreamEnabled);
+    }
+
+    @Override
+    protected void onMdmOverride(boolean mdmOverride)
+    {
+        final String eventName = mdmOverride ? AnalyticsUtils.EVENT_MDM_OVERRIDE_ON : AnalyticsUtils.EVENT_MDM_OVERRIDE_OFF;
+        AnalyticsUtils.logEvent(getApplicationContext(), eventName);
+
+        super.onMdmOverride(mdmOverride);
     }
 
     /**
