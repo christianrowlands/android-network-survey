@@ -17,7 +17,7 @@ android {
         buildConfigField "String", "MESSAGING_API_VERSION", "\"${networkSurveyMessagingVersion}\""
         applicationId "com.craxiom.networksurvey"
         minSdkVersion 26
-        targetSdkVersion 33
+        targetSdkVersion 31
         versionCode 40
         versionName "1.9.0-SNAPSHOT"
         setProperty("archivesBaseName", "$applicationName-$versionName")
@@ -75,9 +75,9 @@ dependencies {
     implementation "com.craxiom:network-survey-messaging:${networkSurveyMessagingVersion}"
     implementation "com.google.protobuf:protobuf-java-util:3.17.3"
 
-    implementation "mil.nga.geopackage:geopackage-android:3.3.0"
+    implementation "mil.nga.geopackage:geopackage-android:6.6.0"
 
-    implementation 'com.craxiom:mqtt-library:0.5.0-SNAPSHOT'
+    implementation 'com.craxiom:mqtt-library:0.5.0'
 
     implementation 'androidx.constraintlayout:constraintlayout:2.1.4'
     implementation 'androidx.recyclerview:recyclerview:1.2.1'
@@ -103,5 +103,5 @@ dependencies {
     androidTestImplementation 'com.schibsted.spain:barista:3.9.0'
     androidTestImplementation 'com.google.truth:truth:1.1.2'
     androidTestImplementation "com.craxiom:network-survey-messaging:${networkSurveyMessagingVersion}"
-    androidTestImplementation "mil.nga.geopackage:geopackage-android:3.3.0"
+    androidTestImplementation "mil.nga.geopackage:geopackage-android:6.6.0"
 }
