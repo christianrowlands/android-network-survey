@@ -1,5 +1,8 @@
 # Changelog
 
+## [1.9.0](https://github.com/christianrowlands/android-network-survey/releases/tag/v1.9.0) - 2022-10-28
+* Library updates, permission updates, logging updates, and other minor changes
+
 ## [1.8.0](https://github.com/christianrowlands/android-network-survey/releases/tag/v1.8.0) - 2022-09-26
 * Empty GNSS survey messages are now sent when GNSS survey is turned on and no GNSS satellites are 
   observed. This is to indicate that the device is surveying as expected, but no satellites are visible.
