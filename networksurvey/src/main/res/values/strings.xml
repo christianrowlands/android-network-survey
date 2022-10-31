@@ -38,6 +38,7 @@
     <string name="turn_on_bluetooth">Please turn on Bluetooth</string>
     <string name="check_bluetooth_is_on">Make sure Bluetooth is on</string>
     <string name="grant_bluetooth_scan_permission">The Find Nearby Devices Permission is required for Bluetooth Survey</string>
+    <string name="grant_bluetooth_connect_permission">The Bluetooth Connect permission is not required for BT survey, but it does allow for getting the device name</string>
     <string name="grant_camera_permission">The Camera Permission is required for scanning QR codes</string>
 
     <string name="data_network_label">Data Network</string>

@@ -711,11 +711,10 @@ public class SurveyRecordProcessor
      */
     private boolean isLocationAllowed()
     {
-        LocationManager locationManager = (LocationManager)context.getSystemService(Context.LOCATION_SERVICE);
+        LocationManager locationManager = (LocationManager) context.getSystemService(Context.LOCATION_SERVICE);
         return locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER) &&
                 ActivityCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED;
     }
-
 
     /**
      * Wraps the execute command for the executor service in a try catch to prevent the app from crashing if something
@@ -1342,8 +1341,11 @@ public class SurveyRecordProcessor
             dataBuilder.setTxPower(FloatValue.newBuilder().setValue(txPowerLevel).build());
         }
 
-        final String otaDeviceName = device.getName();
-        if (otaDeviceName != null) dataBuilder.setOtaDeviceName(otaDeviceName);
+        if (ActivityCompat.checkSelfPermission(context, Manifest.permission.BLUETOOTH_CONNECT) == PackageManager.PERMISSION_GRANTED)
+        {
+            final String otaDeviceName = device.getName();
+            if (otaDeviceName != null) dataBuilder.setOtaDeviceName(otaDeviceName);
+        }
 
         final SupportedTechnologies supportedTech = BluetoothMessageConstants.getSupportedTechnologies(device.getType());
         if (supportedTech != SupportedTechnologies.UNKNOWN)

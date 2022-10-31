@@ -1639,6 +1639,30 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
     }
 
     /**
+     * Note that the {@link Manifest.permission#BLUETOOTH_CONNECT} permission was added in Android 12, so this method
+     * returns true for all older versions.
+     *
+     * The {@link Manifest.permission#BLUETOOTH_CONNECT} permission is required ONLY for getting the bluetooth device
+     * name, so don't fail BT survey if it is missing, but we probably want to notify the user.
+     *
+     * @return True if the {@link Manifest.permission#BLUETOOTH_CONNECT} permission has been granted. False otherwise.
+     * @since 1.6.0
+     */
+    private boolean hasBtConnectPermission()
+    {
+        // The BLUETOOTH_CONNECT permission was added in Android 12
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) return true;
+
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.BLUETOOTH_CONNECT) != PackageManager.PERMISSION_GRANTED)
+        {
+            Timber.w("The BLUETOOTH_CONNECT permission has not been granted");
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
      * Register a listener for Bluetooth scans, and then kick off a scheduled Bluetooth scan.
      * <p>
      * This method only starts scanning if the scan is not already active and we have the required permissions.
@@ -1651,6 +1675,12 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
         {
             uiThreadHandler.post(() -> Toast.makeText(getApplicationContext(), getString(R.string.grant_bluetooth_scan_permission), Toast.LENGTH_LONG).show());
             return;
+        }
+
+        if (!hasBtConnectPermission())
+        {
+            uiThreadHandler.post(() -> Toast.makeText(getApplicationContext(), getString(R.string.grant_bluetooth_connect_permission), Toast.LENGTH_LONG).show());
+            // Don't return here, just warn the user since it is only needed for the device names
         }
 
         if (bluetoothScanningActive.getAndSet(true)) return;
