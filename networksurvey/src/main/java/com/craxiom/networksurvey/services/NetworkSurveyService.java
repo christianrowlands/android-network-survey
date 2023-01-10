@@ -81,6 +81,7 @@ import com.craxiom.networksurvey.mqtt.MqttConnectionInfo;
 import com.craxiom.networksurvey.util.IOUtils;
 import com.craxiom.networksurvey.util.MathUtils;
 import com.craxiom.networksurvey.util.PreferenceUtils;
+import com.google.protobuf.BoolValue;
 import com.google.protobuf.Int32Value;
 
 import java.time.ZonedDateTime;
@@ -153,6 +154,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
     private boolean hasGnssRawFailureNagLaunched = false;
     private MqttConnection mqttConnection;
     private BroadcastReceiver managedConfigurationListener;
+    private boolean mdmOverride = false;
 
     private TelephonyManager.CellInfoCallback cellInfoCallback;
     private BroadcastReceiver wifiScanReceiver;
@@ -196,6 +198,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
         surveyRecordProcessor = new SurveyRecordProcessor(gpsListener, deviceId, context, executorService);
 
         setScanRateValues();
+        readMdmOverridePreference();
         PreferenceManager.getDefaultSharedPreferences(context).registerOnSharedPreferenceChangeListener(this);
 
         // Must register for MDM updates AFTER initializing the MQTT connection because we try to make an MQTT connection if the MDM settings change
@@ -301,6 +304,8 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
             case NetworkSurveyConstants.PROPERTY_DEVICE_STATUS_SCAN_INTERVAL_SECONDS:
                 setScanRateValues();
                 break;
+            case NetworkSurveyConstants.PROPERTY_MDM_OVERRIDE_KEY:
+                readMdmOverridePreference();
 
             default:
         }
@@ -1054,6 +1059,18 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
         surveyRecordProcessor.setGnssScanRateMs(gnssScanRateMs);
 
         updateLocationListener();
+    }
+
+    /**
+     * Triggers a read of the mdm override preference and stores it in an instance variable.
+     *
+     * @since 1.10.0
+     */
+    private void readMdmOverridePreference()
+    {
+        final Context applicationContext = getApplicationContext();
+        mdmOverride = PreferenceManager.getDefaultSharedPreferences(applicationContext)
+                .getBoolean(NetworkSurveyConstants.PROPERTY_MDM_OVERRIDE_KEY, false);
     }
 
 
@@ -1853,6 +1870,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
         final DeviceStatusData.Builder dataBuilder = DeviceStatusData.newBuilder();
         dataBuilder.setDeviceSerialNumber(deviceId)
                 .setDeviceTime(IOUtils.getRfc3339String(ZonedDateTime.now()));
+        dataBuilder.setMdmOverride(BoolValue.newBuilder().setValue(mdmOverride).build());
 
         if (gpsListener != null)
         {

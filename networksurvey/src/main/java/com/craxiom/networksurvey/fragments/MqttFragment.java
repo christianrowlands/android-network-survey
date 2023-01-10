@@ -1,11 +1,5 @@
 package com.craxiom.networksurvey.fragments;
 
-import static com.craxiom.mqttlibrary.MqttConstants.PROPERTY_MQTT_CLIENT_ID;
-import static com.craxiom.mqttlibrary.MqttConstants.PROPERTY_MQTT_CONNECTION_HOST;
-import static com.craxiom.mqttlibrary.MqttConstants.PROPERTY_MQTT_CONNECTION_PORT;
-import static com.craxiom.mqttlibrary.MqttConstants.PROPERTY_MQTT_CONNECTION_TLS_ENABLED;
-import static com.craxiom.mqttlibrary.MqttConstants.PROPERTY_MQTT_PASSWORD;
-import static com.craxiom.mqttlibrary.MqttConstants.PROPERTY_MQTT_USERNAME;
 import static com.craxiom.networksurvey.util.PreferenceUtils.populatePrefsFromMqttConnectionSettings;
 
 import android.Manifest;
@@ -33,7 +27,6 @@ import com.craxiom.networksurvey.constants.NetworkSurveyConstants;
 import com.craxiom.networksurvey.fragments.model.MqttConnectionSettings;
 import com.craxiom.networksurvey.mqtt.MqttConnectionInfo;
 import com.craxiom.networksurvey.services.NetworkSurveyService;
-import com.craxiom.networksurvey.util.AnalyticsUtils;
 
 import timber.log.Timber;
 
@@ -62,13 +55,13 @@ public class MqttFragment extends AConnectionFragment<NetworkSurveyService.Surve
                 if (isGranted)
                 {
                     Navigation.findNavController(requireActivity(), getId())
-                           .navigate(MqttFragmentDirections.actionMqttConnectionFragmentToScannerFragment()
-                                   .setMqttConnectionSettings(getCurrentMqttConnectionSettings()));
+                            .navigate(MqttFragmentDirections.actionMqttConnectionFragmentToScannerFragment()
+                                    .setMqttConnectionSettings(getCurrentMqttConnectionSettings()));
                 } else
                 {
                     Toast.makeText(getContext(), getString(R.string.grant_camera_permission), Toast.LENGTH_LONG).show();
                 }
-    });
+            });
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState)
@@ -205,15 +198,6 @@ public class MqttFragment extends AConnectionFragment<NetworkSurveyService.Surve
                 bluetoothStreamEnabled,
                 gnssStreamEnabled,
                 deviceStatusStreamEnabled);
-    }
-
-    @Override
-    protected void onMdmOverride(boolean mdmOverride)
-    {
-        final String eventName = mdmOverride ? AnalyticsUtils.EVENT_MDM_OVERRIDE_ON : AnalyticsUtils.EVENT_MDM_OVERRIDE_OFF;
-        AnalyticsUtils.logEvent(getApplicationContext(), eventName);
-
-        super.onMdmOverride(mdmOverride);
     }
 
     /**
