@@ -1,15 +1,12 @@
 package com.craxiom.networksurvey;
 
 import android.Manifest;
-import android.annotation.SuppressLint;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
-import android.content.res.ColorStateList;
-import android.graphics.Color;
 import android.location.LocationManager;
 import android.location.LocationProvider;
 import android.os.AsyncTask;
@@ -19,8 +16,6 @@ import android.os.IBinder;
 import android.provider.Settings;
 import android.text.method.LinkMovementMethod;
 import android.view.LayoutInflater;
-import android.view.Menu;
-import android.view.MenuItem;
 import android.view.View;
 import android.widget.CheckBox;
 import android.widget.TextView;
@@ -46,11 +41,9 @@ import com.craxiom.networksurvey.listeners.IGnssFailureListener;
 import com.craxiom.networksurvey.services.GrpcConnectionService;
 import com.craxiom.networksurvey.services.NetworkSurveyService;
 import com.craxiom.networksurvey.util.PreferenceUtils;
+import com.craxiom.networksurvey.util.ToggleLoggingTask;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.android.material.navigation.NavigationView;
-
-import java.util.function.Function;
-import java.util.function.Supplier;
 
 import timber.log.Timber;
 
@@ -68,7 +61,8 @@ public class NetworkSurveyActivity extends AppCompatActivity
     static
     {
         // Android 13+ (SDK 33) requires permission for push notifications
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU)
+        {
             PERMISSIONS = new String[]{
                     Manifest.permission.ACCESS_FINE_LOCATION,
                     Manifest.permission.WRITE_EXTERNAL_STORAGE,
@@ -76,8 +70,7 @@ public class NetworkSurveyActivity extends AppCompatActivity
                     Manifest.permission.BLUETOOTH_CONNECT,
                     Manifest.permission.BLUETOOTH_SCAN,
                     Manifest.permission.POST_NOTIFICATIONS};
-        } else
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S)
+        } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S)
         {
             // Since we are running on the Android 12+, we need to ask for the BLUETOOTH_CONNECT and BLUETOOTH_SCAN permissions
             PERMISSIONS = new String[]{
@@ -99,11 +92,6 @@ public class NetworkSurveyActivity extends AppCompatActivity
 
     public DrawerLayout drawerLayout;
     public NavController navController;
-
-    private MenuItem startStopCellularLoggingMenuItem;
-    private MenuItem startStopWifiLoggingMenuItem;
-    private MenuItem startStopBluetoothLoggingMenuItem;
-    private MenuItem startStopGnssLoggingMenuItem;
 
     private SurveyServiceConnection surveyServiceConnection;
     private NetworkSurveyService networkSurveyService;
@@ -251,61 +239,6 @@ public class NetworkSurveyActivity extends AppCompatActivity
                 }
             }
         }
-    }
-
-    @Override
-    public boolean onCreateOptionsMenu(Menu menu)
-    {
-        // Inflate the menu; this adds items to the action bar if it is present.
-        getMenuInflater().inflate(R.menu.menu_network_details, menu);
-        startStopCellularLoggingMenuItem = menu.findItem(R.id.action_start_stop_cellular_logging);
-        startStopWifiLoggingMenuItem = menu.findItem(R.id.action_start_stop_wifi_logging);
-        startStopBluetoothLoggingMenuItem = menu.findItem(R.id.action_start_stop_bluetooth_logging);
-        startStopGnssLoggingMenuItem = menu.findItem(R.id.action_start_stop_gnss_logging);
-
-        if (networkSurveyService != null)
-        {
-            updateCellularLoggingButton(networkSurveyService.isCellularLoggingEnabled());
-            updateWifiLoggingButton(networkSurveyService.isWifiLoggingEnabled());
-            updateBluetoothLoggingButton(networkSurveyService.isBluetoothLoggingEnabled());
-            updateGnssLoggingButton(networkSurveyService.isGnssLoggingEnabled());
-        }
-
-        return true;
-    }
-
-    @Override
-    public boolean onOptionsItemSelected(MenuItem item)
-    {
-        int id = item.getItemId();
-
-        if (networkSurveyService == null)
-        {
-            Timber.w("The Network Survey service was not ready when the user toggled on file logging");
-            Toast.makeText(getApplicationContext(), getString(R.string.logging_not_ready), Toast.LENGTH_LONG).show();
-            return true;
-        }
-
-        //noinspection SimplifiableIfStatement
-        if (id == R.id.action_start_stop_cellular_logging)
-        {
-            toggleCellularLogging(!networkSurveyService.isCellularLoggingEnabled());
-            return true;
-        } else if (id == R.id.action_start_stop_wifi_logging)
-        {
-            toggleWifiLogging(!networkSurveyService.isWifiLoggingEnabled());
-            return true;
-        } else if (id == R.id.action_start_stop_bluetooth_logging)
-        {
-            toggleBluetoothLogging(!networkSurveyService.isBluetoothLoggingEnabled());
-            return true;
-        } else if (id == R.id.action_start_stop_gnss_logging)
-        {
-            toggleGnssLogging(!networkSurveyService.isGnssLoggingEnabled());
-            return true;
-        }
-
-        return super.onOptionsItemSelected(item);
     }
 
     /**
@@ -577,7 +510,7 @@ public class NetworkSurveyActivity extends AppCompatActivity
         final NavHostFragment navHostFragment = (NavHostFragment) getSupportFragmentManager().findFragmentById(R.id.main_content);
         navController = navHostFragment.getNavController();
 
-        appBarConfiguration = new AppBarConfiguration.Builder(R.id.main_cellular_fragment, R.id.main_wifi_fragment, R.id.main_bluetooth_fragment, R.id.main_gnss_fragment)
+        appBarConfiguration = new AppBarConfiguration.Builder(R.id.main_dashboard_fragment, R.id.main_cellular_fragment, R.id.main_wifi_fragment, R.id.main_bluetooth_fragment, R.id.main_gnss_fragment)
                 .setOpenableLayout(drawerLayout)
                 .build();
 
@@ -588,7 +521,8 @@ public class NetworkSurveyActivity extends AppCompatActivity
 
         navController.addOnDestinationChangedListener((controller, destination, arguments) -> {
             final int destinationId = destination.getId();
-            if (destinationId == R.id.main_cellular_fragment
+            if (destinationId == R.id.main_dashboard_fragment
+                    || destinationId == R.id.main_cellular_fragment
                     || destinationId == R.id.main_wifi_fragment
                     || destinationId == R.id.main_bluetooth_fragment
                     || destinationId == R.id.main_gnss_fragment)
@@ -610,7 +544,8 @@ public class NetworkSurveyActivity extends AppCompatActivity
                 // code here to move this activity to the back stack.
                 final NavDestination currentDestination = navController.getCurrentDestination();
                 if (currentDestination != null &&
-                        (currentDestination.getId() == R.id.main_cellular_fragment
+                        (currentDestination.getId() == R.id.main_dashboard_fragment
+                                || currentDestination.getId() == R.id.main_cellular_fragment
                                 || currentDestination.getId() == R.id.main_wifi_fragment
                                 || currentDestination.getId() == R.id.main_bluetooth_fragment
                                 || currentDestination.getId() == R.id.main_gnss_fragment))
@@ -658,9 +593,8 @@ public class NetworkSurveyActivity extends AppCompatActivity
             return null;
         }, enabled -> {
             if (enabled == null) return getString(R.string.cellular_logging_toggle_failed);
-            updateCellularLoggingButton(enabled);
             return getString(enabled ? R.string.cellular_logging_start_toast : R.string.cellular_logging_stop_toast);
-        }).executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
+        }, getApplicationContext()).executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
     }
 
     /**
@@ -676,9 +610,8 @@ public class NetworkSurveyActivity extends AppCompatActivity
             return null;
         }, enabled -> {
             if (enabled == null) return getString(R.string.wifi_logging_toggle_failed);
-            updateWifiLoggingButton(enabled);
             return getString(enabled ? R.string.wifi_logging_start_toast : R.string.wifi_logging_stop_toast);
-        }).executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
+        }, getApplicationContext()).executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
     }
 
     /**
@@ -697,9 +630,8 @@ public class NetworkSurveyActivity extends AppCompatActivity
             return null;
         }, enabled -> {
             if (enabled == null) return getString(R.string.bluetooth_logging_toggle_failed);
-            updateBluetoothLoggingButton(enabled);
             return getString(enabled ? R.string.bluetooth_logging_start_toast : R.string.bluetooth_logging_stop_toast);
-        }).executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
+        }, getApplicationContext()).executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
     }
 
     /**
@@ -715,112 +647,8 @@ public class NetworkSurveyActivity extends AppCompatActivity
             return null;
         }, enabled -> {
             if (enabled == null) return getString(R.string.gnss_logging_toggle_failed);
-            updateGnssLoggingButton(enabled);
             return getString(enabled ? R.string.gnss_logging_start_toast : R.string.gnss_logging_stop_toast);
-        }).executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
-    }
-
-    /**
-     * Updates the Cellular logging button based on the specified logging state.
-     *
-     * @param enabled True if logging is currently enabled, false otherwise.
-     */
-    private void updateCellularLoggingButton(boolean enabled)
-    {
-        if (startStopCellularLoggingMenuItem == null) return;
-
-        final String menuTitle = getString(enabled ? R.string.action_stop_cellular_logging : R.string.action_start_cellular_logging);
-        startStopCellularLoggingMenuItem.setTitle(menuTitle);
-
-        ColorStateList colorStateList = null;
-        if (enabled) colorStateList = ColorStateList.valueOf(Color.GREEN);
-
-        startStopCellularLoggingMenuItem.setIconTintList(colorStateList);
-    }
-
-    /**
-     * Updates the Wi-Fi logging button based on the specified logging state.
-     *
-     * @param enabled True if logging is currently enabled, false otherwise.
-     * @since 0.1.2
-     */
-    private void updateWifiLoggingButton(boolean enabled)
-    {
-        if (startStopWifiLoggingMenuItem == null) return;
-
-        final String menuTitle = getString(enabled ? R.string.action_stop_wifi_logging : R.string.action_start_wifi_logging);
-        startStopWifiLoggingMenuItem.setTitle(menuTitle);
-
-        ColorStateList colorStateList = null;
-        if (enabled) colorStateList = ColorStateList.valueOf(Color.GREEN);
-
-        startStopWifiLoggingMenuItem.setIconTintList(colorStateList);
-    }
-
-    /**
-     * Updates the Bluetooth logging button based on the specified logging state.
-     *
-     * @param enabled True if logging is currently enabled, false otherwise.
-     * @since 1.0.0
-     */
-    private void updateBluetoothLoggingButton(boolean enabled)
-    {
-        if (startStopBluetoothLoggingMenuItem == null) return;
-
-        final String menuTitle = getString(enabled ? R.string.action_stop_bluetooth_logging : R.string.action_start_bluetooth_logging);
-        startStopBluetoothLoggingMenuItem.setTitle(menuTitle);
-
-        ColorStateList colorStateList = null;
-        if (enabled) colorStateList = ColorStateList.valueOf(Color.GREEN);
-
-        startStopBluetoothLoggingMenuItem.setIconTintList(colorStateList);
-    }
-
-    /**
-     * Updates the GNSS logging button based on the specified logging state.
-     *
-     * @param enabled True if logging is currently enabled, false otherwise.
-     */
-    private void updateGnssLoggingButton(boolean enabled)
-    {
-        if (startStopGnssLoggingMenuItem == null) return;
-
-        final String menuTitle = getString(enabled ? R.string.action_stop_gnss_logging : R.string.action_start_gnss_logging);
-        startStopGnssLoggingMenuItem.setTitle(menuTitle);
-
-        ColorStateList colorStateList = null;
-        if (enabled) colorStateList = ColorStateList.valueOf(Color.GREEN);
-
-        startStopGnssLoggingMenuItem.setIconTintList(colorStateList);
-    }
-
-    /**
-     * A task to move the action of starting or stopping logging off of the UI thread.
-     */
-    @SuppressLint("StaticFieldLeak")
-    private class ToggleLoggingTask extends AsyncTask<Void, Void, Boolean>
-    {
-        private final Supplier<Boolean> toggleLoggingFunction;
-        private final Function<Boolean, String> postExecuteFunction;
-
-        private ToggleLoggingTask(Supplier<Boolean> toggleLoggingFunction, Function<Boolean, String> postExecuteFunction)
-        {
-            this.toggleLoggingFunction = toggleLoggingFunction;
-            this.postExecuteFunction = postExecuteFunction;
-        }
-
-        @Override
-        protected Boolean doInBackground(Void... nothing)
-        {
-            return toggleLoggingFunction.get();
-        }
-
-        @Override
-        protected void onPostExecute(Boolean enabled)
-        {
-            Toast.makeText(getApplicationContext(), postExecuteFunction.apply(enabled),
-                    enabled == null ? Toast.LENGTH_LONG : Toast.LENGTH_SHORT).show();
-        }
+        }, getApplicationContext()).executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
     }
 
     /**
@@ -842,36 +670,24 @@ public class NetworkSurveyActivity extends AppCompatActivity
             if (turnOnCellularLoggingOnNextServiceConnection && !cellularLoggingEnabled)
             {
                 toggleCellularLogging(true);
-            } else
-            {
-                updateCellularLoggingButton(cellularLoggingEnabled);
             }
 
             final boolean wifiLoggingEnabled = networkSurveyService.isWifiLoggingEnabled();
             if (turnOnWifiLoggingOnNextServiceConnection && !wifiLoggingEnabled)
             {
                 toggleWifiLogging(true);
-            } else
-            {
-                updateWifiLoggingButton(wifiLoggingEnabled);
             }
 
             final boolean bluetoothLoggingEnabled = networkSurveyService.isBluetoothLoggingEnabled();
             if (turnOnBluetoothLoggingOnNextServiceConnection && !wifiLoggingEnabled)
             {
                 toggleBluetoothLogging(true);
-            } else
-            {
-                updateBluetoothLoggingButton(bluetoothLoggingEnabled);
             }
 
             final boolean gnssLoggingEnabled = networkSurveyService.isGnssLoggingEnabled();
             if (turnOnGnssLoggingOnNextServiceConnection && !gnssLoggingEnabled)
             {
                 toggleGnssLogging(true);
-            } else
-            {
-                updateGnssLoggingButton(gnssLoggingEnabled);
             }
 
             turnOnCellularLoggingOnNextServiceConnection = false;

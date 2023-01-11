@@ -124,7 +124,7 @@ public class NetworkDetailsFragment extends AServiceDataFragment implements ICel
     }
 
     @Override
-    protected void registerDataListeners(NetworkSurveyService service)
+    protected void onSurveyServiceConnected(NetworkSurveyService service)
     {
         service.registerCellularSurveyRecordListener(this);
         service.registerLocationListener(this);
@@ -135,7 +135,7 @@ public class NetworkDetailsFragment extends AServiceDataFragment implements ICel
     }
 
     @Override
-    protected void unregisterDataListeners(NetworkSurveyService service)
+    protected void onSurveyServiceDisconnecting(NetworkSurveyService service)
     {
         service.unregisterLocationListener(this);
         service.unregisterCellularSurveyRecordListener(this);
@@ -273,11 +273,6 @@ public class NetworkDetailsFragment extends AServiceDataFragment implements ICel
      */
     private void clearCellularUi()
     {
-        // TODO Will this happen via the other listener?
-        /*viewModel.setDataNetworkType("");
-        viewModel.setCarrier("");
-        viewModel.setVoiceNetworkType("");*/
-
         viewModel.setServingCellProtocol(CellularProtocol.NONE);
 
         viewModel.setMcc("");
@@ -304,7 +299,7 @@ public class NetworkDetailsFragment extends AServiceDataFragment implements ICel
      */
     private void initializeLocationTextView()
     {
-        final TextView tvLocation = binding.location;
+        final TextView tvLocation = binding.locationCard.location;
 
         final String displayText;
         final int textColor;
@@ -359,8 +354,8 @@ public class NetworkDetailsFragment extends AServiceDataFragment implements ICel
      */
     private void updateLocationTextView(Location latestLocation)
     {
-        final TextView locationTextView = binding.location;
-        final TextView accuracyTextView = binding.accuracy;
+        final TextView locationTextView = binding.locationCard.location;
+        final TextView accuracyTextView = binding.locationCard.accuracy;
         if (latestLocation != null)
         {
             final String latLonString = locationFormat.format(latestLocation.getLatitude()) + ", " +
@@ -387,7 +382,7 @@ public class NetworkDetailsFragment extends AServiceDataFragment implements ICel
      */
     private void updateLocationProviderStatus(boolean enabled)
     {
-        final TextView locationTextView = binding.location;
+        final TextView locationTextView = binding.locationCard.location;
 
         locationTextView.setTextColor(getResources().getColor(R.color.connectionStatusConnecting, null));
         locationTextView.setText(enabled ? R.string.searching_for_location : R.string.turn_on_gps);
@@ -405,8 +400,6 @@ public class NetworkDetailsFragment extends AServiceDataFragment implements ICel
     {
         final TextView titleTextView = binding.cellularDetailsTitle;
         titleTextView.setText(getString(R.string.card_title_cellular_details, protocol));
-
-        // TODO We need to clear the values in the view model when switching between protocols
 
         switch (protocol)
         {
@@ -520,7 +513,7 @@ public class NetworkDetailsFragment extends AServiceDataFragment implements ICel
                     break;
 
                 case CDMA:
-                    // TODO What do do about CDMA?
+                    // We don't support CDMA since it is pretty much gone
                     break;
 
                 case UMTS:

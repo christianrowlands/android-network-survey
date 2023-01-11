@@ -75,6 +75,22 @@
     <string name="ss_rsrp_label">SS_RSRP</string>
     <string name="ss_rsrq_label">SS_RSRQ</string>
 
+    <!-- Dashboard Constants -->
+    <string name="card_title_logging_details">File Logging Control</string>
+    <string name="card_title_mqtt_details">MQTT Connection Status</string>
+    <string name="cellular_title">Cellular</string>
+    <string name="wifi_title">Wi-Fi</string>
+    <string name="bluetooth_title">Bluetooth</string>
+    <string name="gnss_title">GNSS</string>
+    <string name="status_label">Status:</string>
+    <string name="off">Off</string>
+    <string name="wifi_icon_description">Wi-Fi Icon</string>
+    <string name="bluetooth_icon_description">Bluetooth Icon</string>
+    <string name="gnss_icon_description">GNSS Icon</string>
+    <string name="logging_status_enabled">On</string>
+    <string name="logging_status_disabled">Off</string>
+
+
     <string name="card_title_location">My Location</string>
     <string name="my_location_icon_description">My Location Icon</string>
     <string name="card_title_cellular_details_initial">Serving Cell Details</string>
@@ -297,6 +313,7 @@
     <string name="preferences_preferred_speed_units_option_miles_per_hour">Miles per hour</string>
 
     <!-- Bottom Navigation -->
+    <string name="nav_dashboard">Dashboard</string>
     <string name="nav_cellular">Cellular</string>
     <string name="nav_wifi">Wi-Fi</string>
     <string name="nav_bluetooth">Bluetooth</string>

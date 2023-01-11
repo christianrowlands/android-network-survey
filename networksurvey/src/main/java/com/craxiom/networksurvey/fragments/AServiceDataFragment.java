@@ -32,7 +32,7 @@ public abstract class AServiceDataFragment extends Fragment
     @Override
     public void onPause()
     {
-        if (service != null) unregisterDataListeners(service);
+        if (service != null) onSurveyServiceDisconnecting(service);
 
         try
         {
@@ -47,18 +47,19 @@ public abstract class AServiceDataFragment extends Fragment
 
     /**
      * Called once the service has been bound and set to {@link #service}. This is the appropriate time to interact
-     * with the service in any way needed for the Fragment's specific use case.
+     * with the service in any way needed for the Fragment's specific use case such as registering listeners
+     * or initializing fragment state.
      *
      * @param service The service reference to make calls on.
      */
-    protected abstract void registerDataListeners(NetworkSurveyService service);
+    protected abstract void onSurveyServiceConnected(NetworkSurveyService service);
 
     /**
-     * Cleanup by unregistering any data listeners. This will be called
+     * Cleanup by unregistering any data listeners. This will be called right before the service is unbinded.
      *
-     * @param service
+     * @param service The service reference to make calls on.
      */
-    protected abstract void unregisterDataListeners(NetworkSurveyService service);
+    protected abstract void onSurveyServiceDisconnecting(NetworkSurveyService service);
 
     /**
      * Start the Network Survey Service (it won't start if it is already started), and then bind to the service.
@@ -103,7 +104,7 @@ public abstract class AServiceDataFragment extends Fragment
             Timber.i("%s service connected", name);
 
             service = (NetworkSurveyService) ((NetworkSurveyService.SurveyServiceBinder) binder).getService();
-            registerDataListeners(service);
+            onSurveyServiceConnected(service);
         }
 
         @Override

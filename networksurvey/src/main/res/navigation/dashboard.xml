@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<navigation xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/dashboard"
+    app:startDestination="@+id/main_dashboard_fragment">
+
+    <fragment
+        android:id="@+id/main_dashboard_fragment"
+        android:name="com.craxiom.networksurvey.fragments.DashboardFragment"
+        android:label="Dashboard"
+        tools:layout="@layout/fragment_dashboard">
+        <action
+            android:id="@+id/action_main_dashboard_to_connection"
+            app:destination="@id/connection_fragment" />
+        <action
+            android:id="@+id/action_main_dashboard_to_mqtt_connection"
+            app:destination="@id/mqtt_connection_fragment" />
+        <action
+            android:id="@+id/action_main_dashboard_to_settings"
+            app:destination="@id/settings_fragment" />
+    </fragment>
+
+</navigation>
