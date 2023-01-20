@@ -44,7 +44,7 @@
             style="@style/StandardText"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginStart="12dp"
+            android:layout_marginStart="@dimen/medium_margin"
             android:maxLines="1"
             android:autoSizeTextType="uniform"
             android:text="@string/searching_for_location" />
@@ -54,7 +54,7 @@
             style="@style/StandardText"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginStart="12dp"
+            android:layout_marginStart="@dimen/medium_margin"
             android:layout_marginBottom="@dimen/small_margin"
             android:text="@string/accuracy_initial" />
 

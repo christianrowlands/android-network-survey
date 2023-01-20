@@ -80,6 +80,11 @@
         <item name="android:textColor">#c2c1c1</item>
     </style>
 
+    <style name="SmallStatusText" parent="TextAppearance.AppCompat">
+        <item name="android:textSize">16sp</item>
+        <item name="android:textColor">#c2c1c1</item>
+    </style>
+
     <style name="DescriptionText" parent="TextAppearance.AppCompat">
         <item name="android:textSize">14sp</item>
         <item name="android:textColor">#c2c1c1</item>

@@ -6,10 +6,7 @@ import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
 import androidx.lifecycle.ViewModel;
 
-import com.craxiom.networksurvey.model.CellularProtocol;
-
 import java.util.Objects;
-import java.util.SortedSet;
 
 /**
  * View model for notifying the {@link com.craxiom.networksurvey.fragments.DashboardFragment} of
@@ -25,6 +22,11 @@ public class DashboardViewModel extends ViewModel
     private final MutableLiveData<Boolean> gnssLoggingEnabled = new MutableLiveData<>();
 
     private final MutableLiveData<Boolean> mqttConnectionStatus = new MutableLiveData<>();
+    private final MutableLiveData<Boolean> cellularMqttStreamEnabled = new MutableLiveData<>();
+    private final MutableLiveData<Boolean> wifiMqttStreamEnabled = new MutableLiveData<>();
+    private final MutableLiveData<Boolean> bluetoothMqttStreamEnabled = new MutableLiveData<>();
+    private final MutableLiveData<Boolean> gnssMqttStreamEnabled = new MutableLiveData<>();
+    private final MutableLiveData<Boolean> deviceStatusMqttStreamEnabled = new MutableLiveData<>();
 
     private final MutableLiveData<Location> location = new MutableLiveData<>();
     private final MutableLiveData<Boolean> providerEnabled = new MutableLiveData<>(true);
@@ -78,6 +80,71 @@ public class DashboardViewModel extends ViewModel
         if (!Objects.equals(gnssLoggingEnabled.getValue(), isEnabled))
         {
             gnssLoggingEnabled.postValue(isEnabled);
+        }
+    }
+
+    public LiveData<Boolean> getCellularMqttStreamEnabled()
+    {
+        return cellularMqttStreamEnabled;
+    }
+
+    public void setCellularMqttStreamEnabled(boolean isEnabled)
+    {
+        if (!Objects.equals(cellularMqttStreamEnabled.getValue(), isEnabled))
+        {
+            cellularMqttStreamEnabled.postValue(isEnabled);
+        }
+    }
+
+    public LiveData<Boolean> getWifiMqttStreamEnabled()
+    {
+        return wifiMqttStreamEnabled;
+    }
+
+    public void setWifiMqttStreamEnabled(boolean isEnabled)
+    {
+        if (!Objects.equals(wifiMqttStreamEnabled.getValue(), isEnabled))
+        {
+            wifiMqttStreamEnabled.postValue(isEnabled);
+        }
+    }
+
+    public LiveData<Boolean> getBluetoothMqttStreamEnabled()
+    {
+        return bluetoothMqttStreamEnabled;
+    }
+
+    public void setBluetoothMqttStreamEnabled(boolean isEnabled)
+    {
+        if (!Objects.equals(bluetoothMqttStreamEnabled.getValue(), isEnabled))
+        {
+            bluetoothMqttStreamEnabled.postValue(isEnabled);
+        }
+    }
+
+    public LiveData<Boolean> getGnssMqttStreamEnabled()
+    {
+        return gnssMqttStreamEnabled;
+    }
+
+    public void setGnssMqttStreamEnabled(boolean isEnabled)
+    {
+        if (!Objects.equals(gnssMqttStreamEnabled.getValue(), isEnabled))
+        {
+            gnssMqttStreamEnabled.postValue(isEnabled);
+        }
+    }
+
+    public LiveData<Boolean> getDeviceStatusMqttStreamEnabled()
+    {
+        return deviceStatusMqttStreamEnabled;
+    }
+
+    public void setDeviceStatusMqttStreamEnabled(boolean isEnabled)
+    {
+        if (!Objects.equals(deviceStatusMqttStreamEnabled.getValue(), isEnabled))
+        {
+            deviceStatusMqttStreamEnabled.postValue(isEnabled);
         }
     }
 

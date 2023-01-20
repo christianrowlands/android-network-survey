@@ -540,7 +540,7 @@ public class NetworkSurveyActivity extends AppCompatActivity
             public void handleOnBackPressed()
             {
                 // For whatever reason calling navigateUp from one of the top level destinations results in the
-                // navigation drawer being opened.  Therefore, if the current destination a top level we have custom
+                // navigation drawer being opened.  Therefore, if the current destination is a top level we have custom
                 // code here to move this activity to the back stack.
                 final NavDestination currentDestination = navController.getCurrentDestination();
                 if (currentDestination != null &&

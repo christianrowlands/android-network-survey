@@ -3,6 +3,7 @@ package com.craxiom.networksurvey.fragments;
 import android.Manifest;
 import android.annotation.SuppressLint;
 import android.content.Context;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.content.res.ColorStateList;
 import android.graphics.Color;
@@ -25,9 +26,14 @@ import androidx.lifecycle.LifecycleOwner;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.lifecycle.ViewModelStoreOwner;
 import androidx.navigation.fragment.NavHostFragment;
+import androidx.preference.PreferenceManager;
 
+import com.craxiom.mqttlibrary.IConnectionStateListener;
+import com.craxiom.mqttlibrary.connection.ConnectionState;
 import com.craxiom.networksurvey.R;
+import com.craxiom.networksurvey.constants.NetworkSurveyConstants;
 import com.craxiom.networksurvey.databinding.FragmentDashboardBinding;
+import com.craxiom.networksurvey.databinding.MqttStreamItemBinding;
 import com.craxiom.networksurvey.fragments.model.DashboardViewModel;
 import com.craxiom.networksurvey.services.NetworkSurveyService;
 import com.craxiom.networksurvey.util.MathUtils;
@@ -43,7 +49,7 @@ import timber.log.Timber;
  *
  * @since 1.10.0
  */
-public class DashboardFragment extends AServiceDataFragment implements LocationListener
+public class DashboardFragment extends AServiceDataFragment implements LocationListener, IConnectionStateListener, SharedPreferences.OnSharedPreferenceChangeListener
 {
     private final DecimalFormat locationFormat = new DecimalFormat("###.#####");
 
@@ -98,12 +104,29 @@ public class DashboardFragment extends AServiceDataFragment implements LocationL
         // initial call and when we registered as a listener.
 
         initializeLogging(service);
+
+        Context context = getContext();
+        if (context != null)
+        {
+            PreferenceManager.getDefaultSharedPreferences(context).registerOnSharedPreferenceChangeListener(this);
+        }
+
+        service.registerMqttConnectionStateListener(this);
+        updateMqttUiState(service.getMqttConnectionState());
+        readMqttStreamEnabledProperties();
     }
 
     @Override
     protected void onSurveyServiceDisconnecting(NetworkSurveyService service)
     {
+        Context context = getContext();
+        if (context != null)
+        {
+            PreferenceManager.getDefaultSharedPreferences(context).unregisterOnSharedPreferenceChangeListener(this);
+        }
+
         service.unregisterLocationListener(this);
+        service.unregisterMqttConnectionStateListener(this);
     }
 
     @Override
@@ -122,6 +145,28 @@ public class DashboardFragment extends AServiceDataFragment implements LocationL
     public void onLocationChanged(@NonNull Location location)
     {
         viewModel.setLocation(location);
+    }
+
+    @Override
+    public void onConnectionStateChange(ConnectionState connectionState)
+    {
+        updateMqttUiState(connectionState);
+    }
+
+    @Override
+    public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String key)
+    {
+        switch (key)
+        {
+            case NetworkSurveyConstants.PROPERTY_MQTT_CELLULAR_STREAM_ENABLED:
+            case NetworkSurveyConstants.PROPERTY_MQTT_WIFI_STREAM_ENABLED:
+            case NetworkSurveyConstants.PROPERTY_MQTT_BLUETOOTH_STREAM_ENABLED:
+            case NetworkSurveyConstants.PROPERTY_MQTT_GNSS_STREAM_ENABLED:
+            case NetworkSurveyConstants.PROPERTY_MQTT_DEVICE_STATUS_STREAM_ENABLED:
+                readMqttStreamEnabledProperties();
+                break;
+            default:
+        }
     }
 
     /**
@@ -179,6 +224,12 @@ public class DashboardFragment extends AServiceDataFragment implements LocationL
         viewModel.getWifiLoggingEnabled().observe(viewLifecycleOwner, this::updateWifiLogging);
         viewModel.getBluetoothLoggingEnabled().observe(viewLifecycleOwner, this::updateBluetoothLogging);
         viewModel.getGnssLoggingEnabled().observe(viewLifecycleOwner, this::updateGnssLogging);
+
+        viewModel.getCellularMqttStreamEnabled().observe(viewLifecycleOwner, enabled -> updateStreamUi(binding.mqttCellular, enabled));
+        viewModel.getWifiMqttStreamEnabled().observe(viewLifecycleOwner, enabled -> updateStreamUi(binding.mqttWifi, enabled));
+        viewModel.getBluetoothMqttStreamEnabled().observe(viewLifecycleOwner, enabled -> updateStreamUi(binding.mqttBluetooth, enabled));
+        viewModel.getGnssMqttStreamEnabled().observe(viewLifecycleOwner, enabled -> updateStreamUi(binding.mqttGnss, enabled));
+        viewModel.getDeviceStatusMqttStreamEnabled().observe(viewLifecycleOwner, enabled -> updateStreamUi(binding.mqttDeviceStatus, enabled));
     }
 
     /**
@@ -195,6 +246,12 @@ public class DashboardFragment extends AServiceDataFragment implements LocationL
         viewModel.getWifiLoggingEnabled().removeObservers(viewLifecycleOwner);
         viewModel.getBluetoothLoggingEnabled().removeObservers(viewLifecycleOwner);
         viewModel.getGnssLoggingEnabled().removeObservers(viewLifecycleOwner);
+
+        viewModel.getCellularMqttStreamEnabled().removeObservers(viewLifecycleOwner);
+        viewModel.getWifiMqttStreamEnabled().removeObservers(viewLifecycleOwner);
+        viewModel.getBluetoothMqttStreamEnabled().removeObservers(viewLifecycleOwner);
+        viewModel.getGnssMqttStreamEnabled().removeObservers(viewLifecycleOwner);
+        viewModel.getDeviceStatusMqttStreamEnabled().removeObservers(viewLifecycleOwner);
     }
 
     private synchronized void initializeLogging(NetworkSurveyService networkSurveyService)
@@ -285,6 +342,76 @@ public class DashboardFragment extends AServiceDataFragment implements LocationL
     }
 
     /**
+     * Updates the UI based on the different states of the server connection.
+     *
+     * @param connectionState The new state of the server connection to update the UI for.
+     */
+    private void updateMqttUiState(ConnectionState connectionState)
+    {
+        Timber.d("Updating the UI state for: %s", connectionState);
+
+        try
+        {
+            switch (connectionState)
+            {
+                case DISCONNECTED:
+                case DISCONNECTING:
+                    binding.mqttStatusIcon.setImageTintList(ColorStateList.valueOf(getResources().getColor(R.color.connectionStatusDisconnected, null)));
+                    binding.mqttStatusText.setText(R.string.mqtt_off);
+                    binding.mqttStreamingGroup.setVisibility(View.GONE);
+                    break;
+
+                case CONNECTING:
+                    binding.mqttStatusIcon.setImageTintList(ColorStateList.valueOf(getResources().getColor(R.color.connectionStatusConnecting, null)));
+                    binding.mqttStatusText.setText(R.string.mqtt_connecting);
+                    binding.mqttStreamingGroup.setVisibility(View.VISIBLE);
+                    break;
+
+                case CONNECTED:
+                    binding.mqttStatusIcon.setImageTintList(ColorStateList.valueOf(getResources().getColor(R.color.connectionStatusConnected, null)));
+                    binding.mqttStatusText.setText(R.string.mqtt_connected);
+                    binding.mqttStreamingGroup.setVisibility(View.VISIBLE);
+                    break;
+            }
+        } catch (Exception e)
+        {
+            // An IllegalStateException can occur if the fragment has been moved away from.
+            Timber.w(e, "Caught an exception when trying to update the MQTT Connection Status in the Dashboard UI");
+        }
+    }
+
+    /**
+     * Reads the MQTT streaming settings that indicate which protocol streaming is enabled, and then
+     * updates the view model with that information.
+     */
+    private void readMqttStreamEnabledProperties()
+    {
+        // TODO Finish me
+        final Context context = getContext();
+        if (context == null)
+        {
+            Timber.w("Could not get the context to read the MQTT streaming preferences, " +
+                    "maybe the dashboard fragment has been removed");
+        }
+        final SharedPreferences preferences = android.preference.PreferenceManager.getDefaultSharedPreferences(context);
+
+        boolean cellularStreamEnabled = preferences.getBoolean(NetworkSurveyConstants.PROPERTY_MQTT_CELLULAR_STREAM_ENABLED, NetworkSurveyConstants.DEFAULT_MQTT_CELLULAR_STREAM_SETTING);
+        viewModel.setCellularMqttStreamEnabled(cellularStreamEnabled);
+
+        boolean wifiStreamEnabled = preferences.getBoolean(NetworkSurveyConstants.PROPERTY_MQTT_WIFI_STREAM_ENABLED, NetworkSurveyConstants.DEFAULT_MQTT_WIFI_STREAM_SETTING);
+        viewModel.setWifiMqttStreamEnabled(wifiStreamEnabled);
+
+        boolean bluetoothStreamEnabled = preferences.getBoolean(NetworkSurveyConstants.PROPERTY_MQTT_BLUETOOTH_STREAM_ENABLED, NetworkSurveyConstants.DEFAULT_MQTT_BLUETOOTH_STREAM_SETTING);
+        viewModel.setBluetoothMqttStreamEnabled(bluetoothStreamEnabled);
+
+        boolean gnssStreamEnabled = preferences.getBoolean(NetworkSurveyConstants.PROPERTY_MQTT_GNSS_STREAM_ENABLED, NetworkSurveyConstants.DEFAULT_MQTT_GNSS_STREAM_SETTING);
+        viewModel.setGnssMqttStreamEnabled(gnssStreamEnabled);
+
+        boolean deviceStatusStreamEnabled = preferences.getBoolean(NetworkSurveyConstants.PROPERTY_MQTT_DEVICE_STATUS_STREAM_ENABLED, NetworkSurveyConstants.DEFAULT_MQTT_DEVICE_STATUS_STREAM_SETTING);
+        viewModel.setDeviceStatusMqttStreamEnabled(deviceStatusStreamEnabled);
+    }
+
+    /**
      * Starts or stops writing the Cellular log file based on the specified parameter.
      *
      * @param enable True if logging should be enabled, false if it should be turned off.
@@ -371,7 +498,7 @@ public class DashboardFragment extends AServiceDataFragment implements LocationL
      */
     private void updateCellularLogging(boolean enabled)
     {
-        binding.cellularLoggingStatus.setText(enabled ? R.string.logging_status_enabled : R.string.logging_status_disabled);
+        binding.cellularLoggingStatus.setText(enabled ? R.string.logging_status_enabled : R.string.status_disabled);
         binding.cellularLoggingToggleSwitch.setChecked(enabled);
 
         ColorStateList colorStateList = null;
@@ -387,7 +514,7 @@ public class DashboardFragment extends AServiceDataFragment implements LocationL
      */
     private void updateWifiLogging(boolean enabled)
     {
-        binding.wifiLoggingStatus.setText(enabled ? R.string.logging_status_enabled : R.string.logging_status_disabled);
+        binding.wifiLoggingStatus.setText(enabled ? R.string.logging_status_enabled : R.string.status_disabled);
         binding.wifiLoggingToggleSwitch.setChecked(enabled);
 
         ColorStateList colorStateList = null;
@@ -403,7 +530,7 @@ public class DashboardFragment extends AServiceDataFragment implements LocationL
      */
     private void updateBluetoothLogging(boolean enabled)
     {
-        binding.bluetoothLoggingStatus.setText(enabled ? R.string.logging_status_enabled : R.string.logging_status_disabled);
+        binding.bluetoothLoggingStatus.setText(enabled ? R.string.logging_status_enabled : R.string.status_disabled);
         binding.bluetoothLoggingToggleSwitch.setChecked(enabled);
 
         ColorStateList colorStateList = null;
@@ -419,13 +546,31 @@ public class DashboardFragment extends AServiceDataFragment implements LocationL
      */
     private void updateGnssLogging(boolean enabled)
     {
-        binding.gnssLoggingStatus.setText(enabled ? R.string.logging_status_enabled : R.string.logging_status_disabled);
+        binding.gnssLoggingStatus.setText(enabled ? R.string.logging_status_enabled : R.string.status_disabled);
         binding.gnssLoggingToggleSwitch.setChecked(enabled);
 
         ColorStateList colorStateList = null;
         if (enabled) colorStateList = ColorStateList.valueOf(Color.GREEN);
 
         binding.gnssIcon.setImageTintList(colorStateList);
+    }
+
+    /**
+     * Updates a specific stream item (e.g. Cellular) to the specified status.
+     *
+     * @param streamItem The item to update.
+     * @param enabled    True if streaming is enabled for the specified item, false otherwise.
+     */
+    private void updateStreamUi(MqttStreamItemBinding streamItem, boolean enabled)
+    {
+        streamItem.value.setText(enabled ? R.string.status_on : R.string.status_disabled);
+        if (enabled)
+        {
+            streamItem.mqttStatusIcon.setImageTintList(ColorStateList.valueOf(getResources().getColor(R.color.connectionStatusConnected, null)));
+        } else
+        {
+            streamItem.mqttStatusIcon.setImageTintList(ColorStateList.valueOf(getResources().getColor(R.color.inactiveTabColor, null)));
+        }
     }
 
     /**
