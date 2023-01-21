@@ -61,386 +61,378 @@
 
                     <LinearLayout
                         android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:orientation="horizontal"
-                        android:baselineAligned="false">
+                        android:layout_height="match_parent"
+                        android:layout_margin="@dimen/small_margin"
+                        android:orientation="vertical">
 
                         <LinearLayout
-                            android:layout_width="0dp"
-                            android:layout_height="match_parent"
-                            android:layout_weight="1"
-                            android:layout_margin="@dimen/small_margin"
-                            android:orientation="vertical">
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="horizontal"
+                            android:baselineAligned="false">
 
                             <LinearLayout
-                                android:layout_width="match_parent"
+                                android:layout_width="0dp"
                                 android:layout_height="wrap_content"
                                 android:orientation="horizontal"
-                                android:baselineAligned="false">
+                                android:baselineAligned="false"
+                                android:layout_weight="1">
 
-                                <LinearLayout
-                                    android:layout_width="0dp"
-                                    android:layout_height="wrap_content"
-                                    android:orientation="horizontal"
-                                    android:baselineAligned="false"
-                                    android:layout_weight="1">
-
-                                    <androidx.constraintlayout.widget.ConstraintLayout
-                                        android:id="@+id/cellular_control_group"
-                                        android:layout_width="match_parent"
-                                        android:layout_height="wrap_content"
-                                        android:layout_marginTop="@dimen/small_margin"
-                                        android:layout_marginBottom="@dimen/small_margin">
-
-                                        <LinearLayout
-                                            android:id="@+id/cellular_logging_title_group"
-                                            android:layout_width="match_parent"
-                                            android:layout_height="wrap_content"
-                                            android:orientation="horizontal"
-                                            android:baselineAligned="false"
-                                            android:gravity="center"
-                                            app:layout_constraintTop_toTopOf="@id/cellular_control_group"
-                                            app:layout_constraintBottom_toTopOf="@id/cellular_logging_status_group">
-
-                                            <ImageView
-                                                android:id="@+id/cellular_icon"
-                                                android:layout_width="24dp"
-                                                android:layout_height="24dp"
-                                                android:layout_gravity="center"
-                                                android:layout_marginStart="@dimen/small_margin"
-                                                android:layout_marginEnd="@dimen/small_margin"
-                                                android:contentDescription="@string/cellular_icon_description"
-                                                android:src="@drawable/ic_cellular" />
-
-                                            <TextView
-                                                android:id="@+id/cellular_logging_title"
-                                                style="@style/StandardText"
-                                                android:layout_width="wrap_content"
-                                                android:layout_height="wrap_content"
-                                                android:text="@string/cellular_title" />
-
-                                            <androidx.appcompat.widget.SwitchCompat
-                                                android:id="@+id/cellular_logging_toggle_switch"
-                                                android:layout_width="wrap_content"
-                                                android:layout_height="wrap_content"
-                                                android:layout_gravity="center"
-                                                android:gravity="center"
-                                                app:layout_constraintBottom_toBottomOf="@id/cellular_control_group" />
-
-                                        </LinearLayout>
-
-                                        <LinearLayout
-                                            android:id="@+id/cellular_logging_status_group"
-                                            android:layout_width="match_parent"
-                                            android:layout_height="wrap_content"
-                                            android:orientation="horizontal"
-                                            android:baselineAligned="false"
-                                            android:gravity="center"
-                                            app:layout_constraintTop_toBottomOf="@id/cellular_logging_title_group">
-
-                                            <TextView
-                                                android:id="@+id/cellular_logging_status_label"
-                                                style="@style/SmallLabelText"
-                                                android:layout_width="wrap_content"
-                                                android:layout_height="wrap_content"
-                                                android:layout_weight="0"
-                                                android:text="@string/status_label" />
-
-                                            <TextView
-                                                android:id="@+id/cellular_logging_status"
-                                                style="@style/StandardText"
-                                                android:layout_width="wrap_content"
-                                                android:layout_height="wrap_content"
-                                                android:layout_weight="0"
-                                                android:text="@string/off" />
-                                        </LinearLayout>
-
-                                    </androidx.constraintlayout.widget.ConstraintLayout>
-
-                                </LinearLayout>
-
-                                <View
-                                    android:layout_width="2dp"
-                                    android:layout_height="match_parent"
-                                    android:background="@color/colorAccentFaded" />
-
-                                <LinearLayout
-                                    android:layout_width="0dp"
-                                    android:layout_height="wrap_content"
-                                    android:orientation="horizontal"
-                                    android:baselineAligned="false"
-                                    android:layout_weight="1">
-
-                                    <androidx.constraintlayout.widget.ConstraintLayout
-                                        android:id="@+id/wifi_control_group"
-                                        android:layout_width="match_parent"
-                                        android:layout_height="wrap_content"
-                                        android:layout_marginTop="@dimen/small_margin"
-                                        android:layout_marginBottom="@dimen/small_margin">
-
-                                        <LinearLayout
-                                            android:id="@+id/wifi_logging_title_group"
-                                            android:layout_width="match_parent"
-                                            android:layout_height="wrap_content"
-                                            android:orientation="horizontal"
-                                            android:baselineAligned="false"
-                                            android:gravity="center"
-                                            app:layout_constraintTop_toTopOf="@id/wifi_control_group"
-                                            app:layout_constraintBottom_toTopOf="@id/wifi_logging_status_group">
-
-                                            <ImageView
-                                                android:id="@+id/wifi_icon"
-                                                android:layout_width="24dp"
-                                                android:layout_height="24dp"
-                                                android:layout_gravity="center"
-                                                android:layout_marginStart="@dimen/small_margin"
-                                                android:layout_marginEnd="@dimen/small_margin"
-                                                android:contentDescription="@string/wifi_icon_description"
-                                                android:src="@drawable/ic_wifi" />
-
-                                            <TextView
-                                                android:id="@+id/wifi_logging_title"
-                                                style="@style/StandardText"
-                                                android:layout_width="wrap_content"
-                                                android:layout_height="wrap_content"
-                                                android:text="@string/wifi_title" />
-
-                                            <androidx.appcompat.widget.SwitchCompat
-                                                android:id="@+id/wifi_logging_toggle_switch"
-                                                android:layout_width="wrap_content"
-                                                android:layout_height="wrap_content"
-                                                android:layout_gravity="center"
-                                                android:gravity="center"
-                                                app:layout_constraintBottom_toBottomOf="@id/wifi_control_group" />
-
-                                        </LinearLayout>
-
-                                        <LinearLayout
-                                            android:id="@+id/wifi_logging_status_group"
-                                            android:layout_width="match_parent"
-                                            android:layout_height="wrap_content"
-                                            android:orientation="horizontal"
-                                            android:baselineAligned="false"
-                                            android:gravity="center"
-                                            app:layout_constraintTop_toBottomOf="@id/wifi_logging_title_group">
-
-                                            <TextView
-                                                android:id="@+id/wifi_logging_status_label"
-                                                style="@style/SmallLabelText"
-                                                android:layout_width="wrap_content"
-                                                android:layout_height="wrap_content"
-                                                android:layout_weight="0"
-                                                android:text="@string/status_label" />
-
-                                            <TextView
-                                                android:id="@+id/wifi_logging_status"
-                                                style="@style/StandardText"
-                                                android:layout_width="wrap_content"
-                                                android:layout_height="wrap_content"
-                                                android:layout_weight="0"
-                                                android:text="@string/off" />
-                                        </LinearLayout>
-
-                                    </androidx.constraintlayout.widget.ConstraintLayout>
-
-                                </LinearLayout>
-                            </LinearLayout>
-
-                            <LinearLayout
-                                android:layout_width="match_parent"
-                                android:layout_height="wrap_content"
-                                android:orientation="horizontal"
-                                android:baselineAligned="false">
-
-                                <View
+                                <androidx.constraintlayout.widget.ConstraintLayout
+                                    android:id="@+id/cellular_control_group"
                                     android:layout_width="match_parent"
-                                    android:layout_height="2dp"
-                                    android:layout_weight="1"
-                                    android:layout_marginStart="@dimen/divider_margin"
-                                    android:background="@color/colorAccentFaded" />
+                                    android:layout_height="wrap_content"
+                                    android:layout_gravity="center"
+                                    android:layout_marginTop="@dimen/small_margin"
+                                    android:layout_marginBottom="@dimen/small_margin">
 
-                                <View
-                                    android:layout_width="match_parent"
-                                    android:layout_height="2dp"
-                                    android:layout_weight="1"
-                                    android:layout_marginEnd="@dimen/divider_margin"
-                                    android:background="@color/colorAccentFaded" />
+                                    <com.google.android.flexbox.FlexboxLayout
+                                        android:id="@+id/cellular_logging_title_group"
+                                        android:layout_width="match_parent"
+                                        android:layout_height="wrap_content"
+                                        app:alignContent="center"
+                                        android:layout_gravity="center"
+                                        app:alignItems="center"
+                                        app:justifyContent="center"
+                                        app:flexWrap="wrap"
+                                        app:layout_constraintTop_toTopOf="@id/cellular_control_group"
+                                        app:layout_constraintBottom_toTopOf="@id/cellular_logging_status_group">
+
+                                        <ImageView
+                                            android:id="@+id/cellular_icon"
+                                            android:layout_width="24dp"
+                                            android:layout_height="24dp"
+                                            android:layout_marginStart="@dimen/small_margin"
+                                            android:layout_marginEnd="@dimen/small_margin"
+                                            android:contentDescription="@string/cellular_icon_description"
+                                            android:src="@drawable/ic_cellular" />
+
+                                        <TextView
+                                            android:id="@+id/cellular_logging_title"
+                                            style="@style/StandardText"
+                                            android:layout_width="wrap_content"
+                                            android:layout_height="wrap_content"
+                                            android:text="@string/cellular_title" />
+
+                                        <androidx.appcompat.widget.SwitchCompat
+                                            android:id="@+id/cellular_logging_toggle_switch"
+                                            android:layout_width="wrap_content"
+                                            android:layout_height="wrap_content"
+                                            android:gravity="center"
+                                            app:layout_constraintBottom_toBottomOf="@id/cellular_control_group" />
+
+                                    </com.google.android.flexbox.FlexboxLayout>
+
+                                    <LinearLayout
+                                        android:id="@+id/cellular_logging_status_group"
+                                        android:layout_width="match_parent"
+                                        android:layout_height="wrap_content"
+                                        android:orientation="horizontal"
+                                        android:baselineAligned="false"
+                                        android:gravity="center"
+                                        app:layout_constraintTop_toBottomOf="@id/cellular_logging_title_group">
+
+                                        <TextView
+                                            android:id="@+id/cellular_logging_status_label"
+                                            style="@style/SmallLabelText"
+                                            android:layout_width="wrap_content"
+                                            android:layout_height="wrap_content"
+                                            android:layout_weight="0"
+                                            android:text="@string/status_label" />
+
+                                        <TextView
+                                            android:id="@+id/cellular_logging_status"
+                                            style="@style/StandardText"
+                                            android:layout_width="wrap_content"
+                                            android:layout_height="wrap_content"
+                                            android:layout_weight="0"
+                                            android:text="@string/off" />
+                                    </LinearLayout>
+
+                                </androidx.constraintlayout.widget.ConstraintLayout>
+
                             </LinearLayout>
+
+                            <View
+                                android:layout_width="2dp"
+                                android:layout_height="match_parent"
+                                android:background="@color/colorAccentFaded" />
 
                             <LinearLayout
-                                android:layout_width="match_parent"
+                                android:layout_width="0dp"
                                 android:layout_height="wrap_content"
                                 android:orientation="horizontal"
-                                android:baselineAligned="false">
+                                android:baselineAligned="false"
+                                android:layout_weight="1">
 
-                                <LinearLayout
-                                    android:layout_width="0dp"
+                                <androidx.constraintlayout.widget.ConstraintLayout
+                                    android:id="@+id/wifi_control_group"
+                                    android:layout_width="match_parent"
                                     android:layout_height="wrap_content"
-                                    android:orientation="horizontal"
-                                    android:baselineAligned="false"
-                                    android:layout_weight="1">
+                                    android:layout_marginTop="@dimen/small_margin"
+                                    android:layout_marginBottom="@dimen/small_margin">
 
-                                    <androidx.constraintlayout.widget.ConstraintLayout
-                                        android:id="@+id/bluetooth_control_group"
+                                    <com.google.android.flexbox.FlexboxLayout
+                                        android:id="@+id/wifi_logging_title_group"
                                         android:layout_width="match_parent"
                                         android:layout_height="wrap_content"
-                                        android:layout_marginTop="@dimen/small_margin"
-                                        android:layout_marginBottom="@dimen/small_margin">
+                                        app:alignItems="center"
+                                        app:justifyContent="center"
+                                        app:flexWrap="wrap"
+                                        app:layout_constraintTop_toTopOf="@id/wifi_control_group"
+                                        app:layout_constraintBottom_toTopOf="@id/wifi_logging_status_group">
 
-                                        <LinearLayout
-                                            android:id="@+id/bluetooth_logging_title_group"
-                                            android:layout_width="match_parent"
+                                        <ImageView
+                                            android:id="@+id/wifi_icon"
+                                            android:layout_width="24dp"
+                                            android:layout_height="24dp"
+                                            android:layout_gravity="center"
+                                            android:layout_marginStart="@dimen/small_margin"
+                                            android:layout_marginEnd="@dimen/small_margin"
+                                            android:contentDescription="@string/wifi_icon_description"
+                                            android:src="@drawable/ic_wifi" />
+
+                                        <TextView
+                                            android:id="@+id/wifi_logging_title"
+                                            style="@style/StandardText"
+                                            android:layout_width="wrap_content"
                                             android:layout_height="wrap_content"
-                                            android:orientation="horizontal"
-                                            android:baselineAligned="false"
-                                            android:gravity="center"
-                                            app:layout_constraintTop_toTopOf="@id/bluetooth_control_group"
-                                            app:layout_constraintBottom_toTopOf="@id/bluetooth_logging_status_group">
+                                            android:text="@string/wifi_title" />
 
-                                            <ImageView
-                                                android:id="@+id/bluetooth_icon"
-                                                android:layout_width="24dp"
-                                                android:layout_height="24dp"
-                                                android:layout_gravity="center"
-                                                android:layout_marginStart="@dimen/small_margin"
-                                                android:layout_marginEnd="@dimen/small_margin"
-                                                android:contentDescription="@string/bluetooth_icon_description"
-                                                android:src="@drawable/ic_bluetooth" />
-
-                                            <TextView
-                                                android:id="@+id/bluetooth_logging_title"
-                                                style="@style/StandardText"
-                                                android:layout_width="wrap_content"
-                                                android:layout_height="wrap_content"
-                                                android:text="@string/bluetooth_title" />
-
-                                            <androidx.appcompat.widget.SwitchCompat
-                                                android:id="@+id/bluetooth_logging_toggle_switch"
-                                                android:layout_width="wrap_content"
-                                                android:layout_height="wrap_content"
-                                                android:layout_gravity="center"
-                                                android:gravity="center"
-                                                app:layout_constraintBottom_toBottomOf="@id/bluetooth_control_group" />
-
-                                        </LinearLayout>
-
-                                        <LinearLayout
-                                            android:id="@+id/bluetooth_logging_status_group"
-                                            android:layout_width="match_parent"
+                                        <androidx.appcompat.widget.SwitchCompat
+                                            android:id="@+id/wifi_logging_toggle_switch"
+                                            android:layout_width="wrap_content"
                                             android:layout_height="wrap_content"
-                                            android:orientation="horizontal"
-                                            android:baselineAligned="false"
+                                            android:layout_gravity="center"
                                             android:gravity="center"
-                                            app:layout_constraintTop_toBottomOf="@id/bluetooth_logging_title_group">
+                                            app:layout_constraintBottom_toBottomOf="@id/wifi_control_group" />
 
-                                            <TextView
-                                                android:id="@+id/bluetooth_logging_status_label"
-                                                style="@style/SmallLabelText"
-                                                android:layout_width="wrap_content"
-                                                android:layout_height="wrap_content"
-                                                android:layout_weight="0"
-                                                android:text="@string/status_label" />
+                                    </com.google.android.flexbox.FlexboxLayout>
 
-                                            <TextView
-                                                android:id="@+id/bluetooth_logging_status"
-                                                style="@style/StandardText"
-                                                android:layout_width="wrap_content"
-                                                android:layout_height="wrap_content"
-                                                android:layout_weight="0"
-                                                android:text="@string/off" />
-                                        </LinearLayout>
-
-                                    </androidx.constraintlayout.widget.ConstraintLayout>
-
-                                </LinearLayout>
-
-                                <View
-                                    android:layout_width="2dp"
-                                    android:layout_height="match_parent"
-                                    android:background="@color/colorAccentFaded" />
-
-                                <LinearLayout
-                                    android:layout_width="0dp"
-                                    android:layout_height="wrap_content"
-                                    android:orientation="horizontal"
-                                    android:baselineAligned="false"
-                                    android:layout_weight="1">
-
-                                    <androidx.constraintlayout.widget.ConstraintLayout
-                                        android:id="@+id/gnss_control_group"
+                                    <LinearLayout
+                                        android:id="@+id/wifi_logging_status_group"
                                         android:layout_width="match_parent"
                                         android:layout_height="wrap_content"
-                                        android:layout_marginTop="@dimen/small_margin"
-                                        android:layout_marginBottom="@dimen/small_margin">
+                                        android:orientation="horizontal"
+                                        android:baselineAligned="false"
+                                        android:gravity="center"
+                                        app:layout_constraintTop_toBottomOf="@id/wifi_logging_title_group">
 
-                                        <LinearLayout
-                                            android:id="@+id/gnss_logging_title_group"
-                                            android:layout_width="match_parent"
+                                        <TextView
+                                            android:id="@+id/wifi_logging_status_label"
+                                            style="@style/SmallLabelText"
+                                            android:layout_width="wrap_content"
                                             android:layout_height="wrap_content"
-                                            android:orientation="horizontal"
-                                            android:baselineAligned="false"
-                                            android:gravity="center"
-                                            app:layout_constraintTop_toTopOf="@id/gnss_control_group"
-                                            app:layout_constraintBottom_toTopOf="@id/gnss_logging_status_group">
+                                            android:layout_weight="0"
+                                            android:text="@string/status_label" />
 
-                                            <ImageView
-                                                android:id="@+id/gnss_icon"
-                                                android:layout_width="24dp"
-                                                android:layout_height="24dp"
-                                                android:layout_gravity="center"
-                                                android:layout_marginStart="@dimen/small_margin"
-                                                android:layout_marginEnd="@dimen/small_margin"
-                                                android:contentDescription="@string/gnss_icon_description"
-                                                android:src="@drawable/ic_gnss" />
-
-                                            <TextView
-                                                android:id="@+id/gnss_logging_title"
-                                                style="@style/StandardText"
-                                                android:layout_width="wrap_content"
-                                                android:layout_height="wrap_content"
-                                                android:text="@string/gnss_title" />
-
-                                            <androidx.appcompat.widget.SwitchCompat
-                                                android:id="@+id/gnss_logging_toggle_switch"
-                                                android:layout_width="wrap_content"
-                                                android:layout_height="wrap_content"
-                                                android:layout_gravity="center"
-                                                android:gravity="center"
-                                                app:layout_constraintBottom_toBottomOf="@id/gnss_control_group" />
-
-                                        </LinearLayout>
-
-                                        <LinearLayout
-                                            android:id="@+id/gnss_logging_status_group"
-                                            android:layout_width="match_parent"
+                                        <TextView
+                                            android:id="@+id/wifi_logging_status"
+                                            style="@style/StandardText"
+                                            android:layout_width="wrap_content"
                                             android:layout_height="wrap_content"
-                                            android:orientation="horizontal"
-                                            android:baselineAligned="false"
+                                            android:layout_weight="0"
+                                            android:text="@string/off" />
+                                    </LinearLayout>
+
+                                </androidx.constraintlayout.widget.ConstraintLayout>
+
+                            </LinearLayout>
+                        </LinearLayout>
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="horizontal"
+                            android:baselineAligned="false">
+
+                            <View
+                                android:layout_width="match_parent"
+                                android:layout_height="2dp"
+                                android:layout_weight="1"
+                                android:layout_marginStart="@dimen/divider_margin"
+                                android:background="@color/colorAccentFaded" />
+
+                            <View
+                                android:layout_width="match_parent"
+                                android:layout_height="2dp"
+                                android:layout_weight="1"
+                                android:layout_marginEnd="@dimen/divider_margin"
+                                android:background="@color/colorAccentFaded" />
+                        </LinearLayout>
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="horizontal"
+                            android:baselineAligned="false">
+
+                            <LinearLayout
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:orientation="horizontal"
+                                android:baselineAligned="false"
+                                android:layout_weight="1">
+
+                                <androidx.constraintlayout.widget.ConstraintLayout
+                                    android:id="@+id/bluetooth_control_group"
+                                    android:layout_width="match_parent"
+                                    android:layout_height="wrap_content"
+                                    android:layout_marginTop="@dimen/small_margin"
+                                    android:layout_marginBottom="@dimen/small_margin">
+
+                                    <com.google.android.flexbox.FlexboxLayout
+                                        android:id="@+id/bluetooth_logging_title_group"
+                                        android:layout_width="match_parent"
+                                        android:layout_height="wrap_content"
+                                        app:alignItems="center"
+                                        app:justifyContent="center"
+                                        app:flexWrap="wrap"
+                                        app:layout_constraintTop_toTopOf="@id/bluetooth_control_group"
+                                        app:layout_constraintBottom_toTopOf="@id/bluetooth_logging_status_group">
+
+                                        <ImageView
+                                            android:id="@+id/bluetooth_icon"
+                                            android:layout_width="24dp"
+                                            android:layout_height="24dp"
+                                            android:layout_gravity="center"
+                                            android:layout_marginStart="@dimen/small_margin"
+                                            android:layout_marginEnd="@dimen/small_margin"
+                                            android:contentDescription="@string/bluetooth_icon_description"
+                                            android:src="@drawable/ic_bluetooth" />
+
+                                        <TextView
+                                            android:id="@+id/bluetooth_logging_title"
+                                            style="@style/StandardText.Smaller"
+                                            android:layout_width="wrap_content"
+                                            android:layout_height="wrap_content"
+                                            android:text="@string/bluetooth_title" />
+
+                                        <androidx.appcompat.widget.SwitchCompat
+                                            android:id="@+id/bluetooth_logging_toggle_switch"
+                                            android:layout_width="wrap_content"
+                                            android:layout_height="wrap_content"
+                                            android:layout_gravity="center"
                                             android:gravity="center"
-                                            app:layout_constraintTop_toBottomOf="@id/gnss_logging_title_group">
+                                            app:layout_constraintBottom_toBottomOf="@id/bluetooth_control_group" />
 
-                                            <TextView
-                                                android:id="@+id/gnss_logging_status_label"
-                                                style="@style/SmallLabelText"
-                                                android:layout_width="wrap_content"
-                                                android:layout_height="wrap_content"
-                                                android:layout_weight="0"
-                                                android:text="@string/status_label" />
+                                    </com.google.android.flexbox.FlexboxLayout>
 
-                                            <TextView
-                                                android:id="@+id/gnss_logging_status"
-                                                style="@style/StandardText"
-                                                android:layout_width="wrap_content"
-                                                android:layout_height="wrap_content"
-                                                android:layout_weight="0"
-                                                android:text="@string/off" />
-                                        </LinearLayout>
+                                    <LinearLayout
+                                        android:id="@+id/bluetooth_logging_status_group"
+                                        android:layout_width="match_parent"
+                                        android:layout_height="wrap_content"
+                                        android:orientation="horizontal"
+                                        android:baselineAligned="false"
+                                        android:gravity="center"
+                                        app:layout_constraintTop_toBottomOf="@id/bluetooth_logging_title_group">
 
-                                    </androidx.constraintlayout.widget.ConstraintLayout>
+                                        <TextView
+                                            android:id="@+id/bluetooth_logging_status_label"
+                                            style="@style/SmallLabelText"
+                                            android:layout_width="wrap_content"
+                                            android:layout_height="wrap_content"
+                                            android:layout_weight="0"
+                                            android:text="@string/status_label" />
 
-                                </LinearLayout>
+                                        <TextView
+                                            android:id="@+id/bluetooth_logging_status"
+                                            style="@style/StandardText"
+                                            android:layout_width="wrap_content"
+                                            android:layout_height="wrap_content"
+                                            android:layout_weight="0"
+                                            android:text="@string/off" />
+                                    </LinearLayout>
+
+                                </androidx.constraintlayout.widget.ConstraintLayout>
+
                             </LinearLayout>
 
+                            <View
+                                android:layout_width="2dp"
+                                android:layout_height="match_parent"
+                                android:background="@color/colorAccentFaded" />
+
+                            <LinearLayout
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:orientation="horizontal"
+                                android:baselineAligned="false"
+                                android:layout_weight="1">
+
+                                <androidx.constraintlayout.widget.ConstraintLayout
+                                    android:id="@+id/gnss_control_group"
+                                    android:layout_width="match_parent"
+                                    android:layout_height="wrap_content"
+                                    android:layout_marginTop="@dimen/small_margin"
+                                    android:layout_marginBottom="@dimen/small_margin">
+
+                                    <com.google.android.flexbox.FlexboxLayout
+                                        android:id="@+id/gnss_logging_title_group"
+                                        android:layout_width="match_parent"
+                                        android:layout_height="wrap_content"
+                                        app:alignItems="center"
+                                        app:justifyContent="center"
+                                        app:flexWrap="wrap"
+                                        app:layout_constraintTop_toTopOf="@id/gnss_control_group"
+                                        app:layout_constraintBottom_toTopOf="@id/gnss_logging_status_group">
+
+                                        <ImageView
+                                            android:id="@+id/gnss_icon"
+                                            android:layout_width="24dp"
+                                            android:layout_height="24dp"
+                                            android:layout_gravity="center"
+                                            android:layout_marginStart="@dimen/small_margin"
+                                            android:layout_marginEnd="@dimen/small_margin"
+                                            android:contentDescription="@string/gnss_icon_description"
+                                            android:src="@drawable/ic_gnss" />
+
+                                        <TextView
+                                            android:id="@+id/gnss_logging_title"
+                                            style="@style/StandardText"
+                                            android:layout_width="wrap_content"
+                                            android:layout_height="wrap_content"
+                                            android:text="@string/gnss_title" />
+
+                                        <androidx.appcompat.widget.SwitchCompat
+                                            android:id="@+id/gnss_logging_toggle_switch"
+                                            android:layout_width="wrap_content"
+                                            android:layout_height="wrap_content"
+                                            android:layout_gravity="center"
+                                            android:gravity="center"
+                                            app:layout_constraintBottom_toBottomOf="@id/gnss_control_group" />
+
+                                    </com.google.android.flexbox.FlexboxLayout>
+
+                                    <LinearLayout
+                                        android:id="@+id/gnss_logging_status_group"
+                                        android:layout_width="match_parent"
+                                        android:layout_height="wrap_content"
+                                        android:orientation="horizontal"
+                                        android:baselineAligned="false"
+                                        android:gravity="center"
+                                        app:layout_constraintTop_toBottomOf="@id/gnss_logging_title_group">
+
+                                        <TextView
+                                            android:id="@+id/gnss_logging_status_label"
+                                            style="@style/SmallLabelText"
+                                            android:layout_width="wrap_content"
+                                            android:layout_height="wrap_content"
+                                            android:layout_weight="0"
+                                            android:text="@string/status_label" />
+
+                                        <TextView
+                                            android:id="@+id/gnss_logging_status"
+                                            style="@style/StandardText"
+                                            android:layout_width="wrap_content"
+                                            android:layout_height="wrap_content"
+                                            android:layout_weight="0"
+                                            android:text="@string/off" />
+                                    </LinearLayout>
+
+                                </androidx.constraintlayout.widget.ConstraintLayout>
+
+                            </LinearLayout>
                         </LinearLayout>
 
                     </LinearLayout>
@@ -533,7 +525,7 @@
                                 style="@style/DescriptionText"
                                 android:layout_width="match_parent"
                                 android:layout_height="wrap_content"
-                                android:text="What is configured to stream?" />
+                                android:text="@string/what_is_configured_to_stream" />
 
                             <include
                                 layout="@layout/mqtt_stream_item"

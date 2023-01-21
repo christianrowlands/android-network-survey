@@ -97,7 +97,8 @@
     <string name="wifi_label">Wi-Fi:</string>
     <string name="bluetooth_label">Bluetooth:</string>
     <string name="gnss_label">GNSS:</string>
-    <string name="device_status_label">Deice Status:</string>
+    <string name="device_status_label">Device Status:</string>
+    <string name="what_is_configured_to_stream">What is configured to stream?</string>
 
     <string name="card_title_location">My Location</string>
     <string name="my_location_icon_description">My Location Icon</string>
