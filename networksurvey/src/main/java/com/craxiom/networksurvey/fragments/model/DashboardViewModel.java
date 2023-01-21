@@ -6,6 +6,8 @@ import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
 import androidx.lifecycle.ViewModel;
 
+import com.craxiom.mqttlibrary.connection.ConnectionState;
+
 import java.util.Objects;
 
 /**
@@ -21,7 +23,7 @@ public class DashboardViewModel extends ViewModel
     private final MutableLiveData<Boolean> bluetoothLoggingEnabled = new MutableLiveData<>();
     private final MutableLiveData<Boolean> gnssLoggingEnabled = new MutableLiveData<>();
 
-    private final MutableLiveData<Boolean> mqttConnectionStatus = new MutableLiveData<>();
+    private final MutableLiveData<ConnectionState> mqttConnectionState = new MutableLiveData<>();
     private final MutableLiveData<Boolean> cellularMqttStreamEnabled = new MutableLiveData<>();
     private final MutableLiveData<Boolean> wifiMqttStreamEnabled = new MutableLiveData<>();
     private final MutableLiveData<Boolean> bluetoothMqttStreamEnabled = new MutableLiveData<>();
@@ -80,6 +82,19 @@ public class DashboardViewModel extends ViewModel
         if (!Objects.equals(gnssLoggingEnabled.getValue(), isEnabled))
         {
             gnssLoggingEnabled.postValue(isEnabled);
+        }
+    }
+
+    public LiveData<ConnectionState> getMqttConnectionState()
+    {
+        return mqttConnectionState;
+    }
+
+    public void setMqttConnectionState(ConnectionState state)
+    {
+        if (mqttConnectionState.getValue() != state)
+        {
+            mqttConnectionState.postValue(state);
         }
     }
 

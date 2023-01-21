@@ -150,7 +150,7 @@ public class DashboardFragment extends AServiceDataFragment implements LocationL
     @Override
     public void onConnectionStateChange(ConnectionState connectionState)
     {
-        updateMqttUiState(connectionState);
+        viewModel.setMqttConnectionState(connectionState);
     }
 
     @Override
@@ -225,6 +225,7 @@ public class DashboardFragment extends AServiceDataFragment implements LocationL
         viewModel.getBluetoothLoggingEnabled().observe(viewLifecycleOwner, this::updateBluetoothLogging);
         viewModel.getGnssLoggingEnabled().observe(viewLifecycleOwner, this::updateGnssLogging);
 
+        viewModel.getMqttConnectionState().observe(viewLifecycleOwner, this::updateMqttUiState);
         viewModel.getCellularMqttStreamEnabled().observe(viewLifecycleOwner, enabled -> updateStreamUi(binding.mqttCellular, enabled));
         viewModel.getWifiMqttStreamEnabled().observe(viewLifecycleOwner, enabled -> updateStreamUi(binding.mqttWifi, enabled));
         viewModel.getBluetoothMqttStreamEnabled().observe(viewLifecycleOwner, enabled -> updateStreamUi(binding.mqttBluetooth, enabled));
@@ -386,7 +387,6 @@ public class DashboardFragment extends AServiceDataFragment implements LocationL
      */
     private void readMqttStreamEnabledProperties()
     {
-        // TODO Finish me
         final Context context = getContext();
         if (context == null)
         {
