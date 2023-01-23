@@ -3,8 +3,9 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/nav_graph"
-    app:startDestination="@id/cellular">
+    app:startDestination="@id/dashboard">
 
+    <include app:graph="@navigation/dashboard" />
     <include app:graph="@navigation/cellular" />
     <include app:graph="@navigation/wifi" />
     <include app:graph="@navigation/bluetooth" />
@@ -20,13 +21,13 @@
         android:id="@+id/mqtt_connection_fragment"
         android:name="com.craxiom.networksurvey.fragments.MqttFragment"
         android:label="@string/mqtt_connection_title"
-        tools:layout="@layout/fragment_mqtt" >
+        tools:layout="@layout/fragment_mqtt">
 
         <argument
             android:name="mqttConnectionSettings"
             app:argType="com.craxiom.networksurvey.fragments.model.MqttConnectionSettings"
             app:nullable="true"
-            android:defaultValue="@null"/>
+            android:defaultValue="@null" />
 
         <action
             android:id="@+id/action_mqtt_connection_fragment_to_scanner_fragment"
@@ -36,7 +37,7 @@
                 android:name="mqttConnectionSettings"
                 app:argType="com.craxiom.networksurvey.fragments.model.MqttConnectionSettings"
                 app:nullable="true"
-                android:defaultValue="@null"/>
+                android:defaultValue="@null" />
 
         </action>
     </fragment>
@@ -49,13 +50,13 @@
     <fragment
         android:id="@+id/scanner_fragment"
         android:name="com.craxiom.networksurvey.fragments.CodeScannerFragment"
-        android:label="@string/code_scanner" >
+        android:label="@string/code_scanner">
 
         <argument
             android:name="mqttConnectionSettings"
             app:argType="com.craxiom.networksurvey.fragments.model.MqttConnectionSettings"
             app:nullable="true"
-            android:defaultValue="@null"/>
+            android:defaultValue="@null" />
 
         <action
             android:id="@+id/action_scanner_fragment_to_mqtt_connection_fragment"
@@ -68,7 +69,7 @@
                 android:name="mqttConnectionSettings"
                 app:argType="com.craxiom.networksurvey.fragments.model.MqttConnectionSettings"
                 app:nullable="true"
-                android:defaultValue="@null"/>
+                android:defaultValue="@null" />
 
         </action>
     </fragment>

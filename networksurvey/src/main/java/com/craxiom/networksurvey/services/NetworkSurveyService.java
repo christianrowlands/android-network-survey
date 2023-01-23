@@ -70,6 +70,7 @@ import com.craxiom.networksurvey.listeners.ICellularSurveyRecordListener;
 import com.craxiom.networksurvey.listeners.IDeviceStatusListener;
 import com.craxiom.networksurvey.listeners.IGnssFailureListener;
 import com.craxiom.networksurvey.listeners.IGnssSurveyRecordListener;
+import com.craxiom.networksurvey.listeners.ILoggingChangeListener;
 import com.craxiom.networksurvey.listeners.IWifiSurveyRecordListener;
 import com.craxiom.networksurvey.logging.BluetoothSurveyRecordLogger;
 import com.craxiom.networksurvey.logging.CellularSurveyRecordLogger;
@@ -87,6 +88,8 @@ import com.google.protobuf.Int32Value;
 import java.time.ZonedDateTime;
 import java.util.Collections;
 import java.util.List;
+import java.util.Set;
+import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -162,6 +165,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
     private BroadcastReceiver bluetoothBroadcastReceiver;
     private GnssMeasurementsEvent.Callback measurementListener;
     private PhoneStateListener phoneStateListener;
+    private final Set<ILoggingChangeListener> loggingChangeListeners = new CopyOnWriteArraySet<>();
 
     public NetworkSurveyService()
     {
@@ -478,6 +482,16 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
         gpsListener.unregisterListener(locationListener);
     }
 
+    public void registerLoggingChangeListener(ILoggingChangeListener listener)
+    {
+        loggingChangeListeners.add(listener);
+    }
+
+    public void unregisterLoggingChangeListener(ILoggingChangeListener listener)
+    {
+        loggingChangeListeners.remove(listener);
+    }
+
     /**
      * Registers a listener for notifications when new cellular survey records are available.
      *
@@ -776,6 +790,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
                 toggleCellularConfig(false);
             }
             updateServiceNotification();
+            notifyLoggingChangedListeners();
 
             final boolean newLoggingState = cellularLoggingEnabled.get();
             if (successful && newLoggingState) initializePing();
@@ -843,6 +858,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
                 }
             }
             updateServiceNotification();
+            notifyLoggingChangedListeners();
 
             final boolean newLoggingState = wifiLoggingEnabled.get();
 
@@ -890,6 +906,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
                 }
             }
             updateServiceNotification();
+            notifyLoggingChangedListeners();
 
             final boolean newLoggingState = bluetoothLoggingEnabled.get();
 
@@ -950,6 +967,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
             }
 
             updateServiceNotification();
+            notifyLoggingChangedListeners();
 
             final boolean newLoggingState = gnssLoggingEnabled.get();
 
@@ -1021,6 +1039,16 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
     }
 
     /**
+     * Triggers the creation of a single device status message and notifies the listeners.
+     *
+     * @since 1.10.0
+     */
+    public void sendSingleDeviceStatus()
+    {
+        surveyRecordProcessor.onDeviceStatus(generateDeviceStatus());
+    }
+
+    /**
      * @return The Android ID associated with this device and app.
      */
     @SuppressLint("HardwareIds")
@@ -1072,7 +1100,6 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
         mdmOverride = PreferenceManager.getDefaultSharedPreferences(applicationContext)
                 .getBoolean(NetworkSurveyConstants.PROPERTY_MDM_OVERRIDE_KEY, false);
     }
-
 
     /**
      * Creates a new {@link GpsListener} if necessary, and Registers with the Android {@link LocationManager} for
@@ -1658,7 +1685,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
     /**
      * Note that the {@link Manifest.permission#BLUETOOTH_CONNECT} permission was added in Android 12, so this method
      * returns true for all older versions.
-     *
+     * <p>
      * The {@link Manifest.permission#BLUETOOTH_CONNECT} permission is required ONLY for getting the bluetooth device
      * name, so don't fail BT survey if it is missing, but we probably want to notify the user.
      *
@@ -2357,6 +2384,24 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
         }
 
         return isEnabled;
+    }
+
+    /**
+     * Notify {@link #loggingChangeListeners} that one or more of the logging states have changed.
+     *
+     * @since 1.10.0
+     */
+    private void notifyLoggingChangedListeners()
+    {
+        loggingChangeListeners.forEach(l -> {
+            try
+            {
+                l.onLoggingChanged();
+            } catch (Exception e)
+            {
+                Timber.e(e, "Unable to notify a Logging Changed Listener because of an exception");
+            }
+        });
     }
 
     @Override

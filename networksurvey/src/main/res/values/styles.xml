@@ -61,6 +61,14 @@
         <item name="android:layout_marginEnd">@dimen/small_margin</item>
     </style>
 
+    <style name="StandardText.Smaller" parent="StandardText">
+        <item name="android:textSize">16sp</item>
+        <item name="android:layout_marginTop">5dp</item>
+        <item name="android:layout_marginBottom">5dp</item>
+        <item name="android:layout_marginStart">6dp</item>
+        <item name="android:layout_marginEnd">6dp</item>
+    </style>
+
     <style name="ColumnTitleText" parent="SmallLabelText">
         <item name="android:layout_width">0dp</item>
         <item name="android:layout_weight">1</item>
@@ -77,6 +85,11 @@
 
     <style name="LabelText" parent="TextAppearance.AppCompat">
         <item name="android:textSize">18sp</item>
+        <item name="android:textColor">#c2c1c1</item>
+    </style>
+
+    <style name="SmallStatusText" parent="TextAppearance.AppCompat">
+        <item name="android:textSize">16sp</item>
         <item name="android:textColor">#c2c1c1</item>
     </style>
 

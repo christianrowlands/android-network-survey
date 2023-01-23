@@ -66,6 +66,7 @@ dependencies {
     implementation "androidx.navigation:navigation-fragment-ktx:${navigationVersion}"
     implementation "androidx.navigation:navigation-ui-ktx:${navigationVersion}"
     implementation "androidx.viewpager2:viewpager2:1.0.0"
+    implementation 'com.google.android.flexbox:flexbox:3.0.0'
 
     implementation "io.grpc:grpc-stub:${grpcVersion}"
     implementation "io.grpc:grpc-protobuf:${grpcVersion}"
