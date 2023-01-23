@@ -35,6 +35,7 @@ import com.craxiom.networksurvey.constants.NetworkSurveyConstants;
 import com.craxiom.networksurvey.databinding.FragmentDashboardBinding;
 import com.craxiom.networksurvey.databinding.MqttStreamItemBinding;
 import com.craxiom.networksurvey.fragments.model.DashboardViewModel;
+import com.craxiom.networksurvey.listeners.ILoggingChangeListener;
 import com.craxiom.networksurvey.services.NetworkSurveyService;
 import com.craxiom.networksurvey.util.MathUtils;
 import com.craxiom.networksurvey.util.ToggleLoggingTask;
@@ -49,7 +50,8 @@ import timber.log.Timber;
  *
  * @since 1.10.0
  */
-public class DashboardFragment extends AServiceDataFragment implements LocationListener, IConnectionStateListener, SharedPreferences.OnSharedPreferenceChangeListener
+public class DashboardFragment extends AServiceDataFragment implements LocationListener, IConnectionStateListener,
+        ILoggingChangeListener, SharedPreferences.OnSharedPreferenceChangeListener
 {
     private final DecimalFormat locationFormat = new DecimalFormat("###.#####");
 
@@ -100,10 +102,11 @@ public class DashboardFragment extends AServiceDataFragment implements LocationL
     protected void onSurveyServiceConnected(NetworkSurveyService service)
     {
         service.registerLocationListener(this);
+        service.registerMqttConnectionStateListener(this);
+        service.registerLoggingChangeListener(this);
+
         initializeLocationTextView(); // Refresh the location views because we might have missed something between the
         // initial call and when we registered as a listener.
-
-        initializeLogging(service);
 
         Context context = getContext();
         if (context != null)
@@ -111,9 +114,9 @@ public class DashboardFragment extends AServiceDataFragment implements LocationL
             PreferenceManager.getDefaultSharedPreferences(context).registerOnSharedPreferenceChangeListener(this);
         }
 
-        service.registerMqttConnectionStateListener(this);
         updateMqttUiState(service.getMqttConnectionState());
         readMqttStreamEnabledProperties();
+        updateLoggingState(service);
     }
 
     @Override
@@ -126,6 +129,7 @@ public class DashboardFragment extends AServiceDataFragment implements LocationL
         }
 
         service.unregisterLocationListener(this);
+        service.unregisterLoggingChangeListener(this);
         service.unregisterMqttConnectionStateListener(this);
     }
 
@@ -151,6 +155,12 @@ public class DashboardFragment extends AServiceDataFragment implements LocationL
     public void onConnectionStateChange(ConnectionState connectionState)
     {
         viewModel.setMqttConnectionState(connectionState);
+    }
+
+    @Override
+    public void onLoggingChanged()
+    {
+        if (service != null) updateLoggingState(service);
     }
 
     @Override
@@ -255,7 +265,7 @@ public class DashboardFragment extends AServiceDataFragment implements LocationL
         viewModel.getDeviceStatusMqttStreamEnabled().removeObservers(viewLifecycleOwner);
     }
 
-    private synchronized void initializeLogging(NetworkSurveyService networkSurveyService)
+    private synchronized void updateLoggingState(NetworkSurveyService networkSurveyService)
     {
         viewModel.setCellularLoggingEnabled(networkSurveyService.isCellularLoggingEnabled());
         viewModel.setWifiLoggingEnabled(networkSurveyService.isWifiLoggingEnabled());

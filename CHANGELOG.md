@@ -1,22 +1,32 @@
 # Changelog
 
-## [1.10.0](https://github.com/christianrowlands/android-network-survey/releases/tag/v1.10.0) - 2023-01-11
-* Sets the mdmOverride field on the device status message instead of using firebase analytics events.
+## [1.10.0](https://github.com/christianrowlands/android-network-survey/releases/tag/v1.10.0) - 2023-01-14
+
+* Sets the mdmOverride field on the device status message instead of using firebase analytics
+  events.
+* Adds a Dashboard UI for toggling logging to files as well as viewing the MQTT connection status.
 
 ## [1.9.0](https://github.com/christianrowlands/android-network-survey/releases/tag/v1.9.0) - 2022-10-28
+
 * Library updates, permission updates, logging updates, and other minor changes.
 
 ## [1.8.0](https://github.com/christianrowlands/android-network-survey/releases/tag/v1.8.0) - 2022-09-26
-* Empty GNSS survey messages are now sent when GNSS survey is turned on and no GNSS satellites are 
-  observed. This is to indicate that the device is surveying as expected, but no satellites are visible.
+
+* Empty GNSS survey messages are now sent when GNSS survey is turned on and no GNSS satellites are
+  observed. This is to indicate that the device is surveying as expected, but no satellites are
+  visible.
 
 ## [1.7.0](https://github.com/christianrowlands/android-network-survey/releases/tag/v1.7.0) - 2022-07-03
-* Scan QR Code for configuring the MQTT Broker connection information. (Thanks [dtufekcic](https://github.com/dtufekcic)!)
+
+* Scan QR Code for configuring the MQTT Broker connection information. (
+  Thanks [dtufekcic](https://github.com/dtufekcic)!)
 
 ## [1.6.0](https://github.com/christianrowlands/android-network-survey/releases/tag/v1.6.0) - 2021-12-18
 
-* The WiFi UI is saved when swapping between fragments, so you don’t have to wait for the next scan to see something.
-* The Cellular UI got a total overhaul, and now displays all protocols (except CDMA) and all neighbor cells as well.
+* The WiFi UI is saved when swapping between fragments, so you don’t have to wait for the next scan
+  to see something.
+* The Cellular UI got a total overhaul, and now displays all protocols (except CDMA) and all
+  neighbor cells as well.
 * Updated to compile against Android 12.
 
 ## [1.5.1](https://github.com/christianrowlands/android-network-survey/releases/tag/v1.5.1) - 2021-11-30

@@ -200,6 +200,20 @@ public class MqttFragment extends AConnectionFragment<NetworkSurveyService.Surve
                 deviceStatusStreamEnabled);
     }
 
+    @Override
+    protected void onMdmOverride(boolean mdmOverride)
+    {
+        // If the user has turned on or off the MDM override setting, we want to send out a device
+        // status message ASAP so that the receiving MQTT broker can know it has been enabled or
+        // disabled. There is of course a race condition in this single message because it is
+        // possible the user turns on the MDM override and then immediately stops the MQTT
+        // connection before this message is actually sent. There are ways around this but this
+        // race condition is acceptable.
+        ((NetworkSurveyService) service).sendSingleDeviceStatus();
+
+        super.onMdmOverride(mdmOverride);
+    }
+
     /**
      * Read current values from the MQTT Connection Fragment and return an instance of {@link MqttConnectionSettings}
      * object with those values.
