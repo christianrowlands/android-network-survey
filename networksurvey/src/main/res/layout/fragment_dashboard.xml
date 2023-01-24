@@ -102,8 +102,7 @@
                                             android:id="@+id/cellular_icon"
                                             android:layout_width="24dp"
                                             android:layout_height="24dp"
-                                            android:layout_marginStart="@dimen/small_margin"
-                                            android:layout_marginEnd="@dimen/small_margin"
+                                            android:layout_marginEnd="7dp"
                                             android:contentDescription="@string/cellular_icon_description"
                                             android:src="@drawable/ic_cellular" />
 
@@ -187,8 +186,7 @@
                                             android:layout_width="24dp"
                                             android:layout_height="24dp"
                                             android:layout_gravity="center"
-                                            android:layout_marginStart="@dimen/small_margin"
-                                            android:layout_marginEnd="@dimen/small_margin"
+                                            android:layout_marginEnd="7dp"
                                             android:contentDescription="@string/wifi_icon_description"
                                             android:src="@drawable/ic_wifi" />
 
@@ -296,8 +294,7 @@
                                             android:layout_width="24dp"
                                             android:layout_height="24dp"
                                             android:layout_gravity="center"
-                                            android:layout_marginStart="@dimen/small_margin"
-                                            android:layout_marginEnd="@dimen/small_margin"
+                                            android:layout_marginEnd="7dp"
                                             android:contentDescription="@string/bluetooth_icon_description"
                                             android:src="@drawable/ic_bluetooth" />
 
@@ -382,8 +379,7 @@
                                             android:layout_width="24dp"
                                             android:layout_height="24dp"
                                             android:layout_gravity="center"
-                                            android:layout_marginStart="@dimen/small_margin"
-                                            android:layout_marginEnd="@dimen/small_margin"
+                                            android:layout_marginEnd="7dp"
                                             android:contentDescription="@string/gnss_icon_description"
                                             android:src="@drawable/ic_gnss" />
 
