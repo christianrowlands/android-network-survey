@@ -1,6 +1,6 @@
 # Changelog
 
-## [1.10.0](https://github.com/christianrowlands/android-network-survey/releases/tag/v1.10.0) - 2023-01-14
+## [1.10.0](https://github.com/christianrowlands/android-network-survey/releases/tag/v1.10.0) - 2023-01-24
 
 * Sets the mdmOverride field on the device status message instead of using firebase analytics
   events.
