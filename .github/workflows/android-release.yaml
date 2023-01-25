@@ -101,5 +101,5 @@ jobs:
       - name: Upload apk
         uses: actions/upload-artifact@v3
         with:
-          name: Network Surveuy release apk
+          name: Network_Survey_Release_apk
           path: networksurvey/build/outputs/apk/release/${{ env.base_name }}-release.apk
