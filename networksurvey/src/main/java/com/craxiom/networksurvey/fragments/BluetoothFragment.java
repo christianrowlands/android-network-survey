@@ -19,23 +19,23 @@ import android.os.Looper;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.ImageButton;
-import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AlertDialog;
 import androidx.core.app.ActivityCompat;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentActivity;
+import androidx.lifecycle.LifecycleOwner;
+import androidx.lifecycle.ViewModelProvider;
+import androidx.lifecycle.ViewModelStoreOwner;
+import androidx.navigation.fragment.NavHostFragment;
 import androidx.preference.PreferenceManager;
-import androidx.recyclerview.widget.LinearLayoutManager;
-import androidx.recyclerview.widget.RecyclerView;
-import androidx.recyclerview.widget.SortedList;
 
 import com.craxiom.messaging.BluetoothRecord;
 import com.craxiom.networksurvey.R;
-import com.craxiom.networksurvey.constants.BluetoothMessageConstants;
 import com.craxiom.networksurvey.constants.NetworkSurveyConstants;
+import com.craxiom.networksurvey.databinding.FragmentBluetoothListBinding;
+import com.craxiom.networksurvey.fragments.model.BluetoothViewModel;
 import com.craxiom.networksurvey.listeners.IBluetoothSurveyRecordListener;
 import com.craxiom.networksurvey.model.SortedSet;
 import com.craxiom.networksurvey.services.NetworkSurveyService;
@@ -45,7 +45,6 @@ import com.craxiom.networksurvey.util.PreferenceUtils;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Objects;
 
 import timber.log.Timber;
 
@@ -57,19 +56,16 @@ import timber.log.Timber;
 public class BluetoothFragment extends Fragment implements IBluetoothSurveyRecordListener
 {
     private static final int ACCESS_SCAN_PERMISSION_REQUEST_ID = 11;
+    private FragmentBluetoothListBinding binding;
 
-    private final SortedSet<BluetoothRecord> bluetoothRecordSortedSet = new SortedSet<>(BluetoothRecord.class, new RecordSortedListCallback());
-    private Handler uiThreadHandler;
+    private SortedSet<BluetoothRecord> bluetoothRecordSortedSet;
+    private final Handler uiThreadHandler;
+    private BluetoothViewModel viewModel;
 
     private Context applicationContext;
     private NetworkSurveyService surveyService;
     private BluetoothRecyclerViewAdapter bluetoothRecyclerViewAdapter;
-    private TextView scanStatusView;
-    private TextView devicesInScanView;
 
-    private volatile boolean updatesPaused = false;
-
-    private int sortByIndex = 0;
     private int bluetoothScanRateMs;
 
     /**
@@ -84,44 +80,53 @@ public class BluetoothFragment extends Fragment implements IBluetoothSurveyRecor
      */
     public BluetoothFragment()
     {
+        uiThreadHandler = new Handler(Looper.getMainLooper());
     }
 
     @Override
     public void onCreate(Bundle savedInstanceState)
     {
-        uiThreadHandler = new Handler(Looper.getMainLooper());
         applicationContext = requireActivity().getApplicationContext();
         super.onCreate(savedInstanceState);
-
-        final SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(applicationContext);
-        sortByIndex = preferences.getInt(NetworkSurveyConstants.PROPERTY_BLUETOOTH_DEVICES_SORT_ORDER, 0);
     }
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState)
     {
-        final View view = inflater.inflate(R.layout.fragment_bluetooth_list, container, false);
+        binding = FragmentBluetoothListBinding.inflate(inflater);
 
-        RecyclerView recyclerView = view.findViewById(R.id.bluetooth_device_list);
-        recyclerView.setLayoutManager(new LinearLayoutManager(view.getContext()));
+        final ViewModelStoreOwner viewModelStoreOwner = NavHostFragment.findNavController(this).getViewModelStoreOwner(R.id.nav_graph);
+        final ViewModelProvider viewModelProvider = new ViewModelProvider(viewModelStoreOwner);
+        viewModel = viewModelProvider.get(getClass().getName(), BluetoothViewModel.class);
+
+        binding.setVm(viewModel);
+
+        bluetoothRecordSortedSet = viewModel.getBluetoothList();
+
+        final SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(applicationContext);
+        viewModel.setSortByIndex(preferences.getInt(NetworkSurveyConstants.PROPERTY_BLUETOOTH_DEVICES_SORT_ORDER, 0));
+
         bluetoothRecyclerViewAdapter = new BluetoothRecyclerViewAdapter(bluetoothRecordSortedSet, getContext());
-        recyclerView.setAdapter(bluetoothRecyclerViewAdapter);
+        binding.bluetoothDeviceList.setAdapter(bluetoothRecyclerViewAdapter);
 
-        final ImageButton pauseButton = view.findViewById(R.id.pause_button);
-        pauseButton.setOnClickListener(this::onPauseUiUpdatesToggle);
+        binding.pauseButton.setOnClickListener(v -> viewModel.toggleUpdatesPaused());
+        binding.sortButton.setOnClickListener(v -> showSortByDialog());
 
-        final ImageButton sortButton = view.findViewById(R.id.sort_button);
-        sortButton.setOnClickListener(v -> showSortByDialog());
+        initializeView();
 
         final Context context = requireContext();
 
-        scanStatusView = view.findViewById(R.id.scan_status);
-        scanStatusView.setText(context.getString(R.string.scan_status_scanning));
+        final LifecycleOwner viewLifecycleOwner = getViewLifecycleOwner();
+        viewModel.getScanStatusId().observe(viewLifecycleOwner,
+                scanStatusId -> binding.scanStatus.setText(context.getString(scanStatusId)));
 
-        devicesInScanView = view.findViewById(R.id.bt_devices_in_scan);
-        devicesInScanView.setText(context.getString(R.string.bluetooth_devices_in_scan, 0));
+        viewModel.getDevicesInScan().observe(viewLifecycleOwner,
+                count -> binding.btDevicesInScan.setText(context.getString(R.string.bluetooth_devices_in_scan, count)));
 
-        return view;
+        viewModel.areUpdatesPaused().observe(viewLifecycleOwner,
+                paused -> binding.pauseButton.setBackgroundResource(paused ? R.drawable.ic_play : R.drawable.ic_pause));
+
+        return binding.getRoot();
     }
 
     @SuppressLint("InlinedApi")
@@ -135,7 +140,7 @@ public class BluetoothFragment extends Fragment implements IBluetoothSurveyRecor
             final Context context = getContext();
             if (context != null)
             {
-                scanStatusView.setText(context.getString(R.string.scan_status_permission));
+                viewModel.setScanStatusId(R.string.scan_status_permission);
                 Toast.makeText(context, getString(R.string.grant_bluetooth_scan_permission), Toast.LENGTH_LONG).show();
 
                 ActivityCompat.requestPermissions(requireActivity(), new String[]{Manifest.permission.BLUETOOTH_SCAN},
@@ -166,11 +171,24 @@ public class BluetoothFragment extends Fragment implements IBluetoothSurveyRecor
     }
 
     @Override
+    public void onDestroyView()
+    {
+        final LifecycleOwner viewLifecycleOwner = getViewLifecycleOwner();
+        viewModel.getScanStatusId().removeObservers(viewLifecycleOwner);
+        viewModel.getDevicesInScan().removeObservers(viewLifecycleOwner);
+        viewModel.areUpdatesPaused().removeObservers(viewLifecycleOwner);
+
+        super.onDestroyView();
+    }
+
+    @Override
     public void onBluetoothSurveyRecord(BluetoothRecord bluetoothRecord)
     {
-        if (updatesPaused) return;
+        //noinspection ConstantConditions
+        if (viewModel.areUpdatesPaused().getValue()) return;
 
         uiThreadHandler.post(() -> {
+            //noinspection SynchronizeOnNonFinalField
             synchronized (bluetoothRecordSortedSet)
             {
                 bluetoothRecordSortedSet.add(bluetoothRecord);
@@ -182,7 +200,7 @@ public class BluetoothFragment extends Fragment implements IBluetoothSurveyRecor
                     bluetoothRecyclerViewAdapter.notifyDataSetChanged();
                 }
 
-                devicesInScanView.setText(getString(R.string.bluetooth_devices_in_scan, bluetoothRecordSortedSet.size()));
+                viewModel.setDevicesInScan(bluetoothRecordSortedSet.size());
             }
         });
     }
@@ -190,10 +208,11 @@ public class BluetoothFragment extends Fragment implements IBluetoothSurveyRecor
     @Override
     public void onBluetoothSurveyRecords(List<BluetoothRecord> bluetoothRecords)
     {
-        if (updatesPaused) return;
+        //noinspection ConstantConditions
+        if (viewModel.areUpdatesPaused().getValue()) return;
 
-        // Move this back to the UI thread since we are updating the UI
         uiThreadHandler.post(() -> {
+            //noinspection SynchronizeOnNonFinalField
             synchronized (bluetoothRecordSortedSet)
             {
                 // We can't use the SortedList#addAll method because we have not overridden that method in our custom
@@ -207,9 +226,31 @@ public class BluetoothFragment extends Fragment implements IBluetoothSurveyRecor
                     bluetoothRecyclerViewAdapter.notifyDataSetChanged();
                 }
 
-                devicesInScanView.setText(requireContext().getString(R.string.bluetooth_devices_in_scan, bluetoothRecordSortedSet.size()));
+                viewModel.setDevicesInScan(bluetoothRecordSortedSet.size());
             }
         });
+    }
+
+    /**
+     * Updates the view with the information stored in the view model.
+     *
+     * @since 1.11.0
+     */
+    private void initializeView()
+    {
+        final Context context = requireContext();
+
+        final Integer scanStatusId = viewModel.getScanStatusId().getValue();
+        if (scanStatusId != null)
+        {
+            binding.scanStatus.setText(context.getString(scanStatusId));
+        }
+
+        final Integer count = viewModel.getDevicesInScan().getValue();
+        if (count != null)
+        {
+            binding.btDevicesInScan.setText(context.getString(R.string.bluetooth_devices_in_scan, count));
+        }
     }
 
     /**
@@ -264,6 +305,7 @@ public class BluetoothFragment extends Fragment implements IBluetoothSurveyRecor
     {
         Timber.d("Removing any stale Bluetooth records");
 
+        //noinspection SynchronizeOnNonFinalField
         synchronized (bluetoothRecordSortedSet)
         {
             final long currentTimeMillis = System.currentTimeMillis();
@@ -305,21 +347,6 @@ public class BluetoothFragment extends Fragment implements IBluetoothSurveyRecor
     }
 
     /**
-     * Notification that UI updates have either been paused or resumed.  Toggle the paused state and update any UI
-     * elements.
-     *
-     * @param view The ImageButton to update the paused/play icon on.
-     */
-    private void onPauseUiUpdatesToggle(View view)
-    {
-        scanStatusView.setText(requireContext().getString(updatesPaused ? R.string.scan_status_scanning : R.string.scan_status_paused));
-        view.setBackgroundResource(updatesPaused ? R.drawable.ic_pause : R.drawable.ic_play);
-
-        //noinspection NonAtomicOperationOnVolatileField
-        updatesPaused = !updatesPaused;
-    }
-
-    /**
      * Show the Sort Dialog so the user can pick how they want to sort the list of Bluetooth devices.
      */
     private void showSortByDialog()
@@ -336,7 +363,7 @@ public class BluetoothFragment extends Fragment implements IBluetoothSurveyRecor
 
         final SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(applicationContext);
 
-        builder.setSingleChoiceItems(R.array.bluetooth_sort_options, sortByIndex,
+        builder.setSingleChoiceItems(R.array.bluetooth_sort_options, viewModel.getSortByIndex(),
                 (dialog, index) -> {
                     onSortByChanged(preferences, index);
                     dialog.dismiss();
@@ -355,10 +382,11 @@ public class BluetoothFragment extends Fragment implements IBluetoothSurveyRecor
      */
     private void onSortByChanged(SharedPreferences preferences, int selectedIndex)
     {
+        //noinspection SynchronizeOnNonFinalField
         synchronized (bluetoothRecordSortedSet)
         {
             preferences.edit().putInt(NetworkSurveyConstants.PROPERTY_BLUETOOTH_DEVICES_SORT_ORDER, selectedIndex).apply();
-            sortByIndex = selectedIndex;
+            viewModel.setSortByIndex(selectedIndex);
 
             bluetoothRecordSortedSet.beginBatchedUpdates();
 
@@ -370,6 +398,7 @@ public class BluetoothFragment extends Fragment implements IBluetoothSurveyRecor
                 tempBluetoothList.add(bluetoothRecordSortedSet.get(i));
             }
             bluetoothRecordSortedSet.clear();
+            // It is ok to use addAll here because we don't need the custom add() implementation that evicts duplicates
             bluetoothRecordSortedSet.addAll(tempBluetoothList);
             tempBluetoothList.clear();
 
@@ -402,10 +431,11 @@ public class BluetoothFragment extends Fragment implements IBluetoothSurveyRecor
                     switch (state)
                     {
                         case BluetoothAdapter.STATE_OFF:
-                            scanStatusView.setText(requireContext().getString(R.string.bluetooth_scan_status_disabled));
+                            viewModel.setScanStatusId(R.string.bluetooth_scan_status_disabled);
                             break;
                         case BluetoothAdapter.STATE_ON:
-                            scanStatusView.setText(requireContext().getString(updatesPaused ? R.string.scan_status_paused : R.string.scan_status_scanning));
+                            //noinspection ConstantConditions
+                            viewModel.setScanStatusId(viewModel.areUpdatesPaused().getValue() ? R.string.scan_status_paused : R.string.scan_status_scanning);
                             startAndBindToNetworkSurveyService();
                             break;
                     }
@@ -456,10 +486,10 @@ public class BluetoothFragment extends Fragment implements IBluetoothSurveyRecor
             // First, update the status UI if bluetooth is disabled
             if (bluetoothAdapter == null)
             {
-                scanStatusView.setText(requireContext().getString(R.string.bluetooth_scan_status_not_supported));
+                viewModel.setScanStatusId(R.string.bluetooth_scan_status_not_supported);
             } else if (!bluetoothAdapter.isEnabled())
             {
-                scanStatusView.setText(requireContext().getString(R.string.bluetooth_scan_status_disabled));
+                viewModel.setScanStatusId(R.string.bluetooth_scan_status_disabled);
 
                 // Bluetooth is present, but disabled; prompt the user to enable it, but only ask the user once per app opening (per fragment instance)
                 if (promptedToEnableBluetooth) return;
@@ -487,77 +517,12 @@ public class BluetoothFragment extends Fragment implements IBluetoothSurveyRecor
                 }
             } else
             {
-                scanStatusView.setText(requireContext().getString(updatesPaused ? R.string.scan_status_paused : R.string.scan_status_scanning));
+                //noinspection ConstantConditions
+                viewModel.setScanStatusId(viewModel.areUpdatesPaused().getValue() ? R.string.scan_status_paused : R.string.scan_status_scanning);
             }
         } catch (Exception e)
         {
             Timber.e(e, "Something went wrong when trying to prompt the user to enable Bluetooth");
-        }
-    }
-
-    /**
-     * A Sorted list callback for controlling the behavior of the Bluetooth records sorted list.
-     */
-    public class RecordSortedListCallback extends SortedList.Callback<BluetoothRecord>
-    {
-        @Override
-        public int compare(BluetoothRecord record1, BluetoothRecord record2)
-        {
-            // CAUTION!!! The switch statement here needs to be kept in sync with the values from bluetooth_sort_options in arrays.xml
-            switch (sortByIndex)
-            {
-                case 1: // Source Address
-                    return record1.getData().getSourceAddress().compareTo(record2.getData().getSourceAddress());
-
-                case 2: // OTA Device Name
-                    // Invert the sort so that devices without a device name at all show up at the bottom.
-                    return -1 * record1.getData().getOtaDeviceName().compareTo(record2.getData().getOtaDeviceName());
-
-                case 3: // Supported Technologies
-                    return BluetoothMessageConstants.getSupportedTechString(record1.getData().getSupportedTechnologies())
-                            .compareTo(BluetoothMessageConstants.getSupportedTechString(record2.getData().getSupportedTechnologies()));
-
-                default: // Signal Strength
-                    // Signal Strength is index 0 in the array, but we also use it as the default case
-                    // Invert the sort so that the strongest records are at the top (descending)
-                    return -1 * Float.compare(record1.getData().getSignalStrength().getValue(), record2.getData().getSignalStrength().getValue());
-            }
-        }
-
-        @Override
-        public void onChanged(int position, int count)
-        {
-
-        }
-
-        @Override
-        public boolean areContentsTheSame(BluetoothRecord oldRecord, BluetoothRecord newRecord)
-        {
-            return false;
-        }
-
-        @Override
-        public boolean areItemsTheSame(BluetoothRecord record1, BluetoothRecord record2)
-        {
-            return Objects.equals(record1.getData().getSourceAddress(), record2.getData().getSourceAddress());
-        }
-
-        @Override
-        public void onInserted(int position, int count)
-        {
-
-        }
-
-        @Override
-        public void onRemoved(int position, int count)
-        {
-
-        }
-
-        @Override
-        public void onMoved(int fromPosition, int toPosition)
-        {
-
         }
     }
 

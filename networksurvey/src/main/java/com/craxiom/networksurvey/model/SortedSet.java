@@ -7,7 +7,7 @@ import androidx.recyclerview.widget.SortedList;
  * Creating our own implementation for the {@link SortedList} because while the SortedList acts sort of like a set, it
  * depends on the current sort order on how it evicts old items (it uses the compare method too which means that the
  * current sorting option will change which records get added). Note that we have only implemented the {@link #add(Object)}
- * method, so don't use the addAll or any other add methods. from the parent class if you want to make sure to evict
+ * method, so don't use the addAll or any other add methods from the parent class if you want to make sure to evict
  * old duplicate records.
  *
  * @since 1.0.0

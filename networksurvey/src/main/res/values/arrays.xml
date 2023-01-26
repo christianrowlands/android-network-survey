@@ -54,7 +54,7 @@
     </string-array>
 
     <!-- CAUTION!!! The values in this array need to stay in sync with the code from
-    com.craxiom.networksurvey.fragments.BluetoothFragment.RecordSortedListCallback -->
+    com.craxiom.networksurvey.fragments.model.BluetoothViewModel.RecordSortedListCallback -->
     <string-array name="bluetooth_sort_options">
         <item>Signal Strength</item>
         <item>Source Address</item>

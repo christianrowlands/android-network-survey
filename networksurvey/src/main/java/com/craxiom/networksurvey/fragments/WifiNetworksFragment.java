@@ -183,7 +183,6 @@ public class WifiNetworksFragment extends Fragment implements IWifiSurveyRecordL
             {
                 checkForScanThrottling();
 
-                final Context context = requireContext();
                 viewModel.incrementScanNumber();
                 viewModel.setApsInLastScan(wifiBeaconRecords.size());
 
