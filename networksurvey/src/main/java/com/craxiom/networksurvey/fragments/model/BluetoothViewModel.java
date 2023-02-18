@@ -20,7 +20,7 @@ import java.util.Objects;
  * time of this writing it is being scoped to the navigation graph's cycle. This allows the view
  * model to remain present until the app is force closed or killed for any other reason.
  *
- * @since 1.11.0
+ * @since 1.11
  */
 public class BluetoothViewModel extends ViewModel
 {

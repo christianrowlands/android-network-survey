@@ -8,9 +8,34 @@
         \n\n4. <b>Access Photos, Media, and Files on Your Device</b>:  This permission allows the log file to be written.
         \n\n5. <b>Notifications</b>:  This permission allows NS to add a notification so you know when a survey is running in the background.</string>
 
+    <string name="cdr_required_permissions_rationale_title">CDR Required Permissions</string>
+    <string name="cdr_required_permissions_rationale">The Network Survey app requires a few permissions for Call Detail Record (CDR) logging to work. Denying these permissions will result CDR logging not working.
+        \n\n1. <b>Make and Manage Phone Calls</b>:  This app does not make or manage phone calls. Instead, it needs this permission to get cellular details to write to the CDR log file.
+        \n\n2. <b>Access this Device\'s Location</b>:  The location permission is needed to access Cellular details that are used to write to the CDR file.
+        \n\n3. <b>Access Photos, Media, and Files on Your Device</b>:  This permission allows the log file to be written.
+        \n\n4. <b>Notifications</b>:  This permission allows NS to add a notification so you know when a survey is running in the background.</string>
+
+    <string name="cdr_optional_permissions_rationale_title">CDR Optional Permissions</string>
+    <string name="cdr_optional_permissions_rationale">In addition to the required permissions that were listed in a different dialog, CDR logging has some optional permissions.
+        \n\n1. <b>Access Call Logs</b>:  This is needed to get the phone number for writing it to a CDR log file. You can deny this permission and CDR logging will still work except phone numbers won\'t be logged.
+        \n\n2. <b>Read SMS</b>:  This is needed if you want to log SMS events to the CDR log file. You can deny this permission and CDR logging will still work except SMS events won\'t be logged.</string>
+
+    <string name="cdr_help_title">CDR Information</string>
+    <string name="cdr_help">What is a CDR? A CDR is a Call Detail Record that has an event for specific
+        interaction a phone has with the cellular network. For example, a phone call, sms messages, and certain tower
+        changes. The Network Survey app has a CDR File Logging feature that allows for logging CDR events to a CSV file.
+        There are several possible use cases for recording a CDR; for example, one might be to have a record of
+        what your phone is doing, and what towers it is communicating with.
+        \n\nWorthy of note, getting the information for CDRs requires additional Android permissions. Reading SMS
+        messages is one of these permissions. I want to be clear that the Network Survey app does not take the content
+        of your text messages and send it off to a server somewhere. Instead, the only thing this app does with your
+        text messages is log that a text message occurred to the CDR CSV file.</string>
+
+
     <string name="location_permission_rationale_title">Location Permission</string>
     <string name="location_permission_rationale">The location permission is needed to access Wi-Fi details, Cellular details, GNSS details,
         and also to write geo-relevant log files.\n\nDenying the location permission will result in pretty much all of the features of this app not working.</string>
+    <string name="cdr_location_permission_rationale">The location permission is needed to access Cellular details that are used to create the Call Detail Record (CDR) file.\n\nDenying the location permission will result in the CDR file logging to fail.</string>
 
     <string name="background_location_permission_rationale_title">Background Location</string>
     <string name="background_location_permission_rationale">Network Survey collects location data to enable starting Cellular, Wi-Fi, Bluetooth, and GNSS survey at boot, even when the app is closed or not in use.
@@ -19,18 +44,6 @@
     <string name="open_settings">Open Settings</string>
 
     <string name="app_version">v%1$s</string>
-
-    <string name="action_start_cellular_logging">Start Cellular Logging</string>
-    <string name="action_stop_cellular_logging">Stop Cellular Logging</string>
-
-    <string name="action_start_wifi_logging">Start Wi-Fi Logging</string>
-    <string name="action_stop_wifi_logging">Stop Wi-Fi Logging</string>
-
-    <string name="action_start_bluetooth_logging">Start Bluetooth Logging</string>
-    <string name="action_stop_bluetooth_logging">Stop Bluetooth Logging</string>
-
-    <string name="action_start_gnss_logging">Start GNSS Logging</string>
-    <string name="action_stop_gnss_logging">Stop GNSS Logging</string>
 
     <string name="logging_not_ready">Could not turn on logging, the app is not ready</string>
 
@@ -82,11 +95,13 @@
     <string name="wifi_title">Wi-Fi</string>
     <string name="bluetooth_title">Bluetooth</string>
     <string name="gnss_title">GNSS</string>
+    <string name="cdr_title">CDR</string>
     <string name="status_label">Status:</string>
     <string name="off">Off</string>
     <string name="wifi_icon_description">Wi-Fi Icon</string>
     <string name="bluetooth_icon_description">Bluetooth Icon</string>
     <string name="gnss_icon_description">GNSS Icon</string>
+    <string name="cdr_icon_description">CDR Icon</string>
     <string name="logging_status_enabled">On</string>
     <string name="status_disabled">Off</string>
     <string name="mqtt_off">MQTT Connection is Turned Off</string>
@@ -141,7 +156,10 @@
     <string name="bluetooth_logging_toggle_failed">Failed to toggle the Bluetooth logging state</string>
     <string name="gnss_logging_start_toast">Started Writing the GNSS Log File</string>
     <string name="gnss_logging_stop_toast">GNSS Log File Closed</string>
+    <string name="cdr_logging_start_toast">Started Writing the CDR Log File</string>
+    <string name="cdr_logging_stop_toast">CDR Log File Closed</string>
     <string name="gnss_logging_toggle_failed">Failed to toggle the GNSS logging state; is GPS turned on?</string>
+    <string name="cdr_logging_toggle_failed">Failed to toggle the CDR logging state</string>
 
     <string name="grpc_connection_title">Server Connection</string>
     <string name="grpc_connection_description">Here you can connect to a Network Survey server.  Once connected, all future survey results will be streamed to the server.

@@ -33,7 +33,7 @@ public class LteMessageConstants extends CellularMessageConstants
      * Given a Protocol Buffer defined LTE Bandwidth, return a user friendly string representation.
      *
      * @param lteBandwidth The LTE Bandwidth enum to convert.
-     * @return The user friendly LTE Bandwidthm, or an empty String if it is unknown/could not be converted.
+     * @return The user friendly LTE Bandwidth, or an empty String if it is unknown/could not be converted.
      */
     public static String getLteBandwidth(LteBandwidth lteBandwidth)
     {

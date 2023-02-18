@@ -12,6 +12,7 @@ import android.location.LocationListener;
 import android.location.LocationManager;
 import android.location.LocationProvider;
 import android.os.AsyncTask;
+import android.os.Build;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -20,8 +21,11 @@ import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.widget.SwitchCompat;
 import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
+import androidx.fragment.app.FragmentActivity;
 import androidx.lifecycle.LifecycleOwner;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.lifecycle.ViewModelStoreOwner;
@@ -41,7 +45,7 @@ import com.craxiom.networksurvey.util.MathUtils;
 import com.craxiom.networksurvey.util.ToggleLoggingTask;
 
 import java.text.DecimalFormat;
-import java.util.function.Consumer;
+import java.util.function.BiConsumer;
 
 import timber.log.Timber;
 
@@ -53,6 +57,34 @@ import timber.log.Timber;
 public class DashboardFragment extends AServiceDataFragment implements LocationListener, IConnectionStateListener,
         ILoggingChangeListener, SharedPreferences.OnSharedPreferenceChangeListener
 {
+    private static final int ACCESS_REQUIRED_PERMISSION_REQUEST_ID = 2;
+    private static final int ACCESS_OPTIONAL_PERMISSION_REQUEST_ID = 2;
+
+    public static final String[] CDR_REQUIRED_PERMISSIONS;
+    public static final String[] CDR_OPTIONAL_PERMISSIONS = {
+            Manifest.permission.READ_CALL_LOG,
+            Manifest.permission.READ_PHONE_NUMBERS,
+            Manifest.permission.READ_SMS};
+
+    static
+    {
+        // Android 13+ (SDK 33) requires permission for push notifications
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU)
+        {
+            CDR_REQUIRED_PERMISSIONS = new String[]{
+                    Manifest.permission.ACCESS_FINE_LOCATION,
+                    Manifest.permission.WRITE_EXTERNAL_STORAGE,
+                    Manifest.permission.READ_PHONE_STATE,
+                    Manifest.permission.POST_NOTIFICATIONS};
+        } else
+        {
+            CDR_REQUIRED_PERMISSIONS = new String[]{
+                    Manifest.permission.ACCESS_FINE_LOCATION,
+                    Manifest.permission.WRITE_EXTERNAL_STORAGE,
+                    Manifest.permission.READ_PHONE_STATE};
+        }
+    }
+
     private final DecimalFormat locationFormat = new DecimalFormat("###.#####");
 
     private FragmentDashboardBinding binding;
@@ -185,35 +217,166 @@ public class DashboardFragment extends AServiceDataFragment implements LocationL
      */
     private void initializeUiListeners()
     {
-        initializeLoggingSwitch(binding.cellularLoggingToggleSwitch, newEnabledState -> {
+        initializeLoggingSwitch(binding.cellularLoggingToggleSwitch, (newEnabledState, toggleSwitch) -> {
             viewModel.setCellularLoggingEnabled(newEnabledState);
             toggleCellularLogging(newEnabledState);
         });
 
-        initializeLoggingSwitch(binding.wifiLoggingToggleSwitch, newEnabledState -> {
+        initializeLoggingSwitch(binding.wifiLoggingToggleSwitch, (newEnabledState, toggleSwitch) -> {
             viewModel.setWifiLoggingEnabled(newEnabledState);
             toggleWifiLogging(newEnabledState);
         });
 
-        initializeLoggingSwitch(binding.bluetoothLoggingToggleSwitch, newEnabledState -> {
+        initializeLoggingSwitch(binding.bluetoothLoggingToggleSwitch, (newEnabledState, toggleSwitch) -> {
             viewModel.setBluetoothLoggingEnabled(newEnabledState);
             toggleBluetoothLogging(newEnabledState);
         });
 
-        initializeLoggingSwitch(binding.gnssLoggingToggleSwitch, newEnabledState -> {
+        initializeLoggingSwitch(binding.gnssLoggingToggleSwitch, (newEnabledState, toggleSwitch) -> {
             viewModel.setGnssLoggingEnabled(newEnabledState);
             toggleGnssLogging(newEnabledState);
         });
+
+        initializeLoggingSwitch(binding.cdrLoggingToggleSwitch, (newEnabledState, toggleSwitch) -> {
+            if (missingAnyCdrPermissions(CDR_REQUIRED_PERMISSIONS) || missingAnyCdrPermissions(CDR_OPTIONAL_PERMISSIONS))
+            {
+                toggleSwitch.setChecked(false);
+                showCdrPermissionRationaleAndRequestPermissions();
+                return;
+            }
+
+            viewModel.setCdrLoggingEnabled(newEnabledState);
+            toggleCdrLogging(newEnabledState);
+        });
+
+        binding.cdrHelpIcon.setOnClickListener(c -> showCdrHelpDialog());
+    }
+
+    /**
+     * @return True if any of the permissions for CDR have been denied. False if all the permissions
+     * have been granted.
+     */
+    private boolean missingAnyCdrPermissions(String[] CDR_PERMISSIONS)
+    {
+        final Context context = getContext();
+        if (context == null) return true;
+        for (String permission : CDR_PERMISSIONS)
+        {
+            if (ContextCompat.checkSelfPermission(context, permission) != PackageManager.PERMISSION_GRANTED)
+            {
+                Timber.i("Missing the permission: %s", permission);
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Check to see if we should show the rationale for any of the CDR permissions. If so, then display a dialog that
+     * explains what permissions we need for this app to work properly.
+     * <p>
+     * If we should not show the rationale, then just request the permissions.
+     */
+    private void showCdrPermissionRationaleAndRequestPermissions()
+    {
+        final FragmentActivity activity = getActivity();
+        if (activity == null) return;
+
+        final Context context = getContext();
+        if (context == null) return;
+
+        boolean missingRequiredPermissions = missingAnyCdrPermissions(CDR_REQUIRED_PERMISSIONS);
+
+        if (missingRequiredPermissions)
+        {
+            AlertDialog.Builder alertBuilder = new AlertDialog.Builder(context);
+            alertBuilder.setCancelable(true);
+            alertBuilder.setTitle(getString(R.string.cdr_required_permissions_rationale_title));
+            alertBuilder.setMessage(getText(R.string.cdr_required_permissions_rationale));
+            alertBuilder.setPositiveButton(android.R.string.ok, (dialog, which) -> requestRequiredCdrPermissions());
+
+            AlertDialog permissionsExplanationDialog = alertBuilder.create();
+            permissionsExplanationDialog.show();
+            return;
+        }
+
+        boolean shouldShowOptionalPermissionsRationale = false;
+        for (String cdrPermission : CDR_OPTIONAL_PERMISSIONS)
+        {
+            if (ActivityCompat.shouldShowRequestPermissionRationale(activity, cdrPermission))
+            {
+                shouldShowOptionalPermissionsRationale = true;
+                break;
+            }
+        }
+
+        if (shouldShowOptionalPermissionsRationale)
+        {
+            AlertDialog.Builder alertBuilder = new AlertDialog.Builder(context);
+            alertBuilder.setCancelable(true);
+            alertBuilder.setTitle(getString(R.string.cdr_optional_permissions_rationale_title));
+            alertBuilder.setMessage(getText(R.string.cdr_optional_permissions_rationale));
+            alertBuilder.setPositiveButton(android.R.string.ok, (dialog, which) -> requestOptionalCdrPermissions());
+
+            AlertDialog permissionsExplanationDialog = alertBuilder.create();
+            permissionsExplanationDialog.show();
+        } else
+        {
+            requestOptionalCdrPermissions();
+        }
+    }
+
+    /**
+     * Request the permissions needed for this app if any of them have not yet been granted.  If all of the permissions
+     * are already granted then don't request anything.
+     */
+    private void requestRequiredCdrPermissions()
+    {
+        if (missingAnyCdrPermissions(CDR_REQUIRED_PERMISSIONS))
+        {
+            ActivityCompat.requestPermissions(getActivity(), CDR_REQUIRED_PERMISSIONS, ACCESS_REQUIRED_PERMISSION_REQUEST_ID);
+        }
+    }
+
+    /**
+     * Request the optional permissions for this app if any of them have not yet been granted. If all of the permissions
+     * are already granted then don't request anything.
+     */
+    private void requestOptionalCdrPermissions()
+    {
+        if (missingAnyCdrPermissions(CDR_OPTIONAL_PERMISSIONS))
+        {
+            ActivityCompat.requestPermissions(getActivity(), CDR_OPTIONAL_PERMISSIONS, ACCESS_OPTIONAL_PERMISSION_REQUEST_ID);
+        }
+    }
+
+    /**
+     * Displays a dialog with some information about what a CDR is to the user.
+     */
+    private void showCdrHelpDialog()
+    {
+        final Context context = getContext();
+        if (context == null) return;
+
+        AlertDialog.Builder alertBuilder = new AlertDialog.Builder(context);
+        alertBuilder.setCancelable(true);
+        alertBuilder.setTitle(getString(R.string.cdr_help_title));
+        alertBuilder.setMessage(getText(R.string.cdr_help));
+        alertBuilder.setPositiveButton(android.R.string.ok, (dialog, which) -> {
+        });
+        alertBuilder.create().show();
     }
 
     @SuppressLint("ClickableViewAccessibility")
-    private void initializeLoggingSwitch(SwitchCompat loggingSwitch, Consumer<Boolean> switchAction)
+    private void initializeLoggingSwitch(SwitchCompat loggingSwitch, BiConsumer<Boolean, SwitchCompat> switchAction)
     {
         loggingSwitch.setOnClickListener((buttonView) -> {
             if (buttonView.isPressed())
             {
-                boolean newEnabledState = ((SwitchCompat) buttonView).isChecked();
-                switchAction.accept(newEnabledState);
+                SwitchCompat switchCompat = (SwitchCompat) buttonView;
+                boolean newEnabledState = switchCompat.isChecked();
+                switchAction.accept(newEnabledState, switchCompat);
             }
         });
         loggingSwitch.setOnTouchListener((buttonView, motionEvent) -> motionEvent.getActionMasked() == 2);
@@ -234,6 +397,7 @@ public class DashboardFragment extends AServiceDataFragment implements LocationL
         viewModel.getWifiLoggingEnabled().observe(viewLifecycleOwner, this::updateWifiLogging);
         viewModel.getBluetoothLoggingEnabled().observe(viewLifecycleOwner, this::updateBluetoothLogging);
         viewModel.getGnssLoggingEnabled().observe(viewLifecycleOwner, this::updateGnssLogging);
+        viewModel.getCdrLoggingEnabled().observe(viewLifecycleOwner, this::updateCdrLogging);
 
         viewModel.getMqttConnectionState().observe(viewLifecycleOwner, this::updateMqttUiState);
         viewModel.getCellularMqttStreamEnabled().observe(viewLifecycleOwner, enabled -> updateStreamUi(binding.mqttCellular, enabled));
@@ -257,6 +421,7 @@ public class DashboardFragment extends AServiceDataFragment implements LocationL
         viewModel.getWifiLoggingEnabled().removeObservers(viewLifecycleOwner);
         viewModel.getBluetoothLoggingEnabled().removeObservers(viewLifecycleOwner);
         viewModel.getGnssLoggingEnabled().removeObservers(viewLifecycleOwner);
+        viewModel.getCdrLoggingEnabled().removeObservers(viewLifecycleOwner);
 
         viewModel.getCellularMqttStreamEnabled().removeObservers(viewLifecycleOwner);
         viewModel.getWifiMqttStreamEnabled().removeObservers(viewLifecycleOwner);
@@ -271,6 +436,7 @@ public class DashboardFragment extends AServiceDataFragment implements LocationL
         viewModel.setWifiLoggingEnabled(networkSurveyService.isWifiLoggingEnabled());
         viewModel.setBluetoothLoggingEnabled(networkSurveyService.isBluetoothLoggingEnabled());
         viewModel.setGnssLoggingEnabled(networkSurveyService.isGnssLoggingEnabled());
+        viewModel.setCdrLoggingEnabled(networkSurveyService.isCdrLoggingEnabled());
     }
 
     /**
@@ -502,6 +668,26 @@ public class DashboardFragment extends AServiceDataFragment implements LocationL
     }
 
     /**
+     * Starts or stops writing the CDR log file based on the specified parameter.
+     *
+     * @param enable True if logging should be enabled, false if it should be turned off.
+     */
+    private void toggleCdrLogging(boolean enable)
+    {
+        new ToggleLoggingTask(() -> {
+            if (service != null)
+            {
+                return service.toggleCdrLogging(enable);
+            }
+            return null;
+        }, enabled -> {
+            if (enabled == null) return getString(R.string.cdr_logging_toggle_failed);
+            updateCdrLogging(enabled);
+            return getString(enabled ? R.string.cdr_logging_start_toast : R.string.cdr_logging_stop_toast);
+        }, getContext()).executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
+    }
+
+    /**
      * Updates the cellular logging UI to indicate if logging is enabled or disabled.
      *
      * @param enabled The new status indicating if logging is enabled.
@@ -563,6 +749,22 @@ public class DashboardFragment extends AServiceDataFragment implements LocationL
         if (enabled) colorStateList = ColorStateList.valueOf(Color.GREEN);
 
         binding.gnssIcon.setImageTintList(colorStateList);
+    }
+
+    /**
+     * Updates the CDR logging UI to indicate if logging is enabled or disabled.
+     *
+     * @param enabled The new status indicating if logging is enabled.
+     */
+    private void updateCdrLogging(boolean enabled)
+    {
+        binding.cdrLoggingStatus.setText(enabled ? R.string.logging_status_enabled : R.string.status_disabled);
+        binding.cdrLoggingToggleSwitch.setChecked(enabled);
+
+        ColorStateList colorStateList = null;
+        if (enabled) colorStateList = ColorStateList.valueOf(Color.GREEN);
+
+        binding.cdrIcon.setImageTintList(colorStateList);
     }
 
     /**

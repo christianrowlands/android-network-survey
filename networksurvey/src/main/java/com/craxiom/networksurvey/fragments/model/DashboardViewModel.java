@@ -22,6 +22,7 @@ public class DashboardViewModel extends ViewModel
     private final MutableLiveData<Boolean> wifiLoggingEnabled = new MutableLiveData<>();
     private final MutableLiveData<Boolean> bluetoothLoggingEnabled = new MutableLiveData<>();
     private final MutableLiveData<Boolean> gnssLoggingEnabled = new MutableLiveData<>();
+    private final MutableLiveData<Boolean> cdrLoggingEnabled = new MutableLiveData<>();
 
     private final MutableLiveData<ConnectionState> mqttConnectionState = new MutableLiveData<>();
     private final MutableLiveData<Boolean> cellularMqttStreamEnabled = new MutableLiveData<>();
@@ -82,6 +83,19 @@ public class DashboardViewModel extends ViewModel
         if (!Objects.equals(gnssLoggingEnabled.getValue(), isEnabled))
         {
             gnssLoggingEnabled.postValue(isEnabled);
+        }
+    }
+
+    public LiveData<Boolean> getCdrLoggingEnabled()
+    {
+        return cdrLoggingEnabled;
+    }
+
+    public void setCdrLoggingEnabled(boolean isEnabled)
+    {
+        if (!Objects.equals(cdrLoggingEnabled.getValue(), isEnabled))
+        {
+            cdrLoggingEnabled.postValue(isEnabled);
         }
     }
 

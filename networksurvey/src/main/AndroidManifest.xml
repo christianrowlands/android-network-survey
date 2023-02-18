@@ -7,6 +7,9 @@
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
     <uses-permission android:name="android.permission.READ_PHONE_STATE" /> <!-- For the IMEI / MEID -->
+    <uses-permission android:name="android.permission.READ_PHONE_NUMBERS" /> <!-- For "my" phone number in CDRs -->
+    <uses-permission android:name="android.permission.READ_CALL_LOG" /> <!-- For other phone number in CDRs -->
+    <uses-permission android:name="android.permission.READ_SMS" /> <!-- For SMS events in CDRs -->
     <uses-permission android:name="android.permission.INTERNET" /> <!-- To connect to a remote gRPC server -->
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" /> <!-- To monitor changes to the network state -->
     <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" /> <!-- Access a Wi-Fi Scan -->
@@ -19,7 +22,7 @@
     <uses-permission android:name="android.permission.WAKE_LOCK" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
     <uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION" /> <!-- Needed to start the service at boot -->
-    <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
     <uses-feature
         android:name="android.hardware.location.gps"
@@ -87,6 +90,15 @@
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.BOOT_COMPLETED" />
+            </intent-filter>
+        </receiver>
+
+        <receiver
+            android:name=".CdrSmsReceiver"
+            android:label="CdrSmsReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.provider.Telephony.SMS_RECEIVED" />
             </intent-filter>
         </receiver>
 

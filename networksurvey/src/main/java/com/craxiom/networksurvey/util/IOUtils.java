@@ -15,11 +15,16 @@
  */
 package com.craxiom.networksurvey.util;
 
+import android.Manifest;
 import android.content.ClipData;
 import android.content.ClipboardManager;
 import android.content.Context;
+import android.content.pm.PackageManager;
 import android.location.Location;
+import android.telephony.TelephonyManager;
 import android.text.TextUtils;
+
+import androidx.core.app.ActivityCompat;
 
 import com.craxiom.networksurvey.Application;
 import com.craxiom.networksurvey.R;
@@ -118,5 +123,19 @@ public class IOUtils
             locationString += "," + altitude;
         }
         return locationString;
+    }
+
+    /**
+     * @return This device's phone number. Used for populating the phone number in CDRs.
+     */
+    public static String getMyPhoneNumber(Context context, TelephonyManager telephonyManager)
+    {
+        if (ActivityCompat.checkSelfPermission(context, Manifest.permission.READ_PHONE_NUMBERS) != PackageManager.PERMISSION_GRANTED
+                || ActivityCompat.checkSelfPermission(context, Manifest.permission.READ_PHONE_STATE) != PackageManager.PERMISSION_GRANTED)
+        {
+            return "";
+        }
+        String line1Number = telephonyManager.getLine1Number();
+        return line1Number == null ? "" : line1Number;
     }
 }

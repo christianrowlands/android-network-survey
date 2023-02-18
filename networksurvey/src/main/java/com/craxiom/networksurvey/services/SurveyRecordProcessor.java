@@ -1,6 +1,7 @@
 package com.craxiom.networksurvey.services;
 
 import static com.craxiom.networksurvey.util.GpsTestUtil.getGnssTimeoutIntervalMs;
+import static java.util.concurrent.TimeUnit.NANOSECONDS;
 
 import android.Manifest;
 import android.annotation.SuppressLint;
@@ -13,6 +14,7 @@ import android.location.Location;
 import android.location.LocationManager;
 import android.net.wifi.ScanResult;
 import android.os.Build;
+import android.os.SystemClock;
 import android.telephony.CellIdentity;
 import android.telephony.CellIdentityCdma;
 import android.telephony.CellIdentityGsm;
@@ -59,6 +61,8 @@ import com.craxiom.messaging.WifiBeaconRecord;
 import com.craxiom.messaging.WifiBeaconRecordData;
 import com.craxiom.messaging.bluetooth.SupportedTechnologies;
 import com.craxiom.messaging.gnss.Constellation;
+import com.craxiom.messaging.phonestate.Domain;
+import com.craxiom.messaging.phonestate.NetworkType;
 import com.craxiom.messaging.phonestate.SimState;
 import com.craxiom.messaging.wifi.EncryptionType;
 import com.craxiom.networksurvey.BuildConfig;
@@ -75,10 +79,13 @@ import com.craxiom.networksurvey.constants.NrMessageConstants;
 import com.craxiom.networksurvey.constants.UmtsMessageConstants;
 import com.craxiom.networksurvey.constants.WifiBeaconMessageConstants;
 import com.craxiom.networksurvey.listeners.IBluetoothSurveyRecordListener;
+import com.craxiom.networksurvey.listeners.ICdrEventListener;
 import com.craxiom.networksurvey.listeners.ICellularSurveyRecordListener;
 import com.craxiom.networksurvey.listeners.IDeviceStatusListener;
 import com.craxiom.networksurvey.listeners.IGnssSurveyRecordListener;
 import com.craxiom.networksurvey.listeners.IWifiSurveyRecordListener;
+import com.craxiom.networksurvey.model.CdrEvent;
+import com.craxiom.networksurvey.model.CdrEventType;
 import com.craxiom.networksurvey.model.CellularProtocol;
 import com.craxiom.networksurvey.model.CellularRecordWrapper;
 import com.craxiom.networksurvey.model.WifiRecordWrapper;
@@ -87,6 +94,11 @@ import com.craxiom.networksurvey.util.MathUtils;
 import com.craxiom.networksurvey.util.ParserUtils;
 import com.craxiom.networksurvey.util.PreferenceUtils;
 import com.craxiom.networksurvey.util.WifiCapabilitiesUtils;
+import com.google.android.gms.location.LocationServices;
+import com.google.android.gms.location.Priority;
+import com.google.android.gms.tasks.CancellationToken;
+import com.google.android.gms.tasks.CancellationTokenSource;
+import com.google.android.gms.tasks.Task;
 import com.google.protobuf.BoolValue;
 import com.google.protobuf.FloatValue;
 import com.google.protobuf.Int32Value;
@@ -103,6 +115,8 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
+import java.util.Timer;
+import java.util.TimerTask;
 import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.ExecutorService;
 import java.util.function.Consumer;
@@ -121,6 +135,7 @@ public class SurveyRecordProcessor
     public static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyyMMdd-HHmmss").withZone(ZoneId.systemDefault());
     private static final String MISSION_ID_PREFIX = "NS ";
     private static final int UNSET_TX_POWER_LEVEL = 127;
+    private static final int MAX_CDR_LOCATION_WAIT_TIME = 5_000;
 
     private final Object cellInfoProcessingLock = new Object();
     private final Object activityUpdateLock = new Object();
@@ -130,6 +145,7 @@ public class SurveyRecordProcessor
     private final Set<IWifiSurveyRecordListener> wifiSurveyRecordListeners = new CopyOnWriteArraySet<>();
     private final Set<IBluetoothSurveyRecordListener> bluetoothSurveyRecordListeners = new CopyOnWriteArraySet<>();
     private final Set<IGnssSurveyRecordListener> gnssSurveyRecordListeners = new CopyOnWriteArraySet<>();
+    private final Set<ICdrEventListener> cdrListeners = new CopyOnWriteArraySet<>();
     private final Set<IDeviceStatusListener> deviceStatusListeners = new CopyOnWriteArraySet<>();
     private volatile NetworkSurveyActivity networkSurveyActivity;
 
@@ -151,6 +167,8 @@ public class SurveyRecordProcessor
 
     private long lastGnssLogTimeMs;
     private int gnssScanRateMs;
+
+    private CdrEvent currentCdrCellIdentity = new CdrEvent(CdrEventType.LOCATION_UPDATE, "", "");
 
     /**
      * Creates a new processor that can consume the raw survey records in Android format and convert them to the
@@ -226,6 +244,28 @@ public class SurveyRecordProcessor
     }
 
     /**
+     * Adds a listener that will be notified of new CDR events whenever this class processes a new event.
+     *
+     * @param listener The listener to add.
+     * @since 1.11
+     */
+    void registerCdrEventListener(ICdrEventListener listener)
+    {
+        cdrListeners.add(listener);
+    }
+
+    /**
+     * Removes a listener of CDR events.
+     *
+     * @param listener The listener to remove.
+     * @since 1.11
+     */
+    void unregisterCdrEventListener(ICdrEventListener listener)
+    {
+        cdrListeners.remove(listener);
+    }
+
+    /**
      * Adds a listener that will be notified of new device status messages.
      *
      * @param deviceStatusListener The listener to add.
@@ -282,6 +322,7 @@ public class SurveyRecordProcessor
                 || !wifiSurveyRecordListeners.isEmpty()
                 || !bluetoothSurveyRecordListeners.isEmpty()
                 || !gnssSurveyRecordListeners.isEmpty()
+                || !cdrListeners.isEmpty()
                 || !deviceStatusListeners.isEmpty();
     }
 
@@ -318,6 +359,15 @@ public class SurveyRecordProcessor
     boolean isGnssBeingUsed()
     {
         return !gnssSurveyRecordListeners.isEmpty();
+    }
+
+    /**
+     * @return True if there are any registered CDR event listeners, false otherwise.
+     * @since 1.11
+     */
+    boolean isCdrBeingUsed()
+    {
+        return !cdrListeners.isEmpty();
     }
 
     /**
@@ -455,7 +505,8 @@ public class SurveyRecordProcessor
      * @param telephonyManager The Android telephony manager to get some more details from.
      * @since 1.4.0
      */
-    @RequiresApi(api = Build.VERSION_CODES.R)
+    @SuppressLint("NewApi")
+    @RequiresApi(api = Build.VERSION_CODES.Q)
     void onServiceStateChanged(ServiceState serviceState, TelephonyManager telephonyManager)
     {
         notifyPhoneStateListeners(createPhoneStateMessage(telephonyManager,
@@ -468,6 +519,64 @@ public class SurveyRecordProcessor
                                 .forEach(info -> builder.addNetworkRegistrationInfo(ParserUtils.convertNetworkInfo(info)));
                     }
                 }));
+    }
+
+    void onCdrServiceStateChanged(ServiceState serviceState, TelephonyManager telephonyManager)
+    {
+        CdrEvent cdrEvent = new CdrEvent(CdrEventType.LOCATION_UPDATE, "", "");
+        setCellInfo(cdrEvent, serviceState);
+
+        if (currentCdrCellIdentity.locationAreaChanged(cdrEvent))
+        {
+            currentCdrCellIdentity = cdrEvent;
+            finishCdrEvent(cdrEvent);
+        }
+    }
+
+    /**
+     * Handles creating and sending a {@link CdrEvent} to any listeners.
+     *
+     * @param state            The new state.
+     * @param otherPhoneNumber The phone number. Only present if the READ_CALL_LOG permission is granted.
+     * @param telephonyManager Used to get the cell identity of the current cell.
+     * @param myPhoneNumber    This device's phone number. Only present if the READ_PHONE_NUMBERS permission is granted.
+     */
+    void onCallStateChanged(int state, String otherPhoneNumber, TelephonyManager telephonyManager, String myPhoneNumber)
+    {
+        CdrEvent cdrEvent;
+        switch (state)
+        {
+            case TelephonyManager.CALL_STATE_IDLE: // Hangup
+                Timber.d("CALL_STATE_IDLE"); // TODO Delete me
+                return;
+
+            case TelephonyManager.CALL_STATE_OFFHOOK: // Outgoing
+                Timber.w("OUTGOING CALL!!!!!! otherPhoneNumber=%s", otherPhoneNumber); // TODO Delete me
+                cdrEvent = new CdrEvent(CdrEventType.OUTGOING_CALL, myPhoneNumber, otherPhoneNumber);
+                setCellInfo(cdrEvent, telephonyManager);
+                break;
+
+            case TelephonyManager.CALL_STATE_RINGING: // Incoming
+                Timber.w("INCOMING CALL!!!!!! otherPhoneNumber=%s", otherPhoneNumber); // TODO Delete me
+                cdrEvent = new CdrEvent(CdrEventType.INCOMING_CALL, otherPhoneNumber, myPhoneNumber);
+                setCellInfo(cdrEvent, telephonyManager);
+                break;
+
+            default:
+                return;
+        }
+
+        finishCdrEvent(cdrEvent);
+    }
+
+    public void onSmsEvent(String originatingAddress, TelephonyManager telephonyManager, String destinationAddress)
+    {
+        if (cdrListeners.isEmpty()) return;
+
+        Timber.d("onSmsEvent outgoingAddress=%s, destinationAddress=%s", originatingAddress, destinationAddress);
+        CdrEvent cdrEvent = new CdrEvent(CdrEventType.SMS, originatingAddress, destinationAddress);
+        setCellInfo(cdrEvent, telephonyManager);
+        finishCdrEvent(cdrEvent);
     }
 
     /**
@@ -1534,6 +1643,100 @@ public class SurveyRecordProcessor
     }
 
     /**
+     * @param telephonyManager The manager to use to get the voice network type.
+     * @return The Current Network type for voice calls. This method checks the Android permissions
+     * first, and returns {@link NetworkType#UNKNOWN} if the permission has not been granted.
+     * @since 1.11
+     */
+    private NetworkType getVoiceNetworkType(TelephonyManager telephonyManager)
+    {
+        NetworkType networkType = NetworkType.UNKNOWN;
+        if (ActivityCompat.checkSelfPermission(context, Manifest.permission.READ_PHONE_STATE) == PackageManager.PERMISSION_GRANTED)
+        {
+            networkType = NetworkType.forNumber(telephonyManager.getVoiceNetworkType());
+        }
+        return networkType;
+    }
+
+    /**
+     * Extracts the current cell information from the service state and sets it on the provided
+     * CDR event.
+     */
+    private void setCellInfo(CdrEvent cdrEvent, TelephonyManager telephonyManager)
+    {
+        if (ActivityCompat.checkSelfPermission(context, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED
+                || ActivityCompat.checkSelfPermission(context, Manifest.permission.READ_PHONE_STATE) != PackageManager.PERMISSION_GRANTED)
+        {
+            Timber.i("Don't have the required permissions for getting the current cell information for the CDR event");
+            return;
+        }
+
+        setCellInfo(cdrEvent, telephonyManager.getServiceState());
+    }
+
+    private void setCellInfo(CdrEvent cdrEvent, ServiceState serviceState)
+    {
+        if (serviceState == null) return;
+
+        serviceState.getNetworkRegistrationInfoList().forEach(info -> {
+            final Domain domainEnum = DeviceStatusMessageConstants.convertDomain(info.getDomain());
+            final NetworkType networkType = NetworkType.forNumber(info.getAccessNetworkTechnology());
+            switch (domainEnum)
+            {
+                case PS:
+                    // Ignore Wi-FI Packet Switched info
+                    if (networkType == NetworkType.IWLAN)
+                    {
+                        return;
+                    }
+                    cdrEvent.setPacketSwitchedInformation(networkType, getCellIdentifier(info));
+                    break;
+
+                case CS:
+                    cdrEvent.setCircuitSwitchedInformation(networkType, getCellIdentifier(info));
+                    break;
+
+                default:
+                    Timber.i("Unhandled domain for the current service state domain={}", info.getDomain());
+            }
+        });
+    }
+
+    /**
+     * Pulls the cell identifying information from the provide info object and concatenates it into
+     * a single string.
+     *
+     * @return The cell identity information in a string.
+     */
+    private String getCellIdentifier(android.telephony.NetworkRegistrationInfo info)
+    {
+        CellIdentity cellIdentity = info.getCellIdentity();
+        if (cellIdentity instanceof CellIdentityNr)
+        {
+            CellIdentityNr nr = (CellIdentityNr) cellIdentity;
+            return nr.getMccString() + "-" + nr.getMncString() + "-" + nr.getTac() + "-" + nr.getNci();
+        } else if (cellIdentity instanceof CellIdentityLte)
+        {
+            CellIdentityLte lte = (CellIdentityLte) cellIdentity;
+            return lte.getMccString() + "-" + lte.getMncString() + "-" + lte.getTac() + "-" + lte.getCi();
+        } else if (cellIdentity instanceof CellIdentityWcdma)
+        {
+            CellIdentityWcdma wcdma = (CellIdentityWcdma) cellIdentity;
+            return wcdma.getMccString() + "-" + wcdma.getMncString() + "-" + wcdma.getLac() + "-" + wcdma.getCid();
+        } else if (cellIdentity instanceof CellIdentityCdma)
+        {
+            CellIdentityCdma cdma = (CellIdentityCdma) cellIdentity;
+            return cdma.getSystemId() + "-" + cdma.getNetworkId() + "-" + cdma.getBasestationId();
+        } else if (cellIdentity instanceof CellIdentityGsm)
+        {
+            CellIdentityGsm gsm = (CellIdentityGsm) cellIdentity;
+            return gsm.getMccString() + "-" + gsm.getMncString() + "-" + gsm.getLac() + "-" + gsm.getCid();
+        }
+
+        return "";
+    }
+
+    /**
      * Validates the required fields.
      *
      * @return True if the provided fields are all valid, false if one or more is invalid.
@@ -1924,6 +2127,123 @@ public class SurveyRecordProcessor
                 Timber.e(e, "Unable to notify a GNSS Survey Record Listener because of an exception");
             }
         }
+    }
+
+    private void finishCdrEvent(CdrEvent cdrEvent)
+    {
+        if (cdrEvent == null) return;
+
+        setLocationAndNotifyListeners(cdrEvent, context);
+    }
+
+    /**
+     * Notify all the listeners that we have a new CDR event available.
+     *
+     * @param cdrEvent The new CDR event to send to the listeners.
+     */
+    private void notifyCdrListeners(CdrEvent cdrEvent)
+    {
+        for (ICdrEventListener listener : cdrListeners)
+        {
+            try
+            {
+                listener.onCdrEvent(cdrEvent);
+            } catch (Exception e)
+            {
+                Timber.e(e, "Unable to notify a CDR Event Listener because of an exception");
+            }
+        }
+    }
+
+    /**
+     * Tries to get the current location and set it on the CDR event. If the current location is not ready, then an
+     * async task is created and we try to wait for that to complete before sending the CDR event to listeners. If
+     * the task does not finish in {@link #MAX_CDR_LOCATION_WAIT_TIME}, then we send the CDR event to listeners without
+     * a location.
+     * <p>
+     * There is an edge case here where a user could turn off CDR logging while we are waiting for a location. If that
+     * happens the CSV logging listener will be removed, so the CDR event would never be notified of the event. This
+     * is why I am trying to keep the max wait time low.
+     */
+    private void setLocationAndNotifyListeners(CdrEvent cdrEvent, Context context)
+    {
+        // If the regular listener has a location that is not too old, then use that and don't worry about requesting one
+        Location listenerLocation = gpsListener.getLatestLocation();
+        if (listenerLocation != null)
+        {
+            long ageMs = SystemClock.elapsedRealtime() - NANOSECONDS.toMillis(listenerLocation.getElapsedRealtimeNanos());
+            if (ageMs < 30_000)
+            {
+                cdrEvent.setLocation(listenerLocation);
+                notifyCdrListeners(cdrEvent);
+                return;
+            }
+        }
+
+        // We could not get an existing location, request a new one
+        final CancellationTokenSource locationCancellationToken = new CancellationTokenSource();
+
+        final Task<Location> locationTask = requestLocation(context, locationCancellationToken.getToken());
+        if (locationTask == null)
+        {
+            Timber.d("Could not get the location for a CDR event");
+            notifyCdrListeners(cdrEvent);
+        } else
+        {
+            if (locationTask.isComplete())
+            {
+                final Location location = locationTask.getResult();
+                cdrEvent.setLocation(location);
+                notifyCdrListeners(cdrEvent);
+            } else
+            {
+                // Schedule a timer task that will cancel the location task if the location is not returned in `n` seconds
+                final Timer cancellationTimer = new Timer();
+                cancellationTimer.schedule(new TimerTask()
+                {
+                    @Override
+                    public void run()
+                    {
+                        Timber.i("Cancelling the CDR location request because the timeout of %d ms was reached", MAX_CDR_LOCATION_WAIT_TIME);
+                        locationCancellationToken.cancel();
+                    }
+                }, MAX_CDR_LOCATION_WAIT_TIME);
+
+                locationTask.addOnCompleteListener(locTask -> {
+                    Location location = null;
+                    try
+                    {
+                        Timber.v("CDR Location Task onCompleteListener called");
+                        cancellationTimer.cancel();
+                        if (locTask.isSuccessful()) location = locTask.getResult();
+                        cdrEvent.setLocation(location);
+                    } catch (Throwable t)
+                    {
+                        Timber.e(t, "Something went wrong when trying to get the location for a CDR event");
+                    }
+                    notifyCdrListeners(cdrEvent);
+                });
+            }
+        }
+    }
+
+    /**
+     * Ask the Android API for this device's location as long as we have the right permissions.
+     *
+     * @param context           The context to use to check permissions.
+     * @param cancellationToken The cancellation token that can be used to cancel the location request.
+     * @return The Location {@link Task} that can be used to get the results of the location request.
+     */
+    private static Task<Location> requestLocation(Context context, CancellationToken cancellationToken)
+    {
+        if (ActivityCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED)
+        {
+            Timber.i("Location permissions not granted so the report's sent location could not be populated");
+            return null;
+        }
+
+        return LocationServices.getFusedLocationProviderClient(context)
+                .getCurrentLocation(Priority.PRIORITY_BALANCED_POWER_ACCURACY, cancellationToken);
     }
 
     /**

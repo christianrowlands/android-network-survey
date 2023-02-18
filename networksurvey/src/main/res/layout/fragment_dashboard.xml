@@ -429,6 +429,125 @@
                                 </androidx.constraintlayout.widget.ConstraintLayout>
 
                             </LinearLayout>
+
+                        </LinearLayout>
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="horizontal"
+                            android:baselineAligned="false">
+
+                            <View
+                                android:layout_width="match_parent"
+                                android:layout_height="2dp"
+                                android:layout_weight="1"
+                                android:layout_marginStart="@dimen/divider_margin"
+                                android:background="@color/colorAccentFaded" />
+
+                            <View
+                                android:layout_width="match_parent"
+                                android:layout_height="2dp"
+                                android:layout_weight="1"
+                                android:layout_marginEnd="@dimen/divider_margin"
+                                android:background="@color/colorAccentFaded" />
+                        </LinearLayout>
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="horizontal"
+                            android:baselineAligned="false">
+
+                            <LinearLayout
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:orientation="horizontal"
+                                android:baselineAligned="false"
+                                android:layout_weight="1">
+
+                                <androidx.constraintlayout.widget.ConstraintLayout
+                                    android:id="@+id/cdr_control_group"
+                                    android:layout_width="match_parent"
+                                    android:layout_height="wrap_content"
+                                    android:layout_marginTop="@dimen/small_margin"
+                                    android:layout_marginBottom="@dimen/small_margin">
+
+                                    <com.google.android.flexbox.FlexboxLayout
+                                        android:id="@+id/cdr_logging_title_group"
+                                        android:layout_width="match_parent"
+                                        android:layout_height="wrap_content"
+                                        app:alignItems="center"
+                                        app:justifyContent="center"
+                                        app:flexWrap="wrap"
+                                        app:layout_constraintTop_toTopOf="@id/cdr_control_group"
+                                        app:layout_constraintBottom_toTopOf="@id/cdr_logging_status_group">
+
+                                        <ImageView
+                                            android:id="@+id/cdr_icon"
+                                            android:layout_width="24dp"
+                                            android:layout_height="24dp"
+                                            android:layout_gravity="center"
+                                            android:layout_marginEnd="7dp"
+                                            android:contentDescription="@string/cdr_icon_description"
+                                            android:src="@drawable/ic_cdr" />
+
+                                        <TextView
+                                            android:id="@+id/cdr_logging_title"
+                                            style="@style/StandardText"
+                                            android:layout_width="wrap_content"
+                                            android:layout_height="wrap_content"
+                                            android:text="@string/cdr_title" />
+
+                                        <androidx.appcompat.widget.SwitchCompat
+                                            android:id="@+id/cdr_logging_toggle_switch"
+                                            android:layout_width="wrap_content"
+                                            android:layout_height="wrap_content"
+                                            android:layout_gravity="center"
+                                            android:gravity="center"
+                                            app:layout_constraintBottom_toBottomOf="@id/cdr_control_group" />
+
+                                        <ImageView
+                                            android:id="@+id/cdr_help_icon"
+                                            android:layout_width="24dp"
+                                            android:layout_height="24dp"
+                                            android:layout_gravity="center"
+                                            android:layout_marginStart="@dimen/medium_margin"
+                                            android:contentDescription="@string/cdr_icon_description"
+                                            android:src="@drawable/ic_help" />
+
+                                    </com.google.android.flexbox.FlexboxLayout>
+
+                                    <LinearLayout
+                                        android:id="@+id/cdr_logging_status_group"
+                                        android:layout_width="match_parent"
+                                        android:layout_height="wrap_content"
+                                        android:orientation="horizontal"
+                                        android:baselineAligned="false"
+                                        android:gravity="center"
+                                        app:layout_constraintTop_toBottomOf="@id/cdr_logging_title_group">
+
+                                        <TextView
+                                            android:id="@+id/cdr_logging_status_label"
+                                            style="@style/SmallLabelText"
+                                            android:layout_width="wrap_content"
+                                            android:layout_height="wrap_content"
+                                            android:layout_weight="0"
+                                            android:text="@string/status_label" />
+
+                                        <TextView
+                                            android:id="@+id/cdr_logging_status"
+                                            style="@style/StandardText"
+                                            android:layout_width="wrap_content"
+                                            android:layout_height="wrap_content"
+                                            android:layout_weight="0"
+                                            android:text="@string/off" />
+                                    </LinearLayout>
+
+                                </androidx.constraintlayout.widget.ConstraintLayout>
+
+                            </LinearLayout>
+
                         </LinearLayout>
 
                     </LinearLayout>

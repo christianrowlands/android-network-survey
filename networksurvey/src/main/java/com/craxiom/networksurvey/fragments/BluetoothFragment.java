@@ -59,7 +59,7 @@ public class BluetoothFragment extends Fragment implements IBluetoothSurveyRecor
     private FragmentBluetoothListBinding binding;
 
     private SortedSet<BluetoothRecord> bluetoothRecordSortedSet;
-    private final Handler uiThreadHandler;
+    private Handler uiThreadHandler;
     private BluetoothViewModel viewModel;
 
     private Context applicationContext;
@@ -80,12 +80,12 @@ public class BluetoothFragment extends Fragment implements IBluetoothSurveyRecor
      */
     public BluetoothFragment()
     {
-        uiThreadHandler = new Handler(Looper.getMainLooper());
     }
 
     @Override
     public void onCreate(Bundle savedInstanceState)
     {
+        uiThreadHandler = new Handler(Looper.getMainLooper());
         applicationContext = requireActivity().getApplicationContext();
         super.onCreate(savedInstanceState);
     }
@@ -234,7 +234,7 @@ public class BluetoothFragment extends Fragment implements IBluetoothSurveyRecor
     /**
      * Updates the view with the information stored in the view model.
      *
-     * @since 1.11.0
+     * @since 1.11
      */
     private void initializeView()
     {

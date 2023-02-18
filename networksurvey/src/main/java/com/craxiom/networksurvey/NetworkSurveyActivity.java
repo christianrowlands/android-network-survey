@@ -249,9 +249,17 @@ public class NetworkSurveyActivity extends AppCompatActivity
      */
     private void showPermissionRationaleAndRequestPermissions()
     {
-        if (ActivityCompat.shouldShowRequestPermissionRationale(this, Manifest.permission.ACCESS_FINE_LOCATION)
-                || ActivityCompat.shouldShowRequestPermissionRationale(this, Manifest.permission.WRITE_EXTERNAL_STORAGE)
-                || ActivityCompat.shouldShowRequestPermissionRationale(this, Manifest.permission.READ_PHONE_STATE))
+        boolean shouldShowPermissionsRationale = false;
+        for (String cdrPermission : PERMISSIONS)
+        {
+            if (ActivityCompat.shouldShowRequestPermissionRationale(this, cdrPermission))
+            {
+                shouldShowPermissionsRationale = true;
+                break;
+            }
+        }
+
+        if (shouldShowPermissionsRationale)
         {
             Timber.d("Showing the permissions rationale dialog");
 
