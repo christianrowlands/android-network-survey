@@ -34,6 +34,7 @@ import androidx.preference.PreferenceManager;
 
 import com.craxiom.mqttlibrary.IConnectionStateListener;
 import com.craxiom.mqttlibrary.connection.ConnectionState;
+import com.craxiom.networksurvey.NetworkSurveyActivity;
 import com.craxiom.networksurvey.R;
 import com.craxiom.networksurvey.constants.NetworkSurveyConstants;
 import com.craxiom.networksurvey.databinding.FragmentDashboardBinding;
@@ -57,14 +58,16 @@ import timber.log.Timber;
 public class DashboardFragment extends AServiceDataFragment implements LocationListener, IConnectionStateListener,
         ILoggingChangeListener, SharedPreferences.OnSharedPreferenceChangeListener
 {
-    private static final int ACCESS_REQUIRED_PERMISSION_REQUEST_ID = 2;
-    private static final int ACCESS_OPTIONAL_PERMISSION_REQUEST_ID = 2;
+    private static final int ACCESS_REQUIRED_PERMISSION_REQUEST_ID = 20;
+    private static final int ACCESS_OPTIONAL_PERMISSION_REQUEST_ID = 21;
+    private static final int ACCESS_BLUETOOTH_PERMISSION_REQUEST_ID = 22;
 
     public static final String[] CDR_REQUIRED_PERMISSIONS;
     public static final String[] CDR_OPTIONAL_PERMISSIONS = {
             Manifest.permission.READ_CALL_LOG,
             Manifest.permission.READ_PHONE_NUMBERS,
-            Manifest.permission.READ_SMS};
+            Manifest.permission.READ_SMS,
+            Manifest.permission.RECEIVE_SMS};
 
     static
     {
@@ -73,14 +76,12 @@ public class DashboardFragment extends AServiceDataFragment implements LocationL
         {
             CDR_REQUIRED_PERMISSIONS = new String[]{
                     Manifest.permission.ACCESS_FINE_LOCATION,
-                    Manifest.permission.WRITE_EXTERNAL_STORAGE,
                     Manifest.permission.READ_PHONE_STATE,
                     Manifest.permission.POST_NOTIFICATIONS};
         } else
         {
             CDR_REQUIRED_PERMISSIONS = new String[]{
                     Manifest.permission.ACCESS_FINE_LOCATION,
-                    Manifest.permission.WRITE_EXTERNAL_STORAGE,
                     Manifest.permission.READ_PHONE_STATE};
         }
     }
@@ -228,6 +229,13 @@ public class DashboardFragment extends AServiceDataFragment implements LocationL
         });
 
         initializeLoggingSwitch(binding.bluetoothLoggingToggleSwitch, (newEnabledState, toggleSwitch) -> {
+            if (newEnabledState && (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && missingAnyPermissions(NetworkSurveyActivity.BLUETOOTH_PERMISSIONS)))
+            {
+                toggleSwitch.setChecked(false);
+                showBluetoothPermissionRationaleAndRequestPermissions();
+                return;
+            }
+
             viewModel.setBluetoothLoggingEnabled(newEnabledState);
             toggleBluetoothLogging(newEnabledState);
         });
@@ -238,7 +246,7 @@ public class DashboardFragment extends AServiceDataFragment implements LocationL
         });
 
         initializeLoggingSwitch(binding.cdrLoggingToggleSwitch, (newEnabledState, toggleSwitch) -> {
-            if (missingAnyCdrPermissions(CDR_REQUIRED_PERMISSIONS) || missingAnyCdrPermissions(CDR_OPTIONAL_PERMISSIONS))
+            if (newEnabledState && (missingAnyPermissions(CDR_REQUIRED_PERMISSIONS) || missingAnyPermissions(CDR_OPTIONAL_PERMISSIONS)))
             {
                 toggleSwitch.setChecked(false);
                 showCdrPermissionRationaleAndRequestPermissions();
@@ -253,14 +261,14 @@ public class DashboardFragment extends AServiceDataFragment implements LocationL
     }
 
     /**
-     * @return True if any of the permissions for CDR have been denied. False if all the permissions
+     * @return True if any of the permissions have been denied. False if all the permissions
      * have been granted.
      */
-    private boolean missingAnyCdrPermissions(String[] CDR_PERMISSIONS)
+    private boolean missingAnyPermissions(String[] permissions)
     {
         final Context context = getContext();
         if (context == null) return true;
-        for (String permission : CDR_PERMISSIONS)
+        for (String permission : permissions)
         {
             if (ContextCompat.checkSelfPermission(context, permission) != PackageManager.PERMISSION_GRANTED)
             {
@@ -270,6 +278,34 @@ public class DashboardFragment extends AServiceDataFragment implements LocationL
         }
 
         return false;
+    }
+
+    /**
+     * Check to see if we should show the rationale for any of the Bluetooth permissions. If so,
+     * then display a dialog that explains what permissions we need for bluetooth to work properly.
+     * <p>
+     * If we should not show the rationale, then just request the permissions.
+     */
+    private void showBluetoothPermissionRationaleAndRequestPermissions()
+    {
+        final FragmentActivity activity = getActivity();
+        if (activity == null) return;
+
+        final Context context = getContext();
+        if (context == null) return;
+
+        if (missingAnyPermissions(NetworkSurveyActivity.BLUETOOTH_PERMISSIONS))
+        {
+            AlertDialog.Builder alertBuilder = new AlertDialog.Builder(context);
+            alertBuilder.setCancelable(true);
+            alertBuilder.setTitle(getString(R.string.bluetooth_permissions_rationale_title));
+            alertBuilder.setMessage(getText(R.string.bluetooth_permissions_rationale));
+            alertBuilder.setPositiveButton(android.R.string.ok, (dialog, which) -> requestBluetoothPermissions());
+
+            AlertDialog permissionsExplanationDialog = alertBuilder.create();
+            permissionsExplanationDialog.show();
+            return;
+        }
     }
 
     /**
@@ -286,9 +322,7 @@ public class DashboardFragment extends AServiceDataFragment implements LocationL
         final Context context = getContext();
         if (context == null) return;
 
-        boolean missingRequiredPermissions = missingAnyCdrPermissions(CDR_REQUIRED_PERMISSIONS);
-
-        if (missingRequiredPermissions)
+        if (missingAnyPermissions(CDR_REQUIRED_PERMISSIONS))
         {
             AlertDialog.Builder alertBuilder = new AlertDialog.Builder(context);
             alertBuilder.setCancelable(true);
@@ -301,29 +335,32 @@ public class DashboardFragment extends AServiceDataFragment implements LocationL
             return;
         }
 
-        boolean shouldShowOptionalPermissionsRationale = false;
-        for (String cdrPermission : CDR_OPTIONAL_PERMISSIONS)
-        {
-            if (ActivityCompat.shouldShowRequestPermissionRationale(activity, cdrPermission))
-            {
-                shouldShowOptionalPermissionsRationale = true;
-                break;
-            }
-        }
-
-        if (shouldShowOptionalPermissionsRationale)
+        if (missingAnyPermissions(CDR_OPTIONAL_PERMISSIONS))
         {
             AlertDialog.Builder alertBuilder = new AlertDialog.Builder(context);
             alertBuilder.setCancelable(true);
             alertBuilder.setTitle(getString(R.string.cdr_optional_permissions_rationale_title));
             alertBuilder.setMessage(getText(R.string.cdr_optional_permissions_rationale));
-            alertBuilder.setPositiveButton(android.R.string.ok, (dialog, which) -> requestOptionalCdrPermissions());
+            alertBuilder.setPositiveButton(R.string.request, (dialog, which) -> requestOptionalCdrPermissions());
+            alertBuilder.setNegativeButton(R.string.ignore, (dialog, which) -> {
+                viewModel.setCdrLoggingEnabled(true);
+                toggleCdrLogging(true);
+            });
 
             AlertDialog permissionsExplanationDialog = alertBuilder.create();
             permissionsExplanationDialog.show();
-        } else
+        }
+    }
+
+    /**
+     * Request the permissions needed for bluetooth if any of them have not yet been granted.  If all of the permissions
+     * are already granted then don't request anything.
+     */
+    private void requestBluetoothPermissions()
+    {
+        if (missingAnyPermissions(NetworkSurveyActivity.BLUETOOTH_PERMISSIONS))
         {
-            requestOptionalCdrPermissions();
+            ActivityCompat.requestPermissions(getActivity(), NetworkSurveyActivity.BLUETOOTH_PERMISSIONS, ACCESS_BLUETOOTH_PERMISSION_REQUEST_ID);
         }
     }
 
@@ -333,7 +370,7 @@ public class DashboardFragment extends AServiceDataFragment implements LocationL
      */
     private void requestRequiredCdrPermissions()
     {
-        if (missingAnyCdrPermissions(CDR_REQUIRED_PERMISSIONS))
+        if (missingAnyPermissions(CDR_REQUIRED_PERMISSIONS))
         {
             ActivityCompat.requestPermissions(getActivity(), CDR_REQUIRED_PERMISSIONS, ACCESS_REQUIRED_PERMISSION_REQUEST_ID);
         }
@@ -345,7 +382,7 @@ public class DashboardFragment extends AServiceDataFragment implements LocationL
      */
     private void requestOptionalCdrPermissions()
     {
-        if (missingAnyCdrPermissions(CDR_OPTIONAL_PERMISSIONS))
+        if (missingAnyPermissions(CDR_OPTIONAL_PERMISSIONS))
         {
             ActivityCompat.requestPermissions(getActivity(), CDR_OPTIONAL_PERMISSIONS, ACCESS_OPTIONAL_PERMISSION_REQUEST_ID);
         }

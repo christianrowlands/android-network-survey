@@ -4,7 +4,7 @@ import com.craxiom.messaging.BluetoothRecord;
 import com.craxiom.messaging.BluetoothRecordData;
 import com.craxiom.messaging.bluetooth.SupportedTechnologies;
 import com.craxiom.messaging.bluetooth.Technology;
-import com.craxiom.networksurvey.fragments.BluetoothFragment;
+import com.craxiom.networksurvey.fragments.model.BluetoothViewModel;
 import com.craxiom.networksurvey.model.SortedSet;
 import com.craxiom.networksurvey.util.IOUtils;
 import com.google.protobuf.FloatValue;
@@ -41,13 +41,13 @@ public class SortedSetTest
         SortedSet<BluetoothRecord> bluetoothRecordSortedSet = null;
         try
         {
-            final BluetoothFragment bluetoothFragment = new BluetoothFragment();
-            Field bluetoothRecordSortedSetField = BluetoothFragment.class.getDeclaredField("bluetoothRecordSortedSet");
+            final BluetoothViewModel bluetoothViewModel = new BluetoothViewModel();
+            Field bluetoothRecordSortedSetField = BluetoothViewModel.class.getDeclaredField("bluetoothSortedList");
             bluetoothRecordSortedSetField.setAccessible(true);
-            bluetoothRecordSortedSet = (SortedSet) bluetoothRecordSortedSetField.get(bluetoothFragment);
+            bluetoothRecordSortedSet = (SortedSet) bluetoothRecordSortedSetField.get(bluetoothViewModel);
         } catch (NoSuchFieldException | IllegalAccessException e)
         {
-            Assert.fail("Could not get the bluetoothRecordSortedSet field from the BluetoothFragment class");
+            Assert.fail("Could not get the bluetoothSortedSet field from the BluetoothViewModel class");
         }
 
         bluetoothRecordSortedSet.add(record1);
@@ -57,11 +57,11 @@ public class SortedSetTest
         Assert.assertEquals(2, bluetoothRecordSortedSet.size());
 
         // The old record should be removed and the new one present
-        Assert.assertEquals(-71f, ((BluetoothRecord) bluetoothRecordSortedSet.get(0)).getData().getSignalStrength().getValue(), FLOAT_TOLERANCE);
+        Assert.assertEquals(-71f, bluetoothRecordSortedSet.get(0).getData().getSignalStrength().getValue(), FLOAT_TOLERANCE);
         bluetoothRecordSortedSet.add(matchingRecord);
         Assert.assertEquals(2, bluetoothRecordSortedSet.size());
         // Use index 1 because record2 will be at the top since its RSSI value (-72) is now stronger than the matching record's -81
-        Assert.assertEquals(-81f, ((BluetoothRecord) bluetoothRecordSortedSet.get(1)).getData().getSignalStrength().getValue(), FLOAT_TOLERANCE);
+        Assert.assertEquals(-81f, bluetoothRecordSortedSet.get(1).getData().getSignalStrength().getValue(), FLOAT_TOLERANCE);
 
         bluetoothRecordSortedSet.add(record3);
         Assert.assertEquals(3, bluetoothRecordSortedSet.size());
@@ -71,7 +71,7 @@ public class SortedSetTest
 
         bluetoothRecordSortedSet.add(record1);
         Assert.assertEquals(4, bluetoothRecordSortedSet.size());
-        Assert.assertEquals(-71f, ((BluetoothRecord) bluetoothRecordSortedSet.get(0)).getData().getSignalStrength().getValue(), FLOAT_TOLERANCE);
+        Assert.assertEquals(-71f, bluetoothRecordSortedSet.get(0).getData().getSignalStrength().getValue(), FLOAT_TOLERANCE);
 
         bluetoothRecordSortedSet.add(record4);
         Assert.assertEquals(4, bluetoothRecordSortedSet.size());

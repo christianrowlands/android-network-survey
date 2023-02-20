@@ -168,6 +168,7 @@ public class SurveyRecordProcessor
     private long lastGnssLogTimeMs;
     private int gnssScanRateMs;
 
+    private int currentCallState = TelephonyManager.CALL_STATE_IDLE;
     private CdrEvent currentCdrCellIdentity = new CdrEvent(CdrEventType.LOCATION_UPDATE, "", "");
 
     /**
@@ -543,29 +544,33 @@ public class SurveyRecordProcessor
      */
     void onCallStateChanged(int state, String otherPhoneNumber, TelephonyManager telephonyManager, String myPhoneNumber)
     {
-        CdrEvent cdrEvent;
+        Timber.d("Current call state=%s, new call state=%s", currentCallState, state);
+        CdrEvent cdrEvent = null;
         switch (state)
         {
             case TelephonyManager.CALL_STATE_IDLE: // Hangup
-                Timber.d("CALL_STATE_IDLE"); // TODO Delete me
-                return;
+                break;
 
             case TelephonyManager.CALL_STATE_OFFHOOK: // Outgoing
-                Timber.w("OUTGOING CALL!!!!!! otherPhoneNumber=%s", otherPhoneNumber); // TODO Delete me
-                cdrEvent = new CdrEvent(CdrEventType.OUTGOING_CALL, myPhoneNumber, otherPhoneNumber);
-                setCellInfo(cdrEvent, telephonyManager);
+                // The state has to transition from idle to offhook for it to be an outgoing call. The offhook state
+                // will also be set on an incoming call, but it will transition from ringing to offhook.
+                if (currentCallState == TelephonyManager.CALL_STATE_IDLE)
+                {
+                    cdrEvent = new CdrEvent(CdrEventType.OUTGOING_CALL, myPhoneNumber, otherPhoneNumber);
+                    setCellInfo(cdrEvent, telephonyManager);
+                }
                 break;
 
             case TelephonyManager.CALL_STATE_RINGING: // Incoming
-                Timber.w("INCOMING CALL!!!!!! otherPhoneNumber=%s", otherPhoneNumber); // TODO Delete me
                 cdrEvent = new CdrEvent(CdrEventType.INCOMING_CALL, otherPhoneNumber, myPhoneNumber);
                 setCellInfo(cdrEvent, telephonyManager);
                 break;
 
             default:
-                return;
+                break;
         }
 
+        currentCallState = state;
         finishCdrEvent(cdrEvent);
     }
 

@@ -2286,8 +2286,6 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
 
         boolean hasPermissions = ContextCompat.checkSelfPermission(this,
                 Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED;
-        hasPermissions = hasPermissions && ContextCompat.checkSelfPermission(this,
-                Manifest.permission.WRITE_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED;
 
         if (hasPermissions)
         {

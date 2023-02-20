@@ -129,7 +129,7 @@ public class BluetoothFragment extends Fragment implements IBluetoothSurveyRecor
         return binding.getRoot();
     }
 
-    @SuppressLint("InlinedApi")
+    @SuppressLint("InlinedApi") // Validated in the hasBtScanPermission check
     @Override
     public void onResume()
     {

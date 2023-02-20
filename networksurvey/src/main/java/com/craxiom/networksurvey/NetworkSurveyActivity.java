@@ -58,29 +58,33 @@ public class NetworkSurveyActivity extends AppCompatActivity
     private static final int ACCESS_PERMISSION_REQUEST_ID = 1;
     public static final String[] PERMISSIONS;
 
+    // The BLUETOOTH_CONNECT and BLUETOOTH_SCAN permissions are only for Android 12 and above.
+    public static final String[] BLUETOOTH_PERMISSIONS;
+
     static
     {
         // Android 13+ (SDK 33) requires permission for push notifications
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU)
         {
+            BLUETOOTH_PERMISSIONS = new String[]{
+                    Manifest.permission.BLUETOOTH_CONNECT,
+                    Manifest.permission.BLUETOOTH_SCAN};
             PERMISSIONS = new String[]{
                     Manifest.permission.ACCESS_FINE_LOCATION,
-                    Manifest.permission.WRITE_EXTERNAL_STORAGE,
                     Manifest.permission.READ_PHONE_STATE,
-                    Manifest.permission.BLUETOOTH_CONNECT,
-                    Manifest.permission.BLUETOOTH_SCAN,
                     Manifest.permission.POST_NOTIFICATIONS};
         } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S)
         {
-            // Since we are running on the Android 12+, we need to ask for the BLUETOOTH_CONNECT and BLUETOOTH_SCAN permissions
+            BLUETOOTH_PERMISSIONS = new String[]{
+                    Manifest.permission.BLUETOOTH_CONNECT,
+                    Manifest.permission.BLUETOOTH_SCAN};
             PERMISSIONS = new String[]{
                     Manifest.permission.ACCESS_FINE_LOCATION,
                     Manifest.permission.WRITE_EXTERNAL_STORAGE,
-                    Manifest.permission.READ_PHONE_STATE,
-                    Manifest.permission.BLUETOOTH_CONNECT,
-                    Manifest.permission.BLUETOOTH_SCAN};
+                    Manifest.permission.READ_PHONE_STATE};
         } else
         {
+            BLUETOOTH_PERMISSIONS = new String[]{};
             PERMISSIONS = new String[]{
                     Manifest.permission.ACCESS_FINE_LOCATION,
                     Manifest.permission.WRITE_EXTERNAL_STORAGE,
@@ -252,10 +256,19 @@ public class NetworkSurveyActivity extends AppCompatActivity
         boolean shouldShowPermissionsRationale = false;
         for (String cdrPermission : PERMISSIONS)
         {
-            if (ActivityCompat.shouldShowRequestPermissionRationale(this, cdrPermission))
+            // If we are on Android 13+ and the permission is for the notification, then don't
+            // show the permission rationale. This is because the app gets stuck in a permission
+            // loop because the shouldShowRequestPermissionRationale method was always returning
+            // true for POST_NOTIFICATION, but when requesting the permission it was never prompting
+            // the user. I hope this bug is fixed in future Android versions.
+            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU
+                    || !Manifest.permission.POST_NOTIFICATIONS.equals(cdrPermission))
             {
-                shouldShowPermissionsRationale = true;
-                break;
+                if (ActivityCompat.shouldShowRequestPermissionRationale(this, cdrPermission))
+                {
+                    shouldShowPermissionsRationale = true;
+                    break;
+                }
             }
         }
 

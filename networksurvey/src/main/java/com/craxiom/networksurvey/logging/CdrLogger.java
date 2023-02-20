@@ -29,8 +29,9 @@ public class CdrLogger extends CsvRecordLogger implements ICdrEventListener
         return CdrEvent.getHeaders();
     }
 
+    // Needs to be synchronized so we don't write two records at the same time... which I saw happen
     @Override
-    public void onCdrEvent(CdrEvent record)
+    public synchronized void onCdrEvent(CdrEvent record)
     {
         try
         {

@@ -3,9 +3,11 @@ package com.craxiom.networksurvey.fragments;
 import static com.craxiom.networksurvey.util.PreferenceUtils.populatePrefsFromMqttConnectionSettings;
 
 import android.Manifest;
+import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
+import android.os.Build;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -16,12 +18,16 @@ import android.widget.Toast;
 
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.widget.SwitchCompat;
 import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
+import androidx.fragment.app.FragmentActivity;
 import androidx.navigation.Navigation;
 
 import com.craxiom.mqttlibrary.connection.BrokerConnectionInfo;
 import com.craxiom.mqttlibrary.ui.AConnectionFragment;
+import com.craxiom.networksurvey.NetworkSurveyActivity;
 import com.craxiom.networksurvey.R;
 import com.craxiom.networksurvey.constants.NetworkSurveyConstants;
 import com.craxiom.networksurvey.fragments.model.MqttConnectionSettings;
@@ -38,6 +44,8 @@ import timber.log.Timber;
  */
 public class MqttFragment extends AConnectionFragment<NetworkSurveyService.SurveyServiceBinder>
 {
+    private static final int ACCESS_BLUETOOTH_PERMISSION_REQUEST_ID = 30;
+
     private SwitchCompat cellularStreamToggleSwitch;
     private SwitchCompat wifiStreamToggleSwitch;
     private SwitchCompat bluetoothStreamToggleSwitch;
@@ -77,6 +85,7 @@ public class MqttFragment extends AConnectionFragment<NetworkSurveyService.Surve
         return super.onCreateView(inflater, container, savedInstanceState);
     }
 
+    @SuppressLint("ClickableViewAccessibility")
     @Override
     protected void inflateAdditionalFieldsViewStub(LayoutInflater layoutInflater, ViewStub viewStub)
     {
@@ -88,6 +97,19 @@ public class MqttFragment extends AConnectionFragment<NetworkSurveyService.Surve
         bluetoothStreamToggleSwitch = inflatedStub.findViewById(R.id.streamBluetoothToggleSwitch);
         gnssStreamToggleSwitch = inflatedStub.findViewById(R.id.streamGnssToggleSwitch);
         deviceStatusStreamToggleSwitch = inflatedStub.findViewById(R.id.streamDeviceStatusToggleSwitch);
+
+        bluetoothStreamToggleSwitch.setOnClickListener((buttonView) -> {
+            if (buttonView.isPressed())
+            {
+                SwitchCompat switchCompat = (SwitchCompat) buttonView;
+                if (switchCompat.isChecked() && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && missingBluetoothPermissions())
+                {
+                    switchCompat.setChecked(false);
+                    showBluetoothPermissionRationaleAndRequestPermissions();
+                }
+            }
+        });
+        bluetoothStreamToggleSwitch.setOnTouchListener((buttonView, motionEvent) -> motionEvent.getActionMasked() == 2);
 
         Button scanCodeButton = inflatedStub.findViewById(R.id.code_scan_button);
         scanCodeButton.setOnClickListener(v -> {
@@ -245,5 +267,64 @@ public class MqttFragment extends AConnectionFragment<NetworkSurveyService.Surve
         }
 
         return true;
+    }
+
+    /**
+     * Check to see if we should show the rationale for any of the Bluetooth permissions. If so,
+     * then display a dialog that explains what permissions we need for bluetooth to work properly.
+     * <p>
+     * If we should not show the rationale, then just request the permissions.
+     */
+    private void showBluetoothPermissionRationaleAndRequestPermissions()
+    {
+        final FragmentActivity activity = getActivity();
+        if (activity == null) return;
+
+        final Context context = getContext();
+        if (context == null) return;
+
+        if (missingBluetoothPermissions())
+        {
+            AlertDialog.Builder alertBuilder = new AlertDialog.Builder(context);
+            alertBuilder.setCancelable(true);
+            alertBuilder.setTitle(getString(R.string.bluetooth_permissions_rationale_title));
+            alertBuilder.setMessage(getText(R.string.bluetooth_permissions_rationale));
+            alertBuilder.setPositiveButton(android.R.string.ok, (dialog, which) -> requestBluetoothPermissions());
+
+            AlertDialog permissionsExplanationDialog = alertBuilder.create();
+            permissionsExplanationDialog.show();
+        }
+    }
+
+    /**
+     * @return True if any of the Bluetooth permissions have been denied. False if all the permissions
+     * have been granted.
+     */
+    private boolean missingBluetoothPermissions()
+    {
+        final Context context = getContext();
+        if (context == null) return true;
+        for (String permission : NetworkSurveyActivity.BLUETOOTH_PERMISSIONS)
+        {
+            if (ContextCompat.checkSelfPermission(context, permission) != PackageManager.PERMISSION_GRANTED)
+            {
+                Timber.i("Missing the permission: %s", permission);
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Request the permissions needed for bluetooth if any of them have not yet been granted.  If all of the permissions
+     * are already granted then don't request anything.
+     */
+    private void requestBluetoothPermissions()
+    {
+        if (missingBluetoothPermissions())
+        {
+            ActivityCompat.requestPermissions(getActivity(), NetworkSurveyActivity.BLUETOOTH_PERMISSIONS, ACCESS_BLUETOOTH_PERMISSION_REQUEST_ID);
+        }
     }
 }
