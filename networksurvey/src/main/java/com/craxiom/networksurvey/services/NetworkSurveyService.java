@@ -352,6 +352,41 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
     }
 
     /**
+     * Attempts to connect to the MQTT broker using the saved connection information. First, the MDM
+     * saved connection information is used if it is present. If not, then the regular stored "user"
+     * MQTT entered parameters are used.
+     *
+     * @return True if the connection is going to be attempted, false if it could not (for example,
+     * the saved connection information is invalid).
+     */
+    public boolean connectToMqttBrokerUsingSavedConnectionInfo()
+    {
+        // First try to use the MDM settings. The only exception to this is if the user has overridden the MDM settings
+        if (!isMqttMdmOverrideEnabled())
+        {
+            final RestrictionsManager restrictionsManager = (RestrictionsManager) getSystemService(Context.RESTRICTIONS_SERVICE);
+            if (restrictionsManager != null)
+            {
+                final BrokerConnectionInfo connectionInfo = getMdmBrokerConnectionInfo();
+                if (connectionInfo != null)
+                {
+                    connectToMqttBroker(connectionInfo);
+                    return true;
+                }
+            }
+        }
+
+        final BrokerConnectionInfo userBrokerConnectionInfo = getUserBrokerConnectionInfo();
+        if (userBrokerConnectionInfo != null)
+        {
+            connectToMqttBroker(userBrokerConnectionInfo);
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
      * Connect to an MQTT broker.
      *
      * @param connectionInfo The information needed to connect to the MQTT broker.

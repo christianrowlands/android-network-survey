@@ -18,6 +18,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -29,6 +30,7 @@ import androidx.fragment.app.FragmentActivity;
 import androidx.lifecycle.LifecycleOwner;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.lifecycle.ViewModelStoreOwner;
+import androidx.navigation.Navigation;
 import androidx.navigation.fragment.NavHostFragment;
 import androidx.preference.PreferenceManager;
 
@@ -44,6 +46,7 @@ import com.craxiom.networksurvey.listeners.ILoggingChangeListener;
 import com.craxiom.networksurvey.services.NetworkSurveyService;
 import com.craxiom.networksurvey.util.MathUtils;
 import com.craxiom.networksurvey.util.ToggleLoggingTask;
+import com.google.android.material.snackbar.Snackbar;
 
 import java.text.DecimalFormat;
 import java.util.function.BiConsumer;
@@ -257,7 +260,46 @@ public class DashboardFragment extends AServiceDataFragment implements LocationL
             toggleCdrLogging(newEnabledState);
         });
 
+        initializeLoggingSwitch(binding.mqttConnectionToggleSwitch, (newEnabledState, toggleSwitch) -> {
+            if (service == null)
+            {
+                Timber.w("The service is null when trying to make an MQTT connection from the Dashboard.");
+                Toast.makeText(getContext(), "The App is not ready to make an MQTT connection, try again later", Toast.LENGTH_LONG).show();
+                return;
+            }
+            if (newEnabledState)
+            {
+                boolean attempting = service.connectToMqttBrokerUsingSavedConnectionInfo();
+                if (!attempting)
+                {
+                    toggleSwitch.setChecked(false);
+                    final Snackbar snackbar = Snackbar.make(requireView(), "Could not try to connect to the MQTT broker because the connection information is not set", Snackbar.LENGTH_LONG)
+                            .setAction("Open", v -> navigateToMqttFragment())
+                            .setBackgroundTint(getResources().getColor(R.color.rssi_orange, null));
+
+                    if (snackbar.isShown()) return;
+
+                    TextView snackTextView = snackbar.getView().findViewById(com.google.android.material.R.id.snackbar_text);
+                    snackTextView.setMaxLines(12);
+
+                    snackbar.show();
+                }
+            } else
+            {
+                service.disconnectFromMqttBroker();
+                updateMqttUiState(ConnectionState.DISCONNECTED);
+            }
+        });
+
+        binding.mqttFragmentButton.setOnClickListener(c -> navigateToMqttFragment());
+
         binding.cdrHelpIcon.setOnClickListener(c -> showCdrHelpDialog());
+    }
+
+    private void navigateToMqttFragment()
+    {
+        Navigation.findNavController(requireActivity(), getId())
+                .navigate(DashboardFragmentDirections.actionMainDashboardToMqttConnection());
     }
 
     /**
@@ -573,18 +615,21 @@ public class DashboardFragment extends AServiceDataFragment implements LocationL
                     binding.mqttStatusIcon.setImageTintList(ColorStateList.valueOf(getResources().getColor(R.color.connectionStatusDisconnected, null)));
                     binding.mqttStatusText.setText(R.string.mqtt_off);
                     binding.mqttStreamingGroup.setVisibility(View.GONE);
+                    binding.mqttConnectionToggleSwitch.setChecked(false);
                     break;
 
                 case CONNECTING:
                     binding.mqttStatusIcon.setImageTintList(ColorStateList.valueOf(getResources().getColor(R.color.connectionStatusConnecting, null)));
                     binding.mqttStatusText.setText(R.string.mqtt_connecting);
                     binding.mqttStreamingGroup.setVisibility(View.VISIBLE);
+                    binding.mqttConnectionToggleSwitch.setChecked(true);
                     break;
 
                 case CONNECTED:
                     binding.mqttStatusIcon.setImageTintList(ColorStateList.valueOf(getResources().getColor(R.color.connectionStatusConnected, null)));
                     binding.mqttStatusText.setText(R.string.mqtt_connected);
                     binding.mqttStreamingGroup.setVisibility(View.VISIBLE);
+                    binding.mqttConnectionToggleSwitch.setChecked(true);
                     break;
             }
         } catch (Exception e)
