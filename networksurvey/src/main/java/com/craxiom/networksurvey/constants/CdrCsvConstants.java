@@ -13,8 +13,8 @@ public class CdrCsvConstants extends CsvConstants
 
     public static final String START_TIME = "startTime";
     public static final String EVENT = "event";
-    public static final String CALLING_NUMBER = "callingNumber";
-    public static final String CALLED_NUMBER = "calledNumber";
+    public static final String ORIGINATING_ADDRESS = "originatingAddress";
+    public static final String DESTINATION_ADDRESS = "destinationAddress";
 
     /**
      * The Circuit Switched Radio Access Network Technology. E.g. LTE. See

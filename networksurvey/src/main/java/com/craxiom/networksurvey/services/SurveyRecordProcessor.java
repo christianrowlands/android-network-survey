@@ -574,12 +574,12 @@ public class SurveyRecordProcessor
         finishCdrEvent(cdrEvent);
     }
 
-    public void onSmsEvent(String originatingAddress, TelephonyManager telephonyManager, String destinationAddress)
+    public void onSmsEvent(CdrEventType smsEventType, String originatingAddress, TelephonyManager telephonyManager, String destinationAddress)
     {
         if (cdrListeners.isEmpty()) return;
 
         Timber.d("onSmsEvent outgoingAddress=%s, destinationAddress=%s", originatingAddress, destinationAddress);
-        CdrEvent cdrEvent = new CdrEvent(CdrEventType.SMS, originatingAddress, destinationAddress);
+        CdrEvent cdrEvent = new CdrEvent(smsEventType, originatingAddress, destinationAddress);
         setCellInfo(cdrEvent, telephonyManager);
         finishCdrEvent(cdrEvent);
     }

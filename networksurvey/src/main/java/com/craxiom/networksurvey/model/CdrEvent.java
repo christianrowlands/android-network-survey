@@ -1,10 +1,10 @@
 package com.craxiom.networksurvey.model;
 
-import static com.craxiom.networksurvey.constants.CdrCsvConstants.CALLED_NUMBER;
-import static com.craxiom.networksurvey.constants.CdrCsvConstants.CALLING_NUMBER;
 import static com.craxiom.networksurvey.constants.CdrCsvConstants.CS_CELL_IDENTIFIER;
 import static com.craxiom.networksurvey.constants.CdrCsvConstants.CS_RANT;
+import static com.craxiom.networksurvey.constants.CdrCsvConstants.DESTINATION_ADDRESS;
 import static com.craxiom.networksurvey.constants.CdrCsvConstants.EVENT;
+import static com.craxiom.networksurvey.constants.CdrCsvConstants.ORIGINATING_ADDRESS;
 import static com.craxiom.networksurvey.constants.CdrCsvConstants.PS_CELL_IDENTIFIER;
 import static com.craxiom.networksurvey.constants.CdrCsvConstants.PS_RANT;
 import static com.craxiom.networksurvey.constants.CdrCsvConstants.START_TIME;
@@ -51,7 +51,7 @@ public class CdrEvent
      */
     public static String[] getHeaders()
     {
-        return new String[]{START_TIME, LATITUDE, LONGITUDE, ALTITUDE, ACCURACY, EVENT, CALLING_NUMBER, CALLED_NUMBER, CS_RANT, CS_CELL_IDENTIFIER, PS_RANT, PS_CELL_IDENTIFIER};
+        return new String[]{START_TIME, LATITUDE, LONGITUDE, ALTITUDE, ACCURACY, EVENT, ORIGINATING_ADDRESS, DESTINATION_ADDRESS, CS_RANT, CS_CELL_IDENTIFIER, PS_RANT, PS_CELL_IDENTIFIER};
     }
 
     public void setLocation(Location location)

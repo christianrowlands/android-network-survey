@@ -9,6 +9,7 @@ public enum CdrEventType
 {
     OUTGOING_CALL,
     INCOMING_CALL,
-    SMS,
+    OUTGOING_SMS,
+    INCOMING_SMS,
     LOCATION_UPDATE
 }

@@ -85,6 +85,7 @@ import com.craxiom.networksurvey.logging.CellularSurveyRecordLogger;
 import com.craxiom.networksurvey.logging.GnssRecordLogger;
 import com.craxiom.networksurvey.logging.PhoneStateRecordLogger;
 import com.craxiom.networksurvey.logging.WifiSurveyRecordLogger;
+import com.craxiom.networksurvey.model.CdrEventType;
 import com.craxiom.networksurvey.mqtt.MqttConnection;
 import com.craxiom.networksurvey.mqtt.MqttConnectionInfo;
 import com.craxiom.networksurvey.util.IOUtils;
@@ -335,8 +336,10 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
                 break;
             case NetworkSurveyConstants.PROPERTY_MDM_OVERRIDE_KEY:
                 readMdmOverridePreference();
+                break;
 
             default:
+                break;
         }
     }
 
@@ -829,6 +832,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
      * @return True if there is an active consumer of the survey records produced by this service, false otherwise.
      * @since 0.1.1
      */
+    @SuppressWarnings("BooleanMethodIsAlwaysInverted")
     public boolean isBeingUsed()
     {
         return cellularLoggingEnabled.get()
@@ -2007,7 +2011,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
                 {
                     if (intent == null) return;
                     final String originatingAddress = intent.getStringExtra(CdrSmsReceiver.ORIGINATING_ADDRESS_EXTRA);
-                    execute(() -> surveyRecordProcessor.onSmsEvent(originatingAddress, telephonyManager, myPhoneNumber));
+                    execute(() -> surveyRecordProcessor.onSmsEvent(CdrEventType.INCOMING_SMS, originatingAddress, telephonyManager, myPhoneNumber));
                 }
             };
 
@@ -2045,7 +2049,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
                                     int addressColumn = cursor.getColumnIndex(SMS_COLUMN_ADDRESS);
                                     if (addressColumn < 0) return;
                                     String destinationAddress = cursor.getString(addressColumn);
-                                    execute(() -> surveyRecordProcessor.onSmsEvent(myPhoneNumber, telephonyManager, destinationAddress));
+                                    execute(() -> surveyRecordProcessor.onSmsEvent(CdrEventType.OUTGOING_SMS, myPhoneNumber, telephonyManager, destinationAddress));
                                 }
                             }
                         }
