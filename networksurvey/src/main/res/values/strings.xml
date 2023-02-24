@@ -34,7 +34,9 @@
         \n\nWorthy of note, getting the information for CDRs requires additional Android permissions. Reading SMS
         messages is one of these permissions. I want to be clear that the Network Survey app does not take the content
         of your text messages and send it off to a server somewhere. Instead, the only thing this app does with your
-        text messages is log that a text message occurred to the CDR CSV file.</string>
+        text messages is log that a text message occurred to the CDR CSV file.
+        \n\nOne final note, SMS is currently supported for CDRs, but MMS is not. So messages associated with group
+        chats won\'t show up in the CDR CSV file.</string>
 
     <string name="bluetooth_permissions_rationale_title">Bluetooth Permissions</string>
     <string name="bluetooth_permissions_rationale">The Find Nearby Devices permission is needed to perform a Bluetooth scan for survey. If this permission is denied then Bluetooth survey will not work.</string>
