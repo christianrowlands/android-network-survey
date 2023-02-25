@@ -53,6 +53,14 @@ the recorded GeoPackage or sent to by connecting to someone elses MQTT or gRPC s
 The App has the capability to log information to a GeoPackage file, but that file remains on your device and it is up to you
 if you want to copy the file off the device to another device of your choosing.
 
+**SMS and Call Log Permissions**
+
+The Network Survey Android app requests permission to access incoming and outgoing SMS messages when the Call Detail
+Record (CDR) feature is turned on. The CDR feature is used to generate a record of calls, text messages, and certain
+cellular tower changes. These details are written to a CSV file locally on the phone. If you don't grant the SMS
+permission CDR logging will still work, but SMS events won't be logged to the CSV file. The content of SMS messages
+are not sent off to 3rd parties or the creators of Network Survey for any reason, period.
+
 **Changes to This Privacy Policy**
 
 I may update our Privacy Policy from time to time. Thus, you are advised to review this page periodically for any changes. I will 
