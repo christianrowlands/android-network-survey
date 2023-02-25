@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.11.0](https://github.com/christianrowlands/android-network-survey/releases/tag/v1.11.0) - 2023-02-24
+
+* Adds support for logging Call Detail Record (CDR) events to a CSV file.
+* Caches the Bluetooth UI results so the results are still visible when switching between tabs.
+* Adds a connection toggle switch and direct link to the MQTT Connection Fragment from the Dashboard.
+* Changes the default location provider to Fused, which should improve battery life.
+
 ## [1.10.0](https://github.com/christianrowlands/android-network-survey/releases/tag/v1.10.0) - 2023-01-24
 
 * Sets the mdmOverride field on the device status message instead of using firebase analytics
