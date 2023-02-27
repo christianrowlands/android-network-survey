@@ -1,5 +1,8 @@
 package com.craxiom.networksurvey.fragments;
 
+import static com.craxiom.networksurvey.constants.CdrPermissions.CDR_OPTIONAL_PERMISSIONS;
+import static com.craxiom.networksurvey.constants.CdrPermissions.CDR_REQUIRED_PERMISSIONS;
+
 import android.Manifest;
 import android.annotation.SuppressLint;
 import android.content.Context;
@@ -64,30 +67,6 @@ public class DashboardFragment extends AServiceDataFragment implements LocationL
     private static final int ACCESS_REQUIRED_PERMISSION_REQUEST_ID = 20;
     private static final int ACCESS_OPTIONAL_PERMISSION_REQUEST_ID = 21;
     private static final int ACCESS_BLUETOOTH_PERMISSION_REQUEST_ID = 22;
-
-    public static final String[] CDR_REQUIRED_PERMISSIONS;
-    public static final String[] CDR_OPTIONAL_PERMISSIONS = {
-            Manifest.permission.READ_CALL_LOG,
-            Manifest.permission.READ_PHONE_NUMBERS,
-            Manifest.permission.READ_SMS,
-            Manifest.permission.RECEIVE_SMS};
-
-    static
-    {
-        // Android 13+ (SDK 33) requires permission for push notifications
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU)
-        {
-            CDR_REQUIRED_PERMISSIONS = new String[]{
-                    Manifest.permission.ACCESS_FINE_LOCATION,
-                    Manifest.permission.READ_PHONE_STATE,
-                    Manifest.permission.POST_NOTIFICATIONS};
-        } else
-        {
-            CDR_REQUIRED_PERMISSIONS = new String[]{
-                    Manifest.permission.ACCESS_FINE_LOCATION,
-                    Manifest.permission.READ_PHONE_STATE};
-        }
-    }
 
     private final DecimalFormat locationFormat = new DecimalFormat("###.#####");
 

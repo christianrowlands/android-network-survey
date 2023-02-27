@@ -2004,16 +2004,22 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
         {
             myPhoneNumber = IOUtils.getMyPhoneNumber(this, telephonyManager);
 
-            smsBroadcastReceiver = new BroadcastReceiver()
+            if (ActivityCompat.checkSelfPermission(this, Manifest.permission.RECEIVE_SMS) == PackageManager.PERMISSION_GRANTED)
             {
-                @Override
-                public void onReceive(Context context, Intent intent)
+                smsBroadcastReceiver = new BroadcastReceiver()
                 {
-                    if (intent == null) return;
-                    final String originatingAddress = intent.getStringExtra(CdrSmsReceiver.ORIGINATING_ADDRESS_EXTRA);
-                    execute(() -> surveyRecordProcessor.onSmsEvent(CdrEventType.INCOMING_SMS, originatingAddress, telephonyManager, myPhoneNumber));
-                }
-            };
+                    @Override
+                    public void onReceive(Context context, Intent intent)
+                    {
+                        if (intent == null) return;
+                        final String originatingAddress = intent.getStringExtra(CdrSmsReceiver.ORIGINATING_ADDRESS_EXTRA);
+                        execute(() -> surveyRecordProcessor.onSmsEvent(CdrEventType.INCOMING_SMS, originatingAddress, telephonyManager, myPhoneNumber));
+                    }
+                };
+
+                LocalBroadcastManager.getInstance(this).registerReceiver(smsBroadcastReceiver,
+                        new IntentFilter(CdrSmsReceiver.SMS_RECEIVED_INTENT));
+            }
 
             if (ActivityCompat.checkSelfPermission(this, Manifest.permission.READ_SMS) == PackageManager.PERMISSION_GRANTED)
             {
@@ -2057,9 +2063,6 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
                 };
                 contentResolver.registerContentObserver(SMS_URI, true, smsOutgoingObserver);
             }
-
-            LocalBroadcastManager.getInstance(this).registerReceiver(smsBroadcastReceiver,
-                    new IntentFilter(CdrSmsReceiver.SMS_RECEIVED_INTENT));
 
             Timber.d("Adding the Telephony Manager Service State Listener for CDR events");
 

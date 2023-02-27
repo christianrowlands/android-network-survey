@@ -1,0 +1,19 @@
+<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+
+    <string name="cdr_optional_permissions_rationale">In addition to the required permissions, CDR logging has some optional permissions.
+        \n\n1. <b>Access Call Logs</b>:  This is needed to get the phone number for writing it to a CDR log file. You can deny this permission and CDR logging will still work except phone numbers won\'t be logged.
+        \n\n2. <b>Read SMS</b>:  This is needed if you want to log SMS events to the CDR log file. You can deny this permission and CDR logging will still work except SMS events won\'t be logged.</string>
+
+    <string name="cdr_help">What is a CDR? A CDR is a Call Detail Record that has an event for specific
+        interaction a phone has with the cellular network. For example, a phone call, sms messages, and certain tower
+        changes. The Network Survey app has a CDR File Logging feature that allows for logging CDR events to a CSV file.
+        There are several possible use cases for recording a CDR; for example, one might be to have a record of
+        what your phone is doing, and what towers it is communicating with.
+        \n\nWorthy of note, getting the information for CDRs requires additional Android permissions. Reading SMS
+        messages is one of these permissions. I want to be clear that the Network Survey app does not take the content
+        of your text messages and send it off to a server somewhere. Instead, the only thing this app does with your
+        text messages is log that a text message occurred to the CDR CSV file.
+        \n\nOne final note, SMS is currently supported for CDRs, but MMS is not. So messages associated with group
+        chats won\'t show up in the CDR CSV file.</string>
+
+</resources>

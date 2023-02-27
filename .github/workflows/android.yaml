@@ -33,17 +33,26 @@ jobs:
           java-version: 11
           distribution: 'adopt'
 
-      - name: Build the app
-        run: ./gradlew assembleDebug --stacktrace
+      - name: Build Regular APK
+        run: ./gradlew assembleRegularDebug --stacktrace
 
       - name: Get APK name
         run: echo "base_name=`./gradlew :networksurvey:properties -q | grep 'archivesBaseName:' | awk '{print $2}'`" >> $GITHUB_ENV
 
-      - name: Upload apk
+      - name: Upload Regular APK
         uses: actions/upload-artifact@v3
         with:
-          name: Network Surveuy debug apk
-          path: networksurvey/build/outputs/apk/debug/${{ env.base_name }}-debug.apk
+          name: Network Survey Regular Debug APK
+          path: networksurvey/build/outputs/apk/regular/debug/${{ env.base_name }}-regular-debug.apk
+
+      - name: Build CDR APK
+        run: ./gradlew assembleRegularDebug --stacktrace
+
+      - name: Upload CDR APK
+        uses: actions/upload-artifact@v3
+        with:
+          name: Network Survey CDR Debug APK
+          path: networksurvey/build/outputs/apk/cdr/debug/${{ env.base_name }}-cdr-debug.apk
 
 
   test:

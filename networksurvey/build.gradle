@@ -18,8 +18,8 @@ android {
         applicationId "com.craxiom.networksurvey"
         minSdkVersion 26
         targetSdkVersion 31
-        versionCode 43
-        versionName "1.11.0"
+        versionCode 44
+        versionName "1.11.0-beta03"
         setProperty("archivesBaseName", "$applicationName-$versionName")
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         testInstrumentationRunnerArguments clearPackageData: 'true'
@@ -53,6 +53,17 @@ android {
         abortOnError false
     }
     namespace 'com.craxiom.networksurvey'
+
+    flavorDimensions "version"
+    productFlavors{
+        regular {
+            versionNameSuffix ""
+        }
+
+        cdr {
+            versionNameSuffix "-cdr"
+        }
+    }
 }
 
 dependencies {

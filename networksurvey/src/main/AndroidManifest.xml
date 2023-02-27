@@ -8,9 +8,6 @@
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
     <uses-permission android:name="android.permission.READ_PHONE_STATE" /> <!-- For the IMEI / MEID -->
     <uses-permission android:name="android.permission.READ_PHONE_NUMBERS" /> <!-- For "my" phone number in CDRs -->
-    <uses-permission android:name="android.permission.READ_CALL_LOG" /> <!-- For other phone number in CDRs -->
-    <uses-permission android:name="android.permission.READ_SMS" /> <!-- For SMS events in CDRs -->
-    <uses-permission android:name="android.permission.RECEIVE_SMS" /> <!-- For SMS events in CDRs -->
     <uses-permission android:name="android.permission.INTERNET" /> <!-- To connect to a remote gRPC server -->
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" /> <!-- To monitor changes to the network state -->
     <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" /> <!-- Access a Wi-Fi Scan -->
