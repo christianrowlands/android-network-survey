@@ -1,6 +1,6 @@
 # Changelog
 
-## [1.11.0](https://github.com/christianrowlands/android-network-survey/releases/tag/v1.11.0) - 2023-02-24
+## [1.11.0](https://github.com/christianrowlands/android-network-survey/releases/tag/v1.11.0) - 2023-02-27
 
 * Adds support for logging Call Detail Record (CDR) events to a CSV file.
 * Caches the Bluetooth UI results so the results are still visible when switching between tabs.
