@@ -18,8 +18,8 @@ android {
         applicationId "com.craxiom.networksurvey"
         minSdkVersion 26
         targetSdkVersion 31
-        versionCode 44
-        versionName "1.11"
+        versionCode 45
+        versionName "1.12-SNAPSHOT"
         setProperty("archivesBaseName", "$applicationName-$versionName")
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         testInstrumentationRunnerArguments clearPackageData: 'true'
@@ -44,6 +44,7 @@ android {
     }
     buildToolsVersion '30.0.3'
     packagingOptions {
+        exclude 'google/cloud/audit/audit_log.proto'
         resources {
             excludes += ['META-INF/INDEX.LIST', 'META-INF/io.netty.versions.properties']
         }
