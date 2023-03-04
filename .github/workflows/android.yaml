@@ -46,7 +46,7 @@ jobs:
           path: networksurvey/build/outputs/apk/regular/debug/${{ env.base_name }}-regular-debug.apk
 
       - name: Build CDR APK
-        run: ./gradlew assembleRegularDebug --stacktrace
+        run: ./gradlew assembleCdrDebug --stacktrace
 
       - name: Upload CDR APK
         uses: actions/upload-artifact@v3

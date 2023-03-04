@@ -14,6 +14,7 @@ import android.location.Location;
 import android.location.LocationManager;
 import android.net.wifi.ScanResult;
 import android.os.Build;
+import android.os.CancellationSignal;
 import android.os.SystemClock;
 import android.telephony.CellIdentity;
 import android.telephony.CellIdentityCdma;
@@ -90,15 +91,11 @@ import com.craxiom.networksurvey.model.CellularProtocol;
 import com.craxiom.networksurvey.model.CellularRecordWrapper;
 import com.craxiom.networksurvey.model.WifiRecordWrapper;
 import com.craxiom.networksurvey.util.IOUtils;
+import com.craxiom.networksurvey.util.LocationUtils;
 import com.craxiom.networksurvey.util.MathUtils;
 import com.craxiom.networksurvey.util.ParserUtils;
 import com.craxiom.networksurvey.util.PreferenceUtils;
 import com.craxiom.networksurvey.util.WifiCapabilitiesUtils;
-import com.google.android.gms.location.LocationServices;
-import com.google.android.gms.location.Priority;
-import com.google.android.gms.tasks.CancellationToken;
-import com.google.android.gms.tasks.CancellationTokenSource;
-import com.google.android.gms.tasks.Task;
 import com.google.protobuf.BoolValue;
 import com.google.protobuf.FloatValue;
 import com.google.protobuf.Int32Value;
@@ -2186,69 +2183,60 @@ public class SurveyRecordProcessor
         }
 
         // We could not get an existing location, request a new one
-        final CancellationTokenSource locationCancellationToken = new CancellationTokenSource();
+        final CancellationSignal cancellationSignal = new CancellationSignal();
 
-        final Task<Location> locationTask = requestLocation(context, locationCancellationToken.getToken());
-        if (locationTask == null)
+        // Schedule a timer task that will cancel the location task if the location is not returned in `n` seconds
+        final Timer cancellationTimer = new Timer();
+        cancellationTimer.schedule(new TimerTask()
         {
-            Timber.d("Could not get the location for a CDR event");
-            notifyCdrListeners(cdrEvent);
-        } else
-        {
-            if (locationTask.isComplete())
+            @Override
+            public void run()
             {
-                final Location location = locationTask.getResult();
-                cdrEvent.setLocation(location);
                 notifyCdrListeners(cdrEvent);
-            } else
-            {
-                // Schedule a timer task that will cancel the location task if the location is not returned in `n` seconds
-                final Timer cancellationTimer = new Timer();
-                cancellationTimer.schedule(new TimerTask()
-                {
-                    @Override
-                    public void run()
-                    {
-                        Timber.i("Cancelling the CDR location request because the timeout of %d ms was reached", MAX_CDR_LOCATION_WAIT_TIME);
-                        locationCancellationToken.cancel();
-                    }
-                }, MAX_CDR_LOCATION_WAIT_TIME);
-
-                locationTask.addOnCompleteListener(locTask -> {
-                    Location location = null;
-                    try
-                    {
-                        Timber.v("CDR Location Task onCompleteListener called");
-                        cancellationTimer.cancel();
-                        if (locTask.isSuccessful()) location = locTask.getResult();
-                        cdrEvent.setLocation(location);
-                    } catch (Throwable t)
-                    {
-                        Timber.e(t, "Something went wrong when trying to get the location for a CDR event");
-                    }
-                    notifyCdrListeners(cdrEvent);
-                });
+                Timber.i("Cancelling the CDR location request because the timeout of %d ms was reached", MAX_CDR_LOCATION_WAIT_TIME);
+                cancellationSignal.cancel();
             }
-        }
+        }, MAX_CDR_LOCATION_WAIT_TIME);
+
+        Consumer<Location> locationConsumer = location -> {
+            cancellationTimer.cancel();
+            cdrEvent.setLocation(location);
+            notifyCdrListeners(cdrEvent);
+        };
+
+        requestLocation(context, cancellationSignal, executorService, locationConsumer);
     }
 
     /**
      * Ask the Android API for this device's location as long as we have the right permissions.
      *
-     * @param context           The context to use to check permissions.
-     * @param cancellationToken The cancellation token that can be used to cancel the location request.
-     * @return The Location {@link Task} that can be used to get the results of the location request.
+     * @param context            The context to use to check permissions.
+     * @param cancellationSignal The cancellation signal that can be used to cancel the location request.
+     * @param consumer           The consumer that will be passed the location once it is available.
      */
-    private static Task<Location> requestLocation(Context context, CancellationToken cancellationToken)
+    private static void requestLocation(Context context,
+                                        CancellationSignal cancellationSignal,
+                                        ExecutorService executorService,
+                                        Consumer<Location> consumer)
     {
         if (ActivityCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED)
         {
             Timber.i("Location permissions not granted so the report's sent location could not be populated");
-            return null;
+            return;
         }
 
-        return LocationServices.getFusedLocationProviderClient(context)
-                .getCurrentLocation(Priority.PRIORITY_BALANCED_POWER_ACCURACY, cancellationToken);
+        final LocationManager locationManager = (LocationManager) context.getSystemService(Context.LOCATION_SERVICE);
+        if (locationManager != null)
+        {
+            final String provider = LocationUtils.getLocationProvider(locationManager);
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R)
+            {
+                locationManager.getCurrentLocation(provider, cancellationSignal, executorService, consumer);
+            } else
+            {
+                consumer.accept(locationManager.getLastKnownLocation(provider));
+            }
+        }
     }
 
     /**

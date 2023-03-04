@@ -3,21 +3,49 @@
 [![Build Status](https://travis-ci.com/christianrowlands/android-network-survey.svg?branch=develop)](https://travis-ci.com/github/christianrowlands/android-network-survey)
 [![License](https://img.shields.io/badge/license-Apache%202-green.svg?style=flat)](https://github.com/christianrowlands/android-network-survey/blob/develop/LICENSE)
 
-The Network Survey Android App provides a basic survey capability for Cellular networks, Wi-Fi
-networks, Bluetooth Devices, and GNSS constellations.  
+<p align="center">
+  <a href="https://play.google.com/store/apps/details?id=com.craxiom.networksurvey">
+    <img src="screenshots/google-play-badge.png" height="80">
+  </a>
+  <a href="https://f-droid.org/packages/eu.siacs.conversations">
+    <img src="https://fdroid.gitlab.io/artwork/badge/get-it-on.png" alt="Get it on IzzyOnDroid F-Droid" height="80">
+  </a>
+</p>
 
-For cellular data, in its current state it can be used to examine the network details of the current 
+The Network Survey Android App provides a basic survey capability for Cellular networks, Wi-Fi
+networks, Bluetooth Devices, and GNSS constellations.
+
+For cellular data, in its current state it can be used to examine the network details of the current
 serving cell, and log GSM, CDMA, UMTS, LTE, and NR records to a GeoPackage file. Wi-Fi survey
 records can also be logged to a GeoPackage file, and the current list of Wi-Fi networks in range is
 displayed in the UI. The App also supports connecting to a remote gRPC server and live streaming the
 cellular and Wi-Fi records. For GNSS data, it can display the latest information about the satellite
-vehicles and also log the information to a GeoPackage file. The Bluetooth support allows for scanning
-and displaying a list of the nearby Bluetooth devices.
+vehicles and also log the information to a GeoPackage file. The Bluetooth support allows for
+scanning and displaying a list of the nearby Bluetooth devices.
 
 <img src="screenshots/cellular_details.png" alt="Cellular Details" width="200"/>
 <img src="screenshots/wi-fi_details.png" alt="Wi-Fi Details" width="200"/>
 <img src="screenshots/gnss_details.png" alt="GNSS Details" width="200"/>
 
+## CDR Log Files
+
+A newer feature of the app is the ability to log Call Detail Record (CDR) files. What is a CDR? A
+CDR is a Call Detail Record that has an event for specific interaction a phone has with the cellular
+network. For example, a phone call, sms messages, and certain tower changes. There are several
+possible use cases for recording a CDR; for example, one might be to have a record of what your
+phone is doing, and what towers it is communicating with. Maybe you are just curious about how
+cellular networks work, or maybe you are privacy conscious and what to monitor if your phone starts
+communicating with unexpected towers.
+
+Worthy of note, the regular version of Network Survey does not log SMS events in the CDR, nor does
+it support logging the "other" phone number associated with a phone call. Logging SMS events
+requires the full SMS permission, and Google Play won\'t approve publishing Network Survey to the
+Play Store if it requests the SMS permission. If you are interested in a CDR logger that supports
+SMS events and logging the "other" phone number for call events, you can install the app from the
+source code in this repo, or if you prefer a pre-built apk you can get the latest APK by navigating
+to the GitHub Actions page, clicking on the latest successful action run, and then scrolling all
+the way to the bottom and click on "Network Survey CDR Debug APK" or "Network Survey Regular Release
+APK".
 
 ## Getting Started
 
@@ -50,17 +78,6 @@ commands. Make sure your phone is connected to your computer before running the 
 
 Install Android Studio to work on this code.
 
-## Built With
-
-* [GeoPackage Android](https://github.com/ngageoint/geopackage-android) - The logging file standard
-  and library
-
-## Available At
-
-[The Google Play Listing for this app](https://play.google.com/store/apps/details?id=com.craxiom.networksurvey)
-
-[IzzyOnDroid F-Droid](https://apt.izzysoft.de/fdroid/index/apk/com.craxiom.networksurvey)
-
 ## gRPC Survey Record Streaming
 
 The Network Survey app supports streaming GSM, CDMA, UMTS, LTE, and 802.11 survey records to a gRPC
@@ -90,11 +107,20 @@ The MQTT Broker connection supports both plain text and TLS/SSL connections.
 
 The survey messages are sent in JSON format following the protobuf definitions from
 the [Network Survey Messaging](https://github.com/christianrowlands/network-survey-messaging)
-library. [The API documentation is published to a web page here](https://messaging.networksurvey.app/).
+library. [The API documentation is published to a web page here](https://messaging.networksurvey.app/)
+.
 
 QR Code for MQTT Broker connection setting needs to provide a JSON string with the following fields.
+
 ```json
-{"mqtt_username":"auser","mqtt_password":"apassword","mqtt_host":"cloud.azure.com","mqtt_port":8883,"mqtt_client":"aclient","mqtt_tls":true}
+{
+  "mqtt_username": "auser",
+  "mqtt_password": "apassword",
+  "mqtt_host": "cloud.azure.com",
+  "mqtt_port": 8883,
+  "mqtt_client": "aclient",
+  "mqtt_tls": true
+}
 ```
 
 ## Changelog

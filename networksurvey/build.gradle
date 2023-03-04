@@ -56,7 +56,7 @@ android {
     namespace 'com.craxiom.networksurvey'
 
     flavorDimensions "version"
-    productFlavors{
+    productFlavors {
         regular {
             versionNameSuffix ""
         }
@@ -79,7 +79,6 @@ dependencies {
     implementation "androidx.navigation:navigation-ui-ktx:${navigationVersion}"
     implementation "androidx.viewpager2:viewpager2:1.0.0"
     implementation 'com.google.android.flexbox:flexbox:3.0.0'
-    implementation 'com.google.android.gms:play-services-location:21.0.1'
 
     implementation "io.grpc:grpc-stub:${grpcVersion}"
     implementation "io.grpc:grpc-protobuf:${grpcVersion}"
@@ -115,7 +114,7 @@ dependencies {
     androidTestImplementation 'androidx.test.ext:junit:1.1.5'
     androidTestImplementation 'androidx.test:runner:1.5.2'
     androidTestImplementation 'androidx.test:rules:1.5.0'
-    androidTestImplementation 'com.schibsted.spain:barista:3.9.0'
+    androidTestImplementation 'com.adevinta.android:barista:4.2.0'
     androidTestImplementation 'com.google.truth:truth:1.1.2'
     androidTestImplementation "com.craxiom:network-survey-messaging:${networkSurveyMessagingVersion}"
     androidTestImplementation "mil.nga.geopackage:geopackage-android:6.6.0"

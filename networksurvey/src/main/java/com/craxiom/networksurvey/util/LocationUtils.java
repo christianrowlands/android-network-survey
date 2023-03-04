@@ -16,6 +16,7 @@
 package com.craxiom.networksurvey.util;
 
 import android.location.Location;
+import android.location.LocationManager;
 import android.os.Build;
 import android.os.SystemClock;
 
@@ -65,5 +66,28 @@ public class LocationUtils
         sb.append(String.format("%.0f", timeDiffSec) + " second(s) ago");
 
         return sb.toString();
+    }
+
+    /**
+     * @return A location provider to use for getting locations.
+     */
+    public static String getLocationProvider(LocationManager locationManager)
+    {
+        final String provider;
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && locationManager.isProviderEnabled(LocationManager.FUSED_PROVIDER))
+        {
+            provider = LocationManager.FUSED_PROVIDER;
+        } else if (locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER))
+        {
+            provider = LocationManager.GPS_PROVIDER;
+        } else if (locationManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER))
+        {
+            provider = LocationManager.NETWORK_PROVIDER;
+        } else
+        {
+            provider = LocationManager.PASSIVE_PROVIDER;
+        }
+
+        return provider;
     }
 }
