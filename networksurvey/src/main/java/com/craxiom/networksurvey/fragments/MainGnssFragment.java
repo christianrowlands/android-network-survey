@@ -189,7 +189,13 @@ public class MainGnssFragment extends Fragment
             Timber.w("When trying to add a new location listener, the old one was not null.");
         }
 
-        locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, LOCATION_REFRESH_RATE_MS, 0f, locationListener);
+        try
+        {
+            locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, LOCATION_REFRESH_RATE_MS, 0f, locationListener);
+        } catch (Exception e)
+        {
+            Timber.w(e, "Could not request location updates in the MainGnssFragment");
+        }
     }
 
     /**
@@ -197,9 +203,9 @@ public class MainGnssFragment extends Fragment
      */
     private void removeLocationListener()
     {
-        if (locationManager == null)
+        if (locationManager == null || locationListener == null)
         {
-            Timber.e("The location manager is null.  Unable to remove a location listener");
+            Timber.i("The location manager or listener is null.  Unable to remove a location listener");
             return;
         }
 

@@ -1000,7 +1000,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
             if (enable)
             {
                 // First check to see if Bluetooth is enabled
-                final boolean bluetoothEnabled = isBluetoothEnabled(true);
+                final boolean bluetoothEnabled = isBluetoothEnabledAndPermissionsGranted(true);
                 if (!bluetoothEnabled) return null;
             }
 
@@ -1640,6 +1640,12 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
                 boolean success = intent.getBooleanExtra(WifiManager.EXTRA_RESULTS_UPDATED, false);
                 if (success)
                 {
+                    if (ActivityCompat.checkSelfPermission(getApplicationContext(), Manifest.permission.ACCESS_FINE_LOCATION)
+                            != PackageManager.PERMISSION_GRANTED)
+                    {
+                        Timber.e("Could not get the Wi-FI scan results because the ACCESS_FINE_LOCATION permission is not granted.");
+                        return;
+                    }
                     final List<ScanResult> results = wifiManager.getScanResults();
                     if (results == null)
                     {
@@ -1882,6 +1888,8 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
      *
      * @since 1.0.0
      */
+    // We should not be able to get here without the permissions already granted, but we also check at the beginning of the method
+    @SuppressLint("MissingPermission")
     private void startBluetoothRecordScanning()
     {
         if (!hasBtScanPermission())
@@ -1964,9 +1972,16 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
      *
      * @since 1.0.0
      */
+    @SuppressLint("MissingPermission") // Permissions are checked in the first part of the method
     private void stopBluetoothRecordScanning()
     {
         bluetoothScanningActive.set(false);
+
+        if (!hasBtConnectPermission() || !hasBtScanPermission())
+        {
+            Timber.i("Missing a Bluetooth permission, can't enable BT scanning");
+            return;
+        }
 
         try
         {
@@ -2239,7 +2254,27 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
      */
     private void updateServiceNotification()
     {
-        startForeground(NetworkSurveyConstants.LOGGING_NOTIFICATION_ID, buildNotification());
+        try
+        {
+            startForeground(NetworkSurveyConstants.LOGGING_NOTIFICATION_ID, buildNotification());
+        } catch (Exception e)
+        {
+            Timber.e(e, "Could not start the foreground service for Network Survey");
+            // TODO This is one possible option for the crash on Samsung S22 devices running Android 13
+            /*AlarmManager alarmManager = (AlarmManager) getSystemService(Context.ALARM_SERVICE);
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S)
+            {
+                if (alarmManager.canScheduleExactAlarms())
+                {
+                    Intent i = new Intent(this, NetworkSurveyService.class);
+                    PendingIntent pi = PendingIntent.getForegroundService(this, 50, i, PendingIntent.FLAG_UPDATE_CURRENT);
+                    alarmManager.setExact(AlarmManager.ELAPSED_REALTIME_WAKEUP, SystemClock.elapsedRealtime() + GO_OFF_OFFSET, pi);
+                } else
+                {
+                    Timber.e("Can't schedule an exact alarm in place of startForeground");
+                }
+            }*/
+        }
     }
 
     /**
@@ -2651,7 +2686,8 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
     }
 
     /**
-     * Checks to see if the Bluetooth adapter is present, and if Bluetooth is enabled.
+     * Checks to see if the Bluetooth adapter is present, if Bluetooth is enabled, and if the
+     * proper permissions are granted.
      * <p>
      * After the check to see if Bluetooth is enabled, if Bluetooth is currently disabled and {@code promptEnable} is
      * true, the user is then prompted to turn on Bluetooth.  Even if the user turns on Bluetooth, this method will
@@ -2659,11 +2695,20 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
      *
      * @param promptEnable If true, and Bluetooth is currently disabled, the user will be presented with a UI to turn on
      *                     Bluetooth.
-     * @return True if Bluetooth is enabled, false if it is not.
+     * @return True if Bluetooth is enabled, false if it is not. Also returns false if the
+     * permissions are not granted.
      * @since 1.0.0
      */
-    private boolean isBluetoothEnabled(boolean promptEnable)
+    @SuppressLint("MissingPermission")
+    // Permissions are checked in the first part of this method call
+    private boolean isBluetoothEnabledAndPermissionsGranted(boolean promptEnable)
     {
+        if (!hasBtConnectPermission() || !hasBtScanPermission())
+        {
+            Timber.i("Missing a Bluetooth permission, can't enable BT scanning");
+            return false;
+        }
+
         final BluetoothAdapter bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
         if (bluetoothAdapter == null) return false;
 

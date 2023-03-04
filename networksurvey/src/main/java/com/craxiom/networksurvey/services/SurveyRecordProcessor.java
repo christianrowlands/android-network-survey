@@ -1680,6 +1680,8 @@ public class SurveyRecordProcessor
     {
         if (serviceState == null) return;
 
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) return;
+
         serviceState.getNetworkRegistrationInfoList().forEach(info -> {
             final Domain domainEnum = DeviceStatusMessageConstants.convertDomain(info.getDomain());
             final NetworkType networkType = NetworkType.forNumber(info.getAccessNetworkTechnology());
@@ -1699,7 +1701,7 @@ public class SurveyRecordProcessor
                     break;
 
                 default:
-                    Timber.i("Unhandled domain for the current service state domain={}", info.getDomain());
+                    Timber.i("Unhandled domain for the current service state domain=%s", info.getDomain());
             }
         });
     }
@@ -1712,6 +1714,11 @@ public class SurveyRecordProcessor
      */
     private String getCellIdentifier(android.telephony.NetworkRegistrationInfo info)
     {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R)
+        {
+            return "";
+        }
+
         CellIdentity cellIdentity = info.getCellIdentity();
         if (cellIdentity instanceof CellIdentityNr)
         {

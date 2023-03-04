@@ -1,5 +1,6 @@
 package com.craxiom.networksurvey.util;
 
+import android.annotation.SuppressLint;
 import android.os.Build;
 import android.telephony.CellIdentity;
 import android.telephony.CellIdentityCdma;
@@ -11,6 +12,7 @@ import android.telephony.CellInfo;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.annotation.RequiresApi;
 
 import com.craxiom.messaging.NetworkRegistrationInfo;
 import com.craxiom.messaging.phonestate.Domain;
@@ -67,6 +69,8 @@ public class ParserUtils
      * @param info The Android object with all the registration info.
      * @return The NS Messaging API Network Registration Info object.
      */
+    @SuppressLint("NewApi")
+    @RequiresApi(api = Build.VERSION_CODES.Q)
     public static NetworkRegistrationInfo convertNetworkInfo(android.telephony.NetworkRegistrationInfo info)
     {
         int rejectCause = extractIntFromToString(info.toString(), REJECT_CAUSE_KEY);
