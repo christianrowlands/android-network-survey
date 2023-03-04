@@ -7,7 +7,7 @@
   <a href="https://play.google.com/store/apps/details?id=com.craxiom.networksurvey">
     <img src="screenshots/google-play-badge.png" height="80">
   </a>
-  <a href="https://f-droid.org/packages/eu.siacs.conversations">
+  <a href="https://apt.izzysoft.de/fdroid/index/apk/com.craxiom.networksurvey">
     <img src="https://fdroid.gitlab.io/artwork/badge/get-it-on.png" alt="Get it on IzzyOnDroid F-Droid" height="80">
   </a>
 </p>
