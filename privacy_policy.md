@@ -9,7 +9,9 @@ used for providing and improving the Service. I will not use or share your infor
 
 **Information Collection and Use**
 
-For a better experience, while using our Service, I may require you to provide us with certain personally identifiable information, including but not limited to Location. The information that I request will be retained on your device and is not collected by me in any way.
+For a better experience, while using our Service, I may require you to provide us with certain personally identifiable 
+information, including but not limited to Location. The information that I request will be retained on your device and 
+is not collected by me in any way.
 
 The app does use third party services that may collect information used to identify you.
 
@@ -19,7 +21,7 @@ Links to the privacy policy of third party service providers used by the app
 *   [Google Analytics for Firebase](https://firebase.google.com/policies/analytics)
 *   [Firebase Crashlytics](https://firebase.google.com/support/privacy/)
 
-If you installed this app from the Google Play store then Firebase Crashlytics and Analytics information is stored in Google Firebase. This data is anonoymous
+If you installed this app from the Google Play store then Firebase Crashlytics and Analytics information is stored in Google Firebase. This data is anonymous
 but data related to app crashes and general app usage is set to Google Firebase to improve the stability and functionality of this app. This data is not sold
 or provided to any other 3rd party entities by Christian Rowlands or anyone working on the Network Survey Android project.
 

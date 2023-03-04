@@ -23,9 +23,12 @@ cellular and Wi-Fi records. For GNSS data, it can display the latest information
 vehicles and also log the information to a GeoPackage file. The Bluetooth support allows for
 scanning and displaying a list of the nearby Bluetooth devices.
 
-<img src="screenshots/cellular_details.png" alt="Cellular Details" width="200"/>
-<img src="screenshots/wi-fi_details.png" alt="Wi-Fi Details" width="200"/>
-<img src="screenshots/gnss_details.png" alt="GNSS Details" width="200"/>
+<p align="center">
+  <img src="screenshots/dashboard.png" alt="Cellular Details" width="190"/>
+  <img src="screenshots/cellular_details.png" alt="Cellular Details" width="190"/>
+  <img src="screenshots/wi-fi_details.png" alt="Wi-Fi Details" width="190"/>
+  <img src="screenshots/gnss_details.png" alt="GNSS Details" width="190"/>
+</p>
 
 ## CDR Log Files
 
@@ -46,6 +49,21 @@ source code in this repo, or if you prefer a pre-built apk you can get the lates
 to the GitHub Actions page, clicking on the latest successful action run, and then scrolling all
 the way to the bottom and click on "Network Survey CDR Debug APK" or "Network Survey Regular Release
 APK".
+
+## Tracking And Privacy
+
+The version of this app on the Play Store has Firebase Crashlytics set up. This means that app crash
+logs are sent off the device to Firebase. If you don't want to participate in this type of tracking
+then you have three options.
+
+1. Install the app
+   from [IzzyOnDroid F-Droid](https://apt.izzysoft.de/fdroid/index/apk/com.craxiom.networksurvey).
+2. Install the app from the source code in this repo.
+3. Install the app using the APK from
+   the [Release Page](https://github.com/christianrowlands/android-network-survey/releases).
+
+The [privacy policy for this app](privacy_policy.md) contains more information on the data that is
+sent to Firebase for the Google Play Store version of this app.
 
 ## Getting Started
 
