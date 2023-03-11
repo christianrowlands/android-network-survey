@@ -81,11 +81,16 @@ dependencies {
     implementation 'com.google.android.flexbox:flexbox:3.0.0'
 
     implementation "io.grpc:grpc-stub:${grpcVersion}"
-    implementation "io.grpc:grpc-protobuf:${grpcVersion}"
+    implementation("io.grpc:grpc-protobuf:${grpcVersion}") {
+        exclude group: 'com.google.api.grpc', module: 'proto-google-common-protos'
+    }
+
     implementation "io.grpc:grpc-okhttp:${grpcVersion}"
     implementation "io.grpc:grpc-android:${grpcVersion}"
 
-    implementation "com.craxiom:network-survey-messaging:${networkSurveyMessagingVersion}"
+    implementation("com.craxiom:network-survey-messaging:${networkSurveyMessagingVersion}") {
+        exclude group: 'com.google.api.grpc', module: 'proto-google-common-protos'
+    }
     implementation "com.google.protobuf:protobuf-java-util:3.17.3"
 
     implementation "mil.nga.geopackage:geopackage-android:6.6.0"
