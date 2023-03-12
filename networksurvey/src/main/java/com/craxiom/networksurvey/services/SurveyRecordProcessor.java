@@ -1456,12 +1456,12 @@ public class SurveyRecordProcessor
         {
             final String otaDeviceName = device.getName();
             if (otaDeviceName != null) dataBuilder.setOtaDeviceName(otaDeviceName);
-        }
 
-        final SupportedTechnologies supportedTech = BluetoothMessageConstants.getSupportedTechnologies(device.getType());
-        if (supportedTech != SupportedTechnologies.UNKNOWN)
-        {
-            dataBuilder.setSupportedTechnologies(supportedTech);
+            final SupportedTechnologies supportedTech = BluetoothMessageConstants.getSupportedTechnologies(device.getType());
+            if (supportedTech != null && supportedTech != SupportedTechnologies.UNKNOWN)
+            {
+                dataBuilder.setSupportedTechnologies(supportedTech);
+            }
         }
 
         final BluetoothRecord.Builder recordBuilder = BluetoothRecord.newBuilder();

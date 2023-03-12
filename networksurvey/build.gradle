@@ -19,7 +19,7 @@ android {
         minSdkVersion 26
         targetSdkVersion 31
         versionCode 46
-        versionName "1.13-SNAPSHOT"
+        versionName "1.12.1-beta01"
         setProperty("archivesBaseName", "$applicationName-$versionName")
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         testInstrumentationRunnerArguments clearPackageData: 'true'
@@ -99,7 +99,7 @@ dependencies {
     implementation 'com.craxiom:mqtt-library:0.5.0'
 
     implementation 'androidx.constraintlayout:constraintlayout:2.1.4'
-    implementation 'androidx.recyclerview:recyclerview:1.2.1'
+    implementation 'androidx.recyclerview:recyclerview:1.3.0'
 
     implementation 'app.futured.donut:donut:2.2.0'
 
@@ -109,7 +109,7 @@ dependencies {
     annotationProcessor 'org.projectlombok:lombok:1.18.24'
 
     // Import the Firebase BoM
-    //implementation platform('com.google.firebase:firebase-bom:31.0.1')
+    //implementation platform('com.google.firebase:firebase-bom:31.2.3')
     //implementation 'com.google.firebase:firebase-analytics'
     //implementation 'com.google.firebase:firebase-crashlytics'
 

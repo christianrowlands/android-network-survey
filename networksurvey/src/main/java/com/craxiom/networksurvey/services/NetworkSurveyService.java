@@ -1901,7 +1901,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
         if (!hasBtConnectPermission())
         {
             uiThreadHandler.post(() -> Toast.makeText(getApplicationContext(), getString(R.string.grant_bluetooth_connect_permission), Toast.LENGTH_LONG).show());
-            // Don't return here, just warn the user since it is only needed for the device names
+            return;
         }
 
         if (bluetoothScanningActive.getAndSet(true)) return;
