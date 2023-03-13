@@ -1,5 +1,10 @@
 # Changelog
 
+## [1.12.1](https://github.com/christianrowlands/android-network-survey/releases/tag/v1.12.1) - 2023-03-13
+
+* Fixed a Bluetooth Permissions bug.
+* Exclude the Google Protobuf Audit library.
+
 ## [1.12](https://github.com/christianrowlands/android-network-survey/releases/tag/v1.12) - 2023-03-04
 
 * Remove the use of the GMS library for CDR location.
