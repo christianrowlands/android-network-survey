@@ -38,6 +38,7 @@ import androidx.navigation.fragment.NavHostFragment;
 import androidx.preference.PreferenceManager;
 
 import com.craxiom.mqttlibrary.IConnectionStateListener;
+import com.craxiom.mqttlibrary.MqttConstants;
 import com.craxiom.mqttlibrary.connection.ConnectionState;
 import com.craxiom.networksurvey.NetworkSurveyActivity;
 import com.craxiom.networksurvey.R;
@@ -48,6 +49,7 @@ import com.craxiom.networksurvey.fragments.model.DashboardViewModel;
 import com.craxiom.networksurvey.listeners.ILoggingChangeListener;
 import com.craxiom.networksurvey.services.NetworkSurveyService;
 import com.craxiom.networksurvey.util.MathUtils;
+import com.craxiom.networksurvey.util.MdmUtils;
 import com.craxiom.networksurvey.util.ToggleLoggingTask;
 import com.google.android.material.snackbar.Snackbar;
 
@@ -238,6 +240,13 @@ public class DashboardFragment extends AServiceDataFragment implements LocationL
             viewModel.setCdrLoggingEnabled(newEnabledState);
             toggleCdrLogging(newEnabledState);
         });
+
+        final Context context = getContext();
+        if (context != null)
+        {
+            boolean underMdmControl = MdmUtils.isUnderMdmControl(context, MqttConstants.PROPERTY_MQTT_CONNECTION_HOST);
+            binding.mqttConnectionToggleSwitch.setVisibility(underMdmControl ? View.INVISIBLE : View.VISIBLE);
+        }
 
         initializeLoggingSwitch(binding.mqttConnectionToggleSwitch, (newEnabledState, toggleSwitch) -> {
             if (service == null)
@@ -839,7 +848,7 @@ public class DashboardFragment extends AServiceDataFragment implements LocationL
         streamItem.value.setText(enabled ? R.string.status_on : R.string.status_disabled);
         if (enabled)
         {
-            streamItem.mqttStatusIcon.setImageTintList(ColorStateList.valueOf(getResources().getColor(R.color.connectionStatusConnected, null)));
+            streamItem.mqttStatusIcon.setImageTintList(ColorStateList.valueOf(getResources().getColor(R.color.colorAccent, null)));
         } else
         {
             streamItem.mqttStatusIcon.setImageTintList(ColorStateList.valueOf(getResources().getColor(R.color.inactiveTabColor, null)));

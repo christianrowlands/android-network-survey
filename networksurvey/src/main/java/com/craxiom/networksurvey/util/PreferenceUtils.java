@@ -36,6 +36,7 @@ import com.craxiom.networksurvey.Application;
 import com.craxiom.networksurvey.R;
 import com.craxiom.networksurvey.constants.NetworkSurveyConstants;
 import com.craxiom.networksurvey.fragments.model.MqttConnectionSettings;
+import com.craxiom.networksurvey.mqtt.MqttConnectionInfo;
 
 import timber.log.Timber;
 
@@ -209,7 +210,10 @@ public class PreferenceUtils
 
         final RestrictionsManager restrictionsManager = (RestrictionsManager) context.getSystemService(Context.RESTRICTIONS_SERVICE);
         Bundle mdmProperties = null;
-        if (restrictionsManager != null) mdmProperties = restrictionsManager.getApplicationRestrictions();
+        if (restrictionsManager != null)
+        {
+            mdmProperties = restrictionsManager.getApplicationRestrictions();
+        }
 
         if (!mdmOverride
                 && mdmProperties != null
@@ -452,5 +456,23 @@ public class PreferenceUtils
         }
 
         edit.apply();
+    }
+
+    /**
+     * Saves the provided MQTT Protocol Streaming flags to the shared preferences. Not all the
+     * {@link MqttConnectionInfo} parameters are saved in this method; instead, just the streaming
+     * flags are saved.
+     */
+    public static void saveMqttStreamFlags(MqttConnectionInfo info, Context context)
+    {
+        SharedPreferences preferences = android.preference.PreferenceManager.getDefaultSharedPreferences(context);
+        SharedPreferences.Editor editor = preferences.edit();
+        editor.putBoolean(NetworkSurveyConstants.PROPERTY_MQTT_CELLULAR_STREAM_ENABLED, info.isCellularStreamEnabled());
+        editor.putBoolean(NetworkSurveyConstants.PROPERTY_MQTT_WIFI_STREAM_ENABLED, info.isWifiStreamEnabled());
+        editor.putBoolean(NetworkSurveyConstants.PROPERTY_MQTT_BLUETOOTH_STREAM_ENABLED, info.isBluetoothStreamEnabled());
+        editor.putBoolean(NetworkSurveyConstants.PROPERTY_MQTT_GNSS_STREAM_ENABLED, info.isGnssStreamEnabled());
+        editor.putBoolean(NetworkSurveyConstants.PROPERTY_MQTT_DEVICE_STATUS_STREAM_ENABLED, info.isDeviceStatusStreamEnabled());
+
+        editor.apply();
     }
 }

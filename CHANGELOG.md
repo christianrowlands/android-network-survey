@@ -1,5 +1,10 @@
 # Changelog
 
+## [1.12.2](https://github.com/christianrowlands/android-network-survey/releases/tag/v1.12.2) - 2023-03-28
+
+* Changed the color of the MQTT protocol stream status light on the Dashboard.
+* Fixed a bug where the MDM configured stream settings were not being reflected on the Dashboard.
+
 ## [1.12.1](https://github.com/christianrowlands/android-network-survey/releases/tag/v1.12.1) - 2023-03-13
 
 * Fixed a Bluetooth Permissions bug.

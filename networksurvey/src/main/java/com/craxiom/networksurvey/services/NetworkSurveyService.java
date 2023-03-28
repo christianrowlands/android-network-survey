@@ -401,6 +401,10 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
         mqttConnection.connect(getApplicationContext(), connectionInfo);
         MqttConnectionInfo networkSurveyConnection = (MqttConnectionInfo) connectionInfo;
 
+        // Saving the MQTT protocol streaming flags here allows the Dashboard UI to get notified
+        // of the updates since otherwise MDM specified flags won't get propagated to the Dashboard
+        PreferenceUtils.saveMqttStreamFlags(networkSurveyConnection, getApplicationContext());
+
         if (networkSurveyConnection.isCellularStreamEnabled())
         {
             registerCellularSurveyRecordListener(mqttConnection);
