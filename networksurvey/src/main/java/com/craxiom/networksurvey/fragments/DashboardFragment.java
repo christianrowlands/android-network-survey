@@ -244,7 +244,7 @@ public class DashboardFragment extends AServiceDataFragment implements LocationL
         final Context context = getContext();
         if (context != null)
         {
-            boolean underMdmControl = MdmUtils.isUnderMdmControl(context, MqttConstants.PROPERTY_MQTT_CONNECTION_HOST);
+            boolean underMdmControl = MdmUtils.isUnderMdmControlAndEnabled(context, MqttConstants.PROPERTY_MQTT_CONNECTION_HOST);
             binding.mqttConnectionToggleSwitch.setVisibility(underMdmControl ? View.INVISIBLE : View.VISIBLE);
         }
 
