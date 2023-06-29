@@ -8,7 +8,7 @@ package com.craxiom.networksurvey.listeners;
 public interface ILoggingChangeListener
 {
     /**
-     * Notification that the logging has changed for on or more of the loggers.
+     * Notification that the logging has changed on or more of the loggers.
      */
     void onLoggingChanged();
 }

@@ -741,6 +741,10 @@ public class GrpcConnectionService extends Service implements IDeviceStatusListe
                 dataBuilder.setLongitude(lastKnownLocation.getLongitude());
                 dataBuilder.setAltitude((float) lastKnownLocation.getAltitude());
                 dataBuilder.setAccuracy(MathUtils.roundAccuracy(lastKnownLocation.getAccuracy()));
+                if (lastKnownLocation.hasSpeed())
+                {
+                    dataBuilder.setSpeed(lastKnownLocation.getSpeed());
+                }
             }
         }
 

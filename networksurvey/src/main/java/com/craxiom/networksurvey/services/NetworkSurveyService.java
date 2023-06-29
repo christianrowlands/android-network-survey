@@ -2204,6 +2204,10 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
                 dataBuilder.setLongitude(lastKnownLocation.getLongitude());
                 dataBuilder.setAltitude((float) lastKnownLocation.getAltitude());
                 dataBuilder.setAccuracy(MathUtils.roundAccuracy(lastKnownLocation.getAccuracy()));
+                if (lastKnownLocation.hasSpeed())
+                {
+                    dataBuilder.setSpeed(lastKnownLocation.getSpeed());
+                }
             }
         }
 

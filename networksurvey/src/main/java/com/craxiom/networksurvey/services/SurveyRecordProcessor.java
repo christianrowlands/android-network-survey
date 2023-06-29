@@ -626,6 +626,10 @@ public class SurveyRecordProcessor
                 dataBuilder.setLongitude(lastKnownLocation.getLongitude());
                 dataBuilder.setAltitude((float) lastKnownLocation.getAltitude());
                 dataBuilder.setAccuracy(MathUtils.roundAccuracy(lastKnownLocation.getAccuracy()));
+                if (lastKnownLocation.hasSpeed())
+                {
+                    dataBuilder.setSpeed(lastKnownLocation.getSpeed());
+                }
             }
         }
 
@@ -887,6 +891,10 @@ public class SurveyRecordProcessor
                 dataBuilder.setLongitude(lastKnownLocation.getLongitude());
                 dataBuilder.setAltitude((float) lastKnownLocation.getAltitude());
                 dataBuilder.setAccuracy(MathUtils.roundAccuracy(lastKnownLocation.getAccuracy()));
+                if (lastKnownLocation.hasSpeed())
+                {
+                    dataBuilder.setSpeed(lastKnownLocation.getSpeed());
+                }
             }
         }
 
@@ -976,6 +984,10 @@ public class SurveyRecordProcessor
                 dataBuilder.setLongitude(lastKnownLocation.getLongitude());
                 dataBuilder.setAltitude((float) lastKnownLocation.getAltitude());
                 dataBuilder.setAccuracy(MathUtils.roundAccuracy(lastKnownLocation.getAccuracy()));
+                if (lastKnownLocation.hasSpeed())
+                {
+                    dataBuilder.setSpeed(lastKnownLocation.getSpeed());
+                }
             }
         }
 
@@ -1052,6 +1064,10 @@ public class SurveyRecordProcessor
                 dataBuilder.setLongitude(lastKnownLocation.getLongitude());
                 dataBuilder.setAltitude((float) lastKnownLocation.getAltitude());
                 dataBuilder.setAccuracy(MathUtils.roundAccuracy(lastKnownLocation.getAccuracy()));
+                if (lastKnownLocation.hasSpeed())
+                {
+                    dataBuilder.setSpeed(lastKnownLocation.getSpeed());
+                }
             }
         }
 
@@ -1150,6 +1166,10 @@ public class SurveyRecordProcessor
                 dataBuilder.setLongitude(lastKnownLocation.getLongitude());
                 dataBuilder.setAltitude((float) lastKnownLocation.getAltitude());
                 dataBuilder.setAccuracy(MathUtils.roundAccuracy(lastKnownLocation.getAccuracy()));
+                if (lastKnownLocation.hasSpeed())
+                {
+                    dataBuilder.setSpeed(lastKnownLocation.getSpeed());
+                }
             }
         }
 
@@ -1250,6 +1270,10 @@ public class SurveyRecordProcessor
                 dataBuilder.setLongitude(lastKnownLocation.getLongitude());
                 dataBuilder.setAltitude((float) lastKnownLocation.getAltitude());
                 dataBuilder.setAccuracy(MathUtils.roundAccuracy(lastKnownLocation.getAccuracy()));
+                if (lastKnownLocation.hasSpeed())
+                {
+                    dataBuilder.setSpeed(lastKnownLocation.getSpeed());
+                }
             }
         }
 
@@ -1348,6 +1372,10 @@ public class SurveyRecordProcessor
                 dataBuilder.setLongitude(lastKnownLocation.getLongitude());
                 dataBuilder.setAltitude((float) lastKnownLocation.getAltitude());
                 dataBuilder.setAccuracy(MathUtils.roundAccuracy(lastKnownLocation.getAccuracy()));
+                if (lastKnownLocation.hasSpeed())
+                {
+                    dataBuilder.setSpeed(lastKnownLocation.getSpeed());
+                }
             }
         }
 
@@ -1433,6 +1461,10 @@ public class SurveyRecordProcessor
                 dataBuilder.setLongitude(lastKnownLocation.getLongitude());
                 dataBuilder.setAltitude((float) lastKnownLocation.getAltitude());
                 dataBuilder.setAccuracy(MathUtils.roundAccuracy(lastKnownLocation.getAccuracy()));
+                if (lastKnownLocation.hasSpeed())
+                {
+                    dataBuilder.setSpeed(lastKnownLocation.getSpeed());
+                }
             }
         }
 
@@ -1504,6 +1536,11 @@ public class SurveyRecordProcessor
                 {
                     dataBuilder.setAltitudeStdDevM(FloatValue.newBuilder()
                             .setValue(lastKnownLocation.getVerticalAccuracyMeters()));
+                }
+
+                if (lastKnownLocation.hasSpeed())
+                {
+                    dataBuilder.setSpeed(lastKnownLocation.getSpeed());
                 }
             }
         }
@@ -1578,6 +1615,11 @@ public class SurveyRecordProcessor
                 {
                     dataBuilder.setAltitudeStdDevM(FloatValue.newBuilder()
                             .setValue(lastKnownLocation.getVerticalAccuracyMeters()));
+                }
+
+                if (lastKnownLocation.hasSpeed())
+                {
+                    dataBuilder.setSpeed(lastKnownLocation.getSpeed());
                 }
             }
         }

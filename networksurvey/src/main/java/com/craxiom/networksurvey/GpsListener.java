@@ -7,8 +7,6 @@ import android.os.Bundle;
 
 import androidx.annotation.NonNull;
 
-import com.craxiom.networksurvey.services.NetworkSurveyService;
-
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArraySet;
 
@@ -67,9 +65,6 @@ public class GpsListener implements LocationListener
 
     /**
      * Unregisters a location listener.
-     * <p>
-     * If the listener being removed is the last listener and nothing else is using this {@link NetworkSurveyService},
-     * then this service is shutdown and will need to be restarted before it can be used again.
      *
      * @param listener The listener to unregister.
      * @since 1.6.0

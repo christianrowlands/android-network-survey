@@ -334,7 +334,6 @@ public class DashboardFragment extends AServiceDataFragment implements LocationL
 
             AlertDialog permissionsExplanationDialog = alertBuilder.create();
             permissionsExplanationDialog.show();
-            return;
         }
     }
 
@@ -638,6 +637,7 @@ public class DashboardFragment extends AServiceDataFragment implements LocationL
         {
             Timber.w("Could not get the context to read the MQTT streaming preferences, " +
                     "maybe the dashboard fragment has been removed");
+            return;
         }
         final SharedPreferences preferences = android.preference.PreferenceManager.getDefaultSharedPreferences(context);
 
@@ -678,7 +678,7 @@ public class DashboardFragment extends AServiceDataFragment implements LocationL
     }
 
     /**
-     * Starts or stops writing the Cellular log file based on the specified parameter.
+     * Starts or stops writing the Wi-Fi log file based on the specified parameter.
      *
      * @param enable True if logging should be enabled, false if it should be turned off.
      */
