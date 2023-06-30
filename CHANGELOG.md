@@ -1,5 +1,10 @@
 # Changelog
 
+## [1.13](https://github.com/christianrowlands/android-network-survey/releases/tag/v1.13) - 2023-06-29
+
+* The speed (in meters per second) is now included in all messages.
+* Fixed a bug where the MQTT toggle switch was not displaying when MDM override was enabled.
+
 ## [1.12.2](https://github.com/christianrowlands/android-network-survey/releases/tag/v1.12.2) - 2023-03-28
 
 * Changed the color of the MQTT protocol stream status light on the Dashboard.
