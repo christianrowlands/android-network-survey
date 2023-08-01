@@ -489,6 +489,7 @@ public class DashboardFragment extends AServiceDataFragment implements LocationL
         viewModel.getGnssLoggingEnabled().removeObservers(viewLifecycleOwner);
         viewModel.getCdrLoggingEnabled().removeObservers(viewLifecycleOwner);
 
+        viewModel.getMqttConnectionState().removeObservers(viewLifecycleOwner);
         viewModel.getCellularMqttStreamEnabled().removeObservers(viewLifecycleOwner);
         viewModel.getWifiMqttStreamEnabled().removeObservers(viewLifecycleOwner);
         viewModel.getBluetoothMqttStreamEnabled().removeObservers(viewLifecycleOwner);
