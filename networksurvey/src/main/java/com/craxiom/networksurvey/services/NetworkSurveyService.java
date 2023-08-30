@@ -1137,7 +1137,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
     }
 
     /**
-     * Sends out a ping to the Google DNS IP Address (8.8.8.8) every n seconds.  This allow the data connection to
+     * Sends out a ping to the Google DNS IP Address (8.8.8.8) every n seconds.  This allows the data connection to
      * stay alive, which will enable us to get Timing Advance information.
      */
     public void initializePing()
@@ -1149,7 +1149,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
             {
                 try
                 {
-                    if (!cellularLoggingEnabled.get()) return;
+                    if (!cellularScanningActive.get()) return;
 
                     sendPing();
 
