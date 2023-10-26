@@ -1,6 +1,6 @@
 # Network Survey Android App
 
-[![Build Status](https://travis-ci.com/christianrowlands/android-network-survey.svg?branch=develop)](https://travis-ci.com/github/christianrowlands/android-network-survey)
+![Build Status](https://github.com/christianrowlands/android-network-survey/actions/workflows/android.yml/badge.svg)
 [![License](https://img.shields.io/badge/license-Apache%202-green.svg?style=flat)](https://github.com/christianrowlands/android-network-survey/blob/develop/LICENSE)
 
 <p align="center">
