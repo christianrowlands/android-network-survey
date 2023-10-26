@@ -1,7 +1,7 @@
 apply plugin: 'com.android.application'
 apply plugin: "androidx.navigation.safeargs"
-//apply plugin: "com.google.gms.google-services"
-//apply plugin: "com.google.firebase.crashlytics"
+apply plugin: "com.google.gms.google-services"
+apply plugin: "com.google.firebase.crashlytics"
 apply plugin: 'kotlin-android'
 
 
@@ -17,8 +17,8 @@ android {
         applicationId "com.craxiom.networksurvey"
         minSdkVersion 26
         targetSdkVersion 31
-        versionCode 50
-        versionName "1.13"
+        versionCode 49
+        versionName "1.14-SNAPSHOT"
         setProperty("archivesBaseName", "$applicationName-$versionName")
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         testInstrumentationRunnerArguments clearPackageData: 'true'
@@ -56,10 +56,12 @@ android {
 
     flavorDimensions "version"
     productFlavors {
+        // Regular is for Google Play that contains Firebase tracking features such as crashlytics
         regular {
             versionNameSuffix ""
         }
 
+        // Has the extra CDR features and does not contain any tracking
         cdr {
             versionNameSuffix "-cdr"
         }
@@ -107,10 +109,10 @@ dependencies {
     implementation 'org.projectlombok:lombok:1.18.24'
     annotationProcessor 'org.projectlombok:lombok:1.18.24'
 
-    // Import the Firebase BoM
-    //implementation platform('com.google.firebase:firebase-bom:31.2.3')
-    //implementation 'com.google.firebase:firebase-analytics'
-    //implementation 'com.google.firebase:firebase-crashlytics'
+    // Only include firebase in the google play build
+    regularImplementation platform('com.google.firebase:firebase-bom:31.2.3')
+    regularImplementation 'com.google.firebase:firebase-analytics'
+    regularImplementation 'com.google.firebase:firebase-crashlytics'
 
     testImplementation 'junit:junit:4.13.2'
     implementation 'androidx.annotation:annotation:1.6.0'

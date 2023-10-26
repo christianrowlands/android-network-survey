@@ -52,7 +52,7 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: Network Survey CDR Debug APK
-          path: networksurvey/build/outputs/apk/cdr/debug/${{ env.base_name }}-cdr-debug.apk
+          path: networksurvey/build/outputs/apk/cdr/debug/${{ env.base_name }}-cdr-no-tracking-debug.apk
 
 
   test:
