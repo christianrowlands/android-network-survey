@@ -6,17 +6,17 @@ apply plugin: 'kotlin-android'
 
 
 ext.androidVersion = '28.0.0'
-ext.grpcVersion = '1.45.1'
-ext.networkSurveyMessagingVersion = '0.11.1'
-ext.navigationVersion = '2.6.0'
+ext.grpcVersion = '1.58.0'
+ext.networkSurveyMessagingVersion = '0.12.0'
+ext.navigationVersion = '2.7.4'
 
 android {
-    compileSdkVersion 33
+    compileSdk 34
     defaultConfig {
         buildConfigField "String", "MESSAGING_API_VERSION", "\"${networkSurveyMessagingVersion}\""
         applicationId "com.craxiom.networksurvey"
         minSdkVersion 26
-        targetSdkVersion 31
+        targetSdkVersion 34
         versionCode 49
         versionName "1.14-SNAPSHOT"
         setProperty("archivesBaseName", "$applicationName-$versionName")
@@ -34,18 +34,17 @@ android {
         }
     }
     compileOptions {
-        sourceCompatibility = '1.8'
-        targetCompatibility = '1.8'
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
     }
     buildFeatures {
         viewBinding true
         dataBinding true
     }
-    buildToolsVersion '30.0.3'
+
     packagingOptions {
-        exclude 'google/cloud/audit/audit_log.proto'
         resources {
-            excludes += ['META-INF/INDEX.LIST', 'META-INF/io.netty.versions.properties']
+            excludes += ['META-INF/INDEX.LIST', 'META-INF/io.netty.versions.properties', 'google/cloud/audit/audit_log.proto']
         }
     }
 
@@ -71,10 +70,10 @@ android {
 dependencies {
     implementation 'androidx.appcompat:appcompat:1.6.1'
     implementation 'com.jakewharton.timber:timber:5.0.1'
-    implementation 'com.google.android.material:material:1.9.0'
+    implementation 'com.google.android.material:material:1.10.0'
     implementation 'androidx.legacy:legacy-support-v4:1.0.0'
     implementation 'androidx.cardview:cardview:1.0.0'
-    implementation 'androidx.preference:preference-ktx:1.2.0'
+    implementation 'androidx.preference:preference-ktx:1.2.1'
     implementation "androidx.navigation:navigation-runtime-ktx:${navigationVersion}"
     implementation "androidx.navigation:navigation-fragment-ktx:${navigationVersion}"
     implementation "androidx.navigation:navigation-ui-ktx:${navigationVersion}"
@@ -92,7 +91,7 @@ dependencies {
     implementation("com.craxiom:network-survey-messaging:${networkSurveyMessagingVersion}") {
         exclude group: 'com.google.api.grpc', module: 'proto-google-common-protos'
     }
-    implementation "com.google.protobuf:protobuf-java-util:3.19.3"
+    implementation "com.google.protobuf:protobuf-java-util:3.24.3"
 
     implementation "mil.nga.geopackage:geopackage-android:6.6.0"
     implementation 'org.apache.commons:commons-csv:1.9.0'
@@ -100,7 +99,7 @@ dependencies {
     implementation 'com.craxiom:mqtt-library:0.5.0'
 
     implementation 'androidx.constraintlayout:constraintlayout:2.1.4'
-    implementation 'androidx.recyclerview:recyclerview:1.3.0'
+    implementation 'androidx.recyclerview:recyclerview:1.3.2'
 
     implementation 'app.futured.donut:donut:2.2.0'
 
@@ -115,7 +114,7 @@ dependencies {
     regularImplementation 'com.google.firebase:firebase-crashlytics'
 
     testImplementation 'junit:junit:4.13.2'
-    implementation 'androidx.annotation:annotation:1.6.0'
+    implementation 'androidx.annotation:annotation:1.7.0'
 
     androidTestImplementation 'androidx.test.ext:junit:1.1.5'
     androidTestImplementation 'androidx.test:runner:1.5.2'

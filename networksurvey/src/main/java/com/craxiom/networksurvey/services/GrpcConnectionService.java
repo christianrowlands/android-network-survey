@@ -1079,7 +1079,7 @@ public class GrpcConnectionService extends Service implements IDeviceStatusListe
             Timber.i("%s service connected", name);
             final NetworkSurveyService.SurveyServiceBinder binder = (NetworkSurveyService.SurveyServiceBinder) iBinder;
             networkSurveyService = (NetworkSurveyService) binder.getService();
-            deviceId = networkSurveyService.getDeviceId();
+            deviceId = networkSurveyService.getNsDeviceId();
             gpsListener = networkSurveyService.getGpsListener();
             networkSurveyService.registerCellularSurveyRecordListener(GrpcConnectionService.this);
             networkSurveyService.registerWifiSurveyRecordListener(GrpcConnectionService.this);

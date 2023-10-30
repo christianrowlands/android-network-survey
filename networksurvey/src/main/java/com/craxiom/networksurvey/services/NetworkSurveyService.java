@@ -524,7 +524,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
         return gpsListener;
     }
 
-    public String getDeviceId()
+    public String getNsDeviceId()
     {
         return deviceId;
     }
