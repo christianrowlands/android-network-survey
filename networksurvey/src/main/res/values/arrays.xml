@@ -83,4 +83,16 @@
         <item>250</item>
         <item>1000</item>
     </string-array>
+
+    <string-array name="log_file_option_labels">
+        <item>CSV</item>
+        <item>GeoPackage</item>
+        <item>CSV and GeoPackage</item>
+    </string-array>
+
+    <string-array name="log_file_option_index">
+        <item>0</item>
+        <item>1</item>
+        <item>2</item>
+    </string-array>
 </resources>

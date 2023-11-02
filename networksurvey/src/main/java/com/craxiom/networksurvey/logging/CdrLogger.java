@@ -20,7 +20,8 @@ public class CdrLogger extends CsvRecordLogger implements ICdrEventListener
 {
     public CdrLogger(NetworkSurveyService networkSurveyService, Looper serviceLooper)
     {
-        super(networkSurveyService, serviceLooper, NetworkSurveyConstants.LOG_DIRECTORY_NAME, NetworkSurveyConstants.CDR_FILE_NAME_PREFIX);
+        super(networkSurveyService, serviceLooper, NetworkSurveyConstants.CSV_LOG_DIRECTORY_NAME,
+                NetworkSurveyConstants.CDR_FILE_NAME_PREFIX, false);
     }
 
     @Override

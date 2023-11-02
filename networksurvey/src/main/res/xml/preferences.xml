@@ -56,6 +56,16 @@
             app:key="log_rollover_size_mb"
             app:title="@string/log_rollover_title"
             app:useSimpleSummaryProvider="true" />
+
+        <ListPreference
+            app:defaultValue="2"
+            app:dialogTitle="@string/log_file_title"
+            app:entries="@array/log_file_option_labels"
+            app:entryValues="@array/log_file_option_index"
+            app:icon="@drawable/ic_log_file"
+            app:key="log_file_type"
+            app:useSimpleSummaryProvider="true"
+            app:title="@string/log_file_title" />
     </PreferenceCategory>
 
     <PreferenceCategory

@@ -36,6 +36,7 @@ public class SettingsFragment extends PreferenceFragmentCompat implements Shared
             NetworkSurveyConstants.PROPERTY_AUTO_START_BLUETOOTH_LOGGING,
             NetworkSurveyConstants.PROPERTY_AUTO_START_GNSS_LOGGING,
             NetworkSurveyConstants.PROPERTY_LOG_ROLLOVER_SIZE_MB,
+            NetworkSurveyConstants.PROPERTY_LOG_FILE_TYPE,
             NetworkSurveyConstants.PROPERTY_CELLULAR_SCAN_INTERVAL_SECONDS,
             NetworkSurveyConstants.PROPERTY_WIFI_SCAN_INTERVAL_SECONDS,
             NetworkSurveyConstants.PROPERTY_BLUETOOTH_SCAN_INTERVAL_SECONDS,
@@ -185,7 +186,10 @@ public class SettingsFragment extends PreferenceFragmentCompat implements Shared
 
         final boolean mdmOverride = sharedPreferences.getBoolean(NetworkSurveyConstants.PROPERTY_MDM_OVERRIDE_KEY, false);
 
-        if (mdmOverride) return; // Nothing to do because all the preferences are enabled by default.
+        if (mdmOverride)
+        {
+            return; // Nothing to do because all the preferences are enabled by default.
+        }
 
         final PreferenceScreen preferenceScreen = getPreferenceScreen();
 
@@ -200,6 +204,7 @@ public class SettingsFragment extends PreferenceFragmentCompat implements Shared
         updateBooleanPreferenceForMdm(preferenceScreen, mdmProperties, NetworkSurveyConstants.PROPERTY_AUTO_START_BLUETOOTH_LOGGING);
         updateBooleanPreferenceForMdm(preferenceScreen, mdmProperties, NetworkSurveyConstants.PROPERTY_AUTO_START_GNSS_LOGGING);
         updateLogRolloverSizeForMdm(preferenceScreen, mdmProperties);
+        updateIntPreferenceForMdm(preferenceScreen, mdmProperties, NetworkSurveyConstants.PROPERTY_LOG_FILE_TYPE);
         updateIntPreferenceForMdm(preferenceScreen, mdmProperties, NetworkSurveyConstants.PROPERTY_CELLULAR_SCAN_INTERVAL_SECONDS);
         updateIntPreferenceForMdm(preferenceScreen, mdmProperties, NetworkSurveyConstants.PROPERTY_WIFI_SCAN_INTERVAL_SECONDS);
         updateIntPreferenceForMdm(preferenceScreen, mdmProperties, NetworkSurveyConstants.PROPERTY_BLUETOOTH_SCAN_INTERVAL_SECONDS);

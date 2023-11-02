@@ -385,7 +385,7 @@ public class SurveyRecordProcessor
      * @param dataNetworkType  The data network type (e.g. "LTE"), which might be different than the voice network type.
      * @param voiceNetworkType The voice network type (e.g. "LTE").
      */
-    void onCellInfoUpdate(List<CellInfo> allCellInfo, String dataNetworkType, String voiceNetworkType) throws SecurityException
+    public void onCellInfoUpdate(List<CellInfo> allCellInfo, String dataNetworkType, String voiceNetworkType) throws SecurityException
     {
         // synchronized to make sure that we are only processing one list of Cell Info objects at a time.
         synchronized (cellInfoProcessingLock)
@@ -505,7 +505,7 @@ public class SurveyRecordProcessor
      */
     @SuppressLint("NewApi")
     @RequiresApi(api = Build.VERSION_CODES.Q)
-    void onServiceStateChanged(ServiceState serviceState, TelephonyManager telephonyManager)
+    public void onServiceStateChanged(ServiceState serviceState, TelephonyManager telephonyManager)
     {
         notifyPhoneStateListeners(createPhoneStateMessage(telephonyManager,
                 builder -> {
@@ -1762,25 +1762,20 @@ public class SurveyRecordProcessor
         }
 
         CellIdentity cellIdentity = info.getCellIdentity();
-        if (cellIdentity instanceof CellIdentityNr)
+        if (cellIdentity instanceof CellIdentityNr nr)
         {
-            CellIdentityNr nr = (CellIdentityNr) cellIdentity;
             return nr.getMccString() + "-" + nr.getMncString() + "-" + nr.getTac() + "-" + nr.getNci();
-        } else if (cellIdentity instanceof CellIdentityLte)
+        } else if (cellIdentity instanceof CellIdentityLte lte)
         {
-            CellIdentityLte lte = (CellIdentityLte) cellIdentity;
             return lte.getMccString() + "-" + lte.getMncString() + "-" + lte.getTac() + "-" + lte.getCi();
-        } else if (cellIdentity instanceof CellIdentityWcdma)
+        } else if (cellIdentity instanceof CellIdentityWcdma wcdma)
         {
-            CellIdentityWcdma wcdma = (CellIdentityWcdma) cellIdentity;
             return wcdma.getMccString() + "-" + wcdma.getMncString() + "-" + wcdma.getLac() + "-" + wcdma.getCid();
-        } else if (cellIdentity instanceof CellIdentityCdma)
+        } else if (cellIdentity instanceof CellIdentityCdma cdma)
         {
-            CellIdentityCdma cdma = (CellIdentityCdma) cellIdentity;
             return cdma.getSystemId() + "-" + cdma.getNetworkId() + "-" + cdma.getBasestationId();
-        } else if (cellIdentity instanceof CellIdentityGsm)
+        } else if (cellIdentity instanceof CellIdentityGsm gsm)
         {
-            CellIdentityGsm gsm = (CellIdentityGsm) cellIdentity;
             return gsm.getMccString() + "-" + gsm.getMncString() + "-" + gsm.getLac() + "-" + gsm.getCid();
         }
 

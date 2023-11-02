@@ -36,6 +36,7 @@ import com.craxiom.networksurvey.Application;
 import com.craxiom.networksurvey.R;
 import com.craxiom.networksurvey.constants.NetworkSurveyConstants;
 import com.craxiom.networksurvey.fragments.model.MqttConnectionSettings;
+import com.craxiom.networksurvey.model.LogTypeState;
 import com.craxiom.networksurvey.mqtt.MqttConnectionInfo;
 
 import timber.log.Timber;
@@ -186,6 +187,73 @@ public class PreferenceUtils
         }
 
         return Integer.parseInt(NetworkSurveyConstants.DEFAULT_ROLLOVER_SIZE_MB);
+    }
+
+    /**
+     * Gets the log file type preference.
+     * <p>
+     * First, this method tries to pull the MDM provided auto start value. If it is not set (either because the device
+     * is not under MDM control, or if that specific value is not set by the MDM administrator) then the value is pulled
+     * from the Android Shared Preferences (aka from the user settings). If it is not set there then the default
+     * value is used.
+     * <p>
+     * The only exception to this sequence is that if the user has toggled the MDM override switch in user settings,
+     * then the user preference value will be used instead of the MDM value.
+     *
+     * @param context The context to use when getting the Shared Preferences and Restriction Manager.
+     * @return A wrapper object that contains flags indicating which file types are enabled.
+     */
+    public static LogTypeState getLogTypePreference(Context context)
+    {
+        final RestrictionsManager restrictionsManager = (RestrictionsManager) context.getSystemService(Context.RESTRICTIONS_SERVICE);
+
+        final boolean mdmOverride = PreferenceManager.getDefaultSharedPreferences(context).getBoolean(NetworkSurveyConstants.PROPERTY_MDM_OVERRIDE_KEY, false);
+
+        // First try to use the MDM provided value.
+        if (restrictionsManager != null && !mdmOverride)
+        {
+            final Bundle mdmProperties = restrictionsManager.getApplicationRestrictions();
+
+            if (mdmProperties.containsKey(NetworkSurveyConstants.PROPERTY_LOG_FILE_TYPE))
+            {
+                return convertIndexToLogTypeState(String.valueOf(mdmProperties.getInt(NetworkSurveyConstants.PROPERTY_LOG_FILE_TYPE)));
+            }
+        }
+
+        final SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(context);
+
+        // Next, try to use the value from user preferences, with a default fallback
+        return convertIndexToLogTypeState(preferences.getString(NetworkSurveyConstants.PROPERTY_LOG_FILE_TYPE, "2"));
+    }
+
+    /**
+     * Converts the user preference index to a wrapper object that contains the flags indicating
+     * which file types are enabled.
+     */
+    private static LogTypeState convertIndexToLogTypeState(String index)
+    {
+        boolean csv = false;
+        boolean geoPackage = false;
+        switch (index)
+        {
+            case "0" -> // CSV Only
+                    csv = true;
+            case "1" -> // GeoPackage Only
+                    geoPackage = true;
+            case "2" ->
+            { // Both
+                csv = true;
+                geoPackage = true;
+            }
+            default ->
+            {
+                Timber.wtf("Unhandled log type setting=%s", index);
+                csv = true;
+                geoPackage = true;
+            }
+        }
+
+        return new LogTypeState(csv, geoPackage);
     }
 
     /**

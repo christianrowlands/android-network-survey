@@ -499,6 +499,7 @@ public class DashboardFragment extends AServiceDataFragment implements LocationL
 
     private synchronized void updateLoggingState(NetworkSurveyService networkSurveyService)
     {
+        // TODO Should we reflect the logging file types in the status?
         viewModel.setCellularLoggingEnabled(networkSurveyService.isCellularLoggingEnabled());
         viewModel.setWifiLoggingEnabled(networkSurveyService.isWifiLoggingEnabled());
         viewModel.setBluetoothLoggingEnabled(networkSurveyService.isBluetoothLoggingEnabled());

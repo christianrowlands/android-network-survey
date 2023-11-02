@@ -1,17 +1,17 @@
 package com.craxiom.networksurvey.model;
 
-import static com.craxiom.networksurvey.constants.CdrCsvConstants.CS_CELL_IDENTIFIER;
-import static com.craxiom.networksurvey.constants.CdrCsvConstants.CS_RANT;
-import static com.craxiom.networksurvey.constants.CdrCsvConstants.DESTINATION_ADDRESS;
-import static com.craxiom.networksurvey.constants.CdrCsvConstants.EVENT;
-import static com.craxiom.networksurvey.constants.CdrCsvConstants.ORIGINATING_ADDRESS;
-import static com.craxiom.networksurvey.constants.CdrCsvConstants.PS_CELL_IDENTIFIER;
-import static com.craxiom.networksurvey.constants.CdrCsvConstants.PS_RANT;
-import static com.craxiom.networksurvey.constants.CdrCsvConstants.START_TIME;
-import static com.craxiom.networksurvey.constants.CsvConstants.ACCURACY;
-import static com.craxiom.networksurvey.constants.CsvConstants.ALTITUDE;
-import static com.craxiom.networksurvey.constants.CsvConstants.LATITUDE;
-import static com.craxiom.networksurvey.constants.CsvConstants.LONGITUDE;
+import static com.craxiom.networksurvey.constants.csv.CdrCsvConstants.CS_CELL_IDENTIFIER;
+import static com.craxiom.networksurvey.constants.csv.CdrCsvConstants.CS_RANT;
+import static com.craxiom.networksurvey.constants.csv.CdrCsvConstants.DESTINATION_ADDRESS;
+import static com.craxiom.networksurvey.constants.csv.CdrCsvConstants.EVENT;
+import static com.craxiom.networksurvey.constants.csv.CdrCsvConstants.ORIGINATING_ADDRESS;
+import static com.craxiom.networksurvey.constants.csv.CdrCsvConstants.PS_CELL_IDENTIFIER;
+import static com.craxiom.networksurvey.constants.csv.CdrCsvConstants.PS_RANT;
+import static com.craxiom.networksurvey.constants.csv.CdrCsvConstants.START_TIME;
+import static com.craxiom.networksurvey.constants.csv.CsvConstants.ACCURACY;
+import static com.craxiom.networksurvey.constants.csv.CsvConstants.ALTITUDE;
+import static com.craxiom.networksurvey.constants.csv.CsvConstants.LATITUDE;
+import static com.craxiom.networksurvey.constants.csv.CsvConstants.LONGITUDE;
 
 import android.location.Location;
 

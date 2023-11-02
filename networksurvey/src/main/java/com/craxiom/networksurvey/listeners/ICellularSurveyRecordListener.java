@@ -22,7 +22,9 @@ public interface ICellularSurveyRecordListener
      * @param gsmRecord the GSM Record.
      * @since 0.0.5
      */
-    void onGsmSurveyRecord(GsmRecord gsmRecord);
+    default void onGsmSurveyRecord(GsmRecord gsmRecord)
+    {
+    }
 
     /**
      * Called when a new CDMA Survey Record is ready.
@@ -30,7 +32,9 @@ public interface ICellularSurveyRecordListener
      * @param cdmaRecord the CDMA Record.
      * @since 0.0.5
      */
-    void onCdmaSurveyRecord(CdmaRecord cdmaRecord);
+    default void onCdmaSurveyRecord(CdmaRecord cdmaRecord)
+    {
+    }
 
     /**
      * Called when a new UMTS Survey Record is ready.
@@ -38,14 +42,18 @@ public interface ICellularSurveyRecordListener
      * @param umtsRecord the UMTS Record.
      * @since 0.0.5
      */
-    void onUmtsSurveyRecord(UmtsRecord umtsRecord);
+    default void onUmtsSurveyRecord(UmtsRecord umtsRecord)
+    {
+    }
 
     /**
      * Called when a new LTE Survey Record is ready.
      *
      * @param lteRecord the LTE Record.
      */
-    void onLteSurveyRecord(LteRecord lteRecord);
+    default void onLteSurveyRecord(LteRecord lteRecord)
+    {
+    }
 
     /**
      * Called when a new NR Survey Record is ready.
@@ -53,7 +61,9 @@ public interface ICellularSurveyRecordListener
      * @param nrRecord the New Radio (5G) record.
      * @since 1.5.0
      */
-    void onNrSurveyRecord(NrRecord nrRecord);
+    default void onNrSurveyRecord(NrRecord nrRecord)
+    {
+    }
 
     /**
      * Called when a new batch of cellular survey records are ready.

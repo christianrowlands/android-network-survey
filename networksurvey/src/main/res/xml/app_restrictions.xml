@@ -126,6 +126,13 @@
         android:title="@string/log_rollover_title" />
 
     <restriction
+        android:defaultValue="2"
+        android:description="@string/log_file_description"
+        android:key="log_file_type"
+        android:restrictionType="integer"
+        android:title="@string/log_file_title" />
+
+    <restriction
         android:defaultValue="true"
         android:description="@string/auto_start_cellular_logging_description"
         android:key="auto_start_logging"

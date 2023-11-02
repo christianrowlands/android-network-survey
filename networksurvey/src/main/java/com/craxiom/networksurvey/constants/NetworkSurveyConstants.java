@@ -26,7 +26,13 @@ public class NetworkSurveyConstants
     public static final int LOGGING_NOTIFICATION_ID = 1;
 
     public static final String LOG_DIRECTORY_NAME = "NetworkSurveyData";
+    public static final String CSV_LOG_DIRECTORY_NAME = "NetworkSurveyData/csv";
 
+    public static final String GSM_FILE_NAME_PREFIX = "craxiom-gsm-";
+    public static final String CDMA_FILE_NAME_PREFIX = "craxiom-cdma-";
+    public static final String UMTS_FILE_NAME_PREFIX = "craxiom-umts-";
+    public static final String LTE_FILE_NAME_PREFIX = "craxiom-lte-";
+    public static final String NR_FILE_NAME_PREFIX = "craxiom-nr-";
     public static final String CELLULAR_FILE_NAME_PREFIX = "craxiom-cellular-";
     public static final String WIFI_FILE_NAME_PREFIX = "craxiom-wifi-";
     public static final String BLUETOOTH_FILE_NAME_PREFIX = "craxiom-bluetooth-";
@@ -91,6 +97,7 @@ public class NetworkSurveyConstants
     public static final String PROPERTY_GNSS_SCAN_INTERVAL_SECONDS = "gnss_scan_interval_seconds";
     public static final String PROPERTY_DEVICE_STATUS_SCAN_INTERVAL_SECONDS = "device_status_scan_interval_seconds";
     public static final String PROPERTY_LOG_ROLLOVER_SIZE_MB = "log_rollover_size_mb";
+    public static final String PROPERTY_LOG_FILE_TYPE = "log_file_type";
 
     // The following key is used in the app_restrictions.xml file and in the app's shared preferences
     public static final String PROPERTY_MQTT_START_ON_BOOT = "mqtt_start_on_boot";

@@ -1,4 +1,4 @@
-package com.craxiom.networksurvey.constants;
+package com.craxiom.networksurvey.constants.csv;
 
 /**
  * The constants associated with the CDR CSV file headers.

@@ -44,6 +44,7 @@ public abstract class CsvRecordLogger
     final Handler handler;
     private final String logDirectoryName;
     private final String fileNamePrefix;
+    private final boolean lazyFileCreation;
     private final RolloverWorker rolloverWorker = new RolloverWorker();
 
     CSVPrinter printer;
@@ -60,13 +61,15 @@ public abstract class CsvRecordLogger
      * @param logDirectoryName     The parent directory name to write all the files in.
      * @param fileNamePrefix       The prefix to use for the GeoPackage file name.
      */
-    CsvRecordLogger(NetworkSurveyService networkSurveyService, Looper serviceLooper, String logDirectoryName, String fileNamePrefix)
+    CsvRecordLogger(NetworkSurveyService networkSurveyService, Looper serviceLooper,
+                    String logDirectoryName, String fileNamePrefix, boolean lazyFileCreation)
     {
         this.networkSurveyService = networkSurveyService;
         applicationContext = networkSurveyService.getApplicationContext();
         handler = new Handler(serviceLooper);
         this.logDirectoryName = logDirectoryName;
         this.fileNamePrefix = fileNamePrefix;
+        this.lazyFileCreation = lazyFileCreation;
     }
 
     abstract String[] getHeaders();
@@ -86,6 +89,7 @@ public abstract class CsvRecordLogger
         {
             try
             {
+                Timber.i("Toggling CSV logging to %s", enable);
                 if (!enable)
                 {
                     if (loggingEnabled)
@@ -102,9 +106,11 @@ public abstract class CsvRecordLogger
 
                 if (!isExternalStorageWritable()) return false;
 
-                boolean fileCreated = prepareCsvForLogging();
-
                 updateRolloverWorker();
+
+                if (lazyFileCreation) return true;
+
+                boolean fileCreated = prepareCsvForLogging();
 
                 return loggingEnabled = fileCreated;
             } catch (Exception e)
@@ -127,6 +133,26 @@ public abstract class CsvRecordLogger
                 return false;
             }
         }
+    }
+
+    void writeCsvRecord(Object[] row) throws IOException
+    {
+        if (lazyFileCreation) lazyCreateFileIfNecessary();
+        printer.printRecord(row);
+        printer.flush(); // TODO could we get away with not flushing on every record?
+        checkIfRolloverNeeded();
+    }
+
+    /**
+     * If lazy file creation is enabled, and the file has not yet been created, then this method
+     * creates the CSV file.
+     * <p>
+     * This method should only be called if lazy file creation was set to true wen creating this
+     * logger. And it is important to call this method at least once before using the printer.
+     */
+    private void lazyCreateFileIfNecessary()
+    {
+        if (loggingFileName == null) prepareCsvForLogging();
     }
 
     /**

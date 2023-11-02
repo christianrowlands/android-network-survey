@@ -287,6 +287,9 @@
     <string name="log_rollover_description">The maximum file size (in MB) before starting a new survey log file. The default value is 5 MB.</string>
     <string name="log_rollover_title">Log Rollover Size (MB)</string>
 
+    <string name="log_file_description">Specifies what type of file to log the survey results to. The options are 0, 1, or 2. 0 is for CSV, 1 is for GeoPackage, and 2 is for both CSV and GeoPackage.</string>
+    <string name="log_file_title">Log File Type</string>
+
     <string name="auto_start_cellular_logging_title">Auto Start Cellular Logging</string>
     <string name="auto_start_cellular_logging_summary_on">Cellular logging will be started upon app opening or when the phone is turned on</string>
     <string name="auto_start_cellular_logging_summary_off">Cellular logging will only start when manually enabled</string>
