@@ -7,12 +7,6 @@ import android.annotation.SuppressLint;
 import android.app.Notification;
 import android.app.PendingIntent;
 import android.app.Service;
-import android.bluetooth.BluetoothAdapter;
-import android.bluetooth.BluetoothDevice;
-import android.bluetooth.BluetoothManager;
-import android.bluetooth.le.BluetoothLeScanner;
-import android.bluetooth.le.ScanCallback;
-import android.bluetooth.le.ScanSettings;
 import android.content.BroadcastReceiver;
 import android.content.ContentResolver;
 import android.content.Context;
@@ -41,7 +35,6 @@ import android.provider.Settings;
 import android.telephony.PhoneStateListener;
 import android.telephony.ServiceState;
 import android.telephony.TelephonyManager;
-import android.widget.Toast;
 
 import androidx.core.app.ActivityCompat;
 import androidx.core.app.NotificationCompat;
@@ -74,12 +67,12 @@ import com.craxiom.networksurvey.listeners.IGnssFailureListener;
 import com.craxiom.networksurvey.listeners.IGnssSurveyRecordListener;
 import com.craxiom.networksurvey.listeners.ILoggingChangeListener;
 import com.craxiom.networksurvey.listeners.IWifiSurveyRecordListener;
-import com.craxiom.networksurvey.logging.BluetoothSurveyRecordLogger;
 import com.craxiom.networksurvey.logging.CdrLogger;
 import com.craxiom.networksurvey.logging.GnssRecordLogger;
 import com.craxiom.networksurvey.model.CdrEventType;
 import com.craxiom.networksurvey.mqtt.MqttConnection;
 import com.craxiom.networksurvey.mqtt.MqttConnectionInfo;
+import com.craxiom.networksurvey.services.controller.BluetoothController;
 import com.craxiom.networksurvey.services.controller.CellularController;
 import com.craxiom.networksurvey.services.controller.WifiController;
 import com.craxiom.networksurvey.util.IOUtils;
@@ -89,9 +82,7 @@ import com.google.protobuf.BoolValue;
 import com.google.protobuf.Int32Value;
 
 import java.time.ZonedDateTime;
-import java.util.Collections;
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.ExecutorService;
@@ -122,15 +113,12 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
     private static final String SMS_COLUMN_ADDRESS = "address";
     private static final int SMS_MESSAGE_TYPE_SENT = 2;
 
-    private final AtomicBoolean bluetoothScanningActive = new AtomicBoolean(false);
     private final AtomicBoolean deviceStatusActive = new AtomicBoolean(false);
-    private final AtomicBoolean bluetoothLoggingEnabled = new AtomicBoolean(false);
     private final AtomicBoolean gnssLoggingEnabled = new AtomicBoolean(false);
     private final AtomicBoolean cdrLoggingEnabled = new AtomicBoolean(false);
     private final AtomicBoolean gnssStarted = new AtomicBoolean(false);
     private final AtomicBoolean cdrStarted = new AtomicBoolean(false);
 
-    private final AtomicInteger bluetoothScanningTaskId = new AtomicInteger();
     private final AtomicInteger deviceStatusGeneratorTaskId = new AtomicInteger();
     private final AtomicInteger gnssScanningTaskId = new AtomicInteger();
 
@@ -138,18 +126,17 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
     private final Handler uiThreadHandler;
     private final ExecutorService executorService;
 
-    private volatile int bluetoothScanRateMs;
     private volatile int gnssScanRateMs;
     private volatile int deviceStatusScanRateMs;
 
     private CellularController cellularController;
     private WifiController wifiController;
+    private BluetoothController bluetoothController;
     private String deviceId;
     private String myPhoneNumber = "";
     private SurveyRecordProcessor surveyRecordProcessor;
     private GpsListener gpsListener;
     private IGnssFailureListener gnssFailureListener;
-    private BluetoothSurveyRecordLogger bluetoothSurveyRecordLogger;
     private GnssRecordLogger gnssRecordLogger;
     private CdrLogger cdrLogger;
     private Looper serviceLooper;
@@ -162,8 +149,6 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
     private BroadcastReceiver managedConfigurationListener;
     private boolean mdmOverride = false;
 
-    private ScanCallback bluetoothScanCallback;
-    private BroadcastReceiver bluetoothBroadcastReceiver;
     private GnssMeasurementsEvent.Callback measurementListener;
     private PhoneStateListener phoneStateCdrListener;
     private final Set<ILoggingChangeListener> loggingChangeListeners = new CopyOnWriteArraySet<>();
@@ -196,7 +181,6 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
         serviceHandler = new Handler(serviceLooper);
 
         deviceId = createDeviceId();
-        bluetoothSurveyRecordLogger = new BluetoothSurveyRecordLogger(this, serviceLooper);
         gnssRecordLogger = new GnssRecordLogger(this, serviceLooper);
         cdrLogger = new CdrLogger(this, serviceLooper);
 
@@ -206,6 +190,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
 
         cellularController = new CellularController(this, executorService, serviceLooper, serviceHandler, surveyRecordProcessor);
         wifiController = new WifiController(this, executorService, serviceLooper, serviceHandler, surveyRecordProcessor, uiThreadHandler);
+        bluetoothController = new BluetoothController(this, executorService, serviceLooper, serviceHandler, surveyRecordProcessor, uiThreadHandler);
 
         setScanRateValues();
         readMdmOverridePreference();
@@ -217,7 +202,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
 
         cellularController.initializeCellularScanningResources();
         wifiController.initializeWifiScanningResources();
-        initializeBluetoothScanningResources();
+        bluetoothController.initializeBtScanningResources();
         initializeGnssScanningResources();
 
         updateServiceNotification();
@@ -250,9 +235,9 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
             }
 
             final boolean autoStartBluetoothLogging = PreferenceUtils.getAutoStartPreference(NetworkSurveyConstants.PROPERTY_AUTO_START_BLUETOOTH_LOGGING, false, applicationContext);
-            if (autoStartBluetoothLogging && !bluetoothLoggingEnabled.get())
+            if (autoStartBluetoothLogging && !bluetoothController.isLoggingEnabled())
             {
-                toggleBluetoothLogging(true);
+                bluetoothController.toggleLogging(true);
             }
 
             final boolean autoStartGnssLogging = PreferenceUtils.getAutoStartPreference(NetworkSurveyConstants.PROPERTY_AUTO_START_GNSS_LOGGING, false, applicationContext);
@@ -286,6 +271,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
 
         cellularController.stopCellularRecordScanning();
         wifiController.stopWifiRecordScanning();
+        bluetoothController.stopBluetoothRecordScanning();
         removeLocationListener();
         stopGnssRecordScanning();
         stopDeviceStatusReport();
@@ -308,8 +294,8 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
             case NetworkSurveyConstants.PROPERTY_LOG_ROLLOVER_SIZE_MB:
                 cellularController.onRolloverPreferenceChanged();
                 wifiController.onRolloverPreferenceChanged();
+                bluetoothController.onRolloverPreferenceChanged();
 
-                bluetoothSurveyRecordLogger.onSharedPreferenceChanged();
                 gnssRecordLogger.onSharedPreferenceChanged();
                 cdrLogger.onSharedPreferenceChanged();
                 break;
@@ -326,6 +312,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
             case NetworkSurveyConstants.PROPERTY_LOG_FILE_TYPE:
                 cellularController.onLogFileTypePreferenceChanged();
                 wifiController.onLogFileTypePreferenceChanged();
+                bluetoothController.onLogFileTypePreferenceChanged();
                 break;
 
             default:
@@ -640,15 +627,12 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
      */
     public void registerBluetoothSurveyRecordListener(IBluetoothSurveyRecordListener surveyRecordListener)
     {
-        synchronized (bluetoothScanningActive)
+        if (surveyRecordProcessor != null)
         {
-            if (surveyRecordProcessor != null)
-            {
-                surveyRecordProcessor.registerBluetoothSurveyRecordListener(surveyRecordListener);
-            }
-
-            startBluetoothRecordScanning(); // Only starts scanning if it is not already active.
+            surveyRecordProcessor.registerBluetoothSurveyRecordListener(surveyRecordListener);
         }
+
+        bluetoothController.startBluetoothRecordScanning(); // Only starts scanning if it is not already active.
     }
 
     /**
@@ -665,12 +649,12 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
      */
     public void unregisterBluetoothSurveyRecordListener(IBluetoothSurveyRecordListener surveyRecordListener)
     {
-        synchronized (bluetoothScanningActive)
+        if (surveyRecordProcessor != null)
         {
-            if (surveyRecordProcessor != null)
+            surveyRecordProcessor.unregisterBluetoothSurveyRecordListener(surveyRecordListener);
+            if (!surveyRecordProcessor.isBluetoothBeingUsed())
             {
-                surveyRecordProcessor.unregisterBluetoothSurveyRecordListener(surveyRecordListener);
-                if (!surveyRecordProcessor.isBluetoothBeingUsed()) stopBluetoothRecordScanning();
+                bluetoothController.stopBluetoothRecordScanning();
             }
         }
 
@@ -830,9 +814,9 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
     public boolean isBeingUsed()
     {
         return cellularController.isLoggingEnabled()
-                || gnssLoggingEnabled.get()
                 || wifiController.isLoggingEnabled()
-                || bluetoothLoggingEnabled.get()
+                || bluetoothController.isLoggingEnabled()
+                || gnssLoggingEnabled.get()
                 || getMqttConnectionState() != ConnectionState.DISCONNECTED
                 || GrpcConnectionService.getConnectedState() != ConnectionState.DISCONNECTED
                 || surveyRecordProcessor.isBeingUsed();
@@ -904,43 +888,10 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
      * @param enable True if logging should be enabled, false if it should be turned off.
      * @return The new state of logging.  True if it is enabled, or false if it is disabled.  Null is returned if the
      * toggling was unsuccessful.
-     * @since 1.0.0
      */
     public Boolean toggleBluetoothLogging(boolean enable)
     {
-        synchronized (bluetoothLoggingEnabled)
-        {
-            final boolean originalLoggingState = bluetoothLoggingEnabled.get();
-            if (originalLoggingState == enable) return originalLoggingState;
-
-            Timber.i("Toggling Bluetooth logging to %s", enable);
-
-            if (enable)
-            {
-                // First check to see if Bluetooth is enabled
-                final boolean bluetoothEnabled = isBluetoothEnabledAndPermissionsGranted(true);
-                if (!bluetoothEnabled) return null;
-            }
-
-            final boolean successful = bluetoothSurveyRecordLogger.enableLogging(enable);
-            if (successful)
-            {
-                bluetoothLoggingEnabled.set(enable);
-                if (enable)
-                {
-                    registerBluetoothSurveyRecordListener(bluetoothSurveyRecordLogger);
-                } else
-                {
-                    unregisterBluetoothSurveyRecordListener(bluetoothSurveyRecordLogger);
-                }
-            }
-            updateServiceNotification();
-            notifyLoggingChangedListeners();
-
-            final boolean newLoggingState = bluetoothLoggingEnabled.get();
-
-            return successful ? newLoggingState : null;
-        }
+        return bluetoothController.toggleLogging(enable);
     }
 
     /**
@@ -1037,7 +988,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
 
     public boolean isBluetoothLoggingEnabled()
     {
-        return bluetoothLoggingEnabled.get();
+        return bluetoothController.isLoggingEnabled();
     }
 
     public boolean isGnssLoggingEnabled()
@@ -1120,9 +1071,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
 
         cellularController.refreshScanRate();
         wifiController.refreshScanRate();
-
-        bluetoothScanRateMs = PreferenceUtils.getScanRatePreferenceMs(NetworkSurveyConstants.PROPERTY_BLUETOOTH_SCAN_INTERVAL_SECONDS,
-                NetworkSurveyConstants.DEFAULT_BLUETOOTH_SCAN_INTERVAL_SECONDS, applicationContext);
+        bluetoothController.refreshScanRate();
 
         gnssScanRateMs = PreferenceUtils.getScanRatePreferenceMs(NetworkSurveyConstants.PROPERTY_GNSS_SCAN_INTERVAL_SECONDS,
                 NetworkSurveyConstants.DEFAULT_GNSS_SCAN_INTERVAL_SECONDS, applicationContext);
@@ -1185,9 +1134,9 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
                 smallestScanRate = wifiController.getScanRateMs();
             }
 
-            if (bluetoothScanningActive.get() && bluetoothScanRateMs < smallestScanRate)
+            if (bluetoothController.isScanningActive() && bluetoothController.getScanRateMs() < smallestScanRate)
             {
-                smallestScanRate = bluetoothScanRateMs;
+                smallestScanRate = bluetoothController.getScanRateMs();
             }
 
             if (gnssStarted.get() && gnssScanRateMs < smallestScanRate)
@@ -1314,84 +1263,6 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
     }
 
     /**
-     * Create the Bluetooth Scan broadcast receiver that will be notified of Bluetooth scan events once
-     * {@link #startBluetoothRecordScanning()} is called.
-     *
-     * @since 1.0.0
-     */
-    private void initializeBluetoothScanningResources()
-    {
-        final BluetoothManager bluetoothManager = (BluetoothManager) getSystemService(Context.BLUETOOTH_SERVICE);
-
-        if (bluetoothManager == null)
-        {
-            Timber.e("The BluetoothManager is null. Bluetooth survey won't work");
-            return;
-        }
-
-        final BluetoothAdapter bluetoothAdapter = bluetoothManager.getAdapter();
-        if (bluetoothAdapter == null)
-        {
-            Timber.e("The BluetoothAdapter is null. Bluetooth survey won't work");
-            return;
-        }
-
-        bluetoothBroadcastReceiver = new BroadcastReceiver()
-        {
-            @Override
-            public void onReceive(Context context, Intent intent)
-            {
-                if (BluetoothDevice.ACTION_FOUND.equals(intent.getAction()))
-                {
-                    final BluetoothDevice device = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
-                    if (device == null)
-                    {
-                        Timber.e("Received a null BluetoothDevice in the broadcast action found call");
-                        return;
-                    }
-
-                    int rssi = Short.MIN_VALUE;
-                    if (intent.hasExtra(BluetoothDevice.EXTRA_RSSI))
-                    {
-                        rssi = intent.getShortExtra(BluetoothDevice.EXTRA_RSSI, Short.MIN_VALUE);
-                    }
-
-                    if (rssi == Short.MIN_VALUE) return;
-
-                    surveyRecordProcessor.onBluetoothClassicScanUpdate(device, rssi);
-                }
-            }
-        };
-
-        bluetoothScanCallback = new ScanCallback()
-        {
-            @Override
-            public void onScanResult(int callbackType, android.bluetooth.le.ScanResult result)
-            {
-                surveyRecordProcessor.onBluetoothScanUpdate(result);
-            }
-
-            @Override
-            public void onBatchScanResults(List<android.bluetooth.le.ScanResult> results)
-            {
-                surveyRecordProcessor.onBluetoothScanUpdate(results);
-            }
-
-            @Override
-            public void onScanFailed(int errorCode)
-            {
-                if (errorCode == SCAN_FAILED_ALREADY_STARTED)
-                {
-                    Timber.i("Bluetooth scan already started, so this scan failed");
-                } else
-                {
-                    Timber.e("A Bluetooth scan failed, ignoring the results.");
-                }
-            }
-        };
-    }
-
-    /**
      * Create the callbacks for the {@link GnssMeasurementsEvent} and the {@link GnssStatus} that will be notified of
      * events from the location manager once {@link #startGnssRecordScanning()} is called.
      *
@@ -1408,172 +1279,6 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
                 if (surveyRecordProcessor != null) surveyRecordProcessor.onGnssMeasurements(event);
             }
         };
-    }
-
-    /**
-     * Note that the {@link Manifest.permission#BLUETOOTH_SCAN} permission was added in Android 12, so this method
-     * returns true for all older versions.
-     *
-     * @return True if the {@link Manifest.permission#BLUETOOTH_SCAN} permission has been granted. False otherwise.
-     * @since 1.6.0
-     */
-    private boolean hasBtScanPermission()
-    {
-        // The BLUETOOTH_SCAN permission was added in Android 12
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) return true;
-
-        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.BLUETOOTH_SCAN) != PackageManager.PERMISSION_GRANTED)
-        {
-            Timber.w("The BLUETOOTH_SCAN permission has not been granted");
-            return false;
-        }
-
-        return true;
-    }
-
-    /**
-     * Note that the {@link Manifest.permission#BLUETOOTH_CONNECT} permission was added in Android 12, so this method
-     * returns true for all older versions.
-     * <p>
-     * The {@link Manifest.permission#BLUETOOTH_CONNECT} permission is required ONLY for getting the bluetooth device
-     * name, so don't fail BT survey if it is missing, but we probably want to notify the user.
-     *
-     * @return True if the {@link Manifest.permission#BLUETOOTH_CONNECT} permission has been granted. False otherwise.
-     * @since 1.6.0
-     */
-    private boolean hasBtConnectPermission()
-    {
-        // The BLUETOOTH_CONNECT permission was added in Android 12
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) return true;
-
-        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.BLUETOOTH_CONNECT) != PackageManager.PERMISSION_GRANTED)
-        {
-            Timber.w("The BLUETOOTH_CONNECT permission has not been granted");
-            return false;
-        }
-
-        return true;
-    }
-
-    /**
-     * Register a listener for Bluetooth scans, and then kick off a scheduled Bluetooth scan.
-     * <p>
-     * This method only starts scanning if the scan is not already active and we have the required permissions.
-     *
-     * @since 1.0.0
-     */
-    // We should not be able to get here without the permissions already granted, but we also check at the beginning of the method
-    @SuppressLint("MissingPermission")
-    private void startBluetoothRecordScanning()
-    {
-        if (!hasBtScanPermission())
-        {
-            uiThreadHandler.post(() -> Toast.makeText(getApplicationContext(), getString(R.string.grant_bluetooth_scan_permission), Toast.LENGTH_LONG).show());
-            return;
-        }
-
-        if (!hasBtConnectPermission())
-        {
-            uiThreadHandler.post(() -> Toast.makeText(getApplicationContext(), getString(R.string.grant_bluetooth_connect_permission), Toast.LENGTH_LONG).show());
-            return;
-        }
-
-        if (bluetoothScanningActive.getAndSet(true)) return;
-
-        final BluetoothAdapter bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
-        if (bluetoothAdapter == null)
-        {
-            Timber.e("The BluetoothAdapter is null. Bluetooth survey won't work");
-            bluetoothScanningActive.set(false);
-            return;
-        }
-
-        final BluetoothLeScanner bluetoothLeScanner = bluetoothAdapter.getBluetoothLeScanner();
-        if (bluetoothLeScanner == null)
-        {
-            Timber.e("The BluetoothLeScanner is null, unable to perform Bluetooth LE scans.");
-            bluetoothScanningActive.set(false);
-            return;
-        }
-
-        final IntentFilter intentFilter = new IntentFilter(BluetoothDevice.ACTION_FOUND);
-        intentFilter.addAction(BluetoothAdapter.ACTION_DISCOVERY_FINISHED);
-        registerReceiver(bluetoothBroadcastReceiver, intentFilter);
-
-        final ScanSettings.Builder scanSettingsBuilder = new ScanSettings.Builder();
-        scanSettingsBuilder.setScanMode(ScanSettings.SCAN_MODE_LOW_POWER);
-        scanSettingsBuilder.setReportDelay(bluetoothScanRateMs);
-        bluetoothLeScanner.startScan(Collections.emptyList(), scanSettingsBuilder.build(), bluetoothScanCallback);
-
-        final int handlerTaskId = bluetoothScanningTaskId.incrementAndGet();
-
-        serviceHandler.postDelayed(new Runnable()
-        {
-            @Override
-            public void run()
-            {
-                try
-                {
-                    if (!bluetoothScanningActive.get() || bluetoothScanningTaskId.get() != handlerTaskId)
-                    {
-                        Timber.i("Stopping the handler that pulls the latest Bluetooth information; taskId=%d", handlerTaskId);
-                        return;
-                    }
-
-                    // Calling start Discovery scans for BT Classic (BR/EDR) devices as well. However, it also seems
-                    // it allows for getting some BLE devices as well, but we seem to get more with the BLE scanner above
-                    if (!bluetoothAdapter.isDiscovering())
-                    {
-                        bluetoothAdapter.startDiscovery();
-                    } else
-                    {
-                        Timber.d("Bluetooth discovery already in progress, not starting a new discovery.");
-                    }
-
-                    serviceHandler.postDelayed(this, bluetoothScanRateMs);
-                } catch (Exception e)
-                {
-                    Timber.e(e, "Could not run a Bluetooth scan");
-                }
-            }
-        }, 1_000);
-
-        updateLocationListener();
-    }
-
-    /**
-     * Unregister the Bluetooth scan callback and stop the scanning service handler.
-     *
-     * @since 1.0.0
-     */
-    @SuppressLint("MissingPermission") // Permissions are checked in the first part of the method
-    private void stopBluetoothRecordScanning()
-    {
-        bluetoothScanningActive.set(false);
-
-        if (!hasBtConnectPermission() || !hasBtScanPermission())
-        {
-            Timber.i("Missing a Bluetooth permission, can't enable BT scanning");
-            return;
-        }
-
-        try
-        {
-            final BluetoothAdapter bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
-            if (bluetoothAdapter != null)
-            {
-                bluetoothAdapter.cancelDiscovery();
-
-                final BluetoothLeScanner bluetoothLeScanner = bluetoothAdapter.getBluetoothLeScanner();
-                if (bluetoothLeScanner != null) bluetoothLeScanner.stopScan(bluetoothScanCallback);
-            }
-            unregisterReceiver(bluetoothBroadcastReceiver);
-        } catch (Exception e)
-        {
-            Timber.v(e, "Could not stop the Bluetooth Scan Callback");
-        }
-
-        updateLocationListener();
     }
 
     /**
@@ -1829,7 +1534,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
     {
         Application.createNotificationChannel(this);
 
-        final boolean logging = cellularController.isLoggingEnabled() || wifiController.isLoggingEnabled() || bluetoothLoggingEnabled.get() || gnssLoggingEnabled.get();
+        final boolean logging = cellularController.isLoggingEnabled() || wifiController.isLoggingEnabled() || bluetoothController.isLoggingEnabled() || gnssLoggingEnabled.get();
         final com.craxiom.mqttlibrary.connection.ConnectionState connectionState = mqttConnection.getConnectionState();
         final boolean mqttConnectionActive = connectionState == ConnectionState.CONNECTED || connectionState == ConnectionState.CONNECTING;
         final CharSequence notificationTitle = getText(R.string.network_survey_notification_title);
@@ -2021,7 +1726,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
     {
         cellularController.stopAllLogging();
         wifiController.stopAllLogging();
-        if (bluetoothSurveyRecordLogger != null) bluetoothSurveyRecordLogger.enableLogging(false);
+        bluetoothController.stopAllLogging();
         if (gnssRecordLogger != null) gnssRecordLogger.enableLogging(false);
         if (cdrLogger != null) cdrLogger.enableLogging(false);
     }
@@ -2054,8 +1759,8 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
 
                 cellularController.onMdmPreferenceChanged();
                 wifiController.onMdmPreferenceChanged();
+                bluetoothController.onMdmPreferenceChanged();
 
-                bluetoothSurveyRecordLogger.onMdmPreferenceChanged();
                 gnssRecordLogger.onMdmPreferenceChanged();
                 cdrLogger.onMdmPreferenceChanged();
             }
@@ -2169,62 +1874,6 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
 
         return new MqttConnectionInfo(mqttBrokerHost, portNumber, tlsEnabled, clientId, username, password,
                 cellularStreamEnabled, wifiStreamEnabled, bluetoothStreamEnabled, gnssStreamEnabled, deviceStatusStreamEnabled);
-    }
-
-    /**
-     * Checks to see if the Bluetooth adapter is present, if Bluetooth is enabled, and if the
-     * proper permissions are granted.
-     * <p>
-     * After the check to see if Bluetooth is enabled, if Bluetooth is currently disabled and {@code promptEnable} is
-     * true, the user is then prompted to turn on Bluetooth.  Even if the user turns on Bluetooth, this method will
-     * still return false since the call to enable Wi-Fi is asynchronous.
-     *
-     * @param promptEnable If true, and Bluetooth is currently disabled, the user will be presented with a UI to turn on
-     *                     Bluetooth.
-     * @return True if Bluetooth is enabled, false if it is not. Also returns false if the
-     * permissions are not granted.
-     * @since 1.0.0
-     */
-    @SuppressLint("MissingPermission")
-    // Permissions are checked in the first part of this method call
-    private boolean isBluetoothEnabledAndPermissionsGranted(boolean promptEnable)
-    {
-        if (!hasBtConnectPermission() || !hasBtScanPermission())
-        {
-            Timber.i("Missing a Bluetooth permission, can't enable BT scanning");
-            return false;
-        }
-
-        final BluetoothAdapter bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
-        if (bluetoothAdapter == null) return false;
-
-        boolean isEnabled = true;
-
-        if (!bluetoothAdapter.isEnabled())
-        {
-            isEnabled = false;
-
-            if (promptEnable)
-            {
-                Timber.i("Bluetooth is disabled, prompting the user to enable it");
-
-                uiThreadHandler.post(() -> Toast.makeText(getApplicationContext(), getString(R.string.turn_on_bluetooth), Toast.LENGTH_SHORT).show());
-                serviceHandler.post(() -> {
-                    try
-                    {
-                        final Intent enableBtIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
-                        enableBtIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-                        startActivity(enableBtIntent);
-                    } catch (Exception e)
-                    {
-                        // An IllegalStateException can occur when the fragment is no longer attached to the activity
-                        Timber.e(e, "Could not kick off the Bluetooth Enable Intent");
-                    }
-                });
-            }
-        }
-
-        return isEnabled;
     }
 
     /**

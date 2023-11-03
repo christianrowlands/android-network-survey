@@ -1,4 +1,4 @@
-name: Network Survey CI
+name: Network Survey Release
 
 on:
   push:

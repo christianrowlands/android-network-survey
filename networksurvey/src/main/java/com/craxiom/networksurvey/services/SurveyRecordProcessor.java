@@ -443,7 +443,7 @@ public class SurveyRecordProcessor
      * @param rssi   The RSSI value associated with the scan.
      * @since 1.0.0
      */
-    void onBluetoothClassicScanUpdate(BluetoothDevice device, int rssi)
+    public void onBluetoothClassicScanUpdate(BluetoothDevice device, int rssi)
     {
         execute(() -> processBluetoothClassicResult(device, rssi));
     }
@@ -454,7 +454,7 @@ public class SurveyRecordProcessor
      * @param result A single Bluetooth scan result coming from the Android Bluetooth scanning API.
      * @since 1.0.0
      */
-    void onBluetoothScanUpdate(android.bluetooth.le.ScanResult result)
+    public void onBluetoothScanUpdate(android.bluetooth.le.ScanResult result)
     {
         execute(() -> processBluetoothResult(result));
     }
@@ -465,7 +465,7 @@ public class SurveyRecordProcessor
      * @param results The list of results coming from the Android Bluetooth scanning API.
      * @since 1.0.0
      */
-    void onBluetoothScanUpdate(List<android.bluetooth.le.ScanResult> results)
+    public void onBluetoothScanUpdate(List<android.bluetooth.le.ScanResult> results)
     {
         /*Timber.v("SCAN RESULTS:");
         results.forEach(scanResult -> Timber.v(scanResult.toString()));
