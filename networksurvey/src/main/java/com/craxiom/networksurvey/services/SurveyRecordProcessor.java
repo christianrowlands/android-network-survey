@@ -427,7 +427,7 @@ public class SurveyRecordProcessor
      * @param apScanResults The list of results coming from the Android wifi scanning API.
      * @since 0.1.2
      */
-    void onWifiScanUpdate(List<ScanResult> apScanResults)
+    public void onWifiScanUpdate(List<ScanResult> apScanResults)
     {
         /*Timber.v("SCAN RESULTS:");
         apScanResults.forEach(scanResult -> Timber.v(scanResult.toString()));

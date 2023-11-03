@@ -1,4 +1,4 @@
-package com.craxiom.networksurvey.logging;
+package com.craxiom.networksurvey.services.controller;
 
 import android.Manifest;
 import android.content.Context;
@@ -17,10 +17,12 @@ import androidx.core.app.ActivityCompat;
 
 import com.craxiom.networksurvey.CalculationUtils;
 import com.craxiom.networksurvey.constants.NetworkSurveyConstants;
+import com.craxiom.networksurvey.logging.CellularSurveyRecordLogger;
+import com.craxiom.networksurvey.logging.LteCsvLogger;
+import com.craxiom.networksurvey.logging.PhoneStateRecordLogger;
 import com.craxiom.networksurvey.model.LogTypeState;
 import com.craxiom.networksurvey.services.NetworkSurveyService;
 import com.craxiom.networksurvey.services.SurveyRecordProcessor;
-import com.craxiom.networksurvey.services.controller.AController;
 import com.craxiom.networksurvey.util.PreferenceUtils;
 
 import java.util.List;
@@ -43,7 +45,6 @@ public class CellularController extends AController
 
     private final AtomicInteger cellularScanningTaskId = new AtomicInteger();
 
-    private final Looper serviceLooper;
     private final Handler serviceHandler;
     private final SurveyRecordProcessor surveyRecordProcessor;
 
@@ -60,7 +61,6 @@ public class CellularController extends AController
                               SurveyRecordProcessor surveyRecordProcessor)
     {
         super(surveyService, executorService);
-        this.serviceLooper = serviceLooper;
         this.serviceHandler = serviceHandler;
         this.surveyRecordProcessor = surveyRecordProcessor;
 
@@ -120,6 +120,10 @@ public class CellularController extends AController
         }
     }
 
+    /**
+     * Called to indicate that the cellular scan rate preference changed, which should trigger a
+     * re-read of the preference.
+     */
     public void refreshScanRate()
     {
         cellularScanRateMs = PreferenceUtils.getScanRatePreferenceMs(NetworkSurveyConstants.PROPERTY_CELLULAR_SCAN_INTERVAL_SECONDS,
@@ -162,7 +166,7 @@ public class CellularController extends AController
 
                 if (successful)
                 {
-                    toggleCellularConfig(true);
+                    toggleCellularConfig(true, types);
                 } else
                 {
                     // at least one of the loggers failed to toggle;
@@ -170,7 +174,7 @@ public class CellularController extends AController
                     cellularSurveyRecordLogger.enableLogging(false);
                     phoneStateRecordLogger.enableLogging(false);
                     lteCsvLogger.enableLogging(false);
-                    toggleCellularConfig(false);
+                    toggleCellularConfig(false, null);
                 }
             } else
             {
@@ -179,7 +183,7 @@ public class CellularController extends AController
                 cellularSurveyRecordLogger.enableLogging(false);
                 phoneStateRecordLogger.enableLogging(false);
                 lteCsvLogger.enableLogging(false);
-                toggleCellularConfig(false);
+                toggleCellularConfig(false, null);
                 successful = true;
             }
 
@@ -365,58 +369,61 @@ public class CellularController extends AController
      */
     public void startCellularRecordScanning()
     {
-        if (cellularScanningActive.getAndSet(true)) return;
-
-        final TelephonyManager telephonyManager = (TelephonyManager) surveyService.getSystemService(Context.TELEPHONY_SERVICE);
-
-        if (telephonyManager == null || !surveyService.getPackageManager().hasSystemFeature(PackageManager.FEATURE_TELEPHONY))
+        synchronized (cellularLoggingEnabled)
         {
-            Timber.w("Unable to get access to the Telephony Manager.  No network information will be displayed");
-            return;
-        }
+            if (cellularScanningActive.getAndSet(true)) return;
 
-        final int handlerTaskId = cellularScanningTaskId.incrementAndGet();
+            final TelephonyManager telephonyManager = (TelephonyManager) surveyService.getSystemService(Context.TELEPHONY_SERVICE);
 
-        serviceHandler.postDelayed(new Runnable()
-        {
-            @Override
-            public void run()
+            if (telephonyManager == null || !surveyService.getPackageManager().hasSystemFeature(PackageManager.FEATURE_TELEPHONY))
             {
-                try
-                {
-                    if (!cellularScanningActive.get() || cellularScanningTaskId.get() != handlerTaskId)
-                    {
-                        Timber.i("Stopping the handler that pulls the latest cellular information; taskId=%d", handlerTaskId);
-                        return;
-                    }
-
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q)
-                    {
-                        telephonyManager.requestCellInfoUpdate(executorService, cellInfoCallback);
-                    } else
-                    {
-                        execute(() -> {
-                            try
-                            {
-                                surveyRecordProcessor.onCellInfoUpdate(telephonyManager.getAllCellInfo(),
-                                        CalculationUtils.getNetworkType(telephonyManager.getDataNetworkType()),
-                                        CalculationUtils.getNetworkType(telephonyManager.getVoiceNetworkType()));
-                            } catch (Throwable t)
-                            {
-                                Timber.e(t, "Failed to pass the cellular info to the survey record processor");
-                            }
-                        });
-                    }
-
-                    serviceHandler.postDelayed(this, cellularScanRateMs);
-                } catch (SecurityException e)
-                {
-                    Timber.e(e, "Could not get the required permissions to get the network details");
-                }
+                Timber.w("Unable to get access to the Telephony Manager.  No network information will be displayed");
+                return;
             }
-        }, 1_000);
 
-        surveyService.updateLocationListener();
+            final int handlerTaskId = cellularScanningTaskId.incrementAndGet();
+
+            serviceHandler.postDelayed(new Runnable()
+            {
+                @Override
+                public void run()
+                {
+                    try
+                    {
+                        if (!cellularScanningActive.get() || cellularScanningTaskId.get() != handlerTaskId)
+                        {
+                            Timber.i("Stopping the handler that pulls the latest cellular information; taskId=%d", handlerTaskId);
+                            return;
+                        }
+
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q)
+                        {
+                            telephonyManager.requestCellInfoUpdate(executorService, cellInfoCallback);
+                        } else
+                        {
+                            execute(() -> {
+                                try
+                                {
+                                    surveyRecordProcessor.onCellInfoUpdate(telephonyManager.getAllCellInfo(),
+                                            CalculationUtils.getNetworkType(telephonyManager.getDataNetworkType()),
+                                            CalculationUtils.getNetworkType(telephonyManager.getVoiceNetworkType()));
+                                } catch (Throwable t)
+                                {
+                                    Timber.e(t, "Failed to pass the cellular info to the survey record processor");
+                                }
+                            });
+                        }
+
+                        serviceHandler.postDelayed(this, cellularScanRateMs);
+                    } catch (SecurityException e)
+                    {
+                        Timber.e(e, "Could not get the required permissions to get the network details");
+                    }
+                }
+            }, 1_000);
+
+            surveyService.updateLocationListener();
+        }
     }
 
     /**
@@ -446,14 +453,26 @@ public class CellularController extends AController
      *               status listeners. If {@code true} listeners are registered, otherwise they
      *               are unregistered.
      */
-    private void toggleCellularConfig(boolean enable)
+    private void toggleCellularConfig(boolean enable, LogTypeState types)
     {
         cellularLoggingEnabled.set(enable);
         if (enable)
         {
-            surveyService.registerCellularSurveyRecordListener(cellularSurveyRecordLogger);
-            surveyService.registerCellularSurveyRecordListener(lteCsvLogger);
-            surveyService.registerDeviceStatusListener(phoneStateRecordLogger);
+            if (types != null)
+            {
+                if (types.geoPackage)
+                {
+                    surveyService.registerCellularSurveyRecordListener(cellularSurveyRecordLogger);
+                    surveyService.registerDeviceStatusListener(phoneStateRecordLogger);
+                }
+                if (types.csv)
+                {
+                    surveyService.registerCellularSurveyRecordListener(lteCsvLogger);
+                }
+            } else
+            {
+                throw new IllegalArgumentException("LogTypeState cannot be null when enabling cellular logging");
+            }
         } else
         {
             surveyService.unregisterCellularSurveyRecordListener(cellularSurveyRecordLogger);

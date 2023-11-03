@@ -147,7 +147,7 @@ public abstract class CsvRecordLogger
      * If lazy file creation is enabled, and the file has not yet been created, then this method
      * creates the CSV file.
      * <p>
-     * This method should only be called if lazy file creation was set to true wen creating this
+     * This method should only be called if lazy file creation was set to true when creating this
      * logger. And it is important to call this method at least once before using the printer.
      */
     private void lazyCreateFileIfNecessary()

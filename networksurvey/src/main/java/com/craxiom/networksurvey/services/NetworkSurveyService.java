@@ -30,8 +30,6 @@ import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
 import android.net.Uri;
-import android.net.wifi.ScanResult;
-import android.net.wifi.WifiManager;
 import android.os.BatteryManager;
 import android.os.Build;
 import android.os.Bundle;
@@ -78,12 +76,12 @@ import com.craxiom.networksurvey.listeners.ILoggingChangeListener;
 import com.craxiom.networksurvey.listeners.IWifiSurveyRecordListener;
 import com.craxiom.networksurvey.logging.BluetoothSurveyRecordLogger;
 import com.craxiom.networksurvey.logging.CdrLogger;
-import com.craxiom.networksurvey.logging.CellularController;
 import com.craxiom.networksurvey.logging.GnssRecordLogger;
-import com.craxiom.networksurvey.logging.WifiSurveyRecordLogger;
 import com.craxiom.networksurvey.model.CdrEventType;
 import com.craxiom.networksurvey.mqtt.MqttConnection;
 import com.craxiom.networksurvey.mqtt.MqttConnectionInfo;
+import com.craxiom.networksurvey.services.controller.CellularController;
+import com.craxiom.networksurvey.services.controller.WifiController;
 import com.craxiom.networksurvey.util.IOUtils;
 import com.craxiom.networksurvey.util.MathUtils;
 import com.craxiom.networksurvey.util.PreferenceUtils;
@@ -124,17 +122,14 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
     private static final String SMS_COLUMN_ADDRESS = "address";
     private static final int SMS_MESSAGE_TYPE_SENT = 2;
 
-    private final AtomicBoolean wifiScanningActive = new AtomicBoolean(false);
     private final AtomicBoolean bluetoothScanningActive = new AtomicBoolean(false);
     private final AtomicBoolean deviceStatusActive = new AtomicBoolean(false);
-    private final AtomicBoolean wifiLoggingEnabled = new AtomicBoolean(false);
     private final AtomicBoolean bluetoothLoggingEnabled = new AtomicBoolean(false);
     private final AtomicBoolean gnssLoggingEnabled = new AtomicBoolean(false);
     private final AtomicBoolean cdrLoggingEnabled = new AtomicBoolean(false);
     private final AtomicBoolean gnssStarted = new AtomicBoolean(false);
     private final AtomicBoolean cdrStarted = new AtomicBoolean(false);
 
-    private final AtomicInteger wifiScanningTaskId = new AtomicInteger();
     private final AtomicInteger bluetoothScanningTaskId = new AtomicInteger();
     private final AtomicInteger deviceStatusGeneratorTaskId = new AtomicInteger();
     private final AtomicInteger gnssScanningTaskId = new AtomicInteger();
@@ -143,18 +138,17 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
     private final Handler uiThreadHandler;
     private final ExecutorService executorService;
 
-    private volatile int wifiScanRateMs;
     private volatile int bluetoothScanRateMs;
     private volatile int gnssScanRateMs;
     private volatile int deviceStatusScanRateMs;
 
     private CellularController cellularController;
+    private WifiController wifiController;
     private String deviceId;
     private String myPhoneNumber = "";
     private SurveyRecordProcessor surveyRecordProcessor;
     private GpsListener gpsListener;
     private IGnssFailureListener gnssFailureListener;
-    private WifiSurveyRecordLogger wifiSurveyRecordLogger;
     private BluetoothSurveyRecordLogger bluetoothSurveyRecordLogger;
     private GnssRecordLogger gnssRecordLogger;
     private CdrLogger cdrLogger;
@@ -168,7 +162,6 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
     private BroadcastReceiver managedConfigurationListener;
     private boolean mdmOverride = false;
 
-    private BroadcastReceiver wifiScanReceiver;
     private ScanCallback bluetoothScanCallback;
     private BroadcastReceiver bluetoothBroadcastReceiver;
     private GnssMeasurementsEvent.Callback measurementListener;
@@ -203,7 +196,6 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
         serviceHandler = new Handler(serviceLooper);
 
         deviceId = createDeviceId();
-        wifiSurveyRecordLogger = new WifiSurveyRecordLogger(this, serviceLooper);
         bluetoothSurveyRecordLogger = new BluetoothSurveyRecordLogger(this, serviceLooper);
         gnssRecordLogger = new GnssRecordLogger(this, serviceLooper);
         cdrLogger = new CdrLogger(this, serviceLooper);
@@ -213,6 +205,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
         surveyRecordProcessor = new SurveyRecordProcessor(gpsListener, deviceId, context, executorService);
 
         cellularController = new CellularController(this, executorService, serviceLooper, serviceHandler, surveyRecordProcessor);
+        wifiController = new WifiController(this, executorService, serviceLooper, serviceHandler, surveyRecordProcessor, uiThreadHandler);
 
         setScanRateValues();
         readMdmOverridePreference();
@@ -223,7 +216,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
         registerManagedConfigurationListener();
 
         cellularController.initializeCellularScanningResources();
-        initializeWifiScanningResources();
+        wifiController.initializeWifiScanningResources();
         initializeBluetoothScanningResources();
         initializeGnssScanningResources();
 
@@ -251,7 +244,10 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
             }
 
             final boolean autoStartWifiLogging = PreferenceUtils.getAutoStartPreference(NetworkSurveyConstants.PROPERTY_AUTO_START_WIFI_LOGGING, false, applicationContext);
-            if (autoStartWifiLogging && !wifiLoggingEnabled.get()) toggleWifiLogging(true);
+            if (autoStartWifiLogging && !wifiController.isLoggingEnabled())
+            {
+                wifiController.toggleLogging(true);
+            }
 
             final boolean autoStartBluetoothLogging = PreferenceUtils.getAutoStartPreference(NetworkSurveyConstants.PROPERTY_AUTO_START_BLUETOOTH_LOGGING, false, applicationContext);
             if (autoStartBluetoothLogging && !bluetoothLoggingEnabled.get())
@@ -289,7 +285,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
         PreferenceManager.getDefaultSharedPreferences(getApplicationContext()).unregisterOnSharedPreferenceChangeListener(this);
 
         cellularController.stopCellularRecordScanning();
-        stopWifiRecordScanning();
+        wifiController.stopWifiRecordScanning();
         removeLocationListener();
         stopGnssRecordScanning();
         stopDeviceStatusReport();
@@ -311,8 +307,8 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
         {
             case NetworkSurveyConstants.PROPERTY_LOG_ROLLOVER_SIZE_MB:
                 cellularController.onRolloverPreferenceChanged();
+                wifiController.onRolloverPreferenceChanged();
 
-                wifiSurveyRecordLogger.onSharedPreferenceChanged();
                 bluetoothSurveyRecordLogger.onSharedPreferenceChanged();
                 gnssRecordLogger.onSharedPreferenceChanged();
                 cdrLogger.onSharedPreferenceChanged();
@@ -329,6 +325,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
                 break;
             case NetworkSurveyConstants.PROPERTY_LOG_FILE_TYPE:
                 cellularController.onLogFileTypePreferenceChanged();
+                wifiController.onLogFileTypePreferenceChanged();
                 break;
 
             default:
@@ -599,15 +596,12 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
      */
     public void registerWifiSurveyRecordListener(IWifiSurveyRecordListener surveyRecordListener)
     {
-        synchronized (wifiScanningActive)
+        if (surveyRecordProcessor != null)
         {
-            if (surveyRecordProcessor != null)
-            {
-                surveyRecordProcessor.registerWifiSurveyRecordListener(surveyRecordListener);
-            }
-
-            startWifiRecordScanning(); // Only starts scanning if it is not already active.
+            surveyRecordProcessor.registerWifiSurveyRecordListener(surveyRecordListener);
         }
+
+        wifiController.startWifiRecordScanning(); // Only starts scanning if it is not already active.
     }
 
     /**
@@ -624,12 +618,12 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
      */
     public void unregisterWifiSurveyRecordListener(IWifiSurveyRecordListener surveyRecordListener)
     {
-        synchronized (wifiScanningActive)
+        if (surveyRecordProcessor != null)
         {
-            if (surveyRecordProcessor != null)
+            surveyRecordProcessor.unregisterWifiSurveyRecordListener(surveyRecordListener);
+            if (!surveyRecordProcessor.isWifiBeingUsed())
             {
-                surveyRecordProcessor.unregisterWifiSurveyRecordListener(surveyRecordListener);
-                if (!surveyRecordProcessor.isWifiBeingUsed()) stopWifiRecordScanning();
+                wifiController.stopWifiRecordScanning();
             }
         }
 
@@ -837,7 +831,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
     {
         return cellularController.isLoggingEnabled()
                 || gnssLoggingEnabled.get()
-                || wifiLoggingEnabled.get()
+                || wifiController.isLoggingEnabled()
                 || bluetoothLoggingEnabled.get()
                 || getMqttConnectionState() != ConnectionState.DISCONNECTED
                 || GrpcConnectionService.getConnectedState() != ConnectionState.DISCONNECTED
@@ -895,43 +889,10 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
      * @param enable True if logging should be enabled, false if it should be turned off.
      * @return The new state of logging.  True if it is enabled, or false if it is disabled.  Null is returned if the
      * toggling was unsuccessful.
-     * @since 0.1.2
      */
     public Boolean toggleWifiLogging(boolean enable)
     {
-        synchronized (wifiLoggingEnabled)
-        {
-            final boolean originalLoggingState = wifiLoggingEnabled.get();
-            if (originalLoggingState == enable) return originalLoggingState;
-
-            Timber.i("Toggling wifi logging to %s", enable);
-
-            if (enable)
-            {
-                // First check to see if Wi-Fi is enabled
-                final boolean wifiEnabled = isWifiEnabled(true);
-                if (!wifiEnabled) return null;
-            }
-
-            final boolean successful = wifiSurveyRecordLogger.enableLogging(enable);
-            if (successful)
-            {
-                wifiLoggingEnabled.set(enable);
-                if (enable)
-                {
-                    registerWifiSurveyRecordListener(wifiSurveyRecordLogger);
-                } else
-                {
-                    unregisterWifiSurveyRecordListener(wifiSurveyRecordLogger);
-                }
-            }
-            updateServiceNotification();
-            notifyLoggingChangedListeners();
-
-            final boolean newLoggingState = wifiLoggingEnabled.get();
-
-            return successful ? newLoggingState : null;
-        }
+        return wifiController.toggleLogging(enable);
     }
 
     /**
@@ -1071,7 +1032,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
 
     public boolean isWifiLoggingEnabled()
     {
-        return wifiLoggingEnabled.get();
+        return wifiController.isLoggingEnabled();
     }
 
     public boolean isBluetoothLoggingEnabled()
@@ -1091,7 +1052,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
 
     public int getWifiScanRateMs()
     {
-        return wifiScanRateMs;
+        return wifiController.getScanRateMs();
     }
 
     /**
@@ -1158,9 +1119,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
         final Context applicationContext = getApplicationContext();
 
         cellularController.refreshScanRate();
-
-        wifiScanRateMs = PreferenceUtils.getScanRatePreferenceMs(NetworkSurveyConstants.PROPERTY_WIFI_SCAN_INTERVAL_SECONDS,
-                NetworkSurveyConstants.DEFAULT_WIFI_SCAN_INTERVAL_SECONDS, applicationContext);
+        wifiController.refreshScanRate();
 
         bluetoothScanRateMs = PreferenceUtils.getScanRatePreferenceMs(NetworkSurveyConstants.PROPERTY_BLUETOOTH_SCAN_INTERVAL_SECONDS,
                 NetworkSurveyConstants.DEFAULT_BLUETOOTH_SCAN_INTERVAL_SECONDS, applicationContext);
@@ -1221,9 +1180,9 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
                 smallestScanRate = cellularController.getScanRateMs();
             }
 
-            if (wifiScanningActive.get() && wifiScanRateMs < smallestScanRate)
+            if (wifiController.isScanningActive() && wifiController.getScanRateMs() < smallestScanRate)
             {
-                smallestScanRate = wifiScanRateMs;
+                smallestScanRate = wifiController.getScanRateMs();
             }
 
             if (bluetoothScanningActive.get() && bluetoothScanRateMs < smallestScanRate)
@@ -1355,52 +1314,6 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
     }
 
     /**
-     * Create the Wi-Fi Scan broadcast receiver that will be notified of Wi-Fi scan events once
-     * {@link #startWifiRecordScanning()} is called.
-     *
-     * @since 0.1.2
-     */
-    private void initializeWifiScanningResources()
-    {
-        final WifiManager wifiManager = (WifiManager) getSystemService(Context.WIFI_SERVICE);
-
-        if (wifiManager == null)
-        {
-            Timber.e("The WifiManager is null. Wi-Fi survey won't work");
-            return;
-        }
-
-        wifiScanReceiver = new BroadcastReceiver()
-        {
-            @Override
-            public void onReceive(Context c, Intent intent)
-            {
-                boolean success = intent.getBooleanExtra(WifiManager.EXTRA_RESULTS_UPDATED, false);
-                if (success)
-                {
-                    if (ActivityCompat.checkSelfPermission(getApplicationContext(), Manifest.permission.ACCESS_FINE_LOCATION)
-                            != PackageManager.PERMISSION_GRANTED)
-                    {
-                        Timber.e("Could not get the Wi-FI scan results because the ACCESS_FINE_LOCATION permission is not granted.");
-                        return;
-                    }
-                    final List<ScanResult> results = wifiManager.getScanResults();
-                    if (results == null)
-                    {
-                        Timber.d("Null wifi scan results");
-                        return;
-                    }
-
-                    surveyRecordProcessor.onWifiScanUpdate(results);
-                } else
-                {
-                    Timber.e("A Wi-Fi scan failed, ignoring the results.");
-                }
-            }
-        };
-    }
-
-    /**
      * Create the Bluetooth Scan broadcast receiver that will be notified of Bluetooth scan events once
      * {@link #startBluetoothRecordScanning()} is called.
      *
@@ -1495,83 +1408,6 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
                 if (surveyRecordProcessor != null) surveyRecordProcessor.onGnssMeasurements(event);
             }
         };
-    }
-
-    /**
-     * Register a listener for Wi-Fi scans, and then kick off a scheduled Wi-Fi scan.
-     * <p>
-     * This method only starts scanning if the scan is not already active.
-     *
-     * @since 0.1.2
-     */
-    private void startWifiRecordScanning()
-    {
-        if (wifiScanningActive.getAndSet(true)) return;
-
-        final IntentFilter scanResultsIntentFilter = new IntentFilter();
-        scanResultsIntentFilter.addAction(WifiManager.SCAN_RESULTS_AVAILABLE_ACTION);
-        registerReceiver(wifiScanReceiver, scanResultsIntentFilter);
-
-        final WifiManager wifiManager = (WifiManager) getSystemService(Context.WIFI_SERVICE);
-
-        if (wifiManager == null)
-        {
-            Timber.wtf("The Wi-Fi manager is null, can't start scanning for Wi-Fi networks.");
-            wifiScanningActive.set(false);
-            return;
-        }
-
-        final int handlerTaskId = wifiScanningTaskId.incrementAndGet();
-
-        serviceHandler.postDelayed(new Runnable()
-        {
-            @Override
-            public void run()
-            {
-                try
-                {
-                    if (!wifiScanningActive.get() || wifiScanningTaskId.get() != handlerTaskId)
-                    {
-                        Timber.i("Stopping the handler that pulls the latest wifi information, taskId=%d", handlerTaskId);
-                        return;
-                    }
-
-                    boolean success = wifiManager.startScan();
-
-                    if (!success) Timber.e("Kicking off a Wi-Fi scan failed");
-
-                    serviceHandler.postDelayed(this, wifiScanRateMs);
-                } catch (Exception e)
-                {
-                    Timber.e(e, "Could not run a Wi-Fi scan");
-                }
-            }
-        }, 2_000);
-
-        updateLocationListener();
-    }
-
-    /**
-     * Unregister the Wi-Fi scan broadcast receiver and stop the scanning service handler.
-     *
-     * @since 0.1.2
-     */
-    private void stopWifiRecordScanning()
-    {
-        wifiScanningActive.set(false);
-
-        try
-        {
-            unregisterReceiver(wifiScanReceiver);
-        } catch (Exception e)
-        {
-            // Because we are extra cautious and want to make sure that we unregister the receiver, when the service
-            // is shutdown we call this method to make sure we stop any active scan and unregister the receiver even if
-            // we don't have one registered.
-            Timber.v(e, "Could not unregister the NetworkSurveyService Wi-Fi Scan Receiver");
-        }
-
-        updateLocationListener();
     }
 
     /**
@@ -1993,7 +1829,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
     {
         Application.createNotificationChannel(this);
 
-        final boolean logging = cellularController.isLoggingEnabled() || wifiLoggingEnabled.get() || bluetoothLoggingEnabled.get() || gnssLoggingEnabled.get();
+        final boolean logging = cellularController.isLoggingEnabled() || wifiController.isLoggingEnabled() || bluetoothLoggingEnabled.get() || gnssLoggingEnabled.get();
         final com.craxiom.mqttlibrary.connection.ConnectionState connectionState = mqttConnection.getConnectionState();
         final boolean mqttConnectionActive = connectionState == ConnectionState.CONNECTED || connectionState == ConnectionState.CONNECTING;
         final CharSequence notificationTitle = getText(R.string.network_survey_notification_title);
@@ -2184,7 +2020,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
     private void stopAllLogging()
     {
         cellularController.stopAllLogging();
-        if (wifiSurveyRecordLogger != null) wifiSurveyRecordLogger.enableLogging(false);
+        wifiController.stopAllLogging();
         if (bluetoothSurveyRecordLogger != null) bluetoothSurveyRecordLogger.enableLogging(false);
         if (gnssRecordLogger != null) gnssRecordLogger.enableLogging(false);
         if (cdrLogger != null) cdrLogger.enableLogging(false);
@@ -2217,8 +2053,8 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
                 attemptMqttConnectWithMdmConfig(true);
 
                 cellularController.onMdmPreferenceChanged();
+                wifiController.onMdmPreferenceChanged();
 
-                wifiSurveyRecordLogger.onMdmPreferenceChanged();
                 bluetoothSurveyRecordLogger.onMdmPreferenceChanged();
                 gnssRecordLogger.onMdmPreferenceChanged();
                 cdrLogger.onMdmPreferenceChanged();
@@ -2333,61 +2169,6 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
 
         return new MqttConnectionInfo(mqttBrokerHost, portNumber, tlsEnabled, clientId, username, password,
                 cellularStreamEnabled, wifiStreamEnabled, bluetoothStreamEnabled, gnssStreamEnabled, deviceStatusStreamEnabled);
-    }
-
-    /**
-     * Checks to see if the Wi-Fi manager is present, and if Wi-Fi is enabled.
-     * <p>
-     * After the check to see if Wi-Fi is enabled, if Wi-Fi is currently disabled and {@code promptEnable} is true, the
-     * user is then prompted to turn on Wi-Fi.  Even if the user turns on Wi-Fi, this method will still return false
-     * since the call to enable Wi-Fi is asynchronous.
-     *
-     * @param promptEnable If true, and Wi-Fi is currently disabled, the user will be presented with a UI to turn on Wi-Fi.
-     * @return True if Wi-Fi is enabled, false if it is not.
-     * @since 0.1.2
-     */
-    private boolean isWifiEnabled(boolean promptEnable)
-    {
-        boolean isEnabled = true;
-
-        final WifiManager wifiManager = (WifiManager) getSystemService(Context.WIFI_SERVICE);
-
-        if (wifiManager == null) isEnabled = false;
-
-        if (wifiManager != null && !wifiManager.isWifiEnabled())
-        {
-            isEnabled = false;
-
-            if (promptEnable)
-            {
-                Timber.i("Wi-Fi is disabled, prompting the user to enable it");
-
-                if (Build.VERSION.SDK_INT >= 29)
-                {
-                    final Intent panelIntent = new Intent(Settings.Panel.ACTION_WIFI);
-                    panelIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-                    startActivity(panelIntent);
-                } else
-                {
-                    // Open the Wi-Fi setting pages after a couple seconds
-                    uiThreadHandler.post(() -> Toast.makeText(getApplicationContext(), getString(R.string.turn_on_wifi), Toast.LENGTH_SHORT).show());
-                    serviceHandler.postDelayed(() -> {
-                        try
-                        {
-                            final Intent wifiSettingIntent = new Intent(Settings.ACTION_WIFI_SETTINGS);
-                            wifiSettingIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-                            startActivity(wifiSettingIntent);
-                        } catch (Exception e)
-                        {
-                            // An IllegalStateException can occur when the fragment is no longer attached to the activity
-                            Timber.e(e, "Could not kick off the Wifi Settings Intent for the older pre Android 10 setup");
-                        }
-                    }, 2000);
-                }
-            }
-        }
-
-        return isEnabled;
     }
 
     /**
