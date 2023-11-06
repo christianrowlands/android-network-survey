@@ -18,7 +18,9 @@ import androidx.core.app.ActivityCompat;
 
 import com.craxiom.networksurvey.R;
 import com.craxiom.networksurvey.constants.NetworkSurveyConstants;
+import com.craxiom.networksurvey.logging.WifiCsvLogger;
 import com.craxiom.networksurvey.logging.WifiSurveyRecordLogger;
+import com.craxiom.networksurvey.model.LogTypeState;
 import com.craxiom.networksurvey.services.NetworkSurveyService;
 import com.craxiom.networksurvey.services.SurveyRecordProcessor;
 import com.craxiom.networksurvey.util.PreferenceUtils;
@@ -46,6 +48,7 @@ public class WifiController extends AController
 
     private volatile int wifiScanRateMs;
     private final WifiSurveyRecordLogger wifiSurveyRecordLogger;
+    private final WifiCsvLogger wifiCsvLogger;
     private BroadcastReceiver wifiScanReceiver;
 
     public WifiController(NetworkSurveyService surveyService, ExecutorService executorService,
@@ -59,6 +62,7 @@ public class WifiController extends AController
         this.uiThreadHandler = uiThreadHandler;
 
         wifiSurveyRecordLogger = new WifiSurveyRecordLogger(surveyService, serviceLooper);
+        wifiCsvLogger = new WifiCsvLogger(surveyService, serviceLooper);
     }
 
     public boolean isLoggingEnabled()
@@ -79,6 +83,7 @@ public class WifiController extends AController
     public void onRolloverPreferenceChanged()
     {
         wifiSurveyRecordLogger.onSharedPreferenceChanged();
+        wifiCsvLogger.onSharedPreferenceChanged();
     }
 
     /**
@@ -88,6 +93,7 @@ public class WifiController extends AController
     public void onMdmPreferenceChanged()
     {
         wifiSurveyRecordLogger.onMdmPreferenceChanged();
+        wifiCsvLogger.onMdmPreferenceChanged();
     }
 
     public void onLogFileTypePreferenceChanged()
@@ -137,25 +143,44 @@ public class WifiController extends AController
 
             Timber.i("Toggling wifi logging to %s", enable);
 
+            boolean successful = false;
             if (enable)
             {
                 // First check to see if Wi-Fi is enabled
                 final boolean wifiEnabled = isWifiEnabled(true);
                 if (!wifiEnabled) return null;
-            }
 
-            final boolean successful = wifiSurveyRecordLogger.enableLogging(enable);
-            if (successful)
-            {
-                wifiLoggingEnabled.set(enable);
-                if (enable)
+                LogTypeState types = PreferenceUtils.getLogTypePreference(surveyService.getApplicationContext());
+                if (types.geoPackage)
                 {
-                    surveyService.registerWifiSurveyRecordListener(wifiSurveyRecordLogger);
+                    successful = wifiSurveyRecordLogger.enableLogging(true);
+                }
+                if (types.csv)
+                {
+                    successful = wifiCsvLogger.enableLogging(true);
+                }
+
+                if (successful)
+                {
+                    toggleWifiConfig(true, types);
                 } else
                 {
-                    surveyService.unregisterWifiSurveyRecordListener(wifiSurveyRecordLogger);
+                    // at least one of the loggers failed to toggle;
+                    // disable all of them and set local config to false
+                    wifiSurveyRecordLogger.enableLogging(false);
+                    wifiCsvLogger.enableLogging(false);
+                    toggleWifiConfig(false, null);
                 }
+            } else
+            {
+                // If we are disabling logging, then we need to disable both geoPackage and CSV just
+                // in case the user changed the setting after they started logging.
+                wifiSurveyRecordLogger.enableLogging(false);
+                wifiCsvLogger.enableLogging(false);
+                toggleWifiConfig(false, null);
+                successful = true;
             }
+
             surveyService.updateServiceNotification();
             surveyService.notifyLoggingChangedListeners();
 
@@ -297,6 +322,33 @@ public class WifiController extends AController
     public void stopAllLogging()
     {
         if (wifiSurveyRecordLogger != null) wifiSurveyRecordLogger.enableLogging(false);
+        if (wifiCsvLogger != null) wifiCsvLogger.enableLogging(false);
+    }
+
+    private void toggleWifiConfig(boolean enable, LogTypeState types)
+    {
+        wifiLoggingEnabled.set(enable);
+        if (enable)
+        {
+            if (types != null)
+            {
+                if (types.geoPackage)
+                {
+                    surveyService.registerWifiSurveyRecordListener(wifiSurveyRecordLogger);
+                }
+                if (types.csv)
+                {
+                    surveyService.registerWifiSurveyRecordListener(wifiCsvLogger);
+                }
+            } else
+            {
+                throw new IllegalArgumentException("LogTypeState cannot be null when enabling wifi logging");
+            }
+        } else
+        {
+            surveyService.unregisterWifiSurveyRecordListener(wifiSurveyRecordLogger);
+            surveyService.unregisterWifiSurveyRecordListener(wifiCsvLogger);
+        }
     }
 
     /**

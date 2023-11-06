@@ -1,6 +1,8 @@
 package com.craxiom.networksurvey.logging;
 
 import android.content.Context;
+import android.content.pm.PackageInfo;
+import android.content.pm.PackageManager;
 import android.os.Environment;
 import android.os.Handler;
 import android.os.Looper;
@@ -75,6 +77,11 @@ public abstract class CsvRecordLogger
     abstract String[] getHeaders();
 
     /**
+     * @return A String array of comments and other information that should be written to the top of the CSV file.
+     */
+    abstract String[] getHeaderComments();
+
+    /**
      * Sets up all the GeoPackage stuff so that the survey records can be written to a log file.
      * <p>
      * If calling this method, it is assumed that the caller will add this {@link CsvRecordLogger} as a listener for
@@ -135,11 +142,11 @@ public abstract class CsvRecordLogger
         }
     }
 
-    void writeCsvRecord(Object[] row) throws IOException
+    void writeCsvRecord(Object[] row, boolean flush) throws IOException
     {
         if (lazyFileCreation) lazyCreateFileIfNecessary();
         printer.printRecord(row);
-        printer.flush(); // TODO could we get away with not flushing on every record?
+        if (flush) printer.flush(); // TODO could we get away with not flushing on every record?
         checkIfRolloverNeeded();
     }
 
@@ -169,7 +176,13 @@ public abstract class CsvRecordLogger
 
         Timber.i("Creating the log file: %s", loggingFileName);
 
-        CSVFormat csvFormat = CSVFormat.Builder.create().setHeader(getHeaders()).build();
+        final String versionName = getVersionName();
+
+        CSVFormat csvFormat = CSVFormat.Builder.create()
+                .setHeaderComments("Created by Network Survey version=" + versionName,
+                        getHeaderComments())
+                .setHeader(getHeaders())
+                .build();
         try
         {
             final FileWriter out = new FileWriter(loggingFileName);
@@ -387,6 +400,20 @@ public abstract class CsvRecordLogger
         public void reset()
         {
             recordCount.set(0);
+        }
+    }
+
+    /**
+     * @return The NS App version number, or an empty string if it could not be determined.
+     */
+    private String getVersionName() {
+        try
+        {
+            PackageInfo info = applicationContext.getPackageManager().getPackageInfo(applicationContext.getPackageName(), 0);
+            return info.versionName;
+        } catch (PackageManager.NameNotFoundException e)
+        {
+            return "";
         }
     }
 }

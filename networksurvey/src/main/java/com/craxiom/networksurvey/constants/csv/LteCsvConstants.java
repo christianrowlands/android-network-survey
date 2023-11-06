@@ -5,8 +5,6 @@ package com.craxiom.networksurvey.constants.csv;
  * <p>
  * The constants in this class are intended to match the constants defined in the
  * <a href="https://messaging.networksurvey.app/">Network Survey Messaging API</a>.
- *
- * @since 1.13
  */
 public class LteCsvConstants extends CellularCsvConstants
 {

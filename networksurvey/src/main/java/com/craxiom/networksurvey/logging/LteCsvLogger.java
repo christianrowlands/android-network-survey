@@ -1,5 +1,7 @@
 package com.craxiom.networksurvey.logging;
 
+import static com.craxiom.networksurvey.constants.csv.CellularCsvConstants.SERVING_CELL;
+import static com.craxiom.networksurvey.constants.csv.CsvConstants.SPEED;
 import static com.craxiom.networksurvey.constants.csv.LteCsvConstants.ACCURACY;
 import static com.craxiom.networksurvey.constants.csv.LteCsvConstants.ALTITUDE;
 import static com.craxiom.networksurvey.constants.csv.LteCsvConstants.DEVICE_TIME;
@@ -34,7 +36,7 @@ import java.io.IOException;
 import timber.log.Timber;
 
 /**
- * Responsible for taking in CDR Events and logging them to a CSV file.
+ * Responsible for taking in LTE survey records and logging them to a CSV file.
  */
 public class LteCsvLogger extends CsvRecordLogger implements ICellularSurveyRecordListener
 {
@@ -47,9 +49,15 @@ public class LteCsvLogger extends CsvRecordLogger implements ICellularSurveyReco
     @Override
     String[] getHeaders()
     { // TODO Figure out how to add other information to the header such as version number
-        return new String[]{DEVICE_TIME, LATITUDE, LONGITUDE, ALTITUDE, ACCURACY,
+        return new String[]{DEVICE_TIME, LATITUDE, LONGITUDE, ALTITUDE, SPEED, ACCURACY,
                 MISSION_ID, RECORD_NUMBER, GROUP_NUMBER,
-                MCC, MNC, TAC, ECI, EARFCN, PCI, RSRP, RSRQ, TA, LTE_BANDWIDTH, PROVIDER};
+                MCC, MNC, TAC, ECI, EARFCN, PCI, RSRP, RSRQ, TA, SERVING_CELL, LTE_BANDWIDTH, PROVIDER};
+    }
+
+    @Override
+    String[] getHeaderComments()
+    {
+        return new String[]{"CSV Version=0.1.0"};
     }
 
     @Override
@@ -57,7 +65,7 @@ public class LteCsvLogger extends CsvRecordLogger implements ICellularSurveyReco
     {
         try
         {
-            writeCsvRecord(convertToObjectArray(record));
+            writeCsvRecord(convertToObjectArray(record), true);
         } catch (IOException e)
         {
             Timber.e(e, "Could not log the LTE record to the CSV file");
@@ -72,6 +80,7 @@ public class LteCsvLogger extends CsvRecordLogger implements ICellularSurveyReco
     {
         LteRecordData data = record.getData();
 
+        // TODO Should we use the full enum toString?
         final String lteBandwidth = LteMessageConstants.getLteBandwidth(data.getLteBandwidth());
 
         return new String[]{
@@ -79,6 +88,7 @@ public class LteCsvLogger extends CsvRecordLogger implements ICellularSurveyReco
                 String.valueOf(data.getLatitude()),
                 String.valueOf(data.getLongitude()),
                 String.valueOf(data.getAltitude()),
+                String.valueOf(data.getSpeed()),
                 String.valueOf(data.getAccuracy()),
                 data.getMissionId(),
                 String.valueOf(data.getRecordNumber()),
@@ -92,6 +102,7 @@ public class LteCsvLogger extends CsvRecordLogger implements ICellularSurveyReco
                 data.hasRsrp() ? String.valueOf(data.getRsrp().getValue()) : "",
                 data.hasRsrq() ? String.valueOf(data.getRsrq().getValue()) : "",
                 data.hasTa() ? String.valueOf(data.getTa().getValue()) : "",
+                data.hasServingCell() ? String.valueOf(data.getServingCell().getValue()) : "",
                 lteBandwidth,
                 data.getProvider()};
     }

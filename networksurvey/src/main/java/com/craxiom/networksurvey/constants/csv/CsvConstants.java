@@ -13,5 +13,6 @@ public abstract class CsvConstants
     public static final String LATITUDE = "latitude";
     public static final String LONGITUDE = "longitude";
     public static final String ALTITUDE = "altitude";
+    public static final String SPEED = "speed";
     public static final String ACCURACY = "accuracy";
 }
