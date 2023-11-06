@@ -1,7 +1,5 @@
 package com.craxiom.networksurvey.services;
 
-import static com.craxiom.networksurvey.util.GpsTestUtil.getGnssTimeoutIntervalMs;
-
 import android.Manifest;
 import android.annotation.SuppressLint;
 import android.app.Notification;
@@ -18,8 +16,6 @@ import android.content.pm.PackageManager;
 import android.content.pm.ServiceInfo;
 import android.database.ContentObserver;
 import android.database.Cursor;
-import android.location.GnssMeasurementsEvent;
-import android.location.GnssStatus;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
@@ -38,7 +34,6 @@ import android.telephony.TelephonyManager;
 
 import androidx.core.app.ActivityCompat;
 import androidx.core.app.NotificationCompat;
-import androidx.core.content.ContextCompat;
 import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 import androidx.preference.PreferenceManager;
 
@@ -68,12 +63,12 @@ import com.craxiom.networksurvey.listeners.IGnssSurveyRecordListener;
 import com.craxiom.networksurvey.listeners.ILoggingChangeListener;
 import com.craxiom.networksurvey.listeners.IWifiSurveyRecordListener;
 import com.craxiom.networksurvey.logging.CdrLogger;
-import com.craxiom.networksurvey.logging.GnssRecordLogger;
 import com.craxiom.networksurvey.model.CdrEventType;
 import com.craxiom.networksurvey.mqtt.MqttConnection;
 import com.craxiom.networksurvey.mqtt.MqttConnectionInfo;
 import com.craxiom.networksurvey.services.controller.BluetoothController;
 import com.craxiom.networksurvey.services.controller.CellularController;
+import com.craxiom.networksurvey.services.controller.GnssController;
 import com.craxiom.networksurvey.services.controller.WifiController;
 import com.craxiom.networksurvey.util.IOUtils;
 import com.craxiom.networksurvey.util.MathUtils;
@@ -102,11 +97,6 @@ import timber.log.Timber;
  */
 public class NetworkSurveyService extends Service implements IConnectionStateListener, SharedPreferences.OnSharedPreferenceChangeListener, IMqttService
 {
-    /**
-     * Time to wait between first location measurement received before considering this device does
-     * not likely support raw GNSS collection.
-     */
-    private static final long TIME_TO_WAIT_FOR_GNSS_RAW_BEFORE_FAILURE = 1000L * 15L;
     private static final Uri SMS_URI = Uri.parse("content://sms");
     public static final String SMS_COLUMN_ID = "_id";
     private static final String SMS_COLUMN_TYPE = "type";
@@ -114,42 +104,32 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
     private static final int SMS_MESSAGE_TYPE_SENT = 2;
 
     private final AtomicBoolean deviceStatusActive = new AtomicBoolean(false);
-    private final AtomicBoolean gnssLoggingEnabled = new AtomicBoolean(false);
     private final AtomicBoolean cdrLoggingEnabled = new AtomicBoolean(false);
-    private final AtomicBoolean gnssStarted = new AtomicBoolean(false);
     private final AtomicBoolean cdrStarted = new AtomicBoolean(false);
 
     private final AtomicInteger deviceStatusGeneratorTaskId = new AtomicInteger();
-    private final AtomicInteger gnssScanningTaskId = new AtomicInteger();
 
     private final SurveyServiceBinder surveyServiceBinder;
     private final Handler uiThreadHandler;
     private final ExecutorService executorService;
 
-    private volatile int gnssScanRateMs;
     private volatile int deviceStatusScanRateMs;
 
     private CellularController cellularController;
     private WifiController wifiController;
     private BluetoothController bluetoothController;
+    private GnssController gnssController;
     private String deviceId;
     private String myPhoneNumber = "";
     private SurveyRecordProcessor surveyRecordProcessor;
     private GpsListener gpsListener;
-    private IGnssFailureListener gnssFailureListener;
-    private GnssRecordLogger gnssRecordLogger;
     private CdrLogger cdrLogger;
     private Looper serviceLooper;
     private Handler serviceHandler;
-    private LocationManager locationManager = null;
-    private long firstGpsAcqTime = Long.MIN_VALUE;
-    private boolean gnssRawSupportKnown = false;
-    private boolean hasGnssRawFailureNagLaunched = false;
     private MqttConnection mqttConnection;
     private BroadcastReceiver managedConfigurationListener;
     private boolean mdmOverride = false;
 
-    private GnssMeasurementsEvent.Callback measurementListener;
     private PhoneStateListener phoneStateCdrListener;
     private final Set<ILoggingChangeListener> loggingChangeListeners = new CopyOnWriteArraySet<>();
 
@@ -181,7 +161,6 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
         serviceHandler = new Handler(serviceLooper);
 
         deviceId = createDeviceId();
-        gnssRecordLogger = new GnssRecordLogger(this, serviceLooper);
         cdrLogger = new CdrLogger(this, serviceLooper);
 
         gpsListener = new GpsListener();
@@ -191,6 +170,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
         cellularController = new CellularController(this, executorService, serviceLooper, serviceHandler, surveyRecordProcessor);
         wifiController = new WifiController(this, executorService, serviceLooper, serviceHandler, surveyRecordProcessor, uiThreadHandler);
         bluetoothController = new BluetoothController(this, executorService, serviceLooper, serviceHandler, surveyRecordProcessor, uiThreadHandler);
+        gnssController = new GnssController(this, executorService, serviceLooper, serviceHandler, surveyRecordProcessor);
 
         setScanRateValues();
         readMdmOverridePreference();
@@ -203,7 +183,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
         cellularController.initializeCellularScanningResources();
         wifiController.initializeWifiScanningResources();
         bluetoothController.initializeBtScanningResources();
-        initializeGnssScanningResources();
+        gnssController.initializeGnssScanningResources();
 
         updateServiceNotification();
     }
@@ -241,7 +221,10 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
             }
 
             final boolean autoStartGnssLogging = PreferenceUtils.getAutoStartPreference(NetworkSurveyConstants.PROPERTY_AUTO_START_GNSS_LOGGING, false, applicationContext);
-            if (autoStartGnssLogging && !gnssLoggingEnabled.get()) toggleGnssLogging(true);
+            if (autoStartGnssLogging && !gnssController.isLoggingEnabled())
+            {
+                gnssController.toggleLogging(true);
+            }
         }
 
         return START_REDELIVER_INTENT;
@@ -272,8 +255,8 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
         cellularController.stopCellularRecordScanning();
         wifiController.stopWifiRecordScanning();
         bluetoothController.stopBluetoothRecordScanning();
+        gnssController.stopGnssRecordScanning();
         removeLocationListener();
-        stopGnssRecordScanning();
         stopDeviceStatusReport();
         stopAllLogging();
 
@@ -295,8 +278,8 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
                 cellularController.onRolloverPreferenceChanged();
                 wifiController.onRolloverPreferenceChanged();
                 bluetoothController.onRolloverPreferenceChanged();
+                gnssController.onRolloverPreferenceChanged();
 
-                gnssRecordLogger.onSharedPreferenceChanged();
                 cdrLogger.onSharedPreferenceChanged();
                 break;
             case NetworkSurveyConstants.PROPERTY_CELLULAR_SCAN_INTERVAL_SECONDS:
@@ -313,6 +296,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
                 cellularController.onLogFileTypePreferenceChanged();
                 wifiController.onLogFileTypePreferenceChanged();
                 bluetoothController.onLogFileTypePreferenceChanged();
+                gnssController.onLogFileTypePreferenceChanged();
                 break;
 
             default:
@@ -671,15 +655,12 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
      */
     public void registerGnssSurveyRecordListener(IGnssSurveyRecordListener surveyRecordListener)
     {
-        synchronized (gnssStarted)
+        if (surveyRecordProcessor != null)
         {
-            if (surveyRecordProcessor != null)
-            {
-                surveyRecordProcessor.registerGnssSurveyRecordListener(surveyRecordListener);
-            }
-
-            startGnssRecordScanning(); // Only starts scanning if it is not already active.
+            surveyRecordProcessor.registerGnssSurveyRecordListener(surveyRecordListener);
         }
+
+        gnssController.startGnssRecordScanning(); // Only starts scanning if it is not already active.
     }
 
     /**
@@ -696,13 +677,10 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
      */
     public void unregisterGnssSurveyRecordListener(IGnssSurveyRecordListener surveyRecordListener)
     {
-        synchronized (gnssStarted)
+        if (surveyRecordProcessor != null)
         {
-            if (surveyRecordProcessor != null)
-            {
-                surveyRecordProcessor.unregisterGnssSurveyRecordListener(surveyRecordListener);
-                if (!surveyRecordProcessor.isGnssBeingUsed()) stopGnssRecordScanning();
-            }
+            surveyRecordProcessor.unregisterGnssSurveyRecordListener(surveyRecordListener);
+            if (!surveyRecordProcessor.isGnssBeingUsed()) gnssController.stopGnssRecordScanning();
         }
 
         // Check to see if this service is still needed.  It is still needed if we are either logging, the UI is
@@ -816,7 +794,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
         return cellularController.isLoggingEnabled()
                 || wifiController.isLoggingEnabled()
                 || bluetoothController.isLoggingEnabled()
-                || gnssLoggingEnabled.get()
+                || gnssController.isLoggingEnabled()
                 || getMqttConnectionState() != ConnectionState.DISCONNECTED
                 || GrpcConnectionService.getConnectedState() != ConnectionState.DISCONNECTED
                 || surveyRecordProcessor.isBeingUsed();
@@ -906,33 +884,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
      */
     public Boolean toggleGnssLogging(boolean enable)
     {
-        synchronized (gnssLoggingEnabled)
-        {
-            final boolean originalLoggingState = gnssLoggingEnabled.get();
-            if (originalLoggingState == enable) return originalLoggingState;
-
-            Timber.i("Toggling GNSS logging to %s", enable);
-
-            final boolean successful = gnssRecordLogger.enableLogging(enable);
-            if (successful)
-            {
-                gnssLoggingEnabled.set(enable);
-                if (enable)
-                {
-                    registerGnssSurveyRecordListener(gnssRecordLogger);
-                } else
-                {
-                    unregisterGnssSurveyRecordListener(gnssRecordLogger);
-                }
-            }
-
-            updateServiceNotification();
-            notifyLoggingChangedListeners();
-
-            final boolean newLoggingState = gnssLoggingEnabled.get();
-
-            return successful ? newLoggingState : null;
-        }
+        return gnssController.toggleLogging(enable);
     }
 
     /**
@@ -993,7 +945,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
 
     public boolean isGnssLoggingEnabled()
     {
-        return gnssLoggingEnabled.get();
+        return gnssController.isLoggingEnabled();
     }
 
     public boolean isCdrLoggingEnabled()
@@ -1004,38 +956,6 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
     public int getWifiScanRateMs()
     {
         return wifiController.getScanRateMs();
-    }
-
-    /**
-     * Checks to see if the GNSS timeout has occurred. If we have waited longer than {@link #TIME_TO_WAIT_FOR_GNSS_RAW_BEFORE_FAILURE}
-     * without any GNSS measurements coming in, we can assume that the device does not support raw GNSS measurements.
-     * If that is the case then present that information to the user so they know their device won't support it.
-     */
-    public void checkForGnssTimeout()
-    {
-        if (!gnssRawSupportKnown && !hasGnssRawFailureNagLaunched)
-        {
-            if (firstGpsAcqTime < 0L)
-            {
-                firstGpsAcqTime = System.currentTimeMillis();
-            } else if (System.currentTimeMillis() > firstGpsAcqTime + TIME_TO_WAIT_FOR_GNSS_RAW_BEFORE_FAILURE)
-            {
-                hasGnssRawFailureNagLaunched = true;
-
-                // The user may choose to continue using the app even without GNSS since
-                // they do get some satellite status on this display. If that is the case,
-                // they can choose not to be nagged about this every time they launch the app.
-                boolean ignoreRawGnssFailure = PreferenceUtils.getBoolean(Application.get().getString(R.string.pref_key_ignore_raw_gnss_failure), false);
-                if (!ignoreRawGnssFailure && gnssFailureListener != null)
-                {
-                    gnssFailureListener.onGnssFailure();
-                    gpsListener.clearGnssTimeoutCallback(); // No need for the callback anymore
-                }
-            }
-        } else
-        {
-            gpsListener.clearGnssTimeoutCallback();
-        }
     }
 
     /**
@@ -1072,14 +992,12 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
         cellularController.refreshScanRate();
         wifiController.refreshScanRate();
         bluetoothController.refreshScanRate();
-
-        gnssScanRateMs = PreferenceUtils.getScanRatePreferenceMs(NetworkSurveyConstants.PROPERTY_GNSS_SCAN_INTERVAL_SECONDS,
-                NetworkSurveyConstants.DEFAULT_GNSS_SCAN_INTERVAL_SECONDS, applicationContext);
+        gnssController.refreshScanRate();
 
         deviceStatusScanRateMs = PreferenceUtils.getScanRatePreferenceMs(NetworkSurveyConstants.PROPERTY_DEVICE_STATUS_SCAN_INTERVAL_SECONDS,
                 NetworkSurveyConstants.DEFAULT_DEVICE_STATUS_SCAN_INTERVAL_SECONDS, applicationContext);
 
-        surveyRecordProcessor.setGnssScanRateMs(gnssScanRateMs);
+        surveyRecordProcessor.setGnssScanRateMs(gnssController.getScanRateMs());
 
         updateLocationListener();
     }
@@ -1139,9 +1057,9 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
                 smallestScanRate = bluetoothController.getScanRateMs();
             }
 
-            if (gnssStarted.get() && gnssScanRateMs < smallestScanRate)
+            if (gnssController.isScanningActive() && gnssController.getScanRateMs() < smallestScanRate)
             {
-                smallestScanRate = gnssScanRateMs;
+                smallestScanRate = gnssController.getScanRateMs();
             }
 
             if (deviceStatusActive.get() && deviceStatusScanRateMs < smallestScanRate)
@@ -1260,25 +1178,6 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
                 connectToMqttBroker(userBrokerConnectionInfo);
             }
         }
-    }
-
-    /**
-     * Create the callbacks for the {@link GnssMeasurementsEvent} and the {@link GnssStatus} that will be notified of
-     * events from the location manager once {@link #startGnssRecordScanning()} is called.
-     *
-     * @since 0.3.0
-     */
-    private void initializeGnssScanningResources()
-    {
-        measurementListener = new GnssMeasurementsEvent.Callback()
-        {
-            @Override
-            public void onGnssMeasurementsReceived(GnssMeasurementsEvent event)
-            {
-                gnssRawSupportKnown = true;
-                if (surveyRecordProcessor != null) surveyRecordProcessor.onGnssMeasurements(event);
-            }
-        };
     }
 
     /**
@@ -1534,7 +1433,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
     {
         Application.createNotificationChannel(this);
 
-        final boolean logging = cellularController.isLoggingEnabled() || wifiController.isLoggingEnabled() || bluetoothController.isLoggingEnabled() || gnssLoggingEnabled.get();
+        final boolean logging = cellularController.isLoggingEnabled() || wifiController.isLoggingEnabled() || bluetoothController.isLoggingEnabled() || gnssController.isLoggingEnabled();
         final com.craxiom.mqttlibrary.connection.ConnectionState connectionState = mqttConnection.getConnectionState();
         final boolean mqttConnectionActive = connectionState == ConnectionState.CONNECTED || connectionState == ConnectionState.CONNECTING;
         final CharSequence notificationTitle = getText(R.string.network_survey_notification_title);
@@ -1594,96 +1493,6 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
     }
 
     /**
-     * Starts GNSS record scanning if it is not already started.
-     * <p>
-     * This method handles registering the GNSS listeners with Android so we get notified of updates.
-     * <p>
-     * This method is not thread safe, so make sure to call this method from a synchronized block.
-     */
-    private boolean startGnssRecordScanning()
-    {
-        if (gnssStarted.getAndSet(true)) return true;
-
-        boolean success = false;
-
-        final int handlerTaskId = gnssScanningTaskId.incrementAndGet();
-
-        boolean hasPermissions = ContextCompat.checkSelfPermission(this,
-                Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED;
-
-        if (hasPermissions)
-        {
-            if (locationManager == null)
-            {
-                locationManager = getSystemService(LocationManager.class);
-                if (locationManager != null)
-                {
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R)
-                    {
-                        locationManager.registerGnssMeasurementsCallback(executorService, measurementListener);
-                    } else
-                    {
-                        locationManager.registerGnssMeasurementsCallback(measurementListener);
-                    }
-                    gpsListener.addGnssTimeoutCallback(this::checkForGnssTimeout);
-                    Timber.i("Successfully registered the GNSS listeners");
-                }
-            } else
-            {
-                Timber.w("The location manager was null when registering the GNSS listeners");
-            }
-
-            serviceHandler.postDelayed(new Runnable()
-            {
-                @Override
-                public void run()
-                {
-                    try
-                    {
-                        if (!gnssStarted.get() || gnssScanningTaskId.get() != handlerTaskId)
-                        {
-                            Timber.i("Stopping the handler that checks for missed GNSS measurements");
-                            return;
-                        }
-
-                        surveyRecordProcessor.checkForMissedGnssMeasurement();
-
-                        serviceHandler.postDelayed(this, getGnssTimeoutIntervalMs(gnssScanRateMs));
-                    } catch (SecurityException e)
-                    {
-                        Timber.e(e, "Could not get the required permissions to check for missed GNSS measurement");
-                    }
-                }
-            }, getGnssTimeoutIntervalMs(gnssScanRateMs));
-
-            success = true;
-        }
-
-        updateLocationListener();
-
-        return success;
-    }
-
-    /**
-     * Unregisters from GPS/GNSS updates from the Android OS.
-     * <p>
-     * This method is not thread safe, so make sure to call this method from a synchronized block.
-     */
-    private void stopGnssRecordScanning()
-    {
-        if (!gnssStarted.getAndSet(false)) return;
-
-        if (locationManager != null)
-        {
-            locationManager.unregisterGnssMeasurementsCallback(measurementListener);
-            gpsListener.clearGnssTimeoutCallback();
-            locationManager = null;
-        }
-
-        updateLocationListener();
-    }
-
-    /**
      * Remove the phone state listener for CDR events.
      *
      * @since 1.11
@@ -1727,7 +1536,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
         cellularController.stopAllLogging();
         wifiController.stopAllLogging();
         bluetoothController.stopAllLogging();
-        if (gnssRecordLogger != null) gnssRecordLogger.enableLogging(false);
+        gnssController.stopAllLogging();
         if (cdrLogger != null) cdrLogger.enableLogging(false);
     }
 
@@ -1760,8 +1569,8 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
                 cellularController.onMdmPreferenceChanged();
                 wifiController.onMdmPreferenceChanged();
                 bluetoothController.onMdmPreferenceChanged();
+                gnssController.onMdmPreferenceChanged();
 
-                gnssRecordLogger.onMdmPreferenceChanged();
                 cdrLogger.onMdmPreferenceChanged();
             }
         };
@@ -1909,7 +1718,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
      */
     public void registerGnssFailureListener(IGnssFailureListener gnssFailureListener)
     {
-        this.gnssFailureListener = gnssFailureListener;
+        gnssController.registerGnssFailureListener(gnssFailureListener);
     }
 
     /**
@@ -1919,7 +1728,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
      */
     public void clearGnssFailureListener()
     {
-        gnssFailureListener = null;
+        gnssController.clearGnssFailureListener();
     }
 
     /**

@@ -480,7 +480,7 @@ public class SurveyRecordProcessor
      * @param event The latest set of GNSS measurements.
      * @since 0.3.0
      */
-    void onGnssMeasurements(GnssMeasurementsEvent event)
+    public void onGnssMeasurements(GnssMeasurementsEvent event)
     {
         execute(() -> processGnssMeasurements(event));
     }

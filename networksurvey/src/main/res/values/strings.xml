@@ -111,7 +111,7 @@
     <string name="cdr_icon_description">CDR Icon</string>
     <string name="logging_status_enabled">On</string>
     <string name="status_disabled">Off</string>
-    <string name="mqtt_off">MQTT Connection is Off</string>
+    <string name="mqtt_off">MQTT Connection Off</string>
     <string name="mqtt_connecting">Attempting to Connect</string>
     <string name="mqtt_connected">Connected to MQTT Broker</string>
     <string name="status_on">On</string>
