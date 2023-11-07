@@ -59,7 +59,7 @@ public class BluetoothCsvLogger extends CsvRecordLogger implements IBluetoothSur
     }
 
     @Override
-    public void onBluetoothSurveyRecord(BluetoothRecord bluetoothRecord)
+    public synchronized void onBluetoothSurveyRecord(BluetoothRecord bluetoothRecord)
     {
         try
         {
@@ -71,7 +71,7 @@ public class BluetoothCsvLogger extends CsvRecordLogger implements IBluetoothSur
     }
 
     @Override
-    public void onBluetoothSurveyRecords(List<BluetoothRecord> bluetoothRecords)
+    public synchronized void onBluetoothSurveyRecords(List<BluetoothRecord> bluetoothRecords)
     {
         bluetoothRecords.forEach(record -> {
             try

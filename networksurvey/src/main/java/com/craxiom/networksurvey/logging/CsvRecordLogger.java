@@ -38,7 +38,7 @@ public abstract class CsvRecordLogger
     private static final int RECORD_COUNT_INTERVAL = 5000;
 
     /**
-     * A lock to synchronize the writing of single records and the creation of a new GeoPackage file
+     * A lock to synchronize the writing of single records and the creation of a new CSV file
      * during rollover.
      */
     protected final Object csvFileLock = new Object();
@@ -144,7 +144,7 @@ public abstract class CsvRecordLogger
         }
     }
 
-    void writeCsvRecord(Object[] row, boolean flush) throws IOException
+    synchronized void writeCsvRecord(Object[] row, boolean flush) throws IOException
     {
         if (lazyFileCreation) lazyCreateFileIfNecessary();
         printer.printRecord(row);
