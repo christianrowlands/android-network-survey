@@ -24,9 +24,9 @@ import static com.craxiom.networksurvey.constants.csv.LteCsvConstants.TAC;
 
 import android.os.Looper;
 
+import com.craxiom.messaging.LteBandwidth;
 import com.craxiom.messaging.LteRecord;
 import com.craxiom.messaging.LteRecordData;
-import com.craxiom.networksurvey.constants.LteMessageConstants;
 import com.craxiom.networksurvey.constants.NetworkSurveyConstants;
 import com.craxiom.networksurvey.listeners.ICellularSurveyRecordListener;
 import com.craxiom.networksurvey.services.NetworkSurveyService;
@@ -48,7 +48,7 @@ public class LteCsvLogger extends CsvRecordLogger implements ICellularSurveyReco
 
     @Override
     String[] getHeaders()
-    { // TODO Figure out how to add other information to the header such as version number
+    {
         return new String[]{DEVICE_TIME, LATITUDE, LONGITUDE, ALTITUDE, SPEED, ACCURACY,
                 MISSION_ID, RECORD_NUMBER, GROUP_NUMBER,
                 MCC, MNC, TAC, ECI, EARFCN, PCI, RSRP, RSRQ, TA, SERVING_CELL, LTE_BANDWIDTH, PROVIDER};
@@ -80,8 +80,7 @@ public class LteCsvLogger extends CsvRecordLogger implements ICellularSurveyReco
     {
         LteRecordData data = record.getData();
 
-        // TODO Should we use the full enum toString?
-        final String lteBandwidth = LteMessageConstants.getLteBandwidth(data.getLteBandwidth());
+        LteBandwidth lteBandwidth = data.getLteBandwidth();
 
         return new String[]{
                 data.getDeviceTime(),
@@ -103,7 +102,7 @@ public class LteCsvLogger extends CsvRecordLogger implements ICellularSurveyReco
                 data.hasRsrq() ? String.valueOf(data.getRsrq().getValue()) : "",
                 data.hasTa() ? String.valueOf(data.getTa().getValue()) : "",
                 data.hasServingCell() ? String.valueOf(data.getServingCell().getValue()) : "",
-                lteBandwidth,
+                lteBandwidth == LteBandwidth.UNRECOGNIZED ? "" : lteBandwidth.name(),
                 data.getProvider()};
     }
 }

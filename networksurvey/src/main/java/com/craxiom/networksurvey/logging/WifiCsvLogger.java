@@ -92,7 +92,7 @@ public class WifiCsvLogger extends CsvRecordLogger implements IWifiSurveyRecordL
     }
 
     /**
-     * @return A String array that contains the LTE record values that can be written out as a CSV
+     * @return A String array that contains the Wi-Fi record values that can be written out as a CSV
      * row.
      */
     private String[] convertToObjectArray(WifiRecordWrapper wrapper)

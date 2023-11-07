@@ -19,6 +19,8 @@ import org.apache.commons.csv.CSVPrinter;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -170,7 +172,7 @@ public abstract class CsvRecordLogger
      *
      * @return True, if the operations were successful.
      */
-    private boolean prepareCsvForLogging()
+    private synchronized boolean prepareCsvForLogging()
     {
         loggingFileName = createPublicStorageFilePath();
 
@@ -192,7 +194,7 @@ public abstract class CsvRecordLogger
         {
             final String errorMessage = "Error: Unable to create the CSV file.  No logging will be recorded.";
             Timber.e(e, errorMessage);
-            Toast.makeText(applicationContext, errorMessage, Toast.LENGTH_SHORT).show();
+            new Handler(Looper.getMainLooper()).post(() -> Toast.makeText(applicationContext, errorMessage, Toast.LENGTH_SHORT).show());
 
             loggingFileName = null;
 
@@ -278,6 +280,15 @@ public abstract class CsvRecordLogger
     {
         logFileDirectoryPath = Environment.getExternalStoragePublicDirectory(
                 Environment.DIRECTORY_DOWNLOADS) + "/" + logDirectoryName + "/";
+
+        try
+        {
+            Files.createDirectories(Paths.get(logFileDirectoryPath));
+        } catch (IOException e)
+        {
+            Timber.e(e, "Could not create the CSV log file directory");
+            new Handler(Looper.getMainLooper()).post(() -> Toast.makeText(applicationContext, "Error: Could not create the CSV directory", Toast.LENGTH_SHORT).show());
+        }
 
         String filePath = logFileDirectoryPath +
                 fileNamePrefix + SurveyRecordProcessor.DATE_TIME_FORMATTER.format(LocalDateTime.now()) + ".csv";
@@ -406,7 +417,8 @@ public abstract class CsvRecordLogger
     /**
      * @return The NS App version number, or an empty string if it could not be determined.
      */
-    private String getVersionName() {
+    private String getVersionName()
+    {
         try
         {
             PackageInfo info = applicationContext.getPackageManager().getPackageInfo(applicationContext.getPackageName(), 0);

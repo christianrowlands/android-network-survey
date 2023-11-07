@@ -17,9 +17,13 @@ import androidx.core.app.ActivityCompat;
 
 import com.craxiom.networksurvey.CalculationUtils;
 import com.craxiom.networksurvey.constants.NetworkSurveyConstants;
+import com.craxiom.networksurvey.logging.CdmaCsvLogger;
 import com.craxiom.networksurvey.logging.CellularSurveyRecordLogger;
+import com.craxiom.networksurvey.logging.GsmCsvLogger;
 import com.craxiom.networksurvey.logging.LteCsvLogger;
+import com.craxiom.networksurvey.logging.NrCsvLogger;
 import com.craxiom.networksurvey.logging.PhoneStateRecordLogger;
+import com.craxiom.networksurvey.logging.UmtsCsvLogger;
 import com.craxiom.networksurvey.model.LogTypeState;
 import com.craxiom.networksurvey.services.NetworkSurveyService;
 import com.craxiom.networksurvey.services.SurveyRecordProcessor;
@@ -52,7 +56,11 @@ public class CellularController extends AController
 
     private final CellularSurveyRecordLogger cellularSurveyRecordLogger;
     private final PhoneStateRecordLogger phoneStateRecordLogger;
+    private final NrCsvLogger nrCsvLogger;
     private final LteCsvLogger lteCsvLogger;
+    private final UmtsCsvLogger umtsCsvLogger;
+    private final CdmaCsvLogger cdmaCsvLogger;
+    private final GsmCsvLogger gsmCsvLogger;
     private TelephonyManager.CellInfoCallback cellInfoCallback;
     private PhoneStateListener phoneStateListener;
 
@@ -66,7 +74,11 @@ public class CellularController extends AController
 
         cellularSurveyRecordLogger = new CellularSurveyRecordLogger(surveyService, serviceLooper);
         phoneStateRecordLogger = new PhoneStateRecordLogger(surveyService, serviceLooper);
+        nrCsvLogger = new NrCsvLogger(surveyService, serviceLooper);
         lteCsvLogger = new LteCsvLogger(surveyService, serviceLooper);
+        umtsCsvLogger = new UmtsCsvLogger(surveyService, serviceLooper);
+        cdmaCsvLogger = new CdmaCsvLogger(surveyService, serviceLooper);
+        gsmCsvLogger = new GsmCsvLogger(surveyService, serviceLooper);
     }
 
     public boolean isLoggingEnabled()
@@ -88,7 +100,11 @@ public class CellularController extends AController
     {
         cellularSurveyRecordLogger.onSharedPreferenceChanged();
         phoneStateRecordLogger.onSharedPreferenceChanged();
+        nrCsvLogger.onSharedPreferenceChanged();
         lteCsvLogger.onSharedPreferenceChanged();
+        umtsCsvLogger.onSharedPreferenceChanged();
+        cdmaCsvLogger.onSharedPreferenceChanged();
+        gsmCsvLogger.onSharedPreferenceChanged();
     }
 
     /**
@@ -99,7 +115,11 @@ public class CellularController extends AController
     {
         cellularSurveyRecordLogger.onMdmPreferenceChanged();
         phoneStateRecordLogger.onMdmPreferenceChanged();
+        nrCsvLogger.onSharedPreferenceChanged();
         lteCsvLogger.onSharedPreferenceChanged();
+        umtsCsvLogger.onSharedPreferenceChanged();
+        cdmaCsvLogger.onSharedPreferenceChanged();
+        gsmCsvLogger.onSharedPreferenceChanged();
     }
 
     public void onLogFileTypePreferenceChanged()
@@ -161,7 +181,11 @@ public class CellularController extends AController
                 }
                 if (types.csv)
                 {
-                    successful = lteCsvLogger.enableLogging(true);
+                    successful = nrCsvLogger.enableLogging(true) &&
+                            lteCsvLogger.enableLogging(true) &&
+                            umtsCsvLogger.enableLogging(true) &&
+                            cdmaCsvLogger.enableLogging(true) &&
+                            gsmCsvLogger.enableLogging(true);
                 }
 
                 if (successful)
@@ -169,11 +193,16 @@ public class CellularController extends AController
                     toggleCellularConfig(true, types);
                 } else
                 {
+                    Timber.e("Unsuccessful in enabling cellular logging");
                     // at least one of the loggers failed to toggle;
                     // disable all of them and set local config to false
                     cellularSurveyRecordLogger.enableLogging(false);
                     phoneStateRecordLogger.enableLogging(false);
+                    nrCsvLogger.enableLogging(false);
                     lteCsvLogger.enableLogging(false);
+                    umtsCsvLogger.enableLogging(false);
+                    cdmaCsvLogger.enableLogging(false);
+                    gsmCsvLogger.enableLogging(false);
                     toggleCellularConfig(false, null);
                 }
             } else
@@ -182,7 +211,11 @@ public class CellularController extends AController
                 // in case the user changed the setting after they started logging.
                 cellularSurveyRecordLogger.enableLogging(false);
                 phoneStateRecordLogger.enableLogging(false);
+                nrCsvLogger.enableLogging(false);
                 lteCsvLogger.enableLogging(false);
+                umtsCsvLogger.enableLogging(false);
+                cdmaCsvLogger.enableLogging(false);
+                gsmCsvLogger.enableLogging(false);
                 toggleCellularConfig(false, null);
                 successful = true;
             }
@@ -445,7 +478,11 @@ public class CellularController extends AController
     {
         if (cellularSurveyRecordLogger != null) cellularSurveyRecordLogger.enableLogging(false);
         if (phoneStateRecordLogger != null) phoneStateRecordLogger.enableLogging(false);
+        if (nrCsvLogger != null) nrCsvLogger.enableLogging(false);
         if (lteCsvLogger != null) lteCsvLogger.enableLogging(false);
+        if (umtsCsvLogger != null) umtsCsvLogger.enableLogging(false);
+        if (cdmaCsvLogger != null) cdmaCsvLogger.enableLogging(false);
+        if (gsmCsvLogger != null) gsmCsvLogger.enableLogging(false);
     }
 
     /**
@@ -467,7 +504,11 @@ public class CellularController extends AController
                 }
                 if (types.csv)
                 {
+                    surveyService.registerCellularSurveyRecordListener(nrCsvLogger);
                     surveyService.registerCellularSurveyRecordListener(lteCsvLogger);
+                    surveyService.registerCellularSurveyRecordListener(umtsCsvLogger);
+                    surveyService.registerCellularSurveyRecordListener(cdmaCsvLogger);
+                    surveyService.registerCellularSurveyRecordListener(gsmCsvLogger);
                 }
             } else
             {
@@ -476,7 +517,11 @@ public class CellularController extends AController
         } else
         {
             surveyService.unregisterCellularSurveyRecordListener(cellularSurveyRecordLogger);
+            surveyService.unregisterCellularSurveyRecordListener(nrCsvLogger);
             surveyService.unregisterCellularSurveyRecordListener(lteCsvLogger);
+            surveyService.unregisterCellularSurveyRecordListener(umtsCsvLogger);
+            surveyService.unregisterCellularSurveyRecordListener(cdmaCsvLogger);
+            surveyService.unregisterCellularSurveyRecordListener(gsmCsvLogger);
             surveyService.unregisterDeviceStatusListener(phoneStateRecordLogger);
         }
     }

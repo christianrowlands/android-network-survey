@@ -26,7 +26,7 @@ public class NetworkSurveyConstants
     public static final int LOGGING_NOTIFICATION_ID = 1;
 
     public static final String LOG_DIRECTORY_NAME = "NetworkSurveyData";
-    public static final String CSV_LOG_DIRECTORY_NAME = "NetworkSurveyData";
+    public static final String CSV_LOG_DIRECTORY_NAME = "NetworkSurveyData/csv";
 
     public static final String GSM_FILE_NAME_PREFIX = "craxiom-gsm-";
     public static final String CDMA_FILE_NAME_PREFIX = "craxiom-cdma-";
