@@ -36,6 +36,27 @@
         if it requests the SMS permission. If you are interested in a CDR logger that supports SMS events
         and logging the "other" phone number for call events, reach out to me at craxiomdev@gmail.com</string>
 
+
+    <string name="file_help_title">File Logging &amp; MQTT Streaming: Simplified</string>
+    <string name="file_help">Need help understanding the File Logging and MQTT sections? Here\'s a quick guide:\n\n
+<b>File Logging Control:</b>\n
+This section is all about saving data locally to your phone. When you toggle one of the options to <b>\'On\'</b>,
+the app will start logging that data type to a file in GeoPackage and/or CSV format (depending on the configured
+setting), which you can find on your device. Remember:\n
+\n
+- Toggle <b>Cellular</b>, <b>Wi-Fi</b>, <b>Bluetooth</b>, <b>GNSS</b>, and/or <b>CDR</b> under File Logging Control to save this data locally.\n
+- Logging is completely optional and does not affect MQTT Streaming.\n
+\n
+<b>MQTT Connection Status:</b>\n
+MQTT streaming lets you send your data in real-time to a remote server. No local storage is needed for this:\n
+\n
+- First, configure the broker connection settings.\n
+- Ensure the switch is on to activate streaming.\n
+- MQTT Streaming works independently of File Logging. You don\'t need to turn on File Logging to stream data.\n
+\n
+Use File Logging for local storage and MQTT Streaming for remote transmission. They both capture the same data,
+but work independently, so you have full control over how you handle your data.</string>
+
     <string name="bluetooth_permissions_rationale_title">Bluetooth Permissions</string>
     <string name="bluetooth_permissions_rationale">The Find Nearby Devices permission is needed to perform a Bluetooth scan for survey. If this permission is denied then Bluetooth survey will not work.</string>
 
@@ -127,6 +148,7 @@
     <string name="card_title_cellular_details_initial">Serving Cell Details</string>
     <string name="card_title_cellular_details">%1$s Serving Cell Details</string>
     <string name="cellular_icon_description">Cellular Tower Icon</string>
+    <string name="file_help_description">File Help Icon</string>
     <string name="card_title_neighbors">Neighbors</string>
     <string name="card_title_neighbors_gsm">GSM Neighbors</string>
     <string name="card_title_neighbors_cdma">CDMA Neighbors</string>

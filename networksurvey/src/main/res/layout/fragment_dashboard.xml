@@ -51,11 +51,22 @@
                             android:src="@drawable/ic_action_bar_logging" />
 
                         <TextView
-                            android:id="@+id/cellular_details_title"
+                            android:id="@+id/file_section_title"
                             style="@style/CardTitleStyle"
-                            android:layout_width="match_parent"
+                            android:layout_width="0dp"
                             android:layout_height="wrap_content"
+                            android:layout_weight="1"
                             android:text="@string/card_title_logging_details" />
+
+                        <ImageView
+                            android:id="@+id/file_help_icon"
+                            android:layout_width="24dp"
+                            android:layout_height="24dp"
+                            android:layout_gravity="center"
+                            android:layout_marginStart="@dimen/x_small_margin"
+                            android:layout_marginEnd="@dimen/x_small_margin"
+                            android:contentDescription="@string/file_help_description"
+                            android:src="@drawable/ic_help" />
 
                     </LinearLayout>
 
@@ -588,11 +599,22 @@
                             android:src="@drawable/ic_cloud_connection" />
 
                         <TextView
-                            android:id="@+id/neighbors_title"
+                            android:id="@+id/mqtt_section_title"
                             style="@style/CardTitleStyle"
-                            android:layout_width="match_parent"
+                            android:layout_width="0dp"
                             android:layout_height="wrap_content"
+                            android:layout_weight="1"
                             android:text="@string/card_title_mqtt_details" />
+
+                        <ImageView
+                            android:id="@+id/mqtt_help_icon"
+                            android:layout_width="24dp"
+                            android:layout_height="24dp"
+                            android:layout_gravity="center"
+                            android:layout_marginStart="@dimen/x_small_margin"
+                            android:layout_marginEnd="@dimen/x_small_margin"
+                            android:contentDescription="@string/file_help_description"
+                            android:src="@drawable/ic_help" />
 
                     </LinearLayout>
 

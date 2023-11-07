@@ -282,6 +282,8 @@ public class DashboardFragment extends AServiceDataFragment implements LocationL
         binding.mqttFragmentButton.setOnClickListener(c -> navigateToMqttFragment());
 
         binding.cdrHelpIcon.setOnClickListener(c -> showCdrHelpDialog());
+        binding.fileHelpIcon.setOnClickListener(c -> showFileMqttHelpDialog());
+        binding.mqttHelpIcon.setOnClickListener(c -> showFileMqttHelpDialog());
     }
 
     private void navigateToMqttFragment()
@@ -429,6 +431,23 @@ public class DashboardFragment extends AServiceDataFragment implements LocationL
         alertBuilder.setCancelable(true);
         alertBuilder.setTitle(getString(R.string.cdr_help_title));
         alertBuilder.setMessage(getText(R.string.cdr_help));
+        alertBuilder.setPositiveButton(android.R.string.ok, (dialog, which) -> {
+        });
+        alertBuilder.create().show();
+    }
+
+    /**
+     * Displays a dialog with some information about the difference between file logging and MQTT.
+     */
+    private void showFileMqttHelpDialog()
+    {
+        final Context context = getContext();
+        if (context == null) return;
+
+        AlertDialog.Builder alertBuilder = new AlertDialog.Builder(context);
+        alertBuilder.setCancelable(true);
+        alertBuilder.setTitle(getString(R.string.file_help_title));
+        alertBuilder.setMessage(getText(R.string.file_help));
         alertBuilder.setPositiveButton(android.R.string.ok, (dialog, which) -> {
         });
         alertBuilder.create().show();
