@@ -50,10 +50,10 @@ public class GnssCsvLogger extends CsvRecordLogger implements IGnssSurveyRecordL
     String[] getHeaders()
     {
         return new String[]{DEVICE_TIME, LATITUDE, LONGITUDE, ALTITUDE, SPEED, ACCURACY,
-                MISSION_ID, RECORD_NUMBER,
+                MISSION_ID, RECORD_NUMBER, GROUP_NUMBER,
                 CONSTELLATION, SPACE_VEHICLE_ID, CARRIER_FREQ_HZ, CLOCK_OFFSET, USED_IN_SOLUTION,
                 UNDULATION_M, LATITUDE_STD_DEV_M, LONGITUDE_STD_DEV_M, ALTITUDE_STD_DEV_M, AGC_DB,
-                CN0_DB_HZ, HDOP, VDOP, GROUP_NUMBER};
+                CN0_DB_HZ, HDOP, VDOP};
     }
 
     @Override
@@ -91,6 +91,7 @@ public class GnssCsvLogger extends CsvRecordLogger implements IGnssSurveyRecordL
                 String.valueOf(data.getAccuracy()),
                 data.getMissionId(),
                 String.valueOf(data.getRecordNumber()),
+                String.valueOf(data.getGroupNumber()),
                 data.getConstellation().toString(),
                 data.hasSpaceVehicleId() ? String.valueOf(data.getSpaceVehicleId().getValue()) : "",
                 data.hasCarrierFreqHz() ? String.valueOf(data.getCarrierFreqHz().getValue()) : "",

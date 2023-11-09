@@ -77,7 +77,7 @@
     <activity
         android:id="@+id/nav_user_manual_activity"
         app:action="android.intent.action.VIEW"
-        app:data="https://networksurvey.app/" />
+        app:data="https://networksurvey.app/manual" />
 
     <activity
         android:id="@+id/nav_messaging_activity"
