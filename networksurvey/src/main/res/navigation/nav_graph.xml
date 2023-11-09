@@ -74,4 +74,14 @@
         </action>
     </fragment>
 
+    <activity
+        android:id="@+id/nav_user_manual_activity"
+        app:action="android.intent.action.VIEW"
+        app:data="https://networksurvey.app/" />
+
+    <activity
+        android:id="@+id/nav_messaging_activity"
+        app:action="android.intent.action.VIEW"
+        app:data="https://messaging.networksurvey.app/" />
+
 </navigation>

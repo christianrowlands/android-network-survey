@@ -22,6 +22,16 @@
             android:icon="@drawable/ic_settings"
             android:title="@string/settings" />
 
+        <item
+            android:id="@+id/nav_user_manual_activity"
+            android:icon="@drawable/ic_user_manual"
+            android:title="@string/manual" />
+
+        <item
+            android:id="@+id/nav_messaging_activity"
+            android:icon="@drawable/ic_schema"
+            android:title="@string/messaging_docs" />
+
     </group>
 
 </menu>
