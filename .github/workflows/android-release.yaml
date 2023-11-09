@@ -63,7 +63,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-          ref: github-actions-play-publish
+          ref: develop
 
       - name: Extract version from tag
         uses: damienaicheh/extract-version-from-tag-action@v1.1.0
@@ -100,7 +100,7 @@ jobs:
           git config user.name "Github Actions"
           git add .
           git commit -am "Bump version code and change version name to ${{ env.VERSION_NAME }}"
-          git push origin github-actions-play-publish
+          git push origin develop
 
 
   buildRelease:
