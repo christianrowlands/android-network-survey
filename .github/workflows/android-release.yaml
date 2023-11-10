@@ -189,6 +189,7 @@ jobs:
           commit: ${{ github.sha }}
           body: "The regular-release apk is the same as what can be found on the Google Play Store. The cdr-release apk is the same as the regular-release apk, but with the full CDR support (See README.md for more details) and it also does not contain any tracking libraries such as Google Analytics."
           generateReleaseNotes: true
+          draft: true
 
       - name: Release app to internal track
         uses: r0adkll/upload-google-play@v1

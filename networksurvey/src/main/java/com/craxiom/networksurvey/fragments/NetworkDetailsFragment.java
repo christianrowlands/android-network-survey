@@ -47,6 +47,7 @@ import com.craxiom.networksurvey.listeners.ICellularSurveyRecordListener;
 import com.craxiom.networksurvey.model.CellularProtocol;
 import com.craxiom.networksurvey.model.CellularRecordWrapper;
 import com.craxiom.networksurvey.services.NetworkSurveyService;
+import com.craxiom.networksurvey.util.CellularUtils;
 import com.craxiom.networksurvey.util.ColorUtils;
 import com.craxiom.networksurvey.util.MathUtils;
 import com.craxiom.networksurvey.util.ParserUtils;
@@ -442,7 +443,7 @@ public class NetworkDetailsFragment extends AServiceDataFragment implements ICel
                 binding.tacLabel.setText(R.string.tac_label);
                 binding.enbIdGroup.setVisibility(View.VISIBLE);
                 binding.sectorIdGroup.setVisibility(View.VISIBLE);
-                binding.earfcnLabel.setText(R.string.earfcn_label);
+                binding.earfcnLabel.setText(R.string.earfcn_band_label);
                 binding.pciLabel.setText(R.string.pci_label);
                 binding.bandwidthGroup.setVisibility(View.VISIBLE);
                 binding.taGroup.setVisibility(View.VISIBLE);
@@ -612,7 +613,16 @@ public class NetworkDetailsFragment extends AServiceDataFragment implements ICel
         viewModel.setMnc(data.hasMnc() ? String.valueOf(data.getMnc().getValue()) : "");
         viewModel.setAreaCode(data.hasTac() ? String.valueOf(data.getTac().getValue()) : "");
         viewModel.setCellId(data.hasEci() ? (long) data.getEci().getValue() : null);
-        viewModel.setChannelNumber(data.hasEarfcn() ? String.valueOf(data.getEarfcn().getValue()) : "");
+
+        if (data.hasEarfcn())
+        {
+            int earfcn = data.getEarfcn().getValue();
+            int band = CellularUtils.downlinkEarfcnToBand(earfcn);
+            viewModel.setChannelNumber(earfcn + " / " + (band == -1 ? "?" : band));
+        } else
+        {
+            viewModel.setChannelNumber("");
+        }
 
         if (data.hasPci())
         {

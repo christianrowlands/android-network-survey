@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.14](https://github.com/christianrowlands/android-network-survey/releases/tag/v1.14) - 2023-11-09
+
+* Added support for logging Cellular, Wi-Fi, Bluetooth, and GNSS surveys to CSV files.
+* Added a help dialog explaining the difference between file logging and MQTT.
+* Added links to the user manual and NS Messaging API docs in the Nav menu.
+* Allow for horizontal display (landscape mode).
+* Updates for Android 14.
+
 ## [1.13](https://github.com/christianrowlands/android-network-survey/releases/tag/v1.13) - 2023-06-29
 
 * The speed (in meters per second) is now included in all messages.
@@ -24,7 +32,8 @@
 
 * Adds support for logging Call Detail Record (CDR) events to a CSV file.
 * Caches the Bluetooth UI results so the results are still visible when switching between tabs.
-* Adds a connection toggle switch and direct link to the MQTT Connection Fragment from the Dashboard.
+* Adds a connection toggle switch and direct link to the MQTT Connection Fragment from the
+  Dashboard.
 * Changes the default location provider to Fused, which should improve battery life.
 
 ## [1.10.0](https://github.com/christianrowlands/android-network-survey/releases/tag/v1.10.0) - 2023-01-24

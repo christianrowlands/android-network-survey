@@ -398,7 +398,7 @@
                                     style="@style/SmallLabelText"
                                     android:layout_width="match_parent"
                                     android:layout_height="wrap_content"
-                                    android:text="@string/earfcn_label"
+                                    android:text="@string/earfcn_band_label"
                                     app:layout_constraintBottom_toBottomOf="@id/earfcn_group" />
 
                             </androidx.constraintlayout.widget.ConstraintLayout>
