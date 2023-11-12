@@ -14,6 +14,7 @@ import androidx.fragment.app.Fragment;
 
 import com.craxiom.networksurvey.CalculationUtils;
 import com.craxiom.networksurvey.R;
+import com.craxiom.networksurvey.util.CellularUtils;
 
 import timber.log.Timber;
 
@@ -25,8 +26,9 @@ import timber.log.Timber;
 public class CalculatorFragment extends Fragment
 {
     static final String TITLE = "Calculators";
-    private static final String INVALID_CELL_ID_MESSAGE = "Invalid Cell ID.  Valid Range is 0 - 268435455";
-    private static final String INVALID_PCI_MESSAGE = "Invalid PCI.  Valid Range is 0 - 503";
+    private static final String INVALID_CELL_ID_MESSAGE = "Invalid Cell ID. Valid Range is 0 - 268435455";
+    private static final String INVALID_PCI_MESSAGE = "Invalid PCI. Valid Range is 0 - 503";
+    private static final String INVALID_EARFCN_MESSAGE = "Invalid EARFCN. Valid Range is 0 - 262143";
 
     private View view;
 
@@ -40,7 +42,7 @@ public class CalculatorFragment extends Fragment
             {
                 if (enteredText.isEmpty())
                 {
-                    Timber.v("The entered text for the LTE Cell ID is empty.  Can't calculate the eNodeB ID.");
+                    Timber.v("The entered text for the LTE Cell ID is empty. Can't calculate the eNodeB ID.");
                     clearCellIdCalculatedValues();
                     return;
                 }
@@ -99,7 +101,7 @@ public class CalculatorFragment extends Fragment
             {
                 if (enteredText.isEmpty())
                 {
-                    Timber.v("The entered text for the LTE PCI is empty.  Can't calculate the PSS and SSS.");
+                    Timber.v("The entered text for the LTE PCI is empty. Can't calculate the PSS and SSS.");
                     clearPciCalculatedValues();
                     return;
                 }
@@ -146,6 +148,66 @@ public class CalculatorFragment extends Fragment
         }
     };
 
+    private final TextWatcher lteEarfcnTextWatcher = new TextWatcher()
+    {
+        @Override
+        public void onTextChanged(CharSequence s, int start, int before, int count)
+        {
+            final String enteredText = s.toString();
+            try
+            {
+                if (enteredText.isEmpty())
+                {
+                    Timber.v("The entered text for the LTE EARFCN is empty. Can't calculate the Band.");
+                    clearEarfcnCalculatedValues();
+                    return;
+                }
+
+                final int earfcn;
+                try
+                {
+                    earfcn = Integer.parseInt(enteredText);
+                } catch (Exception e)
+                {
+                    showToast(INVALID_EARFCN_MESSAGE);
+                    clearEarfcnCalculatedValues();
+                    return;
+                }
+
+                if (earfcn < 0 || earfcn > 262143)
+                {
+                    showToast(INVALID_EARFCN_MESSAGE);
+                    clearEarfcnCalculatedValues();
+                    return;
+                }
+
+                int band = CellularUtils.downlinkEarfcnToBand(earfcn);
+                if (band == -1)
+                {
+                    ((TextView) view.findViewById(R.id.calculatedBandValue)).setText("Unknown");
+                } else
+                {
+                    ((TextView) view.findViewById(R.id.calculatedBandValue)).setText(String.valueOf(band));
+                }
+            } catch (Exception e)
+            {
+                Timber.w(e, "Unable to parse the provide LTE EARFCN as an Integer:%s", enteredText);
+            }
+        }
+
+        @Override
+        public void beforeTextChanged(CharSequence s, int start, int count, int after)
+        {
+
+        }
+
+        @Override
+        public void afterTextChanged(Editable s)
+        {
+
+        }
+    };
+
     public CalculatorFragment()
     {
         // Required empty public constructor
@@ -163,6 +225,9 @@ public class CalculatorFragment extends Fragment
 
         final EditText pciField = view.findViewById(R.id.lteCalculatorPci);
         pciField.addTextChangedListener(ltePciTextWatcher);
+
+        final EditText earfcnField = view.findViewById(R.id.lteCalculatorEarfcn);
+        earfcnField.addTextChangedListener(lteEarfcnTextWatcher);
 
         return view;
     }
@@ -183,6 +248,14 @@ public class CalculatorFragment extends Fragment
     {
         ((TextView) view.findViewById(R.id.calculatedPssValue)).setText("");
         ((TextView) view.findViewById(R.id.calculatedSssValue)).setText("");
+    }
+
+    /**
+     * Sets the text in the Band calculated TextView to an empty string.
+     */
+    private void clearEarfcnCalculatedValues()
+    {
+        ((TextView) view.findViewById(R.id.calculatedBandValue)).setText("");
     }
 
     /**

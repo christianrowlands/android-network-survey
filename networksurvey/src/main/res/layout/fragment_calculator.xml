@@ -32,7 +32,7 @@
                     android:id="@+id/lteCalculatorCellIdTextInputLayout"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:autofillHints="Enter in the Host address of the remote gRPC server"
+                    android:autofillHints="Enter in an LTE Cell ID"
                     android:hint="@string/lte_cell_id_label">
 
                     <com.google.android.material.textfield.TextInputEditText
@@ -118,7 +118,7 @@
                     android:id="@+id/lteCalculatorPciTextInputLayout"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:autofillHints="Enter in the Host address of the remote gRPC server"
+                    android:autofillHints="Enter in an LTE PCI to calculate the PSS and SSS for."
                     android:hint="@string/lte_pci_label">
 
                     <com.google.android.material.textfield.TextInputEditText
@@ -172,6 +172,67 @@
 
                     <TextView
                         android:id="@+id/calculatedSssValue"
+                        android:layout_width="150dp"
+                        android:layout_height="wrap_content"
+                        android:text=""
+                        android:textAppearance="@style/ValueText" />
+                </LinearLayout>
+
+            </LinearLayout>
+
+        </androidx.cardview.widget.CardView>
+
+
+        <androidx.cardview.widget.CardView
+            android:id="@+id/lte_band_calculator_card_view"
+            style="?attr/cardStyle"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="@dimen/calculator_margin"
+                android:layout_marginEnd="@dimen/calculator_margin"
+                android:layout_marginBottom="@dimen/calculator_margin"
+                android:gravity="top"
+                android:orientation="vertical">
+
+                <com.google.android.material.textfield.TextInputLayout
+                    android:id="@+id/lteCalculatorEarfcnTextInputLayout"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:autofillHints="Enter in an LTE EARFCN"
+                    android:hint="@string/lte_earfcn_label">
+
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/lteCalculatorEarfcn"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:autofillHints="Enter in the LTE PCI to calculate the PSS and SSS for"
+                        android:importantForAutofill="no"
+                        android:inputType="number"
+                        android:maxLines="1" />
+
+                </com.google.android.material.textfield.TextInputLayout>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="@dimen/calculator_margin"
+                    android:gravity="top"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:id="@+id/calculatedBand"
+                        style="@style/LabelStyle"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/band_label"
+                        android:textAppearance="@style/LabelText" />
+
+                    <TextView
+                        android:id="@+id/calculatedBandValue"
                         android:layout_width="150dp"
                         android:layout_height="wrap_content"
                         android:text=""

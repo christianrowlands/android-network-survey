@@ -168,12 +168,14 @@ but work independently, so you have full control over how you handle your data.<
 
     <string name="pss_label">PSS: </string>
     <string name="sss_label">SSS: </string>
+    <string name="band_label">Band: </string>
 
     <string name="latitude_label">Latitude: %1$s</string>
     <string name="longitude_label">Longitude: %1$s</string>
 
     <string name="lte_cell_id_label">&lt;LTE Cell ID&gt;</string>
     <string name="lte_pci_label">&lt;LTE PCI&gt;</string>
+    <string name="lte_earfcn_label">&lt;LTE EARFCN&gt;</string>
 
     <string name="cellular_logging_start_toast">Started Writing the Cellular Log File</string>
     <string name="cellular_logging_stop_toast">Cellular Log File Closed</string>
