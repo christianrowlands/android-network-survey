@@ -79,6 +79,17 @@
             android:text=""
             tools:ignore="RtlSymmetry" />
 
+        <TextView
+            android:id="@+id/wifi_passpoint"
+            style="@style/ListContentText"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_margin="@dimen/xx_small_margin"
+            android:paddingStart="@dimen/large_margin"
+            android:text=""
+            android:textColor="@color/colorAccent"
+            tools:ignore="RtlSymmetry" />
+
     </LinearLayout>
 
     <LinearLayout

@@ -1417,6 +1417,11 @@ public class SurveyRecordProcessor
             dataBuilder.setWps(BoolValue.newBuilder().setValue(WifiCapabilitiesUtils.supportsWps(capabilities)).build());
         }
 
+        if (apScanResult.isPasspointNetwork())
+        {
+            dataBuilder.setPasspoint(BoolValue.newBuilder().setValue(true).build());
+        }
+
         final WifiBeaconRecord.Builder recordBuilder = WifiBeaconRecord.newBuilder();
         recordBuilder.setMessageType(WifiBeaconMessageConstants.WIFI_BEACON_RECORD_MESSAGE_TYPE);
         recordBuilder.setVersion(BuildConfig.MESSAGING_API_VERSION);

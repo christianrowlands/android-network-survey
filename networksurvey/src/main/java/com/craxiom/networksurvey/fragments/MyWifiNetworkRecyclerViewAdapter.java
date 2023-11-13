@@ -16,6 +16,7 @@ import com.craxiom.messaging.WifiBeaconRecordData;
 import com.craxiom.networksurvey.R;
 import com.craxiom.networksurvey.constants.WifiBeaconMessageConstants;
 import com.craxiom.networksurvey.model.WifiRecordWrapper;
+import com.google.protobuf.BoolValue;
 
 /**
  * The recycler view for the list of Wi-Fi networks displayed in the UI.
@@ -76,6 +77,8 @@ public class MyWifiNetworkRecyclerViewAdapter extends RecyclerView.Adapter<MyWif
         holder.encryptionType.setText(WifiBeaconMessageConstants.getEncryptionTypeString(data.getEncryptionType()));
         holder.frequency.setText(data.hasFrequencyMhz() ? context.getString(R.string.wifi_frequency_value, data.getFrequencyMhz().getValue()) : "");
         holder.channel.setText(data.hasChannel() ? context.getString(R.string.wifi_channel_value, data.getChannel().getValue()) : "");
+        boolean passpoint = data.getPasspoint().getValue();
+        holder.passpoint.setText((data.hasPasspoint() && passpoint) ? "Passpoint" : "");
         holder.capabilities.setText(wifiRecordWrapper.getCapabilitiesString());
     }
 
@@ -125,6 +128,7 @@ public class MyWifiNetworkRecyclerViewAdapter extends RecyclerView.Adapter<MyWif
         final TextView encryptionType;
         final TextView frequency;
         final TextView channel;
+        final TextView passpoint;
         final TextView capabilities;
         WifiBeaconRecord wifiRecord;
 
@@ -138,6 +142,7 @@ public class MyWifiNetworkRecyclerViewAdapter extends RecyclerView.Adapter<MyWif
             encryptionType = view.findViewById(R.id.encryption_type);
             frequency = view.findViewById(R.id.wifi_frequency);
             channel = view.findViewById(R.id.wifi_channel);
+            passpoint = view.findViewById(R.id.wifi_passpoint);
             capabilities = view.findViewById(R.id.wifi_capabilities);
         }
     }
