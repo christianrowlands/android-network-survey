@@ -1479,7 +1479,10 @@ public class SurveyRecordProcessor
         dataBuilder.setRecordNumber(bluetoothRecordNumber++);
 
         dataBuilder.setSourceAddress(sourceAddress);
-        dataBuilder.setSignalStrength(FloatValue.newBuilder().setValue(rssi).build());
+        if (txPowerLevel == UNSET_TX_POWER_LEVEL)
+        {
+            dataBuilder.setSignalStrength(FloatValue.newBuilder().setValue(rssi).build());
+        }
 
         // The TX Power seems to never be set (a value of 127 indicates unset). However, I am including
         // the code here in case it starts being populated in a future version of Android, or if a specific phone model

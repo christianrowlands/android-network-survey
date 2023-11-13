@@ -115,6 +115,15 @@ public class BluetoothViewModel extends ViewModel
                 default: // Signal Strength
                     // Signal Strength is index 0 in the array, but we also use it as the default case
                     // Invert the sort so that the strongest records are at the top (descending)
+                    if (!record1.getData().hasSignalStrength() && !record2.getData().hasSignalStrength())
+                    {
+                        return 0;
+                    }
+
+                    if (!record1.getData().hasSignalStrength()) return -1;
+
+                    if (!record2.getData().hasSignalStrength()) return 1;
+
                     return -1 * Float.compare(record1.getData().getSignalStrength().getValue(), record2.getData().getSignalStrength().getValue());
             }
         }
