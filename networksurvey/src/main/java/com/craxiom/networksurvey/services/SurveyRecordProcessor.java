@@ -8,6 +8,7 @@ import android.annotation.SuppressLint;
 import android.bluetooth.BluetoothDevice;
 import android.content.Context;
 import android.content.pm.PackageManager;
+import android.location.GnssAutomaticGainControl;
 import android.location.GnssMeasurement;
 import android.location.GnssMeasurementsEvent;
 import android.location.Location;
@@ -89,6 +90,8 @@ import com.craxiom.networksurvey.model.CdrEvent;
 import com.craxiom.networksurvey.model.CdrEventType;
 import com.craxiom.networksurvey.model.CellularProtocol;
 import com.craxiom.networksurvey.model.CellularRecordWrapper;
+import com.craxiom.networksurvey.model.ConstellationFreqKey;
+import com.craxiom.networksurvey.model.NrRecordWrapper;
 import com.craxiom.networksurvey.model.WifiRecordWrapper;
 import com.craxiom.networksurvey.util.IOUtils;
 import com.craxiom.networksurvey.util.LocationUtils;
@@ -110,7 +113,9 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -711,11 +716,11 @@ public class SurveyRecordProcessor
                 }
             } else if (android.os.Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q && cellInfo instanceof CellInfoNr)
             {
-                final NrRecord nrRecord = generateNrSurveyRecord((CellInfoNr) cellInfo);
-                if (nrRecord != null)
+                final NrRecordWrapper nrRecordWrapper = generateNrSurveyRecord((CellInfoNr) cellInfo);
+                if (nrRecordWrapper != null)
                 {
-                    notifyNrRecordListeners(nrRecord);
-                    return new CellularRecordWrapper(CellularProtocol.NR, nrRecord);
+                    notifyNrRecordListeners((NrRecord) nrRecordWrapper.cellularRecord);
+                    return nrRecordWrapper;
                 }
             }
         }
@@ -793,12 +798,28 @@ public class SurveyRecordProcessor
         lastGnssLogTimeMs = System.currentTimeMillis();
 
         final Collection<GnssMeasurement> gnssMeasurements = event.getMeasurements();
+        //Timber.i("GnssMeasurement length=%s", (long) gnssMeasurements.size());
+        //gnssMeasurements.forEach(m -> Timber.i("GnssMeasurement: Constellation=%s, CarrierFreq=%s, AGC=%s", GnssMessageConstants.getProtobufConstellation(m.getConstellationType()), (long) m.getCarrierFrequencyHz(), m.getAutomaticGainControlLevelDb()));
+
+        final Map<ConstellationFreqKey, Float> agcMap = new HashMap<>();
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU)
+        {
+            Collection<GnssAutomaticGainControl> gnssAgcs = event.getGnssAutomaticGainControls();
+            //Timber.i("GnssAutomaticGainControls length=%s", (long) gnssAgcs.size());
+            //gnssAgcs.forEach(g -> Timber.i("GnssAutomaticGainControl: Constellation=%s, CarrierFreq=%s, AGC=%s", GnssMessageConstants.getProtobufConstellation(g.getConstellationType()), g.getCarrierFrequencyHz(), g.getLevelDb()));
+
+            for (GnssAutomaticGainControl agc : gnssAgcs)
+            {
+                ConstellationFreqKey key = new ConstellationFreqKey(agc.getConstellationType(), agc.getCarrierFrequencyHz());
+                agcMap.put(key, (float) agc.getLevelDb());
+            }
+        }
 
         gnssGroupNumber++; // Group all the records found in this scan iteration.
 
         for (final GnssMeasurement gnssMeasurement : gnssMeasurements)
         {
-            final GnssRecord gnssRecord = generateGnssSurveyRecord(gnssMeasurement);
+            final GnssRecord gnssRecord = generateGnssSurveyRecord(gnssMeasurement, agcMap);
             notifyGnssRecordListeners(gnssRecord);
         }
     }
@@ -1229,7 +1250,7 @@ public class SurveyRecordProcessor
      * @since 1.5.0
      */
     @RequiresApi(api = Build.VERSION_CODES.Q)
-    private NrRecord generateNrSurveyRecord(CellInfoNr cellInfoNr)
+    private NrRecordWrapper generateNrSurveyRecord(CellInfoNr cellInfoNr)
     {
         // safe to cast as per: https://developer.android.com/reference/android/telephony/CellInfoNr#getCellIdentity()
         final CellIdentityNr cellIdentity = (CellIdentityNr) cellInfoNr.getCellIdentity();
@@ -1241,6 +1262,16 @@ public class SurveyRecordProcessor
         final int pci = cellIdentity.getPci();
         final int tac = cellIdentity.getTac();
         final long nci = cellIdentity.getNci();
+        int[] bands = new int[0];
+        Timber.i("Getting the NR Bands"); // TODO Delete this logging
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.R)
+        {
+            bands = cellIdentity.getBands();
+        }
+        for (int band : bands)
+        {
+            Timber.i("NR Band: %d", band); // TODO Delete this logging
+        }
 
         // can't extract this to method due to API limitations
         CharSequence provider = null;
@@ -1256,6 +1287,13 @@ public class SurveyRecordProcessor
         final int ssRsrp = cellSignalStrength.getSsRsrp();
         final int ssRsrq = cellSignalStrength.getSsRsrq();
         final int ssSinr = cellSignalStrength.getSsSinr();
+
+        int timingAdvanceMicros = -1;
+        if (android.os.Build.VERSION.SDK_INT >= 34)
+        {
+            timingAdvanceMicros = cellSignalStrength.getTimingAdvanceMicros();
+        }
+        Timber.i("Timing Advance Micros: %d", timingAdvanceMicros); // TODO Delete this logging
 
         if (!validateNrFields(nrarfcn, pci)) return null;
 
@@ -1337,13 +1375,16 @@ public class SurveyRecordProcessor
             dataBuilder.setCsiSinr(FloatValue.newBuilder().setValue(csiSinr).build());
         }
 
+        // TODO Don't set if the value is -1
+        dataBuilder.setTa(Int32Value.newBuilder().setValue(timingAdvanceMicros).build());
+
         final NrRecord.Builder recordBuilder = NrRecord.newBuilder();
 
         recordBuilder.setMessageType(NrMessageConstants.NR_RECORD_MESSAGE_TYPE);
         recordBuilder.setVersion(BuildConfig.MESSAGING_API_VERSION);
         recordBuilder.setData(dataBuilder);
 
-        return recordBuilder.build();
+        return new NrRecordWrapper(recordBuilder.build(), bands);
     }
 
     /**
@@ -1515,11 +1556,12 @@ public class SurveyRecordProcessor
     /**
      * Pull out the appropriate values from the {@link GnssMeasurement}, and create a {@link GnssRecord}.
      *
-     * @param gnss The GNSS measurement object to pull the data from.
+     * @param gnss   The GNSS measurement object to pull the data from.
+     * @param agcMap The map of AGC values keyed by the constellation and frequency.
      * @return The GNSS record to send to any listeners.
      * @since 0.3.0
      */
-    private GnssRecord generateGnssSurveyRecord(GnssMeasurement gnss)
+    private GnssRecord generateGnssSurveyRecord(GnssMeasurement gnss, Map<ConstellationFreqKey, Float> agcMap)
     {
         final GnssRecordData.Builder dataBuilder = GnssRecordData.newBuilder();
 
@@ -1577,6 +1619,13 @@ public class SurveyRecordProcessor
         if (gnss.hasAutomaticGainControlLevelDb())
         {
             dataBuilder.setAgcDb(FloatValue.newBuilder().setValue((float) gnss.getAutomaticGainControlLevelDb()));
+        } else
+        {
+            Float agc = agcMap.get(new ConstellationFreqKey(gnss.getConstellationType(), (long) gnss.getCarrierFrequencyHz()));
+            if (agc != null)
+            {
+                dataBuilder.setAgcDb(FloatValue.newBuilder().setValue(agc));
+            }
         }
 
         dataBuilder.setCn0DbHz(FloatValue.newBuilder().setValue((float) gnss.getCn0DbHz()));

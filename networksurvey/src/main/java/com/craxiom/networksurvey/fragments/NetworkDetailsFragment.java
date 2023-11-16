@@ -46,6 +46,7 @@ import com.craxiom.networksurvey.fragments.model.UmtsNeighbor;
 import com.craxiom.networksurvey.listeners.ICellularSurveyRecordListener;
 import com.craxiom.networksurvey.model.CellularProtocol;
 import com.craxiom.networksurvey.model.CellularRecordWrapper;
+import com.craxiom.networksurvey.model.NrRecordWrapper;
 import com.craxiom.networksurvey.services.NetworkSurveyService;
 import com.craxiom.networksurvey.util.CellularUtils;
 import com.craxiom.networksurvey.util.ColorUtils;
@@ -546,7 +547,7 @@ public class NetworkDetailsFragment extends AServiceDataFragment implements ICel
                     if (nrData.hasServingCell() && nrData.getServingCell().getValue())
                     {
                         viewModel.setServingCellProtocol(cellularRecord.cellularProtocol);
-                        processNrServingCell(nrData);
+                        processNrServingCell(nrData, ((NrRecordWrapper) cellularRecord).bands);
                     } else
                     {
                         nrNeighbors.add(nrData);
@@ -647,14 +648,33 @@ public class NetworkDetailsFragment extends AServiceDataFragment implements ICel
      *
      * @param data The details for the NR serving cell record.
      */
-    private void processNrServingCell(NrRecordData data)
+    private void processNrServingCell(NrRecordData data, int[] bands)
     {
         viewModel.setCarrier(data.getProvider());
         viewModel.setMcc(data.hasMcc() ? String.valueOf(data.getMcc().getValue()) : "");
         viewModel.setMnc(data.hasMnc() ? String.valueOf(data.getMnc().getValue()) : "");
         viewModel.setAreaCode(data.hasTac() ? String.valueOf(data.getTac().getValue()) : "");
         viewModel.setCellId(data.hasNci() ? data.getNci().getValue() : null);
-        viewModel.setChannelNumber(data.hasNarfcn() ? String.valueOf(data.getNci().getValue()) : "");
+
+        if (bands.length > 0)
+        {
+            StringBuilder bandsString = new StringBuilder();
+            for (int band : bands)
+            {
+                bandsString.append(band).append(", ");
+            }
+            if (data.hasNarfcn())
+            {
+                int narfcn = data.getNarfcn().getValue();
+                viewModel.setChannelNumber(narfcn + " / " + bandsString);
+            } else
+            {
+                viewModel.setChannelNumber("? / " + bandsString);
+            }
+        } else
+        {
+            viewModel.setChannelNumber(data.hasNarfcn() ? String.valueOf(data.getNci().getValue()) : "");
+        }
 
         if (data.hasPci())
         {

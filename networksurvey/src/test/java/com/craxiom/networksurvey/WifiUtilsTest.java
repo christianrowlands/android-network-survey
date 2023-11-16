@@ -1,15 +1,15 @@
 package com.craxiom.networksurvey;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+
 import com.craxiom.messaging.wifi.CipherSuite;
 import com.craxiom.messaging.wifi.EncryptionType;
 import com.craxiom.networksurvey.constants.WifiBeaconMessageConstants;
 import com.craxiom.networksurvey.util.WifiCapabilitiesUtils;
 
 import org.junit.Test;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
 
 /**
  * Tests the various conversions for Wi-Fi scanning and logging.
@@ -78,6 +78,24 @@ public class WifiUtilsTest
         final String capabilities = "[WPA-PSK-CCMP+TKIP][WPA2-PSK-CCMP+TKIP][RSN-PSK-CCMP+TKIP][ESS]";
 
         assertEquals(EncryptionType.WPA_WPA2, WifiCapabilitiesUtils.getEncryptionType(capabilities));
+        assertFalse(WifiCapabilitiesUtils.supportsWps(capabilities));
+    }
+
+    @Test
+    public void validateWpa3()
+    {
+        final String capabilities = "[RSN-SAE-CCMP][ESS][MFPR][MFPC]";
+
+        assertEquals(EncryptionType.WPA3, WifiCapabilitiesUtils.getEncryptionType(capabilities));
+        assertFalse(WifiCapabilitiesUtils.supportsWps(capabilities));
+    }
+
+    @Test
+    public void validateWpa2Wpa3()
+    {
+        final String capabilities = "[WPA2-PSK-CCMP][RSN-PSK+PSK-SHA256+SAE-CCMP][ESS][MFPC]";
+
+        assertEquals(EncryptionType.WPA2_WPA3, WifiCapabilitiesUtils.getEncryptionType(capabilities));
         assertFalse(WifiCapabilitiesUtils.supportsWps(capabilities));
     }
 

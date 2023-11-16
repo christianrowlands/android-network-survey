@@ -222,12 +222,12 @@ but work independently, so you have full control over how you handle your data.<
     <string name="notification_channel_name">Network Survey</string>
     <string name="service_notification_title">GPS Active</string>
     <string name="logging_notification_title">Network Survey Logging Active</string>
-    <string name="logging_notification_text">Writing to the GeoPackage log file</string>
+    <string name="logging_notification_text">Writing to the log file(s)</string>
     <string name="and">" and "</string>
     <string name="mqtt_connection_notification_text">Streaming records to an MQTT Broker</string>
     <string name="mqtt_reconnecting_notification_text">Reconnecting to MQTT Broker</string>
     <string name="network_survey_notification_title">Network Survey Active</string>
-    <string name="logging_and_mqtt_notification_text">Writing to the GeoPackage log file and streaming records to an MQTT Broker</string>
+    <string name="logging_and_mqtt_notification_text">Writing to the log file(s) and streaming records to an MQTT Broker</string>
     <string name="connection_notification_title">Network Survey Server Connection</string>
     <string name="connection_notification_active_text">The Connection is Active</string>
     <string name="connection_notification_connecting_text">Attempting to Connect</string>

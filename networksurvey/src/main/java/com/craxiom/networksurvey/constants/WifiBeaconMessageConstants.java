@@ -118,6 +118,9 @@ public class WifiBeaconMessageConstants extends MessageConstants
             case WPA3:
                 return "WPA3";
 
+            case WPA2_WPA3:
+                return "WPA2/WPA3";
+
             case UNRECOGNIZED:
                 break;
         }

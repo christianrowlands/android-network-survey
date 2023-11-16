@@ -24,8 +24,12 @@ public class WifiCapabilitiesUtils
         {
             return EncryptionType.WEP;
         }
-        if (capabilities.contains("WPA3"))
+        if (capabilities.contains("WPA3") || capabilities.contains("SAE"))
         {
+            if (capabilities.contains("WPA2"))
+            {
+                return EncryptionType.WPA2_WPA3;
+            }
             return EncryptionType.WPA3;
         } else
         {
