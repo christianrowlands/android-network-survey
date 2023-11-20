@@ -163,6 +163,8 @@ but work independently, so you have full control over how you handle your data.<
     <string name="turn_on_gps">Please turn on GPS</string>
     <string name="searching_for_location">Searching for GPS …</string>
     <string name="low_gps_confidence">Low GPS Confidence</string>
+    <string name="altitude_initial">Altitude: </string>
+    <string name="altitude_value">Altitude: %1$s meters</string>
     <string name="accuracy_initial">Accuracy: </string>
     <string name="accuracy_value">Accuracy: %1$s meters</string>
 

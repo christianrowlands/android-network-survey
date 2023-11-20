@@ -587,6 +587,7 @@ public class DashboardFragment extends AServiceDataFragment implements LocationL
     private void updateLocationTextView(Location latestLocation)
     {
         final TextView locationTextView = binding.locationCard.location;
+        final TextView altitudeTextView = binding.locationCard.altitude;
         final TextView accuracyTextView = binding.locationCard.accuracy;
         if (latestLocation != null)
         {
@@ -595,11 +596,15 @@ public class DashboardFragment extends AServiceDataFragment implements LocationL
             locationTextView.setText(latLonString);
             locationTextView.setTextColor(getResources().getColor(R.color.normalText, null));
 
+            altitudeTextView.setText(getString(R.string.altitude_value, Long.toString(Math.round(latestLocation.getAltitude()))));
+
             accuracyTextView.setText(getString(R.string.accuracy_value, Integer.toString(MathUtils.roundAccuracy(latestLocation.getAccuracy()))));
         } else
         {
             locationTextView.setText(R.string.low_gps_confidence);
             locationTextView.setTextColor(Color.YELLOW);
+
+            altitudeTextView.setText(getString(R.string.altitude_initial));
 
             accuracyTextView.setText(getString(R.string.accuracy_initial));
         }
