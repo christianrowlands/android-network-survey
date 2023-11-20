@@ -14,8 +14,7 @@ import java.util.Objects;
  */
 public class GnssMeasurementWrapper
 {
-    // 5 seconds in nanos
-    public static final long TIMEOUT_VALUE_NANOS = 3_000_000_000L;
+    public static final long TIMEOUT_VALUE_NANOS = 4_000_000_000L;
     // using a default value lets us avoid storing nulls in our records
     private static final long TIMED_OUT = Long.MIN_VALUE;
 

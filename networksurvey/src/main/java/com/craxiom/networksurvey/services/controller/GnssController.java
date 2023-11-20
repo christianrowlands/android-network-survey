@@ -25,6 +25,9 @@ import com.craxiom.networksurvey.services.SurveyRecordProcessor;
 import com.craxiom.networksurvey.util.PreferenceUtils;
 
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -42,9 +45,20 @@ public class GnssController extends AController
      */
     private static final long TIME_TO_WAIT_FOR_GNSS_RAW_BEFORE_FAILURE = 1000L * 15L;
 
+    /**
+     * The threshold for the scan rate in milliseconds that determines if we should use the battery
+     * optimized approach of registering and unregistering for GNSS measurements.
+     */
+    public static final int BATTERY_OPTIMIZATION_SCAN_RATE_THRESHOLD_MS = 30_000;
+
     private final AtomicBoolean gnssLoggingEnabled = new AtomicBoolean(false);
     private final AtomicBoolean gnssStarted = new AtomicBoolean(false);
     private final AtomicInteger gnssScanningTaskId = new AtomicInteger();
+    private final AtomicInteger batteryOptimizedMeasurementCount = new AtomicInteger(0);
+
+    private final ScheduledThreadPoolExecutor pool = new ScheduledThreadPoolExecutor(1);
+    private ScheduledFuture<?> batteryOptimizedScanFuture;
+    private final AtomicBoolean batteryOptimizedGnssMeasurement = new AtomicBoolean(false);
 
     private final Handler serviceHandler;
     private LocationManager locationManager = null;
@@ -204,7 +218,10 @@ public class GnssController extends AController
             public void onGnssMeasurementsReceived(GnssMeasurementsEvent event)
             {
                 gnssRawSupportKnown = true;
-                if (surveyRecordProcessor != null) surveyRecordProcessor.onGnssMeasurements(event);
+                if (handleBatteryOptimization() && surveyRecordProcessor != null)
+                {
+                    surveyRecordProcessor.onGnssMeasurements(event);
+                }
             }
         };
     }
@@ -239,7 +256,23 @@ public class GnssController extends AController
                     {
                         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R)
                         {
-                            locationManager.registerGnssMeasurementsCallback(executorService, measurementListener);
+                            if (gnssScanRateMs <= BATTERY_OPTIMIZATION_SCAN_RATE_THRESHOLD_MS)
+                            {
+                                Timber.i("Registering the normal GNSS measurements listener since the scan rate was frequent enough");
+                                batteryOptimizedGnssMeasurement.set(false);
+                                locationManager.registerGnssMeasurementsCallback(executorService, measurementListener);
+                            } else
+                            {
+                                // If the scan rate is greater than n seconds, then we use the battery optimized
+                                // approach where we continually register and unregister for GNSS measurements.
+                                // We take this approach because once you register for GNSS measurements it returns one
+                                // batch of results every 1 second. Since this is more than we need, and having GNSS
+                                // measurements on drains the battery, we will remove the listener after each batch.
+                                Timber.i("Using the approach of registering and unregistering for GNSS measurements to improve battery life");
+                                batteryOptimizedGnssMeasurement.set(true);
+                                batteryOptimizedScanFuture = pool.scheduleAtFixedRate(this::runOneMeasurement,
+                                        0, gnssScanRateMs, TimeUnit.MILLISECONDS);
+                            }
                         } else
                         {
                             locationManager.registerGnssMeasurementsCallback(measurementListener);
@@ -296,11 +329,19 @@ public class GnssController extends AController
         {
             if (!gnssStarted.getAndSet(false)) return;
 
+            batteryOptimizedMeasurementCount.set(0);
+
             if (locationManager != null)
             {
                 locationManager.unregisterGnssMeasurementsCallback(measurementListener);
                 surveyService.getGpsListener().clearGnssTimeoutCallback();
                 locationManager = null;
+            }
+
+            if (batteryOptimizedScanFuture != null)
+            {
+                batteryOptimizedScanFuture.cancel(true);
+                batteryOptimizedScanFuture = null;
             }
 
             surveyService.updateLocationListener();
@@ -390,5 +431,65 @@ public class GnssController extends AController
         {
             surveyService.getGpsListener().clearGnssTimeoutCallback();
         }
+    }
+
+    /**
+     * Registers for GNSS measurements so that we can get a single batch of measurements. This is
+     * used when the scan rate is greater than n seconds, so that we can save battery life.
+     */
+    private void runOneMeasurement()
+    {
+        synchronized (gnssLoggingEnabled)
+        {
+            boolean hasPermissions = ContextCompat.checkSelfPermission(surveyService,
+                    Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED;
+
+            if (hasPermissions)
+            {
+                batteryOptimizedMeasurementCount.set(0);
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R)
+                {
+                    locationManager.registerGnssMeasurementsCallback(executorService, measurementListener);
+                } else
+                {
+                    locationManager.registerGnssMeasurementsCallback(measurementListener);
+                }
+            } else
+            {
+                Timber.w("Could not run the single GNSS measurement because the app does not have the required permissions");
+            }
+        }
+    }
+
+    /**
+     * If the scan rate is greater than n seconds, then we use the battery optimized approach where we continually
+     * register and unregister for GNSS measurements. We take this approach because once you register for GNSS
+     * measurements it returns one batch of results every 1 second. Since this is more than we need, and having GNSS
+     * measurements on drains the battery, we will remove the listener after each batch. However, the first several
+     * batches of results are not complete as there is a warm up period. So we need to ignore those results. This
+     * method ignores the first 9 batches of results, and then unregisters the listener after the 10th batch. In
+     * practice on a Pixel 8 Pro, the 7th batch of results was the first complete batch.
+     *
+     * @return True if the results are good to be used for sending to listeners.
+     */
+    private boolean handleBatteryOptimization()
+    {
+        if (batteryOptimizedGnssMeasurement.get())
+        {
+            synchronized (gnssLoggingEnabled)
+            {
+                if (batteryOptimizedMeasurementCount.incrementAndGet() >= 10)
+                {
+                    Timber.i("Saw the 10th GNSS measurement; unregistering the GNSS measurements callback to save battery");
+                    locationManager.unregisterGnssMeasurementsCallback(measurementListener);
+                    return true;
+                } else
+                {
+                    return false;
+                }
+            }
+        }
+
+        return true;
     }
 }
