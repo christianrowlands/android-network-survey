@@ -81,7 +81,7 @@
             app:useSimpleSummaryProvider="true" />
 
         <EditTextPreference
-            app:defaultValue="5"
+            app:defaultValue="8"
             app:dialogMessage="@string/wifi_scan_interval_description"
             app:key="wifi_scan_interval_seconds"
             app:title="@string/wifi_scan_interval_title"
@@ -95,7 +95,7 @@
             app:useSimpleSummaryProvider="true" />
 
         <EditTextPreference
-            app:defaultValue="10"
+            app:defaultValue="20"
             app:dialogMessage="@string/gnss_scan_interval_description"
             app:key="gnss_scan_interval_seconds"
             app:title="@string/gnss_scan_interval_title"

@@ -49,14 +49,14 @@
         android:title="@string/mqtt_password_title" />
 
     <restriction
-        android:defaultValue="30"
+        android:defaultValue="5"
         android:description="@string/cellular_scan_interval_description"
         android:key="cellular_scan_interval_seconds"
         android:restrictionType="integer"
         android:title="@string/cellular_scan_interval_title" />
 
     <restriction
-        android:defaultValue="30"
+        android:defaultValue="8"
         android:description="@string/wifi_scan_interval_description"
         android:key="wifi_scan_interval_seconds"
         android:restrictionType="integer"
@@ -70,7 +70,7 @@
         android:title="@string/bluetooth_scan_interval_title" />
 
     <restriction
-        android:defaultValue="30"
+        android:defaultValue="20"
         android:description="@string/gnss_scan_interval_description"
         android:key="gnss_scan_interval_seconds"
         android:restrictionType="integer"
