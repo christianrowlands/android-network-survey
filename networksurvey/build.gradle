@@ -17,8 +17,8 @@ android {
         applicationId "com.craxiom.networksurvey"
         minSdkVersion 26
         targetSdkVersion 34
-        versionCode 52
-        versionName "1.15-SNAPSHOT"
+        versionCode 53
+        versionName "1.15"
         setProperty("archivesBaseName", "$applicationName-$versionName")
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         testInstrumentationRunnerArguments clearPackageData: 'true'
