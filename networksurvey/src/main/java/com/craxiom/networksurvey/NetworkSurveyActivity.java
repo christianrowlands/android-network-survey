@@ -700,7 +700,7 @@ public class NetworkSurveyActivity extends AppCompatActivity
             }
 
             final boolean bluetoothLoggingEnabled = networkSurveyService.isBluetoothLoggingEnabled();
-            if (turnOnBluetoothLoggingOnNextServiceConnection && !wifiLoggingEnabled)
+            if (turnOnBluetoothLoggingOnNextServiceConnection && !bluetoothLoggingEnabled)
             {
                 toggleBluetoothLogging(true);
             }
