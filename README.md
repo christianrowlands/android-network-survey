@@ -46,9 +46,8 @@ requires the full SMS permission, and Google Play won\'t approve publishing Netw
 Play Store if it requests the SMS permission. If you are interested in a CDR logger that supports
 SMS events and logging the "other" phone number for call events, you can install the app from the
 source code in this repo, or if you prefer a pre-built apk you can get the latest APK by navigating
-to the GitHub Actions page, clicking on the latest successful action run, and then scrolling all
-the way to the bottom and click on "Network Survey CDR Debug APK" or "Network Survey Regular Release
-APK".
+to the [GitHub Releases page](https://github.com/christianrowlands/android-network-survey/releases), 
+and then downloading the "*cdr-release.apk" under the latest release.
 
 ## Tracking And Privacy
 
