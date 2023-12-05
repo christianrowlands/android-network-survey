@@ -21,6 +21,7 @@ public class LteCsvConstants extends CellularCsvConstants
     public static final String RSRP = "rsrp";
     public static final String RSRQ = "rsrq";
     public static final String TA = "ta";
-    public static final String SIGNAL_STRENGTH = "signalStrength";
     public static final String LTE_BANDWIDTH = "lteBandwidth";
+    public static final String SIGNAL_STRENGTH = "signalStrength";
+    public static final String CQI = "cqi";
 }

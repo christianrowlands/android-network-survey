@@ -30,4 +30,5 @@ public class WifiCsvConstants extends CellularCsvConstants
     public static final String SNR = "snr";
     public static final String NODE_TYPE = "nodeType";
     public static final String STANDARD = "standard";
+    public static final String PASSPOINT = "passpoint";
 }

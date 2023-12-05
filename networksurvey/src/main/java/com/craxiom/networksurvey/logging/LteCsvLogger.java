@@ -4,6 +4,7 @@ import static com.craxiom.networksurvey.constants.csv.CellularCsvConstants.SERVI
 import static com.craxiom.networksurvey.constants.csv.CsvConstants.SPEED;
 import static com.craxiom.networksurvey.constants.csv.LteCsvConstants.ACCURACY;
 import static com.craxiom.networksurvey.constants.csv.LteCsvConstants.ALTITUDE;
+import static com.craxiom.networksurvey.constants.csv.LteCsvConstants.CQI;
 import static com.craxiom.networksurvey.constants.csv.LteCsvConstants.DEVICE_TIME;
 import static com.craxiom.networksurvey.constants.csv.LteCsvConstants.EARFCN;
 import static com.craxiom.networksurvey.constants.csv.LteCsvConstants.ECI;
@@ -19,6 +20,7 @@ import static com.craxiom.networksurvey.constants.csv.LteCsvConstants.PROVIDER;
 import static com.craxiom.networksurvey.constants.csv.LteCsvConstants.RECORD_NUMBER;
 import static com.craxiom.networksurvey.constants.csv.LteCsvConstants.RSRP;
 import static com.craxiom.networksurvey.constants.csv.LteCsvConstants.RSRQ;
+import static com.craxiom.networksurvey.constants.csv.LteCsvConstants.SIGNAL_STRENGTH;
 import static com.craxiom.networksurvey.constants.csv.LteCsvConstants.TA;
 import static com.craxiom.networksurvey.constants.csv.LteCsvConstants.TAC;
 
@@ -51,13 +53,13 @@ public class LteCsvLogger extends CsvRecordLogger implements ICellularSurveyReco
     {
         return new String[]{DEVICE_TIME, LATITUDE, LONGITUDE, ALTITUDE, SPEED, ACCURACY,
                 MISSION_ID, RECORD_NUMBER, GROUP_NUMBER,
-                MCC, MNC, TAC, ECI, EARFCN, PCI, RSRP, RSRQ, TA, SERVING_CELL, LTE_BANDWIDTH, PROVIDER};
+                MCC, MNC, TAC, ECI, EARFCN, PCI, RSRP, RSRQ, TA, SERVING_CELL, LTE_BANDWIDTH, PROVIDER, SIGNAL_STRENGTH, CQI};
     }
 
     @Override
     String[] getHeaderComments()
     {
-        return new String[]{"CSV Version=0.1.0"};
+        return new String[]{"CSV Version=0.2.0"};
     }
 
     @Override
@@ -103,6 +105,9 @@ public class LteCsvLogger extends CsvRecordLogger implements ICellularSurveyReco
                 data.hasTa() ? String.valueOf(data.getTa().getValue()) : "",
                 data.hasServingCell() ? String.valueOf(data.getServingCell().getValue()) : "",
                 lteBandwidth == LteBandwidth.UNRECOGNIZED ? "" : lteBandwidth.name(),
-                data.getProvider()};
+                data.getProvider(),
+                data.hasSignalStrength() ? String.valueOf(data.getSignalStrength().getValue()) : "",
+                data.hasCqi() ? String.valueOf(data.getCqi().getValue()) : "",
+        };
     }
 }

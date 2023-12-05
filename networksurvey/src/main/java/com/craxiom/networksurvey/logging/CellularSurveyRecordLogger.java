@@ -19,6 +19,7 @@ import com.craxiom.networksurvey.constants.MessageConstants;
 import com.craxiom.networksurvey.constants.NetworkSurveyConstants;
 import com.craxiom.networksurvey.constants.NrMessageConstants;
 import com.craxiom.networksurvey.constants.UmtsMessageConstants;
+import com.craxiom.networksurvey.constants.csv.LteCsvConstants;
 import com.craxiom.networksurvey.listeners.ICellularSurveyRecordListener;
 import com.craxiom.networksurvey.services.NetworkSurveyService;
 import com.craxiom.networksurvey.util.IOUtils;
@@ -190,8 +191,10 @@ public class CellularSurveyRecordLogger extends SurveyRecordLogger implements IC
             tableColumns.add(FeatureColumn.createColumn(columnNumber++, LteMessageConstants.RSRP_COLUMN, GeoPackageDataType.FLOAT, false, null));
             tableColumns.add(FeatureColumn.createColumn(columnNumber++, LteMessageConstants.RSRQ_COLUMN, GeoPackageDataType.FLOAT, false, null));
             tableColumns.add(FeatureColumn.createColumn(columnNumber++, LteMessageConstants.TA_COLUMN, GeoPackageDataType.SMALLINT, false, null));
-            //noinspection UnusedAssignment
             tableColumns.add(FeatureColumn.createColumn(columnNumber++, LteMessageConstants.BANDWIDTH_COLUMN, GeoPackageDataType.TEXT, false, null));
+            tableColumns.add(FeatureColumn.createColumn(columnNumber++, LteCsvConstants.SIGNAL_STRENGTH, GeoPackageDataType.FLOAT, false, null));
+            //noinspection UnusedAssignment
+            tableColumns.add(FeatureColumn.createColumn(columnNumber++, LteCsvConstants.CQI, GeoPackageDataType.SMALLINT, false, null));
         });
     }
 
@@ -602,6 +605,15 @@ public class CellularSurveyRecordLogger extends SurveyRecordLogger implements IC
                         if (!provider.isEmpty())
                         {
                             row.setValue(LteMessageConstants.PROVIDER_COLUMN, provider);
+                        }
+
+                        if (data.hasSignalStrength())
+                        {
+                            row.setValue(LteCsvConstants.SIGNAL_STRENGTH, data.getSignalStrength().getValue());
+                        }
+                        if (data.hasCqi())
+                        {
+                            row.setValue(LteCsvConstants.CQI, data.getCqi().getValue());
                         }
 
                         setLteBandwidth(row, data.getLteBandwidth());

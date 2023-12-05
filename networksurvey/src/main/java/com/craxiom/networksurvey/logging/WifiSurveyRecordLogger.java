@@ -7,6 +7,7 @@ import com.craxiom.messaging.wifi.CipherSuite;
 import com.craxiom.messaging.wifi.EncryptionType;
 import com.craxiom.networksurvey.constants.NetworkSurveyConstants;
 import com.craxiom.networksurvey.constants.WifiBeaconMessageConstants;
+import com.craxiom.networksurvey.constants.csv.WifiCsvConstants;
 import com.craxiom.networksurvey.listeners.IWifiSurveyRecordListener;
 import com.craxiom.networksurvey.model.WifiRecordWrapper;
 import com.craxiom.networksurvey.services.NetworkSurveyService;
@@ -75,8 +76,9 @@ public class WifiSurveyRecordLogger extends SurveyRecordLogger implements IWifiS
             tableColumns.add(FeatureColumn.createColumn(columnNumber++, WifiBeaconMessageConstants.AKM_SUITES_COLUMN, GeoPackageDataType.TEXT, false, null));
             tableColumns.add(FeatureColumn.createColumn(columnNumber++, WifiBeaconMessageConstants.ENCRYPTION_TYPE_COLUMN, GeoPackageDataType.TEXT, false, null));
             tableColumns.add(FeatureColumn.createColumn(columnNumber++, WifiBeaconMessageConstants.WPS_COLUMN, GeoPackageDataType.BOOLEAN, false, null));
-            //noinspection UnusedAssignment
             tableColumns.add(FeatureColumn.createColumn(columnNumber++, WifiBeaconMessageConstants.SIGNAL_STRENGTH_COLUMN, GeoPackageDataType.FLOAT, false, null));
+            //noinspection UnusedAssignment
+            tableColumns.add(FeatureColumn.createColumn(columnNumber++, WifiCsvConstants.PASSPOINT, GeoPackageDataType.BOOLEAN, false, null));
         });
     }
 
@@ -154,6 +156,11 @@ public class WifiSurveyRecordLogger extends SurveyRecordLogger implements IWifiS
                         if (data.hasWps())
                         {
                             row.setValue(WifiBeaconMessageConstants.WPS_COLUMN, data.getWps().getValue());
+                        }
+
+                        if (data.hasPasspoint())
+                        {
+                            row.setValue(WifiCsvConstants.PASSPOINT, data.getPasspoint().getValue());
                         }
 
                         final List<CipherSuite> cipherSuitesList = data.getCipherSuitesList();

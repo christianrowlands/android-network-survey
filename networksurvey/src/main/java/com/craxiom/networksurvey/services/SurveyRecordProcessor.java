@@ -1172,6 +1172,13 @@ public class SurveyRecordProcessor
         final int rsrp = cellSignalStrengthLte.getRsrp();
         final int rsrq = cellSignalStrengthLte.getRsrq();
         final int timingAdvance = cellSignalStrengthLte.getTimingAdvance();
+        final int cqi = cellSignalStrengthLte.getCqi();
+
+        int rssi = Integer.MAX_VALUE;
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q)
+        {
+            rssi = cellSignalStrengthLte.getRssi();
+        }
 
         // Validate that the required fields are present before proceeding further
         if (!validateLteFields(earfcn, pci, rsrp)) return null;
@@ -1230,6 +1237,17 @@ public class SurveyRecordProcessor
         if (timingAdvance != Integer.MAX_VALUE)
         {
             dataBuilder.setTa(Int32Value.newBuilder().setValue(timingAdvance).build());
+        }
+        if (rssi != Integer.MAX_VALUE)
+        {
+            dataBuilder.setSignalStrength(FloatValue.newBuilder().setValue(rssi).build());
+        }
+
+        // A CQI of 0 is considered "out of range" per 3GPP TS 36.213, and Android will return 0 for
+        // neighbor cells.
+        if (cqi != Integer.MAX_VALUE && cqi != 0)
+        {
+            dataBuilder.setCqi(Int32Value.newBuilder().setValue(cqi).build());
         }
 
         setBandwidth(dataBuilder, cellIdentity);
