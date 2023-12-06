@@ -15,6 +15,8 @@
 The Network Survey Android App provides a basic survey capability for Cellular networks, Wi-Fi
 networks, Bluetooth Devices, and GNSS constellations.
 
+The Network Survey user manual can be found [here](https://networksurvey.app/manual).
+
 For cellular data, in its current state it can be used to examine the network details of the current
 serving cell, and log GSM, CDMA, UMTS, LTE, and NR records to a GeoPackage file. Wi-Fi survey
 records can also be logged to a GeoPackage file, and the current list of Wi-Fi networks in range is
