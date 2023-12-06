@@ -18,6 +18,11 @@
             android:title="@string/mqtt_connection_title_full" />
 
         <item
+            android:id="@+id/calculators_fragment"
+            android:icon="@drawable/ic_calculator"
+            android:title="@string/cellular_calculators" />
+
+        <item
             android:id="@+id/settings_fragment"
             android:icon="@drawable/ic_settings"
             android:title="@string/settings" />

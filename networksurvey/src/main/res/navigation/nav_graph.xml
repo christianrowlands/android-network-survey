@@ -43,6 +43,11 @@
     </fragment>
 
     <fragment
+        android:id="@+id/calculators_fragment"
+        android:name="com.craxiom.networksurvey.fragments.CalculatorFragment"
+        android:label="@string/cellular_calculators" />
+
+    <fragment
         android:id="@+id/settings_fragment"
         android:name="com.craxiom.networksurvey.fragments.SettingsFragment"
         android:label="@string/settings" />
