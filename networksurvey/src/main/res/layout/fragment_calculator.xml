@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
+    xmlns:card_view="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
@@ -17,78 +18,112 @@
             android:id="@+id/cell_id_calculator_card_view"
             style="?attr/cardStyle"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content">
+            android:layout_height="wrap_content"
+            card_view:contentPadding="0dp">
 
             <LinearLayout
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="@dimen/calculator_margin"
-                android:layout_marginEnd="@dimen/calculator_margin"
-                android:layout_marginBottom="@dimen/calculator_margin"
-                android:gravity="top"
+                android:layout_height="match_parent"
                 android:orientation="vertical">
 
-                <com.google.android.material.textfield.TextInputLayout
-                    android:id="@+id/lteCalculatorCellIdTextInputLayout"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:autofillHints="Enter in an LTE Cell ID"
-                    android:hint="@string/lte_cell_id_label">
-
-                    <com.google.android.material.textfield.TextInputEditText
-                        android:id="@+id/lteCalculatorCellId"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:autofillHints="Enter in the LTE Cell Id to calculate the eNodeB ID for."
-                        android:importantForAutofill="no"
-                        android:inputType="number"
-                        android:maxLines="1" />
-
-                </com.google.android.material.textfield.TextInputLayout>
-
                 <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="@dimen/calculator_margin"
-                    android:gravity="top"
+                    android:layout_width="fill_parent"
+                    android:layout_height="match_parent"
+                    android:background="@drawable/card_title"
+                    android:padding="3dp"
+                    android:layout_marginBottom="3dp"
                     android:orientation="horizontal">
 
-                    <TextView
-                        android:id="@+id/calculatedEnbId"
-                        style="@style/LabelStyle"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="@string/enb_id_label"
-                        android:textAppearance="@style/LabelText" />
+                    <ImageView
+                        android:id="@+id/cellular_tower_icon"
+                        android:layout_width="16dp"
+                        android:layout_height="16dp"
+                        android:layout_gravity="center"
+                        android:layout_marginStart="@dimen/small_margin"
+                        android:layout_marginEnd="@dimen/small_margin"
+                        android:contentDescription="@string/cellular_icon_description"
+                        android:src="@drawable/ic_cellular" />
 
                     <TextView
-                        android:id="@+id/calculatedEnbIdValue"
-                        android:layout_width="150dp"
+                        style="@style/CardTitleStyle"
+                        android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:text=""
-                        android:textAppearance="@style/ValueText" />
+                        android:text="@string/lte_cell_id_to_enodeb_title" />
+
                 </LinearLayout>
 
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginStart="@dimen/calculator_margin"
-                    android:orientation="horizontal">
+                    android:layout_marginEnd="@dimen/calculator_margin"
+                    android:layout_marginBottom="@dimen/calculator_margin"
+                    android:gravity="top"
+                    android:orientation="vertical">
 
-                    <TextView
-                        android:id="@+id/calculatedSectorId"
-                        style="@style/LabelStyle"
-                        android:layout_width="wrap_content"
+                    <com.google.android.material.textfield.TextInputLayout
+                        android:id="@+id/lteCalculatorCellIdTextInputLayout"
+                        android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:text="@string/sector_id_label"
-                        android:textAppearance="@style/LabelText" />
+                        android:autofillHints="Enter in an LTE Cell ID"
+                        android:hint="@string/lte_cell_id_label">
 
-                    <TextView
-                        android:id="@+id/calculatedSectorIdValue"
-                        android:layout_width="150dp"
+                        <com.google.android.material.textfield.TextInputEditText
+                            android:id="@+id/lteCalculatorCellId"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:autofillHints="Enter in the LTE Cell Id to calculate the eNodeB ID for."
+                            android:importantForAutofill="no"
+                            android:inputType="number"
+                            android:maxLines="1" />
+
+                    </com.google.android.material.textfield.TextInputLayout>
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:text=""
-                        android:textAppearance="@style/ValueText" />
+                        android:layout_marginStart="@dimen/calculator_margin"
+                        android:gravity="top"
+                        android:orientation="horizontal">
+
+                        <TextView
+                            android:id="@+id/calculatedEnbId"
+                            style="@style/LabelStyle"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="@string/enb_id_label"
+                            android:textAppearance="@style/LabelText" />
+
+                        <TextView
+                            android:id="@+id/calculatedEnbIdValue"
+                            android:layout_width="150dp"
+                            android:layout_height="wrap_content"
+                            android:text=""
+                            android:textAppearance="@style/ValueText" />
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="@dimen/calculator_margin"
+                        android:orientation="horizontal">
+
+                        <TextView
+                            android:id="@+id/calculatedSectorId"
+                            style="@style/LabelStyle"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="@string/sector_id_label"
+                            android:textAppearance="@style/LabelText" />
+
+                        <TextView
+                            android:id="@+id/calculatedSectorIdValue"
+                            android:layout_width="150dp"
+                            android:layout_height="wrap_content"
+                            android:text=""
+                            android:textAppearance="@style/ValueText" />
+                    </LinearLayout>
+
                 </LinearLayout>
 
             </LinearLayout>
@@ -103,79 +138,112 @@
             android:id="@+id/pci_calculator_card_view"
             style="?attr/cardStyle"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content">
+            android:layout_height="wrap_content"
+            card_view:contentPadding="0dp">
 
             <LinearLayout
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="@dimen/calculator_margin"
-                android:layout_marginEnd="@dimen/calculator_margin"
-                android:layout_marginBottom="@dimen/calculator_margin"
-                android:gravity="top"
+                android:layout_height="match_parent"
                 android:orientation="vertical">
 
-                <com.google.android.material.textfield.TextInputLayout
-                    android:id="@+id/lteCalculatorPciTextInputLayout"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:autofillHints="Enter in an LTE PCI to calculate the PSS and SSS for."
-                    android:hint="@string/lte_pci_label">
-
-                    <com.google.android.material.textfield.TextInputEditText
-                        android:id="@+id/lteCalculatorPci"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:autofillHints="Enter in the LTE PCI to calculate the PSS and SSS for."
-                        android:importantForAutofill="no"
-                        android:inputType="number"
-                        android:maxLines="1" />
-
-                </com.google.android.material.textfield.TextInputLayout>
-
                 <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="@dimen/calculator_margin"
-                    android:gravity="top"
+                    android:layout_width="fill_parent"
+                    android:layout_height="match_parent"
+                    android:background="@drawable/card_title"
+                    android:padding="3dp"
+                    android:layout_marginBottom="3dp"
                     android:orientation="horizontal">
 
-                    <TextView
-                        android:id="@+id/calculatedPss"
-                        style="@style/LabelStyle"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="@string/pss_label"
-                        android:textAppearance="@style/LabelText" />
+                    <ImageView
+                        android:layout_width="16dp"
+                        android:layout_height="16dp"
+                        android:layout_gravity="center"
+                        android:layout_marginStart="@dimen/small_margin"
+                        android:layout_marginEnd="@dimen/small_margin"
+                        android:contentDescription="@string/cellular_icon_description"
+                        android:src="@drawable/ic_cellular" />
 
                     <TextView
-                        android:id="@+id/calculatedPssValue"
-                        android:layout_width="150dp"
+                        style="@style/CardTitleStyle"
+                        android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:text=""
-                        android:textAppearance="@style/ValueText" />
+                        android:text="@string/lte_pci_to_pss_sss_title" />
+
                 </LinearLayout>
 
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginStart="@dimen/calculator_margin"
+                    android:layout_marginEnd="@dimen/calculator_margin"
+                    android:layout_marginBottom="@dimen/calculator_margin"
                     android:gravity="top"
-                    android:orientation="horizontal">
+                    android:orientation="vertical">
 
-                    <TextView
-                        android:id="@+id/calculatedSss"
-                        style="@style/LabelStyle"
-                        android:layout_width="wrap_content"
+                    <com.google.android.material.textfield.TextInputLayout
+                        android:id="@+id/lteCalculatorPciTextInputLayout"
+                        android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:text="@string/sss_label"
-                        android:textAppearance="@style/LabelText" />
+                        android:autofillHints="Enter in an LTE PCI to calculate the PSS and SSS for."
+                        android:hint="@string/lte_pci_label">
 
-                    <TextView
-                        android:id="@+id/calculatedSssValue"
-                        android:layout_width="150dp"
+                        <com.google.android.material.textfield.TextInputEditText
+                            android:id="@+id/lteCalculatorPci"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:autofillHints="Enter in the LTE PCI to calculate the PSS and SSS for."
+                            android:importantForAutofill="no"
+                            android:inputType="number"
+                            android:maxLines="1" />
+
+                    </com.google.android.material.textfield.TextInputLayout>
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:text=""
-                        android:textAppearance="@style/ValueText" />
+                        android:layout_marginStart="@dimen/calculator_margin"
+                        android:gravity="top"
+                        android:orientation="horizontal">
+
+                        <TextView
+                            android:id="@+id/calculatedPss"
+                            style="@style/LabelStyle"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="@string/pss_label"
+                            android:textAppearance="@style/LabelText" />
+
+                        <TextView
+                            android:id="@+id/calculatedPssValue"
+                            android:layout_width="150dp"
+                            android:layout_height="wrap_content"
+                            android:text=""
+                            android:textAppearance="@style/ValueText" />
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="@dimen/calculator_margin"
+                        android:gravity="top"
+                        android:orientation="horizontal">
+
+                        <TextView
+                            android:id="@+id/calculatedSss"
+                            style="@style/LabelStyle"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="@string/sss_label"
+                            android:textAppearance="@style/LabelText" />
+
+                        <TextView
+                            android:id="@+id/calculatedSssValue"
+                            android:layout_width="150dp"
+                            android:layout_height="wrap_content"
+                            android:text=""
+                            android:textAppearance="@style/ValueText" />
+                    </LinearLayout>
+
                 </LinearLayout>
 
             </LinearLayout>
@@ -187,56 +255,89 @@
             android:id="@+id/lte_band_calculator_card_view"
             style="?attr/cardStyle"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content">
+            android:layout_height="wrap_content"
+            card_view:contentPadding="0dp">
 
             <LinearLayout
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="@dimen/calculator_margin"
-                android:layout_marginEnd="@dimen/calculator_margin"
-                android:layout_marginBottom="@dimen/calculator_margin"
-                android:gravity="top"
+                android:layout_height="match_parent"
                 android:orientation="vertical">
 
-                <com.google.android.material.textfield.TextInputLayout
-                    android:id="@+id/lteCalculatorEarfcnTextInputLayout"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:autofillHints="Enter in an LTE EARFCN"
-                    android:hint="@string/lte_earfcn_label">
+                <LinearLayout
+                    android:layout_width="fill_parent"
+                    android:layout_height="match_parent"
+                    android:background="@drawable/card_title"
+                    android:padding="3dp"
+                    android:layout_marginBottom="3dp"
+                    android:orientation="horizontal">
 
-                    <com.google.android.material.textfield.TextInputEditText
-                        android:id="@+id/lteCalculatorEarfcn"
+                    <ImageView
+                        android:layout_width="16dp"
+                        android:layout_height="16dp"
+                        android:layout_gravity="center"
+                        android:layout_marginStart="@dimen/small_margin"
+                        android:layout_marginEnd="@dimen/small_margin"
+                        android:contentDescription="@string/cellular_icon_description"
+                        android:src="@drawable/ic_cellular" />
+
+                    <TextView
+                        style="@style/CardTitleStyle"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:autofillHints="Enter in the LTE PCI to calculate the PSS and SSS for"
-                        android:importantForAutofill="no"
-                        android:inputType="number"
-                        android:maxLines="1" />
+                        android:text="@string/lte_earfcn_to_band_title" />
 
-                </com.google.android.material.textfield.TextInputLayout>
+                </LinearLayout>
 
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginStart="@dimen/calculator_margin"
+                    android:layout_marginEnd="@dimen/calculator_margin"
+                    android:layout_marginBottom="@dimen/calculator_margin"
                     android:gravity="top"
-                    android:orientation="horizontal">
+                    android:orientation="vertical">
 
-                    <TextView
-                        android:id="@+id/calculatedBand"
-                        style="@style/LabelStyle"
-                        android:layout_width="wrap_content"
+                    <com.google.android.material.textfield.TextInputLayout
+                        android:id="@+id/lteCalculatorEarfcnTextInputLayout"
+                        android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:text="@string/band_label"
-                        android:textAppearance="@style/LabelText" />
+                        android:autofillHints="Enter in an LTE EARFCN"
+                        android:hint="@string/lte_earfcn_label">
 
-                    <TextView
-                        android:id="@+id/calculatedBandValue"
-                        android:layout_width="150dp"
+                        <com.google.android.material.textfield.TextInputEditText
+                            android:id="@+id/lteCalculatorEarfcn"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:autofillHints="Enter in the LTE PCI to calculate the PSS and SSS for"
+                            android:importantForAutofill="no"
+                            android:inputType="number"
+                            android:maxLines="1" />
+
+                    </com.google.android.material.textfield.TextInputLayout>
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:text=""
-                        android:textAppearance="@style/ValueText" />
+                        android:layout_marginStart="@dimen/calculator_margin"
+                        android:gravity="top"
+                        android:orientation="horizontal">
+
+                        <TextView
+                            android:id="@+id/calculatedBand"
+                            style="@style/LabelStyle"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="@string/band_label"
+                            android:textAppearance="@style/LabelText" />
+
+                        <TextView
+                            android:id="@+id/calculatedBandValue"
+                            android:layout_width="150dp"
+                            android:layout_height="wrap_content"
+                            android:text=""
+                            android:textAppearance="@style/ValueText" />
+                    </LinearLayout>
+
                 </LinearLayout>
 
             </LinearLayout>
