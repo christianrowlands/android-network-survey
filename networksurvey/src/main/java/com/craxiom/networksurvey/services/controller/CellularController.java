@@ -9,6 +9,8 @@ import android.os.Looper;
 import android.telephony.CellInfo;
 import android.telephony.PhoneStateListener;
 import android.telephony.ServiceState;
+import android.telephony.SubscriptionInfo;
+import android.telephony.SubscriptionManager;
 import android.telephony.TelephonyManager;
 
 import androidx.annotation.NonNull;
@@ -29,7 +31,10 @@ import com.craxiom.networksurvey.services.NetworkSurveyService;
 import com.craxiom.networksurvey.services.SurveyRecordProcessor;
 import com.craxiom.networksurvey.util.PreferenceUtils;
 
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -43,6 +48,7 @@ import timber.log.Timber;
 public class CellularController extends AController
 {
     private static final int PING_RATE_MS = 10_000;
+    private static final int DEFAULT_SUBSCRIPTION_ID = Integer.MAX_VALUE; // AKA SubscriptionManager.DEFAULT_SUBSCRIPTION_ID
     private final AtomicBoolean cellularScanningActive = new AtomicBoolean(false);
 
     private final AtomicBoolean cellularLoggingEnabled = new AtomicBoolean(false);
@@ -54,6 +60,11 @@ public class CellularController extends AController
 
     private volatile int cellularScanRateMs;
 
+    private final List<TelephonyManagerWrapper> telephonyManagerList = new ArrayList<>();
+    private final Map<Integer, TelephonyManager.CellInfoCallback> cellInfoCallbackMap = new HashMap<>();
+    private List<SubscriptionInfo> activeSubscriptionInfoList = new ArrayList<>();
+    private int simCount = 0;
+
     private final CellularSurveyRecordLogger cellularSurveyRecordLogger;
     private final PhoneStateRecordLogger phoneStateRecordLogger;
     private final NrCsvLogger nrCsvLogger;
@@ -61,7 +72,6 @@ public class CellularController extends AController
     private final UmtsCsvLogger umtsCsvLogger;
     private final CdmaCsvLogger cdmaCsvLogger;
     private final GsmCsvLogger gsmCsvLogger;
-    private TelephonyManager.CellInfoCallback cellInfoCallback;
     private PhoneStateListener phoneStateListener;
 
     public CellularController(NetworkSurveyService surveyService, ExecutorService executorService,
@@ -324,31 +334,54 @@ public class CellularController extends AController
             return;
         }
 
+        SubscriptionManager subscriptionManager = SubscriptionManager.from(surveyService.getApplicationContext());
+        if (ActivityCompat.checkSelfPermission(surveyService, Manifest.permission.READ_PHONE_STATE) == PackageManager.PERMISSION_GRANTED)
+        {
+            activeSubscriptionInfoList = subscriptionManager.getActiveSubscriptionInfoList();
+            simCount = activeSubscriptionInfoList.size();
+            Timber.i("Found %s active SIMs", simCount);
+
+            for (SubscriptionInfo subscriptionInfo : activeSubscriptionInfoList)
+            {
+                int subId = subscriptionInfo.getSubscriptionId();
+                telephonyManagerList.add(new TelephonyManagerWrapper(telephonyManager.createForSubscriptionId(subId), subId));
+            }
+        } else
+        {
+            Timber.e("Unable to get access to the Subscription Manager. Can't get survey information from other SIMs");
+            telephonyManagerList.add(new TelephonyManagerWrapper(telephonyManager, DEFAULT_SUBSCRIPTION_ID));
+        }
+
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q)
         {
-            cellInfoCallback = new TelephonyManager.CellInfoCallback()
+            for (TelephonyManagerWrapper wrapper : telephonyManagerList)
             {
-                @Override
-                public void onCellInfo(@NonNull List<CellInfo> cellInfo)
+                cellInfoCallbackMap.put(wrapper.getSubscriptionId(), new TelephonyManager.CellInfoCallback()
                 {
-                    String dataNetworkType = "Unknown";
-                    String voiceNetworkType = "Unknown";
-                    if (ActivityCompat.checkSelfPermission(surveyService, Manifest.permission.READ_PHONE_STATE) == PackageManager.PERMISSION_GRANTED)
+                    final int subscriptionId = wrapper.getSubscriptionId();
+
+                    @Override
+                    public void onCellInfo(@NonNull List<CellInfo> cellInfo)
                     {
-                        dataNetworkType = CalculationUtils.getNetworkType(telephonyManager.getDataNetworkType());
-                        voiceNetworkType = CalculationUtils.getNetworkType(telephonyManager.getVoiceNetworkType());
+                        String dataNetworkType = "Unknown";
+                        String voiceNetworkType = "Unknown";
+                        if (ActivityCompat.checkSelfPermission(surveyService, Manifest.permission.READ_PHONE_STATE) == PackageManager.PERMISSION_GRANTED)
+                        {
+                            dataNetworkType = CalculationUtils.getNetworkType(wrapper.getTelephonyManager().getDataNetworkType());
+                            voiceNetworkType = CalculationUtils.getNetworkType(wrapper.getTelephonyManager().getVoiceNetworkType());
+                        }
+
+                        surveyRecordProcessor.onCellInfoUpdate(cellInfo, dataNetworkType, voiceNetworkType, subscriptionId);
                     }
 
-                    surveyRecordProcessor.onCellInfoUpdate(cellInfo, dataNetworkType, voiceNetworkType);
-                }
-
-                @Override
-                public void onError(int errorCode, @Nullable Throwable detail)
-                {
-                    super.onError(errorCode, detail);
-                    Timber.w(detail, "Received an error from the Telephony Manager when requesting a cell info update; errorCode=%s", errorCode);
-                }
-            };
+                    @Override
+                    public void onError(int errorCode, @Nullable Throwable detail)
+                    {
+                        super.onError(errorCode, detail);
+                        Timber.w(detail, "Received an error from the Telephony Manager when requesting a cell info update; errorCode=%s", errorCode);
+                    }
+                });
+            }
         }
     }
 
@@ -373,15 +406,30 @@ public class CellularController extends AController
             {
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q)
                 {
-                    telephonyManager.requestCellInfoUpdate(executorService, cellInfoCallback);
+                    for (TelephonyManagerWrapper wrapper : telephonyManagerList)
+                    {
+                        TelephonyManager.CellInfoCallback callback = cellInfoCallbackMap.get(wrapper.getSubscriptionId());
+                        if (callback != null)
+                        {
+                            wrapper.getTelephonyManager().requestCellInfoUpdate(executorService, callback);
+                        } else
+                        {
+                            Timber.wtf("Could not find the callback for the subscription ID %s", wrapper.getSubscriptionId());
+                        }
+                    }
                 } else
                 {
                     execute(() -> {
                         try
                         {
-                            surveyRecordProcessor.onCellInfoUpdate(telephonyManager.getAllCellInfo(),
-                                    CalculationUtils.getNetworkType(telephonyManager.getDataNetworkType()),
-                                    CalculationUtils.getNetworkType(telephonyManager.getVoiceNetworkType()));
+                            for (TelephonyManagerWrapper wrapper : telephonyManagerList)
+                            {
+                                TelephonyManager subscriptionTelephonyManager = wrapper.getTelephonyManager();
+                                surveyRecordProcessor.onCellInfoUpdate(subscriptionTelephonyManager.getAllCellInfo(),
+                                        CalculationUtils.getNetworkType(subscriptionTelephonyManager.getDataNetworkType()),
+                                        CalculationUtils.getNetworkType(subscriptionTelephonyManager.getVoiceNetworkType()),
+                                        wrapper.getSubscriptionId());
+                            }
                         } catch (Throwable t)
                         {
                             Timber.e(t, "Something went wrong when trying to get the cell info for a single scan");
@@ -431,15 +479,30 @@ public class CellularController extends AController
 
                         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q)
                         {
-                            telephonyManager.requestCellInfoUpdate(executorService, cellInfoCallback);
+                            for (TelephonyManagerWrapper wrapper : telephonyManagerList)
+                            {
+                                TelephonyManager.CellInfoCallback callback = cellInfoCallbackMap.get(wrapper.getSubscriptionId());
+                                if (callback != null)
+                                {
+                                    wrapper.getTelephonyManager().requestCellInfoUpdate(executorService, callback);
+                                } else
+                                {
+                                    Timber.wtf("Could not find the callback for the subscription ID %s", wrapper.getSubscriptionId());
+                                }
+                            }
                         } else
                         {
                             execute(() -> {
                                 try
                                 {
-                                    surveyRecordProcessor.onCellInfoUpdate(telephonyManager.getAllCellInfo(),
-                                            CalculationUtils.getNetworkType(telephonyManager.getDataNetworkType()),
-                                            CalculationUtils.getNetworkType(telephonyManager.getVoiceNetworkType()));
+                                    for (TelephonyManagerWrapper wrapper : telephonyManagerList)
+                                    {
+                                        TelephonyManager subscriptionTelephonyManager = wrapper.getTelephonyManager();
+                                        surveyRecordProcessor.onCellInfoUpdate(subscriptionTelephonyManager.getAllCellInfo(),
+                                                CalculationUtils.getNetworkType(subscriptionTelephonyManager.getDataNetworkType()),
+                                                CalculationUtils.getNetworkType(subscriptionTelephonyManager.getVoiceNetworkType()),
+                                                wrapper.getSubscriptionId());
+                                    }
                                 } catch (Throwable t)
                                 {
                                     Timber.e(t, "Failed to pass the cellular info to the survey record processor");

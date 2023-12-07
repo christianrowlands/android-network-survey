@@ -88,10 +88,14 @@ import java.util.concurrent.atomic.AtomicInteger;
 import timber.log.Timber;
 
 /**
- * This service is responsible for getting access to the Android {@link TelephonyManager} and periodically getting the
- * list of cellular towers the phone can see.  It then notifies any listeners of the cellular survey records.
+ * This service is the main service for Network Survey. It is responsible for initializing all of
+ * the controllers and any other resources that is needed to conduct a survey. When the user
+ * performs any actions such as toggling on logging or creating an MQTT connection this is the
+ * service that handles dispatching those requests to the appropriate controller.
  * <p>
- * It also handles starting the MQTT broker connection if connection information is present.
+ * This service also handles performing any actions that need to be done when the application is
+ * started at boot. For example, if the user has enabled auto start logging, then this service will
+ * start the logging when the application is started at boot.
  *
  * @since 0.0.9
  */

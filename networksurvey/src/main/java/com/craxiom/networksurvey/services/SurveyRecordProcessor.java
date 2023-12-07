@@ -390,7 +390,7 @@ public class SurveyRecordProcessor
      * @param dataNetworkType  The data network type (e.g. "LTE"), which might be different than the voice network type.
      * @param voiceNetworkType The voice network type (e.g. "LTE").
      */
-    public void onCellInfoUpdate(List<CellInfo> allCellInfo, String dataNetworkType, String voiceNetworkType) throws SecurityException
+    public void onCellInfoUpdate(List<CellInfo> allCellInfo, String dataNetworkType, String voiceNetworkType, int subId) throws SecurityException
     {
         // synchronized to make sure that we are only processing one list of Cell Info objects at a time.
         synchronized (cellInfoProcessingLock)
