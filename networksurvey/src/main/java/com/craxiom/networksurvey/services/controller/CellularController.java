@@ -32,6 +32,7 @@ import com.craxiom.networksurvey.services.SurveyRecordProcessor;
 import com.craxiom.networksurvey.util.PreferenceUtils;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -48,7 +49,7 @@ import timber.log.Timber;
 public class CellularController extends AController
 {
     private static final int PING_RATE_MS = 10_000;
-    private static final int DEFAULT_SUBSCRIPTION_ID = Integer.MAX_VALUE; // AKA SubscriptionManager.DEFAULT_SUBSCRIPTION_ID
+    public static final int DEFAULT_SUBSCRIPTION_ID = Integer.MAX_VALUE; // AKA SubscriptionManager.DEFAULT_SUBSCRIPTION_ID
     private final AtomicBoolean cellularScanningActive = new AtomicBoolean(false);
 
     private final AtomicBoolean cellularLoggingEnabled = new AtomicBoolean(false);
@@ -62,8 +63,8 @@ public class CellularController extends AController
 
     private final List<TelephonyManagerWrapper> telephonyManagerList = new ArrayList<>();
     private final Map<Integer, TelephonyManager.CellInfoCallback> cellInfoCallbackMap = new HashMap<>();
+    private final Object activeSubscriptionInfoListLock = new Object();
     private List<SubscriptionInfo> activeSubscriptionInfoList = new ArrayList<>();
-    private int simCount = 0;
 
     private final CellularSurveyRecordLogger cellularSurveyRecordLogger;
     private final PhoneStateRecordLogger phoneStateRecordLogger;
@@ -104,6 +105,22 @@ public class CellularController extends AController
     public int getScanRateMs()
     {
         return cellularScanRateMs;
+    }
+
+    public int getSimCount()
+    {
+        synchronized (activeSubscriptionInfoListLock)
+        {
+            return activeSubscriptionInfoList.size();
+        }
+    }
+
+    public List<SubscriptionInfo> getActiveSubscriptionInfoList()
+    {
+        synchronized (activeSubscriptionInfoListLock)
+        {
+            return Collections.unmodifiableList(activeSubscriptionInfoList);
+        }
     }
 
     public void onRolloverPreferenceChanged()
@@ -337,9 +354,11 @@ public class CellularController extends AController
         SubscriptionManager subscriptionManager = SubscriptionManager.from(surveyService.getApplicationContext());
         if (ActivityCompat.checkSelfPermission(surveyService, Manifest.permission.READ_PHONE_STATE) == PackageManager.PERMISSION_GRANTED)
         {
-            activeSubscriptionInfoList = subscriptionManager.getActiveSubscriptionInfoList();
-            simCount = activeSubscriptionInfoList.size();
-            Timber.i("Found %s active SIMs", simCount);
+            synchronized (activeSubscriptionInfoListLock)
+            {
+                activeSubscriptionInfoList = subscriptionManager.getActiveSubscriptionInfoList();
+            }
+            Timber.i("Found %s active SIMs", activeSubscriptionInfoList.size());
 
             for (SubscriptionInfo subscriptionInfo : activeSubscriptionInfoList)
             {

@@ -389,8 +389,10 @@ public class SurveyRecordProcessor
      * @param allCellInfo      The List of {@link CellInfo} records to convert to survey records.
      * @param dataNetworkType  The data network type (e.g. "LTE"), which might be different than the voice network type.
      * @param voiceNetworkType The voice network type (e.g. "LTE").
+     * @param subscriptionId   The subscription ID (aka SIM ID) associated with the cell info records.
+     *                         This allows for multi-sim support in NS.
      */
-    public void onCellInfoUpdate(List<CellInfo> allCellInfo, String dataNetworkType, String voiceNetworkType, int subId) throws SecurityException
+    public void onCellInfoUpdate(List<CellInfo> allCellInfo, String dataNetworkType, String voiceNetworkType, int subscriptionId) throws SecurityException
     {
         // synchronized to make sure that we are only processing one list of Cell Info objects at a time.
         synchronized (cellInfoProcessingLock)
@@ -413,15 +415,17 @@ public class SurveyRecordProcessor
                         if (cellularRecord != null) cellularRecords.add(cellularRecord);
                     }
 
-                    notifyCellularListeners(cellularRecords);
+                    // processCellInfo notifies listeners of the individual records, but we also
+                    // want to notify the batch listeners (eg. the UI) of the entire batch.
+                    notifyCellularListeners(cellularRecords, subscriptionId);
                 } else
                 {
-                    notifyCellularListeners(Collections.emptyList());
+                    notifyCellularListeners(Collections.emptyList(), subscriptionId);
                 }
             } catch (Exception e)
             {
                 Timber.e(e, "Unable to display and log Survey Record(s)");
-                notifyCellularListeners(Collections.emptyList());
+                notifyCellularListeners(Collections.emptyList(), subscriptionId);
             }
         }
     }
@@ -684,7 +688,7 @@ public class SurveyRecordProcessor
         {
             if (cellInfo instanceof CellInfoLte)
             {
-                final LteRecord lteSurveyRecord = generateLteSurveyRecord((CellInfoLte) cellInfo);
+                final LteRecord lteSurveyRecord = generateLteSurveyRecord((CellInfoLte) cellInfo); // TODO Should I added information about the sim slot?
                 if (lteSurveyRecord != null)
                 {
                     notifyLteRecordListeners(lteSurveyRecord);
@@ -2128,14 +2132,15 @@ public class SurveyRecordProcessor
      * generic messages and not a specific cellular protocol message.
      *
      * @param cellularRecords The batch of cellular records.
+     * @param subscriptionId  The subscription ID (aka SIM ID) that the records are associated with.
      * @since 1.6.0
      */
-    private void notifyCellularListeners(List<CellularRecordWrapper> cellularRecords)
+    private void notifyCellularListeners(List<CellularRecordWrapper> cellularRecords, int subscriptionId)
     {
         cellularSurveyRecordListeners.forEach(l -> {
             try
             {
-                l.onCellularBatch(cellularRecords);
+                l.onCellularBatch(cellularRecords, subscriptionId);
             } catch (Throwable t)
             {
                 Timber.e(t, "Unable to notify a Cellular Survey Record Listener because of an exception");

@@ -30,6 +30,7 @@ import android.os.Looper;
 import android.provider.Settings;
 import android.telephony.PhoneStateListener;
 import android.telephony.ServiceState;
+import android.telephony.SubscriptionInfo;
 import android.telephony.TelephonyManager;
 
 import androidx.core.app.ActivityCompat;
@@ -78,6 +79,7 @@ import com.google.protobuf.Int32Value;
 
 import java.time.ZonedDateTime;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.ExecutorService;
@@ -970,6 +972,30 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
     public void sendSingleDeviceStatus()
     {
         surveyRecordProcessor.onDeviceStatus(generateDeviceStatus());
+    }
+
+    /**
+     * Returns the number of SIMs in the device, both physical and eSIMs. If 0 is returned, then
+     * the device does not have any active SIMs. This does not mean that the device does not have a
+     * cellular radio, nor does it mean that survey results won't be available. Because of emergency
+     * service requirements the phone should still report limited survey results even if there is no
+     * active SIM.
+     */
+    public int getSimCount()
+    {
+        return cellularController.getSimCount();
+    }
+
+    /**
+     * Returns the information for the Active SIMs in the device, both physical and eSIMs. If the
+     * returned list is empty, then the device does not have any active SIMs. This does not mean
+     * that the device does not have a cellular radio, nor does it mean that survey results won't
+     * be available. Because of emergency service requirements the phone should still report
+     * limited survey results even if there is no active SIM.
+     */
+    public List<SubscriptionInfo> getActiveSubscriptionInfoList()
+    {
+        return cellularController.getActiveSubscriptionInfoList();
     }
 
     /**

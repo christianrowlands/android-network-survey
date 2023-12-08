@@ -1,6 +1,7 @@
 package com.craxiom.networksurvey.fragments;
 
 import android.os.Bundle;
+import android.telephony.SubscriptionInfo;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -12,8 +13,12 @@ import androidx.viewpager2.adapter.FragmentStateAdapter;
 import androidx.viewpager2.widget.ViewPager2;
 
 import com.craxiom.networksurvey.R;
+import com.craxiom.networksurvey.services.NetworkSurveyService;
+import com.craxiom.networksurvey.services.controller.CellularController;
 import com.google.android.material.tabs.TabLayout;
 import com.google.android.material.tabs.TabLayoutMediator;
+
+import java.util.List;
 
 import timber.log.Timber;
 
@@ -22,8 +27,10 @@ import timber.log.Timber;
  *
  * @since 0.0.10
  */
-public class MainCellularFragment extends Fragment
+public class MainCellularFragment extends AServiceDataFragment
 {
+    private List<SubscriptionInfo> activeSubscriptionInfoList;
+
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container,
@@ -35,7 +42,30 @@ public class MainCellularFragment extends Fragment
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState)
     {
-        final CellularCollectionAdapter cellularCollectionAdapter = new CellularCollectionAdapter(this);
+
+    }
+
+    @Override
+    public void onResume()
+    {
+        super.onResume();
+
+        startAndBindToService();
+    }
+
+    @Override
+    protected void onSurveyServiceConnected(NetworkSurveyService service)
+    {
+        View view = getView();
+        if (view == null)
+        {
+            Timber.e("The view is null in the onSurveyServiceConnected method");
+            return;
+        }
+
+        activeSubscriptionInfoList = service.getActiveSubscriptionInfoList();
+
+        final CellularCollectionAdapter cellularCollectionAdapter = new CellularCollectionAdapter(this, activeSubscriptionInfoList);
         final ViewPager2 viewPager = view.findViewById(R.id.pager);
         viewPager.setAdapter(cellularCollectionAdapter);
 
@@ -43,38 +73,47 @@ public class MainCellularFragment extends Fragment
         new TabLayoutMediator(tabLayout, viewPager, (tab, position) -> tab.setText(getTabTitle(position))).attach();
     }
 
+    @Override
+    protected void onSurveyServiceDisconnecting(NetworkSurveyService service)
+    {
+        // No-op
+    }
+
     /**
      * An adapter that handles creating a new fragment when a tab is selected for the first time.
      */
     public static class CellularCollectionAdapter extends FragmentStateAdapter
     {
-        CellularCollectionAdapter(Fragment fragment)
+        private final List<SubscriptionInfo> subscriptions;
+
+        CellularCollectionAdapter(Fragment fragment, List<SubscriptionInfo> subscriptions)
         {
             super(fragment);
+            this.subscriptions = subscriptions;
         }
 
         @NonNull
         @Override
         public Fragment createFragment(int position)
         {
-            switch (position)
+            // If there are no subscriptions, we might still be able to get survey results because
+            // of emergency call support. It could also be that READ_PHONE_STATE permissions were not granted.
+            if (subscriptions.isEmpty())
             {
-                case 0:
-                    return new NetworkDetailsFragment();
-
-                case 1:
-                    return new CalculatorFragment();
-
-                default:
-                    Timber.wtf("A fragment has not been specified for one of the tabs in the Cellular UI.");
-                    return new NetworkDetailsFragment();
+                return new NetworkDetailsFragment(CellularController.DEFAULT_SUBSCRIPTION_ID);
             }
+
+            int subscriptionId = subscriptions.get(position).getSubscriptionId();
+            return new NetworkDetailsFragment(subscriptionId);
         }
 
         @Override
         public int getItemCount()
         {
-            return 2;
+            int size = subscriptions.size();
+            if (size == 0) return 1;
+
+            return size;
         }
     }
 
@@ -84,19 +123,12 @@ public class MainCellularFragment extends Fragment
      * @param position The tab position (starts at 0).
      * @return The title to use for the tab.
      */
-    private static String getTabTitle(int position)
+    private String getTabTitle(int position)
     {
-        switch (position)
-        {
-            case 0:
-                return NetworkDetailsFragment.TITLE;
+        if (activeSubscriptionInfoList.isEmpty()) return "No SIM";
 
-            case 1:
-                return CalculatorFragment.TITLE;
+        int subscriptionId = activeSubscriptionInfoList.get(position).getSubscriptionId();
 
-            default:
-                Timber.wtf("No title specified for the Cellular tab.  Using a default");
-                return "";
-        }
+        return "SIM " + subscriptionId;
     }
 }

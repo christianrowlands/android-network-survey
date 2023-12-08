@@ -82,9 +82,15 @@ public class NetworkDetailsFragment extends AServiceDataFragment implements ICel
     private static final int RSCP_UNSET_VALUE_24 = -24;
 
     private final DecimalFormat locationFormat = new DecimalFormat("###.#####");
+    private final int subscriptionId;
 
     private FragmentNetworkDetailsBinding binding;
     private CellularViewModel viewModel;
+
+    public NetworkDetailsFragment(int subscriptionId)
+    {
+        this.subscriptionId = subscriptionId;
+    }
 
     @Nullable
     @Override
@@ -143,8 +149,12 @@ public class NetworkDetailsFragment extends AServiceDataFragment implements ICel
     }
 
     @Override
-    public void onCellularBatch(List<CellularRecordWrapper> cellularGroup)
+    public void onCellularBatch(List<CellularRecordWrapper> cellularGroup, int subscriptionId)
     {
+        // The records are for a different SIM, so ignore them because another
+        // NetworkDetailsFragment instance will handle them.
+        if (this.subscriptionId != subscriptionId) return;
+
         processCellularGroup(cellularGroup);
     }
 

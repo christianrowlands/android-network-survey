@@ -74,10 +74,11 @@ public interface ICellularSurveyRecordListener
      * see). The individual methods were used prior to this listener method being added and if a listener consumes from
      * both types of methods, then it will receive duplicate records.
      *
-     * @param cellularGroup the next group/batch of cellular survey records.
+     * @param cellularGroup  the next group/batch of cellular survey records.
+     * @param subscriptionId The subscription ID (aka SIM ID) that the records are associated with.
      * @since 1.6.0
      */
-    default void onCellularBatch(List<CellularRecordWrapper> cellularGroup)
+    default void onCellularBatch(List<CellularRecordWrapper> cellularGroup, int subscriptionId)
     {
     }
 
