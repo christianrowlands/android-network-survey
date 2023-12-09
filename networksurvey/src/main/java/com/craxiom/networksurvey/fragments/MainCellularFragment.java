@@ -40,12 +40,6 @@ public class MainCellularFragment extends AServiceDataFragment
     }
 
     @Override
-    public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState)
-    {
-
-    }
-
-    @Override
     public void onResume()
     {
         super.onResume();
@@ -70,6 +64,14 @@ public class MainCellularFragment extends AServiceDataFragment
         viewPager.setAdapter(cellularCollectionAdapter);
 
         final TabLayout tabLayout = view.findViewById(R.id.tab_layout);
+        if (activeSubscriptionInfoList.size() <= 1)
+        {
+            // Only one tab, so hide the tab layout
+            tabLayout.setVisibility(View.GONE);
+        } else
+        {
+            tabLayout.setVisibility(View.VISIBLE);
+        }
         new TabLayoutMediator(tabLayout, viewPager, (tab, position) -> tab.setText(getTabTitle(position))).attach();
     }
 
