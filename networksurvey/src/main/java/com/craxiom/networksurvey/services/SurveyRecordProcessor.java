@@ -402,7 +402,7 @@ public class SurveyRecordProcessor
                 /* Timber.v("currentTechnology=%s", currentTechnology);
                 Timber.v("allCellInfo: ");
                 allCellInfo.forEach(cellInfo -> Timber.v(cellInfo.toString()));*/
-                notifyNetworkTypeListeners(dataNetworkType, voiceNetworkType);
+                notifyNetworkTypeListeners(dataNetworkType, voiceNetworkType, subscriptionId);
 
                 if (allCellInfo != null && !allCellInfo.isEmpty())
                 {
@@ -2153,14 +2153,15 @@ public class SurveyRecordProcessor
      *
      * @param dataNetworkType  The data network type (e.g. "LTE"), which might be different than the voice network type.
      * @param voiceNetworkType The voice network type (e.g. "LTE").
+     * @param subscriptionId   The subscription ID (aka SIM ID) that the records are associated with.
      * @since 1.6.0
      */
-    private void notifyNetworkTypeListeners(String dataNetworkType, String voiceNetworkType)
+    private void notifyNetworkTypeListeners(String dataNetworkType, String voiceNetworkType, int subscriptionId)
     {
         cellularSurveyRecordListeners.forEach(l -> {
             try
             {
-                l.onNetworkType(dataNetworkType, voiceNetworkType);
+                l.onNetworkType(dataNetworkType, voiceNetworkType, subscriptionId);
             } catch (Exception e)
             {
                 Timber.e(e, "Unable to notify a Cellular Survey Record Listener because of an exception");

@@ -90,9 +90,10 @@ public interface ICellularSurveyRecordListener
      *
      * @param dataNetworkType  The data network type (e.g. "LTE"), which might be different than the voice network type.
      * @param voiceNetworkType The voice network type (e.g. "LTE").
+     * @param subscriptionId   The subscription ID (aka SIM ID) that the records are associated with.
      * @since 1.6.0
      */
-    default void onNetworkType(String dataNetworkType, String voiceNetworkType)
+    default void onNetworkType(String dataNetworkType, String voiceNetworkType, int subscriptionId)
     {
     }
 }

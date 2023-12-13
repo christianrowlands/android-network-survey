@@ -75,21 +75,51 @@ public class NetworkDetailsFragment extends AServiceDataFragment implements ICel
 
     // The next two values have been added because certain devices don't follow the Interger#MAX_VALUE approach defined
     // in the Android API. The phone is supposed to report Interger#MAX_VALUE to indicate "Unknown/Unset" values, but
-    // Pixel devices seem to report -120 all the time for UMTS RSCP, and Samsung devics seem to report -24 for UMTS RSCP.
+    // Pixel devices seem to report -120 all the time for UMTS RSCP, and Samsung devices seem to report -24 for UMTS RSCP.
     // These values are technically valid and filtering them out is an incorrect thing to do, but it is all I can think
     // of right now to prevent invalid values from being reported.
     private static final int RSCP_UNSET_VALUE_120 = -120;
     private static final int RSCP_UNSET_VALUE_24 = -24;
+    public static final String SUBSCRIPTION_ID_KEY = "subscription_id";
 
     private final DecimalFormat locationFormat = new DecimalFormat("###.#####");
-    private final int subscriptionId;
+
+    private int subscriptionId;
 
     private FragmentNetworkDetailsBinding binding;
     private CellularViewModel viewModel;
 
+    /**
+     * Default constructor for the NetworkDetailsFragment. This constructor is used when the
+     * fragment is restored from a previous state. Use the other constructor for creating a new
+     * instance of this fragment.
+     */
+    public NetworkDetailsFragment()
+    {
+        // -1 indicates that this fragment was restored, and therefore we need to read the
+        // subscriptionId from the view model. Otherwise, the subscriptionId is set in the constructor.
+        subscriptionId = -1;
+    }
+
     public NetworkDetailsFragment(int subscriptionId)
     {
         this.subscriptionId = subscriptionId;
+        Timber.i("Creating a new NetworkDetailsFragment subscriptionId=%d", subscriptionId);
+    }
+
+    @Override
+    public void onCreate(@Nullable Bundle savedInstanceState)
+    {
+        super.onCreate(savedInstanceState);
+        if (subscriptionId == -1 && savedInstanceState != null)
+        {
+            int restoredId = savedInstanceState.getInt(SUBSCRIPTION_ID_KEY, -1);
+            if (restoredId != -1)
+            {
+                Timber.d("Restoring the subscriptionId from the savedInstanceState. subscriptionId=%d", restoredId);
+                subscriptionId = restoredId;
+            }
+        }
     }
 
     @Nullable
@@ -100,7 +130,7 @@ public class NetworkDetailsFragment extends AServiceDataFragment implements ICel
 
         final ViewModelStoreOwner viewModelStoreOwner = NavHostFragment.findNavController(this).getViewModelStoreOwner(R.id.nav_graph);
         final ViewModelProvider viewModelProvider = new ViewModelProvider(viewModelStoreOwner);
-        viewModel = viewModelProvider.get(getClass().getName(), CellularViewModel.class);
+        viewModel = viewModelProvider.get(getClass().getName() + subscriptionId, CellularViewModel.class);
 
         initializeLocationTextView();
 
@@ -120,6 +150,13 @@ public class NetworkDetailsFragment extends AServiceDataFragment implements ICel
         initializeLocationTextView();
 
         startAndBindToService();
+    }
+
+    @Override
+    public void onSaveInstanceState(@NonNull Bundle outState)
+    {
+        super.onSaveInstanceState(outState);
+        outState.putInt(SUBSCRIPTION_ID_KEY, subscriptionId);
     }
 
     @Override
@@ -159,8 +196,12 @@ public class NetworkDetailsFragment extends AServiceDataFragment implements ICel
     }
 
     @Override
-    public void onNetworkType(String dataNetworkType, String voiceNetworkType)
+    public void onNetworkType(String dataNetworkType, String voiceNetworkType, int subscriptionId)
     {
+        // The records are for a different SIM, so ignore them because another
+        // NetworkDetailsFragment instance will handle them.
+        if (this.subscriptionId != subscriptionId) return;
+
         viewModel.setDataNetworkType(dataNetworkType);
         viewModel.setVoiceNetworkType(voiceNetworkType);
     }
