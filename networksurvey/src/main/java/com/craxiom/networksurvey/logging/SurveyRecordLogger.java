@@ -11,6 +11,7 @@ import com.craxiom.networksurvey.constants.CellularMessageConstants;
 import com.craxiom.networksurvey.constants.LteMessageConstants;
 import com.craxiom.networksurvey.constants.MessageConstants;
 import com.craxiom.networksurvey.constants.NetworkSurveyConstants;
+import com.craxiom.networksurvey.constants.csv.CellularCsvConstants;
 import com.craxiom.networksurvey.services.NetworkSurveyService;
 import com.craxiom.networksurvey.services.SurveyRecordProcessor;
 import com.craxiom.networksurvey.util.PreferenceUtils;
@@ -236,7 +237,7 @@ public abstract class SurveyRecordLogger
     }
 
     /**
-     * Create a Table in the provided GeoPackage.  This method will create a table with certain standard columns, such as time and location, and will also
+     * Cre ate a Table in the provided GeoPackage.  This method will create a table with certain standard columns, such as time and location, and will also
      * call the {@code customColumnAddition} consumer to trigger the addition of any protocol specific columns.
      *
      * @param tableName            The name of the table to create.
@@ -272,6 +273,7 @@ public abstract class SurveyRecordLogger
             tableColumns.add(FeatureColumn.createColumn(columnNumber++, CellularMessageConstants.GROUP_NUMBER_COLUMN, GeoPackageDataType.MEDIUMINT, true, -1));
             tableColumns.add(FeatureColumn.createColumn(columnNumber++, CellularMessageConstants.SERVING_CELL_COLUMN, GeoPackageDataType.BOOLEAN, false, null));
             tableColumns.add(FeatureColumn.createColumn(columnNumber++, CellularMessageConstants.PROVIDER_COLUMN, GeoPackageDataType.TEXT, false, null));
+            tableColumns.add(FeatureColumn.createColumn(columnNumber++, CellularCsvConstants.SLOT, GeoPackageDataType.SMALLINT, false, null));
         }
 
         customColumnAddition.accept(tableColumns, columnNumber);
@@ -349,7 +351,7 @@ public abstract class SurveyRecordLogger
                     // If the file is not a directory, null will be returned
                     File[] files = dir.listFiles();
 
-                    if ((files != null) && (files.length > 0))
+                    if (files != null)
                     {
                         for (File file : files)
                         {

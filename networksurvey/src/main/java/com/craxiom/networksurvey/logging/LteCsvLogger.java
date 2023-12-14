@@ -1,7 +1,5 @@
 package com.craxiom.networksurvey.logging;
 
-import static com.craxiom.networksurvey.constants.csv.CellularCsvConstants.SERVING_CELL;
-import static com.craxiom.networksurvey.constants.csv.CsvConstants.SPEED;
 import static com.craxiom.networksurvey.constants.csv.LteCsvConstants.ACCURACY;
 import static com.craxiom.networksurvey.constants.csv.LteCsvConstants.ALTITUDE;
 import static com.craxiom.networksurvey.constants.csv.LteCsvConstants.CQI;
@@ -20,7 +18,10 @@ import static com.craxiom.networksurvey.constants.csv.LteCsvConstants.PROVIDER;
 import static com.craxiom.networksurvey.constants.csv.LteCsvConstants.RECORD_NUMBER;
 import static com.craxiom.networksurvey.constants.csv.LteCsvConstants.RSRP;
 import static com.craxiom.networksurvey.constants.csv.LteCsvConstants.RSRQ;
+import static com.craxiom.networksurvey.constants.csv.LteCsvConstants.SERVING_CELL;
 import static com.craxiom.networksurvey.constants.csv.LteCsvConstants.SIGNAL_STRENGTH;
+import static com.craxiom.networksurvey.constants.csv.LteCsvConstants.SLOT;
+import static com.craxiom.networksurvey.constants.csv.LteCsvConstants.SPEED;
 import static com.craxiom.networksurvey.constants.csv.LteCsvConstants.TA;
 import static com.craxiom.networksurvey.constants.csv.LteCsvConstants.TAC;
 
@@ -53,7 +54,7 @@ public class LteCsvLogger extends CsvRecordLogger implements ICellularSurveyReco
     {
         return new String[]{DEVICE_TIME, LATITUDE, LONGITUDE, ALTITUDE, SPEED, ACCURACY,
                 MISSION_ID, RECORD_NUMBER, GROUP_NUMBER,
-                MCC, MNC, TAC, ECI, EARFCN, PCI, RSRP, RSRQ, TA, SERVING_CELL, LTE_BANDWIDTH, PROVIDER, SIGNAL_STRENGTH, CQI};
+                MCC, MNC, TAC, ECI, EARFCN, PCI, RSRP, RSRQ, TA, SERVING_CELL, LTE_BANDWIDTH, PROVIDER, SIGNAL_STRENGTH, CQI, SLOT};
     }
 
     @Override
@@ -108,6 +109,7 @@ public class LteCsvLogger extends CsvRecordLogger implements ICellularSurveyReco
                 data.getProvider(),
                 data.hasSignalStrength() ? String.valueOf(data.getSignalStrength().getValue()) : "",
                 data.hasCqi() ? String.valueOf(data.getCqi().getValue()) : "",
+                data.hasSlot() ? String.valueOf(data.getSlot().getValue()) : "",
         };
     }
 }

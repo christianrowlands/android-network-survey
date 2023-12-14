@@ -19,6 +19,7 @@ import static com.craxiom.networksurvey.constants.csv.CdmaCsvConstants.SID;
 import static com.craxiom.networksurvey.constants.csv.CdmaCsvConstants.SIGNAL_STRENGTH;
 import static com.craxiom.networksurvey.constants.csv.CdmaCsvConstants.SPEED;
 import static com.craxiom.networksurvey.constants.csv.CdmaCsvConstants.ZONE;
+import static com.craxiom.networksurvey.constants.csv.CellularCsvConstants.SLOT;
 
 import android.os.Looper;
 
@@ -48,7 +49,7 @@ public class CdmaCsvLogger extends CsvRecordLogger implements ICellularSurveyRec
     {
         return new String[]{DEVICE_TIME, LATITUDE, LONGITUDE, ALTITUDE, SPEED, ACCURACY,
                 MISSION_ID, RECORD_NUMBER, GROUP_NUMBER,
-                SID, NID, ZONE, BSID, CHANNEL, PN_OFFSET, SIGNAL_STRENGTH, ECIO, SERVING_CELL, PROVIDER};
+                SID, NID, ZONE, BSID, CHANNEL, PN_OFFSET, SIGNAL_STRENGTH, ECIO, SERVING_CELL, PROVIDER, SLOT};
     }
 
     @Override
@@ -96,6 +97,8 @@ public class CdmaCsvLogger extends CsvRecordLogger implements ICellularSurveyRec
                 data.hasSignalStrength() ? String.valueOf(data.getSignalStrength().getValue()) : "",
                 data.hasEcio() ? String.valueOf(data.getEcio().getValue()) : "",
                 data.hasServingCell() ? String.valueOf(data.getServingCell().getValue()) : "",
-                data.getProvider()};
+                data.getProvider(),
+                data.hasSlot() ? String.valueOf(data.getSlot().getValue()) : "",
+        };
     }
 }

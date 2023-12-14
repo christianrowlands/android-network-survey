@@ -35,6 +35,7 @@ import android.telephony.CellSignalStrengthLte;
 import android.telephony.CellSignalStrengthNr;
 import android.telephony.CellSignalStrengthWcdma;
 import android.telephony.ServiceState;
+import android.telephony.SubscriptionManager;
 import android.telephony.TelephonyManager;
 
 import androidx.annotation.NonNull;
@@ -411,7 +412,7 @@ public class SurveyRecordProcessor
 
                     for (CellInfo cellInfo : allCellInfo)
                     {
-                        final CellularRecordWrapper cellularRecord = processCellInfo(cellInfo);
+                        final CellularRecordWrapper cellularRecord = processCellInfo(cellInfo, subscriptionId);
                         if (cellularRecord != null) cellularRecords.add(cellularRecord);
                     }
 
@@ -677,10 +678,11 @@ public class SurveyRecordProcessor
      * Given a {@link CellInfo} record, convert it to the appropriate ProtoBuf defined message.  Then, notify any
      * listeners so it can be written to a log file and/or sent to any servers if those services are enabled.
      *
-     * @param cellInfo The Cell Info object with the details.
+     * @param cellInfo       The Cell Info object with the details.
+     * @param subscriptionId The subscription ID (aka SIM ID) associated with the cell info record.
      * @since 0.0.5
      */
-    private CellularRecordWrapper processCellInfo(CellInfo cellInfo)
+    private CellularRecordWrapper processCellInfo(CellInfo cellInfo, int subscriptionId)
     {
         // We only want to take the time to process a record if we are going to do something with it.  Currently, that
         // means logging, sending to a server, or updating the UI with the latest LTE information.
@@ -688,7 +690,7 @@ public class SurveyRecordProcessor
         {
             if (cellInfo instanceof CellInfoLte)
             {
-                final LteRecord lteSurveyRecord = generateLteSurveyRecord((CellInfoLte) cellInfo); // TODO Should I added information about the sim slot?
+                final LteRecord lteSurveyRecord = generateLteSurveyRecord((CellInfoLte) cellInfo, subscriptionId);
                 if (lteSurveyRecord != null)
                 {
                     notifyLteRecordListeners(lteSurveyRecord);
@@ -696,7 +698,7 @@ public class SurveyRecordProcessor
                 }
             } else if (cellInfo instanceof CellInfoGsm)
             {
-                final GsmRecord gsmRecord = generateGsmSurveyRecord((CellInfoGsm) cellInfo);
+                final GsmRecord gsmRecord = generateGsmSurveyRecord((CellInfoGsm) cellInfo, subscriptionId);
                 if (gsmRecord != null)
                 {
                     notifyGsmRecordListeners(gsmRecord);
@@ -704,7 +706,7 @@ public class SurveyRecordProcessor
                 }
             } else if (cellInfo instanceof CellInfoCdma)
             {
-                final CdmaRecord cdmaRecord = generateCdmaSurveyRecord((CellInfoCdma) cellInfo);
+                final CdmaRecord cdmaRecord = generateCdmaSurveyRecord((CellInfoCdma) cellInfo, subscriptionId);
                 if (cdmaRecord != null)
                 {
                     notifyCdmaRecordListeners(cdmaRecord);
@@ -712,7 +714,7 @@ public class SurveyRecordProcessor
                 }
             } else if (cellInfo instanceof CellInfoWcdma)
             {
-                final UmtsRecord umtsRecord = generateUmtsSurveyRecord((CellInfoWcdma) cellInfo);
+                final UmtsRecord umtsRecord = generateUmtsSurveyRecord((CellInfoWcdma) cellInfo, subscriptionId);
                 if (umtsRecord != null)
                 {
                     notifyUmtsRecordListeners(umtsRecord);
@@ -720,7 +722,7 @@ public class SurveyRecordProcessor
                 }
             } else if (android.os.Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q && cellInfo instanceof CellInfoNr)
             {
-                final NrRecordWrapper nrRecordWrapper = generateNrSurveyRecord((CellInfoNr) cellInfo);
+                final NrRecordWrapper nrRecordWrapper = generateNrSurveyRecord((CellInfoNr) cellInfo, subscriptionId);
                 if (nrRecordWrapper != null)
                 {
                     notifyNrRecordListeners((NrRecord) nrRecordWrapper.cellularRecord);
@@ -882,7 +884,7 @@ public class SurveyRecordProcessor
      * @param cellInfoGsm The object that contains the GSM Cell info.  This can be a serving cell or a neighbor cell.
      * @return The survey record.
      */
-    private GsmRecord generateGsmSurveyRecord(CellInfoGsm cellInfoGsm)
+    private GsmRecord generateGsmSurveyRecord(CellInfoGsm cellInfoGsm, int subscriptionId)
     {
         final CellIdentityGsm cellIdentity = cellInfoGsm.getCellIdentity();
         final int mcc = cellIdentity.getMcc();
@@ -950,6 +952,10 @@ public class SurveyRecordProcessor
         {
             dataBuilder.setCi(Int32Value.newBuilder().setValue(cid).build());
         }
+        if (subscriptionId != SubscriptionManager.INVALID_SUBSCRIPTION_ID && subscriptionId != SubscriptionManager.DEFAULT_SUBSCRIPTION_ID)
+        {
+            dataBuilder.setSlot(Int32Value.newBuilder().setValue(subscriptionId).build());
+        }
 
         dataBuilder.setArfcn(Int32Value.newBuilder().setValue(arfcn).build());
         dataBuilder.setBsic(Int32Value.newBuilder().setValue(bsic).build());
@@ -974,7 +980,7 @@ public class SurveyRecordProcessor
      * @param cellInfoCdma The object that contains the GSM Cell info.  This can be a serving cell or a neighbor cell.
      * @return The survey record.
      */
-    private CdmaRecord generateCdmaSurveyRecord(CellInfoCdma cellInfoCdma)
+    private CdmaRecord generateCdmaSurveyRecord(CellInfoCdma cellInfoCdma, int subscriptionId)
     {
         final CellIdentityCdma cellIdentity = cellInfoCdma.getCellIdentity();
         final int sid = cellIdentity.getSystemId();
@@ -1036,6 +1042,10 @@ public class SurveyRecordProcessor
         {
             dataBuilder.setBsid(Int32Value.newBuilder().setValue(bsid).build());
         }
+        if (subscriptionId != SubscriptionManager.INVALID_SUBSCRIPTION_ID && subscriptionId != SubscriptionManager.DEFAULT_SUBSCRIPTION_ID)
+        {
+            dataBuilder.setSlot(Int32Value.newBuilder().setValue(subscriptionId).build());
+        }
 
         dataBuilder.setSignalStrength(FloatValue.newBuilder().setValue(signalStrength).build());
         dataBuilder.setEcio(FloatValue.newBuilder().setValue(ecioFloat).build());
@@ -1054,7 +1064,7 @@ public class SurveyRecordProcessor
      * @param cellInfoWcdma The object that contains the UMTS Cell info.  This can be a serving cell, or a neighbor cell.
      * @return The survey record.
      */
-    private UmtsRecord generateUmtsSurveyRecord(CellInfoWcdma cellInfoWcdma)
+    private UmtsRecord generateUmtsSurveyRecord(CellInfoWcdma cellInfoWcdma, int subscriptionId)
     {
         final CellIdentityWcdma cellIdentity = cellInfoWcdma.getCellIdentity();
         final int mcc = cellIdentity.getMcc();
@@ -1138,6 +1148,10 @@ public class SurveyRecordProcessor
         {
             dataBuilder.setRscp(FloatValue.newBuilder().setValue(rscp).build());
         }
+        if (subscriptionId != SubscriptionManager.INVALID_SUBSCRIPTION_ID && subscriptionId != SubscriptionManager.DEFAULT_SUBSCRIPTION_ID)
+        {
+            dataBuilder.setSlot(Int32Value.newBuilder().setValue(subscriptionId).build());
+        }
 
         dataBuilder.setUarfcn(Int32Value.newBuilder().setValue(uarfcn).build());
         dataBuilder.setPsc(Int32Value.newBuilder().setValue(psc).build());
@@ -1156,7 +1170,7 @@ public class SurveyRecordProcessor
      * @param cellInfoLte The object that contains the LTE Cell info.  This can be a serving cell, or a neighbor cell.
      * @return The survey record.
      */
-    private LteRecord generateLteSurveyRecord(CellInfoLte cellInfoLte)
+    private LteRecord generateLteSurveyRecord(CellInfoLte cellInfoLte, int subscriptionId)
     {
         final CellIdentityLte cellIdentity = cellInfoLte.getCellIdentity();
         final int mcc = cellIdentity.getMcc();
@@ -1253,6 +1267,10 @@ public class SurveyRecordProcessor
         {
             dataBuilder.setCqi(Int32Value.newBuilder().setValue(cqi).build());
         }
+        if (subscriptionId != SubscriptionManager.INVALID_SUBSCRIPTION_ID && subscriptionId != SubscriptionManager.DEFAULT_SUBSCRIPTION_ID)
+        {
+            dataBuilder.setSlot(Int32Value.newBuilder().setValue(subscriptionId).build());
+        }
 
         setBandwidth(dataBuilder, cellIdentity);
 
@@ -1272,7 +1290,7 @@ public class SurveyRecordProcessor
      * @since 1.5.0
      */
     @RequiresApi(api = Build.VERSION_CODES.Q)
-    private NrRecordWrapper generateNrSurveyRecord(CellInfoNr cellInfoNr)
+    private NrRecordWrapper generateNrSurveyRecord(CellInfoNr cellInfoNr, int subscriptionId)
     {
         // safe to cast as per: https://developer.android.com/reference/android/telephony/CellInfoNr#getCellIdentity()
         final CellIdentityNr cellIdentity = (CellIdentityNr) cellInfoNr.getCellIdentity();
@@ -1310,7 +1328,7 @@ public class SurveyRecordProcessor
         final int ssRsrq = cellSignalStrength.getSsRsrq();
         final int ssSinr = cellSignalStrength.getSsSinr();
 
-        int timingAdvanceMicros = -1;
+        int timingAdvanceMicros = CellInfo.UNAVAILABLE;
         if (android.os.Build.VERSION.SDK_INT >= 34)
         {
             timingAdvanceMicros = cellSignalStrength.getTimingAdvanceMicros();
@@ -1396,9 +1414,14 @@ public class SurveyRecordProcessor
         {
             dataBuilder.setCsiSinr(FloatValue.newBuilder().setValue(csiSinr).build());
         }
-
-        // TODO Don't set if the value is -1
-        dataBuilder.setTa(Int32Value.newBuilder().setValue(timingAdvanceMicros).build());
+        if (timingAdvanceMicros != CellInfo.UNAVAILABLE)
+        {
+            dataBuilder.setTa(Int32Value.newBuilder().setValue(timingAdvanceMicros).build());
+        }
+        if (subscriptionId != SubscriptionManager.INVALID_SUBSCRIPTION_ID && subscriptionId != SubscriptionManager.DEFAULT_SUBSCRIPTION_ID)
+        {
+            dataBuilder.setSlot(Int32Value.newBuilder().setValue(subscriptionId).build());
+        }
 
         final NrRecord.Builder recordBuilder = NrRecord.newBuilder();
 

@@ -1,5 +1,9 @@
 package com.craxiom.networksurvey.fragments;
 
+import android.content.BroadcastReceiver;
+import android.content.Context;
+import android.content.Intent;
+import android.content.IntentFilter;
 import android.os.Bundle;
 import android.telephony.SubscriptionInfo;
 import android.view.LayoutInflater;
@@ -9,10 +13,14 @@ import android.view.ViewGroup;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
+import androidx.fragment.app.FragmentManager;
+import androidx.fragment.app.FragmentTransaction;
+import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 import androidx.viewpager2.adapter.FragmentStateAdapter;
 import androidx.viewpager2.widget.ViewPager2;
 
 import com.craxiom.networksurvey.R;
+import com.craxiom.networksurvey.SimChangeReceiver;
 import com.craxiom.networksurvey.services.NetworkSurveyService;
 import com.craxiom.networksurvey.services.controller.CellularController;
 import com.google.android.material.tabs.TabLayout;
@@ -30,6 +38,46 @@ import timber.log.Timber;
 public class MainCellularFragment extends AServiceDataFragment
 {
     private List<SubscriptionInfo> activeSubscriptionInfoList;
+
+    private BroadcastReceiver simBroadcastReceiver;
+
+    @Override
+    public void onCreate(@Nullable Bundle savedInstanceState)
+    {
+        super.onCreate(savedInstanceState);
+
+        simBroadcastReceiver = new BroadcastReceiver()
+        {
+            @Override
+            public void onReceive(Context context, Intent intent)
+            {
+                if (intent == null) return;
+
+                Timber.i("SIM State Change Detected. Restarting the cellular fragment");
+
+                // Restart this fragment (yes, it seems overly complicated but it works)
+                FragmentManager fragmentManager = getParentFragmentManager();
+                Fragment currentFragment = fragmentManager.findFragmentById(R.id.main_cellular_fragment);
+                if (currentFragment != null)
+                {
+                    FragmentTransaction detachTransaction = fragmentManager.beginTransaction();
+                    detachTransaction.detach(currentFragment);
+                    detachTransaction.commit();
+
+                    FragmentTransaction attachTransaction = fragmentManager.beginTransaction();
+                    attachTransaction.attach(currentFragment);
+                    attachTransaction.commit();
+                }
+            }
+        };
+
+        Context context = getContext();
+        if (context != null)
+        {
+            LocalBroadcastManager.getInstance(context).registerReceiver(simBroadcastReceiver,
+                    new IntentFilter(SimChangeReceiver.SIM_CHANGED_INTENT));
+        }
+    }
 
     @Nullable
     @Override

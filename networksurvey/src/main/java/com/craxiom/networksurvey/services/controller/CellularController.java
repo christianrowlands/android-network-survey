@@ -1,7 +1,10 @@
 package com.craxiom.networksurvey.services.controller;
 
 import android.Manifest;
+import android.content.BroadcastReceiver;
 import android.content.Context;
+import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.Handler;
@@ -16,8 +19,10 @@ import android.telephony.TelephonyManager;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.core.app.ActivityCompat;
+import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 
 import com.craxiom.networksurvey.CalculationUtils;
+import com.craxiom.networksurvey.SimChangeReceiver;
 import com.craxiom.networksurvey.constants.NetworkSurveyConstants;
 import com.craxiom.networksurvey.logging.CdmaCsvLogger;
 import com.craxiom.networksurvey.logging.CellularSurveyRecordLogger;
@@ -74,6 +79,7 @@ public class CellularController extends AController
     private final CdmaCsvLogger cdmaCsvLogger;
     private final GsmCsvLogger gsmCsvLogger;
     private PhoneStateListener phoneStateListener;
+    private BroadcastReceiver simBroadcastReceiver;
 
     public CellularController(NetworkSurveyService surveyService, ExecutorService executorService,
                               Looper serviceLooper, Handler serviceHandler,
@@ -285,7 +291,6 @@ public class CellularController extends AController
 
     public void startPhoneStateListener()
     {
-
         // The onServiceStateChanged required API level 29.
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q)
         {
@@ -324,7 +329,6 @@ public class CellularController extends AController
 
     public void stopPhoneStateListener()
     {
-
         if (phoneStateListener != null)
         {
             final TelephonyManager telephonyManager = (TelephonyManager) surveyService.getSystemService(Context.TELEPHONY_SERVICE);
@@ -340,8 +344,11 @@ public class CellularController extends AController
     /**
      * Create the Cellular Scan callback that will be notified of Cellular scan events once
      * {@link #startCellularRecordScanning()} is called.
+     * <p>
+     * Synchronized to ensure that the activeSubscriptionInfoList, telephonyManagerList, and cellInfoCallbackMap are not
+     * modified while they are being used. Therefore, make sure to synchronize any other methods that use these lists.
      */
-    public void initializeCellularScanningResources()
+    public synchronized void initializeCellularScanningResources()
     {
         final TelephonyManager telephonyManager = (TelephonyManager) surveyService.getSystemService(Context.TELEPHONY_SERVICE);
 
@@ -351,24 +358,38 @@ public class CellularController extends AController
             return;
         }
 
-        SubscriptionManager subscriptionManager = SubscriptionManager.from(surveyService.getApplicationContext());
-        if (ActivityCompat.checkSelfPermission(surveyService, Manifest.permission.READ_PHONE_STATE) == PackageManager.PERMISSION_GRANTED)
+        synchronized (activeSubscriptionInfoListLock)
         {
-            synchronized (activeSubscriptionInfoListLock)
+            // Clear the lists because this could be a re-initialization if the SIM state changes
+            activeSubscriptionInfoList.clear();
+            telephonyManagerList.clear();
+            cellInfoCallbackMap.clear();
+
+            SubscriptionManager subscriptionManager = SubscriptionManager.from(surveyService.getApplicationContext());
+            if (ActivityCompat.checkSelfPermission(surveyService, Manifest.permission.READ_PHONE_STATE) == PackageManager.PERMISSION_GRANTED)
             {
                 activeSubscriptionInfoList = subscriptionManager.getActiveSubscriptionInfoList();
-            }
-            Timber.i("Found %s active SIMs", activeSubscriptionInfoList.size());
+                Timber.i("Found %s active SIMs", activeSubscriptionInfoList.size());
 
-            for (SubscriptionInfo subscriptionInfo : activeSubscriptionInfoList)
+                // We only want to use the subscription info list if there are two active SIMs.  If there is only
+                // one active SIM, then we will just use the default subscription ID which gets filtered out in
+                // the SurveyRecordProcessor. This prevents the "slot" field from getting set on all the records.
+                if (activeSubscriptionInfoList.size() >= 2)
+                {
+                    for (SubscriptionInfo subscriptionInfo : activeSubscriptionInfoList)
+                    {
+                        int subId = subscriptionInfo.getSubscriptionId();
+                        telephonyManagerList.add(new TelephonyManagerWrapper(telephonyManager.createForSubscriptionId(subId), subId));
+                    }
+                } else
+                {
+                    telephonyManagerList.add(new TelephonyManagerWrapper(telephonyManager, DEFAULT_SUBSCRIPTION_ID));
+                }
+            } else
             {
-                int subId = subscriptionInfo.getSubscriptionId();
-                telephonyManagerList.add(new TelephonyManagerWrapper(telephonyManager.createForSubscriptionId(subId), subId));
+                Timber.e("Unable to get access to the Subscription Manager. Can't get survey information from other SIMs");
+                telephonyManagerList.add(new TelephonyManagerWrapper(telephonyManager, DEFAULT_SUBSCRIPTION_ID));
             }
-        } else
-        {
-            Timber.e("Unable to get access to the Subscription Manager. Can't get survey information from other SIMs");
-            telephonyManagerList.add(new TelephonyManagerWrapper(telephonyManager, DEFAULT_SUBSCRIPTION_ID));
         }
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q)
@@ -402,12 +423,38 @@ public class CellularController extends AController
                 });
             }
         }
+
+        registerSimStateChangeReceiver();
+    }
+
+    /**
+     * Registers a receiver for SIM state change events.
+     */
+    private void registerSimStateChangeReceiver()
+    {
+        simBroadcastReceiver = new BroadcastReceiver()
+        {
+            @Override
+            public void onReceive(Context context, Intent intent)
+            {
+                if (intent == null) return;
+
+                Timber.i("SIM State Change Detected. Refreshing the active subscription info list");
+                initializeCellularScanningResources();
+            }
+        };
+
+        LocalBroadcastManager.getInstance(surveyService).registerReceiver(simBroadcastReceiver,
+                new IntentFilter(SimChangeReceiver.SIM_CHANGED_INTENT));
     }
 
     /**
      * Runs one cellular scan. This is used to prime the UI in the event that the scan interval is really long.
+     *
+     * Need to synchronize it because we use the resources that are initialized on SIM changes
+     * such as telephonyManagerList.
      */
-    public void runSingleScan()
+    public synchronized void runSingleScan()
     {
         final TelephonyManager telephonyManager = (TelephonyManager) surveyService.getSystemService(Context.TELEPHONY_SERVICE);
 
@@ -496,37 +543,42 @@ public class CellularController extends AController
                             return;
                         }
 
-                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q)
+                        // Need to synchronize because we use resources that are initialized on SIM
+                        // changes such as telephonyManagerList
+                        synchronized (CellularController.this)
                         {
-                            for (TelephonyManagerWrapper wrapper : telephonyManagerList)
+                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q)
                             {
-                                TelephonyManager.CellInfoCallback callback = cellInfoCallbackMap.get(wrapper.getSubscriptionId());
-                                if (callback != null)
+                                for (TelephonyManagerWrapper wrapper : telephonyManagerList)
                                 {
-                                    wrapper.getTelephonyManager().requestCellInfoUpdate(executorService, callback);
-                                } else
-                                {
-                                    Timber.wtf("Could not find the callback for the subscription ID %s", wrapper.getSubscriptionId());
-                                }
-                            }
-                        } else
-                        {
-                            execute(() -> {
-                                try
-                                {
-                                    for (TelephonyManagerWrapper wrapper : telephonyManagerList)
+                                    TelephonyManager.CellInfoCallback callback = cellInfoCallbackMap.get(wrapper.getSubscriptionId());
+                                    if (callback != null)
                                     {
-                                        TelephonyManager subscriptionTelephonyManager = wrapper.getTelephonyManager();
-                                        surveyRecordProcessor.onCellInfoUpdate(subscriptionTelephonyManager.getAllCellInfo(),
-                                                CalculationUtils.getNetworkType(subscriptionTelephonyManager.getDataNetworkType()),
-                                                CalculationUtils.getNetworkType(subscriptionTelephonyManager.getVoiceNetworkType()),
-                                                wrapper.getSubscriptionId());
+                                        wrapper.getTelephonyManager().requestCellInfoUpdate(executorService, callback);
+                                    } else
+                                    {
+                                        Timber.wtf("Could not find the callback for the subscription ID %s", wrapper.getSubscriptionId());
                                     }
-                                } catch (Throwable t)
-                                {
-                                    Timber.e(t, "Failed to pass the cellular info to the survey record processor");
                                 }
-                            });
+                            } else
+                            {
+                                execute(() -> {
+                                    try
+                                    {
+                                        for (TelephonyManagerWrapper wrapper : telephonyManagerList)
+                                        {
+                                            TelephonyManager subscriptionTelephonyManager = wrapper.getTelephonyManager();
+                                            surveyRecordProcessor.onCellInfoUpdate(subscriptionTelephonyManager.getAllCellInfo(),
+                                                    CalculationUtils.getNetworkType(subscriptionTelephonyManager.getDataNetworkType()),
+                                                    CalculationUtils.getNetworkType(subscriptionTelephonyManager.getVoiceNetworkType()),
+                                                    wrapper.getSubscriptionId());
+                                        }
+                                    } catch (Throwable t)
+                                    {
+                                        Timber.e(t, "Failed to pass the cellular info to the survey record processor");
+                                    }
+                                });
+                            }
                         }
 
                         serviceHandler.postDelayed(this, cellularScanRateMs);

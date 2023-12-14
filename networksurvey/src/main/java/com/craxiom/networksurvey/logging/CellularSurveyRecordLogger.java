@@ -19,6 +19,7 @@ import com.craxiom.networksurvey.constants.MessageConstants;
 import com.craxiom.networksurvey.constants.NetworkSurveyConstants;
 import com.craxiom.networksurvey.constants.NrMessageConstants;
 import com.craxiom.networksurvey.constants.UmtsMessageConstants;
+import com.craxiom.networksurvey.constants.csv.CellularCsvConstants;
 import com.craxiom.networksurvey.constants.csv.LteCsvConstants;
 import com.craxiom.networksurvey.listeners.ICellularSurveyRecordListener;
 import com.craxiom.networksurvey.services.NetworkSurveyService;
@@ -212,6 +213,10 @@ public class CellularSurveyRecordLogger extends SurveyRecordLogger implements IC
         //  and NrMessageConstants for creating a new set of constants
         ContentsDao contentsDao = geoPackage.getContentsDao();
 
+        // Note: We are not using the createTable method here because we want to match the MQTT message
+        // schema. It was decided to start matching the Network Survey Messaging API schema with the
+        // GeoPackage schema starting with the 5G NR records.
+
         Contents contents = new Contents();
         contents.setTableName(NrMessageConstants.NR_RECORDS_TABLE_NAME);
         contents.setDataType(ContentsDataType.FEATURES);
@@ -247,9 +252,10 @@ public class CellularSurveyRecordLogger extends SurveyRecordLogger implements IC
         tableColumns.add(FeatureColumn.createColumn(columnNumber++, NrMessageConstants.CSI_RSRQ_COLUMN, GeoPackageDataType.FLOAT, false, null));
         tableColumns.add(FeatureColumn.createColumn(columnNumber++, NrMessageConstants.CSI_SINR_COLUMN, GeoPackageDataType.FLOAT, false, null));
 
-        // putting these here to match the MQTT message format exactly
         tableColumns.add(FeatureColumn.createColumn(columnNumber++, NrMessageConstants.SERVING_CELL_COLUMN, GeoPackageDataType.BOOLEAN, false, null));
-        tableColumns.add(FeatureColumn.createColumn(columnNumber, NrMessageConstants.PROVIDER_COLUMN, GeoPackageDataType.TEXT, false, null));
+        tableColumns.add(FeatureColumn.createColumn(columnNumber++, NrMessageConstants.PROVIDER_COLUMN, GeoPackageDataType.TEXT, false, null));
+        //noinspection UnusedAssignment
+        tableColumns.add(FeatureColumn.createColumn(columnNumber++, CellularCsvConstants.SLOT, GeoPackageDataType.SMALLINT, false, null));
 
         FeatureTable table = new FeatureTable(NrMessageConstants.NR_RECORDS_TABLE_NAME, tableColumns);
         geoPackage.createFeatureTable(table);
@@ -344,6 +350,10 @@ public class CellularSurveyRecordLogger extends SurveyRecordLogger implements IC
                         {
                             setShortValue(row, GsmMessageConstants.TA_COLUMN, data.getTa().getValue());
                         }
+                        if (data.hasSlot())
+                        {
+                            setShortValue(row, CellularCsvConstants.SLOT, data.getSlot().getValue());
+                        }
 
                         featureDao.insert(row);
 
@@ -423,6 +433,10 @@ public class CellularSurveyRecordLogger extends SurveyRecordLogger implements IC
                         if (data.hasEcio())
                         {
                             row.setValue(CdmaMessageConstants.ECIO_COLUMN, data.getEcio().getValue());
+                        }
+                        if (data.hasSlot())
+                        {
+                            setShortValue(row, CellularCsvConstants.SLOT, data.getSlot().getValue());
                         }
 
                         featureDao.insert(row);
@@ -512,6 +526,10 @@ public class CellularSurveyRecordLogger extends SurveyRecordLogger implements IC
                         if (data.hasRscp())
                         {
                             row.setValue(UmtsMessageConstants.RSCP_COLUMN, data.getRscp().getValue());
+                        }
+                        if (data.hasSlot())
+                        {
+                            setShortValue(row, CellularCsvConstants.SLOT, data.getSlot().getValue());
                         }
 
                         featureDao.insert(row);
@@ -614,6 +632,10 @@ public class CellularSurveyRecordLogger extends SurveyRecordLogger implements IC
                         if (data.hasCqi())
                         {
                             row.setValue(LteCsvConstants.CQI, data.getCqi().getValue());
+                        }
+                        if (data.hasSlot())
+                        {
+                            setShortValue(row, CellularCsvConstants.SLOT, data.getSlot().getValue());
                         }
 
                         setLteBandwidth(row, data.getLteBandwidth());
@@ -724,6 +746,10 @@ public class CellularSurveyRecordLogger extends SurveyRecordLogger implements IC
                         if (!Strings.isNullOrEmpty(provider))
                         {
                             row.setValue(NrMessageConstants.PROVIDER_COLUMN, provider);
+                        }
+                        if (data.hasSlot())
+                        {
+                            setShortValue(row, CellularCsvConstants.SLOT, data.getSlot().getValue());
                         }
 
                         featureDao.insert(row);

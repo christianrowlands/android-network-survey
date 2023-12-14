@@ -1,5 +1,6 @@
 package com.craxiom.networksurvey.logging;
 
+import static com.craxiom.networksurvey.constants.csv.CellularCsvConstants.SLOT;
 import static com.craxiom.networksurvey.constants.csv.GsmCsvConstants.ACCURACY;
 import static com.craxiom.networksurvey.constants.csv.GsmCsvConstants.ALTITUDE;
 import static com.craxiom.networksurvey.constants.csv.GsmCsvConstants.ARFCN;
@@ -48,7 +49,7 @@ public class GsmCsvLogger extends CsvRecordLogger implements ICellularSurveyReco
     {
         return new String[]{DEVICE_TIME, LATITUDE, LONGITUDE, ALTITUDE, SPEED, ACCURACY,
                 MISSION_ID, RECORD_NUMBER, GROUP_NUMBER,
-                MCC, MNC, LAC, CI, ARFCN, BSIC, SIGNAL_STRENGTH, TA, SERVING_CELL, PROVIDER};
+                MCC, MNC, LAC, CI, ARFCN, BSIC, SIGNAL_STRENGTH, TA, SERVING_CELL, PROVIDER, SLOT};
     }
 
     @Override
@@ -96,6 +97,8 @@ public class GsmCsvLogger extends CsvRecordLogger implements ICellularSurveyReco
                 data.hasSignalStrength() ? String.valueOf(data.getSignalStrength().getValue()) : "",
                 data.hasTa() ? String.valueOf(data.getTa().getValue()) : "",
                 data.hasServingCell() ? String.valueOf(data.getServingCell().getValue()) : "",
-                data.getProvider()};
+                data.getProvider(),
+                data.hasSlot() ? String.valueOf(data.getSlot().getValue()) : "",
+        };
     }
 }
