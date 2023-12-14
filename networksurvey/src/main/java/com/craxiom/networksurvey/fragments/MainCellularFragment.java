@@ -98,15 +98,22 @@ public class MainCellularFragment extends AServiceDataFragment
         @Override
         public Fragment createFragment(int position)
         {
+            NetworkDetailsFragment networkDetailsFragment = new NetworkDetailsFragment();
+            Bundle args = new Bundle();
+
             // If there are no subscriptions, we might still be able to get survey results because
             // of emergency call support. It could also be that READ_PHONE_STATE permissions were not granted.
             if (subscriptions.isEmpty())
             {
-                return new NetworkDetailsFragment(CellularController.DEFAULT_SUBSCRIPTION_ID);
+                args.putInt(NetworkDetailsFragment.SUBSCRIPTION_ID_KEY, CellularController.DEFAULT_SUBSCRIPTION_ID);
+            } else
+            {
+                int subscriptionId = subscriptions.get(position).getSubscriptionId();
+                args.putInt(NetworkDetailsFragment.SUBSCRIPTION_ID_KEY, subscriptionId);
             }
 
-            int subscriptionId = subscriptions.get(position).getSubscriptionId();
-            return new NetworkDetailsFragment(subscriptionId);
+            networkDetailsFragment.setArguments(args);
+            return networkDetailsFragment;
         }
 
         @Override

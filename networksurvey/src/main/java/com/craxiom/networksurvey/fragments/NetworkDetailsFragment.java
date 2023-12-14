@@ -71,7 +71,7 @@ import timber.log.Timber;
  */
 public class NetworkDetailsFragment extends AServiceDataFragment implements ICellularSurveyRecordListener, LocationListener
 {
-    static final String TITLE = "Details";
+    public static final String SUBSCRIPTION_ID_KEY = "subscription_id";
 
     // The next two values have been added because certain devices don't follow the Interger#MAX_VALUE approach defined
     // in the Android API. The phone is supposed to report Interger#MAX_VALUE to indicate "Unknown/Unset" values, but
@@ -80,7 +80,6 @@ public class NetworkDetailsFragment extends AServiceDataFragment implements ICel
     // of right now to prevent invalid values from being reported.
     private static final int RSCP_UNSET_VALUE_120 = -120;
     private static final int RSCP_UNSET_VALUE_24 = -24;
-    public static final String SUBSCRIPTION_ID_KEY = "subscription_id";
 
     private final DecimalFormat locationFormat = new DecimalFormat("###.#####");
 
@@ -89,37 +88,15 @@ public class NetworkDetailsFragment extends AServiceDataFragment implements ICel
     private FragmentNetworkDetailsBinding binding;
     private CellularViewModel viewModel;
 
-    /**
-     * Default constructor for the NetworkDetailsFragment. This constructor is used when the
-     * fragment is restored from a previous state. Use the other constructor for creating a new
-     * instance of this fragment.
-     */
-    public NetworkDetailsFragment()
-    {
-        // -1 indicates that this fragment was restored, and therefore we need to read the
-        // subscriptionId from the view model. Otherwise, the subscriptionId is set in the constructor.
-        subscriptionId = -1;
-    }
-
-    public NetworkDetailsFragment(int subscriptionId)
-    {
-        this.subscriptionId = subscriptionId;
-        Timber.i("Creating a new NetworkDetailsFragment subscriptionId=%d", subscriptionId);
-    }
-
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState)
     {
         super.onCreate(savedInstanceState);
-        if (subscriptionId == -1 && savedInstanceState != null)
-        {
-            int restoredId = savedInstanceState.getInt(SUBSCRIPTION_ID_KEY, -1);
-            if (restoredId != -1)
-            {
-                Timber.d("Restoring the subscriptionId from the savedInstanceState. subscriptionId=%d", restoredId);
-                subscriptionId = restoredId;
-            }
-        }
+
+        Bundle args = getArguments();
+        //noinspection DataFlowIssue
+        subscriptionId = args.getInt(SUBSCRIPTION_ID_KEY, -1);
+        Timber.d("Retrieving the subscriptionId from the arguments. subscriptionId=%d", subscriptionId);
     }
 
     @Nullable
@@ -150,13 +127,6 @@ public class NetworkDetailsFragment extends AServiceDataFragment implements ICel
         initializeLocationTextView();
 
         startAndBindToService();
-    }
-
-    @Override
-    public void onSaveInstanceState(@NonNull Bundle outState)
-    {
-        super.onSaveInstanceState(outState);
-        outState.putInt(SUBSCRIPTION_ID_KEY, subscriptionId);
     }
 
     @Override
