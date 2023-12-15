@@ -39,6 +39,10 @@ import com.craxiom.networksurvey.fragments.model.MqttConnectionSettings;
 import com.craxiom.networksurvey.model.LogTypeState;
 import com.craxiom.networksurvey.mqtt.MqttConnectionInfo;
 
+import java.util.Arrays;
+import java.util.List;
+import java.util.Random;
+
 import timber.log.Timber;
 
 /**
@@ -48,6 +52,52 @@ import timber.log.Timber;
  */
 public class PreferenceUtils
 {
+    /**
+     * A list of words to use when generating a random MQTT client ID.
+     */
+    private static final List<String> WORDS = Arrays.asList(
+            "Sun", "Moon", "Star", "Sky", "River", "Ocean",
+            "Mountain", "Valley", "Forest", "Desert", "Island",
+            "Grass", "Dawn", "Twilight", "Morning", "Sunset",
+            "Lake", "Stream", "Hill", "Field", "Meadow",
+            "Cloud", "Rain", "Snow", "Wind", "Storm", "Zinc",
+            "Fire", "Ice", "Earth", "Metal", "Wood", "Ulysses",
+            "Apple", "Berry", "Cherry", "Date", "Elderberry",
+            "Fig", "Grape", "Honeydew", "Ivy", "Jackfruit",
+            "Kiwi", "Lemon", "Mango", "Nectarine", "Olive",
+            "Peach", "Quince", "Raspberry", "Strawberry", "Tomato",
+            "Ugli", "Vanilla", "Walnut", "Xigua", "Yam", "Zucchini",
+            "Amber", "Blue", "Crimson", "Diamond", "Emerald",
+            "Fuchsia", "Gold", "Heliotrope", "Ivory", "Jade",
+            "Khaki", "Lavender", "Magenta", "Green", "Ochre",
+            "Periwinkle", "Orange", "Purple", "Red", "Silver",
+            "Pink", "Quartz", "Ruby", "Sapphire", "Turquoise",
+            "Ultramarine", "Violet", "Wheat", "Xanadu", "Yellow",
+            "Falcon", "Tiger", "Dolphin", "Elephant", "Giraffe",
+            "Lynx", "Octopus", "Panther", "Quail", "Rhino",
+            "Shark", "Tucan", "Unicorn", "Viper", "Wolf",
+            "Yak", "Zebra", "Yeats", "Zoroaster", "Voltaire",
+            "Austin", "Berlin", "Cairo", "Denver", "Edinburgh",
+            "Florence", "Geneva", "Havana", "Istanbul", "Jakarta",
+            "Kyoto", "Lisbon", "Madrid", "Nairobi", "Oslo",
+            "Paris", "Quebec", "Rome", "Sydney", "Tokyo",
+            "Utrecht", "Vienna", "Warsaw", "Xian", "York", "Zurich",
+            "Browser", "Digital", "Ethernet", "Xenophon",
+            "Keyboard", "Football", "Lamp", "Bat", "Oracle",
+            "Python", "Quantum", "Router", "Silicon", "Tablet",
+            "Uranium", "Virus", "Worm", "Xerox", "Yagi", "Zombie",
+            "Angel", "Banshee", "Cyclops", "Demon", "Elf",
+            "Griffin", "Hydra", "Mermaid", "Nymph", "Ogre",
+            "Phoenix", "Quetzalcoatl", "Sasquatch", "Titan",
+            "Valkyrie", "Werewolf", "Yeti", "Zeus", "Washington",
+            "Aristotle", "Beethoven", "Cleopatra", "Darwin", "Einstein",
+            "Freud", "Galileo", "Hippocrates", "Imhotep", "Joan",
+            "Kafka", "Leonardo", "Mozart", "Newton", "Orwell",
+            "Plato", "QueenVictoria", "Rousseau", "Shakespeare"
+    );
+
+    private static final Random RANDOM = new Random();
+
     /**
      * Gets the scan rate preference associated with the provide preference key.
      * <p>
@@ -542,5 +592,42 @@ public class PreferenceUtils
         editor.putBoolean(NetworkSurveyConstants.PROPERTY_MQTT_DEVICE_STATUS_STREAM_ENABLED, info.isDeviceStatusStreamEnabled());
 
         editor.apply();
+    }
+
+    /**
+     * Checks to see if the MQTT client ID is set in the shared preferences. If it is not, then a
+     * random client ID is generated and saved to the shared preferences. This is to improve the
+     * UX for the user, to make it easier to fill out the MQTT connection UI.
+     */
+    public static void populateRandomMqttClientIdIfMissing(Context context)
+    {
+        SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(context);
+        String mqttClientId = preferences.getString(PROPERTY_MQTT_CLIENT_ID, "");
+        if (mqttClientId.isEmpty())
+        {
+            final SharedPreferences.Editor edit = preferences.edit();
+            edit.putString(PROPERTY_MQTT_CLIENT_ID, generateClientID());
+            edit.apply();
+        }
+    }
+
+    /**
+     * @return A random MQTT client ID that is a combination of two words and a number.
+     */
+    private static String generateClientID()
+    {
+        final int wordsSize = WORDS.size();
+        final int index1 = RANDOM.nextInt(wordsSize);
+        int index2 = RANDOM.nextInt(wordsSize);
+        while (index1 == index2)
+        {
+            index2 = RANDOM.nextInt(wordsSize);
+        }
+
+        String word1 = WORDS.get(index1);
+        String word2 = WORDS.get(index2);
+        final int number = RANDOM.nextInt(100); // Generates a number from 0 to 99
+
+        return word1 + word2 + number;
     }
 }

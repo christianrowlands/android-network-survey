@@ -74,9 +74,14 @@ public class MqttFragment extends AConnectionFragment<NetworkSurveyService.Surve
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState)
     {
+        // The mqttConnectionSettings will be passed as an argument if the QR code scanner fragment
+        // was just displayed. A nuance to this is that even if the user did not scan a QR code, we
+        // will still get mqttConnectionSettings. This is because when the user clicks on the "Scan
+        // Code" button we don't want them to lose all of the settings they have already entered in
+        // the event they immediately cancel the QR code scan, so we might just be getting the
+        // settings that were already entered instead of new QR scanned settings.
         MqttConnectionSettings mqttConnectionSettings =
                 MqttFragmentArgs.fromBundle(getArguments()).getMqttConnectionSettings();
-
         if (mqttConnectionSettings != null)
         {
             populatePrefsFromMqttConnectionSettings(mqttConnectionSettings, getContext());

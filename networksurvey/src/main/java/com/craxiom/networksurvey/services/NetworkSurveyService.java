@@ -180,6 +180,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
 
         setScanRateValues();
         readMdmOverridePreference();
+        PreferenceUtils.populateRandomMqttClientIdIfMissing(context);
         PreferenceManager.getDefaultSharedPreferences(context).registerOnSharedPreferenceChangeListener(this);
 
         // Must register for MDM updates AFTER initializing the MQTT connection because we try to make an MQTT connection if the MDM settings change

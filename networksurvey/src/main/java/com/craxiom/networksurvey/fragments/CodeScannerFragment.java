@@ -1,10 +1,8 @@
 package com.craxiom.networksurvey.fragments;
 
-import static com.craxiom.mqttlibrary.MqttConstants.*;
 import static com.craxiom.networksurvey.util.PreferenceUtils.populatePrefsFromMqttConnectionSettings;
 
 import android.app.Activity;
-import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
