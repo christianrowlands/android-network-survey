@@ -154,6 +154,12 @@ public class MainCellularFragment extends AServiceDataFragment
             if (subscriptions.isEmpty())
             {
                 args.putInt(NetworkDetailsFragment.SUBSCRIPTION_ID_KEY, CellularController.DEFAULT_SUBSCRIPTION_ID);
+            } else if (subscriptions.size() == 1)
+            {
+                // We only want to use the subscription info list if there are two active SIMs.  If there is only
+                // one active SIM, then we will just use the default subscription ID which gets filtered out in
+                // the SurveyRecordProcessor. This prevents the "slot" field from getting set on all the records.
+                args.putInt(NetworkDetailsFragment.SUBSCRIPTION_ID_KEY, CellularController.DEFAULT_SUBSCRIPTION_ID);
             } else
             {
                 int subscriptionId = subscriptions.get(position).getSubscriptionId();
