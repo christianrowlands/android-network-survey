@@ -1,5 +1,26 @@
 # Changelog
 
+## [1.16](https://github.com/christianrowlands/android-network-survey/releases/tag/v1.16) - 2023-12-20
+
+* Adds support for Dual/Multi-SIM devices both in the UI as well as the messages (MQTT and file
+  logging).
+* Autogenerate the MQTT client ID when the app is opened for the first time to improve the UX.
+* Move the cellular calculators to the nav drawer menu instead of a tab in cellular.
+* Sets the CQI and Signal Strength (RSSI) on the LteRecord on supported devices.
+* Makes several UI fields selectable so they can be copied.
+* Fixes a bug with auto-starting Bluetooth logging on app opening.
+
+## [1.15](https://github.com/christianrowlands/android-network-survey/releases/tag/v1.15) - 2023-11-22
+
+* Battery improvement for GNSS when the scan rate is set to 30 seconds or more.
+* Adds support for logging AGC with GNSS on certain devices.
+* Logs if a Wi-Fi access point supports Passpoint.
+* Displays and logs WPA2/WPA3 and WPA3 for APs in the Wi-Fi Survey.
+* Displays the LTE band number on the cellular details screen.
+* Changes the default scan rates to 8 seconds for Wi-Fi, and 20 seconds for GNSS (from 5 and 10
+  respectively).
+* Adds the altitude to the location view.
+
 ## [1.14](https://github.com/christianrowlands/android-network-survey/releases/tag/v1.14) - 2023-11-09
 
 * Added support for logging Cellular, Wi-Fi, Bluetooth, and GNSS surveys to CSV files.

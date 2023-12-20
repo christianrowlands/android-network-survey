@@ -32,6 +32,7 @@ import android.os.Bundle;
 
 import androidx.preference.PreferenceManager;
 
+import com.craxiom.mqttlibrary.MqttConstants;
 import com.craxiom.networksurvey.Application;
 import com.craxiom.networksurvey.R;
 import com.craxiom.networksurvey.constants.NetworkSurveyConstants;
@@ -571,6 +572,10 @@ public class PreferenceUtils
         if (mqttConnectionSettings.getMqttPassword() != null)
         {
             edit.putString(PROPERTY_MQTT_PASSWORD, mqttConnectionSettings.getMqttPassword());
+        }
+        if (mqttConnectionSettings.getMqttTopicPrefix() != null)
+        {
+            edit.putString(MqttConstants.PROPERTY_MQTT_TOPIC_PREFIX, mqttConnectionSettings.getMqttTopicPrefix());
         }
 
         edit.apply();

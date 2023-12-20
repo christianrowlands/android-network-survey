@@ -36,6 +36,9 @@ public class MqttConnectionSettings implements Serializable
     @SerializedName("mqtt_password")
     private String mqttPassword;
 
+    @SerializedName("mqtt_topic_prefix")
+    private String mqttTopicPrefix;
+
     public String getHost()
     {
         return host;
@@ -94,5 +97,15 @@ public class MqttConnectionSettings implements Serializable
     public void setMqttPassword(String mqttPassword)
     {
         this.mqttPassword = mqttPassword;
+    }
+
+    public String getMqttTopicPrefix()
+    {
+        return mqttTopicPrefix;
+    }
+
+    public void setMqttTopicPrefix(String mqttTopicPrefix)
+    {
+        this.mqttTopicPrefix = mqttTopicPrefix;
     }
 }

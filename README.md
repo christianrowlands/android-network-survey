@@ -48,7 +48,7 @@ requires the full SMS permission, and Google Play won\'t approve publishing Netw
 Play Store if it requests the SMS permission. If you are interested in a CDR logger that supports
 SMS events and logging the "other" phone number for call events, you can install the app from the
 source code in this repo, or if you prefer a pre-built apk you can get the latest APK by navigating
-to the [GitHub Releases page](https://github.com/christianrowlands/android-network-survey/releases), 
+to the [GitHub Releases page](https://github.com/christianrowlands/android-network-survey/releases),
 and then downloading the "*cdr-release.apk" under the latest release.
 
 ## Tracking And Privacy
@@ -131,6 +131,16 @@ library. [The API documentation is published to a web page here](https://messagi
 
 QR Code for MQTT Broker connection setting needs to provide a JSON string with the following fields.
 
+The `mqtt_client` field is optional and will default to the App's auto-generated value.
+
+The `mqtt_topic_prefix` field is used to prefix the MQTT topics that the survey records are
+published
+to. The default topics are listed above (e.g. `lte_message`), but if you want to add a custom
+prefix,
+you can use the `mqtt_topic_prefix` field to change the topic to something like
+`my/custom/topic/lte_message` by setting the value to `"mqtt_topic_prefix": "my/custom/topic/"`
+(notice the trailing slash).
+
 ```json
 {
   "mqtt_username": "auser",
@@ -138,7 +148,8 @@ QR Code for MQTT Broker connection setting needs to provide a JSON string with t
   "mqtt_host": "cloud.azure.com",
   "mqtt_port": 8883,
   "mqtt_client": "aclient",
-  "mqtt_tls": true
+  "mqtt_tls": true,
+  "mqtt_topic_prefix": "my/custom/topic/path/"
 }
 ```
 

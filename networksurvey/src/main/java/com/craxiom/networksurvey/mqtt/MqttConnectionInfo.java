@@ -12,9 +12,10 @@ public class MqttConnectionInfo extends BrokerConnectionInfo
 
     public MqttConnectionInfo(String mqttBrokerHost, int portNumber, boolean tlsEnabled, String mqttClientId, String mqttUsername,
                               String mqttPassword, boolean isCellularStreamEnabled, boolean isWifiStreamEnabled,
-                              boolean isBluetoothStreamEnabled, boolean isGnssStreamEnabled, boolean isDeviceStatusStreamEnabled)
+                              boolean isBluetoothStreamEnabled, boolean isGnssStreamEnabled, boolean isDeviceStatusStreamEnabled,
+                              String topicPrefix)
     {
-        super(mqttBrokerHost, portNumber, tlsEnabled, mqttClientId, mqttUsername, mqttPassword);
+        super(mqttBrokerHost, portNumber, tlsEnabled, mqttClientId, mqttUsername, mqttPassword, topicPrefix);
         this.isCellularStreamEnabled = isCellularStreamEnabled;
         this.isWifiStreamEnabled = isWifiStreamEnabled;
         this.isBluetoothStreamEnabled = isBluetoothStreamEnabled;

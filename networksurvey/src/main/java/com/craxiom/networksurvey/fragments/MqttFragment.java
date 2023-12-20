@@ -224,7 +224,8 @@ public class MqttFragment extends AConnectionFragment<NetworkSurveyService.Surve
                 wifiStreamEnabled,
                 bluetoothStreamEnabled,
                 gnssStreamEnabled,
-                deviceStatusStreamEnabled);
+                deviceStatusStreamEnabled,
+                topicPrefix);
     }
 
     @Override
@@ -256,6 +257,7 @@ public class MqttFragment extends AConnectionFragment<NetworkSurveyService.Surve
                 .deviceName(deviceNameEdit.getText().toString())
                 .mqttUsername(usernameEdit.getText().toString())
                 .mqttPassword(passwordEdit.getText().toString())
+                .mqttTopicPrefix(topicPrefix)
                 .build();
     }
 

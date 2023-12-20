@@ -278,6 +278,7 @@ but work independently, so you have full control over how you handle your data.<
     <string name="stream_bluetooth_title">Stream Bluetooth</string>
     <string name="stream_gnss_title">Stream GNSS</string>
     <string name="stream_device_status_title">Stream Device Status</string>
+    <string name="mqtt_topic_prefix_title">MQTT Topic Prefix</string>
 
     <!-- App Restriction Constants -->
     <string name="mqtt_start_on_boot_title">MQTT Start at Boot</string>
@@ -294,6 +295,7 @@ but work independently, so you have full control over how you handle your data.<
     <string name="mqtt_username_description">The username to use when authenticating to the MQTT broker</string>
     <string name="mqtt_password_title">MQTT Broker Password</string>
     <string name="mqtt_password_description">The password to use when authenticating to the MQTT broker</string>
+    <string name="mqtt_topic_prefix_description">The prefix to use on the standard MQTT topics used by Network Survey. For example, setting the value to "my/custom/topic/" will result in LTE messages being set on "my/custom/topic/lte_message". The default value is empty.</string>
     <string name="cellular_stream_title">Cellular Stream Enabled</string>
     <string name="cellular_stream_description">True to stream cellular data, false otherwise</string>
     <string name="wifi_stream_title">Wi-Fi Stream Enabled</string>

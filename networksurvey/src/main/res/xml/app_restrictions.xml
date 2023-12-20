@@ -119,6 +119,12 @@
         android:title="@string/device_status_stream_title" />
 
     <restriction
+        android:description="@string/mqtt_topic_prefix_description"
+        android:key="mqtt_topic_prefix"
+        android:restrictionType="string"
+        android:title="@string/mqtt_topic_prefix_title" />
+
+    <restriction
         android:defaultValue="5"
         android:description="@string/log_rollover_description"
         android:key="log_rollover_size_mb"
