@@ -142,8 +142,13 @@ public class NetworkDetailsFragment extends AServiceDataFragment implements ICel
     {
         service.registerCellularSurveyRecordListener(this);
         service.registerLocationListener(this);
-        initializeLocationTextView(); // Refresh the location views because we might have missed something between the
-        // initial call and when we registered as a listener.
+        // Refresh the location views because we might have missed something between the
+        // initial call and when we registered as a listener, but only if the location is not null
+        // because the initializeLocationTextView method might have set the UI to indicate that the
+        // location provider is disabled or that the location permission is missing and we don't
+        // want to override that.
+        Location latestLocation = service.getGpsListener().getLatestLocation();
+        if (latestLocation != null) updateLocationTextView(latestLocation);
 
         service.runSingleCellularScan();
     }

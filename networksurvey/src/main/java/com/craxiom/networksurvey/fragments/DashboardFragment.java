@@ -122,8 +122,13 @@ public class DashboardFragment extends AServiceDataFragment implements LocationL
         service.registerMqttConnectionStateListener(this);
         service.registerLoggingChangeListener(this);
 
-        initializeLocationTextView(); // Refresh the location views because we might have missed something between the
-        // initial call and when we registered as a listener.
+        // Refresh the location views because we might have missed something between the
+        // initial call and when we registered as a listener, but only if the location is not null
+        // because the initializeLocationTextView method might have set the UI to indicate that the
+        // location provider is disabled or that the location permission is missing and we don't
+        // want to override that.
+        Location latestLocation = service.getGpsListener().getLatestLocation();
+        if (latestLocation != null) updateLocationTextView(latestLocation);
 
         Context context = getContext();
         if (context != null)
