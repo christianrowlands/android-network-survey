@@ -34,6 +34,8 @@ public class CdrSmsReceiver extends BroadcastReceiver
         Timber.d("Received the sms received intent action");
 
         final SmsMessage[] messages = Telephony.Sms.Intents.getMessagesFromIntent(intent);
+        if (messages == null) return;
+
         for (SmsMessage message : messages)
         {
             Intent smsIntent = new Intent(SMS_RECEIVED_INTENT);
