@@ -369,6 +369,12 @@ public class CellularController extends AController
             if (ActivityCompat.checkSelfPermission(surveyService, Manifest.permission.READ_PHONE_STATE) == PackageManager.PERMISSION_GRANTED)
             {
                 activeSubscriptionInfoList = subscriptionManager.getActiveSubscriptionInfoList();
+                if (activeSubscriptionInfoList == null)
+                {
+                    Timber.i("The returned active subscription info list was null.");
+                    activeSubscriptionInfoList = new ArrayList<>();
+                }
+
                 Timber.i("Found %s active SIMs", activeSubscriptionInfoList.size());
 
                 // We only want to use the subscription info list if there are two active SIMs.  If there is only
@@ -450,7 +456,7 @@ public class CellularController extends AController
 
     /**
      * Runs one cellular scan. This is used to prime the UI in the event that the scan interval is really long.
-     *
+     * <p>
      * Need to synchronize it because we use the resources that are initialized on SIM changes
      * such as telephonyManagerList.
      */
