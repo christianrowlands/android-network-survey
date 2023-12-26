@@ -4,8 +4,8 @@
 
     <!-- Base application theme. -->
     <style name="NetworkSurveyTheme" parent="Theme.AppCompat.DayNight">
-        <item name="android:colorPrimary">@color/colorPrimary</item>
-        <item name="android:colorAccent">@color/colorAccent</item>
+        <item name="colorPrimary">@color/colorPrimary</item>
+        <item name="colorAccent">@color/colorAccent</item>
         <item name="windowActionBar">false</item>
         <item name="windowNoTitle">true</item>
         <item name="android:colorBackgroundFloating">@color/colorCardDark</item>
@@ -21,7 +21,7 @@
     </style>
 
     <style name="BottomNavigationTheme" parent="NetworkSurveyTheme">
-        <item name="android:colorPrimary">@color/activeTabColor</item>
+        <item name="colorPrimary">@color/activeTabColor</item>
         <item name="android:textColorSecondary">@color/inactiveTabColor</item>
     </style>
 
