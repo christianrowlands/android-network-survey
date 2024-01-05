@@ -260,6 +260,8 @@ but work independently, so you have full control over how you handle your data.<
     <string name="android_10_throttling_information">Android 10+ throttles Wi-Fi scans. To disable throttling: System -> Advanced -> Developer options -> WiFi scan throttling to off.</string>
     <string name="enable_developer_options">To enable Developer Options: Settings -> About Phone -> Tap Build Number 7 times.</string>
 
+    <string name="x_axis_rssi">RSSI (dBm)</string>
+
     <!-- Bluetooth Device List -->
     <string name="bluetooth_devices_in_scan"># of Devices: %1$d</string>
     <string name="bluetooth_scan_status_not_supported">Not Supported</string>

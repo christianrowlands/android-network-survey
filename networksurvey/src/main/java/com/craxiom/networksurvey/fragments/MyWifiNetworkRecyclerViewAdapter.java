@@ -16,7 +16,8 @@ import com.craxiom.messaging.WifiBeaconRecordData;
 import com.craxiom.networksurvey.R;
 import com.craxiom.networksurvey.constants.WifiBeaconMessageConstants;
 import com.craxiom.networksurvey.model.WifiRecordWrapper;
-import com.google.protobuf.BoolValue;
+
+import timber.log.Timber;
 
 /**
  * The recycler view for the list of Wi-Fi networks displayed in the UI.
@@ -27,11 +28,13 @@ public class MyWifiNetworkRecyclerViewAdapter extends RecyclerView.Adapter<MyWif
 {
     private final SortedList<WifiRecordWrapper> wifiRecords;
     private final Context context;
+    private final WifiNetworksFragment wifiNetworksFragment;
 
-    MyWifiNetworkRecyclerViewAdapter(SortedList<WifiRecordWrapper> items, Context context)
+    MyWifiNetworkRecyclerViewAdapter(SortedList<WifiRecordWrapper> items, Context context, WifiNetworksFragment wifiNetworksFragment)
     {
         wifiRecords = items;
         this.context = context;
+        this.wifiNetworksFragment = wifiNetworksFragment;
     }
 
     @NonNull
@@ -116,10 +119,24 @@ public class MyWifiNetworkRecyclerViewAdapter extends RecyclerView.Adapter<MyWif
     }
 
     /**
+     * Navigates to the Wi-Fi details screen for the selected Wi-Fi network.
+     */
+    private void navigateToWifiDetails(String bssid, Float signalStrength)
+    {
+        if (bssid == null || bssid.isEmpty())
+        {
+            Timber.wtf("The BSSID is null or empty so we are unable to show the Wi-Fi details screen.");
+            return;
+        }
+
+        wifiNetworksFragment.navigateToWifiDetails(bssid, signalStrength);
+    }
+
+    /**
      * The holder for the view components that go into the View.  These UI components will be updated with the content
      * in the onBindViewHolder method.
      */
-    static class ViewHolder extends RecyclerView.ViewHolder
+    class ViewHolder extends RecyclerView.ViewHolder
     {
         final View mView;
         final TextView ssid;
@@ -144,6 +161,15 @@ public class MyWifiNetworkRecyclerViewAdapter extends RecyclerView.Adapter<MyWif
             channel = view.findViewById(R.id.wifi_channel);
             passpoint = view.findViewById(R.id.wifi_passpoint);
             capabilities = view.findViewById(R.id.wifi_capabilities);
+
+            mView.setOnClickListener(v -> {
+                Float signalStrength = null;
+                if (wifiRecord.getData().hasSignalStrength())
+                {
+                    signalStrength = wifiRecord.getData().getSignalStrength().getValue();
+                }
+                navigateToWifiDetails(wifiRecord.getData().getBssid(), signalStrength);
+            });
         }
     }
 }

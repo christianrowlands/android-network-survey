@@ -27,6 +27,7 @@ import androidx.fragment.app.FragmentActivity;
 import androidx.lifecycle.LifecycleOwner;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.lifecycle.ViewModelStoreOwner;
+import androidx.navigation.Navigation;
 import androidx.navigation.fragment.NavHostFragment;
 import androidx.preference.PreferenceManager;
 import androidx.recyclerview.widget.SortedList;
@@ -36,6 +37,7 @@ import com.craxiom.networksurvey.constants.NetworkSurveyConstants;
 import com.craxiom.networksurvey.databinding.FragmentWifiNetworksListBinding;
 import com.craxiom.networksurvey.fragments.model.WifiViewModel;
 import com.craxiom.networksurvey.listeners.IWifiSurveyRecordListener;
+import com.craxiom.networksurvey.model.WifiNetwork;
 import com.craxiom.networksurvey.model.WifiRecordWrapper;
 import com.craxiom.networksurvey.services.NetworkSurveyService;
 import com.google.android.material.snackbar.Snackbar;
@@ -103,7 +105,7 @@ public class WifiNetworksFragment extends Fragment implements IWifiSurveyRecordL
         final SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(applicationContext);
         viewModel.setSortByIndex(preferences.getInt(NetworkSurveyConstants.PROPERTY_WIFI_NETWORKS_SORT_ORDER, 0));
 
-        wifiNetworkRecyclerViewAdapter = new MyWifiNetworkRecyclerViewAdapter(wifiRecordSortedList, getContext());
+        wifiNetworkRecyclerViewAdapter = new MyWifiNetworkRecyclerViewAdapter(wifiRecordSortedList, getContext(), this);
         binding.wifiNetworkList.setAdapter(wifiNetworkRecyclerViewAdapter);
 
         binding.pauseButton.setOnClickListener(v -> viewModel.toggleUpdatesPaused(getContext()));
@@ -203,6 +205,24 @@ public class WifiNetworksFragment extends Fragment implements IWifiSurveyRecordL
                 Timber.e(e, "Could not update the Wi-Fi Fragment UI due to an exception");
             }
         });
+    }
+
+    /**
+     * Navigates to the Wi-Fi details screen for the selected Wi-Fi network.
+     */
+    public void navigateToWifiDetails(String bssid, Float signalStrength)
+    {
+        if (bssid == null || bssid.isEmpty())
+        {
+            Timber.wtf("The BSSID is null or empty so we are unable to show the Wi-Fi details screen.");
+            return;
+        }
+
+        FragmentActivity activity = getActivity();
+        if (activity == null) return;
+
+        Navigation.findNavController(activity, getId())
+                .navigate(WifiNetworksFragmentDirections.actionWifiListFragmentToWifiDetailsFragment(new WifiNetwork(bssid, signalStrength)));
     }
 
     /**
