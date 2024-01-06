@@ -15,6 +15,7 @@ import com.craxiom.messaging.WifiBeaconRecord;
 import com.craxiom.messaging.WifiBeaconRecordData;
 import com.craxiom.networksurvey.R;
 import com.craxiom.networksurvey.constants.WifiBeaconMessageConstants;
+import com.craxiom.networksurvey.model.WifiNetwork;
 import com.craxiom.networksurvey.model.WifiRecordWrapper;
 
 import timber.log.Timber;
@@ -121,15 +122,10 @@ public class MyWifiNetworkRecyclerViewAdapter extends RecyclerView.Adapter<MyWif
     /**
      * Navigates to the Wi-Fi details screen for the selected Wi-Fi network.
      */
-    private void navigateToWifiDetails(String bssid, Float signalStrength)
+    private void navigateToWifiDetails(WifiNetwork wifiNetwork)
     {
-        if (bssid == null || bssid.isEmpty())
-        {
-            Timber.wtf("The BSSID is null or empty so we are unable to show the Wi-Fi details screen.");
-            return;
-        }
 
-        wifiNetworksFragment.navigateToWifiDetails(bssid, signalStrength);
+        wifiNetworksFragment.navigateToWifiDetails(wifiNetwork);
     }
 
     /**
@@ -164,11 +160,28 @@ public class MyWifiNetworkRecyclerViewAdapter extends RecyclerView.Adapter<MyWif
 
             mView.setOnClickListener(v -> {
                 Float signalStrength = null;
-                if (wifiRecord.getData().hasSignalStrength())
+                WifiBeaconRecordData data = wifiRecord.getData();
+                if (data.hasSignalStrength())
                 {
-                    signalStrength = wifiRecord.getData().getSignalStrength().getValue();
+                    signalStrength = data.getSignalStrength().getValue();
                 }
-                navigateToWifiDetails(wifiRecord.getData().getBssid(), signalStrength);
+
+                if (data.getBssid().isEmpty())
+                {
+                    Timber.wtf("The BSSID is empty so we are unable to show the Wi-Fi details screen.");
+                    return;
+                }
+
+                WifiNetwork wifiNetwork = new WifiNetwork(
+                        data.getBssid(),
+                        signalStrength,
+                        data.getSsid(),
+                        data.hasFrequencyMhz() ? data.getFrequencyMhz().getValue() : null,
+                        data.hasChannel() ? data.getChannel().getValue() : null,
+                        WifiBeaconMessageConstants.getEncryptionTypeString(data.getEncryptionType()),
+                        data.hasPasspoint() ? data.getPasspoint().getValue() : null,
+                        "");
+                navigateToWifiDetails(wifiNetwork);
             });
         }
     }

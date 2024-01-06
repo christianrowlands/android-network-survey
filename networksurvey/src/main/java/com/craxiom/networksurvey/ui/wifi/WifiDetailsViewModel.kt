@@ -3,6 +3,7 @@ package com.craxiom.networksurvey.ui.wifi
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.craxiom.networksurvey.model.WifiNetwork
 import com.patrykandpatrick.vico.core.model.CartesianChartModelProducer
 import com.patrykandpatrick.vico.core.model.LineCartesianLayerModel
 import kotlinx.coroutines.Dispatchers
@@ -22,6 +23,8 @@ private const val UPDATE_FREQUENCY = 2000L
 internal class WifiDetailsViewModel : ViewModel() {
 
     internal val modelProducer = CartesianChartModelProducer.build()
+
+    lateinit var wifiNetwork: WifiNetwork
 
     private val xValueQueue: ArrayDeque<Int> by dequeLimiter(CHART_WIDTH)
     private val rssiQueue: ArrayDeque<Float> by dequeLimiter(CHART_WIDTH)

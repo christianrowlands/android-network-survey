@@ -210,19 +210,14 @@ public class WifiNetworksFragment extends Fragment implements IWifiSurveyRecordL
     /**
      * Navigates to the Wi-Fi details screen for the selected Wi-Fi network.
      */
-    public void navigateToWifiDetails(String bssid, Float signalStrength)
+    public void navigateToWifiDetails(WifiNetwork wifiNetwork)
     {
-        if (bssid == null || bssid.isEmpty())
-        {
-            Timber.wtf("The BSSID is null or empty so we are unable to show the Wi-Fi details screen.");
-            return;
-        }
-
         FragmentActivity activity = getActivity();
         if (activity == null) return;
 
         Navigation.findNavController(activity, getId())
-                .navigate(WifiNetworksFragmentDirections.actionWifiListFragmentToWifiDetailsFragment(new WifiNetwork(bssid, signalStrength)));
+                .navigate(WifiNetworksFragmentDirections.actionWifiListFragmentToWifiDetailsFragment(
+                        wifiNetwork));
     }
 
     /**

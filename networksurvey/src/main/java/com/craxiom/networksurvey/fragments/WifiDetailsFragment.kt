@@ -35,11 +35,12 @@ class WifiDetailsFragment : AServiceDataFragment(), IWifiSurveyRecordListener {
             setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed)
             setContent {
                 viewModel = viewModel()
+                viewModel.wifiNetwork = wifiNetwork
                 if (wifiNetwork.signalStrength != null) {
                     viewModel.addInitialRssi(wifiNetwork.signalStrength!!)
                 }
                 NsTheme {
-                    WifiDetailsScreen(viewModel = viewModel, wifiNetwork = wifiNetwork)
+                    WifiDetailsScreen(viewModel = viewModel)
                 }
             }
         }
