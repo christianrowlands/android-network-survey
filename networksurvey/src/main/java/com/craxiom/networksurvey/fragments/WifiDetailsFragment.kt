@@ -12,6 +12,7 @@ import com.craxiom.networksurvey.listeners.IWifiSurveyRecordListener
 import com.craxiom.networksurvey.model.WifiNetwork
 import com.craxiom.networksurvey.model.WifiRecordWrapper
 import com.craxiom.networksurvey.services.NetworkSurveyService
+import com.craxiom.networksurvey.ui.wifi.UNKNOWN_RSSI
 import com.craxiom.networksurvey.ui.wifi.WifiDetailsScreen
 import com.craxiom.networksurvey.ui.wifi.WifiDetailsViewModel
 import com.craxiom.networksurvey.util.NsTheme
@@ -36,7 +37,9 @@ class WifiDetailsFragment : AServiceDataFragment(), IWifiSurveyRecordListener {
             setContent {
                 viewModel = viewModel()
                 viewModel.wifiNetwork = wifiNetwork
-                if (wifiNetwork.signalStrength != null) {
+                if (wifiNetwork.signalStrength == null) {
+                    viewModel.addInitialRssi(UNKNOWN_RSSI)
+                } else {
                     viewModel.addInitialRssi(wifiNetwork.signalStrength!!)
                 }
                 NsTheme {
@@ -70,6 +73,7 @@ class WifiDetailsFragment : AServiceDataFragment(), IWifiSurveyRecordListener {
 
         if (targetWifiRecordWrapper == null) {
             Timber.i("No wifi record found for ${wifiNetwork.bssid} in the wifi scan results")
+            viewModel.addNewRssi(UNKNOWN_RSSI)
             return
         }
 
@@ -77,6 +81,8 @@ class WifiDetailsFragment : AServiceDataFragment(), IWifiSurveyRecordListener {
             viewModel.addNewRssi(targetWifiRecordWrapper.wifiBeaconRecord.data.signalStrength.value)
         } else {
             Timber.i("No signal strength present for ${wifiNetwork.bssid} in the wifi beacon record")
+            viewModel.addNewRssi(UNKNOWN_RSSI)
+
         }
     }
 }

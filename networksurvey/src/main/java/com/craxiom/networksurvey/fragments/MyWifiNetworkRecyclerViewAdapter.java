@@ -17,6 +17,7 @@ import com.craxiom.networksurvey.R;
 import com.craxiom.networksurvey.constants.WifiBeaconMessageConstants;
 import com.craxiom.networksurvey.model.WifiNetwork;
 import com.craxiom.networksurvey.model.WifiRecordWrapper;
+import com.craxiom.networksurvey.util.ColorUtils;
 
 import timber.log.Timber;
 
@@ -69,9 +70,9 @@ public class MyWifiNetworkRecyclerViewAdapter extends RecyclerView.Adapter<MyWif
 
         if (data.hasSignalStrength())
         {
-            final float signalStrength = data.getSignalStrength().getValue();
+            final int signalStrength = (int) data.getSignalStrength().getValue();
             holder.signalStrength.setText(context.getString(R.string.dbm_value, String.valueOf(signalStrength)));
-            holder.signalStrength.setTextColor(context.getResources().getColor(getColorForSignalStrength(signalStrength), null));
+            holder.signalStrength.setTextColor(context.getResources().getColor(ColorUtils.getColorForWifiSignalStrength(signalStrength), null));
         } else
         {
             holder.signalStrength.setText("");
@@ -90,33 +91,6 @@ public class MyWifiNetworkRecyclerViewAdapter extends RecyclerView.Adapter<MyWif
     public int getItemCount()
     {
         return wifiRecords.size();
-    }
-
-    /**
-     * @param signalStrength The signal strength value in dBm.
-     * @return The resource ID for the color that should be used for the signal strength text.
-     */
-    private int getColorForSignalStrength(float signalStrength)
-    {
-        final int colorResourceId;
-        if (signalStrength > -60)
-        {
-            colorResourceId = R.color.rssi_green;
-        } else if (signalStrength > -70)
-        {
-            colorResourceId = R.color.rssi_yellow;
-        } else if (signalStrength > -80)
-        {
-            colorResourceId = R.color.rssi_orange;
-        } else if (signalStrength > -90)
-        {
-            colorResourceId = R.color.rssi_red;
-        } else
-        {
-            colorResourceId = R.color.rssi_deep_red;
-        }
-
-        return colorResourceId;
     }
 
     /**
@@ -158,6 +132,7 @@ public class MyWifiNetworkRecyclerViewAdapter extends RecyclerView.Adapter<MyWif
             passpoint = view.findViewById(R.id.wifi_passpoint);
             capabilities = view.findViewById(R.id.wifi_capabilities);
 
+            // FIXME Make a click anywhere on the row navigate to the details screen, even when clicking on text
             mView.setOnClickListener(v -> {
                 Float signalStrength = null;
                 WifiBeaconRecordData data = wifiRecord.getData();

@@ -4,6 +4,8 @@ import android.graphics.Color;
 
 import androidx.annotation.ColorInt;
 
+import com.craxiom.networksurvey.R;
+
 /**
  * Utility methods for working with colors in this app.
  *
@@ -104,5 +106,32 @@ public class ColorUtils
         final int index = Math.min((int) ((signalStrength) / step), NUMBER_VALUES);
 
         return COLOR_BINS[index];
+    }
+
+    /**
+     * @param signalStrength The Wi-Fi signal strength value in dBm.
+     * @return The resource ID for the color that should be used for the signal strength text.
+     */
+    public static int getColorForWifiSignalStrength(float signalStrength)
+    {
+        final int colorResourceId;
+        if (signalStrength > -60)
+        {
+            colorResourceId = R.color.rssi_green;
+        } else if (signalStrength > -70)
+        {
+            colorResourceId = R.color.rssi_yellow;
+        } else if (signalStrength > -80)
+        {
+            colorResourceId = R.color.rssi_orange;
+        } else if (signalStrength > -90)
+        {
+            colorResourceId = R.color.rssi_red;
+        } else
+        {
+            colorResourceId = R.color.rssi_deep_red;
+        }
+
+        return colorResourceId;
     }
 }

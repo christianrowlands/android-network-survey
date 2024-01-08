@@ -14,7 +14,6 @@ import com.patrykandpatrick.vico.compose.chart.layout.fullWidth
 import com.patrykandpatrick.vico.compose.chart.rememberCartesianChart
 import com.patrykandpatrick.vico.compose.chart.scroll.rememberChartScrollSpec
 import com.patrykandpatrick.vico.compose.component.shape.shader.color
-import com.patrykandpatrick.vico.compose.dimensions.dimensionsOf
 import com.patrykandpatrick.vico.compose.style.ProvideChartStyle
 import com.patrykandpatrick.vico.core.axis.AxisItemPlacer
 import com.patrykandpatrick.vico.core.axis.vertical.VerticalAxis
@@ -41,6 +40,12 @@ private fun ComposeChart(modelProducer: CartesianChartModelProducer) {
     ProvideChartStyle(rememberChartStyle(chartColors)) {
         //val defaultLines = currentChartStyle.lineLayer.lines
         CartesianChartHost(
+            modelProducer = modelProducer,
+            marker = rememberMarker(),
+            runInitialAnimation = false,
+            diffAnimationSpec = snap(),
+            horizontalLayout = horizontalLayout,
+            chartScrollSpec = rememberChartScrollSpec(isScrollEnabled = false),
             chart =
             rememberCartesianChart(
                 rememberLineCartesianLayer(
@@ -66,22 +71,14 @@ private fun ComposeChart(modelProducer: CartesianChartModelProducer) {
                     title = stringResource(R.string.y_axis_time),
                 ),*/
                 fadingEdges = rememberFadingEdges(),
-            ),
-            modelProducer = modelProducer,
-            marker = rememberMarker(),
-            runInitialAnimation = false,
-            diffAnimationSpec = snap(),
-            horizontalLayout = horizontalLayout,
-            chartScrollSpec = rememberChartScrollSpec(isScrollEnabled = false)
+            )
         )
     }
 }
 
-private const val COLOR_1_CODE = 0xffffbb00
 private const val COLOR_2_CODE = 0xff9db591
 
 private val lineColor = Color(0xFF03A9F4)
-private val color1 = Color(COLOR_1_CODE)
 private val color2 = Color(COLOR_2_CODE)
 private val chartColors = listOf(lineColor, color2)
 private val lineSpec = listOf(
@@ -92,14 +89,7 @@ private val lineSpec = listOf(
     ),
 )
 private val axisValueOverrider = AxisValueOverrider.fixed<LineCartesianLayerModel>(
-    maxY = -30f,
-    minY = -110f,
+    maxY = MAX_WIFI_RSSI,
+    minY = MIN_WIFI_RSSI,
 )
-private val axisTitleHorizontalPaddingValue = 8.dp
-private val axisTitleVerticalPaddingValue = 2.dp
-private val axisTitlePadding =
-    dimensionsOf(axisTitleHorizontalPaddingValue, axisTitleVerticalPaddingValue)
-private val axisTitleMarginValue = 4.dp
-private val startAxisTitleMargins = dimensionsOf(end = axisTitleMarginValue)
-private val bottomAxisTitleMargins = dimensionsOf(top = axisTitleMarginValue)
 private val horizontalLayout = HorizontalLayout.fullWidth()
