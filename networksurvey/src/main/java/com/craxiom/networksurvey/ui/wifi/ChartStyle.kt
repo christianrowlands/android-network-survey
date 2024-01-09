@@ -1,5 +1,6 @@
 package com.craxiom.networksurvey.ui.wifi
 
+import android.graphics.Paint
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
@@ -10,9 +11,39 @@ import com.patrykandpatrick.vico.compose.style.ChartStyle
 import com.patrykandpatrick.vico.core.DefaultColors
 import com.patrykandpatrick.vico.core.DefaultDimens
 import com.patrykandpatrick.vico.core.chart.layer.LineCartesianLayer
+import com.patrykandpatrick.vico.core.component.Component
 import com.patrykandpatrick.vico.core.component.shape.LineComponent
 import com.patrykandpatrick.vico.core.component.shape.Shapes
 import com.patrykandpatrick.vico.core.component.shape.shader.DynamicShaders
+import com.patrykandpatrick.vico.core.context.DrawContext
+
+/**
+ * A Circle component that can be used to draw a point on a canvas. This could be used instead of
+ * drawing lines between the points.
+ */
+class CircleComponentGpt(
+    private val radius: Float,
+    private val circleColor: Int
+) : Component() {
+    private val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        this.color = circleColor
+    }
+
+    override fun draw(
+        context: DrawContext,
+        left: Float,
+        top: Float,
+        right: Float,
+        bottom: Float,
+        opacity: Float
+    ) {
+        val centerX = (left + right) / 2
+        val centerY = (top + bottom) / 2
+        paint.alpha =
+            (opacity * 255).toInt()  // Adjust paint opacity based on the provided opacity parameter
+        context.canvas.drawCircle(centerX, centerY, radius, paint)
+    }
+}
 
 @Composable
 internal fun rememberChartStyle(
@@ -43,14 +74,7 @@ internal fun rememberChartStyle(
                         thicknessDp = 3f,
                         shader = DynamicShaders.color(lineChartColor),
                         backgroundShader = null,
-                        /*DynamicShaders.fromBrush(
-                            Brush.verticalGradient(
-                                listOf(
-                                    lineChartColor.copy(DefaultAlpha.LINE_BACKGROUND_SHADER_START),
-                                    lineChartColor.copy(DefaultAlpha.LINE_BACKGROUND_SHADER_END),
-                                ),
-                            ),
-                        ),*/
+                        //point = CircleComponentGpt(5f, lineChartColor.toArgb()),
                     )
                 },
             ),
