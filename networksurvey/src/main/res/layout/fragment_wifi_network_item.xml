@@ -19,8 +19,7 @@
             android:layout_weight="1"
             android:ellipsize="end"
             android:maxLines="1"
-            android:text=""
-            android:textIsSelectable="true" />
+            android:text="" />
 
         <TextView
             android:id="@+id/wifi_signal_strength"
@@ -43,8 +42,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_margin="@dimen/xx_small_margin"
-            android:text=""
-            android:textIsSelectable="true" />
+            android:text="" />
 
         <TextView
             android:id="@+id/encryption_type"
@@ -105,8 +103,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_margin="@dimen/xx_small_margin"
-            android:text=""
-            android:textIsSelectable="true" />
+            android:text="" />
 
     </LinearLayout>
 

@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
@@ -65,99 +66,80 @@ private fun LazyListScope.chartItems(
             verticalAlignment = Alignment.Top,
             horizontalArrangement = Arrangement.SpaceAround
         ) {
-            Card(
-                modifier = Modifier
-                    .fillMaxWidth(),
-                shape = MaterialTheme.shapes.large,
-                colors = CardDefaults.elevatedCardColors()
-            ) {
-                Row(
+            SelectionContainer {
+                Card(
                     modifier = Modifier
-                        .padding(vertical = padding / 2)
                         .fillMaxWidth(),
-                    verticalAlignment = Alignment.Top,
-                    horizontalArrangement = Arrangement.SpaceEvenly
+                    shape = MaterialTheme.shapes.large,
+                    colors = CardDefaults.elevatedCardColors()
                 ) {
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally
+                    Row(
+                        modifier = Modifier
+                            .padding(vertical = padding / 2)
+                            .fillMaxWidth(),
+                        verticalAlignment = Alignment.Top,
+                        horizontalArrangement = Arrangement.SpaceEvenly
                     ) {
-                        Text(
-                            text = if (hiddenSsid) HIDDEN_SSID_PLACEHOLDER else viewModel.wifiNetwork.ssid,
-                            style = MaterialTheme.typography.titleMedium.copy(
-                                color = Color(
-                                    LocalContext.current.getColor(
-                                        if (hiddenSsid) R.color.red else R.color.colorAccent
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Text(
+                                text = if (hiddenSsid) HIDDEN_SSID_PLACEHOLDER else viewModel.wifiNetwork.ssid,
+                                style = MaterialTheme.typography.titleMedium.copy(
+                                    color = Color(
+                                        LocalContext.current.getColor(
+                                            if (hiddenSsid) R.color.red else R.color.colorAccent
+                                        )
                                     )
                                 )
                             )
-                        )
-                        Text(
-                            text = "SSID",
-                            style = MaterialTheme.typography.labelMedium
-                        )
+                            Text(
+                                text = "SSID",
+                                style = MaterialTheme.typography.labelMedium
+                            )
+                        }
+
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Text(
+                                text = if (rssi == UNKNOWN_RSSI) "Unknown" else "${rssi.toInt()} dBm",
+                                style = MaterialTheme.typography.titleMedium.copy(color = signalStrengthColor)
+                            )
+                            Text(
+                                text = "Signal Strength",
+                                style = MaterialTheme.typography.labelMedium
+                            )
+                        }
                     }
 
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally
+                    Row(
+                        modifier = Modifier
+                            .padding(horizontal = padding, vertical = padding / 2)
+                            .fillMaxWidth(),
+                        verticalAlignment = Alignment.Top,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Column {
+                            Text(
+                                text = "BSSID: ${viewModel.wifiNetwork.bssid}",
+                                style = MaterialTheme.typography.titleMedium
+                            )
+                        }
+                    }
+
+                    Row(
+                        modifier = Modifier
+                            .padding(start = padding, end = padding, bottom = padding / 2)
+                            .fillMaxWidth(),
+                        verticalAlignment = Alignment.Top,
+                        horizontalArrangement = Arrangement.SpaceBetween
                     ) {
                         Text(
-                            text = if (rssi == UNKNOWN_RSSI) "Unknown" else "${rssi.toInt()} dBm",
-                            style = MaterialTheme.typography.titleMedium.copy(color = signalStrengthColor)
-                        )
-                        Text(
-                            text = "Signal Strength",
-                            style = MaterialTheme.typography.labelMedium
-                        )
-                    }
-                }
-
-                Row(
-                    modifier = Modifier
-                        .padding(horizontal = padding, vertical = padding / 2)
-                        .fillMaxWidth(),
-                    verticalAlignment = Alignment.Top,
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Column {
-                        Text(
-                            text = "BSSID: ${viewModel.wifiNetwork.bssid}",
+                            text = viewModel.wifiNetwork.encryptionType,
                             style = MaterialTheme.typography.titleMedium
                         )
                     }
-                }
-
-                Row(
-                    modifier = Modifier
-                        .padding(start = padding, end = padding, bottom = padding / 2)
-                        .fillMaxWidth(),
-                    verticalAlignment = Alignment.Top,
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Text(
-                        text = viewModel.wifiNetwork.encryptionType,
-                        style = MaterialTheme.typography.titleMedium
-                    )
-                }
-
-                Row(
-                    modifier = Modifier
-                        .padding(start = padding, end = padding, bottom = padding / 2)
-                        .fillMaxWidth(),
-                    verticalAlignment = Alignment.Top,
-                    horizontalArrangement = Arrangement.Start
-                ) {
-                    Text(
-                        text = "Channel: ${viewModel.wifiNetwork.channel?.toString() ?: "Unknown"}",
-                        style = MaterialTheme.typography.titleMedium
-                    )
-                    Spacer(modifier = Modifier.width(padding * 2))
-                    Text(
-                        text = "${viewModel.wifiNetwork.frequency?.toString() ?: "Unknown"} MHz",
-                        style = MaterialTheme.typography.titleMedium
-                    )
-                }
-
-                if (viewModel.wifiNetwork.passpoint != null && viewModel.wifiNetwork.passpoint == true) {
 
                     Row(
                         modifier = Modifier
@@ -167,13 +149,34 @@ private fun LazyListScope.chartItems(
                         horizontalArrangement = Arrangement.Start
                     ) {
                         Text(
-                            text = "Passpoint",
-                            style = MaterialTheme.typography.titleMedium.copy(
-                                color = Color(
-                                    LocalContext.current.getColor(R.color.colorAccent)
+                            text = "Channel: ${viewModel.wifiNetwork.channel?.toString() ?: "Unknown"}",
+                            style = MaterialTheme.typography.titleMedium
+                        )
+                        Spacer(modifier = Modifier.width(padding * 2))
+                        Text(
+                            text = "${viewModel.wifiNetwork.frequency?.toString() ?: "Unknown"} MHz",
+                            style = MaterialTheme.typography.titleMedium
+                        )
+                    }
+
+                    if (viewModel.wifiNetwork.passpoint != null && viewModel.wifiNetwork.passpoint == true) {
+
+                        Row(
+                            modifier = Modifier
+                                .padding(start = padding, end = padding, bottom = padding / 2)
+                                .fillMaxWidth(),
+                            verticalAlignment = Alignment.Top,
+                            horizontalArrangement = Arrangement.Start
+                        ) {
+                            Text(
+                                text = "Passpoint",
+                                style = MaterialTheme.typography.titleMedium.copy(
+                                    color = Color(
+                                        LocalContext.current.getColor(R.color.colorAccent)
+                                    )
                                 )
                             )
-                        )
+                        }
                     }
                 }
             }

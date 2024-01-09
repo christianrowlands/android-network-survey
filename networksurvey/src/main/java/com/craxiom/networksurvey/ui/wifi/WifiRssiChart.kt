@@ -38,7 +38,6 @@ internal fun WifiRssiChart(
 @Composable
 private fun ComposeChart(modelProducer: CartesianChartModelProducer) {
     ProvideChartStyle(rememberChartStyle(chartColors)) {
-        //val defaultLines = currentChartStyle.lineLayer.lines
         CartesianChartHost(
             modelProducer = modelProducer,
             marker = rememberMarker(),
@@ -54,40 +53,17 @@ private fun ComposeChart(modelProducer: CartesianChartModelProducer) {
                 ),
                 startAxis =
                 rememberStartAxis(
-                    guideline = null,
                     horizontalLabelPosition = VerticalAxis.HorizontalLabelPosition.Inside,
                     itemPlacer = remember { AxisItemPlacer.Vertical.default({ _ -> 5 }) },
                 ),
-                /*bottomAxis =
-                rememberBottomAxis(
-                    titleComponent =
-                    rememberTextComponent(
-                        background = rememberShapeComponent(Shapes.pillShape, color2),
-                        color = Color.White,
-                        padding = axisTitlePadding,
-                        margins = bottomAxisTitleMargins,
-                        typeface = Typeface.MONOSPACE,
-                    ),
-                    title = stringResource(R.string.y_axis_time),
-                ),*/
                 fadingEdges = rememberFadingEdges(),
             )
         )
     }
 }
 
-private const val COLOR_2_CODE = 0xff9db591
-
 private val lineColor = Color(0xFF03A9F4)
-private val color2 = Color(COLOR_2_CODE)
-private val chartColors = listOf(lineColor, color2)
-private val lineSpec = listOf(
-    lineSpec(
-        thickness = 4.dp,
-        backgroundShader = null,
-        shader = DynamicShaders.color(Color.DarkGray),
-    ),
-)
+private val chartColors = listOf(lineColor)
 private val axisValueOverrider = AxisValueOverrider.fixed<LineCartesianLayerModel>(
     maxY = MAX_WIFI_RSSI,
     minY = MIN_WIFI_RSSI,

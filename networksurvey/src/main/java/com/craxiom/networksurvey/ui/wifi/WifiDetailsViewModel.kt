@@ -21,8 +21,8 @@ import kotlin.reflect.KProperty
 const val UNKNOWN_RSSI = -200f
 const val MAX_WIFI_RSSI = -20f
 const val MIN_WIFI_RSSI = -100f
-private const val CHART_WIDTH = 60
-private const val UPDATE_FREQUENCY = 2000L
+private const val CHART_WIDTH = 120
+private const val UPDATE_FREQUENCY = 1000L
 
 /**
  * The view model for the Wifi Details screen.
@@ -92,8 +92,8 @@ internal class WifiDetailsViewModel : ViewModel() {
         if (rssi == UNKNOWN_RSSI && latestChartRssi.value != UNKNOWN_RSSI) {
             unknownRssiCount++
 
-            if (unknownRssiCount <= 2) {
-                // Ignore the first couple times the RSSI is missing from the scan results since it
+            if (unknownRssiCount <= 1) {
+                // Ignore the first time the RSSI is missing from the scan results since it
                 // appears to be a common occurrence where a network is not found in a scan result.
                 // even though it is close to the device.
                 Timber.i("Ignoring the RSSI value of $rssi for ${wifiNetwork.ssid} since it is missing from the scan results")
