@@ -44,6 +44,13 @@
             android:name="bluetoothData"
             app:argType="com.craxiom.messaging.BluetoothRecordData"
             app:nullable="false" />
+
+        <action
+            android:id="@+id/action_bluetooth_details_to_settings"
+            app:destination="@id/settings_fragment"
+            app:launchSingleTop="true"
+            app:popUpTo="@+id/bluetooth_details_fragment"
+            app:popUpToInclusive="false" />
     </fragment>
 
 </navigation>

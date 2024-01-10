@@ -28,6 +28,9 @@ internal abstract class AChartDetailsViewModel : ViewModel() {
 
     internal val modelProducer = CartesianChartModelProducer.build()
 
+    private val _scanRateSeconds = MutableStateFlow(-1)
+    val scanRate = _scanRateSeconds.asStateFlow()
+
     // This is the RSSI that is displayed in the details header. It is not necessarily the same
     // as the RSSI that is displayed in the chart because on the chart we have to limit the range
     // of the RSSI values.
@@ -138,6 +141,13 @@ internal abstract class AChartDetailsViewModel : ViewModel() {
             }
 
         modelProducer.tryRunTransaction { add(lineLayerModelPartial) }
+    }
+
+    /**
+     * Sets the scan rate in seconds.
+     */
+    fun setScanRateSeconds(scanRateSeconds: Int) {
+        _scanRateSeconds.value = scanRateSeconds
     }
 }
 

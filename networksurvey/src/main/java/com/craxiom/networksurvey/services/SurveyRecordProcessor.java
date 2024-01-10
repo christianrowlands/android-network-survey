@@ -138,6 +138,12 @@ public class SurveyRecordProcessor
     public static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyyMMdd-HHmmss").withZone(ZoneId.systemDefault());
     private static final String MISSION_ID_PREFIX = "NS ";
     private static final int UNSET_TX_POWER_LEVEL = 127;
+
+    /**
+     * It seems that every once in a while the RSSI value for a bluetooth record will be set to 127.
+     * I'm not sure why this is, but we will just ignore those records.
+     */
+    private static final int UNSET_RSSI = 127;
     private static final int MAX_CDR_LOCATION_WAIT_TIME = 5_000;
 
     private final Object cellInfoProcessingLock = new Object();
@@ -1565,7 +1571,8 @@ public class SurveyRecordProcessor
         dataBuilder.setRecordNumber(bluetoothRecordNumber++);
 
         dataBuilder.setSourceAddress(sourceAddress);
-        if (txPowerLevel == UNSET_TX_POWER_LEVEL)
+
+        if (rssi != UNSET_RSSI)
         {
             dataBuilder.setSignalStrength(FloatValue.newBuilder().setValue(rssi).build());
         }

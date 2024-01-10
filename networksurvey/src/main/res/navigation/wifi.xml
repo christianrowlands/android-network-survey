@@ -44,6 +44,14 @@
             android:name="wifiNetwork"
             app:argType="com.craxiom.networksurvey.model.WifiNetwork"
             app:nullable="false" />
+
+
+        <action
+            android:id="@+id/action_wifi_details_to_settings"
+            app:destination="@id/settings_fragment"
+            app:launchSingleTop="true"
+            app:popUpTo="@+id/wifi_details_fragment"
+            app:popUpToInclusive="false" />
     </fragment>
 
 </navigation>

@@ -20,7 +20,7 @@ import com.patrykandpatrick.vico.core.model.CartesianChartModelProducer
 import com.patrykandpatrick.vico.core.model.LineCartesianLayerModel
 
 /**
- * A chart that shows the RSSI values for the currently selected WiFi network.
+ * A chart that shows the RSSI values over time.
  *
  * @param modelProducer The model producer that will provide the data to be displayed in the chart.
  */

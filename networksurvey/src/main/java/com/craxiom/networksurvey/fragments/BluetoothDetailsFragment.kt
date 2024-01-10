@@ -1,5 +1,6 @@
 package com.craxiom.networksurvey.fragments
 
+import android.content.SharedPreferences
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -7,15 +8,20 @@ import android.view.ViewGroup
 import androidx.compose.ui.platform.ComposeView
 import androidx.compose.ui.platform.ViewCompositionStrategy
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.fragment.findNavController
 import androidx.navigation.fragment.navArgs
+import androidx.preference.PreferenceManager
 import com.craxiom.messaging.BluetoothRecord
 import com.craxiom.messaging.BluetoothRecordData
+import com.craxiom.networksurvey.constants.NetworkSurveyConstants
+import com.craxiom.networksurvey.constants.NetworkSurveyConstants.PROPERTY_BLUETOOTH_SCAN_INTERVAL_SECONDS
 import com.craxiom.networksurvey.listeners.IBluetoothSurveyRecordListener
 import com.craxiom.networksurvey.services.NetworkSurveyService
 import com.craxiom.networksurvey.ui.UNKNOWN_RSSI
 import com.craxiom.networksurvey.ui.bluetooth.BluetoothDetailsScreen
 import com.craxiom.networksurvey.ui.bluetooth.BluetoothDetailsViewModel
 import com.craxiom.networksurvey.util.NsTheme
+import com.craxiom.networksurvey.util.PreferenceUtils
 import timber.log.Timber
 
 /**
@@ -24,6 +30,19 @@ import timber.log.Timber
 class BluetoothDetailsFragment : AServiceDataFragment(), IBluetoothSurveyRecordListener {
     private lateinit var bluetoothData: BluetoothRecordData
     private lateinit var viewModel: BluetoothDetailsViewModel
+
+    private lateinit var sharedPreferences: SharedPreferences
+    private val preferenceChangeListener =
+        SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
+            if (key == PROPERTY_BLUETOOTH_SCAN_INTERVAL_SECONDS) {
+                val bluetoothScanRateMs = PreferenceUtils.getScanRatePreferenceMs(
+                    PROPERTY_BLUETOOTH_SCAN_INTERVAL_SECONDS,
+                    NetworkSurveyConstants.DEFAULT_BLUETOOTH_SCAN_INTERVAL_SECONDS,
+                    context
+                )
+                viewModel.setScanRateSeconds(bluetoothScanRateMs / 1_000)
+            }
+        }
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -46,7 +65,10 @@ class BluetoothDetailsFragment : AServiceDataFragment(), IBluetoothSurveyRecordL
                     viewModel.addInitialRssi(UNKNOWN_RSSI)
                 }
                 NsTheme {
-                    BluetoothDetailsScreen(viewModel = viewModel)
+                    BluetoothDetailsScreen(
+                        viewModel = viewModel,
+                        bluetoothDetailsFragment = this@BluetoothDetailsFragment
+                    )
                 }
             }
         }
@@ -57,7 +79,24 @@ class BluetoothDetailsFragment : AServiceDataFragment(), IBluetoothSurveyRecordL
     override fun onResume() {
         super.onResume()
 
+        context?.let { context ->
+            sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context)
+            sharedPreferences.registerOnSharedPreferenceChangeListener(preferenceChangeListener)
+            val scanRateMs = PreferenceUtils.getScanRatePreferenceMs(
+                PROPERTY_BLUETOOTH_SCAN_INTERVAL_SECONDS,
+                NetworkSurveyConstants.DEFAULT_BLUETOOTH_SCAN_INTERVAL_SECONDS,
+                context
+            )
+            viewModel.setScanRateSeconds(scanRateMs / 1_000)
+        }
+
         startAndBindToService()
+    }
+
+    override fun onPause() {
+        sharedPreferences.unregisterOnSharedPreferenceChangeListener(preferenceChangeListener)
+
+        super.onPause()
     }
 
     override fun onSurveyServiceConnected(service: NetworkSurveyService?) {
@@ -99,5 +138,12 @@ class BluetoothDetailsFragment : AServiceDataFragment(), IBluetoothSurveyRecordL
             viewModel.addNewRssi(UNKNOWN_RSSI)
 
         }
+    }
+
+    /**
+     * Navigates to the Settings UI (primarily for the user to change the scan rate)
+     */
+    fun navigateToSettings() {
+        findNavController().navigate(BluetoothDetailsFragmentDirections.actionBluetoothDetailsToSettings())
     }
 }

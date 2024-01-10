@@ -6,6 +6,8 @@ import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.colorResource
+import com.craxiom.networksurvey.R
 
 @Composable
 fun NsTheme(content: @Composable () -> Unit) {
@@ -13,6 +15,8 @@ fun NsTheme(content: @Composable () -> Unit) {
         darkColorScheme(
             surface = Color(color = DARK_SURFACE),
             background = Color.Black,
+            primary = colorResource(id = R.color.colorAccent),
+            tertiary = colorResource(id = R.color.colorAccent),
         )
     val lightColorScheme =
         lightColorScheme(
