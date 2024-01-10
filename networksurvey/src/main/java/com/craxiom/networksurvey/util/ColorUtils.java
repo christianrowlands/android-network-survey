@@ -109,10 +109,10 @@ public class ColorUtils
     }
 
     /**
-     * @param signalStrength The Wi-Fi signal strength value in dBm.
+     * @param signalStrength The signal strength value in dBm.
      * @return The resource ID for the color that should be used for the signal strength text.
      */
-    public static int getColorForWifiSignalStrength(float signalStrength)
+    public static int getColorForSignalStrength(float signalStrength)
     {
         final int colorResourceId;
         if (signalStrength > -60)

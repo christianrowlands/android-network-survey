@@ -19,6 +19,31 @@
         <action
             android:id="@+id/action_main_bluetooth_to_settings"
             app:destination="@id/settings_fragment" />
+
+        <action
+            android:id="@+id/action_bt_list_fragment_to_bt_details_fragment"
+            app:destination="@id/bluetooth_details_fragment"
+            app:launchSingleTop="true"
+            app:popUpTo="@+id/main_bluetooth_fragment"
+            app:popUpToInclusive="false">
+
+            <argument
+                android:name="bluetoothData"
+                app:argType="com.craxiom.messaging.BluetoothRecordData"
+                app:nullable="false" />
+
+        </action>
+    </fragment>
+
+    <fragment
+        android:id="@+id/bluetooth_details_fragment"
+        android:name="com.craxiom.networksurvey.fragments.BluetoothDetailsFragment"
+        android:label="Bluetooth Device Details">
+
+        <argument
+            android:name="bluetoothData"
+            app:argType="com.craxiom.messaging.BluetoothRecordData"
+            app:nullable="false" />
     </fragment>
 
 </navigation>

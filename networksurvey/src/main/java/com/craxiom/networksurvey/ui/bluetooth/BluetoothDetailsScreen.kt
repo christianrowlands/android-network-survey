@@ -1,14 +1,12 @@
-package com.craxiom.networksurvey.ui.wifi
+package com.craxiom.networksurvey.ui.bluetooth
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -26,17 +24,19 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.craxiom.networksurvey.R
-import com.craxiom.networksurvey.constants.WifiBeaconMessageConstants.HIDDEN_SSID_PLACEHOLDER
+import com.craxiom.networksurvey.constants.BluetoothMessageConstants
+import com.craxiom.networksurvey.ui.UNKNOWN_RSSI
+import com.craxiom.networksurvey.ui.wifi.WifiRssiChart
 import com.craxiom.networksurvey.util.ColorUtils
 
 /**
- * A Compose screen that shows the details of a single WiFi network. The main purpose for this
- * screen is to display the RSSI chart for the selected WiFi network so that the RSSI can be viewed
+ * A Compose screen that shows the details of a single Bluetooth device. The main purpose for this
+ * screen is to display the RSSI chart for the selected BT device so that the RSSI can be viewed
  * over time.
  */
 @Composable
-internal fun WifiDetailsScreen(
-    viewModel: WifiDetailsViewModel
+internal fun BluetoothDetailsScreen(
+    viewModel: BluetoothDetailsViewModel
 ) {
     val context = LocalContext.current
     val rssi by viewModel.rssiFlow.collectAsStateWithLifecycle()
@@ -53,11 +53,10 @@ internal fun WifiDetailsScreen(
 }
 
 private fun LazyListScope.chartItems(
-    viewModel: WifiDetailsViewModel,
+    viewModel: BluetoothDetailsViewModel,
     signalStrengthColor: Color,
     rssi: Float
 ) {
-    val hiddenSsid = viewModel.wifiNetwork.ssid.isEmpty()
     item {
         Row(
             modifier = Modifier
@@ -83,17 +82,15 @@ private fun LazyListScope.chartItems(
                             horizontalAlignment = Alignment.CenterHorizontally
                         ) {
                             Text(
-                                text = if (hiddenSsid) HIDDEN_SSID_PLACEHOLDER else viewModel.wifiNetwork.ssid,
+                                text = viewModel.bluetoothData.sourceAddress,
                                 style = MaterialTheme.typography.titleMedium.copy(
                                     color = Color(
-                                        LocalContext.current.getColor(
-                                            if (hiddenSsid) R.color.red else R.color.colorAccent
-                                        )
+                                        LocalContext.current.getColor(R.color.colorAccent)
                                     )
                                 )
                             )
                             Text(
-                                text = "SSID",
+                                text = "Source Address",
                                 style = MaterialTheme.typography.labelMedium
                             )
                         }
@@ -112,16 +109,20 @@ private fun LazyListScope.chartItems(
                         }
                     }
 
-                    Row(
-                        modifier = Modifier
-                            .padding(horizontal = padding, vertical = padding / 2)
-                            .fillMaxWidth(),
-                        verticalAlignment = Alignment.Top,
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        Column {
+                    if (viewModel.bluetoothData.otaDeviceName.isNotEmpty()) {
+                        Row(
+                            modifier = Modifier
+                                .padding(horizontal = padding, vertical = padding / 2)
+                                .fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.Start
+                        ) {
                             Text(
-                                text = "BSSID: ${viewModel.wifiNetwork.bssid}",
+                                text = "Device Name: ",
+                                style = MaterialTheme.typography.labelMedium
+                            )
+                            Text(
+                                text = viewModel.bluetoothData.otaDeviceName,
                                 style = MaterialTheme.typography.titleMedium
                             )
                         }
@@ -131,51 +132,19 @@ private fun LazyListScope.chartItems(
                         modifier = Modifier
                             .padding(start = padding, end = padding, bottom = padding / 2)
                             .fillMaxWidth(),
-                        verticalAlignment = Alignment.Top,
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        Text(
-                            text = viewModel.wifiNetwork.encryptionType,
-                            style = MaterialTheme.typography.titleMedium
-                        )
-                    }
-
-                    Row(
-                        modifier = Modifier
-                            .padding(start = padding, end = padding, bottom = padding / 2)
-                            .fillMaxWidth(),
-                        verticalAlignment = Alignment.Top,
+                        verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.Start
                     ) {
                         Text(
-                            text = "Channel: ${viewModel.wifiNetwork.channel?.toString() ?: "Unknown"}",
-                            style = MaterialTheme.typography.titleMedium
+                            text = "Supported Technologies: ",
+                            style = MaterialTheme.typography.labelMedium
                         )
-                        Spacer(modifier = Modifier.width(padding * 2))
                         Text(
-                            text = "${viewModel.wifiNetwork.frequency?.toString() ?: "Unknown"} MHz",
+                            text = BluetoothMessageConstants.getSupportedTechString(
+                                viewModel.bluetoothData.supportedTechnologies
+                            ),
                             style = MaterialTheme.typography.titleMedium
                         )
-                    }
-
-                    if (viewModel.wifiNetwork.passpoint != null && viewModel.wifiNetwork.passpoint == true) {
-
-                        Row(
-                            modifier = Modifier
-                                .padding(start = padding, end = padding, bottom = padding / 2)
-                                .fillMaxWidth(),
-                            verticalAlignment = Alignment.Top,
-                            horizontalArrangement = Arrangement.Start
-                        ) {
-                            Text(
-                                text = "Passpoint",
-                                style = MaterialTheme.typography.titleMedium.copy(
-                                    color = Color(
-                                        LocalContext.current.getColor(R.color.colorAccent)
-                                    )
-                                )
-                            )
-                        }
                     }
                 }
             }

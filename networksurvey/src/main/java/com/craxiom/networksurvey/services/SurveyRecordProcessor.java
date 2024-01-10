@@ -447,7 +447,7 @@ public class SurveyRecordProcessor
     }
 
     /**
-     * Notification for when a new single Bluetooth Clasic scan result is available to process.
+     * Notification for when a new single Bluetooth Classic scan result is available to process.
      *
      * @param device The Bluetooth device object associated with the scan.
      * @param rssi   The RSSI value associated with the scan.

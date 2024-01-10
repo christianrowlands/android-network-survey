@@ -68,17 +68,17 @@ class WifiDetailsFragment : AServiceDataFragment(), IWifiSurveyRecordListener {
     }
 
     override fun onWifiBeaconSurveyRecords(wifiBeaconRecords: MutableList<WifiRecordWrapper>?) {
-        val targetWifiRecordWrapper =
+        val matchedWifiRecordWrapper =
             wifiBeaconRecords?.find { it.wifiBeaconRecord.data.bssid.equals(wifiNetwork.bssid) }
 
-        if (targetWifiRecordWrapper == null) {
+        if (matchedWifiRecordWrapper == null) {
             Timber.i("No wifi record found for ${wifiNetwork.bssid} in the wifi scan results")
             viewModel.addNewRssi(UNKNOWN_RSSI)
             return
         }
 
-        if (targetWifiRecordWrapper.wifiBeaconRecord.data.hasSignalStrength()) {
-            viewModel.addNewRssi(targetWifiRecordWrapper.wifiBeaconRecord.data.signalStrength.value)
+        if (matchedWifiRecordWrapper.wifiBeaconRecord.data.hasSignalStrength()) {
+            viewModel.addNewRssi(matchedWifiRecordWrapper.wifiBeaconRecord.data.signalStrength.value)
         } else {
             Timber.i("No signal strength present for ${wifiNetwork.bssid} in the wifi beacon record")
             viewModel.addNewRssi(UNKNOWN_RSSI)

@@ -28,10 +28,12 @@ import androidx.fragment.app.FragmentActivity;
 import androidx.lifecycle.LifecycleOwner;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.lifecycle.ViewModelStoreOwner;
+import androidx.navigation.Navigation;
 import androidx.navigation.fragment.NavHostFragment;
 import androidx.preference.PreferenceManager;
 
 import com.craxiom.messaging.BluetoothRecord;
+import com.craxiom.messaging.BluetoothRecordData;
 import com.craxiom.networksurvey.R;
 import com.craxiom.networksurvey.constants.NetworkSurveyConstants;
 import com.craxiom.networksurvey.databinding.FragmentBluetoothListBinding;
@@ -106,7 +108,7 @@ public class BluetoothFragment extends Fragment implements IBluetoothSurveyRecor
         final SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(applicationContext);
         viewModel.setSortByIndex(preferences.getInt(NetworkSurveyConstants.PROPERTY_BLUETOOTH_DEVICES_SORT_ORDER, 0));
 
-        bluetoothRecyclerViewAdapter = new BluetoothRecyclerViewAdapter(bluetoothRecordSortedSet, getContext());
+        bluetoothRecyclerViewAdapter = new BluetoothRecyclerViewAdapter(bluetoothRecordSortedSet, getContext(), this);
         binding.bluetoothDeviceList.setAdapter(bluetoothRecyclerViewAdapter);
 
         binding.pauseButton.setOnClickListener(v -> viewModel.toggleUpdatesPaused());
@@ -229,6 +231,19 @@ public class BluetoothFragment extends Fragment implements IBluetoothSurveyRecor
                 viewModel.setDevicesInScan(bluetoothRecordSortedSet.size());
             }
         });
+    }
+
+    /**
+     * Navigates to the Bluetooth details screen for the selected Bluetooth device.
+     */
+    public void navigateToBluetoothDetails(BluetoothRecordData bluetoothData)
+    {
+        FragmentActivity activity = getActivity();
+        if (activity == null) return;
+
+        Navigation.findNavController(activity, getId())
+                .navigate(BluetoothFragmentDirections.actionBtListFragmentToBtDetailsFragment(
+                        bluetoothData));
     }
 
     /**

@@ -72,7 +72,7 @@ public class MyWifiNetworkRecyclerViewAdapter extends RecyclerView.Adapter<MyWif
         {
             final int signalStrength = (int) data.getSignalStrength().getValue();
             holder.signalStrength.setText(context.getString(R.string.dbm_value, String.valueOf(signalStrength)));
-            holder.signalStrength.setTextColor(context.getResources().getColor(ColorUtils.getColorForWifiSignalStrength(signalStrength), null));
+            holder.signalStrength.setTextColor(context.getResources().getColor(ColorUtils.getColorForSignalStrength(signalStrength), null));
         } else
         {
             holder.signalStrength.setText("");
@@ -98,7 +98,6 @@ public class MyWifiNetworkRecyclerViewAdapter extends RecyclerView.Adapter<MyWif
      */
     private void navigateToWifiDetails(WifiNetwork wifiNetwork)
     {
-
         wifiNetworksFragment.navigateToWifiDetails(wifiNetwork);
     }
 
@@ -132,7 +131,6 @@ public class MyWifiNetworkRecyclerViewAdapter extends RecyclerView.Adapter<MyWif
             passpoint = view.findViewById(R.id.wifi_passpoint);
             capabilities = view.findViewById(R.id.wifi_capabilities);
 
-            // FIXME Make a click anywhere on the row navigate to the details screen, even when clicking on text
             mView.setOnClickListener(v -> {
                 Float signalStrength = null;
                 WifiBeaconRecordData data = wifiRecord.getData();
@@ -155,7 +153,7 @@ public class MyWifiNetworkRecyclerViewAdapter extends RecyclerView.Adapter<MyWif
                         data.hasChannel() ? data.getChannel().getValue() : null,
                         WifiBeaconMessageConstants.getEncryptionTypeString(data.getEncryptionType()),
                         data.hasPasspoint() ? data.getPasspoint().getValue() : null,
-                        "");
+                        capabilities.getText().toString());
                 navigateToWifiDetails(wifiNetwork);
             });
         }
