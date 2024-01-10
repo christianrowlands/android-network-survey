@@ -64,6 +64,16 @@ class BluetoothDetailsFragment : AServiceDataFragment(), IBluetoothSurveyRecordL
                 } else {
                     viewModel.addInitialRssi(UNKNOWN_RSSI)
                 }
+
+                sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context)
+                sharedPreferences.registerOnSharedPreferenceChangeListener(preferenceChangeListener)
+                val scanRateMs = PreferenceUtils.getScanRatePreferenceMs(
+                    PROPERTY_BLUETOOTH_SCAN_INTERVAL_SECONDS,
+                    NetworkSurveyConstants.DEFAULT_BLUETOOTH_SCAN_INTERVAL_SECONDS,
+                    context
+                )
+                viewModel.setScanRateSeconds(scanRateMs / 1_000)
+
                 NsTheme {
                     BluetoothDetailsScreen(
                         viewModel = viewModel,
@@ -78,17 +88,6 @@ class BluetoothDetailsFragment : AServiceDataFragment(), IBluetoothSurveyRecordL
 
     override fun onResume() {
         super.onResume()
-
-        context?.let { context ->
-            sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context)
-            sharedPreferences.registerOnSharedPreferenceChangeListener(preferenceChangeListener)
-            val scanRateMs = PreferenceUtils.getScanRatePreferenceMs(
-                PROPERTY_BLUETOOTH_SCAN_INTERVAL_SECONDS,
-                NetworkSurveyConstants.DEFAULT_BLUETOOTH_SCAN_INTERVAL_SECONDS,
-                context
-            )
-            viewModel.setScanRateSeconds(scanRateMs / 1_000)
-        }
 
         startAndBindToService()
     }

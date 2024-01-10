@@ -63,6 +63,18 @@ class WifiDetailsFragment : AServiceDataFragment(), IWifiSurveyRecordListener {
                 } else {
                     viewModel.addInitialRssi(wifiNetwork.signalStrength!!)
                 }
+
+                sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context)
+                sharedPreferences.registerOnSharedPreferenceChangeListener(
+                    preferenceChangeListener
+                )
+                val scanRateMs = PreferenceUtils.getScanRatePreferenceMs(
+                    NetworkSurveyConstants.PROPERTY_WIFI_SCAN_INTERVAL_SECONDS,
+                    NetworkSurveyConstants.DEFAULT_WIFI_SCAN_INTERVAL_SECONDS,
+                    context
+                )
+                viewModel.setScanRateSeconds(scanRateMs / 1_000)
+
                 NsTheme {
                     WifiDetailsScreen(
                         viewModel = viewModel,
@@ -77,17 +89,6 @@ class WifiDetailsFragment : AServiceDataFragment(), IWifiSurveyRecordListener {
 
     override fun onResume() {
         super.onResume()
-
-        context?.let { context ->
-            sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context)
-            sharedPreferences.registerOnSharedPreferenceChangeListener(preferenceChangeListener)
-            val scanRateMs = PreferenceUtils.getScanRatePreferenceMs(
-                NetworkSurveyConstants.PROPERTY_WIFI_SCAN_INTERVAL_SECONDS,
-                NetworkSurveyConstants.DEFAULT_WIFI_SCAN_INTERVAL_SECONDS,
-                context
-            )
-            viewModel.setScanRateSeconds(scanRateMs / 1_000)
-        }
 
         startAndBindToService()
     }

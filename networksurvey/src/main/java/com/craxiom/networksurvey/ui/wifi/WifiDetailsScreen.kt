@@ -174,6 +174,19 @@ private fun LazyListScope.chartItems(
                         )
                     }
 
+                    Row(
+                        modifier = Modifier
+                            .padding(start = padding, end = padding, bottom = padding / 2)
+                            .fillMaxWidth(),
+                        verticalAlignment = Alignment.Top,
+                        horizontalArrangement = Arrangement.Start
+                    ) {
+                        Text(
+                            text = viewModel.wifiNetwork.capabilities,
+                            style = MaterialTheme.typography.titleMedium
+                        )
+                    }
+
                     if (viewModel.wifiNetwork.passpoint != null && viewModel.wifiNetwork.passpoint == true) {
 
                         Row(

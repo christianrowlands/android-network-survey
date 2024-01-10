@@ -23,6 +23,7 @@ import android.widget.Toast;
 
 import androidx.appcompat.app.AlertDialog;
 import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentActivity;
 import androidx.lifecycle.LifecycleOwner;
@@ -34,6 +35,7 @@ import androidx.preference.PreferenceManager;
 
 import com.craxiom.messaging.BluetoothRecord;
 import com.craxiom.messaging.BluetoothRecordData;
+import com.craxiom.networksurvey.NetworkSurveyActivity;
 import com.craxiom.networksurvey.R;
 import com.craxiom.networksurvey.constants.NetworkSurveyConstants;
 import com.craxiom.networksurvey.databinding.FragmentBluetoothListBinding;
@@ -57,7 +59,8 @@ import timber.log.Timber;
  */
 public class BluetoothFragment extends Fragment implements IBluetoothSurveyRecordListener
 {
-    private static final int ACCESS_SCAN_PERMISSION_REQUEST_ID = 11;
+    private static final int ACCESS_SCAN_PERMISSION_REQUEST_ID = 41;
+    private static final int ACCESS_BLUETOOTH_PERMISSION_REQUEST_ID = 42;
     private FragmentBluetoothListBinding binding;
 
     private SortedSet<BluetoothRecord> bluetoothRecordSortedSet;
@@ -137,6 +140,8 @@ public class BluetoothFragment extends Fragment implements IBluetoothSurveyRecor
     {
         super.onResume();
 
+        showBluetoothPermissionRationaleAndRequestPermissions();
+
         if (!hasBtScanPermission())
         {
             final Context context = getContext();
@@ -144,9 +149,6 @@ public class BluetoothFragment extends Fragment implements IBluetoothSurveyRecor
             {
                 viewModel.setScanStatusId(R.string.scan_status_permission);
                 Toast.makeText(context, getString(R.string.grant_bluetooth_scan_permission), Toast.LENGTH_LONG).show();
-
-                ActivityCompat.requestPermissions(requireActivity(), new String[]{Manifest.permission.BLUETOOTH_SCAN},
-                        ACCESS_SCAN_PERMISSION_REQUEST_ID);
             }
 
             return;
@@ -309,6 +311,68 @@ public class BluetoothFragment extends Fragment implements IBluetoothSurveyRecor
         }
 
         return true;
+    }
+
+    /**
+     * Check to see if we should show the rationale for any of the Bluetooth permissions. If so,
+     * then display a dialog that explains what permissions we need for bluetooth to work properly.
+     * <p>
+     * If we should not show the rationale, then just request the permissions.
+     */
+    private void showBluetoothPermissionRationaleAndRequestPermissions()
+    {
+        final FragmentActivity activity = getActivity();
+        if (activity == null) return;
+
+        final Context context = getContext();
+        if (context == null) return;
+
+        if (missingAnyPermissions(NetworkSurveyActivity.BLUETOOTH_PERMISSIONS))
+        {
+            AlertDialog.Builder alertBuilder = new AlertDialog.Builder(context);
+            alertBuilder.setCancelable(true);
+            alertBuilder.setTitle(getString(R.string.bluetooth_permissions_rationale_title));
+            alertBuilder.setMessage(getText(R.string.bluetooth_permissions_rationale));
+            alertBuilder.setPositiveButton(android.R.string.ok, (dialog, which) -> requestBluetoothPermissions());
+
+            AlertDialog permissionsExplanationDialog = alertBuilder.create();
+            permissionsExplanationDialog.show();
+        }
+    }
+
+    /**
+     * Request the permissions needed for bluetooth if any of them have not yet been granted.  If all of the permissions
+     * are already granted then don't request anything.
+     */
+    private void requestBluetoothPermissions()
+    {
+        FragmentActivity activity = getActivity();
+        if (activity == null) return;
+
+        if (missingAnyPermissions(NetworkSurveyActivity.BLUETOOTH_PERMISSIONS))
+        {
+            ActivityCompat.requestPermissions(activity, NetworkSurveyActivity.BLUETOOTH_PERMISSIONS, ACCESS_BLUETOOTH_PERMISSION_REQUEST_ID);
+        }
+    }
+
+    /**
+     * @return True if any of the permissions have been denied. False if all the permissions
+     * have been granted.
+     */
+    private boolean missingAnyPermissions(String[] permissions)
+    {
+        final Context context = getContext();
+        if (context == null) return true;
+        for (String permission : permissions)
+        {
+            if (ContextCompat.checkSelfPermission(context, permission) != PackageManager.PERMISSION_GRANTED)
+            {
+                Timber.i("Missing the permission: %s", permission);
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**
