@@ -18,6 +18,7 @@ import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.appcompat.app.AlertDialog;
 import androidx.core.app.ActivityCompat;
 import androidx.lifecycle.LifecycleOwner;
 import androidx.lifecycle.ViewModelProvider;
@@ -111,6 +112,8 @@ public class NetworkDetailsFragment extends AServiceDataFragment implements ICel
 
         initializeLocationTextView();
 
+        initializeUiListeners();
+
         initializeObservers();
 
         return binding.getRoot();
@@ -197,6 +200,14 @@ public class NetworkDetailsFragment extends AServiceDataFragment implements ICel
     public void onLocationChanged(@NonNull Location location)
     {
         viewModel.setLocation(location);
+    }
+
+    /**
+     * Initialize the UI listeners for the various buttons and other UI elements.
+     */
+    private void initializeUiListeners()
+    {
+        binding.cellularInfoIcon.setOnClickListener(c -> showCellularInfoDialog());
     }
 
     /**
@@ -1033,5 +1044,58 @@ public class NetworkDetailsFragment extends AServiceDataFragment implements ICel
         final TextView view = new TextView(context, null, 0, R.style.TableText);
         view.setText(cellText);
         row.addView(view);
+    }
+
+    /**
+     * Displays a dialog with some information about cellular terms.
+     */
+    private void showCellularInfoDialog()
+    {
+        final Context context = getContext();
+        if (context == null) return;
+
+        CellularProtocol protocol = viewModel.getServingCellProtocol().getValue();
+
+        // Default to LTE as a fallback
+        String cellularInfoTitle = getString(R.string.lte_info_description);
+        CharSequence cellularInfoBody = getString(R.string.lte_cellular_terms_explanation);
+
+        if (protocol == null) protocol = CellularProtocol.LTE;
+        switch (protocol)
+        {
+            case NONE, LTE ->
+            {
+                cellularInfoTitle = getString(R.string.lte_info_description);
+                cellularInfoBody = getText(R.string.lte_cellular_terms_explanation);
+            }
+            case GSM ->
+            {
+                cellularInfoTitle = getString(R.string.gsm_info_description);
+                cellularInfoBody = getText(R.string.gsm_cellular_terms_explanation);
+            }
+            case CDMA ->
+            {
+                cellularInfoTitle = "How did you find CDMA?";
+                cellularInfoBody = "CDMA is no longer supported. I am impressed you were able to find a CDMA network! Honestly, send me an email at craxiomdev@gmail.com and let me know where you found it.";
+            }
+            case UMTS ->
+            {
+                cellularInfoTitle = getString(R.string.umts_info_description);
+                cellularInfoBody = getText(R.string.umts_cellular_terms_explanation);
+            }
+            case NR ->
+            {
+                cellularInfoTitle = getString(R.string.nr_info_description);
+                cellularInfoBody = getText(R.string.nr_cellular_terms_explanation);
+            }
+        }
+
+        AlertDialog.Builder alertBuilder = new AlertDialog.Builder(context);
+        alertBuilder.setCancelable(true);
+        alertBuilder.setTitle(cellularInfoTitle);
+        alertBuilder.setMessage(cellularInfoBody);
+        alertBuilder.setPositiveButton(android.R.string.ok, (dialog, which) -> {
+        });
+        alertBuilder.create().show();
     }
 }

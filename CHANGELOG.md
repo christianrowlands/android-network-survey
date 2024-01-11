@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.17](https://github.com/christianrowlands/android-network-survey/releases/tag/v1.17) - 2024-01-12
+
+* Adds Details views for Wi-Fi and Bluetooth that display a chart of the signal strength over time.
+* Adds support for setting a custom MQTT topic prefix.
+* Fixes a bug where Bluetooth permissions were not being requested correctly.
+* Other various bug fixes and improvements.
+
 ## [1.16](https://github.com/christianrowlands/android-network-survey/releases/tag/v1.16) - 2023-12-20
 
 * Adds support for Dual/Multi-SIM devices both in the UI as well as the messages (MQTT and file

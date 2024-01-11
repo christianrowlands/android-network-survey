@@ -177,7 +177,18 @@
                         style="@style/CardTitleStyle"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
+                        android:layout_weight="1"
                         android:text="@string/card_title_cellular_details_initial" />
+
+                    <ImageView
+                        android:id="@+id/cellular_info_icon"
+                        android:layout_width="24dp"
+                        android:layout_height="24dp"
+                        android:layout_gravity="center"
+                        android:layout_marginStart="@dimen/x_small_margin"
+                        android:layout_marginEnd="@dimen/x_small_margin"
+                        android:contentDescription="@string/cellular_info_description"
+                        android:src="@drawable/ic_info" />
 
                 </LinearLayout>
 
