@@ -1,5 +1,7 @@
 package com.craxiom.networksurvey.fragments;
 
+import static com.craxiom.networksurvey.ui.ASignalChartViewModelKt.UNKNOWN_RSSI;
+
 import android.Manifest;
 import android.content.Context;
 import android.content.pm.PackageManager;
@@ -48,6 +50,8 @@ import com.craxiom.networksurvey.model.CellularProtocol;
 import com.craxiom.networksurvey.model.CellularRecordWrapper;
 import com.craxiom.networksurvey.model.NrRecordWrapper;
 import com.craxiom.networksurvey.services.NetworkSurveyService;
+import com.craxiom.networksurvey.ui.cellular.CellularChartViewModel;
+import com.craxiom.networksurvey.ui.cellular.ComposeFunctions;
 import com.craxiom.networksurvey.util.CellularUtils;
 import com.craxiom.networksurvey.util.ColorUtils;
 import com.craxiom.networksurvey.util.MathUtils;
@@ -88,6 +92,7 @@ public class NetworkDetailsFragment extends AServiceDataFragment implements ICel
 
     private FragmentNetworkDetailsBinding binding;
     private CellularViewModel viewModel;
+    private CellularChartViewModel chartViewModel;
 
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState)
@@ -109,12 +114,16 @@ public class NetworkDetailsFragment extends AServiceDataFragment implements ICel
         final ViewModelStoreOwner viewModelStoreOwner = NavHostFragment.findNavController(this).getViewModelStoreOwner(R.id.nav_graph);
         final ViewModelProvider viewModelProvider = new ViewModelProvider(viewModelStoreOwner);
         viewModel = viewModelProvider.get(getClass().getName() + subscriptionId, CellularViewModel.class);
+        chartViewModel = viewModelProvider.get(getClass().getName() + "cellular_chart" + subscriptionId, CellularChartViewModel.class);
 
         initializeLocationTextView();
 
         initializeUiListeners();
 
         initializeObservers();
+
+        chartViewModel.addInitialRssi(UNKNOWN_RSSI);
+        ComposeFunctions.setContent(binding.composeView, chartViewModel);
 
         return binding.getRoot();
     }
@@ -423,6 +432,9 @@ public class NetworkDetailsFragment extends AServiceDataFragment implements ICel
         {
             case NONE:
                 titleTextView.setText(R.string.card_title_cellular_details_initial);
+
+                chartViewModel.setChartTitle("RSSI");
+                chartViewModel.clearChart();
                 break;
 
             case GSM:
@@ -435,12 +447,20 @@ public class NetworkDetailsFragment extends AServiceDataFragment implements ICel
                 binding.taGroup.setVisibility(View.GONE);
                 binding.signalOneLabel.setText(R.string.rssi_label);
                 binding.signalTwoGroup.setVisibility(View.GONE);
+
+                chartViewModel.setChartTitle("RSSI");
+                chartViewModel.clearChart();
+                chartViewModel.setMinRssi(protocol.getMinSignalOne());
+                chartViewModel.setMaxRssi(protocol.getMinSignalOne() + protocol.getMaxNormalizedSignalOne());
                 break;
 
             case CDMA:
                 binding.enbIdGroup.setVisibility(View.GONE);
                 binding.sectorIdGroup.setVisibility(View.GONE);
                 binding.signalTwoGroup.setVisibility(View.GONE);
+
+                chartViewModel.setChartTitle("RSSI");
+                chartViewModel.clearChart();
                 break;
 
             case UMTS:
@@ -454,6 +474,11 @@ public class NetworkDetailsFragment extends AServiceDataFragment implements ICel
                 binding.signalOneLabel.setText(R.string.rssi_label);
                 binding.signalTwoLabel.setText(R.string.rscp_label);
                 binding.signalTwoGroup.setVisibility(View.VISIBLE);
+
+                chartViewModel.setChartTitle("RSCP");
+                chartViewModel.clearChart();
+                chartViewModel.setMinRssi(protocol.getMinSignalOne());
+                chartViewModel.setMaxRssi(protocol.getMinSignalOne() + protocol.getMaxNormalizedSignalOne());
                 break;
 
             case LTE:
@@ -467,6 +492,11 @@ public class NetworkDetailsFragment extends AServiceDataFragment implements ICel
                 binding.signalOneLabel.setText(R.string.rsrp_label);
                 binding.signalTwoLabel.setText(R.string.rsrq_label);
                 binding.signalTwoGroup.setVisibility(View.VISIBLE);
+
+                chartViewModel.setChartTitle("RSRP");
+                chartViewModel.clearChart();
+                chartViewModel.setMinRssi(protocol.getMinSignalOne());
+                chartViewModel.setMaxRssi(protocol.getMinSignalOne() + protocol.getMaxNormalizedSignalOne());
                 break;
 
             case NR:
@@ -480,6 +510,11 @@ public class NetworkDetailsFragment extends AServiceDataFragment implements ICel
                 binding.signalOneLabel.setText(R.string.ss_rsrp_label);
                 binding.signalTwoLabel.setText(R.string.ss_rsrq_label);
                 binding.signalTwoGroup.setVisibility(View.VISIBLE);
+
+                chartViewModel.setChartTitle("SS RSRP");
+                chartViewModel.clearChart();
+                chartViewModel.setMinRssi(protocol.getMinSignalOne());
+                chartViewModel.setMaxRssi(protocol.getMinSignalOne() + protocol.getMaxNormalizedSignalOne());
                 break;
         }
     }
@@ -595,6 +630,11 @@ public class NetworkDetailsFragment extends AServiceDataFragment implements ICel
         viewModel.setPci(data.hasBsic() ? ParserUtils.bsicToString(data.getBsic().getValue()) : "");
 
         viewModel.setSignalOne(data.hasSignalStrength() ? (int) data.getSignalStrength().getValue() : null);
+
+        if (data.hasSignalStrength())
+        {
+            chartViewModel.addNewRssi((int) data.getSignalStrength().getValue());
+        }
     }
 
     /**
@@ -615,6 +655,11 @@ public class NetworkDetailsFragment extends AServiceDataFragment implements ICel
 
         viewModel.setSignalOne(data.hasSignalStrength() ? (int) data.getSignalStrength().getValue() : null);
         viewModel.setSignalTwo(data.hasRscp() ? (int) data.getRscp().getValue() : null);
+
+        if (data.hasSignalStrength())
+        {
+            chartViewModel.addNewRssi((int) data.getSignalStrength().getValue());
+        }
     }
 
     /**
@@ -656,6 +701,8 @@ public class NetworkDetailsFragment extends AServiceDataFragment implements ICel
 
         viewModel.setSignalOne(data.hasRsrp() ? (int) data.getRsrp().getValue() : null);
         viewModel.setSignalTwo(data.hasRsrq() ? (int) data.getRsrq().getValue() : null);
+
+        if (data.hasRsrp()) chartViewModel.addNewRssi((int) data.getRsrp().getValue());
     }
 
     /**
@@ -706,6 +753,8 @@ public class NetworkDetailsFragment extends AServiceDataFragment implements ICel
 
         viewModel.setSignalOne(data.hasSsRsrp() ? (int) data.getSsRsrp().getValue() : null);
         viewModel.setSignalTwo(data.hasSsRsrq() ? (int) data.getSsRsrq().getValue() : null);
+
+        if (data.hasSsRsrp()) chartViewModel.addNewRssi((int) data.getSsRsrp().getValue());
     }
 
     /**

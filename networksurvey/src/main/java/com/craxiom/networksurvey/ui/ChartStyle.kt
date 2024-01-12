@@ -1,4 +1,4 @@
-package com.craxiom.networksurvey.ui.wifi
+package com.craxiom.networksurvey.ui
 
 import android.graphics.Paint
 import androidx.compose.foundation.isSystemInDarkTheme
@@ -21,7 +21,7 @@ import com.patrykandpatrick.vico.core.context.DrawContext
  * A Circle component that can be used to draw a point on a canvas. This could be used instead of
  * drawing lines between the points.
  */
-class CircleComponentGpt(
+class CircleComponent(
     private val radius: Float,
     private val circleColor: Int
 ) : Component() {
@@ -39,8 +39,7 @@ class CircleComponentGpt(
     ) {
         val centerX = (left + right) / 2
         val centerY = (top + bottom) / 2
-        paint.alpha =
-            (opacity * 255).toInt()  // Adjust paint opacity based on the provided opacity parameter
+        paint.alpha = (opacity * 255).toInt()
         context.canvas.drawCircle(centerX, centerY, radius, paint)
     }
 }
@@ -74,7 +73,7 @@ internal fun rememberChartStyle(
                         thicknessDp = 3f,
                         shader = DynamicShaders.color(lineChartColor),
                         backgroundShader = null,
-                        //point = CircleComponentGpt(5f, lineChartColor.toArgb()),
+                        //point = CircleComponent(5f, lineChartColor.toArgb()),
                     )
                 },
             ),

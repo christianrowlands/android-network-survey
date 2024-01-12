@@ -1,9 +1,11 @@
-package com.craxiom.networksurvey.ui.wifi
+package com.craxiom.networksurvey.ui
 
 import androidx.compose.animation.core.snap
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.graphics.Color
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.patrykandpatrick.vico.compose.axis.vertical.rememberStartAxis
 import com.patrykandpatrick.vico.compose.chart.CartesianChartHost
 import com.patrykandpatrick.vico.compose.chart.edges.rememberFadingEdges
@@ -16,26 +18,27 @@ import com.patrykandpatrick.vico.core.axis.AxisItemPlacer
 import com.patrykandpatrick.vico.core.axis.vertical.VerticalAxis
 import com.patrykandpatrick.vico.core.chart.layout.HorizontalLayout
 import com.patrykandpatrick.vico.core.chart.values.AxisValueOverrider
-import com.patrykandpatrick.vico.core.model.CartesianChartModelProducer
-import com.patrykandpatrick.vico.core.model.LineCartesianLayerModel
 
 /**
- * A chart that shows the RSSI values over time.
+ * A chart that shows signal values (e.g. RSSI) over time.
  *
- * @param modelProducer The model producer that will provide the data to be displayed in the chart.
+ * @param viewModel The view model that contains the data to display.
  */
 @Composable
-internal fun WifiRssiChart(
-    modelProducer: CartesianChartModelProducer,
+internal fun SignalChart(
+    viewModel: ASignalChartViewModel
 ) {
-    ComposeChart(modelProducer)
+    ComposeChart(viewModel)
 }
 
 @Composable
-private fun ComposeChart(modelProducer: CartesianChartModelProducer) {
+private fun ComposeChart(viewModel: ASignalChartViewModel) {
+    val maxRssi by viewModel.maxRssi.collectAsStateWithLifecycle()
+    val minRssi by viewModel.minRssi.collectAsStateWithLifecycle()
+
     ProvideChartStyle(rememberChartStyle(chartColors)) {
         CartesianChartHost(
-            modelProducer = modelProducer,
+            modelProducer = viewModel.modelProducer,
             marker = rememberMarker(),
             runInitialAnimation = false,
             diffAnimationSpec = snap(),
@@ -44,7 +47,10 @@ private fun ComposeChart(modelProducer: CartesianChartModelProducer) {
             chart =
             rememberCartesianChart(
                 rememberLineCartesianLayer(
-                    axisValueOverrider = axisValueOverrider,
+                    axisValueOverrider = AxisValueOverrider.fixed(
+                        maxY = maxRssi,
+                        minY = minRssi,
+                    ),
                     //lines = remember(defaultLines) { defaultLines.map { it.copy(backgroundShader = null) } },
                 ),
                 startAxis =
@@ -60,8 +66,4 @@ private fun ComposeChart(modelProducer: CartesianChartModelProducer) {
 
 private val lineColor = Color(0xFF03A9F4)
 private val chartColors = listOf(lineColor)
-private val axisValueOverrider = AxisValueOverrider.fixed<LineCartesianLayerModel>(
-    maxY = MAX_WIFI_RSSI,
-    minY = MIN_WIFI_RSSI,
-)
 private val horizontalLayout = HorizontalLayout.fullWidth()

@@ -1,4 +1,4 @@
-package com.craxiom.networksurvey.ui.wifi
+package com.craxiom.networksurvey.ui
 
 import android.graphics.Typeface
 import androidx.compose.material3.MaterialTheme

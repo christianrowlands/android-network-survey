@@ -2,7 +2,7 @@ package com.craxiom.networksurvey.ui.wifi
 
 
 import com.craxiom.networksurvey.model.WifiNetwork
-import com.craxiom.networksurvey.ui.AChartDetailsViewModel
+import com.craxiom.networksurvey.ui.ASignalChartViewModel
 
 const val MAX_WIFI_RSSI = -20f
 const val MIN_WIFI_RSSI = -100f
@@ -10,15 +10,12 @@ const val MIN_WIFI_RSSI = -100f
 /**
  * The view model for the Wifi Details screen.
  */
-internal class WifiDetailsViewModel : AChartDetailsViewModel() {
+internal class WifiDetailsViewModel : ASignalChartViewModel() {
 
     lateinit var wifiNetwork: WifiNetwork
 
-    override fun getMaxRssi(): Float {
-        return MAX_WIFI_RSSI
-    }
-
-    override fun getMinRssi(): Float {
-        return MIN_WIFI_RSSI
+    init {
+        setMaxRssi(MAX_WIFI_RSSI)
+        setMinRssi(MIN_WIFI_RSSI)
     }
 }

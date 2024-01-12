@@ -3,7 +3,6 @@ package com.craxiom.networksurvey.util
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Typography
 import androidx.compose.material3.darkColorScheme
-import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.colorResource
@@ -18,10 +17,24 @@ fun NsTheme(content: @Composable () -> Unit) {
             primary = colorResource(id = R.color.colorAccent),
             tertiary = colorResource(id = R.color.colorAccent),
         )
-    val lightColorScheme =
-        lightColorScheme(
-            surface = Color.White,
-            background = Color(color = LIGHT_BACKGROUND),
+    MaterialTheme(
+        colorScheme = darkColorScheme,
+        typography = Typography(),
+        content = content,
+    )
+}
+
+/**
+ * The theme used to match the existing cellular UI.
+ */
+@Composable
+fun CellularTheme(content: @Composable () -> Unit) {
+    val darkColorScheme =
+        darkColorScheme(
+            surface = colorResource(id = R.color.colorCardDark),
+            background = Color.Black,
+            primary = colorResource(id = R.color.colorAccent),
+            tertiary = colorResource(id = R.color.colorAccent),
         )
     MaterialTheme(
         colorScheme = darkColorScheme,

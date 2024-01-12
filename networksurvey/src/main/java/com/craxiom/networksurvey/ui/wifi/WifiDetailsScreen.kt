@@ -38,6 +38,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.craxiom.networksurvey.R
 import com.craxiom.networksurvey.constants.WifiBeaconMessageConstants.HIDDEN_SSID_PLACEHOLDER
 import com.craxiom.networksurvey.fragments.WifiDetailsFragment
+import com.craxiom.networksurvey.ui.SignalChart
 import com.craxiom.networksurvey.ui.UNKNOWN_RSSI
 import com.craxiom.networksurvey.util.ColorUtils
 
@@ -251,7 +252,7 @@ private fun LazyListScope.chartItems(
                 text = "Signal Strength (Last 2 Minutes)",
                 style = MaterialTheme.typography.titleMedium
             )
-            WifiRssiChart(viewModel.modelProducer)
+            SignalChart(viewModel)
         }
     }
 }

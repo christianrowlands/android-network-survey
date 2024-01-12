@@ -3,6 +3,8 @@ package com.craxiom.networksurvey.ui
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.craxiom.networksurvey.ui.wifi.MAX_WIFI_RSSI
+import com.craxiom.networksurvey.ui.wifi.MIN_WIFI_RSSI
 import com.patrykandpatrick.vico.core.model.CartesianChartModelProducer
 import com.patrykandpatrick.vico.core.model.LineCartesianLayerModel
 import kotlinx.coroutines.Dispatchers
@@ -22,14 +24,29 @@ private const val CHART_WIDTH = 120
 private const val UPDATE_FREQUENCY = 1000L
 
 /**
- * Abstract base class for the view model for Details screen that contains a chart.
+ * Abstract base class for the view model for a signal chart.
  */
-internal abstract class AChartDetailsViewModel : ViewModel() {
+abstract class ASignalChartViewModel : ViewModel() {
 
     internal val modelProducer = CartesianChartModelProducer.build()
 
     private val _scanRateSeconds = MutableStateFlow(-1)
     val scanRate = _scanRateSeconds.asStateFlow()
+
+    private val _maxRssi = MutableStateFlow(MAX_WIFI_RSSI)
+
+    /**
+     * The maximum RSSI value to display in the chart. This will be the top end of the chart and
+     * values outside this range will be reduced to this value.
+     */
+    val maxRssi = _maxRssi.asStateFlow()
+    private val _minRssi = MutableStateFlow(MIN_WIFI_RSSI)
+
+    /**
+     * The minimum RSSI value to display in the chart. This will be the bottom end of the chart and
+     * values outside this range will be increased to this value.
+     */
+    val minRssi = _minRssi.asStateFlow()
 
     // This is the RSSI that is displayed in the details header. It is not necessarily the same
     // as the RSSI that is displayed in the chart because on the chart we have to limit the range
@@ -62,16 +79,38 @@ internal abstract class AChartDetailsViewModel : ViewModel() {
     }
 
     /**
-     * The maximum RSSI value to display in the chart. This will be the top end of the chart and
-     * values outside this range will be reduced to this value.
+     * Sets the scan rate in seconds.
      */
-    abstract fun getMaxRssi(): Float
+    fun setScanRateSeconds(scanRateSeconds: Int) {
+        _scanRateSeconds.value = scanRateSeconds
+    }
 
     /**
-     * The minimum RSSI value to display in the chart. This will be the bottom end of the chart and
+     * Sets the maximum RSSI value to display in the chart. This will be the top end of the chart and
+     * values outside this range will be reduced to this value.
+     */
+    fun setMaxRssi(maxRssi: Float) {
+        _maxRssi.value = maxRssi
+    }
+
+    /**
+     * Sets the minimum RSSI value to display in the chart. This will be the bottom end of the chart and
      * values outside this range will be increased to this value.
      */
-    abstract fun getMinRssi(): Float
+    fun setMinRssi(minRssi: Float) {
+        _minRssi.value = minRssi
+    }
+
+    /**
+     * Clears the chart of all data and resets the stored RSSI values.
+     */
+    fun clearChart() {
+        for (i in 0 until CHART_WIDTH) {
+            addRssiToChart(UNKNOWN_RSSI)
+        }
+        _latestChartRssi.value = UNKNOWN_RSSI
+        _rssi.value = UNKNOWN_RSSI
+    }
 
     /**
      * Adds the initial RSSI value to the chart. This is used to make sure that the chart is
@@ -114,14 +153,15 @@ internal abstract class AChartDetailsViewModel : ViewModel() {
             }
         }
 
-        val minRssi = getMinRssi()
-        val maxRssi = getMaxRssi()
-
         if (rssi != UNKNOWN_RSSI) {
-            if (rssi < minRssi) {
-                rssiToChart = minRssi
-            } else if (rssi > maxRssi) {
-                rssiToChart = maxRssi
+            val minRssiValue = minRssi.value
+            if (rssi < minRssiValue) {
+                rssiToChart = minRssiValue
+            } else {
+                val maxRssiValue = maxRssi.value
+                if (rssi > maxRssiValue) {
+                    rssiToChart = maxRssiValue
+                }
             }
         }
 
@@ -141,13 +181,6 @@ internal abstract class AChartDetailsViewModel : ViewModel() {
             }
 
         modelProducer.tryRunTransaction { add(lineLayerModelPartial) }
-    }
-
-    /**
-     * Sets the scan rate in seconds.
-     */
-    fun setScanRateSeconds(scanRateSeconds: Int) {
-        _scanRateSeconds.value = scanRateSeconds
     }
 }
 
