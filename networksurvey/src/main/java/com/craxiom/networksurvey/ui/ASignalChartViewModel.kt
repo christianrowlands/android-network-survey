@@ -30,6 +30,9 @@ abstract class ASignalChartViewModel : ViewModel() {
 
     internal val modelProducer = CartesianChartModelProducer.build()
 
+    private val _markerList = MutableStateFlow<List<Int>>(emptyList())
+    val markerList: StateFlow<List<Int>> = _markerList
+
     private val _scanRateSeconds = MutableStateFlow(-1)
     val scanRate = _scanRateSeconds.asStateFlow()
 
@@ -76,6 +79,19 @@ abstract class ASignalChartViewModel : ViewModel() {
                 delay(UPDATE_FREQUENCY)
             }
         }
+    }
+
+    /**
+     * The label to use for the marker text on the chart. If this is an empty string, then the
+     * default marker text is displayed (the y-axis value). Override this method to provide a
+     * custom marker label.
+     */
+    open fun getMarkerLabel(): String {
+        return ""
+    }
+
+    fun addMarker() {
+        _markerList.value = _markerList.value + lastXValue
     }
 
     /**
@@ -171,7 +187,7 @@ abstract class ASignalChartViewModel : ViewModel() {
     }
 
     @Synchronized
-    private fun addRssiToChart(rssi: Float) {
+    internal open fun addRssiToChart(rssi: Float) {
         rssiQueue.add(rssi)
         xValueQueue.add(lastXValue + 1)
 
@@ -181,6 +197,11 @@ abstract class ASignalChartViewModel : ViewModel() {
             }
 
         modelProducer.tryRunTransaction { add(lineLayerModelPartial) }
+
+        // Remove any makers that have moved "off screen"
+        xValueQueue.firstOrNull()?.let { xValue ->
+            _markerList.value = markerList.value - xValue
+        }
     }
 }
 

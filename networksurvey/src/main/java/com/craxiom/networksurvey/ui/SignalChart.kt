@@ -18,6 +18,7 @@ import com.patrykandpatrick.vico.core.axis.AxisItemPlacer
 import com.patrykandpatrick.vico.core.axis.vertical.VerticalAxis
 import com.patrykandpatrick.vico.core.chart.layout.HorizontalLayout
 import com.patrykandpatrick.vico.core.chart.values.AxisValueOverrider
+import com.patrykandpatrick.vico.core.marker.Marker
 
 /**
  * A chart that shows signal values (e.g. RSSI) over time.
@@ -36,10 +37,20 @@ private fun ComposeChart(viewModel: ASignalChartViewModel) {
     val maxRssi by viewModel.maxRssi.collectAsStateWithLifecycle()
     val minRssi by viewModel.minRssi.collectAsStateWithLifecycle()
 
+    val markerList by viewModel.markerList.collectAsStateWithLifecycle()
+
+    val pushMarker = rememberMarker("")
+    val eventMarker = rememberMarker(viewModel.getMarkerLabel())
+
+    fun convertToPair(intValue: Int): Pair<Float, Marker> {
+        val floatValue = intValue.toFloat() // Convert Int to Float
+        return Pair(floatValue, eventMarker)
+    }
+
     ProvideChartStyle(rememberChartStyle(chartColors)) {
         CartesianChartHost(
             modelProducer = viewModel.modelProducer,
-            marker = rememberMarker(),
+            marker = pushMarker,
             runInitialAnimation = false,
             diffAnimationSpec = snap(),
             horizontalLayout = horizontalLayout,
@@ -59,6 +70,7 @@ private fun ComposeChart(viewModel: ASignalChartViewModel) {
                     itemPlacer = remember { AxisItemPlacer.Vertical.default({ _ -> 5 }) },
                 ),
                 fadingEdges = rememberFadingEdges(),
+                persistentMarkers = remember(markerList) { markerList.associate { convertToPair(it) } },
             )
         )
     }

@@ -434,7 +434,7 @@ public class NetworkDetailsFragment extends AServiceDataFragment implements ICel
                 titleTextView.setText(R.string.card_title_cellular_details_initial);
 
                 chartViewModel.setChartTitle("RSSI");
-                chartViewModel.clearChart();
+                chartViewModel.setCellularProtocol(protocol);
                 break;
 
             case GSM:
@@ -449,9 +449,9 @@ public class NetworkDetailsFragment extends AServiceDataFragment implements ICel
                 binding.signalTwoGroup.setVisibility(View.GONE);
 
                 chartViewModel.setChartTitle("RSSI");
-                chartViewModel.clearChart();
-                chartViewModel.setMinRssi(protocol.getMinSignalOne());
-                chartViewModel.setMaxRssi(protocol.getMinSignalOne() + protocol.getMaxNormalizedSignalOne());
+                chartViewModel.setCellularProtocol(protocol);
+                chartViewModel.setMinRssi(-110);
+                chartViewModel.setMaxRssi(-46);
                 break;
 
             case CDMA:
@@ -460,7 +460,7 @@ public class NetworkDetailsFragment extends AServiceDataFragment implements ICel
                 binding.signalTwoGroup.setVisibility(View.GONE);
 
                 chartViewModel.setChartTitle("RSSI");
-                chartViewModel.clearChart();
+                chartViewModel.setCellularProtocol(protocol);
                 break;
 
             case UMTS:
@@ -476,9 +476,9 @@ public class NetworkDetailsFragment extends AServiceDataFragment implements ICel
                 binding.signalTwoGroup.setVisibility(View.VISIBLE);
 
                 chartViewModel.setChartTitle("RSCP");
-                chartViewModel.clearChart();
-                chartViewModel.setMinRssi(protocol.getMinSignalOne());
-                chartViewModel.setMaxRssi(protocol.getMinSignalOne() + protocol.getMaxNormalizedSignalOne());
+                chartViewModel.setCellularProtocol(protocol);
+                chartViewModel.setMinRssi(-110);
+                chartViewModel.setMaxRssi(-50);
                 break;
 
             case LTE:
@@ -494,9 +494,9 @@ public class NetworkDetailsFragment extends AServiceDataFragment implements ICel
                 binding.signalTwoGroup.setVisibility(View.VISIBLE);
 
                 chartViewModel.setChartTitle("RSRP");
-                chartViewModel.clearChart();
-                chartViewModel.setMinRssi(protocol.getMinSignalOne());
-                chartViewModel.setMaxRssi(protocol.getMinSignalOne() + protocol.getMaxNormalizedSignalOne());
+                chartViewModel.setCellularProtocol(protocol);
+                chartViewModel.setMinRssi(-140);
+                chartViewModel.setMaxRssi(-44);
                 break;
 
             case NR:
@@ -512,9 +512,9 @@ public class NetworkDetailsFragment extends AServiceDataFragment implements ICel
                 binding.signalTwoGroup.setVisibility(View.VISIBLE);
 
                 chartViewModel.setChartTitle("SS RSRP");
-                chartViewModel.clearChart();
-                chartViewModel.setMinRssi(protocol.getMinSignalOne());
-                chartViewModel.setMaxRssi(protocol.getMinSignalOne() + protocol.getMaxNormalizedSignalOne());
+                chartViewModel.setCellularProtocol(protocol);
+                chartViewModel.setMinRssi(-156);
+                chartViewModel.setMaxRssi(-32);
                 break;
         }
     }
@@ -621,6 +621,13 @@ public class NetworkDetailsFragment extends AServiceDataFragment implements ICel
      */
     private void processGsmServingCell(GsmRecordData data)
     {
+        // Adding the signal value first so that any cell change markers will be drawn on top of the
+        // new signal value.
+        if (data.hasSignalStrength())
+        {
+            chartViewModel.addNewRssi((int) data.getSignalStrength().getValue());
+        }
+
         viewModel.setCarrier(data.getProvider());
         viewModel.setMcc(data.hasMcc() ? String.valueOf(data.getMcc().getValue()) : "");
         viewModel.setMnc(data.hasMnc() ? String.valueOf(data.getMnc().getValue()) : "");
@@ -630,11 +637,6 @@ public class NetworkDetailsFragment extends AServiceDataFragment implements ICel
         viewModel.setPci(data.hasBsic() ? ParserUtils.bsicToString(data.getBsic().getValue()) : "");
 
         viewModel.setSignalOne(data.hasSignalStrength() ? (int) data.getSignalStrength().getValue() : null);
-
-        if (data.hasSignalStrength())
-        {
-            chartViewModel.addNewRssi((int) data.getSignalStrength().getValue());
-        }
     }
 
     /**
@@ -645,6 +647,13 @@ public class NetworkDetailsFragment extends AServiceDataFragment implements ICel
      */
     private void processUmtsServingCell(UmtsRecordData data)
     {
+        // Adding the signal value first so that any cell change markers will be drawn on top of the
+        // new signal value.
+        if (data.hasSignalStrength())
+        {
+            chartViewModel.addNewRssi((int) data.getSignalStrength().getValue());
+        }
+
         viewModel.setCarrier(data.getProvider());
         viewModel.setMcc(data.hasMcc() ? String.valueOf(data.getMcc().getValue()) : "");
         viewModel.setMnc(data.hasMnc() ? String.valueOf(data.getMnc().getValue()) : "");
@@ -655,11 +664,6 @@ public class NetworkDetailsFragment extends AServiceDataFragment implements ICel
 
         viewModel.setSignalOne(data.hasSignalStrength() ? (int) data.getSignalStrength().getValue() : null);
         viewModel.setSignalTwo(data.hasRscp() ? (int) data.getRscp().getValue() : null);
-
-        if (data.hasSignalStrength())
-        {
-            chartViewModel.addNewRssi((int) data.getSignalStrength().getValue());
-        }
     }
 
     /**
@@ -670,6 +674,10 @@ public class NetworkDetailsFragment extends AServiceDataFragment implements ICel
      */
     private void processLteServingCell(LteRecordData data)
     {
+        // Adding the signal value first so that any cell change markers will be drawn on top of the
+        // new signal value.
+        if (data.hasRsrp()) chartViewModel.addNewRssi((int) data.getRsrp().getValue());
+
         viewModel.setCarrier(data.getProvider());
         viewModel.setMcc(data.hasMcc() ? String.valueOf(data.getMcc().getValue()) : "");
         viewModel.setMnc(data.hasMnc() ? String.valueOf(data.getMnc().getValue()) : "");
@@ -701,8 +709,6 @@ public class NetworkDetailsFragment extends AServiceDataFragment implements ICel
 
         viewModel.setSignalOne(data.hasRsrp() ? (int) data.getRsrp().getValue() : null);
         viewModel.setSignalTwo(data.hasRsrq() ? (int) data.getRsrq().getValue() : null);
-
-        if (data.hasRsrp()) chartViewModel.addNewRssi((int) data.getRsrp().getValue());
     }
 
     /**
@@ -713,6 +719,10 @@ public class NetworkDetailsFragment extends AServiceDataFragment implements ICel
      */
     private void processNrServingCell(NrRecordData data, int[] bands)
     {
+        // Adding the signal value first so that any cell change markers will be drawn on top of the
+        // new signal value.
+        if (data.hasSsRsrp()) chartViewModel.addNewRssi((int) data.getSsRsrp().getValue());
+
         viewModel.setCarrier(data.getProvider());
         viewModel.setMcc(data.hasMcc() ? String.valueOf(data.getMcc().getValue()) : "");
         viewModel.setMnc(data.hasMnc() ? String.valueOf(data.getMnc().getValue()) : "");
@@ -753,8 +763,6 @@ public class NetworkDetailsFragment extends AServiceDataFragment implements ICel
 
         viewModel.setSignalOne(data.hasSsRsrp() ? (int) data.getSsRsrp().getValue() : null);
         viewModel.setSignalTwo(data.hasSsRsrq() ? (int) data.getSsRsrq().getValue() : null);
-
-        if (data.hasSsRsrp()) chartViewModel.addNewRssi((int) data.getSsRsrp().getValue());
     }
 
     /**
@@ -848,6 +856,7 @@ public class NetworkDetailsFragment extends AServiceDataFragment implements ICel
         if (cellIdentity != null)
         {
             final int ci = cellIdentity.intValue();
+            chartViewModel.setServingCellId(ci);
             binding.cid.setText(String.valueOf(ci));
 
             if (viewModel.getServingCellProtocol().getValue() == CellularProtocol.LTE)

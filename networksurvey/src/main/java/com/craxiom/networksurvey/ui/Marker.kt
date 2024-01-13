@@ -7,6 +7,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.unit.dp
+import com.craxiom.networksurvey.ui.cellular.CustomMarkerLabelFormatter
 import com.patrykandpatrick.vico.compose.component.overlayingComponent
 import com.patrykandpatrick.vico.compose.component.rememberLineComponent
 import com.patrykandpatrick.vico.compose.component.rememberShapeComponent
@@ -25,7 +26,7 @@ import com.patrykandpatrick.vico.core.extension.copyColor
 import com.patrykandpatrick.vico.core.marker.Marker
 
 @Composable
-internal fun rememberMarker(): Marker {
+internal fun rememberMarker(labelText: String): Marker {
     val labelBackgroundColor = MaterialTheme.colorScheme.surface
     val labelBackground =
         remember(labelBackgroundColor) {
@@ -64,7 +65,7 @@ internal fun rememberMarker(): Marker {
             guidelineShape,
         )
     return remember(label, indicator, guideline) {
-        object : MarkerComponent(label, indicator, guideline) {
+        val markerComponent = object : MarkerComponent(label, indicator, guideline) {
             init {
                 indicatorSizeDp = INDICATOR_SIZE_DP
                 onApplyEntryColor = { entryColor ->
@@ -90,6 +91,9 @@ internal fun rememberMarker(): Marker {
                         LABEL_BACKGROUND_SHADOW_DY.pixels
             }
         }
+        if (labelText.isNotEmpty()) markerComponent.labelFormatter =
+            CustomMarkerLabelFormatter(text = labelText)
+        markerComponent
     }
 }
 
