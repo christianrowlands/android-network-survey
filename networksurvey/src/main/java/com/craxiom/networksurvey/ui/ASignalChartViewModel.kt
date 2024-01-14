@@ -16,6 +16,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import timber.log.Timber
+import kotlin.concurrent.Volatile
 import kotlin.properties.ReadWriteProperty
 import kotlin.reflect.KProperty
 
@@ -60,6 +61,9 @@ abstract class ASignalChartViewModel : ViewModel() {
     private val xValueQueue: ArrayDeque<Int> by dequeLimiter(CHART_WIDTH)
     private val rssiQueue: ArrayDeque<Float> by dequeLimiter(CHART_WIDTH)
 
+    @Volatile
+    private var isPaused = false
+
     private val _latestChartRssi = MutableStateFlow(UNKNOWN_RSSI)
     private val latestChartRssi: StateFlow<Float> = _latestChartRssi.asStateFlow()
 
@@ -72,13 +76,28 @@ abstract class ASignalChartViewModel : ViewModel() {
             while (currentCoroutineContext().isActive) {
                 // This coroutine will make sure that the chart is updated every n seconds, even
                 // if there are not any new values coming in.
-                if (!rssiQueue.isEmpty()) {
+                if (!isPaused && !rssiQueue.isEmpty()) {
                     addRssiToChart(latestChartRssi.value)
                 }
 
                 delay(UPDATE_FREQUENCY)
             }
         }
+    }
+
+    /**
+     * Pauses updates to the chart so that the chart does not keep getting values added when the
+     * fragment is in the background.
+     */
+    fun pauseChartUpdates() {
+        isPaused = true;
+    }
+
+    /**
+     * Resumes updates to the chart.
+     */
+    fun resumeChartUpdates() {
+        isPaused = false;
     }
 
     /**

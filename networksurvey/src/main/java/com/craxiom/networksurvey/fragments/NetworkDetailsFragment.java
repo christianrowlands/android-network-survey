@@ -129,6 +129,14 @@ public class NetworkDetailsFragment extends AServiceDataFragment implements ICel
     }
 
     @Override
+    public void onPause()
+    {
+        chartViewModel.pauseChartUpdates();
+
+        super.onPause();
+    }
+
+    @Override
     public void onResume()
     {
         super.onResume();
@@ -139,6 +147,8 @@ public class NetworkDetailsFragment extends AServiceDataFragment implements ICel
         initializeLocationTextView();
 
         startAndBindToService();
+
+        chartViewModel.resumeChartUpdates();
     }
 
     @Override
