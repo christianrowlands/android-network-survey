@@ -1,5 +1,10 @@
 # Changelog
 
+## [1.18](https://github.com/christianrowlands/android-network-survey/releases/tag/v1.18) - 2024-01-22
+
+* Adds a chart showing the last two minutes of cellular signal strength to the cellular details view.
+* Adds an information dialog about the cellular terms definitions.
+
 ## [1.17](https://github.com/christianrowlands/android-network-survey/releases/tag/v1.17) - 2024-01-12
 
 * Adds Details views for Wi-Fi and Bluetooth that display a chart of the signal strength over time.
