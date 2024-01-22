@@ -742,10 +742,15 @@ public class NetworkDetailsFragment extends AServiceDataFragment implements ICel
         if (bands.length > 0)
         {
             StringBuilder bandsString = new StringBuilder();
-            for (int band : bands)
+            for (int i = 0; i < bands.length; i++)
             {
-                bandsString.append(band).append(", ");
+                bandsString.append(bands[i]);
+                if (i < bands.length - 1)
+                {
+                    bandsString.append(", ");
+                }
             }
+
             if (data.hasNarfcn())
             {
                 int narfcn = data.getNarfcn().getValue();
