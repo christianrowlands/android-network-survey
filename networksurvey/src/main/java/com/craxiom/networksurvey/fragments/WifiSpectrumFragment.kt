@@ -9,26 +9,21 @@ import androidx.compose.ui.platform.ComposeView
 import androidx.compose.ui.platform.ViewCompositionStrategy
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.fragment.findNavController
-import androidx.navigation.fragment.navArgs
 import androidx.preference.PreferenceManager
 import com.craxiom.networksurvey.constants.NetworkSurveyConstants
 import com.craxiom.networksurvey.listeners.IWifiSurveyRecordListener
-import com.craxiom.networksurvey.model.WifiNetwork
 import com.craxiom.networksurvey.model.WifiRecordWrapper
 import com.craxiom.networksurvey.services.NetworkSurveyService
-import com.craxiom.networksurvey.ui.UNKNOWN_RSSI
-import com.craxiom.networksurvey.ui.wifi.WifiDetailsScreen
-import com.craxiom.networksurvey.ui.wifi.WifiDetailsViewModel
+import com.craxiom.networksurvey.ui.wifi.WifiSpectrumChartViewModel
+import com.craxiom.networksurvey.ui.wifi.WifiSpectrumScreen
 import com.craxiom.networksurvey.util.NsTheme
 import com.craxiom.networksurvey.util.PreferenceUtils
-import timber.log.Timber
 
 /**
  * The fragment that displays the details of a single Wifi network from the scan results.
  */
-class WifiDetailsFragment : AServiceDataFragment(), IWifiSurveyRecordListener {
-    private lateinit var wifiNetwork: WifiNetwork
-    private lateinit var viewModel: WifiDetailsViewModel
+class WifiSpectrumFragment : AServiceDataFragment(), IWifiSurveyRecordListener {
+    private lateinit var viewModel: WifiSpectrumChartViewModel
 
     private lateinit var sharedPreferences: SharedPreferences
     private val preferenceChangeListener =
@@ -48,21 +43,12 @@ class WifiDetailsFragment : AServiceDataFragment(), IWifiSurveyRecordListener {
         container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
-        val args: WifiDetailsFragmentArgs by navArgs()
-        wifiNetwork = args.wifiNetwork
-
         val composeView = ComposeView(requireContext())
 
         composeView.apply {
             setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed)
             setContent {
                 viewModel = viewModel()
-                viewModel.wifiNetwork = wifiNetwork
-                if (wifiNetwork.signalStrength == null) {
-                    viewModel.addInitialRssi(UNKNOWN_RSSI)
-                } else {
-                    viewModel.addInitialRssi(wifiNetwork.signalStrength!!)
-                }
 
                 sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context)
                 sharedPreferences.registerOnSharedPreferenceChangeListener(
@@ -74,11 +60,12 @@ class WifiDetailsFragment : AServiceDataFragment(), IWifiSurveyRecordListener {
                     context
                 )
                 viewModel.setScanRateSeconds(scanRateMs / 1_000)
+                viewModel.initializeCharts()
 
                 NsTheme {
-                    WifiDetailsScreen(
+                    WifiSpectrumScreen(
                         viewModel = viewModel,
-                        wifiDetailsFragment = this@WifiDetailsFragment
+                        wifiSpectrumFragment = this@WifiSpectrumFragment
                     )
                 }
             }
@@ -110,23 +97,20 @@ class WifiDetailsFragment : AServiceDataFragment(), IWifiSurveyRecordListener {
     }
 
     override fun onWifiBeaconSurveyRecords(wifiBeaconRecords: MutableList<WifiRecordWrapper>?) {
-        val matchedWifiRecordWrapper =
-            wifiBeaconRecords?.find { it.wifiBeaconRecord.data.bssid.equals(wifiNetwork.bssid) }
+        val wifiNetworkInfoList: List<WifiNetworkInfo> = wifiBeaconRecords
+            ?.filter { it.wifiBeaconRecord.data.hasSignalStrength() && it.wifiBeaconRecord.data.ssid != null && it.wifiBeaconRecord.data.hasChannel() }
+            ?.map {
+                WifiNetworkInfo(
+                    it.wifiBeaconRecord.data.ssid!!,
+                    it.wifiBeaconRecord.data.signalStrength.value.toInt(),
+                    it.wifiBeaconRecord.data.channel.value
+                )
+            }
+            ?: emptyList()
 
-        if (matchedWifiRecordWrapper == null) {
-            Timber.i("No wifi record found for ${wifiNetwork.bssid} in the wifi scan results")
-            viewModel.addNewRssi(UNKNOWN_RSSI)
-            return
-        }
-
-        if (matchedWifiRecordWrapper.wifiBeaconRecord.data.hasSignalStrength()) {
-            viewModel.addNewRssi(matchedWifiRecordWrapper.wifiBeaconRecord.data.signalStrength.value)
-        } else {
-            Timber.i("No signal strength present for ${wifiNetwork.bssid} in the wifi beacon record")
-            viewModel.addNewRssi(UNKNOWN_RSSI)
-
-        }
+        viewModel.onWifiScanResults(wifiNetworkInfoList)
     }
+
 
     /**
      * Navigates to the Settings UI (primarily for the user to change the scan rate)
@@ -135,3 +119,9 @@ class WifiDetailsFragment : AServiceDataFragment(), IWifiSurveyRecordListener {
         findNavController().navigate(WifiDetailsFragmentDirections.actionWifiDetailsToSettings())
     }
 }
+
+data class WifiNetworkInfo(
+    val ssid: String,
+    val signalStrength: Int,
+    val channel: Int
+)

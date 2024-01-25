@@ -15,6 +15,9 @@ import android.os.IBinder;
 import android.os.Looper;
 import android.provider.Settings;
 import android.view.LayoutInflater;
+import android.view.Menu;
+import android.view.MenuInflater;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
@@ -22,6 +25,7 @@ import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AlertDialog;
+import androidx.core.view.MenuProvider;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentActivity;
 import androidx.lifecycle.LifecycleOwner;
@@ -52,7 +56,7 @@ import timber.log.Timber;
  *
  * @since 0.1.2
  */
-public class WifiNetworksFragment extends Fragment implements IWifiSurveyRecordListener
+public class WifiNetworksFragment extends Fragment implements IWifiSurveyRecordListener, MenuProvider
 {
     private FragmentWifiNetworksListBinding binding;
     private SortedList<WifiRecordWrapper> wifiRecordSortedList;
@@ -134,6 +138,12 @@ public class WifiNetworksFragment extends Fragment implements IWifiSurveyRecordL
                     if (paused) lastScanTime = System.currentTimeMillis();
                 });
 
+        FragmentActivity activity = getActivity();
+        if (activity != null)
+        {
+            activity.addMenuProvider(this, getViewLifecycleOwner());
+        }
+
         return binding.getRoot();
     }
 
@@ -207,6 +217,23 @@ public class WifiNetworksFragment extends Fragment implements IWifiSurveyRecordL
         });
     }
 
+    @Override
+    public void onCreateMenu(@NonNull Menu menu, @NonNull MenuInflater menuInflater)
+    {
+        menuInflater.inflate(R.menu.wifi_networks_menu, menu);
+    }
+
+    @Override
+    public boolean onMenuItemSelected(@NonNull MenuItem menuItem)
+    {
+        if (menuItem.getItemId() == R.id.action_open_spectrum)
+        {
+            navigateToWifiSpectrumScreen();
+            return true;
+        }
+        return false;
+    }
+
     /**
      * Navigates to the Wi-Fi details screen for the selected Wi-Fi network.
      */
@@ -218,6 +245,18 @@ public class WifiNetworksFragment extends Fragment implements IWifiSurveyRecordL
         Navigation.findNavController(activity, getId())
                 .navigate(WifiNetworksFragmentDirections.actionWifiListFragmentToWifiDetailsFragment(
                         wifiNetwork));
+    }
+
+    /**
+     * Navigates to the Wi-Fi spectrum screen.
+     */
+    public void navigateToWifiSpectrumScreen()
+    {
+        FragmentActivity activity = getActivity();
+        if (activity == null) return;
+
+        Navigation.findNavController(activity, getId())
+                .navigate(WifiNetworksFragmentDirections.actionWifiListFragmentToWifiSpectrumFragment());
     }
 
     /**

@@ -186,7 +186,7 @@ but work independently, so you have full control over how you handle your data.<
         <b>MNC</b> (Mobile Network Code): Unique network identifier within the country. Together the MCC and MNC represent a specific service provider (e.g. T-Mobile).\n\n
         <b>TAC</b> (Tracking Area Code): Identifier for a group of cell towers that is used for paging.\n\n
         <b>CID</b> (Cell Identity): Identifier for a specific cell tower. Together the MCC, MNC, and CID uniquely identifies a specific LTE cell panel from all others in the world.\n\n
-        <b>eNB ID</b> (eNodeB Identifier): The cell tower identifier, which will contain one or more cell panels. This is the first 20 bites of the CID.\n\n
+        <b>eNB ID</b> (eNodeB Identifier): The cell tower identifier, which will contain one or more cell panels. This is the first 20 bits of the CID.\n\n
         <b>Sector ID</b>: Identifies a sector (aka panel) within a cell tower. This is the last 8 bits of the CID.\n\n
         <b>EARFCN</b> (E-UTRA Absolute Radio Frequency Channel Number): Number representing LTE carrier frequency.\n\n
         <b>Band</b>: That band number representing the frequency range the EARFCN falls in.\n\n
@@ -534,5 +534,8 @@ but work independently, so you have full control over how you handle your data.<
 
     <string name="scan_button_title">Auto Configure With QR Code</string>
     <string name="code_scanner">QR Code Scanner</string>
+    <string name="open_spectrum">Wi-Fi Spectrum</string>
+    <string name="channel">Channel</string>
+    <string name="ssid">SSID\n</string>
 
 </resources>
