@@ -91,7 +91,44 @@ private fun LazyListScope.chartItems(
                 text = "Wi-Fi 2.4 GHz Spectrum",
                 style = MaterialTheme.typography.titleMedium
             )
-            WifiSpectrumChart(viewModel)
+            WifiSpectrumChart(viewModel, viewModel.modelProducer2Point4Ghz, 1, 0, CHANNELS_5_GHZ_GROUP_3)
+        }
+    }
+
+    cardItem {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Text(
+                text = "Wi-Fi 5 GHz Group 1",
+                style = MaterialTheme.typography.titleMedium
+            )
+            WifiSpectrumChart(viewModel, viewModel.modelProducer5GhzGroup1, 4, 32, CHANNELS_5_GHZ_GROUP_3)
+        }
+    }
+
+    cardItem {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Text(
+                text = "Wi-Fi 5 GHz Group 2",
+                style = MaterialTheme.typography.titleMedium
+            )
+            WifiSpectrumChart(viewModel, viewModel.modelProducer5GhzGroup2, 8, 92, CHANNELS_5_GHZ_GROUP_3)
+        }
+    }
+
+    cardItem {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Text(
+                text = "Wi-Fi 5 GHz Group 3",
+                style = MaterialTheme.typography.titleMedium
+            )
+            val customLabelValues = listOf(5.0f, 5.5f, 6.0f) // Replace with your actual values
+            WifiSpectrumChart(viewModel, viewModel.modelProducer5GhzGroup3, 4, 148, CHANNELS_5_GHZ_GROUP_3)
         }
     }
 }

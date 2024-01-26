@@ -35,6 +35,7 @@ import com.patrykandpatrick.vico.core.chart.values.AxisValueOverrider
 import com.patrykandpatrick.vico.core.component.shape.Shapes
 import com.patrykandpatrick.vico.core.legend.HorizontalLegend
 import com.patrykandpatrick.vico.core.legend.LegendItem
+import com.patrykandpatrick.vico.core.model.CartesianChartModelProducer
 
 /**
  * A chart that shows signal values (e.g. RSSI) over time.
@@ -43,24 +44,34 @@ import com.patrykandpatrick.vico.core.legend.LegendItem
  */
 @Composable
 internal fun WifiSpectrumChart(
-    viewModel: WifiSpectrumChartViewModel
+    viewModel: WifiSpectrumChartViewModel,
+    modelProducer: CartesianChartModelProducer,
+    xSpacing: Int,
+    xOffset: Int,
+    customLabelValues: List<Float>
 ) {
-    ComposeChart(viewModel)
+    ComposeChart(viewModel, modelProducer, xSpacing, xOffset, customLabelValues)
 }
 
 @Composable
-private fun ComposeChart(viewModel: WifiSpectrumChartViewModel) {
+private fun ComposeChart(
+    viewModel: WifiSpectrumChartViewModel,
+    modelProducer: CartesianChartModelProducer,
+    xSpacing: Int,
+    xOffset: Int,
+    customLabelValues: List<Float>
+) {
     val wifiList by viewModel.wifiNetworkInfoList.collectAsStateWithLifecycle()
-
 
     ProvideChartStyle(rememberSpectrumChartStyle(chartColors)) {
         //val defaultLines = currentChartStyle.lineLayer.lines
         CartesianChartHost(
-            modifier = Modifier.height(230.dp),
-            modelProducer = viewModel.modelProducer2Point4,
+            modifier = Modifier.height(220.dp),
+            modelProducer = modelProducer,
             marker = null,//rememberMarker(""),
             runInitialAnimation = false,
             chartScrollSpec = rememberChartScrollSpec(isScrollEnabled = false),
+            getXStep = { 1f },
             chart =
             rememberCartesianChart(
                 rememberLineCartesianLayer(
@@ -77,6 +88,20 @@ private fun ComposeChart(viewModel: WifiSpectrumChartViewModel) {
                 ),
                 bottomAxis =
                 rememberBottomAxis(
+                    title = stringResource(R.string.channel),
+                    itemPlacer = remember {
+                        AxisItemPlacer.Horizontal.default(
+                            spacing = xSpacing,
+                            offset = xOffset
+                        )
+                        /*ChannelAxisItemPlacer(
+                            spacing = xSpacing,
+                            offset = xOffset,
+                            shiftExtremeTicks = true,
+                            addExtremeLabelPadding = true,
+                            customLabelValues = customLabelValues
+                        )*/
+                    },
                     titleComponent =
                     rememberTextComponent(
                         background = rememberShapeComponent(Shapes.pillShape, color2),
@@ -85,7 +110,6 @@ private fun ComposeChart(viewModel: WifiSpectrumChartViewModel) {
                         margins = bottomAxisTitleMargins,
                         typeface = Typeface.MONOSPACE,
                     ),
-                    title = stringResource(R.string.channel),
                 ),
                 //legend = rememberSsidLegend(wifiList),
                 //fadingEdges = rememberFadingEdges(),
@@ -154,7 +178,7 @@ private fun rememberLegend() =
                     textSize = legendItemLabelTextSize,
                     typeface = Typeface.MONOSPACE,
                 ),
-                labelText = stringResource(R.string.series_x, index + 1),
+                labelText = stringResource(R.string.ssid, index + 1),
             )
         },
         iconSize = legendItemIconSize,
