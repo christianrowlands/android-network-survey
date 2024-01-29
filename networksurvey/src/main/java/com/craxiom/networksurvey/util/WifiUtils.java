@@ -1,14 +1,17 @@
 package com.craxiom.networksurvey.util;
 
 import com.craxiom.messaging.wifi.EncryptionType;
+import com.craxiom.messaging.wifi.WifiBandwidth;
 
 /**
  * A few pieces of information come packaged in the {@link android.net.wifi.ScanResult#capabilities} string.  This class
  * offers utility methods to extract the relevant information from that capabilities string.
+ * <p>
+ * This class also has some other Wi-Fi related utility methods.
  *
  * @since 0.1.2
  */
-public class WifiCapabilitiesUtils
+public class WifiUtils
 {
     /**
      * Given the {@link android.net.wifi.ScanResult#capabilities} string, return the appropriate {@link EncryptionType}.
@@ -62,5 +65,23 @@ public class WifiCapabilitiesUtils
     public static boolean supportsWps(String capabilities)
     {
         return capabilities.contains("WPS");
+    }
+
+    /**
+     * @return A string representation of the provided Wi-Fi bandwidth.
+     */
+    public static String formatBandwidth(WifiBandwidth bandwidth)
+    {
+        if (bandwidth == null) return "";
+        return switch (bandwidth)
+        {
+            case MHZ_20 -> "20 MHz";
+            case MHZ_40 -> "40 MHz";
+            case MHZ_80 -> "80 MHz";
+            case MHZ_80_PLUS -> "80+ MHz";
+            case MHZ_160 -> "160 MHz";
+            case MHZ_320 -> "320 MHz";
+            default -> "";
+        };
     }
 }

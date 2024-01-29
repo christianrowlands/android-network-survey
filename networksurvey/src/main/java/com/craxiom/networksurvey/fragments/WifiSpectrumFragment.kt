@@ -10,6 +10,7 @@ import androidx.compose.ui.platform.ViewCompositionStrategy
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.fragment.findNavController
 import androidx.preference.PreferenceManager
+import com.craxiom.messaging.wifi.WifiBandwidth
 import com.craxiom.networksurvey.constants.NetworkSurveyConstants
 import com.craxiom.networksurvey.listeners.IWifiSurveyRecordListener
 import com.craxiom.networksurvey.model.WifiRecordWrapper
@@ -103,7 +104,8 @@ class WifiSpectrumFragment : AServiceDataFragment(), IWifiSurveyRecordListener {
                 WifiNetworkInfo(
                     it.wifiBeaconRecord.data.ssid!!,
                     it.wifiBeaconRecord.data.signalStrength.value.toInt(),
-                    it.wifiBeaconRecord.data.channel.value
+                    it.wifiBeaconRecord.data.channel.value,
+                    it.wifiBeaconRecord.data.bandwidth
                 )
             }
             ?: emptyList()
@@ -123,5 +125,6 @@ class WifiSpectrumFragment : AServiceDataFragment(), IWifiSurveyRecordListener {
 data class WifiNetworkInfo(
     val ssid: String,
     val signalStrength: Int,
-    val channel: Int
+    val channel: Int,
+    val bandwidth: WifiBandwidth
 )

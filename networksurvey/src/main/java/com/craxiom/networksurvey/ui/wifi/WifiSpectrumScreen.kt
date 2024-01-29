@@ -91,7 +91,12 @@ private fun LazyListScope.chartItems(
                 text = "Wi-Fi 2.4 GHz Spectrum",
                 style = MaterialTheme.typography.titleMedium
             )
-            WifiSpectrumChart(viewModel, viewModel.modelProducer2Point4Ghz, 1, 0, CHANNELS_5_GHZ_GROUP_3)
+            WifiSpectrumChart(
+                viewModel, viewModel.modelProducer2Point4Ghz,
+                CHANNELS_2_4_GHZ_CHART_VIEW[0].toFloat(),
+                CHANNELS_2_4_GHZ_CHART_VIEW[CHANNELS_2_4_GHZ_CHART_VIEW.size - 1].toFloat(),
+                CHANNELS_2_4_GHZ
+            )
         }
     }
 
@@ -103,7 +108,13 @@ private fun LazyListScope.chartItems(
                 text = "Wi-Fi 5 GHz Group 1",
                 style = MaterialTheme.typography.titleMedium
             )
-            WifiSpectrumChart(viewModel, viewModel.modelProducer5GhzGroup1, 4, 32, CHANNELS_5_GHZ_GROUP_3)
+            WifiSpectrumChart(
+                viewModel,
+                viewModel.modelProducer5GhzGroup1,
+                CHANNELS_5_GHZ_GROUP_1_CHART_VIEW[0].toFloat(),
+                CHANNELS_5_GHZ_GROUP_1_CHART_VIEW[CHANNELS_5_GHZ_GROUP_1_CHART_VIEW.size - 1].toFloat(),
+                CHANNELS_5_GHZ_GROUP_1
+            )
         }
     }
 
@@ -115,7 +126,14 @@ private fun LazyListScope.chartItems(
                 text = "Wi-Fi 5 GHz Group 2",
                 style = MaterialTheme.typography.titleMedium
             )
-            WifiSpectrumChart(viewModel, viewModel.modelProducer5GhzGroup2, 8, 92, CHANNELS_5_GHZ_GROUP_3)
+            WifiSpectrumChart(
+                viewModel,
+                viewModel.modelProducer5GhzGroup2,
+                CHANNELS_5_GHZ_GROUP_2_CHART_VIEW[0].toFloat(),
+                CHANNELS_5_GHZ_GROUP_2_CHART_VIEW[CHANNELS_5_GHZ_GROUP_2_CHART_VIEW.size - 1].toFloat(),
+                CHANNELS_5_GHZ_GROUP_2,
+                everyOtherLabel = true
+            )
         }
     }
 
@@ -127,8 +145,13 @@ private fun LazyListScope.chartItems(
                 text = "Wi-Fi 5 GHz Group 3",
                 style = MaterialTheme.typography.titleMedium
             )
-            val customLabelValues = listOf(5.0f, 5.5f, 6.0f) // Replace with your actual values
-            WifiSpectrumChart(viewModel, viewModel.modelProducer5GhzGroup3, 4, 148, CHANNELS_5_GHZ_GROUP_3)
+            WifiSpectrumChart(
+                viewModel,
+                viewModel.modelProducer5GhzGroup3,
+                CHANNELS_5_GHZ_GROUP_3_CHART_VIEW[0].toFloat(),
+                CHANNELS_5_GHZ_GROUP_3_CHART_VIEW[CHANNELS_5_GHZ_GROUP_3_CHART_VIEW.size - 1].toFloat(),
+                CHANNELS_5_GHZ_GROUP_3
+            )
         }
     }
 }

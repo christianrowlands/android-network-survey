@@ -46,19 +46,21 @@ import com.patrykandpatrick.vico.core.model.CartesianChartModelProducer
 internal fun WifiSpectrumChart(
     viewModel: WifiSpectrumChartViewModel,
     modelProducer: CartesianChartModelProducer,
-    xSpacing: Int,
-    xOffset: Int,
-    customLabelValues: List<Float>
+    minX: Float,
+    maxX: Float,
+    customLabelValues: List<Float>,
+    everyOtherLabel: Boolean = false
 ) {
-    ComposeChart(viewModel, modelProducer, xSpacing, xOffset, customLabelValues)
+    ComposeChart(viewModel, modelProducer, minX, maxX, everyOtherLabel, customLabelValues)
 }
 
 @Composable
 private fun ComposeChart(
     viewModel: WifiSpectrumChartViewModel,
     modelProducer: CartesianChartModelProducer,
-    xSpacing: Int,
-    xOffset: Int,
+    minX: Float,
+    maxX: Float,
+    everyOtherLabel: Boolean,
     customLabelValues: List<Float>
 ) {
     val wifiList by viewModel.wifiNetworkInfoList.collectAsStateWithLifecycle()
@@ -76,8 +78,10 @@ private fun ComposeChart(
             rememberCartesianChart(
                 rememberLineCartesianLayer(
                     axisValueOverrider = AxisValueOverrider.fixed(
+                        minX = minX,
+                        maxX = maxX,
                         maxY = WIFI_SPECTRUM_MAX,
-                        minY = WIFI_SPECTRUM_MIN,
+                        minY = WIFI_SPECTRUM_MIN
                     ),
                     //remember(defaultLines) { defaultLines.map { it.copy(backgroundShader = null) } },
                 ),
@@ -90,17 +94,14 @@ private fun ComposeChart(
                 rememberBottomAxis(
                     title = stringResource(R.string.channel),
                     itemPlacer = remember {
-                        AxisItemPlacer.Horizontal.default(
+                        /*AxisItemPlacer.Horizontal.default(
                             spacing = xSpacing,
                             offset = xOffset
-                        )
-                        /*ChannelAxisItemPlacer(
-                            spacing = xSpacing,
-                            offset = xOffset,
-                            shiftExtremeTicks = true,
-                            addExtremeLabelPadding = true,
-                            customLabelValues = customLabelValues
                         )*/
+                        ChannelAxisItemPlacer(
+                            everyOtherLabel = everyOtherLabel,
+                            customLabelValues = customLabelValues
+                        )
                     },
                     titleComponent =
                     rememberTextComponent(

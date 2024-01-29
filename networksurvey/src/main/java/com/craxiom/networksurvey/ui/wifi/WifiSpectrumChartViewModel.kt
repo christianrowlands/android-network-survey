@@ -2,6 +2,7 @@ package com.craxiom.networksurvey.ui.wifi
 
 
 import androidx.lifecycle.ViewModel
+import com.craxiom.messaging.wifi.WifiBandwidth
 import com.craxiom.networksurvey.fragments.WifiNetworkInfo
 import com.patrykandpatrick.vico.core.model.CartesianChartModelProducer
 import com.patrykandpatrick.vico.core.model.LineCartesianLayerModel
@@ -19,20 +20,20 @@ private const val WEAKER_SIGNAL_OFFSET = 5
 
 const val WIFI_CHART_MIN = WIFI_SPECTRUM_MIN - 10
 
-private val CHANNELS_2_4_GHZ = listOf(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14)
-private val CHANNELS_2_4_GHZ_CHART_VIEW =
+val CHANNELS_2_4_GHZ = listOf(1f, 2f, 3f, 4f, 5f, 6f, 7f, 8f, 9f, 10f, 11f, 12f, 13f, 14f)
+val CHANNELS_2_4_GHZ_CHART_VIEW =
     listOf(0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15)
 
-private val CHANNELS_5_GHZ_GROUP_1 = listOf(36, 40, 44, 48, 52, 56, 60, 64)
-private val CHANNELS_5_GHZ_GROUP_1_CHART_VIEW = listOf(32, 36, 40, 44, 48, 52, 56, 60, 64, 68)
+val CHANNELS_5_GHZ_GROUP_1 = listOf(36f, 40f, 44f, 48f, 52f, 56f, 60f, 64f)
+val CHANNELS_5_GHZ_GROUP_1_CHART_VIEW = listOf(32, 36, 40, 44, 48, 52, 56, 60, 64, 68)
 
-private val CHANNELS_5_GHZ_GROUP_2 =
-    listOf(100, 104, 108, 112, 116, 120, 124, 128, 132, 136, 140, 144)
-private val CHANNELS_5_GHZ_GROUP_2_CHART_VIEW =
+val CHANNELS_5_GHZ_GROUP_2 =
+    listOf(100f, 104f, 108f, 112f, 116f, 120f, 124f, 128f, 132f, 136f, 140f, 144f)
+val CHANNELS_5_GHZ_GROUP_2_CHART_VIEW =
     listOf(96, 100, 104, 108, 112, 116, 120, 124, 128, 132, 136, 140, 144, 148)
 
 val CHANNELS_5_GHZ_GROUP_3 = listOf(149f, 153f, 157f, 161f, 165f, 169f, 173f, 177f)
-private val CHANNELS_5_GHZ_GROUP_3_CHART_VIEW =
+val CHANNELS_5_GHZ_GROUP_3_CHART_VIEW =
     listOf(145, 149, 153, 157, 161, 165, 169, 173, 177, 181)
 
 /**
@@ -105,103 +106,99 @@ class WifiSpectrumChartViewModel : ViewModel() {
     }
 
     private fun create2Point4SeriesModel(wifiNetworkInfoList: List<WifiNetworkInfo>): LineCartesianLayerModel.Partial {
-        return LineCartesianLayerModel.partial {
-            val matchedWifiNetworks = wifiNetworkInfoList
-                .filter { it.channel in CHANNELS_2_4_GHZ }
-
-            if (matchedWifiNetworks.isEmpty()) {
+        val matchedWifiNetworks =
+            wifiNetworkInfoList.filter { it.channel.toFloat() in CHANNELS_2_4_GHZ }
+        return if (matchedWifiNetworks.isEmpty()) {
+            LineCartesianLayerModel.partial {
                 series(
                     CHANNELS_2_4_GHZ_CHART_VIEW,
                     List(CHANNELS_2_4_GHZ_CHART_VIEW.size) { WIFI_CHART_MIN })
-            } else {
-
-                matchedWifiNetworks
-                    .forEach { wifiNetwork ->
-                        val signalStrengths = CHANNELS_2_4_GHZ_CHART_VIEW.map { channel ->
-                            when (channel) {
-                                wifiNetwork.channel -> constrictSignalStrength(wifiNetwork.signalStrength.toFloat())
-                                wifiNetwork.channel - 1, wifiNetwork.channel + 1 -> (wifiNetwork.signalStrength - WEAKER_SIGNAL_OFFSET).toFloat()
-                                else -> WIFI_CHART_MIN
-                            }
-                        }
-                        series(CHANNELS_2_4_GHZ_CHART_VIEW, signalStrengths)
-                    }
             }
+        } else {
+            createSeriesForNetworks(matchedWifiNetworks)
         }
     }
 
-
     private fun create5Group1SeriesModel(wifiNetworkInfoList: List<WifiNetworkInfo>): LineCartesianLayerModel.Partial {
-        return LineCartesianLayerModel.partial {
-            val matchedWifiNetworks = wifiNetworkInfoList
-                .filter { it.channel in CHANNELS_5_GHZ_GROUP_1 }
-
-            if (matchedWifiNetworks.isEmpty()) {
-                series(CHANNELS_5_GHZ_GROUP_1_CHART_VIEW, List(
-                    CHANNELS_5_GHZ_GROUP_1_CHART_VIEW.size
-                ) { WIFI_CHART_MIN })
-            } else {
-                matchedWifiNetworks
-                    .forEach { wifiNetwork ->
-                        val signalStrengths = CHANNELS_5_GHZ_GROUP_1_CHART_VIEW.map { channel ->
-                            when (channel) {
-                                wifiNetwork.channel -> constrictSignalStrength(wifiNetwork.signalStrength.toFloat())
-                                wifiNetwork.channel - 1, wifiNetwork.channel + 1 -> (wifiNetwork.signalStrength - WEAKER_SIGNAL_OFFSET).toFloat()
-                                else -> WIFI_CHART_MIN
-                            }
-                        }
-                        series(CHANNELS_5_GHZ_GROUP_1_CHART_VIEW, signalStrengths)
-                    }
+        val matchedWifiNetworks =
+            wifiNetworkInfoList.filter { it.channel.toFloat() in CHANNELS_5_GHZ_GROUP_1 }
+        return if (matchedWifiNetworks.isEmpty()) {
+            LineCartesianLayerModel.partial {
+                series(
+                    CHANNELS_5_GHZ_GROUP_1_CHART_VIEW,
+                    List(CHANNELS_5_GHZ_GROUP_1_CHART_VIEW.size) { WIFI_CHART_MIN })
             }
+        } else {
+            createSeriesForNetworks(matchedWifiNetworks)
         }
     }
 
     private fun create5Group2SeriesModel(wifiNetworkInfoList: List<WifiNetworkInfo>): LineCartesianLayerModel.Partial {
-        return LineCartesianLayerModel.partial {
-            val matchedWifiNetworks = wifiNetworkInfoList
-                .filter { it.channel in CHANNELS_5_GHZ_GROUP_2 }
-
-            if (matchedWifiNetworks.isEmpty()) {
-                series(CHANNELS_5_GHZ_GROUP_2_CHART_VIEW, List(
-                    CHANNELS_5_GHZ_GROUP_2_CHART_VIEW.size
-                ) { WIFI_CHART_MIN })
-            } else {
-                matchedWifiNetworks
-                    .forEach { wifiNetwork ->
-                        val signalStrengths = CHANNELS_5_GHZ_GROUP_2_CHART_VIEW.map { channel ->
-                            when (channel) {
-                                wifiNetwork.channel -> constrictSignalStrength(wifiNetwork.signalStrength.toFloat())
-                                wifiNetwork.channel - 1, wifiNetwork.channel + 1 -> (wifiNetwork.signalStrength - WEAKER_SIGNAL_OFFSET).toFloat()
-                                else -> WIFI_CHART_MIN
-                            }
-                        }
-                        series(CHANNELS_5_GHZ_GROUP_2_CHART_VIEW, signalStrengths)
-                    }
+        val matchedWifiNetworks =
+            wifiNetworkInfoList.filter { it.channel.toFloat() in CHANNELS_5_GHZ_GROUP_2 }
+        return if (matchedWifiNetworks.isEmpty()) {
+            LineCartesianLayerModel.partial {
+                series(
+                    CHANNELS_5_GHZ_GROUP_2_CHART_VIEW,
+                    List(CHANNELS_5_GHZ_GROUP_2_CHART_VIEW.size) { WIFI_CHART_MIN })
             }
+        } else {
+            createSeriesForNetworks(matchedWifiNetworks)
         }
     }
 
     private fun create5Group3SeriesModel(wifiNetworkInfoList: List<WifiNetworkInfo>): LineCartesianLayerModel.Partial {
-        return LineCartesianLayerModel.partial {
-            val matchedWifiNetworks = wifiNetworkInfoList
-                .filter { it.channel.toFloat() in CHANNELS_5_GHZ_GROUP_3 }
+        val matchedWifiNetworks =
+            wifiNetworkInfoList.filter { it.channel.toFloat() in CHANNELS_5_GHZ_GROUP_3 }
+        return if (matchedWifiNetworks.isEmpty()) {
+            LineCartesianLayerModel.partial {
+                series(
+                    CHANNELS_5_GHZ_GROUP_3_CHART_VIEW,
+                    List(CHANNELS_5_GHZ_GROUP_3_CHART_VIEW.size) { WIFI_CHART_MIN })
+            }
+        } else {
+            createSeriesForNetworks(matchedWifiNetworks)
+        }
+    }
 
-            if (matchedWifiNetworks.isEmpty()) {
-                series(CHANNELS_5_GHZ_GROUP_3_CHART_VIEW, List(
-                    CHANNELS_5_GHZ_GROUP_3_CHART_VIEW.size
-                ) { WIFI_CHART_MIN })
-            } else {
-                matchedWifiNetworks
-                    .forEach { wifiNetwork ->
-                        val signalStrengths = CHANNELS_5_GHZ_GROUP_3_CHART_VIEW.map { channel ->
-                            when (channel) {
-                                wifiNetwork.channel -> constrictSignalStrength(wifiNetwork.signalStrength.toFloat())
-                                wifiNetwork.channel - 1, wifiNetwork.channel + 1 -> (wifiNetwork.signalStrength - WEAKER_SIGNAL_OFFSET).toFloat()
-                                else -> WIFI_CHART_MIN
-                            }
-                        }
-                        series(CHANNELS_5_GHZ_GROUP_3_CHART_VIEW, signalStrengths)
-                    }
+    /**
+     * Creates a chart series for the provided list of Wifi networks that creates a line series
+     * that is larger than the channel number (since channels overlap in Wi-Fi).
+     */
+    private fun createSeriesForNetworks(matchedWifiNetworks: List<WifiNetworkInfo>): LineCartesianLayerModel.Partial {
+        return LineCartesianLayerModel.partial {
+            matchedWifiNetworks.forEach { wifiNetwork ->
+                val offset = getHalfOffset(wifiNetwork.bandwidth)
+                val channels = listOf(
+                    wifiNetwork.channel - offset,
+                    wifiNetwork.channel,
+                    wifiNetwork.channel + offset
+                )
+                val signalStrengths = listOf(
+                    WIFI_CHART_MIN,
+                    constrictSignalStrength(wifiNetwork.signalStrength.toFloat()),
+                    WIFI_CHART_MIN
+                )
+                series(channels, signalStrengths)
+            }
+        }
+    }
+
+    /**
+     * Gets the number of channels to extend the bandwidth arch to the left and right of the center
+     * channel.
+     */
+    private fun getHalfOffset(bandwidth: WifiBandwidth): Int {
+        when (bandwidth) {
+            WifiBandwidth.MHZ_20 -> return 2
+            WifiBandwidth.MHZ_40 -> return 4
+            WifiBandwidth.MHZ_80 -> return 8
+            WifiBandwidth.MHZ_80_PLUS -> return 8
+            WifiBandwidth.MHZ_160 -> return 16
+            WifiBandwidth.MHZ_320 -> return 32
+            else -> {
+                Timber.w("Unknown Wifi bandwidth value: $bandwidth")
+                return 2
             }
         }
     }

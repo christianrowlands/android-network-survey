@@ -13,11 +13,13 @@ import androidx.recyclerview.widget.SortedList;
 
 import com.craxiom.messaging.WifiBeaconRecord;
 import com.craxiom.messaging.WifiBeaconRecordData;
+import com.craxiom.messaging.wifi.WifiBandwidth;
 import com.craxiom.networksurvey.R;
 import com.craxiom.networksurvey.constants.WifiBeaconMessageConstants;
 import com.craxiom.networksurvey.model.WifiNetwork;
 import com.craxiom.networksurvey.model.WifiRecordWrapper;
 import com.craxiom.networksurvey.util.ColorUtils;
+import com.craxiom.networksurvey.util.WifiUtils;
 
 import timber.log.Timber;
 
@@ -82,6 +84,7 @@ public class MyWifiNetworkRecyclerViewAdapter extends RecyclerView.Adapter<MyWif
         holder.encryptionType.setText(WifiBeaconMessageConstants.getEncryptionTypeString(data.getEncryptionType()));
         holder.frequency.setText(data.hasFrequencyMhz() ? context.getString(R.string.wifi_frequency_value, data.getFrequencyMhz().getValue()) : "");
         holder.channel.setText(data.hasChannel() ? context.getString(R.string.wifi_channel_value, data.getChannel().getValue()) : "");
+        holder.bandwidth.setText(data.getBandwidth() != WifiBandwidth.UNKNOWN ? context.getString(R.string.wifi_bandwidth_value, WifiUtils.formatBandwidth(data.getBandwidth())) : "");
         boolean passpoint = data.getPasspoint().getValue();
         holder.passpoint.setText((data.hasPasspoint() && passpoint) ? "Passpoint" : "");
         holder.capabilities.setText(wifiRecordWrapper.getCapabilitiesString());
@@ -114,6 +117,7 @@ public class MyWifiNetworkRecyclerViewAdapter extends RecyclerView.Adapter<MyWif
         final TextView encryptionType;
         final TextView frequency;
         final TextView channel;
+        final TextView bandwidth;
         final TextView passpoint;
         final TextView capabilities;
         WifiBeaconRecord wifiRecord;
@@ -128,6 +132,7 @@ public class MyWifiNetworkRecyclerViewAdapter extends RecyclerView.Adapter<MyWif
             encryptionType = view.findViewById(R.id.encryption_type);
             frequency = view.findViewById(R.id.wifi_frequency);
             channel = view.findViewById(R.id.wifi_channel);
+            bandwidth = view.findViewById(R.id.wifi_bandwidth);
             passpoint = view.findViewById(R.id.wifi_passpoint);
             capabilities = view.findViewById(R.id.wifi_capabilities);
 
@@ -151,6 +156,7 @@ public class MyWifiNetworkRecyclerViewAdapter extends RecyclerView.Adapter<MyWif
                         data.getSsid(),
                         data.hasFrequencyMhz() ? data.getFrequencyMhz().getValue() : null,
                         data.hasChannel() ? data.getChannel().getValue() : null,
+                        data.getBandwidth(),
                         WifiBeaconMessageConstants.getEncryptionTypeString(data.getEncryptionType()),
                         data.hasPasspoint() ? data.getPasspoint().getValue() : null,
                         capabilities.getText().toString());

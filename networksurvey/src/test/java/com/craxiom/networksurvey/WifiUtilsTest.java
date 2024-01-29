@@ -7,7 +7,7 @@ import static org.junit.Assert.assertTrue;
 import com.craxiom.messaging.wifi.CipherSuite;
 import com.craxiom.messaging.wifi.EncryptionType;
 import com.craxiom.networksurvey.constants.WifiBeaconMessageConstants;
-import com.craxiom.networksurvey.util.WifiCapabilitiesUtils;
+import com.craxiom.networksurvey.util.WifiUtils;
 
 import org.junit.Test;
 
@@ -23,8 +23,8 @@ public class WifiUtilsTest
     {
         final String capabilities = "[WPA2][RSN][ESS][WPS]";
 
-        assertEquals(EncryptionType.WPA2, WifiCapabilitiesUtils.getEncryptionType(capabilities));
-        assertTrue(WifiCapabilitiesUtils.supportsWps(capabilities));
+        assertEquals(EncryptionType.WPA2, WifiUtils.getEncryptionType(capabilities));
+        assertTrue(WifiUtils.supportsWps(capabilities));
     }
 
     @Test
@@ -32,8 +32,8 @@ public class WifiUtilsTest
     {
         final String capabilities = "[WPA2][RSN][WPA][ESS][WPS]";
 
-        assertEquals(EncryptionType.WPA_WPA2, WifiCapabilitiesUtils.getEncryptionType(capabilities));
-        assertTrue(WifiCapabilitiesUtils.supportsWps(capabilities));
+        assertEquals(EncryptionType.WPA_WPA2, WifiUtils.getEncryptionType(capabilities));
+        assertTrue(WifiUtils.supportsWps(capabilities));
     }
 
     @Test
@@ -41,8 +41,8 @@ public class WifiUtilsTest
     {
         final String capabilities = "[WPA][WPA2][RSN][ESS]";
 
-        assertEquals(EncryptionType.WPA_WPA2, WifiCapabilitiesUtils.getEncryptionType(capabilities));
-        assertFalse(WifiCapabilitiesUtils.supportsWps(capabilities));
+        assertEquals(EncryptionType.WPA_WPA2, WifiUtils.getEncryptionType(capabilities));
+        assertFalse(WifiUtils.supportsWps(capabilities));
     }
 
     @Test
@@ -50,8 +50,8 @@ public class WifiUtilsTest
     {
         final String capabilities = "[ESS]";
 
-        assertEquals(EncryptionType.OPEN, WifiCapabilitiesUtils.getEncryptionType(capabilities));
-        assertFalse(WifiCapabilitiesUtils.supportsWps(capabilities));
+        assertEquals(EncryptionType.OPEN, WifiUtils.getEncryptionType(capabilities));
+        assertFalse(WifiUtils.supportsWps(capabilities));
     }
 
     @Test
@@ -59,8 +59,8 @@ public class WifiUtilsTest
     {
         final String capabilities = "[WPA2-PSK-CCMP][RSN-PSK-CCMP][ESS][WPS]";
 
-        assertEquals(EncryptionType.WPA2, WifiCapabilitiesUtils.getEncryptionType(capabilities));
-        assertTrue(WifiCapabilitiesUtils.supportsWps(capabilities));
+        assertEquals(EncryptionType.WPA2, WifiUtils.getEncryptionType(capabilities));
+        assertTrue(WifiUtils.supportsWps(capabilities));
     }
 
     @Test
@@ -68,8 +68,8 @@ public class WifiUtilsTest
     {
         final String capabilities = "[WPA2-PSK-CCMP][RSN-PSK-CCMP][WPA-PSK-CCMP][ESS][WPS]";
 
-        assertEquals(EncryptionType.WPA_WPA2, WifiCapabilitiesUtils.getEncryptionType(capabilities));
-        assertTrue(WifiCapabilitiesUtils.supportsWps(capabilities));
+        assertEquals(EncryptionType.WPA_WPA2, WifiUtils.getEncryptionType(capabilities));
+        assertTrue(WifiUtils.supportsWps(capabilities));
     }
 
     @Test
@@ -77,8 +77,8 @@ public class WifiUtilsTest
     {
         final String capabilities = "[WPA-PSK-CCMP+TKIP][WPA2-PSK-CCMP+TKIP][RSN-PSK-CCMP+TKIP][ESS]";
 
-        assertEquals(EncryptionType.WPA_WPA2, WifiCapabilitiesUtils.getEncryptionType(capabilities));
-        assertFalse(WifiCapabilitiesUtils.supportsWps(capabilities));
+        assertEquals(EncryptionType.WPA_WPA2, WifiUtils.getEncryptionType(capabilities));
+        assertFalse(WifiUtils.supportsWps(capabilities));
     }
 
     @Test
@@ -86,8 +86,8 @@ public class WifiUtilsTest
     {
         final String capabilities = "[RSN-SAE-CCMP][ESS][MFPR][MFPC]";
 
-        assertEquals(EncryptionType.WPA3, WifiCapabilitiesUtils.getEncryptionType(capabilities));
-        assertFalse(WifiCapabilitiesUtils.supportsWps(capabilities));
+        assertEquals(EncryptionType.WPA3, WifiUtils.getEncryptionType(capabilities));
+        assertFalse(WifiUtils.supportsWps(capabilities));
     }
 
     @Test
@@ -95,8 +95,8 @@ public class WifiUtilsTest
     {
         final String capabilities = "[WPA2-PSK-CCMP][RSN-PSK+PSK-SHA256+SAE-CCMP][ESS][MFPC]";
 
-        assertEquals(EncryptionType.WPA2_WPA3, WifiCapabilitiesUtils.getEncryptionType(capabilities));
-        assertFalse(WifiCapabilitiesUtils.supportsWps(capabilities));
+        assertEquals(EncryptionType.WPA2_WPA3, WifiUtils.getEncryptionType(capabilities));
+        assertFalse(WifiUtils.supportsWps(capabilities));
     }
 
     @Test

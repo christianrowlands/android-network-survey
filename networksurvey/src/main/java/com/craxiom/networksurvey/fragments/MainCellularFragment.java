@@ -55,18 +55,24 @@ public class MainCellularFragment extends AServiceDataFragment
 
                 Timber.i("SIM State Change Detected. Restarting the cellular fragment");
 
-                // Restart this fragment (yes, it seems overly complicated but it works)
-                FragmentManager fragmentManager = getParentFragmentManager();
-                Fragment currentFragment = fragmentManager.findFragmentById(R.id.main_cellular_fragment);
-                if (currentFragment != null)
+                try
                 {
-                    FragmentTransaction detachTransaction = fragmentManager.beginTransaction();
-                    detachTransaction.detach(currentFragment);
-                    detachTransaction.commit();
+                    // Restart this fragment (yes, it seems overly complicated but it works)
+                    FragmentManager fragmentManager = getParentFragmentManager();
+                    Fragment currentFragment = fragmentManager.findFragmentById(R.id.main_cellular_fragment);
+                    if (currentFragment != null)
+                    {
+                        FragmentTransaction detachTransaction = fragmentManager.beginTransaction();
+                        detachTransaction.detach(currentFragment);
+                        detachTransaction.commit();
 
-                    FragmentTransaction attachTransaction = fragmentManager.beginTransaction();
-                    attachTransaction.attach(currentFragment);
-                    attachTransaction.commit();
+                        FragmentTransaction attachTransaction = fragmentManager.beginTransaction();
+                        attachTransaction.attach(currentFragment);
+                        attachTransaction.commit();
+                    }
+                } catch (Exception e)
+                {
+                    Timber.w(e, "Could not restart the cellular fragment after a SIM event.");
                 }
             }
         };

@@ -7,7 +7,7 @@ apply plugin: 'kotlin-android'
 
 ext.androidVersion = '28.0.0'
 ext.grpcVersion = '1.58.0'
-ext.networkSurveyMessagingVersion = '0.15.0'
+ext.networkSurveyMessagingVersion = '1.0.0'
 ext.navigationVersion = '2.7.6'
 
 android {

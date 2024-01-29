@@ -68,6 +68,8 @@ import com.craxiom.messaging.phonestate.Domain;
 import com.craxiom.messaging.phonestate.NetworkType;
 import com.craxiom.messaging.phonestate.SimState;
 import com.craxiom.messaging.wifi.EncryptionType;
+import com.craxiom.messaging.wifi.Standard;
+import com.craxiom.messaging.wifi.WifiBandwidth;
 import com.craxiom.networksurvey.BuildConfig;
 import com.craxiom.networksurvey.GpsListener;
 import com.craxiom.networksurvey.NetworkSurveyActivity;
@@ -99,7 +101,7 @@ import com.craxiom.networksurvey.util.LocationUtils;
 import com.craxiom.networksurvey.util.MathUtils;
 import com.craxiom.networksurvey.util.ParserUtils;
 import com.craxiom.networksurvey.util.PreferenceUtils;
-import com.craxiom.networksurvey.util.WifiCapabilitiesUtils;
+import com.craxiom.networksurvey.util.WifiUtils;
 import com.google.protobuf.BoolValue;
 import com.google.protobuf.FloatValue;
 import com.google.protobuf.Int32Value;
@@ -1500,19 +1502,26 @@ public class SurveyRecordProcessor
             // TODO At some point it would be nice to add the Cipher Suites and AKM Suites, but I can't seem to get
             //  enough information for that.
 
-            final EncryptionType encryptionType = WifiCapabilitiesUtils.getEncryptionType(capabilities);
+            final EncryptionType encryptionType = WifiUtils.getEncryptionType(capabilities);
             if (encryptionType != EncryptionType.UNKNOWN)
             {
                 dataBuilder.setEncryptionType(encryptionType);
             }
 
-            dataBuilder.setWps(BoolValue.newBuilder().setValue(WifiCapabilitiesUtils.supportsWps(capabilities)).build());
+            dataBuilder.setWps(BoolValue.newBuilder().setValue(WifiUtils.supportsWps(capabilities)).build());
         }
 
         if (apScanResult.isPasspointNetwork())
         {
             dataBuilder.setPasspoint(BoolValue.newBuilder().setValue(true).build());
         }
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R)
+        {
+            setWifiStandard(dataBuilder, apScanResult.getWifiStandard());
+        }
+
+        setWifiBandwidth(dataBuilder, apScanResult.channelWidth);
 
         final WifiBeaconRecord.Builder recordBuilder = WifiBeaconRecord.newBuilder();
         recordBuilder.setMessageType(WifiBeaconMessageConstants.WIFI_BEACON_RECORD_MESSAGE_TYPE);
@@ -1793,6 +1802,44 @@ public class SurveyRecordProcessor
                 if (lteBandwidth != null) lteRecordBuilder.setLteBandwidth(lteBandwidth);
             }
         }
+    }
+
+    /**
+     * Sets the Wi-Fi standard on the record if it is valid.
+     */
+    private void setWifiStandard(WifiBeaconRecordData.Builder wifiBeaconBuilder, int androidWifiStandard)
+    {
+        Standard wifiStandard = switch (androidWifiStandard)
+        {
+            case ScanResult.WIFI_STANDARD_UNKNOWN, ScanResult.WIFI_STANDARD_LEGACY, ScanResult.WIFI_STANDARD_11AD ->
+                    Standard.UNKNOWN;
+            case ScanResult.WIFI_STANDARD_11N -> Standard.IEEE80211N;
+            case ScanResult.WIFI_STANDARD_11AC -> Standard.IEEE80211AC;
+            case ScanResult.WIFI_STANDARD_11AX -> Standard.IEEE80211AX;
+            case ScanResult.WIFI_STANDARD_11BE -> Standard.IEEE80211BE;
+            default -> Standard.UNKNOWN;
+        };
+
+        if (wifiStandard != Standard.UNKNOWN) wifiBeaconBuilder.setStandard(wifiStandard);
+    }
+
+    /**
+     * Sets the Wi-Fi Bandwidth on the record.
+     */
+    private void setWifiBandwidth(WifiBeaconRecordData.Builder wifiBeaconBuilder, int androidWifiBandwidth)
+    {
+        WifiBandwidth wifiBandwidth = switch (androidWifiBandwidth)
+        {
+            case ScanResult.CHANNEL_WIDTH_20MHZ -> WifiBandwidth.MHZ_20;
+            case ScanResult.CHANNEL_WIDTH_40MHZ -> WifiBandwidth.MHZ_40;
+            case ScanResult.CHANNEL_WIDTH_80MHZ -> WifiBandwidth.MHZ_80;
+            case ScanResult.CHANNEL_WIDTH_80MHZ_PLUS_MHZ -> WifiBandwidth.MHZ_80_PLUS;
+            case ScanResult.CHANNEL_WIDTH_160MHZ -> WifiBandwidth.MHZ_160;
+            case ScanResult.CHANNEL_WIDTH_320MHZ -> WifiBandwidth.MHZ_320;
+            default -> WifiBandwidth.UNKNOWN;
+        };
+
+        if (wifiBandwidth != WifiBandwidth.UNKNOWN) wifiBeaconBuilder.setBandwidth(wifiBandwidth);
     }
 
     /**

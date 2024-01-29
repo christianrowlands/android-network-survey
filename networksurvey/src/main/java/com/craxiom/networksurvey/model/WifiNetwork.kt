@@ -1,5 +1,6 @@
 package com.craxiom.networksurvey.model
 
+import com.craxiom.messaging.wifi.WifiBandwidth
 import java.io.Serializable
 
 data class WifiNetwork(
@@ -8,6 +9,7 @@ data class WifiNetwork(
     val ssid: String,
     val frequency: Int?,
     val channel: Int?,
+    val bandwidth: WifiBandwidth?,
     val encryptionType: String,
     val passpoint: Boolean?,
     val capabilities: String,

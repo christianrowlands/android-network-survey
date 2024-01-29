@@ -34,29 +34,37 @@ scanning and displaying a list of the nearby Bluetooth devices.
 
 ## CDR Log Files
 
-### Call Detail Record (CDR) Logging in Network Survey
-
 **Introduction:**
-The Network Survey app now includes a feature for logging Call Detail Records (CDR). This functionality provides insight into various interactions your phone has with the cellular network.
+The Network Survey app now includes a feature for logging Call Detail Records (CDR). This
+functionality provides insight into various interactions your phone has with the cellular network.
 
 **What is a CDR?**
-A Call Detail Record (CDR) is a data record that documents specific interactions a phone has with the cellular network. These interactions include phone calls, SMS messages, and changes in cell tower connections.
+A Call Detail Record (CDR) is a data record that documents specific interactions a phone has with
+the cellular network. These interactions include phone calls, SMS messages, and changes in cell
+tower connections.
 
 **Use Cases:**
+
 - **Monitoring Network Activity:** Record and review your phone's cellular network interactions.
 - **Educational Insight:** Gain an understanding of how cellular networks operate.
 - **Privacy Monitoring:** Check if your phone is connecting to unexpected cell towers.
 
 **Note on Feature Limitations:**
-- The regular version of Network Survey does not log SMS events in the CDR due to Google Play's policy against apps requesting full SMS permissions.
-- Logging the "other" phone number associated with call events is also not supported in the regular version.
+
+- The regular version of Network Survey does not log SMS events in the CDR due to Google Play's
+  policy against apps requesting full SMS permissions.
+- Logging the "other" phone number associated with call events is also not supported in the regular
+  version.
 
 **Alternative Version with Extended Features:**
 If you're interested in CDR logging that includes SMS events and call details:
-1. **Install from Source:** You can build and install the app using the source code available in this repository.
-2. **Download Pre-Built APK:** Access the latest "*cdr-release.apk" under the latest release on our [GitHub Releases page](https://github.com/YourRepo/NetworkSurvey/releases).
-3. **IzzyOnDroid F-Droid:** Install from [IzzyOnDroid F-Droid](https://apt.izzysoft.de/fdroid/index/apk/com.craxiom.networksurvey).
 
+1. **Install from Source:** You can build and install the app using the source code available in
+   this repository.
+2. **Download Pre-Built APK:** Access the latest "*cdr-release.apk" under the latest release on
+   our [GitHub Releases page](https://github.com/YourRepo/NetworkSurvey/releases).
+3. **IzzyOnDroid F-Droid:** Install
+   from [IzzyOnDroid F-Droid](https://apt.izzysoft.de/fdroid/index/apk/com.craxiom.networksurvey).
 
 ## Tracking And Privacy
 

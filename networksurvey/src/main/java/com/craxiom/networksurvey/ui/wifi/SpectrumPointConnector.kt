@@ -27,18 +27,18 @@ class SpectrumPointConnector : LineCartesianLayer.LineSpec.PointConnector {
 
         if (prevY > y) {
             // Left side
-            val controlPoint1X = prevX + (x - prevX) * 0.16f
+            val controlPoint1X = prevX + (x - prevX) * 0.05f
             val controlPoint1Y = prevY + (y - prevY) * 0.5f
-            val controlPoint2X = prevX + (x - prevX) * 0.60f
-            val controlPoint2Y = prevY + (y - prevY) * 0.93f
+            val controlPoint2X = prevX + (x - prevX) * 0.2f
+            val controlPoint2Y = prevY + (y - prevY) * 1f
 
             path.cubicTo(controlPoint1X, controlPoint1Y, controlPoint2X, controlPoint2Y, x, y)
         } else {
             // Right side
-            val controlPoint1X = prevX + (x - prevX) * 0.6f
-            val controlPoint1Y = prevY + (y - prevY) * 0.16f
-            val controlPoint2X = prevX + (x - prevX) * 0.89f
-            val controlPoint2Y = prevY + (y - prevY) * 0.70f
+            val controlPoint1X = prevX + (x - prevX) * 0.8f
+            val controlPoint1Y = prevY + (y - prevY) * 0f
+            val controlPoint2X = prevX + (x - prevX) * 1f
+            val controlPoint2Y = prevY + (y - prevY) * 0.5f
 
             path.cubicTo(controlPoint1X, controlPoint1Y, controlPoint2X, controlPoint2Y, x, y)
         }

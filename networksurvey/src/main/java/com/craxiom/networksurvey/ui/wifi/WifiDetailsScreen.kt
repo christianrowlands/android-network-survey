@@ -41,6 +41,7 @@ import com.craxiom.networksurvey.fragments.WifiDetailsFragment
 import com.craxiom.networksurvey.ui.SignalChart
 import com.craxiom.networksurvey.ui.UNKNOWN_RSSI
 import com.craxiom.networksurvey.util.ColorUtils
+import com.craxiom.networksurvey.util.WifiUtils
 
 /**
  * A Compose screen that shows the details of a single WiFi network. The main purpose for this
@@ -171,6 +172,19 @@ private fun LazyListScope.chartItems(
                         Spacer(modifier = Modifier.width(padding * 2))
                         Text(
                             text = "${viewModel.wifiNetwork.frequency?.toString() ?: "Unknown"} MHz",
+                            style = MaterialTheme.typography.titleMedium
+                        )
+                    }
+
+                    Row(
+                        modifier = Modifier
+                            .padding(start = padding, end = padding, bottom = padding / 2)
+                            .fillMaxWidth(),
+                        verticalAlignment = Alignment.Top,
+                        horizontalArrangement = Arrangement.Start
+                    ) {
+                        Text(
+                            text = "Bandwidth: ${WifiUtils.formatBandwidth(viewModel.wifiNetwork.bandwidth)}",
                             style = MaterialTheme.typography.titleMedium
                         )
                     }
