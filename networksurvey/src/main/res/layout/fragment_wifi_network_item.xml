@@ -37,23 +37,44 @@
         android:layout_height="wrap_content"
         android:orientation="horizontal">
 
-        <TextView
-            android:id="@+id/bssid"
-            style="@style/ListContentText"
-            android:layout_width="wrap_content"
+        <com.google.android.flexbox.FlexboxLayout
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_margin="@dimen/xx_small_margin"
-            android:text="" />
+            app:alignContent="center"
+            android:layout_gravity="center"
+            app:alignItems="center"
+            app:justifyContent="center"
+            app:flexWrap="wrap">
 
-        <TextView
-            android:id="@+id/encryption_type"
-            style="@style/ListContentText"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_margin="@dimen/xx_small_margin"
-            android:paddingStart="@dimen/large_margin"
-            android:text=""
-            tools:ignore="RtlSymmetry" />
+            <TextView
+                android:id="@+id/bssid"
+                style="@style/ListContentText"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_margin="@dimen/xx_small_margin"
+                android:text="" />
+
+            <TextView
+                android:id="@+id/wifi_standard"
+                style="@style/ListContentText"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_margin="@dimen/xx_small_margin"
+                android:paddingStart="@dimen/large_margin"
+                android:text=""
+                tools:ignore="RtlSymmetry" />
+
+            <TextView
+                android:id="@+id/encryption_type"
+                style="@style/ListContentText"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_margin="@dimen/xx_small_margin"
+                android:paddingStart="@dimen/large_margin"
+                android:text=""
+                tools:ignore="RtlSymmetry" />
+
+        </com.google.android.flexbox.FlexboxLayout>
 
     </LinearLayout>
 

@@ -1,6 +1,7 @@
 package com.craxiom.networksurvey.util;
 
 import com.craxiom.messaging.wifi.EncryptionType;
+import com.craxiom.messaging.wifi.Standard;
 import com.craxiom.messaging.wifi.WifiBandwidth;
 
 /**
@@ -81,6 +82,27 @@ public class WifiUtils
             case MHZ_80_PLUS -> "80+ MHz";
             case MHZ_160 -> "160 MHz";
             case MHZ_320 -> "320 MHz";
+            default -> "";
+        };
+    }
+
+    /**
+     * @return A string representation of the provided Wi-Fi standard.
+     */
+    public static String formatStandard(Standard standard)
+    {
+        if (standard == null) return "";
+        return switch (standard)
+        {
+            case IEEE80211 -> "802.11";
+            case IEEE80211A -> "802.11a";
+            case IEEE80211B -> "802.11b";
+            case IEEE80211BG -> "802.11bg";
+            case IEEE80211G -> "802.11g";
+            case IEEE80211N -> "802.11n";
+            case IEEE80211AC -> "802.11ac";
+            case IEEE80211AX -> "802.11ax";
+            case IEEE80211BE -> "802.11be";
             default -> "";
         };
     }

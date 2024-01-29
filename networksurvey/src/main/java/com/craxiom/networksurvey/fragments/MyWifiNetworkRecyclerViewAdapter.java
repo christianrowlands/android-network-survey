@@ -85,6 +85,7 @@ public class MyWifiNetworkRecyclerViewAdapter extends RecyclerView.Adapter<MyWif
         holder.frequency.setText(data.hasFrequencyMhz() ? context.getString(R.string.wifi_frequency_value, data.getFrequencyMhz().getValue()) : "");
         holder.channel.setText(data.hasChannel() ? context.getString(R.string.wifi_channel_value, data.getChannel().getValue()) : "");
         holder.bandwidth.setText(data.getBandwidth() != WifiBandwidth.UNKNOWN ? context.getString(R.string.wifi_bandwidth_value, WifiUtils.formatBandwidth(data.getBandwidth())) : "");
+        holder.standard.setText(WifiUtils.formatStandard(data.getStandard()));
         boolean passpoint = data.getPasspoint().getValue();
         holder.passpoint.setText((data.hasPasspoint() && passpoint) ? "Passpoint" : "");
         holder.capabilities.setText(wifiRecordWrapper.getCapabilitiesString());
@@ -118,6 +119,7 @@ public class MyWifiNetworkRecyclerViewAdapter extends RecyclerView.Adapter<MyWif
         final TextView frequency;
         final TextView channel;
         final TextView bandwidth;
+        final TextView standard;
         final TextView passpoint;
         final TextView capabilities;
         WifiBeaconRecord wifiRecord;
@@ -133,6 +135,7 @@ public class MyWifiNetworkRecyclerViewAdapter extends RecyclerView.Adapter<MyWif
             frequency = view.findViewById(R.id.wifi_frequency);
             channel = view.findViewById(R.id.wifi_channel);
             bandwidth = view.findViewById(R.id.wifi_bandwidth);
+            standard = view.findViewById(R.id.wifi_standard);
             passpoint = view.findViewById(R.id.wifi_passpoint);
             capabilities = view.findViewById(R.id.wifi_capabilities);
 
@@ -159,7 +162,8 @@ public class MyWifiNetworkRecyclerViewAdapter extends RecyclerView.Adapter<MyWif
                         data.getBandwidth(),
                         WifiBeaconMessageConstants.getEncryptionTypeString(data.getEncryptionType()),
                         data.hasPasspoint() ? data.getPasspoint().getValue() : null,
-                        capabilities.getText().toString());
+                        capabilities.getText().toString(),
+                        data.getStandard());
                 navigateToWifiDetails(wifiNetwork);
             });
         }
