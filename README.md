@@ -34,22 +34,29 @@ scanning and displaying a list of the nearby Bluetooth devices.
 
 ## CDR Log Files
 
-A newer feature of the app is the ability to log Call Detail Record (CDR) files. What is a CDR? A
-CDR is a Call Detail Record that has an event for specific interaction a phone has with the cellular
-network. For example, a phone call, sms messages, and certain tower changes. There are several
-possible use cases for recording a CDR; for example, one might be to have a record of what your
-phone is doing, and what towers it is communicating with. Maybe you are just curious about how
-cellular networks work, or maybe you are privacy conscious and what to monitor if your phone starts
-communicating with unexpected towers.
+### Call Detail Record (CDR) Logging in Network Survey
 
-Worthy of note, the regular version of Network Survey does not log SMS events in the CDR, nor does
-it support logging the "other" phone number associated with a phone call. Logging SMS events
-requires the full SMS permission, and Google Play won\'t approve publishing Network Survey to the
-Play Store if it requests the SMS permission. If you are interested in a CDR logger that supports
-SMS events and logging the "other" phone number for call events, you can install the app from the
-source code in this repo, or if you prefer a pre-built apk you can get the latest APK by navigating
-to the [GitHub Releases page](https://github.com/christianrowlands/android-network-survey/releases),
-and then downloading the "*cdr-release.apk" under the latest release.
+**Introduction:**
+The Network Survey app now includes a feature for logging Call Detail Records (CDR). This functionality provides insight into various interactions your phone has with the cellular network.
+
+**What is a CDR?**
+A Call Detail Record (CDR) is a data record that documents specific interactions a phone has with the cellular network. These interactions include phone calls, SMS messages, and changes in cell tower connections.
+
+**Use Cases:**
+- **Monitoring Network Activity:** Record and review your phone's cellular network interactions.
+- **Educational Insight:** Gain an understanding of how cellular networks operate.
+- **Privacy Monitoring:** Check if your phone is connecting to unexpected cell towers.
+
+**Note on Feature Limitations:**
+- The regular version of Network Survey does not log SMS events in the CDR due to Google Play's policy against apps requesting full SMS permissions.
+- Logging the "other" phone number associated with call events is also not supported in the regular version.
+
+**Alternative Version with Extended Features:**
+If you're interested in CDR logging that includes SMS events and call details:
+1. **Install from Source:** You can build and install the app using the source code available in this repository.
+2. **Download Pre-Built APK:** Access the latest "*cdr-release.apk" under the latest release on our [GitHub Releases page](https://github.com/YourRepo/NetworkSurvey/releases).
+3. **IzzyOnDroid F-Droid:** Install from [IzzyOnDroid F-Droid](https://apt.izzysoft.de/fdroid/index/apk/com.craxiom.networksurvey).
+
 
 ## Tracking And Privacy
 
@@ -59,8 +66,8 @@ then you have three options.
 
 1. Install the app
    from [IzzyOnDroid F-Droid](https://apt.izzysoft.de/fdroid/index/apk/com.craxiom.networksurvey).
-2. Install the app from the source code in this repo.
-3. Install the app using the APK from
+2. Install the app from the source code in this repo specifying the CDR build variant.
+3. Install the app using the CDR APK from
    the [Release Page](https://github.com/christianrowlands/android-network-survey/releases).
 
 The [privacy policy for this app](privacy_policy.md) contains more information on the data that is

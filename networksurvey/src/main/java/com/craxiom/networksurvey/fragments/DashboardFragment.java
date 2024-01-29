@@ -432,10 +432,13 @@ public class DashboardFragment extends AServiceDataFragment implements LocationL
         final Context context = getContext();
         if (context == null) return;
 
+        LayoutInflater inflater = LayoutInflater.from(context);
+        View dialogView = inflater.inflate(R.layout.dialog_cdr_help, null);
+
         AlertDialog.Builder alertBuilder = new AlertDialog.Builder(context);
+        alertBuilder.setView(dialogView);
         alertBuilder.setCancelable(true);
         alertBuilder.setTitle(getString(R.string.cdr_help_title));
-        alertBuilder.setMessage(getText(R.string.cdr_help));
         alertBuilder.setPositiveButton(android.R.string.ok, (dialog, which) -> {
         });
         alertBuilder.create().show();
