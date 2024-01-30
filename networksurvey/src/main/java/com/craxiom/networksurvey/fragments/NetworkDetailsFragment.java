@@ -488,7 +488,7 @@ public class NetworkDetailsFragment extends AServiceDataFragment implements ICel
                 chartViewModel.setChartTitle("RSCP");
                 chartViewModel.setCellularProtocol(protocol);
                 chartViewModel.setMinRssi(-110);
-                chartViewModel.setMaxRssi(-50);
+                chartViewModel.setMaxRssi(-62);
                 break;
 
             case LTE:
@@ -505,8 +505,8 @@ public class NetworkDetailsFragment extends AServiceDataFragment implements ICel
 
                 chartViewModel.setChartTitle("RSRP");
                 chartViewModel.setCellularProtocol(protocol);
-                chartViewModel.setMinRssi(-140);
-                chartViewModel.setMaxRssi(-44);
+                chartViewModel.setMinRssi(-125); // -140 dBm is the lowest reportable value for RSRP
+                chartViewModel.setMaxRssi(-65); // -44 dBm is the highest reportable value for RSRP
                 break;
 
             case NR:
@@ -523,8 +523,8 @@ public class NetworkDetailsFragment extends AServiceDataFragment implements ICel
 
                 chartViewModel.setChartTitle("SS RSRP");
                 chartViewModel.setCellularProtocol(protocol);
-                chartViewModel.setMinRssi(-156);
-                chartViewModel.setMaxRssi(-32);
+                chartViewModel.setMinRssi(-125); // -156 dBm is the lowest reportable value for SS RSRP
+                chartViewModel.setMaxRssi(-73); // -31 dBm is the highest reportable value for SS RSRP
                 break;
         }
     }
