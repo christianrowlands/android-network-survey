@@ -38,6 +38,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.craxiom.networksurvey.R
 import com.craxiom.networksurvey.constants.WifiBeaconMessageConstants.HIDDEN_SSID_PLACEHOLDER
 import com.craxiom.networksurvey.fragments.WifiDetailsFragment
+import com.craxiom.networksurvey.model.WifiNetwork
 import com.craxiom.networksurvey.ui.SignalChart
 import com.craxiom.networksurvey.ui.UNKNOWN_RSSI
 import com.craxiom.networksurvey.util.ColorUtils
@@ -166,7 +167,7 @@ private fun LazyListScope.chartItems(
                         horizontalArrangement = Arrangement.Start
                     ) {
                         Text(
-                            text = "Channel: ${viewModel.wifiNetwork.channel?.toString() ?: "Unknown"}",
+                            text = "Channel: ${getChannelInfo(viewModel.wifiNetwork)}",
                             style = MaterialTheme.typography.titleMedium
                         )
                         Spacer(modifier = Modifier.width(padding * 2))
@@ -284,7 +285,6 @@ private fun LazyListScope.chartItems(
     }
 }
 
-
 private fun LazyListScope.cardItem(content: @Composable () -> Unit) {
     item {
         Card(shape = MaterialTheme.shapes.large, colors = CardDefaults.elevatedCardColors()) {
@@ -294,7 +294,6 @@ private fun LazyListScope.cardItem(content: @Composable () -> Unit) {
         }
     }
 }
-
 
 @Composable
 fun ScanRateInfoButton() {
@@ -341,6 +340,26 @@ fun OpenSettingsButton(detailsFragment: WifiDetailsFragment) {
             Icons.Default.Settings,
             contentDescription = "Settings Button",
         )
+    }
+}
+
+/**
+ * Gets the channel String that displays the center channel as well if it is different.
+ */
+private fun getChannelInfo(network: WifiNetwork): String {
+    if (network.channel == null) return ""
+
+    val channel = network.channel
+    var centerChannel = channel
+    if (network.frequency != null) {
+        centerChannel =
+            WifiUtils.getCenterChannel(network.channel, network.bandwidth, network.frequency)
+    }
+
+    return if (channel == centerChannel) {
+        "" + channel
+    } else {
+        "$channel ($centerChannel)"
     }
 }
 

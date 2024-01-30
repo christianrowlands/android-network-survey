@@ -77,8 +77,10 @@ public class WifiSurveyRecordLogger extends SurveyRecordLogger implements IWifiS
             tableColumns.add(FeatureColumn.createColumn(columnNumber++, WifiBeaconMessageConstants.ENCRYPTION_TYPE_COLUMN, GeoPackageDataType.TEXT, false, null));
             tableColumns.add(FeatureColumn.createColumn(columnNumber++, WifiBeaconMessageConstants.WPS_COLUMN, GeoPackageDataType.BOOLEAN, false, null));
             tableColumns.add(FeatureColumn.createColumn(columnNumber++, WifiBeaconMessageConstants.SIGNAL_STRENGTH_COLUMN, GeoPackageDataType.FLOAT, false, null));
-            //noinspection UnusedAssignment
+            tableColumns.add(FeatureColumn.createColumn(columnNumber++, WifiCsvConstants.STANDARD, GeoPackageDataType.TEXT, false, null));
             tableColumns.add(FeatureColumn.createColumn(columnNumber++, WifiCsvConstants.PASSPOINT, GeoPackageDataType.BOOLEAN, false, null));
+            //noinspection UnusedAssignment
+            tableColumns.add(FeatureColumn.createColumn(columnNumber++, WifiCsvConstants.BANDWIDTH, GeoPackageDataType.TEXT, false, null));
         });
     }
 
@@ -158,10 +160,14 @@ public class WifiSurveyRecordLogger extends SurveyRecordLogger implements IWifiS
                             row.setValue(WifiBeaconMessageConstants.WPS_COLUMN, data.getWps().getValue());
                         }
 
+                        row.setValue(WifiCsvConstants.STANDARD, data.getStandard().toString());
+
                         if (data.hasPasspoint())
                         {
                             row.setValue(WifiCsvConstants.PASSPOINT, data.getPasspoint().getValue());
                         }
+
+                        row.setValue(WifiCsvConstants.BANDWIDTH, data.getBandwidth().toString());
 
                         final List<CipherSuite> cipherSuitesList = data.getCipherSuitesList();
                         if (!cipherSuitesList.isEmpty())

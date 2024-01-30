@@ -4,6 +4,7 @@ import static com.craxiom.networksurvey.constants.csv.CsvConstants.SPEED;
 import static com.craxiom.networksurvey.constants.csv.WifiCsvConstants.ACCURACY;
 import static com.craxiom.networksurvey.constants.csv.WifiCsvConstants.AKM_SUITES;
 import static com.craxiom.networksurvey.constants.csv.WifiCsvConstants.ALTITUDE;
+import static com.craxiom.networksurvey.constants.csv.WifiCsvConstants.BANDWIDTH;
 import static com.craxiom.networksurvey.constants.csv.WifiCsvConstants.BEACON_INTERVAL;
 import static com.craxiom.networksurvey.constants.csv.WifiCsvConstants.BSSID;
 import static com.craxiom.networksurvey.constants.csv.WifiCsvConstants.CHANNEL;
@@ -61,7 +62,7 @@ public class WifiCsvLogger extends CsvRecordLogger implements IWifiSurveyRecordL
                 MISSION_ID, RECORD_NUMBER,
                 SOURCE_ADDRESS, DESTINATION_ADDRESS, BSSID, BEACON_INTERVAL, SERVICE_SET_TYPE, SSID,
                 SUPPORTED_RATES, EXT_SUPPORTED_RATES, CIPHER_SUITES, AKM_SUITES, ENCRYPTION_TYPE,
-                WPA, CHANNEL, FREQ_MHZ, SIGNAL_STRENGTH, SNR, NODE_TYPE, STANDARD, PASSPOINT};
+                WPA, CHANNEL, FREQ_MHZ, SIGNAL_STRENGTH, SNR, NODE_TYPE, STANDARD, PASSPOINT, BANDWIDTH};
     }
 
     @Override
@@ -134,8 +135,9 @@ public class WifiCsvLogger extends CsvRecordLogger implements IWifiSurveyRecordL
                 data.hasSignalStrength() ? String.valueOf(data.getSignalStrength().getValue()) : "",
                 data.hasSnr() ? String.valueOf(data.getSnr().getValue()) : "",
                 "", // Node Type, not supported by NS
-                "", // Standard, not supported by NS
+                data.getStandard().toString(),
                 data.hasPasspoint() ? String.valueOf(data.getPasspoint().getValue()) : "",
+                data.getBandwidth().toString(),
         };
     }
 }

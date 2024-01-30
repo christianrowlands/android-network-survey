@@ -38,7 +38,6 @@ public class WifiBeaconMessageConstants extends MessageConstants
     public static final String SIGNAL_STRENGTH_COLUMN = "Signal Strength";
     public static final String SNR_COLUMN = "SNR";
     public static final String NODE_TYPE_COLUMN = "Node Type";
-    public static final String STANDARD_COLUMN = "Standard";
 
     public static final String HIDDEN_SSID_PLACEHOLDER = "<Hidden SSID>";
 

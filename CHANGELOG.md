@@ -1,8 +1,18 @@
 # Changelog
 
+## [1.19](https://github.com/christianrowlands/android-network-survey/releases/tag/v1.19) - 2024-01-31
+
+* Adds a chart showing the Wi-Fi Spectrum usage.
+* The Wi-Fi Standard and Wi-Fi Bandwidth are now logged in Wi-Fi log files and MQTT messages, and
+  displayed in the UI.
+* The Wi-Fi center channel is displayed next to the channel.
+* Reduced the range of the cellular signal chart to bring it more inline with reality.
+* Removed the extra comma after the NR band(s).
+
 ## [1.18](https://github.com/christianrowlands/android-network-survey/releases/tag/v1.18) - 2024-01-22
 
-* Adds a chart showing the last two minutes of cellular signal strength to the cellular details view.
+* Adds a chart showing the last two minutes of cellular signal strength to the cellular details
+  view.
 * Adds an information dialog about the cellular terms definitions.
 
 ## [1.17](https://github.com/christianrowlands/android-network-survey/releases/tag/v1.17) - 2024-01-12
