@@ -4,6 +4,7 @@ package com.craxiom.networksurvey.ui.wifi
 import androidx.lifecycle.ViewModel
 import com.craxiom.messaging.wifi.WifiBandwidth
 import com.craxiom.networksurvey.fragments.WifiNetworkInfo
+import com.craxiom.networksurvey.util.WifiUtils
 import com.patrykandpatrick.vico.core.model.CartesianChartModelProducer
 import com.patrykandpatrick.vico.core.model.LineCartesianLayerModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -14,9 +15,6 @@ import timber.log.Timber
 // Subtracting 10 from the max and min so that the chart shows spectrum usage a bit better
 const val WIFI_SPECTRUM_MAX = MAX_WIFI_RSSI - 10
 const val WIFI_SPECTRUM_MIN = MIN_WIFI_RSSI - 10
-
-// The offset for the signal strength values for the channels to the left and right
-private const val WEAKER_SIGNAL_OFFSET = 5
 
 const val WIFI_CHART_MIN = WIFI_SPECTRUM_MIN - 10
 
@@ -169,10 +167,15 @@ class WifiSpectrumChartViewModel : ViewModel() {
         return LineCartesianLayerModel.partial {
             matchedWifiNetworks.forEach { wifiNetwork ->
                 val offset = getHalfOffset(wifiNetwork.bandwidth)
-                val channels = listOf(
-                    wifiNetwork.channel - offset,
+                val centerChannel = WifiUtils.getCenterChannel(
                     wifiNetwork.channel,
-                    wifiNetwork.channel + offset
+                    wifiNetwork.bandwidth,
+                    wifiNetwork.frequency
+                )
+                val channels = listOf(
+                    centerChannel - offset,
+                    centerChannel,
+                    centerChannel + offset
                 )
                 val signalStrengths = listOf(
                     WIFI_CHART_MIN,
@@ -189,16 +192,16 @@ class WifiSpectrumChartViewModel : ViewModel() {
      * channel.
      */
     private fun getHalfOffset(bandwidth: WifiBandwidth): Int {
-        when (bandwidth) {
-            WifiBandwidth.MHZ_20 -> return 2
-            WifiBandwidth.MHZ_40 -> return 4
-            WifiBandwidth.MHZ_80 -> return 8
-            WifiBandwidth.MHZ_80_PLUS -> return 8
-            WifiBandwidth.MHZ_160 -> return 16
-            WifiBandwidth.MHZ_320 -> return 32
+        return when (bandwidth) {
+            WifiBandwidth.MHZ_20 -> 2
+            WifiBandwidth.MHZ_40 -> 4
+            WifiBandwidth.MHZ_80 -> 8
+            WifiBandwidth.MHZ_80_PLUS -> 8
+            WifiBandwidth.MHZ_160 -> 16
+            WifiBandwidth.MHZ_320 -> 32
             else -> {
                 Timber.w("Unknown Wifi bandwidth value: $bandwidth")
-                return 2
+                2
             }
         }
     }

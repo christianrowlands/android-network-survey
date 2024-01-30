@@ -303,6 +303,7 @@ but work independently, so you have full control over how you handle your data.<
     <string name="bssid_value">BSSID: %1$s</string>
     <string name="wifi_frequency_value">%1$d MHz</string>
     <string name="wifi_channel_value">CH %1$d</string>
+    <string name="wifi_channel_and_center_value">CH %1$d(%2$d)</string>
     <string name="wifi_bandwidth_value">BW %1$s</string>
 
     <string name="content_description_sort_wifi_networks_button">Sort Wi-Fi Networks Button</string>

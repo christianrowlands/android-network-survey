@@ -99,13 +99,19 @@ class WifiSpectrumFragment : AServiceDataFragment(), IWifiSurveyRecordListener {
 
     override fun onWifiBeaconSurveyRecords(wifiBeaconRecords: MutableList<WifiRecordWrapper>?) {
         val wifiNetworkInfoList: List<WifiNetworkInfo> = wifiBeaconRecords
-            ?.filter { it.wifiBeaconRecord.data.hasSignalStrength() && it.wifiBeaconRecord.data.ssid != null && it.wifiBeaconRecord.data.hasChannel() }
+            ?.filter {
+                it.wifiBeaconRecord.data.hasSignalStrength()
+                        && it.wifiBeaconRecord.data.ssid != null
+                        && it.wifiBeaconRecord.data.hasChannel()
+                        && it.wifiBeaconRecord.data.hasFrequencyMhz()
+            }
             ?.map {
                 WifiNetworkInfo(
                     it.wifiBeaconRecord.data.ssid!!,
                     it.wifiBeaconRecord.data.signalStrength.value.toInt(),
                     it.wifiBeaconRecord.data.channel.value,
-                    it.wifiBeaconRecord.data.bandwidth
+                    it.wifiBeaconRecord.data.bandwidth,
+                    it.wifiBeaconRecord.data.frequencyMhz.value
                 )
             }
             ?: emptyList()
@@ -126,5 +132,6 @@ data class WifiNetworkInfo(
     val ssid: String,
     val signalStrength: Int,
     val channel: Int,
-    val bandwidth: WifiBandwidth
+    val bandwidth: WifiBandwidth,
+    val frequency: Int
 )

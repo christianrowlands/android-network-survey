@@ -83,12 +83,41 @@ public class MyWifiNetworkRecyclerViewAdapter extends RecyclerView.Adapter<MyWif
         holder.bssid.setText(context.getString(R.string.bssid_value, data.getBssid()));
         holder.encryptionType.setText(WifiBeaconMessageConstants.getEncryptionTypeString(data.getEncryptionType()));
         holder.frequency.setText(data.hasFrequencyMhz() ? context.getString(R.string.wifi_frequency_value, data.getFrequencyMhz().getValue()) : "");
-        holder.channel.setText(data.hasChannel() ? context.getString(R.string.wifi_channel_value, data.getChannel().getValue()) : "");
+
+        setChannelText(holder, data);
+
         holder.bandwidth.setText(data.getBandwidth() != WifiBandwidth.UNKNOWN ? context.getString(R.string.wifi_bandwidth_value, WifiUtils.formatBandwidth(data.getBandwidth())) : "");
         holder.standard.setText(WifiUtils.formatStandard(data.getStandard()));
         boolean passpoint = data.getPasspoint().getValue();
         holder.passpoint.setText((data.hasPasspoint() && passpoint) ? "Passpoint" : "");
         holder.capabilities.setText(wifiRecordWrapper.getCapabilitiesString());
+    }
+
+    /**
+     * Sets the channel text view with the channel number and also the center channel number if
+     * applicable.
+     */
+    private void setChannelText(ViewHolder holder, WifiBeaconRecordData data)
+    {
+        if (data.hasChannel())
+        {
+            int channel = data.getChannel().getValue();
+            int centerChannel = channel;
+            if (data.hasFrequencyMhz())
+            {
+                centerChannel = WifiUtils.getCenterChannel(channel, data.getBandwidth(), data.getFrequencyMhz().getValue());
+            }
+            if (centerChannel != channel)
+            {
+                holder.channel.setText(context.getString(R.string.wifi_channel_and_center_value, channel, centerChannel));
+            } else
+            {
+                holder.channel.setText(context.getString(R.string.wifi_channel_value, channel));
+            }
+        } else
+        {
+            holder.channel.setText("");
+        }
     }
 
     @Override
