@@ -15,16 +15,25 @@ import com.craxiom.networksurvey.constants.NetworkSurveyConstants
 import com.craxiom.networksurvey.listeners.IWifiSurveyRecordListener
 import com.craxiom.networksurvey.model.WifiRecordWrapper
 import com.craxiom.networksurvey.services.NetworkSurveyService
-import com.craxiom.networksurvey.ui.wifi.WifiSpectrumChartViewModel
 import com.craxiom.networksurvey.ui.wifi.WifiSpectrumScreen
+import com.craxiom.networksurvey.ui.wifi.model.WifiSpectrum24ViewModel
+import com.craxiom.networksurvey.ui.wifi.model.WifiSpectrum5Group1ViewModel
+import com.craxiom.networksurvey.ui.wifi.model.WifiSpectrum5Group2ViewModel
+import com.craxiom.networksurvey.ui.wifi.model.WifiSpectrum5Group3ViewModel
+import com.craxiom.networksurvey.ui.wifi.model.WifiSpectrumScreenViewModel
 import com.craxiom.networksurvey.util.NsTheme
 import com.craxiom.networksurvey.util.PreferenceUtils
+import com.craxiom.networksurvey.util.WifiUtils
 
 /**
  * The fragment that displays the details of a single Wifi network from the scan results.
  */
 class WifiSpectrumFragment : AServiceDataFragment(), IWifiSurveyRecordListener {
-    private lateinit var viewModel: WifiSpectrumChartViewModel
+    private lateinit var screenViewModel: WifiSpectrumScreenViewModel
+    private lateinit var viewModel24Ghz: WifiSpectrum24ViewModel
+    private lateinit var viewModel5GhzGroup1: WifiSpectrum5Group1ViewModel
+    private lateinit var viewModel5GhzGroup2: WifiSpectrum5Group2ViewModel
+    private lateinit var viewModel5GhzGroup3: WifiSpectrum5Group3ViewModel
 
     private lateinit var sharedPreferences: SharedPreferences
     private val preferenceChangeListener =
@@ -35,7 +44,7 @@ class WifiSpectrumFragment : AServiceDataFragment(), IWifiSurveyRecordListener {
                     NetworkSurveyConstants.DEFAULT_WIFI_SCAN_INTERVAL_SECONDS,
                     context
                 )
-                viewModel.setScanRateSeconds(wifiScanRateMs / 1_000)
+                screenViewModel.setScanRateSeconds(wifiScanRateMs / 1_000)
             }
         }
 
@@ -49,7 +58,11 @@ class WifiSpectrumFragment : AServiceDataFragment(), IWifiSurveyRecordListener {
         composeView.apply {
             setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed)
             setContent {
-                viewModel = viewModel()
+                screenViewModel = viewModel(key = "wifiSpectrumScreenViewModel")
+                viewModel24Ghz = viewModel(key = "chart24Ghz")
+                viewModel5GhzGroup1 = viewModel(key = "chart5GhzGroup1")
+                viewModel5GhzGroup2 = viewModel(key = "chart5GhzGroup2")
+                viewModel5GhzGroup3 = viewModel(key = "chart5GhzGroup3")
 
                 sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context)
                 sharedPreferences.registerOnSharedPreferenceChangeListener(
@@ -60,12 +73,19 @@ class WifiSpectrumFragment : AServiceDataFragment(), IWifiSurveyRecordListener {
                     NetworkSurveyConstants.DEFAULT_WIFI_SCAN_INTERVAL_SECONDS,
                     context
                 )
-                viewModel.setScanRateSeconds(scanRateMs / 1_000)
-                viewModel.initializeCharts()
+                screenViewModel.setScanRateSeconds(scanRateMs / 1_000)
+                viewModel24Ghz.initializeCharts()
+                viewModel5GhzGroup1.initializeCharts()
+                viewModel5GhzGroup2.initializeCharts()
+                viewModel5GhzGroup3.initializeCharts()
 
                 NsTheme {
                     WifiSpectrumScreen(
-                        viewModel = viewModel,
+                        screenViewModel = screenViewModel,
+                        viewModel24Ghz = viewModel24Ghz,
+                        viewModel5GhzGroup1 = viewModel5GhzGroup1,
+                        viewModel5GhzGroup2 = viewModel5GhzGroup2,
+                        viewModel5GhzGroup3 = viewModel5GhzGroup3,
                         wifiSpectrumFragment = this@WifiSpectrumFragment
                     )
                 }
@@ -106,7 +126,7 @@ class WifiSpectrumFragment : AServiceDataFragment(), IWifiSurveyRecordListener {
                         && it.wifiBeaconRecord.data.hasFrequencyMhz()
             }
             ?.map {
-                WifiNetworkInfo(
+                WifiNetworkInfo.create(
                     it.wifiBeaconRecord.data.ssid!!,
                     it.wifiBeaconRecord.data.signalStrength.value.toInt(),
                     it.wifiBeaconRecord.data.channel.value,
@@ -116,7 +136,10 @@ class WifiSpectrumFragment : AServiceDataFragment(), IWifiSurveyRecordListener {
             }
             ?: emptyList()
 
-        viewModel.onWifiScanResults(wifiNetworkInfoList)
+        viewModel24Ghz.onWifiScanResults(wifiNetworkInfoList)
+        viewModel5GhzGroup1.onWifiScanResults(wifiNetworkInfoList)
+        viewModel5GhzGroup2.onWifiScanResults(wifiNetworkInfoList)
+        viewModel5GhzGroup3.onWifiScanResults(wifiNetworkInfoList)
     }
 
 
@@ -132,6 +155,27 @@ data class WifiNetworkInfo(
     val ssid: String,
     val signalStrength: Int,
     val channel: Int,
+    val centerChannel: Int,
     val bandwidth: WifiBandwidth,
     val frequency: Int
-)
+) {
+    companion object {
+        fun create(
+            ssid: String,
+            signalStrength: Int,
+            channel: Int,
+            bandwidth: WifiBandwidth,
+            frequency: Int
+        ): WifiNetworkInfo {
+            val centerChannel = WifiUtils.getCenterChannel(channel, bandwidth, frequency)
+            return WifiNetworkInfo(
+                ssid,
+                signalStrength,
+                channel,
+                centerChannel,
+                bandwidth,
+                frequency
+            )
+        }
+    }
+}

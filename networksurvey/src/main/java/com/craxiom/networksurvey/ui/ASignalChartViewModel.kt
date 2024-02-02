@@ -3,8 +3,8 @@ package com.craxiom.networksurvey.ui
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.craxiom.networksurvey.ui.wifi.MAX_WIFI_RSSI
-import com.craxiom.networksurvey.ui.wifi.MIN_WIFI_RSSI
+import com.craxiom.networksurvey.ui.wifi.model.MAX_WIFI_RSSI
+import com.craxiom.networksurvey.ui.wifi.model.MIN_WIFI_RSSI
 import com.patrykandpatrick.vico.core.model.CartesianChartModelProducer
 import com.patrykandpatrick.vico.core.model.LineCartesianLayerModel
 import kotlinx.coroutines.Dispatchers
@@ -90,14 +90,14 @@ abstract class ASignalChartViewModel : ViewModel() {
      * fragment is in the background.
      */
     fun pauseChartUpdates() {
-        isPaused = true;
+        isPaused = true
     }
 
     /**
      * Resumes updates to the chart.
      */
     fun resumeChartUpdates() {
-        isPaused = false;
+        isPaused = false
     }
 
     /**

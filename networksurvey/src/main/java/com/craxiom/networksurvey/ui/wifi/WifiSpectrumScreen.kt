@@ -26,28 +26,55 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.craxiom.networksurvey.fragments.WifiSpectrumFragment
+import com.craxiom.networksurvey.ui.wifi.model.CHANNELS_2_4_GHZ
+import com.craxiom.networksurvey.ui.wifi.model.CHANNELS_2_4_GHZ_CHART_VIEW
+import com.craxiom.networksurvey.ui.wifi.model.CHANNELS_5_GHZ_GROUP_1
+import com.craxiom.networksurvey.ui.wifi.model.CHANNELS_5_GHZ_GROUP_1_CHART_VIEW
+import com.craxiom.networksurvey.ui.wifi.model.CHANNELS_5_GHZ_GROUP_2
+import com.craxiom.networksurvey.ui.wifi.model.CHANNELS_5_GHZ_GROUP_2_CHART_VIEW
+import com.craxiom.networksurvey.ui.wifi.model.CHANNELS_5_GHZ_GROUP_3
+import com.craxiom.networksurvey.ui.wifi.model.CHANNELS_5_GHZ_GROUP_3_CHART_VIEW
+import com.craxiom.networksurvey.ui.wifi.model.WifiSpectrum24ViewModel
+import com.craxiom.networksurvey.ui.wifi.model.WifiSpectrum5Group1ViewModel
+import com.craxiom.networksurvey.ui.wifi.model.WifiSpectrum5Group2ViewModel
+import com.craxiom.networksurvey.ui.wifi.model.WifiSpectrum5Group3ViewModel
+import com.craxiom.networksurvey.ui.wifi.model.WifiSpectrumScreenViewModel
 
 /**
  * A Compose screen that shows the usage of the Wi-Fi spectrum.
  */
 @Composable
 internal fun WifiSpectrumScreen(
-    viewModel: WifiSpectrumChartViewModel,
+    screenViewModel: WifiSpectrumScreenViewModel,
+    viewModel24Ghz: WifiSpectrum24ViewModel,
+    viewModel5GhzGroup1: WifiSpectrum5Group1ViewModel,
+    viewModel5GhzGroup2: WifiSpectrum5Group2ViewModel,
+    viewModel5GhzGroup3: WifiSpectrum5Group3ViewModel,
     wifiSpectrumFragment: WifiSpectrumFragment
 ) {
-    val scanRate by viewModel.scanRate.collectAsStateWithLifecycle()
+    val scanRate by screenViewModel.scanRate.collectAsStateWithLifecycle()
 
     LazyColumn(
         state = rememberLazyListState(),
         contentPadding = PaddingValues(padding),
         verticalArrangement = Arrangement.spacedBy(padding),
     ) {
-        chartItems(viewModel, scanRate, wifiSpectrumFragment)
+        chartItems(
+            viewModel24Ghz,
+            viewModel5GhzGroup1,
+            viewModel5GhzGroup2,
+            viewModel5GhzGroup3,
+            scanRate,
+            wifiSpectrumFragment
+        )
     }
 }
 
 private fun LazyListScope.chartItems(
-    viewModel: WifiSpectrumChartViewModel,
+    viewModel24Ghz: WifiSpectrum24ViewModel,
+    viewModel5GhzGroup1: WifiSpectrum5Group1ViewModel,
+    viewModel5GhzGroup2: WifiSpectrum5Group2ViewModel,
+    viewModel5GhzGroup3: WifiSpectrum5Group3ViewModel,
     scanRate: Int,
     wifiSpectrumFragment: WifiSpectrumFragment
 ) {
@@ -91,8 +118,9 @@ private fun LazyListScope.chartItems(
                 text = "Wi-Fi 2.4 GHz Spectrum",
                 style = MaterialTheme.typography.titleMedium
             )
+            val wifiList by viewModel24Ghz.wifiNetworkInfoList.collectAsStateWithLifecycle()
             WifiSpectrumChart(
-                viewModel, viewModel.modelProducer2Point4Ghz,
+                wifiList, viewModel24Ghz.modelProducer,
                 CHANNELS_2_4_GHZ_CHART_VIEW[0].toFloat(),
                 CHANNELS_2_4_GHZ_CHART_VIEW[CHANNELS_2_4_GHZ_CHART_VIEW.size - 1].toFloat(),
                 CHANNELS_2_4_GHZ
@@ -108,9 +136,10 @@ private fun LazyListScope.chartItems(
                 text = "Wi-Fi 5 GHz Group 1",
                 style = MaterialTheme.typography.titleMedium
             )
+            val wifiList by viewModel5GhzGroup1.wifiNetworkInfoList.collectAsStateWithLifecycle()
             WifiSpectrumChart(
-                viewModel,
-                viewModel.modelProducer5GhzGroup1,
+                wifiList,
+                viewModel5GhzGroup1.modelProducer,
                 CHANNELS_5_GHZ_GROUP_1_CHART_VIEW[0].toFloat(),
                 CHANNELS_5_GHZ_GROUP_1_CHART_VIEW[CHANNELS_5_GHZ_GROUP_1_CHART_VIEW.size - 1].toFloat(),
                 CHANNELS_5_GHZ_GROUP_1
@@ -126,9 +155,10 @@ private fun LazyListScope.chartItems(
                 text = "Wi-Fi 5 GHz Group 2",
                 style = MaterialTheme.typography.titleMedium
             )
+            val wifiList by viewModel5GhzGroup2.wifiNetworkInfoList.collectAsStateWithLifecycle()
             WifiSpectrumChart(
-                viewModel,
-                viewModel.modelProducer5GhzGroup2,
+                wifiList,
+                viewModel5GhzGroup2.modelProducer,
                 CHANNELS_5_GHZ_GROUP_2_CHART_VIEW[0].toFloat(),
                 CHANNELS_5_GHZ_GROUP_2_CHART_VIEW[CHANNELS_5_GHZ_GROUP_2_CHART_VIEW.size - 1].toFloat(),
                 CHANNELS_5_GHZ_GROUP_2,
@@ -145,9 +175,10 @@ private fun LazyListScope.chartItems(
                 text = "Wi-Fi 5 GHz Group 3",
                 style = MaterialTheme.typography.titleMedium
             )
+            val wifiList by viewModel5GhzGroup3.wifiNetworkInfoList.collectAsStateWithLifecycle()
             WifiSpectrumChart(
-                viewModel,
-                viewModel.modelProducer5GhzGroup3,
+                wifiList,
+                viewModel5GhzGroup3.modelProducer,
                 CHANNELS_5_GHZ_GROUP_3_CHART_VIEW[0].toFloat(),
                 CHANNELS_5_GHZ_GROUP_3_CHART_VIEW[CHANNELS_5_GHZ_GROUP_3_CHART_VIEW.size - 1].toFloat(),
                 CHANNELS_5_GHZ_GROUP_3

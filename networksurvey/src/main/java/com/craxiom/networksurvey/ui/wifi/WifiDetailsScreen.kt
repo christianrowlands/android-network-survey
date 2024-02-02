@@ -41,6 +41,7 @@ import com.craxiom.networksurvey.fragments.WifiDetailsFragment
 import com.craxiom.networksurvey.model.WifiNetwork
 import com.craxiom.networksurvey.ui.SignalChart
 import com.craxiom.networksurvey.ui.UNKNOWN_RSSI
+import com.craxiom.networksurvey.ui.wifi.model.WifiDetailsViewModel
 import com.craxiom.networksurvey.util.ColorUtils
 import com.craxiom.networksurvey.util.WifiUtils
 

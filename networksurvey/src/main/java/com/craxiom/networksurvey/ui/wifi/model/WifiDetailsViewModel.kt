@@ -1,4 +1,4 @@
-package com.craxiom.networksurvey.ui.wifi
+package com.craxiom.networksurvey.ui.wifi.model
 
 
 import com.craxiom.networksurvey.model.WifiNetwork

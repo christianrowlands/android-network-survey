@@ -3,16 +3,16 @@ package com.craxiom.networksurvey.ui.wifi
 import android.graphics.Typeface
 import androidx.compose.foundation.layout.height
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.craxiom.networksurvey.R
 import com.craxiom.networksurvey.fragments.WifiNetworkInfo
+import com.craxiom.networksurvey.ui.wifi.model.WIFI_SPECTRUM_MAX
+import com.craxiom.networksurvey.ui.wifi.model.WIFI_SPECTRUM_MIN
 import com.patrykandpatrick.vico.compose.axis.horizontal.rememberBottomAxis
 import com.patrykandpatrick.vico.compose.axis.vertical.rememberStartAxis
 import com.patrykandpatrick.vico.compose.chart.CartesianChartHost
@@ -44,26 +44,39 @@ import com.patrykandpatrick.vico.core.model.CartesianChartModelProducer
  */
 @Composable
 internal fun WifiSpectrumChart(
-    viewModel: WifiSpectrumChartViewModel,
+    wifiList: List<WifiNetworkInfo>,
     modelProducer: CartesianChartModelProducer,
     minX: Float,
     maxX: Float,
     customLabelValues: List<Float>,
     everyOtherLabel: Boolean = false
 ) {
-    ComposeChart(viewModel, modelProducer, minX, maxX, everyOtherLabel, customLabelValues)
+    ComposeChart(wifiList, modelProducer, minX, maxX, everyOtherLabel, customLabelValues)
 }
 
 @Composable
 private fun ComposeChart(
-    viewModel: WifiSpectrumChartViewModel,
+    wifiList: List<WifiNetworkInfo>,
     modelProducer: CartesianChartModelProducer,
     minX: Float,
     maxX: Float,
     everyOtherLabel: Boolean,
     customLabelValues: List<Float>
 ) {
-    val wifiList by viewModel.wifiNetworkInfoList.collectAsStateWithLifecycle()
+    val decorationList = wifiList.mapIndexed { index, wifiNetwork ->
+        SsidLabel(
+            ssid = wifiNetwork.ssid,
+            signalStrength = wifiNetwork.signalStrength,
+            channel = wifiNetwork.centerChannel,
+            rememberTextComponent(
+                color = chartColors[index % chartColors.size],
+                textSize = 10.sp,
+                padding = axisTitlePadding,
+                margins = bottomAxisTitleMargins,
+                typeface = Typeface.MONOSPACE,
+            )
+        )
+    }
 
     ProvideChartStyle(rememberSpectrumChartStyle(chartColors)) {
         //val defaultLines = currentChartStyle.lineLayer.lines
@@ -112,6 +125,7 @@ private fun ComposeChart(
                         typeface = Typeface.MONOSPACE,
                     ),
                 ),
+                decorations = decorationList,
                 //legend = rememberSsidLegend(wifiList),
                 //fadingEdges = rememberFadingEdges(),
             ),

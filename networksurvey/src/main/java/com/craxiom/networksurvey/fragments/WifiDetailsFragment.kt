@@ -18,7 +18,7 @@ import com.craxiom.networksurvey.model.WifiRecordWrapper
 import com.craxiom.networksurvey.services.NetworkSurveyService
 import com.craxiom.networksurvey.ui.UNKNOWN_RSSI
 import com.craxiom.networksurvey.ui.wifi.WifiDetailsScreen
-import com.craxiom.networksurvey.ui.wifi.WifiDetailsViewModel
+import com.craxiom.networksurvey.ui.wifi.model.WifiDetailsViewModel
 import com.craxiom.networksurvey.util.NsTheme
 import com.craxiom.networksurvey.util.PreferenceUtils
 import timber.log.Timber
