@@ -44,6 +44,7 @@ import com.craxiom.networksurvey.listeners.IWifiSurveyRecordListener;
 import com.craxiom.networksurvey.model.WifiNetwork;
 import com.craxiom.networksurvey.model.WifiRecordWrapper;
 import com.craxiom.networksurvey.services.NetworkSurveyService;
+import com.craxiom.networksurvey.ui.wifi.model.WifiNetworkInfoList;
 import com.google.android.material.snackbar.Snackbar;
 
 import java.util.ArrayList;
@@ -60,6 +61,7 @@ public class WifiNetworksFragment extends Fragment implements IWifiSurveyRecordL
 {
     private FragmentWifiNetworksListBinding binding;
     private SortedList<WifiRecordWrapper> wifiRecordSortedList;
+    private final Object wifiRecordSortedListLock = new Object();
     private final Handler uiThreadHandler;
 
     private WifiViewModel viewModel;
@@ -198,7 +200,7 @@ public class WifiNetworksFragment extends Fragment implements IWifiSurveyRecordL
                 viewModel.incrementScanNumber();
                 viewModel.setApsInLastScan(wifiBeaconRecords.size());
 
-                synchronized (wifiRecordSortedList)
+                synchronized (wifiRecordSortedListLock)
                 {
                     wifiRecordSortedList.clear();
                     wifiRecordSortedList.addAll(wifiBeaconRecords);
@@ -255,8 +257,19 @@ public class WifiNetworksFragment extends Fragment implements IWifiSurveyRecordL
         FragmentActivity activity = getActivity();
         if (activity == null) return;
 
+        List<WifiRecordWrapper> wifiNetworks = new ArrayList<>();
+        synchronized (wifiRecordSortedListLock)
+        {
+            int size = wifiRecordSortedList.size();
+            for (int i = 0; i < size; i++)
+            {
+                wifiNetworks.add(wifiRecordSortedList.get(i));
+            }
+        }
+        WifiNetworkInfoList wifiNetworkInfoList = new WifiNetworkInfoList(wifiNetworks);
+
         Navigation.findNavController(activity, getId())
-                .navigate(WifiNetworksFragmentDirections.actionWifiListFragmentToWifiSpectrumFragment());
+                .navigate(WifiNetworksFragmentDirections.actionWifiListFragmentToWifiSpectrumFragment(wifiNetworkInfoList));
     }
 
     /**
@@ -345,7 +358,7 @@ public class WifiNetworksFragment extends Fragment implements IWifiSurveyRecordL
      */
     private void onSortByChanged(SharedPreferences preferences, int selectedIndex)
     {
-        synchronized (wifiRecordSortedList)
+        synchronized (wifiRecordSortedListLock)
         {
             preferences.edit().putInt(NetworkSurveyConstants.PROPERTY_WIFI_NETWORKS_SORT_ORDER, selectedIndex).apply();
             viewModel.setSortByIndex(selectedIndex);
@@ -393,14 +406,14 @@ public class WifiNetworksFragment extends Fragment implements IWifiSurveyRecordL
                     //noinspection SwitchStatementWithoutDefaultBranch
                     switch (state)
                     {
-                        case WifiManager.WIFI_STATE_DISABLED:
-                            viewModel.setScanStatusId(R.string.wifi_scan_status_disabled);
-                            break;
-                        case WifiManager.WIFI_STATE_ENABLED:
+                        case WifiManager.WIFI_STATE_DISABLED ->
+                                viewModel.setScanStatusId(R.string.wifi_scan_status_disabled);
+                        case WifiManager.WIFI_STATE_ENABLED ->
+                        {
                             //noinspection ConstantConditions
                             viewModel.setScanStatusId(viewModel.areUpdatesPaused().getValue() ? R.string.scan_status_paused : R.string.scan_status_scanning);
                             startAndBindToNetworkSurveyService();
-                            break;
+                        }
                     }
                 }
             }

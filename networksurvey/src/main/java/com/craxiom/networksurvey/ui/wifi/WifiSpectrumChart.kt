@@ -6,6 +6,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -13,6 +14,7 @@ import com.craxiom.networksurvey.R
 import com.craxiom.networksurvey.fragments.WifiNetworkInfo
 import com.craxiom.networksurvey.ui.wifi.model.WIFI_SPECTRUM_MAX
 import com.craxiom.networksurvey.ui.wifi.model.WIFI_SPECTRUM_MIN
+import com.patrykandpatrick.vico.compose.axis.axisLabelComponent
 import com.patrykandpatrick.vico.compose.axis.horizontal.rememberBottomAxis
 import com.patrykandpatrick.vico.compose.axis.vertical.rememberStartAxis
 import com.patrykandpatrick.vico.compose.chart.CartesianChartHost
@@ -22,6 +24,7 @@ import com.patrykandpatrick.vico.compose.chart.rememberCartesianChart
 import com.patrykandpatrick.vico.compose.chart.scroll.rememberChartScrollSpec
 import com.patrykandpatrick.vico.compose.component.rememberShapeComponent
 import com.patrykandpatrick.vico.compose.component.rememberTextComponent
+import com.patrykandpatrick.vico.compose.component.shape.shader.color
 import com.patrykandpatrick.vico.compose.dimensions.dimensionsOf
 import com.patrykandpatrick.vico.compose.legend.horizontalLegend
 import com.patrykandpatrick.vico.compose.legend.legendItem
@@ -30,17 +33,19 @@ import com.patrykandpatrick.vico.compose.style.ProvideChartStyle
 import com.patrykandpatrick.vico.compose.style.currentChartStyle
 import com.patrykandpatrick.vico.core.axis.AxisItemPlacer
 import com.patrykandpatrick.vico.core.axis.vertical.VerticalAxis
+import com.patrykandpatrick.vico.core.chart.layer.LineCartesianLayer
 import com.patrykandpatrick.vico.core.chart.layout.HorizontalLayout
 import com.patrykandpatrick.vico.core.chart.values.AxisValueOverrider
 import com.patrykandpatrick.vico.core.component.shape.Shapes
+import com.patrykandpatrick.vico.core.component.shape.shader.DynamicShaders
+import com.patrykandpatrick.vico.core.dimensions.MutableDimensions
 import com.patrykandpatrick.vico.core.legend.HorizontalLegend
 import com.patrykandpatrick.vico.core.legend.LegendItem
 import com.patrykandpatrick.vico.core.model.CartesianChartModelProducer
+import kotlin.math.absoluteValue
 
 /**
- * A chart that shows signal values (e.g. RSSI) over time.
- *
- * @param viewModel The view model that contains the data to display.
+ * A chart that shows a view of the Wi-Fi spectrum so the user can see where there is free space.
  */
 @Composable
 internal fun WifiSpectrumChart(
@@ -63,25 +68,42 @@ private fun ComposeChart(
     everyOtherLabel: Boolean,
     customLabelValues: List<Float>
 ) {
-    val decorationList = wifiList.mapIndexed { index, wifiNetwork ->
+    val decorationList = wifiList.map { wifiNetwork ->
         SsidLabel(
             ssid = wifiNetwork.ssid,
             signalStrength = wifiNetwork.signalStrength,
             channel = wifiNetwork.centerChannel,
             rememberTextComponent(
-                color = chartColors[index % chartColors.size],
+                color = getColorForSsid(wifiNetwork.ssid),
                 textSize = 10.sp,
-                padding = axisTitlePadding,
                 margins = bottomAxisTitleMargins,
                 typeface = Typeface.MONOSPACE,
             )
         )
     }
 
+    val lines: List<LineCartesianLayer.LineSpec>
+    if (wifiList.isEmpty()) {
+        lines = listOf(
+            LineCartesianLayer.LineSpec(
+                pointConnector = SpectrumPointConnector(),
+                thicknessDp = 3f,
+                shader = remember { DynamicShaders.color(color1) },
+            )
+        )
+    } else {
+        lines = wifiList.map { wifiNetwork ->
+            LineCartesianLayer.LineSpec(
+                pointConnector = SpectrumPointConnector(),
+                thicknessDp = 3f,
+                shader = DynamicShaders.color(getColorForSsid(wifiNetwork.ssid)),
+            )
+        }
+    }
     ProvideChartStyle(rememberSpectrumChartStyle(chartColors)) {
         //val defaultLines = currentChartStyle.lineLayer.lines
         CartesianChartHost(
-            modifier = Modifier.height(220.dp),
+            modifier = Modifier.height(210.dp),
             modelProducer = modelProducer,
             marker = null,//rememberMarker(""),
             runInitialAnimation = false,
@@ -96,6 +118,7 @@ private fun ComposeChart(
                         maxY = WIFI_SPECTRUM_MAX,
                         minY = WIFI_SPECTRUM_MIN
                     ),
+                    lines = lines
                     //remember(defaultLines) { defaultLines.map { it.copy(backgroundShader = null) } },
                 ),
                 startAxis =
@@ -106,6 +129,10 @@ private fun ComposeChart(
                 bottomAxis =
                 rememberBottomAxis(
                     title = stringResource(R.string.channel),
+                    label = axisLabelComponent(
+                        textSize = 12.sp,
+                        padding = MutableDimensions(1f, 1f)
+                    ),
                     itemPlacer = remember {
                         /*AxisItemPlacer.Horizontal.default(
                             spacing = xSpacing,
@@ -118,7 +145,10 @@ private fun ComposeChart(
                     },
                     titleComponent =
                     rememberTextComponent(
-                        background = rememberShapeComponent(Shapes.pillShape, color2),
+                        background = rememberShapeComponent(
+                            Shapes.pillShape,
+                            colorResource(id = R.color.colorAccent)
+                        ),
                         color = Color.White,
                         padding = axisTitlePadding,
                         margins = bottomAxisTitleMargins,
@@ -132,6 +162,16 @@ private fun ComposeChart(
             horizontalLayout = horizontalLayout,
         )
     }
+}
+
+/**
+ * Provided a String SSID, this function will return the same color for that SSID. This is useful
+ * because the color would be randomly assigned otherwise, which means the color is likely to
+ * change after every scan, which makes it hard to track the same SSID over time.
+ */
+fun getColorForSsid(ssid: String): Color {
+    val index = ssid.hashCode().absoluteValue % chartColors.size
+    return chartColors[index]
 }
 
 @Composable
@@ -202,15 +242,10 @@ private fun rememberLegend() =
         padding = legendPadding,
     )
 
-/*private val color1 = Color(0xffb983ff)
-private val color2 = Color(0xff91b1fd)
-private val color3 = Color(0xff8fdaff)
-private val color4 = Color(0xfffab94d)*/
-
-private val color1 = Color(0xff4a148c)
-private val color2 = Color(0xff880e4f)
-private val color3 = Color(0xffb71c1c)
-private val color4 = Color(0xffd50000)
+private val color1 = Color(0xFF835DB1)
+private val color2 = Color(0xFF852659)
+private val color3 = Color(0xFFB42D2D)
+private val color4 = Color(0xFFD33838)
 private val color5 = Color(0xffe65100)
 private val color6 = Color(0xfff57f17)
 private val color7 = Color(0xffff6f00)
@@ -222,9 +257,9 @@ private val color12 = Color(0xff2e7d32)
 private val color13 = Color(0xff00695c)
 private val color14 = Color(0xff004d40)
 private val color15 = Color(0xff01579b)
-private val color16 = Color(0xff0d47a1)
-private val color17 = Color(0xff1a237e)
-private val color18 = Color(0xff311b92)
+private val color16 = Color(0xFF1C50A0)
+private val color17 = Color(0xFF464B83)
+private val color18 = Color(0xFF63559E)
 
 private val chartColors = listOf(
     color1,
@@ -246,10 +281,6 @@ private val chartColors = listOf(
     color17,
     color18
 )
-private val startAxisLabelVerticalPaddingValue = 2.dp
-private val startAxisLabelHorizontalPaddingValue = 8.dp
-private val startAxisLabelMarginValue = 4.dp
-private val startAxisLabelBackgroundCornerRadius = 4.dp
 private val legendItemLabelTextSize = 12.sp
 private val legendItemIconSize = 8.dp
 private val legendItemIconPaddingValue = 10.dp
@@ -264,7 +295,4 @@ private val axisTitlePadding =
 private val axisTitleMarginValue = 4.dp
 private val bottomAxisTitleMargins = dimensionsOf(top = axisTitleMarginValue)
 
-private val lineColor = Color(0xFF03A9F4)
-
-//private val chartColors = listOf(lineColor)
 private val horizontalLayout = HorizontalLayout.fullWidth()

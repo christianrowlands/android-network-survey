@@ -20,10 +20,6 @@ internal fun rememberSpectrumChartStyle(
     lineLayerColors: List<Color>,
 ): ChartStyle {
     val isSystemInDarkTheme = isSystemInDarkTheme()
-    // TODO Use the textComponent for the SSID labels when support is added to the library
-    /*val textComponent = rememberTextComponent(
-        color = Color(if (isSystemInDarkTheme) DefaultColors.Dark.axisLabelColor else DefaultColors.Light.axisLabelColor),
-    )*/
 
     return remember(columnLayerColors, lineLayerColors, isSystemInDarkTheme) {
         val defaultColors = if (isSystemInDarkTheme) DefaultColors.Dark else DefaultColors.Light
@@ -46,7 +42,6 @@ internal fun rememberSpectrumChartStyle(
                 lineLayerColors.map { lineChartColor ->
                     LineCartesianLayer.LineSpec(
                         pointConnector = SpectrumPointConnector(),
-                        //dataLabel = textComponent,
                         thicknessDp = 3f,
                         shader = DynamicShaders.color(lineChartColor),
                         //backgroundShader = null,

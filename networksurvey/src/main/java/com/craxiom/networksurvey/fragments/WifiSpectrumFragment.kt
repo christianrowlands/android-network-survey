@@ -9,6 +9,7 @@ import androidx.compose.ui.platform.ComposeView
 import androidx.compose.ui.platform.ViewCompositionStrategy
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.fragment.findNavController
+import androidx.navigation.fragment.navArgs
 import androidx.preference.PreferenceManager
 import com.craxiom.messaging.wifi.WifiBandwidth
 import com.craxiom.networksurvey.constants.NetworkSurveyConstants
@@ -53,6 +54,9 @@ class WifiSpectrumFragment : AServiceDataFragment(), IWifiSurveyRecordListener {
         container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
+        val args: WifiSpectrumFragmentArgs by navArgs()
+        val wifiNetworks = args.wifiNetworks
+
         val composeView = ComposeView(requireContext())
 
         composeView.apply {
@@ -88,6 +92,10 @@ class WifiSpectrumFragment : AServiceDataFragment(), IWifiSurveyRecordListener {
                         viewModel5GhzGroup3 = viewModel5GhzGroup3,
                         wifiSpectrumFragment = this@WifiSpectrumFragment
                     )
+                }
+
+                if (wifiNetworks.networks.isNotEmpty()) {
+                    onWifiBeaconSurveyRecords(wifiNetworks.networks.toMutableList())
                 }
             }
         }
