@@ -166,4 +166,11 @@
         android:restrictionType="bool"
         android:title="@string/auto_start_gnss_logging_title" />
 
+    <restriction
+        android:defaultValue="true"
+        android:description="@string/ignore_wifi_scan_throttling_warning_description"
+        android:key="ignore_wifi_scan_throttling_warning"
+        android:restrictionType="bool"
+        android:title="@string/ignore_wifi_scan_throttling_warning_title" />
+
 </restrictions>

@@ -45,6 +45,7 @@ import com.craxiom.networksurvey.model.WifiNetwork;
 import com.craxiom.networksurvey.model.WifiRecordWrapper;
 import com.craxiom.networksurvey.services.NetworkSurveyService;
 import com.craxiom.networksurvey.ui.wifi.model.WifiNetworkInfoList;
+import com.craxiom.networksurvey.util.PreferenceUtils;
 import com.google.android.material.snackbar.Snackbar;
 
 import java.util.ArrayList;
@@ -496,7 +497,14 @@ public class WifiNetworksFragment extends Fragment implements IWifiSurveyRecordL
     {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) return;
 
-        final WifiManager wifiManager = (WifiManager) requireContext().getSystemService(Context.WIFI_SERVICE);
+        Context context = getContext();
+        if (context == null) return;
+
+        // Check the MDM preference to see if we should show the warning
+        boolean ignoreWarning = PreferenceUtils.getIgnoreWifiThrottlingWarningPreference(false, context);
+        if (ignoreWarning) return;
+
+        final WifiManager wifiManager = (WifiManager) context.getSystemService(Context.WIFI_SERVICE);
 
         if (wifiManager != null && wifiManager.isScanThrottleEnabled())
         {
@@ -523,6 +531,13 @@ public class WifiNetworksFragment extends Fragment implements IWifiSurveyRecordL
 
         // There is a better way to check for scan throttling as of API level 30 (see the other method)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) return;
+
+        Context context = getContext();
+        if (context == null) return;
+
+        // Check the MDM preference to see if we should show the warning
+        boolean ignoreWarning = PreferenceUtils.getIgnoreWifiThrottlingWarningPreference(false, context);
+        if (ignoreWarning) return;
 
         if (lastScanTime == 0)
         {

@@ -278,6 +278,45 @@ public class PreferenceUtils
     }
 
     /**
+     * Gets the preference for ignoring the WiFi scan throttling warning.
+     * <p>
+     * First, this method tries to pull the MDM provided auto start value. If it is not set (either because the device
+     * is not under MDM control, or if that specific value is not set by the MDM administrator) then the value is pulled
+     * from the Android Shared Preferences (aka from the user settings). If it is not set there then the provided default
+     * value is used.
+     * <p>
+     * Note: The MDM Override does not apply to this preference because it should be up to the MDM admin to decide
+     * if developer options have been disabled. If they have, then the user toggling the MDM override switch does not
+     * change anything.
+     *
+     * @param defaultValue The default value to fall back on if it could not be found.
+     * @param context      The context to use when getting the Shared Preferences and Restriction Manager.
+     * @return True if the Wi-Fi scan throttling warning should not be displayed, false if it should be displayed if
+     * throttling is enabled.
+     */
+    public static boolean getIgnoreWifiThrottlingWarningPreference(boolean defaultValue, Context context)
+    {
+        final RestrictionsManager restrictionsManager = (RestrictionsManager) context.getSystemService(Context.RESTRICTIONS_SERVICE);
+        String propertyKey = NetworkSurveyConstants.PROPERTY_IGNORE_WIFI_SCAN_THROTTLING_WARNING;
+
+        // First try to use the MDM provided value.
+        if (restrictionsManager != null)
+        {
+            final Bundle mdmProperties = restrictionsManager.getApplicationRestrictions();
+
+            if (mdmProperties.containsKey(propertyKey))
+            {
+                return mdmProperties.getBoolean(propertyKey);
+            }
+        }
+
+        final SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(context);
+
+        // Next, try to use the value from user preferences, with a default fallback
+        return preferences.getBoolean(propertyKey, defaultValue);
+    }
+
+    /**
      * Converts the user preference index to a wrapper object that contains the flags indicating
      * which file types are enabled.
      */
