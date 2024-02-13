@@ -21,6 +21,7 @@ import static com.craxiom.mqttlibrary.MqttConstants.PROPERTY_MQTT_CONNECTION_POR
 import static com.craxiom.mqttlibrary.MqttConstants.PROPERTY_MQTT_CONNECTION_TLS_ENABLED;
 import static com.craxiom.mqttlibrary.MqttConstants.PROPERTY_MQTT_PASSWORD;
 import static com.craxiom.mqttlibrary.MqttConstants.PROPERTY_MQTT_USERNAME;
+import static com.craxiom.networksurvey.constants.NetworkSurveyConstants.DEFAULT_LOCATION_PROVIDER;
 
 import android.annotation.TargetApi;
 import android.content.Context;
@@ -243,7 +244,7 @@ public class PreferenceUtils
     /**
      * Gets the log file type preference.
      * <p>
-     * First, this method tries to pull the MDM provided auto start value. If it is not set (either because the device
+     * First, this method tries to pull the MDM provided log file type. If it is not set (either because the device
      * is not under MDM control, or if that specific value is not set by the MDM administrator) then the value is pulled
      * from the Android Shared Preferences (aka from the user settings). If it is not set there then the default
      * value is used.
@@ -275,6 +276,52 @@ public class PreferenceUtils
 
         // Next, try to use the value from user preferences, with a default fallback
         return convertIndexToLogTypeState(preferences.getString(NetworkSurveyConstants.PROPERTY_LOG_FILE_TYPE, "2"));
+    }
+
+    /**
+     * Gets the location provider preference
+     * <p>
+     * First, this method tries to pull the MDM provided location provider. If it is not set (either because the device
+     * is not under MDM control, or if that specific value is not set by the MDM administrator) then the value is pulled
+     * from the Android Shared Preferences (aka from the user settings). If it is not set there then the default
+     * value is used.
+     * <p>
+     * The only exception to this sequence is that if the user has toggled the MDM override switch in user settings,
+     * then the user preference value will be used instead of the MDM value.
+     *
+     * @param context The context to use when getting the Shared Preferences and Restriction Manager.
+     * @return An int representing the location provider. See {@link values/arrays.xml:location_provider_option_labels}
+     * for a mapping of the values.
+     */
+    public static int getLocationProviderPreference(Context context)
+    {
+        final RestrictionsManager restrictionsManager = (RestrictionsManager) context.getSystemService(Context.RESTRICTIONS_SERVICE);
+
+        final boolean mdmOverride = PreferenceManager.getDefaultSharedPreferences(context).getBoolean(NetworkSurveyConstants.PROPERTY_MDM_OVERRIDE_KEY, false);
+
+        // First try to use the MDM provided value.
+        if (restrictionsManager != null && !mdmOverride)
+        {
+            final Bundle mdmProperties = restrictionsManager.getApplicationRestrictions();
+
+            if (mdmProperties.containsKey(NetworkSurveyConstants.PROPERTY_LOCATION_PROVIDER))
+            {
+                return mdmProperties.getInt(NetworkSurveyConstants.PROPERTY_LOCATION_PROVIDER, DEFAULT_LOCATION_PROVIDER);
+            }
+        }
+
+        final SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(context);
+
+        // Next, try to use the value from user preferences, with a default fallback
+        String locationProviderString = preferences.getString(NetworkSurveyConstants.PROPERTY_LOCATION_PROVIDER, String.valueOf(DEFAULT_LOCATION_PROVIDER));
+        try
+        {
+            return Integer.parseInt(locationProviderString);
+        } catch (NumberFormatException e)
+        {
+            Timber.e(e, "Could not parse the location provider string: %s", locationProviderString);
+            return DEFAULT_LOCATION_PROVIDER;
+        }
     }
 
     /**

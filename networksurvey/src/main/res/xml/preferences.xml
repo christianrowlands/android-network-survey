@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<PreferenceScreen xmlns:app="http://schemas.android.com/apk/res-auto">
+<PreferenceScreen xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:android="http://schemas.android.com/apk/res/android">
 
     <SwitchPreferenceCompat
         app:defaultValue="false"
@@ -122,6 +123,25 @@
             app:summaryOff="@string/auto_start_mqtt_summary_off"
             app:summaryOn="@string/auto_start_mqtt_summary_on"
             app:title="@string/mqtt_start_on_boot_title" />
+
+    </PreferenceCategory>
+
+    <PreferenceCategory
+        app:icon="@drawable/ic_gnss"
+        app:key="location_config"
+        app:title="@string/location_config_title">
+
+        <ListPreference
+            android:dialogLayout="@layout/custom_list_preference_layout"
+            app:defaultValue="0"
+            app:dialogTitle="@string/location_provider_title"
+            app:dialogMessage="@string/location_provider_description"
+            app:entries="@array/location_provider_option_labels"
+            app:entryValues="@array/location_provider_option_index"
+            app:icon="@drawable/ic_my_location"
+            app:key="location_provider"
+            app:useSimpleSummaryProvider="true"
+            app:title="@string/location_provider_title" />
 
     </PreferenceCategory>
 

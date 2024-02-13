@@ -127,7 +127,7 @@ public class DashboardFragment extends AServiceDataFragment implements LocationL
         // because the initializeLocationTextView method might have set the UI to indicate that the
         // location provider is disabled or that the location permission is missing and we don't
         // want to override that.
-        Location latestLocation = service.getGpsListener().getLatestLocation();
+        Location latestLocation = service.getPrimaryLocationListener().getLatestLocation();
         if (latestLocation != null) updateLocationTextView(latestLocation);
 
         Context context = getContext();

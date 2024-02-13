@@ -84,6 +84,12 @@ public class NetworkSurveyConstants
 
     public static final String DEFAULT_ROLLOVER_SIZE_MB = "5";
 
+    public static final int LOCATION_PROVIDER_FUSED = 0;
+    public static final int LOCATION_PROVIDER_GNSS = 1;
+    public static final int LOCATION_PROVIDER_NETWORK = 2;
+    public static final int LOCATION_PROVIDER_ALL = 3;
+    public static final int DEFAULT_LOCATION_PROVIDER = LOCATION_PROVIDER_FUSED;
+
     public static final String PROPERTY_MDM_OVERRIDE_KEY = "mdm_override";
 
     // Preferences
@@ -98,6 +104,7 @@ public class NetworkSurveyConstants
     public static final String PROPERTY_DEVICE_STATUS_SCAN_INTERVAL_SECONDS = "device_status_scan_interval_seconds";
     public static final String PROPERTY_LOG_ROLLOVER_SIZE_MB = "log_rollover_size_mb";
     public static final String PROPERTY_LOG_FILE_TYPE = "log_file_type";
+    public static final String PROPERTY_LOCATION_PROVIDER = "location_provider";
     public static final String PROPERTY_IGNORE_WIFI_SCAN_THROTTLING_WARNING = "ignore_wifi_scan_throttling_warning";
 
     // The following key is used in the app_restrictions.xml file and in the app's shared preferences

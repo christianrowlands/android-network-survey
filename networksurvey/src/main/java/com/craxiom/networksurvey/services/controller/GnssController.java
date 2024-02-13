@@ -277,7 +277,7 @@ public class GnssController extends AController
                         {
                             locationManager.registerGnssMeasurementsCallback(measurementListener);
                         }
-                        surveyService.getGpsListener().addGnssTimeoutCallback(this::checkForGnssTimeout);
+                        surveyService.getPrimaryLocationListener().addGnssTimeoutCallback(this::checkForGnssTimeout);
                         Timber.i("Successfully registered the GNSS listeners");
                     }
                 } else
@@ -334,7 +334,7 @@ public class GnssController extends AController
             if (locationManager != null)
             {
                 locationManager.unregisterGnssMeasurementsCallback(measurementListener);
-                surveyService.getGpsListener().clearGnssTimeoutCallback();
+                surveyService.getPrimaryLocationListener().clearGnssTimeoutCallback();
                 locationManager = null;
             }
 
@@ -424,12 +424,12 @@ public class GnssController extends AController
                 if (!ignoreRawGnssFailure && gnssFailureListener != null)
                 {
                     gnssFailureListener.onGnssFailure();
-                    surveyService.getGpsListener().clearGnssTimeoutCallback(); // No need for the callback anymore
+                    surveyService.getPrimaryLocationListener().clearGnssTimeoutCallback(); // No need for the callback anymore
                 }
             }
         } else
         {
-            surveyService.getGpsListener().clearGnssTimeoutCallback();
+            surveyService.getPrimaryLocationListener().clearGnssTimeoutCallback();
         }
     }
 

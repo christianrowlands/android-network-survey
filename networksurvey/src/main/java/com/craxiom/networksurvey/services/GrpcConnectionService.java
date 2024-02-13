@@ -1080,7 +1080,7 @@ public class GrpcConnectionService extends Service implements IDeviceStatusListe
             final NetworkSurveyService.SurveyServiceBinder binder = (NetworkSurveyService.SurveyServiceBinder) iBinder;
             networkSurveyService = (NetworkSurveyService) binder.getService();
             deviceId = networkSurveyService.getNsDeviceId();
-            gpsListener = networkSurveyService.getGpsListener();
+            gpsListener = networkSurveyService.getPrimaryLocationListener();
             networkSurveyService.registerCellularSurveyRecordListener(GrpcConnectionService.this);
             networkSurveyService.registerWifiSurveyRecordListener(GrpcConnectionService.this);
         }

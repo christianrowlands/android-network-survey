@@ -78,7 +78,7 @@ public class GpsListener implements LocationListener
     }
 
     @Override
-    public void onLocationChanged(Location location)
+    public void onLocationChanged(@NonNull Location location)
     {
         updateLocation(location);
     }

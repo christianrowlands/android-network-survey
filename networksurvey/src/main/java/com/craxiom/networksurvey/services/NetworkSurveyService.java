@@ -1,5 +1,10 @@
 package com.craxiom.networksurvey.services;
 
+import static com.craxiom.networksurvey.constants.NetworkSurveyConstants.LOCATION_PROVIDER_ALL;
+import static com.craxiom.networksurvey.constants.NetworkSurveyConstants.LOCATION_PROVIDER_FUSED;
+import static com.craxiom.networksurvey.constants.NetworkSurveyConstants.LOCATION_PROVIDER_GNSS;
+import static com.craxiom.networksurvey.constants.NetworkSurveyConstants.LOCATION_PROVIDER_NETWORK;
+
 import android.Manifest;
 import android.annotation.SuppressLint;
 import android.app.Notification;
@@ -55,6 +60,7 @@ import com.craxiom.networksurvey.NetworkSurveyActivity;
 import com.craxiom.networksurvey.R;
 import com.craxiom.networksurvey.constants.DeviceStatusMessageConstants;
 import com.craxiom.networksurvey.constants.NetworkSurveyConstants;
+import com.craxiom.networksurvey.listeners.ExtraLocationListener;
 import com.craxiom.networksurvey.listeners.IBluetoothSurveyRecordListener;
 import com.craxiom.networksurvey.listeners.ICdrEventListener;
 import com.craxiom.networksurvey.listeners.ICellularSurveyRecordListener;
@@ -128,7 +134,10 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
     private String deviceId;
     private String myPhoneNumber = "";
     private SurveyRecordProcessor surveyRecordProcessor;
-    private GpsListener gpsListener;
+    private GpsListener primaryLocationListener;
+    private ExtraLocationListener gnssLocationListener;
+    private ExtraLocationListener networkLocationListener;
+
     private CdrLogger cdrLogger;
     private Looper serviceLooper;
     private Handler serviceHandler;
@@ -142,6 +151,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
     private BroadcastReceiver smsBroadcastReceiver;
     private ContentObserver smsOutgoingObserver;
     private final LinkedHashMap<String, String> smsIdQueue = new EvictingLinkedHashMap();
+    private int locationProviderPreference = NetworkSurveyConstants.DEFAULT_LOCATION_PROVIDER;
 
     public NetworkSurveyService()
     {
@@ -169,9 +179,11 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
         deviceId = createDeviceId();
         cdrLogger = new CdrLogger(this, serviceLooper);
 
-        gpsListener = new GpsListener();
+        primaryLocationListener = new GpsListener();
+        gnssLocationListener = new ExtraLocationListener(LocationManager.GPS_PROVIDER);
+        networkLocationListener = new ExtraLocationListener(LocationManager.NETWORK_PROVIDER);
 
-        surveyRecordProcessor = new SurveyRecordProcessor(gpsListener, deviceId, context, executorService);
+        surveyRecordProcessor = new SurveyRecordProcessor(primaryLocationListener, deviceId, context, executorService);
 
         cellularController = new CellularController(this, executorService, serviceLooper, serviceHandler, surveyRecordProcessor);
         wifiController = new WifiController(this, executorService, serviceLooper, serviceHandler, surveyRecordProcessor, uiThreadHandler);
@@ -304,6 +316,9 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
                 wifiController.onLogFileTypePreferenceChanged();
                 bluetoothController.onLogFileTypePreferenceChanged();
                 gnssController.onLogFileTypePreferenceChanged();
+                break;
+            case NetworkSurveyConstants.PROPERTY_LOCATION_PROVIDER:
+                updateLocationListener();
                 break;
 
             default:
@@ -487,9 +502,9 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
         mqttConnection.unregisterMqttConnectionStateListener(connectionStateListener);
     }
 
-    public GpsListener getGpsListener()
+    public GpsListener getPrimaryLocationListener()
     {
-        return gpsListener;
+        return primaryLocationListener;
     }
 
     public String getNsDeviceId()
@@ -504,7 +519,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
      */
     public void registerLocationListener(LocationListener locationListener)
     {
-        gpsListener.registerListener(locationListener);
+        primaryLocationListener.registerListener(locationListener);
     }
 
     /**
@@ -514,7 +529,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
      */
     public void unregisterLocationListener(LocationListener locationListener)
     {
-        gpsListener.unregisterListener(locationListener);
+        primaryLocationListener.unregisterListener(locationListener);
     }
 
     public void registerLoggingChangeListener(ILoggingChangeListener listener)
@@ -1116,7 +1131,14 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
             try
             {
                 final String provider;
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && locationManager.isProviderEnabled(LocationManager.FUSED_PROVIDER))
+
+                locationProviderPreference = PreferenceUtils.getLocationProviderPreference(getApplicationContext());
+
+                String locationProviderMapping = getLocationProviderFromPreference(locationProviderPreference);
+                if (locationManager.isProviderEnabled(locationProviderMapping))
+                {
+                    provider = locationProviderMapping;
+                } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && locationManager.isProviderEnabled(LocationManager.FUSED_PROVIDER))
                 {
                     provider = LocationManager.FUSED_PROVIDER;
                 } else if (locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER))
@@ -1129,7 +1151,9 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
                 {
                     provider = LocationManager.PASSIVE_PROVIDER;
                 }
-                locationManager.requestLocationUpdates(provider, smallestScanRate, 0f, gpsListener, serviceLooper);
+                locationManager.requestLocationUpdates(provider, smallestScanRate, 0f, primaryLocationListener, serviceLooper);
+
+                updateOtherLocationListeners(locationProviderPreference, locationManager, smallestScanRate);
             } catch (Throwable t)
             {
                 // An IllegalArgumentException was occurring on phones that don't have a GPS provider, so some defensive coding here
@@ -1142,14 +1166,72 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
     }
 
     /**
-     * Removes the location listener from the Android {@link LocationManager}.
+     * @return The location provider that is mapped to the location provider preference. This is a one to one mapping
+     * but in this method we also check the Android SDK version and also map "All" to the FUSED provider.
+     */
+    private String getLocationProviderFromPreference(int locationProvider)
+    {
+        switch (locationProvider)
+        {
+            // Use the FUSED provider for "All" as well, since we will be registering them all anyway.
+            case LOCATION_PROVIDER_FUSED, LOCATION_PROVIDER_ALL ->
+            {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S)
+                {
+                    return LocationManager.FUSED_PROVIDER;
+                } else
+                {
+                    return LocationManager.GPS_PROVIDER;
+                }
+            }
+            case LOCATION_PROVIDER_GNSS ->
+            {
+                return LocationManager.GPS_PROVIDER;
+            }
+            case LOCATION_PROVIDER_NETWORK ->
+            {
+                return LocationManager.NETWORK_PROVIDER;
+            }
+            default ->
+            {
+                return LocationManager.GPS_PROVIDER;
+            }
+        }
+    }
+
+    @SuppressLint("MissingPermission")
+    // Only called from updateLocationListener, which checks the permission
+    private void updateOtherLocationListeners(int locationProviderPreference, LocationManager locationManager, int scanRate)
+    {
+        if (locationProviderPreference == LOCATION_PROVIDER_ALL)
+        {
+
+            locationManager.requestLocationUpdates(gnssLocationListener.getProvider(), scanRate, 0f, gnssLocationListener, serviceLooper);
+            locationManager.requestLocationUpdates(networkLocationListener.getProvider(), scanRate, 0f, networkLocationListener, serviceLooper);
+        } else
+        {
+            locationManager.removeUpdates(gnssLocationListener);
+            locationManager.removeUpdates(networkLocationListener);
+        }
+    }
+
+    /**
+     * Removes the location listener(s) from the Android {@link LocationManager}.
      */
     private void removeLocationListener()
     {
-        if (gpsListener != null)
+        final LocationManager locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
+        if (primaryLocationListener != null)
         {
-            final LocationManager locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
-            if (locationManager != null) locationManager.removeUpdates(gpsListener);
+            if (locationManager != null) locationManager.removeUpdates(primaryLocationListener);
+        }
+        if (gnssLocationListener != null)
+        {
+            if (locationManager != null) locationManager.removeUpdates(gnssLocationListener);
+        }
+        if (networkLocationListener != null)
+        {
+            if (locationManager != null) locationManager.removeUpdates(networkLocationListener);
         }
     }
 
@@ -1367,9 +1449,9 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
                 .setDeviceTime(IOUtils.getRfc3339String(ZonedDateTime.now()));
         dataBuilder.setMdmOverride(BoolValue.newBuilder().setValue(mdmOverride).build());
 
-        if (gpsListener != null)
+        if (primaryLocationListener != null)
         {
-            final Location lastKnownLocation = gpsListener.getLatestLocation();
+            final Location lastKnownLocation = primaryLocationListener.getLatestLocation();
             if (lastKnownLocation != null)
             {
                 dataBuilder.setLatitude(lastKnownLocation.getLatitude());
@@ -1379,6 +1461,34 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
                 if (lastKnownLocation.hasSpeed())
                 {
                     dataBuilder.setSpeed(lastKnownLocation.getSpeed());
+                }
+            }
+        }
+
+        if (locationProviderPreference == LOCATION_PROVIDER_ALL)
+        {
+            // Add the extra locations to the message
+            if (gnssLocationListener != null)
+            {
+                Location gnssLocation = gnssLocationListener.getLatestLocation();
+                if (gnssLocation != null)
+                {
+                    dataBuilder.setGnssLatitude(gnssLocation.getLatitude());
+                    dataBuilder.setGnssLongitude(gnssLocation.getLongitude());
+                    dataBuilder.setGnssAltitude((float) gnssLocation.getAltitude());
+                    dataBuilder.setGnssAccuracy(MathUtils.roundAccuracy(gnssLocation.getAccuracy()));
+                }
+            }
+
+            if (networkLocationListener != null)
+            {
+                Location networkLocation = networkLocationListener.getLatestLocation();
+                if (networkLocation != null)
+                {
+                    dataBuilder.setNetworkLatitude(networkLocation.getLatitude());
+                    dataBuilder.setNetworkLongitude(networkLocation.getLongitude());
+                    dataBuilder.setNetworkAltitude((float) networkLocation.getAltitude());
+                    dataBuilder.setNetworkAccuracy(MathUtils.roundAccuracy(networkLocation.getAccuracy()));
                 }
             }
         }
