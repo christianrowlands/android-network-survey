@@ -318,15 +318,15 @@ public class WifiNetworksFragment extends Fragment implements IWifiSurveyRecordL
             Timber.i("Binding to the Network Survey Service");
             final Intent serviceIntent = new Intent(applicationContext, NetworkSurveyService.class);
             applicationContext.startService(serviceIntent);
+
+            // Bind to the service
+            ServiceConnection surveyServiceConnection = new SurveyServiceConnection();
+            final boolean bound = applicationContext.bindService(serviceIntent, surveyServiceConnection, Context.BIND_ABOVE_CLIENT);
+            Timber.i("NetworkSurveyService bound in the MqttConnectionFragment: %s", bound);
         } catch (Exception e)
         {
             Timber.e(e, "Could not start the Network Survey Service");
         }
-
-        // Bind to the service
-        ServiceConnection surveyServiceConnection = new SurveyServiceConnection();
-        final boolean bound = applicationContext.bindService(serviceIntent, surveyServiceConnection, Context.BIND_ABOVE_CLIENT);
-        Timber.i("NetworkSurveyService bound in the MqttConnectionFragment: %s", bound);
     }
 
     /**
