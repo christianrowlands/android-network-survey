@@ -250,9 +250,18 @@ public class MqttFragment extends AConnectionFragment<NetworkSurveyService.Surve
      */
     private MqttConnectionSettings getCurrentMqttConnectionSettings()
     {
+        int portNumber;
+        try
+        {
+            portNumber = Integer.parseInt(mqttPortNumberEdit.getText().toString());
+        } catch (NumberFormatException e)
+        {
+            portNumber = 1883;
+        }
+
         return MqttConnectionSettings.builder()
                 .host(mqttHostAddressEdit.getText().toString())
-                .port(Integer.parseInt(mqttPortNumberEdit.getText().toString()))
+                .port(portNumber)
                 .tlsEnabled(tlsToggleSwitch.isChecked())
                 .deviceName(deviceNameEdit.getText().toString())
                 .mqttUsername(usernameEdit.getText().toString())

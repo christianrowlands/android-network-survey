@@ -313,9 +313,15 @@ public class WifiNetworksFragment extends Fragment implements IWifiSurveyRecordL
         lastScanTime = System.currentTimeMillis();
 
         // Start the service
-        Timber.i("Binding to the Network Survey Service");
-        final Intent serviceIntent = new Intent(applicationContext, NetworkSurveyService.class);
-        applicationContext.startService(serviceIntent);
+        try
+        {
+            Timber.i("Binding to the Network Survey Service");
+            final Intent serviceIntent = new Intent(applicationContext, NetworkSurveyService.class);
+            applicationContext.startService(serviceIntent);
+        } catch (Exception e)
+        {
+            Timber.e(e, "Could not start the Network Survey Service");
+        }
 
         // Bind to the service
         ServiceConnection surveyServiceConnection = new SurveyServiceConnection();
