@@ -39,6 +39,7 @@ public class NetworkSurveyConstants
     public static final String GNSS_FILE_NAME_PREFIX = "craxiom-gnss-";
     public static final String CDR_FILE_NAME_PREFIX = "craxiom-cdr-";
     public static final String PHONESTATE_FILE_NAME_PREFIX = "craxiom-phonestate-";
+    public static final String DEVICESTATUS_FILE_NAME_PREFIX = "craxiom-devicestatus-";
 
     public static final String GPRS = "GPRS";
     public static final String EDGE = "EDGE";

@@ -24,5 +24,7 @@ public interface IDeviceStatusListener
      * @param phoneState The Phone State message.
      * @since 1.4.0
      */
-    void onPhoneState(PhoneState phoneState);
+    default void onPhoneState(PhoneState phoneState)
+    {
+    }
 }

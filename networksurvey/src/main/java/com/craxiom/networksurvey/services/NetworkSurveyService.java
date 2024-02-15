@@ -70,7 +70,9 @@ import com.craxiom.networksurvey.listeners.IGnssSurveyRecordListener;
 import com.craxiom.networksurvey.listeners.ILoggingChangeListener;
 import com.craxiom.networksurvey.listeners.IWifiSurveyRecordListener;
 import com.craxiom.networksurvey.logging.CdrLogger;
+import com.craxiom.networksurvey.logging.DeviceStatusCsvLogger;
 import com.craxiom.networksurvey.model.CdrEventType;
+import com.craxiom.networksurvey.model.LogTypeState;
 import com.craxiom.networksurvey.mqtt.MqttConnection;
 import com.craxiom.networksurvey.mqtt.MqttConnectionInfo;
 import com.craxiom.networksurvey.services.controller.BluetoothController;
@@ -139,6 +141,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
     private ExtraLocationListener networkLocationListener;
 
     private CdrLogger cdrLogger;
+    private DeviceStatusCsvLogger deviceStatusCsvLogger;
     private Looper serviceLooper;
     private Handler serviceHandler;
     private MqttConnection mqttConnection;
@@ -178,6 +181,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
 
         deviceId = createDeviceId();
         cdrLogger = new CdrLogger(this, serviceLooper);
+        deviceStatusCsvLogger = new DeviceStatusCsvLogger(this, serviceLooper);
 
         primaryLocationListener = new GpsListener();
         gnssLocationListener = new ExtraLocationListener(LocationManager.GPS_PROVIDER);
@@ -300,6 +304,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
                 gnssController.onRolloverPreferenceChanged();
 
                 cdrLogger.onSharedPreferenceChanged();
+                deviceStatusCsvLogger.onSharedPreferenceChanged();
                 break;
             case NetworkSurveyConstants.PROPERTY_CELLULAR_SCAN_INTERVAL_SECONDS:
             case NetworkSurveyConstants.PROPERTY_WIFI_SCAN_INTERVAL_SECONDS:
@@ -316,6 +321,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
                 wifiController.onLogFileTypePreferenceChanged();
                 bluetoothController.onLogFileTypePreferenceChanged();
                 gnssController.onLogFileTypePreferenceChanged();
+                stopDeviceStatusReportIfNotNeeded();
                 break;
             case NetworkSurveyConstants.PROPERTY_LOCATION_PROVIDER:
                 updateLocationListener();
@@ -555,6 +561,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
         }
 
         cellularController.startCellularRecordScanning(); // Only starts scanning if it is not already active.
+        startDeviceStatusReportIfLoggingEnabled(); // Only starts the device status report if it is not already active.
     }
 
     /**
@@ -576,6 +583,8 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
             }
         }
 
+        stopDeviceStatusReportIfNotNeeded();
+
         // Check to see if this service is still needed.  It is still needed if we are either logging, the UI is
         // visible, or a server connection is active.
         if (!isBeingUsed()) stopSelf();
@@ -595,6 +604,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
         }
 
         wifiController.startWifiRecordScanning(); // Only starts scanning if it is not already active.
+        startDeviceStatusReportIfLoggingEnabled(); // Only starts the device status report if it is not already active.
     }
 
     /**
@@ -620,6 +630,8 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
             }
         }
 
+        stopDeviceStatusReportIfNotNeeded();
+
         // Check to see if this service is still needed.  It is still needed if we are either logging, the UI is
         // visible, or a server connection is active.
         if (!isBeingUsed()) stopSelf();
@@ -639,6 +651,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
         }
 
         bluetoothController.startBluetoothRecordScanning(); // Only starts scanning if it is not already active.
+        startDeviceStatusReportIfLoggingEnabled(); // Only starts the device status report if it is not already active.
     }
 
     /**
@@ -664,6 +677,8 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
             }
         }
 
+        stopDeviceStatusReportIfNotNeeded();
+
         // Check to see if this service is still needed.  It is still needed if we are either logging, the UI is
         // visible, or a server connection is active.
         if (!isBeingUsed()) stopSelf();
@@ -683,6 +698,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
         }
 
         gnssController.startGnssRecordScanning(); // Only starts scanning if it is not already active.
+        startDeviceStatusReportIfLoggingEnabled(); // Only starts the device status report if it is not already active.
     }
 
     /**
@@ -704,6 +720,8 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
             surveyRecordProcessor.unregisterGnssSurveyRecordListener(surveyRecordListener);
             if (!surveyRecordProcessor.isGnssBeingUsed()) gnssController.stopGnssRecordScanning();
         }
+
+        stopDeviceStatusReportIfNotNeeded();
 
         // Check to see if this service is still needed.  It is still needed if we are either logging, the UI is
         // visible, or a server connection is active.
@@ -1398,6 +1416,26 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
     }
 
     /**
+     * Starts the device status report if any of the logging types are enabled, otherwise it does nothing.
+     */
+    private void startDeviceStatusReportIfLoggingEnabled()
+    {
+        if (cellularController.isLoggingEnabled()
+                || wifiController.isLoggingEnabled()
+                || bluetoothController.isLoggingEnabled()
+                || gnssController.isLoggingEnabled())
+        {
+            LogTypeState types = PreferenceUtils.getLogTypePreference(getApplicationContext());
+            if (surveyRecordProcessor != null && types.csv)
+            {
+                deviceStatusCsvLogger.enableLogging(true);
+                surveyRecordProcessor.registerDeviceStatusListener(deviceStatusCsvLogger);
+            }
+            startDeviceStatusReport();
+        }
+    }
+
+    /**
      * Initialize and start the handler that generates a periodic Device Status Message.
      * <p>
      * This method only starts scanning if the scan is not already active.
@@ -1511,6 +1549,29 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
         statusBuilder.setData(dataBuilder);
 
         return statusBuilder.build();
+    }
+
+    /**
+     * Stops generating device status reports if no more loggers are enabled.
+     */
+    private void stopDeviceStatusReportIfNotNeeded()
+    {
+        if (!deviceStatusActive.get()) return;
+
+        LogTypeState types = PreferenceUtils.getLogTypePreference(getApplicationContext());
+
+        // We only want to stop the device status report if all of the logging types are inactive or CSV logging is off
+        if (!types.csv ||
+                // Not checking for CDR logging since that is a different beast (it logs at a much lower rate)
+                (!cellularController.isLoggingEnabled() && !wifiController.isLoggingEnabled() && !bluetoothController.isLoggingEnabled() && !gnssController.isLoggingEnabled())
+        )
+        {
+            surveyRecordProcessor.unregisterDeviceStatusListener(deviceStatusCsvLogger);
+            deviceStatusCsvLogger.enableLogging(false);
+
+            // Need to check the survey record processor because MQTT could be using the device status message
+            if (!surveyRecordProcessor.isDeviceStatusBeingUsed()) stopDeviceStatusReport();
+        }
     }
 
     /**
@@ -1679,6 +1740,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
         bluetoothController.stopAllLogging();
         gnssController.stopAllLogging();
         if (cdrLogger != null) cdrLogger.enableLogging(false);
+        if (deviceStatusCsvLogger != null) deviceStatusCsvLogger.enableLogging(false);
     }
 
     /**
@@ -1713,6 +1775,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
                 gnssController.onMdmPreferenceChanged();
 
                 cdrLogger.onMdmPreferenceChanged();
+                deviceStatusCsvLogger.onMdmPreferenceChanged();
             }
         };
 

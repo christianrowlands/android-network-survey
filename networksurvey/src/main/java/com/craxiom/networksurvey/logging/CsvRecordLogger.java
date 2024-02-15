@@ -22,6 +22,9 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import timber.log.Timber;
@@ -104,6 +107,7 @@ public abstract class CsvRecordLogger
                     if (loggingEnabled)
                     {
                         loggingEnabled = false;
+                        loggingFileName = null;
                         printer.close(true);
                         printer = null;
                         rolloverWorker.reset();
@@ -119,6 +123,7 @@ public abstract class CsvRecordLogger
 
                 if (lazyFileCreation) return true;
 
+                loggingFileName = null;
                 boolean fileCreated = prepareCsvForLogging();
 
                 return loggingEnabled = fileCreated;
@@ -179,10 +184,15 @@ public abstract class CsvRecordLogger
         Timber.i("Creating the log file: %s", loggingFileName);
 
         final String versionName = getVersionName();
+        final List<String> headerComments = new ArrayList<>();
+        headerComments.add("Created by Network Survey version=" + versionName);
+
+        String[] additionalComments = getHeaderComments();
+        Collections.addAll(headerComments, additionalComments);
 
         CSVFormat csvFormat = CSVFormat.Builder.create()
-                .setHeaderComments("Created by Network Survey version=" + versionName,
-                        getHeaderComments())
+                .setCommentMarker('#')
+                .setHeaderComments(headerComments.toArray(new String[0]))
                 .setHeader(getHeaders())
                 .build();
         try
