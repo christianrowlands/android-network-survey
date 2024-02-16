@@ -1,5 +1,15 @@
 # Changelog
 
+## [1.20](https://github.com/christianrowlands/android-network-survey/releases/tag/v1.20) - 2024-02-16
+
+* Add SSID labels to the Wi-Fi spectrum charts.
+* Several other improvements to the Wi-Fi spectrum charts.
+* Adds an MDM setting to stop showing the Wi-Fi throttling warning snackbar message.
+* Adds a location provider preference to select which location provider to use.
+* An ALL option was added to allow for adding locations from each location provider to the device status message which can be used for comparison and location analysis.
+* Adds a CSV log file for the device status message.
+* CSV header comments are now added to the top of the CSV log files.
+
 ## [1.19](https://github.com/christianrowlands/android-network-survey/releases/tag/v1.19) - 2024-01-31
 
 * Adds a chart showing the Wi-Fi Spectrum usage.
