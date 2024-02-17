@@ -1,1 +1,1 @@
-Displays and Logs LTE Network Survey Details
+Displays and Logs Cellular, Wi-Fi, Bluetooth, and GNSS Network Survey Details

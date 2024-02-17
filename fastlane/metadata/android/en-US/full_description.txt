@@ -1,8 +1,19 @@
-<p>The <i>Network Survey</i> app enables logging cellular, Wi-Fi, and/or GNSS information to a log file (GeoPackage format). For cellular records it supports logging GSM, CDMA, UMTS, and LTE records.</p>
-<p>The cellular logging feature logs several details about the current serving cell, and then some basic information about the neighbor cells. This app won't log all 4 cellular protocols at once. Instead, it will only log information about the protocols that are current connected. If logging for one specific protocol is desired, then the phone must be locked to that protocol (try using *#*#4636#*#* from the dial pad).</p>
-<p>The app also has a calculator that converts an LTE Cell ID to the corresponding eNodeB ID and Sector ID, and a calculator that converts an LTE PCI to the corresponding Primary Sync Sequence (PSS) and Secondary Sync Sequence (SSS).</p>
+<p>The <i>Network Survey</i> app enables logging cellular, Wi-Fi, Bluetooth, and/or GNSS information to a log file (GeoPackage or CSV format). For cellular records it supports logging GSM, CDMA, UMTS, LTE, and NR records.</p>
+
+<p>This app has the ability to access your device's location in the background. The background location permission is needed to start Network Survey at boot. More information can be found in the App's privacy policy located at <a href="https://github.com/christianrowlands/android-network-survey/blob/master/privacy_policy.md">https://github.com/christianrowlands/android-network-survey/blob/master/privacy_policy.md</a></p>
+
+<p>The cellular logging feature logs several details about the current serving cell, and then some basic information about the neighbor cells. This app won't log all 5 cellular protocols at once. Instead, it will only log information about the protocols that are current connected. If logging for one specific protocol is desired, then the phone must be locked to that protocol (try using *#*#4636#*#* from the dial pad).</p>
+
 <p>The cellular survey records can be streamed to either a gRPC server or a MQTT broker. This is not on by default and a gRPC server or MQTT Broker needs to be setup for this feature to work.</p>
-<p>See https://github.com/christianrowlands/network-survey-messaging for more details on setting up a network survey gRPC server.</p>
-<p>See https://mosquitto.org for information on setting up a MQTT Broker.</p>
-<p>This app is very basic and was built for my own use, but I decided to share it with others. Enjoy!</p>
+
+<p>See the <a href="https://github.com/christianrowlands/network-survey-messaging">NS Messaging GitHub Repo</a> for more details on setting up a network survey gRPC server.</p>
+
+<p>See <a href="https://mosquitto.org"> for information on setting up a MQTT Broker.</p>
+
+<p>A bonus feature of this app is its ability to create a Call Detail Record (CDR) file. If enabled, CDR events are logged to a CSV file.</p>
+
+<p>The app also has a calculator that converts an LTE Cell ID to the corresponding eNodeB ID and Sector ID, and a calculator that converts an LTE PCI to the corresponding Primary Sync Sequence (PSS) and Secondary Sync Sequence (SSS).</p>
+
+<p>I hope you enjoy this app as much as I have enjoyed writing it. If you have any feature requests please feel free to reach out by creating a GitHub issue at the link below.</p>
+
 <p>The source code for this app lives here: https://github.com/christianrowlands/android-network-survey</p>
