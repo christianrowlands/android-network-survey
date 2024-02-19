@@ -62,7 +62,7 @@ If you're interested in CDR logging that includes SMS events and call details:
 1. **Install from Source:** You can build and install the app using the source code available in
    this repository.
 2. **Download Pre-Built APK:** Access the latest "*cdr-release.apk" under the latest release on
-   our [GitHub Releases page](https://github.com/YourRepo/NetworkSurvey/releases).
+   our [GitHub Releases page](https://github.com/christianrowlands/android-network-survey/releases).
 3. **IzzyOnDroid F-Droid:** Install
    from [IzzyOnDroid F-Droid](https://apt.izzysoft.de/fdroid/index/apk/com.craxiom.networksurvey).
 
