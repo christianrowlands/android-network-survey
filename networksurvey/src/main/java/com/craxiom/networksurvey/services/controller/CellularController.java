@@ -98,6 +98,19 @@ public class CellularController extends AController
         gsmCsvLogger = new GsmCsvLogger(surveyService, serviceLooper);
     }
 
+    @Override
+    public void onDestroy()
+    {
+        cellularSurveyRecordLogger.onDestroy();
+        phoneStateRecordLogger.onDestroy();
+        nrCsvLogger.onDestroy();
+        lteCsvLogger.onDestroy();
+        umtsCsvLogger.onDestroy();
+        cdmaCsvLogger.onDestroy();
+        gsmCsvLogger.onDestroy();
+        super.onDestroy();
+    }
+
     public boolean isLoggingEnabled()
     {
         return cellularLoggingEnabled.get();

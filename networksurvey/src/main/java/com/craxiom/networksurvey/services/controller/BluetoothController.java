@@ -72,6 +72,18 @@ public class BluetoothController extends AController
         bluetoothCsvLogger = new BluetoothCsvLogger(surveyService, serviceLooper);
     }
 
+    @Override
+    public void onDestroy()
+    {
+        bluetoothSurveyRecordLogger.onDestroy();
+        bluetoothCsvLogger.onDestroy();
+
+        bluetoothBroadcastReceiver = null;
+        bluetoothScanCallback = null;
+
+        super.onDestroy();
+    }
+
     public boolean isLoggingEnabled()
     {
         return bluetoothLoggingEnabled.get();
@@ -415,7 +427,7 @@ public class BluetoothController extends AController
 
             if (!hasBtConnectPermission() || !hasBtScanPermission())
             {
-                Timber.i("Missing a Bluetooth permission, can't enable BT scanning");
+                Timber.i("Missing a Bluetooth permission, can't stop BT scanning");
                 return;
             }
 

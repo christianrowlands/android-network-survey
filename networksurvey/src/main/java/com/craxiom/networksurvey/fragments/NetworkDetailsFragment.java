@@ -180,6 +180,8 @@ public class NetworkDetailsFragment extends AServiceDataFragment implements ICel
     {
         service.unregisterLocationListener(this);
         service.unregisterCellularSurveyRecordListener(this);
+
+        super.onSurveyServiceDisconnecting(service);
     }
 
     @Override

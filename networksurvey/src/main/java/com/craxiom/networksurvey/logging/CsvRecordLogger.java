@@ -46,8 +46,7 @@ public abstract class CsvRecordLogger
      */
     protected final Object csvFileLock = new Object();
 
-    private final NetworkSurveyService networkSurveyService;
-    private final Context applicationContext;
+    private Context applicationContext;
     final Handler handler;
     private final String logDirectoryName;
     private final String fileNamePrefix;
@@ -71,12 +70,16 @@ public abstract class CsvRecordLogger
     CsvRecordLogger(NetworkSurveyService networkSurveyService, Looper serviceLooper,
                     String logDirectoryName, String fileNamePrefix, boolean lazyFileCreation)
     {
-        this.networkSurveyService = networkSurveyService;
         applicationContext = networkSurveyService.getApplicationContext();
         handler = new Handler(serviceLooper);
         this.logDirectoryName = logDirectoryName;
         this.fileNamePrefix = fileNamePrefix;
         this.lazyFileCreation = lazyFileCreation;
+    }
+
+    public void onDestroy()
+    {
+        applicationContext = null;
     }
 
     abstract String[] getHeaders();

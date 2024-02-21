@@ -123,7 +123,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
 
     private final AtomicInteger deviceStatusGeneratorTaskId = new AtomicInteger();
 
-    private final SurveyServiceBinder surveyServiceBinder;
+    private SurveyServiceBinder surveyServiceBinder;
     private final Handler uiThreadHandler;
     private final ExecutorService executorService;
 
@@ -158,7 +158,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
 
     public NetworkSurveyService()
     {
-        surveyServiceBinder = new SurveyServiceBinder();
+        surveyServiceBinder = new SurveyServiceBinder(this);
         uiThreadHandler = new Handler(Looper.getMainLooper());
 
         executorService = Executors.newFixedThreadPool(8);
@@ -286,6 +286,14 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
         serviceLooper.quitSafely();
         shutdownNotifications();
         executorService.shutdown();
+
+        cellularController.onDestroy();
+        wifiController.onDestroy();
+        bluetoothController.onDestroy();
+        gnssController.onDestroy();
+
+        surveyServiceBinder.onDestroy();
+        surveyServiceBinder = null;
 
         super.onDestroy();
     }
@@ -1941,12 +1949,24 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
      * Class used for the client Binder.  Because we know this service always runs in the same process as its clients,
      * we don't need to deal with IPC.
      */
-    public class SurveyServiceBinder extends AConnectionFragment.ServiceBinder
+    public static class SurveyServiceBinder extends AConnectionFragment.ServiceBinder
     {
+        private NetworkSurveyService service;
+
+        public SurveyServiceBinder(NetworkSurveyService service)
+        {
+            this.service = service;
+        }
+
         @Override
         public IMqttService getService()
         {
-            return NetworkSurveyService.this;
+            return service;
+        }
+
+        public void onDestroy()
+        {
+            service = null;
         }
     }
 

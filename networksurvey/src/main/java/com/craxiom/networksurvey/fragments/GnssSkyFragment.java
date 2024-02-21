@@ -141,6 +141,42 @@ public class GnssSkyFragment extends Fragment implements IGnssListener
     }
 
     @Override
+    public void onPause()
+    {
+        mainGnssFragment.unregisterGnssListener(this);
+
+        super.onPause();
+    }
+
+    @Override
+    public void onDestroyView()
+    {
+        mainGnssFragment = null;
+        snrCn0InViewAvg = null;
+        snrCn0UsedAvg = null;
+        legendCn0Title = null;
+        legendCn0Units = null;
+        legendCn0LeftText = null;
+        legendCn0LeftCenterText = null;
+        legendCn0CenterText = null;
+        legendCn0RightCenterText = null;
+        legendCn0RightText = null;
+        snrCn0InViewAvgText = null;
+        snrCn0UsedAvgText = null;
+
+        legendLines.clear();
+        legendShapes.clear();
+
+        if (skyView != null)
+        {
+            skyView.onDestroy();
+            skyView = null;
+        }
+
+        super.onDestroyView();
+    }
+
+    @Override
     public void onLocationChanged(Location loc)
     {
     }

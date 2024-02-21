@@ -45,6 +45,14 @@ public abstract class AServiceDataFragment extends Fragment
         super.onPause();
     }
 
+    @Override
+    public void onDestroy()
+    {
+        service = null;
+
+        super.onDestroy();
+    }
+
     /**
      * Called once the service has been bound and set to {@link #service}. This is the appropriate time to interact
      * with the service in any way needed for the Fragment's specific use case such as registering listeners
@@ -57,9 +65,12 @@ public abstract class AServiceDataFragment extends Fragment
     /**
      * Cleanup by unregistering any data listeners. This will be called right before the service is unbinded.
      *
-     * @param service The service reference to make calls on.
+     * @param surveyService The service reference to make calls on.
      */
-    protected abstract void onSurveyServiceDisconnecting(NetworkSurveyService service);
+    protected void onSurveyServiceDisconnecting(NetworkSurveyService surveyService)
+    {
+        service = null;
+    }
 
     /**
      * Start the Network Survey Service (it won't start if it is already started), and then bind to the service.

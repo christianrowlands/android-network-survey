@@ -1,17 +1,14 @@
 package com.craxiom.networksurvey.fragments;
 
 import android.content.BroadcastReceiver;
-import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
-import android.content.ServiceConnection;
 import android.content.SharedPreferences;
 import android.net.wifi.WifiManager;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
-import android.os.IBinder;
 import android.os.Looper;
 import android.provider.Settings;
 import android.view.LayoutInflater;
@@ -26,7 +23,6 @@ import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AlertDialog;
 import androidx.core.view.MenuProvider;
-import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentActivity;
 import androidx.lifecycle.LifecycleOwner;
 import androidx.lifecycle.ViewModelProvider;
@@ -58,7 +54,7 @@ import timber.log.Timber;
  *
  * @since 0.1.2
  */
-public class WifiNetworksFragment extends Fragment implements IWifiSurveyRecordListener, MenuProvider
+public class WifiNetworksFragment extends AServiceDataFragment implements IWifiSurveyRecordListener, MenuProvider
 {
     private FragmentWifiNetworksListBinding binding;
     private SortedList<WifiRecordWrapper> wifiRecordSortedList;
@@ -68,7 +64,6 @@ public class WifiNetworksFragment extends Fragment implements IWifiSurveyRecordL
     private WifiViewModel viewModel;
 
     private Context applicationContext;
-    private NetworkSurveyService surveyService;
     private MyWifiNetworkRecyclerViewAdapter wifiNetworkRecyclerViewAdapter;
 
     private long lastScanTime = 0;
@@ -159,7 +154,7 @@ public class WifiNetworksFragment extends Fragment implements IWifiSurveyRecordL
 
         checkWifiEnabled();
 
-        startAndBindToNetworkSurveyService();
+        startAndBindToService();
 
         checkForScanThrottlingAndroid11();
     }
@@ -168,8 +163,6 @@ public class WifiNetworksFragment extends Fragment implements IWifiSurveyRecordL
     public void onPause()
     {
         unregisterWifiBroadcastReceiver();
-
-        if (surveyService != null) surveyService.unregisterWifiSurveyRecordListener(this);
 
         super.onPause();
     }
@@ -184,6 +177,27 @@ public class WifiNetworksFragment extends Fragment implements IWifiSurveyRecordL
         viewModel.areUpdatesPaused().removeObservers(viewLifecycleOwner);
 
         super.onDestroyView();
+    }
+
+    @Override
+    public void onDestroy()
+    {
+        applicationContext = null;
+
+        super.onDestroy();
+    }
+
+    @Override
+    protected void onSurveyServiceConnected(NetworkSurveyService service)
+    {
+        service.registerWifiSurveyRecordListener(this);
+    }
+
+    @Override
+    protected void onSurveyServiceDisconnecting(NetworkSurveyService service)
+    {
+        service.unregisterWifiSurveyRecordListener(this);
+        super.onSurveyServiceDisconnecting(service);
     }
 
     @Override
@@ -302,34 +316,6 @@ public class WifiNetworksFragment extends Fragment implements IWifiSurveyRecordL
     }
 
     /**
-     * Start the Network Survey Service (it won't start if it is already started), and then bind to the service.
-     * <p>
-     * Starting the service will cause the cellular records to be pulled from the Android system, and then once the
-     * MQTT connection is made those cellular records will be sent over the connection to the MQTT Broker.
-     */
-    private void startAndBindToNetworkSurveyService()
-    {
-        // Update the last scan time so that we don't trigger a false positive alert on the scan time interval.
-        lastScanTime = System.currentTimeMillis();
-
-        // Start the service
-        try
-        {
-            Timber.i("Binding to the Network Survey Service");
-            final Intent serviceIntent = new Intent(applicationContext, NetworkSurveyService.class);
-            applicationContext.startService(serviceIntent);
-
-            // Bind to the service
-            ServiceConnection surveyServiceConnection = new SurveyServiceConnection();
-            final boolean bound = applicationContext.bindService(serviceIntent, surveyServiceConnection, Context.BIND_ABOVE_CLIENT);
-            Timber.i("NetworkSurveyService bound in the MqttConnectionFragment: %s", bound);
-        } catch (Exception e)
-        {
-            Timber.e(e, "Could not start the Network Survey Service");
-        }
-    }
-
-    /**
      * Show the Sort Dialog so the user can pick how they want to sort the list of Wi-Fi networks.
      */
     private void showSortByDialog()
@@ -419,7 +405,7 @@ public class WifiNetworksFragment extends Fragment implements IWifiSurveyRecordL
                         {
                             //noinspection ConstantConditions
                             viewModel.setScanStatusId(viewModel.areUpdatesPaused().getValue() ? R.string.scan_status_paused : R.string.scan_status_scanning);
-                            startAndBindToNetworkSurveyService();
+                            startAndBindToService();
                         }
                     }
                 }
@@ -558,7 +544,8 @@ public class WifiNetworksFragment extends Fragment implements IWifiSurveyRecordL
         final long newScanTime = System.currentTimeMillis();
         final boolean devOptionsEnabled = areDeveloperOptionsEnabled();
 
-        if (!devOptionsEnabled || newScanTime - lastScanTime > surveyService.getWifiScanRateMs() * 3L)
+        if (service == null) return;
+        if (!devOptionsEnabled || newScanTime - lastScanTime > service.getWifiScanRateMs() * 3L)
         {
             showScanThrottlingSnackbar();
 
@@ -615,29 +602,5 @@ public class WifiNetworksFragment extends Fragment implements IWifiSurveyRecordL
     private boolean areDeveloperOptionsEnabled()
     {
         return Settings.Global.getInt(requireContext().getContentResolver(), Settings.Global.DEVELOPMENT_SETTINGS_ENABLED, 0) != 0;
-    }
-
-    /**
-     * A {@link ServiceConnection} implementation for binding to the {@link NetworkSurveyService}.
-     * <p>
-     * We need to bind to the {@link NetworkSurveyService} so that we can get notified about the Wi-Fi scan results.
-     */
-    private class SurveyServiceConnection implements ServiceConnection
-    {
-        @Override
-        public void onServiceConnected(final ComponentName name, final IBinder binder)
-        {
-            Timber.i("%s service connected", name);
-            NetworkSurveyService.SurveyServiceBinder serviceBinder = (NetworkSurveyService.SurveyServiceBinder) binder;
-            surveyService = (NetworkSurveyService) serviceBinder.getService();
-            surveyService.registerWifiSurveyRecordListener(WifiNetworksFragment.this);
-        }
-
-        @Override
-        public void onServiceDisconnected(final ComponentName name)
-        {
-            Timber.i("%s service disconnected", name);
-            surveyService = null;
-        }
     }
 }

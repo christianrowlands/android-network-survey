@@ -106,6 +106,8 @@ class BluetoothDetailsFragment : AServiceDataFragment(), IBluetoothSurveyRecordL
     override fun onSurveyServiceDisconnecting(service: NetworkSurveyService?) {
         if (service == null) return
         service.unregisterBluetoothSurveyRecordListener(this)
+
+        super.onSurveyServiceDisconnecting(service)
     }
 
     override fun onBluetoothSurveyRecord(bluetoothRecord: BluetoothRecord?) {

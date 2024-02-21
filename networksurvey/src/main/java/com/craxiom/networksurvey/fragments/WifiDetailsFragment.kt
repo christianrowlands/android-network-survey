@@ -107,6 +107,8 @@ class WifiDetailsFragment : AServiceDataFragment(), IWifiSurveyRecordListener {
     override fun onSurveyServiceDisconnecting(service: NetworkSurveyService?) {
         if (service == null) return
         service.unregisterWifiSurveyRecordListener(this)
+
+        super.onSurveyServiceDisconnecting(service)
     }
 
     override fun onWifiBeaconSurveyRecords(wifiBeaconRecords: MutableList<WifiRecordWrapper>?) {

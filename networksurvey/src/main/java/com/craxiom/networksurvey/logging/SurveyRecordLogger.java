@@ -54,9 +54,9 @@ public abstract class SurveyRecordLogger
     private static final int RECORD_COUNT_INTERVAL = 5000;
     static final long WGS84_SRS = 4326;
 
-    private final NetworkSurveyService networkSurveyService;
-    private final Context applicationContext;
-    final Handler handler;
+    private NetworkSurveyService networkSurveyService;
+    private Context applicationContext;
+    Handler handler;
     private final String logDirectoryName;
     private final String fileNamePrefix;
     private final GeoPackageManager geoPackageManager;
@@ -89,6 +89,13 @@ public abstract class SurveyRecordLogger
         this.fileNamePrefix = fileNamePrefix;
 
         geoPackageManager = GeoPackageFactory.getManager(networkSurveyService.getApplicationContext());
+    }
+
+    public void onDestroy()
+    {
+        networkSurveyService = null;
+        applicationContext = null;
+        handler = null;
     }
 
     /**

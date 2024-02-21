@@ -2,13 +2,15 @@ package com.craxiom.networksurvey.model;
 
 import com.craxiom.messaging.WifiBeaconRecord;
 
+import java.io.Serializable;
+
 /**
  * Wraps the {@link com.craxiom.messaging.WifiBeaconRecord} so that we can include the Android Specific
  * {@link android.net.wifi.ScanResult#capabilities} string.  This allow us to display the capabilities string in the UI.
  *
  * @since 0.1.2
  */
-public class WifiRecordWrapper
+public class WifiRecordWrapper implements Serializable
 {
     private final WifiBeaconRecord wifiBeaconRecord;
     private final String capabilitiesString;

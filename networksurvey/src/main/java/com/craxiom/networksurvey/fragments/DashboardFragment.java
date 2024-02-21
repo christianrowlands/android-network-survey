@@ -112,7 +112,16 @@ public class DashboardFragment extends AServiceDataFragment implements LocationL
     {
         removeObservers();
 
+        binding = null;
+        viewModel = null;
+
         super.onDestroyView();
+    }
+
+    @Override
+    public void onDestroy()
+    {
+        super.onDestroy();
     }
 
     @Override
@@ -153,6 +162,8 @@ public class DashboardFragment extends AServiceDataFragment implements LocationL
         service.unregisterLocationListener(this);
         service.unregisterLoggingChangeListener(this);
         service.unregisterMqttConnectionStateListener(this);
+
+        super.onSurveyServiceDisconnecting(service);
     }
 
     @Override
@@ -293,8 +304,17 @@ public class DashboardFragment extends AServiceDataFragment implements LocationL
 
     private void navigateToMqttFragment()
     {
-        Navigation.findNavController(requireActivity(), getId())
-                .navigate(DashboardFragmentDirections.actionMainDashboardToMqttConnection());
+        try
+        {
+            Navigation.findNavController(requireActivity(), getId())
+                    .navigate(DashboardFragmentDirections.actionMainDashboardToMqttConnection());
+        } catch (Exception e)
+        {
+            // It is possible that the user has tried to connect, the snakbar message is displayed,
+            // and then they navigated away from the dashboard fragment and then clicked on the
+            // snackbar "Open" button. In this case we will get an IllegalStateException.
+            Timber.e(e, "Could not navigate to the MQTT Connection fragment");
+        }
     }
 
     /**

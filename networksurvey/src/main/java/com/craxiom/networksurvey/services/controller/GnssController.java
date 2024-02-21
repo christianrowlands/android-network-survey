@@ -85,6 +85,14 @@ public class GnssController extends AController
         gnssCsvLogger = new GnssCsvLogger(surveyService, serviceLooper);
     }
 
+    @Override
+    public void onDestroy()
+    {
+        gnssRecordLogger.onDestroy();
+        gnssCsvLogger.onDestroy();
+        super.onDestroy();
+    }
+
     public boolean isLoggingEnabled()
     {
         return gnssLoggingEnabled.get();

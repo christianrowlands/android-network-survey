@@ -12,13 +12,19 @@ import timber.log.Timber;
  */
 public class AController
 {
-    protected final NetworkSurveyService surveyService;
-    protected final ExecutorService executorService;
+    protected NetworkSurveyService surveyService;
+    protected ExecutorService executorService;
 
     public AController(NetworkSurveyService surveyService, ExecutorService executorService)
     {
         this.surveyService = surveyService;
         this.executorService = executorService;
+    }
+
+    public void onDestroy()
+    {
+        surveyService = null;
+        executorService = null;
     }
 
     /**

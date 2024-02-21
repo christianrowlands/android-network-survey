@@ -65,6 +65,14 @@ public class WifiController extends AController
         wifiCsvLogger = new WifiCsvLogger(surveyService, serviceLooper);
     }
 
+    @Override
+    public void onDestroy()
+    {
+        wifiSurveyRecordLogger.onDestroy();
+        wifiCsvLogger.onDestroy();
+        super.onDestroy();
+    }
+
     public boolean isLoggingEnabled()
     {
         return wifiLoggingEnabled.get();

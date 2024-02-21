@@ -102,6 +102,18 @@ public class MainCellularFragment extends AServiceDataFragment
     }
 
     @Override
+    public void onDestroy()
+    {
+        Context context = getContext();
+        if (context != null)
+        {
+            LocalBroadcastManager.getInstance(context).unregisterReceiver(simBroadcastReceiver);
+        }
+
+        super.onDestroy();
+    }
+
+    @Override
     protected void onSurveyServiceConnected(NetworkSurveyService service)
     {
         View view = getView();
@@ -132,7 +144,7 @@ public class MainCellularFragment extends AServiceDataFragment
     @Override
     protected void onSurveyServiceDisconnecting(NetworkSurveyService service)
     {
-        // No-op
+        super.onSurveyServiceDisconnecting(service);
     }
 
     /**

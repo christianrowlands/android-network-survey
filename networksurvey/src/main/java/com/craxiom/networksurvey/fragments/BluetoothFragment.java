@@ -4,27 +4,24 @@ import android.Manifest;
 import android.annotation.SuppressLint;
 import android.bluetooth.BluetoothAdapter;
 import android.content.BroadcastReceiver;
-import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
-import android.content.ServiceConnection;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
-import android.os.IBinder;
 import android.os.Looper;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Toast;
 
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AlertDialog;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
-import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentActivity;
 import androidx.lifecycle.LifecycleOwner;
 import androidx.lifecycle.ViewModelProvider;
@@ -57,9 +54,8 @@ import timber.log.Timber;
  *
  * @since 1.0.0
  */
-public class BluetoothFragment extends Fragment implements IBluetoothSurveyRecordListener
+public class BluetoothFragment extends AServiceDataFragment implements IBluetoothSurveyRecordListener
 {
-    private static final int ACCESS_SCAN_PERMISSION_REQUEST_ID = 41;
     private static final int ACCESS_BLUETOOTH_PERMISSION_REQUEST_ID = 42;
     private FragmentBluetoothListBinding binding;
 
@@ -68,7 +64,6 @@ public class BluetoothFragment extends Fragment implements IBluetoothSurveyRecor
     private BluetoothViewModel viewModel;
 
     private Context applicationContext;
-    private NetworkSurveyService surveyService;
     private BluetoothRecyclerViewAdapter bluetoothRecyclerViewAdapter;
 
     private int bluetoothScanRateMs;
@@ -96,7 +91,7 @@ public class BluetoothFragment extends Fragment implements IBluetoothSurveyRecor
     }
 
     @Override
-    public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState)
+    public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState)
     {
         binding = FragmentBluetoothListBinding.inflate(inflater);
 
@@ -161,15 +156,13 @@ public class BluetoothFragment extends Fragment implements IBluetoothSurveyRecor
 
         checkBluetoothEnabled();
 
-        startAndBindToNetworkSurveyService();
+        startAndBindToService();
     }
 
     @Override
     public void onPause()
     {
         unregisterBluetoothBroadcastReceiver();
-
-        if (surveyService != null) surveyService.unregisterBluetoothSurveyRecordListener(this);
 
         super.onPause();
     }
@@ -183,6 +176,27 @@ public class BluetoothFragment extends Fragment implements IBluetoothSurveyRecor
         viewModel.areUpdatesPaused().removeObservers(viewLifecycleOwner);
 
         super.onDestroyView();
+    }
+
+    @Override
+    public void onDestroy()
+    {
+        applicationContext = null;
+
+        super.onDestroy();
+    }
+
+    @Override
+    protected void onSurveyServiceConnected(NetworkSurveyService service)
+    {
+        service.registerBluetoothSurveyRecordListener(this);
+    }
+
+    @Override
+    protected void onSurveyServiceDisconnecting(NetworkSurveyService service)
+    {
+        service.unregisterBluetoothSurveyRecordListener(this);
+        super.onSurveyServiceDisconnecting(service);
     }
 
     @Override
@@ -410,22 +424,6 @@ public class BluetoothFragment extends Fragment implements IBluetoothSurveyRecor
     }
 
     /**
-     * Start the Network Survey Service (it won't start if it is already started), and then bind to the service.
-     */
-    private void startAndBindToNetworkSurveyService()
-    {
-        // Start the service
-        Timber.i("Binding to the Network Survey Service");
-        final Intent serviceIntent = new Intent(applicationContext, NetworkSurveyService.class);
-        applicationContext.startService(serviceIntent);
-
-        // Bind to the service
-        ServiceConnection surveyServiceConnection = new SurveyServiceConnection();
-        final boolean bound = applicationContext.bindService(serviceIntent, surveyServiceConnection, Context.BIND_ABOVE_CLIENT);
-        Timber.i("NetworkSurveyService bound in the BluetoothFragment: %s", bound);
-    }
-
-    /**
      * Show the Sort Dialog so the user can pick how they want to sort the list of Bluetooth devices.
      */
     private void showSortByDialog()
@@ -509,14 +507,14 @@ public class BluetoothFragment extends Fragment implements IBluetoothSurveyRecor
                     //noinspection SwitchStatementWithoutDefaultBranch
                     switch (state)
                     {
-                        case BluetoothAdapter.STATE_OFF:
-                            viewModel.setScanStatusId(R.string.bluetooth_scan_status_disabled);
-                            break;
-                        case BluetoothAdapter.STATE_ON:
+                        case BluetoothAdapter.STATE_OFF ->
+                                viewModel.setScanStatusId(R.string.bluetooth_scan_status_disabled);
+                        case BluetoothAdapter.STATE_ON ->
+                        {
                             //noinspection ConstantConditions
                             viewModel.setScanStatusId(viewModel.areUpdatesPaused().getValue() ? R.string.scan_status_paused : R.string.scan_status_scanning);
-                            startAndBindToNetworkSurveyService();
-                            break;
+                            startAndBindToService();
+                        }
                     }
                 }
             }
@@ -602,30 +600,6 @@ public class BluetoothFragment extends Fragment implements IBluetoothSurveyRecor
         } catch (Exception e)
         {
             Timber.e(e, "Something went wrong when trying to prompt the user to enable Bluetooth");
-        }
-    }
-
-    /**
-     * A {@link ServiceConnection} implementation for binding to the {@link NetworkSurveyService}.
-     * <p>
-     * We need to bind to the {@link NetworkSurveyService} so that we can get notified about the Bluetooth scan results.
-     */
-    private class SurveyServiceConnection implements ServiceConnection
-    {
-        @Override
-        public void onServiceConnected(final ComponentName name, final IBinder binder)
-        {
-            Timber.i("%s service connected", name);
-            NetworkSurveyService.SurveyServiceBinder serviceBinder = (NetworkSurveyService.SurveyServiceBinder) binder;
-            surveyService = (NetworkSurveyService) serviceBinder.getService();
-            surveyService.registerBluetoothSurveyRecordListener(BluetoothFragment.this);
-        }
-
-        @Override
-        public void onServiceDisconnected(final ComponentName name)
-        {
-            Timber.i("%s service disconnected", name);
-            surveyService = null;
         }
     }
 }
