@@ -363,6 +363,8 @@ public class CellularController extends AController
      */
     public synchronized void initializeCellularScanningResources()
     {
+        if (surveyService == null) return;
+
         final TelephonyManager telephonyManager = (TelephonyManager) surveyService.getSystemService(Context.TELEPHONY_SERVICE);
 
         if (telephonyManager == null)
@@ -620,7 +622,7 @@ public class CellularController extends AController
         Timber.d("Setting the cellular scanning active flag to false");
         cellularScanningActive.set(false);
 
-        surveyService.updateLocationListener();
+        if (surveyService != null) surveyService.updateLocationListener();
     }
 
     /**
