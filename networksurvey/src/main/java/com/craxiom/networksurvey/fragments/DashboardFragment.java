@@ -718,6 +718,9 @@ public class DashboardFragment extends AServiceDataFragment implements LocationL
      */
     private void toggleCellularLogging(boolean enable)
     {
+        Context context = getContext();
+        if (context == null) return;
+
         new ToggleLoggingTask(() -> {
             if (service != null)
             {
@@ -728,7 +731,7 @@ public class DashboardFragment extends AServiceDataFragment implements LocationL
             if (enabled == null) return getString(R.string.cellular_logging_toggle_failed);
             updateCellularLogging(enabled);
             return getString(enabled ? R.string.cellular_logging_start_toast : R.string.cellular_logging_stop_toast);
-        }, getContext()).executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
+        }, context).executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
     }
 
     /**
@@ -738,6 +741,9 @@ public class DashboardFragment extends AServiceDataFragment implements LocationL
      */
     private void toggleWifiLogging(boolean enable)
     {
+        Context context = getContext();
+        if (context == null) return;
+
         new ToggleLoggingTask(() -> {
             if (service != null)
             {
@@ -748,7 +754,7 @@ public class DashboardFragment extends AServiceDataFragment implements LocationL
             if (enabled == null) return getString(R.string.wifi_logging_toggle_failed);
             updateWifiLogging(enabled);
             return getString(enabled ? R.string.wifi_logging_start_toast : R.string.wifi_logging_stop_toast);
-        }, getContext()).executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
+        }, context).executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
     }
 
     /**
@@ -758,6 +764,9 @@ public class DashboardFragment extends AServiceDataFragment implements LocationL
      */
     private void toggleBluetoothLogging(boolean enable)
     {
+        Context context = getContext();
+        if (context == null) return;
+
         new ToggleLoggingTask(() -> {
             if (service != null)
             {
@@ -768,7 +777,7 @@ public class DashboardFragment extends AServiceDataFragment implements LocationL
             if (enabled == null) return getString(R.string.bluetooth_logging_toggle_failed);
             updateBluetoothLogging(enabled);
             return getString(enabled ? R.string.bluetooth_logging_start_toast : R.string.bluetooth_logging_stop_toast);
-        }, getContext()).executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
+        }, context).executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
     }
 
     /**
@@ -778,6 +787,9 @@ public class DashboardFragment extends AServiceDataFragment implements LocationL
      */
     private void toggleGnssLogging(boolean enable)
     {
+        Context context = getContext();
+        if (context == null) return;
+
         new ToggleLoggingTask(() -> {
             if (service != null)
             {
@@ -788,7 +800,7 @@ public class DashboardFragment extends AServiceDataFragment implements LocationL
             if (enabled == null) return getString(R.string.gnss_logging_toggle_failed);
             updateGnssLogging(enabled);
             return getString(enabled ? R.string.gnss_logging_start_toast : R.string.gnss_logging_stop_toast);
-        }, getContext()).executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
+        }, context).executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
     }
 
     /**
@@ -798,6 +810,9 @@ public class DashboardFragment extends AServiceDataFragment implements LocationL
      */
     private void toggleCdrLogging(boolean enable)
     {
+        Context context = getContext();
+        if (context == null) return;
+
         new ToggleLoggingTask(() -> {
             if (service != null)
             {
@@ -808,7 +823,7 @@ public class DashboardFragment extends AServiceDataFragment implements LocationL
             if (enabled == null) return getString(R.string.cdr_logging_toggle_failed);
             updateCdrLogging(enabled);
             return getString(enabled ? R.string.cdr_logging_start_toast : R.string.cdr_logging_stop_toast);
-        }, getContext()).executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
+        }, context).executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
     }
 
     /**

@@ -14,7 +14,6 @@ import android.os.Build;
 import android.os.Bundle;
 import android.util.AttributeSet;
 import android.view.View;
-import android.view.ViewTreeObserver;
 import android.view.WindowManager;
 
 import androidx.annotation.Nullable;
@@ -27,8 +26,6 @@ import com.craxiom.networksurvey.model.GnssType;
 import com.craxiom.networksurvey.util.GpsTestUtil;
 import com.craxiom.networksurvey.util.UIUtils;
 
-import timber.log.Timber;
-
 /**
  * View that shows satellite positions on a circle representing the sky
  */
@@ -38,11 +35,6 @@ public class GnssSkyView extends View implements IGnssListener
     public static final float MAX_VALUE_CN0 = 45.0f;
     public static final float MIN_VALUE_SNR = 0.0f;
     public static final float MAX_VALUE_SNR = 30.0f;
-
-    // View dimensions, to draw the compass with the correct width and height
-    private int height;
-
-    private int width;
 
     private static final float PRN_TEXT_SCALE = 0.7f;
 
@@ -94,7 +86,6 @@ public class GnssSkyView extends View implements IGnssListener
     private boolean useLegacyGnssApi = false;
 
     private boolean isSnrBad = false;
-    private ViewTreeObserver.OnPreDrawListener onPreDrawListener;
 
     public GnssSkyView(Context context)
     {
@@ -190,23 +181,10 @@ public class GnssSkyView extends View implements IGnssListener
         notInViewPaint.setAntiAlias(true);
 
         setFocusable(true);
-
-        // Get the proper height and width of view before drawing
-        onPreDrawListener = () -> {
-            height = getHeight();
-            width = getWidth();
-            return true;
-        };
-        getViewTreeObserver().addOnPreDrawListener(onPreDrawListener);
     }
 
     public void onDestroy()
     {
-        if (onPreDrawListener != null)
-        {
-            getViewTreeObserver().removeOnPreDrawListener(onPreDrawListener);
-            onPreDrawListener = null;
-        }
         context = null;
     }
 
@@ -618,7 +596,7 @@ public class GnssSkyView extends View implements IGnssListener
     @Override
     protected void onDraw(Canvas canvas)
     {
-        int minScreenDimen = Math.min(width, height);
+        int minScreenDimen = Math.min(getWidth(), getHeight());
 
         drawHorizon(canvas, minScreenDimen);
 
