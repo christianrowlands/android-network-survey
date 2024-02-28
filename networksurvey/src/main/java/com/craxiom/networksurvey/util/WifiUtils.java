@@ -112,7 +112,7 @@ public class WifiUtils
 
     /**
      * Gets the center channel frequency provided the channel number, bandwidth, and frequency.
-     *
+     * <p>
      * This conversion is needed because Wi-Fi has some interesting channel usage as the bandwidth
      * grows. It seems that Wi-Fi 6E and 7 has fixed this in the 6 GHz range by making the chanel
      * and center channel equal to each other, but other channels need the conversion.
@@ -123,11 +123,16 @@ public class WifiUtils
 
         if (frequencyMhz >= START_OF_6_GHZ_RANGE)
         {
-            // As best as I can tell, the 6 GHz band does not use the same approach as the 5 GHz
-            // band where a specific channel is mapped to a center channel. Instead, in 6 GHz, the
-            // center channel is specified from the start (which makes sense, right?).
+            return switch (bandwidth)
+            {
+                case MHZ_20 -> channelNumber;
+                case MHZ_40 -> get6GhzCenterChannelFor40Mhz(channelNumber);
+                case MHZ_80, MHZ_80_PLUS -> get6GhzCenterChannelFor80Mhz(channelNumber);
+                case MHZ_160 -> get6GhzCenterChannelFor160Mhz(channelNumber);
+                case MHZ_320 -> channelNumber; // TODO It is unclear how to map the 320 MHz channels
+                default -> channelNumber;
+            };
             // https://www.rfwireless-world.com/calculators/WiFi-7-channel-number-to-center-frequency-conversion.html
-            return channelNumber;
         }
 
         return switch (bandwidth)
@@ -211,6 +216,80 @@ public class WifiUtils
         {
             case 1, 5, 9, 13, 17, 21, 25, 29, 33, 37, 41, 45, 49, 53, 57, 61 -> 31;
             default -> -1;
+        };
+    }
+
+    private static int get6GhzCenterChannelFor40Mhz(int channelNumber)
+    {
+        return switch (channelNumber)
+        {
+            case 1, 5 -> 3;
+            case 9, 13 -> 11;
+            case 17, 21 -> 19;
+            case 25, 29 -> 27;
+            case 33, 37 -> 35;
+            case 41, 45 -> 43;
+            case 49, 53 -> 51;
+            case 57, 61 -> 59;
+            case 65, 69 -> 67;
+            case 73, 77 -> 75;
+            case 81, 85 -> 83;
+            case 89, 93 -> 91;
+            case 97, 101 -> 99;
+            case 105, 109 -> 107;
+            case 113, 117 -> 115;
+            case 121, 125 -> 123;
+            case 129, 133 -> 131;
+            case 137, 141 -> 139;
+            case 145, 149 -> 147;
+            case 153, 157 -> 155;
+            case 161, 165 -> 163;
+            case 169, 173 -> 171;
+            case 177, 181 -> 179;
+            case 185, 189 -> 187;
+            case 193, 197 -> 195;
+            case 201, 205 -> 203;
+            case 209, 213 -> 211;
+            case 217, 221 -> 219;
+            case 225, 229 -> 227;
+            default -> channelNumber;
+        };
+    }
+
+    private static int get6GhzCenterChannelFor80Mhz(int channelNumber)
+    {
+        return switch (channelNumber)
+        {
+            case 1, 5, 9, 13 -> 7;
+            case 17, 21, 25, 29 -> 23;
+            case 33, 37, 41, 45 -> 39;
+            case 49, 53, 57, 61 -> 55;
+            case 65, 69, 73, 77 -> 71;
+            case 81, 85, 89, 93 -> 87;
+            case 97, 101, 105, 109 -> 103;
+            case 113, 117, 121, 125 -> 119;
+            case 129, 133, 137, 141 -> 135;
+            case 145, 149, 153, 157 -> 151;
+            case 161, 165, 169, 173 -> 167;
+            case 177, 181, 185, 189 -> 183;
+            case 193, 197, 201, 205 -> 199;
+            case 209, 213, 217, 221 -> 215;
+            default -> channelNumber;
+        };
+    }
+
+    private static int get6GhzCenterChannelFor160Mhz(int channelNumber)
+    {
+        return switch (channelNumber)
+        {
+            case 1, 5, 9, 13, 17, 21, 25, 29 -> 15;
+            case 33, 37, 41, 45, 49, 53, 57, 61 -> 47;
+            case 65, 69, 73, 77, 81, 85, 89, 93 -> 79;
+            case 97, 101, 105, 109, 113, 117, 121, 125 -> 111;
+            case 129, 133, 137, 141, 145, 149, 153, 157 -> 143;
+            case 161, 165, 169, 173, 177, 181, 185, 189 -> 175;
+            case 193, 197, 201, 205, 209, 213, 217, 221 -> 207;
+            default -> channelNumber;
         };
     }
 }
