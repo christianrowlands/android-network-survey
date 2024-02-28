@@ -147,6 +147,13 @@ public class WifiUtilsTest
         assertEquals(149, WifiBeaconMessageConstants.convertFrequencyToChannelNumber(5745));
         assertEquals(157, WifiBeaconMessageConstants.convertFrequencyToChannelNumber(5785));
         assertEquals(165, WifiBeaconMessageConstants.convertFrequencyToChannelNumber(5825));
+
+        assertEquals(1, WifiBeaconMessageConstants.convertFrequencyToChannelNumber(5955));
+        assertEquals(3, WifiBeaconMessageConstants.convertFrequencyToChannelNumber(5965));
+        assertEquals(5, WifiBeaconMessageConstants.convertFrequencyToChannelNumber(5975));
+        assertEquals(191, WifiBeaconMessageConstants.convertFrequencyToChannelNumber(6905));
+        assertEquals(233, WifiBeaconMessageConstants.convertFrequencyToChannelNumber(7115));
+        assertEquals(-1, WifiBeaconMessageConstants.convertFrequencyToChannelNumber(7120));
     }
 
     @Test

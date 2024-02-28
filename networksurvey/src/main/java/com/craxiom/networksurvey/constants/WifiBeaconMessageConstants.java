@@ -82,6 +82,11 @@ public class WifiBeaconMessageConstants extends MessageConstants
             return (short) ((frequency - 5000) / 5);
         }
 
+        if (frequency >= 5950 && frequency <= 7115)
+        {
+            return (short) (((frequency - 5955) / 5) + 1);
+        }
+
         return -1;
     }
 
