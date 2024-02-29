@@ -522,6 +522,42 @@
 
                         </LinearLayout>
 
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="horizontal"
+                            android:baselineAligned="false">
+
+                            <androidx.constraintlayout.widget.ConstraintLayout
+                                android:id="@+id/cqi_group"
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="@dimen/small_margin"
+                                android:layout_marginBottom="@dimen/small_margin"
+                                android:layout_weight="1">
+
+                                <TextView
+                                    android:id="@+id/cqi"
+                                    style="@style/StandardText"
+                                    android:layout_width="match_parent"
+                                    android:layout_height="wrap_content"
+                                    app:layout_constraintTop_toTopOf="@id/cqi_group"
+                                    app:layout_constraintBottom_toTopOf="@id/cqi_label"
+                                    android:textIsSelectable="true"
+                                    tools:layout_editor_absoluteX="8dp" />
+
+                                <TextView
+                                    android:id="@+id/cqi_label"
+                                    style="@style/SmallLabelText"
+                                    android:layout_width="match_parent"
+                                    android:layout_height="wrap_content"
+                                    android:text="@string/cqi_label"
+                                    app:layout_constraintBottom_toBottomOf="@id/cqi_group" />
+
+                            </androidx.constraintlayout.widget.ConstraintLayout>
+
+                        </LinearLayout>
+
                     </LinearLayout>
 
                     <LinearLayout

@@ -109,6 +109,7 @@ but work independently, so you have full control over how you handle your data.<
     <string name="pci_label">PCI</string>
     <string name="bandwidth_label">Bandwidth</string>
     <string name="ta_label">TA</string>
+    <string name="cqi_label">CQI</string>
     <string name="rsrp_label">RSRP</string>
     <string name="rsrq_label">RSRQ</string>
 
@@ -193,6 +194,7 @@ but work independently, so you have full control over how you handle your data.<
         <b>PCI</b> (Physical Cell ID): A physical layer cell identifier that helps a mobile device differentiate two cells during cell selection/reselection that are using the same frequency. Valid range 0-503. The numbers in parenthesis represent the Primary Sync Sequence (PSS) and Secondary Sync Sequence (SSS).\n\n
         <b>Bandwidth</b>: Width of the signal.\n\n
         <b>TA</b> (Timing Advance): The timing offset a mobile device uses to keep its transmissions in sync with the tower. Represents RF distance from the tower, which can be loosely translated to physical distance. Larger numbers indicate the device is further away from the tower.\n\n
+        <b>CQI</b> (Channel Quality Indicator): Used by the UE to notify the serving cell (eNodeB) about the quality of the downlink channel. Valid range 0-15 with 15 being the best.\n\n
         <b>RSRP</b> (Reference Signal Received Power): Power of the reference signal in dBm as received by the mobile device. Valid range -44 to -140.\n\n
         <b>RSRQ</b> (Reference Signal Received Quality): Measures the quality of the received reference signal. Valid range -3 to -19.5 with -3 being the best.\n
     </string>

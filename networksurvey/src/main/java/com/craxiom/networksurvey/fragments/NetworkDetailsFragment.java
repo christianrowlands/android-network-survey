@@ -257,6 +257,7 @@ public class NetworkDetailsFragment extends AServiceDataFragment implements ICel
         viewModel.getPci().observe(viewLifecycleOwner, s -> binding.pci.setText(s));
         viewModel.getBandwidth().observe(viewLifecycleOwner, s -> binding.bandwidth.setText(s));
         viewModel.getTa().observe(viewLifecycleOwner, s -> binding.ta.setText(s));
+        viewModel.getCqi().observe(viewLifecycleOwner, s -> binding.cqi.setText(s));
 
         viewModel.getSignalOne().observe(viewLifecycleOwner, this::updateSignalStrengthOne);
         viewModel.getSignalTwo().observe(viewLifecycleOwner, this::updateSignalStrengthTwo);
@@ -292,6 +293,7 @@ public class NetworkDetailsFragment extends AServiceDataFragment implements ICel
         viewModel.getPci().removeObservers(viewLifecycleOwner);
         viewModel.getBandwidth().removeObservers(viewLifecycleOwner);
         viewModel.getTa().removeObservers(viewLifecycleOwner);
+        viewModel.getCqi().removeObservers(viewLifecycleOwner);
 
         viewModel.getSignalOne().removeObservers(viewLifecycleOwner);
         viewModel.getSignalTwo().removeObservers(viewLifecycleOwner);
@@ -318,6 +320,7 @@ public class NetworkDetailsFragment extends AServiceDataFragment implements ICel
         viewModel.setPci("");
         viewModel.setBandwidth("");
         viewModel.setTa("");
+        viewModel.setCqi("");
 
         viewModel.setSignalOne(null);
         viewModel.setSignalTwo(null);
@@ -457,6 +460,7 @@ public class NetworkDetailsFragment extends AServiceDataFragment implements ICel
                 binding.pciLabel.setText(R.string.bsic_label);
                 binding.bandwidthGroup.setVisibility(View.GONE);
                 binding.taGroup.setVisibility(View.GONE);
+                binding.cqiGroup.setVisibility(View.GONE);
                 binding.signalOneLabel.setText(R.string.rssi_label);
                 binding.signalTwoGroup.setVisibility(View.GONE);
 
@@ -467,6 +471,7 @@ public class NetworkDetailsFragment extends AServiceDataFragment implements ICel
                 break;
 
             case CDMA:
+                binding.cqiGroup.setVisibility(View.GONE);
                 binding.enbIdGroup.setVisibility(View.GONE);
                 binding.sectorIdGroup.setVisibility(View.GONE);
                 binding.signalTwoGroup.setVisibility(View.GONE);
@@ -483,6 +488,7 @@ public class NetworkDetailsFragment extends AServiceDataFragment implements ICel
                 binding.pciLabel.setText(R.string.psc_label);
                 binding.bandwidthGroup.setVisibility(View.GONE);
                 binding.taGroup.setVisibility(View.GONE);
+                binding.cqiGroup.setVisibility(View.GONE);
                 binding.signalOneLabel.setText(R.string.rssi_label);
                 binding.signalTwoLabel.setText(R.string.rscp_label);
                 binding.signalTwoGroup.setVisibility(View.VISIBLE);
@@ -501,6 +507,7 @@ public class NetworkDetailsFragment extends AServiceDataFragment implements ICel
                 binding.pciLabel.setText(R.string.pci_label);
                 binding.bandwidthGroup.setVisibility(View.VISIBLE);
                 binding.taGroup.setVisibility(View.VISIBLE);
+                binding.cqiGroup.setVisibility(View.VISIBLE);
                 binding.signalOneLabel.setText(R.string.rsrp_label);
                 binding.signalTwoLabel.setText(R.string.rsrq_label);
                 binding.signalTwoGroup.setVisibility(View.VISIBLE);
@@ -519,6 +526,7 @@ public class NetworkDetailsFragment extends AServiceDataFragment implements ICel
                 binding.pciLabel.setText(R.string.pci_label);
                 binding.bandwidthGroup.setVisibility(View.GONE);
                 binding.taGroup.setVisibility(View.GONE);
+                binding.cqiGroup.setVisibility(View.GONE);
                 binding.signalOneLabel.setText(R.string.ss_rsrp_label);
                 binding.signalTwoLabel.setText(R.string.ss_rsrq_label);
                 binding.signalTwoGroup.setVisibility(View.VISIBLE);
@@ -718,6 +726,7 @@ public class NetworkDetailsFragment extends AServiceDataFragment implements ICel
         }
         viewModel.setBandwidth(LteMessageConstants.getLteBandwidth(data.getLteBandwidth()));
         viewModel.setTa(data.hasTa() ? String.valueOf(data.getTa().getValue()) : "");
+        viewModel.setCqi(data.hasCqi() ? String.valueOf(data.getCqi().getValue()) : "");
 
         viewModel.setSignalOne(data.hasRsrp() ? (int) data.getRsrp().getValue() : null);
         viewModel.setSignalTwo(data.hasRsrq() ? (int) data.getRsrq().getValue() : null);
