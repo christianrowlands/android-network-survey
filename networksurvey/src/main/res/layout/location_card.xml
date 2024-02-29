@@ -40,27 +40,37 @@
 
         </LinearLayout>
 
-        <TextView
-            android:id="@+id/location"
-            style="@style/StandardText"
-            android:layout_width="wrap_content"
+        <LinearLayout
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginStart="@dimen/large_margin"
-            android:maxLines="1"
-            android:autoSizeTextType="uniform"
-            android:text="@string/searching_for_location"
-            android:textIsSelectable="true" />
+            android:orientation="horizontal">
 
-        <TextView
-            android:id="@+id/altitude"
-            style="@style/StandardText"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="@dimen/large_margin"
-            android:maxLines="1"
-            android:autoSizeTextType="uniform"
-            android:text="@string/altitude_initial"
-            android:textIsSelectable="true" />
+            <TextView
+                android:id="@+id/location"
+                style="@style/StandardText"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:gravity="start"
+                android:layout_marginStart="@dimen/large_margin"
+                android:maxLines="1"
+                android:autoSizeTextType="uniform"
+                android:text="@string/searching_for_location"
+                android:textIsSelectable="true" />
+
+            <TextView
+                android:id="@+id/altitude"
+                style="@style/StandardText"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:layout_marginStart="@dimen/large_margin"
+                android:maxLines="1"
+                android:autoSizeTextType="uniform"
+                android:text="@string/altitude_initial"
+                android:textIsSelectable="true" />
+
+        </LinearLayout>
 
         <TextView
             android:id="@+id/accuracy"
