@@ -6,6 +6,7 @@
     <style name="NetworkSurveyTheme" parent="Theme.AppCompat.DayNight">
         <item name="colorPrimary">@color/colorPrimary</item>
         <item name="colorAccent">@color/colorAccent</item>
+        <item name="android:colorBackground">@color/colorBackground</item>
         <item name="windowActionBar">false</item>
         <item name="windowNoTitle">true</item>
         <item name="android:colorBackgroundFloating">@color/colorCardDark</item>
@@ -139,6 +140,7 @@
 
     <style name="ListContentText" parent="TextAppearance.AppCompat">
         <item name="android:textSize">13sp</item>
+        <item name="android:textColor">@color/normalText</item>
     </style>
 
     <!-- GNSS Status view -->

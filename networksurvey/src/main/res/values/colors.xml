@@ -2,7 +2,8 @@
 <resources>
     <color name="colorPrimary">#4CAF50</color>
     <color name="colorAccent">#03A9F4</color>
-    <color name="colorCardDark">#161212</color>
+    <color name="colorBackground">#2C2C2C</color>
+    <color name="colorCardDark">#121212</color>
     <color name="colorCardDarkTitle">#6603A9F4</color>
 
     <color name="colorAccentFaded">#6603A9F4</color>

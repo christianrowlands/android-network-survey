@@ -12,7 +12,7 @@ import com.craxiom.networksurvey.R
 fun NsTheme(content: @Composable () -> Unit) {
     val darkColorScheme =
         darkColorScheme(
-            surface = Color(color = DARK_SURFACE),
+            surface = colorResource(id = R.color.colorCardDark),
             background = Color.Black,
             primary = colorResource(id = R.color.colorAccent),
             tertiary = colorResource(id = R.color.colorAccent),
