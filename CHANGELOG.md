@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.21](https://github.com/christianrowlands/android-network-survey/releases/tag/v1.21) - 2024-03-05
+
+* Fixed several memory leaks that would eventually result in app crashes.
+* Fixed some edge case app crashes.
+* Adds support for 6 GHz Wi-Fi channels.
+* Adds CQI to the LTE cellular details view.
+* Other minor UI improvements.
+
 ## [1.20](https://github.com/christianrowlands/android-network-survey/releases/tag/v1.20) - 2024-02-16
 
 * Add SSID labels to the Wi-Fi spectrum charts.
