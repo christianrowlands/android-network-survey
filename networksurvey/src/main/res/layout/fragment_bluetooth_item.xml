@@ -3,6 +3,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="fill_parent"
     android:layout_height="wrap_content"
+    android:layout_margin="4dp"
     android:orientation="vertical">
 
     <LinearLayout
@@ -56,12 +57,5 @@
             tools:ignore="RtlSymmetry" />
 
     </LinearLayout>
-
-    <View
-        android:id="@+id/divider"
-        android:layout_width="match_parent"
-        android:layout_height="1dp"
-        android:layout_marginTop="@dimen/x_small_margin"
-        android:background="?android:attr/listDivider" />
 
 </LinearLayout>

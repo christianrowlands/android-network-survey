@@ -29,6 +29,7 @@ import androidx.lifecycle.ViewModelStoreOwner;
 import androidx.navigation.Navigation;
 import androidx.navigation.fragment.NavHostFragment;
 import androidx.preference.PreferenceManager;
+import androidx.recyclerview.widget.DividerItemDecoration;
 
 import com.craxiom.messaging.BluetoothRecord;
 import com.craxiom.messaging.BluetoothRecordData;
@@ -108,6 +109,8 @@ public class BluetoothFragment extends AServiceDataFragment implements IBluetoot
 
         bluetoothRecyclerViewAdapter = new BluetoothRecyclerViewAdapter(bluetoothRecordSortedSet, getContext(), this);
         binding.bluetoothDeviceList.setAdapter(bluetoothRecyclerViewAdapter);
+
+        binding.bluetoothDeviceList.addItemDecoration(new DividerItemDecoration(binding.bluetoothDeviceList.getContext(), DividerItemDecoration.VERTICAL));
 
         binding.pauseButton.setOnClickListener(v -> viewModel.toggleUpdatesPaused());
         binding.sortButton.setOnClickListener(v -> showSortByDialog());

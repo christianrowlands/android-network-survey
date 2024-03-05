@@ -30,6 +30,7 @@ import androidx.lifecycle.ViewModelStoreOwner;
 import androidx.navigation.Navigation;
 import androidx.navigation.fragment.NavHostFragment;
 import androidx.preference.PreferenceManager;
+import androidx.recyclerview.widget.DividerItemDecoration;
 import androidx.recyclerview.widget.SortedList;
 
 import com.craxiom.networksurvey.R;
@@ -109,6 +110,8 @@ public class WifiNetworksFragment extends AServiceDataFragment implements IWifiS
 
         wifiNetworkRecyclerViewAdapter = new MyWifiNetworkRecyclerViewAdapter(wifiRecordSortedList, getContext(), this);
         binding.wifiNetworkList.setAdapter(wifiNetworkRecyclerViewAdapter);
+
+        binding.wifiNetworkList.addItemDecoration(new DividerItemDecoration(binding.wifiNetworkList.getContext(), DividerItemDecoration.VERTICAL));
 
         binding.pauseButton.setOnClickListener(v -> viewModel.toggleUpdatesPaused(getContext()));
         binding.sortButton.setOnClickListener(v -> showSortByDialog());
