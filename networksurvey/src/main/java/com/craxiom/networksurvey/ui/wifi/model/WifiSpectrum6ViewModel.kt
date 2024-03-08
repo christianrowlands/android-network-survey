@@ -1,16 +1,16 @@
 package com.craxiom.networksurvey.ui.wifi.model
 
 import com.craxiom.networksurvey.fragments.WifiNetworkInfo
-import com.craxiom.networksurvey.util.WifiUtils
+import com.craxiom.networksurvey.util.WifiUtils.START_OF_6_GHZ_RANGE
 import com.patrykandpatrick.vico.core.model.LineCartesianLayerModel
 
 /**
- * The specific Wi-Fi spectrum view model implementation for the 5 GHz Group 1 chart.
+ * The specific Wi-Fi spectrum view model implementation for the 5 GHz Group 3 chart.
  */
-class WifiSpectrum5Group1ViewModel : AWifiSpectrumChartViewModel() {
+class WifiSpectrum6ViewModel : AWifiSpectrumChartViewModel() {
     override fun filterWifiNetworks(wifiNetworkInfoList: List<WifiNetworkInfo>): List<WifiNetworkInfo> {
         return wifiNetworkInfoList.filter {
-            it.frequency < WifiUtils.START_OF_6_GHZ_RANGE && it.channel.toFloat() in CHANNELS_5_GHZ_GROUP_1
+            it.frequency >= START_OF_6_GHZ_RANGE && it.channel.toFloat() in CHANNELS_6_GHZ
         }
     }
 
@@ -18,8 +18,8 @@ class WifiSpectrum5Group1ViewModel : AWifiSpectrumChartViewModel() {
         return if (wifiNetworkInfoList.isEmpty()) {
             LineCartesianLayerModel.partial {
                 series(
-                    CHANNELS_5_GHZ_GROUP_1_CHART_VIEW,
-                    List(CHANNELS_5_GHZ_GROUP_1_CHART_VIEW.size) { WIFI_CHART_MIN })
+                    CHANNELS_6_GHZ_CHART_VIEW,
+                    List(CHANNELS_6_GHZ_CHART_VIEW.size) { WIFI_CHART_MIN })
             }
         } else {
             createSeriesForNetworks(wifiNetworkInfoList)
@@ -30,8 +30,8 @@ class WifiSpectrum5Group1ViewModel : AWifiSpectrumChartViewModel() {
         modelProducer.tryRunTransaction {
             add(LineCartesianLayerModel.partial {
                 series(
-                    CHANNELS_5_GHZ_GROUP_1_CHART_VIEW,
-                    List(CHANNELS_5_GHZ_GROUP_1_CHART_VIEW.size) { WIFI_CHART_MIN })
+                    CHANNELS_6_GHZ_CHART_VIEW,
+                    List(CHANNELS_6_GHZ_CHART_VIEW.size) { WIFI_CHART_MIN })
             })
         }
     }

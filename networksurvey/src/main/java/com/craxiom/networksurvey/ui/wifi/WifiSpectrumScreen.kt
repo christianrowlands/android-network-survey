@@ -34,10 +34,13 @@ import com.craxiom.networksurvey.ui.wifi.model.CHANNELS_5_GHZ_GROUP_2
 import com.craxiom.networksurvey.ui.wifi.model.CHANNELS_5_GHZ_GROUP_2_CHART_VIEW
 import com.craxiom.networksurvey.ui.wifi.model.CHANNELS_5_GHZ_GROUP_3
 import com.craxiom.networksurvey.ui.wifi.model.CHANNELS_5_GHZ_GROUP_3_CHART_VIEW
+import com.craxiom.networksurvey.ui.wifi.model.CHANNELS_6_GHZ
+import com.craxiom.networksurvey.ui.wifi.model.CHANNELS_6_GHZ_CHART_VIEW
 import com.craxiom.networksurvey.ui.wifi.model.WifiSpectrum24ViewModel
 import com.craxiom.networksurvey.ui.wifi.model.WifiSpectrum5Group1ViewModel
 import com.craxiom.networksurvey.ui.wifi.model.WifiSpectrum5Group2ViewModel
 import com.craxiom.networksurvey.ui.wifi.model.WifiSpectrum5Group3ViewModel
+import com.craxiom.networksurvey.ui.wifi.model.WifiSpectrum6ViewModel
 import com.craxiom.networksurvey.ui.wifi.model.WifiSpectrumScreenViewModel
 
 /**
@@ -50,6 +53,7 @@ internal fun WifiSpectrumScreen(
     viewModel5GhzGroup1: WifiSpectrum5Group1ViewModel,
     viewModel5GhzGroup2: WifiSpectrum5Group2ViewModel,
     viewModel5GhzGroup3: WifiSpectrum5Group3ViewModel,
+    viewModel6Ghz: WifiSpectrum6ViewModel,
     wifiSpectrumFragment: WifiSpectrumFragment
 ) {
     val scanRate by screenViewModel.scanRate.collectAsStateWithLifecycle()
@@ -64,6 +68,7 @@ internal fun WifiSpectrumScreen(
             viewModel5GhzGroup1,
             viewModel5GhzGroup2,
             viewModel5GhzGroup3,
+            viewModel6Ghz,
             scanRate,
             wifiSpectrumFragment
         )
@@ -75,6 +80,7 @@ private fun LazyListScope.chartItems(
     viewModel5GhzGroup1: WifiSpectrum5Group1ViewModel,
     viewModel5GhzGroup2: WifiSpectrum5Group2ViewModel,
     viewModel5GhzGroup3: WifiSpectrum5Group3ViewModel,
+    viewModel6Ghz: WifiSpectrum6ViewModel,
     scanRate: Int,
     wifiSpectrumFragment: WifiSpectrumFragment
 ) {
@@ -162,7 +168,7 @@ private fun LazyListScope.chartItems(
                 CHANNELS_5_GHZ_GROUP_2_CHART_VIEW[0].toFloat(),
                 CHANNELS_5_GHZ_GROUP_2_CHART_VIEW[CHANNELS_5_GHZ_GROUP_2_CHART_VIEW.size - 1].toFloat(),
                 CHANNELS_5_GHZ_GROUP_2,
-                everyOtherLabel = true
+                labelInterval = 2
             )
         }
     }
@@ -182,6 +188,26 @@ private fun LazyListScope.chartItems(
                 CHANNELS_5_GHZ_GROUP_3_CHART_VIEW[0].toFloat(),
                 CHANNELS_5_GHZ_GROUP_3_CHART_VIEW[CHANNELS_5_GHZ_GROUP_3_CHART_VIEW.size - 1].toFloat(),
                 CHANNELS_5_GHZ_GROUP_3
+            )
+        }
+    }
+
+    cardItem {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Text(
+                text = "Wi-Fi 6 GHz",
+                style = MaterialTheme.typography.titleMedium
+            )
+            val wifiList by viewModel6Ghz.wifiNetworkInfoList.collectAsStateWithLifecycle()
+            WifiSpectrumChart(
+                wifiList,
+                viewModel6Ghz.modelProducer,
+                CHANNELS_6_GHZ_CHART_VIEW[0].toFloat(),
+                CHANNELS_6_GHZ_CHART_VIEW[CHANNELS_6_GHZ_CHART_VIEW.size - 1].toFloat(),
+                CHANNELS_6_GHZ,
+                labelInterval = 8
             )
         }
     }

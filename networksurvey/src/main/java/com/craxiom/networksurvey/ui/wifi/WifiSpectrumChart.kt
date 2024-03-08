@@ -54,9 +54,9 @@ internal fun WifiSpectrumChart(
     minX: Float,
     maxX: Float,
     customLabelValues: List<Float>,
-    everyOtherLabel: Boolean = false
+    labelInterval: Int = 1
 ) {
-    ComposeChart(wifiList, modelProducer, minX, maxX, everyOtherLabel, customLabelValues)
+    ComposeChart(wifiList, modelProducer, minX, maxX, labelInterval, customLabelValues)
 }
 
 @Composable
@@ -65,7 +65,7 @@ private fun ComposeChart(
     modelProducer: CartesianChartModelProducer,
     minX: Float,
     maxX: Float,
-    everyOtherLabel: Boolean,
+    labelInterval: Int,
     customLabelValues: List<Float>
 ) {
     val decorationList = wifiList.map { wifiNetwork ->
@@ -139,7 +139,7 @@ private fun ComposeChart(
                             offset = xOffset
                         )*/
                         ChannelAxisItemPlacer(
-                            everyOtherLabel = everyOtherLabel,
+                            labelInterval = labelInterval,
                             customLabelValues = customLabelValues
                         )
                     },

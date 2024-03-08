@@ -1,6 +1,7 @@
 package com.craxiom.networksurvey.ui.wifi.model
 
 import com.craxiom.networksurvey.fragments.WifiNetworkInfo
+import com.craxiom.networksurvey.util.WifiUtils
 import com.patrykandpatrick.vico.core.model.LineCartesianLayerModel
 
 /**
@@ -8,7 +9,9 @@ import com.patrykandpatrick.vico.core.model.LineCartesianLayerModel
  */
 class WifiSpectrum5Group2ViewModel : AWifiSpectrumChartViewModel() {
     override fun filterWifiNetworks(wifiNetworkInfoList: List<WifiNetworkInfo>): List<WifiNetworkInfo> {
-        return wifiNetworkInfoList.filter { it.channel.toFloat() in CHANNELS_5_GHZ_GROUP_2 }
+        return wifiNetworkInfoList.filter {
+            it.frequency < WifiUtils.START_OF_6_GHZ_RANGE && it.channel.toFloat() in CHANNELS_5_GHZ_GROUP_2
+        }
     }
 
     override fun createSeriesModel(wifiNetworkInfoList: List<WifiNetworkInfo>): LineCartesianLayerModel.Partial {

@@ -21,6 +21,7 @@ import com.craxiom.networksurvey.ui.wifi.model.WifiSpectrum24ViewModel
 import com.craxiom.networksurvey.ui.wifi.model.WifiSpectrum5Group1ViewModel
 import com.craxiom.networksurvey.ui.wifi.model.WifiSpectrum5Group2ViewModel
 import com.craxiom.networksurvey.ui.wifi.model.WifiSpectrum5Group3ViewModel
+import com.craxiom.networksurvey.ui.wifi.model.WifiSpectrum6ViewModel
 import com.craxiom.networksurvey.ui.wifi.model.WifiSpectrumScreenViewModel
 import com.craxiom.networksurvey.util.NsTheme
 import com.craxiom.networksurvey.util.PreferenceUtils
@@ -35,6 +36,7 @@ class WifiSpectrumFragment : AServiceDataFragment(), IWifiSurveyRecordListener {
     private lateinit var viewModel5GhzGroup1: WifiSpectrum5Group1ViewModel
     private lateinit var viewModel5GhzGroup2: WifiSpectrum5Group2ViewModel
     private lateinit var viewModel5GhzGroup3: WifiSpectrum5Group3ViewModel
+    private lateinit var viewModel6Ghz: WifiSpectrum6ViewModel
 
     private lateinit var sharedPreferences: SharedPreferences
     private val preferenceChangeListener =
@@ -67,6 +69,7 @@ class WifiSpectrumFragment : AServiceDataFragment(), IWifiSurveyRecordListener {
                 viewModel5GhzGroup1 = viewModel(key = "chart5GhzGroup1")
                 viewModel5GhzGroup2 = viewModel(key = "chart5GhzGroup2")
                 viewModel5GhzGroup3 = viewModel(key = "chart5GhzGroup3")
+                viewModel6Ghz = viewModel(key = "chart6Ghz")
 
                 sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context)
                 sharedPreferences.registerOnSharedPreferenceChangeListener(
@@ -82,6 +85,7 @@ class WifiSpectrumFragment : AServiceDataFragment(), IWifiSurveyRecordListener {
                 viewModel5GhzGroup1.initializeCharts()
                 viewModel5GhzGroup2.initializeCharts()
                 viewModel5GhzGroup3.initializeCharts()
+                viewModel6Ghz.initializeCharts()
 
                 NsTheme {
                     WifiSpectrumScreen(
@@ -90,6 +94,7 @@ class WifiSpectrumFragment : AServiceDataFragment(), IWifiSurveyRecordListener {
                         viewModel5GhzGroup1 = viewModel5GhzGroup1,
                         viewModel5GhzGroup2 = viewModel5GhzGroup2,
                         viewModel5GhzGroup3 = viewModel5GhzGroup3,
+                        viewModel6Ghz = viewModel6Ghz,
                         wifiSpectrumFragment = this@WifiSpectrumFragment
                     )
                 }
@@ -150,6 +155,7 @@ class WifiSpectrumFragment : AServiceDataFragment(), IWifiSurveyRecordListener {
         viewModel5GhzGroup1.onWifiScanResults(wifiNetworkInfoList)
         viewModel5GhzGroup2.onWifiScanResults(wifiNetworkInfoList)
         viewModel5GhzGroup3.onWifiScanResults(wifiNetworkInfoList)
+        viewModel6Ghz.onWifiScanResults(wifiNetworkInfoList)
     }
 
 

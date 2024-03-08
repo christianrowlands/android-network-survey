@@ -6,7 +6,7 @@ import com.patrykandpatrick.vico.core.chart.draw.ChartDrawContext
 import com.patrykandpatrick.vico.core.context.MeasureContext
 
 class ChannelAxisItemPlacer(
-    private val everyOtherLabel: Boolean = false,
+    private val labelInterval: Int = 1,
     private val shiftExtremeTicks: Boolean = false,
     private val customLabelValues: List<Float> // Add your custom label values here
 ) : AxisItemPlacer.Horizontal {
@@ -22,10 +22,10 @@ class ChannelAxisItemPlacer(
         visibleXRange: ClosedFloatingPointRange<Float>,
         fullXRange: ClosedFloatingPointRange<Float>,
     ): List<Float> {
-        if (everyOtherLabel) {
+        if (labelInterval > 1) {
             val everyOtherLabelValues = mutableListOf<Float>()
             for (i in customLabelValues.indices) {
-                if (i % 2 == 0) {
+                if (i % labelInterval == 0) {
                     everyOtherLabelValues.add(customLabelValues[i])
                 }
             }
