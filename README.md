@@ -8,7 +8,7 @@
     <img src="screenshots/google-play-badge.png" height="80">
   </a>
   <a href="https://apt.izzysoft.de/fdroid/index/apk/com.craxiom.networksurvey">
-    <img src="https://fdroid.gitlab.io/artwork/badge/get-it-on.png" alt="Get it on IzzyOnDroid F-Droid" height="80">
+    <img src="screenshots/IzzyOnDroidButton.png" alt="Get it on IzzyOnDroid" height="80">
   </a>
 </p>
 
@@ -63,8 +63,8 @@ If you're interested in CDR logging that includes SMS events and call details:
    this repository.
 2. **Download Pre-Built APK:** Access the latest "*cdr-release.apk" under the latest release on
    our [GitHub Releases page](https://github.com/christianrowlands/android-network-survey/releases).
-3. **IzzyOnDroid F-Droid:** Install
-   from [IzzyOnDroid F-Droid](https://apt.izzysoft.de/fdroid/index/apk/com.craxiom.networksurvey).
+3. **IzzyOnDroid:** Install
+   from [IzzyOnDroid](https://apt.izzysoft.de/fdroid/index/apk/com.craxiom.networksurvey).
 
 ## Tracking And Privacy
 
@@ -73,7 +73,7 @@ logs are sent off the device to Firebase. If you don't want to participate in th
 then you have three options.
 
 1. Install the app
-   from [IzzyOnDroid F-Droid](https://apt.izzysoft.de/fdroid/index/apk/com.craxiom.networksurvey).
+   from [IzzyOnDroid](https://apt.izzysoft.de/fdroid/index/apk/com.craxiom.networksurvey).
 2. Install the app from the source code in this repo specifying the CDR build variant.
 3. Install the app using the CDR APK from
    the [Release Page](https://github.com/christianrowlands/android-network-survey/releases).

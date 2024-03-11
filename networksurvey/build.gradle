@@ -55,6 +55,11 @@ android {
         }
     }
 
+    dependenciesInfo {
+        // Disables dependency metadata when building APKs.
+        includeInApk = false
+    }
+
     lint {
         abortOnError false
     }
