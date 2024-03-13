@@ -5,10 +5,10 @@
 
 <p align="center">
   <a href="https://play.google.com/store/apps/details?id=com.craxiom.networksurvey">
-    <img src="screenshots/google-play-badge.png" height="60">
+    <img src="screenshots/google-play-badge.png" alt="Get it on Play" height="80">
   </a>
   <a href="https://apt.izzysoft.de/fdroid/index/apk/com.craxiom.networksurvey">
-    <img src="screenshots/IzzyOnDroidButton.png" alt="Get it on IzzyOnDroid" height="60">
+    <img src="screenshots/IzzyOnDroid.png" alt="Get it on IzzyOnDroid" height="80">
   </a>
 </p>
 
