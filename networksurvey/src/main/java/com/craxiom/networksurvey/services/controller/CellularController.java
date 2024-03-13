@@ -192,6 +192,8 @@ public class CellularController extends AController
      */
     public void refreshScanRate()
     {
+        if (surveyService == null) return;
+
         cellularScanRateMs = PreferenceUtils.getScanRatePreferenceMs(NetworkSurveyConstants.PROPERTY_CELLULAR_SCAN_INTERVAL_SECONDS,
                 NetworkSurveyConstants.DEFAULT_CELLULAR_SCAN_INTERVAL_SECONDS, surveyService.getApplicationContext());
     }
@@ -212,6 +214,8 @@ public class CellularController extends AController
         {
             final boolean originalLoggingState = cellularLoggingEnabled.get();
             if (originalLoggingState == enable) return originalLoggingState;
+
+            if (surveyService == null) return null;
 
             Timber.i("Toggling cellular logging to %s", enable);
 
@@ -307,6 +311,8 @@ public class CellularController extends AController
         // The onServiceStateChanged required API level 29.
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q)
         {
+            if (surveyService == null) return;
+
             // Add a listener for the Service State information if we have access to the Telephony Manager
             final TelephonyManager telephonyManager = (TelephonyManager) surveyService.getSystemService(Context.TELEPHONY_SERVICE);
             if (telephonyManager != null && surveyService.getPackageManager().hasSystemFeature(PackageManager.FEATURE_TELEPHONY))
@@ -342,7 +348,7 @@ public class CellularController extends AController
 
     public void stopPhoneStateListener()
     {
-        if (phoneStateListener != null)
+        if (phoneStateListener != null && surveyService != null)
         {
             final TelephonyManager telephonyManager = (TelephonyManager) surveyService.getSystemService(Context.TELEPHONY_SERVICE);
             if (telephonyManager != null && surveyService.getPackageManager().hasSystemFeature(PackageManager.FEATURE_TELEPHONY))
@@ -453,6 +459,8 @@ public class CellularController extends AController
      */
     private void registerSimStateChangeReceiver()
     {
+        if (surveyService == null) return;
+
         simBroadcastReceiver = new BroadcastReceiver()
         {
             @Override
@@ -477,6 +485,8 @@ public class CellularController extends AController
      */
     public synchronized void runSingleScan()
     {
+        if (surveyService == null) return;
+
         final TelephonyManager telephonyManager = (TelephonyManager) surveyService.getSystemService(Context.TELEPHONY_SERVICE);
 
         if (telephonyManager == null || !surveyService.getPackageManager().hasSystemFeature(PackageManager.FEATURE_TELEPHONY))
@@ -537,6 +547,8 @@ public class CellularController extends AController
      */
     public void startCellularRecordScanning()
     {
+        if (surveyService == null) return;
+
         synchronized (cellularLoggingEnabled)
         {
             if (cellularScanningActive.getAndSet(true)) return;
@@ -647,6 +659,8 @@ public class CellularController extends AController
      */
     private void toggleCellularConfig(boolean enable, LogTypeState types)
     {
+        if (surveyService == null) return;
+
         cellularLoggingEnabled.set(enable);
         if (enable)
         {

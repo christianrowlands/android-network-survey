@@ -148,6 +148,8 @@ public class GnssController extends AController
      */
     public void refreshScanRate()
     {
+        if (surveyService == null) return;
+
         gnssScanRateMs = PreferenceUtils.getScanRatePreferenceMs(NetworkSurveyConstants.PROPERTY_GNSS_SCAN_INTERVAL_SECONDS,
                 NetworkSurveyConstants.DEFAULT_GNSS_SCAN_INTERVAL_SECONDS, surveyService.getApplicationContext());
     }
@@ -164,6 +166,8 @@ public class GnssController extends AController
      */
     public Boolean toggleLogging(boolean enable)
     {
+        if (surveyService == null) return;
+
         synchronized (gnssLoggingEnabled)
         {
             final boolean originalLoggingState = gnssLoggingEnabled.get();
@@ -243,6 +247,8 @@ public class GnssController extends AController
      */
     public boolean startGnssRecordScanning()
     {
+        if (surveyService == null) return false;
+
         // Using gnssLoggingEnabled as the lock object because it is also used in the toggleLogging method
         synchronized (gnssLoggingEnabled)
         {
@@ -332,6 +338,8 @@ public class GnssController extends AController
      */
     public void stopGnssRecordScanning()
     {
+        if (surveyService == null) return;
+
         // Using gnssLoggingEnabled as the lock object because it is also used in the toggleLogging method
         synchronized (gnssLoggingEnabled)
         {
@@ -368,6 +376,8 @@ public class GnssController extends AController
 
     private void toggleGnssConfig(boolean enable, LogTypeState types)
     {
+        if (surveyService == null) return;
+
         gnssLoggingEnabled.set(enable);
         if (enable)
         {
@@ -416,6 +426,8 @@ public class GnssController extends AController
      */
     private void checkForGnssTimeout()
     {
+        if (surveyService == null) return;
+
         if (!gnssRawSupportKnown && !hasGnssRawFailureNagLaunched)
         {
             if (firstGpsAcqTime < 0L)
@@ -447,6 +459,8 @@ public class GnssController extends AController
      */
     private void runOneMeasurement()
     {
+        if (surveyService == null) return;
+
         synchronized (gnssLoggingEnabled)
         {
             boolean hasPermissions = ContextCompat.checkSelfPermission(surveyService,

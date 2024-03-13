@@ -139,6 +139,8 @@ public class BluetoothController extends AController
      */
     public void refreshScanRate()
     {
+        if (surveyService == null) return;
+
         bluetoothScanRateMs = PreferenceUtils.getScanRatePreferenceMs(NetworkSurveyConstants.PROPERTY_BLUETOOTH_SCAN_INTERVAL_SECONDS,
                 NetworkSurveyConstants.DEFAULT_BLUETOOTH_SCAN_INTERVAL_SECONDS, surveyService.getApplicationContext());
     }
@@ -159,6 +161,8 @@ public class BluetoothController extends AController
         {
             final boolean originalLoggingState = bluetoothLoggingEnabled.get();
             if (originalLoggingState == enable) return originalLoggingState;
+
+            if (surveyService == null) return null;
 
             Timber.i("Toggling Bluetooth logging to %s", enable);
 
@@ -215,6 +219,8 @@ public class BluetoothController extends AController
      */
     public void initializeBtScanningResources()
     {
+        if (surveyService == null) return;
+
         final BluetoothManager bluetoothManager = (BluetoothManager) surveyService.getSystemService(Context.BLUETOOTH_SERVICE);
 
         if (bluetoothManager == null)
@@ -337,6 +343,8 @@ public class BluetoothController extends AController
     @SuppressLint("MissingPermission")
     public void startBluetoothRecordScanning()
     {
+        if (surveyService == null) return;
+
         synchronized (bluetoothLoggingEnabled)
         {
             if (!hasBtScanPermission())
@@ -421,6 +429,8 @@ public class BluetoothController extends AController
     @SuppressLint("MissingPermission") // Permissions are checked in the first part of the method
     public void stopBluetoothRecordScanning()
     {
+        if (surveyService == null) return;
+
         synchronized (bluetoothLoggingEnabled)
         {
             bluetoothScanningActive.set(false);
@@ -466,6 +476,8 @@ public class BluetoothController extends AController
 
     private void toggleBtConfig(boolean enable, LogTypeState types)
     {
+        if (surveyService == null) return;
+
         bluetoothLoggingEnabled.set(enable);
         if (enable)
         {
@@ -507,6 +519,8 @@ public class BluetoothController extends AController
     // Permissions are checked in the first part of this method call
     private boolean isBluetoothEnabledAndPermissionsGranted(boolean promptEnable)
     {
+        if (surveyService == null) return false;
+
         if (!hasBtConnectPermission() || !hasBtScanPermission())
         {
             Timber.i("Missing a Bluetooth permission, can't enable BT scanning");

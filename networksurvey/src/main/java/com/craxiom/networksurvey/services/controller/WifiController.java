@@ -128,6 +128,8 @@ public class WifiController extends AController
      */
     public void refreshScanRate()
     {
+        if (surveyService == null) return;
+
         wifiScanRateMs = PreferenceUtils.getScanRatePreferenceMs(NetworkSurveyConstants.PROPERTY_WIFI_SCAN_INTERVAL_SECONDS,
                 NetworkSurveyConstants.DEFAULT_WIFI_SCAN_INTERVAL_SECONDS, surveyService.getApplicationContext());
     }
@@ -144,6 +146,8 @@ public class WifiController extends AController
      */
     public Boolean toggleLogging(boolean enable)
     {
+        if (surveyService == null) return null;
+
         synchronized (wifiLoggingEnabled)
         {
             final boolean originalLoggingState = wifiLoggingEnabled.get();
@@ -204,6 +208,8 @@ public class WifiController extends AController
      */
     public void initializeWifiScanningResources()
     {
+        if (surveyService == null) return;
+
         final WifiManager wifiManager = (WifiManager) surveyService.getSystemService(Context.WIFI_SERVICE);
 
         if (wifiManager == null)
@@ -249,6 +255,8 @@ public class WifiController extends AController
      */
     public void startWifiRecordScanning()
     {
+        if (surveyService == null) return;
+
         // Using wifiLoggingEnabled as the lock object because it is also used in the toggleLogging method
         synchronized (wifiLoggingEnabled)
         {
@@ -303,6 +311,8 @@ public class WifiController extends AController
      */
     public void stopWifiRecordScanning()
     {
+        if (surveyService == null) return;
+
         // Using wifiLoggingEnabled as the lock object because it is also used in the toggleLogging method
         synchronized (wifiLoggingEnabled)
         {
@@ -335,6 +345,8 @@ public class WifiController extends AController
 
     private void toggleWifiConfig(boolean enable, LogTypeState types)
     {
+        if (surveyService == null) return;
+
         wifiLoggingEnabled.set(enable);
         if (enable)
         {
@@ -371,6 +383,8 @@ public class WifiController extends AController
      */
     private boolean isWifiEnabled(boolean promptEnable)
     {
+        if (surveyService == null) return false;
+
         boolean isEnabled = true;
 
         final WifiManager wifiManager = (WifiManager) surveyService.getSystemService(Context.WIFI_SERVICE);
