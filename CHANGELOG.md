@@ -1,5 +1,9 @@
 # Changelog
 
+## [1.21.1](https://github.com/christianrowlands/android-network-survey/releases/tag/v1.21.1) - 2024-03-13
+
+* Fixed an edge case app crash issue when stopping surveys.
+
 ## [1.21](https://github.com/christianrowlands/android-network-survey/releases/tag/v1.21) - 2024-03-05
 
 * Fixed several memory leaks that would eventually result in app crashes.

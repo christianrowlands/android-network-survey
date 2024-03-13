@@ -166,7 +166,7 @@ public class GnssController extends AController
      */
     public Boolean toggleLogging(boolean enable)
     {
-        if (surveyService == null) return;
+        if (surveyService == null) return null;
 
         synchronized (gnssLoggingEnabled)
         {
