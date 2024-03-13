@@ -1,7 +1,8 @@
 # Changelog
 
-## [1.21.1](https://github.com/christianrowlands/android-network-survey/releases/tag/v1.21.1) - 2024-03-13
+## [1.22](https://github.com/christianrowlands/android-network-survey/releases/tag/v1.22) - 2024-03-13
 
+* Adds a 6 GHz Wi-Fi spectrum view.
 * Fixed an edge case app crash issue when stopping surveys.
 
 ## [1.21](https://github.com/christianrowlands/android-network-survey/releases/tag/v1.21) - 2024-03-05
