@@ -41,6 +41,8 @@ import timber.log.Timber;
 /**
  * Handles all of the Bluetooth related logic for Network Survey Service to include file logging
  * and managing Bluetooth scanning.
+ *
+ * @noinspection NonPrivateFieldAccessedInSynchronizedContext
  */
 public class BluetoothController extends AController
 {
@@ -75,13 +77,18 @@ public class BluetoothController extends AController
     @Override
     public void onDestroy()
     {
-        bluetoothSurveyRecordLogger.onDestroy();
-        bluetoothCsvLogger.onDestroy();
+        // Sync on the bluetoothLoggingEnabled to ensure cleaning up resources (e.g. assigning null
+        // to the surveyService) does not cause a NPE if logging is still being enabled or disabled.
+        synchronized (bluetoothLoggingEnabled)
+        {
+            bluetoothSurveyRecordLogger.onDestroy();
+            bluetoothCsvLogger.onDestroy();
 
-        bluetoothBroadcastReceiver = null;
-        bluetoothScanCallback = null;
+            bluetoothBroadcastReceiver = null;
+            bluetoothScanCallback = null;
 
-        super.onDestroy();
+            super.onDestroy();
+        }
     }
 
     public boolean isLoggingEnabled()
@@ -219,76 +226,80 @@ public class BluetoothController extends AController
      */
     public void initializeBtScanningResources()
     {
-        if (surveyService == null) return;
-
-        final BluetoothManager bluetoothManager = (BluetoothManager) surveyService.getSystemService(Context.BLUETOOTH_SERVICE);
-
-        if (bluetoothManager == null)
+        // Syncing on the bluetoothLoggingEnabled to ensure that surveyService won't be assigned null while we are using it
+        synchronized (bluetoothLoggingEnabled)
         {
-            Timber.e("The BluetoothManager is null. Bluetooth survey won't work");
-            return;
-        }
+            if (surveyService == null) return;
 
-        final BluetoothAdapter bluetoothAdapter = bluetoothManager.getAdapter();
-        if (bluetoothAdapter == null)
-        {
-            Timber.e("The BluetoothAdapter is null. Bluetooth survey won't work");
-            return;
-        }
+            final BluetoothManager bluetoothManager = (BluetoothManager) surveyService.getSystemService(Context.BLUETOOTH_SERVICE);
 
-        bluetoothBroadcastReceiver = new BroadcastReceiver()
-        {
-            @Override
-            public void onReceive(Context context, Intent intent)
+            if (bluetoothManager == null)
             {
-                if (BluetoothDevice.ACTION_FOUND.equals(intent.getAction()))
+                Timber.e("The BluetoothManager is null. Bluetooth survey won't work");
+                return;
+            }
+
+            final BluetoothAdapter bluetoothAdapter = bluetoothManager.getAdapter();
+            if (bluetoothAdapter == null)
+            {
+                Timber.e("The BluetoothAdapter is null. Bluetooth survey won't work");
+                return;
+            }
+
+            bluetoothBroadcastReceiver = new BroadcastReceiver()
+            {
+                @Override
+                public void onReceive(Context context, Intent intent)
                 {
-                    final BluetoothDevice device = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
-                    if (device == null)
+                    if (BluetoothDevice.ACTION_FOUND.equals(intent.getAction()))
                     {
-                        Timber.e("Received a null BluetoothDevice in the broadcast action found call");
-                        return;
-                    }
+                        final BluetoothDevice device = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
+                        if (device == null)
+                        {
+                            Timber.e("Received a null BluetoothDevice in the broadcast action found call");
+                            return;
+                        }
 
-                    int rssi = Short.MIN_VALUE;
-                    if (intent.hasExtra(BluetoothDevice.EXTRA_RSSI))
+                        int rssi = Short.MIN_VALUE;
+                        if (intent.hasExtra(BluetoothDevice.EXTRA_RSSI))
+                        {
+                            rssi = intent.getShortExtra(BluetoothDevice.EXTRA_RSSI, Short.MIN_VALUE);
+                        }
+
+                        if (rssi == Short.MIN_VALUE) return;
+
+                        surveyRecordProcessor.onBluetoothClassicScanUpdate(device, rssi);
+                    }
+                }
+            };
+
+            bluetoothScanCallback = new ScanCallback()
+            {
+                @Override
+                public void onScanResult(int callbackType, android.bluetooth.le.ScanResult result)
+                {
+                    surveyRecordProcessor.onBluetoothScanUpdate(result);
+                }
+
+                @Override
+                public void onBatchScanResults(List<ScanResult> results)
+                {
+                    surveyRecordProcessor.onBluetoothScanUpdate(results);
+                }
+
+                @Override
+                public void onScanFailed(int errorCode)
+                {
+                    if (errorCode == SCAN_FAILED_ALREADY_STARTED)
                     {
-                        rssi = intent.getShortExtra(BluetoothDevice.EXTRA_RSSI, Short.MIN_VALUE);
+                        Timber.i("Bluetooth scan already started, so this scan failed");
+                    } else
+                    {
+                        Timber.e("A Bluetooth scan failed, ignoring the results.");
                     }
-
-                    if (rssi == Short.MIN_VALUE) return;
-
-                    surveyRecordProcessor.onBluetoothClassicScanUpdate(device, rssi);
                 }
-            }
-        };
-
-        bluetoothScanCallback = new ScanCallback()
-        {
-            @Override
-            public void onScanResult(int callbackType, android.bluetooth.le.ScanResult result)
-            {
-                surveyRecordProcessor.onBluetoothScanUpdate(result);
-            }
-
-            @Override
-            public void onBatchScanResults(List<ScanResult> results)
-            {
-                surveyRecordProcessor.onBluetoothScanUpdate(results);
-            }
-
-            @Override
-            public void onScanFailed(int errorCode)
-            {
-                if (errorCode == SCAN_FAILED_ALREADY_STARTED)
-                {
-                    Timber.i("Bluetooth scan already started, so this scan failed");
-                } else
-                {
-                    Timber.e("A Bluetooth scan failed, ignoring the results.");
-                }
-            }
-        };
+            };
+        }
     }
 
     /**
@@ -343,10 +354,10 @@ public class BluetoothController extends AController
     @SuppressLint("MissingPermission")
     public void startBluetoothRecordScanning()
     {
-        if (surveyService == null) return;
-
         synchronized (bluetoothLoggingEnabled)
         {
+            if (surveyService == null) return;
+
             if (!hasBtScanPermission())
             {
                 uiThreadHandler.post(() -> Toast.makeText(surveyService.getApplicationContext(), surveyService.getString(R.string.grant_bluetooth_scan_permission), Toast.LENGTH_LONG).show());
@@ -429,10 +440,10 @@ public class BluetoothController extends AController
     @SuppressLint("MissingPermission") // Permissions are checked in the first part of the method
     public void stopBluetoothRecordScanning()
     {
-        if (surveyService == null) return;
-
         synchronized (bluetoothLoggingEnabled)
         {
+            if (surveyService == null) return;
+
             bluetoothScanningActive.set(false);
 
             if (!hasBtConnectPermission() || !hasBtScanPermission())

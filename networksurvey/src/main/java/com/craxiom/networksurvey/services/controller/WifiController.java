@@ -35,6 +35,8 @@ import timber.log.Timber;
 /**
  * Handles all of the Wi-Fi related logic for Network Survey Service to include file logging
  * and managing the Wi-Fi scanning.
+ *
+ * @noinspection NonPrivateFieldAccessedInSynchronizedContext
  */
 public class WifiController extends AController
 {
@@ -68,9 +70,14 @@ public class WifiController extends AController
     @Override
     public void onDestroy()
     {
-        wifiSurveyRecordLogger.onDestroy();
-        wifiCsvLogger.onDestroy();
-        super.onDestroy();
+        // Sync on the wifiLoggingEnabled to ensure cleaning up resources (e.g. assigning null
+        // to the surveyService) does not cause a NPE if logging is still being enabled or disabled.
+        synchronized (wifiLoggingEnabled)
+        {
+            wifiSurveyRecordLogger.onDestroy();
+            wifiCsvLogger.onDestroy();
+            super.onDestroy();
+        }
     }
 
     public boolean isLoggingEnabled()
@@ -208,44 +215,53 @@ public class WifiController extends AController
      */
     public void initializeWifiScanningResources()
     {
-        if (surveyService == null) return;
-
-        final WifiManager wifiManager = (WifiManager) surveyService.getSystemService(Context.WIFI_SERVICE);
-
-        if (wifiManager == null)
+        // Syncing on the wifiLoggingEnabled to ensure that surveyService won't be assigned null while we are using it
+        synchronized (wifiLoggingEnabled)
         {
-            Timber.e("The WifiManager is null. Wi-Fi survey won't work");
-            return;
-        }
+            if (surveyService == null) return;
 
-        wifiScanReceiver = new BroadcastReceiver()
-        {
-            @Override
-            public void onReceive(Context c, Intent intent)
+            final WifiManager wifiManager = (WifiManager) surveyService.getSystemService(Context.WIFI_SERVICE);
+
+            if (wifiManager == null)
             {
-                boolean success = intent.getBooleanExtra(WifiManager.EXTRA_RESULTS_UPDATED, false);
-                if (success)
-                {
-                    if (ActivityCompat.checkSelfPermission(surveyService.getApplicationContext(), Manifest.permission.ACCESS_FINE_LOCATION)
-                            != PackageManager.PERMISSION_GRANTED)
-                    {
-                        Timber.e("Could not get the Wi-FI scan results because the ACCESS_FINE_LOCATION permission is not granted.");
-                        return;
-                    }
-                    final List<ScanResult> results = wifiManager.getScanResults();
-                    if (results == null)
-                    {
-                        Timber.d("Null wifi scan results");
-                        return;
-                    }
-
-                    surveyRecordProcessor.onWifiScanUpdate(results);
-                } else
-                {
-                    Timber.e("A Wi-Fi scan failed, ignoring the results.");
-                }
+                Timber.e("The WifiManager is null. Wi-Fi survey won't work");
+                return;
             }
-        };
+
+            wifiScanReceiver = new BroadcastReceiver()
+            {
+                @Override
+                public void onReceive(Context c, Intent intent)
+                {
+                    boolean success = intent.getBooleanExtra(WifiManager.EXTRA_RESULTS_UPDATED, false);
+                    if (success)
+                    {
+                        synchronized (wifiLoggingEnabled)
+                        {
+                            if (surveyService == null) return;
+
+                            if (ActivityCompat.checkSelfPermission(surveyService.getApplicationContext(), Manifest.permission.ACCESS_FINE_LOCATION)
+                                    != PackageManager.PERMISSION_GRANTED)
+                            {
+                                Timber.e("Could not get the Wi-FI scan results because the ACCESS_FINE_LOCATION permission is not granted.");
+                                return;
+                            }
+                            final List<ScanResult> results = wifiManager.getScanResults();
+                            if (results == null)
+                            {
+                                Timber.d("Null wifi scan results");
+                                return;
+                            }
+
+                            surveyRecordProcessor.onWifiScanUpdate(results);
+                        }
+                    } else
+                    {
+                        Timber.e("A Wi-Fi scan failed, ignoring the results.");
+                    }
+                }
+            };
+        }
     }
 
     /**
@@ -255,11 +271,11 @@ public class WifiController extends AController
      */
     public void startWifiRecordScanning()
     {
-        if (surveyService == null) return;
-
         // Using wifiLoggingEnabled as the lock object because it is also used in the toggleLogging method
         synchronized (wifiLoggingEnabled)
         {
+            if (surveyService == null) return;
+
             if (wifiScanningActive.getAndSet(true)) return;
 
             final IntentFilter scanResultsIntentFilter = new IntentFilter();
@@ -311,11 +327,11 @@ public class WifiController extends AController
      */
     public void stopWifiRecordScanning()
     {
-        if (surveyService == null) return;
-
         // Using wifiLoggingEnabled as the lock object because it is also used in the toggleLogging method
         synchronized (wifiLoggingEnabled)
         {
+            if (surveyService == null) return;
+
             wifiScanningActive.set(false);
 
             try
@@ -383,47 +399,50 @@ public class WifiController extends AController
      */
     private boolean isWifiEnabled(boolean promptEnable)
     {
-        if (surveyService == null) return false;
-
-        boolean isEnabled = true;
-
-        final WifiManager wifiManager = (WifiManager) surveyService.getSystemService(Context.WIFI_SERVICE);
-
-        if (wifiManager == null) isEnabled = false;
-
-        if (wifiManager != null && !wifiManager.isWifiEnabled())
+        synchronized (wifiLoggingEnabled)
         {
-            isEnabled = false;
+            if (surveyService == null) return false;
 
-            if (promptEnable)
+            boolean isEnabled = true;
+
+            final WifiManager wifiManager = (WifiManager) surveyService.getSystemService(Context.WIFI_SERVICE);
+
+            if (wifiManager == null) isEnabled = false;
+
+            if (wifiManager != null && !wifiManager.isWifiEnabled())
             {
-                Timber.i("Wi-Fi is disabled, prompting the user to enable it");
+                isEnabled = false;
 
-                if (Build.VERSION.SDK_INT >= 29)
+                if (promptEnable)
                 {
-                    final Intent panelIntent = new Intent(Settings.Panel.ACTION_WIFI);
-                    panelIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-                    surveyService.startActivity(panelIntent);
-                } else
-                {
-                    // Open the Wi-Fi setting pages after a couple seconds
-                    uiThreadHandler.post(() -> Toast.makeText(surveyService.getApplicationContext(), surveyService.getString(R.string.turn_on_wifi), Toast.LENGTH_SHORT).show());
-                    serviceHandler.postDelayed(() -> {
-                        try
-                        {
-                            final Intent wifiSettingIntent = new Intent(Settings.ACTION_WIFI_SETTINGS);
-                            wifiSettingIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-                            surveyService.startActivity(wifiSettingIntent);
-                        } catch (Exception e)
-                        {
-                            // An IllegalStateException can occur when the fragment is no longer attached to the activity
-                            Timber.e(e, "Could not kick off the Wifi Settings Intent for the older pre Android 10 setup");
-                        }
-                    }, 2000);
+                    Timber.i("Wi-Fi is disabled, prompting the user to enable it");
+
+                    if (Build.VERSION.SDK_INT >= 29)
+                    {
+                        final Intent panelIntent = new Intent(Settings.Panel.ACTION_WIFI);
+                        panelIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                        surveyService.startActivity(panelIntent);
+                    } else
+                    {
+                        // Open the Wi-Fi setting pages after a couple seconds
+                        uiThreadHandler.post(() -> Toast.makeText(surveyService.getApplicationContext(), surveyService.getString(R.string.turn_on_wifi), Toast.LENGTH_SHORT).show());
+                        serviceHandler.postDelayed(() -> {
+                            try
+                            {
+                                final Intent wifiSettingIntent = new Intent(Settings.ACTION_WIFI_SETTINGS);
+                                wifiSettingIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                                surveyService.startActivity(wifiSettingIntent);
+                            } catch (Exception e)
+                            {
+                                // An IllegalStateException can occur when the fragment is no longer attached to the activity
+                                Timber.e(e, "Could not kick off the Wifi Settings Intent for the older pre Android 10 setup");
+                            }
+                        }, 2000);
+                    }
                 }
             }
-        }
 
-        return isEnabled;
+            return isEnabled;
+        }
     }
 }

@@ -50,6 +50,8 @@ import timber.log.Timber;
 /**
  * Handles all of the cellular related logic for Network Survey Service to include file logging
  * and managing the cellular scanning.
+ *
+ * @noinspection NonPrivateFieldAccessedInSynchronizedContext
  */
 public class CellularController extends AController
 {
@@ -101,14 +103,19 @@ public class CellularController extends AController
     @Override
     public void onDestroy()
     {
-        cellularSurveyRecordLogger.onDestroy();
-        phoneStateRecordLogger.onDestroy();
-        nrCsvLogger.onDestroy();
-        lteCsvLogger.onDestroy();
-        umtsCsvLogger.onDestroy();
-        cdmaCsvLogger.onDestroy();
-        gsmCsvLogger.onDestroy();
-        super.onDestroy();
+        // Sync on the cellularLoggingEnabled to ensure cleaning up resources (e.g. assigning null
+        // to the surveyService) does not cause a NPE if logging is still being enabled or disabled.
+        synchronized (cellularLoggingEnabled)
+        {
+            cellularSurveyRecordLogger.onDestroy();
+            phoneStateRecordLogger.onDestroy();
+            nrCsvLogger.onDestroy();
+            lteCsvLogger.onDestroy();
+            umtsCsvLogger.onDestroy();
+            cdmaCsvLogger.onDestroy();
+            gsmCsvLogger.onDestroy();
+            super.onDestroy();
+        }
     }
 
     public boolean isLoggingEnabled()
@@ -369,89 +376,99 @@ public class CellularController extends AController
      */
     public synchronized void initializeCellularScanningResources()
     {
-        if (surveyService == null) return;
-
-        final TelephonyManager telephonyManager = (TelephonyManager) surveyService.getSystemService(Context.TELEPHONY_SERVICE);
-
-        if (telephonyManager == null)
+        // Ok, 3 synchronized keywords in one method is a bit much, but cellularLoggingEnabled is
+        // used to make sure that surveyService won't be assigned null while we are using it.
+        synchronized (cellularLoggingEnabled)
         {
-            Timber.e("Unable to get access to the Telephony Manager.  No network information will be displayed");
-            return;
-        }
+            if (surveyService == null) return;
 
-        synchronized (activeSubscriptionInfoListLock)
-        {
-            // Clear the lists because this could be a re-initialization if the SIM state changes
-            activeSubscriptionInfoList.clear();
-            telephonyManagerList.clear();
-            cellInfoCallbackMap.clear();
+            final TelephonyManager telephonyManager = (TelephonyManager) surveyService.getSystemService(Context.TELEPHONY_SERVICE);
 
-            SubscriptionManager subscriptionManager = SubscriptionManager.from(surveyService.getApplicationContext());
-            if (ActivityCompat.checkSelfPermission(surveyService, Manifest.permission.READ_PHONE_STATE) == PackageManager.PERMISSION_GRANTED)
+            if (telephonyManager == null)
             {
-                activeSubscriptionInfoList = subscriptionManager.getActiveSubscriptionInfoList();
-                if (activeSubscriptionInfoList == null)
-                {
-                    Timber.i("The returned active subscription info list was null.");
-                    activeSubscriptionInfoList = new ArrayList<>();
-                }
+                Timber.e("Unable to get access to the Telephony Manager.  No network information will be displayed");
+                return;
+            }
 
-                Timber.i("Found %s active SIMs", activeSubscriptionInfoList.size());
+            // Synchronizing the activeSubscriptionInfoListLock separately because it has a smaller impact
+            synchronized (activeSubscriptionInfoListLock)
+            {
+                // Clear the lists because this could be a re-initialization if the SIM state changes
+                activeSubscriptionInfoList.clear();
+                telephonyManagerList.clear();
+                cellInfoCallbackMap.clear();
 
-                // We only want to use the subscription info list if there are two active SIMs.  If there is only
-                // one active SIM, then we will just use the default subscription ID which gets filtered out in
-                // the SurveyRecordProcessor. This prevents the "slot" field from getting set on all the records.
-                if (activeSubscriptionInfoList.size() >= 2)
+                SubscriptionManager subscriptionManager = SubscriptionManager.from(surveyService.getApplicationContext());
+                if (ActivityCompat.checkSelfPermission(surveyService, Manifest.permission.READ_PHONE_STATE) == PackageManager.PERMISSION_GRANTED)
                 {
-                    for (SubscriptionInfo subscriptionInfo : activeSubscriptionInfoList)
+                    activeSubscriptionInfoList = subscriptionManager.getActiveSubscriptionInfoList();
+                    if (activeSubscriptionInfoList == null)
                     {
-                        int subId = subscriptionInfo.getSubscriptionId();
-                        telephonyManagerList.add(new TelephonyManagerWrapper(telephonyManager.createForSubscriptionId(subId), subId));
+                        Timber.i("The returned active subscription info list was null.");
+                        activeSubscriptionInfoList = new ArrayList<>();
+                    }
+
+                    Timber.i("Found %s active SIMs", activeSubscriptionInfoList.size());
+
+                    // We only want to use the subscription info list if there are two active SIMs.  If there is only
+                    // one active SIM, then we will just use the default subscription ID which gets filtered out in
+                    // the SurveyRecordProcessor. This prevents the "slot" field from getting set on all the records.
+                    if (activeSubscriptionInfoList.size() >= 2)
+                    {
+                        for (SubscriptionInfo subscriptionInfo : activeSubscriptionInfoList)
+                        {
+                            int subId = subscriptionInfo.getSubscriptionId();
+                            telephonyManagerList.add(new TelephonyManagerWrapper(telephonyManager.createForSubscriptionId(subId), subId));
+                        }
+                    } else
+                    {
+                        telephonyManagerList.add(new TelephonyManagerWrapper(telephonyManager, DEFAULT_SUBSCRIPTION_ID));
                     }
                 } else
                 {
+                    Timber.e("Unable to get access to the Subscription Manager. Can't get survey information from other SIMs");
                     telephonyManagerList.add(new TelephonyManagerWrapper(telephonyManager, DEFAULT_SUBSCRIPTION_ID));
                 }
-            } else
-            {
-                Timber.e("Unable to get access to the Subscription Manager. Can't get survey information from other SIMs");
-                telephonyManagerList.add(new TelephonyManagerWrapper(telephonyManager, DEFAULT_SUBSCRIPTION_ID));
             }
-        }
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q)
-        {
-            for (TelephonyManagerWrapper wrapper : telephonyManagerList)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q)
             {
-                cellInfoCallbackMap.put(wrapper.getSubscriptionId(), new TelephonyManager.CellInfoCallback()
+                for (TelephonyManagerWrapper wrapper : telephonyManagerList)
                 {
-                    final int subscriptionId = wrapper.getSubscriptionId();
-
-                    @Override
-                    public void onCellInfo(@NonNull List<CellInfo> cellInfo)
+                    cellInfoCallbackMap.put(wrapper.getSubscriptionId(), new TelephonyManager.CellInfoCallback()
                     {
-                        String dataNetworkType = "Unknown";
-                        String voiceNetworkType = "Unknown";
-                        if (ActivityCompat.checkSelfPermission(surveyService, Manifest.permission.READ_PHONE_STATE) == PackageManager.PERMISSION_GRANTED)
+                        final int subscriptionId = wrapper.getSubscriptionId();
+
+                        @Override
+                        public void onCellInfo(@NonNull List<CellInfo> cellInfo)
                         {
-                            dataNetworkType = CalculationUtils.getNetworkType(wrapper.getTelephonyManager().getDataNetworkType());
-                            voiceNetworkType = CalculationUtils.getNetworkType(wrapper.getTelephonyManager().getVoiceNetworkType());
+                            synchronized (cellularLoggingEnabled)
+                            {
+                                if (surveyService == null) return;
+                                String dataNetworkType = "Unknown";
+                                String voiceNetworkType = "Unknown";
+                                if (ActivityCompat.checkSelfPermission(surveyService, Manifest.permission.READ_PHONE_STATE) == PackageManager.PERMISSION_GRANTED)
+                                {
+                                    dataNetworkType = CalculationUtils.getNetworkType(wrapper.getTelephonyManager().getDataNetworkType());
+                                    voiceNetworkType = CalculationUtils.getNetworkType(wrapper.getTelephonyManager().getVoiceNetworkType());
+                                }
+
+                                surveyRecordProcessor.onCellInfoUpdate(cellInfo, dataNetworkType, voiceNetworkType, subscriptionId);
+                            }
                         }
 
-                        surveyRecordProcessor.onCellInfoUpdate(cellInfo, dataNetworkType, voiceNetworkType, subscriptionId);
-                    }
-
-                    @Override
-                    public void onError(int errorCode, @Nullable Throwable detail)
-                    {
-                        super.onError(errorCode, detail);
-                        Timber.w(detail, "Received an error from the Telephony Manager when requesting a cell info update; errorCode=%s", errorCode);
-                    }
-                });
+                        @Override
+                        public void onError(int errorCode, @Nullable Throwable detail)
+                        {
+                            super.onError(errorCode, detail);
+                            Timber.w(detail, "Received an error from the Telephony Manager when requesting a cell info update; errorCode=%s", errorCode);
+                        }
+                    });
+                }
             }
-        }
 
-        registerSimStateChangeReceiver();
+            registerSimStateChangeReceiver();
+        }
     }
 
     /**
@@ -547,10 +564,10 @@ public class CellularController extends AController
      */
     public void startCellularRecordScanning()
     {
-        if (surveyService == null) return;
-
         synchronized (cellularLoggingEnabled)
         {
+            if (surveyService == null) return;
+
             if (cellularScanningActive.getAndSet(true)) return;
 
             final TelephonyManager telephonyManager = (TelephonyManager) surveyService.getSystemService(Context.TELEPHONY_SERVICE);

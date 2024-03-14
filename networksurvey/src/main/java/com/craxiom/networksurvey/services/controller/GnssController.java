@@ -88,9 +88,14 @@ public class GnssController extends AController
     @Override
     public void onDestroy()
     {
-        gnssRecordLogger.onDestroy();
-        gnssCsvLogger.onDestroy();
-        super.onDestroy();
+        // Sync on the gnssLoggingEnabled to ensure cleaning up resources (e.g. assigning null
+        // to the surveyService) does not cause a NPE if logging is still being enabled or disabled.
+        synchronized (gnssLoggingEnabled)
+        {
+            gnssRecordLogger.onDestroy();
+            gnssCsvLogger.onDestroy();
+            super.onDestroy();
+        }
     }
 
     public boolean isLoggingEnabled()
@@ -166,10 +171,10 @@ public class GnssController extends AController
      */
     public Boolean toggleLogging(boolean enable)
     {
-        if (surveyService == null) return null;
-
         synchronized (gnssLoggingEnabled)
         {
+            if (surveyService == null) return null;
+
             final boolean originalLoggingState = gnssLoggingEnabled.get();
             if (originalLoggingState == enable) return originalLoggingState;
 
@@ -247,11 +252,11 @@ public class GnssController extends AController
      */
     public boolean startGnssRecordScanning()
     {
-        if (surveyService == null) return false;
-
         // Using gnssLoggingEnabled as the lock object because it is also used in the toggleLogging method
         synchronized (gnssLoggingEnabled)
         {
+            if (surveyService == null) return false;
+
             if (gnssStarted.getAndSet(true)) return true;
 
             boolean success = false;
@@ -338,11 +343,11 @@ public class GnssController extends AController
      */
     public void stopGnssRecordScanning()
     {
-        if (surveyService == null) return;
-
         // Using gnssLoggingEnabled as the lock object because it is also used in the toggleLogging method
         synchronized (gnssLoggingEnabled)
         {
+            if (surveyService == null) return;
+
             if (!gnssStarted.getAndSet(false)) return;
 
             batteryOptimizedMeasurementCount.set(0);
@@ -426,30 +431,33 @@ public class GnssController extends AController
      */
     private void checkForGnssTimeout()
     {
-        if (surveyService == null) return;
-
-        if (!gnssRawSupportKnown && !hasGnssRawFailureNagLaunched)
+        synchronized (gnssLoggingEnabled)
         {
-            if (firstGpsAcqTime < 0L)
-            {
-                firstGpsAcqTime = System.currentTimeMillis();
-            } else if (System.currentTimeMillis() > firstGpsAcqTime + TIME_TO_WAIT_FOR_GNSS_RAW_BEFORE_FAILURE)
-            {
-                hasGnssRawFailureNagLaunched = true;
+            if (surveyService == null) return;
 
-                // The user may choose to continue using the app even without GNSS since
-                // they do get some satellite status on this display. If that is the case,
-                // they can choose not to be nagged about this every time they launch the app.
-                boolean ignoreRawGnssFailure = PreferenceUtils.getBoolean(Application.get().getString(R.string.pref_key_ignore_raw_gnss_failure), false);
-                if (!ignoreRawGnssFailure && gnssFailureListener != null)
+            if (!gnssRawSupportKnown && !hasGnssRawFailureNagLaunched)
+            {
+                if (firstGpsAcqTime < 0L)
                 {
-                    gnssFailureListener.onGnssFailure();
-                    surveyService.getPrimaryLocationListener().clearGnssTimeoutCallback(); // No need for the callback anymore
+                    firstGpsAcqTime = System.currentTimeMillis();
+                } else if (System.currentTimeMillis() > firstGpsAcqTime + TIME_TO_WAIT_FOR_GNSS_RAW_BEFORE_FAILURE)
+                {
+                    hasGnssRawFailureNagLaunched = true;
+
+                    // The user may choose to continue using the app even without GNSS since
+                    // they do get some satellite status on this display. If that is the case,
+                    // they can choose not to be nagged about this every time they launch the app.
+                    boolean ignoreRawGnssFailure = PreferenceUtils.getBoolean(Application.get().getString(R.string.pref_key_ignore_raw_gnss_failure), false);
+                    if (!ignoreRawGnssFailure && gnssFailureListener != null)
+                    {
+                        gnssFailureListener.onGnssFailure();
+                        surveyService.getPrimaryLocationListener().clearGnssTimeoutCallback(); // No need for the callback anymore
+                    }
                 }
+            } else
+            {
+                surveyService.getPrimaryLocationListener().clearGnssTimeoutCallback();
             }
-        } else
-        {
-            surveyService.getPrimaryLocationListener().clearGnssTimeoutCallback();
         }
     }
 
@@ -459,10 +467,10 @@ public class GnssController extends AController
      */
     private void runOneMeasurement()
     {
-        if (surveyService == null) return;
-
         synchronized (gnssLoggingEnabled)
         {
+            if (surveyService == null) return;
+
             boolean hasPermissions = ContextCompat.checkSelfPermission(surveyService,
                     Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED;
 
