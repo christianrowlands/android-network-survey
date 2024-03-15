@@ -112,9 +112,6 @@ public class DashboardFragment extends AServiceDataFragment implements LocationL
     {
         removeObservers();
 
-        binding = null;
-        viewModel = null;
-
         super.onDestroyView();
     }
 

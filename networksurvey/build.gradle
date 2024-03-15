@@ -6,7 +6,7 @@ apply plugin: 'kotlin-android'
 
 
 ext.androidVersion = '28.0.0'
-ext.grpcVersion = '1.58.0'
+ext.grpcVersion = '1.61.1'
 ext.networkSurveyMessagingVersion = '1.1.0'
 ext.navigationVersion = '2.7.7'
 
@@ -124,7 +124,7 @@ dependencies {
     annotationProcessor 'org.projectlombok:lombok:1.18.24'
 
     // Compose
-    def composeBom = platform('androidx.compose:compose-bom:2023.10.01')
+    def composeBom = platform('androidx.compose:compose-bom:2024.02.02')
     implementation(composeBom)
     androidTestImplementation(composeBom)
 
@@ -135,14 +135,13 @@ dependencies {
     implementation "androidx.compose.material3:material3"
     implementation "androidx.compose.runtime:runtime-livedata"
     implementation "androidx.compose.ui:ui-tooling"
-    debugImplementation "androidx.compose.ui:ui-tooling"
     implementation "androidx.compose.ui:ui-tooling-preview"
     implementation "androidx.lifecycle:lifecycle-viewmodel-compose"
     implementation "androidx.lifecycle:lifecycle-runtime-compose"
     implementation "com.google.accompanist:accompanist-themeadapter-material:0.28.0"
 
     // Only include firebase in the google play build
-    regularImplementation platform('com.google.firebase:firebase-bom:32.7.0')
+    regularImplementation platform('com.google.firebase:firebase-bom:32.7.4')
     regularImplementation 'com.google.firebase:firebase-analytics'
     regularImplementation 'com.google.firebase:firebase-crashlytics'
 
