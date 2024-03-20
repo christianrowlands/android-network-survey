@@ -442,19 +442,19 @@ public class CellularController extends AController
                         @Override
                         public void onCellInfo(@NonNull List<CellInfo> cellInfo)
                         {
+                            String dataNetworkType = "Unknown";
+                            String voiceNetworkType = "Unknown";
                             synchronized (cellularLoggingEnabled)
                             {
                                 if (surveyService == null) return;
-                                String dataNetworkType = "Unknown";
-                                String voiceNetworkType = "Unknown";
                                 if (ActivityCompat.checkSelfPermission(surveyService, Manifest.permission.READ_PHONE_STATE) == PackageManager.PERMISSION_GRANTED)
                                 {
                                     dataNetworkType = CalculationUtils.getNetworkType(wrapper.getTelephonyManager().getDataNetworkType());
                                     voiceNetworkType = CalculationUtils.getNetworkType(wrapper.getTelephonyManager().getVoiceNetworkType());
                                 }
-
-                                surveyRecordProcessor.onCellInfoUpdate(cellInfo, dataNetworkType, voiceNetworkType, subscriptionId);
                             }
+
+                            surveyRecordProcessor.onCellInfoUpdate(cellInfo, dataNetworkType, voiceNetworkType, subscriptionId);
                         }
 
                         @Override
