@@ -390,7 +390,7 @@ public class CellularController extends AController
                 return;
             }
 
-            // Synchronizing the activeSubscriptionInfoListLock separately because it has a smaller impact
+            // Synchronizing the activeSubscriptionInfoListLock for all the telephony resources
             synchronized (activeSubscriptionInfoListLock)
             {
                 // Clear the lists because this could be a re-initialization if the SIM state changes
@@ -518,37 +518,40 @@ public class CellularController extends AController
         serviceHandler.postDelayed(() -> {
             try
             {
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q)
+                synchronized (activeSubscriptionInfoListLock)
                 {
-                    for (TelephonyManagerWrapper wrapper : telephonyManagerList)
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q)
                     {
-                        TelephonyManager.CellInfoCallback callback = cellInfoCallbackMap.get(wrapper.getSubscriptionId());
-                        if (callback != null)
+                        for (TelephonyManagerWrapper wrapper : telephonyManagerList)
                         {
-                            wrapper.getTelephonyManager().requestCellInfoUpdate(executorService, callback);
-                        } else
-                        {
-                            Timber.wtf("Could not find the callback for the subscription ID %s", wrapper.getSubscriptionId());
-                        }
-                    }
-                } else
-                {
-                    execute(() -> {
-                        try
-                        {
-                            for (TelephonyManagerWrapper wrapper : telephonyManagerList)
+                            TelephonyManager.CellInfoCallback callback = cellInfoCallbackMap.get(wrapper.getSubscriptionId());
+                            if (callback != null)
                             {
-                                TelephonyManager subscriptionTelephonyManager = wrapper.getTelephonyManager();
-                                surveyRecordProcessor.onCellInfoUpdate(subscriptionTelephonyManager.getAllCellInfo(),
-                                        CalculationUtils.getNetworkType(subscriptionTelephonyManager.getDataNetworkType()),
-                                        CalculationUtils.getNetworkType(subscriptionTelephonyManager.getVoiceNetworkType()),
-                                        wrapper.getSubscriptionId());
+                                wrapper.getTelephonyManager().requestCellInfoUpdate(executorService, callback);
+                            } else
+                            {
+                                Timber.wtf("Could not find the callback for the subscription ID %s", wrapper.getSubscriptionId());
                             }
-                        } catch (Throwable t)
-                        {
-                            Timber.e(t, "Something went wrong when trying to get the cell info for a single scan");
                         }
-                    });
+                    } else
+                    {
+                        execute(() -> {
+                            try
+                            {
+                                for (TelephonyManagerWrapper wrapper : telephonyManagerList)
+                                {
+                                    TelephonyManager subscriptionTelephonyManager = wrapper.getTelephonyManager();
+                                    surveyRecordProcessor.onCellInfoUpdate(subscriptionTelephonyManager.getAllCellInfo(),
+                                            CalculationUtils.getNetworkType(subscriptionTelephonyManager.getDataNetworkType()),
+                                            CalculationUtils.getNetworkType(subscriptionTelephonyManager.getVoiceNetworkType()),
+                                            wrapper.getSubscriptionId());
+                                }
+                            } catch (Throwable t)
+                            {
+                                Timber.e(t, "Something went wrong when trying to get the cell info for a single scan");
+                            }
+                        });
+                    }
                 }
             } catch (SecurityException e)
             {
@@ -595,7 +598,7 @@ public class CellularController extends AController
 
                         // Need to synchronize because we use resources that are initialized on SIM
                         // changes such as telephonyManagerList
-                        synchronized (CellularController.this)
+                        synchronized (activeSubscriptionInfoListLock)
                         {
                             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q)
                             {
