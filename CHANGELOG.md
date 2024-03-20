@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.22.2](https://github.com/christianrowlands/android-network-survey/releases/tag/v1.22.2) - 2024-03-20
+
+* App stability improvements.
+
+## [1.22.1](https://github.com/christianrowlands/android-network-survey/releases/tag/v1.22.1) - 2024-03-14
+
+* Fixed several bugs causing app crashes.
+
 ## [1.22](https://github.com/christianrowlands/android-network-survey/releases/tag/v1.22) - 2024-03-13
 
 * Adds a 6 GHz Wi-Fi spectrum view.
