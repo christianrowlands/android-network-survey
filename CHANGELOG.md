@@ -1,5 +1,9 @@
 # Changelog
 
+## [1.22.3](https://github.com/christianrowlands/android-network-survey/releases/tag/v1.22.3) - 2024-03-21
+
+* Prevent ANRs when the data connection drops.
+
 ## [1.22.2](https://github.com/christianrowlands/android-network-survey/releases/tag/v1.22.2) - 2024-03-20
 
 * App stability improvements.
