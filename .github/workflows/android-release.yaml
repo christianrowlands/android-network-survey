@@ -198,4 +198,4 @@ jobs:
           packageName: com.craxiom.networksurvey
           releaseFiles: networksurvey/build/outputs/bundle/regularRelease/${{ env.base_name }}-regular-release.aab
           track: internal
-          status: draft
+          status: completed
