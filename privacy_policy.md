@@ -17,9 +17,9 @@ The app does use third party services that may collect information used to ident
 
 Links to the privacy policy of third party service providers used by the app
 
-*   [Google Play Services](https://www.google.com/policies/privacy/)
-*   [Google Analytics for Firebase](https://firebase.google.com/policies/analytics)
-*   [Firebase Crashlytics](https://firebase.google.com/support/privacy/)
+* [Google Play Services](https://www.google.com/policies/privacy/)
+* [Google Analytics for Firebase](https://www.google.com/analytics/terms/)
+* [Firebase Crashlytics](https://firebase.google.com/support/privacy/)
 
 If you installed this app from the Google Play store then Firebase Crashlytics and Analytics information is stored in Google Firebase. This data is anonymous
 but data related to app crashes and general app usage is set to Google Firebase to improve the stability and functionality of this app. This data is not sold

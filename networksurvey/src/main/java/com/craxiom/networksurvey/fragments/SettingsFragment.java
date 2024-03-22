@@ -3,6 +3,7 @@ package com.craxiom.networksurvey.fragments;
 import android.content.Context;
 import android.content.RestrictionsManager;
 import android.content.SharedPreferences;
+import android.content.pm.PackageInfo;
 import android.os.Bundle;
 import android.text.InputType;
 
@@ -16,6 +17,7 @@ import androidx.preference.SwitchPreferenceCompat;
 import com.craxiom.networksurvey.R;
 import com.craxiom.networksurvey.constants.NetworkSurveyConstants;
 import com.craxiom.networksurvey.util.MdmUtils;
+import com.craxiom.networksurvey.util.SettingsUtils;
 
 import timber.log.Timber;
 
@@ -57,6 +59,9 @@ public class SettingsFragment extends PreferenceFragmentCompat implements Shared
         setPreferenceAsIntegerOnly(findPreference(NetworkSurveyConstants.PROPERTY_BLUETOOTH_SCAN_INTERVAL_SECONDS));
         setPreferenceAsIntegerOnly(findPreference(NetworkSurveyConstants.PROPERTY_GNSS_SCAN_INTERVAL_SECONDS));
         setPreferenceAsIntegerOnly(findPreference(NetworkSurveyConstants.PROPERTY_DEVICE_STATUS_SCAN_INTERVAL_SECONDS));
+
+        setAppVersion();
+        setAppInstanceId();
 
         updateUiForMdmIfNecessary();
     }
@@ -322,5 +327,40 @@ public class SettingsFragment extends PreferenceFragmentCompat implements Shared
         {
             Timber.wtf(e, "Could not find the int preference or update the UI component for %s", preferenceKey);
         }
+    }
+
+    /**
+     * Sets the App Version in the preferences UI if it is available.
+     */
+    private void setAppVersion()
+    {
+        try
+        {
+            Context context = getContext();
+            if (context == null) return;
+
+            PackageInfo info = context.getPackageManager().getPackageInfo(context.getPackageName(), 0);
+            final Preference appVersionPreference = findPreference(NetworkSurveyConstants.PROPERTY_APP_VERSION);
+            if (appVersionPreference != null)
+            {
+                appVersionPreference.setSummary(info.versionName);
+            }
+        } catch (Exception e)
+        {
+            Timber.wtf(e, "Could not set the app version number");
+        }
+    }
+
+    /**
+     * Sets the App Instance ID in the preferences UI if it is available.
+     */
+    private void setAppInstanceId()
+    {
+        Context context = getContext();
+        if (context == null) return;
+
+        final Preference appInstanceIdPreference = findPreference(NetworkSurveyConstants.PROPERTY_APP_INSTANCE_ID);
+
+        SettingsUtils.setAppInstanceId(context, appInstanceIdPreference);
     }
 }
