@@ -1,5 +1,9 @@
 # Changelog
 
+## [1.22.4](https://github.com/christianrowlands/android-network-survey/releases/tag/v1.22.4) - 2024-03-25
+
+* Display the app version number and Firebase app instance ID in the settings UI.
+
 ## [1.22.3](https://github.com/christianrowlands/android-network-survey/releases/tag/v1.22.3) - 2024-03-21
 
 * Prevent ANRs when the data connection drops.
