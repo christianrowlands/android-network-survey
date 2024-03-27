@@ -386,6 +386,12 @@ public class NetworkSurveyActivity extends AppCompatActivity
             return false;
         }
 
+        if (!hasLocationPermission())
+        {
+            runOnUiThread(() -> Toast.makeText(getApplicationContext(), "Missing location permission", Toast.LENGTH_SHORT).show());
+            return false;
+        }
+
         final LocationProvider locationProvider = locationManager.getProvider(LocationManager.GPS_PROVIDER);
         if (locationProvider == null)
         {
