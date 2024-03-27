@@ -735,35 +735,9 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
+                        android:layout_marginBottom="@dimen/small_margin"
                         style="@style/StandardText"
                         android:text="@string/card_title_neighbors_nr" />
-
-                    <TableLayout
-                        android:id="@+id/nr_neighbors_table_headers"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="@dimen/small_margin"
-                        android:stretchColumns="*">
-
-                        <TableRow tools:ignore="UselessParent">
-
-                            <TextView
-                                android:text="@string/narfcn_label"
-                                style="@style/ColumnTitleText" />
-
-                            <TextView
-                                android:text="@string/pci_label"
-                                style="@style/ColumnTitleText" />
-
-                            <TextView
-                                android:text="@string/ss_rsrp_label"
-                                style="@style/ColumnTitleText" />
-
-                            <TextView
-                                android:text="@string/ss_rsrp_label"
-                                style="@style/ColumnTitleText" />
-                        </TableRow>
-                    </TableLayout>
 
                     <TableLayout
                         android:id="@+id/nr_neighbors_table"
@@ -784,39 +758,9 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
+                        android:layout_marginBottom="@dimen/small_margin"
                         style="@style/StandardText"
                         android:text="@string/card_title_neighbors_lte" />
-
-                    <TableLayout
-                        android:id="@+id/lte_neighbors_table_headers"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="@dimen/small_margin"
-                        android:stretchColumns="*">
-
-                        <TableRow tools:ignore="UselessParent">
-
-                            <TextView
-                                android:text="@string/earfcn_label"
-                                style="@style/ColumnTitleText" />
-
-                            <TextView
-                                android:text="@string/pci_label"
-                                style="@style/ColumnTitleText" />
-
-                            <TextView
-                                android:text="@string/rsrp_label"
-                                style="@style/ColumnTitleText" />
-
-                            <TextView
-                                android:text="@string/rsrq_label"
-                                style="@style/ColumnTitleText" />
-
-                            <TextView
-                                android:text="@string/ta_label"
-                                style="@style/ColumnTitleText" />
-                        </TableRow>
-                    </TableLayout>
 
                     <TableLayout
                         android:id="@+id/lte_neighbors_table"
@@ -837,31 +781,9 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
+                        android:layout_marginBottom="@dimen/small_margin"
                         style="@style/StandardText"
                         android:text="@string/card_title_neighbors_umts" />
-
-                    <TableLayout
-                        android:id="@+id/umts_neighbors_table_headers"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="@dimen/small_margin"
-                        android:stretchColumns="*">
-
-                        <TableRow tools:ignore="UselessParent">
-
-                            <TextView
-                                android:text="@string/uarfcn_label"
-                                style="@style/ColumnTitleText" />
-
-                            <TextView
-                                android:text="@string/psc_label"
-                                style="@style/ColumnTitleText" />
-
-                            <TextView
-                                android:text="@string/rscp_label"
-                                style="@style/ColumnTitleText" />
-                        </TableRow>
-                    </TableLayout>
 
                     <TableLayout
                         android:id="@+id/umts_neighbors_table"
@@ -881,31 +803,9 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
+                        android:layout_marginBottom="@dimen/small_margin"
                         style="@style/StandardText"
                         android:text="@string/card_title_neighbors_gsm" />
-
-                    <TableLayout
-                        android:id="@+id/gsm_neighbors_table_headers"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="@dimen/small_margin"
-                        android:stretchColumns="*">
-
-                        <TableRow tools:ignore="UselessParent">
-
-                            <TextView
-                                android:text="@string/arfcn_label"
-                                style="@style/ColumnTitleText" />
-
-                            <TextView
-                                android:text="@string/bsic_label"
-                                style="@style/ColumnTitleText" />
-
-                            <TextView
-                                android:text="@string/rssi_label"
-                                style="@style/ColumnTitleText" />
-                        </TableRow>
-                    </TableLayout>
 
                     <TableLayout
                         android:id="@+id/gsm_neighbors_table"

@@ -987,6 +987,13 @@ public class NetworkDetailsFragment extends AServiceDataFragment implements ICel
 
         neighborsTable.removeAllViews();
 
+        final TableRow headerRow = new TableRow(context);
+        addHeaderToRow(context, headerRow, getString(R.string.narfcn_label));
+        addHeaderToRow(context, headerRow, getString(R.string.pci_label));
+        addHeaderToRow(context, headerRow, getString(R.string.ss_rsrp_label));
+        addHeaderToRow(context, headerRow, getString(R.string.ss_rsrq_label));
+        neighborsTable.addView(headerRow);
+
         for (NrNeighbor neighbor : neighbors)
         {
             final TableRow row = new TableRow(context);
@@ -1021,6 +1028,14 @@ public class NetworkDetailsFragment extends AServiceDataFragment implements ICel
         final TableLayout lteNeighborsTable = binding.lteNeighborsTable;
 
         lteNeighborsTable.removeAllViews();
+
+        final TableRow headerRow = new TableRow(context);
+        addHeaderToRow(context, headerRow, getString(R.string.earfcn_label));
+        addHeaderToRow(context, headerRow, getString(R.string.pci_label));
+        addHeaderToRow(context, headerRow, getString(R.string.rsrp_label));
+        addHeaderToRow(context, headerRow, getString(R.string.rsrq_label));
+        addHeaderToRow(context, headerRow, getString(R.string.ta_label));
+        lteNeighborsTable.addView(headerRow);
 
         for (LteNeighbor neighbor : neighbors)
         {
@@ -1058,6 +1073,12 @@ public class NetworkDetailsFragment extends AServiceDataFragment implements ICel
 
         umtsNeighborsTable.removeAllViews();
 
+        final TableRow headerRow = new TableRow(context);
+        addHeaderToRow(context, headerRow, getString(R.string.uarfcn_label));
+        addHeaderToRow(context, headerRow, getString(R.string.psc_label));
+        addHeaderToRow(context, headerRow, getString(R.string.rscp_label));
+        umtsNeighborsTable.addView(headerRow);
+
         for (UmtsNeighbor neighbor : neighbors)
         {
             final TableRow row = new TableRow(context);
@@ -1091,6 +1112,12 @@ public class NetworkDetailsFragment extends AServiceDataFragment implements ICel
         binding.gsmNeighborsGroup.setVisibility(View.VISIBLE);
 
         gsmNeighborsTable.removeAllViews();
+
+        final TableRow headerRow = new TableRow(context);
+        addHeaderToRow(context, headerRow, getString(R.string.arfcn_label));
+        addHeaderToRow(context, headerRow, getString(R.string.bsic_label));
+        addHeaderToRow(context, headerRow, getString(R.string.rssi_label));
+        gsmNeighborsTable.addView(headerRow);
 
         for (GsmNeighbor neighbor : neighbors)
         {
@@ -1128,6 +1155,20 @@ public class NetworkDetailsFragment extends AServiceDataFragment implements ICel
 
         final TextView view = new TextView(context, null, 0, R.style.TableText);
         view.setText(cellText);
+        row.addView(view);
+    }
+
+    /**
+     * Set the provided column header in a TextView and then adds it to the row.
+     *
+     * @param context The context to use for creating the TextView.
+     * @param row     The header row to add the cell to.
+     * @param header  The value to place in the header column.
+     */
+    private void addHeaderToRow(Context context, TableRow row, String header)
+    {
+        final TextView view = new TextView(context, null, 0, R.style.ColumnTitleText);
+        view.setText(header);
         row.addView(view);
     }
 
