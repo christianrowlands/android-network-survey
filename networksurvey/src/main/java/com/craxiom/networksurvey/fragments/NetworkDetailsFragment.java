@@ -1026,7 +1026,7 @@ public class NetworkDetailsFragment extends AServiceDataFragment implements ICel
         {
             final TableRow row = new TableRow(context);
 
-            addValueToRow(context, row, neighbor.earfcn);
+            addEarfcnValueToRow(context, row, neighbor.earfcn);
             addValueToRow(context, row, neighbor.pci);
             addValueToRow(context, row, neighbor.rsrp);
             addValueToRow(context, row, neighbor.rsrq);
@@ -1105,13 +1105,40 @@ public class NetworkDetailsFragment extends AServiceDataFragment implements ICel
     }
 
     /**
-     * Set the provided value in a TextView and then add it to the row.
+     * Set the provided EARFCN in a TextView and then adds it to the row. Also adds the band number.
+     *
+     * @param context The context to use for creating the TextView.
+     * @param row     The row to add the cell to.
+     * @param earfcn  The earfcn value to place in the cell. If the value is
+     *                {@link com.craxiom.networksurvey.constants.NetworkSurveyConstants#UNSET_VALUE},
+     *                then an empty string is placed in the cell.
+     */
+    private void addEarfcnValueToRow(Context context, TableRow row, int earfcn)
+    {
+        final String cellText;
+        if (earfcn == NetworkSurveyConstants.UNSET_VALUE)
+        {
+            // We need to add an empty text view to make sure the columns align correctly
+            cellText = "";
+        } else
+        {
+            int band = CellularUtils.downlinkEarfcnToBand(earfcn);
+            cellText = earfcn + " / " + (band == -1 ? "?" : band);
+        }
+
+        final TextView view = new TextView(context, null, 0, R.style.TableText);
+        view.setText(cellText);
+        row.addView(view);
+    }
+
+    /**
+     * Set the provided value in a TextView and then adds it to the row.
      *
      * @param context The context to use for creating the TextView.
      * @param row     The row to add the cell to.
      * @param value   The value to place in the cell. If the value is
      *                {@link com.craxiom.networksurvey.constants.NetworkSurveyConstants#UNSET_VALUE},
-     *                then an empty strinig is placed in the cell.
+     *                then an empty string is placed in the cell.
      */
     private void addValueToRow(Context context, TableRow row, int value)
     {
