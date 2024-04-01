@@ -1,5 +1,10 @@
 # Changelog
 
+## [1.22.5](https://github.com/christianrowlands/android-network-survey/releases/tag/v1.22.5) - 2024-04-01
+
+* Adds the band next to the EARFCN in the LTE neighbors table.
+* Aligns the neighbor column headers with the data rows.
+
 ## [1.22.4](https://github.com/christianrowlands/android-network-survey/releases/tag/v1.22.4) - 2024-03-25
 
 * Display the app version number and Firebase app instance ID in the settings UI.
