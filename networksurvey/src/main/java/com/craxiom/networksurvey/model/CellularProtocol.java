@@ -25,7 +25,7 @@ public enum CellularProtocol
      * Signal 1 is RSRP
      * Signal 2 is RSRQ
      */
-    LTE(-125, 35, -23, 11),
+    LTE(-125, 35, -23, 11, 0, 13),
 
     /**
      * Signal 1 is SS_RSRP
@@ -37,6 +37,8 @@ public enum CellularProtocol
     private final int maxNormalizedSignalOne;
     private final int minSignalTwo;
     private final int maxNormalizedSignalTwo;
+    private final int minSignalThree;
+    private final int maxNormalizedSignalThree;
 
     /**
      * Condensed version for protocols with one signal value.
@@ -54,10 +56,25 @@ public enum CellularProtocol
      */
     CellularProtocol(int minSignalOne, int maxNormalizedSignalOne, int minSignalTwo, int maxNormalizedSignalTwo)
     {
+        this(minSignalOne, maxNormalizedSignalOne, minSignalTwo, maxNormalizedSignalTwo, -1, -1);
+    }
+
+    /**
+     * @param minSignalOne             The minimum value that should be represented in the UI via the progress bar for signal 1.
+     * @param maxNormalizedSignalOne   When added with minSignalOne, represents the "good" signal value in the progress bar.
+     * @param minSignalTwo             The minimum value that should be represented in the UI via the progress bar for signal 2.
+     * @param maxNormalizedSignalTwo   When added with minSignalTwo, represents the "good" signal value in the progress bar.
+     * @param minSignalThree           The minimum value that should be represented in the UI via the progress bar for signal 3.
+     * @param maxNormalizedSignalThree When added with minSignalThree, represents the "good" signal value in the progress bar.
+     */
+    CellularProtocol(int minSignalOne, int maxNormalizedSignalOne, int minSignalTwo, int maxNormalizedSignalTwo, int minSignalThree, int maxNormalizedSignalThree)
+    {
         this.minSignalOne = minSignalOne;
         this.maxNormalizedSignalOne = maxNormalizedSignalOne;
         this.minSignalTwo = minSignalTwo;
         this.maxNormalizedSignalTwo = maxNormalizedSignalTwo;
+        this.minSignalThree = minSignalThree;
+        this.maxNormalizedSignalThree = maxNormalizedSignalThree;
     }
 
     public int getMinSignalOne()
@@ -84,5 +101,21 @@ public enum CellularProtocol
     public int getMaxNormalizedSignalTwo()
     {
         return maxNormalizedSignalTwo;
+    }
+
+    /**
+     * @return The minimum value for signal three, or -1 if this protocol type does not support a third signal.
+     */
+    public int getMinSignalThree()
+    {
+        return minSignalThree;
+    }
+
+    /**
+     * @return The maximum normalized value for signal three, or -1 if this protocol type does not support a third signal.
+     */
+    public int getMaxNormalizedSignalThree()
+    {
+        return maxNormalizedSignalThree;
     }
 }

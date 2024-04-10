@@ -261,6 +261,7 @@ public class NetworkDetailsFragment extends AServiceDataFragment implements ICel
 
         viewModel.getSignalOne().observe(viewLifecycleOwner, this::updateSignalStrengthOne);
         viewModel.getSignalTwo().observe(viewLifecycleOwner, this::updateSignalStrengthTwo);
+        viewModel.getSignalThree().observe(viewLifecycleOwner, this::updateSignalStrengthThree);
 
         viewModel.getNrNeighbors().observe(viewLifecycleOwner, this::updateNrNeighborsView);
         viewModel.getLteNeighbors().observe(viewLifecycleOwner, this::updateLteNeighborsView);
@@ -297,6 +298,7 @@ public class NetworkDetailsFragment extends AServiceDataFragment implements ICel
 
         viewModel.getSignalOne().removeObservers(viewLifecycleOwner);
         viewModel.getSignalTwo().removeObservers(viewLifecycleOwner);
+        viewModel.getSignalThree().removeObservers(viewLifecycleOwner);
 
         viewModel.getNrNeighbors().removeObservers(viewLifecycleOwner);
         viewModel.getLteNeighbors().removeObservers(viewLifecycleOwner);
@@ -324,6 +326,7 @@ public class NetworkDetailsFragment extends AServiceDataFragment implements ICel
 
         viewModel.setSignalOne(null);
         viewModel.setSignalTwo(null);
+        viewModel.setSignalThree(null);
 
         viewModel.setNrNeighbors(Collections.emptySortedSet());
         viewModel.setLteNeighbors(Collections.emptySortedSet());
@@ -730,6 +733,7 @@ public class NetworkDetailsFragment extends AServiceDataFragment implements ICel
 
         viewModel.setSignalOne(data.hasRsrp() ? (int) data.getRsrp().getValue() : null);
         viewModel.setSignalTwo(data.hasRsrq() ? (int) data.getRsrq().getValue() : null);
+        viewModel.setSignalThree(data.hasSnr() ? (int) data.getSnr().getValue() : null);
     }
 
     /**
@@ -940,6 +944,22 @@ public class NetworkDetailsFragment extends AServiceDataFragment implements ICel
         binding.signalTwoGroup.setVisibility(signalValue == null ? View.GONE : View.VISIBLE);
         binding.signalTwoValue.setText(signalValue != null ? String.valueOf(signalValue) : "");
         setSignalStrengthBar(binding.progressBarSignalTwo, signalValue, protocol.getMinSignalTwo(), protocol.getMaxNormalizedSignalTwo());
+    }
+
+    /**
+     * Sets the provided value on the third Signal Strength display, and handles configuring the display with the
+     * appropriate min and max value.
+     *
+     * @param signalValue The new signal value to set.
+     */
+    private void updateSignalStrengthThree(Integer signalValue)
+    {
+        final CellularProtocol protocol = viewModel.getServingCellProtocol().getValue();
+        if (protocol == null) return;
+
+        binding.signalThreeGroup.setVisibility(signalValue == null ? View.GONE : View.VISIBLE);
+        binding.signalThreeValue.setText(signalValue != null ? String.valueOf(signalValue) : "");
+        setSignalStrengthBar(binding.progressBarSignalThree, signalValue, protocol.getMinSignalThree(), protocol.getMaxNormalizedSignalThree());
     }
 
     /**

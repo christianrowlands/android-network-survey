@@ -12,6 +12,7 @@ import android.os.Looper;
 import android.telephony.CellInfo;
 import android.telephony.PhoneStateListener;
 import android.telephony.ServiceState;
+import android.telephony.SignalStrength;
 import android.telephony.SubscriptionInfo;
 import android.telephony.SubscriptionManager;
 import android.telephony.TelephonyManager;
@@ -444,17 +445,21 @@ public class CellularController extends AController
                         {
                             String dataNetworkType = "Unknown";
                             String voiceNetworkType = "Unknown";
+                            TelephonyManager telephonyManager = wrapper.getTelephonyManager();
                             synchronized (cellularLoggingEnabled)
                             {
                                 if (surveyService == null) return;
                                 if (ActivityCompat.checkSelfPermission(surveyService, Manifest.permission.READ_PHONE_STATE) == PackageManager.PERMISSION_GRANTED)
                                 {
-                                    dataNetworkType = CalculationUtils.getNetworkType(wrapper.getTelephonyManager().getDataNetworkType());
-                                    voiceNetworkType = CalculationUtils.getNetworkType(wrapper.getTelephonyManager().getVoiceNetworkType());
+                                    dataNetworkType = CalculationUtils.getNetworkType(telephonyManager.getDataNetworkType());
+                                    voiceNetworkType = CalculationUtils.getNetworkType(telephonyManager.getVoiceNetworkType());
                                 }
                             }
 
-                            surveyRecordProcessor.onCellInfoUpdate(cellInfo, dataNetworkType, voiceNetworkType, subscriptionId);
+                            String networkOperatorName = telephonyManager.getNetworkOperatorName();
+                            SignalStrength signalStrength = telephonyManager.getSignalStrength();
+
+                            surveyRecordProcessor.onCellInfoUpdate(cellInfo, dataNetworkType, voiceNetworkType, subscriptionId, networkOperatorName, signalStrength);
                         }
 
                         @Override
@@ -541,10 +546,19 @@ public class CellularController extends AController
                                 for (TelephonyManagerWrapper wrapper : telephonyManagerList)
                                 {
                                     TelephonyManager subscriptionTelephonyManager = wrapper.getTelephonyManager();
+
+                                    SignalStrength signalStrength = null;
+                                    if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.P)
+                                    {
+                                        signalStrength = subscriptionTelephonyManager.getSignalStrength();
+                                    }
+
                                     surveyRecordProcessor.onCellInfoUpdate(subscriptionTelephonyManager.getAllCellInfo(),
                                             CalculationUtils.getNetworkType(subscriptionTelephonyManager.getDataNetworkType()),
                                             CalculationUtils.getNetworkType(subscriptionTelephonyManager.getVoiceNetworkType()),
-                                            wrapper.getSubscriptionId());
+                                            wrapper.getSubscriptionId(),
+                                            subscriptionTelephonyManager.getNetworkOperatorName(),
+                                            signalStrength);
                                 }
                             } catch (Throwable t)
                             {
@@ -621,10 +635,19 @@ public class CellularController extends AController
                                         for (TelephonyManagerWrapper wrapper : telephonyManagerList)
                                         {
                                             TelephonyManager subscriptionTelephonyManager = wrapper.getTelephonyManager();
+
+                                            SignalStrength signalStrength = null;
+                                            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.P)
+                                            {
+                                                signalStrength = subscriptionTelephonyManager.getSignalStrength();
+                                            }
+
                                             surveyRecordProcessor.onCellInfoUpdate(subscriptionTelephonyManager.getAllCellInfo(),
                                                     CalculationUtils.getNetworkType(subscriptionTelephonyManager.getDataNetworkType()),
                                                     CalculationUtils.getNetworkType(subscriptionTelephonyManager.getVoiceNetworkType()),
-                                                    wrapper.getSubscriptionId());
+                                                    wrapper.getSubscriptionId(),
+                                                    subscriptionTelephonyManager.getNetworkOperatorName(),
+                                                    signalStrength);
                                         }
                                     } catch (Throwable t)
                                     {

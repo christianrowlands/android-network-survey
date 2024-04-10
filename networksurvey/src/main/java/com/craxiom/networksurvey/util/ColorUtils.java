@@ -1,7 +1,5 @@
 package com.craxiom.networksurvey.util;
 
-import android.graphics.Color;
-
 import androidx.annotation.ColorInt;
 
 import com.craxiom.networksurvey.R;
@@ -39,28 +37,30 @@ public class ColorUtils
     {
         int[] colors = new int[NUMBER_COLORS];
 
-        final int minRed = Color.red(minColor);
-        final int minGreen = Color.green(minColor);
-        final int minBlue = Color.blue(minColor);
+        float[] minHSL = new float[3];
+        androidx.core.graphics.ColorUtils.colorToHSL(minColor, minHSL);
 
-        // Determine the difference between the min and max colors
-        int deltaRed = Color.red(maxColor) - minRed;
-        int deltaGreen = Color.green(maxColor) - minGreen;
-        int deltaBlue = Color.blue(maxColor) - minBlue;
+        float[] maxHSL = new float[3];
+        androidx.core.graphics.ColorUtils.colorToHSL(maxColor, maxHSL);
 
-        // Divide the deltas by the number of spaces between colors (which is one less than the number of colors)
-        double stepRed = (double) deltaRed / NUMBER_VALUES;
-        double stepGreen = (double) deltaGreen / NUMBER_VALUES;
-        double stepBlue = (double) deltaBlue / NUMBER_VALUES;
+        // Calculate the differences in the HSL components
+        float deltaH = (maxHSL[0] - minHSL[0]) / NUMBER_VALUES;
+        float deltaS = (maxHSL[1] - minHSL[1]) / NUMBER_VALUES;
+        float deltaL = (maxHSL[2] - minHSL[2]) / NUMBER_VALUES;
 
-        // Don't recalculate the max color; it will not be the same due to rounding error
         for (int i = 0; i < NUMBER_VALUES; i++)
         {
-            int red = (int) (minRed + stepRed * i);
-            int green = (int) (minGreen + stepGreen * i);
-            int blue = (int) (minBlue + stepBlue * i);
+            float[] hsl = {
+                    minHSL[0] + deltaH * i,
+                    Math.max(0f, Math.min(1f, minHSL[1] + deltaS * i)), // Ensure the saturation stays within bounds
+                    Math.max(0f, Math.min(1f, minHSL[2] + deltaL * i))  // Ensure the lightness stays within bounds
+            };
 
-            colors[i] = lightenColor(Color.rgb(red, green, blue), 0.1f);
+            // Adjust saturation and lightness to improve the colors
+            //hsl[1] = adjustSaturation(hsl[1], i);
+            //hsl[2] = adjustLightness(hsl[2], i);
+
+            colors[i] = androidx.core.graphics.ColorUtils.HSLToColor(hsl);
         }
 
         // Add the max color to the list (since it was not added as part of the calculation)
@@ -70,21 +70,30 @@ public class ColorUtils
     }
 
     /**
-     * Lightens a color by the specified {@code value}.
-     *
-     * @param color The color to lighten
-     * @param value A value to lighten the color by in the range of 0.0 to 1.0.
-     * @return The lightened color.
+     * Adjusts the saturation based on the position in the gradient.
      */
-    @ColorInt
-    public static int lightenColor(@ColorInt int color,
-                                   float value)
+    private static float adjustSaturation(float saturation, int position)
     {
-        float[] hsl = new float[3];
-        androidx.core.graphics.ColorUtils.colorToHSL(color, hsl);
-        hsl[2] += value;
-        hsl[2] = Math.max(0f, Math.min(hsl[2], 1f));
-        return androidx.core.graphics.ColorUtils.HSLToColor(hsl);
+        // Example adjustment: Increase saturation in the middle of the gradient
+        if (position > NUMBER_VALUES / 4 && position < 3 * NUMBER_VALUES / 4)
+        {
+            saturation += 0.1F; // Increase saturation by 10%
+        }
+        return Math.max(0f, Math.min(saturation, 1f)); // Ensure saturation remains within bounds
+    }
+
+    /**
+     * Adjusts the lightness based on the position in the gradient.
+     * Similar to adjustSaturation, this method can be customized to enhance visual appeal.
+     */
+    private static float adjustLightness(float lightness, int position)
+    {
+        // Example adjustment: Slightly lighten the middle of the gradient
+        if (position > NUMBER_VALUES / 4 && position < 3 * NUMBER_VALUES / 4)
+        {
+            lightness += 0.05F; // Increase lightness by 5%
+        }
+        return Math.max(0f, Math.min(lightness, 1f)); // Ensure lightness remains within bounds
     }
 
     /**

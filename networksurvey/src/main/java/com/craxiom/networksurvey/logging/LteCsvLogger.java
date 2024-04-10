@@ -21,6 +21,7 @@ import static com.craxiom.networksurvey.constants.csv.LteCsvConstants.RSRQ;
 import static com.craxiom.networksurvey.constants.csv.LteCsvConstants.SERVING_CELL;
 import static com.craxiom.networksurvey.constants.csv.LteCsvConstants.SIGNAL_STRENGTH;
 import static com.craxiom.networksurvey.constants.csv.LteCsvConstants.SLOT;
+import static com.craxiom.networksurvey.constants.csv.LteCsvConstants.SNR;
 import static com.craxiom.networksurvey.constants.csv.LteCsvConstants.SPEED;
 import static com.craxiom.networksurvey.constants.csv.LteCsvConstants.TA;
 import static com.craxiom.networksurvey.constants.csv.LteCsvConstants.TAC;
@@ -54,7 +55,7 @@ public class LteCsvLogger extends CsvRecordLogger implements ICellularSurveyReco
     {
         return new String[]{DEVICE_TIME, LATITUDE, LONGITUDE, ALTITUDE, SPEED, ACCURACY,
                 MISSION_ID, RECORD_NUMBER, GROUP_NUMBER,
-                MCC, MNC, TAC, ECI, EARFCN, PCI, RSRP, RSRQ, TA, SERVING_CELL, LTE_BANDWIDTH, PROVIDER, SIGNAL_STRENGTH, CQI, SLOT};
+                MCC, MNC, TAC, ECI, EARFCN, PCI, RSRP, RSRQ, TA, SERVING_CELL, LTE_BANDWIDTH, PROVIDER, SIGNAL_STRENGTH, CQI, SLOT, SNR};
     }
 
     @Override
@@ -110,6 +111,7 @@ public class LteCsvLogger extends CsvRecordLogger implements ICellularSurveyReco
                 data.hasSignalStrength() ? String.valueOf(data.getSignalStrength().getValue()) : "",
                 data.hasCqi() ? String.valueOf(data.getCqi().getValue()) : "",
                 data.hasSlot() ? String.valueOf(data.getSlot().getValue()) : "",
+                data.hasSnr() ? String.valueOf(data.getSnr().getValue()) : "",
         };
     }
 }

@@ -29,12 +29,14 @@ import android.telephony.CellInfoGsm;
 import android.telephony.CellInfoLte;
 import android.telephony.CellInfoNr;
 import android.telephony.CellInfoWcdma;
+import android.telephony.CellSignalStrength;
 import android.telephony.CellSignalStrengthCdma;
 import android.telephony.CellSignalStrengthGsm;
 import android.telephony.CellSignalStrengthLte;
 import android.telephony.CellSignalStrengthNr;
 import android.telephony.CellSignalStrengthWcdma;
 import android.telephony.ServiceState;
+import android.telephony.SignalStrength;
 import android.telephony.SubscriptionManager;
 import android.telephony.TelephonyManager;
 
@@ -401,7 +403,8 @@ public class SurveyRecordProcessor
      * @param subscriptionId   The subscription ID (aka SIM ID) associated with the cell info records.
      *                         This allows for multi-sim support in NS.
      */
-    public void onCellInfoUpdate(List<CellInfo> allCellInfo, String dataNetworkType, String voiceNetworkType, int subscriptionId) throws SecurityException
+    public void onCellInfoUpdate(List<CellInfo> allCellInfo, String dataNetworkType, String voiceNetworkType,
+                                 int subscriptionId, String networkOperatorName, SignalStrength signalStrength) throws SecurityException
     {
         // synchronized to make sure that we are only processing one list of Cell Info objects at a time.
         synchronized (cellInfoProcessingLock)
@@ -420,7 +423,7 @@ public class SurveyRecordProcessor
 
                     for (CellInfo cellInfo : allCellInfo)
                     {
-                        final CellularRecordWrapper cellularRecord = processCellInfo(cellInfo, subscriptionId);
+                        final CellularRecordWrapper cellularRecord = processCellInfo(cellInfo, subscriptionId, networkOperatorName, signalStrength);
                         if (cellularRecord != null) cellularRecords.add(cellularRecord);
                     }
 
@@ -690,15 +693,17 @@ public class SurveyRecordProcessor
      * @param subscriptionId The subscription ID (aka SIM ID) associated with the cell info record.
      * @since 0.0.5
      */
-    private CellularRecordWrapper processCellInfo(CellInfo cellInfo, int subscriptionId)
+    private CellularRecordWrapper processCellInfo(CellInfo cellInfo, int subscriptionId, String networkOperatorName, SignalStrength signalStrength)
     {
         // We only want to take the time to process a record if we are going to do something with it.  Currently, that
         // means logging, sending to a server, or updating the UI with the latest LTE information.
         if (!cellularSurveyRecordListeners.isEmpty())
         {
+            final String carrierName = getCarrierName(cellInfo, networkOperatorName);
+
             if (cellInfo instanceof CellInfoLte)
             {
-                final LteRecord lteSurveyRecord = generateLteSurveyRecord((CellInfoLte) cellInfo, subscriptionId);
+                final LteRecord lteSurveyRecord = generateLteSurveyRecord((CellInfoLte) cellInfo, subscriptionId, carrierName, signalStrength);
                 if (lteSurveyRecord != null)
                 {
                     notifyLteRecordListeners(lteSurveyRecord);
@@ -706,7 +711,7 @@ public class SurveyRecordProcessor
                 }
             } else if (cellInfo instanceof CellInfoGsm)
             {
-                final GsmRecord gsmRecord = generateGsmSurveyRecord((CellInfoGsm) cellInfo, subscriptionId);
+                final GsmRecord gsmRecord = generateGsmSurveyRecord((CellInfoGsm) cellInfo, subscriptionId, carrierName);
                 if (gsmRecord != null)
                 {
                     notifyGsmRecordListeners(gsmRecord);
@@ -714,7 +719,7 @@ public class SurveyRecordProcessor
                 }
             } else if (cellInfo instanceof CellInfoCdma)
             {
-                final CdmaRecord cdmaRecord = generateCdmaSurveyRecord((CellInfoCdma) cellInfo, subscriptionId);
+                final CdmaRecord cdmaRecord = generateCdmaSurveyRecord((CellInfoCdma) cellInfo, subscriptionId, carrierName);
                 if (cdmaRecord != null)
                 {
                     notifyCdmaRecordListeners(cdmaRecord);
@@ -722,7 +727,7 @@ public class SurveyRecordProcessor
                 }
             } else if (cellInfo instanceof CellInfoWcdma)
             {
-                final UmtsRecord umtsRecord = generateUmtsSurveyRecord((CellInfoWcdma) cellInfo, subscriptionId);
+                final UmtsRecord umtsRecord = generateUmtsSurveyRecord((CellInfoWcdma) cellInfo, subscriptionId, carrierName);
                 if (umtsRecord != null)
                 {
                     notifyUmtsRecordListeners(umtsRecord);
@@ -730,7 +735,7 @@ public class SurveyRecordProcessor
                 }
             } else if (android.os.Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q && cellInfo instanceof CellInfoNr)
             {
-                final NrRecordWrapper nrRecordWrapper = generateNrSurveyRecord((CellInfoNr) cellInfo, subscriptionId);
+                final NrRecordWrapper nrRecordWrapper = generateNrSurveyRecord((CellInfoNr) cellInfo, subscriptionId, carrierName);
                 if (nrRecordWrapper != null)
                 {
                     notifyNrRecordListeners((NrRecord) nrRecordWrapper.cellularRecord);
@@ -740,6 +745,30 @@ public class SurveyRecordProcessor
         }
 
         return null;
+    }
+
+    /**
+     * Tries to get the carrier name from the provided cellInfo object.  If the carrier name is not available from the
+     * cellInfo object, then the provided network operator name is used.
+     */
+    private String getCarrierName(CellInfo cellInfo, String networkOperatorName)
+    {
+        String carrierName = "";
+        if (android.os.Build.VERSION.SDK_INT >= Build.VERSION_CODES.R)
+        {
+            CharSequence operatorAlphaLong = cellInfo.getCellIdentity().getOperatorAlphaLong();
+            if (operatorAlphaLong != null)
+            {
+                carrierName = operatorAlphaLong.toString().trim();
+            }
+        }
+
+        if (carrierName.isEmpty() && networkOperatorName != null)
+        {
+            carrierName = networkOperatorName;
+        }
+
+        return carrierName;
     }
 
     /**
@@ -892,7 +921,7 @@ public class SurveyRecordProcessor
      * @param cellInfoGsm The object that contains the GSM Cell info.  This can be a serving cell or a neighbor cell.
      * @return The survey record.
      */
-    private GsmRecord generateGsmSurveyRecord(CellInfoGsm cellInfoGsm, int subscriptionId)
+    private GsmRecord generateGsmSurveyRecord(CellInfoGsm cellInfoGsm, int subscriptionId, String carrierName)
     {
         final CellIdentityGsm cellIdentity = cellInfoGsm.getCellIdentity();
         final int mcc = cellIdentity.getMcc();
@@ -903,7 +932,10 @@ public class SurveyRecordProcessor
         final int bsic = cellIdentity.getBsic();
 
         CharSequence provider = null;
-        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.P)
+        if (!carrierName.isEmpty())
+        {
+            provider = carrierName;
+        } else if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.P)
         {
             provider = cellIdentity.getOperatorAlphaLong();
         }
@@ -988,7 +1020,7 @@ public class SurveyRecordProcessor
      * @param cellInfoCdma The object that contains the GSM Cell info.  This can be a serving cell or a neighbor cell.
      * @return The survey record.
      */
-    private CdmaRecord generateCdmaSurveyRecord(CellInfoCdma cellInfoCdma, int subscriptionId)
+    private CdmaRecord generateCdmaSurveyRecord(CellInfoCdma cellInfoCdma, int subscriptionId, String carrierName)
     {
         final CellIdentityCdma cellIdentity = cellInfoCdma.getCellIdentity();
         final int sid = cellIdentity.getSystemId();
@@ -997,7 +1029,10 @@ public class SurveyRecordProcessor
         // TODO also get the Base Latitude and Longitude
 
         CharSequence provider = null;
-        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.P)
+        if (!carrierName.isEmpty())
+        {
+            provider = carrierName;
+        } else if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.P)
         {
             provider = cellIdentity.getOperatorAlphaLong();
         }
@@ -1072,7 +1107,7 @@ public class SurveyRecordProcessor
      * @param cellInfoWcdma The object that contains the UMTS Cell info.  This can be a serving cell, or a neighbor cell.
      * @return The survey record.
      */
-    private UmtsRecord generateUmtsSurveyRecord(CellInfoWcdma cellInfoWcdma, int subscriptionId)
+    private UmtsRecord generateUmtsSurveyRecord(CellInfoWcdma cellInfoWcdma, int subscriptionId, String carrierName)
     {
         final CellIdentityWcdma cellIdentity = cellInfoWcdma.getCellIdentity();
         final int mcc = cellIdentity.getMcc();
@@ -1083,7 +1118,10 @@ public class SurveyRecordProcessor
         final int psc = cellIdentity.getPsc();
 
         CharSequence provider = null;
-        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.P)
+        if (!carrierName.isEmpty())
+        {
+            provider = carrierName;
+        } else if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.P)
         {
             provider = cellIdentity.getOperatorAlphaLong();
         }
@@ -1178,7 +1216,7 @@ public class SurveyRecordProcessor
      * @param cellInfoLte The object that contains the LTE Cell info.  This can be a serving cell, or a neighbor cell.
      * @return The survey record.
      */
-    private LteRecord generateLteSurveyRecord(CellInfoLte cellInfoLte, int subscriptionId)
+    private LteRecord generateLteSurveyRecord(CellInfoLte cellInfoLte, int subscriptionId, String carrierName, SignalStrength signalStrength)
     {
         final CellIdentityLte cellIdentity = cellInfoLte.getCellIdentity();
         final int mcc = cellIdentity.getMcc();
@@ -1189,7 +1227,10 @@ public class SurveyRecordProcessor
         final int pci = cellIdentity.getPci();
 
         CharSequence provider = null;
-        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.P)
+        if (!carrierName.isEmpty())
+        {
+            provider = carrierName;
+        } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P)
         {
             provider = cellIdentity.getOperatorAlphaLong();
         }
@@ -1201,7 +1242,7 @@ public class SurveyRecordProcessor
         final int cqi = cellSignalStrengthLte.getCqi();
 
         int rssi = Integer.MAX_VALUE;
-        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q)
         {
             rssi = cellSignalStrengthLte.getRssi();
         }
@@ -1280,6 +1321,35 @@ public class SurveyRecordProcessor
             dataBuilder.setSlot(Int32Value.newBuilder().setValue(subscriptionId).build());
         }
 
+        /*Timber.i("CellSignalStrengthLte: %s", cellSignalStrengthLte.toString());
+        if (signalStrength != null)
+        {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q)
+            {
+                Timber.i("SignalStrength: %s", signalStrength.getCellSignalStrengths().stream().filter(v -> v instanceof CellSignalStrengthLte).collect(Collectors.toList()).get(0).toString());
+            }
+        }*/
+
+        // The signalStrength object is only for the serving cell
+        if (cellInfoLte.isRegistered())
+        {
+            int signalStrengthSnr = getLteRssnr(signalStrength);
+            if (signalStrengthSnr != Integer.MIN_VALUE)
+            {
+                dataBuilder.setSnr(FloatValue.newBuilder().setValue(signalStrengthSnr).build());
+            }
+        }
+
+        // I can't trust the rssnr value from the cellSignalStrengthLte object because it has always been 0 or 1.
+        // Looking at the NetMonster Core source code, they indicate on certain devices the SNR value coming from
+        // cellSignalStrengthLte is divided by 10, but the SignalStrength object has the correct value, so we will
+        // use that value instead.
+        /*int rssnr = cellSignalStrengthLte.getRssnr();
+        if (rssnr != CellInfo.UNAVAILABLE)
+        {
+            dataBuilder.setSnr(FloatValue.newBuilder().setValue(rssnr).build());
+        }*/
+
         setBandwidth(dataBuilder, cellIdentity);
 
         final LteRecord.Builder recordBuilder = LteRecord.newBuilder();
@@ -1290,6 +1360,32 @@ public class SurveyRecordProcessor
         return recordBuilder.build();
     }
 
+    private int getLteRssnr(SignalStrength signalStrengths)
+    {
+        if (signalStrengths != null && android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q)
+        {
+            List<CellSignalStrength> cellSignalStrengths = signalStrengths.getCellSignalStrengths();
+
+            int rssnrValue = Integer.MIN_VALUE; // Initialize with a default invalid value
+
+            for (CellSignalStrength signalStrength : cellSignalStrengths)
+            {
+                // Check if the CellSignalStrength instance is LTE
+                if (signalStrength instanceof CellSignalStrengthLte lteStrength)
+                {
+                    rssnrValue = lteStrength.getRssnr();
+
+                    break;
+                }
+            }
+
+            return rssnrValue;
+        } else
+        {
+            return Integer.MIN_VALUE;
+        }
+    }
+
     /**
      * Given a {@link CellInfoNr} object, pull out the values and generate a {@link NrRecord}.
      *
@@ -1298,7 +1394,7 @@ public class SurveyRecordProcessor
      * @since 1.5.0
      */
     @RequiresApi(api = Build.VERSION_CODES.Q)
-    private NrRecordWrapper generateNrSurveyRecord(CellInfoNr cellInfoNr, int subscriptionId)
+    private NrRecordWrapper generateNrSurveyRecord(CellInfoNr cellInfoNr, int subscriptionId, String carrierName)
     {
         // safe to cast as per: https://developer.android.com/reference/android/telephony/CellInfoNr#getCellIdentity()
         final CellIdentityNr cellIdentity = (CellIdentityNr) cellInfoNr.getCellIdentity();
@@ -1321,9 +1417,11 @@ public class SurveyRecordProcessor
             Timber.i("NR Band: %d", band); // TODO Delete this logging
         }
 
-        // can't extract this to method due to API limitations
         CharSequence provider = null;
-        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.P)
+        if (!carrierName.isEmpty())
+        {
+            provider = carrierName;
+        } else if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.P)
         {
             provider = cellIdentity.getOperatorAlphaLong();
         }

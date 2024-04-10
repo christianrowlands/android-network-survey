@@ -672,6 +672,59 @@
 
                         </androidx.constraintlayout.widget.ConstraintLayout>
 
+                        <androidx.constraintlayout.widget.ConstraintLayout
+                            android:id="@+id/signal_three_group"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_gravity="end">
+
+                            <app.futured.donut.DonutProgressView
+                                android:id="@+id/progress_bar_signal_three"
+                                android:layout_width="100dp"
+                                android:layout_height="100dp"
+                                app:layout_constraintBottom_toBottomOf="parent"
+                                app:layout_constraintLeft_toLeftOf="parent"
+                                app:layout_constraintRight_toRightOf="parent"
+                                app:layout_constraintTop_toTopOf="parent"
+                                app:donut_bgLineColor="@color/fadedGrayColor"
+                                app:donut_gapWidth="90"
+                                app:donut_gapAngle="90"
+                                app:donut_strokeWidth="8dp" />
+
+                            <LinearLayout
+                                android:layout_width="0dp"
+                                android:layout_height="match_parent"
+                                android:layout_weight="1"
+                                android:orientation="vertical"
+                                app:layout_constraintTop_toTopOf="parent"
+                                app:layout_constraintBottom_toBottomOf="parent"
+                                app:layout_constraintStart_toStartOf="parent"
+                                app:layout_constraintEnd_toEndOf="parent">
+
+                                <TextView
+                                    android:id="@+id/signal_three_value"
+                                    style="@style/StandardText"
+                                    android:layout_width="match_parent"
+                                    android:layout_height="match_parent"
+                                    android:gravity="center"
+                                    app:layout_constraintTop_toTopOf="@id/signal_three_group"
+                                    app:layout_constraintEnd_toEndOf="@id/progress_bar_signal_three"
+                                    android:textIsSelectable="true" />
+
+                                <TextView
+                                    android:id="@+id/signal_three_label"
+                                    style="@style/SmallLabelText"
+                                    android:layout_width="match_parent"
+                                    android:layout_height="match_parent"
+                                    android:gravity="center"
+                                    app:layout_constraintTop_toTopOf="@id/signal_three_group"
+                                    app:layout_constraintEnd_toEndOf="@id/progress_bar_signal_three"
+                                    android:text="@string/snr_label" />
+
+                            </LinearLayout>
+
+                        </androidx.constraintlayout.widget.ConstraintLayout>
+
                     </LinearLayout>
 
                 </LinearLayout>

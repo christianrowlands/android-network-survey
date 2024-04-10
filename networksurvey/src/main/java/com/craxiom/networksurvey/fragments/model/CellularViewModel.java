@@ -42,6 +42,7 @@ public class CellularViewModel extends ViewModel
     private final MutableLiveData<String> cqi = new MutableLiveData<>();
     private final MutableLiveData<Integer> signalOne = new MutableLiveData<>(); // Also used for RSSI and SS_RSRP
     private final MutableLiveData<Integer> signalTwo = new MutableLiveData<>(); // Also used for RSCP and SS_RSRQ
+    private final MutableLiveData<Integer> signalThree = new MutableLiveData<>(); // Used for LTE SNR
     private final MutableLiveData<SortedSet<NrNeighbor>> nrNeighbors = new MutableLiveData<>();
     private final MutableLiveData<SortedSet<LteNeighbor>> lteNeighbors = new MutableLiveData<>();
     private final MutableLiveData<SortedSet<UmtsNeighbor>> umtsNeighbors = new MutableLiveData<>();
@@ -265,6 +266,19 @@ public class CellularViewModel extends ViewModel
         if (!Objects.equals(signalTwo.getValue(), newSignal))
         {
             signalTwo.postValue(newSignal);
+        }
+    }
+
+    public LiveData<Integer> getSignalThree()
+    {
+        return signalThree;
+    }
+
+    public void setSignalThree(Integer newSignal)
+    {
+        if (!Objects.equals(signalThree.getValue(), newSignal))
+        {
+            signalThree.postValue(newSignal);
         }
     }
 

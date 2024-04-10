@@ -194,8 +194,9 @@ public class CellularSurveyRecordLogger extends SurveyRecordLogger implements IC
             tableColumns.add(FeatureColumn.createColumn(columnNumber++, LteMessageConstants.TA_COLUMN, GeoPackageDataType.SMALLINT, false, null));
             tableColumns.add(FeatureColumn.createColumn(columnNumber++, LteMessageConstants.BANDWIDTH_COLUMN, GeoPackageDataType.TEXT, false, null));
             tableColumns.add(FeatureColumn.createColumn(columnNumber++, LteCsvConstants.SIGNAL_STRENGTH, GeoPackageDataType.FLOAT, false, null));
-            //noinspection UnusedAssignment
             tableColumns.add(FeatureColumn.createColumn(columnNumber++, LteCsvConstants.CQI, GeoPackageDataType.SMALLINT, false, null));
+            //noinspection UnusedAssignment
+            tableColumns.add(FeatureColumn.createColumn(columnNumber++, LteCsvConstants.SNR, GeoPackageDataType.FLOAT, false, null));
         });
     }
 
@@ -209,8 +210,6 @@ public class CellularSurveyRecordLogger extends SurveyRecordLogger implements IC
      */
     private void createNrRecordTable(GeoPackage geoPackage, SpatialReferenceSystem srs) throws SQLException
     {
-        // TODO: Should we move to a column schema that matches the MQTT messages, use this as the basis for rewriting SurveyRecordLogger#createTable
-        //  and NrMessageConstants for creating a new set of constants
         ContentsDao contentsDao = geoPackage.getContentsDao();
 
         // Note: We are not using the createTable method here because we want to match the MQTT message
@@ -636,6 +635,10 @@ public class CellularSurveyRecordLogger extends SurveyRecordLogger implements IC
                         if (data.hasSlot())
                         {
                             setShortValue(row, CellularCsvConstants.SLOT, data.getSlot().getValue());
+                        }
+                        if (data.hasSnr())
+                        {
+                            row.setValue(LteCsvConstants.SNR, data.getSnr().getValue());
                         }
 
                         setLteBandwidth(row, data.getLteBandwidth());
