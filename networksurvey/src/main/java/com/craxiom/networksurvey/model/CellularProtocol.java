@@ -24,14 +24,16 @@ public enum CellularProtocol
     /**
      * Signal 1 is RSRP
      * Signal 2 is RSRQ
+     * Signal 3 is SNR
      */
     LTE(-125, 35, -23, 11, 2, 13),
 
     /**
      * Signal 1 is SS_RSRP
      * Signal 2 is SS_RSRQ
+     * Signal 3 is SS_SINR
      */
-    NR(-110, 40, -31, 28);
+    NR(-110, 40, -31, 28, -5, 29);
 
     private final int minSignalOne;
     private final int maxNormalizedSignalOne;

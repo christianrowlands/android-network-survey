@@ -468,6 +468,7 @@ public class NetworkDetailsFragment extends AServiceDataFragment implements ICel
                 binding.cqiGroup.setVisibility(View.GONE);
                 binding.signalOneLabel.setText(R.string.rssi_label);
                 binding.signalTwoGroup.setVisibility(View.GONE);
+                binding.signalThreeGroup.setVisibility(View.GONE);
 
                 chartViewModel.setChartTitle("RSSI");
                 chartViewModel.setCellularProtocol(protocol);
@@ -480,6 +481,7 @@ public class NetworkDetailsFragment extends AServiceDataFragment implements ICel
                 binding.enbIdGroup.setVisibility(View.GONE);
                 binding.sectorIdGroup.setVisibility(View.GONE);
                 binding.signalTwoGroup.setVisibility(View.GONE);
+                binding.signalThreeGroup.setVisibility(View.GONE);
 
                 chartViewModel.setChartTitle("RSSI");
                 chartViewModel.setCellularProtocol(protocol);
@@ -497,6 +499,7 @@ public class NetworkDetailsFragment extends AServiceDataFragment implements ICel
                 binding.signalOneLabel.setText(R.string.rssi_label);
                 binding.signalTwoLabel.setText(R.string.rscp_label);
                 binding.signalTwoGroup.setVisibility(View.VISIBLE);
+                binding.signalThreeGroup.setVisibility(View.GONE);
 
                 chartViewModel.setChartTitle("RSCP");
                 chartViewModel.setCellularProtocol(protocol);
@@ -516,6 +519,8 @@ public class NetworkDetailsFragment extends AServiceDataFragment implements ICel
                 binding.signalOneLabel.setText(R.string.rsrp_label);
                 binding.signalTwoLabel.setText(R.string.rsrq_label);
                 binding.signalTwoGroup.setVisibility(View.VISIBLE);
+                binding.signalThreeLabel.setText(R.string.snr_label);
+                binding.signalThreeGroup.setVisibility(View.VISIBLE);
 
                 chartViewModel.setChartTitle("RSRP");
                 chartViewModel.setCellularProtocol(protocol);
@@ -535,6 +540,8 @@ public class NetworkDetailsFragment extends AServiceDataFragment implements ICel
                 binding.signalOneLabel.setText(R.string.ss_rsrp_label);
                 binding.signalTwoLabel.setText(R.string.ss_rsrq_label);
                 binding.signalTwoGroup.setVisibility(View.VISIBLE);
+                binding.signalThreeLabel.setText(R.string.ss_sinr_label);
+                binding.signalThreeGroup.setVisibility(View.VISIBLE);
 
                 chartViewModel.setChartTitle("SS RSRP");
                 chartViewModel.setCellularProtocol(protocol);
@@ -795,6 +802,7 @@ public class NetworkDetailsFragment extends AServiceDataFragment implements ICel
 
         viewModel.setSignalOne(data.hasSsRsrp() ? (int) data.getSsRsrp().getValue() : null);
         viewModel.setSignalTwo(data.hasSsRsrq() ? (int) data.getSsRsrq().getValue() : null);
+        viewModel.setSignalThree(data.hasSsSinr() ? (int) data.getSsSinr().getValue() : null);
     }
 
     /**
@@ -943,8 +951,12 @@ public class NetworkDetailsFragment extends AServiceDataFragment implements ICel
             signalValue = null;
         }
 
+        int valueLabelResourceId = R.string.db_value_label;
+        // For UMTS, the second signal strength is RSCP, and the units is dbm
+        if (protocol == CellularProtocol.UMTS) valueLabelResourceId = R.string.dbm_value_label;
+
         binding.signalTwoGroup.setVisibility(signalValue == null ? View.GONE : View.VISIBLE);
-        binding.signalTwoValue.setText(signalValue != null ? getString(R.string.db_value_label, String.valueOf(signalValue)) : "");
+        binding.signalTwoValue.setText(signalValue != null ? getString(valueLabelResourceId, String.valueOf(signalValue)) : "");
         setSignalStrengthBar(binding.progressBarSignalTwo, signalValue, protocol.getMinSignalTwo(), protocol.getMaxNormalizedSignalTwo());
     }
 
@@ -972,12 +984,9 @@ public class NetworkDetailsFragment extends AServiceDataFragment implements ICel
      */
     private void setSignalStrengthBar(RoundedProgressBar signalStrengthBar, Integer signalValue, int minValue, int maxNormalizedValue)
     {
-        //signalStrengthBar.setProgressTextFormatter(new MyProgressTextFormatter(signalValue));
-
         if (signalValue == null)
         {
             signalStrengthBar.setProgressPercentage(0, false);
-            //signalStrengthBar.showProgressText(false);
             return;
         }
 
@@ -989,9 +998,7 @@ public class NetworkDetailsFragment extends AServiceDataFragment implements ICel
         final int color = ColorUtils.getSignalColorForValue(normalizedValue, maxNormalizedValue);
 
         signalStrengthBar.setProgressDrawableColor(color);
-        //signalStrengthBar.setBackgroundTextColor(color);
         signalStrengthBar.setBackgroundColor(ColorUtils.getFadedColor(color));
-        //signalStrengthBar.showProgressText(true);
         // We want there to be at least a small amount of the bar visible, so we set the minimum to 2%.
         signalStrengthBar.setProgressPercentage(Math.max(2, scaledNormalizedValue), true);
     }
@@ -1303,26 +1310,5 @@ public class NetworkDetailsFragment extends AServiceDataFragment implements ICel
         alertBuilder.setPositiveButton(android.R.string.ok, (dialog, which) -> {
         });
         alertBuilder.create().show();
-    }
-
-    /**
-     * The custom {@link ProgressTextFormatter} that is used to display the signal value in the signal strength bar.
-     */
-    private record MyProgressTextFormatter(Integer signalValue) implements ProgressTextFormatter
-    {
-
-        @NonNull
-        @Override
-        public String getProgressText(float v)
-        {
-            return signalValue == null ? "" : String.valueOf(signalValue);
-        }
-
-        @NonNull
-        @Override
-        public String getMinWidthString()
-        {
-            return "50"; // I have no idea how this is used
-        }
     }
 }
