@@ -25,7 +25,7 @@ public enum CellularProtocol
      * Signal 1 is RSRP
      * Signal 2 is RSRQ
      */
-    LTE(-125, 35, -23, 11, 0, 13),
+    LTE(-125, 35, -23, 11, 2, 13),
 
     /**
      * Signal 1 is SS_RSRP

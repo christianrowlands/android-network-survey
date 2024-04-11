@@ -23,6 +23,9 @@
 
     <dimen name="medium_text_size">18sp</dimen>
 
+    <dimen name="space_between_bars">12dp</dimen>
+    <dimen name="signal_bar_text_size">22sp</dimen>
+
     <!-- GNSS Status view -->
     <dimen name="status_label_right_margin">4dp</dimen>
     <dimen name="column_padding">3dp</dimen>

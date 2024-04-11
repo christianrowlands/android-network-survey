@@ -197,7 +197,7 @@ but work independently, so you have full control over how you handle your data.<
         <b>TA</b> (Timing Advance): The timing offset a mobile device uses to keep its transmissions in sync with the tower. Represents RF distance from the tower, which can be loosely translated to physical distance. Larger numbers indicate the device is further away from the tower.\n\n
         <b>CQI</b> (Channel Quality Indicator): Used by the UE to notify the serving cell (eNodeB) about the quality of the downlink channel. Valid range 0-15 with 15 being the best.\n\n
         <b>RSRP</b> (Reference Signal Received Power): Power of the reference signal in dBm as received by the mobile device. Valid range -44 to -140.\n\n
-        <b>RSRQ</b> (Reference Signal Received Quality): Measures the quality of the received reference signal. Valid range -3 to -19.5 with -3 being the best.\n
+        <b>RSRQ</b> (Reference Signal Received Quality): Measures the quality of the received reference signal. Valid range -3 to -19.5 with -3 being the best.\n\n
         <b>SNR</b> (Signal to Noise Ratio): The Reference Signal Signal-to-Noise Ratio measured in dB. Full Range: -20 dB to +30 dB, with 30 being the best. Common range is 5 to 15 ish.\n
     </string>
     <string name="nr_info_description">NR Terms Info</string>

@@ -1,5 +1,7 @@
 package com.craxiom.networksurvey.util;
 
+import android.graphics.Color;
+
 import androidx.annotation.ColorInt;
 
 import com.craxiom.networksurvey.R;
@@ -24,7 +26,7 @@ public class ColorUtils
     private static final int NUMBER_VALUES = NUMBER_COLORS - 1;
 
     @ColorInt
-    private static final int[] COLOR_BINS = generateRssiColors(0xFFD50000, 0xFF388E3C); // Red and Green
+    private static final int[] COLOR_BINS = generateRssiColors(0xFFc20606, 0xFF338a37); // Red and Green
 
     /**
      * Generates NUMBER_COLORS colors between the minColor and maxColor (inclusive).
@@ -57,7 +59,7 @@ public class ColorUtils
             };
 
             // Adjust saturation and lightness to improve the colors
-            //hsl[1] = adjustSaturation(hsl[1], i);
+            hsl[1] = adjustSaturation(hsl[1], i);
             //hsl[2] = adjustLightness(hsl[2], i);
 
             colors[i] = androidx.core.graphics.ColorUtils.HSLToColor(hsl);
@@ -142,5 +144,20 @@ public class ColorUtils
         }
 
         return colorResourceId;
+    }
+
+    /**
+     * Creates a faded version of the input color by adjusting its alpha value.
+     *
+     * @param color The original color in ARGB format (e.g., 0xFFRRGGBB).
+     * @return The faded color with reduced alpha.
+     */
+    public static int getFadedColor(int color) {
+        // Set the alpha to 10% of its full value to make the color really faded
+        int fadedAlpha = (int) (255 * 0.1); // You can adjust the 0.1 to make it more or less faded
+
+        // Use Color.argb to create a new color with the modified alpha
+        // Maintain the original RGB values
+        return Color.argb(fadedAlpha, Color.red(color), Color.green(color), Color.blue(color));
     }
 }

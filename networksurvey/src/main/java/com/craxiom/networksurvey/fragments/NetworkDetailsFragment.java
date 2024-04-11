@@ -56,6 +56,8 @@ import com.craxiom.networksurvey.util.CellularUtils;
 import com.craxiom.networksurvey.util.ColorUtils;
 import com.craxiom.networksurvey.util.MathUtils;
 import com.craxiom.networksurvey.util.ParserUtils;
+import com.mackhartley.roundedprogressbar.ProgressTextFormatter;
+import com.mackhartley.roundedprogressbar.RoundedProgressBar;
 
 import java.text.DecimalFormat;
 import java.util.ArrayList;
@@ -919,7 +921,6 @@ public class NetworkDetailsFragment extends AServiceDataFragment implements ICel
         if (protocol == null) return;
 
         binding.signalOneGroup.setVisibility(signalValue == null ? View.GONE : View.VISIBLE);
-        binding.signalOneValue.setText(signalValue != null ? String.valueOf(signalValue) : "");
         setSignalStrengthBar(binding.progressBarSignalOne, signalValue, protocol.getMinSignalOne(), protocol.getMaxNormalizedSignalOne());
     }
 
@@ -942,7 +943,6 @@ public class NetworkDetailsFragment extends AServiceDataFragment implements ICel
         }
 
         binding.signalTwoGroup.setVisibility(signalValue == null ? View.GONE : View.VISIBLE);
-        binding.signalTwoValue.setText(signalValue != null ? String.valueOf(signalValue) : "");
         setSignalStrengthBar(binding.progressBarSignalTwo, signalValue, protocol.getMinSignalTwo(), protocol.getMaxNormalizedSignalTwo());
     }
 
@@ -958,7 +958,6 @@ public class NetworkDetailsFragment extends AServiceDataFragment implements ICel
         if (protocol == null) return;
 
         binding.signalThreeGroup.setVisibility(signalValue == null ? View.GONE : View.VISIBLE);
-        binding.signalThreeValue.setText(signalValue != null ? String.valueOf(signalValue) : "");
         setSignalStrengthBar(binding.progressBarSignalThree, signalValue, protocol.getMinSignalThree(), protocol.getMaxNormalizedSignalThree());
     }
 
@@ -968,7 +967,39 @@ public class NetworkDetailsFragment extends AServiceDataFragment implements ICel
      *
      * @param signalValue The new signal value to set, or null if the current value should be cleared.
      */
-    private void setSignalStrengthBar(DonutProgressView signalStrengthBar, Integer signalValue, int minValue, int maxNormalizedValue)
+    private void setSignalStrengthBar(RoundedProgressBar signalStrengthBar, Integer signalValue, int minValue, int maxNormalizedValue)
+    {
+        signalStrengthBar.setProgressTextFormatter(new MyProgressTextFormatter(signalValue));
+
+        if (signalValue == null)
+        {
+            signalStrengthBar.setProgressPercentage(0, false);
+            signalStrengthBar.showProgressText(false);
+            return;
+        }
+
+        int normalizedValue = signalValue <= minValue ? 0 : Math.abs(minValue - signalValue);
+
+        double scaleFactor = 100.0 / maxNormalizedValue;
+        int scaledNormalizedValue = (int) (normalizedValue * scaleFactor);
+
+        final int color = ColorUtils.getSignalColorForValue(normalizedValue, maxNormalizedValue);
+
+        signalStrengthBar.setProgressDrawableColor(color);
+        signalStrengthBar.setBackgroundTextColor(color);
+        signalStrengthBar.setBackgroundColor(ColorUtils.getFadedColor(color));
+        signalStrengthBar.showProgressText(true);
+        // We want there to be at least a small amount of the bar visible, so we set the minimum to 2%.
+        signalStrengthBar.setProgressPercentage(Math.max(2, scaledNormalizedValue), true);
+    }
+
+    /**
+     * Updates the first signal strength indicator UI element with the provided value. If the value is null, then
+     * the current value is cleared and a blank UI element is show.
+     *
+     * @param signalValue The new signal value to set, or null if the current value should be cleared.
+     */
+    private void setSignalStrengthDonut(DonutProgressView signalStrengthBar, Integer signalValue, int minValue, int maxNormalizedValue)
     {
         if (signalValue == null)
         {
@@ -1269,5 +1300,26 @@ public class NetworkDetailsFragment extends AServiceDataFragment implements ICel
         alertBuilder.setPositiveButton(android.R.string.ok, (dialog, which) -> {
         });
         alertBuilder.create().show();
+    }
+
+    /**
+     * The custom {@link ProgressTextFormatter} that is used to display the signal value in the signal strength bar.
+     */
+    private record MyProgressTextFormatter(Integer signalValue) implements ProgressTextFormatter
+    {
+
+        @NonNull
+        @Override
+        public String getProgressText(float v)
+        {
+            return signalValue == null ? "" : String.valueOf(signalValue);
+        }
+
+        @NonNull
+        @Override
+        public String getMinWidthString()
+        {
+            return "50"; // I have no idea how this is used
+        }
     }
 }

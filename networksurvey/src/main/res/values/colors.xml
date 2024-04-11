@@ -11,6 +11,7 @@
     <color name="activeTabColor">#FFFFFF</color>
     <color name="inactiveTabColor">#A2A2A2</color>
     <color name="fadedGrayColor">#60A2A2A2</color>
+    <color name="signalBarBackground">#00FFFFFF</color>
 
 
     <color name="connectionStatusDisconnected">#A21919</color>

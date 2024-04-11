@@ -115,6 +115,7 @@ dependencies {
     implementation 'androidx.recyclerview:recyclerview:1.3.2'
 
     implementation 'app.futured.donut:donut:2.2.3'
+    implementation 'com.github.MackHartley:RoundedProgressBar:3.0.0'
     implementation 'com.patrykandpatrick.vico:core:2.0.0-alpha.6'
     implementation 'com.patrykandpatrick.vico:compose-m3:2.0.0-alpha.6'
 
