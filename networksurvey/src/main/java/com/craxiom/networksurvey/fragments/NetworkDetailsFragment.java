@@ -921,6 +921,7 @@ public class NetworkDetailsFragment extends AServiceDataFragment implements ICel
         if (protocol == null) return;
 
         binding.signalOneGroup.setVisibility(signalValue == null ? View.GONE : View.VISIBLE);
+        binding.signalOneValue.setText(signalValue != null ? getString(R.string.dbm_value_label, String.valueOf(signalValue)) : "");
         setSignalStrengthBar(binding.progressBarSignalOne, signalValue, protocol.getMinSignalOne(), protocol.getMaxNormalizedSignalOne());
     }
 
@@ -943,6 +944,7 @@ public class NetworkDetailsFragment extends AServiceDataFragment implements ICel
         }
 
         binding.signalTwoGroup.setVisibility(signalValue == null ? View.GONE : View.VISIBLE);
+        binding.signalTwoValue.setText(signalValue != null ? getString(R.string.db_value_label, String.valueOf(signalValue)) : "");
         setSignalStrengthBar(binding.progressBarSignalTwo, signalValue, protocol.getMinSignalTwo(), protocol.getMaxNormalizedSignalTwo());
     }
 
@@ -958,6 +960,7 @@ public class NetworkDetailsFragment extends AServiceDataFragment implements ICel
         if (protocol == null) return;
 
         binding.signalThreeGroup.setVisibility(signalValue == null ? View.GONE : View.VISIBLE);
+        binding.signalThreeValue.setText(signalValue != null ? getString(R.string.db_value_label, String.valueOf(signalValue)) : "");
         setSignalStrengthBar(binding.progressBarSignalThree, signalValue, protocol.getMinSignalThree(), protocol.getMaxNormalizedSignalThree());
     }
 
@@ -969,12 +972,12 @@ public class NetworkDetailsFragment extends AServiceDataFragment implements ICel
      */
     private void setSignalStrengthBar(RoundedProgressBar signalStrengthBar, Integer signalValue, int minValue, int maxNormalizedValue)
     {
-        signalStrengthBar.setProgressTextFormatter(new MyProgressTextFormatter(signalValue));
+        //signalStrengthBar.setProgressTextFormatter(new MyProgressTextFormatter(signalValue));
 
         if (signalValue == null)
         {
             signalStrengthBar.setProgressPercentage(0, false);
-            signalStrengthBar.showProgressText(false);
+            //signalStrengthBar.showProgressText(false);
             return;
         }
 
@@ -986,9 +989,9 @@ public class NetworkDetailsFragment extends AServiceDataFragment implements ICel
         final int color = ColorUtils.getSignalColorForValue(normalizedValue, maxNormalizedValue);
 
         signalStrengthBar.setProgressDrawableColor(color);
-        signalStrengthBar.setBackgroundTextColor(color);
+        //signalStrengthBar.setBackgroundTextColor(color);
         signalStrengthBar.setBackgroundColor(ColorUtils.getFadedColor(color));
-        signalStrengthBar.showProgressText(true);
+        //signalStrengthBar.showProgressText(true);
         // We want there to be at least a small amount of the bar visible, so we set the minimum to 2%.
         signalStrengthBar.setProgressPercentage(Math.max(2, scaledNormalizedValue), true);
     }

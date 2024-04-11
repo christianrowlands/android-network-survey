@@ -563,7 +563,10 @@
                     <LinearLayout
                         android:layout_width="wrap_content"
                         android:layout_height="match_parent"
-                        android:layout_margin="@dimen/medium_margin"
+                        android:layout_marginStart="@dimen/small_margin"
+                        android:layout_marginEnd="@dimen/medium_margin"
+                        android:layout_marginTop="@dimen/medium_margin"
+                        android:layout_marginBottom="@dimen/medium_margin"
                         android:orientation="vertical">
 
                         <androidx.constraintlayout.widget.ConstraintLayout
@@ -587,8 +590,20 @@
                                 app:rpbProgressColor="@color/colorAccent"
                                 app:rpbProgressTextColor="@color/normalText"
                                 app:rpbTextPadding="5dp"
-                                app:rpbAnimationLength="@integer/material_motion_duration_long_2"
-                                app:rpbTextSize="@dimen/signal_bar_text_size" />
+                                app:rpbAnimationLength="600" />
+
+                            <TextView
+                                android:id="@+id/signal_one_value"
+                                style="@style/StandardText"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text=""
+                                android:textColor="@color/normalText"
+                                app:layout_constraintStart_toStartOf="@id/progress_bar_signal_one"
+                                app:layout_constraintEnd_toEndOf="@id/progress_bar_signal_one"
+                                app:layout_constraintTop_toTopOf="@id/progress_bar_signal_one"
+                                app:layout_constraintBottom_toBottomOf="@id/progress_bar_signal_one"
+                                android:gravity="center" />
 
                         </androidx.constraintlayout.widget.ConstraintLayout>
 
@@ -624,8 +639,20 @@
                                 app:rpbProgressColor="@color/colorAccent"
                                 app:rpbProgressTextColor="@color/normalText"
                                 app:rpbTextPadding="5dp"
-                                app:rpbAnimationLength="@integer/material_motion_duration_long_2"
-                                app:rpbTextSize="@dimen/signal_bar_text_size" />
+                                app:rpbAnimationLength="600" />
+
+                            <TextView
+                                android:id="@+id/signal_two_value"
+                                style="@style/StandardText"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text=""
+                                android:textColor="@color/normalText"
+                                app:layout_constraintStart_toStartOf="@id/progress_bar_signal_two"
+                                app:layout_constraintEnd_toEndOf="@id/progress_bar_signal_two"
+                                app:layout_constraintTop_toTopOf="@id/progress_bar_signal_two"
+                                app:layout_constraintBottom_toBottomOf="@id/progress_bar_signal_two"
+                                android:gravity="center" />
 
                         </androidx.constraintlayout.widget.ConstraintLayout>
 
@@ -661,8 +688,20 @@
                                 app:rpbProgressColor="@color/colorAccent"
                                 app:rpbProgressTextColor="@color/normalText"
                                 app:rpbTextPadding="5dp"
-                                app:rpbAnimationLength="@integer/material_motion_duration_long_2"
-                                app:rpbTextSize="@dimen/signal_bar_text_size" />
+                                app:rpbAnimationLength="600" />
+
+                            <TextView
+                                android:id="@+id/signal_three_value"
+                                style="@style/StandardText"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text=""
+                                android:textColor="@color/normalText"
+                                app:layout_constraintStart_toStartOf="@id/progress_bar_signal_three"
+                                app:layout_constraintEnd_toEndOf="@id/progress_bar_signal_three"
+                                app:layout_constraintTop_toTopOf="@id/progress_bar_signal_three"
+                                app:layout_constraintBottom_toBottomOf="@id/progress_bar_signal_three"
+                                android:gravity="center" />
 
                         </androidx.constraintlayout.widget.ConstraintLayout>
 

@@ -113,6 +113,8 @@ but work independently, so you have full control over how you handle your data.<
     <string name="rsrp_label">RSRP</string>
     <string name="rsrq_label">RSRQ</string>
     <string name="snr_label">SNR</string>
+    <string name="dbm_value_label">%1$s dBm</string>
+    <string name="db_value_label">%1$s dB</string>
 
     <!-- NR labels -->
     <string name="narfcn_label">NARFCN</string>
