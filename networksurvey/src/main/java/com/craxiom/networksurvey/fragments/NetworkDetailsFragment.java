@@ -532,7 +532,7 @@ public class NetworkDetailsFragment extends AServiceDataFragment implements ICel
                 binding.tacLabel.setText(R.string.tac_label);
                 binding.enbIdGroup.setVisibility(View.GONE);
                 binding.sectorIdGroup.setVisibility(View.GONE);
-                binding.earfcnLabel.setText(R.string.narfcn_label);
+                binding.earfcnLabel.setText(R.string.narfcn_band_label);
                 binding.pciLabel.setText(R.string.pci_label);
                 binding.bandwidthGroup.setVisibility(View.GONE);
                 binding.taGroup.setVisibility(View.GONE);
@@ -999,8 +999,8 @@ public class NetworkDetailsFragment extends AServiceDataFragment implements ICel
 
         signalStrengthBar.setProgressDrawableColor(color);
         signalStrengthBar.setBackgroundColor(ColorUtils.getFadedColor(color));
-        // We want there to be at least a small amount of the bar visible, so we set the minimum to 2%.
-        signalStrengthBar.setProgressPercentage(Math.max(2, scaledNormalizedValue), true);
+        // We want there to be at least a small amount of the bar visible, so we set the minimum to 5%.
+        signalStrengthBar.setProgressPercentage(Math.max(5, scaledNormalizedValue), true);
     }
 
     /**
