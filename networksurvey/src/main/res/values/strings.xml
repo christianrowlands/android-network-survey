@@ -105,7 +105,7 @@ but work independently, so you have full control over how you handle your data.<
     <string name="enb_id_label">eNB ID</string>
     <string name="sector_id_label">Sector ID</string>
     <string name="earfcn_band_label">EARFCN/Band</string>
-    <string name="earfcn_label">EARFCN</string>
+    <string name="earfcn_label">EARFCN/Band</string>
     <string name="pci_label">PCI</string>
     <string name="bandwidth_label">Bandwidth</string>
     <string name="ta_label">TA</string>
