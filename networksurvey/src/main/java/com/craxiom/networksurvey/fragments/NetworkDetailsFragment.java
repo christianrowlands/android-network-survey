@@ -56,7 +56,6 @@ import com.craxiom.networksurvey.util.CellularUtils;
 import com.craxiom.networksurvey.util.ColorUtils;
 import com.craxiom.networksurvey.util.MathUtils;
 import com.craxiom.networksurvey.util.ParserUtils;
-import com.mackhartley.roundedprogressbar.ProgressTextFormatter;
 import com.mackhartley.roundedprogressbar.RoundedProgressBar;
 
 import java.text.DecimalFormat;

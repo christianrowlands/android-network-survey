@@ -4,11 +4,13 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.graphics.Rect;
 import android.os.Bundle;
 import android.telephony.SubscriptionInfo;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ScrollView;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -21,6 +23,7 @@ import androidx.viewpager2.widget.ViewPager2;
 
 import com.craxiom.networksurvey.R;
 import com.craxiom.networksurvey.SimChangeReceiver;
+import com.craxiom.networksurvey.databinding.FragmentMainTabsBinding;
 import com.craxiom.networksurvey.services.NetworkSurveyService;
 import com.craxiom.networksurvey.services.controller.CellularController;
 import com.google.android.material.tabs.TabLayout;
@@ -40,6 +43,8 @@ public class MainCellularFragment extends AServiceDataFragment
     private List<SubscriptionInfo> activeSubscriptionInfoList;
 
     private BroadcastReceiver simBroadcastReceiver;
+    private FragmentMainTabsBinding binding;
+    private boolean scrolledToBottom;
 
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState)
@@ -90,7 +95,21 @@ public class MainCellularFragment extends AServiceDataFragment
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container,
                              @Nullable Bundle savedInstanceState)
     {
-        return inflater.inflate(R.layout.fragment_main_tabs, container, false);
+        binding = FragmentMainTabsBinding.inflate(inflater, container, false);
+
+        binding.mainTabsScrollView.getViewTreeObserver().addOnPreDrawListener(() -> {
+            scrolledToBottom = isScrolledToBottom();
+            return true;
+        });
+
+        binding.mainTabsScrollView.getViewTreeObserver().addOnGlobalLayoutListener(() -> {
+            if (scrolledToBottom)
+            {
+                binding.mainTabsScrollView.fullScroll(ScrollView.FOCUS_DOWN);
+            }
+        });
+
+        return binding.getRoot();
     }
 
     @Override
@@ -211,5 +230,17 @@ public class MainCellularFragment extends AServiceDataFragment
         int subscriptionId = activeSubscriptionInfoList.get(position).getSubscriptionId();
 
         return "SIM " + subscriptionId;
+    }
+
+    /**
+     * @return True if the NestedScrollView is scrolled to the bottom. False otherwise.
+     */
+    private boolean isScrolledToBottom()
+    {
+        Rect scrollBounds = new Rect();
+        binding.mainTabsScrollView.getDrawingRect(scrollBounds);
+        int bottom = binding.mainTabsScrollView.getChildAt(0).getBottom() + binding.mainTabsScrollView.getPaddingBottom();
+        int delta = bottom - scrollBounds.bottom;
+        return delta == 0;
     }
 }

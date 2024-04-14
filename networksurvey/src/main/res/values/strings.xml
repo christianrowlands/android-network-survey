@@ -119,9 +119,9 @@ but work independently, so you have full control over how you handle your data.<
     <!-- NR labels -->
     <string name="narfcn_band_label">NARFCN/Band</string>
     <string name="narfcn_label">NARFCN</string>
-    <string name="ss_rsrp_label">SS_RSRP</string>
-    <string name="ss_rsrq_label">SS_RSRQ</string>
-    <string name="ss_sinr_label">SS_SINR</string>
+    <string name="ss_rsrp_label">SS-RSRP</string>
+    <string name="ss_rsrq_label">SS-RSRQ</string>
+    <string name="ss_sinr_label">SS-SINR</string>
 
     <!-- Dashboard Constants -->
     <string name="card_title_logging_details">File Logging Control</string>
