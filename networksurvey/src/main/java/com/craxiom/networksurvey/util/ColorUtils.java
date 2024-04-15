@@ -157,7 +157,7 @@ public class ColorUtils
     public static int getFadedColor(int color)
     {
         // Set the alpha to 10% of its full value to make the color really faded
-        int fadedAlpha = (int) (255 * 0.1); // You can adjust the 0.1 to make it more or less faded
+        int fadedAlpha = (int) (255 * 0.2); // You can adjust the 0.2 to make it more or less faded
 
         // Use Color.argb to create a new color with the modified alpha
         // Maintain the original RGB values

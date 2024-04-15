@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.23](https://github.com/christianrowlands/android-network-survey/releases/tag/v1.23) - 2024-04-15
+
+* The Reference Signal SNR is now logged in LTE messages as well as displayed in the UI.
+* Adds a fallback for getting the cellular providers name if it is not available from the system.
+* Switched the donut cellular signal strength indicators to a horizontal signal bar.
+* "Anchor" the view at the bottom of the cellular details screen when scrolled to the bottom to ensure that newly added neighbors are immediately visible.
+
 ## [1.22.5](https://github.com/christianrowlands/android-network-survey/releases/tag/v1.22.5) - 2024-04-01
 
 * Adds the band next to the EARFCN in the LTE neighbors table.
@@ -40,7 +47,8 @@
 * Several other improvements to the Wi-Fi spectrum charts.
 * Adds an MDM setting to stop showing the Wi-Fi throttling warning snackbar message.
 * Adds a location provider preference to select which location provider to use.
-* An ALL option was added to allow for adding locations from each location provider to the device status message which can be used for comparison and location analysis.
+* An ALL option was added to allow for adding locations from each location provider to the device
+  status message which can be used for comparison and location analysis.
 * Adds a CSV log file for the device status message.
 * CSV header comments are now added to the top of the CSV log files.
 
