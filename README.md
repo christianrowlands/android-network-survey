@@ -168,6 +168,30 @@ you can use the `mqtt_topic_prefix` field to change the topic to something like
 }
 ```
 
+## Credits and Acknowledgements
+
+### Credits
+
+This project uses elements from the **[GPSTest Android app](https://github.com/barbeau/gpstest)**,
+specifically the GPS user interface components. We appreciate the GPSTest app for making these
+resources available and acknowledge their contribution to the open source community.
+
+### Acknowledgements
+
+We would like to express our gratitude to all the contributors who have dedicated their time and
+skills to this project. Your contributions have been invaluable to the development and success of
+this application.
+
+Thank you to:
+
+<a href="https://github.com/christianrowlands/android-network-survey/graphs/contributors">
+  <img src="https://contrib.rocks/image?repo=christianrowlands/android-network-survey" />
+</a>
+
+Made with [contrib.rocks](https://contrib.rocks).
+
+Your commitment and hard work are sincerely appreciated.
+
 ## Changelog
 
 See the change log for details about each release: [`CHANGELOG.md`](CHANGELOG.md)
