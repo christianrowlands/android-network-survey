@@ -67,6 +67,39 @@ public final class CalculationUtils
     }
 
     /**
+     * Pulls the gNB ID from a 5G NR Cell Identifier (NCI). The gNB ID is the first 22 to 32 bits of the NCI.
+     *
+     * @param nci       The NR Cell ID to pull the gNB ID from.
+     * @param gnbIdBits The number of bits for the gNB ID.
+     * @return The gNB ID.
+     */
+    public static long getGnbIdFromNci(long nci, int gnbIdBits)
+    {
+        if (gnbIdBits < 22 || gnbIdBits > 32)
+        {
+            throw new IllegalArgumentException("gnbIdBits must be between 22 and 32.");
+        }
+        return nci >> (36 - gnbIdBits);
+    }
+
+    /**
+     * Pulls the sector ID from a 5G NR Cell Identifier (NCI). The sector ID is the remaining bits after the gNB ID.
+     *
+     * @param nci       The NR Cell ID to pull the sector ID from.
+     * @param gnbIdBits The number of bits for the gNB ID.
+     * @return The sector ID.
+     */
+    public static long getSectorIdFromNci(long nci, int gnbIdBits)
+    {
+        if (gnbIdBits < 22 || gnbIdBits > 32)
+        {
+            throw new IllegalArgumentException("gnbIdBits must be between 22 and 32.");
+        }
+        int sectorIdBits = 36 - gnbIdBits;
+        return nci & ((1L << sectorIdBits) - 1);
+    }
+
+    /**
      * ¬
      * Given the Android int value for a network type, return the String value that it represents.
      *
