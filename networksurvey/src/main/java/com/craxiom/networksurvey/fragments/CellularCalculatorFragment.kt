@@ -6,7 +6,7 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.compose.ui.platform.ComposeView
 import androidx.fragment.app.Fragment
-import androidx.fragment.app.viewModels
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.craxiom.networksurvey.ui.cellular.CalculatorScreen
 import com.craxiom.networksurvey.ui.cellular.model.CalculatorViewModel
 import com.craxiom.networksurvey.util.NsTheme
@@ -16,7 +16,7 @@ import com.craxiom.networksurvey.util.NsTheme
  */
 class CellularCalculatorFragment : Fragment() {
 
-    private val viewModel: CalculatorViewModel by viewModels()
+    private lateinit var viewModel: CalculatorViewModel
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -24,6 +24,8 @@ class CellularCalculatorFragment : Fragment() {
     ): View {
         return ComposeView(requireContext()).apply {
             setContent {
+                viewModel = viewModel()
+
                 NsTheme {
                     CalculatorScreen(viewModel)
                 }

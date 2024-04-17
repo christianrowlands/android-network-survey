@@ -27,6 +27,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.craxiom.networksurvey.ui.cellular.model.CalculatorNetworkType
@@ -37,11 +38,6 @@ import com.craxiom.networksurvey.ui.cellular.model.GnbIdLengthOption
 fun CalculatorScreen(viewModel: CalculatorViewModel = viewModel()) {
     // This will hold the state for which calculator section is being displayed
     val networkType by viewModel.networkType.collectAsState()
-    val selectedGnbIdLength by viewModel.selectedGnbIdLength.collectAsState()
-    val gnbIdLengthOptions = viewModel.gnbIdLengthOptions
-    val cellIdInput by viewModel.nciInput.collectAsState()
-    val gnbIdOutput by viewModel.gnbIdOutput.collectAsState()
-    val sectorIdOutput by viewModel.nrSectorIdOutput.collectAsState()
 
     Column(
         modifier = Modifier
@@ -56,23 +52,7 @@ fun CalculatorScreen(viewModel: CalculatorViewModel = viewModel()) {
 
         when (networkType) {
             CalculatorNetworkType.NR -> {
-                CardItem {
-                    Column {
-                        GnbIdLengthDropdown(
-                            selectedGnbIdLength,
-                            gnbIdLengthOptions,
-                            viewModel::setSelectedGnbIdLength
-                        )
-                        Spacer(modifier = Modifier.height(16.dp))
-                        NciInputField(cellIdInput, viewModel) {
-                            viewModel.setCellIdInput(it)
-                            viewModel.calculate5GNrGnbIdAndSectorId()
-                        }
-                        Spacer(modifier = Modifier.height(16.dp))
-                        Spacer(modifier = Modifier.height(8.dp))
-                        ResultsDisplay(gnbIdOutput, sectorIdOutput, viewModel)
-                    }
-                }
+                NrCalculators(viewModel = viewModel)
             }
 
             CalculatorNetworkType.LTE -> {
@@ -118,6 +98,35 @@ fun NetworkTypeDropdown(
                     }
                 )
             }
+        }
+    }
+}
+
+@Composable
+fun NrCalculators(viewModel: CalculatorViewModel) {
+    val selectedGnbIdLength by viewModel.selectedGnbIdLength.collectAsState()
+    val gnbIdLengthOptions = viewModel.gnbIdLengthOptions
+    val cellIdInput by viewModel.nciInput.collectAsState()
+    val gnbIdOutput by viewModel.gnbIdOutput.collectAsState()
+    val sectorIdOutput by viewModel.nrSectorIdOutput.collectAsState()
+
+    CardItem {
+        Column {
+            TitleText(text = "NCI to gNB ID and Sector ID")
+
+            GnbIdLengthDropdown(
+                selectedGnbIdLength,
+                gnbIdLengthOptions,
+                viewModel::setSelectedGnbIdLength
+            )
+            Spacer(modifier = Modifier.height(16.dp))
+            NciInputField(cellIdInput, viewModel) {
+                viewModel.setCellIdInput(it)
+                viewModel.calculate5GNrGnbIdAndSectorId()
+            }
+            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(8.dp))
+            ResultsDisplay(gnbIdOutput, sectorIdOutput, viewModel)
         }
     }
 }
@@ -186,7 +195,6 @@ fun ResultsDisplay(gnbIdOutput: String, sectorIdOutput: String, viewModel: Calcu
     Column {
         val nciError by viewModel.nciError.collectAsState()
 
-        Text(text = "Results:", style = MaterialTheme.typography.titleMedium)
         Text(text = "gNB ID: $gnbIdOutput", style = MaterialTheme.typography.bodyLarge)
         Text(text = "Sector ID: $sectorIdOutput", style = MaterialTheme.typography.bodyLarge)
 
@@ -206,6 +214,8 @@ fun LteCalculators(viewModel: CalculatorViewModel) {
             Column {
                 val lteCidError by viewModel.lteCidError.collectAsState()
 
+                TitleText(text = "Cell ID to eNB ID and Sector ID")
+
                 OutlinedTextField(
                     value = viewModel.lteCellIdInput.collectAsState().value,
                     onValueChange = {
@@ -217,7 +227,7 @@ fun LteCalculators(viewModel: CalculatorViewModel) {
                     modifier = Modifier.fillMaxWidth(),
                     isError = lteCidError != null
                 )
-                Spacer(modifier = Modifier.height(4.dp))
+                Spacer(modifier = Modifier.height(6.dp))
                 Text(
                     "eNodeB ID: ${viewModel.enbIdOutput.collectAsState().value}",
                     modifier = Modifier.padding(start = 8.dp)
@@ -241,6 +251,8 @@ fun LteCalculators(viewModel: CalculatorViewModel) {
             Column {
                 val ltePciError by viewModel.ltePciError.collectAsState()
 
+                TitleText(text = "PCI to PSS and SSS")
+
                 OutlinedTextField(
                     value = viewModel.pciInput.collectAsState().value,
                     onValueChange = {
@@ -252,7 +264,7 @@ fun LteCalculators(viewModel: CalculatorViewModel) {
                     modifier = Modifier.fillMaxWidth(),
                     isError = ltePciError != null
                 )
-                Spacer(modifier = Modifier.height(4.dp))
+                Spacer(modifier = Modifier.height(6.dp))
                 Text(
                     "PSS: ${viewModel.pssOutput.collectAsState().value}",
                     modifier = Modifier.padding(start = 8.dp)
@@ -276,6 +288,8 @@ fun LteCalculators(viewModel: CalculatorViewModel) {
             Column {
                 val lteEarfcnError by viewModel.lteEarfcnError.collectAsState()
 
+                TitleText(text = "EARFCN to Band Number")
+
                 OutlinedTextField(
                     value = viewModel.earfcnInput.collectAsState().value,
                     onValueChange = {
@@ -287,7 +301,7 @@ fun LteCalculators(viewModel: CalculatorViewModel) {
                     modifier = Modifier.fillMaxWidth(),
                     isError = lteEarfcnError != null
                 )
-                Spacer(modifier = Modifier.height(4.dp))
+                Spacer(modifier = Modifier.height(6.dp))
                 Text(
                     "Band: ${viewModel.bandOutput.collectAsState().value}",
                     modifier = Modifier.padding(start = 8.dp)
@@ -309,4 +323,17 @@ private fun CardItem(content: @Composable () -> Unit) {
             content()
         }
     }
+}
+
+@Composable
+fun TitleText(text: String) {
+    Text(
+        textAlign = TextAlign.Center,
+        text = text,
+        style = MaterialTheme.typography.titleMedium,
+        color = MaterialTheme.colorScheme.primary,
+        modifier = Modifier
+            .padding(bottom = 6.dp)
+            .fillMaxWidth()
+    )
 }
