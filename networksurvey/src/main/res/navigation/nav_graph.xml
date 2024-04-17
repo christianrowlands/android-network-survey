@@ -89,4 +89,14 @@
         app:action="android.intent.action.VIEW"
         app:data="https://messaging.networksurvey.app/" />
 
+    <activity
+        android:id="@+id/nav_report_issue_activity"
+        app:action="android.intent.action.VIEW"
+        app:data="https://github.com/christianrowlands/android-network-survey/issues/new/choose" />
+
+    <activity
+        android:id="@+id/nav_github_activity"
+        app:action="android.intent.action.VIEW"
+        app:data="https://github.com/christianrowlands/android-network-survey" />
+
 </navigation>

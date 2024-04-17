@@ -27,6 +27,12 @@
             android:icon="@drawable/ic_settings"
             android:title="@string/settings" />
 
+    </group>
+
+    <group
+        android:id="@+id/links"
+        android:checkableBehavior="single">
+
         <item
             android:id="@+id/nav_user_manual_activity"
             android:icon="@drawable/ic_user_manual"
@@ -36,6 +42,16 @@
             android:id="@+id/nav_messaging_activity"
             android:icon="@drawable/ic_schema"
             android:title="@string/messaging_docs" />
+
+        <item
+            android:id="@+id/nav_report_issue_activity"
+            android:icon="@drawable/ic_bug"
+            android:title="@string/report_issue" />
+
+        <item
+            android:id="@+id/nav_github_activity"
+            android:icon="@drawable/ic_github"
+            android:title="@string/github" />
 
     </group>
 

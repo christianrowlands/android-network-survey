@@ -279,6 +279,8 @@ but work independently, so you have full control over how you handle your data.<
     <string name="settings">Settings</string>
     <string name="manual">User Manual</string>
     <string name="messaging_docs">Messaging Docs</string>
+    <string name="report_issue">Report an Issue</string>
+    <string name="github">GitHub</string>
 
     <string name="network_survey_service_description">The Network Survey Service runs when the app needs to do work in the background such as write to the log file or stream data out over active connection</string>
     <string name="connection_service_description">The Connection Service handles managing the connection to a remote server to stream Network Survey data</string>
