@@ -1,5 +1,6 @@
 package com.craxiom.networksurvey;
 
+import android.telephony.TelephonyDisplayInfo;
 import android.telephony.TelephonyManager;
 
 import com.craxiom.networksurvey.constants.NetworkSurveyConstants;
@@ -100,7 +101,6 @@ public final class CalculationUtils
     }
 
     /**
-     * ¬
      * Given the Android int value for a network type, return the String value that it represents.
      *
      * @param networkType The network type in integer form as reported by Android.
@@ -175,5 +175,26 @@ public final class CalculationUtils
             default:
                 return "Unknown";
         }
+    }
+
+    /**
+     * Given the Android int value for an override network type, return the String value that it represents.
+     *
+     * @param networkType The override network type in integer form as reported by Android.
+     * @return The human friendly String representation of the override network type int value.
+     * @see TelephonyDisplayInfo#getOverrideNetworkType()
+     */
+    public static String getOverrideNetworkType(int networkType)
+    {
+        return switch (networkType)
+        {
+            case TelephonyDisplayInfo.OVERRIDE_NETWORK_TYPE_NONE -> "None";
+            case TelephonyDisplayInfo.OVERRIDE_NETWORK_TYPE_LTE_CA -> "LTE-CA";
+            case TelephonyDisplayInfo.OVERRIDE_NETWORK_TYPE_LTE_ADVANCED_PRO -> "LTE Adv Pro";
+            case TelephonyDisplayInfo.OVERRIDE_NETWORK_TYPE_NR_NSA -> "NR NSA";
+            case TelephonyDisplayInfo.OVERRIDE_NETWORK_TYPE_NR_NSA_MMWAVE -> "NR NSA mmWave";
+            case TelephonyDisplayInfo.OVERRIDE_NETWORK_TYPE_NR_ADVANCED -> "NR Advanced";
+            default -> "Unknown";
+        };
     }
 }

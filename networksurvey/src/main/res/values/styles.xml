@@ -37,6 +37,14 @@
         <item name="android:textColor">@color/colorAccent</item>
     </style>
 
+    <style name="SingleLineTitleText" parent="CellularTitleText">
+        <item name="android:maxLines">1</item>
+        <item name="android:autoSizeMaxTextSize">22sp</item>
+        <item name="android:autoSizeMinTextSize">8sp</item>
+        <item name="android:autoSizeTextType">uniform</item>
+        <item name="android:autoSizeStepGranularity">2sp</item>
+    </style>
+
     <style name="TitleText" parent="TextAppearance.AppCompat">
         <item name="android:textSize">22sp</item>
         <item name="android:textColor">#c2c1c1</item>

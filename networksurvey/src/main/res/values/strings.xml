@@ -82,8 +82,9 @@ but work independently, so you have full control over how you handle your data.<
     <string name="grant_bluetooth_connect_permission">The Bluetooth Connect permission is not required for BT survey, but it does allow for getting the device name</string>
     <string name="grant_camera_permission">The Camera Permission is required for scanning QR codes</string>
 
-    <string name="data_network_label">Data Network</string>
     <string name="carrier_label">Carrier</string>
+    <string name="data_network_label">Data Network</string>
+    <string name="override_network_label">Override Network</string>
     <string name="voice_network_label">Voice Network</string>
 
     <!-- GSM labels -->

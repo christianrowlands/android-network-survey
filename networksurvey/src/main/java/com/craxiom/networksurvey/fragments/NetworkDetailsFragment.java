@@ -196,7 +196,7 @@ public class NetworkDetailsFragment extends AServiceDataFragment implements ICel
     }
 
     @Override
-    public void onNetworkType(String dataNetworkType, String voiceNetworkType, int subscriptionId)
+    public void onNetworkType(String dataNetworkType, String voiceNetworkType, int subscriptionId, String overrideNetworkType)
     {
         // The records are for a different SIM, so ignore them because another
         // NetworkDetailsFragment instance will handle them.
@@ -204,6 +204,7 @@ public class NetworkDetailsFragment extends AServiceDataFragment implements ICel
 
         viewModel.setDataNetworkType(dataNetworkType);
         viewModel.setVoiceNetworkType(voiceNetworkType);
+        viewModel.setOverrideNetworkType(overrideNetworkType);
     }
 
     @Override
@@ -243,6 +244,7 @@ public class NetworkDetailsFragment extends AServiceDataFragment implements ICel
         viewModel.getDataNetworkType().observe(viewLifecycleOwner, networkType -> binding.currentDataNetwork.setText(networkType));
         viewModel.getCarrier().observe(viewLifecycleOwner, carrier -> binding.currentCarrier.setText(carrier));
         viewModel.getVoiceNetworkType().observe(viewLifecycleOwner, networkType -> binding.currentVoiceNetwork.setText(networkType));
+        viewModel.getOverrideNetworkType().observe(viewLifecycleOwner, networkType -> binding.currentOverrideNetwork.setText(networkType));
 
         viewModel.getProviderEnabled().observe(viewLifecycleOwner, this::updateLocationProviderStatus);
         viewModel.getLocation().observe(viewLifecycleOwner, this::updateLocationTextView);
@@ -280,6 +282,7 @@ public class NetworkDetailsFragment extends AServiceDataFragment implements ICel
         viewModel.getDataNetworkType().removeObservers(viewLifecycleOwner);
         viewModel.getCarrier().removeObservers(viewLifecycleOwner);
         viewModel.getVoiceNetworkType().removeObservers(viewLifecycleOwner);
+        viewModel.getOverrideNetworkType().removeObservers(viewLifecycleOwner);
 
         viewModel.getProviderEnabled().removeObservers(viewLifecycleOwner);
         viewModel.getLocation().removeObservers(viewLifecycleOwner);

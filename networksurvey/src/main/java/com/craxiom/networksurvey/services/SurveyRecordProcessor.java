@@ -397,14 +397,20 @@ public class SurveyRecordProcessor
      * Process the updated list of {@link CellInfo} objects from the {@link TelephonyManager}.  This list is converted to the appropriate ProtoBuf defined
      * survey records and any listeners are notified of the new records.
      *
-     * @param allCellInfo      The List of {@link CellInfo} records to convert to survey records.
-     * @param dataNetworkType  The data network type (e.g. "LTE"), which might be different than the voice network type.
-     * @param voiceNetworkType The voice network type (e.g. "LTE").
-     * @param subscriptionId   The subscription ID (aka SIM ID) associated with the cell info records.
-     *                         This allows for multi-sim support in NS.
+     * @param allCellInfo         The List of {@link CellInfo} records to convert to survey records.
+     * @param dataNetworkType     The data network type (e.g. "LTE"), which might be different than the voice network type.
+     * @param voiceNetworkType    The voice network type (e.g. "LTE").
+     * @param subscriptionId      The subscription ID (aka SIM ID) associated with the cell info records.
+     *                            This allows for multi-sim support in NS.
+     * @param networkOperatorName The name of the network operator since it is sometimes not available in the CellInfo.
+     * @param signalStrength      The signal strength object that contains the SNR value since it is sometimes not
+     *                            available in the CellInfo object.
+     * @param overrideNetworkType The network type that the provider has specified to override the actual network type
+     *                            with. This is use for marketing purposes to show 5G when the network is really 4G.
      */
     public void onCellInfoUpdate(List<CellInfo> allCellInfo, String dataNetworkType, String voiceNetworkType,
-                                 int subscriptionId, String networkOperatorName, SignalStrength signalStrength) throws SecurityException
+                                 int subscriptionId, String networkOperatorName, SignalStrength signalStrength,
+                                 String overrideNetworkType) throws SecurityException
     {
         // synchronized to make sure that we are only processing one list of Cell Info objects at a time.
         synchronized (cellInfoProcessingLock)
@@ -414,7 +420,7 @@ public class SurveyRecordProcessor
                 /* Timber.v("currentTechnology=%s", currentTechnology);
                 Timber.v("allCellInfo: ");
                 allCellInfo.forEach(cellInfo -> Timber.v(cellInfo.toString()));*/
-                notifyNetworkTypeListeners(dataNetworkType, voiceNetworkType, subscriptionId);
+                notifyNetworkTypeListeners(dataNetworkType, voiceNetworkType, subscriptionId, overrideNetworkType);
 
                 if (allCellInfo != null && !allCellInfo.isEmpty())
                 {
@@ -2331,12 +2337,13 @@ public class SurveyRecordProcessor
      * @param subscriptionId   The subscription ID (aka SIM ID) that the records are associated with.
      * @since 1.6.0
      */
-    private void notifyNetworkTypeListeners(String dataNetworkType, String voiceNetworkType, int subscriptionId)
+    private void notifyNetworkTypeListeners(String dataNetworkType, String voiceNetworkType,
+                                            int subscriptionId, String overrideNetworkType)
     {
         cellularSurveyRecordListeners.forEach(l -> {
             try
             {
-                l.onNetworkType(dataNetworkType, voiceNetworkType, subscriptionId);
+                l.onNetworkType(dataNetworkType, voiceNetworkType, subscriptionId, overrideNetworkType);
             } catch (Exception e)
             {
                 Timber.e(e, "Unable to notify a Cellular Survey Record Listener because of an exception");

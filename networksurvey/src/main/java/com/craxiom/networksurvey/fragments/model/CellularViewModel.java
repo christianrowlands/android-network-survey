@@ -22,6 +22,7 @@ public class CellularViewModel extends ViewModel
     private final MutableLiveData<String> dataNetworkType = new MutableLiveData<>();
     private final MutableLiveData<String> carrier = new MutableLiveData<>();
     private final MutableLiveData<String> voiceNetworkType = new MutableLiveData<>();
+    private final MutableLiveData<String> overrideNetworkType = new MutableLiveData<>();
 
     private final MutableLiveData<Location> location = new MutableLiveData<>();
     private final MutableLiveData<Boolean> providerEnabled = new MutableLiveData<>(true);
@@ -84,6 +85,19 @@ public class CellularViewModel extends ViewModel
         if (!Objects.equals(voiceNetworkType.getValue(), newVoiceNetworkType))
         {
             voiceNetworkType.postValue(newVoiceNetworkType);
+        }
+    }
+
+    public LiveData<String> getOverrideNetworkType()
+    {
+        return overrideNetworkType;
+    }
+
+    public void setOverrideNetworkType(String newOverrideNetworkType)
+    {
+        if (!Objects.equals(overrideNetworkType.getValue(), newOverrideNetworkType))
+        {
+            overrideNetworkType.postValue(newOverrideNetworkType);
         }
     }
 

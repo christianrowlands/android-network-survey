@@ -15,10 +15,13 @@ import android.telephony.ServiceState;
 import android.telephony.SignalStrength;
 import android.telephony.SubscriptionInfo;
 import android.telephony.SubscriptionManager;
+import android.telephony.TelephonyCallback;
+import android.telephony.TelephonyDisplayInfo;
 import android.telephony.TelephonyManager;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.annotation.RequiresApi;
 import androidx.core.app.ActivityCompat;
 import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 
@@ -71,6 +74,7 @@ public class CellularController extends AController
 
     private final List<TelephonyManagerWrapper> telephonyManagerList = new ArrayList<>();
     private final Map<Integer, TelephonyManager.CellInfoCallback> cellInfoCallbackMap = new HashMap<>();
+    private final Map<Integer, OverrideNetworkTypeListener> displayInfoCallbackMap = new HashMap<>();
     private final Object activeSubscriptionInfoListLock = new Object();
     private List<SubscriptionInfo> activeSubscriptionInfoList = new ArrayList<>();
 
@@ -398,6 +402,7 @@ public class CellularController extends AController
                 activeSubscriptionInfoList.clear();
                 telephonyManagerList.clear();
                 cellInfoCallbackMap.clear();
+                displayInfoCallbackMap.clear();
 
                 SubscriptionManager subscriptionManager = SubscriptionManager.from(surveyService.getApplicationContext());
                 if (ActivityCompat.checkSelfPermission(surveyService, Manifest.permission.READ_PHONE_STATE) == PackageManager.PERMISSION_GRANTED)
@@ -436,6 +441,11 @@ public class CellularController extends AController
             {
                 for (TelephonyManagerWrapper wrapper : telephonyManagerList)
                 {
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S)
+                    {
+                        displayInfoCallbackMap.put(wrapper.getSubscriptionId(), new OverrideNetworkTypeListener());
+                    }
+
                     cellInfoCallbackMap.put(wrapper.getSubscriptionId(), new TelephonyManager.CellInfoCallback()
                     {
                         final int subscriptionId = wrapper.getSubscriptionId();
@@ -459,7 +469,18 @@ public class CellularController extends AController
                             String networkOperatorName = telephonyManager.getNetworkOperatorName();
                             SignalStrength signalStrength = telephonyManager.getSignalStrength();
 
-                            surveyRecordProcessor.onCellInfoUpdate(cellInfo, dataNetworkType, voiceNetworkType, subscriptionId, networkOperatorName, signalStrength);
+                            String overrideNetworkType = "N/A";
+                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S)
+                            {
+                                OverrideNetworkTypeListener overrideNetworkTypeListener = displayInfoCallbackMap.get(subscriptionId);
+                                if (overrideNetworkTypeListener != null)
+                                {
+                                    overrideNetworkType = CalculationUtils.getOverrideNetworkType(overrideNetworkTypeListener.overrideNetworkType);
+                                }
+                            }
+                            surveyRecordProcessor.onCellInfoUpdate(cellInfo, dataNetworkType, voiceNetworkType,
+                                    subscriptionId, networkOperatorName, signalStrength,
+                                    overrideNetworkType);
                         }
 
                         @Override
@@ -529,6 +550,8 @@ public class CellularController extends AController
                     {
                         for (TelephonyManagerWrapper wrapper : telephonyManagerList)
                         {
+                            // Skipping the override network type listener because we don't need it for a single scan
+
                             TelephonyManager.CellInfoCallback callback = cellInfoCallbackMap.get(wrapper.getSubscriptionId());
                             if (callback != null)
                             {
@@ -558,7 +581,8 @@ public class CellularController extends AController
                                             CalculationUtils.getNetworkType(subscriptionTelephonyManager.getVoiceNetworkType()),
                                             wrapper.getSubscriptionId(),
                                             subscriptionTelephonyManager.getNetworkOperatorName(),
-                                            signalStrength);
+                                            signalStrength,
+                                            "None");
                                 }
                             } catch (Throwable t)
                             {
@@ -596,6 +620,18 @@ public class CellularController extends AController
             }
 
             final int handlerTaskId = cellularScanningTaskId.incrementAndGet();
+
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S)
+            {
+                for (TelephonyManagerWrapper wrapper : telephonyManagerList)
+                {
+                    OverrideNetworkTypeListener displayInfoListener = displayInfoCallbackMap.get(wrapper.getSubscriptionId());
+                    if (displayInfoListener != null)
+                    {
+                        wrapper.getTelephonyManager().registerTelephonyCallback(executorService, displayInfoListener);
+                    }
+                }
+            }
 
             serviceHandler.postDelayed(new Runnable()
             {
@@ -637,7 +673,7 @@ public class CellularController extends AController
                                             TelephonyManager subscriptionTelephonyManager = wrapper.getTelephonyManager();
 
                                             SignalStrength signalStrength = null;
-                                            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.P)
+                                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P)
                                             {
                                                 signalStrength = subscriptionTelephonyManager.getSignalStrength();
                                             }
@@ -647,7 +683,8 @@ public class CellularController extends AController
                                                     CalculationUtils.getNetworkType(subscriptionTelephonyManager.getVoiceNetworkType()),
                                                     wrapper.getSubscriptionId(),
                                                     subscriptionTelephonyManager.getNetworkOperatorName(),
-                                                    signalStrength);
+                                                    signalStrength,
+                                                    "N/A");
                                         }
                                     } catch (Throwable t)
                                     {
@@ -676,6 +713,18 @@ public class CellularController extends AController
     {
         Timber.d("Setting the cellular scanning active flag to false");
         cellularScanningActive.set(false);
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S)
+        {
+            for (TelephonyManagerWrapper wrapper : telephonyManagerList)
+            {
+                OverrideNetworkTypeListener displayInfoListener = displayInfoCallbackMap.get(wrapper.getSubscriptionId());
+                if (displayInfoListener != null)
+                {
+                    wrapper.getTelephonyManager().unregisterTelephonyCallback(displayInfoListener);
+                }
+            }
+        }
 
         if (surveyService != null) surveyService.updateLocationListener();
     }
@@ -752,6 +801,18 @@ public class CellularController extends AController
         } catch (Exception e)
         {
             Timber.e(e, "An exception occurred trying to send out a ping ");
+        }
+    }
+
+    @RequiresApi(api = Build.VERSION_CODES.S)
+    private static class OverrideNetworkTypeListener extends TelephonyCallback implements TelephonyCallback.DisplayInfoListener
+    {
+        int overrideNetworkType = -1;
+
+        @Override
+        public void onDisplayInfoChanged(@NonNull TelephonyDisplayInfo telephonyDisplayInfo)
+        {
+            overrideNetworkType = telephonyDisplayInfo.getOverrideNetworkType();
         }
     }
 }
