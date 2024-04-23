@@ -218,6 +218,9 @@ but work independently, so you have full control over how you handle your data.<
         <b>SS_RSRQ</b> (Secondary Synchronization Reference Signal Received Quality): Measures the quality of the received reference signal. Valid range 20 to -43 with 20 being the best.\n
     </string>
 
+    <string name="override_network_info_title">What is an Override Network?</string>
+    <string name="override_network_explanation">The override network type is for market branding or visualization purposes only. It cannot be treated as the actual network type the device is camped on.\n\nIn other words, service providers want the user to think they are on a better network than they actually are such as showing 5G in the top bar when it is really a 4G network.</string>
+
     <string name="missing_location_permission">Missing Location Permission</string>
     <string name="no_gps_device">No GPS detected in device!</string>
     <string name="turn_on_gps">Please turn on GPS</string>

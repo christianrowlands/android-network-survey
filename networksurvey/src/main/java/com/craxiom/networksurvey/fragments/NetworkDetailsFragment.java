@@ -230,6 +230,7 @@ public class NetworkDetailsFragment extends AServiceDataFragment implements ICel
      */
     private void initializeUiListeners()
     {
+        binding.overrideNetworkGroup.setOnClickListener(c -> showOverrideNetworkInfoDialog());
         binding.cellularInfoIcon.setOnClickListener(c -> showCellularInfoDialog());
     }
 
@@ -1259,6 +1260,23 @@ public class NetworkDetailsFragment extends AServiceDataFragment implements ICel
         final TextView view = new TextView(context, null, 0, R.style.TableText);
         view.setText(cellText);
         row.addView(view);
+    }
+
+    /**
+     * Displays a dialog with a description about the Override Network.
+     */
+    private void showOverrideNetworkInfoDialog()
+    {
+        final Context context = getContext();
+        if (context == null) return;
+
+        AlertDialog.Builder alertBuilder = new AlertDialog.Builder(context);
+        alertBuilder.setCancelable(true);
+        alertBuilder.setTitle(getString(R.string.override_network_info_title));
+        alertBuilder.setMessage(getString(R.string.override_network_explanation));
+        alertBuilder.setPositiveButton(android.R.string.ok, (dialog, which) -> {
+        });
+        alertBuilder.create().show();
     }
 
     /**
