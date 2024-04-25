@@ -12,6 +12,9 @@ import android.location.LocationManager;
 import android.location.LocationProvider;
 import android.os.Bundle;
 import android.view.LayoutInflater;
+import android.view.Menu;
+import android.view.MenuInflater;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TableLayout;
@@ -22,9 +25,12 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AlertDialog;
 import androidx.core.app.ActivityCompat;
+import androidx.core.view.MenuProvider;
+import androidx.fragment.app.FragmentActivity;
 import androidx.lifecycle.LifecycleOwner;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.lifecycle.ViewModelStoreOwner;
+import androidx.navigation.Navigation;
 import androidx.navigation.fragment.NavHostFragment;
 
 import com.craxiom.messaging.GsmRecord;
@@ -52,10 +58,13 @@ import com.craxiom.networksurvey.model.NrRecordWrapper;
 import com.craxiom.networksurvey.services.NetworkSurveyService;
 import com.craxiom.networksurvey.ui.cellular.CellularChartViewModel;
 import com.craxiom.networksurvey.ui.cellular.ComposeFunctions;
+import com.craxiom.networksurvey.ui.cellular.model.ServingCellInfo;
 import com.craxiom.networksurvey.util.CellularUtils;
 import com.craxiom.networksurvey.util.ColorUtils;
 import com.craxiom.networksurvey.util.MathUtils;
 import com.craxiom.networksurvey.util.ParserUtils;
+import com.google.protobuf.Descriptors;
+import com.google.protobuf.GeneratedMessageV3;
 import com.mackhartley.roundedprogressbar.RoundedProgressBar;
 
 import java.text.DecimalFormat;
@@ -75,7 +84,7 @@ import timber.log.Timber;
  *
  * @since 1.6.0 (It really came earlier, but was minimal until the 1.6.0 rewrite.
  */
-public class NetworkDetailsFragment extends AServiceDataFragment implements ICellularSurveyRecordListener, LocationListener
+public class NetworkDetailsFragment extends AServiceDataFragment implements ICellularSurveyRecordListener, LocationListener, MenuProvider
 {
     public static final String SUBSCRIPTION_ID_KEY = "subscription_id";
 
@@ -94,6 +103,7 @@ public class NetworkDetailsFragment extends AServiceDataFragment implements ICel
     private FragmentNetworkDetailsBinding binding;
     private CellularViewModel viewModel;
     private CellularChartViewModel chartViewModel;
+    private CellularRecordWrapper latestServingCellRecord;
 
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState)
@@ -125,6 +135,12 @@ public class NetworkDetailsFragment extends AServiceDataFragment implements ICel
 
         chartViewModel.addInitialRssi(UNKNOWN_RSSI);
         ComposeFunctions.setContent(binding.composeView, chartViewModel);
+
+        FragmentActivity activity = getActivity();
+        if (activity != null)
+        {
+            activity.addMenuProvider(this, getViewLifecycleOwner());
+        }
 
         return binding.getRoot();
     }
@@ -223,6 +239,35 @@ public class NetworkDetailsFragment extends AServiceDataFragment implements ICel
     public void onLocationChanged(@NonNull Location location)
     {
         viewModel.setLocation(location);
+    }
+
+    @Override
+    public void onCreateMenu(@NonNull Menu menu, @NonNull MenuInflater menuInflater)
+    {
+        menuInflater.inflate(R.menu.cellular_details_menu, menu);
+    }
+
+    @Override
+    public boolean onMenuItemSelected(@NonNull MenuItem menuItem)
+    {
+        if (menuItem.getItemId() == R.id.action_open_tower_map)
+        {
+            navigateToTowerMap();
+            return true;
+        }
+        return false;
+    }
+
+    /**
+     * Navigates to the cell tower map screen.
+     */
+    public void navigateToTowerMap()
+    {
+        FragmentActivity activity = getActivity();
+        if (activity == null) return;
+
+        Navigation.findNavController(activity, R.id.main_content)
+                .navigate(MainCellularFragmentDirections.actionMainCellularFragmentToTowerMapFragment(new ServingCellInfo(latestServingCellRecord, subscriptionId)));
     }
 
     /**
@@ -583,6 +628,11 @@ public class NetworkDetailsFragment extends AServiceDataFragment implements ICel
         final List<NrRecordData> nrNeighbors = new ArrayList<>();
         for (CellularRecordWrapper cellularRecord : cellularGroup)
         {
+            if (isServingCell(cellularRecord.cellularRecord))
+            {
+                latestServingCellRecord = cellularRecord;
+            }
+
             switch (cellularRecord.cellularProtocol)
             {
                 case NONE:
@@ -646,6 +696,22 @@ public class NetworkDetailsFragment extends AServiceDataFragment implements ICel
         processUmtsNeighbors(umtsNeighbors);
         processLteNeighbors(lteNeighbors);
         processNrNeighbors(nrNeighbors);
+    }
+
+    /**
+     * @return Returns true if the servingCell field is present and also set to true.
+     */
+    private boolean isServingCell(GeneratedMessageV3 message)
+    {
+        try
+        {
+            Descriptors.Descriptor descriptor = message.getDescriptorForType();
+            Descriptors.FieldDescriptor field = descriptor.findFieldByName("servingCell");
+            return (boolean) message.getField(field);
+        } catch (Exception e)
+        {
+            return false;
+        }
     }
 
     /**

@@ -6,6 +6,7 @@ import android.content.Intent;
 import android.content.ServiceConnection;
 import android.os.IBinder;
 
+import androidx.annotation.CallSuper;
 import androidx.fragment.app.Fragment;
 
 import com.craxiom.networksurvey.services.NetworkSurveyService;
@@ -67,6 +68,7 @@ public abstract class AServiceDataFragment extends Fragment
      *
      * @param surveyService The service reference to make calls on.
      */
+    @CallSuper
     protected void onSurveyServiceDisconnecting(NetworkSurveyService surveyService)
     {
         service = null;

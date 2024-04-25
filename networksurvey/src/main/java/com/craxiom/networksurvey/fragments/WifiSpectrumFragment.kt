@@ -28,7 +28,7 @@ import com.craxiom.networksurvey.util.PreferenceUtils
 import com.craxiom.networksurvey.util.WifiUtils
 
 /**
- * The fragment that displays the details of a single Wifi network from the scan results.
+ * The fragment that enables visualizing the the latest scan results on a simple spectrum view.
  */
 class WifiSpectrumFragment : AServiceDataFragment(), IWifiSurveyRecordListener {
     private lateinit var screenViewModel: WifiSpectrumScreenViewModel

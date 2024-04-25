@@ -14,6 +14,8 @@ android {
     compileSdk 34
     defaultConfig {
         buildConfigField "String", "MESSAGING_API_VERSION", "\"${networkSurveyMessagingVersion}\""
+        buildConfigField 'String', "MAPBOX_ACCESS_TOKEN", "\"${MAPBOX_ACCESS_TOKEN}\""
+        buildConfigField 'String', "NS_API_KEY", "\"${NS_API_KEY}\""
         applicationId "com.craxiom.networksurvey"
         minSdkVersion 26
         targetSdkVersion 34
@@ -121,11 +123,17 @@ dependencies {
 
     implementation 'com.github.yuriy-budiyev:code-scanner:2.1.2'
 
+    implementation 'com.mapbox.extension:maps-compose:11.3.0'
+    implementation 'com.mapbox.maps:android:11.3.0'
+
+    implementation 'com.squareup.retrofit2:retrofit:2.9.0'
+    implementation 'com.squareup.retrofit2:converter-gson:2.9.0'
+
     implementation 'org.projectlombok:lombok:1.18.24'
     annotationProcessor 'org.projectlombok:lombok:1.18.24'
 
     // Compose
-    def composeBom = platform('androidx.compose:compose-bom:2024.02.02')
+    def composeBom = platform('androidx.compose:compose-bom:2024.04.01')
     implementation(composeBom)
     androidTestImplementation(composeBom)
 
@@ -142,7 +150,7 @@ dependencies {
     implementation "com.google.accompanist:accompanist-themeadapter-material:0.28.0"
 
     // Only include firebase in the google play build
-    regularImplementation platform('com.google.firebase:firebase-bom:32.7.4')
+    regularImplementation platform('com.google.firebase:firebase-bom:32.8.1')
     regularImplementation 'com.google.firebase:firebase-analytics'
     regularImplementation 'com.google.firebase:firebase-crashlytics'
 

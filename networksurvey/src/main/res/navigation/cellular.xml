@@ -19,6 +19,30 @@
         <action
             android:id="@+id/action_main_to_settings"
             app:destination="@id/settings_fragment" />
+
+        <action
+            android:id="@+id/action_main_cellular_fragment_to_tower_map_fragment"
+            app:destination="@id/tower_map_fragment"
+            app:launchSingleTop="true"
+            app:popUpTo="@+id/main_cellular_fragment"
+            app:popUpToInclusive="false">
+
+            <argument
+                android:name="servingCell"
+                app:argType="com.craxiom.networksurvey.ui.cellular.model.ServingCellInfo"
+                app:nullable="false" />
+        </action>
+    </fragment>
+
+    <fragment
+        android:id="@+id/tower_map_fragment"
+        android:name="com.craxiom.networksurvey.fragments.TowerMapFragment"
+        android:label="Tower Map">
+
+        <argument
+            android:name="servingCell"
+            app:argType="com.craxiom.networksurvey.ui.cellular.model.ServingCellInfo"
+            app:nullable="false" />
     </fragment>
 
 </navigation>
