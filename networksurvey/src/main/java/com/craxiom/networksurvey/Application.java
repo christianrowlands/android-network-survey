@@ -66,6 +66,9 @@ public class Application extends android.app.Application
         // If this is a debug apk, then we enable logging. If it is a release apk we don't want to output any logs.
         if (BuildConfig.DEBUG) Timber.plant(new Timber.DebugTree());
 
+        // Required for osmdroid
+        org.osmdroid.config.Configuration.getInstance().setUserAgentValue(BuildConfig.APPLICATION_ID);
+
         mApp = this;
         mPrefs = PreferenceManager.getDefaultSharedPreferences(this);
     }

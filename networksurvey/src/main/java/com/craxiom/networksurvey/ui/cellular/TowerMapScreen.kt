@@ -1,12 +1,12 @@
 package com.craxiom.networksurvey.ui.cellular
 
-import android.content.Context
-import android.graphics.Color
-import android.widget.Toast
+import androidx.appcompat.content.res.AppCompatResources.getDrawable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -15,55 +15,51 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.viewinterop.AndroidView
+import androidx.core.graphics.BlendModeColorFilterCompat
+import androidx.core.graphics.BlendModeCompat
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.craxiom.networksurvey.BuildConfig
+import com.craxiom.networksurvey.R
 import com.craxiom.networksurvey.ui.cellular.model.TowerMapViewModel
 import com.google.gson.annotations.SerializedName
-import com.mapbox.common.MapboxOptions
-import com.mapbox.geojson.Point
-import com.mapbox.maps.CoordinateBounds
-import com.mapbox.maps.MapView
-import com.mapbox.maps.MapboxExperimental
-import com.mapbox.maps.Style
-import com.mapbox.maps.extension.compose.MapEffect
-import com.mapbox.maps.extension.compose.MapboxMap
-import com.mapbox.maps.extension.compose.animation.viewport.rememberMapViewportState
-import com.mapbox.maps.extension.compose.annotation.generated.PointAnnotationGroup
-import com.mapbox.maps.extension.compose.style.MapStyle
-import com.mapbox.maps.extension.style.expressions.dsl.generated.literal
-import com.mapbox.maps.extension.style.expressions.generated.Expression
-import com.mapbox.maps.plugin.annotation.AnnotationConfig
-import com.mapbox.maps.plugin.annotation.AnnotationSourceOptions
-import com.mapbox.maps.plugin.annotation.ClusterOptions
-import com.mapbox.maps.plugin.annotation.generated.PointAnnotationOptions
-import com.mapbox.maps.toCameraOptions
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
-import okhttp3.Cache
 import okhttp3.OkHttpClient
-import okhttp3.Request
+import org.osmdroid.events.DelayedMapListener
+import org.osmdroid.events.MapListener
+import org.osmdroid.events.ScrollEvent
+import org.osmdroid.events.ZoomEvent
+import org.osmdroid.tileprovider.tilesource.TileSourceFactory
+import org.osmdroid.util.BoundingBox
+import org.osmdroid.util.GeoPoint
+import org.osmdroid.views.CustomZoomButtonsController
+import org.osmdroid.views.MapView
+import org.osmdroid.views.overlay.Marker
+import org.osmdroid.views.overlay.compass.CompassOverlay
+import org.osmdroid.views.overlay.compass.InternalCompassOrientationProvider
+import org.osmdroid.views.overlay.infowindow.InfoWindow
+import org.osmdroid.views.overlay.mylocation.GpsMyLocationProvider
+import org.osmdroid.views.overlay.mylocation.MyLocationNewOverlay
 import retrofit2.Response
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import retrofit2.http.GET
 import retrofit2.http.Query
 import timber.log.Timber
-import java.io.BufferedInputStream
-import java.io.BufferedReader
-import java.io.File
-import java.io.IOException
-import java.io.InputStreamReader
-import java.nio.charset.Charset
 import java.util.Collections
+import kotlin.math.atan2
+import kotlin.math.cos
+import kotlin.math.sin
+import kotlin.math.sqrt
 
 
-const val ZOOM: Double = 9.0
+const val INITIAL_ZOOM: Double = 8.0
 const val MIN_ZOOM_LEVEL = 7.0
 const val MAX_AREA_SQ_METERS = 400_000_000.0
 const val ICON_TOWER = "communications-tower"
@@ -74,120 +70,17 @@ private const val MAX_TOWERS_ON_MAP = 5000
  * Creates the map view for displaying the tower locations. The tower locations are pulled from the
  * NS backend.
  */
-@OptIn(MapboxExperimental::class)
 @Composable
 internal fun TowerMapScreen(viewModel: TowerMapViewModel = viewModel()) {
-    MapboxOptions.accessToken = BuildConfig.MAPBOX_ACCESS_TOKEN
 
-    var isLoadingInProgress by remember {
-        mutableStateOf(true)
-    }
-    var isZoomedOutTooFar by remember {
-        mutableStateOf(false)
-    }
-    var points by remember {
-        mutableStateOf<LinkedHashSet<Point>>(LinkedHashSet())
-    }
-    val mapViewportState = rememberMapViewportState {
-        setCameraOptions {
-            center(Point.fromLngLat(-80.854, 35.410))
-            zoom(ZOOM)
-        }
-    }
-    val context = LocalContext.current
-    var towerMapView: MapView? = null
-    var lastQueriedBounds by remember { mutableStateOf<CoordinateBounds?>(null) }
-    var lastJob by remember { mutableStateOf<Job?>(null) }
+    val isLoadingInProgress by viewModel.isLoadingInProgress.collectAsStateWithLifecycle()
+    val isZoomedOutTooFar by viewModel.isZoomedOutTooFar.collectAsStateWithLifecycle()
 
-    // ExampleScaffold { TODO Look into the ExampleScaffold from the example app
-    MapboxMap(
-        Modifier.fillMaxSize(),
-        mapViewportState = mapViewportState,
-        style = {
-            MapStyle(style = Style.LIGHT)
-            //MapStyle(style = Style.SATELLITE_STREETS)
-        }
+    Surface(
+        modifier = Modifier.fillMaxSize(),
+        color = MaterialTheme.colorScheme.background
     ) {
-        MapEffect(Unit) { mapView ->
-            towerMapView = mapView
-            mapView.mapboxMap.subscribeMapIdle { cameraPosition ->
-                Timber.d("Map is idle at: $cameraPosition")
-                val bounds =
-                    towerMapView!!.mapboxMap.coordinateBoundsForCamera(towerMapView!!.mapboxMap.cameraState.toCameraOptions())
-
-                if (lastQueriedBounds != null && lastQueriedBounds!! == bounds) {
-                    Timber.d("The bounds have not changed, so we do not need to load the towers")
-                    return@subscribeMapIdle
-                }
-
-                val area = calculateArea(bounds)
-                if (mapView.mapboxMap.cameraState.zoom >= MIN_ZOOM_LEVEL && area <= MAX_AREA_SQ_METERS) {
-                    isLoadingInProgress = true
-                    isZoomedOutTooFar = false
-                    lastQueriedBounds = bounds
-                    Timber.d("The zoom level is appropriate to show the towers")
-
-                    lastJob?.cancel() // Cancel the previous job if it is still running
-                    lastJob = viewModel.viewModelScope.launch {
-                        val towerPoints = loadTowers(bounds, viewModel)
-                        Timber.d("Loaded ${towerPoints.size} towers")
-
-                        // TODO Add a text overlay if no towers are found
-
-                        towerPoints.forEach {
-                            val newPoint: Point = it
-                            // FIXME Checking !points.contains(newPoint) is not the right way to do this
-                            //  because we can have multiple towers at the same location
-                            if (points.size >= MAX_TOWERS_ON_MAP && !points.contains(newPoint)) {
-                                points.remove(points.first())
-                            }
-                            points.add(newPoint)
-                        }
-
-                        isLoadingInProgress = false
-                    }
-                } else {
-                    isLoadingInProgress = false
-                    isZoomedOutTooFar = true
-                    Timber.d(
-                        "The zoom level is too high or the area is too large to show the towers %s",
-                        area.toBigDecimal().toPlainString()
-                    )
-                }
-            }
-        }
-
-        PointAnnotationGroup(
-            annotations = points.map {
-                PointAnnotationOptions()
-                    .withPoint(it)
-                    .withIconImage(ICON_TOWER)
-                    .withIconSize(1.5)
-            },
-            annotationConfig = AnnotationConfig(
-                annotationSourceOptions = AnnotationSourceOptions(
-                    clusterOptions = ClusterOptions(
-                        textColorExpression = Expression.color(Color.YELLOW),
-                        textColor = Color.BLACK, // Will not be applied as textColorExpression has been set
-                        textSize = 20.0,
-                        circleRadiusExpression = literal(25.0),
-                        colorLevels = listOf(
-                            Pair(100, Color.RED),
-                            Pair(50, Color.BLUE),
-                            Pair(0, Color.GREEN) // TODO Update these clustering options
-                        )
-                    )
-                )
-            ),
-            onClick = {
-                Toast.makeText(
-                    context,
-                    "Clicked on Point Annotation Cluster: $it",
-                    Toast.LENGTH_SHORT
-                ).show()
-                true
-            }
-        )
+        OsmdroidMapView(viewModel)
     }
 
     if (isZoomedOutTooFar) {
@@ -214,17 +107,142 @@ internal fun TowerMapScreen(viewModel: TowerMapViewModel = viewModel()) {
     //}
 }
 
+@Composable
+internal fun OsmdroidMapView(viewModel: TowerMapViewModel) {
+    var points by remember {
+        mutableStateOf<LinkedHashSet<Marker>>(LinkedHashSet())
+    }
+
+    AndroidView(
+        modifier = Modifier.fillMaxSize(),
+        factory = { context ->
+            val mapView = MapView(context)
+            mapView.setTileSource(TileSourceFactory.MAPNIK)
+            mapView.zoomController.setVisibility(CustomZoomButtonsController.Visibility.ALWAYS)
+            mapView.setMultiTouchControls(true)
+
+            // I pulled the idea for setting this from: https://github.com/osmdroid/osmdroid/wiki/Important-notes-on-using-osmdroid-in-your-app#changing-the-loading-tile-grid-colors
+            mapView.overlayManager.tilesOverlay.loadingBackgroundColor = android.R.color.black;
+            mapView.overlayManager.tilesOverlay.loadingLineColor =
+                context.getColor(R.color.colorPrimary)
+
+            val mapController = mapView.controller
+            mapController.setZoom(INITIAL_ZOOM)
+            val startPoint = GeoPoint(35.410, -80.854);
+            mapController.setCenter(startPoint);
+
+            val mLocationOverlay = MyLocationNewOverlay(GpsMyLocationProvider(context), mapView)
+            mLocationOverlay.enableMyLocation()
+            mapView.overlays.add(mLocationOverlay)
+
+            val compassOverlay =
+                CompassOverlay(context, InternalCompassOrientationProvider(context), mapView)
+            compassOverlay.enableCompass()
+            mapView.overlays.add(compassOverlay)
+
+            // Listener to detect when map movement stops
+            mapView.addMapListener(DelayedMapListener(object : MapListener {
+                override fun onScroll(event: ScrollEvent?): Boolean {
+                    runListener(mapView, viewModel, points)
+                    return true
+                }
+
+                override fun onZoom(event: ZoomEvent?): Boolean {
+                    runListener(mapView, viewModel, points)
+                    return true
+                }
+            }, 400))
+
+            mapView
+        }
+    )
+
+    // TODO I need to figure out a way to call mapView.onPause() and mapView.onResume()
+}
+
+/**
+ * The listener that is called when the map is idle. This is where we will load the towers for the
+ * current map view.
+ */
+private fun runListener(
+    mapView: MapView,
+    viewModel: TowerMapViewModel,
+    points: LinkedHashSet<Marker>
+) {
+    Timber.d("Map is idle")
+
+    val bounds = mapView.boundingBox
+
+    if (viewModel.lastQueriedBounds.value != null && viewModel.lastQueriedBounds.value == bounds) {
+        Timber.d("The bounds have not changed, so we do not need to load the towers")
+        return
+    }
+
+    val area = calculateArea(bounds)
+    if (mapView.zoomLevelDouble >= MIN_ZOOM_LEVEL && area <= MAX_AREA_SQ_METERS) {
+        viewModel.setIsLoadingInProgress(true)
+        viewModel.setIsZoomedOutTooFar(false)
+        viewModel.setLastQueriedBounds(bounds)
+        Timber.d("The zoom level is appropriate to show the towers")
+
+        viewModel.viewModelScope.launch {
+            val towerPoints = loadTowers(bounds, viewModel)
+            Timber.d("Loaded ${towerPoints.size} towers")
+
+            // TODO Add a text overlay if no towers are found
+
+            towerPoints.forEach {
+                val towerMarker = Marker(mapView)
+                towerMarker.setPosition(GeoPoint(it.lat, it.lon))
+                towerMarker.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM)
+                // TODO towerMarker.infoWindow = InfoWindow(view, mapView)
+                val towerDrawable = getDrawable(mapView.context, R.drawable.ic_cellular)
+                towerDrawable!!.colorFilter =
+                    BlendModeColorFilterCompat.createBlendModeColorFilterCompat(
+                        R.color.colorPrimary, BlendModeCompat.SRC_ATOP
+                    )
+                towerMarker.icon = towerDrawable
+                // TODO Set an onClick listener to display the tower details
+                towerMarker.title = getCgiString(it)
+                // FIXME Checking !points.contains(towerMarker) is not the right way to do this
+                //  because we can have multiple towers at the same location. Override the equals and hashCode to fix this
+                if (points.size >= MAX_TOWERS_ON_MAP && !points.contains(towerMarker)) {
+                    points.remove(points.first())
+                }
+                points.add(towerMarker)
+            }
+
+            Timber.i("Adding %s points to the map", points.size)
+            points.forEach { mapView.overlays.add(it) }
+
+            mapView.invalidate()
+
+            viewModel.setIsLoadingInProgress(false)
+        }
+    } else {
+        viewModel.setIsLoadingInProgress(false)
+        viewModel.setIsZoomedOutTooFar(true)
+        Timber.d(
+            "The zoom level is too high or the area is too large to show the towers %s",
+            area.toBigDecimal().toPlainString()
+        )
+    }
+}
+
+/**
+ * Loads the towers from the NS backend for the given bounding box.
+ */
 @OptIn(ExperimentalCoroutinesApi::class)
 private suspend fun loadTowers(
-    bounds: CoordinateBounds,
+    bounds: BoundingBox,
     viewModel: TowerMapViewModel
-): List<Point> {
+): List<Tower> {
     return suspendCancellableCoroutine { continuation ->
         try {
             viewModel.viewModelScope.launch {
                 // Format the bounding box coordinates to the required "bbox" string format
                 val bbox =
-                    "${bounds.southwest.latitude()},${bounds.southwest.longitude()},${bounds.northeast.latitude()},${bounds.northeast.longitude()}"
+                    "${bounds.latSouth},${bounds.lonWest},${bounds.latNorth},${bounds.lonEast}"
                 val response = nsApi.getTowers(bbox)
 
                 // Process the response
@@ -232,16 +250,12 @@ private suspend fun loadTowers(
                     // No towers found, return an empty list
                     Timber.w("No towers found; raw: ${response.raw()}") // TODO Delete me
                     continuation.resume(Collections.emptyList(), onCancellation = null)
-                    Collections.emptyList<Point>()
+                    Collections.emptyList<GeoPoint>()
                 } else if (response.isSuccessful && response.body() != null) {
                     Timber.i("Successfully loaded towers")
                     val towerData = response.body()!!
-                    val mappedPoints = towerData.cells.map {
-                        //Timber.i("Tower lat: ${it.lat}, lon: ${it.lon}, mcc: ${it.mcc}, mnc: ${it.mnc}, area: ${it.area}, cid: ${it.cid}, unit: ${it.unit}, averageSignal: ${it.averageSignal}, range: ${it.range}, samples: ${it.samples}, changeable: ${it.changeable}, createdAt: ${it.createdAt}, updatedAt: ${it.updatedAt}, radio: ${it.radio}")
-                        Point.fromLngLat(it.lon, it.lat)
-                    }
 
-                    continuation.resume(mappedPoints, onCancellation = {
+                    continuation.resume(towerData.cells, onCancellation = {
                         Timber.e("The tower data fetch was cancelled")
                     })
                 } else {
@@ -257,48 +271,30 @@ private suspend fun loadTowers(
 }
 
 /**
- * Load the string content from net
- *
- * @param url the url of the file to load
+ * Calculates the area of the bounding box in square meters.
  */
-fun loadStringFromNet(context: Context, url: String): String? {
-    val client = OkHttpClient.Builder()
-        .cache(Cache(File(context.externalCacheDir.toString(), "cache"), 10 * 1024 * 1024L))
-        .build()
-    val request: Request = Request.Builder()
-        .url(url)
-        .build()
-
-    return try {
-        val response = client.newCall(request).execute()
-        val inputStream = BufferedInputStream(response.body?.byteStream())
-        val rd = BufferedReader(InputStreamReader(inputStream, Charset.forName("UTF-8")))
-        val sb = StringBuilder()
-        rd.forEachLine {
-            sb.append(it)
-        }
-        sb.toString()
-    } catch (e: IOException) {
-        Timber.e("Unable to download $url")
-        null
-    }
-}
-
-private fun calculateArea(bounds: CoordinateBounds): Double {
+private fun calculateArea(bounds: BoundingBox): Double {
     val earthRadius = 6371000.0 // meters
 
-    val latDistance = Math.toRadians(bounds.northeast.latitude() - bounds.southwest.latitude())
-    val lngDistance = Math.toRadians(bounds.northeast.longitude() - bounds.southwest.longitude())
+    val latDistance = Math.toRadians(bounds.latNorth - bounds.latSouth)
+    val lngDistance = Math.toRadians(bounds.lonEast - bounds.lonWest)
 
-    val a = Math.sin(latDistance / 2) * Math.sin(latDistance / 2) +
-            Math.cos(Math.toRadians(bounds.southwest.latitude())) * Math.cos(Math.toRadians(bounds.northeast.latitude())) *
-            Math.sin(lngDistance / 2) * Math.sin(lngDistance / 2)
-    val c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
+    val a = sin(latDistance / 2) * sin(latDistance / 2) +
+            cos(Math.toRadians(bounds.latSouth)) * cos(Math.toRadians(bounds.latNorth)) *
+            sin(lngDistance / 2) * Math.sin(lngDistance / 2)
+    val c = 2 * atan2(sqrt(a), sqrt(1 - a))
 
     val width = earthRadius * c
     val height = width // Approximation as we're not accounting for changes in radius with latitude
 
     return width * height // area in square meters
+}
+
+/**
+ * Returns a string representation of the Cell Global Identifier (CGI) for the given tower.
+ */
+private fun getCgiString(tower: Tower): String {
+    return "${tower.mcc}/${tower.mnc}/${tower.area}/${tower.cid}"
 }
 
 // The API definition for the NS Tower Service
@@ -325,6 +321,9 @@ val retrofit: Retrofit = Retrofit.Builder()
 
 val nsApi: Api = retrofit.create(Api::class.java)
 
+/**
+ * The data class that represents a tower from the NS backend. Needs to stay in sync with the API.
+ */
 data class Tower(
     @SerializedName("lat") val lat: Double,
     @SerializedName("lon") val lon: Double,
@@ -342,6 +341,9 @@ data class Tower(
     @SerializedName("radio") val radio: String
 )
 
+/**
+ * The data class that represents the response from the NS backend when fetching towers.
+ */
 data class TowerResponse(
     val count: Int,
     val cells: List<Tower>
