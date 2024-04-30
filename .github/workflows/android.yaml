@@ -32,7 +32,10 @@ jobs:
         run: echo "$GOOGLE_SERVICES" > networksurvey/google-services.json
 
       - name: Build Regular APK
-        run: ./gradlew assembleRegularDebug --stacktrace
+        env:
+          NS_API_KEY: ${{ secrets.NS_API_KEY }}
+        run: ./gradlew assembleRegularDebug
+          -PnsApiKey=$NS_API_KEY
 
       - name: Get APK name
         run: echo "base_name=`./gradlew :networksurvey:properties -q | grep 'archivesBaseName:' | awk '{print $2}'`" >> $GITHUB_ENV
