@@ -37,12 +37,13 @@
         <item name="android:textColor">@color/colorAccent</item>
     </style>
 
-    <style name="SingleLineTitleText" parent="CellularTitleText">
+    <style name="CellularOverrideTitleText" parent="CellularTitleText">
         <item name="android:maxLines">1</item>
         <item name="android:autoSizeMaxTextSize">22sp</item>
         <item name="android:autoSizeMinTextSize">8sp</item>
         <item name="android:autoSizeTextType">uniform</item>
         <item name="android:autoSizeStepGranularity">2sp</item>
+        <item name="android:textColor">@color/rssi_orange</item>
     </style>
 
     <style name="TitleText" parent="TextAppearance.AppCompat">

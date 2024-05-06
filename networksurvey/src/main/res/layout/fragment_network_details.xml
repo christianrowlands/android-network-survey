@@ -82,6 +82,40 @@
                         android:orientation="vertical">
 
                         <androidx.constraintlayout.widget.ConstraintLayout
+                            android:id="@+id/voice_network_group"
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent">
+
+                            <TextView
+                                android:id="@+id/current_voice_network"
+                                style="@style/CellularTitleText"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:gravity="center"
+                                app:layout_constraintTop_toTopOf="@id/voice_network_group"
+                                app:layout_constraintBottom_toTopOf="@id/current_voice_network_label"
+                                android:text="" />
+
+                            <TextView
+                                android:id="@+id/current_voice_network_label"
+                                style="@style/SmallLabelText"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:gravity="center"
+                                android:text="@string/voice_network_label"
+                                app:layout_constraintBottom_toBottomOf="@id/voice_network_group" />
+
+                        </androidx.constraintlayout.widget.ConstraintLayout>
+
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="match_parent"
+                        android:layout_weight="1"
+                        android:orientation="vertical">
+
+                        <androidx.constraintlayout.widget.ConstraintLayout
                             android:id="@+id/data_network_group"
                             android:layout_width="match_parent"
                             android:layout_height="match_parent">
@@ -122,7 +156,7 @@
 
                             <TextView
                                 android:id="@+id/current_override_network"
-                                style="@style/SingleLineTitleText"
+                                style="@style/CellularOverrideTitleText"
                                 android:layout_width="match_parent"
                                 android:layout_height="wrap_content"
                                 android:gravity="center"
@@ -138,40 +172,6 @@
                                 android:gravity="center"
                                 android:text="@string/override_network_label"
                                 app:layout_constraintBottom_toBottomOf="@id/override_network_group" />
-
-                        </androidx.constraintlayout.widget.ConstraintLayout>
-
-                    </LinearLayout>
-
-                    <LinearLayout
-                        android:layout_width="0dp"
-                        android:layout_height="match_parent"
-                        android:layout_weight="1"
-                        android:orientation="vertical">
-
-                        <androidx.constraintlayout.widget.ConstraintLayout
-                            android:id="@+id/voice_network_group"
-                            android:layout_width="match_parent"
-                            android:layout_height="match_parent">
-
-                            <TextView
-                                android:id="@+id/current_voice_network"
-                                style="@style/CellularTitleText"
-                                android:layout_width="match_parent"
-                                android:layout_height="wrap_content"
-                                android:gravity="center"
-                                app:layout_constraintTop_toTopOf="@id/voice_network_group"
-                                app:layout_constraintBottom_toTopOf="@id/current_voice_network_label"
-                                android:text="" />
-
-                            <TextView
-                                android:id="@+id/current_voice_network_label"
-                                style="@style/SmallLabelText"
-                                android:layout_width="match_parent"
-                                android:layout_height="wrap_content"
-                                android:gravity="center"
-                                android:text="@string/voice_network_label"
-                                app:layout_constraintBottom_toBottomOf="@id/voice_network_group" />
 
                         </androidx.constraintlayout.widget.ConstraintLayout>
 
