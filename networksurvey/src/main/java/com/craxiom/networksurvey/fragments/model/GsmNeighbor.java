@@ -2,22 +2,53 @@ package com.craxiom.networksurvey.fragments.model;
 
 import static com.craxiom.networksurvey.constants.NetworkSurveyConstants.UNSET_VALUE;
 
-import lombok.Builder;
-
 /**
  * Holds the information for a single GSM neighbor record that will be displayed in the Cellular UI.
  *
  * @since 1.6.0
  */
-@Builder
 public class GsmNeighbor implements Comparable<GsmNeighbor>
 {
-    @Builder.Default
-    public int arfcn = UNSET_VALUE;
-    @Builder.Default
-    public int bsic = UNSET_VALUE;
-    @Builder.Default
-    public int rssi = UNSET_VALUE;
+    public final int arfcn;
+    public final int bsic;
+    public final int rssi;
+
+    public static class Builder
+    {
+        private int arfcn = UNSET_VALUE;
+        private int bsic = UNSET_VALUE;
+        private int rssi = UNSET_VALUE;
+
+        public Builder arfcn(int arfcn)
+        {
+            this.arfcn = arfcn;
+            return this;
+        }
+
+        public Builder bsic(int bsic)
+        {
+            this.bsic = bsic;
+            return this;
+        }
+
+        public Builder rssi(int rssi)
+        {
+            this.rssi = rssi;
+            return this;
+        }
+
+        public GsmNeighbor build()
+        {
+            return new GsmNeighbor(this);
+        }
+    }
+
+    private GsmNeighbor(Builder builder)
+    {
+        this.arfcn = builder.arfcn;
+        this.bsic = builder.bsic;
+        this.rssi = builder.rssi;
+    }
 
     @Override
     public int compareTo(GsmNeighbor neighbor)

@@ -2,26 +2,63 @@ package com.craxiom.networksurvey.fragments.model;
 
 import static com.craxiom.networksurvey.constants.NetworkSurveyConstants.UNSET_VALUE;
 
-import lombok.Builder;
-
 /**
  * Holds the information for a single LTE neighbor record that will be displayed in the Cellular UI.
  *
  * @since 1.6.0
  */
-@Builder
 public class LteNeighbor implements Comparable<LteNeighbor>
 {
-    @Builder.Default
-    public int earfcn = UNSET_VALUE;
-    @Builder.Default
-    public int pci = UNSET_VALUE;
-    @Builder.Default
-    public int rsrp = UNSET_VALUE;
-    @Builder.Default
-    public int rsrq = UNSET_VALUE;
-    @Builder.Default
-    public int ta = UNSET_VALUE;
+    public final int earfcn;
+    public final int pci;
+    public final int rsrp;
+    public final int rsrq;
+    public final int ta;
+
+    public static class Builder {
+        private int earfcn = UNSET_VALUE;
+        private int pci = UNSET_VALUE;
+        private int rsrp = UNSET_VALUE;
+        private int rsrq = UNSET_VALUE;
+        private int ta = UNSET_VALUE;
+
+        public Builder earfcn(int earfcn) {
+            this.earfcn = earfcn;
+            return this;
+        }
+
+        public Builder pci(int pci) {
+            this.pci = pci;
+            return this;
+        }
+
+        public Builder rsrp(int rsrp) {
+            this.rsrp = rsrp;
+            return this;
+        }
+
+        public Builder rsrq(int rsrq) {
+            this.rsrq = rsrq;
+            return this;
+        }
+
+        public Builder ta(int ta) {
+            this.ta = ta;
+            return this;
+        }
+
+        public LteNeighbor build() {
+            return new LteNeighbor(this);
+        }
+    }
+
+    private LteNeighbor(Builder builder) {
+        this.earfcn = builder.earfcn;
+        this.pci = builder.pci;
+        this.rsrp = builder.rsrp;
+        this.rsrq = builder.rsrq;
+        this.ta = builder.ta;
+    }
 
     @Override
     public int compareTo(LteNeighbor neighbor)

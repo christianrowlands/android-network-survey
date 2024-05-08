@@ -259,7 +259,7 @@ public class MqttFragment extends AConnectionFragment<NetworkSurveyService.Surve
             portNumber = 1883;
         }
 
-        return MqttConnectionSettings.builder()
+        return new MqttConnectionSettings.Builder()
                 .host(mqttHostAddressEdit.getText().toString())
                 .port(portNumber)
                 .tlsEnabled(tlsToggleSwitch.isChecked())

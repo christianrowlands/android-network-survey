@@ -2,24 +2,62 @@ package com.craxiom.networksurvey.fragments.model;
 
 import static com.craxiom.networksurvey.constants.NetworkSurveyConstants.UNSET_VALUE;
 
-import lombok.Builder;
-
 /**
  * Holds the information for a single NR neighbor record that will be displayed in the Cellular UI.
  *
  * @since 1.6.0
  */
-@Builder
 public class NrNeighbor implements Comparable<NrNeighbor>
 {
-    @Builder.Default
-    public int narfcn = UNSET_VALUE;
-    @Builder.Default
-    public int pci = UNSET_VALUE;
-    @Builder.Default
-    public int ssRsrp = UNSET_VALUE;
-    @Builder.Default
-    public int ssRsrq = UNSET_VALUE;
+    public final int narfcn;
+    public final int pci;
+    public final int ssRsrp;
+    public final int ssRsrq;
+
+    public static class Builder
+    {
+        private int narfcn = UNSET_VALUE;
+        private int pci = UNSET_VALUE;
+        private int ssRsrp = UNSET_VALUE;
+        private int ssRsrq = UNSET_VALUE;
+
+        public Builder narfcn(int narfcn)
+        {
+            this.narfcn = narfcn;
+            return this;
+        }
+
+        public Builder pci(int pci)
+        {
+            this.pci = pci;
+            return this;
+        }
+
+        public Builder ssRsrp(int ssRsrp)
+        {
+            this.ssRsrp = ssRsrp;
+            return this;
+        }
+
+        public Builder ssRsrq(int ssRsrq)
+        {
+            this.ssRsrq = ssRsrq;
+            return this;
+        }
+
+        public NrNeighbor build()
+        {
+            return new NrNeighbor(this);
+        }
+    }
+
+    private NrNeighbor(Builder builder)
+    {
+        this.narfcn = builder.narfcn;
+        this.pci = builder.pci;
+        this.ssRsrp = builder.ssRsrp;
+        this.ssRsrq = builder.ssRsrq;
+    }
 
     @Override
     public int compareTo(NrNeighbor neighbor)

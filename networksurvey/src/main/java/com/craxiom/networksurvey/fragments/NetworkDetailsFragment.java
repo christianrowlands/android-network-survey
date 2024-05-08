@@ -883,7 +883,7 @@ public class NetworkDetailsFragment extends AServiceDataFragment implements ICel
     private void processGsmNeighbors(List<GsmRecordData> neighbors)
     {
         final TreeSet<GsmNeighbor> gsmNeighbors = neighbors.stream().map(data -> {
-            GsmNeighbor.GsmNeighborBuilder builder = GsmNeighbor.builder();
+            GsmNeighbor.Builder builder = new GsmNeighbor.Builder();
             if (data.hasArfcn()) builder.arfcn(data.getArfcn().getValue());
             if (data.hasBsic()) builder.bsic(data.getBsic().getValue());
             if (data.hasSignalStrength()) builder.rssi((int) data.getSignalStrength().getValue());
@@ -902,7 +902,7 @@ public class NetworkDetailsFragment extends AServiceDataFragment implements ICel
     private void processUmtsNeighbors(List<UmtsRecordData> neighbors)
     {
         final TreeSet<UmtsNeighbor> umtsNeighbors = neighbors.stream().map(data -> {
-            UmtsNeighbor.UmtsNeighborBuilder builder = UmtsNeighbor.builder();
+            UmtsNeighbor.Builder builder = new UmtsNeighbor.Builder();
             if (data.hasUarfcn()) builder.uarfcn(data.getUarfcn().getValue());
             if (data.hasPsc()) builder.psc(data.getPsc().getValue());
             if (data.hasRscp()) builder.rscp((int) data.getRscp().getValue());
@@ -921,7 +921,7 @@ public class NetworkDetailsFragment extends AServiceDataFragment implements ICel
     private void processLteNeighbors(List<LteRecordData> neighbors)
     {
         final TreeSet<LteNeighbor> lteNeighbors = neighbors.stream().map(data -> {
-            LteNeighbor.LteNeighborBuilder builder = LteNeighbor.builder();
+            LteNeighbor.Builder builder = new LteNeighbor.Builder();
             if (data.hasEarfcn()) builder.earfcn(data.getEarfcn().getValue());
             if (data.hasPci()) builder.pci(data.getPci().getValue());
             if (data.hasRsrp()) builder.rsrp((int) data.getRsrp().getValue());
@@ -942,7 +942,7 @@ public class NetworkDetailsFragment extends AServiceDataFragment implements ICel
     private void processNrNeighbors(List<NrRecordData> neighbors)
     {
         final TreeSet<NrNeighbor> nrNeighbors = neighbors.stream().map(data -> {
-            NrNeighbor.NrNeighborBuilder builder = NrNeighbor.builder();
+            NrNeighbor.Builder builder = new NrNeighbor.Builder();
             if (data.hasNarfcn()) builder.narfcn(data.getNarfcn().getValue());
             if (data.hasPci()) builder.pci(data.getPci().getValue());
             if (data.hasSsRsrp()) builder.ssRsrp((int) data.getSsRsrp().getValue());

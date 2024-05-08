@@ -4,108 +4,67 @@ import com.google.gson.annotations.SerializedName;
 
 import java.io.Serializable;
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.NoArgsConstructor;
-
 /**
  * Holds the MQTT Broker connection settings scanned from a QR Code
  *
  * @since 1.7.0
  */
-@Builder
-@NoArgsConstructor
-@AllArgsConstructor
-public class MqttConnectionSettings implements Serializable
-{
-    @SerializedName("mqtt_host")
-    private String host;
+public record MqttConnectionSettings(
+        @SerializedName("mqtt_host") String host,
+        @SerializedName("mqtt_port") int port,
+        @SerializedName("mqtt_tls") Boolean tlsEnabled,
+        @SerializedName("mqtt_client") String deviceName,
+        @SerializedName("mqtt_username") String mqttUsername,
+        @SerializedName("mqtt_password") String mqttPassword,
+        @SerializedName("mqtt_topic_prefix") String mqttTopicPrefix
+) implements Serializable {
 
-    @SerializedName("mqtt_port")
-    private int port;
+    public static class Builder {
+        private String host;
+        private int port;
+        private Boolean tlsEnabled;
+        private String deviceName;
+        private String mqttUsername;
+        private String mqttPassword;
+        private String mqttTopicPrefix;
 
-    @SerializedName("mqtt_tls")
-    private Boolean tlsEnabled;
+        public Builder host(String host) {
+            this.host = host;
+            return this;
+        }
 
-    @SerializedName("mqtt_client")
-    private String deviceName;
+        public Builder port(int port) {
+            this.port = port;
+            return this;
+        }
 
-    @SerializedName("mqtt_username")
-    private String mqttUsername;
+        public Builder tlsEnabled(Boolean tlsEnabled) {
+            this.tlsEnabled = tlsEnabled;
+            return this;
+        }
 
-    @SerializedName("mqtt_password")
-    private String mqttPassword;
+        public Builder deviceName(String deviceName) {
+            this.deviceName = deviceName;
+            return this;
+        }
 
-    @SerializedName("mqtt_topic_prefix")
-    private String mqttTopicPrefix;
+        public Builder mqttUsername(String mqttUsername) {
+            this.mqttUsername = mqttUsername;
+            return this;
+        }
 
-    public String getHost()
-    {
-        return host;
-    }
+        public Builder mqttPassword(String mqttPassword) {
+            this.mqttPassword = mqttPassword;
+            return this;
+        }
 
-    public void setHost(String host)
-    {
-        this.host = host;
-    }
+        public Builder mqttTopicPrefix(String mqttTopicPrefix) {
+            this.mqttTopicPrefix = mqttTopicPrefix;
+            return this;
+        }
 
-    public int getPort()
-    {
-        return port;
-    }
-
-    public void setPort(int port)
-    {
-        this.port = port;
-    }
-
-    public Boolean getTlsEnabled()
-    {
-        return tlsEnabled;
-    }
-
-    public void setTlsEnabled(Boolean tlsEnabled)
-    {
-        this.tlsEnabled = tlsEnabled;
-    }
-
-    public String getDeviceName()
-    {
-        return deviceName;
-    }
-
-    public void setDeviceName(String deviceName)
-    {
-        this.deviceName = deviceName;
-    }
-
-    public String getMqttUsername()
-    {
-        return mqttUsername;
-    }
-
-    public void setMqttUsername(String mqttUsername)
-    {
-        this.mqttUsername = mqttUsername;
-    }
-
-    public String getMqttPassword()
-    {
-        return mqttPassword;
-    }
-
-    public void setMqttPassword(String mqttPassword)
-    {
-        this.mqttPassword = mqttPassword;
-    }
-
-    public String getMqttTopicPrefix()
-    {
-        return mqttTopicPrefix;
-    }
-
-    public void setMqttTopicPrefix(String mqttTopicPrefix)
-    {
-        this.mqttTopicPrefix = mqttTopicPrefix;
+        public MqttConnectionSettings build() {
+            return new MqttConnectionSettings(host, port, tlsEnabled, deviceName, mqttUsername, mqttPassword, mqttTopicPrefix);
+        }
     }
 }

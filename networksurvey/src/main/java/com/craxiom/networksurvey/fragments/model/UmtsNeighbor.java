@@ -2,22 +2,47 @@ package com.craxiom.networksurvey.fragments.model;
 
 import static com.craxiom.networksurvey.constants.NetworkSurveyConstants.UNSET_VALUE;
 
-import lombok.Builder;
-
 /**
  * Holds the information for a single UMTS neighbor record that will be displayed in the Cellular UI.
  *
  * @since 1.6.0
  */
-@Builder
 public class UmtsNeighbor implements Comparable<UmtsNeighbor>
 {
-    @Builder.Default
-    public int uarfcn = UNSET_VALUE;
-    @Builder.Default
-    public int psc = UNSET_VALUE;
-    @Builder.Default
-    public int rscp = UNSET_VALUE;
+    public final int uarfcn;
+    public final int psc;
+    public final int rscp;
+
+    public static class Builder {
+        private int uarfcn = UNSET_VALUE;
+        private int psc = UNSET_VALUE;
+        private int rscp = UNSET_VALUE;
+
+        public Builder uarfcn(int uarfcn) {
+            this.uarfcn = uarfcn;
+            return this;
+        }
+
+        public Builder psc(int psc) {
+            this.psc = psc;
+            return this;
+        }
+
+        public Builder rscp(int rscp) {
+            this.rscp = rscp;
+            return this;
+        }
+
+        public UmtsNeighbor build() {
+            return new UmtsNeighbor(this);
+        }
+    }
+
+    private UmtsNeighbor(Builder builder) {
+        this.uarfcn = builder.uarfcn;
+        this.psc = builder.psc;
+        this.rscp = builder.rscp;
+    }
 
     @Override
     public int compareTo(UmtsNeighbor neighbor)

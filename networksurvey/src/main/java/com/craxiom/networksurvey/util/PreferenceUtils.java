@@ -434,19 +434,12 @@ public class PreferenceUtils
         }
     }
 
-    @TargetApi(9)
     public static void saveString(SharedPreferences prefs, String key, String value)
     {
         SharedPreferences.Editor edit = prefs.edit();
         edit.putString(key, value);
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.GINGERBREAD)
-        {
-            edit.apply();
-        } else
-        {
-            edit.commit();
-        }
+        edit.apply();
     }
 
     public static void saveString(String key, String value)
@@ -454,19 +447,12 @@ public class PreferenceUtils
         saveString(Application.getPrefs(), key, value);
     }
 
-    @TargetApi(9)
     public static void saveInt(SharedPreferences prefs, String key, int value)
     {
         SharedPreferences.Editor edit = prefs.edit();
         edit.putInt(key, value);
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.GINGERBREAD)
-        {
-            edit.apply();
-        } else
-        {
-            edit.commit();
-        }
+        edit.apply();
     }
 
     public static void saveInt(String key, int value)
@@ -474,19 +460,12 @@ public class PreferenceUtils
         saveInt(Application.getPrefs(), key, value);
     }
 
-    @TargetApi(9)
     public static void saveLong(SharedPreferences prefs, String key, long value)
     {
         SharedPreferences.Editor edit = prefs.edit();
         edit.putLong(key, value);
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.GINGERBREAD)
-        {
-            edit.apply();
-        } else
-        {
-            edit.commit();
-        }
+        edit.apply();
     }
 
     public static void saveLong(String key, long value)
@@ -494,19 +473,12 @@ public class PreferenceUtils
         saveLong(Application.getPrefs(), key, value);
     }
 
-    @TargetApi(9)
     public static void saveBoolean(SharedPreferences prefs, String key, boolean value)
     {
         SharedPreferences.Editor edit = prefs.edit();
         edit.putBoolean(key, value);
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.GINGERBREAD)
-        {
-            edit.apply();
-        } else
-        {
-            edit.commit();
-        }
+        edit.apply();
     }
 
     public static void saveBoolean(String key, boolean value)
@@ -514,19 +486,12 @@ public class PreferenceUtils
         saveBoolean(Application.getPrefs(), key, value);
     }
 
-    @TargetApi(9)
     public static void saveFloat(SharedPreferences prefs, String key, float value)
     {
         SharedPreferences.Editor edit = prefs.edit();
         edit.putFloat(key, value);
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.GINGERBREAD)
-        {
-            edit.apply();
-        } else
-        {
-            edit.commit();
-        }
+        edit.apply();
     }
 
     public static void saveFloat(String key, float value)
@@ -534,22 +499,14 @@ public class PreferenceUtils
         saveFloat(Application.getPrefs(), key, value);
     }
 
-    @TargetApi(9)
     public static void saveDouble(SharedPreferences prefs, String key, double value)
     {
         SharedPreferences.Editor edit = prefs.edit();
         edit.putLong(key, Double.doubleToRawLongBits(value));
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.GINGERBREAD)
-        {
-            edit.apply();
-        } else
-        {
-            edit.commit();
-        }
+        edit.apply();
     }
 
-    @TargetApi(9)
     public static void saveDouble(String key, double value)
     {
         saveDouble(Application.getPrefs(), key, value);
@@ -633,35 +590,35 @@ public class PreferenceUtils
 
     public static void populatePrefsFromMqttConnectionSettings(MqttConnectionSettings mqttConnectionSettings, Context context)
     {
-        SharedPreferences preferences = android.preference.PreferenceManager.getDefaultSharedPreferences(context);
+        SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(context);
         SharedPreferences.Editor edit = preferences.edit();
-        if (mqttConnectionSettings.getHost() != null)
+        if (mqttConnectionSettings.host() != null)
         {
-            edit.putString(PROPERTY_MQTT_CONNECTION_HOST, mqttConnectionSettings.getHost());
+            edit.putString(PROPERTY_MQTT_CONNECTION_HOST, mqttConnectionSettings.host());
         }
-        if (mqttConnectionSettings.getPort() != 0)
+        if (mqttConnectionSettings.port() != 0)
         {
-            edit.putInt(PROPERTY_MQTT_CONNECTION_PORT, mqttConnectionSettings.getPort());
+            edit.putInt(PROPERTY_MQTT_CONNECTION_PORT, mqttConnectionSettings.port());
         }
-        if (mqttConnectionSettings.getTlsEnabled() != null)
+        if (mqttConnectionSettings.tlsEnabled() != null)
         {
-            edit.putBoolean(PROPERTY_MQTT_CONNECTION_TLS_ENABLED, mqttConnectionSettings.getTlsEnabled());
+            edit.putBoolean(PROPERTY_MQTT_CONNECTION_TLS_ENABLED, mqttConnectionSettings.tlsEnabled());
         }
-        if (mqttConnectionSettings.getDeviceName() != null)
+        if (mqttConnectionSettings.deviceName() != null)
         {
-            edit.putString(PROPERTY_MQTT_CLIENT_ID, mqttConnectionSettings.getDeviceName());
+            edit.putString(PROPERTY_MQTT_CLIENT_ID, mqttConnectionSettings.deviceName());
         }
-        if (mqttConnectionSettings.getMqttUsername() != null)
+        if (mqttConnectionSettings.mqttUsername() != null)
         {
-            edit.putString(PROPERTY_MQTT_USERNAME, mqttConnectionSettings.getMqttUsername());
+            edit.putString(PROPERTY_MQTT_USERNAME, mqttConnectionSettings.mqttUsername());
         }
-        if (mqttConnectionSettings.getMqttPassword() != null)
+        if (mqttConnectionSettings.mqttPassword() != null)
         {
-            edit.putString(PROPERTY_MQTT_PASSWORD, mqttConnectionSettings.getMqttPassword());
+            edit.putString(PROPERTY_MQTT_PASSWORD, mqttConnectionSettings.mqttPassword());
         }
-        if (mqttConnectionSettings.getMqttTopicPrefix() != null)
+        if (mqttConnectionSettings.mqttTopicPrefix() != null)
         {
-            edit.putString(MqttConstants.PROPERTY_MQTT_TOPIC_PREFIX, mqttConnectionSettings.getMqttTopicPrefix());
+            edit.putString(MqttConstants.PROPERTY_MQTT_TOPIC_PREFIX, mqttConnectionSettings.mqttTopicPrefix());
         }
 
         edit.apply();
@@ -674,7 +631,7 @@ public class PreferenceUtils
      */
     public static void saveMqttStreamFlags(MqttConnectionInfo info, Context context)
     {
-        SharedPreferences preferences = android.preference.PreferenceManager.getDefaultSharedPreferences(context);
+        SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(context);
         SharedPreferences.Editor editor = preferences.edit();
         editor.putBoolean(NetworkSurveyConstants.PROPERTY_MQTT_CELLULAR_STREAM_ENABLED, info.isCellularStreamEnabled());
         editor.putBoolean(NetworkSurveyConstants.PROPERTY_MQTT_WIFI_STREAM_ENABLED, info.isWifiStreamEnabled());
