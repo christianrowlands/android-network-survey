@@ -194,7 +194,7 @@
     </style>
 
     <style name="cn0_avg_value_used" parent="cn0_avg_value_in_view">
-        <item name="android:background">@drawable/cn0_round_corner_background_used</item>
+        <item name="android:background">@drawable/cn0_round_corner_background_used_dark</item>
     </style>
 
 </resources>

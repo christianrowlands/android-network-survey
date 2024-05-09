@@ -26,6 +26,21 @@ import android.location.Location;
 public class MathUtils
 {
     /**
+     * Calculates {@code a mod b} in a way that respects negative values (for example,
+     * {@code mod(-1, 5) == 4}, rather than {@code -1}).
+     * <p>
+     * (from Glass Compass sample)
+     *
+     * @param a the dividend
+     * @param b the divisor
+     * @return {@code a mod b}
+     */
+    public static double mod(double a, double b)
+    {
+        return (a % b + b) % b;
+    }
+
+    /**
      * Converts the provided number in Hz to MHz
      *
      * @param hertz value to be converted
@@ -34,6 +49,17 @@ public class MathUtils
     public static float toMhz(float hertz)
     {
         return hertz / 1000000.00f;
+    }
+
+    /**
+     * Converts the provided number in Hz to MHz
+     *
+     * @param hertz value to be converted
+     * @return value converted to MHz
+     */
+    public static double toMhz(double hertz)
+    {
+        return hertz / 1000000.00;
     }
 
     /**

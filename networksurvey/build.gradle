@@ -3,6 +3,8 @@ apply plugin: "androidx.navigation.safeargs"
 apply plugin: "com.google.gms.google-services"
 apply plugin: "com.google.firebase.crashlytics"
 apply plugin: 'kotlin-android'
+apply plugin: 'kotlin-kapt'
+apply plugin: 'dagger.hilt.android.plugin'
 
 
 ext.androidVersion = '28.0.0'
@@ -19,7 +21,7 @@ android {
         minSdkVersion 26
         targetSdkVersion 34
         versionCode 66
-        versionName "1.23"
+        versionName "1.24-SNAPSHOT"
         setProperty("archivesBaseName", "$applicationName-$versionName")
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         testInstrumentationRunnerArguments clearPackageData: 'true'
@@ -122,6 +124,11 @@ dependencies {
 
     implementation 'com.github.yuriy-budiyev:code-scanner:2.1.2'
 
+    implementation 'com.google.dagger:dagger:2.45'
+    kapt 'com.google.dagger:dagger-compiler:2.45'
+    implementation "com.google.dagger:hilt-android:$hilt_version"
+    kapt "com.google.dagger:hilt-compiler:$hilt_version"
+
     implementation 'org.osmdroid:osmdroid-android:6.1.18'
     //implementation 'org.osmdroid:osmdroid-bonuspack:6.9.0' // Provides additional features including Marker clustering
 
@@ -143,10 +150,11 @@ dependencies {
     implementation "androidx.compose.ui:ui-tooling-preview"
     implementation "androidx.lifecycle:lifecycle-viewmodel-compose"
     implementation "androidx.lifecycle:lifecycle-runtime-compose"
+    implementation 'androidx.compose.ui:ui-tooling:1.6.7'
     implementation "com.google.accompanist:accompanist-themeadapter-material:0.28.0"
 
     // Only include firebase in the google play build
-    regularImplementation platform('com.google.firebase:firebase-bom:32.8.1')
+    regularImplementation platform('com.google.firebase:firebase-bom:33.0.0')
     regularImplementation 'com.google.firebase:firebase-analytics'
     regularImplementation 'com.google.firebase:firebase-crashlytics'
 

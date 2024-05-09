@@ -9,7 +9,7 @@
                 android:left="3dp"
                 android:bottom="3dp"
                 android:right="3dp" />
-            <solid android:color="@android:color/black" />
+            <solid android:color="@android:color/darker_gray" />
         </shape>
     </item>
     <!-- Inside fill -->

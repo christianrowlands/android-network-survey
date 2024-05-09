@@ -15,6 +15,13 @@
  */
 package com.craxiom.networksurvey.util
 
+import android.content.Context
+import android.content.DialogInterface
+import android.content.SharedPreferences
+import androidx.appcompat.app.AlertDialog
+import androidx.fragment.app.FragmentActivity
+import com.craxiom.networksurvey.Application
+import com.craxiom.networksurvey.R
 import com.craxiom.networksurvey.model.SatelliteStatus
 
 /**
@@ -29,21 +36,27 @@ class SortUtil {
          * Sorts the [list] by the SatelliteStatus gnssType then svid asc and returns the sorted list
          */
         fun sortByGnssThenId(list: List<SatelliteStatus>): List<SatelliteStatus> {
-            return list.sortedWith(compareBy(SatelliteStatus::gnssType, SatelliteStatus::svid)).toMutableList()
+            return list.sortedWith(compareBy(SatelliteStatus::gnssType, SatelliteStatus::svid))
+                .toMutableList()
         }
 
         /**
          * Sorts the [list] by the SatelliteStatus sbasType then svid asc and returns the sorted list
          */
         fun sortBySbasThenId(list: List<SatelliteStatus>): List<SatelliteStatus> {
-            return list.sortedWith(compareBy(SatelliteStatus::sbasType, SatelliteStatus::svid)).toMutableList()
+            return list.sortedWith(compareBy(SatelliteStatus::sbasType, SatelliteStatus::svid))
+                .toMutableList()
         }
 
         /**
          * Sorts the [list] by the SatelliteStatus usedInFix desc then svid asc and returns the sorted list
          */
         fun sortByUsedThenId(list: List<SatelliteStatus>): List<SatelliteStatus> {
-            return list.sortedWith(compareByDescending(SatelliteStatus::usedInFix).thenComparing(SatelliteStatus::svid)).toMutableList()
+            return list.sortedWith(
+                compareByDescending(SatelliteStatus::usedInFix).thenComparing(
+                    SatelliteStatus::svid
+                )
+            ).toMutableList()
         }
 
         /**
@@ -57,49 +70,115 @@ class SortUtil {
          * Sorts the [list] by the SatelliteStatus carrier frequency then svid and returns the sorted list
          */
         fun sortByCarrierFrequencyThenId(list: List<SatelliteStatus>): List<SatelliteStatus> {
-            return list.sortedWith(compareBy(SatelliteStatus::carrierFrequencyHz, SatelliteStatus::svid)).toMutableList()
+            return list.sortedWith(
+                compareBy(
+                    SatelliteStatus::carrierFrequencyHz,
+                    SatelliteStatus::svid
+                )
+            ).toMutableList()
         }
 
         /**
          * Sorts the [list] by the SatelliteStatus gnssType then usedInFix desc then svid asc and returns the sorted list
          */
         fun sortByGnssThenUsedThenId(list: List<SatelliteStatus>): List<SatelliteStatus> {
-            return list.sortedWith(compareBy(SatelliteStatus::gnssType).thenByDescending(SatelliteStatus::usedInFix).thenComparing(SatelliteStatus::svid)).toMutableList()
+            return list.sortedWith(
+                compareBy(SatelliteStatus::gnssType).thenByDescending(
+                    SatelliteStatus::usedInFix
+                ).thenComparing(SatelliteStatus::svid)
+            ).toMutableList()
         }
 
         /**
          * Sorts the [list] by the SatelliteStatus sbasType then usedInFix desc then svid asc and returns the sorted list
          */
         fun sortBySbasThenUsedThenId(list: List<SatelliteStatus>): List<SatelliteStatus> {
-            return list.sortedWith(compareBy(SatelliteStatus::sbasType).thenByDescending(SatelliteStatus::usedInFix).thenComparing(SatelliteStatus::svid)).toMutableList()
+            return list.sortedWith(
+                compareBy(SatelliteStatus::sbasType).thenByDescending(
+                    SatelliteStatus::usedInFix
+                ).thenComparing(SatelliteStatus::svid)
+            ).toMutableList()
         }
 
         /**
          * Sorts the [list] by the SatelliteStatus gnssType then C/N0 desc and returns the sorted list
          */
         fun sortByGnssThenCn0ThenId(list: List<SatelliteStatus>): List<SatelliteStatus> {
-            return list.sortedWith(compareBy(SatelliteStatus::gnssType).thenByDescending(SatelliteStatus::cn0DbHz)).toMutableList()
+            return list.sortedWith(
+                compareBy(SatelliteStatus::gnssType).thenByDescending(
+                    SatelliteStatus::cn0DbHz
+                )
+            ).toMutableList()
         }
 
         /**
          * Sorts the [list] by the SatelliteStatus sbasType then C/N0 desc and returns the sorted list
          */
         fun sortBySbasThenCn0ThenId(list: List<SatelliteStatus>): List<SatelliteStatus> {
-            return list.sortedWith(compareBy(SatelliteStatus::sbasType).thenByDescending(SatelliteStatus::cn0DbHz)).toMutableList()
+            return list.sortedWith(
+                compareBy(SatelliteStatus::sbasType).thenByDescending(
+                    SatelliteStatus::cn0DbHz
+                )
+            ).toMutableList()
         }
 
         /**
          * Sorts the [list] by the SatelliteStatus gnssType then carrier frequency then svid and returns the sorted list
          */
         fun sortByGnssThenCarrierFrequencyThenId(list: List<SatelliteStatus>): List<SatelliteStatus> {
-            return list.sortedWith(compareBy(SatelliteStatus::gnssType, SatelliteStatus::carrierFrequencyHz, SatelliteStatus::svid)).toMutableList()
+            return list.sortedWith(
+                compareBy(
+                    SatelliteStatus::gnssType,
+                    SatelliteStatus::carrierFrequencyHz,
+                    SatelliteStatus::svid
+                )
+            ).toMutableList()
         }
 
         /**
          * Sorts the [list] by the SatelliteStatus sbasType then carrier frequency then svid and returns the sorted list
          */
         fun sortBySbasThenCarrierFrequencyThenId(list: List<SatelliteStatus>): List<SatelliteStatus> {
-            return list.sortedWith(compareBy(SatelliteStatus::sbasType, SatelliteStatus::carrierFrequencyHz, SatelliteStatus::svid)).toMutableList()
+            return list.sortedWith(
+                compareBy(
+                    SatelliteStatus::sbasType,
+                    SatelliteStatus::carrierFrequencyHz,
+                    SatelliteStatus::svid
+                )
+            ).toMutableList()
+        }
+
+        fun showSortByDialog(activity: FragmentActivity) {
+            // TODO - convert all dialogs to MaterialAlertDialog (https://material.io/components/dialogs/android#using-dialogs)
+            val builder = AlertDialog.Builder(
+                activity
+            )
+            builder.setTitle(R.string.menu_option_sort_by)
+            val prefs = Application.getPrefs()
+            val currentSatOrder = PreferenceUtils.getSatSortOrderFromPreferences(activity, prefs)
+            builder.setSingleChoiceItems(
+                R.array.sort_sats, currentSatOrder
+            ) { dialog: DialogInterface, index: Int ->
+                setSortByClause(activity, index, prefs)
+                dialog.dismiss()
+            }
+            val dialog = builder.create()
+            dialog.setOwnerActivity(activity)
+            dialog.show()
+        }
+
+        /**
+         * Saves the "sort by" order to preferences
+         *
+         * @param index the index of R.array.sort_sats that should be set
+         */
+        private fun setSortByClause(context: Context, index: Int, prefs: SharedPreferences) {
+            val sortOptions = context.resources.getStringArray(R.array.sort_sats)
+            PreferenceUtils.saveString(
+                prefs,
+                context.resources.getString(R.string.pref_key_default_sat_sort),
+                sortOptions[index]
+            )
         }
     }
 }

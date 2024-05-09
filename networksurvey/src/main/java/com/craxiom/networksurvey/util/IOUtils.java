@@ -138,4 +138,56 @@ public class IOUtils
         String line1Number = telephonyManager.getLine1Number();
         return line1Number == null ? "" : line1Number;
     }
+
+    /**
+     * Removes leading and trailing characters ("[" and "]") from the provided input, respectively.
+     * If the input size is less than 2, then an empty string is returned
+     *
+     * @param input The input string to trim
+     * @return the input string with leading and trailing characters ("[" and "]") from the provided input, respectively
+     */
+    public static String trimEnds(String input)
+    {
+        if (input.length() < 2)
+        {
+            return "";
+        }
+        return input.substring(1, input.length() - 1);
+    }
+
+    /**
+     * Replaces the term "NAVSTAR" with "GPS" for the provided input
+     *
+     * @param input
+     * @return the input string with the term "NAVSTAR" replaced with "GPS"
+     */
+    public static String replaceNavstar(String input)
+    {
+        return input.replace("NAVSTAR", "GPS");
+    }
+
+    /**
+     * Serializes the provided two-dimensional array of doubles to a String
+     * (for example, for logging GnssAntennaInfo to CSV files). Example:
+     * [11.22 33.44 55.66 77.88; 10.2 30.4 50.6 70.8; 12.2 34.4 56.6 78.8]
+     *
+     * @param data an array to be serialized
+     * @return the serialized version of the provided array as a String
+     */
+    public static String serialize(double[][] data)
+    {
+        StringBuilder builder = new StringBuilder(70); // Based on Pixel 5 GnssAntennaInfo
+        builder.append("[");
+        for (double[] i : data)
+        {
+            for (double j : i)
+            {
+                builder.append(j);
+                builder.append(" ");
+            }
+            builder.replace(builder.length() - 1, builder.length(), "; ");
+        }
+        builder.replace(builder.length() - 2, builder.length(), "]");
+        return builder.toString();
+    }
 }

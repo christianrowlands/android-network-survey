@@ -16,9 +16,7 @@
 package com.craxiom.networksurvey.util;
 
 import static com.craxiom.networksurvey.view.GnssSkyView.MAX_VALUE_CN0;
-import static com.craxiom.networksurvey.view.GnssSkyView.MAX_VALUE_SNR;
 import static com.craxiom.networksurvey.view.GnssSkyView.MIN_VALUE_CN0;
-import static com.craxiom.networksurvey.view.GnssSkyView.MIN_VALUE_SNR;
 
 import android.content.Context;
 import android.location.Location;
@@ -89,36 +87,6 @@ public class UIUtils
         {
             return TimeUnit.MILLISECONDS.toSeconds(ttff) + " sec";
         }
-    }
-
-    /**
-     * Converts the provided SNR values to a left margin value (pixels) for the avg SNR indicator ImageViews in gps_sky_signal
-     * Left margin range for the SNR indicator ImageViews in gps_sky_signal is determined by dimens.xml
-     * cn0_meter_width (based on device screen width) and cn0_indicator_min_left_margin values.
-     * <p>
-     * This is effectively an affine transform - https://math.stackexchange.com/a/377174/554287.
-     *
-     * @param snr signal-to-noise ratio of the satellite in dB (from GpsSatellite)
-     * @return left margin value in pixels for the SNR indicator ImageViews
-     */
-    public static int snrToIndicatorLeftMarginPx(float snr, int minIndicatorMarginPx, int maxIndicatorMarginPx)
-    {
-        return (int) MathUtils.mapToRange(snr, MIN_VALUE_SNR, MAX_VALUE_SNR, minIndicatorMarginPx, maxIndicatorMarginPx);
-    }
-
-    /**
-     * Converts the provided SNR values to a left margin value (pixels) for the avg SNR TextViews in gps_sky_signal
-     * Left margin range for the SNR indicator TextView in gps_sky_signal is determined by dimens.xml
-     * cn0_meter_width (based on device screen width) and cn0_textview_min_left_margin values.
-     * <p>
-     * This is effectively an affine transform - https://math.stackexchange.com/a/377174/554287.
-     *
-     * @param snr signal-to-noise ratio of the satellite in dB (from GpsSatellite)
-     * @return left margin value in dp for the SNR TextViews
-     */
-    public static int snrToTextViewLeftMarginPx(float snr, int minTextViewMarginPx, int maxTextViewMarginPx)
-    {
-        return (int) MathUtils.mapToRange(snr, MIN_VALUE_SNR, MAX_VALUE_SNR, minTextViewMarginPx, maxTextViewMarginPx);
     }
 
     /**

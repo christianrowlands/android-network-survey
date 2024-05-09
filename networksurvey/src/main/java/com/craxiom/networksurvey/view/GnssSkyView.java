@@ -1,5 +1,8 @@
 package com.craxiom.networksurvey.view;
 
+import static com.craxiom.networksurvey.model.SatelliteStatus.NO_DATA;
+import static java.util.Collections.emptyList;
+
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Color;
@@ -7,85 +10,69 @@ import android.graphics.Matrix;
 import android.graphics.Paint;
 import android.graphics.Path;
 import android.graphics.RectF;
-import android.location.GnssMeasurementsEvent;
-import android.location.GnssStatus;
-import android.location.Location;
-import android.os.Build;
-import android.os.Bundle;
 import android.util.AttributeSet;
 import android.view.View;
 import android.view.WindowManager;
 
+import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import androidx.annotation.RequiresApi;
 import androidx.core.content.ContextCompat;
 
 import com.craxiom.networksurvey.R;
-import com.craxiom.networksurvey.listeners.IGnssListener;
 import com.craxiom.networksurvey.model.GnssType;
-import com.craxiom.networksurvey.util.GpsTestUtil;
+import com.craxiom.networksurvey.model.SatelliteStatus;
 import com.craxiom.networksurvey.util.UIUtils;
+
+import java.util.List;
 
 /**
  * View that shows satellite positions on a circle representing the sky
  */
-public class GnssSkyView extends View implements IGnssListener
+
+public class GnssSkyView extends View
 {
+
     public static final float MIN_VALUE_CN0 = 10.0f;
     public static final float MAX_VALUE_CN0 = 45.0f;
-    public static final float MIN_VALUE_SNR = 0.0f;
-    public static final float MAX_VALUE_SNR = 30.0f;
+
+    // View dimensions, to draw the compass with the correct width and height
+    private int mHeight;
+
+    private int mWidth;
 
     private static final float PRN_TEXT_SCALE = 0.7f;
 
     private int satRadius;
 
-    private float[] snrThresholds;
+    private float[] mCn0Thresholds;
 
-    private int[] snrColors;
+    private int[] mCn0Colors;
 
-    private float[] cn0Thresholds;
+    Context mContext;
 
-    private int[] cn0Colors;
+    WindowManager mWindowManager;
 
-    Context context;
+    private Paint mHorizonActiveFillPaint;
+    private Paint mHorizonInactiveFillPaint;
+    private Paint mHorizonStrokePaint;
+    private Paint mGridStrokePaint;
+    private Paint mSatelliteFillPaint;
+    private Paint mSatelliteStrokePaint;
+    private Paint mSatelliteUsedStrokePaint;
+    private Paint mNorthPaint;
+    private Paint mNorthFillPaint;
+    private Paint mPrnIdPaint;
+    private Paint mNotInViewPaint;
 
-    WindowManager windowManager;
+    private double mOrientation = 0.0;
 
-    private Paint horizonActiveFillPaint;
-    private Paint horizonInactiveFillPaint;
-    private Paint horizonStrokePaint;
-    private Paint gridStrokePaint;
-    private Paint satelliteFillPaint;
-    private Paint satelliteStrokePaint;
-    private Paint satelliteUsedStrokePaint;
-    private Paint northPaint;
-    private Paint northFillPaint;
-    private Paint prnIdPaint;
-    private Paint notInViewPaint;
+    private boolean mStarted;
 
-    private double orientation = 0.0;
+    private float mCn0UsedAvg = 0.0f;
 
-    private boolean started;
+    private float mCn0InViewAvg = 0.0f;
 
-    private float[] snrCn0s;
-    private float[] elevs;
-    private float[] azims;  // Holds either SNR or C/N0 - see #65
-
-    private float snrCn0UsedAvg = 0.0f;
-
-    private float snrCn0InViewAvg = 0.0f;
-
-    private boolean[] usedInFix;
-
-    private int[] prns;
-    private int[] constellationType;
-
-    private int svCount;
-
-    private boolean useLegacyGnssApi = false;
-
-    private boolean isSnrBad = false;
+    private List<SatelliteStatus> statuses = emptyList();
 
     public GnssSkyView(Context context)
     {
@@ -101,174 +88,149 @@ public class GnssSkyView extends View implements IGnssListener
 
     private void init(Context context)
     {
-        this.context = context;
-        windowManager = (WindowManager) this.context.getSystemService(Context.WINDOW_SERVICE);
+        mContext = context;
+        mWindowManager = (WindowManager) mContext.getSystemService(Context.WINDOW_SERVICE);
         satRadius = UIUtils.dpToPixels(context, 5);
 
-        horizonActiveFillPaint = new Paint();
-        horizonActiveFillPaint.setColor(Color.WHITE);
-        horizonActiveFillPaint.setStyle(Paint.Style.FILL);
-        horizonActiveFillPaint.setAntiAlias(true);
+        int textColor = getResources().getColor(android.R.color.secondary_text_dark, null);
+        int backgroundColor = ContextCompat.getColor(context, R.color.cardview_dark_background);
+        int satStrokeColorUsed = getResources().getColor(android.R.color.darker_gray, null);
 
-        horizonInactiveFillPaint = new Paint();
-        horizonInactiveFillPaint.setColor(Color.LTGRAY);
-        horizonInactiveFillPaint.setStyle(Paint.Style.FILL);
-        horizonInactiveFillPaint.setAntiAlias(true);
+        mHorizonActiveFillPaint = new Paint();
+        mHorizonActiveFillPaint.setColor(backgroundColor);
+        mHorizonActiveFillPaint.setStyle(Paint.Style.FILL);
+        mHorizonActiveFillPaint.setAntiAlias(true);
 
-        horizonStrokePaint = new Paint();
-        horizonStrokePaint.setColor(Color.BLACK);
-        horizonStrokePaint.setStyle(Paint.Style.STROKE);
-        horizonStrokePaint.setStrokeWidth(2.0f);
-        horizonStrokePaint.setAntiAlias(true);
+        mHorizonInactiveFillPaint = new Paint();
+        mHorizonInactiveFillPaint.setColor(backgroundColor);
+        mHorizonInactiveFillPaint.setStyle(Paint.Style.FILL);
+        mHorizonInactiveFillPaint.setAntiAlias(true);
 
-        gridStrokePaint = new Paint();
-        gridStrokePaint.setColor(ContextCompat.getColor(this.context, R.color.gray));
-        gridStrokePaint.setStyle(Paint.Style.STROKE);
-        gridStrokePaint.setAntiAlias(true);
+        mHorizonStrokePaint = new Paint();
+        mHorizonStrokePaint.setColor(Color.BLACK);
+        mHorizonStrokePaint.setStyle(Paint.Style.STROKE);
+        mHorizonStrokePaint.setStrokeWidth(2.0f);
+        mHorizonStrokePaint.setAntiAlias(true);
 
-        satelliteFillPaint = new Paint();
-        satelliteFillPaint.setColor(ContextCompat.getColor(this.context, R.color.yellow));
-        satelliteFillPaint.setStyle(Paint.Style.FILL);
-        satelliteFillPaint.setAntiAlias(true);
+        mGridStrokePaint = new Paint();
+        mGridStrokePaint.setColor(ContextCompat.getColor(mContext, R.color.gray));
+        mGridStrokePaint.setStyle(Paint.Style.STROKE);
+        mGridStrokePaint.setAntiAlias(true);
 
-        satelliteStrokePaint = new Paint();
-        satelliteStrokePaint.setColor(Color.BLACK);
-        satelliteStrokePaint.setStyle(Paint.Style.STROKE);
-        satelliteStrokePaint.setStrokeWidth(2.0f);
-        satelliteStrokePaint.setAntiAlias(true);
+        mSatelliteFillPaint = new Paint();
+        mSatelliteFillPaint.setColor(ContextCompat.getColor(mContext, R.color.yellow));
+        mSatelliteFillPaint.setStyle(Paint.Style.FILL);
+        mSatelliteFillPaint.setAntiAlias(true);
 
-        satelliteUsedStrokePaint = new Paint();
-        satelliteUsedStrokePaint.setColor(Color.BLACK);
-        satelliteUsedStrokePaint.setStyle(Paint.Style.STROKE);
-        satelliteUsedStrokePaint.setStrokeWidth(8.0f);
-        satelliteUsedStrokePaint.setAntiAlias(true);
+        mSatelliteStrokePaint = new Paint();
+        mSatelliteStrokePaint.setColor(Color.BLACK);
+        mSatelliteStrokePaint.setStyle(Paint.Style.STROKE);
+        mSatelliteStrokePaint.setStrokeWidth(2.0f);
+        mSatelliteStrokePaint.setAntiAlias(true);
 
-        snrThresholds = new float[]{MIN_VALUE_SNR, 10.0f, 20.0f, MAX_VALUE_SNR};
-        snrColors = new int[]{ContextCompat.getColor(this.context, R.color.gray),
-                ContextCompat.getColor(this.context, R.color.red),
-                ContextCompat.getColor(this.context, R.color.yellow),
-                ContextCompat.getColor(this.context, R.color.green)};
+        mSatelliteUsedStrokePaint = new Paint();
+        mSatelliteUsedStrokePaint.setColor(satStrokeColorUsed);
+        mSatelliteUsedStrokePaint.setStyle(Paint.Style.STROKE);
+        mSatelliteUsedStrokePaint.setStrokeWidth(8.0f);
+        mSatelliteUsedStrokePaint.setAntiAlias(true);
 
-        cn0Thresholds = new float[]{MIN_VALUE_CN0, 21.67f, 33.3f, MAX_VALUE_CN0};
-        cn0Colors = new int[]{ContextCompat.getColor(this.context, R.color.gray),
-                ContextCompat.getColor(this.context, R.color.red),
-                ContextCompat.getColor(this.context, R.color.yellow),
-                ContextCompat.getColor(this.context, R.color.green)};
+        mCn0Thresholds = new float[]{MIN_VALUE_CN0, 21.67f, 33.3f, MAX_VALUE_CN0};
+        mCn0Colors = new int[]{ContextCompat.getColor(mContext, R.color.gray),
+                ContextCompat.getColor(mContext, R.color.red),
+                ContextCompat.getColor(mContext, R.color.yellow),
+                ContextCompat.getColor(mContext, R.color.green)};
 
-        northPaint = new Paint();
-        northPaint.setColor(Color.BLACK);
-        northPaint.setStyle(Paint.Style.STROKE);
-        northPaint.setStrokeWidth(4.0f);
-        northPaint.setAntiAlias(true);
+        mNorthPaint = new Paint();
+        mNorthPaint.setColor(Color.BLACK);
+        mNorthPaint.setStyle(Paint.Style.STROKE);
+        mNorthPaint.setStrokeWidth(4.0f);
+        mNorthPaint.setAntiAlias(true);
 
-        northFillPaint = new Paint();
-        northFillPaint.setColor(Color.GRAY);
-        northFillPaint.setStyle(Paint.Style.FILL);
-        northFillPaint.setStrokeWidth(4.0f);
-        northFillPaint.setAntiAlias(true);
+        mNorthFillPaint = new Paint();
+        mNorthFillPaint.setColor(Color.GRAY);
+        mNorthFillPaint.setStyle(Paint.Style.FILL);
+        mNorthFillPaint.setStrokeWidth(4.0f);
+        mNorthFillPaint.setAntiAlias(true);
 
-        prnIdPaint = new Paint();
-        prnIdPaint.setColor(Color.BLACK);
-        prnIdPaint.setStyle(Paint.Style.STROKE);
-        prnIdPaint
+        mPrnIdPaint = new Paint();
+        mPrnIdPaint.setColor(textColor);
+        mPrnIdPaint.setStyle(Paint.Style.FILL_AND_STROKE);
+        mPrnIdPaint
                 .setTextSize(UIUtils.dpToPixels(getContext(), satRadius * PRN_TEXT_SCALE));
-        prnIdPaint.setAntiAlias(true);
+        mPrnIdPaint.setAntiAlias(true);
 
-        notInViewPaint = new Paint();
-        notInViewPaint.setColor(ContextCompat.getColor(context, R.color.not_in_view_sat));
-        notInViewPaint.setStyle(Paint.Style.FILL);
-        notInViewPaint.setStrokeWidth(4.0f);
-        notInViewPaint.setAntiAlias(true);
+        mNotInViewPaint = new Paint();
+        mNotInViewPaint.setColor(ContextCompat.getColor(context, R.color.not_in_view_sat));
+        mNotInViewPaint.setStyle(Paint.Style.FILL);
+        mNotInViewPaint.setStrokeWidth(4.0f);
+        mNotInViewPaint.setAntiAlias(true);
 
         setFocusable(true);
-    }
 
-    public void onDestroy()
-    {
-        context = null;
+        // Get the proper height and width of view before drawing
+        getViewTreeObserver().addOnPreDrawListener(
+                () -> {
+                    mHeight = getHeight();
+                    mWidth = getWidth();
+                    return true;
+                }
+        );
     }
 
     public void setStarted()
     {
-        started = true;
+        mStarted = true;
         invalidate();
     }
 
     public void setStopped()
     {
-        started = false;
-        svCount = 0;
+        mStarted = false;
         invalidate();
     }
 
-    @RequiresApi(api = Build.VERSION_CODES.N)
-    public synchronized void setGnssStatus(GnssStatus status)
+    public synchronized void setStatus(List<SatelliteStatus> statuses)
     {
-        useLegacyGnssApi = false;
-        isSnrBad = false;
-        if (prns == null)
-        {
-            /*
-             * We need to allocate arrays big enough so we don't overflow them.  Per
-             * https://developer.android.com/reference/android/location/GnssStatus.html#getSvid(int)
-             * 255 should be enough to contain all known satellites world-wide.
-             */
-            final int maxLength = 255;
-            prns = new int[maxLength];
-            snrCn0s = new float[maxLength];
-            elevs = new float[maxLength];
-            azims = new float[maxLength];
-            constellationType = new int[maxLength];
-            usedInFix = new boolean[maxLength];
-        }
+        this.statuses = statuses;
 
-        int length = status.getSatelliteCount();
-        svCount = 0;
         int svInViewCount = 0;
         int svUsedCount = 0;
         float cn0InViewSum = 0.0f;
         float cn0UsedSum = 0.0f;
-        snrCn0InViewAvg = 0.0f;
-        snrCn0UsedAvg = 0.0f;
-        while (svCount < length)
+        mCn0InViewAvg = 0.0f;
+        mCn0UsedAvg = 0.0f;
+        for (SatelliteStatus s : statuses)
         {
-            snrCn0s[svCount] = status.getCn0DbHz(svCount);  // Store C/N0 values (see #65)
-            elevs[svCount] = status.getElevationDegrees(svCount);
-            azims[svCount] = status.getAzimuthDegrees(svCount);
-            prns[svCount] = status.getSvid(svCount);
-            constellationType[svCount] = status.getConstellationType(svCount);
-            usedInFix[svCount] = status.usedInFix(svCount);
             // If satellite is in view, add signal to calculate avg
-            if (status.getCn0DbHz(svCount) != 0.0f)
+            if (s.getCn0DbHz() != 0.0f)
             {
                 svInViewCount++;
-                cn0InViewSum = cn0InViewSum + status.getCn0DbHz(svCount);
+                cn0InViewSum = cn0InViewSum + s.getCn0DbHz();
             }
-            if (status.usedInFix(svCount))
+            if (s.getUsedInFix())
             {
                 svUsedCount++;
-                cn0UsedSum = cn0UsedSum + status.getCn0DbHz(svCount);
+                cn0UsedSum = cn0UsedSum + s.getCn0DbHz();
             }
-            svCount++;
         }
 
         if (svInViewCount > 0)
         {
-            snrCn0InViewAvg = cn0InViewSum / svInViewCount;
+            mCn0InViewAvg = cn0InViewSum / svInViewCount;
         }
         if (svUsedCount > 0)
         {
-            snrCn0UsedAvg = cn0UsedSum / svUsedCount;
+            mCn0UsedAvg = cn0UsedSum / svUsedCount;
         }
 
-        started = true;
+        mStarted = true;
         invalidate();
     }
 
     private void drawLine(Canvas c, float x1, float y1, float x2, float y2)
     {
         // rotate the line based on orientation
-        double angle = Math.toRadians(-orientation);
+        double angle = Math.toRadians(-mOrientation);
         float cos = (float) Math.cos(angle);
         float sin = (float) Math.sin(angle);
 
@@ -284,26 +246,27 @@ public class GnssSkyView extends View implements IGnssListener
         float X2 = cos * x2 + sin * y2 + centerX;
         float Y2 = -(-sin * x2 + cos * y2) + centerY;
 
-        c.drawLine(X1, Y1, X2, Y2, gridStrokePaint);
+        c.drawLine(X1, Y1, X2, Y2, mGridStrokePaint);
     }
 
     private void drawHorizon(Canvas c, int s)
     {
-        float radius = s / 2f;
+        float radius = s / 2;
 
         c.drawCircle(radius, radius, radius,
-                started ? horizonActiveFillPaint : horizonInactiveFillPaint);
+                mStarted ? mHorizonActiveFillPaint : mHorizonInactiveFillPaint);
         drawLine(c, 0, radius, 2 * radius, radius);
         drawLine(c, radius, 0, radius, 2 * radius);
-        c.drawCircle(radius, radius, elevationToRadius(s, 60.0f), gridStrokePaint);
-        c.drawCircle(radius, radius, elevationToRadius(s, 30.0f), gridStrokePaint);
-        c.drawCircle(radius, radius, elevationToRadius(s, 0.0f), gridStrokePaint);
-        c.drawCircle(radius, radius, radius, horizonStrokePaint);
+        c.drawCircle(radius, radius, elevationToRadius(s, 60.0f), mGridStrokePaint);
+        c.drawCircle(radius, radius, elevationToRadius(s, 30.0f), mGridStrokePaint);
+        c.drawCircle(radius, radius, elevationToRadius(s, 0.0f), mGridStrokePaint);
+        c.drawCircle(radius, radius, radius, mHorizonStrokePaint);
     }
 
     private void drawNorthIndicator(Canvas c, int s)
     {
-        float radius = s / 2f;
+        float radius = s / 2;
+        double angle = Math.toRadians(-mOrientation);
         final float arrowHeightScale = 0.05f;
         final float arrowWidthScale = 0.1f;
 
@@ -327,51 +290,51 @@ public class GnssSkyView extends View implements IGnssListener
 
         // Rotate arrow around center point
         Matrix matrix = new Matrix();
-        matrix.postRotate((float) -orientation, radius, radius);
+        matrix.postRotate((float) -mOrientation, radius, radius);
         path.transform(matrix);
 
-        c.drawPath(path, northPaint);
-        c.drawPath(path, northFillPaint);
+        c.drawPath(path, mNorthPaint);
+        c.drawPath(path, mNorthFillPaint);
     }
 
-    private void drawSatellite(Canvas c, int s, float elev, float azim, float snrCn0, int prn,
-                               int constellationType, boolean usedInFix)
+    private void drawSatellite(Canvas c, int s, float elev, float azim, float cn0, int prn,
+                               GnssType gnssType, boolean usedInFix)
     {
+        float x;
+        float y;
         // Place PRN text slightly below drawn satellite
         final double prnXScale = 1.4;
         final double prnYScale = 3.8;
 
         Paint fillPaint;
-        if (snrCn0 == 0.0f)
+        if (cn0 == 0.0f)
         {
             // Satellite can't be seen
-            fillPaint = notInViewPaint;
+            fillPaint = mNotInViewPaint;
         } else
         {
             // Calculate fill color based on signal strength
-            fillPaint = getSatellitePaint(satelliteFillPaint, snrCn0);
+            fillPaint = getSatellitePaint(mSatelliteFillPaint, cn0);
         }
 
         Paint strokePaint;
         if (usedInFix)
         {
-            strokePaint = satelliteUsedStrokePaint;
+            strokePaint = mSatelliteUsedStrokePaint;
         } else
         {
-            strokePaint = satelliteStrokePaint;
+            strokePaint = mSatelliteStrokePaint;
         }
 
-        final double radius = elevationToRadius(s, elev);
-        azim -= orientation;
-        final double angle = (float) Math.toRadians(azim);
+        double radius = elevationToRadius(s, elev);
+        azim -= mOrientation;
+        double angle = (float) Math.toRadians(azim);
 
-        final float x = (float) ((s / 2) + (radius * Math.sin(angle)));
-        final float y = (float) ((s / 2) - (radius * Math.cos(angle)));
+        x = (float) ((s / 2) + (radius * Math.sin(angle)));
+        y = (float) ((s / 2) - (radius * Math.cos(angle)));
 
-        // Change shape based on satellite operator
-        final GnssType operator = GpsTestUtil.getGnssConstellationType(constellationType);
-
-        switch (operator)
+        // Change shape based on satellite gnssType
+        switch (gnssType)
         {
             case NAVSTAR:
                 c.drawCircle(x, y, satRadius, fillPaint);
@@ -395,47 +358,20 @@ public class GnssSkyView extends View implements IGnssListener
             case IRNSS:
                 drawOval(c, x, y, fillPaint, strokePaint);
                 break;
-//            case GAGAN:
-//                // SBAS
-//                drawDiamond(c, x, y, fillPaint, strokePaint);
-//                break;
-//            case ANIK:
-//                // SBAS
-//                drawDiamond(c, x, y, fillPaint, strokePaint);
-//                break;
-//            case GALAXY_15:
-//                // SBAS
-//                drawDiamond(c, x, y, fillPaint, strokePaint);
-//                break;
-//            case INMARSAT_3F2:
-//                // SBAS
-//                drawDiamond(c, x, y, fillPaint, strokePaint);
-//                break;
-//            case INMARSAT_3F5:
-//                // SBAS
-//                drawDiamond(c, x, y, fillPaint, strokePaint);
-//                break;
-//            case INMARSAT_4F3:
-//                // SBAS
-//                drawDiamond(c, x, y, fillPaint, strokePaint);
-//                break;
-//            case SES_5:
-//                // SBAS
-//                drawDiamond(c, x, y, fillPaint, strokePaint);
-//                break;
-//            case ASTRA_5B:
-//                // SBAS
-//                drawDiamond(c, x, y, fillPaint, strokePaint);
-//                break;
+            case SBAS:
+                drawDiamond(c, x, y, fillPaint, strokePaint);
+                break;
+            case UNKNOWN:
+                break;
         }
 
         c.drawText(String.valueOf(prn), x - (int) (satRadius * prnXScale),
-                y + (int) (satRadius * prnYScale), prnIdPaint);
+                y + (int) (satRadius * prnYScale), mPrnIdPaint);
     }
 
     private float elevationToRadius(int s, float elev)
     {
-        return ((s / 2f) - satRadius) * (1.0f - (elev / 90.0f));
+        return ((s / 2) - satRadius) * (1.0f - (elev / 90.0f));
     }
 
     private void drawTriangle(Canvas c, float x, float y, Paint fillPaint, Paint strokePaint)
@@ -481,10 +417,10 @@ public class GnssSkyView extends View implements IGnssListener
     {
         Path path = new Path();
         path.moveTo(x, y - satRadius);
-        path.lineTo(x - satRadius, y - (satRadius / 3f));
-        path.lineTo(x - 2 * (satRadius / 3f), y + satRadius);
-        path.lineTo(x + 2 * (satRadius / 3f), y + satRadius);
-        path.lineTo(x + satRadius, y - (satRadius / 3f));
+        path.lineTo(x - satRadius, y - (satRadius / 3));
+        path.lineTo(x - 2 * (satRadius / 3), y + satRadius);
+        path.lineTo(x + 2 * (satRadius / 3), y + satRadius);
+        path.lineTo(x + satRadius, y - (satRadius / 3));
         path.close();
 
         c.drawPath(path, fillPaint);
@@ -521,46 +457,32 @@ public class GnssSkyView extends View implements IGnssListener
         c.drawOval(rect, strokePaint);
     }
 
-    private Paint getSatellitePaint(Paint base, float snrCn0)
+    private Paint getSatellitePaint(Paint base, float cn0)
     {
-        final Paint newPaint = new Paint(base);
-        newPaint.setColor(getSatelliteColor(snrCn0));
+        Paint newPaint = new Paint(base);
+        newPaint.setColor(getSatelliteColor(cn0));
         return newPaint;
     }
 
     /**
-     * Gets the paint color for a satellite based on provided SNR or C/N0 and the thresholds defined in this class
+     * Gets the paint color for a satellite based on provided C/N0 and the thresholds defined in this class
      *
-     * @param snrCn0 the SNR to use (if using legacy GpsStatus) or the C/N0 to use (if using is
-     *               GnssStatus) to generate the satellite color based on signal quality
-     * @return the paint color for a satellite based on provided SNR or C/N0
+     * @param cn0 the C/N0 to use to generate the satellite color based on signal quality
+     * @return the paint color for a satellite based on provided C/N0
      */
-    public synchronized int getSatelliteColor(float snrCn0)
+    public synchronized int getSatelliteColor(float cn0)
     {
-        int numSteps;
-        final float[] thresholds;
-        final int[] colors;
 
-        if (!useLegacyGnssApi || isSnrBad)
-        {
-            // Use C/N0 ranges/colors for both C/N0 and SNR on Android 7.0 and higher (see #76)
-            numSteps = cn0Thresholds.length;
-            thresholds = cn0Thresholds;
-            colors = cn0Colors;
-        } else
-        {
-            // Use legacy SNR ranges/colors for Android versions less than Android 7.0 or if user selects legacy API (see #76)
-            numSteps = snrThresholds.length;
-            thresholds = snrThresholds;
-            colors = snrColors;
-        }
+        int numSteps = mCn0Thresholds.length;
+        final float[] thresholds = mCn0Thresholds;
+        final int[] colors = mCn0Colors;
 
-        if (snrCn0 <= thresholds[0])
+        if (cn0 <= thresholds[0])
         {
             return colors[0];
         }
 
-        if (snrCn0 >= thresholds[numSteps - 1])
+        if (cn0 >= thresholds[numSteps - 1])
         {
             return colors[numSteps - 1];
         }
@@ -569,8 +491,9 @@ public class GnssSkyView extends View implements IGnssListener
         {
             float threshold = thresholds[i];
             float nextThreshold = thresholds[i + 1];
-            if (snrCn0 >= threshold && snrCn0 <= nextThreshold)
+            if (cn0 >= threshold && cn0 <= nextThreshold)
             {
+
                 int c1 = colors[i];
                 int r1 = Color.red(c1);
                 int g1 = Color.green(c1);
@@ -581,38 +504,40 @@ public class GnssSkyView extends View implements IGnssListener
                 int g2 = Color.green(c2);
                 int b2 = Color.blue(c2);
 
-                float f = (snrCn0 - threshold) / (nextThreshold - threshold);
+                float f = (cn0 - threshold) / (nextThreshold - threshold);
 
                 int r3 = (int) (r2 * f + r1 * (1.0f - f));
                 int g3 = (int) (g2 * f + g1 * (1.0f - f));
                 int b3 = (int) (b2 * f + b1 * (1.0f - f));
+                int c3 = Color.rgb(r3, g3, b3);
 
-                return Color.rgb(r3, g3, b3);
+                return c3;
             }
         }
         return Color.MAGENTA;
     }
 
     @Override
-    protected void onDraw(Canvas canvas)
+    protected void onDraw(@NonNull Canvas canvas)
     {
-        int minScreenDimen = Math.min(getWidth(), getHeight());
+
+        int minScreenDimen = Math.min(mWidth, mHeight);
 
         drawHorizon(canvas, minScreenDimen);
 
         drawNorthIndicator(canvas, minScreenDimen);
 
-        if (elevs != null)
+        for (SatelliteStatus s : statuses)
         {
-            int numSats = svCount;
-
-            for (int i = 0; i < numSats; i++)
+            if (s.getElevationDegrees() != NO_DATA && s.getAzimuthDegrees() != NO_DATA)
             {
-                if (elevs[i] != 0.0f || azims[i] != 0.0f)
-                {
-                    drawSatellite(canvas, minScreenDimen, elevs[i], azims[i], snrCn0s[i],
-                            prns[i], constellationType[i], usedInFix[i]);
-                }
+                drawSatellite(canvas, minScreenDimen,
+                        s.getElevationDegrees(),
+                        s.getAzimuthDegrees(),
+                        s.getCn0DbHz(),
+                        s.getSvid(),
+                        s.getGnssType(),
+                        s.getUsedInFix());
             }
         }
     }
@@ -626,84 +551,29 @@ public class GnssSkyView extends View implements IGnssListener
         setMeasuredDimension(specSize, specSize);
     }
 
-    @Override
     public void onOrientationChanged(double orientation, double tilt)
     {
-        this.orientation = orientation;
+        mOrientation = orientation;
         invalidate();
     }
 
-    @RequiresApi(api = Build.VERSION_CODES.N)
-    @Override
-    public void onSatelliteStatusChanged(GnssStatus status)
+    /**
+     * Returns the average signal strength (C/N0) for satellites that are in view of the device (i.e., value is not 0), or 0 if the average can't be calculated
+     *
+     * @return the average signal strength (C/N0) for satellites that are in view of the device (i.e., value is not 0), or 0 if the average can't be calculated
+     */
+    public synchronized float getCn0InViewAvg()
     {
-    }
-
-    @RequiresApi(api = Build.VERSION_CODES.N)
-    @Override
-    public void onGnssMeasurementsReceived(GnssMeasurementsEvent event)
-    {
-
-    }
-
-    @Override
-    public void onLocationChanged(Location location)
-    {
-    }
-
-    @Override
-    public void onStatusChanged(String provider, int status, Bundle extras)
-    {
-    }
-
-    @Override
-    public void onProviderEnabled(String provider)
-    {
-    }
-
-    @Override
-    public void onProviderDisabled(String provider)
-    {
+        return mCn0InViewAvg;
     }
 
     /**
-     * Returns the average signal strength (C/N0 if isUsingLegacyGpsApi is false, SNR if isUsingLegacyGpsApi is true) for satellites that are in view of the device (i.e., value is not 0), or 0 if the average can't be calculated
+     * Returns the average signal strength (C/N0) for satellites that are being used to calculate a location fix, or 0 if the average can't be calculated
      *
-     * @return the average signal strength (C/N0 if isUsingLegacyGpsApi is false, SNR if isUsingLegacyGpsApi is true) for satellites that are in view of the device (i.e., value is not 0), or 0 if the average can't be calculated
+     * @return the average signal strength (C/N0) for satellites that are being used to calculate a location fix, or 0 if the average can't be calculated
      */
-    public synchronized float getSnrCn0InViewAvg()
+    public synchronized float getCn0UsedAvg()
     {
-        return snrCn0InViewAvg;
-    }
-
-    /**
-     * Returns the average signal strength (C/N0 if isUsingLegacyGpsApi is false, SNR if isUsingLegacyGpsApi is true) for satellites that are being used to calculate a location fix, or 0 if the average can't be calculated
-     *
-     * @return the average signal strength (C/N0 if isUsingLegacyGpsApi is false, SNR if isUsingLegacyGpsApi is true) for satellites that are being used to calculate a location fix, or 0 if the average can't be calculated
-     */
-    public synchronized float getSnrCn0UsedAvg()
-    {
-        return snrCn0UsedAvg;
-    }
-
-    /**
-     * Returns true if the app is monitoring the legacy GpsStatus.Listener, or false if the app is monitoring the GnssStatus.Callback
-     *
-     * @return true if the app is monitoring the legacy GpsStatus.Listener, or false if the app is monitoring the GnssStatus.Callback
-     */
-    @SuppressWarnings("BooleanMethodIsAlwaysInverted")
-    public synchronized boolean isUsingLegacyGpsApi()
-    {
-        return useLegacyGnssApi;
-    }
-
-    /**
-     * Returns true if bad SNR data has been detected (avgs exceeded max SNR threshold), or false if no SNR is observed (i.e., C/N0 data is observed) or SNR data seems ok
-     *
-     * @return true if bad SNR data has been detected (avgs exceeded max SNR threshold), or false if no SNR is observed (i.e., C/N0 data is observed) or SNR data seems ok
-     */
-    public synchronized boolean isSnrBad()
-    {
-        return isSnrBad;
+        return mCn0UsedAvg;
     }
 }

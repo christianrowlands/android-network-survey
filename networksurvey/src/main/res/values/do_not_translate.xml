@@ -21,6 +21,7 @@
     <string name="app_name">Network Survey</string>
 
     <!-- Values and units display - Status -->
+    <string name="lat_or_lon">%1$.7f\u00B0</string>
     <string name="gps_latitude_value">%1$.7f\u00B0</string>
     <string name="gps_lat_lon_dms_value">%1$d\u00B0 %2$d\' %3$d\"</string>
     <string name="gps_longitude_value">%1$.7f\u00B0</string>
@@ -44,7 +45,7 @@
     <string name="gps_speed_acc_value_miles_hour">%1$.1f mph</string>
     <string name="gps_bearing_value">%1$.1f\u00B0</string>
     <string name="gps_bearing_acc_value">%1$.1f\u00B0</string>
-    <string name="gps_num_sats_value">%1$d/%2$d</string>
+    <string name="gps_num_sats_value">%1$d/%2$d/%3$d</string>
     <string name="pdop_value">%1$.1f</string>
     <string name="hvdop_value">%1$.1f/%2$.1f</string>
     <string name="gps_elevation_column_value">%1$.1f\u00B0</string>
@@ -83,6 +84,7 @@
 
     <!-- Preference keys -->
     <string name="pref_key_default_sat_sort">preference_default_sat_sort</string>
+    <string name="pref_key_default_sat_filter">preference_default_sat_filter</string>
 
     <string name="pref_key_map_category">map_category</string>
     <string name="pref_key_map_type">map_type</string>
@@ -125,6 +127,7 @@
     <string name="pref_key_preferred_distance_units_v2">preference_distance_units_v2</string>
     <string name="pref_key_preferred_speed_units_v2">preference_speed_units_v2</string>
     <string name="pref_key_language">preference_language</string>
+    <string name="pref_key_force_full_gnss_measurements">preference_force_full_gnss_measurements</string>
 
     <string name="pref_key_ignore_raw_gnss_failure">ignore_raw_gnss_failure</string>
 
@@ -162,6 +165,10 @@
     <string name="capability_key_raw_measurements">capability_key_raw_measurements</string>
     <string name="capability_key_nav_messages">capability_key_nav_messages</string>
     <string name="capability_key_nmea">capability_key_nmea</string>
+    <string name="capability_key_measurement_automatic_gain_control">capability_key_measurement_automatic_gain_control</string>
+    <string name="capability_key_measurement_delta_range">capability_key_measurement_delta_range</string>
+    <string name="capability_key_num_antenna">capability_key_num_antenna</string>
+    <string name="capability_key_antenna_cf">capability_key_antenna_cf</string>
 
     <string name="capability_title_inject_xtra">Inject XTRA: %1$s\n</string>
     <string name="capability_title_inject_time">Inject time: %1$s\n</string>

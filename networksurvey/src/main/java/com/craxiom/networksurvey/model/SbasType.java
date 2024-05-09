@@ -24,5 +24,5 @@ package com.craxiom.networksurvey.model;
  */
 public enum SbasType
 {
-    WAAS, EGNOS, GAGAN, MSAS, SDCM, SNAS, SACCSA, UNKNOWN
+    WAAS, EGNOS, GAGAN, MSAS, SDCM, SNAS, SACCSA, SOUTHPAN, UNKNOWN
 }

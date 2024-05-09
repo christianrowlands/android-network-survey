@@ -9,7 +9,7 @@
         android:id="@+id/main_gnss_fragment"
         android:name="com.craxiom.networksurvey.fragments.MainGnssFragment"
         android:label="GNSS"
-        tools:layout="@layout/gps_status">
+        tools:layout="@layout/fragment_main_gnss_tabs">
         <action
             android:id="@+id/action_main_gnss_to_connection"
             app:destination="@id/connection_fragment" />

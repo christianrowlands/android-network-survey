@@ -22,13 +22,12 @@ import static com.craxiom.mqttlibrary.MqttConstants.PROPERTY_MQTT_CONNECTION_TLS
 import static com.craxiom.mqttlibrary.MqttConstants.PROPERTY_MQTT_PASSWORD;
 import static com.craxiom.mqttlibrary.MqttConstants.PROPERTY_MQTT_USERNAME;
 import static com.craxiom.networksurvey.constants.NetworkSurveyConstants.DEFAULT_LOCATION_PROVIDER;
+import static java.util.Collections.emptySet;
 
-import android.annotation.TargetApi;
 import android.content.Context;
 import android.content.RestrictionsManager;
 import android.content.SharedPreferences;
 import android.content.res.Resources;
-import android.os.Build;
 import android.os.Bundle;
 
 import androidx.preference.PreferenceManager;
@@ -38,12 +37,15 @@ import com.craxiom.networksurvey.Application;
 import com.craxiom.networksurvey.R;
 import com.craxiom.networksurvey.constants.NetworkSurveyConstants;
 import com.craxiom.networksurvey.fragments.model.MqttConnectionSettings;
+import com.craxiom.networksurvey.model.GnssType;
 import com.craxiom.networksurvey.model.LogTypeState;
 import com.craxiom.networksurvey.mqtt.MqttConnectionInfo;
 
 import java.util.Arrays;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Random;
+import java.util.Set;
 
 import timber.log.Timber;
 
@@ -54,6 +56,11 @@ import timber.log.Timber;
  */
 public class PreferenceUtils
 {
+    public static final int CAPABILITY_UNKNOWN = -1;
+    public static final int CAPABILITY_NOT_SUPPORTED = 0;
+    public static final int CAPABILITY_SUPPORTED = 1;
+    public static final int CAPABILITY_LOCATION_DISABLED = 2;
+
     /**
      * A list of words to use when generating a random MQTT client ID.
      */
@@ -542,19 +549,19 @@ public class PreferenceUtils
         return Application.getPrefs().getBoolean(key, defaultValue);
     }
 
-    public static String getString(String key)
+    public static String getString(String key, SharedPreferences prefs)
     {
-        return Application.getPrefs().getString(key, null);
+        return prefs.getString(key, null);
     }
 
-    public static long getLong(String key, long defaultValue)
+    public static long getLong(SharedPreferences prefs, String key, long defaultValue)
     {
-        return Application.getPrefs().getLong(key, defaultValue);
+        return prefs.getLong(key, defaultValue);
     }
 
-    public static float getFloat(String key, float defaultValue)
+    public static float getFloat(SharedPreferences prefs, String key, float defaultValue)
     {
-        return Application.getPrefs().getFloat(key, defaultValue);
+        return prefs.getFloat(key, defaultValue);
     }
 
     /**
@@ -562,12 +569,11 @@ public class PreferenceUtils
      *
      * @return the currently selected satellite sort order as the index in R.array.sort_sats
      */
-    public static int getSatSortOrderFromPreferences()
+    public static int getSatSortOrderFromPreferences(Context context, SharedPreferences prefs)
     {
-        Resources r = Application.get().getResources();
-        SharedPreferences settings = Application.getPrefs();
+        Resources r = context.getResources();
         String[] sortOptions = r.getStringArray(R.array.sort_sats);
-        String sortPref = settings.getString(r.getString(
+        String sortPref = prefs.getString(r.getString(
                 R.string.pref_key_default_sat_sort), sortOptions[0]);
         for (int i = 0; i < sortOptions.length; i++)
         {
@@ -577,6 +583,62 @@ public class PreferenceUtils
             }
         }
         return 0;  // Default to the first option
+    }
+
+    /**
+     * Gets a set of GnssTypes that should have their satellites displayed that has been saved to preferences. (All are shown if empty or null)
+     *
+     * @return a set of GnssTypes that should have their satellites displayed that has been saved to preferences. (All are shown if empty or null)
+     */
+    public static Set<GnssType> gnssFilter(Context context, SharedPreferences prefs)
+    {
+        Set<GnssType> filter = new LinkedHashSet<>();
+        Resources r = context.getResources();
+        String filterString = getString(r.getString(R.string.pref_key_default_sat_filter), prefs);
+        if (filterString == null)
+        {
+            return filter;
+        }
+        String[] parsedFilter = filterString.split(",");
+        for (String s : parsedFilter)
+        {
+            GnssType gnssType = GnssType.fromString(s);
+            if (gnssType != null)
+            {
+                filter.add(gnssType);
+            }
+        }
+        return filter;
+    }
+
+    /**
+     * Saves a set of GnssTypes that should have their satellites displayed to preferences. (All are shown if empty or null)
+     * Values are persisted as string of comma-separated values, with each of the enum values .toString() called
+     *
+     * @param filter a set of GnssTypes that should have their satellites displayed. (All are shown if empty or null)
+     */
+    public static void saveGnssFilter(Context context, Set<GnssType> filter, SharedPreferences prefs)
+    {
+        Resources r = context.getResources();
+        StringBuilder filterString = new StringBuilder();
+        for (GnssType gnssType : filter)
+        {
+            filterString.append(gnssType.toString()).append(",");
+        }
+        // Remove the last comma (if there was at least one entry)
+        if (!filter.isEmpty())
+        {
+            filterString.deleteCharAt(filterString.length() - 1);
+        }
+        saveString(prefs, r.getString(R.string.pref_key_default_sat_filter), filterString.toString());
+    }
+
+    /**
+     * Clears any active GNSS filter so all satellites are displayed
+     */
+    public static void clearGnssFilter(Context context, SharedPreferences prefs)
+    {
+        saveGnssFilter(context, emptySet(), prefs);
     }
 
     /**

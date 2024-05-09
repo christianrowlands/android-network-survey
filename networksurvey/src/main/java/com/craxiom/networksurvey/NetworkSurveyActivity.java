@@ -45,6 +45,7 @@ import com.craxiom.networksurvey.util.ToggleLoggingTask;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.android.material.navigation.NavigationView;
 
+import dagger.hilt.android.AndroidEntryPoint;
 import timber.log.Timber;
 
 /**
@@ -53,6 +54,7 @@ import timber.log.Timber;
  *
  * @since 0.0.1
  */
+@AndroidEntryPoint
 public class NetworkSurveyActivity extends AppCompatActivity
 {
     private static final int ACCESS_PERMISSION_REQUEST_ID = 1;

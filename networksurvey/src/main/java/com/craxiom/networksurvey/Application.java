@@ -26,6 +26,7 @@ import android.preference.PreferenceManager;
 import com.craxiom.networksurvey.constants.NetworkSurveyConstants;
 import com.craxiom.networksurvey.lang.LocaleManager;
 
+import dagger.hilt.android.HiltAndroidApp;
 import timber.log.Timber;
 
 /**
@@ -35,6 +36,7 @@ import timber.log.Timber;
  *
  * @author Sean J. Barbeau
  */
+@HiltAndroidApp
 public class Application extends android.app.Application
 {
     private static Application mApp;
