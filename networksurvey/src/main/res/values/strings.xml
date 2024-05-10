@@ -530,6 +530,8 @@ but work independently, so you have full control over how you handle your data.<
     <string name="avg_cn0_label">Avg</string>
     <string name="gps_agc_column_label">AGC</string>
     <string name="menu_option_sort_by">Sort by</string>
+    <string name="menu_option_filter">Filter</string>
+    <string name="menu_option_filter_content_description">Filter signals</string>
     <string name="gps_prn_column_label">ID</string>
     <string name="gnss_flag_image_label">GNSS</string>
     <string name="sbas_flag_image_label">SBAS</string>
@@ -539,6 +541,10 @@ but work independently, so you have full control over how you handle your data.<
     <string name="flags_aeu_column_label">Flags</string>
     <string name="copied_to_clipboard">Location copied to clipboard</string>
     <string name="send_log">"Send log…"</string>
+
+    <string name="filter_dialog_title">Show only these GNSS</string>
+    <string name="save">"Save"</string>
+    <string name="sbas">SBAS</string>
 
     <!-- GNSS Sky View -->
     <string name="sky_legend_title">Legend</string>

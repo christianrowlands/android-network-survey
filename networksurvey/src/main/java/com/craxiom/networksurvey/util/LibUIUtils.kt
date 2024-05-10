@@ -2,12 +2,13 @@ package com.craxiom.networksurvey.util
 
 import android.animation.Animator
 import android.animation.AnimatorListenerAdapter
+import android.content.Context
 import android.view.View
+import com.craxiom.networksurvey.R
+import com.craxiom.networksurvey.model.GnssType
 
 object LibUIUtils {
     const val ANIMATION_DURATION_SHORT_MS = 200
-    const val MIN_VALUE_CN0 = 10.0f
-    const val MAX_VALUE_CN0 = 45.0f
 
     /**
      * Shows a view using animation
@@ -60,5 +61,26 @@ object LibUIUtils {
                     v.visibility = View.GONE
                 }
             })
+    }
+
+
+    /**
+     * Returns the display name for the given GnssType
+     * @param context
+     * @param gnssType
+     * @return the display name for the given GnssType
+     */
+    fun getGnssDisplayName(context: Context, gnssType: GnssType?): String {
+        return when (gnssType) {
+            GnssType.NAVSTAR -> context.resources.getString(R.string.sky_legend_shape_navstar)
+            GnssType.GALILEO -> context.resources.getString(R.string.sky_legend_shape_galileo)
+            GnssType.GLONASS -> context.resources.getString(R.string.sky_legend_shape_glonass)
+            GnssType.BEIDOU -> context.resources.getString(R.string.sky_legend_shape_beidou)
+            GnssType.QZSS -> context.resources.getString(R.string.sky_legend_shape_qzss)
+            GnssType.IRNSS -> context.resources.getString(R.string.sky_legend_shape_irnss)
+            GnssType.SBAS -> context.resources.getString(R.string.sbas)
+            GnssType.UNKNOWN -> context.resources.getString(R.string.unknown)
+            else -> context.resources.getString(R.string.unknown)
+        }
     }
 }

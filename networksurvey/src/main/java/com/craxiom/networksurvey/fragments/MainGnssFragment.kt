@@ -4,9 +4,13 @@ import android.Manifest
 import android.content.pm.PackageManager
 import android.os.Bundle
 import android.view.LayoutInflater
+import android.view.Menu
+import android.view.MenuInflater
+import android.view.MenuItem
 import android.view.View
 import android.view.ViewGroup
 import androidx.core.app.ActivityCompat
+import androidx.core.view.MenuProvider
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
 import androidx.viewpager2.adapter.FragmentStateAdapter
@@ -14,6 +18,8 @@ import androidx.viewpager2.widget.ViewPager2
 import com.craxiom.networksurvey.Application
 import com.craxiom.networksurvey.R
 import com.craxiom.networksurvey.ui.gnss.model.SignalInfoViewModel
+import com.craxiom.networksurvey.util.SatelliteUtil
+import com.craxiom.networksurvey.util.SortUtil
 import com.google.android.material.tabs.TabLayout
 import com.google.android.material.tabs.TabLayoutMediator
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -25,7 +31,10 @@ import timber.log.Timber
  *
  * @since 0.0.10
  */
-class MainGnssFragment : Fragment() {
+class MainGnssFragment : Fragment(), MenuProvider {
+
+    private var menu: Menu? = null
+    private var selectedTab: Int = 0
 
     @ExperimentalCoroutinesApi
     val viewModel: SignalInfoViewModel by activityViewModels()
@@ -34,6 +43,9 @@ class MainGnssFragment : Fragment() {
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View? {
+        val activity = activity
+        activity?.addMenuProvider(this, getViewLifecycleOwner())
+
         return inflater.inflate(R.layout.fragment_main_gnss_tabs, container, false)
     }
 
@@ -47,6 +59,15 @@ class MainGnssFragment : Fragment() {
                 getTabTitle(position)
             )
         }.attach()
+
+        viewPager.registerOnPageChangeCallback(object : ViewPager2.OnPageChangeCallback() {
+            override fun onPageSelected(position: Int) {
+                super.onPageSelected(position)
+                // Update menu based on the selected tab
+                menu?.setGroupVisible(R.id.gnss_status_group, position == 0)
+                selectedTab = position
+            }
+        })
     }
 
     @ExperimentalCoroutinesApi
@@ -60,6 +81,23 @@ class MainGnssFragment : Fragment() {
     override fun onPause() {
         viewModel.setStarted(requireContext(), false, Application.getPrefs())
         super.onPause()
+    }
+
+    override fun onCreateMenu(menu: Menu, menuInflater: MenuInflater) {
+        menuInflater.inflate(R.menu.gnss_main_menu, menu)
+        this.menu = menu
+        if (selectedTab != 0) menu.setGroupVisible(R.id.gnss_status_group, false)
+    }
+
+    override fun onMenuItemSelected(menuItem: MenuItem): Boolean {
+        if (menuItem.itemId == R.id.filter_sats) {
+            SatelliteUtil.showSatsFilterDialog(requireActivity())
+            return true
+        } else if (menuItem.itemId == R.id.sort_sats) {
+            SortUtil.showSortByDialog(requireActivity())
+            return true
+        }
+        return false
     }
 
     /**

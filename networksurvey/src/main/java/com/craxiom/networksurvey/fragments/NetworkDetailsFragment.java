@@ -134,7 +134,8 @@ public class NetworkDetailsFragment extends AServiceDataFragment implements ICel
         initializeObservers();
 
         chartViewModel.addInitialRssi(UNKNOWN_RSSI);
-        ComposeFunctions.setContent(binding.composeView, chartViewModel);
+        ComposeFunctions.
+                setContent(binding.composeView, chartViewModel);
 
         FragmentActivity activity = getActivity();
         if (activity != null)

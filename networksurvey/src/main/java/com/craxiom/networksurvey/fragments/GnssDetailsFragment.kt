@@ -18,20 +18,15 @@ package com.craxiom.networksurvey.fragments
 
 import android.os.Bundle
 import android.view.LayoutInflater
-import android.view.Menu
-import android.view.MenuInflater
-import android.view.MenuItem
 import android.view.View
 import android.view.ViewGroup
 import androidx.compose.ui.platform.ComposeView
 import androidx.compose.ui.platform.ViewCompositionStrategy
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
-import com.craxiom.networksurvey.R
 import com.craxiom.networksurvey.ui.gnss.GnssStatusScreen
 import com.craxiom.networksurvey.ui.gnss.model.SignalInfoViewModel
 import com.craxiom.networksurvey.util.NsTheme
-import com.craxiom.networksurvey.util.SortUtil
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 
@@ -56,25 +51,6 @@ class GnssDetailsFragment : Fragment() {
                 }
             }
         }
-    }
-
-    @Deprecated(
-        "Deprecated in Java", ReplaceWith(
-            "inflater.inflate(R.menu.status_menu, menu)",
-            "com.craxiom.networksurvey.R"
-        )
-    )
-    override fun onCreateOptionsMenu(menu: Menu, inflater: MenuInflater) {
-        inflater.inflate(R.menu.gnss_status_menu, menu)
-    }
-
-    @Deprecated("Deprecated in Java")
-    override fun onOptionsItemSelected(item: MenuItem): Boolean {
-        val id = item.itemId
-        if (id == R.id.sort_sats) {
-            SortUtil.showSortByDialog(requireActivity())
-        }
-        return false
     }
 
     @Deprecated("Deprecated in Java")
