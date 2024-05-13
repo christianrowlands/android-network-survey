@@ -366,7 +366,7 @@ class SkyFragment : Fragment() {
         val maxTextViewMarginPx = meterWidthPx + minTextViewMarginPx
 
         // When both "in view" and "used" indicators and TextViews are shown, slide the "in view" TextView by this amount to the left to avoid overlap
-        val TEXTVIEW_NON_OVERLAP_OFFSET_DP = -16.0f
+        val TEXTVIEW_NON_OVERLAP_OFFSET_DP = -14.0f
 
         // Calculate normal offsets for avg in view satellite C/N0 value TextViews
         var leftInViewTextViewMarginPx: Int? = null
