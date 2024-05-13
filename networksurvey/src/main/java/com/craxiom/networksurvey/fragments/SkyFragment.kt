@@ -27,7 +27,6 @@ import android.view.ViewGroup.MarginLayoutParams
 import android.view.animation.Animation
 import android.view.animation.Transformation
 import android.widget.ImageView
-import android.widget.RelativeLayout
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.platform.ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed
@@ -55,7 +54,6 @@ import com.craxiom.networksurvey.util.MathUtils
 import com.craxiom.networksurvey.util.NsTheme
 import com.craxiom.networksurvey.util.PreferenceUtils.clearGnssFilter
 import com.craxiom.networksurvey.util.PreferenceUtils.gnssFilter
-import com.craxiom.networksurvey.util.UIUtils
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
@@ -359,7 +357,7 @@ class SkyFragment : Fragment() {
         // Based on the avg C/N0 for "in view" and "used" satellites the left margins need to be adjusted accordingly
         val meterWidthPx = (Application.get().resources.getDimension(R.dimen.cn0_meter_width)
             .toInt()
-                - UIUtils.dpToPixels(Application.get(), 7.0f)) // Reduce width for padding
+                - LibUIUtils.dpToPixels(Application.get(), 7.0f)) // Reduce width for padding
         val minIndicatorMarginPx = Application.get().resources
             .getDimension(R.dimen.cn0_indicator_min_left_margin).toInt()
         val maxIndicatorMarginPx = meterWidthPx + minIndicatorMarginPx
@@ -373,7 +371,7 @@ class SkyFragment : Fragment() {
         // Calculate normal offsets for avg in view satellite C/N0 value TextViews
         var leftInViewTextViewMarginPx: Int? = null
         if (MathUtils.isValidFloat(binding!!.skyView.cn0InViewAvg)) {
-            leftInViewTextViewMarginPx = UIUtils.cn0ToTextViewLeftMarginPx(
+            leftInViewTextViewMarginPx = LibUIUtils.cn0ToTextViewLeftMarginPx(
                 binding!!.skyView.cn0InViewAvg,
                 minTextViewMarginPx, maxTextViewMarginPx
             )
@@ -382,7 +380,7 @@ class SkyFragment : Fragment() {
         // Calculate normal offsets for avg used satellite C/N0 value TextViews
         var leftUsedTextViewMarginPx: Int? = null
         if (MathUtils.isValidFloat(binding!!.skyView.cn0UsedAvg)) {
-            leftUsedTextViewMarginPx = UIUtils.cn0ToTextViewLeftMarginPx(
+            leftUsedTextViewMarginPx = LibUIUtils.cn0ToTextViewLeftMarginPx(
                 binding!!.skyView.cn0UsedAvg,
                 minTextViewMarginPx, maxTextViewMarginPx
             )
@@ -390,7 +388,7 @@ class SkyFragment : Fragment() {
 
         // See if we need to apply the offset margin to try and keep the two TextViews from overlapping by shifting one of the two left
         if (leftInViewTextViewMarginPx != null && leftUsedTextViewMarginPx != null) {
-            val offset = UIUtils.dpToPixels(Application.get(), TEXTVIEW_NON_OVERLAP_OFFSET_DP)
+            val offset = LibUIUtils.dpToPixels(Application.get(), TEXTVIEW_NON_OVERLAP_OFFSET_DP)
             if (leftInViewTextViewMarginPx <= leftUsedTextViewMarginPx) {
                 leftInViewTextViewMarginPx += offset
             } else {
@@ -399,8 +397,8 @@ class SkyFragment : Fragment() {
         }
 
         // Define paddings used for TextViews
-        val pSides = UIUtils.dpToPixels(Application.get(), 7f)
-        val pTopBottom = UIUtils.dpToPixels(Application.get(), 4f)
+        val pSides = LibUIUtils.dpToPixels(Application.get(), 7f)
+        val pTopBottom = LibUIUtils.dpToPixels(Application.get(), 4f)
 
         // Set avg C/N0 of satellites in view of device
         if (MathUtils.isValidFloat(binding!!.skyView.cn0InViewAvg)) {
@@ -439,20 +437,15 @@ class SkyFragment : Fragment() {
                     cn0InViewAvgAnimationTextView
                 )
             } else {
-                val lp =
-                    meter.cn0TextInView.cn0TextInView.layoutParams as RelativeLayout.LayoutParams
-                lp.setMargins(
+                LibUIUtils.updateLeftMarginPx(
                     leftInViewTextViewMarginPx!!,
-                    lp.topMargin,
-                    lp.rightMargin,
-                    lp.bottomMargin
+                    meter.cn0TextInView.cn0TextInView
                 )
-                meter.cn0TextInView.cn0TextInView.layoutParams = lp
                 meter.cn0TextInView.cn0TextInView.visibility = View.VISIBLE
             }
 
             // Set position and visibility of indicator
-            val leftIndicatorMarginPx = UIUtils.cn0ToIndicatorLeftMarginPx(
+            val leftIndicatorMarginPx = LibUIUtils.cn0ToIndicatorLeftMarginPx(
                 binding!!.skyView.cn0InViewAvg,
                 minIndicatorMarginPx, maxIndicatorMarginPx
             )
@@ -465,9 +458,7 @@ class SkyFragment : Fragment() {
                     cn0InViewAvgAnimation
                 )
             } else {
-                val lp = meter.cn0IndicatorInView.layoutParams as RelativeLayout.LayoutParams
-                lp.setMargins(leftIndicatorMarginPx, lp.topMargin, lp.rightMargin, lp.bottomMargin)
-                meter.cn0IndicatorInView.layoutParams = lp
+                LibUIUtils.updateLeftMarginPx(leftIndicatorMarginPx, meter.cn0IndicatorInView)
                 meter.cn0IndicatorInView.visibility = View.VISIBLE
             }
         } else {
@@ -504,19 +495,15 @@ class SkyFragment : Fragment() {
                     cn0UsedAvgAnimationTextView
                 )
             } else {
-                val lp = meter.cn0TextUsed.cn0TextUsed.layoutParams as RelativeLayout.LayoutParams
-                lp.setMargins(
+                LibUIUtils.updateLeftMarginPx(
                     leftUsedTextViewMarginPx!!,
-                    lp.topMargin,
-                    lp.rightMargin,
-                    lp.bottomMargin
+                    meter.cn0TextUsed.cn0TextUsed
                 )
-                meter.cn0TextUsed.cn0TextUsed.layoutParams = lp
                 meter.cn0TextUsed.cn0TextUsed.visibility = View.VISIBLE
             }
 
             // Set position and visibility of indicator
-            val leftMarginPx = UIUtils.cn0ToIndicatorLeftMarginPx(
+            val leftMarginPx = LibUIUtils.cn0ToIndicatorLeftMarginPx(
                 binding!!.skyView.cn0UsedAvg,
                 minIndicatorMarginPx, maxIndicatorMarginPx
             )
@@ -525,9 +512,7 @@ class SkyFragment : Fragment() {
             if (meter.cn0IndicatorUsed.visibility == View.VISIBLE) {
                 animateCn0Indicator(meter.cn0IndicatorUsed, leftMarginPx, cn0UsedAvgAnimation)
             } else {
-                val lp = meter.cn0IndicatorUsed.layoutParams as RelativeLayout.LayoutParams
-                lp.setMargins(leftMarginPx, lp.topMargin, lp.rightMargin, lp.bottomMargin)
-                meter.cn0IndicatorUsed.layoutParams = lp
+                LibUIUtils.updateLeftMarginPx(leftMarginPx, meter.cn0IndicatorUsed)
                 meter.cn0IndicatorUsed.visibility = View.VISIBLE
             }
         } else {
@@ -560,13 +545,7 @@ class SkyFragment : Fragment() {
                     currentMargin - (abs(currentMargin - goalLeftMarginPx)
                             * interpolatedTime).toInt()
                 }
-                UIUtils.setMargins(
-                    v,
-                    newLeft,
-                    p.topMargin,
-                    p.rightMargin,
-                    p.bottomMargin
-                )
+                LibUIUtils.updateLeftMarginPx(newLeft, v)
             }
         }
         // C/N0 updates every second, so animation of 300ms (https://material.io/guidelines/motion/duration-easing.html#duration-easing-common-durations)

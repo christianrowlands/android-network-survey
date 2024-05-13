@@ -46,21 +46,6 @@ public class UIUtils
     public static final String COORDINATE_LONGITUDE = "lon";
 
     /**
-     * Converts screen dimension units from dp to pixels, based on algorithm defined in
-     * http://developer.android.com/guide/practices/screens_support.html#dips-pels
-     *
-     * @param dp value in dp
-     * @return value in pixels
-     */
-    public static int dpToPixels(Context context, float dp)
-    {
-        // Get the screen's density scale
-        final float scale = context.getResources().getDisplayMetrics().density;
-        // Convert the dps to pixels, based on density scale
-        return (int) (dp * scale + 0.5f);
-    }
-
-    /**
      * Returns true if the fragment is attached to the activity, or false if it is not attached
      *
      * @param f fragment to be tested
@@ -87,52 +72,6 @@ public class UIUtils
         {
             return TimeUnit.MILLISECONDS.toSeconds(ttff) + " sec";
         }
-    }
-
-    /**
-     * Converts the provided C/N0 values to a left margin value (dp) for the avg C/N0 indicator ImageViews in gps_sky_signal
-     * Left margin range for the C/N0 indicator ImageViews in gps_sky_signal is determined by dimens.xml
-     * cn0_meter_width (based on device screen width) and cn0_indicator_min_left_margin values.
-     * <p>
-     * This is effectively an affine transform - https://math.stackexchange.com/a/377174/554287.
-     *
-     * @param cn0 carrier-to-noise density at the antenna of the satellite in dB-Hz (from GnssStatus)
-     * @return left margin value in dp for the C/N0 indicator ImageViews
-     */
-    public static int cn0ToIndicatorLeftMarginPx(float cn0, int minIndicatorMarginPx, int maxIndicatorMarginPx)
-    {
-        return (int) MathUtils.mapToRange(cn0, MIN_VALUE_CN0, MAX_VALUE_CN0, minIndicatorMarginPx, maxIndicatorMarginPx);
-    }
-
-    /**
-     * Converts the provided C/N0 values to a left margin value (dp) for the avg C/N0 TextViews in gps_sky_signal
-     * Left margin range for the C/N0 indicator TextView in gps_sky_signal is determined by dimens.xml
-     * cn0_meter_width (based on device screen width) and cn0_textview_min_left_margin values.
-     * <p>
-     * This is effectively an affine transform - https://math.stackexchange.com/a/377174/554287.
-     *
-     * @param cn0 carrier-to-noise density at the antenna of the satellite in dB-Hz (from GnssStatus)
-     * @return left margin value in dp for the C/N0 TextViews
-     */
-    public static int cn0ToTextViewLeftMarginPx(float cn0, int minTextViewMarginPx, int maxTextViewMarginPx)
-    {
-        return (int) MathUtils.mapToRange(cn0, MIN_VALUE_CN0, MAX_VALUE_CN0, minTextViewMarginPx, maxTextViewMarginPx);
-    }
-
-    /**
-     * Sets the margins for a given view
-     *
-     * @param v View to set the margin for
-     * @param l left margin, in pixels
-     * @param t top margin, in pixels
-     * @param r right margin, in pixels
-     * @param b bottom margin, in pixels
-     */
-    public static void setMargins(View v, int l, int t, int r, int b)
-    {
-        ViewGroup.MarginLayoutParams p = (ViewGroup.MarginLayoutParams) v.getLayoutParams();
-        p.setMargins(l, t, r, b);
-        v.setLayoutParams(p);
     }
 
     /**

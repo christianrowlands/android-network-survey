@@ -4,11 +4,104 @@ import android.animation.Animator
 import android.animation.AnimatorListenerAdapter
 import android.content.Context
 import android.view.View
+import android.widget.RelativeLayout
 import com.craxiom.networksurvey.R
 import com.craxiom.networksurvey.model.GnssType
 
 object LibUIUtils {
     const val ANIMATION_DURATION_SHORT_MS = 200
+    const val MIN_VALUE_CN0 = 10.0f
+    const val MAX_VALUE_CN0 = 45.0f
+
+    /**
+     * Converts screen dimension units from dp to pixels, based on algorithm defined in
+     * http://developer.android.com/guide/practices/screens_support.html#dips-pels
+     *
+     * @param dp value in dp
+     * @return value in pixels
+     */
+    @JvmStatic
+    fun dpToPixels(context: Context, dp: Float): Int {
+        // Get the screen's density scale
+        val scale = context.resources.displayMetrics.density
+        // Convert the dps to pixels, based on density scale
+        return (dp * scale + 0.5f).toInt()
+    }
+
+    /**
+     * Converts the provided C/N0 values to a left margin value (dp) for the avg C/N0 indicator ImageViews in gps_sky_signal
+     * Left margin range for the C/N0 indicator ImageViews in gps_sky_signal is determined by dimens.xml
+     * cn0_meter_width (based on device screen width) and cn0_indicator_min_left_margin values.
+     *
+     * This is effectively an affine transform - https://math.stackexchange.com/a/377174/554287.
+     *
+     * @param cn0 carrier-to-noise density at the antenna of the satellite in dB-Hz (from GnssStatus)
+     * @return left margin value in dp for the C/N0 indicator ImageViews
+     */
+    @JvmStatic
+    fun cn0ToIndicatorLeftMarginPx(
+        cn0: Float,
+        minIndicatorMarginPx: Int,
+        maxIndicatorMarginPx: Int
+    ): Int {
+        return MathUtils.mapToRange(
+            cn0,
+            MIN_VALUE_CN0,
+            MAX_VALUE_CN0,
+            minIndicatorMarginPx.toFloat(),
+            maxIndicatorMarginPx.toFloat()
+        ).toInt()
+    }
+
+    /**
+     * Converts the provided C/N0 values to a left margin value (dp) for the avg C/N0 TextViews in gps_sky_signal
+     * Left margin range for the C/N0 indicator TextView in gps_sky_signal is determined by dimens.xml
+     * cn0_meter_width (based on device screen width) and cn0_textview_min_left_margin values.
+     *
+     * This is effectively an affine transform - https://math.stackexchange.com/a/377174/554287.
+     *
+     * @param cn0 carrier-to-noise density at the antenna of the satellite in dB-Hz (from GnssStatus)
+     * @return left margin value in dp for the C/N0 TextViews
+     */
+    @JvmStatic
+    fun cn0ToTextViewLeftMarginPx(
+        cn0: Float,
+        minTextViewMarginPx: Int,
+        maxTextViewMarginPx: Int
+    ): Int {
+        return MathUtils.mapToRange(
+            cn0,
+            MIN_VALUE_CN0,
+            MAX_VALUE_CN0,
+            minTextViewMarginPx.toFloat(),
+            maxTextViewMarginPx.toFloat()
+        ).toInt()
+    }
+
+    /**
+     * Sets the margins for a given view
+     *
+     * @param v View to set the margin for
+     * @param l left margin, in pixels
+     * @param t top margin, in pixels
+     * @param r right margin, in pixels
+     * @param b bottom margin, in pixels
+     */
+    fun setMargins(v: View, l: Int, t: Int, r: Int, b: Int) {
+        val p = v.layoutParams as RelativeLayout.LayoutParams
+        p.setMargins(l, t, r, b)
+        v.layoutParams = p
+    }
+
+    fun updateLeftMarginPx(leftMarginPx: Int, view: View) {
+        val lp = view.layoutParams as RelativeLayout.LayoutParams
+        val newLp = RelativeLayout.LayoutParams(lp.width, lp.height)
+        newLp.setMargins(leftMarginPx, lp.topMargin, lp.rightMargin, lp.bottomMargin)
+        lp.rules.forEachIndexed { index, i ->
+            newLp.addRule(index, i)
+        }
+        view.layoutParams = newLp
+    }
 
     /**
      * Shows a view using animation

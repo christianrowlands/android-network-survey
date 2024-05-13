@@ -21,7 +21,7 @@ import androidx.core.content.ContextCompat;
 import com.craxiom.networksurvey.R;
 import com.craxiom.networksurvey.model.GnssType;
 import com.craxiom.networksurvey.model.SatelliteStatus;
-import com.craxiom.networksurvey.util.UIUtils;
+import com.craxiom.networksurvey.util.LibUIUtils;
 
 import java.util.List;
 
@@ -90,7 +90,7 @@ public class GnssSkyView extends View
     {
         mContext = context;
         mWindowManager = (WindowManager) mContext.getSystemService(Context.WINDOW_SERVICE);
-        satRadius = UIUtils.dpToPixels(context, 5);
+        satRadius = LibUIUtils.dpToPixels(context, 5);
 
         int textColor = getResources().getColor(android.R.color.secondary_text_dark, null);
         int backgroundColor = ContextCompat.getColor(context, R.color.cardview_dark_background);
@@ -156,7 +156,7 @@ public class GnssSkyView extends View
         mPrnIdPaint.setColor(textColor);
         mPrnIdPaint.setStyle(Paint.Style.FILL_AND_STROKE);
         mPrnIdPaint
-                .setTextSize(UIUtils.dpToPixels(getContext(), satRadius * PRN_TEXT_SCALE));
+                .setTextSize(LibUIUtils.dpToPixels(getContext(), satRadius * PRN_TEXT_SCALE));
         mPrnIdPaint.setAntiAlias(true);
 
         mNotInViewPaint = new Paint();
