@@ -245,7 +245,7 @@ public class NetworkDetailsFragment extends AServiceDataFragment implements ICel
     @Override
     public void onCreateMenu(@NonNull Menu menu, @NonNull MenuInflater menuInflater)
     {
-        menuInflater.inflate(R.menu.cellular_details_menu, menu);
+       // menuInflater.inflate(R.menu.cellular_details_menu, menu);
     }
 
     @Override
