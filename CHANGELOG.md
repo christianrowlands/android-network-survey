@@ -1,11 +1,24 @@
 # Changelog
 
+## [1.24](https://github.com/christianrowlands/android-network-survey/releases/tag/v1.24) - 2024-04-14
+
+* Adds a 5G NR calculator to the cellular calculators.
+* Updates the cellular calculators UI to Jetpack Compose.
+* Adds a link to GitHub in the Nav Drawer.
+* Adds a link to report a bug in the Nav Drawer.
+* Displays the Override Network Type (aka marketing network) in the cellular details view.
+* Pulls in the latest GPSTest code, to include support for SouthPAN and a compass rotating sky view.
+* Fixes the Avg C/N0 Slider on the Sky View screen.
+* Adds support for sorting and filtering in the GNSS UIs.
+* Prevents upside down screen rotation. (Thanks [joelkoen](https://github.com/joelkoen))
+
 ## [1.23](https://github.com/christianrowlands/android-network-survey/releases/tag/v1.23) - 2024-04-15
 
 * The Reference Signal SNR is now logged in LTE messages as well as displayed in the UI.
 * Adds a fallback for getting the cellular providers name if it is not available from the system.
 * Switched the donut cellular signal strength indicators to a horizontal signal bar.
 * "Anchor" the view at the bottom of the cellular details screen when scrolled to the bottom to ensure that newly added neighbors are immediately visible.
+* Adds "band" in title after EARFCN in LTE neighbor table. (Thanks [high3eam](https://github.com/high3eam))
 
 ## [1.22.5](https://github.com/christianrowlands/android-network-survey/releases/tag/v1.22.5) - 2024-04-01
 
