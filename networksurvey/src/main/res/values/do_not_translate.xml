@@ -152,12 +152,6 @@
     <string name="force_time_injection_command">force_time_injection</string>
     <string name="force_xtra_injection_command">force_xtra_injection</string>
 
-    <!-- Open-source link for Github project -->
-    <string name="open_source_github">https://github.com/chesapeaketechnology/gpstest</string>
-
-    <!-- Send feedback -->
-    <string name="app_feedback_email">sturner@ctic-inc.com</string>
-
     <!-- Device capabilities -->
     <string name="capability_key_inject_xtra">capability_key_inject_xtra</string>
     <string name="capability_key_inject_time">capability_key_inject_time</string>
