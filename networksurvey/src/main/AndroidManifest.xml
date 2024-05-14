@@ -60,7 +60,6 @@
         <activity
             android:name=".NetworkSurveyActivity"
             android:launchMode="singleTask"
-            android:screenOrientation="fullSensor"
             android:theme="@style/NetworkSurveyTheme"
             android:windowSoftInputMode="adjustPan"
             android:exported="true">
