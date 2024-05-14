@@ -82,6 +82,12 @@ android {
     }
 }
 
+configurations.configureEach {
+    exclude group: 'com.google.android.gms', module : 'play-services-ads'
+    exclude group: 'com.google.android.gms', module : 'play-services-ads-identifier'
+    exclude group: 'com.google.android.gms', module : 'play-services-ads-lite'
+}
+
 dependencies {
     implementation 'androidx.appcompat:appcompat:1.6.1'
     implementation 'com.jakewharton.timber:timber:5.0.1'

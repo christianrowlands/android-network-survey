@@ -85,6 +85,9 @@
             android:name="android.content.APP_RESTRICTIONS"
             android:resource="@xml/app_restrictions" />
 
+        <meta-data android:name="google_analytics_adid_collection_enabled" android:value="false" />
+        <meta-data android:name="google_analytics_default_allow_ad_personalization_signals" android:value="false" />
+
         <receiver
             android:name=".StartAtBootReceiver"
             android:label="StartAtBootReceiver"
