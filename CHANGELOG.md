@@ -1,6 +1,6 @@
 # Changelog
 
-## [1.24](https://github.com/christianrowlands/android-network-survey/releases/tag/v1.24) - 2024-04-14
+## [1.24](https://github.com/christianrowlands/android-network-survey/releases/tag/v1.24) - 2024-05-14
 
 * Adds a 5G NR calculator to the cellular calculators.
 * Updates the cellular calculators UI to Jetpack Compose.
