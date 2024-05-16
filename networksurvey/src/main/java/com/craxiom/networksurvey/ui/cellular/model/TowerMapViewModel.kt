@@ -13,6 +13,9 @@ internal class TowerMapViewModel : ASignalChartViewModel() {
 
     lateinit var servingCellInfo: ServingCellInfo
 
+    private val _selectedRadioType = MutableStateFlow("LTE")
+    val selectedRadioType = _selectedRadioType.asStateFlow()
+
     private val _isLoadingInProgress = MutableStateFlow(true)
     val isLoadingInProgress = _isLoadingInProgress.asStateFlow()
 
@@ -21,6 +24,10 @@ internal class TowerMapViewModel : ASignalChartViewModel() {
 
     private val _lastQueriedBounds = MutableStateFlow<BoundingBox?>(null)
     val lastQueriedBounds = _lastQueriedBounds.asStateFlow()
+
+    fun setSelectedRadioType(radioType: String) {
+        _selectedRadioType.value = radioType
+    }
 
     fun setIsLoadingInProgress(isLoading: Boolean) {
         _isLoadingInProgress.value = isLoading

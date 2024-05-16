@@ -36,6 +36,7 @@ class TowerMapFragment : AServiceDataFragment(), ICellularSurveyRecordListener {
             setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed)
             setContent {
                 viewModel = viewModel()
+                viewModel.servingCellInfo = servingCell
 
                 NsTheme {
                     TowerMapScreen(viewModel = viewModel)

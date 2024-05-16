@@ -4,7 +4,10 @@ import androidx.appcompat.content.res.AppCompatResources.getDrawable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -15,6 +18,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
@@ -43,7 +47,6 @@ import org.osmdroid.views.MapView
 import org.osmdroid.views.overlay.Marker
 import org.osmdroid.views.overlay.compass.CompassOverlay
 import org.osmdroid.views.overlay.compass.InternalCompassOrientationProvider
-import org.osmdroid.views.overlay.infowindow.InfoWindow
 import org.osmdroid.views.overlay.mylocation.GpsMyLocationProvider
 import org.osmdroid.views.overlay.mylocation.MyLocationNewOverlay
 import retrofit2.Response
@@ -59,7 +62,7 @@ import kotlin.math.sin
 import kotlin.math.sqrt
 
 
-const val INITIAL_ZOOM: Double = 8.0
+const val INITIAL_ZOOM: Double = 14.0
 const val MIN_ZOOM_LEVEL = 7.0
 const val MAX_AREA_SQ_METERS = 400_000_000.0
 const val ICON_TOWER = "communications-tower"
@@ -113,49 +116,94 @@ internal fun OsmdroidMapView(viewModel: TowerMapViewModel) {
         mutableStateOf<LinkedHashSet<Marker>>(LinkedHashSet())
     }
 
-    AndroidView(
-        modifier = Modifier.fillMaxSize(),
-        factory = { context ->
-            val mapView = MapView(context)
-            mapView.setTileSource(TileSourceFactory.MAPNIK)
-            mapView.zoomController.setVisibility(CustomZoomButtonsController.Visibility.ALWAYS)
-            mapView.setMultiTouchControls(true)
+    val radio by viewModel.selectedRadioType.collectAsStateWithLifecycle()
 
-            // I pulled the idea for setting this from: https://github.com/osmdroid/osmdroid/wiki/Important-notes-on-using-osmdroid-in-your-app#changing-the-loading-tile-grid-colors
-            mapView.overlayManager.tilesOverlay.loadingBackgroundColor = android.R.color.black;
-            mapView.overlayManager.tilesOverlay.loadingLineColor =
-                context.getColor(R.color.colorPrimary)
+    // TODO Set the radio via the serving cell info
 
-            val mapController = mapView.controller
-            mapController.setZoom(INITIAL_ZOOM)
-            val startPoint = GeoPoint(35.410, -80.854);
-            mapController.setCenter(startPoint);
+    val options = listOf("GSM", "CDMA", "UMTS", "LTE", "NR")
+    var expanded by remember { mutableStateOf(false) }
+    val mapView = MapView(LocalContext.current)
 
-            val mLocationOverlay = MyLocationNewOverlay(GpsMyLocationProvider(context), mapView)
-            mLocationOverlay.enableMyLocation()
-            mapView.overlays.add(mLocationOverlay)
+    Box(modifier = Modifier.fillMaxSize()) {
+        AndroidView(
+            modifier = Modifier.fillMaxSize(),
+            factory = { context ->
+                mapView.setTileSource(TileSourceFactory.MAPNIK)
+                mapView.zoomController.setVisibility(CustomZoomButtonsController.Visibility.ALWAYS)
+                mapView.setMultiTouchControls(true)
 
-            val compassOverlay =
-                CompassOverlay(context, InternalCompassOrientationProvider(context), mapView)
-            compassOverlay.enableCompass()
-            mapView.overlays.add(compassOverlay)
+                // I pulled the idea for setting this from: https://github.com/osmdroid/osmdroid/wiki/Important-notes-on-using-osmdroid-in-your-app#changing-the-loading-tile-grid-colors
+                mapView.overlayManager.tilesOverlay.loadingBackgroundColor = android.R.color.black;
+                mapView.overlayManager.tilesOverlay.loadingLineColor =
+                    context.getColor(R.color.colorPrimary)
 
-            // Listener to detect when map movement stops
-            mapView.addMapListener(DelayedMapListener(object : MapListener {
-                override fun onScroll(event: ScrollEvent?): Boolean {
-                    runListener(mapView, viewModel, points)
-                    return true
-                }
+                val mapController = mapView.controller
+                mapController.setZoom(INITIAL_ZOOM)
+                val startPoint = GeoPoint(35.410, -80.854);
+                mapController.setCenter(startPoint);
 
-                override fun onZoom(event: ZoomEvent?): Boolean {
-                    runListener(mapView, viewModel, points)
-                    return true
-                }
-            }, 400))
+                val mLocationOverlay = MyLocationNewOverlay(GpsMyLocationProvider(context), mapView)
+                mLocationOverlay.enableMyLocation()
+                mapView.overlays.add(mLocationOverlay)
 
-            mapView
+                val compassOverlay =
+                    CompassOverlay(context, InternalCompassOrientationProvider(context), mapView)
+                compassOverlay.enableCompass()
+                mapView.overlays.add(compassOverlay)
+
+                // Listener to detect when map movement stops
+                mapView.addMapListener(DelayedMapListener(object : MapListener {
+                    override fun onScroll(event: ScrollEvent?): Boolean {
+                        runListener(mapView, viewModel, points)
+                        return true
+                    }
+
+                    override fun onZoom(event: ZoomEvent?): Boolean {
+                        runListener(mapView, viewModel, points)
+                        return true
+                    }
+                }, 400))
+
+                mapView
+            },
+            update = { mapView ->
+                Timber.i("Updating the map view!!!")
+                // TODO This is not working, it is being called too often. There must be a better way to trigger an update on changes
+                runListener(mapView, viewModel, points)
+            }
+        )
+
+        DropdownMenu(
+            expanded = expanded,
+            onDismissRequest = { expanded = false },
+            modifier = Modifier
+                .align(Alignment.TopEnd)
+                .padding(16.dp)
+        ) {
+            options.forEach { label ->
+                DropdownMenuItem(
+                    text = { Text(text = label) },
+                    onClick = {
+                        if (viewModel.selectedRadioType.value != label) {
+                            Timber.i("The Selected radio type changed to $label")
+                            viewModel.setSelectedRadioType(label)
+                            points.clear()
+                        }
+                        expanded = false
+                    })
+            }
         }
-    )
+
+        // Button to show the DropdownMenu
+        Button(
+            onClick = { expanded = true },
+            modifier = Modifier
+                .align(Alignment.TopEnd)
+                .padding(16.dp)
+        ) {
+            Text(text = radio)
+        }
+    }
 
     // TODO I need to figure out a way to call mapView.onPause() and mapView.onResume()
 }
@@ -212,8 +260,10 @@ private fun runListener(
                 points.add(towerMarker)
             }
 
+            mapView.overlays.clear() // TODO is this the right way to do it?
+
             Timber.i("Adding %s points to the map", points.size)
-            points.forEach { mapView.overlays.add(it) }
+            points.forEach { mapView.overlays.add(it) } // FIXME I am not actually clearing the map, which means we can end up with more than MAX_TOWERS_ON_MAP
 
             mapView.invalidate()
 
@@ -243,7 +293,7 @@ private suspend fun loadTowers(
                 // Format the bounding box coordinates to the required "bbox" string format
                 val bbox =
                     "${bounds.latSouth},${bounds.lonWest},${bounds.latNorth},${bounds.lonEast}"
-                val response = nsApi.getTowers(bbox)
+                val response = nsApi.getTowers(bbox, viewModel.selectedRadioType.value)
 
                 // Process the response
                 if (response.code() == 204) {
@@ -294,13 +344,16 @@ private fun calculateArea(bounds: BoundingBox): Double {
  * Returns a string representation of the Cell Global Identifier (CGI) for the given tower.
  */
 private fun getCgiString(tower: Tower): String {
-    return "${tower.mcc}/${tower.mnc}/${tower.area}/${tower.cid}"
+    return "${tower.radio}: ${tower.mcc}/${tower.mnc}/${tower.area}/${tower.cid}"
 }
 
 // The API definition for the NS Tower Service
 interface Api {
     @GET("cells/area")
-    suspend fun getTowers(@Query("bbox") bbox: String): Response<TowerResponse>
+    suspend fun getTowers(
+        @Query("bbox") bbox: String,
+        @Query("radio") radio: String
+    ): Response<TowerResponse>
 }
 
 val okHttpClient = OkHttpClient.Builder()
