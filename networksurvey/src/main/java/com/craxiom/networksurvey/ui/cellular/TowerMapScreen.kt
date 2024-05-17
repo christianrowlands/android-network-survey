@@ -1,6 +1,5 @@
 package com.craxiom.networksurvey.ui.cellular
 
-import androidx.appcompat.content.res.AppCompatResources.getDrawable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -22,14 +21,13 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
-import androidx.core.graphics.BlendModeColorFilterCompat
-import androidx.core.graphics.BlendModeCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.craxiom.networksurvey.BuildConfig
 import com.craxiom.networksurvey.R
 import com.craxiom.networksurvey.ui.cellular.model.TowerMapViewModel
+import com.craxiom.networksurvey.ui.cellular.model.TowerMarker
 import com.google.gson.annotations.SerializedName
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.launch
@@ -78,12 +76,55 @@ internal fun TowerMapScreen(viewModel: TowerMapViewModel = viewModel()) {
 
     val isLoadingInProgress by viewModel.isLoadingInProgress.collectAsStateWithLifecycle()
     val isZoomedOutTooFar by viewModel.isZoomedOutTooFar.collectAsStateWithLifecycle()
+    val radio by viewModel.selectedRadioType.collectAsStateWithLifecycle()
+
+    // TODO Set the radio via the serving cell info
+
+    val options = listOf("GSM", "CDMA", "UMTS", "LTE", "NR")
+    var expanded by remember { mutableStateOf(false) }
+    val mapView = MapView(LocalContext.current)
 
     Surface(
         modifier = Modifier.fillMaxSize(),
         color = MaterialTheme.colorScheme.background
     ) {
-        OsmdroidMapView(viewModel)
+        Box(modifier = Modifier.fillMaxSize()) {
+            OsmdroidMapView(viewModel)
+
+            DropdownMenu(
+                expanded = expanded,
+                onDismissRequest = { expanded = false },
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .padding(16.dp)
+            ) {
+                options.forEach { label ->
+                    DropdownMenuItem(
+                        text = { Text(text = label) },
+                        onClick = {
+                            if (viewModel.selectedRadioType.value != label) {
+                                Timber.i("The Selected radio type changed to $label")
+                                viewModel.setSelectedRadioType(label)
+                                viewModel.towers.value.clear() // TODO Is this the best way to do this?
+                                viewModel.viewModelScope.launch {
+                                    runTowerQuery(viewModel)
+                                }
+                            }
+                            expanded = false
+                        })
+                }
+            }
+
+            // Button to show the DropdownMenu
+            Button(
+                onClick = { expanded = true },
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .padding(16.dp)
+            ) {
+                Text(text = radio)
+            }
+        }
     }
 
     if (isZoomedOutTooFar) {
@@ -112,100 +153,102 @@ internal fun TowerMapScreen(viewModel: TowerMapViewModel = viewModel()) {
 
 @Composable
 internal fun OsmdroidMapView(viewModel: TowerMapViewModel) {
-    var points by remember {
-        mutableStateOf<LinkedHashSet<Marker>>(LinkedHashSet())
-    }
+    val points by viewModel.towers.collectAsStateWithLifecycle()
 
-    val radio by viewModel.selectedRadioType.collectAsStateWithLifecycle()
+    AndroidView(
+        modifier = Modifier.fillMaxSize(),
+        factory = { context ->
+            val mapView = MapView(context)
+            viewModel.mapView = mapView
 
-    // TODO Set the radio via the serving cell info
+            mapView.setTileSource(TileSourceFactory.MAPNIK)
+            mapView.zoomController.setVisibility(CustomZoomButtonsController.Visibility.ALWAYS)
+            mapView.setMultiTouchControls(true)
 
-    val options = listOf("GSM", "CDMA", "UMTS", "LTE", "NR")
-    var expanded by remember { mutableStateOf(false) }
-    val mapView = MapView(LocalContext.current)
+            // I pulled the idea for setting this from: https://github.com/osmdroid/osmdroid/wiki/Important-notes-on-using-osmdroid-in-your-app#changing-the-loading-tile-grid-colors
+            mapView.overlayManager.tilesOverlay.loadingBackgroundColor = android.R.color.black
+            mapView.overlayManager.tilesOverlay.loadingLineColor =
+                context.getColor(R.color.colorPrimary)
 
-    Box(modifier = Modifier.fillMaxSize()) {
-        AndroidView(
-            modifier = Modifier.fillMaxSize(),
-            factory = { context ->
-                mapView.setTileSource(TileSourceFactory.MAPNIK)
-                mapView.zoomController.setVisibility(CustomZoomButtonsController.Visibility.ALWAYS)
-                mapView.setMultiTouchControls(true)
+            val mapController = mapView.controller
+            mapController.setZoom(INITIAL_ZOOM)
+            val startPoint = GeoPoint(35.410, -80.854)
+            mapController.setCenter(startPoint)
 
-                // I pulled the idea for setting this from: https://github.com/osmdroid/osmdroid/wiki/Important-notes-on-using-osmdroid-in-your-app#changing-the-loading-tile-grid-colors
-                mapView.overlayManager.tilesOverlay.loadingBackgroundColor = android.R.color.black;
-                mapView.overlayManager.tilesOverlay.loadingLineColor =
-                    context.getColor(R.color.colorPrimary)
+            val mLocationOverlay = MyLocationNewOverlay(GpsMyLocationProvider(context), mapView)
+            mLocationOverlay.enableMyLocation()
+            mapView.overlays.add(mLocationOverlay)
 
-                val mapController = mapView.controller
-                mapController.setZoom(INITIAL_ZOOM)
-                val startPoint = GeoPoint(35.410, -80.854);
-                mapController.setCenter(startPoint);
+            val compassOverlay =
+                CompassOverlay(context, InternalCompassOrientationProvider(context), mapView)
+            compassOverlay.enableCompass()
+            mapView.overlays.add(compassOverlay)
 
-                val mLocationOverlay = MyLocationNewOverlay(GpsMyLocationProvider(context), mapView)
-                mLocationOverlay.enableMyLocation()
-                mapView.overlays.add(mLocationOverlay)
+            // Listener to detect when map movement stops
+            mapView.addMapListener(DelayedMapListener(object : MapListener {
+                override fun onScroll(event: ScrollEvent?): Boolean {
+                    runListener(mapView, viewModel, points)
+                    return true
+                }
 
-                val compassOverlay =
-                    CompassOverlay(context, InternalCompassOrientationProvider(context), mapView)
-                compassOverlay.enableCompass()
-                mapView.overlays.add(compassOverlay)
+                override fun onZoom(event: ZoomEvent?): Boolean {
+                    runListener(mapView, viewModel, points)
+                    return true
+                }
+            }, 400))
 
-                // Listener to detect when map movement stops
-                mapView.addMapListener(DelayedMapListener(object : MapListener {
-                    override fun onScroll(event: ScrollEvent?): Boolean {
-                        runListener(mapView, viewModel, points)
-                        return true
-                    }
-
-                    override fun onZoom(event: ZoomEvent?): Boolean {
-                        runListener(mapView, viewModel, points)
-                        return true
-                    }
-                }, 400))
-
-                mapView
-            },
-            update = { mapView ->
-                Timber.i("Updating the map view!!!")
-                // TODO This is not working, it is being called too often. There must be a better way to trigger an update on changes
-                runListener(mapView, viewModel, points)
-            }
-        )
-
-        DropdownMenu(
-            expanded = expanded,
-            onDismissRequest = { expanded = false },
-            modifier = Modifier
-                .align(Alignment.TopEnd)
-                .padding(16.dp)
-        ) {
-            options.forEach { label ->
-                DropdownMenuItem(
-                    text = { Text(text = label) },
-                    onClick = {
-                        if (viewModel.selectedRadioType.value != label) {
-                            Timber.i("The Selected radio type changed to $label")
-                            viewModel.setSelectedRadioType(label)
-                            points.clear()
-                        }
-                        expanded = false
-                    })
-            }
+            mapView
+        },
+        update = { mapView ->
+            Timber.i("Updating the map view!!!")
+            recreateOverlaysFromTowerData(viewModel)
+            // TODO This is not working, it is being called too often. There must be a better way to trigger an update on changes
         }
-
-        // Button to show the DropdownMenu
-        Button(
-            onClick = { expanded = true },
-            modifier = Modifier
-                .align(Alignment.TopEnd)
-                .padding(16.dp)
-        ) {
-            Text(text = radio)
-        }
-    }
+    )
 
     // TODO I need to figure out a way to call mapView.onPause() and mapView.onResume()
+}
+
+private fun recreateOverlaysFromTowerData(viewModel: TowerMapViewModel) {
+    val mapView = viewModel.mapView
+    mapView.overlays.clear() // TODO is this the right way to do it?
+
+    val towers = viewModel.towers.value
+
+    Timber.i("Adding %s points to the map", towers.size)
+    towers.forEach { mapView.overlays.add(it) } // FIXME I am not actually clearing the map, which means we can end up with more than MAX_TOWERS_ON_MAP
+
+    mapView.invalidate() // TODO Is this needed?
+}
+
+private suspend fun runTowerQuery(viewModel: TowerMapViewModel) {
+    viewModel.setIsLoadingInProgress(true)
+
+    Timber.i("Running the towerQuery")
+
+    val towerPoints = getTowersFromServer(viewModel)
+    Timber.d("Loaded ${towerPoints.size} towers")
+
+    val towers = viewModel.towers.value
+
+    towerPoints.forEach {
+        val towerMarker = TowerMarker(viewModel.mapView, it)
+
+        if (towers.size >= MAX_TOWERS_ON_MAP) {
+            towers.remove(towers.first())
+        }
+
+        if (towers.contains(towerMarker)) {
+            towers.remove(towerMarker)
+        }
+
+        towers.add(towerMarker)
+    }
+
+    // TODO Add a text overlay if no towers are in the viewModel.towers list
+
+
+    viewModel.setIsLoadingInProgress(false)
 }
 
 /**
@@ -219,6 +262,8 @@ private fun runListener(
 ) {
     Timber.d("Map is idle")
 
+    // FIXME: This function should only update the model and not do anything to the map view. Updating the map view here is making it hard to make data changes to the model when the user selects a radio filter
+
     val bounds = mapView.boundingBox
 
     if (viewModel.lastQueriedBounds.value != null && viewModel.lastQueriedBounds.value == bounds) {
@@ -227,47 +272,14 @@ private fun runListener(
     }
 
     val area = calculateArea(bounds)
+    viewModel.setMapZoomLevel(mapView.zoomLevelDouble) // FIXME DO we need to set the zoom level here?
     if (mapView.zoomLevelDouble >= MIN_ZOOM_LEVEL && area <= MAX_AREA_SQ_METERS) {
-        viewModel.setIsLoadingInProgress(true)
         viewModel.setIsZoomedOutTooFar(false)
         viewModel.setLastQueriedBounds(bounds)
         Timber.d("The zoom level is appropriate to show the towers")
 
         viewModel.viewModelScope.launch {
-            val towerPoints = loadTowers(bounds, viewModel)
-            Timber.d("Loaded ${towerPoints.size} towers")
-
-            // TODO Add a text overlay if no towers are found
-
-            towerPoints.forEach {
-                val towerMarker = Marker(mapView)
-                towerMarker.setPosition(GeoPoint(it.lat, it.lon))
-                towerMarker.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM)
-                // TODO towerMarker.infoWindow = InfoWindow(view, mapView)
-                val towerDrawable = getDrawable(mapView.context, R.drawable.ic_cellular)
-                towerDrawable!!.colorFilter =
-                    BlendModeColorFilterCompat.createBlendModeColorFilterCompat(
-                        R.color.colorPrimary, BlendModeCompat.SRC_ATOP
-                    )
-                towerMarker.icon = towerDrawable
-                // TODO Set an onClick listener to display the tower details
-                towerMarker.title = getCgiString(it)
-                // FIXME Checking !points.contains(towerMarker) is not the right way to do this
-                //  because we can have multiple towers at the same location. Override the equals and hashCode to fix this
-                if (points.size >= MAX_TOWERS_ON_MAP && !points.contains(towerMarker)) {
-                    points.remove(points.first())
-                }
-                points.add(towerMarker)
-            }
-
-            mapView.overlays.clear() // TODO is this the right way to do it?
-
-            Timber.i("Adding %s points to the map", points.size)
-            points.forEach { mapView.overlays.add(it) } // FIXME I am not actually clearing the map, which means we can end up with more than MAX_TOWERS_ON_MAP
-
-            mapView.invalidate()
-
-            viewModel.setIsLoadingInProgress(false)
+            runTowerQuery(viewModel)
         }
     } else {
         viewModel.setIsLoadingInProgress(false)
@@ -283,13 +295,14 @@ private fun runListener(
  * Loads the towers from the NS backend for the given bounding box.
  */
 @OptIn(ExperimentalCoroutinesApi::class)
-private suspend fun loadTowers(
-    bounds: BoundingBox,
+private suspend fun getTowersFromServer(
     viewModel: TowerMapViewModel
 ): List<Tower> {
     return suspendCancellableCoroutine { continuation ->
         try {
             viewModel.viewModelScope.launch {
+                val bounds = viewModel.lastQueriedBounds.value ?: return@launch
+
                 // Format the bounding box coordinates to the required "bbox" string format
                 val bbox =
                     "${bounds.latSouth},${bounds.lonWest},${bounds.latNorth},${bounds.lonEast}"
@@ -338,13 +351,6 @@ private fun calculateArea(bounds: BoundingBox): Double {
     val height = width // Approximation as we're not accounting for changes in radius with latitude
 
     return width * height // area in square meters
-}
-
-/**
- * Returns a string representation of the Cell Global Identifier (CGI) for the given tower.
- */
-private fun getCgiString(tower: Tower): String {
-    return "${tower.radio}: ${tower.mcc}/${tower.mnc}/${tower.area}/${tower.cid}"
 }
 
 // The API definition for the NS Tower Service

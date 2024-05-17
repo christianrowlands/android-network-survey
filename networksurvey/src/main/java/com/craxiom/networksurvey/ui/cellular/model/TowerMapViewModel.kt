@@ -5,6 +5,8 @@ import com.craxiom.networksurvey.ui.ASignalChartViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import org.osmdroid.util.BoundingBox
+import org.osmdroid.views.MapView
+import org.osmdroid.views.overlay.Marker
 
 /**
  * The view model for the Tower Map screen.
@@ -12,6 +14,10 @@ import org.osmdroid.util.BoundingBox
 internal class TowerMapViewModel : ASignalChartViewModel() {
 
     lateinit var servingCellInfo: ServingCellInfo
+    lateinit var mapView: MapView
+
+    private val _towers = MutableStateFlow(LinkedHashSet<Marker>(LinkedHashSet()))
+    val towers = _towers.asStateFlow()
 
     private val _selectedRadioType = MutableStateFlow("LTE")
     val selectedRadioType = _selectedRadioType.asStateFlow()
@@ -24,6 +30,13 @@ internal class TowerMapViewModel : ASignalChartViewModel() {
 
     private val _lastQueriedBounds = MutableStateFlow<BoundingBox?>(null)
     val lastQueriedBounds = _lastQueriedBounds.asStateFlow()
+
+    private val _mapZoomLevel = MutableStateFlow(0.0)
+    val mapZoomLevel = _mapZoomLevel.asStateFlow()
+
+    fun setTowers(towers: LinkedHashSet<Marker>) {
+        _towers.value = towers
+    }
 
     fun setSelectedRadioType(radioType: String) {
         _selectedRadioType.value = radioType
@@ -39,5 +52,9 @@ internal class TowerMapViewModel : ASignalChartViewModel() {
 
     fun setLastQueriedBounds(bounds: BoundingBox) {
         _lastQueriedBounds.value = bounds
+    }
+
+    fun setMapZoomLevel(zoomLevel: Double) {
+        _mapZoomLevel.value = zoomLevel
     }
 }
