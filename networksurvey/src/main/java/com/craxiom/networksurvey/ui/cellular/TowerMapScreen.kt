@@ -91,38 +91,39 @@ internal fun TowerMapScreen(viewModel: TowerMapViewModel = viewModel()) {
         Box(modifier = Modifier.fillMaxSize()) {
             OsmdroidMapView(viewModel)
 
-            DropdownMenu(
-                expanded = expanded,
-                onDismissRequest = { expanded = false },
+            Box(
                 modifier = Modifier
                     .align(Alignment.TopEnd)
                     .padding(16.dp)
             ) {
-                options.forEach { label ->
-                    DropdownMenuItem(
-                        text = { Text(text = label) },
-                        onClick = {
-                            if (viewModel.selectedRadioType.value != label) {
-                                Timber.i("The Selected radio type changed to $label")
-                                viewModel.setSelectedRadioType(label)
-                                viewModel.towers.value.clear() // TODO Is this the best way to do this?
-                                viewModel.viewModelScope.launch {
-                                    runTowerQuery(viewModel)
-                                }
-                            }
-                            expanded = false
-                        })
-                }
-            }
 
-            // Button to show the DropdownMenu
-            Button(
-                onClick = { expanded = true },
-                modifier = Modifier
-                    .align(Alignment.TopEnd)
-                    .padding(16.dp)
-            ) {
-                Text(text = radio)
+                // Button to show the DropdownMenu
+                Button(
+                    onClick = { expanded = true },
+                ) {
+                    Text(text = radio)
+                }
+
+                DropdownMenu(
+                    expanded = expanded,
+                    onDismissRequest = { expanded = false }
+                ) {
+                    options.forEach { label ->
+                        DropdownMenuItem(
+                            text = { Text(text = label) },
+                            onClick = {
+                                if (viewModel.selectedRadioType.value != label) {
+                                    Timber.i("The Selected radio type changed to $label")
+                                    viewModel.setSelectedRadioType(label)
+                                    viewModel.towers.value.clear() // TODO Is this the best way to do this?
+                                    viewModel.viewModelScope.launch {
+                                        runTowerQuery(viewModel)
+                                    }
+                                }
+                                expanded = false
+                            })
+                    }
+                }
             }
         }
     }
