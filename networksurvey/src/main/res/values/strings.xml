@@ -629,4 +629,5 @@ but work independently, so you have full control over how you handle your data.<
     <string name="ssid">SSID\n</string>
 
     <string name="open_tower_map">Tower Map</string>
+    <string name="open_tower_map_info">Tower Map Info</string>
 </resources>
