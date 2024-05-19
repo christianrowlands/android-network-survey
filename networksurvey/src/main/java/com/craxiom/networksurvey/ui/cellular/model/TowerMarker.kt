@@ -22,6 +22,7 @@ class TowerMarker(mapView: MapView, tower: Tower) : Marker(mapView) {
         setAnchor(ANCHOR_CENTER, ANCHOR_BOTTOM)
         icon = towerDrawable
         title = getCgiString(tower)
+        setPanToView(false)
 
         // TODO towerMarker.infoWindow = InfoWindow(view, mapView)
 
