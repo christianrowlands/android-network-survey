@@ -1,5 +1,8 @@
 package com.craxiom.networksurvey.util;
 
+import com.google.protobuf.Descriptors;
+import com.google.protobuf.GeneratedMessageV3;
+
 /**
  * Helper methods for working with cellular networks.
  */
@@ -97,5 +100,21 @@ public class CellularUtils
         }
 
         return -1;
+    }
+
+    /**
+     * @return Returns true if the servingCell field is present and also set to true.
+     */
+    public static boolean isServingCell(GeneratedMessageV3 message)
+    {
+        try
+        {
+            Descriptors.Descriptor descriptor = message.getDescriptorForType();
+            Descriptors.FieldDescriptor field = descriptor.findFieldByName("servingCell");
+            return (boolean) message.getField(field);
+        } catch (Exception e)
+        {
+            return false;
+        }
     }
 }

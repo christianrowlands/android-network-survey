@@ -629,7 +629,7 @@ public class NetworkDetailsFragment extends AServiceDataFragment implements ICel
         final List<NrRecordData> nrNeighbors = new ArrayList<>();
         for (CellularRecordWrapper cellularRecord : cellularGroup)
         {
-            if (isServingCell(cellularRecord.cellularRecord))
+            if (CellularUtils.isServingCell(cellularRecord.cellularRecord))
             {
                 latestServingCellRecord = cellularRecord;
             }
@@ -697,22 +697,6 @@ public class NetworkDetailsFragment extends AServiceDataFragment implements ICel
         processUmtsNeighbors(umtsNeighbors);
         processLteNeighbors(lteNeighbors);
         processNrNeighbors(nrNeighbors);
-    }
-
-    /**
-     * @return Returns true if the servingCell field is present and also set to true.
-     */
-    private boolean isServingCell(GeneratedMessageV3 message)
-    {
-        try
-        {
-            Descriptors.Descriptor descriptor = message.getDescriptorForType();
-            Descriptors.FieldDescriptor field = descriptor.findFieldByName("servingCell");
-            return (boolean) message.getField(field);
-        } catch (Exception e)
-        {
-            return false;
-        }
     }
 
     /**
