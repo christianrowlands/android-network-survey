@@ -129,4 +129,5 @@ public class NetworkSurveyConstants
 
     public static final String PROPERTY_WIFI_NETWORKS_SORT_ORDER = "wifi_networks_sort_order";
     public static final String PROPERTY_BLUETOOTH_DEVICES_SORT_ORDER = "bluetooth_devices_sort_order";
+    public static final String PROPERTY_KEY_ACCEPT_MAP_PRIVACY = "accepted_map_privacy";
 }

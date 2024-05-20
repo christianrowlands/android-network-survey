@@ -22,6 +22,7 @@ import static com.craxiom.mqttlibrary.MqttConstants.PROPERTY_MQTT_CONNECTION_TLS
 import static com.craxiom.mqttlibrary.MqttConstants.PROPERTY_MQTT_PASSWORD;
 import static com.craxiom.mqttlibrary.MqttConstants.PROPERTY_MQTT_USERNAME;
 import static com.craxiom.networksurvey.constants.NetworkSurveyConstants.DEFAULT_LOCATION_PROVIDER;
+import static com.craxiom.networksurvey.constants.NetworkSurveyConstants.PROPERTY_KEY_ACCEPT_MAP_PRIVACY;
 import static java.util.Collections.emptySet;
 
 import android.content.Context;
@@ -739,5 +740,15 @@ public class PreferenceUtils
         final int number = RANDOM.nextInt(100); // Generates a number from 0 to 99
 
         return word1 + word2 + number;
+    }
+
+    public static boolean hasAcceptedMapPrivacy(Context context)
+    {
+        return PreferenceManager.getDefaultSharedPreferences(context).getBoolean(PROPERTY_KEY_ACCEPT_MAP_PRIVACY, false);
+    }
+
+    public static void setAcceptMapPrivacy(Context context, boolean hasAccepted)
+    {
+        PreferenceManager.getDefaultSharedPreferences(context).edit().putBoolean(PROPERTY_KEY_ACCEPT_MAP_PRIVACY, hasAccepted).apply();
     }
 }
