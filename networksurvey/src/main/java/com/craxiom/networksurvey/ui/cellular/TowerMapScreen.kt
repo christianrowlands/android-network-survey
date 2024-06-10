@@ -33,6 +33,7 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
 import okhttp3.OkHttpClient
+import org.osmdroid.bonuspack.clustering.RadiusMarkerClusterer
 import org.osmdroid.events.DelayedMapListener
 import org.osmdroid.events.MapListener
 import org.osmdroid.events.ScrollEvent
@@ -161,6 +162,8 @@ internal fun OsmdroidMapView(viewModel: TowerMapViewModel) {
         factory = { context ->
             val mapView = MapView(context)
             viewModel.mapView = mapView
+            viewModel.towerOverlayGroup = RadiusMarkerClusterer(context)
+            viewModel.towerOverlayGroup.setMaxClusteringZoomLevel(14)
 
             mapView.setTileSource(TileSourceFactory.MAPNIK)
             mapView.zoomController.setVisibility(CustomZoomButtonsController.Visibility.ALWAYS)
@@ -200,14 +203,17 @@ internal fun OsmdroidMapView(viewModel: TowerMapViewModel) {
 }
 
 private fun recreateOverlaysFromTowerData(viewModel: TowerMapViewModel) {
-    viewModel.towerOverlayGroup?.items?.clear()
+    viewModel.towerOverlayGroup.items?.clear()
 
     val towers = viewModel.towers.value
 
     Timber.i("Adding %s points to the map", towers.size)
     towers.forEach { marker ->
-        viewModel.towerOverlayGroup?.add(marker)
+        viewModel.towerOverlayGroup.add(marker)
     }
+    viewModel.towerOverlayGroup.clusterer(viewModel.mapView)
+    viewModel.towerOverlayGroup.invalidate()
+    viewModel.mapView.postInvalidate()
 }
 
 /**

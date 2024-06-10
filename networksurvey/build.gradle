@@ -136,7 +136,8 @@ dependencies {
     kapt "com.google.dagger:hilt-compiler:$hilt_version"
 
     implementation 'org.osmdroid:osmdroid-android:6.1.18'
-    //implementation 'org.osmdroid:osmdroid-bonuspack:6.9.0' // Provides additional features including Marker clustering
+    // Provides additional features including Marker clustering
+    implementation 'com.github.MKergall:osmbonuspack:6.9.0'
 
     implementation 'com.squareup.retrofit2:retrofit:2.9.0'
     implementation 'com.squareup.retrofit2:converter-gson:2.9.0'

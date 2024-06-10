@@ -7,10 +7,10 @@ import com.craxiom.networksurvey.ui.ASignalChartViewModel
 import com.craxiom.networksurvey.util.CellularUtils
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import org.osmdroid.bonuspack.clustering.RadiusMarkerClusterer
 import org.osmdroid.util.BoundingBox
 import org.osmdroid.util.GeoPoint
 import org.osmdroid.views.MapView
-import org.osmdroid.views.overlay.FolderOverlay
 import org.osmdroid.views.overlay.Marker
 
 /**
@@ -22,7 +22,7 @@ internal class TowerMapViewModel : ASignalChartViewModel() {
     lateinit var mapView: MapView
     private var hasMapLocationBeenSet = false
 
-    var towerOverlayGroup: FolderOverlay? = FolderOverlay()
+    lateinit var towerOverlayGroup: RadiusMarkerClusterer
 
     private val _towers = MutableStateFlow(LinkedHashSet<Marker>(LinkedHashSet()))
     val towers = _towers.asStateFlow()
