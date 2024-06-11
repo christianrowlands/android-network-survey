@@ -18,6 +18,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -43,7 +44,6 @@ import org.osmdroid.util.BoundingBox
 import org.osmdroid.util.GeoPoint
 import org.osmdroid.views.CustomZoomButtonsController
 import org.osmdroid.views.MapView
-import org.osmdroid.views.overlay.Marker
 import org.osmdroid.views.overlay.mylocation.GpsMyLocationProvider
 import org.osmdroid.views.overlay.mylocation.MyLocationNewOverlay
 import retrofit2.Response
@@ -76,6 +76,8 @@ internal fun TowerMapScreen(viewModel: TowerMapViewModel = viewModel()) {
     val isZoomedOutTooFar by viewModel.isZoomedOutTooFar.collectAsStateWithLifecycle()
     val radio by viewModel.selectedRadioType.collectAsStateWithLifecycle()
     val noTowersFound by viewModel.noTowersFound.collectAsStateWithLifecycle()
+
+    val missingApiKey = BuildConfig.NS_API_KEY.isEmpty()
 
     val options = listOf(
         CellularProtocol.GSM.name,
@@ -130,34 +132,49 @@ internal fun TowerMapScreen(viewModel: TowerMapViewModel = viewModel()) {
         }
     }
 
-    if (isZoomedOutTooFar) {
+    if (missingApiKey) {
         Box(
             contentAlignment = Alignment.Center,
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(bottom = 8.dp)
-        ) {
-            Text(text = "Zoom in farther to see the towers", fontWeight = FontWeight.Bold)
-        }
-    } else if (noTowersFound) {
-        Box(
-            contentAlignment = Alignment.Center,
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(bottom = 8.dp)
-        ) {
-            Text(text = "No towers found in the area", fontWeight = FontWeight.Bold)
-        }
-    }
-
-    if (isLoadingInProgress) {
-        Box(
-            contentAlignment = Alignment.TopCenter,
             modifier = Modifier
                 .fillMaxSize()
                 .padding(8.dp)
         ) {
-            CircularProgressIndicator()
+            Text(
+                text = "Missing the API Key. Please report this bug at https://github.com/christianrowlands/android-network-survey/issues/new/choose",
+                fontWeight = FontWeight.Bold,
+                textAlign = TextAlign.Center
+            )
+        }
+    } else {
+        if (isZoomedOutTooFar) {
+            Box(
+                contentAlignment = Alignment.Center,
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(bottom = 8.dp)
+            ) {
+                Text(text = "Zoom in farther to see the towers", fontWeight = FontWeight.Bold)
+            }
+        } else if (noTowersFound) {
+            Box(
+                contentAlignment = Alignment.Center,
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(bottom = 8.dp)
+            ) {
+                Text(text = "No towers found in the area", fontWeight = FontWeight.Bold)
+            }
+        }
+
+        if (isLoadingInProgress) {
+            Box(
+                contentAlignment = Alignment.TopCenter,
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(8.dp)
+            ) {
+                CircularProgressIndicator()
+            }
         }
     }
 }
@@ -268,7 +285,8 @@ private suspend fun runTowerQuery(viewModel: TowerMapViewModel) {
  */
 private fun runListener(
     mapView: MapView,
-    viewModel: TowerMapViewModel) {
+    viewModel: TowerMapViewModel
+) {
     Timber.d("Map is idle")
 
     val bounds = mapView.boundingBox
@@ -308,28 +326,33 @@ private suspend fun getTowersFromServer(
     return suspendCancellableCoroutine { continuation ->
         try {
             viewModel.viewModelScope.launch {
-                val bounds = viewModel.lastQueriedBounds.value ?: return@launch
+                try {
+                    val bounds = viewModel.lastQueriedBounds.value ?: return@launch
 
-                // Format the bounding box coordinates to the required "bbox" string format
-                val bbox =
-                    "${bounds.latSouth},${bounds.lonWest},${bounds.latNorth},${bounds.lonEast}"
-                val response = nsApi.getTowers(bbox, viewModel.selectedRadioType.value)
+                    // Format the bounding box coordinates to the required "bbox" string format
+                    val bbox =
+                        "${bounds.latSouth},${bounds.lonWest},${bounds.latNorth},${bounds.lonEast}"
+                    val response = nsApi.getTowers(bbox, viewModel.selectedRadioType.value)
 
-                // Process the response
-                if (response.code() == 204) {
-                    // No towers found, return an empty list
-                    Timber.w("No towers found; raw: ${response.raw()}")
-                    continuation.resume(Collections.emptyList(), onCancellation = null)
-                    Collections.emptyList<GeoPoint>()
-                } else if (response.isSuccessful && response.body() != null) {
-                    Timber.i("Successfully loaded towers")
-                    val towerData = response.body()!!
+                    // Process the response
+                    if (response.code() == 204) {
+                        // No towers found, return an empty list
+                        Timber.w("No towers found; raw: ${response.raw()}")
+                        continuation.resume(Collections.emptyList(), onCancellation = null)
+                        Collections.emptyList<GeoPoint>()
+                    } else if (response.isSuccessful && response.body() != null) {
+                        Timber.i("Successfully loaded towers")
+                        val towerData = response.body()!!
 
-                    continuation.resume(towerData.cells, onCancellation = {
-                        Timber.e("The tower data fetch was cancelled")
-                    })
-                } else {
-                    Timber.w("Failed to load towers; raw: ${response.raw()}")
+                        continuation.resume(towerData.cells, onCancellation = {
+                            Timber.e("The tower data fetch was cancelled")
+                        })
+                    } else {
+                        Timber.w("Failed to load towers; raw: ${response.raw()}")
+                        continuation.resume(Collections.emptyList(), onCancellation = null)
+                    }
+                } catch (e: Exception) {
+                    Timber.e(e, "Failed to fetch towers")
                     continuation.resume(Collections.emptyList(), onCancellation = null)
                 }
             }

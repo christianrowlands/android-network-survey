@@ -18,7 +18,7 @@ import org.osmdroid.views.overlay.Marker
  */
 internal class TowerMapViewModel : ASignalChartViewModel() {
 
-    lateinit var servingCellInfo: ServingCellInfo
+    var servingCellInfo: ServingCellInfo? = null
     lateinit var mapView: MapView
     private var hasMapLocationBeenSet = false
 

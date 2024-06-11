@@ -35,7 +35,7 @@ import java.util.Collections
 class TowerMapFragment : AServiceDataFragment(), MenuProvider, ICellularSurveyRecordListener {
     private lateinit var viewModel: TowerMapViewModel
     private lateinit var composeView: ComposeView
-    private lateinit var servingCell: ServingCellInfo
+    private var servingCell: ServingCellInfo? = null
     private var locationListener: LocationListener? = null
 
     override fun onCreateView(
@@ -60,6 +60,10 @@ class TowerMapFragment : AServiceDataFragment(), MenuProvider, ICellularSurveyRe
 
     override fun onResume() {
         super.onResume()
+
+        if (PreferenceUtils.hasAcceptedMapPrivacy(requireContext())) {
+            setupComposeView(servingCell)
+        }
 
         checkAcceptedMapPrivacy()
         checkLocationServicesEnabled()
@@ -181,11 +185,11 @@ class TowerMapFragment : AServiceDataFragment(), MenuProvider, ICellularSurveyRe
         }
     }
 
-    private fun setupComposeView(servingCell: ServingCellInfo) {
+    private fun setupComposeView(servingCell: ServingCellInfo?) {
         composeView.setContent {
             viewModel = viewModel()
             viewModel.servingCellInfo = servingCell
-            if (servingCell.servingCell != null && servingCell.servingCell.cellularProtocol != CellularProtocol.NONE) {
+            if (servingCell?.servingCell != null && servingCell.servingCell.cellularProtocol != CellularProtocol.NONE) {
                 viewModel.setSelectedRadioType(servingCell.servingCell.cellularProtocol.name)
             }
 
@@ -193,10 +197,11 @@ class TowerMapFragment : AServiceDataFragment(), MenuProvider, ICellularSurveyRe
                 TowerMapScreen(viewModel = viewModel)
             }
 
-            onCellularBatch(
-                Collections.singletonList(servingCell.servingCell),
-                servingCell.subscriptionId
-            )
+            if (servingCell != null)
+                onCellularBatch(
+                    Collections.singletonList(servingCell.servingCell),
+                    servingCell.subscriptionId
+                )
         }
     }
 
