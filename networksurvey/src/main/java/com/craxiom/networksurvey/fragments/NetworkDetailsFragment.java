@@ -84,7 +84,7 @@ import timber.log.Timber;
  *
  * @since 1.6.0 (It really came earlier, but was minimal until the 1.6.0 rewrite.
  */
-public class NetworkDetailsFragment extends AServiceDataFragment implements ICellularSurveyRecordListener, LocationListener, MenuProvider
+public class NetworkDetailsFragment extends AServiceDataFragment implements ICellularSurveyRecordListener, LocationListener
 {
     public static final String SUBSCRIPTION_ID_KEY = "subscription_id";
 
@@ -136,12 +136,6 @@ public class NetworkDetailsFragment extends AServiceDataFragment implements ICel
         chartViewModel.addInitialRssi(UNKNOWN_RSSI);
         ComposeFunctions.
                 setContent(binding.composeView, chartViewModel);
-
-        FragmentActivity activity = getActivity();
-        if (activity != null)
-        {
-            activity.addMenuProvider(this, getViewLifecycleOwner());
-        }
 
         return binding.getRoot();
     }
@@ -240,35 +234,6 @@ public class NetworkDetailsFragment extends AServiceDataFragment implements ICel
     public void onLocationChanged(@NonNull Location location)
     {
         viewModel.setLocation(location);
-    }
-
-    @Override
-    public void onCreateMenu(@NonNull Menu menu, @NonNull MenuInflater menuInflater)
-    {
-       menuInflater.inflate(R.menu.cellular_details_menu, menu);
-    }
-
-    @Override
-    public boolean onMenuItemSelected(@NonNull MenuItem menuItem)
-    {
-        if (menuItem.getItemId() == R.id.action_open_tower_map)
-        {
-            navigateToTowerMap();
-            return true;
-        }
-        return false;
-    }
-
-    /**
-     * Navigates to the cell tower map screen.
-     */
-    public void navigateToTowerMap()
-    {
-        FragmentActivity activity = getActivity();
-        if (activity == null) return;
-
-        Navigation.findNavController(activity, R.id.main_content)
-                .navigate(MainCellularFragmentDirections.actionMainCellularFragmentToTowerMapFragment(new ServingCellInfo(latestServingCellRecord, subscriptionId)));
     }
 
     /**

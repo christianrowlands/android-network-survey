@@ -75,6 +75,7 @@ internal fun TowerMapScreen(viewModel: TowerMapViewModel = viewModel()) {
     val isLoadingInProgress by viewModel.isLoadingInProgress.collectAsStateWithLifecycle()
     val isZoomedOutTooFar by viewModel.isZoomedOutTooFar.collectAsStateWithLifecycle()
     val radio by viewModel.selectedRadioType.collectAsStateWithLifecycle()
+    val noTowersFound by viewModel.noTowersFound.collectAsStateWithLifecycle()
 
     val options = listOf(
         CellularProtocol.GSM.name,
@@ -138,6 +139,15 @@ internal fun TowerMapScreen(viewModel: TowerMapViewModel = viewModel()) {
         ) {
             Text(text = "Zoom in farther to see the towers", fontWeight = FontWeight.Bold)
         }
+    } else if (noTowersFound) {
+        Box(
+            contentAlignment = Alignment.Center,
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(bottom = 8.dp)
+        ) {
+            Text(text = "No towers found in the area", fontWeight = FontWeight.Bold)
+        }
     }
 
     if (isLoadingInProgress) {
@@ -150,13 +160,10 @@ internal fun TowerMapScreen(viewModel: TowerMapViewModel = viewModel()) {
             CircularProgressIndicator()
         }
     }
-    //}
 }
 
 @Composable
 internal fun OsmdroidMapView(viewModel: TowerMapViewModel) {
-    val points by viewModel.towers.collectAsStateWithLifecycle()
-
     AndroidView(
         modifier = Modifier.fillMaxSize(),
         factory = { context ->
@@ -183,26 +190,25 @@ internal fun OsmdroidMapView(viewModel: TowerMapViewModel) {
             // Listener to detect when map movement stops
             mapView.addMapListener(DelayedMapListener(object : MapListener {
                 override fun onScroll(event: ScrollEvent?): Boolean {
-                    runListener(mapView, viewModel, points)
+                    runListener(mapView, viewModel)
                     return true
                 }
 
                 override fun onZoom(event: ZoomEvent?): Boolean {
-                    runListener(mapView, viewModel, points)
+                    runListener(mapView, viewModel)
                     return true
                 }
             }, 400))
 
             mapView
         },
-        update = { mapView ->
-            Timber.i("Updating the map view!!!")
-            recreateOverlaysFromTowerData(viewModel)
+        update = {
+            recreateOverlaysFromTowerData(viewModel, it)
         }
     )
 }
 
-private fun recreateOverlaysFromTowerData(viewModel: TowerMapViewModel) {
+private fun recreateOverlaysFromTowerData(viewModel: TowerMapViewModel, mapView: MapView) {
     viewModel.towerOverlayGroup.items?.clear()
 
     val towers = viewModel.towers.value
@@ -211,9 +217,9 @@ private fun recreateOverlaysFromTowerData(viewModel: TowerMapViewModel) {
     towers.forEach { marker ->
         viewModel.towerOverlayGroup.add(marker)
     }
-    viewModel.towerOverlayGroup.clusterer(viewModel.mapView)
+    viewModel.towerOverlayGroup.clusterer(mapView)
     viewModel.towerOverlayGroup.invalidate()
-    viewModel.mapView.postInvalidate()
+    mapView.postInvalidate()
 }
 
 /**
@@ -249,6 +255,8 @@ private suspend fun runTowerQuery(viewModel: TowerMapViewModel) {
         towers.add(towerMarker)
     }
 
+    viewModel.setNoTowersFound(towers.isEmpty())
+
     // TODO Add a text overlay if no towers are in the viewModel.towers list
 
     viewModel.setIsLoadingInProgress(false)
@@ -260,9 +268,7 @@ private suspend fun runTowerQuery(viewModel: TowerMapViewModel) {
  */
 private fun runListener(
     mapView: MapView,
-    viewModel: TowerMapViewModel,
-    points: LinkedHashSet<Marker>
-) {
+    viewModel: TowerMapViewModel) {
     Timber.d("Map is idle")
 
     val bounds = mapView.boundingBox

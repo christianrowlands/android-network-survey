@@ -27,6 +27,9 @@ internal class TowerMapViewModel : ASignalChartViewModel() {
     private val _towers = MutableStateFlow(LinkedHashSet<Marker>(LinkedHashSet()))
     val towers = _towers.asStateFlow()
 
+    private val _noTowersFound = MutableStateFlow(false)
+    val noTowersFound = _noTowersFound.asStateFlow()
+
     private val _selectedRadioType = MutableStateFlow(CellularProtocol.LTE.name)
     val selectedRadioType = _selectedRadioType.asStateFlow()
 
@@ -44,6 +47,10 @@ internal class TowerMapViewModel : ASignalChartViewModel() {
 
     private val _currentLocation = MutableStateFlow<Location?>(null)
     val currentLocation = _currentLocation.asStateFlow()
+
+    fun setNoTowersFound(noTowersFound: Boolean) {
+        _noTowersFound.value = noTowersFound
+    }
 
     fun setSelectedRadioType(radioType: String) {
         _selectedRadioType.value = radioType
