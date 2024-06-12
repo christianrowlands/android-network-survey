@@ -180,6 +180,35 @@ jobs:
           -Pandroid.injected.signing.key.alias=$KEY_ALIAS
           -Pandroid.injected.signing.key.password=$KEY_PASSWORD
 
+      - name: Upload Release Bundle
+        uses: actions/upload-artifact@v3
+        with:
+          name: Network Survey Release Bundle
+          path: networksurvey/build/outputs/bundle/regularRelease/${{ env.base_name }}-regular-release.aab
+
+  uploadRelease:
+    needs: buildRelease
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Download Regular APK
+        uses: actions/download-artifact@v4
+        with:
+          name: Network Survey Regular Release APK
+          path: networksurvey/build/outputs/apk/regular/release/
+
+      - name: Download CDR APK
+        uses: actions/download-artifact@v4
+        with:
+          name: Network Survey CDR Release APK
+          path: networksurvey/build/outputs/apk/cdr/release/
+
+      - name: Download Release Bundle
+        uses: actions/download-artifact@v4
+        with:
+          name: Network Survey Release Bundle
+          path: networksurvey/build/outputs/bundle/regularRelease/
+
       - name: Create a Release in GitHub
         uses: ncipollo/release-action@v1
         with:
