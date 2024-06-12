@@ -147,7 +147,7 @@ jobs:
           echo ${{ env.base_name }}
 
       - name: Upload Regular APK
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: Network Survey Regular Release APK
           path: networksurvey/build/outputs/apk/regular/release/${{ env.base_name }}-regular-release.apk
@@ -164,7 +164,7 @@ jobs:
           -Pandroid.injected.signing.key.password=$KEY_PASSWORD
 
       - name: Upload CDR APK
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: Network Survey CDR Release APK
           path: networksurvey/build/outputs/apk/cdr/release/${{ env.base_name }}-cdr-release.apk
@@ -181,7 +181,7 @@ jobs:
           -Pandroid.injected.signing.key.password=$KEY_PASSWORD
 
       - name: Upload Release Bundle
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: Network Survey Release Bundle
           path: networksurvey/build/outputs/bundle/regularRelease/${{ env.base_name }}-regular-release.aab
