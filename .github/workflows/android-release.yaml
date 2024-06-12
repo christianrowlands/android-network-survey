@@ -220,6 +220,11 @@ jobs:
           generateReleaseNotes: true
           draft: true
 
+      - name: Get base name
+        run: |
+          echo "base_name=`./gradlew :networksurvey:properties -q | grep 'archivesBaseName:' | awk '{print $2}'`" >> $GITHUB_ENV
+          echo ${{ env.base_name }}
+
       - name: Release app to internal track
         uses: r0adkll/upload-google-play@v1
         with:
