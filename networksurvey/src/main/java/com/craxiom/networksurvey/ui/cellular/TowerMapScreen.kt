@@ -1,9 +1,14 @@
 package com.craxiom.networksurvey.ui.cellular
 
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -17,6 +22,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -129,6 +137,42 @@ internal fun TowerMapScreen(viewModel: TowerMapViewModel = viewModel()) {
                     }
                 }
             }
+
+            Box(
+                modifier = Modifier
+                    .align(Alignment.BottomEnd)
+                    .padding(16.dp)
+            ) {
+                Surface(
+                    modifier = Modifier
+                        .size(64.dp)
+                        .clip(CircleShape)
+                        .background(MaterialTheme.colorScheme.primary),
+                    color = MaterialTheme.colorScheme.primary
+                ) {
+                    Box(
+                        contentAlignment = Alignment.Center,
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(16.dp)
+                    ) {
+                        Image(
+                            painter = painterResource(id = R.drawable.ic_my_location),
+                            contentDescription = "Microphone",
+                            modifier = Modifier.size(32.dp)
+                        )
+                        Button(
+                            onClick = { goToMyLocation(viewModel) },
+                            modifier = Modifier
+                                .size(48.dp)
+                                .clip(CircleShape),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = Color.Transparent
+                            )
+                        ) {}
+                    }
+                }
+            }
         }
     }
 
@@ -186,6 +230,7 @@ internal fun OsmdroidMapView(viewModel: TowerMapViewModel) {
         factory = { context ->
             val mapView = MapView(context)
             viewModel.mapView = mapView
+            viewModel.gpsMyLocationProvider = GpsMyLocationProvider(mapView.context)
             viewModel.towerOverlayGroup = RadiusMarkerClusterer(context)
             viewModel.towerOverlayGroup.setMaxClusteringZoomLevel(14)
 
@@ -201,7 +246,7 @@ internal fun OsmdroidMapView(viewModel: TowerMapViewModel) {
             val mapController = mapView.controller
             mapController.setZoom(INITIAL_ZOOM)
 
-            addDefaultOverlays(mapView)
+            addDefaultOverlays(mapView, viewModel.gpsMyLocationProvider)
             mapView.overlays.add(viewModel.towerOverlayGroup)
 
             // Listener to detect when map movement stops
@@ -225,6 +270,24 @@ internal fun OsmdroidMapView(viewModel: TowerMapViewModel) {
     )
 }
 
+/**
+ * Moves the map view to the user's current location.
+ */
+private fun goToMyLocation(viewModel: TowerMapViewModel) {
+    val lastKnownLocation = viewModel.gpsMyLocationProvider.lastKnownLocation
+    if (lastKnownLocation == null) {
+        Timber.w("The last known location is null")
+        return
+    }
+    viewModel.mapView.controller.animateTo(
+        GeoPoint(
+            lastKnownLocation.latitude,
+            lastKnownLocation.longitude
+        )
+    )
+    viewModel.mapView.controller.setZoom(INITIAL_ZOOM)
+}
+
 private fun recreateOverlaysFromTowerData(viewModel: TowerMapViewModel, mapView: MapView) {
     viewModel.towerOverlayGroup.items?.clear()
 
@@ -242,8 +305,8 @@ private fun recreateOverlaysFromTowerData(viewModel: TowerMapViewModel, mapView:
 /**
  * Adds the default overlays to the map view such as the my location overlay.
  */
-private fun addDefaultOverlays(mapView: MapView) {
-    val mLocationOverlay = MyLocationNewOverlay(GpsMyLocationProvider(mapView.context), mapView)
+private fun addDefaultOverlays(mapView: MapView, gpsMyLocationProvider: GpsMyLocationProvider) {
+    val mLocationOverlay = MyLocationNewOverlay(gpsMyLocationProvider, mapView)
     mLocationOverlay.enableMyLocation()
     mapView.overlays.add(mLocationOverlay)
 }

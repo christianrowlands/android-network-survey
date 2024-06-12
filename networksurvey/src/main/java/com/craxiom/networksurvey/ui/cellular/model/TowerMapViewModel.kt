@@ -12,6 +12,7 @@ import org.osmdroid.util.BoundingBox
 import org.osmdroid.util.GeoPoint
 import org.osmdroid.views.MapView
 import org.osmdroid.views.overlay.Marker
+import org.osmdroid.views.overlay.mylocation.GpsMyLocationProvider
 
 /**
  * The view model for the Tower Map screen.
@@ -20,6 +21,7 @@ internal class TowerMapViewModel : ASignalChartViewModel() {
 
     var servingCellInfo: ServingCellInfo? = null
     lateinit var mapView: MapView
+    lateinit var gpsMyLocationProvider: GpsMyLocationProvider
     private var hasMapLocationBeenSet = false
 
     lateinit var towerOverlayGroup: RadiusMarkerClusterer
