@@ -1,5 +1,9 @@
 # Changelog
 
+## [1.25](https://github.com/christianrowlands/android-network-survey/releases/tag/v1.25) - 2024-06-14
+
+* Adds a Tower Map view that shows the location of cellular towers.
+
 ## [1.24](https://github.com/christianrowlands/android-network-survey/releases/tag/v1.24) - 2024-05-14
 
 * Adds a 5G NR calculator to the cellular calculators.
