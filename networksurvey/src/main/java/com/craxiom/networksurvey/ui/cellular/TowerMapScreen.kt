@@ -145,7 +145,7 @@ internal fun TowerMapScreen(viewModel: TowerMapViewModel = viewModel()) {
             ) {
                 Surface(
                     modifier = Modifier
-                        .size(64.dp)
+                        .size(40.dp)
                         .clip(CircleShape)
                         .background(MaterialTheme.colorScheme.primary),
                     color = MaterialTheme.colorScheme.primary
@@ -154,12 +154,12 @@ internal fun TowerMapScreen(viewModel: TowerMapViewModel = viewModel()) {
                         contentAlignment = Alignment.Center,
                         modifier = Modifier
                             .fillMaxSize()
-                            .padding(16.dp)
+                            .padding(8.dp)
                     ) {
                         Image(
                             painter = painterResource(id = R.drawable.ic_my_location),
-                            contentDescription = "Microphone",
-                            modifier = Modifier.size(32.dp)
+                            contentDescription = "My Location",
+                            modifier = Modifier.size(24.dp)
                         )
                         Button(
                             onClick = { goToMyLocation(viewModel) },
