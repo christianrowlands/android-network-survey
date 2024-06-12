@@ -107,6 +107,9 @@ jobs:
     needs: bumpVersion
     runs-on: ubuntu-latest
 
+    outputs:
+      basename: ${{ steps.basenamestep.outputs.basename }}
+
     steps:
       - name: Checkout the code
         uses: actions/checkout@v4
@@ -142,8 +145,10 @@ jobs:
           -Pandroid.injected.signing.key.password=$KEY_PASSWORD
 
       - name: Get base name
+        id: basenamestep
         run: |
           echo "base_name=`./gradlew :networksurvey:properties -q | grep 'archivesBaseName:' | awk '{print $2}'`" >> $GITHUB_ENV
+          echo "basename=${{ env.base_name }}" >> "$GITHUB_OUTPUT"
           echo ${{ env.base_name }}
 
       - name: Upload Regular APK
@@ -220,16 +225,11 @@ jobs:
           generateReleaseNotes: true
           draft: true
 
-      - name: Get base name
-        run: |
-          echo "base_name=`./gradlew :networksurvey:properties -q | grep 'archivesBaseName:' | awk '{print $2}'`" >> $GITHUB_ENV
-          echo ${{ env.base_name }}
-
       - name: Release app to internal track
         uses: r0adkll/upload-google-play@v1
         with:
           serviceAccountJsonPlainText: ${{ secrets.PLAYSTORE_ACCOUNT_KEY }}
           packageName: com.craxiom.networksurvey
-          releaseFiles: networksurvey/build/outputs/bundle/regularRelease/${{ env.base_name }}-regular-release.aab
+          releaseFiles: networksurvey/build/outputs/bundle/regularRelease/${{needs.buildRelease.outputs.basename}}-regular-release.aab
           track: internal
           status: completed
