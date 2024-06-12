@@ -31,10 +31,10 @@ jobs:
           GOOGLE_SERVICES: ${{ secrets.GOOGLE_SERVICES }}
         run: echo "$GOOGLE_SERVICES" > networksurvey/google-services.json
 
-      - name: Change applicationId to debug
-        run: |
-          # Update build.gradle with the debug applicationId
-          sed -i "s/applicationId \"[^\"]*\"/applicationId \"com.craxiom.networksurvey.debug\"/g" networksurvey/build.gradle
+#      - name: Change applicationId to debug
+#        run: |
+#          # Update build.gradle with the debug applicationId
+#          sed -i "s/applicationId \"[^\"]*\"/applicationId \"com.craxiom.networksurvey.debug\"/g" networksurvey/build.gradle
 
       - name: Build Regular APK
         env:
