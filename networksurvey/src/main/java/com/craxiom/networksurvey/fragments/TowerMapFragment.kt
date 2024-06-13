@@ -33,7 +33,7 @@ import java.util.Collections
  * A map view of all the towers in the area as pulled from the NS Tower Service.
  */
 class TowerMapFragment : AServiceDataFragment(), MenuProvider, ICellularSurveyRecordListener {
-    private lateinit var viewModel: TowerMapViewModel
+    private var viewModel: TowerMapViewModel? = null
     private lateinit var composeView: ComposeView
     private var servingCell: ServingCellInfo? = null
     private var locationListener: LocationListener? = null
@@ -63,18 +63,17 @@ class TowerMapFragment : AServiceDataFragment(), MenuProvider, ICellularSurveyRe
 
         if (PreferenceUtils.hasAcceptedMapPrivacy(requireContext())) {
             setupComposeView(servingCell)
+            viewModel?.mapView?.onResume()
         }
 
         checkAcceptedMapPrivacy()
         checkLocationServicesEnabled()
 
-        viewModel.mapView.onResume()
-
         startAndBindToService()
     }
 
     override fun onPause() {
-        viewModel.mapView.onPause()
+        viewModel?.mapView?.onPause()
         super.onPause()
     }
 
@@ -97,13 +96,17 @@ class TowerMapFragment : AServiceDataFragment(), MenuProvider, ICellularSurveyRe
         var removeListener = false
         val initialLocation = service.primaryLocationListener?.latestLocation
         initialLocation?.let {
-            removeListener = viewModel.updateLocation(it)
+            if (viewModel == null) {
+                removeListener = true
+            } else {
+                removeListener = viewModel!!.updateLocation(it)
+            }
 
         }
 
         if (!removeListener) {
             locationListener = LocationListener { location ->
-                removeListener = viewModel.updateLocation(location)
+                removeListener = viewModel!!.updateLocation(location)
                 if (removeListener) service.unregisterLocationListener(locationListener)
             }
             service.registerLocationListener(locationListener)
@@ -125,7 +128,7 @@ class TowerMapFragment : AServiceDataFragment(), MenuProvider, ICellularSurveyRe
         cellularGroup: MutableList<CellularRecordWrapper>?,
         subscriptionId: Int
     ) {
-        viewModel.onCellularBatchResults(cellularGroup, subscriptionId)
+        viewModel?.onCellularBatchResults(cellularGroup, subscriptionId)
     }
 
     /**
@@ -188,13 +191,13 @@ class TowerMapFragment : AServiceDataFragment(), MenuProvider, ICellularSurveyRe
     private fun setupComposeView(servingCell: ServingCellInfo?) {
         composeView.setContent {
             viewModel = viewModel()
-            viewModel.servingCellInfo = servingCell
+            viewModel!!.servingCellInfo = servingCell
             if (servingCell?.servingCell != null && servingCell.servingCell.cellularProtocol != CellularProtocol.NONE) {
-                viewModel.setSelectedRadioType(servingCell.servingCell.cellularProtocol.name)
+                viewModel!!.setSelectedRadioType(servingCell.servingCell.cellularProtocol.name)
             }
 
             NsTheme {
-                TowerMapScreen(viewModel = viewModel)
+                TowerMapScreen(viewModel = viewModel!!)
             }
 
             if (servingCell != null)

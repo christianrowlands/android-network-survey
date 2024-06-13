@@ -23,7 +23,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Set up JDK 17
-        uses: actions/setup-java@v3
+        uses: actions/setup-java@v4
         with:
           java-version: 17
           distribution: 'temurin'
@@ -66,7 +66,7 @@ jobs:
           ref: develop
 
       - name: Extract version from tag
-        uses: damienaicheh/extract-version-from-tag-action@v1.1.0
+        uses: damienaicheh/extract-version-from-tag-action@v1.3.0
 
       - name: Extract existing version code
         run: |
@@ -116,7 +116,7 @@ jobs:
           ref: develop
 
       - name: Set up JDK 17
-        uses: actions/setup-java@v3
+        uses: actions/setup-java@v4
         with:
           java-version: 17
           distribution: 'temurin'
@@ -137,11 +137,13 @@ jobs:
           KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
           KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+          NS_API_KEY: ${{ secrets.NS_API_KEY }}
         run: ./gradlew assembleRegularRelease
           -Pandroid.injected.signing.store.file=$(pwd)/my.keystore
           -Pandroid.injected.signing.store.password=$KEYSTORE_PASSWORD
           -Pandroid.injected.signing.key.alias=$KEY_ALIAS
           -Pandroid.injected.signing.key.password=$KEY_PASSWORD
+          -PnsApiKey=$NS_API_KEY
 
       - name: Get base name
         id: basenamestep
@@ -162,11 +164,13 @@ jobs:
           KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
           KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+          NS_API_KEY: ${{ secrets.NS_API_KEY }}
         run: ./gradlew assembleCdrRelease
           -Pandroid.injected.signing.store.file=$(pwd)/my.keystore
           -Pandroid.injected.signing.store.password=$KEYSTORE_PASSWORD
           -Pandroid.injected.signing.key.alias=$KEY_ALIAS
           -Pandroid.injected.signing.key.password=$KEY_PASSWORD
+          -PnsApiKey=$NS_API_KEY
 
       - name: Upload CDR APK
         uses: actions/upload-artifact@v4
@@ -179,11 +183,13 @@ jobs:
           KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
           KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+          NS_API_KEY: ${{ secrets.NS_API_KEY }}
         run: ./gradlew bundleRelease
           -Pandroid.injected.signing.store.file=$(pwd)/my.keystore
           -Pandroid.injected.signing.store.password=$KEYSTORE_PASSWORD
           -Pandroid.injected.signing.key.alias=$KEY_ALIAS
           -Pandroid.injected.signing.key.password=$KEY_PASSWORD
+          -PnsApiKey=$NS_API_KEY
 
       - name: Upload Release Bundle
         uses: actions/upload-artifact@v4

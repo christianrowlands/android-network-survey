@@ -20,7 +20,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Set up JDK 17
-        uses: actions/setup-java@v3
+        uses: actions/setup-java@v4
         with:
           java-version: 17
           distribution: 'temurin'
@@ -46,16 +46,19 @@ jobs:
         run: echo "base_name=`./gradlew :networksurvey:properties -q | grep 'archivesBaseName:' | awk '{print $2}'`" >> $GITHUB_ENV
 
       - name: Upload Regular APK
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: Network Survey Regular Debug APK
           path: networksurvey/build/outputs/apk/regular/debug/${{ env.base_name }}-regular-debug.apk
 
       - name: Build CDR APK
-        run: ./gradlew assembleCdrDebug --stacktrace
+        env:
+          NS_API_KEY: ${{ secrets.NS_API_KEY }}
+        run: ./gradlew assembleCdrDebug
+          -PnsApiKey=$NS_API_KEY
 
       - name: Upload CDR APK
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: Network Survey CDR Debug APK
           path: networksurvey/build/outputs/apk/cdr/debug/${{ env.base_name }}-cdr-debug.apk
@@ -75,7 +78,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Set up JDK 17
-        uses: actions/setup-java@v3
+        uses: actions/setup-java@v4
         with:
           java-version: 17
           distribution: 'temurin'
@@ -101,7 +104,7 @@ jobs:
 
       # Only upload the reports on failure
       - name: Upload Reports
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v4
         with:
           name: Test-Reports
           path: networksurvey/build/reports
