@@ -102,7 +102,6 @@ jobs:
           git commit -am "Bump version code and change version name to ${{ env.VERSION_NAME }}"
           git push origin develop
 
-
   buildRelease:
     needs: bumpVersion
     runs-on: ubuntu-latest
@@ -147,15 +146,16 @@ jobs:
       - name: Get base name
         id: basenamestep
         run: |
-          echo "base_name=`./gradlew :networksurvey:properties -q | grep 'archivesBaseName:' | awk '{print $2}'`" >> $GITHUB_ENV
-          echo "basename=${{ env.base_name }}" >> "$GITHUB_OUTPUT"
-          echo ${{ env.base_name }}
+          base_name=$(./gradlew :networksurvey:properties -q | grep 'archivesBaseName:' | awk '{print $2}')
+          echo "basename=$base_name" >> $GITHUB_ENV
+          echo "basename=$base_name" >> "$GITHUB_OUTPUT"
+          echo $base_name
 
       - name: Upload Regular APK
         uses: actions/upload-artifact@v4
         with:
           name: Network Survey Regular Release APK
-          path: networksurvey/build/outputs/apk/regular/release/${{ env.base_name }}-regular-release.apk
+          path: networksurvey/build/outputs/apk/regular/release/${{ env.basename }}-regular-release.apk
 
       - name: Build CDR Release APK
         env:
@@ -172,7 +172,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: Network Survey CDR Release APK
-          path: networksurvey/build/outputs/apk/cdr/release/${{ env.base_name }}-cdr-release.apk
+          path: networksurvey/build/outputs/apk/cdr/release/${{ env.basename }}-cdr-release.apk
 
       - name: Build Regular Release Bundle
         env:
@@ -189,7 +189,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: Network Survey Release Bundle
-          path: networksurvey/build/outputs/bundle/regularRelease/${{ env.base_name }}-regular-release.aab
+          path: networksurvey/build/outputs/bundle/regularRelease/${{ env.basename }}-regular-release.aab
 
   uploadRelease:
     needs: buildRelease
@@ -230,6 +230,6 @@ jobs:
         with:
           serviceAccountJsonPlainText: ${{ secrets.PLAYSTORE_ACCOUNT_KEY }}
           packageName: com.craxiom.networksurvey
-          releaseFiles: networksurvey/build/outputs/bundle/regularRelease/${{needs.buildRelease.outputs.basename}}-regular-release.aab
+          releaseFiles: networksurvey/build/outputs/bundle/regularRelease/${{ needs.buildRelease.outputs.basename }}-regular-release.aab
           track: internal
           status: completed
