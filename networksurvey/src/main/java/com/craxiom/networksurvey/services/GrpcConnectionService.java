@@ -11,10 +11,12 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.ServiceConnection;
+import android.content.pm.ServiceInfo;
 import android.location.Location;
 import android.os.AsyncTask;
 import android.os.BatteryManager;
 import android.os.Binder;
+import android.os.Build;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.IBinder;
@@ -805,7 +807,12 @@ public class GrpcConnectionService extends Service implements IDeviceStatusListe
                 .setTicker(getText(R.string.connection_notification_title))
                 .build();
 
-        startForeground(NetworkSurveyConstants.GRPC_CONNECTION_NOTIFICATION_ID, notification);
+        if (Build.VERSION.SDK_INT > Build.VERSION_CODES.TIRAMISU) {
+            startForeground(NetworkSurveyConstants.GRPC_CONNECTION_NOTIFICATION_ID, notification,
+                    ServiceInfo.FOREGROUND_SERVICE_TYPE_REMOTE_MESSAGING);
+        } else {
+            startForeground(NetworkSurveyConstants.GRPC_CONNECTION_NOTIFICATION_ID, notification);
+        }
     }
 
     /**
