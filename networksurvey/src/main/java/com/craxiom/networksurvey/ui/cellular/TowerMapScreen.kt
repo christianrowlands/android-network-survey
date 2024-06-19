@@ -37,6 +37,7 @@ import com.craxiom.networksurvey.R
 import com.craxiom.networksurvey.model.CellularProtocol
 import com.craxiom.networksurvey.ui.cellular.model.TowerMapViewModel
 import com.craxiom.networksurvey.ui.cellular.model.TowerMarker
+import com.craxiom.networksurvey.util.CellularUtils
 import com.google.gson.annotations.SerializedName
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.launch
@@ -292,10 +293,12 @@ private fun recreateOverlaysFromTowerData(viewModel: TowerMapViewModel, mapView:
     viewModel.towerOverlayGroup.items?.clear()
 
     val towers = viewModel.towers.value
+    val servingCellCgiId = CellularUtils.getTowerId(viewModel.servingCellInfo)
 
     Timber.i("Adding %s points to the map", towers.size)
     towers.forEach { marker ->
-        viewModel.towerOverlayGroup.add(marker)
+        marker.setServingCell(marker.cgiId == servingCellCgiId)
+        if (marker.cgiId == servingCellCgiId) viewModel.towerOverlayGroup.add(marker)
     }
     viewModel.towerOverlayGroup.clusterer(mapView)
     viewModel.towerOverlayGroup.invalidate()
@@ -336,8 +339,6 @@ private suspend fun runTowerQuery(viewModel: TowerMapViewModel) {
     }
 
     viewModel.setNoTowersFound(towers.isEmpty())
-
-    // TODO Add a text overlay if no towers are in the viewModel.towers list
 
     viewModel.setIsLoadingInProgress(false)
 }

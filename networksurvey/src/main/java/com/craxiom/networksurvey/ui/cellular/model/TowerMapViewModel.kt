@@ -11,7 +11,6 @@ import org.osmdroid.bonuspack.clustering.RadiusMarkerClusterer
 import org.osmdroid.util.BoundingBox
 import org.osmdroid.util.GeoPoint
 import org.osmdroid.views.MapView
-import org.osmdroid.views.overlay.Marker
 import org.osmdroid.views.overlay.mylocation.GpsMyLocationProvider
 
 /**
@@ -26,7 +25,7 @@ internal class TowerMapViewModel : ASignalChartViewModel() {
 
     lateinit var towerOverlayGroup: RadiusMarkerClusterer
 
-    private val _towers = MutableStateFlow(LinkedHashSet<Marker>(LinkedHashSet()))
+    private val _towers = MutableStateFlow(LinkedHashSet<TowerMarker>(LinkedHashSet()))
     val towers = _towers.asStateFlow()
 
     private val _noTowersFound = MutableStateFlow(false)
