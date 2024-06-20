@@ -215,10 +215,15 @@ class TowerMapFragment : AServiceDataFragment(), MenuProvider, ICellularSurveyRe
         builder.setTitle("Tower Map Information")
         builder.setMessage(
             """
-            The tower locations are sourced from OpenCelliD.
+            The tower locations are sourced from OpenCelliD ( https://opencellid.org ).
+            
             Please note that these locations may not be accurate as they are generated from crowd-sourced data and based on survey results.
             The tower locations are provided for your convenience, but they should not be relied upon for precise accuracy.
             We recommend verifying tower locations through additional sources if accuracy is critical.
+            
+            Legend:
+            - Purple: Your Current Serving Cell
+            - Blue: Non-Serving Cells
         """.trimIndent()
         )
         builder.setPositiveButton("OK") { dialog, _ -> dialog.dismiss() }

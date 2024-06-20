@@ -327,12 +327,16 @@ private fun addDefaultOverlays(
     val directionIcon = AppCompatResources.getDrawable(context, R.drawable.ic_navigation)?.toBitmap()
     if (icon != null) {
         mLocationOverlay.setDirectionIcon(directionIcon)
+        mLocationOverlay.setDirectionAnchor(0.5f, 0.5f)
     }
 
     mLocationOverlay.enableMyLocation()
     mapView.overlays.add(mLocationOverlay)
 }
 
+/**
+ * Runs the tower query to get the towers from the back end for the current map view.
+ */
 private suspend fun runTowerQuery(viewModel: TowerMapViewModel) {
     viewModel.setIsLoadingInProgress(true)
 
