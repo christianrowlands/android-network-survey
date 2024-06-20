@@ -1,5 +1,7 @@
 package com.craxiom.networksurvey.ui.cellular
 
+import android.content.Context
+import androidx.appcompat.content.res.AppCompatResources
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -29,6 +31,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
+import androidx.core.graphics.drawable.toBitmap
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -247,7 +250,7 @@ internal fun OsmdroidMapView(viewModel: TowerMapViewModel) {
             val mapController = mapView.controller
             mapController.setZoom(INITIAL_ZOOM)
 
-            addDefaultOverlays(mapView, viewModel.gpsMyLocationProvider)
+            addDefaultOverlays(context, mapView, viewModel.gpsMyLocationProvider)
             mapView.overlays.add(viewModel.towerOverlayGroup)
 
             // Listener to detect when map movement stops
@@ -308,8 +311,17 @@ private fun recreateOverlaysFromTowerData(viewModel: TowerMapViewModel, mapView:
 /**
  * Adds the default overlays to the map view such as the my location overlay.
  */
-private fun addDefaultOverlays(mapView: MapView, gpsMyLocationProvider: GpsMyLocationProvider) {
+private fun addDefaultOverlays(
+    context: Context,
+    mapView: MapView,
+    gpsMyLocationProvider: GpsMyLocationProvider
+) {
+    val icon = AppCompatResources.getDrawable(context, R.drawable.ic_location_pin)?.toBitmap()
     val mLocationOverlay = MyLocationNewOverlay(gpsMyLocationProvider, mapView)
+    if (icon != null) {
+        mLocationOverlay.setPersonIcon(icon)
+        mLocationOverlay.setPersonAnchor(0.5f, .8725f)
+    }
     mLocationOverlay.enableMyLocation()
     mapView.overlays.add(mLocationOverlay)
 }
