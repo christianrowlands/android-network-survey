@@ -298,7 +298,7 @@ private fun recreateOverlaysFromTowerData(viewModel: TowerMapViewModel, mapView:
     Timber.i("Adding %s points to the map", towers.size)
     towers.forEach { marker ->
         marker.setServingCell(marker.cgiId == servingCellCgiId)
-        if (marker.cgiId == servingCellCgiId) viewModel.towerOverlayGroup.add(marker)
+        viewModel.towerOverlayGroup.add(marker)
     }
     viewModel.towerOverlayGroup.clusterer(mapView)
     viewModel.towerOverlayGroup.invalidate()
