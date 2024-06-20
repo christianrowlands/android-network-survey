@@ -47,6 +47,9 @@
 
     <color name="cn0_meter_border">@color/body_text_2_light</color>
 
+    <color name="colorTower">#0273A6</color>
+    <color name="colorServingCell">#8052D2</color>
+
     <!-- Mostly for preview purposes using Android tools -->
     <color name="black">#000000</color>
     <color name="white">#FFFFFF</color>

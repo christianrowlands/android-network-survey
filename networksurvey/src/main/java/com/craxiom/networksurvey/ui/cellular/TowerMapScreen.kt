@@ -316,12 +316,19 @@ private fun addDefaultOverlays(
     mapView: MapView,
     gpsMyLocationProvider: GpsMyLocationProvider
 ) {
-    val icon = AppCompatResources.getDrawable(context, R.drawable.ic_location_pin)?.toBitmap()
     val mLocationOverlay = MyLocationNewOverlay(gpsMyLocationProvider, mapView)
+
+    val icon = AppCompatResources.getDrawable(context, R.drawable.ic_location_pin)?.toBitmap()
     if (icon != null) {
         mLocationOverlay.setPersonIcon(icon)
         mLocationOverlay.setPersonAnchor(0.5f, .8725f)
     }
+
+    val directionIcon = AppCompatResources.getDrawable(context, R.drawable.ic_navigation)?.toBitmap()
+    if (icon != null) {
+        mLocationOverlay.setDirectionIcon(directionIcon)
+    }
+
     mLocationOverlay.enableMyLocation()
     mapView.overlays.add(mLocationOverlay)
 }

@@ -61,7 +61,7 @@ class TowerMarker(private val mapView: MapView, tower: Tower) : Marker(mapView) 
             )
         val color = ContextCompat.getColor(
             mapView.context,
-            if (isServingCell) R.color.colorPrimary else R.color.colorAccent
+            if (isServingCell) R.color.colorServingCell else R.color.colorTower
         )
 
         val wrappedDrawable = DrawableCompat.wrap(towerDrawable!!)
