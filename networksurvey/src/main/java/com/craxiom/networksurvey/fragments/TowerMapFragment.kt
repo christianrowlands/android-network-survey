@@ -191,7 +191,6 @@ class TowerMapFragment : AServiceDataFragment(), MenuProvider, ICellularSurveyRe
     private fun setupComposeView(servingCell: ServingCellInfo?) {
         composeView.setContent {
             viewModel = viewModel()
-            viewModel!!.servingCellInfo = servingCell
             if (servingCell?.servingCell != null && servingCell.servingCell.cellularProtocol != CellularProtocol.NONE) {
                 viewModel!!.setSelectedRadioType(servingCell.servingCell.cellularProtocol.name)
             }

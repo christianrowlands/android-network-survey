@@ -296,11 +296,11 @@ private fun recreateOverlaysFromTowerData(viewModel: TowerMapViewModel, mapView:
     viewModel.towerOverlayGroup.items?.clear()
 
     val towers = viewModel.towers.value
-    val servingCellCgiId = CellularUtils.getTowerId(viewModel.servingCellInfo)
+    val servingCellGciIds = viewModel.servingCells.value.values.map { CellularUtils.getTowerId(it) }
 
     Timber.i("Adding %s points to the map", towers.size)
     towers.forEach { marker ->
-        marker.setServingCell(marker.cgiId == servingCellCgiId)
+        marker.setServingCell(servingCellGciIds.contains(marker.cgiId))
         viewModel.towerOverlayGroup.add(marker)
     }
     viewModel.towerOverlayGroup.clusterer(mapView)

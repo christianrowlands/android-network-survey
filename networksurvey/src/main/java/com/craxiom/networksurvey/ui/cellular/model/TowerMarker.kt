@@ -55,7 +55,10 @@ class TowerMarker(private val mapView: MapView, tower: Tower) : Marker(mapView) 
 
     fun setServingCell(isServingCell: Boolean) {
         val towerDrawable =
-            AppCompatResources.getDrawable(mapView.context,R.drawable.ic_cell_tower)
+            AppCompatResources.getDrawable(
+                mapView.context,
+                if (isServingCell) R.drawable.ic_cell_tower_48 else R.drawable.ic_cell_tower
+            )
         val color = ContextCompat.getColor(
             mapView.context,
             if (isServingCell) R.color.colorPrimary else R.color.colorAccent

@@ -18,7 +18,10 @@ import org.osmdroid.views.overlay.mylocation.GpsMyLocationProvider
  */
 internal class TowerMapViewModel : ASignalChartViewModel() {
 
-    var servingCellInfo: ServingCellInfo? = null
+    private var _servingCells =
+        MutableStateFlow<HashMap<Int, ServingCellInfo>>(HashMap()) // <SubscriptionId, ServingCellInfo>
+    val servingCells = _servingCells.asStateFlow()
+
     lateinit var mapView: MapView
     lateinit var gpsMyLocationProvider: GpsMyLocationProvider
     private var hasMapLocationBeenSet = false
@@ -102,6 +105,8 @@ internal class TowerMapViewModel : ASignalChartViewModel() {
             }
                 ?: return
 
-        servingCellInfo = ServingCellInfo(servingCellRecord, subscriptionId)
+        _servingCells.value[subscriptionId] = ServingCellInfo(servingCellRecord, subscriptionId)
+
+        mapView.postInvalidate()
     }
 }
