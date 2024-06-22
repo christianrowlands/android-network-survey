@@ -11,6 +11,8 @@ import org.osmdroid.bonuspack.clustering.RadiusMarkerClusterer
 import org.osmdroid.util.BoundingBox
 import org.osmdroid.util.GeoPoint
 import org.osmdroid.views.MapView
+import org.osmdroid.views.overlay.FolderOverlay
+import org.osmdroid.views.overlay.OverlayManager
 import org.osmdroid.views.overlay.mylocation.GpsMyLocationProvider
 
 /**
@@ -22,11 +24,15 @@ internal class TowerMapViewModel : ASignalChartViewModel() {
         MutableStateFlow<HashMap<Int, ServingCellInfo>>(HashMap()) // <SubscriptionId, ServingCellInfo>
     val servingCells = _servingCells.asStateFlow()
 
+    val subIdToServingCellLocations = HashMap<Int, GeoPoint>()
+    var myLocation: Location? = null
+
     lateinit var mapView: MapView
     lateinit var gpsMyLocationProvider: GpsMyLocationProvider
     private var hasMapLocationBeenSet = false
 
     lateinit var towerOverlayGroup: RadiusMarkerClusterer
+    val servingCellLinesOverlayGroup: FolderOverlay = FolderOverlay()
 
     private val _towers = MutableStateFlow(LinkedHashSet<TowerMarker>(LinkedHashSet()))
     val towers = _towers.asStateFlow()
@@ -50,7 +56,6 @@ internal class TowerMapViewModel : ASignalChartViewModel() {
     val mapZoomLevel = _mapZoomLevel.asStateFlow()
 
     private val _currentLocation = MutableStateFlow<Location?>(null)
-    val currentLocation = _currentLocation.asStateFlow()
 
     fun setNoTowersFound(noTowersFound: Boolean) {
         _noTowersFound.value = noTowersFound

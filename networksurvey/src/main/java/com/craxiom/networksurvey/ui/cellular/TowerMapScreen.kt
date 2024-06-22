@@ -1,6 +1,8 @@
 package com.craxiom.networksurvey.ui.cellular
 
 import android.content.Context
+import android.graphics.DashPathEffect
+import android.graphics.PathEffect
 import androidx.appcompat.content.res.AppCompatResources
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -38,6 +40,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.craxiom.networksurvey.BuildConfig
 import com.craxiom.networksurvey.R
 import com.craxiom.networksurvey.model.CellularProtocol
+import com.craxiom.networksurvey.ui.cellular.model.CustomLocationOverlay
 import com.craxiom.networksurvey.ui.cellular.model.TowerMapViewModel
 import com.craxiom.networksurvey.ui.cellular.model.TowerMarker
 import com.craxiom.networksurvey.util.CellularUtils
@@ -56,8 +59,9 @@ import org.osmdroid.util.BoundingBox
 import org.osmdroid.util.GeoPoint
 import org.osmdroid.views.CustomZoomButtonsController
 import org.osmdroid.views.MapView
+import org.osmdroid.views.overlay.Polyline
 import org.osmdroid.views.overlay.mylocation.GpsMyLocationProvider
-import org.osmdroid.views.overlay.mylocation.MyLocationNewOverlay
+import org.osmdroid.views.overlay.mylocation.IMyLocationConsumer
 import retrofit2.Response
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
@@ -250,7 +254,7 @@ internal fun OsmdroidMapView(viewModel: TowerMapViewModel) {
             val mapController = mapView.controller
             mapController.setZoom(INITIAL_ZOOM)
 
-            addDefaultOverlays(context, mapView, viewModel.gpsMyLocationProvider)
+            addDefaultOverlays(context, mapView, viewModel.gpsMyLocationProvider, viewModel)
             mapView.overlays.add(viewModel.towerOverlayGroup)
 
             // Listener to detect when map movement stops
@@ -296,11 +300,24 @@ private fun recreateOverlaysFromTowerData(viewModel: TowerMapViewModel, mapView:
     viewModel.towerOverlayGroup.items?.clear()
 
     val towers = viewModel.towers.value
-    val servingCellGciIds = viewModel.servingCells.value.values.map { CellularUtils.getTowerId(it) }
+    //val servingCellGciIds = viewModel.servingCells.value.values.map { CellularUtils.getTowerId(it) }
+    val servingCellGciIds: List<String>
+    val servingCellToSubscriptionMap =
+        viewModel.servingCells.value.entries.associate { entry ->
+            CellularUtils.getTowerId(entry.value) to entry.value.subscriptionId
+        }
+    servingCellToSubscriptionMap.let { servingCellGciIds = it.keys.toList() }
 
     Timber.i("Adding %s points to the map", towers.size)
     towers.forEach { marker ->
-        marker.setServingCell(servingCellGciIds.contains(marker.cgiId))
+        val isServingCell = servingCellGciIds.contains(marker.cgiId)
+        if (isServingCell) {
+            // Get the value form servingCellToSubscriptionMap to be the key for the subIdToServingCellLocations so that we can set the value as marker.position
+            viewModel.subIdToServingCellLocations[servingCellToSubscriptionMap[marker.cgiId]!!] =
+                marker.position
+            drawServingCellLine(viewModel, mapView)
+        }
+        marker.setServingCell(isServingCell)
         viewModel.towerOverlayGroup.add(marker)
     }
     viewModel.towerOverlayGroup.clusterer(mapView)
@@ -314,9 +331,15 @@ private fun recreateOverlaysFromTowerData(viewModel: TowerMapViewModel, mapView:
 private fun addDefaultOverlays(
     context: Context,
     mapView: MapView,
-    gpsMyLocationProvider: GpsMyLocationProvider
+    gpsMyLocationProvider: GpsMyLocationProvider,
+    viewModel: TowerMapViewModel
 ) {
-    val mLocationOverlay = MyLocationNewOverlay(gpsMyLocationProvider, mapView)
+    val locationConsumer = IMyLocationConsumer { location, source ->
+        viewModel.myLocation = location
+        drawServingCellLine(viewModel, mapView)
+    }
+
+    val mLocationOverlay = CustomLocationOverlay(gpsMyLocationProvider, mapView, locationConsumer)
 
     val icon = AppCompatResources.getDrawable(context, R.drawable.ic_location_pin)?.toBitmap()
     if (icon != null) {
@@ -324,7 +347,8 @@ private fun addDefaultOverlays(
         mLocationOverlay.setPersonAnchor(0.5f, .8725f)
     }
 
-    val directionIcon = AppCompatResources.getDrawable(context, R.drawable.ic_navigation)?.toBitmap()
+    val directionIcon =
+        AppCompatResources.getDrawable(context, R.drawable.ic_navigation)?.toBitmap()
     if (icon != null) {
         mLocationOverlay.setDirectionIcon(directionIcon)
         mLocationOverlay.setDirectionAnchor(0.5f, 0.5f)
@@ -332,6 +356,35 @@ private fun addDefaultOverlays(
 
     mLocationOverlay.enableMyLocation()
     mapView.overlays.add(mLocationOverlay)
+}
+
+/**
+ * Draws a line between the current location and all the serving cell locations.
+ */
+private fun drawServingCellLine(
+    viewModel: TowerMapViewModel,
+    mapView: MapView
+) {
+    viewModel.servingCellLinesOverlayGroup.items?.clear()
+
+    val currentLocation = viewModel.myLocation ?: return
+
+    if (viewModel.subIdToServingCellLocations.isEmpty()) return
+
+    val myGeoPoint = GeoPoint(currentLocation.latitude, currentLocation.longitude)
+
+    viewModel.subIdToServingCellLocations.forEach { (_, geoPoint) ->
+        val polyline = Polyline()
+        polyline.outlinePaint.strokeWidth = 4f
+        //polyline.outlinePaint.style = android.graphics.Paint.Style.FILL_AND_STROKE
+        polyline.outlinePaint.setPathEffect(DashPathEffect(floatArrayOf(10f, 20f), 0f))
+        mapView.overlays.add(polyline)
+
+        val pathPoints = ArrayList<GeoPoint>()
+        pathPoints.add(myGeoPoint)
+        pathPoints.add(geoPoint)
+        polyline.setPoints(pathPoints)
+    }
 }
 
 /**
