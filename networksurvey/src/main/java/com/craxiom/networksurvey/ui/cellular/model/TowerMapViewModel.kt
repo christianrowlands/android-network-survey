@@ -1,5 +1,6 @@
 package com.craxiom.networksurvey.ui.cellular.model
 
+import android.graphics.DashPathEffect
 import android.location.Location
 import com.craxiom.networksurvey.model.CellularProtocol
 import com.craxiom.networksurvey.model.CellularRecordWrapper
@@ -12,8 +13,9 @@ import org.osmdroid.util.BoundingBox
 import org.osmdroid.util.GeoPoint
 import org.osmdroid.views.MapView
 import org.osmdroid.views.overlay.FolderOverlay
-import org.osmdroid.views.overlay.OverlayManager
+import org.osmdroid.views.overlay.Polyline
 import org.osmdroid.views.overlay.mylocation.GpsMyLocationProvider
+import timber.log.Timber
 
 /**
  * The view model for the Tower Map screen.
@@ -99,7 +101,6 @@ internal class TowerMapViewModel : ASignalChartViewModel() {
     ) {
         if (cellularBatchResults.isNullOrEmpty()) return
 
-        // TODO Update to support multiple SIMs
         val servingCellRecord =
             cellularBatchResults.firstOrNull {
                 if (it != null) {
@@ -112,6 +113,60 @@ internal class TowerMapViewModel : ASignalChartViewModel() {
 
         _servingCells.value[subscriptionId] = ServingCellInfo(servingCellRecord, subscriptionId)
 
+        recreateOverlaysFromTowerData(mapView)
+    }
+
+    fun recreateOverlaysFromTowerData(mapView: MapView) {
+        towerOverlayGroup.items?.clear()
+
+        val towers = towers.value
+        val servingCellGciIds: List<String>
+        val servingCellToSubscriptionMap =
+            servingCells.value.entries.associate { entry ->
+                CellularUtils.getTowerId(entry.value) to entry.value.subscriptionId
+            }
+        servingCellToSubscriptionMap.let { servingCellGciIds = it.keys.toList() }
+
+        Timber.i("Adding %s points to the map", towers.size)
+        towers.forEach { marker ->
+            val isServingCell = servingCellGciIds.contains(marker.cgiId)
+            if (isServingCell) {
+                // Get the value form servingCellToSubscriptionMap to be the key for the subIdToServingCellLocations so that we can set the value as marker.position
+                subIdToServingCellLocations[servingCellToSubscriptionMap[marker.cgiId]!!] =
+                    marker.position
+            }
+            marker.setServingCell(isServingCell)
+            towerOverlayGroup.add(marker)
+        }
+
+        drawServingCellLine()
+        towerOverlayGroup.clusterer(mapView)
+        towerOverlayGroup.invalidate()
         mapView.postInvalidate()
+    }
+
+    /**
+     * Draws a line between the current location and all the serving cell locations.
+     */
+    fun drawServingCellLine() {
+        servingCellLinesOverlayGroup.items?.clear()
+
+        val currentLocation = myLocation ?: return
+
+        if (subIdToServingCellLocations.isEmpty()) return
+
+        val myGeoPoint = GeoPoint(currentLocation.latitude, currentLocation.longitude)
+
+        subIdToServingCellLocations.forEach { (_, geoPoint) ->
+            val polyline = Polyline()
+            polyline.outlinePaint.strokeWidth = 4f
+            polyline.outlinePaint.setPathEffect(DashPathEffect(floatArrayOf(10f, 20f), 0f))
+            servingCellLinesOverlayGroup.add(polyline)
+
+            val pathPoints = ArrayList<GeoPoint>()
+            pathPoints.add(myGeoPoint)
+            pathPoints.add(geoPoint)
+            polyline.setPoints(pathPoints)
+        }
     }
 }
