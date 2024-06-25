@@ -116,7 +116,9 @@ public class ColorUtils
 
         // Divide the delta by the number of spaces between values (which is one less than the number of values)
         final double step = (double) (maxValue) / (NUMBER_VALUES - 1);
-        final int index = Math.min((int) ((signalStrength) / step), NUMBER_VALUES);
+        int index = Math.min((int) ((signalStrength) / step), NUMBER_VALUES);
+
+        if (index < 0) index = 0;
 
         return COLOR_BINS[index];
     }

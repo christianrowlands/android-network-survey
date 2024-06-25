@@ -981,6 +981,12 @@ public class NetworkDetailsFragment extends AServiceDataFragment implements ICel
         final CellularProtocol protocol = viewModel.getServingCellProtocol().getValue();
         if (protocol == null) return;
 
+        if (protocol != CellularProtocol.LTE && protocol != CellularProtocol.NR)
+        {
+            Timber.e("Somehow the protocol is incorrect for the third signal strength. protocol=%s", protocol);
+            return;
+        }
+
         binding.signalThreeGroup.setVisibility(signalValue == null ? View.GONE : View.VISIBLE);
         binding.signalThreeValue.setText(signalValue != null ? getString(R.string.db_value_label, String.valueOf(signalValue)) : "");
         setSignalStrengthBar(binding.progressBarSignalThree, signalValue, protocol.getMinSignalThree(), protocol.getMaxNormalizedSignalThree());
