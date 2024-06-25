@@ -1000,7 +1000,7 @@ public class NetworkDetailsFragment extends AServiceDataFragment implements ICel
      */
     private void setSignalStrengthBar(RoundedProgressBar signalStrengthBar, Integer signalValue, int minValue, int maxNormalizedValue)
     {
-        if (signalValue == null)
+        if (signalValue == null || maxNormalizedValue < 0)
         {
             signalStrengthBar.setProgressPercentage(0, false);
             return;
