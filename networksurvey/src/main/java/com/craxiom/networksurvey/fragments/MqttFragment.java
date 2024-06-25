@@ -237,7 +237,10 @@ public class MqttFragment extends AConnectionFragment<NetworkSurveyService.Surve
         // possible the user turns on the MDM override and then immediately stops the MQTT
         // connection before this message is actually sent. There are ways around this but this
         // race condition is acceptable.
-        ((NetworkSurveyService) service).sendSingleDeviceStatus();
+        if (service != null && service instanceof NetworkSurveyService)
+        {
+            ((NetworkSurveyService) service).sendSingleDeviceStatus();
+        }
 
         super.onMdmOverride(mdmOverride);
     }
