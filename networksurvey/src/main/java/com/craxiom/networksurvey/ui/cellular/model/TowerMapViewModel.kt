@@ -33,6 +33,8 @@ internal class TowerMapViewModel : ASignalChartViewModel() {
     lateinit var gpsMyLocationProvider: GpsMyLocationProvider
     private var hasMapLocationBeenSet = false
 
+    var myLocationOverlay: CustomLocationOverlay? = null
+
     lateinit var towerOverlayGroup: RadiusMarkerClusterer
     val servingCellLinesOverlayGroup: FolderOverlay = FolderOverlay()
 
@@ -96,20 +98,22 @@ internal class TowerMapViewModel : ASignalChartViewModel() {
     }
 
     fun onCellularBatchResults(
-        cellularBatchResults: MutableList<CellularRecordWrapper>?,
+        cellularBatchResults: MutableList<CellularRecordWrapper?>?,
         subscriptionId: Int
     ) {
         if (cellularBatchResults.isNullOrEmpty()) return
 
+        // Get the servingCellRecord from the cellularBatchResults and add it to the servingCells map
+        // If none are found then clear the serving cell map for that particular subscriptionId
         val servingCellRecord =
             cellularBatchResults.firstOrNull {
-                if (it != null) {
-                    CellularUtils.isServingCell(it.cellularRecord)
-                } else {
-                    false
-                }
+                it?.cellularRecord != null && CellularUtils.isServingCell(it.cellularRecord)
+
             }
-                ?: return
+        if (servingCellRecord == null) {
+            _servingCells.value.remove(subscriptionId)
+            return
+        }
 
         _servingCells.value[subscriptionId] = ServingCellInfo(servingCellRecord, subscriptionId)
 
@@ -118,6 +122,7 @@ internal class TowerMapViewModel : ASignalChartViewModel() {
 
     fun recreateOverlaysFromTowerData(mapView: MapView) {
         towerOverlayGroup.items?.clear()
+        subIdToServingCellLocations.clear()
 
         val towers = towers.value
         val servingCellGciIds: List<String>
@@ -131,7 +136,8 @@ internal class TowerMapViewModel : ASignalChartViewModel() {
         towers.forEach { marker ->
             val isServingCell = servingCellGciIds.contains(marker.cgiId)
             if (isServingCell) {
-                // Get the value form servingCellToSubscriptionMap to be the key for the subIdToServingCellLocations so that we can set the value as marker.position
+                // Get the value form servingCellToSubscriptionMap to be the key for the
+                // subIdToServingCellLocations so that we can set the value as marker.position
                 subIdToServingCellLocations[servingCellToSubscriptionMap[marker.cgiId]!!] =
                     marker.position
             }

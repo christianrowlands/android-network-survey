@@ -125,7 +125,7 @@ class TowerMapFragment : AServiceDataFragment(), MenuProvider, ICellularSurveyRe
     }
 
     override fun onCellularBatch(
-        cellularGroup: MutableList<CellularRecordWrapper>?,
+        cellularGroup: MutableList<CellularRecordWrapper?>?,
         subscriptionId: Int
     ) {
         viewModel?.onCellularBatchResults(cellularGroup, subscriptionId)

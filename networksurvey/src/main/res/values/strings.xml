@@ -125,7 +125,7 @@ but work independently, so you have full control over how you handle your data.<
     <string name="ss_sinr_label">SS-SINR</string>
 
     <!-- Dashboard Constants -->
-    <string name="card_title_logging_details">File Logging Control</string>
+    <string name="card_title_logging_details">Local File Logging Control</string>
     <string name="card_title_mqtt_details">MQTT Connection</string>
     <string name="cellular_title">Cellular</string>
     <string name="wifi_title">Wi-Fi</string>

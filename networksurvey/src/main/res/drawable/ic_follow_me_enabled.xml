@@ -7,15 +7,12 @@
     android:autoMirrored="true"
     android:viewportWidth="36.0"
     android:viewportHeight="36.0">
-    <path
-        android:fillColor="#20000000"
-        android:pathData="M18,18m-18,0a18,18 0,1 1,36 0a18,18 0,1 1,-36 0" />
 
     <group
-        android:scaleX="0.9"
-        android:scaleY="0.9"
-        android:translateX="7.2"
-        android:translateY="7.2">
+        android:scaleX="1.5"
+        android:scaleY="1.5"
+        android:translateX="-.3"
+        android:translateY=".3">
 
         <path
             android:fillColor="@android:color/white"

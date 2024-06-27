@@ -5,7 +5,10 @@ import androidx.appcompat.content.res.AppCompatResources
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
@@ -39,6 +42,7 @@ import com.craxiom.networksurvey.BuildConfig
 import com.craxiom.networksurvey.R
 import com.craxiom.networksurvey.model.CellularProtocol
 import com.craxiom.networksurvey.ui.cellular.model.CustomLocationOverlay
+import com.craxiom.networksurvey.ui.cellular.model.FollowMyLocationChangeListener
 import com.craxiom.networksurvey.ui.cellular.model.TowerMapViewModel
 import com.craxiom.networksurvey.ui.cellular.model.TowerMarker
 import com.google.gson.annotations.SerializedName
@@ -58,6 +62,7 @@ import org.osmdroid.views.CustomZoomButtonsController
 import org.osmdroid.views.MapView
 import org.osmdroid.views.overlay.mylocation.GpsMyLocationProvider
 import org.osmdroid.views.overlay.mylocation.IMyLocationConsumer
+import org.osmdroid.views.overlay.mylocation.MyLocationNewOverlay
 import retrofit2.Response
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
@@ -99,13 +104,19 @@ internal fun TowerMapScreen(viewModel: TowerMapViewModel = viewModel()) {
         CellularProtocol.NR.name
     )
     var expanded by remember { mutableStateOf(false) }
+    var isFollowing by remember { mutableStateOf(false) }
 
     Surface(
         modifier = Modifier.fillMaxSize(),
         color = MaterialTheme.colorScheme.background
     ) {
         Box(modifier = Modifier.fillMaxSize()) {
-            OsmdroidMapView(viewModel)
+            OsmdroidMapView(viewModel, object :
+                FollowMyLocationChangeListener {
+                override fun onFollowMyLocationChanged(enabled: Boolean) {
+                    isFollowing = enabled
+                }
+            })
 
             Box(
                 modifier = Modifier
@@ -147,34 +158,49 @@ internal fun TowerMapScreen(viewModel: TowerMapViewModel = viewModel()) {
                     .align(Alignment.BottomEnd)
                     .padding(16.dp)
             ) {
-                Surface(
-                    modifier = Modifier
-                        .size(40.dp)
-                        .clip(CircleShape)
-                        .background(MaterialTheme.colorScheme.primary),
-                    color = MaterialTheme.colorScheme.primary
-                ) {
-                    Box(
-                        contentAlignment = Alignment.Center,
+                Column {
+                    Surface(
                         modifier = Modifier
-                            .fillMaxSize()
-                            .padding(8.dp)
+                            .size(40.dp)
+                            .clip(CircleShape)
+                            .background(MaterialTheme.colorScheme.primary),
+                        color = MaterialTheme.colorScheme.primary
                     ) {
-                        Image(
-                            painter = painterResource(id = R.drawable.ic_my_location),
-                            contentDescription = "My Location",
-                            modifier = Modifier.size(24.dp)
-                        )
-                        Button(
-                            onClick = { goToMyLocation(viewModel) },
+                        Box(
+                            contentAlignment = Alignment.Center,
                             modifier = Modifier
-                                .size(48.dp)
-                                .clip(CircleShape),
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = Color.Transparent
+                                .fillMaxSize()
+                                .padding(8.dp)
+                        ) {
+                            Image(
+                                painter = painterResource(id = R.drawable.ic_my_location),
+                                contentDescription = "My Location",
+                                modifier = Modifier.size(24.dp)
                             )
-                        ) {}
+                            Button(
+                                onClick = { goToMyLocation(viewModel) },
+                                modifier = Modifier
+                                    .size(48.dp)
+                                    .clip(CircleShape),
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = Color.Transparent
+                                )
+                            ) {}
+                        }
                     }
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    CircleButtonWithLine(
+                        isFollowing = isFollowing,
+                        toggleFollowMe = {
+                            if (viewModel.myLocationOverlay == null) return@CircleButtonWithLine
+
+                            val currentIsFollowing =
+                                viewModel.myLocationOverlay!!.isFollowLocationEnabled
+                            isFollowing = !currentIsFollowing
+                            toggleFollowMe(viewModel, isFollowing)
+                        })
                 }
             }
         }
@@ -228,7 +254,10 @@ internal fun TowerMapScreen(viewModel: TowerMapViewModel = viewModel()) {
 }
 
 @Composable
-internal fun OsmdroidMapView(viewModel: TowerMapViewModel) {
+internal fun OsmdroidMapView(
+    viewModel: TowerMapViewModel,
+    followMyLocationChangeListener: FollowMyLocationChangeListener
+) {
     AndroidView(
         modifier = Modifier.fillMaxSize(),
         factory = { context ->
@@ -250,7 +279,13 @@ internal fun OsmdroidMapView(viewModel: TowerMapViewModel) {
             val mapController = mapView.controller
             mapController.setZoom(INITIAL_ZOOM)
 
-            addDefaultOverlays(context, mapView, viewModel.gpsMyLocationProvider, viewModel)
+            addDefaultOverlays(
+                context,
+                mapView,
+                viewModel.gpsMyLocationProvider,
+                viewModel,
+                followMyLocationChangeListener
+            )
             mapView.overlays.add(viewModel.towerOverlayGroup)
             mapView.overlays.add(viewModel.servingCellLinesOverlayGroup)
 
@@ -290,7 +325,19 @@ private fun goToMyLocation(viewModel: TowerMapViewModel) {
             lastKnownLocation.longitude
         )
     )
-    viewModel.mapView.controller.setZoom(INITIAL_ZOOM)
+}
+
+/**
+ * Toggles the option to continuously move the map view to the user's current location.
+ */
+private fun toggleFollowMe(viewModel: TowerMapViewModel, newIsFollowing: Boolean) {
+    if (viewModel.myLocationOverlay == null) return
+
+    if (newIsFollowing) {
+        viewModel.myLocationOverlay?.enableFollowLocation()
+    } else {
+        viewModel.myLocationOverlay?.disableFollowLocation()
+    }
 }
 
 /**
@@ -300,30 +347,38 @@ private fun addDefaultOverlays(
     context: Context,
     mapView: MapView,
     gpsMyLocationProvider: GpsMyLocationProvider,
-    viewModel: TowerMapViewModel
+    viewModel: TowerMapViewModel,
+    followMyLocationChangeListener: FollowMyLocationChangeListener
 ) {
     val locationConsumer = IMyLocationConsumer { location, _ ->
         viewModel.myLocation = location
         viewModel.drawServingCellLine()
     }
 
-    val mLocationOverlay = CustomLocationOverlay(gpsMyLocationProvider, mapView, locationConsumer)
+    viewModel.myLocationOverlay =
+        CustomLocationOverlay(
+            gpsMyLocationProvider,
+            mapView,
+            locationConsumer,
+            followMyLocationChangeListener
+        )
+    val locationOverlay: MyLocationNewOverlay = viewModel.myLocationOverlay!!
 
     val icon = AppCompatResources.getDrawable(context, R.drawable.ic_location_pin)?.toBitmap()
     if (icon != null) {
-        mLocationOverlay.setPersonIcon(icon)
-        mLocationOverlay.setPersonAnchor(0.5f, .8725f)
+        locationOverlay.setPersonIcon(icon)
+        locationOverlay.setPersonAnchor(0.5f, .8725f)
     }
 
     val directionIcon =
         AppCompatResources.getDrawable(context, R.drawable.ic_navigation)?.toBitmap()
     if (icon != null) {
-        mLocationOverlay.setDirectionIcon(directionIcon)
-        mLocationOverlay.setDirectionAnchor(0.5f, 0.5f)
+        locationOverlay.setDirectionIcon(directionIcon)
+        locationOverlay.setDirectionAnchor(0.5f, 0.5f)
     }
 
-    mLocationOverlay.enableMyLocation()
-    mapView.overlays.add(mLocationOverlay)
+    locationOverlay.enableMyLocation()
+    mapView.overlays.add(locationOverlay)
 }
 
 /**
@@ -461,6 +516,43 @@ private fun calculateArea(bounds: BoundingBox): Double {
 
     return width * height // area in square meters
 }
+
+@Composable
+fun CircleButtonWithLine(
+    isFollowing: Boolean,
+    toggleFollowMe: () -> Unit
+) {
+    Surface(
+        modifier = Modifier
+            .size(40.dp)
+            .clip(CircleShape)
+            .background(MaterialTheme.colorScheme.primary),
+        color = MaterialTheme.colorScheme.primary
+    ) {
+        Box(
+            contentAlignment = Alignment.Center,
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(8.dp)
+        ) {
+            Image(
+                painter = painterResource(id = if (isFollowing) R.drawable.ic_follow_me_enabled else R.drawable.ic_follow_me_disabled),
+                contentDescription = "Follow Me",
+                modifier = Modifier.size(24.dp)
+            )
+            Button(
+                onClick = { toggleFollowMe() },
+                modifier = Modifier
+                    .size(48.dp)
+                    .clip(CircleShape),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color.Transparent
+                )
+            ) {}
+        }
+    }
+}
+
 
 // The API definition for the NS Tower Service
 interface Api {
