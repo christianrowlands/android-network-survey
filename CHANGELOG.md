@@ -2,10 +2,10 @@
 
 ## [1.26](https://github.com/christianrowlands/android-network-survey/releases/tag/v1.26) - 2024-06-28
 
-* Fixes a bug with gRPC streaming on Android 14.
+* Fixes a bug with gRPC streaming on Android 14. (Thanks [PeregrineFalcon](https://github.com/PeregrineFalcon))
 * Fixes a couple edge case app crashes.
 * Display the serving cell on the Tower Map.
-* Draws a line to teh serving cell on the Tower Map.
+* Draws a line to the serving cell on the Tower Map.
 * Adds a follow me button to the Tower Map.
 * Keeps the same zoom level when going to your location on the Tower Map.
 
