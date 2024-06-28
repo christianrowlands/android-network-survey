@@ -809,7 +809,7 @@ public class GrpcConnectionService extends Service implements IDeviceStatusListe
 
         if (Build.VERSION.SDK_INT > Build.VERSION_CODES.TIRAMISU) {
             startForeground(NetworkSurveyConstants.GRPC_CONNECTION_NOTIFICATION_ID, notification,
-                    ServiceInfo.FOREGROUND_SERVICE_TYPE_REMOTE_MESSAGING);
+                    ServiceInfo.FOREGROUND_SERVICE_TYPE_LOCATION);
         } else {
             startForeground(NetworkSurveyConstants.GRPC_CONNECTION_NOTIFICATION_ID, notification);
         }
