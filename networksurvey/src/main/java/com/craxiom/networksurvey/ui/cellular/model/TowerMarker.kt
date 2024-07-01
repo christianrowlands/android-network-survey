@@ -30,9 +30,7 @@ class TowerMarker(private val mapView: MapView, tower: Tower) : Marker(mapView) 
         cgiId = CellularUtils.getTowerId(tower)
         setPanToView(false)
 
-        // TODO towerMarker.infoWindow = InfoWindow(view, mapView)
-
-        // TODO Set an onClick listener to display the tower details
+        infoWindow = TowerMarkerInfoWindow(R.layout.bonuspack_bubble, mapView, this, tower)
     }
 
     override fun equals(other: Any?): Boolean {
