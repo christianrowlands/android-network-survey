@@ -117,10 +117,17 @@ internal class TowerMapViewModel : ASignalChartViewModel() {
 
         _servingCells.value[subscriptionId] = ServingCellInfo(servingCellRecord, subscriptionId)
 
-        recreateOverlaysFromTowerData(mapView)
+        recreateOverlaysFromTowerData(mapView, false)
     }
 
-    fun recreateOverlaysFromTowerData(mapView: MapView) {
+    /**
+     * Recreates the overlays on the map based on the current tower data.
+     * @param mapView The map view to add the overlays to.
+     * @param invalidate True to invalidate the map view after adding the overlays. Invalidating the
+     * map will trigger a redraw of the map, which is important if the towers have changed, but a
+     * side effect is that it closes any open info windows (shown when a user clicks on a tower).
+     */
+    fun recreateOverlaysFromTowerData(mapView: MapView, invalidate: Boolean = true) {
         towerOverlayGroup.items?.clear()
         subIdToServingCellLocations.clear()
 
@@ -147,8 +154,11 @@ internal class TowerMapViewModel : ASignalChartViewModel() {
 
         drawServingCellLine()
         towerOverlayGroup.clusterer(mapView)
-        towerOverlayGroup.invalidate()
-        mapView.postInvalidate()
+
+        if (invalidate) {
+            towerOverlayGroup.invalidate()
+            mapView.postInvalidate()
+        }
     }
 
     /**
