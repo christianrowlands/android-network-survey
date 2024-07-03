@@ -171,6 +171,7 @@ internal class TowerMapViewModel : ASignalChartViewModel() {
     /**
      * Draws a line between the current location and all the serving cell locations.
      */
+    @Synchronized
     fun drawServingCellLine() {
         servingCellLinesOverlayGroup.items?.clear()
 
