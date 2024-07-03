@@ -127,37 +127,44 @@ internal class TowerMapViewModel : ASignalChartViewModel() {
      * map will trigger a redraw of the map, which is important if the towers have changed, but a
      * side effect is that it closes any open info windows (shown when a user clicks on a tower).
      */
+    @Synchronized
     fun recreateOverlaysFromTowerData(mapView: MapView, invalidate: Boolean = true) {
-        towerOverlayGroup.items?.clear()
-        subIdToServingCellLocations.clear()
+        try {
+            towerOverlayGroup.items?.clear()
+            subIdToServingCellLocations.clear()
 
-        val towers = towers.value
-        val servingCellGciIds: List<String>
-        val servingCellToSubscriptionMap =
-            servingCells.value.entries.associate { entry ->
-                CellularUtils.getTowerId(entry.value) to entry.value.subscriptionId
+            val towers = towers.value
+            val servingCellGciIds: List<String>
+            val servingCellToSubscriptionMap =
+                servingCells.value.entries.associate { entry ->
+                    CellularUtils.getTowerId(entry.value) to entry.value.subscriptionId
+                }
+            servingCellToSubscriptionMap.let { servingCellGciIds = it.keys.toList() }
+
+            Timber.i("Adding %s points to the map", towers.size)
+            towers.forEach { marker ->
+                val isServingCell = servingCellGciIds.contains(marker.cgiId)
+                if (isServingCell) {
+                    // Get the value form servingCellToSubscriptionMap to be the key for the
+                    // subIdToServingCellLocations so that we can set the value as marker.position
+                    subIdToServingCellLocations[servingCellToSubscriptionMap[marker.cgiId]!!] =
+                        marker.position
+                }
+                marker.setServingCell(isServingCell)
+                towerOverlayGroup.add(marker)
             }
-        servingCellToSubscriptionMap.let { servingCellGciIds = it.keys.toList() }
 
-        Timber.i("Adding %s points to the map", towers.size)
-        towers.forEach { marker ->
-            val isServingCell = servingCellGciIds.contains(marker.cgiId)
-            if (isServingCell) {
-                // Get the value form servingCellToSubscriptionMap to be the key for the
-                // subIdToServingCellLocations so that we can set the value as marker.position
-                subIdToServingCellLocations[servingCellToSubscriptionMap[marker.cgiId]!!] =
-                    marker.position
+            drawServingCellLine()
+
+            // .clusterer can cause a NPE if the markers are changed while the map is being drawn
+            towerOverlayGroup.clusterer(mapView)
+
+            if (invalidate) {
+                towerOverlayGroup.invalidate()
             }
-            marker.setServingCell(isServingCell)
-            towerOverlayGroup.add(marker)
-        }
-
-        drawServingCellLine()
-        towerOverlayGroup.clusterer(mapView)
-
-        if (invalidate) {
-            towerOverlayGroup.invalidate()
             mapView.postInvalidate()
+        } catch (e: Exception) {
+            Timber.e(e, "Something went wrong while recreating the overlays on the map")
         }
     }
 
