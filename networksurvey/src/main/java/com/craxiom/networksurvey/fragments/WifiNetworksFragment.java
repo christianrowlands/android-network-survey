@@ -262,9 +262,17 @@ public class WifiNetworksFragment extends AServiceDataFragment implements IWifiS
         FragmentActivity activity = getActivity();
         if (activity == null) return;
 
-        Navigation.findNavController(activity, getId())
-                .navigate(WifiNetworksFragmentDirections.actionWifiListFragmentToWifiDetailsFragment(
-                        wifiNetwork));
+        try
+        {
+            Navigation.findNavController(activity, getId())
+                    .navigate(WifiNetworksFragmentDirections.actionWifiListFragmentToWifiDetailsFragment(
+                            wifiNetwork));
+        } catch (Exception e)
+        {
+            // An IllegalArgumentException can occur when the user switches to a new fragment (e.g. cellular details)
+            // before the navigation is complete. This is an edge case that we can ignore.
+            Timber.e(e, "Could not navigate to the Wi-Fi Details Fragment");
+        }
     }
 
     /**
