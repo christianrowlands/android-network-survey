@@ -48,6 +48,14 @@
             app:summaryOn="@string/auto_start_gnss_logging_summary_on"
             app:title="@string/auto_start_gnss_logging_title" />
 
+        <SwitchPreferenceCompat
+            app:defaultValue="false"
+            app:icon="@drawable/ic_cdr"
+            app:key="auto_start_cdr_logging"
+            app:summaryOff="@string/auto_start_cdr_logging_summary_off"
+            app:summaryOn="@string/auto_start_cdr_logging_summary_on"
+            app:title="@string/auto_start_cdr_logging_title" />
+
         <DropDownPreference
             app:defaultValue="5"
             app:entries="@array/log_rollover_size_labels"
@@ -118,7 +126,6 @@
 
         <SwitchPreferenceCompat
             app:defaultValue="false"
-            app:icon="@drawable/ic_power"
             app:key="mqtt_start_on_boot"
             app:summaryOff="@string/auto_start_mqtt_summary_off"
             app:summaryOn="@string/auto_start_mqtt_summary_on"
@@ -127,7 +134,7 @@
     </PreferenceCategory>
 
     <PreferenceCategory
-        app:icon="@drawable/ic_gnss"
+        app:icon="@drawable/ic_my_location"
         app:key="location_config"
         app:title="@string/location_config_title">
 
@@ -138,7 +145,6 @@
             app:dialogMessage="@string/location_provider_description"
             app:entries="@array/location_provider_option_labels"
             app:entryValues="@array/location_provider_option_index"
-            app:icon="@drawable/ic_my_location"
             app:key="location_provider"
             app:useSimpleSummaryProvider="true"
             app:title="@string/location_provider_title" />

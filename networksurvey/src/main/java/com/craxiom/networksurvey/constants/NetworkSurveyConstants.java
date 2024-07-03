@@ -98,6 +98,7 @@ public class NetworkSurveyConstants
     public static final String PROPERTY_AUTO_START_WIFI_LOGGING = "auto_start_wifi_logging";
     public static final String PROPERTY_AUTO_START_BLUETOOTH_LOGGING = "auto_start_bluetooth_logging";
     public static final String PROPERTY_AUTO_START_GNSS_LOGGING = "auto_start_gnss_logging";
+    public static final String PROPERTY_AUTO_START_CDR_LOGGING = "auto_start_cdr_logging";
     public static final String PROPERTY_CELLULAR_SCAN_INTERVAL_SECONDS = "cellular_scan_interval_seconds";
     public static final String PROPERTY_WIFI_SCAN_INTERVAL_SECONDS = "wifi_scan_interval_seconds";
     public static final String PROPERTY_BLUETOOTH_SCAN_INTERVAL_SECONDS = "bluetooth_scan_interval_seconds";

@@ -379,6 +379,7 @@ but work independently, so you have full control over how you handle your data.<
     <string name="auto_start_wifi_logging_description">True to start Wi-Fi logging automatically, false otherwise</string>
     <string name="auto_start_bluetooth_logging_description">True to start Bluetooth logging automatically, false otherwise</string>
     <string name="auto_start_gnss_logging_description">True to start GNSS logging automatically, false otherwise</string>
+    <string name="auto_start_cdr_logging_description">True to start CDR logging automatically, false otherwise</string>
     <string name="ignore_wifi_scan_throttling_warning_title">Ignore Wi-Fi Throttling Warning</string>
     <string name="ignore_wifi_scan_throttling_warning_description">True to ignore showing the throttling warning snackbar message on the Wi-Fi UI, false to allow the snackbar message to work as normal. The snackbar message tells the user if Wi-Fi throttling is enabled, and gives them a link to turn off throttling in developer options. If developer options are disabled via MDM, then set this to true so the user is not asked to open developer options.</string>
 
@@ -410,6 +411,10 @@ but work independently, so you have full control over how you handle your data.<
     <string name="auto_start_gnss_logging_title">Auto Start GNSS Logging</string>
     <string name="auto_start_gnss_logging_summary_on">GNSS logging will be started upon app opening or when the phone is turned on</string>
     <string name="auto_start_gnss_logging_summary_off">GNSS logging will only start when manually enabled</string>
+
+    <string name="auto_start_cdr_logging_title">Auto Start CDR Logging</string>
+    <string name="auto_start_cdr_logging_summary_on">CDR logging will be started upon app opening or when the phone is turned on</string>
+    <string name="auto_start_cdr_logging_summary_off">CDR logging will only start when manually enabled</string>
 
     <string name="scan_interval_config_title">Scanning Rate</string>
 

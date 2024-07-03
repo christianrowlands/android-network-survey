@@ -248,6 +248,12 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
             {
                 gnssController.toggleLogging(true);
             }
+
+            final boolean autoStartCdrLogging = PreferenceUtils.getAutoStartPreference(NetworkSurveyConstants.PROPERTY_AUTO_START_CDR_LOGGING, false, applicationContext);
+            if (autoStartCdrLogging && !isCdrLoggingEnabled())
+            {
+                toggleCdrLogging(true);
+            }
         }
 
         return START_REDELIVER_INTENT;
@@ -1424,7 +1430,8 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
     }
 
     /**
-     * Starts the device status report if any of the logging types are enabled, otherwise it does nothing.
+     * Starts the device status report if any of the logging types are enabled (other than CDR logging), otherwise it
+     * does nothing.
      */
     private void startDeviceStatusReportIfLoggingEnabled()
     {
@@ -1645,7 +1652,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
     {
         Application.createNotificationChannel(this);
 
-        final boolean logging = cellularController.isLoggingEnabled() || wifiController.isLoggingEnabled() || bluetoothController.isLoggingEnabled() || gnssController.isLoggingEnabled();
+        final boolean logging = cellularController.isLoggingEnabled() || wifiController.isLoggingEnabled() || bluetoothController.isLoggingEnabled() || gnssController.isLoggingEnabled() || cdrLoggingEnabled.get();
         final com.craxiom.mqttlibrary.connection.ConnectionState connectionState = mqttConnection.getConnectionState();
         final boolean mqttConnectionActive = connectionState == ConnectionState.CONNECTED || connectionState == ConnectionState.CONNECTING;
         final CharSequence notificationTitle = getText(R.string.network_survey_notification_title);

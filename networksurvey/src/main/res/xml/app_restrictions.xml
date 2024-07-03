@@ -167,6 +167,13 @@
         android:title="@string/auto_start_gnss_logging_title" />
 
     <restriction
+        android:defaultValue="false"
+        android:description="@string/auto_start_cdr_logging_description"
+        android:key="auto_start_cdr_logging"
+        android:restrictionType="bool"
+        android:title="@string/auto_start_cdr_logging_title" />
+
+    <restriction
         android:defaultValue="true"
         android:description="@string/ignore_wifi_scan_throttling_warning_description"
         android:key="ignore_wifi_scan_throttling_warning"

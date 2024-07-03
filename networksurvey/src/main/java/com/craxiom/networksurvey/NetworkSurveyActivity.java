@@ -105,6 +105,7 @@ public class NetworkSurveyActivity extends AppCompatActivity
     private boolean turnOnWifiLoggingOnNextServiceConnection = false;
     private boolean turnOnBluetoothLoggingOnNextServiceConnection = false;
     private boolean turnOnGnssLoggingOnNextServiceConnection = false;
+    private boolean turnOnCdrLoggingOnNextServiceConnection = false;
     private AppBarConfiguration appBarConfiguration;
     private IGnssFailureListener gnssFailureListener;
     private boolean hasRequestedPermissions = false;
@@ -126,6 +127,7 @@ public class NetworkSurveyActivity extends AppCompatActivity
         turnOnWifiLoggingOnNextServiceConnection = PreferenceUtils.getAutoStartPreference(NetworkSurveyConstants.PROPERTY_AUTO_START_WIFI_LOGGING, false, applicationContext);
         turnOnBluetoothLoggingOnNextServiceConnection = PreferenceUtils.getAutoStartPreference(NetworkSurveyConstants.PROPERTY_AUTO_START_BLUETOOTH_LOGGING, false, applicationContext);
         turnOnGnssLoggingOnNextServiceConnection = PreferenceUtils.getAutoStartPreference(NetworkSurveyConstants.PROPERTY_AUTO_START_GNSS_LOGGING, false, applicationContext);
+        turnOnCdrLoggingOnNextServiceConnection = PreferenceUtils.getAutoStartPreference(NetworkSurveyConstants.PROPERTY_AUTO_START_CDR_LOGGING, false, applicationContext);
 
         setupNavigation();
 
@@ -689,6 +691,23 @@ public class NetworkSurveyActivity extends AppCompatActivity
     }
 
     /**
+     * Starts or stops writing the CDR log file based on the specified parameter.
+     *
+     * @param enable True if logging should be enabled, false if it should be turned off.
+     */
+    private void toggleCdrLogging(boolean enable)
+    {
+        new ToggleLoggingTask(() -> {
+            if (!checkLocationProvider(false)) return null;
+            if (networkSurveyService != null) return networkSurveyService.toggleCdrLogging(enable);
+            return null;
+        }, enabled -> {
+            if (enabled == null) return getString(R.string.cdr_logging_toggle_failed);
+            return getString(enabled ? R.string.cdr_logging_start_toast : R.string.cdr_logging_stop_toast);
+        }, getApplicationContext()).executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
+    }
+
+    /**
      * A {@link ServiceConnection} implementation for binding to the {@link NetworkSurveyService}.
      */
     private class SurveyServiceConnection implements ServiceConnection
@@ -727,10 +746,17 @@ public class NetworkSurveyActivity extends AppCompatActivity
                 toggleGnssLogging(true);
             }
 
+            final boolean cdrLoggingEnabled = networkSurveyService.isCdrLoggingEnabled();
+            if (turnOnCdrLoggingOnNextServiceConnection && !cdrLoggingEnabled)
+            {
+                toggleCdrLogging(true);
+            }
+
             turnOnCellularLoggingOnNextServiceConnection = false;
             turnOnWifiLoggingOnNextServiceConnection = false;
             turnOnBluetoothLoggingOnNextServiceConnection = false;
             turnOnGnssLoggingOnNextServiceConnection = false;
+            turnOnCdrLoggingOnNextServiceConnection = false;
         }
 
         @Override
