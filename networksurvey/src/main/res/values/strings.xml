@@ -628,11 +628,15 @@ but work independently, so you have full control over how you handle your data.<
     <string name="notification_historical">Network Survey is reviewing old GNSS data…</string>
 
     <string name="scan_button_title">Auto Configure With QR Code</string>
+    <string name="share_mqtt_qr_button_title">Share via QR Code</string>
     <string name="code_scanner">QR Code Scanner</string>
+    <string name="qr_code_share">MQTT Settings QR Code Share</string>
     <string name="open_spectrum">Wi-Fi Spectrum</string>
     <string name="channel">Channel</string>
     <string name="ssid">SSID\n</string>
 
     <string name="open_tower_map">Tower Map</string>
     <string name="open_tower_map_info">Tower Map Info</string>
+    <string name="mqtt_connection_settings">MQTT Connection Settings</string>
+    <string name="qr_code">QR Code</string>
 </resources>

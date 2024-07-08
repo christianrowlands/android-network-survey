@@ -128,6 +128,11 @@ public class MqttFragment extends AConnectionFragment<NetworkSurveyService.Surve
                 cameraPermissionRequestLauncher.launch(Manifest.permission.CAMERA);
             }
         });
+
+        Button codeShareButton = inflatedStub.findViewById(R.id.code_share_button);
+        codeShareButton.setOnClickListener(v -> Navigation.findNavController(requireActivity(), getId())
+                .navigate(MqttFragmentDirections.actionMqttConnectionFragmentToShareFragment()
+                        .setMqttConnectionSettings(getCurrentMqttConnectionSettings())));
     }
 
     @Override

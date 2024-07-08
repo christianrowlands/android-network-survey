@@ -1710,6 +1710,11 @@ public class SurveyRecordProcessor
             }
         }
 
+        /*BluetoothClass bluetoothClass = device.getBluetoothClass();
+        int majorDeviceClass = bluetoothClass.getMajorDeviceClass();
+        int deviceClass = bluetoothClass.getDeviceClass();
+        Timber.i("Bluetooth Major Device Class: %s, Device Class: %s", Integer.toHexString(majorDeviceClass), Integer.toHexString(deviceClass));*/
+
         final BluetoothRecord.Builder recordBuilder = BluetoothRecord.newBuilder();
         recordBuilder.setMessageType(BluetoothMessageConstants.BLUETOOTH_RECORD_MESSAGE_TYPE);
         recordBuilder.setVersion(BuildConfig.MESSAGING_API_VERSION);
@@ -1915,8 +1920,8 @@ public class SurveyRecordProcessor
     {
         Standard wifiStandard = switch (androidWifiStandard)
         {
-            case ScanResult.WIFI_STANDARD_UNKNOWN, ScanResult.WIFI_STANDARD_LEGACY, ScanResult.WIFI_STANDARD_11AD ->
-                    Standard.UNKNOWN;
+            case ScanResult.WIFI_STANDARD_UNKNOWN, ScanResult.WIFI_STANDARD_LEGACY,
+                 ScanResult.WIFI_STANDARD_11AD -> Standard.UNKNOWN;
             case ScanResult.WIFI_STANDARD_11N -> Standard.IEEE80211N;
             case ScanResult.WIFI_STANDARD_11AC -> Standard.IEEE80211AC;
             case ScanResult.WIFI_STANDARD_11AX -> Standard.IEEE80211AX;

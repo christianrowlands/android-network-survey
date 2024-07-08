@@ -40,6 +40,18 @@
                 android:defaultValue="@null" />
 
         </action>
+
+        <action
+            android:id="@+id/action_mqtt_connection_fragment_to_share_fragment"
+            app:destination="@id/qr_code_share_fragment">
+
+            <argument
+                android:name="mqttConnectionSettings"
+                app:argType="com.craxiom.networksurvey.fragments.model.MqttConnectionSettings"
+                app:nullable="true"
+                android:defaultValue="@null" />
+
+        </action>
     </fragment>
 
     <fragment
@@ -65,6 +77,33 @@
 
         <action
             android:id="@+id/action_scanner_fragment_to_mqtt_connection_fragment"
+            app:destination="@id/mqtt_connection_fragment"
+            app:launchSingleTop="true"
+            app:popUpTo="@+id/mqtt_connection_fragment"
+            app:popUpToInclusive="true">
+
+            <argument
+                android:name="mqttConnectionSettings"
+                app:argType="com.craxiom.networksurvey.fragments.model.MqttConnectionSettings"
+                app:nullable="true"
+                android:defaultValue="@null" />
+
+        </action>
+    </fragment>
+
+    <fragment
+        android:id="@+id/qr_code_share_fragment"
+        android:name="com.craxiom.networksurvey.fragments.QrCodeShareFragment"
+        android:label="@string/qr_code_share">
+
+        <argument
+            android:name="mqttConnectionSettings"
+            app:argType="com.craxiom.networksurvey.fragments.model.MqttConnectionSettings"
+            app:nullable="true"
+            android:defaultValue="@null" />
+
+        <action
+            android:id="@+id/action_share_fragment_to_mqtt_connection_fragment"
             app:destination="@id/mqtt_connection_fragment"
             app:launchSingleTop="true"
             app:popUpTo="@+id/mqtt_connection_fragment"
