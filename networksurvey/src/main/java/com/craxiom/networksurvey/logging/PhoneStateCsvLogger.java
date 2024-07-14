@@ -89,7 +89,7 @@ public class PhoneStateCsvLogger extends CsvRecordLogger implements IDeviceStatu
         PhoneStateData data = record.getData();
         String networkRegistrationJson = new Gson().toJson(data.getNetworkRegistrationInfoList());
 
-        String jsonMessage = this.jsonFormatter.print(data.getNetworkRegistrationInfoList());
+        //String jsonMessage = this.jsonFormatter.print(data.getNetworkRegistrationInfoList());
 
         String simState = "";
         try
