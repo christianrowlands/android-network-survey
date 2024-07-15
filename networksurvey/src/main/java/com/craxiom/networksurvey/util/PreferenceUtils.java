@@ -751,4 +751,14 @@ public class PreferenceUtils
     {
         PreferenceManager.getDefaultSharedPreferences(context).edit().putBoolean(PROPERTY_KEY_ACCEPT_MAP_PRIVACY, hasAccepted).apply();
     }
+
+    public static boolean hasDeniedBackgroundLocationPermission(Context context)
+    {
+        return PreferenceManager.getDefaultSharedPreferences(context).getBoolean(NetworkSurveyConstants.PROPERTY_KEY_DENIED_BACKGROUND_LOCATION_PERMISSION, false);
+    }
+
+    public static void denyBackgroundLocationPermission(Context context)
+    {
+        PreferenceManager.getDefaultSharedPreferences(context).edit().putBoolean(NetworkSurveyConstants.PROPERTY_KEY_DENIED_BACKGROUND_LOCATION_PERMISSION, true).apply();
+    }
 }

@@ -3,6 +3,7 @@ package com.craxiom.networksurvey;
 import android.Manifest;
 import android.content.ComponentName;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.ServiceConnection;
 import android.content.pm.PackageInfo;
@@ -325,6 +326,10 @@ public class NetworkSurveyActivity extends AppCompatActivity
      */
     private void showBackgroundLocationRationaleAndRequest()
     {
+        boolean deniedBackgroundAlready = PreferenceUtils.hasDeniedBackgroundLocationPermission(this);
+
+        if (deniedBackgroundAlready) return;
+
         if (hasLocationPermission() && ActivityCompat.shouldShowRequestPermissionRationale(this, Manifest.permission.ACCESS_BACKGROUND_LOCATION))
         {
             Timber.d("Showing the background location permission rationale dialog");
@@ -334,6 +339,12 @@ public class NetworkSurveyActivity extends AppCompatActivity
             alertBuilder.setTitle(getString(R.string.background_location_permission_rationale_title));
             alertBuilder.setMessage(getText(R.string.background_location_permission_rationale));
             alertBuilder.setPositiveButton(R.string.open_settings, (dialog, which) -> requestBackgroundLocationPermission());
+            alertBuilder.setNegativeButton(R.string.deny_permission, (dialog, which) -> {
+                if (which == DialogInterface.BUTTON_NEGATIVE)
+                {
+                    PreferenceUtils.denyBackgroundLocationPermission(this);
+                }
+            });
 
             AlertDialog permissionsExplanationDialog = alertBuilder.create();
             permissionsExplanationDialog.show();

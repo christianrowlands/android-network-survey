@@ -70,6 +70,7 @@ but work independently, so you have full control over how you handle your data.<
         \n\nWithout the background location permission, this app will not be able to start surveying Cellular, Wi-Fi, or GNSS at boot. If you don\'t want to start surveying when the phone boots then you don\'t
         need to enable this permission.\n\nEnable the background location permission in the Android settings for this app by selecting <b>Allow all the time</b> on the next page.</string>
     <string name="open_settings">Open Settings</string>
+    <string name="deny_permission">Deny Permission</string>
 
     <string name="app_version">v%1$s</string>
 
