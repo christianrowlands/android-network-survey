@@ -15,6 +15,7 @@ import static com.craxiom.networksurvey.constants.MessageConstants.TIME_COLUMN;
 import android.os.Looper;
 
 import com.craxiom.messaging.DeviceStatus;
+import com.craxiom.messaging.NetworkRegistrationInfo;
 import com.craxiom.messaging.PhoneState;
 import com.craxiom.messaging.PhoneStateData;
 import com.craxiom.messaging.phonestate.SimState;
@@ -26,11 +27,14 @@ import com.craxiom.networksurvey.util.MathUtils;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Strings;
-import com.google.gson.Gson;
+import com.google.protobuf.InvalidProtocolBufferException;
+import com.google.protobuf.util.JsonFormat;
 
 import org.jetbrains.annotations.Nullable;
 
 import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.List;
 
 import mil.nga.geopackage.GeoPackage;
 import mil.nga.geopackage.db.GeoPackageDataType;
@@ -49,11 +53,15 @@ import timber.log.Timber;
  */
 public class PhoneStateRecordLogger extends SurveyRecordLogger implements IDeviceStatusListener
 {
+    private final JsonFormat.Printer jsonFormatter;
+
     public PhoneStateRecordLogger(NetworkSurveyService networkSurveyService, Looper serviceLooper)
     {
         super(networkSurveyService, serviceLooper,
                 NetworkSurveyConstants.LOG_DIRECTORY_NAME,
                 NetworkSurveyConstants.PHONESTATE_FILE_NAME_PREFIX);
+
+        jsonFormatter = JsonFormat.printer().preservingProtoFieldNames().omittingInsignificantWhitespace();
     }
 
     @Override
@@ -105,7 +113,20 @@ public class PhoneStateRecordLogger extends SurveyRecordLogger implements IDevic
                         row.setValue(SIM_STATE_COLUMN, readSimState(data));
                         row.setValue(SIM_OPERATOR_COLUMN, data.getSimOperator());
 
-                        String networkRegistrationJson = new Gson().toJson(data.getNetworkRegistrationInfoList());
+                        List<String> jsonList = new ArrayList<>();
+                        for (NetworkRegistrationInfo info : data.getNetworkRegistrationInfoList())
+                        {
+                            String jsonMessage = null;
+                            try
+                            {
+                                jsonMessage = jsonFormatter.print(info);
+                            } catch (InvalidProtocolBufferException e)
+                            {
+                                Timber.wtf(e, "Could not convert the NetworkRegistrationInfo to a JSON string, this should never happen");
+                            }
+                            jsonList.add(jsonMessage);
+                        }
+                        String networkRegistrationJson = jsonList.toString();
                         row.setValue(NETWORK_REGISTRATION_COLUMN, networkRegistrationJson);
 
                         featureDao.insert(row);

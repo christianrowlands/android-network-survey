@@ -15,6 +15,7 @@ import static com.craxiom.networksurvey.constants.csv.PhoneStateCsvConstants.SPE
 import android.os.Looper;
 
 import com.craxiom.messaging.DeviceStatus;
+import com.craxiom.messaging.NetworkRegistrationInfo;
 import com.craxiom.messaging.PhoneState;
 import com.craxiom.messaging.PhoneStateData;
 import com.craxiom.messaging.phonestate.SimState;
@@ -24,12 +25,14 @@ import com.craxiom.networksurvey.services.NetworkSurveyService;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Strings;
-import com.google.gson.Gson;
+import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.util.JsonFormat;
 
 import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 import timber.log.Timber;
 
@@ -87,10 +90,24 @@ public class PhoneStateCsvLogger extends CsvRecordLogger implements IDeviceStatu
     private String[] convertToObjectArray(PhoneState record)
     {
         PhoneStateData data = record.getData();
-        String networkRegistrationJson = new Gson().toJson(data.getNetworkRegistrationInfoList());
+        List<String> jsonList = new ArrayList<>();
 
-        //String jsonMessage = this.jsonFormatter.print(data.getNetworkRegistrationInfoList());
+        // Iterate over each item in the list and convert to JSON
+        for (NetworkRegistrationInfo info : data.getNetworkRegistrationInfoList())
+        {
+            String jsonMessage = null;
+            try
+            {
+                jsonMessage = jsonFormatter.print(info);
+            } catch (InvalidProtocolBufferException e)
+            {
+                Timber.wtf(e, "Could not convert the NetworkRegistrationInfo to a JSON string, this should never happen");
+            }
+            jsonList.add(jsonMessage);
+        }
 
+        // Combine the JSON strings into a JSON array
+        String networkRegistrationJson = jsonList.toString();
         String simState = "";
         try
         {
