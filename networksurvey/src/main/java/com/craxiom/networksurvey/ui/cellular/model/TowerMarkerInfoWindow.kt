@@ -31,24 +31,44 @@ class TowerMarkerInfoWindow(
     }
 
     private fun getTowerSnippet(tower: Tower): String {
-        return """
+        return if ("BTSearch" == tower.source) {
+            """
+            <b>Protocol:</b> ${tower.radio}
+        """.trimIndent()
+        } else {
+            """
             <b>Protocol:</b> ${tower.radio}<br>
             <b>Range:</b> ${tower.range} meters<br>
             <b>Samples:</b> ${tower.samples}
         """.trimIndent()
+        }
     }
 
     private fun getTowerSubDescription(tower: Tower): String {
-        return """
-            <b>Changeable:</b> ${if (tower.changeable == 1) "Yes" else "No"}<br>
-            <b>Created:</b> ${formatDate(tower.createdAt)}<br>
-            <b>Updated:</b> ${formatDate(tower.updatedAt)}
-        """.trimIndent()
+        return if ("BTSearch" == tower.source) {
+            """
+                    <b>Updated:</b> ${formatDate(tower.updatedAt)}<br>
+                    <b>Source:</b> ${tower.source}
+                """.trimIndent()
+        } else { // Tower source is "OpenCelliD"
+            """
+                    <b>Changeable:</b> ${if (tower.changeable == 1) "Yes" else "No"}<br>
+                    <b>Created:</b> ${formatDateTime(tower.createdAt)}<br>
+                    <b>Updated:</b> ${formatDateTime(tower.updatedAt)}<br>
+                    <b>Source:</b> ${tower.source}
+            """.trimIndent()
+        }
+    }
+
+    private fun formatDateTime(timestamp: Long): String {
+        val date = Date(timestamp * 1000) // Convert to milliseconds
+        val sdf = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault())
+        return sdf.format(date)
     }
 
     private fun formatDate(timestamp: Long): String {
         val date = Date(timestamp * 1000) // Convert to milliseconds
-        val sdf = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault())
+        val sdf = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
         return sdf.format(date)
     }
 }
