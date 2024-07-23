@@ -8,6 +8,7 @@ import com.craxiom.messaging.bluetooth.SupportedTechnologies;
 import com.craxiom.messaging.bluetooth.Technology;
 import com.craxiom.networksurvey.constants.BluetoothMessageConstants;
 import com.craxiom.networksurvey.constants.NetworkSurveyConstants;
+import com.craxiom.networksurvey.constants.csv.BluetoothCsvConstants;
 import com.craxiom.networksurvey.listeners.IBluetoothSurveyRecordListener;
 import com.craxiom.networksurvey.services.NetworkSurveyService;
 import com.craxiom.networksurvey.util.IOUtils;
@@ -109,9 +110,11 @@ public class BluetoothSurveyRecordLogger extends SurveyRecordLogger implements I
 
                         row.setGeometry(geomData);
 
+                        row.setValue(BluetoothCsvConstants.DEVICE_SERIAL_NUMBER, data.getDeviceSerialNumber());
                         row.setValue(BluetoothMessageConstants.TIME_COLUMN, IOUtils.getEpochFromRfc3339(data.getDeviceTime()));
                         row.setValue(BluetoothMessageConstants.MISSION_ID_COLUMN, data.getMissionId());
                         row.setValue(BluetoothMessageConstants.RECORD_NUMBER_COLUMN, data.getRecordNumber());
+                        row.setValue(BluetoothCsvConstants.SPEED, data.getSpeed());
                         row.setValue(BluetoothMessageConstants.ACCURACY, MathUtils.roundAccuracy(data.getAccuracy()));
 
                         final String sourceAddress = data.getSourceAddress();

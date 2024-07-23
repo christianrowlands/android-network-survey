@@ -1,5 +1,6 @@
 package com.craxiom.networksurvey.logging;
 
+import static com.craxiom.networksurvey.constants.csv.CsvConstants.DEVICE_SERIAL_NUMBER;
 import static com.craxiom.networksurvey.constants.csv.GnssCsvConstants.ACCURACY;
 import static com.craxiom.networksurvey.constants.csv.GnssCsvConstants.AGC_DB;
 import static com.craxiom.networksurvey.constants.csv.GnssCsvConstants.ALTITUDE;
@@ -8,6 +9,7 @@ import static com.craxiom.networksurvey.constants.csv.GnssCsvConstants.CARRIER_F
 import static com.craxiom.networksurvey.constants.csv.GnssCsvConstants.CLOCK_OFFSET;
 import static com.craxiom.networksurvey.constants.csv.GnssCsvConstants.CN0_DB_HZ;
 import static com.craxiom.networksurvey.constants.csv.GnssCsvConstants.CONSTELLATION;
+import static com.craxiom.networksurvey.constants.csv.GnssCsvConstants.DEVICE_MODEL;
 import static com.craxiom.networksurvey.constants.csv.GnssCsvConstants.DEVICE_TIME;
 import static com.craxiom.networksurvey.constants.csv.GnssCsvConstants.GROUP_NUMBER;
 import static com.craxiom.networksurvey.constants.csv.GnssCsvConstants.HDOP;
@@ -53,13 +55,14 @@ public class GnssCsvLogger extends CsvRecordLogger implements IGnssSurveyRecordL
                 MISSION_ID, RECORD_NUMBER, GROUP_NUMBER,
                 CONSTELLATION, SPACE_VEHICLE_ID, CARRIER_FREQ_HZ, CLOCK_OFFSET, USED_IN_SOLUTION,
                 UNDULATION_M, LATITUDE_STD_DEV_M, LONGITUDE_STD_DEV_M, ALTITUDE_STD_DEV_M, AGC_DB,
-                CN0_DB_HZ, HDOP, VDOP};
+                CN0_DB_HZ, HDOP, VDOP,
+                DEVICE_MODEL, DEVICE_SERIAL_NUMBER};
     }
 
     @Override
     String[] getHeaderComments()
     {
-        return new String[]{"CSV Version=0.1.0"};
+        return new String[]{"CSV Version=0.2.0"};
     }
 
     @Override
@@ -104,7 +107,9 @@ public class GnssCsvLogger extends CsvRecordLogger implements IGnssSurveyRecordL
                 data.hasAgcDb() ? String.valueOf(data.getAgcDb().getValue()) : "",
                 data.hasCn0DbHz() ? String.valueOf(data.getCn0DbHz().getValue()) : "",
                 data.hasHdop() ? String.valueOf(data.getHdop().getValue()) : "",
-                data.hasVdop() ? String.valueOf(data.getVdop().getValue()) : ""
+                data.hasVdop() ? String.valueOf(data.getVdop().getValue()) : "",
+                data.getDeviceModel(),
+                data.getDeviceSerialNumber()
         };
     }
 }

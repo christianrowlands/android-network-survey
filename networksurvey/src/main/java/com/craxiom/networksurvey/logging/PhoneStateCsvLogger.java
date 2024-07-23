@@ -1,5 +1,6 @@
 package com.craxiom.networksurvey.logging;
 
+import static com.craxiom.networksurvey.constants.csv.CsvConstants.DEVICE_SERIAL_NUMBER;
 import static com.craxiom.networksurvey.constants.csv.PhoneStateCsvConstants.ACCURACY;
 import static com.craxiom.networksurvey.constants.csv.PhoneStateCsvConstants.ALTITUDE;
 import static com.craxiom.networksurvey.constants.csv.PhoneStateCsvConstants.DEVICE_TIME;
@@ -56,13 +57,14 @@ public class PhoneStateCsvLogger extends CsvRecordLogger implements IDeviceStatu
     {
         return new String[]{DEVICE_TIME, LATITUDE, LONGITUDE, ALTITUDE, SPEED, ACCURACY,
                 MISSION_ID, RECORD_NUMBER,
-                SIM_STATE, SIM_OPERATOR, NETWORK_REGISTRATION};
+                SIM_STATE, SIM_OPERATOR, NETWORK_REGISTRATION,
+                DEVICE_SERIAL_NUMBER};
     }
 
     @Override
     String[] getHeaderComments()
     {
-        return new String[]{"CSV Version=0.1.0"};
+        return new String[]{"CSV Version=0.2.0"};
     }
 
     @Override
@@ -129,6 +131,7 @@ public class PhoneStateCsvLogger extends CsvRecordLogger implements IDeviceStatu
                 simState,
                 data.getSimOperator(),
                 networkRegistrationJson,
+                data.getDeviceSerialNumber()
         };
     }
 

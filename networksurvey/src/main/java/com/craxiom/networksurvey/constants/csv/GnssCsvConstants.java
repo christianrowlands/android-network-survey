@@ -27,4 +27,5 @@ public class GnssCsvConstants extends SurveyCsvConstants
     public static final String CN0_DB_HZ = "cn0DbHz";
     public static final String HDOP = "hdop";
     public static final String VDOP = "vdop";
+    public static final String DEVICE_MODEL = "deviceModel";
 }

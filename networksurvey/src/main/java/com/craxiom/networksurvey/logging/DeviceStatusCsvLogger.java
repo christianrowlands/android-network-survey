@@ -1,5 +1,6 @@
 package com.craxiom.networksurvey.logging;
 
+import static com.craxiom.networksurvey.constants.csv.CsvConstants.DEVICE_SERIAL_NUMBER;
 import static com.craxiom.networksurvey.constants.csv.DeviceStatusCsvConstants.ACCURACY;
 import static com.craxiom.networksurvey.constants.csv.DeviceStatusCsvConstants.ALTITUDE;
 import static com.craxiom.networksurvey.constants.csv.DeviceStatusCsvConstants.BATTERY_LEVEL_PERCENT;
@@ -44,13 +45,14 @@ public class DeviceStatusCsvLogger extends CsvRecordLogger implements IDeviceSta
     {
         return new String[]{DEVICE_TIME, LATITUDE, LONGITUDE, ALTITUDE, SPEED, ACCURACY,
                 BATTERY_LEVEL_PERCENT, GNSS_LATITUDE, GNSS_LONGITUDE, GNSS_ALTITUDE, GNSS_ACCURACY,
-                NETWORK_LATITUDE, NETWORK_LONGITUDE, NETWORK_ALTITUDE, NETWORK_ACCURACY,};
+                NETWORK_LATITUDE, NETWORK_LONGITUDE, NETWORK_ALTITUDE, NETWORK_ACCURACY,
+                DEVICE_SERIAL_NUMBER};
     }
 
     @Override
     String[] getHeaderComments()
     {
-        return new String[]{"CSV Version=0.2.0"};
+        return new String[]{"CSV Version=0.3.0"};
     }
 
     @Override
@@ -100,6 +102,7 @@ public class DeviceStatusCsvLogger extends CsvRecordLogger implements IDeviceSta
                 hasNetworkLocation ? String.valueOf(networkLongitude) : "",
                 hasNetworkLocation ? String.valueOf(data.getNetworkAltitude()) : "",
                 hasNetworkLocation ? String.valueOf(data.getNetworkAccuracy()) : "",
+                data.getDeviceSerialNumber()
         };
     }
 }

@@ -1,6 +1,7 @@
 package com.craxiom.networksurvey.logging;
 
 import static com.craxiom.networksurvey.constants.csv.CellularCsvConstants.SLOT;
+import static com.craxiom.networksurvey.constants.csv.CsvConstants.DEVICE_SERIAL_NUMBER;
 import static com.craxiom.networksurvey.constants.csv.UmtsCsvConstants.ACCURACY;
 import static com.craxiom.networksurvey.constants.csv.UmtsCsvConstants.ALTITUDE;
 import static com.craxiom.networksurvey.constants.csv.UmtsCsvConstants.CID;
@@ -50,13 +51,14 @@ public class UmtsCsvLogger extends CsvRecordLogger implements ICellularSurveyRec
     {
         return new String[]{DEVICE_TIME, LATITUDE, LONGITUDE, ALTITUDE, SPEED, ACCURACY,
                 MISSION_ID, RECORD_NUMBER, GROUP_NUMBER,
-                MCC, MNC, LAC, CID, UARFCN, PSC, RSCP, ECNO, SIGNAL_STRENGTH, SERVING_CELL, PROVIDER, SLOT};
+                MCC, MNC, LAC, CID, UARFCN, PSC, RSCP, ECNO, SIGNAL_STRENGTH, SERVING_CELL, PROVIDER, SLOT,
+                DEVICE_SERIAL_NUMBER};
     }
 
     @Override
     String[] getHeaderComments()
     {
-        return new String[]{"CSV Version=0.1.0"};
+        return new String[]{"CSV Version=0.2.0"};
     }
 
     @Override
@@ -101,6 +103,7 @@ public class UmtsCsvLogger extends CsvRecordLogger implements ICellularSurveyRec
                 data.hasServingCell() ? String.valueOf(data.getServingCell().getValue()) : "",
                 data.getProvider(),
                 data.hasSlot() ? String.valueOf(data.getSlot().getValue()) : "",
+                data.getDeviceSerialNumber()
         };
     }
 }

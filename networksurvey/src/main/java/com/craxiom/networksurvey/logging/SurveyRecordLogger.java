@@ -12,6 +12,7 @@ import com.craxiom.networksurvey.constants.LteMessageConstants;
 import com.craxiom.networksurvey.constants.MessageConstants;
 import com.craxiom.networksurvey.constants.NetworkSurveyConstants;
 import com.craxiom.networksurvey.constants.csv.CellularCsvConstants;
+import com.craxiom.networksurvey.constants.csv.CsvConstants;
 import com.craxiom.networksurvey.services.NetworkSurveyService;
 import com.craxiom.networksurvey.services.SurveyRecordProcessor;
 import com.craxiom.networksurvey.util.PreferenceUtils;
@@ -270,9 +271,11 @@ public abstract class SurveyRecordLogger
         List<FeatureColumn> tableColumns = new LinkedList<>();
         tableColumns.add(FeatureColumn.createPrimaryKeyColumn(columnNumber++, MessageConstants.ID_COLUMN));
         tableColumns.add(FeatureColumn.createGeometryColumn(columnNumber++, MessageConstants.GEOMETRY_COLUMN, GeometryType.POINT, false, null));
+        tableColumns.add(FeatureColumn.createColumn(columnNumber++, CsvConstants.DEVICE_SERIAL_NUMBER, GeoPackageDataType.TEXT, false, null));
         tableColumns.add(FeatureColumn.createColumn(columnNumber++, MessageConstants.TIME_COLUMN, GeoPackageDataType.INT, false, null));
         tableColumns.add(FeatureColumn.createColumn(columnNumber++, MessageConstants.MISSION_ID_COLUMN, GeoPackageDataType.TEXT, false, null));
         tableColumns.add(FeatureColumn.createColumn(columnNumber++, MessageConstants.RECORD_NUMBER_COLUMN, GeoPackageDataType.MEDIUMINT, true, -1));
+        tableColumns.add(FeatureColumn.createColumn(columnNumber++, CsvConstants.SPEED, GeoPackageDataType.MEDIUMINT, false, null));
         tableColumns.add(FeatureColumn.createColumn(columnNumber++, MessageConstants.ACCURACY, GeoPackageDataType.MEDIUMINT, false, null));
 
         if (addCellularColumns)

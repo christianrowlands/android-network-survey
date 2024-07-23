@@ -16,6 +16,7 @@ import static com.craxiom.networksurvey.constants.csv.BluetoothCsvConstants.SPEE
 import static com.craxiom.networksurvey.constants.csv.BluetoothCsvConstants.SUPPORTED_TECHNOLOGIES;
 import static com.craxiom.networksurvey.constants.csv.BluetoothCsvConstants.TECHNOLOGY;
 import static com.craxiom.networksurvey.constants.csv.BluetoothCsvConstants.TX_POWER;
+import static com.craxiom.networksurvey.constants.csv.CsvConstants.DEVICE_SERIAL_NUMBER;
 
 import android.os.Looper;
 
@@ -49,13 +50,14 @@ public class BluetoothCsvLogger extends CsvRecordLogger implements IBluetoothSur
         return new String[]{DEVICE_TIME, LATITUDE, LONGITUDE, ALTITUDE, SPEED, ACCURACY,
                 MISSION_ID, RECORD_NUMBER,
                 SOURCE_ADDRESS, DESTINATION_ADDRESS, SIGNAL_STRENGTH, TX_POWER, TECHNOLOGY,
-                SUPPORTED_TECHNOLOGIES, OTA_DEVICE_NAME, CHANNEL};
+                SUPPORTED_TECHNOLOGIES, OTA_DEVICE_NAME, CHANNEL,
+                DEVICE_SERIAL_NUMBER};
     }
 
     @Override
     String[] getHeaderComments()
     {
-        return new String[]{"CSV Version=0.1.0"};
+        return new String[]{"CSV Version=0.2.0"};
     }
 
     @Override
@@ -116,7 +118,8 @@ public class BluetoothCsvLogger extends CsvRecordLogger implements IBluetoothSur
                 data.getTechnology() == Technology.UNRECOGNIZED ? "" : data.getTechnology().name(),
                 data.getSupportedTechnologies() == SupportedTechnologies.UNRECOGNIZED ? "" : data.getSupportedTechnologies().name(),
                 data.getOtaDeviceName(),
-                data.hasChannel() ? String.valueOf(data.getChannel().getValue()) : ""
+                data.hasChannel() ? String.valueOf(data.getChannel().getValue()) : "",
+                data.getDeviceSerialNumber()
         };
     }
 }

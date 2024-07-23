@@ -19,8 +19,13 @@ import com.craxiom.networksurvey.constants.MessageConstants;
 import com.craxiom.networksurvey.constants.NetworkSurveyConstants;
 import com.craxiom.networksurvey.constants.NrMessageConstants;
 import com.craxiom.networksurvey.constants.UmtsMessageConstants;
+import com.craxiom.networksurvey.constants.csv.CdmaCsvConstants;
 import com.craxiom.networksurvey.constants.csv.CellularCsvConstants;
+import com.craxiom.networksurvey.constants.csv.CsvConstants;
+import com.craxiom.networksurvey.constants.csv.GsmCsvConstants;
 import com.craxiom.networksurvey.constants.csv.LteCsvConstants;
+import com.craxiom.networksurvey.constants.csv.NrCsvConstants;
+import com.craxiom.networksurvey.constants.csv.UmtsCsvConstants;
 import com.craxiom.networksurvey.listeners.ICellularSurveyRecordListener;
 import com.craxiom.networksurvey.services.NetworkSurveyService;
 import com.craxiom.networksurvey.util.IOUtils;
@@ -228,6 +233,7 @@ public class CellularSurveyRecordLogger extends SurveyRecordLogger implements IC
         tableColumns.add(FeatureColumn.createPrimaryKeyColumn(columnNumber++, MessageConstants.ID_COLUMN));
         tableColumns.add(FeatureColumn.createGeometryColumn(columnNumber++, MessageConstants.GEOMETRY_COLUMN, GeometryType.POINT, false, null));
 
+        tableColumns.add(FeatureColumn.createColumn(columnNumber++, CsvConstants.DEVICE_SERIAL_NUMBER, GeoPackageDataType.TEXT, false, null));
         tableColumns.add(FeatureColumn.createColumn(columnNumber++, NrMessageConstants.DEVICE_TIME_COLUMN, GeoPackageDataType.INT, false, null));
         tableColumns.add(FeatureColumn.createColumn(columnNumber++, NrMessageConstants.LATITUDE_COLUMN, GeoPackageDataType.DOUBLE, false, null));
         tableColumns.add(FeatureColumn.createColumn(columnNumber++, NrMessageConstants.LONGITUDE_COLUMN, GeoPackageDataType.DOUBLE, false, null));
@@ -235,6 +241,7 @@ public class CellularSurveyRecordLogger extends SurveyRecordLogger implements IC
         tableColumns.add(FeatureColumn.createColumn(columnNumber++, NrMessageConstants.MISSION_ID_COLUMN, GeoPackageDataType.TEXT, false, null));
         tableColumns.add(FeatureColumn.createColumn(columnNumber++, NrMessageConstants.RECORD_NUMBER_COLUMN, GeoPackageDataType.MEDIUMINT, true, -1));
         tableColumns.add(FeatureColumn.createColumn(columnNumber++, NrMessageConstants.GROUP_NUMBER_COLUMN, GeoPackageDataType.MEDIUMINT, true, -1));
+        tableColumns.add(FeatureColumn.createColumn(columnNumber++, CsvConstants.SPEED, GeoPackageDataType.MEDIUMINT, false, null));
         tableColumns.add(FeatureColumn.createColumn(columnNumber++, NrMessageConstants.ACCURACY, GeoPackageDataType.INT, false, null));
 
         // nr record specific
@@ -301,10 +308,12 @@ public class CellularSurveyRecordLogger extends SurveyRecordLogger implements IC
 
                         row.setGeometry(geomData);
 
+                        row.setValue(GsmCsvConstants.DEVICE_SERIAL_NUMBER, data.getDeviceSerialNumber());
                         row.setValue(GsmMessageConstants.TIME_COLUMN, IOUtils.getEpochFromRfc3339(data.getDeviceTime()));
                         row.setValue(GsmMessageConstants.MISSION_ID_COLUMN, data.getMissionId());
                         row.setValue(GsmMessageConstants.RECORD_NUMBER_COLUMN, data.getRecordNumber());
                         row.setValue(GsmMessageConstants.GROUP_NUMBER_COLUMN, data.getGroupNumber());
+                        row.setValue(GsmCsvConstants.SPEED, data.getSpeed());
                         row.setValue(GsmMessageConstants.ACCURACY, MathUtils.roundAccuracy(data.getAccuracy()));
 
                         if (data.hasServingCell())
@@ -394,10 +403,12 @@ public class CellularSurveyRecordLogger extends SurveyRecordLogger implements IC
 
                         row.setGeometry(geomData);
 
+                        row.setValue(CdmaCsvConstants.DEVICE_SERIAL_NUMBER, data.getDeviceSerialNumber());
                         row.setValue(CdmaMessageConstants.TIME_COLUMN, IOUtils.getEpochFromRfc3339(data.getDeviceTime()));
                         row.setValue(CdmaMessageConstants.MISSION_ID_COLUMN, data.getMissionId());
                         row.setValue(CdmaMessageConstants.RECORD_NUMBER_COLUMN, data.getRecordNumber());
                         row.setValue(CdmaMessageConstants.GROUP_NUMBER_COLUMN, data.getGroupNumber());
+                        row.setValue(CdmaCsvConstants.SPEED, data.getSpeed());
                         row.setValue(CdmaMessageConstants.ACCURACY, MathUtils.roundAccuracy(data.getAccuracy()));
                         if (data.hasServingCell())
                         {
@@ -478,10 +489,12 @@ public class CellularSurveyRecordLogger extends SurveyRecordLogger implements IC
 
                         row.setGeometry(geomData);
 
+                        row.setValue(UmtsCsvConstants.DEVICE_SERIAL_NUMBER, data.getDeviceSerialNumber());
                         row.setValue(UmtsMessageConstants.TIME_COLUMN, IOUtils.getEpochFromRfc3339(data.getDeviceTime()));
                         row.setValue(UmtsMessageConstants.MISSION_ID_COLUMN, data.getMissionId());
                         row.setValue(UmtsMessageConstants.RECORD_NUMBER_COLUMN, data.getRecordNumber());
                         row.setValue(UmtsMessageConstants.GROUP_NUMBER_COLUMN, data.getGroupNumber());
+                        row.setValue(UmtsCsvConstants.SPEED, data.getSpeed());
                         row.setValue(UmtsMessageConstants.ACCURACY, MathUtils.roundAccuracy(data.getAccuracy()));
 
                         if (data.hasServingCell())
@@ -571,10 +584,12 @@ public class CellularSurveyRecordLogger extends SurveyRecordLogger implements IC
 
                         row.setGeometry(geomData);
 
+                        row.setValue(LteCsvConstants.DEVICE_SERIAL_NUMBER, data.getDeviceSerialNumber());
                         row.setValue(LteMessageConstants.TIME_COLUMN, IOUtils.getEpochFromRfc3339(data.getDeviceTime()));
                         row.setValue(LteMessageConstants.MISSION_ID_COLUMN, data.getMissionId());
                         row.setValue(LteMessageConstants.RECORD_NUMBER_COLUMN, data.getRecordNumber());
                         row.setValue(LteMessageConstants.GROUP_NUMBER_COLUMN, data.getGroupNumber());
+                        row.setValue(LteCsvConstants.SPEED, data.getSpeed());
                         row.setValue(LteMessageConstants.ACCURACY, MathUtils.roundAccuracy(data.getAccuracy()));
 
                         if (data.hasMcc())
@@ -684,10 +699,12 @@ public class CellularSurveyRecordLogger extends SurveyRecordLogger implements IC
 
                         row.setGeometry(geomData);
 
+                        row.setValue(NrCsvConstants.DEVICE_SERIAL_NUMBER, data.getDeviceSerialNumber());
                         row.setValue(NrMessageConstants.DEVICE_TIME_COLUMN, IOUtils.getEpochFromRfc3339(data.getDeviceTime()));
                         row.setValue(NrMessageConstants.MISSION_ID_COLUMN, data.getMissionId());
                         row.setValue(NrMessageConstants.RECORD_NUMBER_COLUMN, data.getRecordNumber());
                         row.setValue(NrMessageConstants.GROUP_NUMBER_COLUMN, data.getGroupNumber());
+                        row.setValue(NrCsvConstants.SPEED, data.getSpeed());
                         row.setValue(NrMessageConstants.ACCURACY, MathUtils.roundAccuracy(data.getAccuracy()));
 
                         if (data.hasMcc())
