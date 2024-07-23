@@ -275,7 +275,7 @@ public abstract class SurveyRecordLogger
         tableColumns.add(FeatureColumn.createColumn(columnNumber++, MessageConstants.TIME_COLUMN, GeoPackageDataType.INT, false, null));
         tableColumns.add(FeatureColumn.createColumn(columnNumber++, MessageConstants.MISSION_ID_COLUMN, GeoPackageDataType.TEXT, false, null));
         tableColumns.add(FeatureColumn.createColumn(columnNumber++, MessageConstants.RECORD_NUMBER_COLUMN, GeoPackageDataType.MEDIUMINT, true, -1));
-        tableColumns.add(FeatureColumn.createColumn(columnNumber++, CsvConstants.SPEED, GeoPackageDataType.MEDIUMINT, false, null));
+        tableColumns.add(FeatureColumn.createColumn(columnNumber++, CsvConstants.SPEED, GeoPackageDataType.FLOAT, false, null));
         tableColumns.add(FeatureColumn.createColumn(columnNumber++, MessageConstants.ACCURACY, GeoPackageDataType.MEDIUMINT, false, null));
 
         if (addCellularColumns)
