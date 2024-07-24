@@ -12,8 +12,9 @@ import com.craxiom.networksurvey.util.CellularUtils
 import org.osmdroid.util.GeoPoint
 import org.osmdroid.views.MapView
 import org.osmdroid.views.overlay.Marker
+import org.osmdroid.views.overlay.infowindow.MarkerInfoWindow
 
-class TowerMarker(private val mapView: MapView, tower: Tower) : Marker(mapView) {
+class TowerMarker(private val mapView: MapView, private val tower: Tower) : Marker(mapView) {
     var cgiId: String
 
     init {
@@ -23,14 +24,12 @@ class TowerMarker(private val mapView: MapView, tower: Tower) : Marker(mapView) 
             BlendModeColorFilterCompat.createBlendModeColorFilterCompat(
                 R.color.colorPrimary, BlendModeCompat.SRC_ATOP
             )
-        setPosition(GeoPoint(tower.lat, tower.lon))
+        position = GeoPoint(tower.lat, tower.lon)
         setAnchor(ANCHOR_CENTER, ANCHOR_BOTTOM)
         icon = towerDrawable
         title = getTitleString(tower)
         cgiId = CellularUtils.getTowerId(tower)
         setPanToView(false)
-
-        infoWindow = TowerMarkerInfoWindow(R.layout.bonuspack_bubble, mapView, this, tower)
     }
 
     override fun equals(other: Any?): Boolean {
@@ -49,6 +48,23 @@ class TowerMarker(private val mapView: MapView, tower: Tower) : Marker(mapView) 
         var result = title.hashCode()
         result = 31 * result + position.hashCode()
         return result
+    }
+
+    override fun setInfoWindow(infoWindow: MarkerInfoWindow?) {
+        // Do nothing
+    }
+
+    override fun showInfoWindow() {
+        if (mInfoWindow == null) {
+            mInfoWindow = TowerMarkerInfoWindow(R.layout.bonuspack_bubble, mapView, this, tower)
+        }
+
+        super.showInfoWindow()
+    }
+
+    fun destroy() {
+        mapView.overlays.remove(this)
+        this.onDestroy()
     }
 
     fun setServingCell(isServingCell: Boolean) {

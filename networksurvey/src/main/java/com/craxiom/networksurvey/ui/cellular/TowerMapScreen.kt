@@ -398,7 +398,9 @@ private suspend fun runTowerQuery(viewModel: TowerMapViewModel) {
         val towerMarker = TowerMarker(viewModel.mapView, it)
 
         if (towers.size >= MAX_TOWERS_ON_MAP) {
-            towers.remove(towers.first())
+            val towerToRemove = towers.first()
+            towers.remove(towerToRemove)
+            towerToRemove.destroy()
         }
 
         if (towers.contains(towerMarker)) {
