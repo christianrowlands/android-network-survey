@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.27](https://github.com/christianrowlands/android-network-survey/releases/tag/v1.27) - 2024-07-24
+
+* Create a more detailed info window for the towers in the map view.
+* Imported the Tower data from BTSearch.
+* Adds the ability to share the MQTT connection settings via a QR Code.
+* Adds a start auto logging setting for CDR.
+* Logs the phone state messages to CSV.
+* Prevent the background location permission info dialog from displaying on every app opening.
+* Properly format the network registration info for the phone state message logging to CSV and GeoPackage.
+* Adds speed and deviceSerialNumber columns to the GeoPackage files, and deviceSerialNumber to the CSV files. Also adds deviceModel to the GNSS CSV files.
+* Fix a few edge case crash bugs.
+
 ## [1.26](https://github.com/christianrowlands/android-network-survey/releases/tag/v1.26) - 2024-06-28
 
 * Fixes a bug with gRPC streaming on Android 14. (Thanks [PeregrineFalcon](https://github.com/PeregrineFalcon))
