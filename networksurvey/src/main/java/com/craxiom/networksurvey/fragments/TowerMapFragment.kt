@@ -1,6 +1,9 @@
 package com.craxiom.networksurvey.fragments
 
+import android.content.BroadcastReceiver
 import android.content.Context
+import android.content.Intent
+import android.content.IntentFilter
 import android.location.LocationListener
 import android.location.LocationManager
 import android.os.Bundle
@@ -15,9 +18,11 @@ import androidx.compose.ui.platform.ComposeView
 import androidx.compose.ui.platform.ViewCompositionStrategy
 import androidx.core.view.MenuProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import androidx.navigation.fragment.findNavController
 import androidx.navigation.fragment.navArgs
 import com.craxiom.networksurvey.R
+import com.craxiom.networksurvey.SimChangeReceiver
 import com.craxiom.networksurvey.listeners.ICellularSurveyRecordListener
 import com.craxiom.networksurvey.model.CellularProtocol
 import com.craxiom.networksurvey.model.CellularRecordWrapper
@@ -27,6 +32,7 @@ import com.craxiom.networksurvey.ui.cellular.model.ServingCellInfo
 import com.craxiom.networksurvey.ui.cellular.model.TowerMapViewModel
 import com.craxiom.networksurvey.util.NsTheme
 import com.craxiom.networksurvey.util.PreferenceUtils
+import timber.log.Timber
 import java.util.Collections
 
 /**
@@ -37,6 +43,25 @@ class TowerMapFragment : AServiceDataFragment(), MenuProvider, ICellularSurveyRe
     private lateinit var composeView: ComposeView
     private var servingCell: ServingCellInfo? = null
     private var locationListener: LocationListener? = null
+    private var simBroadcastReceiver = object : BroadcastReceiver(
+    ) {
+        override fun onReceive(context: Context, intent: Intent) {
+            Timber.i("SIM State Change Detected. Updating the tower map view model")
+            viewModel?.resetSimCount()
+        }
+    }
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+
+        val context = context
+        if (context != null) {
+            LocalBroadcastManager.getInstance(context).registerReceiver(
+                simBroadcastReceiver,
+                IntentFilter(SimChangeReceiver.SIM_CHANGED_INTENT)
+            )
+        }
+    }
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -75,6 +100,15 @@ class TowerMapFragment : AServiceDataFragment(), MenuProvider, ICellularSurveyRe
     override fun onPause() {
         viewModel?.mapView?.onPause()
         super.onPause()
+    }
+
+    override fun onDestroy() {
+        val context = context
+        if (context != null) {
+            LocalBroadcastManager.getInstance(context).unregisterReceiver(simBroadcastReceiver)
+        }
+
+        super.onDestroy()
     }
 
     override fun onCreateMenu(menu: Menu, menuInflater: MenuInflater) {

@@ -140,6 +140,17 @@ internal class TowerMapViewModel : ASignalChartViewModel() {
     }
 
     /**
+     * Triggers any necessary updates to SIM count aware variables.
+     */
+    fun resetSimCount() {
+        _servingCells.update {
+            it.clear()
+            it
+        }
+        _servingSignals.value = ServingSignalInfo(CellularProtocol.NONE, 0, 0)
+    }
+
+    /**
      * Recreates the overlays on the map based on the current tower data.
      * @param mapView The map view to add the overlays to.
      * @param invalidate True to invalidate the map view after adding the overlays. Invalidating the
