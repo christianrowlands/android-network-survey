@@ -31,7 +31,8 @@ internal class TowerMapViewModel : ASignalChartViewModel() {
     val subIdToServingCellLocations = HashMap<Int, GeoPoint>()
     var myLocation: Location? = null
 
-    private var _servingSignals = MutableStateFlow(ServingSignalInfo(CellularProtocol.NONE, 0, 0))
+    private var _servingSignals =
+        MutableStateFlow<HashMap<Int, ServingSignalInfo>>(HashMap()) // <SubscriptionId, ServingSignalInfo>
     val servingSignals = _servingSignals.asStateFlow()
 
     lateinit var mapView: MapView
@@ -147,7 +148,10 @@ internal class TowerMapViewModel : ASignalChartViewModel() {
             it.clear()
             it
         }
-        _servingSignals.value = ServingSignalInfo(CellularProtocol.NONE, 0, 0)
+        _servingSignals.update {
+            it.clear()
+            it
+        }
     }
 
     /**
@@ -229,11 +233,16 @@ internal class TowerMapViewModel : ASignalChartViewModel() {
         subscriptionId: Int
     ) {
         if (servingCellRecord == null) {
-            _servingSignals.value = ServingSignalInfo(CellularProtocol.NONE, 0, 0)
-            return
+            _servingSignals.update { map ->
+                map.remove(subscriptionId)
+                map
+            }
+        } else {
+            _servingSignals.update { oldMap ->
+                val newMap = HashMap(oldMap)
+                newMap[subscriptionId] = CellularUtils.getSignalInfo(servingCellRecord)
+                newMap
+            }
         }
-
-        val servingSignalInfo = CellularUtils.getSignalInfo(servingCellRecord)
-        _servingSignals.value = servingSignalInfo
     }
 }

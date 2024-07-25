@@ -234,7 +234,7 @@ internal fun TowerMapScreen(viewModel: TowerMapViewModel = viewModel()) {
                     if (servingCells.size == 1) {
                         ServingCellInfoDisplay(
                             servingCells.values.first(),
-                            servingCellSignals
+                            servingCellSignals.values.first()
                         )
                     } else {
                         if (selectedSimIndex == -1) {
@@ -243,7 +243,7 @@ internal fun TowerMapScreen(viewModel: TowerMapViewModel = viewModel()) {
                         }
                         ServingCellInfoDisplay(
                             servingCells[selectedSimIndex],
-                            servingCellSignals
+                            servingCellSignals[selectedSimIndex]
                         )
                     }
                 }
@@ -386,7 +386,7 @@ fun SimCardDropdown(
 }
 
 @Composable
-fun ServingCellInfoDisplay(cellInfo: ServingCellInfo?, servingSignalInfo: ServingSignalInfo) {
+fun ServingCellInfoDisplay(cellInfo: ServingCellInfo?, servingSignalInfo: ServingSignalInfo?) {
     Column(
         modifier = Modifier
             .background(Color(0x80EEEEEE))
@@ -412,7 +412,12 @@ fun ServingCellInfoDisplay(cellInfo: ServingCellInfo?, servingSignalInfo: Servin
                 "Technology: ${servingCell.cellularProtocol}",
                 color = MaterialTheme.colorScheme.primary
             )
-            Text("$servingSignalInfo", color = MaterialTheme.colorScheme.primary)
+            if (servingSignalInfo != null) {
+                Text(
+                    servingSignalInfo.toString(),
+                    color = MaterialTheme.colorScheme.primary
+                )
+            }
 
             val servingCellDisplayString = getServingCellDisplayString(record)
             Text(servingCellDisplayString, color = MaterialTheme.colorScheme.primary)
