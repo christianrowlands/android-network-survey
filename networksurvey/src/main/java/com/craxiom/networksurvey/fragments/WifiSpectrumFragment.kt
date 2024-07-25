@@ -115,7 +115,11 @@ class WifiSpectrumFragment : AServiceDataFragment(), IWifiSurveyRecordListener {
     }
 
     override fun onPause() {
-        sharedPreferences.unregisterOnSharedPreferenceChangeListener(preferenceChangeListener)
+        try {
+            sharedPreferences.unregisterOnSharedPreferenceChangeListener(preferenceChangeListener)
+        } catch (e: UninitializedPropertyAccessException) {
+            // no-op
+        }
 
         super.onPause()
     }
