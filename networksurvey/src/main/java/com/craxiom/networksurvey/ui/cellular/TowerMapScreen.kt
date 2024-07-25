@@ -22,6 +22,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -38,14 +39,22 @@ import androidx.core.graphics.drawable.toBitmap
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.craxiom.messaging.CdmaRecord
+import com.craxiom.messaging.GsmRecord
+import com.craxiom.messaging.LteRecord
+import com.craxiom.messaging.NrRecord
+import com.craxiom.messaging.UmtsRecord
 import com.craxiom.networksurvey.BuildConfig
 import com.craxiom.networksurvey.R
 import com.craxiom.networksurvey.model.CellularProtocol
 import com.craxiom.networksurvey.ui.cellular.model.CustomLocationOverlay
 import com.craxiom.networksurvey.ui.cellular.model.FollowMyLocationChangeListener
+import com.craxiom.networksurvey.ui.cellular.model.ServingCellInfo
+import com.craxiom.networksurvey.ui.cellular.model.ServingSignalInfo
 import com.craxiom.networksurvey.ui.cellular.model.TowerMapViewModel
 import com.craxiom.networksurvey.ui.cellular.model.TowerMarker
 import com.google.gson.annotations.SerializedName
+import com.google.protobuf.GeneratedMessageV3
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
@@ -95,6 +104,10 @@ internal fun TowerMapScreen(viewModel: TowerMapViewModel = viewModel()) {
     val noTowersFound by viewModel.noTowersFound.collectAsStateWithLifecycle()
 
     val missingApiKey = BuildConfig.NS_API_KEY.isEmpty()
+
+    val servingCells by viewModel.servingCells.collectAsStateWithLifecycle()
+    var selectedSimIndex by remember { mutableIntStateOf(-1) }
+    val servingCellSignals by viewModel.servingSignals.collectAsStateWithLifecycle()
 
     val options = listOf(
         CellularProtocol.GSM.name,
@@ -203,6 +216,38 @@ internal fun TowerMapScreen(viewModel: TowerMapViewModel = viewModel()) {
                         })
                 }
             }
+
+            Column(
+                modifier = Modifier
+                    .align(Alignment.BottomStart)
+                    .padding(16.dp)
+            ) {
+                if (servingCells.size > 1) {
+                    // Only show the drop down if there is more than one option
+                    SimCardDropdown(servingCells, selectedSimIndex) { newIndex ->
+                        selectedSimIndex = newIndex
+                    }
+                }
+
+                // Display the serving cell info for the selected SIM card
+                if (servingCells.isNotEmpty()) {
+                    if (servingCells.size == 1) {
+                        ServingCellInfoDisplay(
+                            servingCells.values.first(),
+                            servingCellSignals
+                        )
+                    } else {
+                        if (selectedSimIndex == -1) {
+                            // Default to the first key if a SIM card has not been selected
+                            selectedSimIndex = servingCells.keys.first()
+                        }
+                        ServingCellInfoDisplay(
+                            servingCells[selectedSimIndex],
+                            servingCellSignals
+                        )
+                    }
+                }
+            }
         }
     }
 
@@ -308,6 +353,73 @@ internal fun OsmdroidMapView(
             viewModel.recreateOverlaysFromTowerData(it)
         }
     )
+}
+
+@Composable
+fun SimCardDropdown(
+    servingCells: HashMap<Int, ServingCellInfo>,
+    selectedSimIndex: Int,
+    onSimSelected: (Int) -> Unit
+) {
+    var expanded by remember { mutableStateOf(false) }
+    val simOptions = servingCells.keys.toList() // Get SIM card indices
+
+    // Dropdown button for selecting SIM card
+    Button(onClick = { expanded = true }) {
+        Text(text = "SIM Card $selectedSimIndex")
+    }
+
+    DropdownMenu(
+        expanded = expanded,
+        onDismissRequest = { expanded = false }
+    ) {
+        simOptions.forEachIndexed { _, simIndex ->
+            DropdownMenuItem(
+                text = { Text(text = "SIM Card $simIndex") },
+                onClick = {
+                    onSimSelected(simIndex)
+                    expanded = false
+                }
+            )
+        }
+    }
+}
+
+@Composable
+fun ServingCellInfoDisplay(cellInfo: ServingCellInfo?, servingSignalInfo: ServingSignalInfo) {
+    Column(
+        modifier = Modifier
+            .background(Color(0x80EEEEEE))
+            .padding(16.dp),
+        horizontalAlignment = Alignment.Start
+    ) {
+        Text(
+            text = "Serving Cell Info",
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.primary
+        )
+        Spacer(modifier = Modifier.height(8.dp))
+
+        if (cellInfo != null) {
+            val servingCell = cellInfo.servingCell ?: return Text(
+                "No serving cell found",
+                color = MaterialTheme.colorScheme.primary
+            )
+            val record = servingCell.cellularRecord
+
+            // Display technology and signal strengths based on CellularRecord
+            Text(
+                "Technology: ${servingCell.cellularProtocol}",
+                color = MaterialTheme.colorScheme.primary
+            )
+            Text("$servingSignalInfo", color = MaterialTheme.colorScheme.primary)
+
+            val servingCellDisplayString = getServingCellDisplayString(record)
+            Text(servingCellDisplayString, color = MaterialTheme.colorScheme.primary)
+        } else {
+            Text("No serving cell info available", color = MaterialTheme.colorScheme.primary)
+        }
+    }
 }
 
 /**
@@ -518,6 +630,35 @@ private fun calculateArea(bounds: BoundingBox): Double {
 
     return width * height // area in square meters
 }
+
+private fun getServingCellDisplayString(message: GeneratedMessageV3): String {
+    return when (message) {
+        is GsmRecord -> {
+            "MCC: ${message.data.mcc.value}\nMNC: ${message.data.mnc.value}\nLAC: ${message.data.lac.value}\nCellId: ${message.data.ci.value}"
+        }
+
+        is CdmaRecord -> {
+            "SID: ${message.data.sid.value}\nNID: ${message.data.nid.value}\nBSID: ${message.data.bsid.value}"
+        }
+
+        is UmtsRecord -> {
+            "MCC: ${message.data.mcc.value}\nMNC: ${message.data.mnc.value}\nLAC: ${message.data.lac.value}\nCellId: ${message.data.cid.value}"
+        }
+
+        is LteRecord -> {
+            "MCC: ${message.data.mcc.value}\nMNC: ${message.data.mnc.value}\nTAC: ${message.data.tac.value}\nECI: ${message.data.eci.value}"
+        }
+
+        is NrRecord -> {
+            "MCC: ${message.data.mcc.value}\nMNC: ${message.data.mnc.value}\nTAC: ${message.data.tac.value}\nNCI: ${message.data.nci.value}"
+        }
+
+        else -> {
+            "Unknown Protocol"
+        }
+    }
+}
+
 
 @Composable
 fun CircleButtonWithLine(

@@ -1,5 +1,7 @@
 package com.craxiom.networksurvey.util;
 
+import com.craxiom.messaging.CdmaRecord;
+import com.craxiom.messaging.CdmaRecordData;
 import com.craxiom.messaging.GsmRecord;
 import com.craxiom.messaging.GsmRecordData;
 import com.craxiom.messaging.LteRecord;
@@ -8,9 +10,11 @@ import com.craxiom.messaging.NrRecord;
 import com.craxiom.messaging.NrRecordData;
 import com.craxiom.messaging.UmtsRecord;
 import com.craxiom.messaging.UmtsRecordData;
+import com.craxiom.networksurvey.model.CellularProtocol;
 import com.craxiom.networksurvey.model.CellularRecordWrapper;
 import com.craxiom.networksurvey.ui.cellular.Tower;
 import com.craxiom.networksurvey.ui.cellular.model.ServingCellInfo;
+import com.craxiom.networksurvey.ui.cellular.model.ServingSignalInfo;
 import com.google.protobuf.BoolValue;
 import com.google.protobuf.Descriptors;
 import com.google.protobuf.GeneratedMessageV3;
@@ -211,5 +215,43 @@ public class CellularUtils
         }
 
         return "";
+    }
+
+    public static ServingSignalInfo getSignalInfo(CellularRecordWrapper cellularRecord)
+    {
+        if (cellularRecord == null || cellularRecord.cellularProtocol == null)
+        {
+            return null;
+        }
+
+        return switch (cellularRecord.cellularProtocol)
+        {
+            case NONE -> null;
+            case GSM ->
+            {
+                final GsmRecordData gsmData = ((GsmRecord) cellularRecord.cellularRecord).getData();
+                yield new ServingSignalInfo(CellularProtocol.GSM, (int) gsmData.getSignalStrength().getValue(), -1);
+            }
+            case CDMA ->
+            {
+                final CdmaRecordData cdmaData = ((CdmaRecord) cellularRecord.cellularRecord).getData();
+                yield new ServingSignalInfo(CellularProtocol.CDMA, ((int) cdmaData.getEcio().getValue()), -1);
+            }
+            case UMTS ->
+            {
+                final UmtsRecordData umtsData = ((UmtsRecord) cellularRecord.cellularRecord).getData();
+                yield new ServingSignalInfo(CellularProtocol.UMTS, ((int) umtsData.getSignalStrength().getValue()), (int) umtsData.getRscp().getValue());
+            }
+            case LTE ->
+            {
+                final LteRecordData lteData = ((LteRecord) cellularRecord.cellularRecord).getData();
+                yield new ServingSignalInfo(CellularProtocol.LTE, (int) lteData.getRsrp().getValue(), (int) lteData.getRsrq().getValue());
+            }
+            case NR ->
+            {
+                final NrRecordData nrData = ((NrRecord) cellularRecord.cellularRecord).getData();
+                yield new ServingSignalInfo(CellularProtocol.NR, (int) nrData.getSsRsrp().getValue(), (int) nrData.getSsRsrq().getValue());
+            }
+        };
     }
 }

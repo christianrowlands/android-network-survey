@@ -42,6 +42,3 @@ fun CellularTheme(content: @Composable () -> Unit) {
         content = content,
     )
 }
-
-private const val LIGHT_BACKGROUND = 0xFFF5F5F7
-private const val DARK_SURFACE = 0xFF1C1E21

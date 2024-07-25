@@ -8,6 +8,7 @@ import com.craxiom.networksurvey.ui.ASignalChartViewModel
 import com.craxiom.networksurvey.util.CellularUtils
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import org.osmdroid.bonuspack.clustering.RadiusMarkerClusterer
 import org.osmdroid.util.BoundingBox
 import org.osmdroid.util.GeoPoint
@@ -16,6 +17,7 @@ import org.osmdroid.views.overlay.FolderOverlay
 import org.osmdroid.views.overlay.Polyline
 import org.osmdroid.views.overlay.mylocation.GpsMyLocationProvider
 import timber.log.Timber
+import java.util.Objects
 
 /**
  * The view model for the Tower Map screen.
@@ -28,6 +30,9 @@ internal class TowerMapViewModel : ASignalChartViewModel() {
 
     val subIdToServingCellLocations = HashMap<Int, GeoPoint>()
     var myLocation: Location? = null
+
+    private var _servingSignals = MutableStateFlow(ServingSignalInfo(CellularProtocol.NONE, 0, 0))
+    val servingSignals = _servingSignals.asStateFlow()
 
     lateinit var mapView: MapView
     lateinit var gpsMyLocationProvider: GpsMyLocationProvider
@@ -110,12 +115,26 @@ internal class TowerMapViewModel : ASignalChartViewModel() {
                 it?.cellularRecord != null && CellularUtils.isServingCell(it.cellularRecord)
 
             }
-        if (servingCellRecord == null) {
-            _servingCells.value.remove(subscriptionId)
-            return
-        }
 
-        _servingCells.value[subscriptionId] = ServingCellInfo(servingCellRecord, subscriptionId)
+        updateServingCellSignals(servingCellRecord, subscriptionId)
+
+        // No need to update the serving cell if it is the same as the current serving cell. This
+        // prevents a map refresh which is expensive.
+        val currentServingCell = _servingCells.value[subscriptionId]
+        if (Objects.equals(currentServingCell?.servingCell, servingCellRecord)) return
+
+        if (servingCellRecord == null) {
+            _servingCells.update { map ->
+                map.remove(subscriptionId)
+                map
+            }
+        } else {
+            _servingCells.update { oldMap ->
+                val newMap = HashMap(oldMap)
+                newMap[subscriptionId] = ServingCellInfo(servingCellRecord, subscriptionId)
+                newMap
+            }
+        }
 
         recreateOverlaysFromTowerData(mapView, false)
     }
@@ -192,5 +211,18 @@ internal class TowerMapViewModel : ASignalChartViewModel() {
             pathPoints.add(geoPoint)
             polyline.setPoints(pathPoints)
         }
+    }
+
+    private fun updateServingCellSignals(
+        servingCellRecord: CellularRecordWrapper?,
+        subscriptionId: Int
+    ) {
+        if (servingCellRecord == null) {
+            _servingSignals.value = ServingSignalInfo(CellularProtocol.NONE, 0, 0)
+            return
+        }
+
+        val servingSignalInfo = CellularUtils.getSignalInfo(servingCellRecord)
+        _servingSignals.value = servingSignalInfo
     }
 }
