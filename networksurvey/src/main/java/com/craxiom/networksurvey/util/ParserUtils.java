@@ -349,6 +349,34 @@ public class ParserUtils
     }
 
     /**
+     * Given a string, look for the key `isUsingCarrierAggregation=`, take the value after it, convert it to a boolean,
+     * and return it.
+     *
+     * @param infoString The string to look for the carrier aggregation in.
+     * @return null if the carrier aggregation could not be found, or the carrier aggregation value if it could be
+     * extracted from the provided string.
+     */
+    public static Boolean extractCarrierAggregationFromString(String infoString)
+    {
+        try
+        {
+            final String carrierAggregationKey = "isUsingCarrierAggregation=";
+            final int carrierAggregationIndex = infoString.indexOf(carrierAggregationKey);
+            if (carrierAggregationIndex == -1) return null;
+
+            final int endCarrierAggregationIndex = infoString.indexOf(' ', carrierAggregationIndex);
+            if (endCarrierAggregationIndex == -1) return null;
+
+            final String isCaString = infoString.substring(carrierAggregationIndex + carrierAggregationKey.length(), endCarrierAggregationIndex);
+            return Boolean.parseBoolean(isCaString);
+        } catch (Throwable t)
+        {
+            Timber.e(t, "Could not get the carrier aggregation from the NetworkRegistrationInfo toString method");
+            return null;
+        }
+    }
+
+    /**
      * Given a string, look for the provided key, take the value after it, convert it to an int, and return it.
      * In other words, extract the value of interest from the provided toString.
      *
@@ -372,7 +400,7 @@ public class ParserUtils
             return parseInt(rssiString, Integer.MAX_VALUE);
         } catch (Throwable t)
         {
-            Timber.e(t, "Could not get the rssi from the provided toString");
+            Timber.e(t, "Could not get the int value from the provided toString");
             return Integer.MAX_VALUE;
         }
     }
