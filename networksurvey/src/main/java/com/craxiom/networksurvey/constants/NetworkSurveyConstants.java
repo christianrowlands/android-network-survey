@@ -77,6 +77,18 @@ public class NetworkSurveyConstants
      */
     public static final String EXTRA_STARTED_AT_BOOT = "com.craxiom.networksurvey.extra.STARTED_AT_BOOT";
 
+    /**
+     * The key for the Intent extra that indicates the {@link com.craxiom.networksurvey.services.NetworkSurveyService}
+     * is being started via an external intent.
+     */
+    public static final String EXTRA_STARTED_VIA_EXTERNAL_INTENT = "com.craxiom.networksurvey.extra.STARTED_VIA_EXTERNAL_INTENT";
+    public static final String EXTRA_CELLULAR_FILE_LOGGING = "cellular_file_logging";
+    public static final String EXTRA_WIFI_FILE_LOGGING = "wifi_file_logging";
+    public static final String EXTRA_BLUETOOTH_FILE_LOGGING = "bluetooth_file_logging";
+    public static final String EXTRA_GNSS_FILE_LOGGING = "gnss_file_logging";
+    public static final String EXTRA_CDR_FILE_LOGGING = "cdr_file_logging";
+    public static final String EXTRA_MQTT_CONFIG_JSON = "mqtt_config_json";
+
     public static final int DEFAULT_CELLULAR_SCAN_INTERVAL_SECONDS = 5;
     public static final int DEFAULT_WIFI_SCAN_INTERVAL_SECONDS = 8;
     public static final int DEFAULT_BLUETOOTH_SCAN_INTERVAL_SECONDS = 30;

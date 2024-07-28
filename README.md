@@ -160,7 +160,7 @@ you can use the `mqtt_topic_prefix` field to change the topic to something like
 {
   "mqtt_username": "auser",
   "mqtt_password": "apassword",
-  "mqtt_host": "cloud.azure.com",
+  "mqtt_host": "cloud.mymqttserver.com",
   "mqtt_port": 8883,
   "mqtt_client": "aclient",
   "mqtt_tls": true,

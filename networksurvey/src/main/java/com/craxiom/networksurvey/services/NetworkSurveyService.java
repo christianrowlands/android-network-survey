@@ -60,6 +60,7 @@ import com.craxiom.networksurvey.NetworkSurveyActivity;
 import com.craxiom.networksurvey.R;
 import com.craxiom.networksurvey.constants.DeviceStatusMessageConstants;
 import com.craxiom.networksurvey.constants.NetworkSurveyConstants;
+import com.craxiom.networksurvey.fragments.model.MqttConnectionSettings;
 import com.craxiom.networksurvey.listeners.ExtraLocationListener;
 import com.craxiom.networksurvey.listeners.IBluetoothSurveyRecordListener;
 import com.craxiom.networksurvey.listeners.ICdrEventListener;
@@ -82,6 +83,7 @@ import com.craxiom.networksurvey.services.controller.WifiController;
 import com.craxiom.networksurvey.util.IOUtils;
 import com.craxiom.networksurvey.util.MathUtils;
 import com.craxiom.networksurvey.util.PreferenceUtils;
+import com.google.gson.Gson;
 import com.google.protobuf.BoolValue;
 import com.google.protobuf.Int32Value;
 
@@ -254,6 +256,50 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
             {
                 toggleCdrLogging(true);
             }
+        } else if (intent.getBooleanExtra(NetworkSurveyConstants.EXTRA_STARTED_VIA_EXTERNAL_INTENT, false))
+        {
+            Timber.i("The Network Survey Service was started via an external intent");
+
+            final boolean startCellular = intent.getBooleanExtra(NetworkSurveyConstants.EXTRA_CELLULAR_FILE_LOGGING, false);
+            final boolean startWifi = intent.getBooleanExtra(NetworkSurveyConstants.EXTRA_WIFI_FILE_LOGGING, false);
+            final boolean startBluetooth = intent.getBooleanExtra(NetworkSurveyConstants.EXTRA_BLUETOOTH_FILE_LOGGING, false);
+            final boolean startGnss = intent.getBooleanExtra(NetworkSurveyConstants.EXTRA_GNSS_FILE_LOGGING, false);
+            final boolean startCdr = intent.getBooleanExtra(NetworkSurveyConstants.EXTRA_CDR_FILE_LOGGING, false);
+
+            if (startCellular && !cellularController.isLoggingEnabled())
+            {
+                cellularController.toggleLogging(true);
+            }
+            if (startWifi && !wifiController.isLoggingEnabled())
+            {
+                wifiController.toggleLogging(true);
+            }
+            if (startBluetooth && !bluetoothController.isLoggingEnabled())
+            {
+                bluetoothController.toggleLogging(true);
+            }
+            if (startGnss && !gnssController.isLoggingEnabled())
+            {
+                gnssController.toggleLogging(true);
+            }
+            if (startCdr && !isCdrLoggingEnabled()) toggleCdrLogging(true);
+
+            if (mqttConnection.getConnectionState() != ConnectionState.DISCONNECTED)
+            {
+                mqttConnection.disconnect(); // TODO Do we want to disconnect if already connected?
+            }
+            final String mqttConfigJsonString = intent.getStringExtra(NetworkSurveyConstants.EXTRA_MQTT_CONFIG_JSON);
+            if (mqttConfigJsonString != null)
+            {
+                try
+                {
+                    MqttConnectionSettings mqttConnectionSettings = new Gson().fromJson(mqttConfigJsonString, MqttConnectionSettings.class);
+                    connectToMqttBroker(mqttConnectionSettings.toMqttConnectionInfo());
+                } catch (Exception e)
+                {
+                    Timber.e(e, "Failed to parse the MQTT connection settings from the intent");
+                }
+            }
         }
 
         return START_REDELIVER_INTENT;
@@ -262,7 +308,6 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
     @Override
     public IBinder onBind(Intent intent)
     {
-        //noinspection ReturnOfInnerClass
         return surveyServiceBinder;
     }
 
@@ -370,7 +415,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
         // First try to use the MDM settings. The only exception to this is if the user has overridden the MDM settings
         if (!isMqttMdmOverrideEnabled())
         {
-            final RestrictionsManager restrictionsManager = (RestrictionsManager) getSystemService(Context.RESTRICTIONS_SERVICE);
+            final RestrictionsManager restrictionsManager = (RestrictionsManager) getSystemService(RESTRICTIONS_SERVICE);
             if (restrictionsManager != null)
             {
                 final BrokerConnectionInfo connectionInfo = getMdmBrokerConnectionInfo();
@@ -1114,7 +1159,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
             return;
         }
 
-        final LocationManager locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
+        final LocationManager locationManager = (LocationManager) getSystemService(LOCATION_SERVICE);
         if (locationManager != null)
         {
             int smallestScanRate = Integer.MAX_VALUE;
@@ -1252,7 +1297,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
      */
     private void removeLocationListener()
     {
-        final LocationManager locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
+        final LocationManager locationManager = (LocationManager) getSystemService(LOCATION_SERVICE);
         if (primaryLocationListener != null)
         {
             if (locationManager != null) locationManager.removeUpdates(primaryLocationListener);
@@ -1303,7 +1348,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
         boolean mdmConnection = false;
         if (!isMqttMdmOverrideEnabled())
         {
-            final RestrictionsManager restrictionsManager = (RestrictionsManager) getSystemService(Context.RESTRICTIONS_SERVICE);
+            final RestrictionsManager restrictionsManager = (RestrictionsManager) getSystemService(RESTRICTIONS_SERVICE);
             if (restrictionsManager != null)
             {
                 final BrokerConnectionInfo connectionInfo = getMdmBrokerConnectionInfo();
@@ -1337,7 +1382,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
         if (cdrStarted.getAndSet(true)) return;
 
         // Add a listener for the Service State information if we have access to the Telephony Manager
-        final TelephonyManager telephonyManager = (TelephonyManager) getSystemService(Context.TELEPHONY_SERVICE);
+        final TelephonyManager telephonyManager = (TelephonyManager) getSystemService(TELEPHONY_SERVICE);
         if (telephonyManager != null && getPackageManager().hasSystemFeature(PackageManager.FEATURE_TELEPHONY))
         {
             myPhoneNumber = IOUtils.getMyPhoneNumber(this, telephonyManager);
@@ -1722,7 +1767,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
 
         if (phoneStateCdrListener != null)
         {
-            final TelephonyManager telephonyManager = (TelephonyManager) getSystemService(Context.TELEPHONY_SERVICE);
+            final TelephonyManager telephonyManager = (TelephonyManager) getSystemService(TELEPHONY_SERVICE);
             if (telephonyManager != null && getPackageManager().hasSystemFeature(PackageManager.FEATURE_TELEPHONY))
             {
                 Timber.d("Removing the CDR Telephony Manager Service State Listener");
@@ -1840,7 +1885,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
 
     private BrokerConnectionInfo getMdmBrokerConnectionInfo()
     {
-        final RestrictionsManager restrictionsManager = (RestrictionsManager) getSystemService(Context.RESTRICTIONS_SERVICE);
+        final RestrictionsManager restrictionsManager = (RestrictionsManager) getSystemService(RESTRICTIONS_SERVICE);
         if (restrictionsManager != null)
         {
             final Bundle mdmProperties = restrictionsManager.getApplicationRestrictions();
