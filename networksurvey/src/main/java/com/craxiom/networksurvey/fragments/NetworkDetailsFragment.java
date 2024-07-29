@@ -473,7 +473,9 @@ public class NetworkDetailsFragment extends AServiceDataFragment implements ICel
                 binding.cqiGroup.setVisibility(View.GONE);
                 binding.signalOneLabel.setText(R.string.rssi_label);
                 binding.signalTwoGroup.setVisibility(View.GONE);
+                binding.signalTwoLabel.setVisibility(View.GONE);
                 binding.signalThreeGroup.setVisibility(View.GONE);
+                binding.signalThreeLabel.setVisibility(View.GONE);
 
                 chartViewModel.setChartTitle("RSSI");
                 chartViewModel.setCellularProtocol(protocol);
@@ -486,7 +488,9 @@ public class NetworkDetailsFragment extends AServiceDataFragment implements ICel
                 binding.enbIdGroup.setVisibility(View.GONE);
                 binding.sectorIdGroup.setVisibility(View.GONE);
                 binding.signalTwoGroup.setVisibility(View.GONE);
+                binding.signalTwoLabel.setVisibility(View.GONE);
                 binding.signalThreeGroup.setVisibility(View.GONE);
+                binding.signalThreeLabel.setVisibility(View.GONE);
 
                 chartViewModel.setChartTitle("RSSI");
                 chartViewModel.setCellularProtocol(protocol);
@@ -504,7 +508,9 @@ public class NetworkDetailsFragment extends AServiceDataFragment implements ICel
                 binding.signalOneLabel.setText(R.string.rssi_label);
                 binding.signalTwoLabel.setText(R.string.rscp_label);
                 binding.signalTwoGroup.setVisibility(View.VISIBLE);
+                binding.signalTwoLabel.setVisibility(View.VISIBLE);
                 binding.signalThreeGroup.setVisibility(View.GONE);
+                binding.signalThreeLabel.setVisibility(View.GONE);
 
                 chartViewModel.setChartTitle("RSCP");
                 chartViewModel.setCellularProtocol(protocol);
@@ -524,8 +530,10 @@ public class NetworkDetailsFragment extends AServiceDataFragment implements ICel
                 binding.signalOneLabel.setText(R.string.rsrp_label);
                 binding.signalTwoLabel.setText(R.string.rsrq_label);
                 binding.signalTwoGroup.setVisibility(View.VISIBLE);
+                binding.signalTwoLabel.setVisibility(View.VISIBLE);
                 binding.signalThreeLabel.setText(R.string.snr_label);
                 binding.signalThreeGroup.setVisibility(View.VISIBLE);
+                binding.signalThreeLabel.setVisibility(View.VISIBLE);
 
                 chartViewModel.setChartTitle("RSRP");
                 chartViewModel.setCellularProtocol(protocol);
@@ -545,8 +553,10 @@ public class NetworkDetailsFragment extends AServiceDataFragment implements ICel
                 binding.signalOneLabel.setText(R.string.ss_rsrp_label);
                 binding.signalTwoLabel.setText(R.string.ss_rsrq_label);
                 binding.signalTwoGroup.setVisibility(View.VISIBLE);
+                binding.signalTwoLabel.setVisibility(View.VISIBLE);
                 binding.signalThreeLabel.setText(R.string.ss_sinr_label);
                 binding.signalThreeGroup.setVisibility(View.VISIBLE);
+                binding.signalThreeLabel.setVisibility(View.VISIBLE);
 
                 chartViewModel.setChartTitle("SS RSRP");
                 chartViewModel.setCellularProtocol(protocol);
