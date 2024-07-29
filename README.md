@@ -68,9 +68,9 @@ If you're interested in CDR logging that includes SMS events and call details:
 
 ## Tracking And Privacy
 
-The version of this app on the Play Store has Firebase Crashlytics set up. This means that app crash
-logs are sent off the device to Firebase. If you don't want to participate in this type of tracking
-then you have three options.
+The version of this app on the Play Store has Firebase Crashlytics and Analytics set up. This means 
+that app crash logs and analytics are sent off the device to Firebase. If you don't want to 
+participate in this type of tracking then you have three options.
 
 1. Install the app
    from [IzzyOnDroid](https://apt.izzysoft.de/fdroid/index/apk/com.craxiom.networksurvey).
@@ -93,11 +93,26 @@ To build and install the project follow the steps below:
 If you want to build using the command line, the apk can be built and installed using the following
 commands. Make sure your phone is connected to your computer before running the install command.
 
+There are two build variants available for this app. The default build variant is the regular
+version of the app which is the "Google Play" version. As noted in the privacy section, the 
+"Google Play" version has Firebase Crashlytics and Analytics enabled. The second build variant is 
+the "CDR" version. The "CDR" version does not have Firebase Crashlytics and Analytics enabled, and
+it has the extended CDR logging features (as discussed above).
+
+### Build and Install the Regular Version
+
 > NOTE: If building on Windows, replace `./gradlew` with `gradlew`
 
 ```shell
-./gradlew assembleDebug
-./gradlew installDebug
+./gradlew assembleRegularDebug
+./gradlew installRegularDebug
+```
+
+### Build and Install the CDR Version
+
+```shell
+./gradlew assembleCdrDebug
+./gradlew installCdrDebug
 ```
 
 ### Run Tests

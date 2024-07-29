@@ -1,7 +1,10 @@
 apply plugin: 'com.android.application'
 apply plugin: "androidx.navigation.safeargs"
-apply plugin: "com.google.gms.google-services"
-apply plugin: "com.google.firebase.crashlytics"
+if (file("google-services.json").exists()) {
+    logger.quiet("Using the google-services.json file")
+    apply plugin: "com.google.gms.google-services"
+    apply plugin: "com.google.firebase.crashlytics"
+}
 apply plugin: 'kotlin-android'
 apply plugin: 'kotlin-kapt'
 apply plugin: 'dagger.hilt.android.plugin'
