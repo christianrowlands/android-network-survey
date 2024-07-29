@@ -416,7 +416,7 @@ public class ParserUtils
      */
     public static String bsicToString(int bsic)
     {
-        if (bsic >= 0 && bsic < 64)
+        if (bsic < 0 || bsic > 63)
         {
             Timber.e("BSIC is not in the rage of 0 to 63 %s", bsic);
             return "";
