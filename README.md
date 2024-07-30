@@ -12,18 +12,13 @@
   </a>
 </p>
 
-The Network Survey Android App provides a basic survey capability for Cellular networks, Wi-Fi
-networks, Bluetooth Devices, and GNSS constellations.
+The Network Survey Android App provides a basic survey capability for logging and analyzing 
+Cellular networks, Wi-Fi networks, Bluetooth Devices, and GNSS constellations. Capture detailed 
+records of signal strength, network information, and device data.  All data can be conveniently 
+logged to GeoPackage or CSV files for offline analysis. Alternatively, choose to live stream the 
+data via MQTT or gRPC protocols for real-time monitoring and integration with other systems.
 
 The Network Survey user manual can be found [here](https://networksurvey.app/manual).
-
-For cellular data, in its current state it can be used to examine the network details of the current
-serving cell, and log GSM, CDMA, UMTS, LTE, and NR records to a GeoPackage file. Wi-Fi survey
-records can also be logged to a GeoPackage file, and the current list of Wi-Fi networks in range is
-displayed in the UI. The App also supports connecting to a remote gRPC server and live streaming the
-cellular and Wi-Fi records. For GNSS data, it can display the latest information about the satellite
-vehicles and also log the information to a GeoPackage file. The Bluetooth support allows for
-scanning and displaying a list of the nearby Bluetooth devices.
 
 <p align="center">
   <img src="screenshots/dashboard.png" alt="Cellular Details" width="190"/>
