@@ -46,7 +46,8 @@ public class SettingsFragment extends PreferenceFragmentCompat implements Shared
             NetworkSurveyConstants.PROPERTY_GNSS_SCAN_INTERVAL_SECONDS,
             NetworkSurveyConstants.PROPERTY_DEVICE_STATUS_SCAN_INTERVAL_SECONDS,
             NetworkSurveyConstants.PROPERTY_MQTT_START_ON_BOOT,
-            NetworkSurveyConstants.PROPERTY_LOCATION_PROVIDER};
+            NetworkSurveyConstants.PROPERTY_LOCATION_PROVIDER,
+            NetworkSurveyConstants.PROPERTY_ALLOW_INTENT_CONTROL};
 
     @Override
     public void onCreatePreferences(Bundle savedInstanceState, String rootKey)
@@ -220,6 +221,7 @@ public class SettingsFragment extends PreferenceFragmentCompat implements Shared
         updateIntPreferenceForMdm(preferenceScreen, mdmProperties, NetworkSurveyConstants.PROPERTY_DEVICE_STATUS_SCAN_INTERVAL_SECONDS);
         updateBooleanPreferenceForMdm(preferenceScreen, mdmProperties, NetworkSurveyConstants.PROPERTY_MQTT_START_ON_BOOT);
         updateIntPreferenceForMdm(preferenceScreen, mdmProperties, NetworkSurveyConstants.PROPERTY_LOCATION_PROVIDER);
+        updateBooleanPreferenceForMdm(preferenceScreen, mdmProperties, NetworkSurveyConstants.PROPERTY_ALLOW_INTENT_CONTROL);
     }
 
     /**

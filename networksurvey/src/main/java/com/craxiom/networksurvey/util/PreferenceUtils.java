@@ -333,6 +333,43 @@ public class PreferenceUtils
     }
 
     /**
+     * Gets the preference for allowing intent control.
+     * <p>
+     * First, this method tries to pull the MDM provided allow intent control value. If it is not set (either because the device
+     * is not under MDM control, or if that specific value is not set by the MDM administrator) then the value is pulled
+     * from the Android Shared Preferences (aka from the user settings). If it is not set there then the default
+     * value is used.
+     * <p>
+     * The only exception to this sequence is that if the user has toggled the MDM override switch in user settings,
+     * then the user preference value will be used instead of the MDM value.
+     *
+     * @param context The context to use when getting the Shared Preferences and Restriction Manager.
+     * @return True if the app should allow intent control, false otherwise.
+     */
+    public static boolean getAllowIntentControlPreference(Context context)
+    {
+        final RestrictionsManager restrictionsManager = (RestrictionsManager) context.getSystemService(Context.RESTRICTIONS_SERVICE);
+
+        final boolean mdmOverride = PreferenceManager.getDefaultSharedPreferences(context).getBoolean(NetworkSurveyConstants.PROPERTY_MDM_OVERRIDE_KEY, false);
+
+        // First try to use the MDM provided value.
+        if (restrictionsManager != null && !mdmOverride)
+        {
+            final Bundle mdmProperties = restrictionsManager.getApplicationRestrictions();
+
+            if (mdmProperties.containsKey(NetworkSurveyConstants.PROPERTY_ALLOW_INTENT_CONTROL))
+            {
+                return mdmProperties.getBoolean(NetworkSurveyConstants.PROPERTY_ALLOW_INTENT_CONTROL);
+            }
+        }
+
+        final SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(context);
+
+        // Next, try to use the value from user preferences, with a default fallback
+        return preferences.getBoolean(NetworkSurveyConstants.PROPERTY_ALLOW_INTENT_CONTROL, true);
+    }
+
+    /**
      * Gets the preference for ignoring the WiFi scan throttling warning.
      * <p>
      * First, this method tries to pull the MDM provided auto start value. If it is not set (either because the device

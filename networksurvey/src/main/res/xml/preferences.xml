@@ -152,6 +152,20 @@
     </PreferenceCategory>
 
     <PreferenceCategory
+        app:icon="@drawable/ic_security_24"
+        app:key="security"
+        app:title="@string/security_config_title">
+
+        <SwitchPreferenceCompat
+            app:defaultValue="true"
+            app:key="allow_intent_control"
+            app:summaryOff="@string/allow_intent_control_summary_off"
+            app:summaryOn="@string/allow_intent_control_summary_on"
+            app:title="@string/allow_intent_control_title" />
+
+    </PreferenceCategory>
+
+    <PreferenceCategory
         app:icon="@drawable/ic_info"
         app:key="about"
         app:title="About">

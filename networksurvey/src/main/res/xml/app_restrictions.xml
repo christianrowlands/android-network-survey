@@ -187,4 +187,11 @@
         android:restrictionType="integer"
         android:title="@string/location_provider_title" />
 
+    <restriction
+        android:defaultValue="true"
+        android:description="@string/allow_intent_control_description"
+        android:key="allow_intent_control"
+        android:restrictionType="bool"
+        android:title="@string/allow_intent_control_title" />
+
 </restrictions>

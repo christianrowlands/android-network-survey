@@ -119,6 +119,7 @@ public class NetworkSurveyConstants
     public static final String PROPERTY_LOG_ROLLOVER_SIZE_MB = "log_rollover_size_mb";
     public static final String PROPERTY_LOG_FILE_TYPE = "log_file_type";
     public static final String PROPERTY_LOCATION_PROVIDER = "location_provider";
+    public static final String PROPERTY_ALLOW_INTENT_CONTROL = "allow_intent_control";
     public static final String PROPERTY_IGNORE_WIFI_SCAN_THROTTLING_WARNING = "ignore_wifi_scan_throttling_warning";
 
     // A read only value in the preferences that shows the App Version

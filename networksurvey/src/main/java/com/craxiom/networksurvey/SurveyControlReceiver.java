@@ -8,6 +8,7 @@ import android.widget.Toast;
 import com.craxiom.networksurvey.constants.NetworkSurveyConstants;
 import com.craxiom.networksurvey.fragments.model.MqttConnectionSettings;
 import com.craxiom.networksurvey.services.NetworkSurveyService;
+import com.craxiom.networksurvey.util.PreferenceUtils;
 import com.google.gson.Gson;
 import com.google.gson.JsonSyntaxException;
 
@@ -23,6 +24,13 @@ public class SurveyControlReceiver extends BroadcastReceiver
     {
         if (intent != null && intent.getAction() != null)
         {
+            boolean allowIntentControl = PreferenceUtils.getAllowIntentControlPreference(context);
+            if (!allowIntentControl)
+            {
+                Timber.w("Received a survey control intent, but the user has disabled intent control");
+                return;
+            }
+
             switch (intent.getAction())
             {
                 case ACTION_START_SURVEY:

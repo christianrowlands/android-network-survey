@@ -446,6 +446,12 @@ but work independently, so you have full control over how you handle your data.<
     </string>
     <string name="location_provider_mdm_description">Specifies what provider to use for getting the device\'s location. The options are 0, 1, 2, or 3. 0 is for FUSED, 1 is for GNSS, 2 is for NETWORK, and 3 is for ALL.</string>
 
+    <string name="security_config_title">Security Config</string>
+    <string name="allow_intent_control_title">Allow other apps to Start NS</string>
+    <string name="allow_intent_control_description">True to allow other apps to start Network Survey via an Intent</string>
+    <string name="allow_intent_control_summary_on">Other apps can start Network Survey</string>
+    <string name="allow_intent_control_summary_off">Other apps will be blocked from starting Network Survey</string>
+
     <string name="auto_start_mqtt_summary_on">The MQTT connection will be started when the phone is booted (Note that a valid MQTT broker must be configured in the connection UI)</string>
     <string name="auto_start_mqtt_summary_off">The MQTT connection will only be started manually</string>
 
