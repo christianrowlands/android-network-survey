@@ -683,6 +683,26 @@ public class PreferenceUtils
         {
             edit.putString(MqttConstants.PROPERTY_MQTT_TOPIC_PREFIX, mqttConnectionSettings.mqttTopicPrefix());
         }
+        if (mqttConnectionSettings.cellularStreamEnabled() != null)
+        {
+            edit.putBoolean(NetworkSurveyConstants.PROPERTY_MQTT_CELLULAR_STREAM_ENABLED, mqttConnectionSettings.cellularStreamEnabled());
+        }
+        if (mqttConnectionSettings.wifiStreamEnabled() != null)
+        {
+            edit.putBoolean(NetworkSurveyConstants.PROPERTY_MQTT_WIFI_STREAM_ENABLED, mqttConnectionSettings.wifiStreamEnabled());
+        }
+        if (mqttConnectionSettings.bluetoothStreamEnabled() != null)
+        {
+            edit.putBoolean(NetworkSurveyConstants.PROPERTY_MQTT_BLUETOOTH_STREAM_ENABLED, mqttConnectionSettings.bluetoothStreamEnabled());
+        }
+        if (mqttConnectionSettings.gnssStreamEnabled() != null)
+        {
+            edit.putBoolean(NetworkSurveyConstants.PROPERTY_MQTT_GNSS_STREAM_ENABLED, mqttConnectionSettings.gnssStreamEnabled());
+        }
+        if (mqttConnectionSettings.deviceStatusStreamEnabled() != null)
+        {
+            edit.putBoolean(NetworkSurveyConstants.PROPERTY_MQTT_DEVICE_STATUS_STREAM_ENABLED, mqttConnectionSettings.deviceStatusStreamEnabled());
+        }
 
         edit.apply();
     }

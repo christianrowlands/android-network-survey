@@ -34,13 +34,14 @@ public class CodeScannerFragment extends Fragment
     public View onCreateView(LayoutInflater inflater, @Nullable ViewGroup container,
                              @Nullable Bundle savedInstanceState)
     {
-        final Activity activity = getActivity();
         View root = inflater.inflate(R.layout.fragment_scanner, container, false);
+
+        final Activity activity = getActivity();
+        if (activity == null) return null;
 
         CodeScannerView scannerView = root.findViewById(R.id.scanner_view);
         codeScanner = new CodeScanner(activity, scannerView);
         codeScanner.setDecodeCallback(result -> activity.runOnUiThread(() -> {
-
             if (!result.getText().isEmpty())
             {
                 try

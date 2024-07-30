@@ -12,10 +12,10 @@
   </a>
 </p>
 
-The Network Survey Android App provides a basic survey capability for logging and analyzing 
-Cellular networks, Wi-Fi networks, Bluetooth Devices, and GNSS constellations. Capture detailed 
-records of signal strength, network information, and device data.  All data can be conveniently 
-logged to GeoPackage or CSV files for offline analysis. Alternatively, choose to live stream the 
+The Network Survey Android App provides a basic survey capability for logging and analyzing
+Cellular networks, Wi-Fi networks, Bluetooth Devices, and GNSS constellations. Capture detailed
+records of signal strength, network information, and device data. All data can be conveniently
+logged to GeoPackage or CSV files for offline analysis. Alternatively, choose to live stream the
 data via MQTT or gRPC protocols for real-time monitoring and integration with other systems.
 
 The Network Survey user manual can be found [here](https://networksurvey.app/manual).
@@ -63,8 +63,8 @@ If you're interested in CDR logging that includes SMS events and call details:
 
 ## Tracking And Privacy
 
-The version of this app on the Play Store has Firebase Crashlytics and Analytics set up. This means 
-that app crash logs and analytics are sent off the device to Firebase. If you don't want to 
+The version of this app on the Play Store has Firebase Crashlytics and Analytics set up. This means
+that app crash logs and analytics are sent off the device to Firebase. If you don't want to
 participate in this type of tracking then you have three options.
 
 1. Install the app
@@ -89,8 +89,8 @@ If you want to build using the command line, the apk can be built and installed 
 commands. Make sure your phone is connected to your computer before running the install command.
 
 There are two build variants available for this app. The default build variant is the regular
-version of the app which is the "Google Play" version. As noted in the privacy section, the 
-"Google Play" version has Firebase Crashlytics and Analytics enabled. The second build variant is 
+version of the app which is the "Google Play" version. As noted in the privacy section, the
+"Google Play" version has Firebase Crashlytics and Analytics enabled. The second build variant is
 the "CDR" version. The "CDR" version does not have Firebase Crashlytics and Analytics enabled, and
 it has the extended CDR logging features (as discussed above).
 
@@ -174,7 +174,9 @@ you can use the `mqtt_topic_prefix` field to change the topic to something like
   "mqtt_port": 8883,
   "mqtt_client": "aclient",
   "mqtt_tls": true,
-  "mqtt_topic_prefix": "my/custom/topic/path/"
+  "mqtt_topic_prefix": "my/custom/topic/path/",
+  "cellular_stream_enabled": true,
+  "wifi_stream_enabled": true
 }
 ```
 

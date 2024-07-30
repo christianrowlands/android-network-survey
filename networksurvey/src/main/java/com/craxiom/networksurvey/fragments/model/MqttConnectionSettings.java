@@ -23,7 +23,7 @@ public record MqttConnectionSettings(
         @SerializedName("wifi_stream_enabled") Boolean wifiStreamEnabled,
         @SerializedName("bluetooth_stream_enabled") Boolean bluetoothStreamEnabled,
         @SerializedName("gnss_stream_enabled") Boolean gnssStreamEnabled,
-        @SerializedName("device_status_stream_enabled") Boolean deviceStatusStreamEnabled // TODO Handle these fields in the QR Code scanner
+        @SerializedName("device_status_stream_enabled") Boolean deviceStatusStreamEnabled
 ) implements Serializable
 {
 
