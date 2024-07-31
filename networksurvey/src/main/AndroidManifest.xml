@@ -73,8 +73,13 @@
         <service
             android:name=".services.NetworkSurveyService"
             android:description="@string/network_survey_service_description"
-            android:exported="false"
-            android:foregroundServiceType="location" />
+            android:exported="true"
+            android:foregroundServiceType="location">
+            <intent-filter>
+                <action android:name="com.craxiom.networksurvey.START_SURVEY" />
+                <action android:name="com.craxiom.networksurvey.STOP_SURVEY" />
+            </intent-filter>
+        </service>
 
         <service
             android:name=".services.GrpcConnectionService"

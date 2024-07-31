@@ -113,6 +113,9 @@ import timber.log.Timber;
  */
 public class NetworkSurveyService extends Service implements IConnectionStateListener, SharedPreferences.OnSharedPreferenceChangeListener, IMqttService
 {
+    public static final String ACTION_START_SURVEY = "com.craxiom.networksurvey.START_SURVEY";
+    public static final String ACTION_STOP_SURVEY = "com.craxiom.networksurvey.STOP_SURVEY";
+
     private static final Uri SMS_URI = Uri.parse("content://sms");
     public static final String SMS_COLUMN_ID = "_id";
     private static final String SMS_COLUMN_TYPE = "type";
@@ -256,7 +259,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
             {
                 toggleCdrLogging(true);
             }
-        } else if (intent.getBooleanExtra(NetworkSurveyConstants.EXTRA_STARTED_VIA_EXTERNAL_INTENT, false))
+        } else if (ACTION_START_SURVEY.equals(intent.getAction()))
         {
             Timber.i("The Network Survey Service was started via an external intent");
 
@@ -265,6 +268,9 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
             final boolean startBluetooth = intent.getBooleanExtra(NetworkSurveyConstants.EXTRA_BLUETOOTH_FILE_LOGGING, false);
             final boolean startGnss = intent.getBooleanExtra(NetworkSurveyConstants.EXTRA_GNSS_FILE_LOGGING, false);
             final boolean startCdr = intent.getBooleanExtra(NetworkSurveyConstants.EXTRA_CDR_FILE_LOGGING, false);
+
+            Timber.i("Starting the Network Survey Service with the file logging flags: cellular=%b, wifi=%b, bluetooth=%b, gnss=%b, cdr=%b",
+                    startCellular, startWifi, startBluetooth, startGnss, startCdr);
 
             if (startCellular && !cellularController.isLoggingEnabled())
             {
@@ -284,22 +290,41 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
             }
             if (startCdr && !isCdrLoggingEnabled()) toggleCdrLogging(true);
 
-            if (mqttConnection.getConnectionState() != ConnectionState.DISCONNECTED)
-            {
-                mqttConnection.disconnect(); // TODO Do we want to disconnect if already connected?
-            }
             final String mqttConfigJsonString = intent.getStringExtra(NetworkSurveyConstants.EXTRA_MQTT_CONFIG_JSON);
             if (mqttConfigJsonString != null)
             {
                 try
                 {
                     MqttConnectionSettings mqttConnectionSettings = new Gson().fromJson(mqttConfigJsonString, MqttConnectionSettings.class);
+
+                    Timber.i("Starting the MQTT connection with the intent provided configuration");
+
+                    if (mqttConnection.getConnectionState() != ConnectionState.DISCONNECTED)
+                    {
+                        mqttConnection.disconnect(); // TODO Do we want to disconnect if already connected?
+                    }
+
                     connectToMqttBroker(mqttConnectionSettings.toMqttConnectionInfo());
                 } catch (Exception e)
                 {
                     Timber.e(e, "Failed to parse the MQTT connection settings from the intent");
                 }
             }
+        } else if (ACTION_STOP_SURVEY.equals(intent.getAction()))
+        {
+            Timber.i("The Network Survey Service is being stopped via an external intent");
+
+            // This whole else-if block is really unnecessary because the caller should just use
+            // stopService(stopNetworkSurveyIntent) instead of sending this intent. But, we'll
+            // handle it just in case.
+            if (cellularController.isLoggingEnabled()) cellularController.toggleLogging(false);
+            if (wifiController.isLoggingEnabled()) wifiController.toggleLogging(false);
+            if (bluetoothController.isLoggingEnabled()) bluetoothController.toggleLogging(false);
+            if (gnssController.isLoggingEnabled()) gnssController.toggleLogging(false);
+            if (isCdrLoggingEnabled()) toggleCdrLogging(false);
+            disconnectFromMqttBroker();
+
+            if (!isBeingUsed()) stopSelf();
         }
 
         return START_REDELIVER_INTENT;
@@ -330,6 +355,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
         wifiController.stopWifiRecordScanning();
         bluetoothController.stopBluetoothRecordScanning();
         gnssController.stopGnssRecordScanning();
+        stopCdrEvents();
         removeLocationListener();
         stopDeviceStatusReport();
         stopAllLogging();
@@ -551,7 +577,8 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
      * @param connectionStateListener The listener to add.
      */
     @Override
-    public void registerMqttConnectionStateListener(IConnectionStateListener connectionStateListener)
+    public void registerMqttConnectionStateListener(IConnectionStateListener
+                                                            connectionStateListener)
     {
         mqttConnection.registerMqttConnectionStateListener(connectionStateListener);
     }
@@ -562,7 +589,8 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
      * @param connectionStateListener The listener to remove.
      */
     @Override
-    public void unregisterMqttConnectionStateListener(IConnectionStateListener connectionStateListener)
+    public void unregisterMqttConnectionStateListener(IConnectionStateListener
+                                                              connectionStateListener)
     {
         mqttConnection.unregisterMqttConnectionStateListener(connectionStateListener);
     }
@@ -612,7 +640,8 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
      *
      * @param surveyRecordListener The survey record listener to register.
      */
-    public void registerCellularSurveyRecordListener(ICellularSurveyRecordListener surveyRecordListener)
+    public void registerCellularSurveyRecordListener(ICellularSurveyRecordListener
+                                                             surveyRecordListener)
     {
         if (surveyRecordProcessor != null)
         {
@@ -631,7 +660,8 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
      *
      * @param surveyRecordListener The listener to unregister.
      */
-    public void unregisterCellularSurveyRecordListener(ICellularSurveyRecordListener surveyRecordListener)
+    public void unregisterCellularSurveyRecordListener(ICellularSurveyRecordListener
+                                                               surveyRecordListener)
     {
         if (surveyRecordProcessor != null)
         {
@@ -678,7 +708,8 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
      * @param surveyRecordListener The listener to unregister.
      * @since 0.1.2
      */
-    public void unregisterWifiSurveyRecordListener(IWifiSurveyRecordListener surveyRecordListener)
+    public void unregisterWifiSurveyRecordListener(IWifiSurveyRecordListener
+                                                           surveyRecordListener)
     {
         if (surveyRecordProcessor != null)
         {
@@ -702,7 +733,8 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
      * @param surveyRecordListener The survey record listener to register.
      * @since 1.0.0
      */
-    public void registerBluetoothSurveyRecordListener(IBluetoothSurveyRecordListener surveyRecordListener)
+    public void registerBluetoothSurveyRecordListener(IBluetoothSurveyRecordListener
+                                                              surveyRecordListener)
     {
         if (surveyRecordProcessor != null)
         {
@@ -725,7 +757,8 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
      * @param surveyRecordListener The listener to unregister.
      * @since 1.0.0
      */
-    public void unregisterBluetoothSurveyRecordListener(IBluetoothSurveyRecordListener surveyRecordListener)
+    public void unregisterBluetoothSurveyRecordListener(IBluetoothSurveyRecordListener
+                                                                surveyRecordListener)
     {
         if (surveyRecordProcessor != null)
         {
@@ -772,12 +805,16 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
      * @param surveyRecordListener The listener to unregister.
      * @since 0.3.0
      */
-    public void unregisterGnssSurveyRecordListener(IGnssSurveyRecordListener surveyRecordListener)
+    public void unregisterGnssSurveyRecordListener(IGnssSurveyRecordListener
+                                                           surveyRecordListener)
     {
         if (surveyRecordProcessor != null)
         {
             surveyRecordProcessor.unregisterGnssSurveyRecordListener(surveyRecordListener);
-            if (!surveyRecordProcessor.isGnssBeingUsed()) gnssController.stopGnssRecordScanning();
+            if (!surveyRecordProcessor.isGnssBeingUsed())
+            {
+                gnssController.stopGnssRecordScanning();
+            }
         }
 
         stopDeviceStatusReportIfNotNeeded();
@@ -906,7 +943,10 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
      */
     public void onUiVisible(NetworkSurveyActivity networkSurveyActivity)
     {
-        if (surveyRecordProcessor != null) surveyRecordProcessor.onUiVisible(networkSurveyActivity);
+        if (surveyRecordProcessor != null)
+        {
+            surveyRecordProcessor.onUiVisible(networkSurveyActivity);
+        }
 
         cellularController.startCellularRecordScanning();
     }
@@ -1278,7 +1318,8 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
 
     @SuppressLint("MissingPermission")
     // Only called from updateLocationListener, which checks the permission
-    private void updateOtherLocationListeners(int locationProviderPreference, LocationManager locationManager, int scanRate)
+    private void updateOtherLocationListeners(int locationProviderPreference, LocationManager
+            locationManager, int scanRate)
     {
         if (locationProviderPreference == LOCATION_PROVIDER_ALL)
         {
@@ -1733,7 +1774,8 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
      * @return The text that can be added to the service notification.
      * @since 0.1.1
      */
-    private String getNotificationText(boolean logging, boolean mqttConnectionActive, ConnectionState connectionState)
+    private String getNotificationText(boolean logging,
+                                       boolean mqttConnectionActive, ConnectionState connectionState)
     {
         String notificationText = "";
 

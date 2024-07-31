@@ -63,7 +63,8 @@ public class SurveyControlReceiver extends BroadcastReceiver
 
     private void stopSurvey(Context context, Intent intent)
     {
-        // TODO Finish me
+        Intent serviceIntent = new Intent(context, NetworkSurveyService.class);
+        context.stopService(serviceIntent);
     }
 
     /**
