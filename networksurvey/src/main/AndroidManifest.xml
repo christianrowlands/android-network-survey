@@ -107,16 +107,6 @@
         </receiver>
 
         <receiver
-            android:name=".SurveyControlReceiver"
-            android:label="SurveyControlReceiver"
-            android:enabled="true"
-            android:exported="true">
-            <intent-filter>
-                <action android:name="com.craxiom.networksurvey.START_SURVEY" />
-            </intent-filter>
-        </receiver>
-
-        <receiver
             android:name=".CdrSmsReceiver"
             android:label="CdrSmsReceiver"
             android:exported="true">

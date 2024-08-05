@@ -172,8 +172,6 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
     @Override
     public void onCreate()
     {
-        super.onCreate();
-
         Timber.i("Creating the Network Survey Service");
 
         final Context context = getApplicationContext();
@@ -261,6 +259,13 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
             }
         } else if (ACTION_START_SURVEY.equals(intent.getAction()))
         {
+            boolean allowIntentControl = PreferenceUtils.getAllowIntentControlPreference(this);
+            if (!allowIntentControl)
+            {
+                Timber.w("Received a start survey control intent, but the user has disabled intent control");
+                return START_REDELIVER_INTENT;
+            }
+
             Timber.i("The Network Survey Service was started via an external intent");
 
             final boolean startCellular = intent.getBooleanExtra(NetworkSurveyConstants.EXTRA_CELLULAR_FILE_LOGGING, false);
@@ -312,16 +317,16 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
             }
         } else if (ACTION_STOP_SURVEY.equals(intent.getAction()))
         {
+            boolean allowIntentControl = PreferenceUtils.getAllowIntentControlPreference(this);
+            if (!allowIntentControl)
+            {
+                Timber.w("Received a stop survey control intent, but the user has disabled intent control");
+                return START_REDELIVER_INTENT;
+            }
+
             Timber.i("The Network Survey Service is being stopped via an external intent");
 
-            // This whole else-if block is really unnecessary because the caller should just use
-            // stopService(stopNetworkSurveyIntent) instead of sending this intent. But, we'll
-            // handle it just in case.
-            if (cellularController.isLoggingEnabled()) cellularController.toggleLogging(false);
-            if (wifiController.isLoggingEnabled()) wifiController.toggleLogging(false);
-            if (bluetoothController.isLoggingEnabled()) bluetoothController.toggleLogging(false);
-            if (gnssController.isLoggingEnabled()) gnssController.toggleLogging(false);
-            if (isCdrLoggingEnabled()) toggleCdrLogging(false);
+            stopAllLogging();
             disconnectFromMqttBroker();
 
             if (!isBeingUsed()) stopSelf();
@@ -1750,10 +1755,12 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
         final NotificationCompat.Builder builder = new NotificationCompat.Builder(this, NetworkSurveyConstants.NOTIFICATION_CHANNEL_ID)
                 .setContentTitle(notificationTitle)
                 .setOngoing(true)
+                .setOnlyAlertOnce(true)
                 .setSmallIcon(mqttConnectionActive ? R.drawable.ic_cloud_connection : (logging ? R.drawable.logging_thick_icon : R.drawable.gps_map_icon))
                 .setContentIntent(pendingIntent)
                 .setTicker(notificationTitle)
                 .setContentText(notificationText)
+                .setCategory(NotificationCompat.CATEGORY_SERVICE)
                 .setStyle(new NotificationCompat.BigTextStyle().bigText(notificationText));
 
         if (connectionState == ConnectionState.CONNECTING)
