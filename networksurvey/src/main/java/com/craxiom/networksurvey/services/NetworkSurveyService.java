@@ -17,6 +17,7 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.RestrictionsManager;
 import android.content.SharedPreferences;
+import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.content.pm.ServiceInfo;
 import android.database.ContentObserver;
@@ -1648,6 +1649,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
         }
 
         dataBuilder.setDeviceModel(Build.MODEL);
+        dataBuilder.setAppVersion(getVersionName());
 
         final DeviceStatus.Builder statusBuilder = DeviceStatus.newBuilder();
         statusBuilder.setMessageType(DeviceStatusMessageConstants.DEVICE_STATUS_MESSAGE_TYPE);
@@ -1655,6 +1657,21 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
         statusBuilder.setData(dataBuilder);
 
         return statusBuilder.build();
+    }
+
+    /**
+     * @return The NS App version number, or an empty string if it could not be determined.
+     */
+    private String getVersionName()
+    {
+        try
+        {
+            PackageInfo info = getPackageManager().getPackageInfo(getPackageName(), 0);
+            return info.versionName;
+        } catch (PackageManager.NameNotFoundException e)
+        {
+            return "";
+        }
     }
 
     /**
