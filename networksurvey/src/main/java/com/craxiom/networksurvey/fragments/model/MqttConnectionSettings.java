@@ -116,12 +116,22 @@ public record MqttConnectionSettings(
 
         public MqttConnectionSettings build()
         {
-            return new MqttConnectionSettings(host, port, tlsEnabled, deviceName, mqttUsername, mqttPassword, mqttTopicPrefix, cellularStreamEnabled, wifiStreamEnabled, bluetoothStreamEnabled, gnssStreamEnabled, deviceStatusStreamEnabled);
+            return new MqttConnectionSettings(host, port, tlsEnabled, deviceName, mqttUsername, mqttPassword, mqttTopicPrefix,
+                    cellularStreamEnabled != null ? cellularStreamEnabled : false,
+                    wifiStreamEnabled != null ? wifiStreamEnabled : false,
+                    bluetoothStreamEnabled != null ? bluetoothStreamEnabled : false,
+                    gnssStreamEnabled != null ? gnssStreamEnabled : false,
+                    deviceStatusStreamEnabled != null ? deviceStatusStreamEnabled : false);
         }
     }
 
     public BrokerConnectionInfo toMqttConnectionInfo()
     {
-        return new MqttConnectionInfo(host, port, tlsEnabled, deviceName, mqttUsername, mqttPassword, cellularStreamEnabled, wifiStreamEnabled, bluetoothStreamEnabled, gnssStreamEnabled, deviceStatusStreamEnabled, mqttTopicPrefix);
+        return new MqttConnectionInfo(host, port, tlsEnabled, deviceName, mqttUsername, mqttPassword,
+                cellularStreamEnabled != null ? cellularStreamEnabled : false,
+                wifiStreamEnabled != null ? wifiStreamEnabled : false,
+                bluetoothStreamEnabled != null ? bluetoothStreamEnabled : false,
+                gnssStreamEnabled != null ? gnssStreamEnabled : false,
+                deviceStatusStreamEnabled != null ? deviceStatusStreamEnabled : false, mqttTopicPrefix);
     }
 }

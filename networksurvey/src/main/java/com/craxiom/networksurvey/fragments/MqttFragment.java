@@ -275,6 +275,11 @@ public class MqttFragment extends AConnectionFragment<NetworkSurveyService.Surve
                 .mqttUsername(usernameEdit.getText().toString())
                 .mqttPassword(passwordEdit.getText().toString())
                 .mqttTopicPrefix(topicPrefix)
+                .cellularStreamEnabled(cellularStreamEnabled)
+                .wifiStreamEnabled(wifiStreamEnabled)
+                .bluetoothStreamEnabled(bluetoothStreamEnabled)
+                .gnssStreamEnabled(gnssStreamEnabled)
+                .deviceStatusStreamEnabled(deviceStatusStreamEnabled)
                 .build();
     }
 
