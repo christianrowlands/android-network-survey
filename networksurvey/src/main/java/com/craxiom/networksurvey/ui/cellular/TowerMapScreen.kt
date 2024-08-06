@@ -389,40 +389,40 @@ fun SimCardDropdown(
 fun ServingCellInfoDisplay(cellInfo: ServingCellInfo?, servingSignalInfo: ServingSignalInfo?) {
     Column(
         modifier = Modifier
-            .background(Color(0x80EEEEEE))
+            .background(Color(0xA6EEEEEE))
             .padding(16.dp),
         horizontalAlignment = Alignment.Start
     ) {
         Text(
             text = "Serving Cell Info",
             fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.primary
+            color = MaterialTheme.colorScheme.surface
         )
         Spacer(modifier = Modifier.height(8.dp))
 
         if (cellInfo != null) {
             val servingCell = cellInfo.servingCell ?: return Text(
                 "No serving cell found",
-                color = MaterialTheme.colorScheme.primary
+                color = MaterialTheme.colorScheme.surface
             )
             val record = servingCell.cellularRecord
 
             // Display technology and signal strengths based on CellularRecord
             Text(
                 "Technology: ${servingCell.cellularProtocol}",
-                color = MaterialTheme.colorScheme.primary
+                color = MaterialTheme.colorScheme.surface
             )
             if (servingSignalInfo != null) {
                 Text(
                     servingSignalInfo.toString(),
-                    color = MaterialTheme.colorScheme.primary
+                    color = MaterialTheme.colorScheme.surface
                 )
             }
 
             val servingCellDisplayString = getServingCellDisplayString(record)
-            Text(servingCellDisplayString, color = MaterialTheme.colorScheme.primary)
+            Text(servingCellDisplayString, color = MaterialTheme.colorScheme.surface)
         } else {
-            Text("No serving cell info available", color = MaterialTheme.colorScheme.primary)
+            Text("No serving cell info available", color = MaterialTheme.colorScheme.surface)
         }
     }
 }
