@@ -355,8 +355,7 @@ public class WifiController extends AController
      */
     public void stopAllLogging()
     {
-        if (wifiSurveyRecordLogger != null) wifiSurveyRecordLogger.enableLogging(false);
-        if (wifiCsvLogger != null) wifiCsvLogger.enableLogging(false);
+        toggleLogging(false);
     }
 
     private void toggleWifiConfig(boolean enable, LogTypeState types)

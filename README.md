@@ -168,15 +168,18 @@ you can use the `mqtt_topic_prefix` field to change the topic to something like
 
 ```json
 {
-  "mqtt_username": "auser",
-  "mqtt_password": "apassword",
   "mqtt_host": "cloud.mymqttserver.com",
   "mqtt_port": 8883,
-  "mqtt_client": "aclient",
   "mqtt_tls": true,
+  "mqtt_client": "aclient",
+  "mqtt_username": "auser",
+  "mqtt_password": "apassword",
   "mqtt_topic_prefix": "my/custom/topic/path/",
   "cellular_stream_enabled": true,
-  "wifi_stream_enabled": true
+  "wifi_stream_enabled": true,
+  "bluetooth_stream_enabled": true,
+  "gnss_stream_enabled": true,
+  "device_status_stream_enabled": true
 }
 ```
 

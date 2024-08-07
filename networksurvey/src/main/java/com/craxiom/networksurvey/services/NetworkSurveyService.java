@@ -330,7 +330,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
             stopAllLogging();
             disconnectFromMqttBroker();
 
-            if (!isBeingUsed()) stopSelf();
+            stopSelf();
         }
 
         return START_REDELIVER_INTENT;
@@ -937,6 +937,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
                 || wifiController.isLoggingEnabled()
                 || bluetoothController.isLoggingEnabled()
                 || gnssController.isLoggingEnabled()
+                || cdrLoggingEnabled.get()
                 || getMqttConnectionState() != ConnectionState.DISCONNECTED
                 || GrpcConnectionService.getConnectedState() != ConnectionState.DISCONNECTED
                 || surveyRecordProcessor.isBeingUsed();

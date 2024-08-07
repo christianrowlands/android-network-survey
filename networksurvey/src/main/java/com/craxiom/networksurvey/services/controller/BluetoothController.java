@@ -481,8 +481,7 @@ public class BluetoothController extends AController
      */
     public void stopAllLogging()
     {
-        if (bluetoothSurveyRecordLogger != null) bluetoothSurveyRecordLogger.enableLogging(false);
-        if (bluetoothCsvLogger != null) bluetoothCsvLogger.enableLogging(false);
+        toggleLogging(false);
     }
 
     private void toggleBtConfig(boolean enable, LogTypeState types)

@@ -747,14 +747,7 @@ public class CellularController extends AController
      */
     public void stopAllLogging()
     {
-        if (cellularSurveyRecordLogger != null) cellularSurveyRecordLogger.enableLogging(false);
-        if (phoneStateRecordLogger != null) phoneStateRecordLogger.enableLogging(false);
-        if (phoneStateCsvLogger != null) phoneStateCsvLogger.enableLogging(false);
-        if (nrCsvLogger != null) nrCsvLogger.enableLogging(false);
-        if (lteCsvLogger != null) lteCsvLogger.enableLogging(false);
-        if (umtsCsvLogger != null) umtsCsvLogger.enableLogging(false);
-        if (cdmaCsvLogger != null) cdmaCsvLogger.enableLogging(false);
-        if (gsmCsvLogger != null) gsmCsvLogger.enableLogging(false);
+        toggleLogging(false);
     }
 
     /**

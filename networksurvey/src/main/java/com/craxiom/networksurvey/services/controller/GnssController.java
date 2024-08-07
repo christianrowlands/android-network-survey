@@ -375,8 +375,7 @@ public class GnssController extends AController
      */
     public void stopAllLogging()
     {
-        if (gnssRecordLogger != null) gnssRecordLogger.enableLogging(false);
-        if (gnssCsvLogger != null) gnssCsvLogger.enableLogging(false);
+        toggleLogging(false);
     }
 
     private void toggleGnssConfig(boolean enable, LogTypeState types)
