@@ -183,6 +183,11 @@ you can use the `mqtt_topic_prefix` field to change the topic to something like
 }
 ```
 
+## Intent API
+
+The Network Survey app supports an Intent API that allows other apps to start and stop a survey. The
+Intent API is documented on the [Intent API website](https://www.networksurvey.app/intent-api).
+
 ## Credits and Acknowledgements
 
 ### Credits
