@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.28](https://github.com/christianrowlands/android-network-survey/releases/tag/v1.28) - 2024-08-28
+
+* Adds a display overlay on the map with current serving cell information.
+* Update the Tower Map if the SIM count changes.
+* Adds the ability to start a survey via an Intent (see https://www.networksurvey.app/intent-api ).
+* Adds the streaming options to the MQTT Settings QR Code.
+* Adds a setting to turn on or off the ability for other apps to send intents to start/stop Network Survey.
+* Set the NS version number in the device status message
+* Display the GSM BSIC in the cellular details view.
+* Fix a couple of edge case crashes.
+* Fixes a bug where the the LTE signal labels would remain visible when switching to a different technology.
+
 ## [1.27](https://github.com/christianrowlands/android-network-survey/releases/tag/v1.27) - 2024-07-24
 
 * Create a more detailed info window for the towers in the map view.
