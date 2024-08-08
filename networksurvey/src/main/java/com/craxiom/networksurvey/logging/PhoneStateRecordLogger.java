@@ -11,6 +11,7 @@ import static com.craxiom.networksurvey.constants.MessageConstants.ACCURACY;
 import static com.craxiom.networksurvey.constants.MessageConstants.MISSION_ID_COLUMN;
 import static com.craxiom.networksurvey.constants.MessageConstants.RECORD_NUMBER_COLUMN;
 import static com.craxiom.networksurvey.constants.MessageConstants.TIME_COLUMN;
+import static com.craxiom.networksurvey.constants.csv.PhoneStateCsvConstants.SLOT;
 
 import android.os.Looper;
 
@@ -74,6 +75,7 @@ public class PhoneStateRecordLogger extends SurveyRecordLogger implements IDevic
             tableColumns.add(FeatureColumn.createColumn(columnNumber++, ALTITUDE_COLUMN, GeoPackageDataType.FLOAT, false, null));
             tableColumns.add(FeatureColumn.createColumn(columnNumber++, SIM_STATE_COLUMN, GeoPackageDataType.TEXT, false, null));
             tableColumns.add(FeatureColumn.createColumn(columnNumber++, SIM_OPERATOR_COLUMN, GeoPackageDataType.TEXT, false, null));
+            tableColumns.add(FeatureColumn.createColumn(columnNumber++, SLOT, GeoPackageDataType.SMALLINT, false, null));
             //noinspection UnusedAssignment
             tableColumns.add(FeatureColumn.createColumn(columnNumber++, NETWORK_REGISTRATION_COLUMN, GeoPackageDataType.TEXT, false, null));
         });
@@ -115,6 +117,10 @@ public class PhoneStateRecordLogger extends SurveyRecordLogger implements IDevic
 
                         row.setValue(SIM_STATE_COLUMN, readSimState(data));
                         row.setValue(SIM_OPERATOR_COLUMN, data.getSimOperator());
+                        if (data.hasSlot())
+                        {
+                            row.setValue(SLOT, data.getSlot().getValue());
+                        }
 
                         List<String> jsonList = new ArrayList<>();
                         for (NetworkRegistrationInfo info : data.getNetworkRegistrationInfoList())

@@ -54,7 +54,7 @@ import com.craxiom.networksurvey.ui.cellular.model.ServingSignalInfo
 import com.craxiom.networksurvey.ui.cellular.model.TowerMapViewModel
 import com.craxiom.networksurvey.ui.cellular.model.TowerMarker
 import com.google.gson.annotations.SerializedName
-import com.google.protobuf.GeneratedMessageV3
+import com.google.protobuf.GeneratedMessage
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
@@ -636,7 +636,7 @@ private fun calculateArea(bounds: BoundingBox): Double {
     return width * height // area in square meters
 }
 
-private fun getServingCellDisplayString(message: GeneratedMessageV3): String {
+private fun getServingCellDisplayString(message: GeneratedMessage): String {
     return when (message) {
         is GsmRecord -> {
             "MCC: ${message.data.mcc.value}\nMNC: ${message.data.mnc.value}\nLAC: ${message.data.lac.value}\nCellId: ${message.data.ci.value}"

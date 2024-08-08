@@ -15,4 +15,5 @@ public class PhoneStateCsvConstants extends CellularCsvConstants
     public static final String SIM_STATE = "simState";
     public static final String SIM_OPERATOR = "simOperator";
     public static final String NETWORK_REGISTRATION = "networkRegistrationInfo";
+    public static final String SLOT = "slot";
 }

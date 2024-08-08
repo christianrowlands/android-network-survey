@@ -7,7 +7,7 @@
 * Adds the ability to start a survey via an Intent (see https://www.networksurvey.app/intent-api ).
 * Adds the streaming options to the MQTT Settings QR Code.
 * Adds a setting to turn on or off the ability for other apps to send intents to start/stop Network Survey.
-* Set the NS version number in the device status message
+* Set the NS version number in the device status message.
 * Display the GSM BSIC in the cellular details view.
 * Fix a couple of edge case crashes.
 * Fixes a bug where the the LTE signal labels would remain visible when switching to a different technology.

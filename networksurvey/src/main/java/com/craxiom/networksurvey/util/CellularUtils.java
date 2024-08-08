@@ -17,7 +17,7 @@ import com.craxiom.networksurvey.ui.cellular.model.ServingCellInfo;
 import com.craxiom.networksurvey.ui.cellular.model.ServingSignalInfo;
 import com.google.protobuf.BoolValue;
 import com.google.protobuf.Descriptors;
-import com.google.protobuf.GeneratedMessageV3;
+import com.google.protobuf.GeneratedMessage;
 
 /**
  * Helper methods for working with cellular networks.
@@ -121,7 +121,7 @@ public class CellularUtils
     /**
      * @return Returns true if the servingCell field is present and also set to true.
      */
-    public static boolean isServingCell(GeneratedMessageV3 message)
+    public static boolean isServingCell(GeneratedMessage message)
     {
         try
         {
@@ -136,7 +136,7 @@ public class CellularUtils
             }
 
             // Get the value of the 'data' field
-            GeneratedMessageV3 dataMessage = (GeneratedMessageV3) message.getField(dataField);
+            GeneratedMessage dataMessage = (GeneratedMessage) message.getField(dataField);
 
             // Get the descriptor for the 'servingCell' field within the 'data' field
             Descriptors.Descriptor dataDescriptor = dataMessage.getDescriptorForType();

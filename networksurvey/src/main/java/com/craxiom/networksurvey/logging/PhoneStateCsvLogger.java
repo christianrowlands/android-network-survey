@@ -11,6 +11,7 @@ import static com.craxiom.networksurvey.constants.csv.PhoneStateCsvConstants.NET
 import static com.craxiom.networksurvey.constants.csv.PhoneStateCsvConstants.RECORD_NUMBER;
 import static com.craxiom.networksurvey.constants.csv.PhoneStateCsvConstants.SIM_OPERATOR;
 import static com.craxiom.networksurvey.constants.csv.PhoneStateCsvConstants.SIM_STATE;
+import static com.craxiom.networksurvey.constants.csv.PhoneStateCsvConstants.SLOT;
 import static com.craxiom.networksurvey.constants.csv.PhoneStateCsvConstants.SPEED;
 
 import android.os.Looper;
@@ -58,7 +59,7 @@ public class PhoneStateCsvLogger extends CsvRecordLogger implements IDeviceStatu
         return new String[]{DEVICE_TIME, LATITUDE, LONGITUDE, ALTITUDE, SPEED, ACCURACY,
                 MISSION_ID, RECORD_NUMBER,
                 SIM_STATE, SIM_OPERATOR, NETWORK_REGISTRATION,
-                DEVICE_SERIAL_NUMBER};
+                DEVICE_SERIAL_NUMBER, SLOT};
     }
 
     @Override
@@ -131,7 +132,8 @@ public class PhoneStateCsvLogger extends CsvRecordLogger implements IDeviceStatu
                 simState,
                 data.getSimOperator(),
                 networkRegistrationJson,
-                data.getDeviceSerialNumber()
+                data.getDeviceSerialNumber(),
+                data.hasSlot() ? String.valueOf(data.getSlot().getValue()) : ""
         };
     }
 

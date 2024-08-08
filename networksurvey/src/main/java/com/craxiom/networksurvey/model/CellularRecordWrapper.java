@@ -8,7 +8,7 @@ import com.craxiom.messaging.NrRecord;
 import com.craxiom.messaging.NrRecordData;
 import com.craxiom.messaging.UmtsRecord;
 import com.craxiom.messaging.UmtsRecordData;
-import com.google.protobuf.GeneratedMessageV3;
+import com.google.protobuf.GeneratedMessage;
 
 import java.util.Objects;
 
@@ -20,11 +20,11 @@ import java.util.Objects;
 public class CellularRecordWrapper
 {
     public final CellularProtocol cellularProtocol;
-    public final GeneratedMessageV3 cellularRecord;
+    public final GeneratedMessage cellularRecord;
     private final int hash;
     private final String comparableString;
 
-    public CellularRecordWrapper(CellularProtocol cellularProtocol, GeneratedMessageV3 cellularRecord)
+    public CellularRecordWrapper(CellularProtocol cellularProtocol, GeneratedMessage cellularRecord)
     {
         this.cellularProtocol = cellularProtocol;
         this.cellularRecord = cellularRecord;

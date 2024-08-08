@@ -87,7 +87,7 @@ public class CellularController extends AController
     private final UmtsCsvLogger umtsCsvLogger;
     private final CdmaCsvLogger cdmaCsvLogger;
     private final GsmCsvLogger gsmCsvLogger;
-    private PhoneStateListener phoneStateListener;
+    private final Map<Integer, PhoneStateListener> phoneStateListenerMap = new HashMap<>();
     private BroadcastReceiver simBroadcastReceiver;
 
     public CellularController(NetworkSurveyService surveyService, ExecutorService executorService,
@@ -327,58 +327,73 @@ public class CellularController extends AController
         }, PING_RATE_MS);
     }
 
-    public void startPhoneStateListener()
+    public synchronized void startPhoneStateListener()
     {
         // The onServiceStateChanged required API level 29.
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q)
         {
             if (surveyService == null) return;
 
-            // Add a listener for the Service State information if we have access to the Telephony Manager
-            final TelephonyManager telephonyManager = (TelephonyManager) surveyService.getSystemService(Context.TELEPHONY_SERVICE);
-            if (telephonyManager != null && surveyService.getPackageManager().hasSystemFeature(PackageManager.FEATURE_TELEPHONY))
+            phoneStateListenerMap.clear();
+
+            for (TelephonyManagerWrapper wrapper : telephonyManagerList)
             {
-                Timber.d("Adding the Telephony Manager Service State Listener");
+                if (surveyService.getPackageManager().hasSystemFeature(PackageManager.FEATURE_TELEPHONY))
+                {
+                    int subscriptionId = wrapper.getSubscriptionId();
+                    Timber.d("Adding the Telephony Manager Service State Listener for subscription ID %s", subscriptionId);
 
-                // Sadly we have to use the service handler for this because the PhoneStateListener constructor calls
-                // Looper.myLooper(), which needs to be run from a thread where the looper is prepared. The better option
-                // is to use the constructor that takes an executor service, but that is only supported in Android 10+.
-                serviceHandler.post(() -> {
-                    phoneStateListener = new PhoneStateListener()
-                    {
-                        @Override
-                        public void onServiceStateChanged(ServiceState serviceState)
+                    // Sadly we have to use the service handler for this because the PhoneStateListener constructor calls
+                    // Looper.myLooper(), which needs to be run from a thread where the looper is prepared. The better option
+                    // is to use the constructor that takes an executor service, but that is only supported in Android 10+.
+                    serviceHandler.post(() -> {
+                        PhoneStateListener phoneStateListener = new PhoneStateListener()
                         {
-                            execute(() -> surveyRecordProcessor.onServiceStateChanged(serviceState, telephonyManager));
-                        }
+                            @Override
+                            public void onServiceStateChanged(ServiceState serviceState)
+                            {
+                                execute(() -> surveyRecordProcessor.onServiceStateChanged(serviceState, wrapper.getTelephonyManager(), subscriptionId));
+                            }
 
-                        // We can't use this because you have to be a system app to get the READ_PRECISE_PHONE_STATE permission.
-                        // So this is unused for now, but maybe at some point in the future we can make use of it.
-                        /*@Override
-                        public void onRegistrationFailed(@NonNull CellIdentity cellIdentity, @NonNull String chosenPlmn, int domain, int causeCode, int additionalCauseCode)
-                        {
-                            execute(() -> surveyRecordProcessor.onRegistrationFailed(cellIdentity, domain, causeCode, additionalCauseCode, telephonyManager));
-                        }*/
-                    };
+                            // We can't use this because you have to be a system app to get the READ_PRECISE_PHONE_STATE permission.
+                            // So this is unused for now, but maybe at some point in the future we can make use of it.
+                            /*@Override
+                            public void onRegistrationFailed(@NonNull CellIdentity cellIdentity, @NonNull String chosenPlmn, int domain, int causeCode, int additionalCauseCode)
+                            {
+                                execute(() -> surveyRecordProcessor.onRegistrationFailed(cellIdentity, domain, causeCode, additionalCauseCode, telephonyManager));
+                            }*/
+                        };
 
-                    telephonyManager.listen(phoneStateListener, PhoneStateListener.LISTEN_SERVICE_STATE);
-                });
+                        phoneStateListenerMap.put(subscriptionId, phoneStateListener);
+                        wrapper.getTelephonyManager().listen(phoneStateListener, PhoneStateListener.LISTEN_SERVICE_STATE);
+                    });
+                }
             }
         }
     }
 
     public void stopPhoneStateListener()
     {
-        if (phoneStateListener != null && surveyService != null)
-        {
-            final TelephonyManager telephonyManager = (TelephonyManager) surveyService.getSystemService(Context.TELEPHONY_SERVICE);
-            if (telephonyManager != null && surveyService.getPackageManager().hasSystemFeature(PackageManager.FEATURE_TELEPHONY))
+        telephonyManagerList.forEach(wrapper -> {
+            if (wrapper != null && surveyService != null)
             {
-                Timber.d("Removing the Telephony Manager Service State Listener");
+                final TelephonyManager telephonyManager = wrapper.getTelephonyManager();
+                if (telephonyManager != null && surveyService.getPackageManager().hasSystemFeature(PackageManager.FEATURE_TELEPHONY))
+                {
+                    Timber.d("Removing the Telephony Manager Service State Listener");
 
-                telephonyManager.listen(phoneStateListener, PhoneStateListener.LISTEN_NONE);
+                    try
+                    {
+                        telephonyManager.listen(phoneStateListenerMap.get(wrapper.getSubscriptionId()), PhoneStateListener.LISTEN_NONE);
+                    } catch (Exception e)
+                    {
+                        // This is expected if a SIM card is added or removed because the telephony
+                        // service will have changed out from under us.
+                        Timber.e(e, "An exception occurred trying to remove the PhoneStateListener");
+                    }
+                }
             }
-        }
+        });
     }
 
     /**
@@ -521,7 +536,12 @@ public class CellularController extends AController
                 if (intent == null) return;
 
                 Timber.i("SIM State Change Detected. Refreshing the active subscription info list");
+                stopPhoneStateListener();
+
                 initializeCellularScanningResources();
+
+                // Stop and start the phone state listener so that it will be listening to the new SIM(s)
+                startPhoneStateListener();
             }
         };
 
