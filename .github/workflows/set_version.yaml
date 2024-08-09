@@ -18,7 +18,7 @@ jobs:
           fetch-depth: 0
           ref: main
           # You must use a personal access token when pushing the tag or it won't trigger the next workflow (purposefully done by GH to prevent runaway recursive workflows)
-          token: ${{ secrets.MY_GH_TOKEN }}
+          token: ${{ secrets.GH_TOKEN }}
 
       - name: Extract existing version code
         run: |
