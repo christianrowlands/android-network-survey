@@ -37,16 +37,6 @@ jobs:
       - name: Unit Tests
         run: ./gradlew test --stacktrace
 
-      # Need to work through a permissions error to get these working
-      #      - name: Instrumentation Tests
-      #        uses: reactivecircus/android-emulator-runner@v2
-      #        with:
-      #          api-level: ${{ matrix.api-level }}
-      #          target: ${{ matrix.target }}
-      #          arch: x86_64
-      #          profile: Nexus 6
-      #          script: ./gradlew test check connectedCheck -x lint --stacktrace
-
       # Only upload the reports on failure
       - name: Upload Reports
         uses: actions/upload-artifact@v2
@@ -55,55 +45,8 @@ jobs:
           path: networksurvey/build/reports
         if: failure()
 
-  bumpVersion:
-    needs: test
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-          ref: develop
-
-      - name: Extract version from tag
-        uses: damienaicheh/extract-version-from-tag-action@v1.3.0
-
-      - name: Extract existing version code
-        run: |
-          # Set new version name from tag
-          if [[ -z "${{ env.PATCH }}" ]]; then
-           version_name=${{ env.MAJOR }}.${{ env.MINOR }}
-          else
-           version_name=${{ env.MAJOR }}.${{ env.MINOR }}.${{ env.PATCH }}
-          fi
-
-          # Get existing version code from build.gradle
-          version_code=$(grep "versionCode" networksurvey/build.gradle | awk '{print $2}' | tr -d '\n')
-
-          # Increment existing version code by 1
-          version_code=$((version_code + 1))
-
-          # Set environment variable for later use
-          echo "VERSION_NAME=$version_name" >> $GITHUB_ENV
-          echo "VERSION_CODE=$version_code" >> $GITHUB_ENV
-
-      - name: Increase version code and change version name
-        run: |
-          # Update build.gradle with new version code and name
-          echo "${{ env.VERSION_CODE }} - ${{ env.VERSION_NAME }}"
-          sed -i "s/versionCode [0-9]\+/versionCode ${{ env.VERSION_CODE }}/g" networksurvey/build.gradle
-          sed -i "s/versionName \"[^\"]*\"/versionName \"${{ env.VERSION_NAME }}\"/g" networksurvey/build.gradle
-
-      - name: Commit and push changes
-        run: |
-          git config user.email "github-actions@github.com"
-          git config user.name "Github Actions"
-          git add .
-          git commit -am "Bump version code and change version name to ${{ env.VERSION_NAME }}"
-          git push origin develop
-
   buildRelease:
-    needs: bumpVersion
+    needs: test
     runs-on: ubuntu-latest
 
     outputs:

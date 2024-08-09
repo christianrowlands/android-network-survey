@@ -1,0 +1,58 @@
+name: Sets the version for a release and tags the repo
+run-name: Set the version number to ${{ inputs.version }}
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'The version to set for the release (e.g. 1.0)'
+        required: true
+
+jobs:
+  setVersion:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: main
+          # You must use a personal access token when pushing the tag or it won't trigger the next workflow (purposefully done by GH to prevent runaway recursive workflows)
+          token: ${{ secrets.MY_GH_TOKEN }}
+
+      - name: Extract existing version code
+        run: |
+          # Get existing version code from build.gradle
+          version_code=$(grep "versionCode" networksurvey/build.gradle | awk '{print $2}' | tr -d '\n')
+
+          # Increment existing version code by 1
+          version_code=$((version_code + 1))
+
+          # Set environment variable for later use
+          echo "VERSION_CODE=$version_code" >> $GITHUB_ENV
+
+      - name: Increase version code and change version name
+        run: |
+          # Update build.gradle with new version code and name
+          echo "${{ env.VERSION_CODE }} - ${{ github.event.inputs.version }}"
+          sed -i "s/versionCode [0-9]\+/versionCode ${{ env.VERSION_CODE }}/g" networksurvey/build.gradle
+          sed -i "s/versionName \"[^\"]*\"/versionName \"${{ github.event.inputs.version }}\"/g" networksurvey/build.gradle
+
+      - name: Commit and push changes
+        run: |
+          git config user.email "github-actions@github.com"
+          git config user.name "Github Actions"
+          git add .
+          # Check for changes
+          if git diff --staged --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "Bump version to ${{ github.event.inputs.version }}"
+            git push origin main
+          fi
+
+      - name: Create and push tag
+        run: |
+          TAG="v${{ github.event.inputs.version }}"
+          git tag $TAG
+          git push origin $TAG
