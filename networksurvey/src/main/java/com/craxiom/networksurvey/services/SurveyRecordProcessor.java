@@ -546,7 +546,7 @@ public class SurveyRecordProcessor
                 }));
     }
 
-    void onCdrServiceStateChanged(ServiceState serviceState, TelephonyManager telephonyManager)
+    public void onCdrServiceStateChanged(ServiceState serviceState, TelephonyManager telephonyManager)
     {
         CdrEvent cdrEvent = new CdrEvent(CdrEventType.LOCATION_UPDATE, "", "");
         setCellInfo(cdrEvent, serviceState);
@@ -566,7 +566,7 @@ public class SurveyRecordProcessor
      * @param telephonyManager Used to get the cell identity of the current cell.
      * @param myPhoneNumber    This device's phone number. Only present if the READ_PHONE_NUMBERS permission is granted.
      */
-    void onCallStateChanged(int state, String otherPhoneNumber, TelephonyManager telephonyManager, String myPhoneNumber)
+    public void onCallStateChanged(int state, String otherPhoneNumber, TelephonyManager telephonyManager, String myPhoneNumber)
     {
         Timber.d("Current call state=%s, new call state=%s", currentCallState, state);
         CdrEvent cdrEvent = null;

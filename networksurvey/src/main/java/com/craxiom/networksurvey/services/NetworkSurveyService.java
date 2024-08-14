@@ -11,7 +11,6 @@ import android.app.Notification;
 import android.app.PendingIntent;
 import android.app.Service;
 import android.content.BroadcastReceiver;
-import android.content.ContentResolver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
@@ -20,12 +19,9 @@ import android.content.SharedPreferences;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.content.pm.ServiceInfo;
-import android.database.ContentObserver;
-import android.database.Cursor;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
-import android.net.Uri;
 import android.os.BatteryManager;
 import android.os.Build;
 import android.os.Bundle;
@@ -34,14 +30,10 @@ import android.os.HandlerThread;
 import android.os.IBinder;
 import android.os.Looper;
 import android.provider.Settings;
-import android.telephony.PhoneStateListener;
-import android.telephony.ServiceState;
 import android.telephony.SubscriptionInfo;
-import android.telephony.TelephonyManager;
 
 import androidx.core.app.ActivityCompat;
 import androidx.core.app.NotificationCompat;
-import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 import androidx.preference.PreferenceManager;
 
 import com.craxiom.messaging.DeviceStatus;
@@ -55,7 +47,6 @@ import com.craxiom.mqttlibrary.connection.DefaultMqttConnection;
 import com.craxiom.mqttlibrary.ui.AConnectionFragment;
 import com.craxiom.networksurvey.Application;
 import com.craxiom.networksurvey.BuildConfig;
-import com.craxiom.networksurvey.CdrSmsReceiver;
 import com.craxiom.networksurvey.GpsListener;
 import com.craxiom.networksurvey.NetworkSurveyActivity;
 import com.craxiom.networksurvey.R;
@@ -71,9 +62,7 @@ import com.craxiom.networksurvey.listeners.IGnssFailureListener;
 import com.craxiom.networksurvey.listeners.IGnssSurveyRecordListener;
 import com.craxiom.networksurvey.listeners.ILoggingChangeListener;
 import com.craxiom.networksurvey.listeners.IWifiSurveyRecordListener;
-import com.craxiom.networksurvey.logging.CdrLogger;
 import com.craxiom.networksurvey.logging.DeviceStatusCsvLogger;
-import com.craxiom.networksurvey.model.CdrEventType;
 import com.craxiom.networksurvey.model.LogTypeState;
 import com.craxiom.networksurvey.mqtt.MqttConnection;
 import com.craxiom.networksurvey.mqtt.MqttConnectionInfo;
@@ -89,7 +78,6 @@ import com.google.protobuf.BoolValue;
 import com.google.protobuf.Int32Value;
 
 import java.time.ZonedDateTime;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArraySet;
@@ -117,15 +105,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
     public static final String ACTION_START_SURVEY = "com.craxiom.networksurvey.START_SURVEY";
     public static final String ACTION_STOP_SURVEY = "com.craxiom.networksurvey.STOP_SURVEY";
 
-    private static final Uri SMS_URI = Uri.parse("content://sms");
-    public static final String SMS_COLUMN_ID = "_id";
-    private static final String SMS_COLUMN_TYPE = "type";
-    private static final String SMS_COLUMN_ADDRESS = "address";
-    private static final int SMS_MESSAGE_TYPE_SENT = 2;
-
     private final AtomicBoolean deviceStatusActive = new AtomicBoolean(false);
-    private final AtomicBoolean cdrLoggingEnabled = new AtomicBoolean(false);
-    private final AtomicBoolean cdrStarted = new AtomicBoolean(false);
 
     private final AtomicInteger deviceStatusGeneratorTaskId = new AtomicInteger();
 
@@ -140,13 +120,11 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
     private BluetoothController bluetoothController;
     private GnssController gnssController;
     private String deviceId;
-    private String myPhoneNumber = "";
     private SurveyRecordProcessor surveyRecordProcessor;
     private GpsListener primaryLocationListener;
     private ExtraLocationListener gnssLocationListener;
     private ExtraLocationListener networkLocationListener;
 
-    private CdrLogger cdrLogger;
     private DeviceStatusCsvLogger deviceStatusCsvLogger;
     private Looper serviceLooper;
     private Handler serviceHandler;
@@ -154,12 +132,8 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
     private BroadcastReceiver managedConfigurationListener;
     private boolean mdmOverride = false;
 
-    private PhoneStateListener phoneStateCdrListener;
     private final Set<ILoggingChangeListener> loggingChangeListeners = new CopyOnWriteArraySet<>();
 
-    private BroadcastReceiver smsBroadcastReceiver;
-    private ContentObserver smsOutgoingObserver;
-    private final LinkedHashMap<String, String> smsIdQueue = new EvictingLinkedHashMap();
     private int locationProviderPreference = NetworkSurveyConstants.DEFAULT_LOCATION_PROVIDER;
 
     public NetworkSurveyService()
@@ -184,7 +158,6 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
         serviceHandler = new Handler(serviceLooper);
 
         deviceId = createDeviceId();
-        cdrLogger = new CdrLogger(this, serviceLooper);
         deviceStatusCsvLogger = new DeviceStatusCsvLogger(this, serviceLooper);
 
         primaryLocationListener = new GpsListener();
@@ -361,7 +334,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
         wifiController.stopWifiRecordScanning();
         bluetoothController.stopBluetoothRecordScanning();
         gnssController.stopGnssRecordScanning();
-        stopCdrEvents();
+        cellularController.stopCdrEvents();
         removeLocationListener();
         stopDeviceStatusReport();
         stopAllLogging();
@@ -394,7 +367,6 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
                 bluetoothController.onRolloverPreferenceChanged();
                 gnssController.onRolloverPreferenceChanged();
 
-                cdrLogger.onSharedPreferenceChanged();
                 deviceStatusCsvLogger.onSharedPreferenceChanged();
                 break;
             case NetworkSurveyConstants.PROPERTY_CELLULAR_SCAN_INTERVAL_SECONDS:
@@ -838,15 +810,14 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
      */
     public void registerCdrEventListener(ICdrEventListener listener)
     {
-        synchronized (cdrStarted)
+        if (surveyRecordProcessor != null)
         {
-            if (surveyRecordProcessor != null)
-            {
-                surveyRecordProcessor.registerCdrEventListener(listener);
-            }
-
-            startCdrEvents(); // Only registers a listener if it is not already active.
+            surveyRecordProcessor.registerCdrEventListener(listener);
         }
+
+        cellularController.startCdrEvents(); // Only starts if it is not already active
+
+        // Don't call startDeviceStatusReportIfLoggingEnabled() here because CDR events are not part of the device status report.
     }
 
     /**
@@ -863,14 +834,13 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
      */
     public void unregisterCdrEventListener(ICdrEventListener listener)
     {
-        synchronized (cdrStarted)
+        if (surveyRecordProcessor != null)
         {
-            if (surveyRecordProcessor != null)
-            {
-                surveyRecordProcessor.unregisterCdrEventListener(listener);
-                if (!surveyRecordProcessor.isCdrBeingUsed()) stopCdrEvents();
-            }
+            surveyRecordProcessor.unregisterCdrEventListener(listener);
+            if (!surveyRecordProcessor.isCdrBeingUsed()) cellularController.stopCdrEvents();
         }
+
+        // Don't call stopDeviceStatusReportIfNotNeeded() here because CDR events are not part of the device status report.
 
         // Check to see if this service is still needed. It is still needed if we are either logging, the UI is
         // visible, or a server connection is active.
@@ -937,7 +907,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
                 || wifiController.isLoggingEnabled()
                 || bluetoothController.isLoggingEnabled()
                 || gnssController.isLoggingEnabled()
-                || cdrLoggingEnabled.get()
+                || cellularController.isCdrLoggingEnabled()
                 || getMqttConnectionState() != ConnectionState.DISCONNECTED
                 || GrpcConnectionService.getConnectedState() != ConnectionState.DISCONNECTED
                 || surveyRecordProcessor.isBeingUsed();
@@ -1045,33 +1015,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
      */
     public Boolean toggleCdrLogging(boolean enable)
     {
-        synchronized (cdrLoggingEnabled)
-        {
-            final boolean originalLoggingState = cdrLoggingEnabled.get();
-            if (originalLoggingState == enable) return originalLoggingState;
-
-            Timber.i("Toggling CDR logging to %s", enable);
-
-            final boolean successful = cdrLogger.enableLogging(enable);
-            if (successful)
-            {
-                cdrLoggingEnabled.set(enable);
-                if (enable)
-                {
-                    registerCdrEventListener(cdrLogger);
-                } else
-                {
-                    unregisterCdrEventListener(cdrLogger);
-                }
-            }
-
-            updateServiceNotification();
-            notifyLoggingChangedListeners();
-
-            final boolean newLoggingState = cdrLoggingEnabled.get();
-
-            return successful ? newLoggingState : null;
-        }
+        return cellularController.toggleCdrLogging(enable);
     }
 
     public boolean isCellularLoggingEnabled()
@@ -1096,7 +1040,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
 
     public boolean isCdrLoggingEnabled()
     {
-        return cdrLoggingEnabled.get();
+        return cellularController.isCdrLoggingEnabled();
     }
 
     public int getWifiScanRateMs()
@@ -1419,110 +1363,6 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
     }
 
     /**
-     * Initialize and start the handler that listens for phone state events to create CDR events.
-     * <p>
-     * This method only starts the CDR listener if it is not already active.
-     *
-     * @since 1.11
-     */
-    private void startCdrEvents()
-    {
-        if (cdrStarted.getAndSet(true)) return;
-
-        // Add a listener for the Service State information if we have access to the Telephony Manager
-        final TelephonyManager telephonyManager = (TelephonyManager) getSystemService(TELEPHONY_SERVICE);
-        if (telephonyManager != null && getPackageManager().hasSystemFeature(PackageManager.FEATURE_TELEPHONY))
-        {
-            myPhoneNumber = IOUtils.getMyPhoneNumber(this, telephonyManager);
-
-            if (ActivityCompat.checkSelfPermission(this, Manifest.permission.RECEIVE_SMS) == PackageManager.PERMISSION_GRANTED)
-            {
-                smsBroadcastReceiver = new BroadcastReceiver()
-                {
-                    @Override
-                    public void onReceive(Context context, Intent intent)
-                    {
-                        if (intent == null) return;
-                        final String originatingAddress = intent.getStringExtra(CdrSmsReceiver.ORIGINATING_ADDRESS_EXTRA);
-                        execute(() -> surveyRecordProcessor.onSmsEvent(CdrEventType.INCOMING_SMS, originatingAddress, telephonyManager, myPhoneNumber));
-                    }
-                };
-
-                LocalBroadcastManager.getInstance(this).registerReceiver(smsBroadcastReceiver,
-                        new IntentFilter(CdrSmsReceiver.SMS_RECEIVED_INTENT));
-            }
-
-            if (ActivityCompat.checkSelfPermission(this, Manifest.permission.READ_SMS) == PackageManager.PERMISSION_GRANTED)
-            {
-                ContentResolver contentResolver = getContentResolver();
-                smsOutgoingObserver = new ContentObserver(serviceHandler)
-                {
-                    @Override
-                    public void onChange(boolean selfChange)
-                    {
-                        try (Cursor cursor = contentResolver.query(SMS_URI, null, null, null, null))
-                        {
-                            if (cursor != null && cursor.moveToFirst())
-                            {
-                                int idColumn = cursor.getColumnIndex(SMS_COLUMN_ID);
-                                String id = cursor.getString(idColumn);
-                                // So this is a huge hack, but apparently this content resolver approach for getting
-                                // outgoing text messages is not officially supported by Android. The result is that
-                                // I am seeing this onChange event called 3 times for each outgoing message. To prevent
-                                // duplicate entries in the CDR file we keep track of the most recent messages.
-                                if (smsIdQueue.containsKey(id))
-                                {
-                                    Timber.d("Duplicate outgoing SMS message seen in the CDR processor. Ignoring it.");
-                                    return;
-                                }
-                                smsIdQueue.put(id, id);
-
-                                int typeColumn = cursor.getColumnIndex(SMS_COLUMN_TYPE);
-                                if (typeColumn < 0) return;
-                                int type = cursor.getInt(typeColumn);
-
-                                if (type == SMS_MESSAGE_TYPE_SENT)
-                                {
-                                    int addressColumn = cursor.getColumnIndex(SMS_COLUMN_ADDRESS);
-                                    if (addressColumn < 0) return;
-                                    String destinationAddress = cursor.getString(addressColumn);
-                                    execute(() -> surveyRecordProcessor.onSmsEvent(CdrEventType.OUTGOING_SMS, myPhoneNumber, telephonyManager, destinationAddress));
-                                }
-                            }
-                        }
-                    }
-                };
-                contentResolver.registerContentObserver(SMS_URI, true, smsOutgoingObserver);
-            }
-
-            Timber.d("Adding the Telephony Manager Service State Listener for CDR events");
-
-            // Sadly we have to use the service handler for this because the PhoneStateListener constructor calls
-            // Looper.myLooper(), which needs to be run from a thread where the looper is prepared. The better option
-            // is to use the constructor that takes an executor service, but that is only supported in Android 10+.
-            serviceHandler.post(() -> {
-                phoneStateCdrListener = new PhoneStateListener()
-                {
-                    @Override
-                    public void onCallStateChanged(int state, String otherPhoneNumber)
-                    {
-                        execute(() -> surveyRecordProcessor.onCallStateChanged(state, otherPhoneNumber,
-                                telephonyManager, myPhoneNumber));
-                    }
-
-                    @Override
-                    public void onServiceStateChanged(ServiceState serviceState)
-                    {
-                        execute(() -> surveyRecordProcessor.onCdrServiceStateChanged(serviceState, telephonyManager));
-                    }
-                };
-
-                telephonyManager.listen(phoneStateCdrListener, PhoneStateListener.LISTEN_CALL_STATE | PhoneStateListener.LISTEN_SERVICE_STATE);
-            });
-        }
-    }
-
-    /**
      * Starts the device status report if any of the logging types are enabled (other than CDR logging), otherwise it
      * does nothing.
      */
@@ -1761,7 +1601,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
     {
         Application.createNotificationChannel(this);
 
-        final boolean logging = cellularController.isLoggingEnabled() || wifiController.isLoggingEnabled() || bluetoothController.isLoggingEnabled() || gnssController.isLoggingEnabled() || cdrLoggingEnabled.get();
+        final boolean logging = cellularController.isLoggingEnabled() || wifiController.isLoggingEnabled() || bluetoothController.isLoggingEnabled() || gnssController.isLoggingEnabled() || cellularController.isCdrLoggingEnabled();
         final com.craxiom.mqttlibrary.connection.ConnectionState connectionState = mqttConnection.getConnectionState();
         final boolean mqttConnectionActive = connectionState == ConnectionState.CONNECTED || connectionState == ConnectionState.CONNECTING;
         final CharSequence notificationTitle = getText(R.string.network_survey_notification_title);
@@ -1824,39 +1664,6 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
     }
 
     /**
-     * Remove the phone state listener for CDR events.
-     *
-     * @since 1.11
-     */
-    private void stopCdrEvents()
-    {
-        Timber.d("Setting the cdr active flag to false");
-
-        if (phoneStateCdrListener != null)
-        {
-            final TelephonyManager telephonyManager = (TelephonyManager) getSystemService(TELEPHONY_SERVICE);
-            if (telephonyManager != null && getPackageManager().hasSystemFeature(PackageManager.FEATURE_TELEPHONY))
-            {
-                Timber.d("Removing the CDR Telephony Manager Service State Listener");
-
-                telephonyManager.listen(phoneStateCdrListener, PhoneStateListener.LISTEN_NONE);
-            }
-        }
-
-        if (smsBroadcastReceiver != null)
-        {
-            LocalBroadcastManager.getInstance(this).unregisterReceiver(smsBroadcastReceiver);
-        }
-
-        if (smsOutgoingObserver != null)
-        {
-            getContentResolver().unregisterContentObserver(smsOutgoingObserver);
-        }
-
-        cdrStarted.set(false);
-    }
-
-    /**
      * If any of the loggers are still active, this stops them all just to be safe. If they are not active then nothing
      * changes.
      *
@@ -1868,7 +1675,6 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
         wifiController.stopAllLogging();
         bluetoothController.stopAllLogging();
         gnssController.stopAllLogging();
-        if (cdrLogger != null) cdrLogger.enableLogging(false);
         if (deviceStatusCsvLogger != null) deviceStatusCsvLogger.enableLogging(false);
     }
 
@@ -1903,7 +1709,6 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
                 bluetoothController.onMdmPreferenceChanged();
                 gnssController.onMdmPreferenceChanged();
 
-                cdrLogger.onMdmPreferenceChanged();
                 deviceStatusCsvLogger.onMdmPreferenceChanged();
             }
         };
@@ -2088,18 +1893,6 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
         public void onDestroy()
         {
             service = null;
-        }
-    }
-
-    /**
-     * Acts as a cache and evicts older entries when new ones are added.
-     */
-    private static class EvictingLinkedHashMap extends LinkedHashMap<String, String>
-    {
-        @Override
-        protected boolean removeEldestEntry(Entry<String, String> eldest)
-        {
-            return size() > 10;
         }
     }
 

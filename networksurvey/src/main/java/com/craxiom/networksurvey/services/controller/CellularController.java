@@ -1,11 +1,15 @@
 package com.craxiom.networksurvey.services.controller;
 
+import static com.craxiom.networksurvey.listeners.CdrSmsObserver.SMS_URI;
+
 import android.Manifest;
 import android.content.BroadcastReceiver;
+import android.content.ContentResolver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.pm.PackageManager;
+import android.database.ContentObserver;
 import android.os.Build;
 import android.os.Handler;
 import android.os.Looper;
@@ -28,7 +32,9 @@ import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 import com.craxiom.networksurvey.CalculationUtils;
 import com.craxiom.networksurvey.SimChangeReceiver;
 import com.craxiom.networksurvey.constants.NetworkSurveyConstants;
+import com.craxiom.networksurvey.listeners.CdrSmsObserver;
 import com.craxiom.networksurvey.logging.CdmaCsvLogger;
+import com.craxiom.networksurvey.logging.CdrLogger;
 import com.craxiom.networksurvey.logging.CellularSurveyRecordLogger;
 import com.craxiom.networksurvey.logging.GsmCsvLogger;
 import com.craxiom.networksurvey.logging.LteCsvLogger;
@@ -39,6 +45,7 @@ import com.craxiom.networksurvey.logging.UmtsCsvLogger;
 import com.craxiom.networksurvey.model.LogTypeState;
 import com.craxiom.networksurvey.services.NetworkSurveyService;
 import com.craxiom.networksurvey.services.SurveyRecordProcessor;
+import com.craxiom.networksurvey.util.IOUtils;
 import com.craxiom.networksurvey.util.PreferenceUtils;
 
 import java.util.ArrayList;
@@ -62,6 +69,7 @@ public class CellularController extends AController
 {
     private static final int PING_RATE_MS = 10_000;
     public static final int DEFAULT_SUBSCRIPTION_ID = Integer.MAX_VALUE; // AKA SubscriptionManager.DEFAULT_SUBSCRIPTION_ID
+
     private final AtomicBoolean cellularScanningActive = new AtomicBoolean(false);
 
     private final AtomicBoolean cellularLoggingEnabled = new AtomicBoolean(false);
@@ -90,6 +98,12 @@ public class CellularController extends AController
     private final Map<Integer, PhoneStateListener> phoneStateListenerMap = new HashMap<>();
     private BroadcastReceiver simBroadcastReceiver;
 
+    private final AtomicBoolean cdrLoggingEnabled = new AtomicBoolean(false);
+    private final AtomicBoolean cdrStarted = new AtomicBoolean(false);
+    private final CdrLogger cdrLogger;
+    private final Map<Integer, PhoneStateListener> phoneStateCdrListenerMap = new HashMap<>();
+    private ContentObserver smsObserver;
+
     public CellularController(NetworkSurveyService surveyService, ExecutorService executorService,
                               Looper serviceLooper, Handler serviceHandler,
                               SurveyRecordProcessor surveyRecordProcessor)
@@ -106,6 +120,7 @@ public class CellularController extends AController
         umtsCsvLogger = new UmtsCsvLogger(surveyService, serviceLooper);
         cdmaCsvLogger = new CdmaCsvLogger(surveyService, serviceLooper);
         gsmCsvLogger = new GsmCsvLogger(surveyService, serviceLooper);
+        cdrLogger = new CdrLogger(surveyService, serviceLooper);
     }
 
     @Override
@@ -135,6 +150,11 @@ public class CellularController extends AController
     public boolean isScanningActive()
     {
         return cellularScanningActive.get();
+    }
+
+    public boolean isCdrLoggingEnabled()
+    {
+        return cdrLoggingEnabled.get();
     }
 
     public int getScanRateMs()
@@ -168,6 +188,7 @@ public class CellularController extends AController
         umtsCsvLogger.onSharedPreferenceChanged();
         cdmaCsvLogger.onSharedPreferenceChanged();
         gsmCsvLogger.onSharedPreferenceChanged();
+        cdrLogger.onSharedPreferenceChanged();
     }
 
     /**
@@ -184,6 +205,7 @@ public class CellularController extends AController
         umtsCsvLogger.onSharedPreferenceChanged();
         cdmaCsvLogger.onSharedPreferenceChanged();
         gsmCsvLogger.onSharedPreferenceChanged();
+        cdrLogger.onMdmPreferenceChanged();
     }
 
     public void onLogFileTypePreferenceChanged()
@@ -296,6 +318,47 @@ public class CellularController extends AController
 
             final boolean newLoggingState = cellularLoggingEnabled.get();
             if (successful && newLoggingState) initializePing();
+
+            return successful ? newLoggingState : null;
+        }
+    }
+
+    /**
+     * Toggles the CDR logging setting.
+     * <p>
+     * It is possible that an error occurs while trying to enable or disable logging. In that event null will be
+     * returned indicating that logging could not be toggled.
+     *
+     * @param enable True if logging should be enabled, false if it should be turned off.
+     * @return The new state of logging.  True if it is enabled, or false if it is disabled. Null is returned if the
+     * toggling was unsuccessful.
+     */
+    public Boolean toggleCdrLogging(boolean enable)
+    {
+        synchronized (cdrLoggingEnabled)
+        {
+            final boolean originalLoggingState = cdrLoggingEnabled.get();
+            if (originalLoggingState == enable) return originalLoggingState;
+
+            Timber.i("Toggling CDR logging to %s", enable);
+
+            final boolean successful = cdrLogger.enableLogging(enable);
+            if (successful)
+            {
+                cdrLoggingEnabled.set(enable);
+                if (enable)
+                {
+                    surveyService.registerCdrEventListener(cdrLogger);
+                } else
+                {
+                    surveyService.unregisterCdrEventListener(cdrLogger);
+                }
+            }
+
+            surveyService.updateServiceNotification();
+            surveyService.notifyLoggingChangedListeners();
+
+            final boolean newLoggingState = cdrLoggingEnabled.get();
 
             return successful ? newLoggingState : null;
         }
@@ -448,16 +511,19 @@ public class CellularController extends AController
                         for (SubscriptionInfo subscriptionInfo : activeSubscriptionInfoList)
                         {
                             int subId = subscriptionInfo.getSubscriptionId();
-                            telephonyManagerList.add(new TelephonyManagerWrapper(telephonyManager.createForSubscriptionId(subId), subId));
+                            String myPhoneNumber = subscriptionInfo.getNumber();
+                            telephonyManagerList.add(new TelephonyManagerWrapper(telephonyManager.createForSubscriptionId(subId), subId, myPhoneNumber));
                         }
                     } else
                     {
-                        telephonyManagerList.add(new TelephonyManagerWrapper(telephonyManager, DEFAULT_SUBSCRIPTION_ID));
+                        String myPhoneNumber = IOUtils.getMyPhoneNumber(surveyService, telephonyManager);
+                        telephonyManagerList.add(new TelephonyManagerWrapper(telephonyManager, DEFAULT_SUBSCRIPTION_ID, myPhoneNumber));
                     }
                 } else
                 {
+                    String myPhoneNumber = IOUtils.getMyPhoneNumber(surveyService, telephonyManager);
                     Timber.e("Unable to get access to the Subscription Manager. Can't get survey information from other SIMs");
-                    telephonyManagerList.add(new TelephonyManagerWrapper(telephonyManager, DEFAULT_SUBSCRIPTION_ID));
+                    telephonyManagerList.add(new TelephonyManagerWrapper(telephonyManager, DEFAULT_SUBSCRIPTION_ID, myPhoneNumber));
                 }
             }
 
@@ -537,11 +603,13 @@ public class CellularController extends AController
 
                 Timber.i("SIM State Change Detected. Refreshing the active subscription info list");
                 stopPhoneStateListener();
+                stopCdrEvents();
 
                 initializeCellularScanningResources();
 
                 // Stop and start the phone state listener so that it will be listening to the new SIM(s)
                 startPhoneStateListener();
+                startCdrEvents();
             }
         };
 
@@ -768,6 +836,7 @@ public class CellularController extends AController
     public void stopAllLogging()
     {
         toggleLogging(false);
+        toggleCdrLogging(false);
     }
 
     /**
@@ -830,6 +899,114 @@ public class CellularController extends AController
         {
             Timber.e(e, "An exception occurred trying to send out a ping ");
         }
+    }
+
+    /**
+     * Initialize and start the handler that listens for phone state events to create CDR events.
+     * <p>
+     * This method only starts the CDR listener if it is not already active.
+     */
+    public void startCdrEvents()
+    {
+        if (surveyService == null) return;
+
+        synchronized (activeSubscriptionInfoListLock)
+        {
+            if (cdrStarted.getAndSet(true)) return;
+
+            // Add a listener for the Service State information if we have access to the Telephony Manager
+            final TelephonyManager telephonyManager = (TelephonyManager) surveyService.getSystemService(Context.TELEPHONY_SERVICE);
+            if (telephonyManager != null && surveyService.getPackageManager().hasSystemFeature(PackageManager.FEATURE_TELEPHONY))
+            {
+                if (ActivityCompat.checkSelfPermission(surveyService, Manifest.permission.READ_SMS) == PackageManager.PERMISSION_GRANTED)
+                {
+                    ContentResolver contentResolver = surveyService.getContentResolver();
+                    smsObserver = new CdrSmsObserver(serviceHandler, contentResolver, this, surveyRecordProcessor, executorService);
+                    contentResolver.registerContentObserver(SMS_URI, true, smsObserver);
+                }
+
+                Timber.d("Adding the Telephony Manager Service State Listener for CDR events");
+
+                phoneStateCdrListenerMap.clear();
+
+                for (TelephonyManagerWrapper wrapper : telephonyManagerList)
+                {
+                    if (surveyService.getPackageManager().hasSystemFeature(PackageManager.FEATURE_TELEPHONY))
+                    {
+                        // Sadly we have to use the service handler for this because the PhoneStateListener constructor calls
+                        // Looper.myLooper(), which needs to be run from a thread where the looper is prepared. The better option
+                        // is to use the constructor that takes an executor service, but that is only supported in Android 10+.
+                        serviceHandler.post(() -> {
+                            PhoneStateListener phoneStateCdrListener = new PhoneStateListener()
+                            {
+                                @Override
+                                public void onCallStateChanged(int state, String otherPhoneNumber)
+                                {
+                                    execute(() -> surveyRecordProcessor.onCallStateChanged(state, otherPhoneNumber,
+                                            telephonyManager, wrapper.getPhoneNumber()));
+                                }
+
+                                @Override
+                                public void onServiceStateChanged(ServiceState serviceState)
+                                {
+                                    execute(() -> surveyRecordProcessor.onCdrServiceStateChanged(serviceState, telephonyManager));
+                                }
+                            };
+
+                            wrapper.getTelephonyManager().listen(phoneStateCdrListener, PhoneStateListener.LISTEN_CALL_STATE | PhoneStateListener.LISTEN_SERVICE_STATE);
+                        });
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * Remove the phone state listener for CDR events.
+     */
+    public void stopCdrEvents()
+    {
+        Timber.d("Setting the cdr active flag to false");
+
+        telephonyManagerList.forEach(wrapper -> {
+            if (wrapper != null && surveyService != null)
+            {
+                final TelephonyManager telephonyManager = wrapper.getTelephonyManager();
+                if (telephonyManager != null && surveyService.getPackageManager().hasSystemFeature(PackageManager.FEATURE_TELEPHONY))
+                {
+                    Timber.d("Removing the CDR Telephony Manager Service State Listener");
+
+                    try
+                    {
+                        telephonyManager.listen(phoneStateCdrListenerMap.get(wrapper.getSubscriptionId()), PhoneStateListener.LISTEN_NONE);
+                    } catch (Exception e)
+                    {
+                        // This is expected if a SIM card is added or removed because the telephony
+                        // service will have changed out from under us.
+                        Timber.e(e, "An exception occurred trying to remove the PhoneStateListener");
+                    }
+                }
+            }
+        });
+
+        if (smsObserver != null)
+        {
+            surveyService.getContentResolver().unregisterContentObserver(smsObserver);
+        }
+
+        cdrStarted.set(false);
+    }
+
+    public TelephonyManagerWrapper getTelephonyManagerForSubscription(int subscriptionId)
+    {
+        for (TelephonyManagerWrapper wrapper : telephonyManagerList)
+        {
+            if (wrapper.getSubscriptionId() == subscriptionId)
+            {
+                return wrapper;
+            }
+        }
+        return null;
     }
 
     @RequiresApi(api = Build.VERSION_CODES.S)

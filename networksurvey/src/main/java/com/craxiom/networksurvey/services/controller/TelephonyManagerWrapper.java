@@ -10,6 +10,7 @@ public class TelephonyManagerWrapper
 {
     private final TelephonyManager telephonyManager;
     private final int subscriptionId;
+    private final String phoneNumber;
 
     /**
      * Creates a new TelephonyManagerWrapper instance.
@@ -17,10 +18,11 @@ public class TelephonyManagerWrapper
      * @param telephonyManager The TelephonyManager to store in this wrapper.
      * @param subscriptionId   The subscription ID to use when getting the TelephonyManager.
      */
-    public TelephonyManagerWrapper(TelephonyManager telephonyManager, int subscriptionId)
+    public TelephonyManagerWrapper(TelephonyManager telephonyManager, int subscriptionId, String phoneNumber)
     {
-        this.subscriptionId = subscriptionId;
         this.telephonyManager = telephonyManager;
+        this.subscriptionId = subscriptionId;
+        this.phoneNumber = phoneNumber;
     }
 
     public TelephonyManager getTelephonyManager()
@@ -31,5 +33,10 @@ public class TelephonyManagerWrapper
     public int getSubscriptionId()
     {
         return subscriptionId;
+    }
+
+    public String getPhoneNumber()
+    {
+        return phoneNumber;
     }
 }
