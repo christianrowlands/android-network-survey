@@ -7,6 +7,7 @@ import static com.craxiom.networksurvey.constants.csv.CdrCsvConstants.EVENT;
 import static com.craxiom.networksurvey.constants.csv.CdrCsvConstants.ORIGINATING_ADDRESS;
 import static com.craxiom.networksurvey.constants.csv.CdrCsvConstants.PS_CELL_IDENTIFIER;
 import static com.craxiom.networksurvey.constants.csv.CdrCsvConstants.PS_RANT;
+import static com.craxiom.networksurvey.constants.csv.CdrCsvConstants.SLOT;
 import static com.craxiom.networksurvey.constants.csv.CdrCsvConstants.START_TIME;
 import static com.craxiom.networksurvey.constants.csv.CsvConstants.ACCURACY;
 import static com.craxiom.networksurvey.constants.csv.CsvConstants.ALTITUDE;
@@ -16,6 +17,7 @@ import static com.craxiom.networksurvey.constants.csv.CsvConstants.LONGITUDE;
 import android.location.Location;
 
 import com.craxiom.messaging.phonestate.NetworkType;
+import com.craxiom.networksurvey.services.controller.CellularController;
 import com.craxiom.networksurvey.util.IOUtils;
 
 import java.time.ZonedDateTime;
@@ -36,13 +38,15 @@ public class CdrEvent
     private NetworkType psRant;
     private String csCellIdentifier = "";
     private String psCellIdentifier = "";
+    private final int slot;
 
-    public CdrEvent(CdrEventType eventType, String callingNumber, String calledNumber)
+    public CdrEvent(CdrEventType eventType, String callingNumber, String calledNumber, int subscriptionId)
     {
         timestamp = ZonedDateTime.now();
         this.eventType = eventType;
         this.callingNumber = callingNumber;
         this.calledNumber = calledNumber;
+        slot = subscriptionId;
     }
 
     /**
@@ -51,7 +55,9 @@ public class CdrEvent
      */
     public static String[] getHeaders()
     {
-        return new String[]{START_TIME, LATITUDE, LONGITUDE, ALTITUDE, ACCURACY, EVENT, ORIGINATING_ADDRESS, DESTINATION_ADDRESS, CS_RANT, CS_CELL_IDENTIFIER, PS_RANT, PS_CELL_IDENTIFIER};
+        return new String[]{START_TIME, LATITUDE, LONGITUDE, ALTITUDE, ACCURACY, EVENT,
+                ORIGINATING_ADDRESS, DESTINATION_ADDRESS, CS_RANT, CS_CELL_IDENTIFIER, PS_RANT,
+                PS_CELL_IDENTIFIER, SLOT};
     }
 
     public void setLocation(Location location)
@@ -92,7 +98,9 @@ public class CdrEvent
                 csRant.toString(),
                 csCellIdentifier,
                 psRant.toString(),
-                psCellIdentifier};
+                psCellIdentifier,
+                slot != CellularController.DEFAULT_SUBSCRIPTION_ID ? String.valueOf(slot) : ""
+        };
     }
 
     /**

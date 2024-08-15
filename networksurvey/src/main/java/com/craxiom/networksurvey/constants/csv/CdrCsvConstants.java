@@ -39,4 +39,10 @@ public class CdrCsvConstants extends CsvConstants
      * did not call this the CGI because I wanted to include the TAC.
      */
     public static final String PS_CELL_IDENTIFIER = "psCellIdentifier";
+
+    /**
+     * The subscription ID that the event occurred on. This allows for multiple SIMs to be tracked.
+     * The value does not have to start at 0 ot 1, it can start at any value.
+     */
+    public static final String SLOT = "slot";
 }

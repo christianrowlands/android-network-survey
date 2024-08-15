@@ -107,15 +107,6 @@
         </receiver>
 
         <receiver
-            android:name=".CdrSmsReceiver"
-            android:label="CdrSmsReceiver"
-            android:exported="true">
-            <intent-filter>
-                <action android:name="android.provider.Telephony.SMS_RECEIVED" />
-            </intent-filter>
-        </receiver>
-
-        <receiver
             android:name=".SimChangeReceiver"
             android:enabled="true"
             android:exported="true">

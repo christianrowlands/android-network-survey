@@ -915,8 +915,7 @@ public class CellularController extends AController
             if (cdrStarted.getAndSet(true)) return;
 
             // Add a listener for the Service State information if we have access to the Telephony Manager
-            final TelephonyManager telephonyManager = (TelephonyManager) surveyService.getSystemService(Context.TELEPHONY_SERVICE);
-            if (telephonyManager != null && surveyService.getPackageManager().hasSystemFeature(PackageManager.FEATURE_TELEPHONY))
+            if (surveyService.getPackageManager().hasSystemFeature(PackageManager.FEATURE_TELEPHONY))
             {
                 if (ActivityCompat.checkSelfPermission(surveyService, Manifest.permission.READ_SMS) == PackageManager.PERMISSION_GRANTED)
                 {
@@ -943,13 +942,14 @@ public class CellularController extends AController
                                 public void onCallStateChanged(int state, String otherPhoneNumber)
                                 {
                                     execute(() -> surveyRecordProcessor.onCallStateChanged(state, otherPhoneNumber,
-                                            telephonyManager, wrapper.getPhoneNumber()));
+                                            wrapper.getTelephonyManager(), wrapper.getPhoneNumber(), wrapper.getSubscriptionId()));
                                 }
 
                                 @Override
                                 public void onServiceStateChanged(ServiceState serviceState)
                                 {
-                                    execute(() -> surveyRecordProcessor.onCdrServiceStateChanged(serviceState, telephonyManager));
+                                    execute(() -> surveyRecordProcessor.onCdrServiceStateChanged(serviceState,
+                                            wrapper.getTelephonyManager(), wrapper.getSubscriptionId()));
                                 }
                             };
 

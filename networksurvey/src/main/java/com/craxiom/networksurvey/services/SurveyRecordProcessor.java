@@ -98,6 +98,7 @@ import com.craxiom.networksurvey.model.CellularRecordWrapper;
 import com.craxiom.networksurvey.model.ConstellationFreqKey;
 import com.craxiom.networksurvey.model.NrRecordWrapper;
 import com.craxiom.networksurvey.model.WifiRecordWrapper;
+import com.craxiom.networksurvey.services.controller.CellularController;
 import com.craxiom.networksurvey.util.IOUtils;
 import com.craxiom.networksurvey.util.LocationUtils;
 import com.craxiom.networksurvey.util.MathUtils;
@@ -182,7 +183,7 @@ public class SurveyRecordProcessor
     private int gnssScanRateMs;
 
     private int currentCallState = TelephonyManager.CALL_STATE_IDLE;
-    private CdrEvent currentCdrCellIdentity = new CdrEvent(CdrEventType.LOCATION_UPDATE, "", "");
+    private CdrEvent currentCdrCellIdentity = new CdrEvent(CdrEventType.LOCATION_UPDATE, "", "", CellularController.DEFAULT_SUBSCRIPTION_ID);
 
     /**
      * Creates a new processor that can consume the raw survey records in Android format and convert them to the
@@ -546,9 +547,9 @@ public class SurveyRecordProcessor
                 }));
     }
 
-    public void onCdrServiceStateChanged(ServiceState serviceState, TelephonyManager telephonyManager)
+    public void onCdrServiceStateChanged(ServiceState serviceState, TelephonyManager telephonyManager, int subscriptionId)
     {
-        CdrEvent cdrEvent = new CdrEvent(CdrEventType.LOCATION_UPDATE, "", "");
+        CdrEvent cdrEvent = new CdrEvent(CdrEventType.LOCATION_UPDATE, "", "", subscriptionId);
         setCellInfo(cdrEvent, serviceState);
 
         if (currentCdrCellIdentity.locationAreaChanged(cdrEvent))
@@ -566,7 +567,7 @@ public class SurveyRecordProcessor
      * @param telephonyManager Used to get the cell identity of the current cell.
      * @param myPhoneNumber    This device's phone number. Only present if the READ_PHONE_NUMBERS permission is granted.
      */
-    public void onCallStateChanged(int state, String otherPhoneNumber, TelephonyManager telephonyManager, String myPhoneNumber)
+    public void onCallStateChanged(int state, String otherPhoneNumber, TelephonyManager telephonyManager, String myPhoneNumber, int subscriptionId)
     {
         Timber.d("Current call state=%s, new call state=%s", currentCallState, state);
         CdrEvent cdrEvent = null;
@@ -580,13 +581,13 @@ public class SurveyRecordProcessor
                 // will also be set on an incoming call, but it will transition from ringing to offhook.
                 if (currentCallState == TelephonyManager.CALL_STATE_IDLE)
                 {
-                    cdrEvent = new CdrEvent(CdrEventType.OUTGOING_CALL, myPhoneNumber, otherPhoneNumber);
+                    cdrEvent = new CdrEvent(CdrEventType.OUTGOING_CALL, myPhoneNumber, otherPhoneNumber, subscriptionId);
                     setCellInfo(cdrEvent, telephonyManager);
                 }
                 break;
 
             case TelephonyManager.CALL_STATE_RINGING: // Incoming
-                cdrEvent = new CdrEvent(CdrEventType.INCOMING_CALL, otherPhoneNumber, myPhoneNumber);
+                cdrEvent = new CdrEvent(CdrEventType.INCOMING_CALL, otherPhoneNumber, myPhoneNumber, subscriptionId);
                 setCellInfo(cdrEvent, telephonyManager);
                 break;
 
@@ -598,12 +599,13 @@ public class SurveyRecordProcessor
         finishCdrEvent(cdrEvent);
     }
 
-    public void onSmsEvent(CdrEventType smsEventType, String originatingAddress, TelephonyManager telephonyManager, String destinationAddress)
+    public void onSmsEvent(CdrEventType smsEventType, String originatingAddress, TelephonyManager telephonyManager,
+                           String destinationAddress, int subscriptionId)
     {
         if (cdrListeners.isEmpty()) return;
 
         Timber.d("onSmsEvent outgoingAddress=%s, destinationAddress=%s", originatingAddress, destinationAddress);
-        CdrEvent cdrEvent = new CdrEvent(smsEventType, originatingAddress, destinationAddress);
+        CdrEvent cdrEvent = new CdrEvent(smsEventType, originatingAddress, destinationAddress, subscriptionId);
         setCellInfo(cdrEvent, telephonyManager);
         finishCdrEvent(cdrEvent);
     }

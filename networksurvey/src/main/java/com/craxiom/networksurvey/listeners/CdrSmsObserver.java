@@ -86,7 +86,9 @@ public class CdrSmsObserver extends ContentObserver
                     {
                         try
                         {
-                            executorService.execute(() -> surveyRecordProcessor.onSmsEvent(CdrEventType.OUTGOING_SMS, wrapper.getPhoneNumber(), wrapper.getTelephonyManager(), destinationAddress));
+                            executorService.execute(() -> surveyRecordProcessor.onSmsEvent(CdrEventType.OUTGOING_SMS,
+                                    wrapper.getPhoneNumber(), wrapper.getTelephonyManager(), destinationAddress,
+                                    wrapper.getSubscriptionId()));
                         } catch (Throwable t)
                         {
                             Timber.w(t, "Could not submit to the executor service");
@@ -105,7 +107,9 @@ public class CdrSmsObserver extends ContentObserver
                     {
                         try
                         {
-                            executorService.execute(() -> surveyRecordProcessor.onSmsEvent(CdrEventType.INCOMING_SMS, sourceAddress, wrapper.getTelephonyManager(), wrapper.getPhoneNumber()));
+                            executorService.execute(() -> surveyRecordProcessor.onSmsEvent(CdrEventType.INCOMING_SMS,
+                                    sourceAddress, wrapper.getTelephonyManager(), wrapper.getPhoneNumber(),
+                                    wrapper.getSubscriptionId()));
                         } catch (Throwable t)
                         {
                             Timber.w(t, "Could not submit to the executor service");
