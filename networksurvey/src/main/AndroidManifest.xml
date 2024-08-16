@@ -84,7 +84,8 @@
         <service
             android:name=".services.GrpcConnectionService"
             android:description="@string/connection_service_description"
-            android:exported="false" />
+            android:exported="false"
+            android:foregroundServiceType="location" />
 
         <meta-data
             android:name="android.content.APP_RESTRICTIONS"
