@@ -176,7 +176,7 @@ dependencies {
     //debugImplementation 'com.squareup.leakcanary:leakcanary-android:3.0-alpha-1'
 
     androidTestImplementation 'androidx.test.ext:junit:1.2.1'
-    androidTestImplementation 'androidx.test:runner:1.6.1'
+    androidTestImplementation 'androidx.test:runner:1.6.2'
     androidTestImplementation 'androidx.test:rules:1.6.1'
     androidTestImplementation 'com.adevinta.android:barista:4.2.0'
     androidTestImplementation 'com.google.truth:truth:1.1.2'

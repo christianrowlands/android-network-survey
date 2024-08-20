@@ -344,6 +344,7 @@ but work independently, so you have full control over how you handle your data.<
     <string name="mqtt_connection_title_full">MQTT Broker Connection</string>
     <string name="mqtt_connection_title">MQTT Broker</string>
     <string name="stream_cellular_title">Stream Cellular</string>
+    <string name="stream_phone_state_title">Stream Cellular Phone State</string>
     <string name="stream_wifi_title">Stream Wi-Fi</string>
     <string name="stream_bluetooth_title">Stream Bluetooth</string>
     <string name="stream_gnss_title">Stream GNSS</string>
