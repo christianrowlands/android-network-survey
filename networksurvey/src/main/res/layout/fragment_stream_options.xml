@@ -166,13 +166,13 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="@string/scan_button_title"
-        android:visibility="visible" />
+        android:visibility="gone" />
 
     <Button
         android:id="@+id/code_share_button"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="@string/share_mqtt_qr_button_title"
-        android:visibility="visible" />
+        android:visibility="gone" />
 
 </LinearLayout>

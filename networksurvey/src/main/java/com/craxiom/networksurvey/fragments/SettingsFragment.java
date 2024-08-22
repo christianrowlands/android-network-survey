@@ -33,7 +33,7 @@ public class SettingsFragment extends PreferenceFragmentCompat implements Shared
     /**
      * The list of preferences that can be set in both the MDM app restrictions, and this settings UI.
      */
-    private static final String[] PROPERTY_KEYS = {NetworkSurveyConstants.PROPERTY_AUTO_START_CELLULAR_LOGGING,
+    private static final String[] MDM_OVERLAP_PROPERTY_KEYS = {NetworkSurveyConstants.PROPERTY_AUTO_START_CELLULAR_LOGGING,
             NetworkSurveyConstants.PROPERTY_AUTO_START_WIFI_LOGGING,
             NetworkSurveyConstants.PROPERTY_AUTO_START_BLUETOOTH_LOGGING,
             NetworkSurveyConstants.PROPERTY_AUTO_START_GNSS_LOGGING,
@@ -83,7 +83,7 @@ public class SettingsFragment extends PreferenceFragmentCompat implements Shared
                 if (mdmOverride)
                 {
                     final PreferenceScreen preferenceScreen = getPreferenceScreen();
-                    for (String preferenceKey : PROPERTY_KEYS)
+                    for (String preferenceKey : MDM_OVERLAP_PROPERTY_KEYS)
                     {
                         final Preference preference = preferenceScreen.findPreference(preferenceKey);
                         if (preference != null) preference.setEnabled(true);
@@ -184,7 +184,7 @@ public class SettingsFragment extends PreferenceFragmentCompat implements Shared
      */
     private void updateUiForMdmIfNecessary()
     {
-        if (!MdmUtils.isUnderMdmControl(requireContext(), PROPERTY_KEYS)) return;
+        if (!MdmUtils.isUnderMdmControl(requireContext(), MDM_OVERLAP_PROPERTY_KEYS)) return;
 
         final SharedPreferences sharedPreferences = getPreferenceManager().getSharedPreferences();
 

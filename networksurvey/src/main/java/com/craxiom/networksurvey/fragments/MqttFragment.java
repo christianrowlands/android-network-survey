@@ -25,6 +25,7 @@ import androidx.core.content.ContextCompat;
 import androidx.fragment.app.FragmentActivity;
 import androidx.navigation.Navigation;
 
+import com.craxiom.mqttlibrary.MqttConstants;
 import com.craxiom.mqttlibrary.connection.BrokerConnectionInfo;
 import com.craxiom.mqttlibrary.ui.AConnectionFragment;
 import com.craxiom.networksurvey.NetworkSurveyActivity;
@@ -33,6 +34,7 @@ import com.craxiom.networksurvey.constants.NetworkSurveyConstants;
 import com.craxiom.networksurvey.fragments.model.MqttConnectionSettings;
 import com.craxiom.networksurvey.mqtt.MqttConnectionInfo;
 import com.craxiom.networksurvey.services.NetworkSurveyService;
+import com.craxiom.networksurvey.util.MdmUtils;
 
 import timber.log.Timber;
 
@@ -51,6 +53,8 @@ public class MqttFragment extends AConnectionFragment<NetworkSurveyService.Surve
     private SwitchCompat bluetoothStreamToggleSwitch;
     private SwitchCompat gnssStreamToggleSwitch;
     private SwitchCompat deviceStatusStreamToggleSwitch;
+
+    private Button qrCodeScanButton;
 
     private boolean cellularStreamEnabled = true;
     private boolean wifiStreamEnabled = true;
@@ -102,6 +106,7 @@ public class MqttFragment extends AConnectionFragment<NetworkSurveyService.Surve
         bluetoothStreamToggleSwitch = inflatedStub.findViewById(R.id.streamBluetoothToggleSwitch);
         gnssStreamToggleSwitch = inflatedStub.findViewById(R.id.streamGnssToggleSwitch);
         deviceStatusStreamToggleSwitch = inflatedStub.findViewById(R.id.streamDeviceStatusToggleSwitch);
+        qrCodeScanButton = inflatedStub.findViewById(R.id.code_scan_button);
 
         bluetoothStreamToggleSwitch.setOnClickListener((buttonView) -> {
             if (buttonView.isPressed())
@@ -116,23 +121,24 @@ public class MqttFragment extends AConnectionFragment<NetworkSurveyService.Surve
         });
         bluetoothStreamToggleSwitch.setOnTouchListener((buttonView, motionEvent) -> motionEvent.getActionMasked() == 2);
 
-        Button scanCodeButton = inflatedStub.findViewById(R.id.code_scan_button);
-        scanCodeButton.setOnClickListener(v -> {
-            if (hasCameraPermission())
+        Context context = getContext();
+        if (context != null)
+        {
+            boolean underMdmControl = MdmUtils.isUnderMdmControl(context, MqttConstants.PROPERTY_MQTT_PASSWORD);
+            if (!underMdmControl)
             {
-                Navigation.findNavController(requireActivity(), getId())
-                        .navigate(MqttFragmentDirections.actionMqttConnectionFragmentToScannerFragment()
-                                .setMqttConnectionSettings(getCurrentMqttConnectionSettings()));
-            } else
-            {
-                cameraPermissionRequestLauncher.launch(Manifest.permission.CAMERA);
+                // For security reasons, we don't want to expose the MDM password via the share QR code,
+                // so only enable the button if the password is not under MDM control.
+                Button codeShareButton = inflatedStub.findViewById(R.id.code_share_button);
+                codeShareButton.setVisibility(View.VISIBLE);
+                codeShareButton.setOnClickListener(v -> Navigation.findNavController(requireActivity(), getId())
+                        .navigate(MqttFragmentDirections.actionMqttConnectionFragmentToShareFragment()
+                                .setMqttConnectionSettings(getCurrentMqttConnectionSettings())));
             }
-        });
 
-        Button codeShareButton = inflatedStub.findViewById(R.id.code_share_button);
-        codeShareButton.setOnClickListener(v -> Navigation.findNavController(requireActivity(), getId())
-                .navigate(MqttFragmentDirections.actionMqttConnectionFragmentToShareFragment()
-                        .setMqttConnectionSettings(getCurrentMqttConnectionSettings())));
+            boolean underMdmControlAndEnabled = MdmUtils.isUnderMdmControlAndEnabled(context, MqttConstants.PROPERTY_MQTT_CONNECTION_HOST);
+            updateQrCodeScanButtonVisibility(!underMdmControlAndEnabled);
+        }
     }
 
     @Override
@@ -247,7 +253,39 @@ public class MqttFragment extends AConnectionFragment<NetworkSurveyService.Surve
             ((NetworkSurveyService) service).sendSingleDeviceStatus();
         }
 
+        updateQrCodeScanButtonVisibility(mdmOverride);
+
         super.onMdmOverride(mdmOverride);
+    }
+
+    /**
+     * Update the visibility of the QR code scan button based on the provide visibility flag, which
+     * should be set based on the MDM override setting.
+     *
+     * @param visible True if the QR code scan button should be visible, false otherwise.
+     */
+    private void updateQrCodeScanButtonVisibility(boolean visible)
+    {
+        if (visible)
+        {
+            // Hiding the scan button is not a security setting, just a UX choice. We don't want
+            // the user to override the MDM settings by scanning a QR code.
+            qrCodeScanButton.setVisibility(View.VISIBLE);
+            qrCodeScanButton.setOnClickListener(v -> {
+                if (hasCameraPermission())
+                {
+                    Navigation.findNavController(requireActivity(), getId())
+                            .navigate(MqttFragmentDirections.actionMqttConnectionFragmentToScannerFragment()
+                                    .setMqttConnectionSettings(getCurrentMqttConnectionSettings()));
+                } else
+                {
+                    cameraPermissionRequestLauncher.launch(Manifest.permission.CAMERA);
+                }
+            });
+        } else
+        {
+            qrCodeScanButton.setVisibility(View.GONE);
+        }
     }
 
     /**
