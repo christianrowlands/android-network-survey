@@ -2,6 +2,8 @@ package com.craxiom.networksurvey.constants;
 
 import android.telephony.CellInfo;
 
+import com.craxiom.mqttlibrary.MqttConstants;
+
 /**
  * Some constants used in the Network Survey App.
  *
@@ -103,7 +105,7 @@ public class NetworkSurveyConstants
     public static final int LOCATION_PROVIDER_ALL = 3;
     public static final int DEFAULT_LOCATION_PROVIDER = LOCATION_PROVIDER_FUSED;
 
-    public static final String PROPERTY_MDM_OVERRIDE_KEY = "mdm_override";
+    public static final String PROPERTY_MDM_OVERRIDE_KEY = MqttConstants.PROPERTY_MQTT_MDM_OVERRIDE;
 
     // Preferences
     public static final String PROPERTY_AUTO_START_CELLULAR_LOGGING = "auto_start_logging";

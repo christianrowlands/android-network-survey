@@ -6,7 +6,7 @@
         app:defaultValue="false"
         app:icon="@drawable/ic_mdm_control"
         app:isPreferenceVisible="false"
-        app:key="mdm_override"
+        app:key="mqtt_mdm_override"
         app:summaryOff="@string/mdm_override_summary_off"
         app:summaryOn="@string/mdm_override_summary_on"
         app:title="@string/mdm_override_title" />
