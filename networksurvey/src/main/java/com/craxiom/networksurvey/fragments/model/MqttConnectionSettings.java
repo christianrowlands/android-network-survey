@@ -26,7 +26,6 @@ public record MqttConnectionSettings(
         @SerializedName("device_status_stream_enabled") Boolean deviceStatusStreamEnabled
 ) implements Serializable
 {
-
     public static class Builder
     {
         private String host;
@@ -123,6 +122,23 @@ public record MqttConnectionSettings(
                     gnssStreamEnabled != null ? gnssStreamEnabled : false,
                     deviceStatusStreamEnabled != null ? deviceStatusStreamEnabled : false);
         }
+    }
+
+    public MqttConnectionSettings withoutDeviceName() {
+        return new MqttConnectionSettings(
+                host,
+                port,
+                tlsEnabled,
+                null, // deviceName is set to null
+                mqttUsername,
+                mqttPassword,
+                mqttTopicPrefix,
+                cellularStreamEnabled != null ? cellularStreamEnabled : false,
+                wifiStreamEnabled != null ? wifiStreamEnabled : false,
+                bluetoothStreamEnabled != null ? bluetoothStreamEnabled : false,
+                gnssStreamEnabled != null ? gnssStreamEnabled : false,
+                deviceStatusStreamEnabled != null ? deviceStatusStreamEnabled : false
+        );
     }
 
     public BrokerConnectionInfo toMqttConnectionInfo()

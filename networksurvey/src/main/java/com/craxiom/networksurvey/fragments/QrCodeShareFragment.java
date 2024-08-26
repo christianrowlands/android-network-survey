@@ -37,7 +37,8 @@ public class QrCodeShareFragment extends Fragment
                 QrCodeShareFragmentArgs.fromBundle(getArguments()).getMqttConnectionSettings();
         if (mqttConnectionSettings == null) return view;
 
-        String mqttConnectionSettingsJson = new Gson().toJson(mqttConnectionSettings);
+        // Removing the device name because if two devices use the same MQTT client ID, then neither will be able to connect
+        String mqttConnectionSettingsJson = new Gson().toJson(mqttConnectionSettings.withoutDeviceName());
         if (mqttConnectionSettingsJson == null) return view;
 
         Bitmap bitmap;
