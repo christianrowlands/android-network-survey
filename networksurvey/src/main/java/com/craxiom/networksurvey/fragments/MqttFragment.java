@@ -131,9 +131,12 @@ public class MqttFragment extends AConnectionFragment<NetworkSurveyService.Surve
                 // so only enable the button if the password is not under MDM control.
                 Button codeShareButton = inflatedStub.findViewById(R.id.code_share_button);
                 codeShareButton.setVisibility(View.VISIBLE);
-                codeShareButton.setOnClickListener(v -> Navigation.findNavController(requireActivity(), getId())
-                        .navigate(MqttFragmentDirections.actionMqttConnectionFragmentToShareFragment()
-                                .setMqttConnectionSettings(getCurrentMqttConnectionSettings())));
+                codeShareButton.setOnClickListener(v -> {
+                    storeConnectionParameters(); // Store the parameters so that the latest values are shared
+                    Navigation.findNavController(requireActivity(), getId())
+                            .navigate(MqttFragmentDirections.actionMqttConnectionFragmentToShareFragment()
+                                    .setMqttConnectionSettings(getCurrentMqttConnectionSettings()));
+                });
             }
 
             boolean underMdmControlAndEnabled = MdmUtils.isUnderMdmControlAndEnabled(context, MqttConstants.PROPERTY_MQTT_CONNECTION_HOST);
