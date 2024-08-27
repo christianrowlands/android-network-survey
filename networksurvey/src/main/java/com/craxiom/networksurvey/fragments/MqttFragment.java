@@ -256,6 +256,10 @@ public class MqttFragment extends AConnectionFragment<NetworkSurveyService.Surve
             ((NetworkSurveyService) service).sendSingleDeviceStatus();
         }
 
+        // Save the connection parameters to the user preferences so that they are used for any
+        // auto connect on boot or other scenarios.
+        if (mdmOverride) storeConnectionParameters();
+
         updateQrCodeScanButtonVisibility(mdmOverride);
 
         super.onMdmOverride(mdmOverride);
