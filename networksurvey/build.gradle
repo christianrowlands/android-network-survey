@@ -2,7 +2,7 @@ apply plugin: 'com.android.application'
 apply plugin: "androidx.navigation.safeargs"
 
 // Exclude google-services and crashlytics if the json file is missing and for debug builds
-if (file("google-services.json").exists() && !gradle.startParameter.taskNames.any { it.contains("Debug") }) {
+if (file("google-services.json").exists() && !gradle.startParameter.taskNames.any { it.contains("Debug") || it.contains("test") }) {
     logger.quiet("Using the google-services.json file")
     apply plugin: "com.google.gms.google-services"
     apply plugin: "com.google.firebase.crashlytics"

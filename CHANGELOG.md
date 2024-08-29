@@ -1,6 +1,20 @@
 # Changelog
 
-## [1.28](https://github.com/christianrowlands/android-network-survey/releases/tag/v1.28) - 2024-08-28
+## [1.29](https://github.com/christianrowlands/android-network-survey/releases/tag/v1.29) - 2024-08-28
+
+* Support multiple SIM cards for the phone state messages (adds the slot field to the phone state message).
+* Adds multi-SIM support for the CDR feature of NS.
+* Adds the SIM slot to the CDR CSV records to track which SIM each record is associated with.
+* Fixes the gRPC connection (server connection) bug on Android 14.
+* Adds gRPC streaming for Phone State, Bluetooth, and GNSS records.
+* Adds stream options for all the different survey types to the gRPC connection.
+* Fixes a bug where the MDM override property was set differently in two places causing inconsistent override behavior.
+* Hide the MQTT share QR code button if the password is set via MDM.
+* Don't include the device name when sharing the MQTT connection information since it needs to be unique for each MQTT broker.
+* Save the latest connection parameters before creating the MQTT connection QR Code so that the latest values are shared.
+* Store the connection parameters on MDM override to facilitate MQTT start on boot and other edge case scenarios.
+
+## [1.28](https://github.com/christianrowlands/android-network-survey/releases/tag/v1.28) - 2024-08-08
 
 * Adds a display overlay on the map with current serving cell information.
 * Update the Tower Map if the SIM count changes.
