@@ -1,10 +1,13 @@
 apply plugin: 'com.android.application'
 apply plugin: "androidx.navigation.safeargs"
-if (file("google-services.json").exists()) {
+
+// Exclude google-services and crashlytics if the json file is missing and for debug builds
+if (file("google-services.json").exists() && !gradle.startParameter.taskNames.any { it.contains("Debug") }) {
     logger.quiet("Using the google-services.json file")
     apply plugin: "com.google.gms.google-services"
     apply plugin: "com.google.firebase.crashlytics"
 }
+
 apply plugin: 'kotlin-android'
 apply plugin: 'kotlin-kapt'
 apply plugin: 'dagger.hilt.android.plugin'
@@ -31,6 +34,8 @@ android {
     }
     buildTypes {
         debug {
+            applicationIdSuffix ".dev" // Suffix for debug builds
+            resValue "string", "app_name", "NS - dev"
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
