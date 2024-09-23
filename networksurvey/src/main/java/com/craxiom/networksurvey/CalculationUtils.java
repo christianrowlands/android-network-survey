@@ -46,6 +46,29 @@ public final class CalculationUtils
     }
 
     /**
+     * Pulls the sector ID (aka short cell ID) from a UMTS long CID. The short cell ID is the last 16 bits of the
+     * long CID.
+     *
+     * @param longCid The UMTS CID to pull the sector ID from.
+     * @return The short cell ID (last 8 bits).
+     */
+    public static int getUmtsShortCellIdFromCid(int longCid)
+    {
+        return longCid & 0xFFFF;
+    }
+
+    /**
+     * Pulls the UMTS Radio Network Controller (RNC) from a UMTS long CID. The RNC is the first 12 bits of the long CID.
+     *
+     * @param longCid The UMTS Cell ID to pull the RNC from.
+     * @return The RNC (first 12 bits).
+     */
+    public static int getUmtsRncFromCid(int longCid)
+    {
+        return longCid >> 16;
+    }
+
+    /**
      * Pulls the Primary Sync Sequence (PSS) from an LTE Physical Cell ID (PCI).
      *
      * @param pci The LTE Physical Cell ID to pull the PSS from.

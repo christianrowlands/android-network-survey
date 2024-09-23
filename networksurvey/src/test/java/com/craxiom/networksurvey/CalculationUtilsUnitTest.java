@@ -1,11 +1,11 @@
 package com.craxiom.networksurvey;
 
-import org.junit.Test;
-
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
+
+import org.junit.Test;
 
 /**
  * Calculation Utils unit tests, which will execute on the development machine (host).
@@ -61,6 +61,38 @@ public class CalculationUtilsUnitTest
     {
         assertNotEquals(15, CalculationUtils.getSectorIdFromCellId(1));
         assertNotEquals(8, CalculationUtils.getSectorIdFromCellId(48_624));
+    }
+
+    @Test
+    public void getUmtsShortCellIdFromCid_isCorrect()
+    {
+        assertEquals(17315, CalculationUtils.getUmtsShortCellIdFromCid(1655715)); // Lower 16 bits
+        assertEquals(39540, CalculationUtils.getUmtsShortCellIdFromCid(3054196)); // Lower 16 bits
+        assertEquals(12416, CalculationUtils.getUmtsShortCellIdFromCid(306000000));
+        assertEquals(65535, CalculationUtils.getUmtsShortCellIdFromCid(268435455)); // Lower 16 bits max value
+    }
+
+    @Test
+    public void getUmtsShortCellIdFromCid_isWrong()
+    {
+        assertNotEquals(4660, CalculationUtils.getUmtsShortCellIdFromCid(14709556)); // Testing wrong value
+        assertNotEquals(0, CalculationUtils.getUmtsShortCellIdFromCid(305896)); // Should not return 0
+    }
+
+    @Test
+    public void getUmtsRncFromCid_isCorrect()
+    {
+        assertEquals(464, CalculationUtils.getUmtsRncFromCid(30419896)); // Upper 12 bits
+        assertEquals(4095, CalculationUtils.getUmtsRncFromCid(268435455)); // Upper 12 bits max value
+        assertEquals(0, CalculationUtils.getUmtsRncFromCid(4660)); // No bits in upper 12
+        assertEquals(465, CalculationUtils.getUmtsRncFromCid(30539760)); // Only upper 12 bits
+    }
+
+    @Test
+    public void getUmtsRncFromCid_isWrong()
+    {
+        assertNotEquals(4660, CalculationUtils.getUmtsRncFromCid(1450556)); // Testing wrong value
+        assertNotEquals(65535, CalculationUtils.getUmtsRncFromCid(305419896)); // Should not return 65535
     }
 
     @Test

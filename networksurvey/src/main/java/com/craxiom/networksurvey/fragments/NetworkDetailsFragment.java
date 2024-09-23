@@ -498,8 +498,10 @@ public class NetworkDetailsFragment extends AServiceDataFragment implements ICel
 
             case UMTS:
                 binding.tacLabel.setText(R.string.lac_label);
-                binding.enbIdGroup.setVisibility(View.GONE);
-                binding.sectorIdGroup.setVisibility(View.GONE);
+                binding.enbIdLabel.setText(R.string.rnc_label);
+                binding.enbIdGroup.setVisibility(View.VISIBLE);
+                binding.sectorIdLabel.setText(R.string.short_cid_label);
+                binding.sectorIdGroup.setVisibility(View.VISIBLE);
                 binding.earfcnLabel.setText(R.string.uarfcn_label);
                 binding.pciLabel.setText(R.string.psc_label);
                 binding.bandwidthGroup.setVisibility(View.GONE);
@@ -520,7 +522,9 @@ public class NetworkDetailsFragment extends AServiceDataFragment implements ICel
 
             case LTE:
                 binding.tacLabel.setText(R.string.tac_label);
+                binding.enbIdLabel.setText(R.string.enb_id_label);
                 binding.enbIdGroup.setVisibility(View.VISIBLE);
+                binding.sectorIdLabel.setText(R.string.sector_id_label);
                 binding.sectorIdGroup.setVisibility(View.VISIBLE);
                 binding.earfcnLabel.setText(R.string.earfcn_band_label);
                 binding.pciLabel.setText(R.string.pci_label);
@@ -919,7 +923,8 @@ public class NetworkDetailsFragment extends AServiceDataFragment implements ICel
             chartViewModel.setServingCellId(ci);
             binding.cid.setText(String.valueOf(ci));
 
-            if (viewModel.getServingCellProtocol().getValue() == CellularProtocol.LTE)
+            CellularProtocol servingCellProtocol = viewModel.getServingCellProtocol().getValue();
+            if (servingCellProtocol == CellularProtocol.LTE)
             {
                 // The Cell Identity is 28 bits long. The first 20 bits represent the Macro eNodeB ID. The last 8 bits
                 // represent the sector.  Strip off the last 8 bits to get the Macro eNodeB ID.
@@ -928,6 +933,15 @@ public class NetworkDetailsFragment extends AServiceDataFragment implements ICel
 
                 int sectorId = CalculationUtils.getSectorIdFromCellId(ci);
                 binding.sectorId.setText(String.valueOf(sectorId));
+            } else if (servingCellProtocol == CellularProtocol.UMTS)
+            {
+                // The UMTS CID is 28 bits long. The first 12 bits represent the RNC ID. The last 16 bits represent the
+                // Short Cell ID. Strip off the last 16 bits to get the RNC ID.
+                int umtsRnc = CalculationUtils.getUmtsRncFromCid(ci);
+                binding.enbId.setText(String.valueOf(umtsRnc));
+
+                int umtsShortCellId = CalculationUtils.getUmtsShortCellIdFromCid(ci);
+                binding.sectorId.setText(String.valueOf(umtsShortCellId));
             }
         } else
         {
