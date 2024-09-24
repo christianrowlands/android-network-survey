@@ -215,6 +215,9 @@ public class NetworkSurveyActivity extends AppCompatActivity
             } catch (IllegalArgumentException e)
             {
                 Timber.e(e, "Could not unbind the service because it is not bound.");
+            } catch (Exception e)
+            {
+                Timber.e(e, "Could not unbind the service because of an exception.");
             }
         }
 
