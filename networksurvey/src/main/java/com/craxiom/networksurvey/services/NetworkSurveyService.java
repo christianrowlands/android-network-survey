@@ -180,7 +180,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
         initializeMqttConnection();
         registerManagedConfigurationListener();
 
-        cellularController.initializeCellularScanningResources();
+        cellularController.initialize();
         wifiController.initializeWifiScanningResources();
         bluetoothController.initializeBtScanningResources();
         gnssController.initializeGnssScanningResources();

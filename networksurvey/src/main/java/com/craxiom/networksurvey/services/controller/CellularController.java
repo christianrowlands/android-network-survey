@@ -397,7 +397,7 @@ public class CellularController extends AController
         {
             if (surveyService == null) return;
 
-            phoneStateListenerMap.clear();
+            clearPhoneStateListeners();
 
             for (TelephonyManagerWrapper wrapper : telephonyManagerList)
             {
@@ -435,7 +435,7 @@ public class CellularController extends AController
         }
     }
 
-    public void stopPhoneStateListener()
+    public synchronized void stopPhoneStateListener()
     {
         telephonyManagerList.forEach(wrapper -> {
             if (wrapper != null && surveyService != null)
@@ -447,7 +447,12 @@ public class CellularController extends AController
 
                     try
                     {
-                        telephonyManager.listen(phoneStateListenerMap.get(wrapper.getSubscriptionId()), PhoneStateListener.LISTEN_NONE);
+                        PhoneStateListener phoneStateListener = phoneStateListenerMap.get(wrapper.getSubscriptionId());
+                        if (phoneStateListener != null)
+                        {
+                            telephonyManager.listen(phoneStateListener, PhoneStateListener.LISTEN_NONE);
+                            phoneStateListenerMap.remove(wrapper.getSubscriptionId());
+                        }
                     } catch (Exception e)
                     {
                         // This is expected if a SIM card is added or removed because the telephony
@@ -457,6 +462,18 @@ public class CellularController extends AController
                 }
             }
         });
+    }
+
+    /**
+     * Initialize the resources needed for the Cellular Controller. This method causes the various listeners and
+     * receivers to be registered so that the cellular controller is ready to start scanning using the
+     * {@link #startCellularRecordScanning()} method.
+     */
+    public void initialize()
+    {
+        initializeCellularScanningResources();
+
+        registerSimStateChangeReceiver();
     }
 
     /**
@@ -582,8 +599,6 @@ public class CellularController extends AController
                     });
                 }
             }
-
-            registerSimStateChangeReceiver();
         }
     }
 
@@ -602,14 +617,19 @@ public class CellularController extends AController
                 if (intent == null) return;
 
                 Timber.i("SIM State Change Detected. Refreshing the active subscription info list");
-                stopPhoneStateListener();
-                stopCdrEvents();
+
+                boolean phoneStateWasEnabled = !phoneStateListenerMap.isEmpty();
+                boolean cdrWasEnabled = cdrStarted.get();
+
+                if (phoneStateWasEnabled) stopPhoneStateListener();
+                if (cdrWasEnabled) stopCdrEvents();
 
                 initializeCellularScanningResources();
 
-                // Stop and start the phone state listener so that it will be listening to the new SIM(s)
-                startPhoneStateListener();
-                startCdrEvents();
+                // Stop and start the phone state listener so that it will be listening to the new SIM(s),
+                // only if they were started before the SIM change.
+                if (phoneStateWasEnabled) startPhoneStateListener();
+                if (cdrWasEnabled) startCdrEvents();
             }
         };
 
@@ -926,7 +946,7 @@ public class CellularController extends AController
 
                 Timber.d("Adding the Telephony Manager Service State Listener for CDR events");
 
-                phoneStateCdrListenerMap.clear();
+                clearPhoneStateCdrListeners();
 
                 for (TelephonyManagerWrapper wrapper : telephonyManagerList)
                 {
@@ -953,11 +973,60 @@ public class CellularController extends AController
                                 }
                             };
 
-                            wrapper.getTelephonyManager().listen(phoneStateCdrListener, PhoneStateListener.LISTEN_CALL_STATE | PhoneStateListener.LISTEN_SERVICE_STATE);
+                            synchronized (phoneStateCdrListenerMap)
+                            {
+                                phoneStateCdrListenerMap.put(wrapper.getSubscriptionId(), phoneStateCdrListener);
+                                wrapper.getTelephonyManager().listen(phoneStateCdrListener, PhoneStateListener.LISTEN_CALL_STATE | PhoneStateListener.LISTEN_SERVICE_STATE);
+                            }
                         });
                     }
                 }
             }
+        }
+    }
+
+    /**
+     * Clears the phone state listeners for the cellular status events and delete everything in the map.
+     * See {@link #clearPhoneStateCdrListeners()} for clearing the listener for the CDR logging.
+     */
+    private synchronized void clearPhoneStateListeners()
+    {
+        phoneStateListenerMap.forEach((subscriptionId, listener) -> {
+            TelephonyManagerWrapper wrapper = getTelephonyManagerForSubscription(subscriptionId);
+            if (wrapper != null)
+            {
+                TelephonyManager telephonyManager = wrapper.getTelephonyManager();
+                if (telephonyManager != null)
+                {
+                    telephonyManager.listen(listener, PhoneStateListener.LISTEN_NONE);
+                }
+            }
+        });
+
+        phoneStateListenerMap.clear();
+    }
+
+    /**
+     * Clears the phone state listeners for CDR events and delete everything in the map.
+     */
+    private void clearPhoneStateCdrListeners()
+    {
+        // Synchronized to prevent adding or removing in the start/stop methods while clearing here
+        synchronized (phoneStateCdrListenerMap)
+        {
+            phoneStateCdrListenerMap.forEach((subscriptionId, listener) -> {
+                TelephonyManagerWrapper wrapper = getTelephonyManagerForSubscription(subscriptionId);
+                if (wrapper != null)
+                {
+                    TelephonyManager telephonyManager = wrapper.getTelephonyManager();
+                    if (telephonyManager != null)
+                    {
+                        telephonyManager.listen(listener, PhoneStateListener.LISTEN_NONE);
+                    }
+                }
+            });
+
+            phoneStateCdrListenerMap.clear();
         }
     }
 
@@ -968,26 +1037,35 @@ public class CellularController extends AController
     {
         Timber.d("Setting the cdr active flag to false");
 
-        telephonyManagerList.forEach(wrapper -> {
-            if (wrapper != null && surveyService != null)
-            {
-                final TelephonyManager telephonyManager = wrapper.getTelephonyManager();
-                if (telephonyManager != null && surveyService.getPackageManager().hasSystemFeature(PackageManager.FEATURE_TELEPHONY))
+        synchronized (phoneStateCdrListenerMap)
+        {
+            telephonyManagerList.forEach(wrapper -> {
+                if (wrapper != null && surveyService != null)
                 {
-                    Timber.d("Removing the CDR Telephony Manager Service State Listener");
+                    final TelephonyManager telephonyManager = wrapper.getTelephonyManager();
+                    if (telephonyManager != null && surveyService.getPackageManager().hasSystemFeature(PackageManager.FEATURE_TELEPHONY))
+                    {
+                        Timber.d("Removing the CDR Telephony Manager Service State Listener");
 
-                    try
-                    {
-                        telephonyManager.listen(phoneStateCdrListenerMap.get(wrapper.getSubscriptionId()), PhoneStateListener.LISTEN_NONE);
-                    } catch (Exception e)
-                    {
-                        // This is expected if a SIM card is added or removed because the telephony
-                        // service will have changed out from under us.
-                        Timber.e(e, "An exception occurred trying to remove the PhoneStateListener");
+                        try
+                        {
+                            int subscriptionId = wrapper.getSubscriptionId();
+                            final PhoneStateListener listener = phoneStateCdrListenerMap.get(subscriptionId);
+                            if (listener != null)
+                            {
+                                telephonyManager.listen(listener, PhoneStateListener.LISTEN_NONE);
+                                phoneStateCdrListenerMap.remove(subscriptionId);
+                            }
+                        } catch (Exception e)
+                        {
+                            // This is expected if a SIM card is added or removed because the telephony
+                            // service will have changed out from under us.
+                            Timber.e(e, "An exception occurred trying to remove the PhoneStateListener");
+                        }
                     }
                 }
-            }
-        });
+            });
+        }
 
         if (smsObserver != null)
         {
