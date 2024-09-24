@@ -1,5 +1,10 @@
 # Changelog
 
+## [1.30](https://github.com/christianrowlands/android-network-survey/releases/tag/v1.30) - 2024-09-24
+
+* Display the UMTS RNC ID and Short CID in the cellular details UI.
+* Fixes a crash that was triggered when CDR logging was enabled while enabling a second SIM card.
+
 ## [1.29](https://github.com/christianrowlands/android-network-survey/releases/tag/v1.29) - 2024-08-28
 
 * Support multiple SIM cards for the phone state messages (adds the slot field to the phone state message).
