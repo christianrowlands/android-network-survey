@@ -4,6 +4,7 @@
 
 * Display the UMTS RNC ID and Short CID in the cellular details UI.
 * Fixes a crash that was triggered when CDR logging was enabled while enabling a second SIM card.
+* Other edge case crash fixes.
 
 ## [1.29](https://github.com/christianrowlands/android-network-survey/releases/tag/v1.29) - 2024-08-28
 

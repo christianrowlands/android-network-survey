@@ -711,6 +711,9 @@ public class CellularController extends AController
             } catch (SecurityException e)
             {
                 Timber.e(e, "Could not get the required permissions to get the network details");
+            } catch (Exception e)
+            {
+                Timber.e(e, "An exception occurred trying to get the latest cellular information for a single scan");
             }
         }, 1_000);
     }

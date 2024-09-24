@@ -130,13 +130,20 @@ public class IOUtils
      */
     public static String getMyPhoneNumber(Context context, TelephonyManager telephonyManager)
     {
-        if (ActivityCompat.checkSelfPermission(context, Manifest.permission.READ_PHONE_NUMBERS) != PackageManager.PERMISSION_GRANTED
-                || ActivityCompat.checkSelfPermission(context, Manifest.permission.READ_PHONE_STATE) != PackageManager.PERMISSION_GRANTED)
+        try
         {
+            if (ActivityCompat.checkSelfPermission(context, Manifest.permission.READ_PHONE_NUMBERS) != PackageManager.PERMISSION_GRANTED
+                    || ActivityCompat.checkSelfPermission(context, Manifest.permission.READ_PHONE_STATE) != PackageManager.PERMISSION_GRANTED)
+            {
+                return "";
+            }
+            String line1Number = telephonyManager.getLine1Number();
+            return line1Number == null ? "" : line1Number;
+        } catch (SecurityException e)
+        {
+            Timber.e(e, "Could not get the phone number because of a permissions issue");
             return "";
         }
-        String line1Number = telephonyManager.getLine1Number();
-        return line1Number == null ? "" : line1Number;
     }
 
     /**

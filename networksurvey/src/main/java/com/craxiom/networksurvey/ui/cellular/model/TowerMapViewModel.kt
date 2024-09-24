@@ -207,24 +207,30 @@ internal class TowerMapViewModel : ASignalChartViewModel() {
      */
     @Synchronized
     fun drawServingCellLine() {
-        servingCellLinesOverlayGroup.items?.clear()
+        try {
+            servingCellLinesOverlayGroup.items?.clear()
 
-        val currentLocation = myLocation ?: return
+            val currentLocation = myLocation ?: return
 
-        if (subIdToServingCellLocations.isEmpty()) return
+            if (subIdToServingCellLocations.isEmpty()) return
 
-        val myGeoPoint = GeoPoint(currentLocation.latitude, currentLocation.longitude)
+            val myGeoPoint = GeoPoint(currentLocation.latitude, currentLocation.longitude)
 
-        subIdToServingCellLocations.forEach { (_, geoPoint) ->
-            val polyline = Polyline()
-            polyline.outlinePaint.strokeWidth = 4f
-            polyline.outlinePaint.setPathEffect(DashPathEffect(floatArrayOf(10f, 20f), 0f))
-            servingCellLinesOverlayGroup.add(polyline)
+            subIdToServingCellLocations.forEach { (_, geoPoint) ->
+                val polyline = Polyline()
+                polyline.outlinePaint.strokeWidth = 4f
+                polyline.outlinePaint.setPathEffect(DashPathEffect(floatArrayOf(10f, 20f), 0f))
+                servingCellLinesOverlayGroup.add(polyline)
 
-            val pathPoints = ArrayList<GeoPoint>()
-            pathPoints.add(myGeoPoint)
-            pathPoints.add(geoPoint)
-            polyline.setPoints(pathPoints)
+                val pathPoints = ArrayList<GeoPoint>()
+                pathPoints.add(myGeoPoint)
+                pathPoints.add(geoPoint)
+                polyline.setPoints(pathPoints)
+            }
+        } catch (e: Exception) {
+            // Sometimes the servingCellLinesOverlayGroup will throw a NPE on the #add call because
+            // the mOverlayManager is assigned null on cleanup
+            Timber.e(e, "Something went wrong while drawing the serving cell lines on the map")
         }
     }
 
