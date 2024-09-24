@@ -39,7 +39,7 @@ jobs:
 
       # Only upload the reports on failure
       - name: Upload Reports
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v4
         with:
           name: Test-Reports
           path: networksurvey/build/reports
