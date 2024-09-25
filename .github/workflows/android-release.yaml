@@ -70,6 +70,33 @@ jobs:
           KEYSTORE_FILE: ${{ secrets.KEYSTORE_FILE }}
         run: echo $KEYSTORE_FILE | base64 -d > my.keystore
 
+      - name: Build CDR Release APK
+        env:
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+          NS_API_KEY: ${{ secrets.NS_API_KEY }}
+        run: ./gradlew assembleCdrRelease
+          -Pandroid.injected.signing.store.file=$(pwd)/my.keystore
+          -Pandroid.injected.signing.store.password=$KEYSTORE_PASSWORD
+          -Pandroid.injected.signing.key.alias=$KEY_ALIAS
+          -Pandroid.injected.signing.key.password=$KEY_PASSWORD
+          -PnsApiKey=$NS_API_KEY
+
+      - name: Get base name
+        id: basenamestep
+        run: |
+          base_name=$(./gradlew :networksurvey:properties -q | grep 'archivesBaseName:' | awk '{print $2}')
+          echo "basename=$base_name" >> $GITHUB_ENV
+          echo "basename=$base_name" >> "$GITHUB_OUTPUT"
+          echo $base_name
+
+      - name: Upload CDR APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: Network Survey CDR Release APK
+          path: networksurvey/build/outputs/apk/cdr/release/${{ env.basename }}-cdr-release.apk
+
       - name: Save google-services.json
         env:
           GOOGLE_SERVICES: ${{ secrets.GOOGLE_SERVICES }}
@@ -88,38 +115,11 @@ jobs:
           -Pandroid.injected.signing.key.password=$KEY_PASSWORD
           -PnsApiKey=$NS_API_KEY
 
-      - name: Get base name
-        id: basenamestep
-        run: |
-          base_name=$(./gradlew :networksurvey:properties -q | grep 'archivesBaseName:' | awk '{print $2}')
-          echo "basename=$base_name" >> $GITHUB_ENV
-          echo "basename=$base_name" >> "$GITHUB_OUTPUT"
-          echo $base_name
-
       - name: Upload Regular APK
         uses: actions/upload-artifact@v4
         with:
           name: Network Survey Regular Release APK
           path: networksurvey/build/outputs/apk/regular/release/${{ env.basename }}-regular-release.apk
-
-      - name: Build CDR Release APK
-        env:
-          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
-          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
-          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
-          NS_API_KEY: ${{ secrets.NS_API_KEY }}
-        run: ./gradlew assembleCdrRelease
-          -Pandroid.injected.signing.store.file=$(pwd)/my.keystore
-          -Pandroid.injected.signing.store.password=$KEYSTORE_PASSWORD
-          -Pandroid.injected.signing.key.alias=$KEY_ALIAS
-          -Pandroid.injected.signing.key.password=$KEY_PASSWORD
-          -PnsApiKey=$NS_API_KEY
-
-      - name: Upload CDR APK
-        uses: actions/upload-artifact@v4
-        with:
-          name: Network Survey CDR Release APK
-          path: networksurvey/build/outputs/apk/cdr/release/${{ env.basename }}-cdr-release.apk
 
       - name: Build Regular Release Bundle
         env:
