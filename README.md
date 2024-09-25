@@ -2,6 +2,7 @@
 
 ![Build Status](https://github.com/christianrowlands/android-network-survey/actions/workflows/android.yaml/badge.svg)
 [![License](https://img.shields.io/badge/license-Apache%202-green.svg?style=flat)](https://github.com/christianrowlands/android-network-survey/blob/develop/LICENSE)
+![Latest Release](https://img.shields.io/github/release/christianrowlands/android-network-survey.svg?logo=github)
 
 <p align="center">
   <a href="https://play.google.com/store/apps/details?id=com.craxiom.networksurvey">
