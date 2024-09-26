@@ -13,6 +13,7 @@ on:
 
 jobs:
   build:
+    if: "! startsWith(github.event.head_commit.message, 'Bump version to')"
     runs-on: ubuntu-latest
 
     steps:
@@ -30,11 +31,6 @@ jobs:
         env:
           GOOGLE_SERVICES: ${{ secrets.GOOGLE_SERVICES }}
         run: echo "$GOOGLE_SERVICES" > networksurvey/google-services.json
-
-#      - name: Change applicationId to debug
-#        run: |
-#          # Update build.gradle with the debug applicationId
-#          sed -i "s/applicationId \"[^\"]*\"/applicationId \"com.craxiom.networksurvey.debug\"/g" networksurvey/build.gradle
 
       - name: Build Regular APK
         env:
@@ -65,6 +61,7 @@ jobs:
 
 
   test:
+    if: "! startsWith(github.event.head_commit.message, 'Bump version to')"
     name: Run Tests
     runs-on: macos-latest
 
