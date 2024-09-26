@@ -16,7 +16,6 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.RestrictionsManager;
 import android.content.SharedPreferences;
-import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.content.pm.ServiceInfo;
 import android.location.Location;
@@ -70,8 +69,8 @@ import com.craxiom.networksurvey.services.controller.BluetoothController;
 import com.craxiom.networksurvey.services.controller.CellularController;
 import com.craxiom.networksurvey.services.controller.GnssController;
 import com.craxiom.networksurvey.services.controller.WifiController;
-import com.craxiom.networksurvey.util.IOUtils;
 import com.craxiom.networksurvey.util.MathUtils;
+import com.craxiom.networksurvey.util.NsUtils;
 import com.craxiom.networksurvey.util.PreferenceUtils;
 import com.google.gson.Gson;
 import com.google.protobuf.BoolValue;
@@ -1432,7 +1431,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
     {
         final DeviceStatusData.Builder dataBuilder = DeviceStatusData.newBuilder();
         dataBuilder.setDeviceSerialNumber(deviceId)
-                .setDeviceTime(IOUtils.getRfc3339String(ZonedDateTime.now()));
+                .setDeviceTime(NsUtils.getRfc3339String(ZonedDateTime.now()));
         dataBuilder.setMdmOverride(BoolValue.newBuilder().setValue(mdmOverride).build());
 
         if (primaryLocationListener != null)
@@ -1490,7 +1489,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
         }
 
         dataBuilder.setDeviceModel(Build.MODEL);
-        dataBuilder.setAppVersion(getVersionName());
+        dataBuilder.setAppVersion(NsUtils.getAppVersionName(this));
 
         final DeviceStatus.Builder statusBuilder = DeviceStatus.newBuilder();
         statusBuilder.setMessageType(DeviceStatusMessageConstants.DEVICE_STATUS_MESSAGE_TYPE);
@@ -1498,21 +1497,6 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
         statusBuilder.setData(dataBuilder);
 
         return statusBuilder.build();
-    }
-
-    /**
-     * @return The NS App version number, or an empty string if it could not be determined.
-     */
-    private String getVersionName()
-    {
-        try
-        {
-            PackageInfo info = getPackageManager().getPackageInfo(getPackageName(), 0);
-            return info.versionName;
-        } catch (PackageManager.NameNotFoundException e)
-        {
-            return "";
-        }
     }
 
     /**

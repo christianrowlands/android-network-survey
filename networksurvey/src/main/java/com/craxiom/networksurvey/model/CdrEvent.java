@@ -18,7 +18,7 @@ import android.location.Location;
 
 import com.craxiom.messaging.phonestate.NetworkType;
 import com.craxiom.networksurvey.services.controller.CellularController;
-import com.craxiom.networksurvey.util.IOUtils;
+import com.craxiom.networksurvey.util.NsUtils;
 
 import java.time.ZonedDateTime;
 
@@ -87,7 +87,7 @@ public class CdrEvent
         // getHeaders method, and new columns should not be inserted in the middle since consuming
         // applications need to trust that the order will not change.
         return new String[]{
-                IOUtils.getRfc3339String(timestamp),
+                NsUtils.getRfc3339String(timestamp),
                 String.valueOf(location == null ? "" : location.getLatitude()),
                 String.valueOf(location == null ? "" : location.getLongitude()),
                 String.valueOf(location == null ? "" : location.getAltitude()),

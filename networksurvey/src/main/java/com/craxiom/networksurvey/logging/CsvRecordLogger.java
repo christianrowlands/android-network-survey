@@ -1,8 +1,6 @@
 package com.craxiom.networksurvey.logging;
 
 import android.content.Context;
-import android.content.pm.PackageInfo;
-import android.content.pm.PackageManager;
 import android.os.Environment;
 import android.os.Handler;
 import android.os.Looper;
@@ -11,6 +9,7 @@ import android.widget.Toast;
 import com.craxiom.networksurvey.constants.NetworkSurveyConstants;
 import com.craxiom.networksurvey.services.NetworkSurveyService;
 import com.craxiom.networksurvey.services.SurveyRecordProcessor;
+import com.craxiom.networksurvey.util.NsUtils;
 import com.craxiom.networksurvey.util.PreferenceUtils;
 
 import org.apache.commons.csv.CSVFormat;
@@ -186,7 +185,7 @@ public abstract class CsvRecordLogger
 
         Timber.i("Creating the log file: %s", loggingFileName);
 
-        final String versionName = getVersionName();
+        final String versionName = NsUtils.getAppVersionName(applicationContext);
         final List<String> headerComments = new ArrayList<>();
         headerComments.add("Created by Network Survey version=" + versionName);
 
@@ -424,21 +423,6 @@ public abstract class CsvRecordLogger
         public void reset()
         {
             recordCount.set(0);
-        }
-    }
-
-    /**
-     * @return The NS App version number, or an empty string if it could not be determined.
-     */
-    private String getVersionName()
-    {
-        try
-        {
-            PackageInfo info = applicationContext.getPackageManager().getPackageInfo(applicationContext.getPackageName(), 0);
-            return info.versionName;
-        } catch (PackageManager.NameNotFoundException e)
-        {
-            return "";
         }
     }
 }

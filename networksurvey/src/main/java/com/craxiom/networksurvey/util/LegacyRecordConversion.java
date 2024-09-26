@@ -13,7 +13,7 @@ import com.craxiom.messaging.UmtsRecordData;
 import com.craxiom.networksurvey.messaging.Error;
 import com.craxiom.networksurvey.messaging.LteBandwidth;
 
-import static com.craxiom.networksurvey.util.IOUtils.getEpochFromRfc3339;
+import static com.craxiom.networksurvey.util.NsUtils.getEpochFromRfc3339;
 
 /**
  * Utility methods to help with converting the newer survey record protobuf objects to the old format. This class should

@@ -87,7 +87,7 @@ import com.craxiom.networksurvey.util.FormatUtils.formatLatOrLon
 import com.craxiom.networksurvey.util.FormatUtils.formatNumSats
 import com.craxiom.networksurvey.util.FormatUtils.formatSpeed
 import com.craxiom.networksurvey.util.FormatUtils.formatSpeedAccuracy
-import com.craxiom.networksurvey.util.IOUtils
+import com.craxiom.networksurvey.util.NsUtils
 import com.craxiom.networksurvey.util.PreferenceUtils.gnssFilter
 import com.craxiom.networksurvey.util.SatelliteUtil.isVerticalAccuracySupported
 import com.craxiom.networksurvey.util.UIUtils
@@ -521,7 +521,7 @@ private fun copyToClipboard(context: Context, location: Location) {
         null, null, null, context.getString(R.string.preferences_coordinate_format_dd_key)
     )
     if (!TextUtils.isEmpty(formattedLocation)) {
-        IOUtils.copyToClipboard(formattedLocation)
+        NsUtils.copyToClipboard(formattedLocation)
         // Android 12 and higher generates a Toast automatically
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) {
             Toast.makeText(context, R.string.copied_to_clipboard, Toast.LENGTH_LONG)

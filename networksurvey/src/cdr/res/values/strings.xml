@@ -16,4 +16,6 @@
         \n\nOne final note, SMS is currently supported for CDRs, but MMS is not. So messages associated with group
         chats won\'t show up in the CDR CSV file.</string>
 
+    <string name="version_suffix">-cdr</string>
+
 </resources>

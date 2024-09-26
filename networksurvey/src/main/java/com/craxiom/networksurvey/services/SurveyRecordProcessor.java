@@ -99,7 +99,7 @@ import com.craxiom.networksurvey.model.ConstellationFreqKey;
 import com.craxiom.networksurvey.model.NrRecordWrapper;
 import com.craxiom.networksurvey.model.WifiRecordWrapper;
 import com.craxiom.networksurvey.services.controller.CellularController;
-import com.craxiom.networksurvey.util.IOUtils;
+import com.craxiom.networksurvey.util.NsUtils;
 import com.craxiom.networksurvey.util.LocationUtils;
 import com.craxiom.networksurvey.util.MathUtils;
 import com.craxiom.networksurvey.util.ParserUtils;
@@ -663,7 +663,7 @@ public class SurveyRecordProcessor
         }
 
         dataBuilder.setDeviceSerialNumber(deviceId);
-        dataBuilder.setDeviceTime(IOUtils.getRfc3339String(ZonedDateTime.now()));
+        dataBuilder.setDeviceTime(NsUtils.getRfc3339String(ZonedDateTime.now()));
 
         dataBuilder.setMissionId(missionId);
         dataBuilder.setRecordNumber(phoneStateRecordNumber++);
@@ -979,7 +979,7 @@ public class SurveyRecordProcessor
         }
 
         dataBuilder.setDeviceSerialNumber(deviceId);
-        dataBuilder.setDeviceTime(IOUtils.getRfc3339String(ZonedDateTime.now()));
+        dataBuilder.setDeviceTime(NsUtils.getRfc3339String(ZonedDateTime.now()));
         dataBuilder.setMissionId(missionId);
         dataBuilder.setRecordNumber(recordNumber++);
         dataBuilder.setGroupNumber(groupNumber);
@@ -1079,7 +1079,7 @@ public class SurveyRecordProcessor
         }
 
         dataBuilder.setDeviceSerialNumber(deviceId);
-        dataBuilder.setDeviceTime(IOUtils.getRfc3339String(ZonedDateTime.now()));
+        dataBuilder.setDeviceTime(NsUtils.getRfc3339String(ZonedDateTime.now()));
         dataBuilder.setMissionId(missionId);
         dataBuilder.setRecordNumber(recordNumber++);
         dataBuilder.setGroupNumber(groupNumber);
@@ -1166,7 +1166,7 @@ public class SurveyRecordProcessor
         }
 
         dataBuilder.setDeviceSerialNumber(deviceId);
-        dataBuilder.setDeviceTime(IOUtils.getRfc3339String(ZonedDateTime.now()));
+        dataBuilder.setDeviceTime(NsUtils.getRfc3339String(ZonedDateTime.now()));
         dataBuilder.setMissionId(missionId);
         dataBuilder.setRecordNumber(recordNumber++);
         dataBuilder.setGroupNumber(groupNumber);
@@ -1282,7 +1282,7 @@ public class SurveyRecordProcessor
         }
 
         dataBuilder.setDeviceSerialNumber(deviceId);
-        dataBuilder.setDeviceTime(IOUtils.getRfc3339String(ZonedDateTime.now()));
+        dataBuilder.setDeviceTime(NsUtils.getRfc3339String(ZonedDateTime.now()));
         dataBuilder.setMissionId(missionId);
         dataBuilder.setRecordNumber(recordNumber++);
         dataBuilder.setGroupNumber(groupNumber);
@@ -1475,7 +1475,7 @@ public class SurveyRecordProcessor
         }
 
         dataBuilder.setDeviceSerialNumber(deviceId);
-        dataBuilder.setDeviceTime(IOUtils.getRfc3339String(ZonedDateTime.now()));
+        dataBuilder.setDeviceTime(NsUtils.getRfc3339String(ZonedDateTime.now()));
         dataBuilder.setMissionId(missionId);
         dataBuilder.setRecordNumber(recordNumber++);
         dataBuilder.setGroupNumber(groupNumber);
@@ -1585,7 +1585,7 @@ public class SurveyRecordProcessor
         }
 
         dataBuilder.setDeviceSerialNumber(deviceId);
-        dataBuilder.setDeviceTime(IOUtils.getRfc3339String(ZonedDateTime.now()));
+        dataBuilder.setDeviceTime(NsUtils.getRfc3339String(ZonedDateTime.now()));
         dataBuilder.setMissionId(missionId);
         dataBuilder.setRecordNumber(wifiRecordNumber++);
 
@@ -1686,7 +1686,7 @@ public class SurveyRecordProcessor
         }
 
         dataBuilder.setDeviceSerialNumber(deviceId);
-        dataBuilder.setDeviceTime(IOUtils.getRfc3339String(ZonedDateTime.now()));
+        dataBuilder.setDeviceTime(NsUtils.getRfc3339String(ZonedDateTime.now()));
         dataBuilder.setMissionId(missionId);
         dataBuilder.setRecordNumber(bluetoothRecordNumber++);
 
@@ -1773,7 +1773,7 @@ public class SurveyRecordProcessor
         }
 
         dataBuilder.setDeviceSerialNumber(deviceId);
-        dataBuilder.setDeviceTime(IOUtils.getRfc3339String(ZonedDateTime.now()));
+        dataBuilder.setDeviceTime(NsUtils.getRfc3339String(ZonedDateTime.now()));
         dataBuilder.setMissionId(missionId);
         dataBuilder.setRecordNumber(gnssRecordNumber++);
         dataBuilder.setGroupNumber(gnssGroupNumber);
@@ -1859,7 +1859,7 @@ public class SurveyRecordProcessor
         }
 
         dataBuilder.setDeviceSerialNumber(deviceId);
-        dataBuilder.setDeviceTime(IOUtils.getRfc3339String(ZonedDateTime.now()));
+        dataBuilder.setDeviceTime(NsUtils.getRfc3339String(ZonedDateTime.now()));
         dataBuilder.setMissionId(missionId);
         dataBuilder.setRecordNumber(gnssRecordNumber++);
         dataBuilder.setGroupNumber(gnssGroupNumber);

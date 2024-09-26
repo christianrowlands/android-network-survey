@@ -171,7 +171,7 @@ object FormatUtils {
             meta.numSignalsInView
         ) +
                 if (meta.supportedGnssCfs.isNotEmpty())
-                    " (" + IOUtils.trimEnds(meta.supportedGnssCfs.sorted().toString()) + ")"
+                    " (" + NsUtils.trimEnds(meta.supportedGnssCfs.sorted().toString()) + ")"
                 else ""
     }
 
@@ -283,15 +283,15 @@ object FormatUtils {
                 "${phaseCenterOffset.xOffsetUncertaintyMm.toLog()},${phaseCenterOffset.yOffsetMm.toLog()}," +
                 "${phaseCenterOffset.yOffsetUncertaintyMm.toLog()},${phaseCenterOffset.zOffsetMm.toLog()}," +
                 "${phaseCenterOffset.zOffsetUncertaintyMm.toLog()},${
-                    IOUtils.serialize(
+                    NsUtils.serialize(
                         phaseCenterVariationCorrections!!.correctionsArray
                     )
-                },${IOUtils.serialize(phaseCenterVariationCorrections!!.correctionUncertaintiesArray)}," +
+                },${NsUtils.serialize(phaseCenterVariationCorrections!!.correctionUncertaintiesArray)}," +
                 "${phaseCenterVariationCorrections!!.deltaPhi.toLog()},${phaseCenterVariationCorrections!!.deltaTheta.toLog()},${
-                    IOUtils.serialize(
+                    NsUtils.serialize(
                         signalGainCorrections!!.correctionsArray
                     )
-                },${IOUtils.serialize(signalGainCorrections!!.correctionUncertaintiesArray)}," +
+                },${NsUtils.serialize(signalGainCorrections!!.correctionUncertaintiesArray)}," +
                 "${signalGainCorrections!!.deltaPhi.toLog()},${signalGainCorrections!!.deltaTheta.toLog()}"
     }
 

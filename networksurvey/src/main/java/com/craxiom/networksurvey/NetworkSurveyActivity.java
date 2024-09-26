@@ -6,7 +6,6 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.ServiceConnection;
-import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.location.LocationManager;
 import android.location.LocationProvider;
@@ -41,6 +40,7 @@ import com.craxiom.networksurvey.constants.NetworkSurveyConstants;
 import com.craxiom.networksurvey.listeners.IGnssFailureListener;
 import com.craxiom.networksurvey.services.GrpcConnectionService;
 import com.craxiom.networksurvey.services.NetworkSurveyService;
+import com.craxiom.networksurvey.util.NsUtils;
 import com.craxiom.networksurvey.util.PreferenceUtils;
 import com.craxiom.networksurvey.util.ToggleLoggingTask;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
@@ -397,7 +397,7 @@ public class NetworkSurveyActivity extends AppCompatActivity
      */
     private boolean checkLocationProvider(boolean informUser)
     {
-        final LocationManager locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
+        final LocationManager locationManager = (LocationManager) getSystemService(LOCATION_SERVICE);
         if (locationManager == null)
         {
             Timber.w("Could not get the location manager.  Skipping checking the location provider");
@@ -538,7 +538,7 @@ public class NetworkSurveyActivity extends AppCompatActivity
             startService(startServiceIntent);
 
             final Intent serviceIntent = new Intent(applicationContext, NetworkSurveyService.class);
-            final boolean bound = applicationContext.bindService(serviceIntent, surveyServiceConnection, Context.BIND_ABOVE_CLIENT);
+            final boolean bound = applicationContext.bindService(serviceIntent, surveyServiceConnection, BIND_ABOVE_CLIENT);
             Timber.i("NetworkSurveyService bound in the NetworkSurveyActivity: %s", bound);
         } catch (IllegalStateException e)
         {
@@ -614,17 +614,15 @@ public class NetworkSurveyActivity extends AppCompatActivity
     }
 
     /**
-     * Get the app version number and set it at the bottom of the navigation drawer.
-     *
-     * @since 0.1.2
+     * Get the app version name and set it at the bottom of the navigation drawer.
      */
     private void setAppVersionNumber()
     {
         try
         {
-            PackageInfo info = getPackageManager().getPackageInfo(getPackageName(), 0);
+            String appVersionName = NsUtils.getAppVersionName(this);
             final TextView appVersionView = findViewById(R.id.app_version_name);
-            appVersionView.setText(getString(R.string.app_version, info.versionName));
+            appVersionView.setText(getString(R.string.app_version, appVersionName));
         } catch (Exception e)
         {
             Timber.wtf(e, "Could not set the app version number");

@@ -5,6 +5,8 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
 
+import com.craxiom.networksurvey.util.CalculationUtils;
+
 import org.junit.Test;
 
 /**

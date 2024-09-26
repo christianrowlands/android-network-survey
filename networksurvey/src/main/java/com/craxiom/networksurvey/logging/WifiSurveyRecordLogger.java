@@ -11,8 +11,8 @@ import com.craxiom.networksurvey.constants.csv.WifiCsvConstants;
 import com.craxiom.networksurvey.listeners.IWifiSurveyRecordListener;
 import com.craxiom.networksurvey.model.WifiRecordWrapper;
 import com.craxiom.networksurvey.services.NetworkSurveyService;
-import com.craxiom.networksurvey.util.IOUtils;
 import com.craxiom.networksurvey.util.MathUtils;
+import com.craxiom.networksurvey.util.NsUtils;
 
 import java.sql.SQLException;
 import java.util.List;
@@ -112,7 +112,7 @@ public class WifiSurveyRecordLogger extends SurveyRecordLogger implements IWifiS
                         row.setGeometry(geomData);
 
                         row.setValue(WifiCsvConstants.DEVICE_SERIAL_NUMBER, data.getDeviceSerialNumber());
-                        row.setValue(WifiBeaconMessageConstants.TIME_COLUMN, IOUtils.getEpochFromRfc3339(data.getDeviceTime()));
+                        row.setValue(WifiBeaconMessageConstants.TIME_COLUMN, NsUtils.getEpochFromRfc3339(data.getDeviceTime()));
                         row.setValue(WifiBeaconMessageConstants.MISSION_ID_COLUMN, data.getMissionId());
                         row.setValue(WifiBeaconMessageConstants.RECORD_NUMBER_COLUMN, data.getRecordNumber());
                         row.setValue(WifiCsvConstants.SPEED, data.getSpeed());

@@ -6,6 +6,7 @@ import com.craxiom.messaging.LteRecord;
 import com.craxiom.messaging.NrRecord;
 import com.craxiom.messaging.UmtsRecord;
 import com.craxiom.networksurvey.model.CellularRecordWrapper;
+import com.craxiom.networksurvey.util.CalculationUtils;
 
 import java.util.List;
 
@@ -86,7 +87,7 @@ public interface ICellularSurveyRecordListener
      * Notification of the current Data and Voice network types. This method is called even when the values have not
      * changed.
      * <p>
-     * See {@link com.craxiom.networksurvey.CalculationUtils#getNetworkType(int)} for the possible string values.
+     * See {@link CalculationUtils#getNetworkType(int)} for the possible string values.
      *
      * @param dataNetworkType     The data network type (e.g. "LTE"), which might be different than the voice network type.
      * @param voiceNetworkType    The voice network type (e.g. "LTE").

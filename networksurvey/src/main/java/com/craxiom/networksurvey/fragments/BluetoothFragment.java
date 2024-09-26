@@ -41,7 +41,7 @@ import com.craxiom.networksurvey.fragments.model.BluetoothViewModel;
 import com.craxiom.networksurvey.listeners.IBluetoothSurveyRecordListener;
 import com.craxiom.networksurvey.model.SortedSet;
 import com.craxiom.networksurvey.services.NetworkSurveyService;
-import com.craxiom.networksurvey.util.IOUtils;
+import com.craxiom.networksurvey.util.NsUtils;
 import com.craxiom.networksurvey.util.PreferenceUtils;
 
 import java.util.ArrayList;
@@ -413,7 +413,7 @@ public class BluetoothFragment extends AServiceDataFragment implements IBluetoot
             {
                 final BluetoothRecord bluetoothRecord = bluetoothRecordSortedSet.get(i);
                 // Adding 5_000 ms so that we have plenty of time for the next scan to return its results
-                if (IOUtils.getEpochFromRfc3339(bluetoothRecord.getData().getDeviceTime()) + bluetoothScanRateMs + 5_000 < currentTimeMillis)
+                if (NsUtils.getEpochFromRfc3339(bluetoothRecord.getData().getDeviceTime()) + bluetoothScanRateMs + 5_000 < currentTimeMillis)
                 {
                     itemsToRemove.add(bluetoothRecord);
                 }

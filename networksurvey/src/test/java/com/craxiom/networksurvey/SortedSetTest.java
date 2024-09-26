@@ -6,7 +6,7 @@ import com.craxiom.messaging.bluetooth.SupportedTechnologies;
 import com.craxiom.messaging.bluetooth.Technology;
 import com.craxiom.networksurvey.fragments.model.BluetoothViewModel;
 import com.craxiom.networksurvey.model.SortedSet;
-import com.craxiom.networksurvey.util.IOUtils;
+import com.craxiom.networksurvey.util.NsUtils;
 import com.google.protobuf.FloatValue;
 import com.google.protobuf.Int32Value;
 
@@ -95,7 +95,7 @@ public class SortedSetTest
         final BluetoothRecordData.Builder dataBuilder = BluetoothRecordData.newBuilder();
         dataBuilder.setDeviceSerialNumber("ee4d453e4c6f73fa");
         dataBuilder.setDeviceName("BT Pixel");
-        dataBuilder.setDeviceTime(IOUtils.getRfc3339String(ZonedDateTime.now()));
+        dataBuilder.setDeviceTime(NsUtils.getRfc3339String(ZonedDateTime.now()));
         dataBuilder.setLatitude(51.470334);
         dataBuilder.setLongitude(-0.486594);
         dataBuilder.setAltitude(184.08124f);

@@ -15,13 +15,8 @@
  */
 package com.craxiom.networksurvey.util;
 
-import static com.craxiom.networksurvey.view.GnssSkyView.MAX_VALUE_CN0;
-import static com.craxiom.networksurvey.view.GnssSkyView.MIN_VALUE_CN0;
-
 import android.content.Context;
 import android.location.Location;
-import android.view.View;
-import android.view.ViewGroup;
 import android.widget.TextView;
 
 import androidx.fragment.app.Fragment;
@@ -183,7 +178,7 @@ public class UIUtils
             // Constants below must match string values in do_not_translate.xml
             case "dd":
                 // Decimal degrees
-                formattedLocation = IOUtils.createLocationShare(location, includeAltitude);
+                formattedLocation = NsUtils.createLocationShare(location, includeAltitude);
                 if (chipDecimalDegrees != null)
                 {
                     chipDecimalDegrees.setChecked(true);
@@ -192,7 +187,7 @@ public class UIUtils
 
             case "dms":
                 // Degrees minutes seconds
-                formattedLocation = IOUtils.createLocationShare(getDMSFromLocation(Application.get(), location.getLatitude(), COORDINATE_LATITUDE),
+                formattedLocation = NsUtils.createLocationShare(getDMSFromLocation(Application.get(), location.getLatitude(), COORDINATE_LATITUDE),
                         getDMSFromLocation(Application.get(), location.getLongitude(), COORDINATE_LONGITUDE),
                         (location.hasAltitude() && includeAltitude) ? Double.toString(location.getAltitude()) : null);
                 if (chipDMS != null)
@@ -203,7 +198,7 @@ public class UIUtils
 
             case "ddm":
                 // Degrees decimal minutes
-                formattedLocation = IOUtils.createLocationShare(getDDMFromLocation(Application.get(), location.getLatitude(), COORDINATE_LATITUDE),
+                formattedLocation = NsUtils.createLocationShare(getDDMFromLocation(Application.get(), location.getLatitude(), COORDINATE_LATITUDE),
                         getDDMFromLocation(Application.get(), location.getLongitude(), COORDINATE_LONGITUDE),
                         (location.hasAltitude() && includeAltitude) ? Double.toString(location.getAltitude()) : null);
                 if (chipDegreesDecimalMin != null)
@@ -214,7 +209,7 @@ public class UIUtils
 
             default:
                 // Decimal degrees
-                formattedLocation = IOUtils.createLocationShare(location, includeAltitude);
+                formattedLocation = NsUtils.createLocationShare(location, includeAltitude);
                 if (chipDecimalDegrees != null)
                 {
                     chipDecimalDegrees.setChecked(true);

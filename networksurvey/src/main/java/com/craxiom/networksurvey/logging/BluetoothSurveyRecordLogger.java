@@ -11,8 +11,8 @@ import com.craxiom.networksurvey.constants.NetworkSurveyConstants;
 import com.craxiom.networksurvey.constants.csv.BluetoothCsvConstants;
 import com.craxiom.networksurvey.listeners.IBluetoothSurveyRecordListener;
 import com.craxiom.networksurvey.services.NetworkSurveyService;
-import com.craxiom.networksurvey.util.IOUtils;
 import com.craxiom.networksurvey.util.MathUtils;
+import com.craxiom.networksurvey.util.NsUtils;
 
 import java.sql.SQLException;
 import java.util.List;
@@ -111,7 +111,7 @@ public class BluetoothSurveyRecordLogger extends SurveyRecordLogger implements I
                         row.setGeometry(geomData);
 
                         row.setValue(BluetoothCsvConstants.DEVICE_SERIAL_NUMBER, data.getDeviceSerialNumber());
-                        row.setValue(BluetoothMessageConstants.TIME_COLUMN, IOUtils.getEpochFromRfc3339(data.getDeviceTime()));
+                        row.setValue(BluetoothMessageConstants.TIME_COLUMN, NsUtils.getEpochFromRfc3339(data.getDeviceTime()));
                         row.setValue(BluetoothMessageConstants.MISSION_ID_COLUMN, data.getMissionId());
                         row.setValue(BluetoothMessageConstants.RECORD_NUMBER_COLUMN, data.getRecordNumber());
                         row.setValue(BluetoothCsvConstants.SPEED, data.getSpeed());

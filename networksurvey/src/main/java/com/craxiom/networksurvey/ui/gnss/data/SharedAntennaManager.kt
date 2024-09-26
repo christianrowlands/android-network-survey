@@ -10,7 +10,7 @@ import android.os.Build
 import androidx.annotation.RequiresApi
 import com.craxiom.networksurvey.R
 import com.craxiom.networksurvey.util.CarrierFreqUtils
-import com.craxiom.networksurvey.util.IOUtils
+import com.craxiom.networksurvey.util.NsUtils
 import com.craxiom.networksurvey.util.PreferenceUtils
 import com.craxiom.networksurvey.util.hasPermission
 import kotlinx.coroutines.CoroutineScope
@@ -54,7 +54,7 @@ class SharedAntennaManager(
                 PreferenceUtils.saveString(
                     prefs,
                     context.getString(R.string.capability_key_antenna_cf),
-                    IOUtils.trimEnds(cfs.toString())
+                    NsUtils.trimEnds(cfs.toString())
                 )
             }
 

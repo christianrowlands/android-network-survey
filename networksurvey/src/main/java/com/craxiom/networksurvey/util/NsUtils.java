@@ -1,24 +1,10 @@
-/*
- * Copyright (C) 2019 Sean J. Barbeau
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
 package com.craxiom.networksurvey.util;
 
 import android.Manifest;
 import android.content.ClipData;
 import android.content.ClipboardManager;
 import android.content.Context;
+import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.location.Location;
 import android.telephony.TelephonyManager;
@@ -35,9 +21,9 @@ import java.time.format.DateTimeFormatter;
 import timber.log.Timber;
 
 /**
- * Originally from the GPS Test open source Android app.  https://github.com/barbeau/gpstest
+ * A collection of general purpose util methods for use throughout the app.
  */
-public class IOUtils
+public class NsUtils
 {
     /**
      * Return an ISO 8601 combined date and time string for specified date/time.
@@ -196,5 +182,21 @@ public class IOUtils
         }
         builder.replace(builder.length() - 2, builder.length(), "]");
         return builder.toString();
+    }
+
+    /**
+     * @return The NS App version name (with any flavor suffix), or an empty string if it could not be determined.
+     */
+    public static String getAppVersionName(Context context)
+    {
+        try
+        {
+            final PackageInfo info = context.getPackageManager().getPackageInfo(context.getPackageName(), 0);
+            final String versionSuffix = context.getString(R.string.version_suffix);
+            return info.versionName + versionSuffix;
+        } catch (PackageManager.NameNotFoundException e)
+        {
+            return "";
+        }
     }
 }

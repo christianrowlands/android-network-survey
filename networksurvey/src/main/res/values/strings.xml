@@ -73,6 +73,7 @@ but work independently, so you have full control over how you handle your data.<
     <string name="deny_permission">Deny Permission</string>
 
     <string name="app_version">v%1$s</string>
+    <string name="version_suffix" />
 
     <string name="logging_not_ready">Could not turn on logging, the app is not ready</string>
 

@@ -26,8 +26,8 @@ import com.craxiom.networksurvey.constants.NetworkSurveyConstants;
 import com.craxiom.networksurvey.constants.csv.GnssCsvConstants;
 import com.craxiom.networksurvey.listeners.IGnssSurveyRecordListener;
 import com.craxiom.networksurvey.services.NetworkSurveyService;
-import com.craxiom.networksurvey.util.IOUtils;
 import com.craxiom.networksurvey.util.MathUtils;
+import com.craxiom.networksurvey.util.NsUtils;
 
 import java.sql.SQLException;
 
@@ -124,7 +124,7 @@ public class GnssRecordLogger extends SurveyRecordLogger implements IGnssSurveyR
                         row.setGeometry(geomData);
 
                         row.setValue(GnssCsvConstants.DEVICE_SERIAL_NUMBER, data.getDeviceSerialNumber());
-                        row.setValue(TIME_COLUMN, IOUtils.getEpochFromRfc3339(data.getDeviceTime()));
+                        row.setValue(TIME_COLUMN, NsUtils.getEpochFromRfc3339(data.getDeviceTime()));
                         row.setValue(GnssMessageConstants.MISSION_ID_COLUMN, data.getMissionId());
                         row.setValue(RECORD_NUMBER_COLUMN, data.getRecordNumber());
                         row.setValue(GROUP_NUMBER_COLUMN, data.getGroupNumber());

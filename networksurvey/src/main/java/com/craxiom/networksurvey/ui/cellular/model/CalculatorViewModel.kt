@@ -1,7 +1,7 @@
 package com.craxiom.networksurvey.ui.cellular.model
 
 import androidx.lifecycle.ViewModel
-import com.craxiom.networksurvey.CalculationUtils
+import com.craxiom.networksurvey.util.CalculationUtils
 import com.craxiom.networksurvey.util.CellularUtils
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow

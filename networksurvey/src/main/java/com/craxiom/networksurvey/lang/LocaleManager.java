@@ -5,18 +5,18 @@
 
 package com.craxiom.networksurvey.lang;
 
+import static android.os.Build.VERSION_CODES.JELLY_BEAN_MR1;
+
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.content.res.Configuration;
 import android.content.res.Resources;
+import android.os.Build;
 import android.preference.PreferenceManager;
 
 import com.craxiom.networksurvey.R;
-import com.craxiom.networksurvey.util.LocaleUtils;
 
 import java.util.Locale;
-
-import static android.os.Build.VERSION_CODES.JELLY_BEAN_MR1;
 
 /**
  * Dynamically changes the app locale
@@ -54,7 +54,7 @@ public class LocaleManager
 
         Resources res = context.getResources();
         Configuration config = new Configuration(res.getConfiguration());
-        if (LocaleUtils.isAtLeastVersion(JELLY_BEAN_MR1))
+        if (isAtLeastVersion(JELLY_BEAN_MR1))
         {
             config.setLocale(locale);
             context = context.createConfigurationContext(config);
@@ -64,5 +64,10 @@ public class LocaleManager
             res.updateConfiguration(config, res.getDisplayMetrics());
         }
         return context;
+    }
+
+    private static boolean isAtLeastVersion(int version)
+    {
+        return Build.VERSION.SDK_INT >= version;
     }
 }
