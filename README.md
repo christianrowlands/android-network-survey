@@ -131,10 +131,11 @@ the [Network Survey Messaging](https://github.com/christianrowlands/network-surv
 library can be used to stand up a gRPC server. From there it is up to the implementation to handle
 the incoming survey messages.
 
-If you want to see how to use the generated Go code to create a gRPC server, check out the code at 
+If you want to see how to use the generated Go code to create a gRPC server, check out the code at
 https://github.com/christianrowlands/ns-messaging-go-grpc-server
 
-The server does not do anything useful, but serves as an example of how one might be created in GoLang.
+The server does not do anything useful, but serves as an example of how one might be created in
+GoLang.
 
 ## MQTT Broker Survey Record Streaming
 

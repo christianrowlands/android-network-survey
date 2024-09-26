@@ -1,5 +1,7 @@
 package com.craxiom.networksurvey.util;
 
+import static com.craxiom.networksurvey.util.NsUtils.getEpochFromRfc3339;
+
 import com.craxiom.messaging.CdmaRecord;
 import com.craxiom.messaging.CdmaRecordData;
 import com.craxiom.messaging.DeviceStatus;
@@ -12,8 +14,6 @@ import com.craxiom.messaging.UmtsRecord;
 import com.craxiom.messaging.UmtsRecordData;
 import com.craxiom.networksurvey.messaging.Error;
 import com.craxiom.networksurvey.messaging.LteBandwidth;
-
-import static com.craxiom.networksurvey.util.NsUtils.getEpochFromRfc3339;
 
 /**
  * Utility methods to help with converting the newer survey record protobuf objects to the old format. This class should
@@ -45,7 +45,10 @@ public final class LegacyRecordConversion
         builder.setAltitude(data.getAltitude());
         builder.setDeviceName((data.getDeviceName()));
 
-        if (data.hasBatteryLevelPercent()) builder.setBatteryLevelPercent(data.getBatteryLevelPercent().getValue());
+        if (data.hasBatteryLevelPercent())
+        {
+            builder.setBatteryLevelPercent(data.getBatteryLevelPercent().getValue());
+        }
         if (data.hasError())
         {
             builder.setError(Error.newBuilder().setErrorMessage(data.getError().getErrorMessage()).build());

@@ -12,8 +12,8 @@ import android.widget.Toast;
 
 import androidx.fragment.app.Fragment;
 
-import com.craxiom.networksurvey.util.CalculationUtils;
 import com.craxiom.networksurvey.R;
+import com.craxiom.networksurvey.util.CalculationUtils;
 import com.craxiom.networksurvey.util.CellularUtils;
 
 import timber.log.Timber;
