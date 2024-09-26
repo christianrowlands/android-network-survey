@@ -1,0 +1,1 @@
+* Log the battery percentage in the device status message CSV file as an int instead of a protobuf value.

@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.30.2](https://github.com/christianrowlands/android-network-survey/releases/tag/v1.30.2) - 2024-09-26
+
+* Log the battery percentage in the device status message CSV file as an int instead of a protobuf value.
+
+## [1.30.1](https://github.com/christianrowlands/android-network-survey/releases/tag/v1.30.1) - 2024-09-25
+
+* Don't add GMS and crashlytics to the classpath unless the google-services.json file is present.
+
 ## [1.30](https://github.com/christianrowlands/android-network-survey/releases/tag/v1.30) - 2024-09-24
 
 * Display the UMTS RNC ID and Short CID in the cellular details UI.
