@@ -91,7 +91,7 @@ public class DeviceStatusCsvLogger extends CsvRecordLogger implements IDeviceSta
                 String.valueOf(data.getAltitude()),
                 String.valueOf(data.getSpeed()),
                 String.valueOf(data.getAccuracy()),
-                data.hasBatteryLevelPercent() ? String.valueOf(data.getBatteryLevelPercent()) : "",
+                data.hasBatteryLevelPercent() ? String.valueOf(data.getBatteryLevelPercent().getValue()) : "",
 
                 hasGnssLocation ? String.valueOf(gnssLatitude) : "",
                 hasGnssLocation ? String.valueOf(gnssLongitude) : "",
