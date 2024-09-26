@@ -88,18 +88,6 @@ android {
             versionNameSuffix ""
         }
     }
-
-    // Customize the APK file name for the CDR flavor
-    applicationVariants.all { variant ->
-        variant.outputs.all { output ->
-            def flavorName = variant.flavorName
-            def baseName = "$applicationName-$versionName"
-            if (flavorName == "cdr") {
-                baseName += "-cdr"
-            }
-            outputFileName = "$baseName-${variant.buildType.name}.apk"
-        }
-    }
 }
 
 configurations.configureEach {
