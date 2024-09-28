@@ -16,7 +16,7 @@ apply plugin: 'dagger.hilt.android.plugin'
 ext.androidVersion = '28.0.0'
 ext.grpcVersion = '1.65.1'
 ext.networkSurveyMessagingVersion = '1.5.0'
-ext.navigationVersion = '2.7.7'
+ext.navigationVersion = '2.8.1'
 
 android {
     compileSdk 34
@@ -54,7 +54,7 @@ android {
         compose true
     }
     composeOptions {
-        kotlinCompilerExtensionVersion '1.5.7'
+        kotlinCompilerExtensionVersion '1.5.14'
     }
     kotlinOptions {
         jvmTarget = "17"
@@ -139,8 +139,8 @@ dependencies {
     implementation 'com.github.yuriy-budiyev:code-scanner:2.3.2'
     implementation 'com.google.zxing:core:3.5.3'
 
-    implementation 'com.google.dagger:dagger:2.51.1'
-    kapt 'com.google.dagger:dagger-compiler:2.51.1'
+    implementation "com.google.dagger:dagger:$hilt_version"
+    kapt "com.google.dagger:dagger-compiler:$hilt_version"
     implementation "com.google.dagger:hilt-android:$hilt_version"
     kapt "com.google.dagger:hilt-compiler:$hilt_version"
 
@@ -152,7 +152,7 @@ dependencies {
     implementation 'com.squareup.retrofit2:converter-gson:2.11.0'
 
     // Compose
-    def composeBom = platform('androidx.compose:compose-bom:2024.08.00')
+    def composeBom = platform('androidx.compose:compose-bom:2024.09.02')
     implementation(composeBom)
     androidTestImplementation(composeBom)
 
@@ -166,11 +166,11 @@ dependencies {
     implementation "androidx.compose.ui:ui-tooling-preview"
     implementation "androidx.lifecycle:lifecycle-viewmodel-compose"
     implementation "androidx.lifecycle:lifecycle-runtime-compose"
-    implementation 'androidx.compose.ui:ui-tooling:1.6.8'
+    implementation 'androidx.compose.ui:ui-tooling:1.7.2'
     implementation "com.google.accompanist:accompanist-themeadapter-material:0.28.0"
 
     // Only include firebase in the google play build
-    regularImplementation platform('com.google.firebase:firebase-bom:33.1.2')
+    regularImplementation platform('com.google.firebase:firebase-bom:33.3.0')
     regularImplementation 'com.google.firebase:firebase-analytics'
     regularImplementation 'com.google.firebase:firebase-crashlytics'
 
@@ -183,8 +183,8 @@ dependencies {
     androidTestImplementation 'androidx.test.ext:junit:1.2.1'
     androidTestImplementation 'androidx.test:runner:1.6.2'
     androidTestImplementation 'androidx.test:rules:1.6.1'
-    androidTestImplementation 'com.adevinta.android:barista:4.2.0'
-    androidTestImplementation 'com.google.truth:truth:1.1.2'
+    androidTestImplementation 'com.adevinta.android:barista:4.3.0'
+    androidTestImplementation 'com.google.truth:truth:1.4.4'
     androidTestImplementation "com.craxiom:network-survey-messaging:${networkSurveyMessagingVersion}"
     androidTestImplementation "mil.nga.geopackage:geopackage-android:6.7.3"
 }
