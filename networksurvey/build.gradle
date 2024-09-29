@@ -76,7 +76,7 @@ android {
     }
     namespace 'com.craxiom.networksurvey'
 
-    flavorDimensions "version"
+    flavorDimensions = ["version"]
     productFlavors {
         // Regular is for Google Play that contains Firebase tracking features such as crashlytics
         regular {
