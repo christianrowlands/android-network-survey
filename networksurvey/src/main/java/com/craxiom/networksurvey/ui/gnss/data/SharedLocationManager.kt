@@ -6,6 +6,7 @@ import android.content.Context
 import android.content.SharedPreferences
 import android.location.Location
 import android.location.LocationManager
+import android.os.Build
 import android.util.Log
 import androidx.core.location.LocationListenerCompat
 import com.craxiom.networksurvey.R
@@ -19,6 +20,7 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.flow.shareIn
+import timber.log.Timber
 
 private const val TAG = "SharedLocationManager"
 
@@ -65,13 +67,26 @@ class SharedLocationManager(
         _receivingLocationUpdates.value = true
 
         try {
-            locationManager.requestLocationUpdates(
-                LocationManager.GPS_PROVIDER,
-                minTimeMillis(context, prefs),
-                minDistance(context, prefs),
-                callback,
-                context.mainLooper
-            )
+            val hasGspProvider: Boolean
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                hasGspProvider = locationManager.hasProvider(LocationManager.GPS_PROVIDER)
+            } else {
+                hasGspProvider = locationManager.getProvider(LocationManager.GPS_PROVIDER) != null
+            }
+
+            if (hasGspProvider) {
+                locationManager.requestLocationUpdates(
+                    LocationManager.GPS_PROVIDER,
+                    minTimeMillis(context, prefs),
+                    minDistance(context, prefs),
+                    callback,
+                    context.mainLooper
+                )
+            } else {
+                Timber.e("No GPS provider available")
+                close()
+
+            }
         } catch (e: Exception) {
             Log.e(TAG, "Exception in location flow: $e")
             close(e) // in case of exception, close the Flow
