@@ -43,6 +43,14 @@ class WifiDetailsFragment : AServiceDataFragment(), IWifiSurveyRecordListener {
             }
         }
 
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+
+        if (context != null) {
+            sharedPreferences = PreferenceManager.getDefaultSharedPreferences(requireContext())
+        }
+    }
+
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
@@ -64,7 +72,6 @@ class WifiDetailsFragment : AServiceDataFragment(), IWifiSurveyRecordListener {
                     viewModel.addInitialRssi(wifiNetwork.signalStrength!!)
                 }
 
-                sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context)
                 sharedPreferences.registerOnSharedPreferenceChangeListener(
                     preferenceChangeListener
                 )
