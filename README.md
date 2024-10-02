@@ -4,14 +4,16 @@
 [![License](https://img.shields.io/badge/license-Apache%202-green.svg?style=flat)](https://github.com/christianrowlands/android-network-survey/blob/develop/LICENSE)
 ![Latest Release](https://img.shields.io/github/release/christianrowlands/android-network-survey.svg?logo=github)
 
-<p align="center">
-  <a href="https://play.google.com/store/apps/details?id=com.craxiom.networksurvey">
-    <img src="screenshots/google-play-badge.png" alt="Get it on Play" height="80">
-  </a>
-  <a href="https://apt.izzysoft.de/fdroid/index/apk/com.craxiom.networksurvey">
-    <img src="screenshots/IzzyOnDroid.png" alt="Get it on IzzyOnDroid" height="80">
-  </a>
-</p>
+[<img src="https://play.google.com/intl/en_us/badges/static/images/badges/en_badge_web_generic.png"
+alt="Download at https://play.google.com/store/apps/details?id=com.craxiom.networksurvey]"
+width="
+32%">](https://play.google.com/store/apps/details?id=com.craxiom.networksurvey&referrer=utm_source%3Dgithub-android-readme)
+[<img src="https://gitlab.com/IzzyOnDroid/repo/-/raw/master/assets/IzzyOnDroid.png"
+alt="Get it on IzzyOnDroid"
+width="32%">](https://apt.izzysoft.de/fdroid/index/apk/com.craxiom.networksurvey)
+[<img src="https://fdroid.gitlab.io/artwork/badge/get-it-on.png"
+alt="Get it on F-Droid"
+width="32%">](https://f-droid.org/packages/com.craxiom.networksurvey/)
 
 The Network Survey Android App provides a basic survey capability for logging and analyzing
 Cellular networks, Wi-Fi networks, Bluetooth Devices, and GNSS constellations. Capture detailed
