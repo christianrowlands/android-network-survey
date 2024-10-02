@@ -73,7 +73,14 @@ public class ParserUtils
     @RequiresApi(api = Build.VERSION_CODES.Q)
     public static NetworkRegistrationInfo convertNetworkInfo(android.telephony.NetworkRegistrationInfo info)
     {
-        int rejectCause = extractIntFromToString(info.toString(), REJECT_CAUSE_KEY);
+        int rejectCause;
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.VANILLA_ICE_CREAM)
+        {
+            rejectCause = info.getRejectCause();
+        } else
+        {
+            rejectCause = extractIntFromToString(info.toString(), REJECT_CAUSE_KEY);
+        }
 
         return convertNetworkInfo(info.getCellIdentity(), info.getDomain(), rejectCause,
                 info.getAccessNetworkTechnology(), info.isRoaming());
