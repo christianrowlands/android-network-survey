@@ -16,7 +16,7 @@
         \n\n4. <b>Notifications</b>:  This permission allows NS to add a notification so you know when a survey is running in the background.
         \n\nThere is a known bug where this permission dialog keep showing, but the permission request dialog does not
         show up after hitting OK. You can work around this by uninstalling and reinstalling the app and approving all
-        the permission the first time, or opening the Android settings and manually approving the required permissions.</string>
+        the permissions the first time, or opening the Android settings and manually approving the required permissions.</string>
 
     <string name="cdr_optional_permissions_rationale_title">CDR Optional Permissions</string>
     <string name="cdr_optional_permissions_rationale">In addition to the required permissions that were listed in a different dialog, CDR logging has an optional permission.

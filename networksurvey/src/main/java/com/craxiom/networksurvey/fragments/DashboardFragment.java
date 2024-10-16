@@ -66,8 +66,8 @@ import timber.log.Timber;
 public class DashboardFragment extends AServiceDataFragment implements LocationListener, IConnectionStateListener,
         ILoggingChangeListener, SharedPreferences.OnSharedPreferenceChangeListener
 {
-    private static final int ACCESS_REQUIRED_PERMISSION_REQUEST_ID = 20;
-    private static final int ACCESS_OPTIONAL_PERMISSION_REQUEST_ID = 21;
+    public static final int ACCESS_REQUIRED_PERMISSION_REQUEST_ID = 20;
+    public static final int ACCESS_OPTIONAL_PERMISSION_REQUEST_ID = 21;
     private static final int ACCESS_BLUETOOTH_PERMISSION_REQUEST_ID = 22;
 
     private final DecimalFormat locationFormat = new DecimalFormat("###.#####");
@@ -381,7 +381,7 @@ public class DashboardFragment extends AServiceDataFragment implements LocationL
             alertBuilder.setCancelable(true);
             alertBuilder.setTitle(getString(R.string.cdr_required_permissions_rationale_title));
             alertBuilder.setMessage(getText(R.string.cdr_required_permissions_rationale));
-            alertBuilder.setPositiveButton(android.R.string.ok, (dialog, which) -> requestRequiredCdrPermissions());
+            alertBuilder.setPositiveButton(R.string.request, (dialog, which) -> requestRequiredCdrPermissions());
 
             AlertDialog permissionsExplanationDialog = alertBuilder.create();
             permissionsExplanationDialog.show();

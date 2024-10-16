@@ -933,6 +933,15 @@ public class CellularController extends AController
     {
         if (surveyService == null) return;
 
+        if (ActivityCompat.checkSelfPermission(surveyService, Manifest.permission.READ_PHONE_STATE) != PackageManager.PERMISSION_GRANTED)
+        {
+            // Not notifying the user here because if the user toggled this via the UI then we already checked this
+            // permission. The way we can reach this point without the permission is if CDR was turned on via MDM
+            // control, in which case a user notification is not necessary.
+            Timber.e("Unable to get the READ_PHONE_STATE permission. CDR logging won't work.");
+            return;
+        }
+
         synchronized (activeSubscriptionInfoListLock)
         {
             if (cdrStarted.getAndSet(true)) return;

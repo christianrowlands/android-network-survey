@@ -1,12 +1,22 @@
 package com.craxiom.networksurvey.fragments;
 
+import static com.craxiom.networksurvey.constants.CdrPermissions.CDR_OPTIONAL_PERMISSIONS;
+import static com.craxiom.networksurvey.constants.CdrPermissions.CDR_REQUIRED_PERMISSIONS;
+import static com.craxiom.networksurvey.fragments.DashboardFragment.ACCESS_OPTIONAL_PERMISSION_REQUEST_ID;
+import static com.craxiom.networksurvey.fragments.DashboardFragment.ACCESS_REQUIRED_PERMISSION_REQUEST_ID;
+
 import android.content.Context;
 import android.content.RestrictionsManager;
 import android.content.SharedPreferences;
 import android.content.pm.PackageInfo;
+import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.text.InputType;
 
+import androidx.appcompat.app.AlertDialog;
+import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
+import androidx.fragment.app.FragmentActivity;
 import androidx.preference.DropDownPreference;
 import androidx.preference.EditTextPreference;
 import androidx.preference.Preference;
@@ -72,6 +82,7 @@ public class SettingsFragment extends PreferenceFragmentCompat implements Shared
     public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String key)
     {
         int defaultValue = -1;
+        if (key == null) return;
 
         switch (key)
         {
@@ -112,6 +123,15 @@ public class SettingsFragment extends PreferenceFragmentCompat implements Shared
 
             case NetworkSurveyConstants.PROPERTY_DEVICE_STATUS_SCAN_INTERVAL_SECONDS:
                 defaultValue = NetworkSurveyConstants.DEFAULT_DEVICE_STATUS_SCAN_INTERVAL_SECONDS;
+                break;
+
+            case NetworkSurveyConstants.PROPERTY_AUTO_START_CDR_LOGGING:
+                final boolean autostartCdr = sharedPreferences.getBoolean(key, false);
+                if (autostartCdr)
+                {
+                    // Verify the app has the necessary permissions to start CDR logging
+                    showCdrPermissionRationaleAndRequestPermissions();
+                }
                 break;
         }
 
@@ -366,5 +386,109 @@ public class SettingsFragment extends PreferenceFragmentCompat implements Shared
         final Preference appInstanceIdPreference = findPreference(NetworkSurveyConstants.PROPERTY_APP_INSTANCE_ID);
 
         SettingsUtils.setAppInstanceId(context, appInstanceIdPreference);
+    }
+
+    /**
+     * Check to see if we should show the rationale for any of the CDR permissions. If so, then display a dialog that
+     * explains what permissions we need for this app to work properly.
+     * <p>
+     * If we should not show the rationale, then just request the permissions.
+     */
+    private void showCdrPermissionRationaleAndRequestPermissions()
+    {
+        final FragmentActivity activity = getActivity();
+        if (activity == null) return;
+
+        final Context context = getContext();
+        if (context == null) return;
+
+        if (missingAnyPermissions(CDR_REQUIRED_PERMISSIONS))
+        {
+            AlertDialog.Builder alertBuilder = new AlertDialog.Builder(context);
+            alertBuilder.setCancelable(true);
+            alertBuilder.setTitle(getString(R.string.cdr_required_permissions_rationale_title));
+            alertBuilder.setMessage(getText(R.string.cdr_required_permissions_rationale));
+            alertBuilder.setPositiveButton(R.string.request, (dialog, which) -> requestRequiredCdrPermissions());
+
+            AlertDialog permissionsExplanationDialog = alertBuilder.create();
+            permissionsExplanationDialog.show();
+
+            // Revert the cdr autostart preference if the permissions have not been granted
+            final SwitchPreferenceCompat preference = getPreferenceScreen().findPreference(NetworkSurveyConstants.PROPERTY_AUTO_START_CDR_LOGGING);
+            if (preference != null) preference.setChecked(false);
+            getPreferenceManager().getSharedPreferences()
+                    .edit()
+                    .putBoolean(NetworkSurveyConstants.PROPERTY_AUTO_START_CDR_LOGGING, false)
+                    .apply();
+
+            return;
+        }
+
+        if (missingAnyPermissions(CDR_OPTIONAL_PERMISSIONS))
+        {
+            AlertDialog.Builder alertBuilder = new AlertDialog.Builder(context);
+            alertBuilder.setCancelable(true);
+            alertBuilder.setTitle(getString(R.string.cdr_optional_permissions_rationale_title));
+            alertBuilder.setMessage(getText(R.string.cdr_optional_permissions_rationale));
+            alertBuilder.setPositiveButton(R.string.request, (dialog, which) -> requestOptionalCdrPermissions());
+            alertBuilder.setNegativeButton(R.string.ignore, (dialog, which) -> {
+
+            });
+
+            AlertDialog permissionsExplanationDialog = alertBuilder.create();
+            permissionsExplanationDialog.show();
+        }
+    }
+
+    /**
+     * @return True if any of the permissions have been denied. False if all the permissions
+     * have been granted.
+     */
+    private boolean missingAnyPermissions(String[] permissions)
+    {
+        final Context context = getContext();
+        if (context == null) return true;
+        for (String permission : permissions)
+        {
+            if (ContextCompat.checkSelfPermission(context, permission) != PackageManager.PERMISSION_GRANTED)
+            {
+                Timber.i("Missing the permission: %s", permission);
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Request the permissions needed for this app if any of them have not yet been granted.  If all of the permissions
+     * are already granted then don't request anything.
+     */
+    private void requestRequiredCdrPermissions()
+    {
+        if (missingAnyPermissions(CDR_REQUIRED_PERMISSIONS))
+        {
+            FragmentActivity activity = getActivity();
+            if (activity != null)
+            {
+                ActivityCompat.requestPermissions(activity, CDR_REQUIRED_PERMISSIONS, ACCESS_REQUIRED_PERMISSION_REQUEST_ID);
+            }
+        }
+    }
+
+    /**
+     * Request the optional permissions for this app if any of them have not yet been granted. If all of the permissions
+     * are already granted then don't request anything.
+     */
+    private void requestOptionalCdrPermissions()
+    {
+        if (missingAnyPermissions(CDR_OPTIONAL_PERMISSIONS))
+        {
+            FragmentActivity activity = getActivity();
+            if (activity != null)
+            {
+                ActivityCompat.requestPermissions(activity, CDR_OPTIONAL_PERMISSIONS, ACCESS_OPTIONAL_PERMISSION_REQUEST_ID);
+            }
+        }
     }
 }
