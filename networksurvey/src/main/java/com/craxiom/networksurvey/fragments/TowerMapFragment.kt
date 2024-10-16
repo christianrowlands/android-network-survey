@@ -131,15 +131,15 @@ class TowerMapFragment : AServiceDataFragment(), MenuProvider, ICellularSurveyRe
         val initialLocation = service.primaryLocationListener?.latestLocation
         initialLocation?.let {
             if (viewModel == null) {
-                removeListener = true
+                removeListener = false
             } else {
                 removeListener = viewModel!!.updateLocation(it)
             }
-
         }
 
         if (!removeListener) {
             locationListener = LocationListener { location ->
+                if (viewModel == null) return@LocationListener
                 removeListener = viewModel!!.updateLocation(location)
                 if (removeListener) service.unregisterLocationListener(locationListener)
             }
