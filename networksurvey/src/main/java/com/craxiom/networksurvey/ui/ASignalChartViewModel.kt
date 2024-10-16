@@ -219,7 +219,7 @@ abstract class ASignalChartViewModel : ViewModel() {
 
         // Remove any makers that have moved "off screen"
         xValueQueue.firstOrNull()?.let { xValue ->
-            _markerList.value = markerList.value - xValue
+            _markerList.value -= xValue
         }
     }
 }

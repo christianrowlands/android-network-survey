@@ -69,6 +69,7 @@ import com.craxiom.networksurvey.services.controller.BluetoothController;
 import com.craxiom.networksurvey.services.controller.CellularController;
 import com.craxiom.networksurvey.services.controller.GnssController;
 import com.craxiom.networksurvey.services.controller.WifiController;
+import com.craxiom.networksurvey.util.FormatUtils;
 import com.craxiom.networksurvey.util.MathUtils;
 import com.craxiom.networksurvey.util.NsUtils;
 import com.craxiom.networksurvey.util.PreferenceUtils;
@@ -1445,7 +1446,11 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
                 dataBuilder.setAccuracy(MathUtils.roundAccuracy(lastKnownLocation.getAccuracy()));
                 if (lastKnownLocation.hasSpeed())
                 {
-                    dataBuilder.setSpeed(lastKnownLocation.getSpeed());
+                    float speed = FormatUtils.formatSpeed(lastKnownLocation.getSpeed());
+                    if (speed != 0f)
+                    {
+                        dataBuilder.setSpeed(speed);
+                    }
                 }
             }
         }

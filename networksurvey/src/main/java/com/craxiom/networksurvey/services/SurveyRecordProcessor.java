@@ -99,6 +99,7 @@ import com.craxiom.networksurvey.model.ConstellationFreqKey;
 import com.craxiom.networksurvey.model.NrRecordWrapper;
 import com.craxiom.networksurvey.model.WifiRecordWrapper;
 import com.craxiom.networksurvey.services.controller.CellularController;
+import com.craxiom.networksurvey.util.FormatUtils;
 import com.craxiom.networksurvey.util.LocationUtils;
 import com.craxiom.networksurvey.util.MathUtils;
 import com.craxiom.networksurvey.util.NsUtils;
@@ -657,7 +658,11 @@ public class SurveyRecordProcessor
                 dataBuilder.setAccuracy(MathUtils.roundAccuracy(lastKnownLocation.getAccuracy()));
                 if (lastKnownLocation.hasSpeed())
                 {
-                    dataBuilder.setSpeed(lastKnownLocation.getSpeed());
+                    float speed = FormatUtils.formatSpeed(lastKnownLocation.getSpeed());
+                    if (speed != 0f)
+                    {
+                        dataBuilder.setSpeed(speed);
+                    }
                 }
             }
         }
@@ -973,7 +978,11 @@ public class SurveyRecordProcessor
                 dataBuilder.setAccuracy(MathUtils.roundAccuracy(lastKnownLocation.getAccuracy()));
                 if (lastKnownLocation.hasSpeed())
                 {
-                    dataBuilder.setSpeed(lastKnownLocation.getSpeed());
+                    float speed = FormatUtils.formatSpeed(lastKnownLocation.getSpeed());
+                    if (speed != 0f)
+                    {
+                        dataBuilder.setSpeed(speed);
+                    }
                 }
             }
         }
@@ -1073,7 +1082,11 @@ public class SurveyRecordProcessor
                 dataBuilder.setAccuracy(MathUtils.roundAccuracy(lastKnownLocation.getAccuracy()));
                 if (lastKnownLocation.hasSpeed())
                 {
-                    dataBuilder.setSpeed(lastKnownLocation.getSpeed());
+                    float speed = FormatUtils.formatSpeed(lastKnownLocation.getSpeed());
+                    if (speed != 0f)
+                    {
+                        dataBuilder.setSpeed(speed);
+                    }
                 }
             }
         }
@@ -1160,7 +1173,11 @@ public class SurveyRecordProcessor
                 dataBuilder.setAccuracy(MathUtils.roundAccuracy(lastKnownLocation.getAccuracy()));
                 if (lastKnownLocation.hasSpeed())
                 {
-                    dataBuilder.setSpeed(lastKnownLocation.getSpeed());
+                    float speed = FormatUtils.formatSpeed(lastKnownLocation.getSpeed());
+                    if (speed != 0f)
+                    {
+                        dataBuilder.setSpeed(speed);
+                    }
                 }
             }
         }
@@ -1276,7 +1293,11 @@ public class SurveyRecordProcessor
                 dataBuilder.setAccuracy(MathUtils.roundAccuracy(lastKnownLocation.getAccuracy()));
                 if (lastKnownLocation.hasSpeed())
                 {
-                    dataBuilder.setSpeed(lastKnownLocation.getSpeed());
+                    float speed = FormatUtils.formatSpeed(lastKnownLocation.getSpeed());
+                    if (speed != 0f)
+                    {
+                        dataBuilder.setSpeed(speed);
+                    }
                 }
             }
         }
@@ -1469,7 +1490,11 @@ public class SurveyRecordProcessor
                 dataBuilder.setAccuracy(MathUtils.roundAccuracy(lastKnownLocation.getAccuracy()));
                 if (lastKnownLocation.hasSpeed())
                 {
-                    dataBuilder.setSpeed(lastKnownLocation.getSpeed());
+                    float speed = FormatUtils.formatSpeed(lastKnownLocation.getSpeed());
+                    if (speed != 0f)
+                    {
+                        dataBuilder.setSpeed(speed);
+                    }
                 }
             }
         }
@@ -1579,7 +1604,11 @@ public class SurveyRecordProcessor
                 dataBuilder.setAccuracy(MathUtils.roundAccuracy(lastKnownLocation.getAccuracy()));
                 if (lastKnownLocation.hasSpeed())
                 {
-                    dataBuilder.setSpeed(lastKnownLocation.getSpeed());
+                    float speed = FormatUtils.formatSpeed(lastKnownLocation.getSpeed());
+                    if (speed != 0f)
+                    {
+                        dataBuilder.setSpeed(speed);
+                    }
                 }
             }
         }
@@ -1680,7 +1709,11 @@ public class SurveyRecordProcessor
                 dataBuilder.setAccuracy(MathUtils.roundAccuracy(lastKnownLocation.getAccuracy()));
                 if (lastKnownLocation.hasSpeed())
                 {
-                    dataBuilder.setSpeed(lastKnownLocation.getSpeed());
+                    float speed = FormatUtils.formatSpeed(lastKnownLocation.getSpeed());
+                    if (speed != 0f)
+                    {
+                        dataBuilder.setSpeed(speed);
+                    }
                 }
             }
         }
@@ -1767,7 +1800,11 @@ public class SurveyRecordProcessor
 
                 if (lastKnownLocation.hasSpeed())
                 {
-                    dataBuilder.setSpeed(lastKnownLocation.getSpeed());
+                    float speed = FormatUtils.formatSpeed(lastKnownLocation.getSpeed());
+                    if (speed != 0f)
+                    {
+                        dataBuilder.setSpeed(speed);
+                    }
                 }
             }
         }
@@ -1853,7 +1890,11 @@ public class SurveyRecordProcessor
 
                 if (lastKnownLocation.hasSpeed())
                 {
-                    dataBuilder.setSpeed(lastKnownLocation.getSpeed());
+                    float speed = FormatUtils.formatSpeed(lastKnownLocation.getSpeed());
+                    if (speed != 0f)
+                    {
+                        dataBuilder.setSpeed(speed);
+                    }
                 }
             }
         }
