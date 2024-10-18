@@ -11,6 +11,7 @@ import static com.craxiom.networksurvey.constants.MessageConstants.ACCURACY;
 import static com.craxiom.networksurvey.constants.MessageConstants.MISSION_ID_COLUMN;
 import static com.craxiom.networksurvey.constants.MessageConstants.RECORD_NUMBER_COLUMN;
 import static com.craxiom.networksurvey.constants.MessageConstants.TIME_COLUMN;
+import static com.craxiom.networksurvey.constants.csv.PhoneStateCsvConstants.NON_TERRESTRIAL_NETWORK;
 import static com.craxiom.networksurvey.constants.csv.PhoneStateCsvConstants.SLOT;
 
 import android.os.Looper;
@@ -76,6 +77,7 @@ public class PhoneStateRecordLogger extends SurveyRecordLogger implements IDevic
             tableColumns.add(FeatureColumn.createColumn(columnNumber++, SIM_STATE_COLUMN, GeoPackageDataType.TEXT, false, null));
             tableColumns.add(FeatureColumn.createColumn(columnNumber++, SIM_OPERATOR_COLUMN, GeoPackageDataType.TEXT, false, null));
             tableColumns.add(FeatureColumn.createColumn(columnNumber++, SLOT, GeoPackageDataType.SMALLINT, false, null));
+            tableColumns.add(FeatureColumn.createColumn(columnNumber++, NON_TERRESTRIAL_NETWORK, GeoPackageDataType.BOOLEAN, false, null));
             //noinspection UnusedAssignment
             tableColumns.add(FeatureColumn.createColumn(columnNumber++, NETWORK_REGISTRATION_COLUMN, GeoPackageDataType.TEXT, false, null));
         });
@@ -120,6 +122,11 @@ public class PhoneStateRecordLogger extends SurveyRecordLogger implements IDevic
                         if (data.hasSlot())
                         {
                             row.setValue(SLOT, data.getSlot().getValue());
+                        }
+
+                        if (data.hasNonTerrestrialNetwork())
+                        {
+                            row.setValue(NON_TERRESTRIAL_NETWORK, data.getNonTerrestrialNetwork().getValue());
                         }
 
                         List<String> jsonList = new ArrayList<>();

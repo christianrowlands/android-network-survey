@@ -536,7 +536,7 @@ public class SurveyRecordProcessor
     @RequiresApi(api = Build.VERSION_CODES.Q)
     public void onServiceStateChanged(ServiceState serviceState, TelephonyManager telephonyManager, int subscriptionId)
     {
-        notifyPhoneStateListeners(createPhoneStateMessage(telephonyManager, subscriptionId,
+        notifyPhoneStateListeners(createPhoneStateMessage(telephonyManager, subscriptionId, serviceState,
                 builder -> {
                     // The documentation indicates the getNetworkRegistrationInfoList method was added in API level 30,
                     // but I found it works for API level 29 as well. I filed a bug: https://issuetracker.google.com/issues/190809962
@@ -637,13 +637,15 @@ public class SurveyRecordProcessor
      * @since 1.4.0
      */
     void onRegistrationFailed(@NonNull CellIdentity cellIdentity, int domain,
-                              int causeCode, int additionalCauseCode, TelephonyManager telephonyManager, int subscriptionId)
+                              int causeCode, int additionalCauseCode, TelephonyManager telephonyManager,
+                              int subscriptionId, ServiceState serviceState)
     {
-        notifyPhoneStateListeners(createPhoneStateMessage(telephonyManager, subscriptionId,
+        notifyPhoneStateListeners(createPhoneStateMessage(telephonyManager, subscriptionId, serviceState,
                 builder -> builder.addNetworkRegistrationInfo(ParserUtils.convertNetworkInfo(cellIdentity, domain, causeCode))));
     }
 
-    private PhoneState createPhoneStateMessage(TelephonyManager telephonyManager, int subscriptionId, Consumer<PhoneStateData.Builder> networkRegistrationInfoFunction)
+    private PhoneState createPhoneStateMessage(TelephonyManager telephonyManager, int subscriptionId,
+                                               ServiceState serviceState, Consumer<PhoneStateData.Builder> networkRegistrationInfoFunction)
     {
         final PhoneStateData.Builder dataBuilder = PhoneStateData.newBuilder();
 
@@ -675,6 +677,11 @@ public class SurveyRecordProcessor
 
         dataBuilder.setSimState(SimState.forNumber(telephonyManager.getSimState()));
         dataBuilder.setSimOperator(telephonyManager.getSimOperator());
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.VANILLA_ICE_CREAM)
+        {
+            dataBuilder.setNonTerrestrialNetwork(BoolValue.of(serviceState.isUsingNonTerrestrialNetwork()));
+        }
 
         if (subscriptionId != SubscriptionManager.INVALID_SUBSCRIPTION_ID && subscriptionId != SubscriptionManager.DEFAULT_SUBSCRIPTION_ID)
         {

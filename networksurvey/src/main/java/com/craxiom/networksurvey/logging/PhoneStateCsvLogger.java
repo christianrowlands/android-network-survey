@@ -8,6 +8,7 @@ import static com.craxiom.networksurvey.constants.csv.PhoneStateCsvConstants.LAT
 import static com.craxiom.networksurvey.constants.csv.PhoneStateCsvConstants.LONGITUDE;
 import static com.craxiom.networksurvey.constants.csv.PhoneStateCsvConstants.MISSION_ID;
 import static com.craxiom.networksurvey.constants.csv.PhoneStateCsvConstants.NETWORK_REGISTRATION;
+import static com.craxiom.networksurvey.constants.csv.PhoneStateCsvConstants.NON_TERRESTRIAL_NETWORK;
 import static com.craxiom.networksurvey.constants.csv.PhoneStateCsvConstants.RECORD_NUMBER;
 import static com.craxiom.networksurvey.constants.csv.PhoneStateCsvConstants.SIM_OPERATOR;
 import static com.craxiom.networksurvey.constants.csv.PhoneStateCsvConstants.SIM_STATE;
@@ -59,13 +60,13 @@ public class PhoneStateCsvLogger extends CsvRecordLogger implements IDeviceStatu
         return new String[]{DEVICE_TIME, LATITUDE, LONGITUDE, ALTITUDE, SPEED, ACCURACY,
                 MISSION_ID, RECORD_NUMBER,
                 SIM_STATE, SIM_OPERATOR, NETWORK_REGISTRATION,
-                DEVICE_SERIAL_NUMBER, SLOT};
+                DEVICE_SERIAL_NUMBER, SLOT, NON_TERRESTRIAL_NETWORK};
     }
 
     @Override
     String[] getHeaderComments()
     {
-        return new String[]{"CSV Version=0.2.0"};
+        return new String[]{"CSV Version=0.3.0"};
     }
 
     @Override
@@ -133,7 +134,8 @@ public class PhoneStateCsvLogger extends CsvRecordLogger implements IDeviceStatu
                 data.getSimOperator(),
                 networkRegistrationJson,
                 data.getDeviceSerialNumber(),
-                data.hasSlot() ? String.valueOf(data.getSlot().getValue()) : ""
+                data.hasSlot() ? String.valueOf(data.getSlot().getValue()) : "",
+                data.hasNonTerrestrialNetwork() ? String.valueOf(data.getNonTerrestrialNetwork().getValue()) : ""
         };
     }
 
