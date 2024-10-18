@@ -9,13 +9,13 @@ buildscript {
         mavenCentral()
     }
     dependencies {
-        classpath 'com.android.tools.build:gradle:8.6.1'
+        classpath 'com.android.tools.build:gradle:8.7.1'
         classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
         if (useCrashlytics) {
             classpath 'com.google.gms:google-services:4.4.2'
             classpath 'com.google.firebase:firebase-crashlytics-gradle:3.0.2'
         }
-        classpath "androidx.navigation:navigation-safe-args-gradle-plugin:2.8.2"
+        classpath "androidx.navigation:navigation-safe-args-gradle-plugin:2.8.3"
         classpath "com.google.dagger:hilt-android-gradle-plugin:$hilt_version"
     }
 }
