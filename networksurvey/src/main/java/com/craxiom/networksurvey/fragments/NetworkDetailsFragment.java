@@ -24,8 +24,6 @@ import androidx.appcompat.app.AlertDialog;
 import androidx.core.app.ActivityCompat;
 import androidx.lifecycle.LifecycleOwner;
 import androidx.lifecycle.ViewModelProvider;
-import androidx.lifecycle.ViewModelStoreOwner;
-import androidx.navigation.fragment.NavHostFragment;
 
 import com.craxiom.messaging.GsmRecord;
 import com.craxiom.messaging.GsmRecordData;
@@ -113,10 +111,8 @@ public class NetworkDetailsFragment extends AServiceDataFragment implements ICel
     {
         binding = FragmentNetworkDetailsBinding.inflate(inflater);
 
-        final ViewModelStoreOwner viewModelStoreOwner = NavHostFragment.findNavController(this).getViewModelStoreOwner(R.id.nav_graph);
-        final ViewModelProvider viewModelProvider = new ViewModelProvider(viewModelStoreOwner);
-        viewModel = viewModelProvider.get(getClass().getName() + subscriptionId, CellularViewModel.class);
-        chartViewModel = viewModelProvider.get(getClass().getName() + "cellular_chart" + subscriptionId, CellularChartViewModel.class);
+        viewModel = new ViewModelProvider(requireActivity()).get(getClass().getName() + subscriptionId, CellularViewModel.class);
+        chartViewModel = new ViewModelProvider(requireActivity()).get(getClass().getName() + "cellular_chart" + subscriptionId, CellularChartViewModel.class);
 
         initializeLocationTextView();
 

@@ -32,9 +32,7 @@ import androidx.core.content.ContextCompat;
 import androidx.fragment.app.FragmentActivity;
 import androidx.lifecycle.LifecycleOwner;
 import androidx.lifecycle.ViewModelProvider;
-import androidx.lifecycle.ViewModelStoreOwner;
 import androidx.navigation.Navigation;
-import androidx.navigation.fragment.NavHostFragment;
 import androidx.preference.PreferenceManager;
 
 import com.craxiom.mqttlibrary.IConnectionStateListener;
@@ -81,14 +79,10 @@ public class DashboardFragment extends AServiceDataFragment implements LocationL
     {
         binding = FragmentDashboardBinding.inflate(inflater);
 
-        final ViewModelStoreOwner viewModelStoreOwner = NavHostFragment.findNavController(this).getViewModelStoreOwner(R.id.nav_graph);
-        final ViewModelProvider viewModelProvider = new ViewModelProvider(viewModelStoreOwner);
-        viewModel = viewModelProvider.get(getClass().getName(), DashboardViewModel.class);
+        viewModel = new ViewModelProvider(requireActivity()).get(DashboardViewModel.class);
 
         initializeLocationTextView();
-
         initializeUiListeners();
-
         initializeObservers();
 
         return binding.getRoot();
