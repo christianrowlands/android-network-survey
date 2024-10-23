@@ -1,7 +1,13 @@
 package com.craxiom.networksurvey.fragments.model;
 
+import android.os.Parcel;
+import android.os.Parcelable;
+
+import androidx.annotation.NonNull;
+
 import com.craxiom.mqttlibrary.connection.BrokerConnectionInfo;
 import com.craxiom.networksurvey.mqtt.MqttConnectionInfo;
+import com.google.gson.Gson;
 import com.google.gson.annotations.SerializedName;
 
 import java.io.Serializable;
@@ -24,8 +30,37 @@ public record MqttConnectionSettings(
         @SerializedName("bluetooth_stream_enabled") Boolean bluetoothStreamEnabled,
         @SerializedName("gnss_stream_enabled") Boolean gnssStreamEnabled,
         @SerializedName("device_status_stream_enabled") Boolean deviceStatusStreamEnabled
-) implements Serializable
+) implements Serializable, Parcelable
 {
+    public static final String KEY = "mqttConnectionSettings";
+
+    public static final Creator<MqttConnectionSettings> CREATOR = new Creator<>()
+    {
+        @Override
+        public MqttConnectionSettings createFromParcel(Parcel in)
+        {
+            return new Gson().fromJson(in.readString(), MqttConnectionSettings.class);
+        }
+
+        @Override
+        public MqttConnectionSettings[] newArray(int size)
+        {
+            return new MqttConnectionSettings[size];
+        }
+    };
+
+    @Override
+    public int describeContents()
+    {
+        return 0;
+    }
+
+    @Override
+    public void writeToParcel(@NonNull Parcel dest, int flags)
+    {
+        dest.writeString(new Gson().toJson(this));
+    }
+
     public static class Builder
     {
         private String host;
@@ -124,7 +159,8 @@ public record MqttConnectionSettings(
         }
     }
 
-    public MqttConnectionSettings withoutDeviceName() {
+    public MqttConnectionSettings withoutDeviceName()
+    {
         return new MqttConnectionSettings(
                 host,
                 port,

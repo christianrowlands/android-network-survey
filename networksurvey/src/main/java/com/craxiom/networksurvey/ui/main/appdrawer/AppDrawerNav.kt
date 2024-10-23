@@ -1,5 +1,6 @@
 package com.craxiom.networksurvey.ui.main.appdrawer
 
+import android.os.Build
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.padding
@@ -9,12 +10,15 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.viewinterop.AndroidViewBinding
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavGraphBuilder
+import androidx.navigation.NavType
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.navigation
+import androidx.navigation.navArgument
 import com.craxiom.networksurvey.databinding.ContainerGrpcFragmentBinding
 import com.craxiom.networksurvey.databinding.ContainerMqttFragmentBinding
 import com.craxiom.networksurvey.databinding.ContainerSettingsFragmentBinding
-import com.craxiom.networksurvey.fragments.SettingsFragment
+import com.craxiom.networksurvey.fragments.MqttFragment
+import com.craxiom.networksurvey.fragments.model.MqttConnectionSettings
 import com.craxiom.networksurvey.ui.cellular.CalculatorScreen
 import com.craxiom.networksurvey.ui.main.HomeScreen
 import com.craxiom.networksurvey.ui.main.NavRoutes
@@ -28,12 +32,33 @@ fun NavGraphBuilder.mainGraph(
         composable(NavDrawerOption.None.name) {
             HomeScreen(drawerState)
         }
+
         composable(NavDrawerOption.ServerConnection.name) {
             GrpcFragmentInCompose(paddingValues)
         }
-        composable(NavDrawerOption.MqttBrokerConnection.name) {
-            MqttFragmentInCompose(paddingValues)
+        composable(
+            route = "${NavDrawerOption.MqttBrokerConnection.name}?${MqttConnectionSettings.KEY}={mqttConnectionSettings}",
+            arguments = listOf(navArgument("mqttConnectionSettings") {
+                type = NavType.ParcelableType(MqttConnectionSettings::class.java)
+                nullable = true  // Allow this argument to be nullable
+            })
+        ) { backStackEntry ->
+            val mqttConnectionSettings =
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                    backStackEntry.arguments?.getParcelable(
+                        "mqttConnectionSettings",
+                        MqttConnectionSettings::class.java
+                    )
+                } else {
+                    @Suppress("DEPRECATION")
+                    backStackEntry.arguments?.getParcelable(MqttConnectionSettings.KEY)
+                }
+            MqttFragmentInCompose(
+                paddingValues = paddingValues,
+                mqttConnectionSettings = mqttConnectionSettings
+            )
         }
+
         composable(NavDrawerOption.CellularCalculators.name) {
             Box(modifier = Modifier.padding(paddingValues = paddingValues)) {
                 CalculatorScreen(viewModel = viewModel())
@@ -70,11 +95,16 @@ fun GrpcFragmentInCompose(paddingValues: PaddingValues) {
 }
 
 @Composable
-fun MqttFragmentInCompose(paddingValues: PaddingValues) {
+fun MqttFragmentInCompose(
+    paddingValues: PaddingValues,
+    mqttConnectionSettings: MqttConnectionSettings?
+) {
     AndroidViewBinding(
         ContainerMqttFragmentBinding::inflate,
-        modifier = Modifier.padding(paddingValues = paddingValues)
+        modifier = Modifier.padding(paddingValues)
     ) {
+        val fragment = mqttFragmentContainerView.getFragment<MqttFragment>()
+        fragment.setMqttConnectionSettings(mqttConnectionSettings)
     }
 }
 
@@ -84,6 +114,5 @@ fun SettingsFragmentInCompose(paddingValues: PaddingValues) {
         ContainerSettingsFragmentBinding::inflate,
         modifier = Modifier.padding(paddingValues = paddingValues)
     ) {
-        val fragment = settingsFragmentContainerView.getFragment<SettingsFragment>()
     }
 }
