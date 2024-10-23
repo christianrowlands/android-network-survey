@@ -1,5 +1,7 @@
 package com.craxiom.networksurvey.ui.main
 
+import android.content.Intent
+import android.net.Uri
 import androidx.activity.compose.BackHandler
 import androidx.compose.material3.DrawerState
 import androidx.compose.material3.DrawerValue
@@ -7,6 +9,7 @@ import androidx.compose.material3.ModalNavigationDrawer
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.navigation.NavController
 import androidx.navigation.NavHostController
@@ -27,6 +30,7 @@ fun MainCompose(
     appVersion: String
 ) {
     // TODO Is this needed? HandleBackPress(navController)
+    val context = LocalContext.current
 
     NsTheme {
         Scaffold { paddingValues ->
@@ -37,6 +41,7 @@ fun MainCompose(
                         appVersion = appVersion,
                         drawerState = drawerState,
                         menuItems = DrawerParams.drawerButtons,
+                        externalLinks = DrawerParams.externalDrawerLinks,
                         defaultPick = NavDrawerOption.None
                     ) { onUserPickedOption ->
                         when (onUserPickedOption) {
@@ -68,6 +73,38 @@ fun MainCompose(
                                 navController.navigate(onUserPickedOption.name) {
                                     popUpTo(NavDrawerOption.None.name)
                                 }
+                            }
+
+                            NavDrawerOption.UserManual -> {
+                                val intent = Intent(
+                                    Intent.ACTION_VIEW,
+                                    Uri.parse("https://networksurvey.app/manual")
+                                )
+                                context.startActivity(intent)
+                            }
+
+                            NavDrawerOption.MessagingDocs -> {
+                                val intent = Intent(
+                                    Intent.ACTION_VIEW,
+                                    Uri.parse("https://messaging.networksurvey.app/")
+                                )
+                                context.startActivity(intent)
+                            }
+
+                            NavDrawerOption.ReportAnIssue -> {
+                                val intent = Intent(
+                                    Intent.ACTION_VIEW,
+                                    Uri.parse("https://github.com/christianrowlands/android-network-survey/issues/new/choose")
+                                )
+                                context.startActivity(intent)
+                            }
+
+                            NavDrawerOption.GitHub -> {
+                                val intent = Intent(
+                                    Intent.ACTION_VIEW,
+                                    Uri.parse("https://github.com/christianrowlands/android-network-survey")
+                                )
+                                context.startActivity(intent)
                             }
                         }
                     }
@@ -101,7 +138,6 @@ enum class NavRoutes {
 
 object DrawerParams {
     val drawerButtons = arrayListOf(
-        // TODO Update all of these
         AppDrawerItemInfo(
             NavDrawerOption.ServerConnection,
             R.string.grpc_connection_title,
@@ -125,6 +161,33 @@ object DrawerParams {
             R.string.settings,
             R.drawable.ic_settings,
             R.string.device_status_stream_description
+        )
+    )
+
+    val externalDrawerLinks = arrayListOf(
+        AppDrawerItemInfo(
+            NavDrawerOption.UserManual,
+            R.string.manual,
+            R.drawable.ic_user_manual,
+            R.string.manual
+        ),
+        AppDrawerItemInfo(
+            NavDrawerOption.MessagingDocs,
+            R.string.messaging_docs,
+            R.drawable.ic_schema,
+            R.string.messaging_docs
+        ),
+        AppDrawerItemInfo(
+            NavDrawerOption.ReportAnIssue,
+            R.string.report_issue,
+            R.drawable.ic_bug,
+            R.string.report_issue
+        ),
+        AppDrawerItemInfo(
+            NavDrawerOption.GitHub,
+            R.string.github,
+            R.drawable.ic_github,
+            R.string.github
         )
     )
 }

@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.DrawerState
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalDrawerSheet
 import androidx.compose.material3.Surface
@@ -26,6 +27,7 @@ fun <T : Enum<T>> AppDrawerContent(
     appVersion: String,
     drawerState: DrawerState,
     menuItems: List<AppDrawerItemInfo<T>>,
+    externalLinks: List<AppDrawerItemInfo<T>>,
     defaultPick: T,
     onClick: (T) -> Unit
 ) {
@@ -44,6 +46,28 @@ fun <T : Enum<T>> AppDrawerContent(
                     items(menuItems) { item ->
                         AppDrawerItem(item = item) { navOption ->
 
+                            if (currentPick == navOption) {
+                                coroutineScope.launch {
+                                    drawerState.close()
+                                }
+                                return@AppDrawerItem
+                            }
+
+                            currentPick = navOption
+                            coroutineScope.launch {
+                                drawerState.close()
+                            }
+                            onClick(navOption)
+                        }
+                    }
+
+                    item {
+                        // TODO Figure out a way to prevent this from making the drawer wider
+                        HorizontalDivider(thickness = 1.dp)
+                    }
+
+                    items(externalLinks) { item ->
+                        AppDrawerItem(item = item) { navOption ->
                             if (currentPick == navOption) {
                                 coroutineScope.launch {
                                     drawerState.close()
