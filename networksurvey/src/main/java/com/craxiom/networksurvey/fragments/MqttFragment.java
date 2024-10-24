@@ -23,6 +23,7 @@ import androidx.appcompat.widget.SwitchCompat;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import androidx.fragment.app.FragmentActivity;
+import androidx.lifecycle.ViewModelProvider;
 import androidx.navigation.Navigation;
 
 import com.craxiom.mqttlibrary.MqttConstants;
@@ -34,6 +35,7 @@ import com.craxiom.networksurvey.constants.NetworkSurveyConstants;
 import com.craxiom.networksurvey.fragments.model.MqttConnectionSettings;
 import com.craxiom.networksurvey.mqtt.MqttConnectionInfo;
 import com.craxiom.networksurvey.services.NetworkSurveyService;
+import com.craxiom.networksurvey.ui.main.SharedViewModel;
 import com.craxiom.networksurvey.util.MdmUtils;
 
 import timber.log.Timber;
@@ -66,9 +68,11 @@ public class MqttFragment extends AConnectionFragment<NetworkSurveyService.Surve
             registerForActivityResult(new ActivityResultContracts.RequestPermission(), isGranted -> {
                 if (isGranted)
                 {
-                    Navigation.findNavController(requireActivity(), getId())
+                    SharedViewModel viewModel = new ViewModelProvider(requireActivity()).get(SharedViewModel.class);
+                    viewModel.triggerNavigationToQrCodeScanner();
+                    /* TODO Delete me Navigation.findNavController(requireActivity(), getId())
                             .navigate(MqttFragmentDirections.actionMqttConnectionFragmentToScannerFragment()
-                                    .setMqttConnectionSettings(getCurrentMqttConnectionSettings()));
+                                    .setMqttConnectionSettings(getCurrentMqttConnectionSettings()));*/
                 } else
                 {
                     Toast.makeText(getContext(), getString(R.string.grant_camera_permission), Toast.LENGTH_LONG).show();
@@ -282,9 +286,11 @@ public class MqttFragment extends AConnectionFragment<NetworkSurveyService.Surve
             qrCodeScanButton.setOnClickListener(v -> {
                 if (hasCameraPermission())
                 {
-                    Navigation.findNavController(requireActivity(), getId())
+                    SharedViewModel viewModel = new ViewModelProvider(requireActivity()).get(SharedViewModel.class);
+                    viewModel.triggerNavigationToQrCodeScanner();
+                    /* TODO Delete me Navigation.findNavController(requireActivity(), getId())
                             .navigate(MqttFragmentDirections.actionMqttConnectionFragmentToScannerFragment()
-                                    .setMqttConnectionSettings(getCurrentMqttConnectionSettings()));
+                                    .setMqttConnectionSettings(getCurrentMqttConnectionSettings()));*/
                 } else
                 {
                     cameraPermissionRequestLauncher.launch(Manifest.permission.CAMERA);

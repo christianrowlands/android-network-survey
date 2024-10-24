@@ -9,8 +9,11 @@ import androidx.compose.material3.ModalNavigationDrawer
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
@@ -19,6 +22,7 @@ import com.craxiom.networksurvey.R
 import com.craxiom.networksurvey.ui.main.appdrawer.AppDrawerContent
 import com.craxiom.networksurvey.ui.main.appdrawer.AppDrawerItemInfo
 import com.craxiom.networksurvey.ui.main.appdrawer.NavDrawerOption
+import com.craxiom.networksurvey.ui.main.appdrawer.NavOption
 import com.craxiom.networksurvey.ui.main.appdrawer.mainGraph
 import com.craxiom.networksurvey.util.NsTheme
 
@@ -31,6 +35,17 @@ fun MainCompose(
 ) {
     // TODO Is this needed? HandleBackPress(navController)
     val context = LocalContext.current
+    val lifecycleOwner = LocalLifecycleOwner.current
+
+    val viewModel = viewModel<SharedViewModel>()
+    LaunchedEffect(viewModel.navigateToQrCodeScanner) {
+        viewModel.navigateToQrCodeScanner.observe(lifecycleOwner) { shouldNavigate ->
+            if (shouldNavigate) {
+                navController.navigate(NavOption.QrCodeScanner.name)
+                viewModel.resetNavigationFlag()
+            }
+        }
+    }
 
     NsTheme {
         Scaffold { paddingValues ->

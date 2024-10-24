@@ -16,6 +16,7 @@ import androidx.navigation.compose.navigation
 import androidx.navigation.navArgument
 import com.craxiom.networksurvey.databinding.ContainerGrpcFragmentBinding
 import com.craxiom.networksurvey.databinding.ContainerMqttFragmentBinding
+import com.craxiom.networksurvey.databinding.ContainerMqttQrCodeScannerFragmentBinding
 import com.craxiom.networksurvey.databinding.ContainerSettingsFragmentBinding
 import com.craxiom.networksurvey.fragments.MqttFragment
 import com.craxiom.networksurvey.fragments.model.MqttConnectionSettings
@@ -68,6 +69,11 @@ fun NavGraphBuilder.mainGraph(
         composable(NavDrawerOption.Settings.name) {
             SettingsFragmentInCompose(paddingValues)
         }
+
+        // --------- Deeper navigation (beyond the nav drawer) ---------
+        composable(NavOption.QrCodeScanner.name) {
+            QrCodeScannerInCompose(paddingValues)
+        }
     }
 }
 
@@ -83,6 +89,10 @@ enum class NavDrawerOption {
     MessagingDocs,
     ReportAnIssue,
     GitHub
+}
+
+enum class NavOption {
+    QrCodeScanner
 }
 
 @Composable
@@ -112,6 +122,15 @@ fun MqttFragmentInCompose(
 fun SettingsFragmentInCompose(paddingValues: PaddingValues) {
     AndroidViewBinding(
         ContainerSettingsFragmentBinding::inflate,
+        modifier = Modifier.padding(paddingValues = paddingValues)
+    ) {
+    }
+}
+
+@Composable
+fun QrCodeScannerInCompose(paddingValues: PaddingValues) {
+    AndroidViewBinding(
+        ContainerMqttQrCodeScannerFragmentBinding::inflate,
         modifier = Modifier.padding(paddingValues = paddingValues)
     ) {
     }
