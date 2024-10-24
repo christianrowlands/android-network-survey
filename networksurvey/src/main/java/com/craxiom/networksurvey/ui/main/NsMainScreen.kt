@@ -47,6 +47,51 @@ fun MainCompose(
         }
     }
 
+    LaunchedEffect(viewModel.navigateToQrCodeShare) {
+        viewModel.navigateToQrCodeShare.observe(lifecycleOwner) { shouldNavigate ->
+            if (shouldNavigate) {
+                navController.navigate(NavOption.QrCodeShare.name)
+                viewModel.resetNavigationFlag()
+            }
+        }
+    }
+
+    LaunchedEffect(viewModel.navigateToTowerMap) {
+        viewModel.navigateToTowerMap.observe(lifecycleOwner) { shouldNavigate ->
+            if (shouldNavigate) {
+                navController.navigate(NavOption.TowerMap.name)
+                viewModel.resetNavigationFlag()
+            }
+        }
+    }
+
+    LaunchedEffect(viewModel.navigateToWifiSpectrum) {
+        viewModel.navigateToWifiSpectrum.observe(lifecycleOwner) { shouldNavigate ->
+            if (shouldNavigate) {
+                navController.navigate(NavOption.WifiSpectrum.name)
+                viewModel.resetNavigationFlag()
+            }
+        }
+    }
+
+    LaunchedEffect(viewModel.navigateToWifiDetails) {
+        viewModel.navigateToWifiDetails.observe(lifecycleOwner) { shouldNavigate ->
+            if (shouldNavigate) {
+                navController.navigate(NavOption.WifiDetails.name)
+                viewModel.resetNavigationFlag()
+            }
+        }
+    }
+
+    LaunchedEffect(viewModel.navigateToBluetooth) {
+        viewModel.navigateToBluetooth.observe(lifecycleOwner) { shouldNavigate ->
+            if (shouldNavigate) {
+                navController.navigate(NavOption.BluetoothDetails.name)
+                viewModel.resetNavigationFlag()
+            }
+        }
+    }
+
     NsTheme {
         Scaffold { paddingValues ->
             ModalNavigationDrawer(

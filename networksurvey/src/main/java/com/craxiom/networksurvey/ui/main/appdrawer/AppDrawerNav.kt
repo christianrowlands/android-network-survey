@@ -14,10 +14,15 @@ import androidx.navigation.NavType
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.navigation
 import androidx.navigation.navArgument
+import com.craxiom.networksurvey.databinding.ContainerBluetoothFragmentBinding
 import com.craxiom.networksurvey.databinding.ContainerGrpcFragmentBinding
 import com.craxiom.networksurvey.databinding.ContainerMqttFragmentBinding
 import com.craxiom.networksurvey.databinding.ContainerMqttQrCodeScannerFragmentBinding
+import com.craxiom.networksurvey.databinding.ContainerMqttQrCodeShareFragmentBinding
 import com.craxiom.networksurvey.databinding.ContainerSettingsFragmentBinding
+import com.craxiom.networksurvey.databinding.ContainerTowerMapFragmentBinding
+import com.craxiom.networksurvey.databinding.ContainerWifiDetailsFragmentBinding
+import com.craxiom.networksurvey.databinding.ContainerWifiSpectrumFragmentBinding
 import com.craxiom.networksurvey.fragments.MqttFragment
 import com.craxiom.networksurvey.fragments.model.MqttConnectionSettings
 import com.craxiom.networksurvey.ui.cellular.CalculatorScreen
@@ -70,9 +75,30 @@ fun NavGraphBuilder.mainGraph(
             SettingsFragmentInCompose(paddingValues)
         }
 
-        // --------- Deeper navigation (beyond the nav drawer) ---------
+        // --------- Deeper navigation (beyond the nav drawer) --------- //
+
         composable(NavOption.QrCodeScanner.name) {
             QrCodeScannerInCompose(paddingValues)
+        }
+
+        composable(NavOption.QrCodeShare.name) {
+            QrCodeShareInCompose(paddingValues)
+        }
+
+        composable(NavOption.TowerMap.name) {
+            TowerMapInCompose(paddingValues)
+        }
+
+        composable(NavOption.WifiSpectrum.name) {
+            WifiSpectrumInCompose(paddingValues)
+        }
+
+        composable(NavOption.WifiDetails.name) {
+            WifiDetailsInCompose(paddingValues)
+        }
+
+        composable(NavOption.BluetoothDetails.name) {
+            BluetoothDetailsInCompose(paddingValues)
         }
     }
 }
@@ -92,7 +118,12 @@ enum class NavDrawerOption {
 }
 
 enum class NavOption {
-    QrCodeScanner
+    QrCodeScanner,
+    QrCodeShare,
+    TowerMap,
+    WifiSpectrum,
+    WifiDetails,
+    BluetoothDetails
 }
 
 @Composable
@@ -131,6 +162,51 @@ fun SettingsFragmentInCompose(paddingValues: PaddingValues) {
 fun QrCodeScannerInCompose(paddingValues: PaddingValues) {
     AndroidViewBinding(
         ContainerMqttQrCodeScannerFragmentBinding::inflate,
+        modifier = Modifier.padding(paddingValues = paddingValues)
+    ) {
+    }
+}
+
+@Composable
+fun QrCodeShareInCompose(paddingValues: PaddingValues) {
+    AndroidViewBinding(
+        ContainerMqttQrCodeShareFragmentBinding::inflate,
+        modifier = Modifier.padding(paddingValues = paddingValues)
+    ) {
+    }
+}
+
+@Composable
+fun TowerMapInCompose(paddingValues: PaddingValues) {
+    AndroidViewBinding(
+        ContainerTowerMapFragmentBinding::inflate,
+        modifier = Modifier.padding(paddingValues = paddingValues)
+    ) {
+    }
+}
+
+@Composable
+fun WifiSpectrumInCompose(paddingValues: PaddingValues) {
+    AndroidViewBinding(
+        ContainerWifiSpectrumFragmentBinding::inflate,
+        modifier = Modifier.padding(paddingValues = paddingValues)
+    ) {
+    }
+}
+
+@Composable
+fun WifiDetailsInCompose(paddingValues: PaddingValues) {
+    AndroidViewBinding(
+        ContainerWifiDetailsFragmentBinding::inflate,
+        modifier = Modifier.padding(paddingValues = paddingValues)
+    ) {
+    }
+}
+
+@Composable
+fun BluetoothDetailsInCompose(paddingValues: PaddingValues) {
+    AndroidViewBinding(
+        ContainerBluetoothFragmentBinding::inflate,
         modifier = Modifier.padding(paddingValues = paddingValues)
     ) {
     }

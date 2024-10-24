@@ -52,6 +52,7 @@ public class CodeScannerFragment extends Fragment
                     final String scanSuccess = "Successfully scanned the MQTT settings";
                     Toast.makeText(getContext(), scanSuccess, Toast.LENGTH_SHORT).show();
 
+                    // TODO Navigate to Mqtt Fragment
                     Navigation.findNavController(requireActivity(), getId())
                             .navigate(CodeScannerFragmentDirections.actionScannerFragmentToMqttConnectionFragment()
                                     .setMqttConnectionSettings(mqttConnectionSettings)
