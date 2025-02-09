@@ -104,8 +104,8 @@ public class DashboardFragment extends AServiceDataFragment implements LocationL
         {
             queryUploadQueueCount();
 
-            // Re-run every 15 seconds as long as the UI is visible
-            handler.postDelayed(this, 15_000);
+            // Re-run every 10 seconds as long as the UI is visible
+            handler.postDelayed(this, 10_000);
         }
     };
 
@@ -1115,11 +1115,8 @@ public class DashboardFragment extends AServiceDataFragment implements LocationL
         Context context = getContext();
         if (context == null) return;
 
-        binding.uploadScanningStatus.setText(R.string.scanning_active);
-        binding.uploadScanningStatus.setTextColor(ContextCompat.getColor(context, R.color.md_theme_primary));
-        binding.startScanningButton.setVisibility(View.GONE);
-        binding.stopScanningButton.setVisibility(View.VISIBLE);
-        // TODO: Start scanning logic here
+        binding.startScanningButton.setEnabled(false);
+        toggleUploadRecordSaving(true);
     }
 
     /**
@@ -1131,11 +1128,57 @@ public class DashboardFragment extends AServiceDataFragment implements LocationL
         Context context = getContext();
         if (context == null) return;
 
-        binding.uploadScanningStatus.setText(R.string.scanning_inactive);
-        binding.uploadScanningStatus.setTextColor(ContextCompat.getColor(context, R.color.normalText));
-        binding.stopScanningButton.setVisibility(View.GONE);
-        binding.startScanningButton.setVisibility(View.VISIBLE);
-        // TODO: Stop scanning logic here
+        binding.stopScanningButton.setEnabled(false);
+        toggleUploadRecordSaving(false);
+    }
+
+    private void toggleUploadRecordSaving(boolean enable)
+    {
+        Context context = getContext();
+        if (context == null) return;
+
+        new ToggleLoggingTask(() -> {
+            if (service != null)
+            {
+                return service.toggleUploadRecordSaving(enable);
+            }
+            return null;
+        }, enabled -> {
+            if (enabled == null)
+            {
+                updateUploadRecordSavingUi(false);
+                return getString(R.string.upload_saving_toggle_failed);
+            }
+            updateUploadRecordSavingUi(enabled);
+            return getString(enabled ? R.string.upload_saving_start_toast : R.string.upload_saving_stop_toast);
+        }, context).executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
+    }
+
+    /**
+     * Updates the upload record scanning and saving UI to indicate if logging is enabled or disabled.
+     *
+     * @param enabled The new status indicating if it is enabled.
+     */
+    private void updateUploadRecordSavingUi(boolean enabled)
+    {
+        Context context = getContext();
+        if (context == null) return;
+
+        if (enabled)
+        {
+            binding.uploadScanningStatus.setText(R.string.scanning_active);
+            binding.uploadScanningStatus.setTextColor(ContextCompat.getColor(context, R.color.md_theme_primary));
+            binding.startScanningButton.setVisibility(View.GONE);
+            binding.stopScanningButton.setVisibility(View.VISIBLE);
+            binding.stopScanningButton.setEnabled(true);
+        } else
+        {
+            binding.uploadScanningStatus.setText(R.string.scanning_inactive);
+            binding.uploadScanningStatus.setTextColor(ContextCompat.getColor(context, R.color.normalText));
+            binding.startScanningButton.setVisibility(View.VISIBLE);
+            binding.startScanningButton.setEnabled(true);
+            binding.stopScanningButton.setVisibility(View.GONE);
+        }
     }
 
     /**

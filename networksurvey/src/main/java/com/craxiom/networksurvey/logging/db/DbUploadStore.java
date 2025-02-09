@@ -40,6 +40,8 @@ public class DbUploadStore implements ICellularSurveyRecordListener, IWifiSurvey
 
     private volatile double lastLatitude = Double.NaN;
     private volatile double lastLongitude = Double.NaN;
+    private volatile double lastWifiLatitude = Double.NaN;
+    private volatile double lastWifiLongitude = Double.NaN;
 
     public DbUploadStore(Context context)
     {
@@ -136,6 +138,28 @@ public class DbUploadStore implements ICellularSurveyRecordListener, IWifiSurvey
     {
         executorService.execute(() -> {
             final List<WifiBeaconRecordEntity> wifiRecords = new ArrayList<>();
+
+            if (!wifiBeaconRecords.isEmpty())
+            {
+                WifiBeaconRecordData data = wifiBeaconRecords.get(0).getWifiBeaconRecord().getData();
+
+                double latitude = data.getLatitude();
+                double longitude = data.getLongitude();
+                boolean hasLocation = latitude != 0d && longitude != 0d;
+
+                // First, check for a valid location
+                if (!hasLocation) return;
+
+                if (hasMovedEnough(latitude, longitude, lastWifiLatitude, lastWifiLongitude))
+                {
+                    lastWifiLatitude = latitude;
+                    lastWifiLongitude = longitude;
+                } else
+                {
+                    // Skip all the records because the location should be the same on all of them.
+                    return;
+                }
+            }
 
             for (WifiRecordWrapper wifiRecordWrapper : wifiBeaconRecords)
             {

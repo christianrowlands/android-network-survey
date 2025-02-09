@@ -30,8 +30,8 @@
         <![CDATA[
         The upload feature allows you to share collected cellular and Wi-Fi survey data with third-party databases.<br/><br/>
         <b>How This Feature Works:</b><br/>
-        &#8226; When enabled, survey records collected by the app are written to an internal database. You can then decide whether to upload the stored records to the selected destinations.<br/>
-        &#8226; When disabled, no survey data is written to the internal database, and no survey data is uploaded to a third-party database.<br/><br/>
+        &#8226; When started, survey records collected by the app are written to an internal database. You can then decide whether to upload the stored records to the selected destinations.<br/>
+        &#8226; When stopped, no survey data is written to the internal database, and no survey data is uploaded to a third-party database.<br/><br/>
 
         <b>Where Your Data Goes:</b><br/>
         Your survey data will be uploaded to one or both of the following services, depending on your selections:<br/>
@@ -43,6 +43,9 @@
         &#8226; <b>Cellular Information</b> (MCC, MNC, TAC/LAC, Cell ID, Signal Strength, Timing Advance, PCI, ARFCN, etc.)<br/>
         &#8226; <b>Wi-Fi Information</b> (SSID, BSSID, Frequency, Channel, Signal Strength, Encryption Type)<br/>
         &#8226; <b>Timestamp</b> of Collection<br/><br/>
+
+        <b>When new records are written to the database</b><br/>
+        Cellular and Wi-Fi Survey data is written to the database only if it contains all the required information, AND if the location of the device has changed by at least 35 meters since the last record was written. This is to prevent an excessive amount of survey data from being uploaded to the servers for the same location.<br/><br/>
 
         Data is anonymized and used to improve cellular and Wi-Fi coverage mapping, as well as enhance the BeaconDB geolocation service.<br/><br/>
 
@@ -763,4 +766,7 @@ but work independently, so you have full control over how you handle your data.<
     <string name="preferences">Preferences</string>
     <string name="uploader_enqueued">An error occurred, will retry later</string>
     <string name="upload_disabled_via_mdm">External upload has been disabled via MDM</string>
+    <string name="upload_saving_toggle_failed">An error occurred when trying to start saving records for upload</string>
+    <string name="upload_saving_start_toast">Started scanning and saving records for upload</string>
+    <string name="upload_saving_stop_toast">Stopped scanning and saving records for upload</string>
 </resources>

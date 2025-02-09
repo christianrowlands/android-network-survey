@@ -72,6 +72,7 @@ import com.craxiom.networksurvey.services.controller.GnssController;
 import com.craxiom.networksurvey.services.controller.WifiController;
 import com.craxiom.networksurvey.util.FormatUtils;
 import com.craxiom.networksurvey.util.MathUtils;
+import com.craxiom.networksurvey.util.MdmUtils;
 import com.craxiom.networksurvey.util.NsUtils;
 import com.craxiom.networksurvey.util.PreferenceUtils;
 import com.google.gson.Gson;
@@ -169,10 +170,6 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
         surveyRecordProcessor = new SurveyRecordProcessor(primaryLocationListener, deviceId, context, executorService);
 
         dbUploadStore = new DbUploadStore(context);
-        if (PreferenceUtils.isUploadEnabled(context))
-        {
-            surveyRecordProcessor.addDbSink(dbUploadStore);
-        }
 
         cellularController = new CellularController(this, executorService, serviceLooper, serviceHandler, surveyRecordProcessor);
         wifiController = new WifiController(this, executorService, serviceLooper, serviceHandler, surveyRecordProcessor, uiThreadHandler);
@@ -401,9 +398,6 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
                 updateLocationListener();
                 break;
 
-            case NetworkSurveyConstants.PROPERTY_UPLOAD_ENABLED:
-                updateUploadEnabled();
-                break;
             default:
                 break;
         }
@@ -1032,6 +1026,41 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
         return cellularController.toggleCdrLogging(enable);
     }
 
+    public Boolean toggleUploadRecordSaving(boolean enable)
+    {
+        //noinspection SynchronizeOnNonFinalField
+        synchronized (dbUploadStore)
+        {
+            try
+            {
+                boolean externalDataUploadAllowedForMdm = MdmUtils.isExternalDataUploadAllowed(this);
+                if (!externalDataUploadAllowedForMdm)
+                {
+                    return null;
+                }
+
+                if (enable)
+                {
+                    surveyRecordProcessor.addDbSink(dbUploadStore);
+                    cellularController.startCellularRecordScanning(); // Only starts scanning if it is not already active.
+                    wifiController.startWifiRecordScanning(); // Only starts scanning if it is not already active.
+                } else
+                {
+                    surveyRecordProcessor.removeDbSink();
+                    // Check to see if this service is still needed.  It is still needed if we are either logging, the UI is
+                    // visible, or a server connection is active.
+                    if (!isBeingUsed()) stopSelf();
+                }
+            } catch (Exception e)
+            {
+                Timber.e(e, "Failed to toggle upload record saving");
+                return null;
+            }
+
+            return enable;
+        }
+    }
+
     public boolean isCellularLoggingEnabled()
     {
         return cellularController.isLoggingEnabled();
@@ -1325,13 +1354,11 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
      * Adds or removes the Database Sink from the survey record processor depending on the user
      * preference.
      */
-    public void updateUploadEnabled()
+    public void updateUploadAllowedForMdm()
     {
-        final boolean uploadEnabled = PreferenceUtils.isUploadEnabled(this);
-        if (uploadEnabled)
-        {
-            surveyRecordProcessor.addDbSink(dbUploadStore);
-        } else
+        boolean externalDataUploadAllowed = MdmUtils.isExternalDataUploadAllowed(this);
+
+        if (!externalDataUploadAllowed)
         {
             surveyRecordProcessor.removeDbSink();
         }
@@ -1732,7 +1759,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
                 gnssController.onMdmPreferenceChanged();
 
                 deviceStatusCsvLogger.onMdmPreferenceChanged();
-                updateUploadEnabled();
+                updateUploadAllowedForMdm();
             }
         };
 

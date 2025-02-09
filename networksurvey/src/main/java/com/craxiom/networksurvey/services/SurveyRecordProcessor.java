@@ -165,7 +165,7 @@ public class SurveyRecordProcessor
     private final Set<IDeviceStatusListener> deviceStatusListeners = new CopyOnWriteArraySet<>();
     private volatile NetworkSurveyActivity networkSurveyActivity;
 
-    private DbUploadStore cellularDbSink;
+    private DbUploadStore uploadDbSink;
 
     private final ExecutorService executorService;
     private final String deviceId;
@@ -314,12 +314,16 @@ public class SurveyRecordProcessor
      */
     public synchronized void addDbSink(DbUploadStore dbSink)
     {
-        cellularDbSink = dbSink;
+        registerCellularSurveyRecordListener(dbSink);
+        registerWifiSurveyRecordListener(dbSink);
+        uploadDbSink = dbSink;
     }
 
     public synchronized void removeDbSink()
     {
-        cellularDbSink = null;
+        unregisterCellularSurveyRecordListener(uploadDbSink);
+        unregisterWifiSurveyRecordListener(uploadDbSink);
+        uploadDbSink = null;
     }
 
     /**
@@ -349,8 +353,10 @@ public class SurveyRecordProcessor
     /**
      * @return True if either the UI or a listener needs this survey record processor.  False if the UI is hidden and
      * there are not any listeners.
+     * <p>
+     * Need to synchronize because of the usage of cellularDbSink.
      */
-    boolean isBeingUsed()
+    synchronized boolean isBeingUsed()
     {
         return networkSurveyActivity != null
                 || !cellularSurveyRecordListeners.isEmpty()
@@ -358,7 +364,8 @@ public class SurveyRecordProcessor
                 || !bluetoothSurveyRecordListeners.isEmpty()
                 || !gnssSurveyRecordListeners.isEmpty()
                 || !cdrListeners.isEmpty()
-                || !deviceStatusListeners.isEmpty();
+                || !deviceStatusListeners.isEmpty()
+                || uploadDbSink != null;
     }
 
     /**
@@ -2405,9 +2412,9 @@ public class SurveyRecordProcessor
         // Synchronized because the user can turn off the DB sink via the UI, which would set it to null
         synchronized (this)
         {
-            if (cellularDbSink != null)
+            if (uploadDbSink != null)
             {
-                cellularDbSink.onCellularBatch(cellularRecords, subscriptionId);
+                uploadDbSink.onCellularBatch(cellularRecords, subscriptionId);
             }
         }
     }
@@ -2458,9 +2465,9 @@ public class SurveyRecordProcessor
         // Synchronized because the user can turn off the DB sink via the UI, which would set it to null
         synchronized (this)
         {
-            if (cellularDbSink != null)
+            if (uploadDbSink != null)
             {
-                cellularDbSink.onWifiBeaconSurveyRecords(wifiBeaconRecords);
+                uploadDbSink.onWifiBeaconSurveyRecords(wifiBeaconRecords);
             }
         }
     }
