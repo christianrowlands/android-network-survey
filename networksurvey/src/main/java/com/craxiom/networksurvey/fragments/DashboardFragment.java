@@ -259,8 +259,10 @@ public class DashboardFragment extends AServiceDataFragment implements LocationL
      */
     private void initializeUiListeners()
     {
-        initializeLoggingSwitch(binding.uploadEnabledToggleSwitch, (newEnabledState, toggleSwitch) -> viewModel.setUploadEnabled(newEnabledState));
+        // TODO remove all of the enabled code initializeLoggingSwitch(binding.uploadEnabledToggleSwitch, (newEnabledState, toggleSwitch) -> viewModel.setUploadEnabled(newEnabledState));
 
+        binding.startScanningButton.setOnClickListener(v -> startSavingRecordsForUpload());
+        binding.stopScanningButton.setOnClickListener(v -> stopSavingRecordsForUpload());
         binding.uploadSettingsButton.setOnClickListener(v -> navigateToUploadSettings());
         binding.uploadButton.setOnClickListener(v -> showUploadDialog());
         binding.uploadCancelButton.setOnClickListener(v -> cancelUploads());
@@ -1025,6 +1027,7 @@ public class DashboardFragment extends AServiceDataFragment implements LocationL
     /**
      * Update the upload card UI so that it reflects the new enabled state.
      */
+    // TODO Remove this method if I go with the dedicated start/stop approach
     private void updateUploadEnabledUi(boolean enabled)
     {
         final Context context = getContext();
@@ -1035,15 +1038,15 @@ public class DashboardFragment extends AServiceDataFragment implements LocationL
         edit.apply();
 
         viewModel.setUploadEnabled(enabled);
-        binding.uploadEnabledToggleSwitch.setChecked(enabled);
+        // TODO binding.uploadEnabledToggleSwitch.setChecked(enabled);
 
         if (enabled)
         {
-            binding.uploadDescriptionGroup.setVisibility(View.GONE);
+            //binding.uploadDescriptionGroup.setVisibility(View.GONE);
             binding.uploadControlGroup.setVisibility(View.VISIBLE);
         } else
         {
-            binding.uploadDescriptionGroup.setVisibility(View.VISIBLE);
+            //binding.uploadDescriptionGroup.setVisibility(View.VISIBLE);
             binding.uploadControlGroup.setVisibility(View.GONE);
         }
     }
@@ -1101,6 +1104,38 @@ public class DashboardFragment extends AServiceDataFragment implements LocationL
         {
             Timber.e(e, "Could not navigate to the Upload Preferences fragment");
         }
+    }
+
+    /**
+     * Updates the UI and starts the cellular and wifi scanning, and writing those results to the
+     * internal DB so that the records can be saved for upload.
+     */
+    private void startSavingRecordsForUpload()
+    {
+        Context context = getContext();
+        if (context == null) return;
+
+        binding.uploadScanningStatus.setText(R.string.scanning_active);
+        binding.uploadScanningStatus.setTextColor(ContextCompat.getColor(context, R.color.md_theme_primary));
+        binding.startScanningButton.setVisibility(View.GONE);
+        binding.stopScanningButton.setVisibility(View.VISIBLE);
+        // TODO: Start scanning logic here
+    }
+
+    /**
+     * Updates the UI and stops the writing the cellular and wifi records to the internal DB, and
+     * stops the cellular and wifi scanning if it is no longer being used by anything else.
+     */
+    private void stopSavingRecordsForUpload()
+    {
+        Context context = getContext();
+        if (context == null) return;
+
+        binding.uploadScanningStatus.setText(R.string.scanning_inactive);
+        binding.uploadScanningStatus.setTextColor(ContextCompat.getColor(context, R.color.normalText));
+        binding.stopScanningButton.setVisibility(View.GONE);
+        binding.startScanningButton.setVisibility(View.VISIBLE);
+        // TODO: Stop scanning logic here
     }
 
     /**
