@@ -120,7 +120,7 @@ public class DashboardFragment extends AServiceDataFragment implements LocationL
         initializeLocationTextView();
         initializeUiListeners();
         initializeObservers();
-        initializeUploadEnabledState();
+        initializeUploadUiState();
         queryUploadQueueCount();
 
         return binding.getRoot();
@@ -188,6 +188,7 @@ public class DashboardFragment extends AServiceDataFragment implements LocationL
         updateMqttUiState(service.getMqttConnectionState());
         readMqttStreamEnabledProperties();
         updateLoggingState(service);
+        viewModel.setUploadScanningActive(service.isUploadScanningActive());
     }
 
     @Override
@@ -571,7 +572,7 @@ public class DashboardFragment extends AServiceDataFragment implements LocationL
         viewModel.getProviderEnabled().observe(viewLifecycleOwner, this::updateLocationProviderStatus);
         viewModel.getLocation().observe(viewLifecycleOwner, this::updateLocationTextView);
 
-        viewModel.getUploadEnabled().observe(viewLifecycleOwner, this::updateUploadEnabledUi);
+        viewModel.getUploadScanningActive().observe(viewLifecycleOwner, this::updateUploadRecordSavingUi);
 
         viewModel.getCellularLoggingEnabled().observe(viewLifecycleOwner, this::updateCellularLogging);
         viewModel.getWifiLoggingEnabled().observe(viewLifecycleOwner, this::updateWifiLogging);
@@ -597,7 +598,7 @@ public class DashboardFragment extends AServiceDataFragment implements LocationL
         viewModel.getProviderEnabled().removeObservers(viewLifecycleOwner);
         viewModel.getLocation().removeObservers(viewLifecycleOwner);
 
-        viewModel.getUploadEnabled().removeObservers(viewLifecycleOwner);
+        viewModel.getUploadScanningActive().removeObservers(viewLifecycleOwner);
 
         viewModel.getCellularLoggingEnabled().removeObservers(viewLifecycleOwner);
         viewModel.getWifiLoggingEnabled().removeObservers(viewLifecycleOwner);
@@ -613,7 +614,7 @@ public class DashboardFragment extends AServiceDataFragment implements LocationL
         viewModel.getDeviceStatusMqttStreamEnabled().removeObservers(viewLifecycleOwner);
     }
 
-    private void initializeUploadEnabledState()
+    private void initializeUploadUiState()
     {
         final Context context = getContext();
         if (context == null) return;
@@ -625,8 +626,6 @@ public class DashboardFragment extends AServiceDataFragment implements LocationL
         {
             binding.dbLoggingCardView.setVisibility(View.GONE);
         }
-
-        viewModel.setUploadEnabled(PreferenceUtils.isUploadEnabled(context));
     }
 
     private synchronized void updateLoggingState(NetworkSurveyService networkSurveyService)
@@ -1024,33 +1023,6 @@ public class DashboardFragment extends AServiceDataFragment implements LocationL
         locationTextView.setText(enabled ? R.string.searching_for_location : R.string.turn_on_gps);
     }
 
-    /**
-     * Update the upload card UI so that it reflects the new enabled state.
-     */
-    // TODO Remove this method if I go with the dedicated start/stop approach
-    private void updateUploadEnabledUi(boolean enabled)
-    {
-        final Context context = getContext();
-        if (context == null) return;
-        SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context);
-        final SharedPreferences.Editor edit = sharedPreferences.edit();
-        edit.putBoolean(NetworkSurveyConstants.PROPERTY_UPLOAD_ENABLED, enabled);
-        edit.apply();
-
-        viewModel.setUploadEnabled(enabled);
-        // TODO binding.uploadEnabledToggleSwitch.setChecked(enabled);
-
-        if (enabled)
-        {
-            //binding.uploadDescriptionGroup.setVisibility(View.GONE);
-            binding.uploadControlGroup.setVisibility(View.VISIBLE);
-        } else
-        {
-            //binding.uploadDescriptionGroup.setVisibility(View.VISIBLE);
-            binding.uploadControlGroup.setVisibility(View.GONE);
-        }
-    }
-
     private void queryUploadQueueCount()
     {
         executorService.execute(() -> {
@@ -1146,10 +1118,10 @@ public class DashboardFragment extends AServiceDataFragment implements LocationL
         }, enabled -> {
             if (enabled == null)
             {
-                updateUploadRecordSavingUi(false);
+                viewModel.setUploadScanningActive(false);
                 return getString(R.string.upload_saving_toggle_failed);
             }
-            updateUploadRecordSavingUi(enabled);
+            viewModel.setUploadScanningActive(enabled);
             return getString(enabled ? R.string.upload_saving_start_toast : R.string.upload_saving_stop_toast);
         }, context).executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
     }

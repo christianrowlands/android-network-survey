@@ -326,6 +326,11 @@ public class SurveyRecordProcessor
         uploadDbSink = null;
     }
 
+    public synchronized boolean isDbSinkSet()
+    {
+        return uploadDbSink != null;
+    }
+
     /**
      * Whenever the UI is visible, we need to pass information to it so it can be displayed to the user.
      *

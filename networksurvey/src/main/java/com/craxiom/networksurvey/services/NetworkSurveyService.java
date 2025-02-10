@@ -1061,6 +1061,11 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
         }
     }
 
+    public boolean isUploadScanningActive()
+    {
+        return surveyRecordProcessor.isDbSinkSet();
+    }
+
     public boolean isCellularLoggingEnabled()
     {
         return cellularController.isLoggingEnabled();

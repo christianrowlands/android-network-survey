@@ -18,7 +18,7 @@ import java.util.Objects;
  */
 public class DashboardViewModel extends ViewModel
 {
-    private final MutableLiveData<Boolean> uploadEnabled = new MutableLiveData<>();
+    private final MutableLiveData<Boolean> uploadScanningActive = new MutableLiveData<>();
     private final MutableLiveData<Integer> cellularUploadQueueCount = new MutableLiveData<>(-1);
     private final MutableLiveData<Integer> wifiUploadQueueCount = new MutableLiveData<>(-1);
 
@@ -38,16 +38,16 @@ public class DashboardViewModel extends ViewModel
     private final MutableLiveData<Location> location = new MutableLiveData<>();
     private final MutableLiveData<Boolean> providerEnabled = new MutableLiveData<>(true);
 
-    public LiveData<Boolean> getUploadEnabled()
+    public LiveData<Boolean> getUploadScanningActive()
     {
-        return uploadEnabled;
+        return uploadScanningActive;
     }
 
-    public void setUploadEnabled(boolean isEnabled)
+    public void setUploadScanningActive(boolean isEnabled)
     {
-        if (!Objects.equals(uploadEnabled.getValue(), isEnabled))
+        if (!Objects.equals(uploadScanningActive.getValue(), isEnabled))
         {
-            uploadEnabled.postValue(isEnabled);
+            uploadScanningActive.postValue(isEnabled);
         }
     }
 
