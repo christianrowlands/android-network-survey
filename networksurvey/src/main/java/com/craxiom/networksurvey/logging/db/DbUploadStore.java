@@ -1,6 +1,7 @@
 package com.craxiom.networksurvey.logging.db;
 
 import android.content.Context;
+import android.util.Pair;
 
 import com.craxiom.messaging.CdmaRecord;
 import com.craxiom.messaging.CdmaRecordData;
@@ -25,21 +26,22 @@ import com.craxiom.networksurvey.model.CellularRecordWrapper;
 import com.craxiom.networksurvey.model.WifiRecordWrapper;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-import timber.log.Timber;
-
 public class DbUploadStore implements ICellularSurveyRecordListener, IWifiSurveyRecordListener
 {
-    public static final int DISTANCE_MOVED_THRESHOLD = 35;
+    public static final int DISTANCE_MOVED_THRESHOLD_METERS = 35;
     public static final int EARTH_RADIUS_METERS = 6371000; // Earth's radius in meters
     private final SurveyDatabase database;
     private final ExecutorService executorService;
 
-    private volatile double lastLatitude = Double.NaN;
-    private volatile double lastLongitude = Double.NaN;
+    // Store last known location per subscription ID
+    private final Map<Integer, kotlin.Pair<Double, Double>> lastKnownCellularLocations = new HashMap<>();
+
     private volatile double lastWifiLatitude = Double.NaN;
     private volatile double lastWifiLongitude = Double.NaN;
 
@@ -69,7 +71,7 @@ public class DbUploadStore implements ICellularSurveyRecordListener, IWifiSurvey
                         break;
                     case GSM:
                         GsmRecordData gsmRecordData = ((GsmRecord) cellularRecordWrapper.cellularRecord).getData();
-                        if (shouldWriteGsmRecord(gsmRecordData))
+                        if (shouldWriteGsmRecord(gsmRecordData, subscriptionId))
                         {
                             GsmRecordEntity gsmEntity = mapGsmRecordToEntity(gsmRecordData);
                             gsmRecords.add(gsmEntity);
@@ -77,7 +79,7 @@ public class DbUploadStore implements ICellularSurveyRecordListener, IWifiSurvey
                         break;
                     case CDMA:
                         CdmaRecordData cdmaRecordData = ((CdmaRecord) cellularRecordWrapper.cellularRecord).getData();
-                        if (shouldWriteCdmaRecord(cdmaRecordData))
+                        if (shouldWriteCdmaRecord(cdmaRecordData, subscriptionId))
                         {
                             CdmaRecordEntity cdmaEntity = mapCdmaRecordToEntity(cdmaRecordData);
                             cdmaRecords.add(cdmaEntity);
@@ -85,7 +87,7 @@ public class DbUploadStore implements ICellularSurveyRecordListener, IWifiSurvey
                         break;
                     case UMTS:
                         UmtsRecordData umtsRecordData = ((UmtsRecord) cellularRecordWrapper.cellularRecord).getData();
-                        if (shouldWriteUmtsRecord(umtsRecordData))
+                        if (shouldWriteUmtsRecord(umtsRecordData, subscriptionId))
                         {
                             UmtsRecordEntity umtsEntity = mapUmtsRecordToEntity(umtsRecordData);
                             umtsRecords.add(umtsEntity);
@@ -93,7 +95,7 @@ public class DbUploadStore implements ICellularSurveyRecordListener, IWifiSurvey
                         break;
                     case LTE:
                         LteRecordData lteRecordData = ((LteRecord) cellularRecordWrapper.cellularRecord).getData();
-                        if (shouldWriteLteRecord(lteRecordData))
+                        if (shouldWriteLteRecord(lteRecordData, subscriptionId))
                         {
                             LteRecordEntity lteEntity = mapLteRecordToEntity(lteRecordData);
                             lteRecords.add(lteEntity);
@@ -101,7 +103,7 @@ public class DbUploadStore implements ICellularSurveyRecordListener, IWifiSurvey
                         break;
                     case NR:
                         NrRecordData nrRecordData = ((NrRecord) cellularRecordWrapper.cellularRecord).getData();
-                        if (shouldWriteNrRecord(nrRecordData))
+                        if (shouldWriteNrRecord(nrRecordData, subscriptionId))
                         {
                             NrRecordEntity nrEntity = mapNrRecordToEntity(nrRecordData);
                             nrRecords.add(nrEntity);
@@ -150,7 +152,7 @@ public class DbUploadStore implements ICellularSurveyRecordListener, IWifiSurvey
                 // First, check for a valid location
                 if (!hasLocation) return;
 
-                if (hasMovedEnough(latitude, longitude, lastWifiLatitude, lastWifiLongitude))
+                if (hasMovedEnough(latitude, longitude, new kotlin.Pair<>(lastWifiLatitude, lastWifiLongitude)))
                 {
                     lastWifiLatitude = latitude;
                     lastWifiLongitude = longitude;
@@ -175,7 +177,7 @@ public class DbUploadStore implements ICellularSurveyRecordListener, IWifiSurvey
         });
     }
 
-    private boolean shouldWriteGsmRecord(GsmRecordData data)
+    private boolean shouldWriteGsmRecord(GsmRecordData data, int subscriptionId)
     {
         // Yes, I know that 0.0 is a valid location, but I am filtering on 0.0 anyway
         double latitude = data.getLatitude();
@@ -194,10 +196,10 @@ public class DbUploadStore implements ICellularSurveyRecordListener, IWifiSurvey
         if (!isCompleteRecord) return false;
 
         // Finally, check if the device has moved far enough
-        if (hasMovedEnough(latitude, longitude, lastLatitude, lastLongitude))
+        kotlin.Pair<Double, Double> lastLocation = lastKnownCellularLocations.get(subscriptionId);
+        if (hasMovedEnough(latitude, longitude, lastLocation))
         {
-            lastLatitude = latitude;
-            lastLongitude = longitude;
+            lastKnownCellularLocations.put(subscriptionId, new kotlin.Pair<>(latitude, longitude));
             return true;
         } else
         {
@@ -205,7 +207,7 @@ public class DbUploadStore implements ICellularSurveyRecordListener, IWifiSurvey
         }
     }
 
-    private boolean shouldWriteCdmaRecord(CdmaRecordData data)
+    private boolean shouldWriteCdmaRecord(CdmaRecordData data, int subscriptionId)
     {
         return false; // Ignore CDMA for now
         /*double latitude = data.getLatitude();
@@ -220,7 +222,7 @@ public class DbUploadStore implements ICellularSurveyRecordListener, IWifiSurvey
                 data.hasSignalStrength();*/
     }
 
-    private boolean shouldWriteUmtsRecord(UmtsRecordData data)
+    private boolean shouldWriteUmtsRecord(UmtsRecordData data, int subscriptionId)
     {
         // Yes, I know that 0.0 is a valid location, but I am filtering on 0.0 anyway
         double latitude = data.getLatitude();
@@ -238,10 +240,10 @@ public class DbUploadStore implements ICellularSurveyRecordListener, IWifiSurvey
         if (!isCompleteRecord) return false;
 
         // Finally, check if the device has moved far enough
-        if (hasMovedEnough(latitude, longitude, lastLatitude, lastLongitude))
+        kotlin.Pair<Double, Double> lastLocation = lastKnownCellularLocations.get(subscriptionId);
+        if (hasMovedEnough(latitude, longitude, lastLocation))
         {
-            lastLatitude = latitude;
-            lastLongitude = longitude;
+            lastKnownCellularLocations.put(subscriptionId, new kotlin.Pair<>(latitude, longitude));
             return true;
         } else
         {
@@ -249,7 +251,7 @@ public class DbUploadStore implements ICellularSurveyRecordListener, IWifiSurvey
         }
     }
 
-    private boolean shouldWriteLteRecord(LteRecordData data)
+    private boolean shouldWriteLteRecord(LteRecordData data, int subscriptionId)
     {
         // Yes, I know that 0.0 is a valid location, but I am filtering on 0.0 anyway
         double latitude = data.getLatitude();
@@ -267,10 +269,10 @@ public class DbUploadStore implements ICellularSurveyRecordListener, IWifiSurvey
         if (!isCompleteRecord) return false;
 
         // Finally, check if the device has moved far enough
-        if (hasMovedEnough(latitude, longitude, lastLatitude, lastLongitude))
+        kotlin.Pair<Double, Double> lastLocation = lastKnownCellularLocations.get(subscriptionId);
+        if (hasMovedEnough(latitude, longitude, lastLocation))
         {
-            lastLatitude = latitude;
-            lastLongitude = longitude;
+            lastKnownCellularLocations.put(subscriptionId, new kotlin.Pair<>(latitude, longitude));
             return true;
         } else
         {
@@ -278,7 +280,7 @@ public class DbUploadStore implements ICellularSurveyRecordListener, IWifiSurvey
         }
     }
 
-    private boolean shouldWriteNrRecord(NrRecordData data)
+    private boolean shouldWriteNrRecord(NrRecordData data, int subscriptionId)
     {
         // Yes, I know that 0.0 is a valid location, but I am filtering on 0.0 anyway
         double latitude = data.getLatitude();
@@ -296,10 +298,10 @@ public class DbUploadStore implements ICellularSurveyRecordListener, IWifiSurvey
         if (!isCompleteRecord) return false;
 
         // Finally, check if the device has moved far enough
-        if (hasMovedEnough(latitude, longitude, lastLatitude, lastLongitude))
+        kotlin.Pair<Double, Double> lastLocation = lastKnownCellularLocations.get(subscriptionId);
+        if (hasMovedEnough(latitude, longitude, lastLocation))
         {
-            lastLatitude = latitude;
-            lastLongitude = longitude;
+            lastKnownCellularLocations.put(subscriptionId, new kotlin.Pair<>(latitude, longitude));
             return true;
         } else
         {
@@ -310,12 +312,15 @@ public class DbUploadStore implements ICellularSurveyRecordListener, IWifiSurvey
     /**
      * @return True if the record has moved enough to be considered a new location, false otherwise.
      */
-    public static boolean hasMovedEnough(double latitude, double longitude, double lastLatitude, double lastLongitude)
+    public static boolean hasMovedEnough(double latitude, double longitude, kotlin.Pair<Double, Double> lastLocation)
     {
-        if (Double.isNaN(lastLatitude) || Double.isNaN(lastLongitude))
+        if (lastLocation == null || Double.isNaN(lastLocation.getFirst()) || Double.isNaN(lastLocation.getSecond()))
         {
-            return true; // Always allow the first record
+            return true; // Always allow first record
         }
+
+        double lastLatitude = lastLocation.getFirst();
+        double lastLongitude = lastLocation.getSecond();
 
         double dLat = Math.toRadians(latitude - lastLatitude);
         double dLon = Math.toRadians(longitude - lastLongitude);
@@ -327,9 +332,7 @@ public class DbUploadStore implements ICellularSurveyRecordListener, IWifiSurvey
 
         double distance = EARTH_RADIUS_METERS * c;
 
-        Timber.i("Distance moved: %s meters", distance); // TODO Delete me
-
-        return distance >= DISTANCE_MOVED_THRESHOLD;
+        return distance >= DISTANCE_MOVED_THRESHOLD_METERS;
     }
 
     private GsmRecordEntity mapGsmRecordToEntity(GsmRecordData record)
