@@ -1,9 +1,11 @@
 package com.craxiom.networksurvey.logging.db.uploader.beacondb;
 
+import com.craxiom.networksurvey.logging.db.model.BaseRecordEntity;
 import com.craxiom.networksurvey.logging.db.model.GsmRecordEntity;
 import com.craxiom.networksurvey.logging.db.model.LteRecordEntity;
 import com.craxiom.networksurvey.logging.db.model.NrRecordEntity;
 import com.craxiom.networksurvey.logging.db.model.UmtsRecordEntity;
+import com.craxiom.networksurvey.logging.db.model.WifiBeaconRecordEntity;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -21,7 +23,8 @@ public class GeosubmitJsonFormatter
             List<LteRecordEntity> lteRecords,
             List<GsmRecordEntity> gsmRecords,
             List<UmtsRecordEntity> umtsRecords,
-            List<NrRecordEntity> nrRecords) throws JSONException
+            List<NrRecordEntity> nrRecords,
+            List<WifiBeaconRecordEntity> wifiRecords) throws JSONException
     {
 
         JSONArray itemsArray = new JSONArray();
@@ -46,6 +49,11 @@ public class GeosubmitJsonFormatter
             itemsArray.put(formatNrRecord(record));
         }
 
+        for (WifiBeaconRecordEntity record : wifiRecords)
+        {
+            itemsArray.put(formatWifiRecord(record));
+        }
+
         JSONObject geosubmitJson = new JSONObject();
         geosubmitJson.put("items", itemsArray);
 
@@ -54,17 +62,7 @@ public class GeosubmitJsonFormatter
 
     private static JSONObject formatGsmRecord(GsmRecordEntity record) throws JSONException
     {
-        JSONObject item = new JSONObject();
-        item.put("timestamp", System.currentTimeMillis());
-
-        JSONObject position = new JSONObject();
-        position.put("latitude", record.latitude);
-        position.put("longitude", record.longitude);
-        position.put("accuracy", record.accuracy);
-        position.put("altitude", record.altitude);
-        position.put("speed", record.speed);
-        //position.put("source", "gps");
-        item.put("position", position);
+        JSONObject item = createBaseRecord(record);
 
         JSONArray cellTowers = new JSONArray();
         JSONObject cellTower = new JSONObject();
@@ -84,17 +82,7 @@ public class GeosubmitJsonFormatter
 
     private static JSONObject formatUmtsRecord(UmtsRecordEntity record) throws JSONException
     {
-        JSONObject item = new JSONObject();
-        item.put("timestamp", System.currentTimeMillis());
-
-        JSONObject position = new JSONObject();
-        position.put("latitude", record.latitude);
-        position.put("longitude", record.longitude);
-        position.put("accuracy", record.accuracy);
-        position.put("altitude", record.altitude);
-        position.put("speed", record.speed);
-        //position.put("source", "gps");
-        item.put("position", position);
+        JSONObject item = createBaseRecord(record);
 
         JSONArray cellTowers = new JSONArray();
         JSONObject cellTower = new JSONObject();
@@ -114,17 +102,7 @@ public class GeosubmitJsonFormatter
 
     private static JSONObject formatLteRecord(LteRecordEntity record) throws JSONException
     {
-        JSONObject item = new JSONObject();
-        item.put("timestamp", System.currentTimeMillis());
-
-        JSONObject position = new JSONObject();
-        position.put("latitude", record.latitude);
-        position.put("longitude", record.longitude);
-        position.put("accuracy", record.accuracy);
-        position.put("altitude", record.altitude);
-        position.put("speed", record.speed);
-        //position.put("source", "gps");
-        item.put("position", position);
+        JSONObject item = createBaseRecord(record);
 
         JSONArray cellTowers = new JSONArray();
         JSONObject cellTower = new JSONObject();
@@ -146,17 +124,7 @@ public class GeosubmitJsonFormatter
 
     private static JSONObject formatNrRecord(NrRecordEntity record) throws JSONException
     {
-        JSONObject item = new JSONObject();
-        item.put("timestamp", System.currentTimeMillis());
-
-        JSONObject position = new JSONObject();
-        position.put("latitude", record.latitude);
-        position.put("longitude", record.longitude);
-        position.put("accuracy", record.accuracy);
-        position.put("altitude", record.altitude);
-        position.put("speed", record.speed);
-        //position.put("source", "gps");
-        item.put("position", position);
+        JSONObject item = createBaseRecord(record);
 
         JSONArray cellTowers = new JSONArray();
         JSONObject cellTower = new JSONObject();
@@ -172,6 +140,45 @@ public class GeosubmitJsonFormatter
         cellTowers.put(cellTower);
 
         item.put("cellTowers", cellTowers);
+        return item;
+    }
+
+    private static JSONObject formatWifiRecord(WifiBeaconRecordEntity record) throws JSONException
+    {
+        JSONObject item = createBaseRecord(record);
+
+        JSONArray wifiAccessPoints = new JSONArray();
+        JSONObject wifiAp = new JSONObject();
+        wifiAp.put("macAddress", record.bssid);
+        wifiAp.put("channel", record.channel);
+        wifiAp.put("frequency", record.frequencyMhz);
+        wifiAp.put("radioType", record.standard);
+        wifiAp.put("signalStrength", record.signalStrength);
+        if (record.snr != null)
+        {
+            wifiAp.put("signalToNoiseRatio", record.snr);
+        }
+
+        wifiAccessPoints.put(wifiAp);
+        item.put("wifiAccessPoints", wifiAccessPoints);
+        return item;
+    }
+
+    private static JSONObject createBaseRecord(BaseRecordEntity record) throws JSONException
+    {
+        JSONObject item = new JSONObject();
+        item.put("timestamp", System.currentTimeMillis());
+
+        JSONObject position = new JSONObject();
+        position.put("latitude", record.latitude);
+        position.put("longitude", record.longitude);
+        position.put("accuracy", record.accuracy);
+        position.put("altitude", record.altitude);
+        position.put("speed", record.speed);
+        // TODO wifiAp.put("age", record.age);
+        //position.put("source", "gps");
+        item.put("position", position);
+
         return item;
     }
 }

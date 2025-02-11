@@ -3,12 +3,9 @@ package com.craxiom.networksurvey.logging.db.uploader;
 import android.app.Notification;
 import android.app.NotificationManager;
 import android.content.Context;
-import android.content.pm.ServiceInfo;
-import android.os.Build;
 
 import androidx.annotation.NonNull;
 import androidx.work.Data;
-import androidx.work.ForegroundInfo;
 import androidx.work.Worker;
 import androidx.work.WorkerParameters;
 
@@ -17,16 +14,18 @@ import com.craxiom.networksurvey.constants.NetworkSurveyConstants;
 import com.craxiom.networksurvey.logging.db.SurveyDatabase;
 import com.craxiom.networksurvey.logging.db.dao.SurveyRecordDao;
 import com.craxiom.networksurvey.logging.db.model.CdmaRecordEntity;
-import com.craxiom.networksurvey.logging.db.model.CellularRecordsWrapper;
 import com.craxiom.networksurvey.logging.db.model.GsmRecordEntity;
 import com.craxiom.networksurvey.logging.db.model.LteRecordEntity;
 import com.craxiom.networksurvey.logging.db.model.NrRecordEntity;
 import com.craxiom.networksurvey.logging.db.model.UmtsRecordEntity;
+import com.craxiom.networksurvey.logging.db.model.UploadRecordsWrapper;
+import com.craxiom.networksurvey.logging.db.model.WifiBeaconRecordEntity;
 import com.craxiom.networksurvey.logging.db.uploader.beacondb.BeaconDbUploadClient;
 import com.craxiom.networksurvey.logging.db.uploader.ocid.OpenCelliDCsvFormatter;
 import com.craxiom.networksurvey.logging.db.uploader.ocid.OpenCelliDUploadClient;
 import com.craxiom.networksurvey.util.PreferenceUtils;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -68,7 +67,6 @@ public class NsUploaderWorker extends Worker
     private boolean isOpenCellIdUploadEnabled;
     private boolean anonymousUploadToOcid;
     private boolean isBeaconDBUploadEnabled;
-    private boolean isRetryEnabled;
 
     public NsUploaderWorker(@NonNull Context context, @NonNull WorkerParameters workerParams)
     {
@@ -94,10 +92,10 @@ public class NsUploaderWorker extends Worker
             isOpenCellIdUploadEnabled = getInputData().getBoolean(NetworkSurveyConstants.PROPERTY_UPLOAD_TO_OPENCELLID, false);
             anonymousUploadToOcid = getInputData().getBoolean(NetworkSurveyConstants.PROPERTY_ANONYMOUS_OPENCELLID_UPLOAD, false);
             isBeaconDBUploadEnabled = getInputData().getBoolean(NetworkSurveyConstants.PROPERTY_UPLOAD_TO_BEACONDB, false);
-            isRetryEnabled = getInputData().getBoolean(NetworkSurveyConstants.PROPERTY_UPLOAD_RETRY_ENABLED, false);
+            boolean isRetryEnabled = getInputData().getBoolean(NetworkSurveyConstants.PROPERTY_UPLOAD_RETRY_ENABLED, false);
 
             UploadResultBundle uploadResultBundle = new UploadResultBundle();
-            int totalRecords = getTotalCellularRecordsForUpload(database.surveyRecordDao());
+            int totalRecords = getTotalRecordsForUpload(database.surveyRecordDao(), isBeaconDBUploadEnabled);
             if (totalRecords == 0)
             {
                 Timber.d("No records to upload.");
@@ -120,10 +118,10 @@ public class NsUploaderWorker extends Worker
                 reportProgress(progress, PROGRESS_MAX_VALUE, "Uploading records...");
 
                 // TODO Keep track using partially uploaded status, and then switch to success at the end
-                uploadResultBundle.merge(processUploadBatch(LOCATIONS_PER_PART));
+                uploadResultBundle.merge(processUploadBatch(LOCATIONS_PER_PART, isBeaconDBUploadEnabled));
                 if (!uploadResultBundle.isAllSuccess())
                 {
-                    if (isRetryEnabled)
+                    if (isRetryEnabled) // TODO Also check if the error is retryable
                     {
                         Timber.d("Upload failed, retry enabled.");
                         reportProgress(progress, PROGRESS_MAX_VALUE, "An error occurred, will retry later");
@@ -161,36 +159,80 @@ public class NsUploaderWorker extends Worker
         super.onStopped();
     }
 
-    private UploadResultBundle processUploadBatch(int batchSize)
+    private UploadResultBundle processUploadBatch(int batchSize, boolean isBeaconDBUploadEnabled)
     {
-        List<GsmRecordEntity> gsmRecords = database.surveyRecordDao().getGsmRecordsForUpload(batchSize);
-        List<CdmaRecordEntity> cdmaRecords = database.surveyRecordDao().getCdmaRecordsForUpload(batchSize);
-        List<UmtsRecordEntity> umtsRecords = database.surveyRecordDao().getUmtsRecordsForUpload(batchSize);
-        List<LteRecordEntity> lteRecords = database.surveyRecordDao().getLteRecordsForUpload(batchSize);
-        List<NrRecordEntity> nrRecords = database.surveyRecordDao().getNrRecordsForUpload(batchSize);
+        int remainingBatchSize = batchSize;
+
+        // Fetch records from each protocol table while ensuring we don’t exceed batchSize
+        List<GsmRecordEntity> gsmRecords = Collections.emptyList();
+        if (remainingBatchSize > 0)
+        {
+            gsmRecords = database.surveyRecordDao().getGsmRecordsForUpload(remainingBatchSize);
+            remainingBatchSize -= gsmRecords.size();
+        }
+
+        List<CdmaRecordEntity> cdmaRecords = Collections.emptyList();
+        if (remainingBatchSize > 0)
+        {
+            cdmaRecords = database.surveyRecordDao().getCdmaRecordsForUpload(remainingBatchSize);
+            remainingBatchSize -= cdmaRecords.size();
+        }
+
+        List<UmtsRecordEntity> umtsRecords = Collections.emptyList();
+        if (remainingBatchSize > 0)
+        {
+            umtsRecords = database.surveyRecordDao().getUmtsRecordsForUpload(remainingBatchSize);
+            remainingBatchSize -= umtsRecords.size();
+        }
+
+        List<LteRecordEntity> lteRecords = Collections.emptyList();
+        if (remainingBatchSize > 0)
+        {
+            lteRecords = database.surveyRecordDao().getLteRecordsForUpload(remainingBatchSize);
+            remainingBatchSize -= lteRecords.size();
+        }
+
+        List<NrRecordEntity> nrRecords = Collections.emptyList();
+        if (remainingBatchSize > 0)
+        {
+            nrRecords = database.surveyRecordDao().getNrRecordsForUpload(remainingBatchSize);
+            remainingBatchSize -= nrRecords.size();
+        }
+
+        List<WifiBeaconRecordEntity> wifiRecords = Collections.emptyList();
+        if (isBeaconDBUploadEnabled && remainingBatchSize > 0)
+        {
+            wifiRecords = database.surveyRecordDao().getWifiRecordsForUpload(remainingBatchSize);
+            remainingBatchSize -= wifiRecords.size();
+        }
 
         // Create a combined results bundle
-        UploadResultBundle totalResultBundle = new UploadResultBundle();
+        final UploadResultBundle totalResultBundle = new UploadResultBundle();
 
-        if (!nrRecords.isEmpty())
+        if (!gsmRecords.isEmpty())
         {
-            totalResultBundle.merge(processUpload(nrRecords));
-        }
-        if (!lteRecords.isEmpty())
-        {
-            totalResultBundle.merge(processUpload(lteRecords));
-        }
-        if (!umtsRecords.isEmpty())
-        {
-            totalResultBundle.merge(processUpload(umtsRecords));
+            totalResultBundle.merge(processUpload(gsmRecords));
         }
         if (!cdmaRecords.isEmpty())
         {
             totalResultBundle.merge(processUpload(cdmaRecords));
         }
-        if (!gsmRecords.isEmpty())
+        if (!umtsRecords.isEmpty())
         {
-            totalResultBundle.merge(processUpload(gsmRecords));
+            totalResultBundle.merge(processUpload(umtsRecords));
+        }
+        if (!lteRecords.isEmpty())
+        {
+            totalResultBundle.merge(processUpload(lteRecords));
+        }
+        if (!nrRecords.isEmpty())
+        {
+            totalResultBundle.merge(processUpload(nrRecords));
+        }
+
+        if (!wifiRecords.isEmpty())
+        {
+            totalResultBundle.merge(processUpload(wifiRecords));
         }
 
         return totalResultBundle;
@@ -222,7 +264,7 @@ public class NsUploaderWorker extends Worker
         final UploadResultBundle uploadResultBundle = new UploadResultBundle();
         try
         {
-            final CellularRecordsWrapper recordsWrapper = CellularRecordsWrapper.createCellularRecordsWrapper(records);
+            final UploadRecordsWrapper recordsWrapper = UploadRecordsWrapper.createRecordsWrapper(records);
 
             if (isOpenCellIdUploadEnabled)
             {
@@ -320,6 +362,11 @@ public class NsUploaderWorker extends Worker
     {
         if (records == null || records.isEmpty()) return;
 
+        if (records.get(0) instanceof WifiBeaconRecordEntity)
+        {
+            return; // OCID does not support Wifi records
+        }
+
         database.runInTransaction(() -> {
             if (records.get(0) instanceof NrRecordEntity)
             {
@@ -372,32 +419,40 @@ public class NsUploaderWorker extends Worker
             {
                 List<Long> recordIds = records.stream().map(record -> ((CdmaRecordEntity) record).id).collect(Collectors.toList());
                 database.surveyRecordDao().markCdmaRecordsAsUploadedToBeaconDb(recordIds);
+            } else if (records.get(0) instanceof WifiBeaconRecordEntity)
+            {
+                List<Long> recordIds = records.stream().map(record -> ((WifiBeaconRecordEntity) record).id).collect(Collectors.toList());
+                database.surveyRecordDao().markWifiRecordsAsUploadedToBeaconDb(recordIds);
             }
 
             Timber.d("%d records marked as uploaded to BeaconDB", records.size());
         });
     }
 
-    private ForegroundInfo createForegroundInfo(Notification notification)
+    /**
+     * Sums up the total number of records to be uploaded for all protocols.
+     */
+    public static int getTotalRecordsForUpload(SurveyRecordDao surveyRecordDao, boolean isBeaconDBUploadEnabled)
     {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q)
+        if (!isBeaconDBUploadEnabled)
         {
-            return new ForegroundInfo(NOTIFICATION_ID, notification, ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC);
+            return getTotalCellularRecordsForUpload(surveyRecordDao);
         } else
         {
-            return new ForegroundInfo(NOTIFICATION_ID, notification);
+            return getTotalCellularRecordsForUpload(surveyRecordDao)
+                    + surveyRecordDao.getWifiRecordCountForUpload();
         }
     }
 
     /**
-     * Sums up the total number of records to be uploaded for all cellular protocols.
+     * Sums up the total number of cellular records to be uploaded for all cellular protocols.
      */
     public static int getTotalCellularRecordsForUpload(SurveyRecordDao surveyRecordDao)
     {
-        return surveyRecordDao.getNrRecordCountForUpload()
-                + surveyRecordDao.getLteRecordCountForUpload()
+        return surveyRecordDao.getGsmRecordCountForUpload()
+                + surveyRecordDao.getCdmaRecordCountForUpload() // TODO Remove CDMA since we don't actually upload them?
                 + surveyRecordDao.getUmtsRecordCountForUpload()
-                + surveyRecordDao.getGsmRecordCountForUpload()
-                + surveyRecordDao.getCdmaRecordCountForUpload();
+                + surveyRecordDao.getLteRecordCountForUpload()
+                + surveyRecordDao.getNrRecordCountForUpload();
     }
 }

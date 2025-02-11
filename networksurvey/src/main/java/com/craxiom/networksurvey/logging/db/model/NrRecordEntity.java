@@ -1,11 +1,10 @@
 package com.craxiom.networksurvey.logging.db.model;
 
-import androidx.annotation.NonNull;
 import androidx.room.Entity;
 import androidx.room.PrimaryKey;
 
 @Entity(tableName = "nr_survey_records")
-public class NrRecordEntity
+public class NrRecordEntity extends BaseRecordEntity
 {
     @PrimaryKey(autoGenerate = true)
     public long id;
@@ -13,20 +12,7 @@ public class NrRecordEntity
     public boolean ocidUploaded = false;
     public boolean beaconDbUploaded = false;
 
-    @NonNull
-    public String deviceSerialNumber;
-    @NonNull
-    public String deviceName;
-    @NonNull
-    public String deviceTime;
-    public double latitude;
-    public double longitude;
-    public float altitude;
-    public String missionId;
-    public int recordNumber;
     public int groupNumber;
-    public int accuracy;
-    public Float speed;
 
     // NR specific fields (nullable due to protobuf Int32Value and FloatValue)
     public Integer mcc;

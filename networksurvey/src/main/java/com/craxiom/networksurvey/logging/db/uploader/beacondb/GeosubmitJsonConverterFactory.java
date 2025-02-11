@@ -1,6 +1,6 @@
 package com.craxiom.networksurvey.logging.db.uploader.beacondb;
 
-import com.craxiom.networksurvey.logging.db.model.CellularRecordsWrapper;
+import com.craxiom.networksurvey.logging.db.model.UploadRecordsWrapper;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -27,7 +27,7 @@ public class GeosubmitJsonConverterFactory extends Converter.Factory
     }
 
     @Override
-    public Converter<CellularRecordsWrapper, RequestBody> requestBodyConverter(Type type, Annotation[] parameterAnnotations, Annotation[] methodAnnotations, Retrofit retrofit)
+    public Converter<UploadRecordsWrapper, RequestBody> requestBodyConverter(Type type, Annotation[] parameterAnnotations, Annotation[] methodAnnotations, Retrofit retrofit)
     {
         return recordsWrapper -> {
             try
@@ -36,7 +36,8 @@ public class GeosubmitJsonConverterFactory extends Converter.Factory
                         recordsWrapper.lteRecords(),
                         recordsWrapper.gsmRecords(),
                         recordsWrapper.umtsRecords(),
-                        recordsWrapper.nrRecords()
+                        recordsWrapper.nrRecords(),
+                        recordsWrapper.wifiRecords()
                 );
 
                 return RequestBody.create(

@@ -3,19 +3,21 @@ package com.craxiom.networksurvey.logging.db.model;
 import java.util.Collections;
 import java.util.List;
 
-public record CellularRecordsWrapper(List<GsmRecordEntity> gsmRecords,
-                                     List<UmtsRecordEntity> umtsRecords,
-                                     List<LteRecordEntity> lteRecords,
-                                     List<NrRecordEntity> nrRecords)
+public record UploadRecordsWrapper(List<GsmRecordEntity> gsmRecords,
+                                   List<UmtsRecordEntity> umtsRecords,
+                                   List<LteRecordEntity> lteRecords,
+                                   List<NrRecordEntity> nrRecords,
+                                   List<WifiBeaconRecordEntity> wifiRecords)
 {
     /**
      * @noinspection unchecked
      */
-    public static CellularRecordsWrapper createCellularRecordsWrapper(List<?> records)
+    public static UploadRecordsWrapper createRecordsWrapper(List<?> records)
     {
         if (records == null || records.isEmpty())
         {
-            return new CellularRecordsWrapper(
+            return new UploadRecordsWrapper(
+                    Collections.emptyList(),
                     Collections.emptyList(),
                     Collections.emptyList(),
                     Collections.emptyList(),
@@ -25,15 +27,17 @@ public record CellularRecordsWrapper(List<GsmRecordEntity> gsmRecords,
 
         if (records.get(0) instanceof GsmRecordEntity)
         {
-            return new CellularRecordsWrapper(
+            return new UploadRecordsWrapper(
                     (List<GsmRecordEntity>) records,
+                    Collections.emptyList(),
                     Collections.emptyList(),
                     Collections.emptyList(),
                     Collections.emptyList()
             );
         } else if (records.get(0) instanceof CdmaRecordEntity)
         {
-            return new CellularRecordsWrapper(
+            return new UploadRecordsWrapper(
+                    Collections.emptyList(),
                     Collections.emptyList(),
                     Collections.emptyList(),
                     Collections.emptyList(),
@@ -41,27 +45,39 @@ public record CellularRecordsWrapper(List<GsmRecordEntity> gsmRecords,
             );
         } else if (records.get(0) instanceof UmtsRecordEntity)
         {
-            return new CellularRecordsWrapper(
+            return new UploadRecordsWrapper(
                     Collections.emptyList(),
                     (List<UmtsRecordEntity>) records,
+                    Collections.emptyList(),
                     Collections.emptyList(),
                     Collections.emptyList()
             );
         } else if (records.get(0) instanceof LteRecordEntity)
         {
-            return new CellularRecordsWrapper(
+            return new UploadRecordsWrapper(
                     Collections.emptyList(),
                     Collections.emptyList(),
                     (List<LteRecordEntity>) records,
+                    Collections.emptyList(),
                     Collections.emptyList()
             );
         } else if (records.get(0) instanceof NrRecordEntity)
         {
-            return new CellularRecordsWrapper(
+            return new UploadRecordsWrapper(
                     Collections.emptyList(),
                     Collections.emptyList(),
                     Collections.emptyList(),
-                    (List<NrRecordEntity>) records
+                    (List<NrRecordEntity>) records,
+                    Collections.emptyList()
+            );
+        } else if (records.get(0) instanceof WifiBeaconRecordEntity)
+        {
+            return new UploadRecordsWrapper(
+                    Collections.emptyList(),
+                    Collections.emptyList(),
+                    Collections.emptyList(),
+                    Collections.emptyList(),
+                    (List<WifiBeaconRecordEntity>) records
             );
         }
 

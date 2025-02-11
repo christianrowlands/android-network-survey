@@ -5,7 +5,7 @@ import static com.google.common.net.HttpHeaders.USER_AGENT;
 import androidx.annotation.NonNull;
 
 import com.craxiom.networksurvey.BuildConfig;
-import com.craxiom.networksurvey.logging.db.model.CellularRecordsWrapper;
+import com.craxiom.networksurvey.logging.db.model.UploadRecordsWrapper;
 import com.craxiom.networksurvey.logging.db.uploader.RequestResult;
 import com.craxiom.networksurvey.logging.db.uploader.UploadConstants;
 import com.craxiom.networksurvey.logging.db.uploader.UploadResult;
@@ -30,11 +30,8 @@ import timber.log.Timber;
  */
 public interface BeaconDbUploadClient
 {
-    @POST
-    Call<ResponseBody> uploadToCustomEndpoint(@Url String url, @Body CellularRecordsWrapper records);
-
     @POST("v2/geosubmit")
-    Call<ResponseBody> uploadToBeaconDB(@Body CellularRecordsWrapper records);
+    Call<ResponseBody> uploadToBeaconDB(@Body UploadRecordsWrapper records);
 
     static BeaconDbUploadClient getInstance()
     {

@@ -1,10 +1,10 @@
 package com.craxiom.networksurvey.logging.db.uploader.ocid;
 
-import com.craxiom.networksurvey.logging.db.model.CellularRecordsWrapper;
 import com.craxiom.networksurvey.logging.db.model.GsmRecordEntity;
 import com.craxiom.networksurvey.logging.db.model.LteRecordEntity;
 import com.craxiom.networksurvey.logging.db.model.NrRecordEntity;
 import com.craxiom.networksurvey.logging.db.model.UmtsRecordEntity;
+import com.craxiom.networksurvey.logging.db.model.UploadRecordsWrapper;
 import com.craxiom.networksurvey.util.NsUtils;
 
 import java.text.SimpleDateFormat;
@@ -22,7 +22,7 @@ public class OpenCelliDCsvFormatter
     });
     private static final String DEVICE_MODEL = NsUtils.getDeviceModel();
 
-    public static String formatRecords(CellularRecordsWrapper recordsWrapper)
+    public static String formatRecords(UploadRecordsWrapper recordsWrapper)
     {
         StringBuilder csvBuilder = new StringBuilder();
         csvBuilder.append(CSV_HEADER).append("\n");

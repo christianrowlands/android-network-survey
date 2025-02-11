@@ -1266,6 +1266,7 @@ public class DashboardFragment extends AServiceDataFragment implements LocationL
                         showUploadProgress(activeWorkId); // Update UI for the active task
                     } else
                     {
+                        binding.uploadButton.setEnabled(true);
                         binding.uploadProgressGroup.setVisibility(View.GONE);
                     }
                 });
@@ -1289,6 +1290,8 @@ public class DashboardFragment extends AServiceDataFragment implements LocationL
                     .show();
             return;
         }
+
+        binding.uploadButton.setEnabled(false);
 
         SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context);
         final SharedPreferences.Editor edit = sharedPreferences.edit();
@@ -1372,6 +1375,7 @@ public class DashboardFragment extends AServiceDataFragment implements LocationL
 
     private void showUploaderFinished(WorkInfo workInfo)
     {
+        binding.uploadButton.setEnabled(true);
         binding.uploadProgressGroup.setVisibility(View.GONE);
 
         binding.uploadResultsGroup.setVisibility(View.VISIBLE);

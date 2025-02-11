@@ -1,30 +1,15 @@
 package com.craxiom.networksurvey.logging.db.model;
 
-import androidx.annotation.NonNull;
 import androidx.room.Entity;
 import androidx.room.PrimaryKey;
 
 @Entity(tableName = "wifi_survey_records")
-public class WifiBeaconRecordEntity
+public class WifiBeaconRecordEntity extends BaseRecordEntity
 {
     @PrimaryKey(autoGenerate = true)
     public long id;
 
     public boolean beaconDbUploaded = false;
-
-    @NonNull
-    public String deviceSerialNumber;
-    @NonNull
-    public String deviceName;
-    @NonNull
-    public String deviceTime;
-    public double latitude;
-    public double longitude;
-    public float altitude;
-    public String missionId;
-    public int recordNumber;
-    public int accuracy;
-    public Float speed;
 
     public String sourceAddress;
     public String destinationAddress;
