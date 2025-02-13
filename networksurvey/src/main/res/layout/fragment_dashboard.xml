@@ -793,7 +793,6 @@
                     </LinearLayout>
 
                     <LinearLayout
-                        android:id="@+id/upload_enabled_row"
                         android:layout_width="match_parent"
                         android:layout_height="match_parent"
                         android:orientation="vertical">

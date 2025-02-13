@@ -523,8 +523,6 @@ but work independently, so you have full control over how you handle your data.<
 
     <string name="allow_data_upload">External Data Upload</string>
     <string name="allow_data_upload_mdm_description">True to allow users to upload survey records to 3rd Party databases such as OpenCelliD and BeaconDB, false to prevent it</string>
-    <string name="upload_enabled_summary_on">Survey records collected by the app are written to an internal database. You can then decide whether to upload the stored records to the selected destinations.</string>
-    <string name="upload_enabled_summary_off">No survey data is written to the internal database, and no survey data is uploaded to a third-party database.</string>
 
     <string name="auto_start_mqtt_summary_on">The MQTT connection will be started when the phone is booted (Note that a valid MQTT broker must be configured in the connection UI)</string>
     <string name="auto_start_mqtt_summary_off">The MQTT connection will only be started manually</string>

@@ -7,7 +7,6 @@ import android.widget.Toast;
 
 import androidx.fragment.app.FragmentActivity;
 import androidx.preference.EditTextPreference;
-import androidx.preference.Preference;
 import androidx.preference.PreferenceFragmentCompat;
 import androidx.preference.PreferenceManager;
 
@@ -33,8 +32,6 @@ public class UploadSettingsFragment extends PreferenceFragmentCompat implements 
         SharedPreferences defaultSharedPreferences = PreferenceManager.getDefaultSharedPreferences(activity);
         defaultSharedPreferences.registerOnSharedPreferenceChangeListener(this);
 
-        refreshPreferences(defaultSharedPreferences);
-
         super.onResume();
     }
 
@@ -46,8 +43,6 @@ public class UploadSettingsFragment extends PreferenceFragmentCompat implements 
         if (activity == null) return;
         SharedPreferences defaultSharedPreferences = PreferenceManager.getDefaultSharedPreferences(activity);
         defaultSharedPreferences.unregisterOnSharedPreferenceChangeListener(this);
-
-        refreshPreferences(defaultSharedPreferences);
     }
 
     @Override
@@ -70,28 +65,6 @@ public class UploadSettingsFragment extends PreferenceFragmentCompat implements 
                 Timber.d("onSharedPreferenceChanged(): User defined invalid API key = \"%s\"", apiKeyValue);
                 Toast.makeText(getActivity(), "OpenCelliD API Key is invalid", Toast.LENGTH_LONG).show();
             }
-        } else if (NetworkSurveyConstants.PROPERTY_UPLOAD_ENABLED.equals(key))
-        {
-            refreshPreferences(sharedPreferences);
-        }
-    }
-
-    private void refreshPreferences(SharedPreferences sharedPreferences)
-    {
-        boolean uploadEnabled = sharedPreferences.getBoolean(NetworkSurveyConstants.PROPERTY_UPLOAD_ENABLED, NetworkSurveyConstants.DEFAULT_UPLOAD_ENABLED);
-        enablePreference(NetworkSurveyConstants.PROPERTY_UPLOAD_RETRY_ENABLED, uploadEnabled);
-        enablePreference(NetworkSurveyConstants.PROPERTY_UPLOAD_TO_OPENCELLID, uploadEnabled);
-        enablePreference(NetworkSurveyConstants.PROPERTY_ANONYMOUS_OPENCELLID_UPLOAD, uploadEnabled);
-        enablePreference(NetworkSurveyConstants.PROPERTY_OCID_API_KEY, uploadEnabled);
-        enablePreference(NetworkSurveyConstants.PROPERTY_UPLOAD_TO_BEACONDB, uploadEnabled);
-    }
-
-    private void enablePreference(String key, boolean enabled)
-    {
-        Preference preference = findPreference(key);
-        if (preference != null)
-        {
-            preference.setEnabled(enabled);
         }
     }
 }

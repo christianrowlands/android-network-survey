@@ -820,18 +820,6 @@ public class PreferenceUtils
         PreferenceManager.getDefaultSharedPreferences(context).edit().putBoolean(NetworkSurveyConstants.PROPERTY_KEY_DENIED_BACKGROUND_LOCATION_PERMISSION, true).apply();
     }
 
-    public static boolean isUploadEnabled(Context context)
-    {
-        boolean externalDataUploadAllowedForMdm = MdmUtils.isExternalDataUploadAllowed(context);
-        if (!externalDataUploadAllowedForMdm)
-        {
-            return false;
-        }
-
-        SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context);
-        return sharedPreferences.getBoolean(NetworkSurveyConstants.PROPERTY_UPLOAD_ENABLED, NetworkSurveyConstants.DEFAULT_UPLOAD_ENABLED);
-    }
-
     public static boolean isApiKeyValid(String apiKey)
     {
         // old 8 motions - e.g. "9743a66f914cc249efca164485a19c5c"

@@ -99,8 +99,6 @@ public class NetworkSurveyConstants
 
     public static final String DEFAULT_ROLLOVER_SIZE_MB = "5";
 
-    public static final boolean DEFAULT_UPLOAD_ENABLED = true;
-
     public static final boolean DEFAULT_UPLOAD_TO_OPENCELLID = false;
     public static final boolean DEFAULT_UPLOAD_TO_BEACONDB = false;
     public static final boolean DEFAULT_UPLOAD_RETRY_ENABLED = true;
@@ -141,11 +139,6 @@ public class NetworkSurveyConstants
     // The following key is used in the app_restrictions.xml file and in the app's shared preferences
     public static final String PROPERTY_MQTT_START_ON_BOOT = "mqtt_start_on_boot";
 
-    /**
-     * Key for the preference on if records should be saved so that they can be uploaded to the
-     * tower databases.
-     */
-    public static final String PROPERTY_UPLOAD_ENABLED = "upload_enabled";
     public static final String PROPERTY_UPLOAD_TO_OPENCELLID = "upload_to_opencellid";
     public static final String PROPERTY_ANONYMOUS_OPENCELLID_UPLOAD = "anonymous_opencellid_upload";
     public static final String PROPERTY_UPLOAD_TO_BEACONDB = "upload_to_beacondb";

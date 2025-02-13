@@ -7,12 +7,6 @@
         app:title="@string/settings">
 
         <SwitchPreferenceCompat
-            app:key="upload_enabled"
-            app:title="Upload Enabled"
-            app:summaryOff="@string/upload_enabled_summary_off"
-            app:summaryOn="@string/upload_enabled_summary_on" />
-
-        <SwitchPreferenceCompat
             app:key="upload_retry_enabled"
             app:title="Retry Failed Uploads"
             app:summary="Automatically retry uploads on failure" />
