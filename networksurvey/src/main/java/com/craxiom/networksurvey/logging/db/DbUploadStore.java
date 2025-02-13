@@ -1,7 +1,6 @@
 package com.craxiom.networksurvey.logging.db;
 
 import android.content.Context;
-import android.util.Pair;
 
 import com.craxiom.messaging.CdmaRecord;
 import com.craxiom.messaging.CdmaRecordData;
@@ -348,6 +347,7 @@ public class DbUploadStore implements ICellularSurveyRecordListener, IWifiSurvey
         entity.recordNumber = record.getRecordNumber();
         entity.groupNumber = record.getGroupNumber();
         entity.accuracy = record.getAccuracy();
+        entity.locationAge = record.getLocationAge();
         entity.speed = record.getSpeed();
 
         entity.mcc = record.hasMcc() ? record.getMcc().getValue() : null;
@@ -378,6 +378,7 @@ public class DbUploadStore implements ICellularSurveyRecordListener, IWifiSurvey
         entity.recordNumber = record.getRecordNumber();
         entity.groupNumber = record.getGroupNumber();
         entity.accuracy = record.getAccuracy();
+        entity.locationAge = record.getLocationAge();
         entity.speed = record.getSpeed();
 
         entity.sid = record.hasSid() ? record.getSid().getValue() : null;
@@ -408,6 +409,7 @@ public class DbUploadStore implements ICellularSurveyRecordListener, IWifiSurvey
         entity.recordNumber = record.getRecordNumber();
         entity.groupNumber = record.getGroupNumber();
         entity.accuracy = record.getAccuracy();
+        entity.locationAge = record.getLocationAge();
         entity.speed = record.getSpeed();
 
         entity.mcc = record.hasMcc() ? record.getMcc().getValue() : null;
@@ -439,6 +441,7 @@ public class DbUploadStore implements ICellularSurveyRecordListener, IWifiSurvey
         entity.recordNumber = record.getRecordNumber();
         entity.groupNumber = record.getGroupNumber();
         entity.accuracy = record.getAccuracy();
+        entity.locationAge = record.getLocationAge();
         entity.speed = record.getSpeed();
 
         entity.mcc = record.hasMcc() ? record.getMcc().getValue() : null;
@@ -474,6 +477,7 @@ public class DbUploadStore implements ICellularSurveyRecordListener, IWifiSurvey
         entity.recordNumber = record.getRecordNumber();
         entity.groupNumber = record.getGroupNumber();
         entity.accuracy = record.getAccuracy();
+        entity.locationAge = record.getLocationAge();
         entity.speed = record.getSpeed();
 
         entity.mcc = record.hasMcc() ? record.getMcc().getValue() : null;
@@ -508,6 +512,7 @@ public class DbUploadStore implements ICellularSurveyRecordListener, IWifiSurvey
         entity.missionId = record.getMissionId();
         entity.recordNumber = record.getRecordNumber();
         entity.accuracy = record.getAccuracy();
+        entity.locationAge = record.getLocationAge();
         entity.speed = record.getSpeed();
 
         entity.sourceAddress = record.getSourceAddress();

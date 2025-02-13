@@ -16,4 +16,5 @@ public abstract class CsvConstants
     public static final String ALTITUDE = "altitude";
     public static final String SPEED = "speed";
     public static final String ACCURACY = "accuracy";
+    public static final String LOCATION_AGE = "locationAge";
 }

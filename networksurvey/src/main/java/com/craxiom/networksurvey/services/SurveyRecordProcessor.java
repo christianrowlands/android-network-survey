@@ -375,6 +375,7 @@ public class SurveyRecordProcessor
 
     /**
      * @return True if there are any registered Cellular survey record listeners, false otherwise.
+     * @noinspection BooleanMethodIsAlwaysInverted
      * @since 0.3.0
      */
     boolean isCellularBeingUsed()
@@ -419,6 +420,7 @@ public class SurveyRecordProcessor
 
     /**
      * @return True if there are any registered Device Status message listeners, false otherwise.
+     * @noinspection BooleanMethodIsAlwaysInverted
      * @since 1.1.0
      */
     boolean isDeviceStatusBeingUsed()
@@ -563,7 +565,7 @@ public class SurveyRecordProcessor
      * @param telephonyManager The Android telephony manager to get some more details from.
      * @since 1.4.0
      */
-    @SuppressLint("NewApi")
+    @SuppressLint({"NewApi", "ObsoleteSdkInt"})
     @RequiresApi(api = Build.VERSION_CODES.Q)
     public void onServiceStateChanged(ServiceState serviceState, TelephonyManager telephonyManager, int subscriptionId)
     {
@@ -679,6 +681,8 @@ public class SurveyRecordProcessor
                                                ServiceState serviceState, Consumer<PhoneStateData.Builder> networkRegistrationInfoFunction)
     {
         final PhoneStateData.Builder dataBuilder = PhoneStateData.newBuilder();
+        final ZonedDateTime deviceTime = ZonedDateTime.now();
+        final long elapsedTimeMillis = SystemClock.elapsedRealtime();
 
         if (gpsListener != null)
         {
@@ -689,6 +693,13 @@ public class SurveyRecordProcessor
                 dataBuilder.setLongitude(lastKnownLocation.getLongitude());
                 dataBuilder.setAltitude((float) lastKnownLocation.getAltitude());
                 dataBuilder.setAccuracy(MathUtils.roundAccuracy(lastKnownLocation.getAccuracy()));
+
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU)
+                {
+                    long elapsedRealtimeAgeMillis = lastKnownLocation.getElapsedRealtimeAgeMillis(elapsedTimeMillis);
+                    dataBuilder.setLocationAge((int) elapsedRealtimeAgeMillis);
+                }
+
                 if (lastKnownLocation.hasSpeed())
                 {
                     float speed = FormatUtils.formatSpeed(lastKnownLocation.getSpeed());
@@ -701,7 +712,7 @@ public class SurveyRecordProcessor
         }
 
         dataBuilder.setDeviceSerialNumber(deviceId);
-        dataBuilder.setDeviceTime(NsUtils.getRfc3339String(ZonedDateTime.now()));
+        dataBuilder.setDeviceTime(NsUtils.getRfc3339String(deviceTime));
 
         dataBuilder.setMissionId(missionId);
         dataBuilder.setRecordNumber(phoneStateRecordNumber++);
@@ -756,10 +767,12 @@ public class SurveyRecordProcessor
         if (!cellularSurveyRecordListeners.isEmpty())
         {
             final String carrierName = getCarrierName(cellInfo, networkOperatorName);
+            final ZonedDateTime deviceTime = ZonedDateTime.now();
+            final long elapsedTimeMillis = SystemClock.elapsedRealtime();
 
             if (cellInfo instanceof CellInfoLte)
             {
-                final LteRecord lteSurveyRecord = generateLteSurveyRecord((CellInfoLte) cellInfo, subscriptionId, carrierName, signalStrength);
+                final LteRecord lteSurveyRecord = generateLteSurveyRecord((CellInfoLte) cellInfo, subscriptionId, carrierName, signalStrength, deviceTime, elapsedTimeMillis);
                 if (lteSurveyRecord != null)
                 {
                     notifyLteRecordListeners(lteSurveyRecord);
@@ -767,7 +780,7 @@ public class SurveyRecordProcessor
                 }
             } else if (cellInfo instanceof CellInfoGsm)
             {
-                final GsmRecord gsmRecord = generateGsmSurveyRecord((CellInfoGsm) cellInfo, subscriptionId, carrierName);
+                final GsmRecord gsmRecord = generateGsmSurveyRecord((CellInfoGsm) cellInfo, subscriptionId, carrierName, deviceTime, elapsedTimeMillis);
                 if (gsmRecord != null)
                 {
                     notifyGsmRecordListeners(gsmRecord);
@@ -775,7 +788,7 @@ public class SurveyRecordProcessor
                 }
             } else if (cellInfo instanceof CellInfoCdma)
             {
-                final CdmaRecord cdmaRecord = generateCdmaSurveyRecord((CellInfoCdma) cellInfo, subscriptionId, carrierName);
+                final CdmaRecord cdmaRecord = generateCdmaSurveyRecord((CellInfoCdma) cellInfo, subscriptionId, carrierName, deviceTime, elapsedTimeMillis);
                 if (cdmaRecord != null)
                 {
                     notifyCdmaRecordListeners(cdmaRecord);
@@ -783,7 +796,7 @@ public class SurveyRecordProcessor
                 }
             } else if (cellInfo instanceof CellInfoWcdma)
             {
-                final UmtsRecord umtsRecord = generateUmtsSurveyRecord((CellInfoWcdma) cellInfo, subscriptionId, carrierName);
+                final UmtsRecord umtsRecord = generateUmtsSurveyRecord((CellInfoWcdma) cellInfo, subscriptionId, carrierName, deviceTime, elapsedTimeMillis);
                 if (umtsRecord != null)
                 {
                     notifyUmtsRecordListeners(umtsRecord);
@@ -791,7 +804,7 @@ public class SurveyRecordProcessor
                 }
             } else if (android.os.Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q && cellInfo instanceof CellInfoNr)
             {
-                final NrRecordWrapper nrRecordWrapper = generateNrSurveyRecord((CellInfoNr) cellInfo, subscriptionId, carrierName);
+                final NrRecordWrapper nrRecordWrapper = generateNrSurveyRecord((CellInfoNr) cellInfo, subscriptionId, carrierName, deviceTime, elapsedTimeMillis);
                 if (nrRecordWrapper != null)
                 {
                     notifyNrRecordListeners((NrRecord) nrRecordWrapper.cellularRecord);
@@ -835,8 +848,10 @@ public class SurveyRecordProcessor
      */
     private void processAccessPoints(List<ScanResult> apScanResults)
     {
+        final ZonedDateTime deviceTime = ZonedDateTime.now();
+        final long elapsedTimeMillis = SystemClock.elapsedRealtime();
         final List<WifiRecordWrapper> wifiBeaconRecords = apScanResults.stream()
-                .map(this::generateWiFiBeaconSurveyRecord)
+                .map(apScanResult -> generateWiFiBeaconSurveyRecord(apScanResult, deviceTime, elapsedTimeMillis))
                 .collect(Collectors.toList());
         notifyWifiBeaconRecordListeners(wifiBeaconRecords);
     }
@@ -850,7 +865,7 @@ public class SurveyRecordProcessor
      */
     private void processBluetoothClassicResult(BluetoothDevice device, int rssi)
     {
-        notifyBluetoothRecordListeners(generateBluetoothSurveyRecord(device, rssi, UNSET_TX_POWER_LEVEL));
+        notifyBluetoothRecordListeners(generateBluetoothSurveyRecord(device, rssi, UNSET_TX_POWER_LEVEL, ZonedDateTime.now(), SystemClock.elapsedRealtime()));
     }
 
     /**
@@ -861,7 +876,7 @@ public class SurveyRecordProcessor
      */
     private void processBluetoothResult(android.bluetooth.le.ScanResult result)
     {
-        notifyBluetoothRecordListeners(generateBluetoothSurveyRecord(result));
+        notifyBluetoothRecordListeners(generateBluetoothSurveyRecord(result, ZonedDateTime.now(), SystemClock.elapsedRealtime()));
     }
 
     /**
@@ -872,8 +887,10 @@ public class SurveyRecordProcessor
      */
     private void processBluetoothResults(List<android.bluetooth.le.ScanResult> results)
     {
+        final ZonedDateTime deviceTime = ZonedDateTime.now();
+        final long elapsedTimeMillis = SystemClock.elapsedRealtime();
         final List<BluetoothRecord> bluetoothRecords = results.stream()
-                .map(this::generateBluetoothSurveyRecord)
+                .map(scanResult -> generateBluetoothSurveyRecord(scanResult, deviceTime, elapsedTimeMillis))
                 .collect(Collectors.toList());
         notifyBluetoothRecordListeners(bluetoothRecords);
     }
@@ -916,9 +933,11 @@ public class SurveyRecordProcessor
 
         gnssGroupNumber++; // Group all the records found in this scan iteration.
 
+        final ZonedDateTime deviceTime = ZonedDateTime.now();
+        final long elapsedTimeMillis = SystemClock.elapsedRealtime();
         for (final GnssMeasurement gnssMeasurement : gnssMeasurements)
         {
-            final GnssRecord gnssRecord = generateGnssSurveyRecord(gnssMeasurement, agcMap);
+            final GnssRecord gnssRecord = generateGnssSurveyRecord(gnssMeasurement, agcMap, deviceTime, elapsedTimeMillis);
             notifyGnssRecordListeners(gnssRecord);
         }
     }
@@ -977,7 +996,7 @@ public class SurveyRecordProcessor
      * @param cellInfoGsm The object that contains the GSM Cell info.  This can be a serving cell or a neighbor cell.
      * @return The survey record.
      */
-    private GsmRecord generateGsmSurveyRecord(CellInfoGsm cellInfoGsm, int subscriptionId, String carrierName)
+    private GsmRecord generateGsmSurveyRecord(CellInfoGsm cellInfoGsm, int subscriptionId, String carrierName, ZonedDateTime deviceTime, long elapsedTimeMillis)
     {
         final CellIdentityGsm cellIdentity = cellInfoGsm.getCellIdentity();
         final int mcc = cellIdentity.getMcc();
@@ -1014,6 +1033,13 @@ public class SurveyRecordProcessor
                 dataBuilder.setLongitude(lastKnownLocation.getLongitude());
                 dataBuilder.setAltitude((float) lastKnownLocation.getAltitude());
                 dataBuilder.setAccuracy(MathUtils.roundAccuracy(lastKnownLocation.getAccuracy()));
+
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU)
+                {
+                    long elapsedRealtimeAgeMillis = lastKnownLocation.getElapsedRealtimeAgeMillis(elapsedTimeMillis);
+                    dataBuilder.setLocationAge((int) elapsedRealtimeAgeMillis);
+                }
+
                 if (lastKnownLocation.hasSpeed())
                 {
                     float speed = FormatUtils.formatSpeed(lastKnownLocation.getSpeed());
@@ -1026,7 +1052,7 @@ public class SurveyRecordProcessor
         }
 
         dataBuilder.setDeviceSerialNumber(deviceId);
-        dataBuilder.setDeviceTime(NsUtils.getRfc3339String(ZonedDateTime.now()));
+        dataBuilder.setDeviceTime(NsUtils.getRfc3339String(deviceTime));
         dataBuilder.setMissionId(missionId);
         dataBuilder.setRecordNumber(recordNumber++);
         dataBuilder.setGroupNumber(groupNumber);
@@ -1080,13 +1106,12 @@ public class SurveyRecordProcessor
      * @param cellInfoCdma The object that contains the GSM Cell info.  This can be a serving cell or a neighbor cell.
      * @return The survey record.
      */
-    private CdmaRecord generateCdmaSurveyRecord(CellInfoCdma cellInfoCdma, int subscriptionId, String carrierName)
+    private CdmaRecord generateCdmaSurveyRecord(CellInfoCdma cellInfoCdma, int subscriptionId, String carrierName, ZonedDateTime deviceTime, long elapsedTimeMillis)
     {
         final CellIdentityCdma cellIdentity = cellInfoCdma.getCellIdentity();
         final int sid = cellIdentity.getSystemId();
         final int nid = cellIdentity.getNetworkId();
         final int bsid = cellIdentity.getBasestationId();
-        // TODO also get the Base Latitude and Longitude
 
         CharSequence provider = null;
         if (!carrierName.isEmpty())
@@ -1118,6 +1143,13 @@ public class SurveyRecordProcessor
                 dataBuilder.setLongitude(lastKnownLocation.getLongitude());
                 dataBuilder.setAltitude((float) lastKnownLocation.getAltitude());
                 dataBuilder.setAccuracy(MathUtils.roundAccuracy(lastKnownLocation.getAccuracy()));
+
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU)
+                {
+                    long elapsedRealtimeAgeMillis = lastKnownLocation.getElapsedRealtimeAgeMillis(elapsedTimeMillis);
+                    dataBuilder.setLocationAge((int) elapsedRealtimeAgeMillis);
+                }
+
                 if (lastKnownLocation.hasSpeed())
                 {
                     float speed = FormatUtils.formatSpeed(lastKnownLocation.getSpeed());
@@ -1130,7 +1162,7 @@ public class SurveyRecordProcessor
         }
 
         dataBuilder.setDeviceSerialNumber(deviceId);
-        dataBuilder.setDeviceTime(NsUtils.getRfc3339String(ZonedDateTime.now()));
+        dataBuilder.setDeviceTime(NsUtils.getRfc3339String(deviceTime));
         dataBuilder.setMissionId(missionId);
         dataBuilder.setRecordNumber(recordNumber++);
         dataBuilder.setGroupNumber(groupNumber);
@@ -1171,7 +1203,7 @@ public class SurveyRecordProcessor
      * @param cellInfoWcdma The object that contains the UMTS Cell info.  This can be a serving cell, or a neighbor cell.
      * @return The survey record.
      */
-    private UmtsRecord generateUmtsSurveyRecord(CellInfoWcdma cellInfoWcdma, int subscriptionId, String carrierName)
+    private UmtsRecord generateUmtsSurveyRecord(CellInfoWcdma cellInfoWcdma, int subscriptionId, String carrierName, ZonedDateTime deviceTime, long elapsedTimeMillis)
     {
         final CellIdentityWcdma cellIdentity = cellInfoWcdma.getCellIdentity();
         final int mcc = cellIdentity.getMcc();
@@ -1209,6 +1241,13 @@ public class SurveyRecordProcessor
                 dataBuilder.setLongitude(lastKnownLocation.getLongitude());
                 dataBuilder.setAltitude((float) lastKnownLocation.getAltitude());
                 dataBuilder.setAccuracy(MathUtils.roundAccuracy(lastKnownLocation.getAccuracy()));
+
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU)
+                {
+                    long elapsedRealtimeAgeMillis = lastKnownLocation.getElapsedRealtimeAgeMillis(elapsedTimeMillis);
+                    dataBuilder.setLocationAge((int) elapsedRealtimeAgeMillis);
+                }
+
                 if (lastKnownLocation.hasSpeed())
                 {
                     float speed = FormatUtils.formatSpeed(lastKnownLocation.getSpeed());
@@ -1221,7 +1260,7 @@ public class SurveyRecordProcessor
         }
 
         dataBuilder.setDeviceSerialNumber(deviceId);
-        dataBuilder.setDeviceTime(NsUtils.getRfc3339String(ZonedDateTime.now()));
+        dataBuilder.setDeviceTime(NsUtils.getRfc3339String(deviceTime));
         dataBuilder.setMissionId(missionId);
         dataBuilder.setRecordNumber(recordNumber++);
         dataBuilder.setGroupNumber(groupNumber);
@@ -1284,7 +1323,7 @@ public class SurveyRecordProcessor
      * @param cellInfoLte The object that contains the LTE Cell info.  This can be a serving cell, or a neighbor cell.
      * @return The survey record.
      */
-    private LteRecord generateLteSurveyRecord(CellInfoLte cellInfoLte, int subscriptionId, String carrierName, SignalStrength signalStrength)
+    private LteRecord generateLteSurveyRecord(CellInfoLte cellInfoLte, int subscriptionId, String carrierName, SignalStrength signalStrength, ZonedDateTime deviceTime, long elapsedTimeMillis)
     {
         final CellIdentityLte cellIdentity = cellInfoLte.getCellIdentity();
         final int mcc = cellIdentity.getMcc();
@@ -1329,6 +1368,13 @@ public class SurveyRecordProcessor
                 dataBuilder.setLongitude(lastKnownLocation.getLongitude());
                 dataBuilder.setAltitude((float) lastKnownLocation.getAltitude());
                 dataBuilder.setAccuracy(MathUtils.roundAccuracy(lastKnownLocation.getAccuracy()));
+
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU)
+                {
+                    long elapsedRealtimeAgeMillis = lastKnownLocation.getElapsedRealtimeAgeMillis(elapsedTimeMillis);
+                    dataBuilder.setLocationAge((int) elapsedRealtimeAgeMillis);
+                }
+
                 if (lastKnownLocation.hasSpeed())
                 {
                     float speed = FormatUtils.formatSpeed(lastKnownLocation.getSpeed());
@@ -1341,7 +1387,7 @@ public class SurveyRecordProcessor
         }
 
         dataBuilder.setDeviceSerialNumber(deviceId);
-        dataBuilder.setDeviceTime(NsUtils.getRfc3339String(ZonedDateTime.now()));
+        dataBuilder.setDeviceTime(NsUtils.getRfc3339String(deviceTime));
         dataBuilder.setMissionId(missionId);
         dataBuilder.setRecordNumber(recordNumber++);
         dataBuilder.setGroupNumber(groupNumber);
@@ -1465,8 +1511,9 @@ public class SurveyRecordProcessor
      * @return The survey record.
      * @since 1.5.0
      */
+    @SuppressLint("Range")
     @RequiresApi(api = Build.VERSION_CODES.Q)
-    private NrRecordWrapper generateNrSurveyRecord(CellInfoNr cellInfoNr, int subscriptionId, String carrierName)
+    private NrRecordWrapper generateNrSurveyRecord(CellInfoNr cellInfoNr, int subscriptionId, String carrierName, ZonedDateTime deviceTime, long elapsedTimeMillis)
     {
         // safe to cast as per: https://developer.android.com/reference/android/telephony/CellInfoNr#getCellIdentity()
         final CellIdentityNr cellIdentity = (CellIdentityNr) cellInfoNr.getCellIdentity();
@@ -1488,7 +1535,7 @@ public class SurveyRecordProcessor
         if (!carrierName.isEmpty())
         {
             provider = carrierName;
-        } else if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.P)
+        } else
         {
             provider = cellIdentity.getOperatorAlphaLong();
         }
@@ -1506,7 +1553,6 @@ public class SurveyRecordProcessor
         {
             timingAdvanceMicros = cellSignalStrength.getTimingAdvanceMicros();
         }
-        Timber.i("Timing Advance Micros: %d", timingAdvanceMicros); // TODO Delete this logging
 
         if (!validateNrFields(nrarfcn, pci)) return null;
 
@@ -1521,6 +1567,13 @@ public class SurveyRecordProcessor
                 dataBuilder.setLongitude(lastKnownLocation.getLongitude());
                 dataBuilder.setAltitude((float) lastKnownLocation.getAltitude());
                 dataBuilder.setAccuracy(MathUtils.roundAccuracy(lastKnownLocation.getAccuracy()));
+
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU)
+                {
+                    long elapsedRealtimeAgeMillis = lastKnownLocation.getElapsedRealtimeAgeMillis(elapsedTimeMillis);
+                    dataBuilder.setLocationAge((int) elapsedRealtimeAgeMillis);
+                }
+
                 if (lastKnownLocation.hasSpeed())
                 {
                     float speed = FormatUtils.formatSpeed(lastKnownLocation.getSpeed());
@@ -1533,7 +1586,7 @@ public class SurveyRecordProcessor
         }
 
         dataBuilder.setDeviceSerialNumber(deviceId);
-        dataBuilder.setDeviceTime(NsUtils.getRfc3339String(ZonedDateTime.now()));
+        dataBuilder.setDeviceTime(NsUtils.getRfc3339String(deviceTime));
         dataBuilder.setMissionId(missionId);
         dataBuilder.setRecordNumber(recordNumber++);
         dataBuilder.setGroupNumber(groupNumber);
@@ -1616,7 +1669,7 @@ public class SurveyRecordProcessor
      * @return The Wi-Fi record to send to any listeners.
      * @since 0.1.2
      */
-    private WifiRecordWrapper generateWiFiBeaconSurveyRecord(ScanResult apScanResult)
+    private WifiRecordWrapper generateWiFiBeaconSurveyRecord(ScanResult apScanResult, ZonedDateTime deviceTime, long elapsedTimeMillis)
     {
         final String bssid = apScanResult.BSSID;
         final int signalStrength = apScanResult.level;
@@ -1635,6 +1688,13 @@ public class SurveyRecordProcessor
                 dataBuilder.setLongitude(lastKnownLocation.getLongitude());
                 dataBuilder.setAltitude((float) lastKnownLocation.getAltitude());
                 dataBuilder.setAccuracy(MathUtils.roundAccuracy(lastKnownLocation.getAccuracy()));
+
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU)
+                {
+                    long elapsedRealtimeAgeMillis = lastKnownLocation.getElapsedRealtimeAgeMillis(elapsedTimeMillis);
+                    dataBuilder.setLocationAge((int) elapsedRealtimeAgeMillis);
+                }
+
                 if (lastKnownLocation.hasSpeed())
                 {
                     float speed = FormatUtils.formatSpeed(lastKnownLocation.getSpeed());
@@ -1647,7 +1707,7 @@ public class SurveyRecordProcessor
         }
 
         dataBuilder.setDeviceSerialNumber(deviceId);
-        dataBuilder.setDeviceTime(NsUtils.getRfc3339String(ZonedDateTime.now()));
+        dataBuilder.setDeviceTime(NsUtils.getRfc3339String(deviceTime));
         dataBuilder.setMissionId(missionId);
         dataBuilder.setRecordNumber(wifiRecordNumber++);
 
@@ -1672,9 +1732,6 @@ public class SurveyRecordProcessor
         final String capabilities = apScanResult.capabilities;
         if (capabilities != null && !capabilities.isEmpty())
         {
-            // TODO At some point it would be nice to add the Cipher Suites and AKM Suites, but I can't seem to get
-            //  enough information for that.
-
             final EncryptionType encryptionType = WifiUtils.getEncryptionType(capabilities);
             if (encryptionType != EncryptionType.UNKNOWN)
             {
@@ -1711,9 +1768,9 @@ public class SurveyRecordProcessor
      * @return The Bluetooth record to send to any listeners.
      * @since 1.0.0
      */
-    private BluetoothRecord generateBluetoothSurveyRecord(android.bluetooth.le.ScanResult result)
+    private BluetoothRecord generateBluetoothSurveyRecord(android.bluetooth.le.ScanResult result, ZonedDateTime deviceTime, long elapsedTimeMillis)
     {
-        return generateBluetoothSurveyRecord(result.getDevice(), result.getRssi(), result.getTxPower());
+        return generateBluetoothSurveyRecord(result.getDevice(), result.getRssi(), result.getTxPower(), deviceTime, elapsedTimeMillis);
     }
 
     /**
@@ -1722,7 +1779,7 @@ public class SurveyRecordProcessor
      * @return The Bluetooth record to send to any listeners.
      * @since 1.0.0
      */
-    private BluetoothRecord generateBluetoothSurveyRecord(BluetoothDevice device, int rssi, int txPowerLevel)
+    private BluetoothRecord generateBluetoothSurveyRecord(BluetoothDevice device, int rssi, int txPowerLevel, ZonedDateTime deviceTime, long elapsedTimeMillis)
     {
         final String sourceAddress = device.getAddress();
 
@@ -1740,6 +1797,13 @@ public class SurveyRecordProcessor
                 dataBuilder.setLongitude(lastKnownLocation.getLongitude());
                 dataBuilder.setAltitude((float) lastKnownLocation.getAltitude());
                 dataBuilder.setAccuracy(MathUtils.roundAccuracy(lastKnownLocation.getAccuracy()));
+
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU)
+                {
+                    long elapsedRealtimeAgeMillis = lastKnownLocation.getElapsedRealtimeAgeMillis(elapsedTimeMillis);
+                    dataBuilder.setLocationAge((int) elapsedRealtimeAgeMillis);
+                }
+
                 if (lastKnownLocation.hasSpeed())
                 {
                     float speed = FormatUtils.formatSpeed(lastKnownLocation.getSpeed());
@@ -1752,7 +1816,7 @@ public class SurveyRecordProcessor
         }
 
         dataBuilder.setDeviceSerialNumber(deviceId);
-        dataBuilder.setDeviceTime(NsUtils.getRfc3339String(ZonedDateTime.now()));
+        dataBuilder.setDeviceTime(NsUtils.getRfc3339String(deviceTime));
         dataBuilder.setMissionId(missionId);
         dataBuilder.setRecordNumber(bluetoothRecordNumber++);
 
@@ -1804,7 +1868,7 @@ public class SurveyRecordProcessor
      * @return The GNSS record to send to any listeners.
      * @since 0.3.0
      */
-    private GnssRecord generateGnssSurveyRecord(GnssMeasurement gnss, Map<ConstellationFreqKey, Float> agcMap)
+    private GnssRecord generateGnssSurveyRecord(GnssMeasurement gnss, Map<ConstellationFreqKey, Float> agcMap, ZonedDateTime deviceTime, long elapsedTimeMillis)
     {
         final GnssRecordData.Builder dataBuilder = GnssRecordData.newBuilder();
 
@@ -1831,6 +1895,12 @@ public class SurveyRecordProcessor
                             .setValue(lastKnownLocation.getVerticalAccuracyMeters()));
                 }
 
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU)
+                {
+                    long elapsedRealtimeAgeMillis = lastKnownLocation.getElapsedRealtimeAgeMillis(elapsedTimeMillis);
+                    dataBuilder.setLocationAge((int) elapsedRealtimeAgeMillis);
+                }
+
                 if (lastKnownLocation.hasSpeed())
                 {
                     float speed = FormatUtils.formatSpeed(lastKnownLocation.getSpeed());
@@ -1843,7 +1913,7 @@ public class SurveyRecordProcessor
         }
 
         dataBuilder.setDeviceSerialNumber(deviceId);
-        dataBuilder.setDeviceTime(NsUtils.getRfc3339String(ZonedDateTime.now()));
+        dataBuilder.setDeviceTime(NsUtils.getRfc3339String(deviceTime));
         dataBuilder.setMissionId(missionId);
         dataBuilder.setRecordNumber(gnssRecordNumber++);
         dataBuilder.setGroupNumber(gnssGroupNumber);
@@ -1859,10 +1929,6 @@ public class SurveyRecordProcessor
             dataBuilder.setCarrierFreqHz(UInt64Value.newBuilder().setValue((long) gnss.getCarrierFrequencyHz()));
         }
 
-        // TODO dataBuilder.setClockOffset(FloatValue.newBuilder().setValue());
-        // TODO Can get this from the Satellite Status Changed call dataBuilder.setUsedInSolution(FloatValue.newBuilder().setValue());
-        // TODO dataBuilder.setUndulationM(FloatValue.newBuilder().setValue());
-
         if (gnss.hasAutomaticGainControlLevelDb())
         {
             dataBuilder.setAgcDb(FloatValue.newBuilder().setValue((float) gnss.getAutomaticGainControlLevelDb()));
@@ -1876,9 +1942,6 @@ public class SurveyRecordProcessor
         }
 
         dataBuilder.setCn0DbHz(FloatValue.newBuilder().setValue((float) gnss.getCn0DbHz()));
-
-        // TODO dataBuilder.setHdop(FloatValue.newBuilder().setValue());
-        // TODO dataBuilder.setVdop(FloatValue.newBuilder().setValue());
 
         final GnssRecord.Builder recordBuilder = GnssRecord.newBuilder();
         recordBuilder.setMessageType(GnssMessageConstants.GNSS_RECORD_MESSAGE_TYPE);
@@ -1897,6 +1960,8 @@ public class SurveyRecordProcessor
     private GnssRecord generateEmptyGnssSurveyRecord()
     {
         final GnssRecordData.Builder dataBuilder = GnssRecordData.newBuilder();
+        final ZonedDateTime deviceTime = ZonedDateTime.now();
+        final long elapseTimeMillis = SystemClock.elapsedRealtime();
 
         if (gpsListener != null)
         {
@@ -1921,6 +1986,12 @@ public class SurveyRecordProcessor
                             .setValue(lastKnownLocation.getVerticalAccuracyMeters()));
                 }
 
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU)
+                {
+                    long elapsedRealtimeAgeMillis = lastKnownLocation.getElapsedRealtimeAgeMillis(elapseTimeMillis);
+                    dataBuilder.setLocationAge((int) elapsedRealtimeAgeMillis);
+                }
+
                 if (lastKnownLocation.hasSpeed())
                 {
                     float speed = FormatUtils.formatSpeed(lastKnownLocation.getSpeed());
@@ -1933,7 +2004,7 @@ public class SurveyRecordProcessor
         }
 
         dataBuilder.setDeviceSerialNumber(deviceId);
-        dataBuilder.setDeviceTime(NsUtils.getRfc3339String(ZonedDateTime.now()));
+        dataBuilder.setDeviceTime(NsUtils.getRfc3339String(deviceTime));
         dataBuilder.setMissionId(missionId);
         dataBuilder.setRecordNumber(gnssRecordNumber++);
         dataBuilder.setGroupNumber(gnssGroupNumber);
@@ -1960,34 +2031,16 @@ public class SurveyRecordProcessor
             final int bandwidth = cellIdentity.getBandwidth();
             if (bandwidth != Integer.MAX_VALUE)
             {
-                LteBandwidth lteBandwidth = null;
-                //noinspection SwitchStatementWithoutDefaultBranch
-                switch (bandwidth)
+                LteBandwidth lteBandwidth = switch (bandwidth)
                 {
-                    case 1_400:
-                        lteBandwidth = LteBandwidth.MHZ_1_4;
-                        break;
-
-                    case 3_000:
-                        lteBandwidth = LteBandwidth.MHZ_3;
-                        break;
-
-                    case 5_000:
-                        lteBandwidth = LteBandwidth.MHZ_5;
-                        break;
-
-                    case 10_000:
-                        lteBandwidth = LteBandwidth.MHZ_10;
-                        break;
-
-                    case 15_000:
-                        lteBandwidth = LteBandwidth.MHZ_15;
-                        break;
-
-                    case 20_000:
-                        lteBandwidth = LteBandwidth.MHZ_20;
-                        break;
-                }
+                    case 1_400 -> LteBandwidth.MHZ_1_4;
+                    case 3_000 -> LteBandwidth.MHZ_3;
+                    case 5_000 -> LteBandwidth.MHZ_5;
+                    case 10_000 -> LteBandwidth.MHZ_10;
+                    case 15_000 -> LteBandwidth.MHZ_15;
+                    case 20_000 -> LteBandwidth.MHZ_20;
+                    default -> null;
+                };
 
                 if (lteBandwidth != null) lteRecordBuilder.setLteBandwidth(lteBandwidth);
             }
@@ -1996,6 +2049,8 @@ public class SurveyRecordProcessor
 
     /**
      * Sets the Wi-Fi standard on the record if it is valid.
+     *
+     * @noinspection DuplicateBranchesInSwitch
      */
     private void setWifiStandard(WifiBeaconRecordData.Builder wifiBeaconBuilder, int androidWifiStandard)
     {

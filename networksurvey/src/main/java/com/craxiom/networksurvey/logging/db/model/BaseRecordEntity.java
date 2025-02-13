@@ -16,5 +16,6 @@ public class BaseRecordEntity
     public String missionId;
     public int recordNumber;
     public int accuracy;
+    public int locationAge;
     public Float speed;
 }

@@ -175,7 +175,7 @@ public class GeosubmitJsonFormatter
         position.put("accuracy", record.accuracy);
         position.put("altitude", record.altitude);
         position.put("speed", record.speed);
-        // TODO wifiAp.put("age", record.age);
+        if (record.locationAge != 0) position.put("age", record.locationAge);
         //position.put("source", "gps");
         item.put("position", position);
 

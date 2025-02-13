@@ -1,6 +1,7 @@
 package com.craxiom.networksurvey.logging;
 
 import static com.craxiom.networksurvey.constants.csv.CsvConstants.DEVICE_SERIAL_NUMBER;
+import static com.craxiom.networksurvey.constants.csv.CsvConstants.LOCATION_AGE;
 import static com.craxiom.networksurvey.constants.csv.GnssCsvConstants.ACCURACY;
 import static com.craxiom.networksurvey.constants.csv.GnssCsvConstants.AGC_DB;
 import static com.craxiom.networksurvey.constants.csv.GnssCsvConstants.ALTITUDE;
@@ -56,13 +57,13 @@ public class GnssCsvLogger extends CsvRecordLogger implements IGnssSurveyRecordL
                 CONSTELLATION, SPACE_VEHICLE_ID, CARRIER_FREQ_HZ, CLOCK_OFFSET, USED_IN_SOLUTION,
                 UNDULATION_M, LATITUDE_STD_DEV_M, LONGITUDE_STD_DEV_M, ALTITUDE_STD_DEV_M, AGC_DB,
                 CN0_DB_HZ, HDOP, VDOP,
-                DEVICE_MODEL, DEVICE_SERIAL_NUMBER};
+                DEVICE_MODEL, DEVICE_SERIAL_NUMBER, LOCATION_AGE};
     }
 
     @Override
     String[] getHeaderComments()
     {
-        return new String[]{"CSV Version=0.2.0"};
+        return new String[]{"CSV Version=0.3.0"};
     }
 
     @Override
@@ -109,7 +110,8 @@ public class GnssCsvLogger extends CsvRecordLogger implements IGnssSurveyRecordL
                 data.hasHdop() ? String.valueOf(data.getHdop().getValue()) : "",
                 data.hasVdop() ? String.valueOf(data.getVdop().getValue()) : "",
                 data.getDeviceModel(),
-                data.getDeviceSerialNumber()
+                data.getDeviceSerialNumber(),
+                data.getLocationAge() == 0 ? "" : String.valueOf(data.getLocationAge())
         };
     }
 }

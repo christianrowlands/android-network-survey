@@ -17,8 +17,8 @@ if (file("google-services.json").exists() && !gradle.startParameter.taskNames.an
 
 ext.androidVersion = '28.0.0'
 ext.grpcVersion = '1.68.0'
-ext.networkSurveyMessagingVersion = '1.6.0'
-ext.navigationVersion = '2.8.6'
+ext.networkSurveyMessagingVersion = '1.7.0'
+ext.navigationVersion = '2.8.7'
 
 android {
     compileSdk 35
@@ -115,7 +115,7 @@ dependencies {
     implementation "androidx.drawerlayout:drawerlayout:1.2.0"
     implementation 'com.google.android.flexbox:flexbox:3.0.0'
 
-    implementation 'com.craxiom:mqtt-library:0.7.4'
+    implementation 'com.craxiom:mqtt-library:0.7.5'
     implementation "com.google.protobuf:protobuf-java-util:4.28.2"
     implementation "io.grpc:grpc-okhttp:${grpcVersion}"
     implementation "io.grpc:grpc-android:${grpcVersion}"
@@ -145,7 +145,7 @@ dependencies {
     implementation 'androidx.room:room-common:2.6.1'
 
     implementation "com.google.dagger:dagger:$hilt_version"
-    implementation 'androidx.compose.ui:ui-viewbinding:1.7.7'
+    implementation 'androidx.compose.ui:ui-viewbinding:1.7.8'
     implementation "androidx.room:room-runtime:$room_version"
     ksp "androidx.room:room-compiler:$room_version"
     kapt "com.google.dagger:dagger-compiler:$hilt_version"
@@ -162,7 +162,7 @@ dependencies {
     implementation "androidx.work:work-runtime:2.10.0"
 
     // Compose
-    def composeBom = platform('androidx.compose:compose-bom:2025.01.01')
+    def composeBom = platform('androidx.compose:compose-bom:2025.02.00')
     implementation(composeBom)
     androidTestImplementation(composeBom)
 
@@ -176,7 +176,7 @@ dependencies {
     implementation "androidx.compose.ui:ui-tooling-preview"
     implementation "androidx.lifecycle:lifecycle-viewmodel-compose"
     implementation "androidx.lifecycle:lifecycle-runtime-compose"
-    implementation 'androidx.compose.ui:ui-tooling:1.7.7'
+    implementation 'androidx.compose.ui:ui-tooling:1.7.8'
     implementation "com.google.accompanist:accompanist-themeadapter-material:0.36.0"
 
     // Only include firebase in the google play build

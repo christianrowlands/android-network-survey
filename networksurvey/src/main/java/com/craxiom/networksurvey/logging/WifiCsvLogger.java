@@ -1,6 +1,7 @@
 package com.craxiom.networksurvey.logging;
 
 import static com.craxiom.networksurvey.constants.csv.CsvConstants.DEVICE_SERIAL_NUMBER;
+import static com.craxiom.networksurvey.constants.csv.CsvConstants.LOCATION_AGE;
 import static com.craxiom.networksurvey.constants.csv.CsvConstants.SPEED;
 import static com.craxiom.networksurvey.constants.csv.WifiCsvConstants.ACCURACY;
 import static com.craxiom.networksurvey.constants.csv.WifiCsvConstants.AKM_SUITES;
@@ -64,13 +65,13 @@ public class WifiCsvLogger extends CsvRecordLogger implements IWifiSurveyRecordL
                 SOURCE_ADDRESS, DESTINATION_ADDRESS, BSSID, BEACON_INTERVAL, SERVICE_SET_TYPE, SSID,
                 SUPPORTED_RATES, EXT_SUPPORTED_RATES, CIPHER_SUITES, AKM_SUITES, ENCRYPTION_TYPE,
                 WPA, CHANNEL, FREQ_MHZ, SIGNAL_STRENGTH, SNR, NODE_TYPE, STANDARD, PASSPOINT, BANDWIDTH,
-                DEVICE_SERIAL_NUMBER};
+                DEVICE_SERIAL_NUMBER, LOCATION_AGE};
     }
 
     @Override
     String[] getHeaderComments()
     {
-        return new String[]{"CSV Version=0.3.0"};
+        return new String[]{"CSV Version=0.4.0"};
     }
 
     @Override
@@ -140,7 +141,8 @@ public class WifiCsvLogger extends CsvRecordLogger implements IWifiSurveyRecordL
                 data.getStandard().toString(),
                 data.hasPasspoint() ? String.valueOf(data.getPasspoint().getValue()) : "",
                 data.getBandwidth().toString(),
-                data.getDeviceSerialNumber()
+                data.getDeviceSerialNumber(),
+                data.getLocationAge() == 0 ? "" : String.valueOf(data.getLocationAge())
         };
     }
 }
