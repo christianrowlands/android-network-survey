@@ -1,9 +1,11 @@
 plugins {
     id 'com.android.application'
-    id 'org.jetbrains.kotlin.android'
-    id 'org.jetbrains.kotlin.kapt'
+    alias(libs.plugins.org.jetbrains.kotlin.android)
+    //alias(libs.plugins.compose.compiler)
+    alias(libs.plugins.kotlin.kapt)
     id 'dagger.hilt.android.plugin'
-    id 'org.jetbrains.kotlin.plugin.parcelize'
+    alias(libs.plugins.kotlin.parcelize)
+    //alias(libs.plugins.google.devtools.ksp)
     id 'com.google.devtools.ksp'
     id 'com.github.jk1.dependency-license-report' version '2.9'
 }
@@ -180,7 +182,7 @@ dependencies {
     implementation "com.google.accompanist:accompanist-themeadapter-material:0.36.0"
 
     // Only include firebase in the google play build
-    regularImplementation platform('com.google.firebase:firebase-bom:33.9.0')
+    regularImplementation platform('com.google.firebase:firebase-bom:33.5.1')
     regularImplementation 'com.google.firebase:firebase-analytics'
     regularImplementation 'com.google.firebase:firebase-crashlytics'
 

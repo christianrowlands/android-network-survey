@@ -1,0 +1,11 @@
+[versions]
+#kotlin = "2.0.21"
+#ksp = "2.0.21-1.0.28"
+kotlin = "1.9.24"
+
+[plugins]
+org-jetbrains-kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
+compose-compiler = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
+kotlin-kapt = { id = "org.jetbrains.kotlin.kapt", version.ref = "kotlin" }
+kotlin-parcelize = { id = "org.jetbrains.kotlin.plugin.parcelize", version.ref = "kotlin" }
+#google-devtools-ksp = { id = "com.google.devtools.ksp", version.ref = 'ksp' }

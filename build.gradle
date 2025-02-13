@@ -1,7 +1,6 @@
 // Top-level build file where you can add configuration options common to all sub-projects/modules.
 
 buildscript {
-    ext.kotlin_version = '1.9.24'
     ext.hilt_version = '2.52'
     ext.room_version = '2.6.1'
     ext.useCrashlytics = file("networksurvey/google-services.json").exists()
@@ -11,14 +10,21 @@ buildscript {
     }
     dependencies {
         classpath 'com.android.tools.build:gradle:8.8.0'
-        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
         if (useCrashlytics) {
             classpath 'com.google.gms:google-services:4.4.2'
             classpath 'com.google.firebase:firebase-crashlytics-gradle:3.0.2'
         }
         classpath "com.google.dagger:hilt-android-gradle-plugin:$hilt_version"
-        classpath "com.google.devtools.ksp:com.google.devtools.ksp.gradle.plugin:$kotlin_version-1.0.20"
+        classpath "com.google.devtools.ksp:com.google.devtools.ksp.gradle.plugin:1.9.24-1.0.20"
     }
+}
+
+plugins {
+    alias(libs.plugins.org.jetbrains.kotlin.android) apply false
+    //alias(libs.plugins.compose.compiler) apply false
+    alias(libs.plugins.kotlin.kapt) apply false
+    alias(libs.plugins.kotlin.parcelize) apply false
+    //alias(libs.plugins.google.devtools.ksp) apply false
 }
 
 allprojects {
