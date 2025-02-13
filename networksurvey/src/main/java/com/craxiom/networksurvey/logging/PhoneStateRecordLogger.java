@@ -22,6 +22,7 @@ import com.craxiom.messaging.PhoneState;
 import com.craxiom.messaging.PhoneStateData;
 import com.craxiom.messaging.phonestate.SimState;
 import com.craxiom.networksurvey.constants.NetworkSurveyConstants;
+import com.craxiom.networksurvey.constants.csv.CsvConstants;
 import com.craxiom.networksurvey.constants.csv.PhoneStateCsvConstants;
 import com.craxiom.networksurvey.listeners.IDeviceStatusListener;
 import com.craxiom.networksurvey.services.NetworkSurveyService;
@@ -116,6 +117,7 @@ public class PhoneStateRecordLogger extends SurveyRecordLogger implements IDevic
                         row.setValue(RECORD_NUMBER_COLUMN, data.getRecordNumber());
                         row.setValue(PhoneStateCsvConstants.SPEED, data.getSpeed());
                         row.setValue(ACCURACY, MathUtils.roundAccuracy(data.getAccuracy()));
+                        row.setValue(CsvConstants.LOCATION_AGE, data.getLocationAge());
 
                         row.setValue(SIM_STATE_COLUMN, readSimState(data));
                         row.setValue(SIM_OPERATOR_COLUMN, data.getSimOperator());

@@ -8,6 +8,7 @@ import com.craxiom.messaging.gnss.Constellation;
 import com.craxiom.networksurvey.constants.GnssMessageConstants;
 import com.craxiom.networksurvey.constants.MessageConstants;
 import com.craxiom.networksurvey.constants.NetworkSurveyConstants;
+import com.craxiom.networksurvey.constants.csv.CsvConstants;
 import com.craxiom.networksurvey.constants.csv.GnssCsvConstants;
 import com.craxiom.networksurvey.listeners.IGnssSurveyRecordListener;
 import com.craxiom.networksurvey.services.NetworkSurveyService;
@@ -116,6 +117,7 @@ public class GnssRecordLogger extends SurveyRecordLogger implements IGnssSurveyR
                         row.setValue(GnssMessageConstants.DEVICE_MODEL_COLUMN, data.getDeviceModel());
                         row.setValue(GnssCsvConstants.SPEED, data.getSpeed());
                         row.setValue(MessageConstants.ACCURACY, MathUtils.roundAccuracy(data.getAccuracy()));
+                        row.setValue(CsvConstants.LOCATION_AGE, data.getLocationAge());
 
                         final Constellation constellation = data.getConstellation();
                         if (constellation != Constellation.UNKNOWN)

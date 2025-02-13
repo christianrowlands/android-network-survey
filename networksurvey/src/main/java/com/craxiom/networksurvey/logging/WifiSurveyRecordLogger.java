@@ -7,6 +7,7 @@ import com.craxiom.messaging.wifi.CipherSuite;
 import com.craxiom.messaging.wifi.EncryptionType;
 import com.craxiom.networksurvey.constants.NetworkSurveyConstants;
 import com.craxiom.networksurvey.constants.WifiBeaconMessageConstants;
+import com.craxiom.networksurvey.constants.csv.CsvConstants;
 import com.craxiom.networksurvey.constants.csv.WifiCsvConstants;
 import com.craxiom.networksurvey.listeners.IWifiSurveyRecordListener;
 import com.craxiom.networksurvey.model.WifiRecordWrapper;
@@ -117,6 +118,7 @@ public class WifiSurveyRecordLogger extends SurveyRecordLogger implements IWifiS
                         row.setValue(WifiBeaconMessageConstants.RECORD_NUMBER_COLUMN, data.getRecordNumber());
                         row.setValue(WifiCsvConstants.SPEED, data.getSpeed());
                         row.setValue(WifiBeaconMessageConstants.ACCURACY, MathUtils.roundAccuracy(data.getAccuracy()));
+                        row.setValue(CsvConstants.LOCATION_AGE, data.getLocationAge());
 
                         final String sourceAddress = data.getSourceAddress();
                         if (!sourceAddress.isEmpty())

@@ -243,6 +243,7 @@ public class CellularSurveyRecordLogger extends SurveyRecordLogger implements IC
         tableColumns.add(FeatureColumn.createColumn(columnNumber++, NrMessageConstants.GROUP_NUMBER_COLUMN, GeoPackageDataType.MEDIUMINT, true, -1));
         tableColumns.add(FeatureColumn.createColumn(columnNumber++, CsvConstants.SPEED, GeoPackageDataType.FLOAT, false, null));
         tableColumns.add(FeatureColumn.createColumn(columnNumber++, NrMessageConstants.ACCURACY, GeoPackageDataType.INT, false, null));
+        tableColumns.add(FeatureColumn.createColumn(columnNumber++, CsvConstants.LOCATION_AGE, GeoPackageDataType.MEDIUMINT, false, null));
 
         // nr record specific
         tableColumns.add(FeatureColumn.createColumn(columnNumber++, NrMessageConstants.MCC_COLUMN, GeoPackageDataType.SMALLINT, false, null));
@@ -315,6 +316,7 @@ public class CellularSurveyRecordLogger extends SurveyRecordLogger implements IC
                         row.setValue(GsmMessageConstants.GROUP_NUMBER_COLUMN, data.getGroupNumber());
                         row.setValue(GsmCsvConstants.SPEED, data.getSpeed());
                         row.setValue(GsmMessageConstants.ACCURACY, MathUtils.roundAccuracy(data.getAccuracy()));
+                        row.setValue(CsvConstants.LOCATION_AGE, data.getLocationAge());
 
                         if (data.hasServingCell())
                         {
@@ -410,6 +412,8 @@ public class CellularSurveyRecordLogger extends SurveyRecordLogger implements IC
                         row.setValue(CdmaMessageConstants.GROUP_NUMBER_COLUMN, data.getGroupNumber());
                         row.setValue(CdmaCsvConstants.SPEED, data.getSpeed());
                         row.setValue(CdmaMessageConstants.ACCURACY, MathUtils.roundAccuracy(data.getAccuracy()));
+                        row.setValue(CsvConstants.LOCATION_AGE, data.getLocationAge());
+
                         if (data.hasServingCell())
                         {
                             row.setValue(CdmaMessageConstants.SERVING_CELL_COLUMN, data.getServingCell().getValue());
@@ -496,6 +500,7 @@ public class CellularSurveyRecordLogger extends SurveyRecordLogger implements IC
                         row.setValue(UmtsMessageConstants.GROUP_NUMBER_COLUMN, data.getGroupNumber());
                         row.setValue(UmtsCsvConstants.SPEED, data.getSpeed());
                         row.setValue(UmtsMessageConstants.ACCURACY, MathUtils.roundAccuracy(data.getAccuracy()));
+                        row.setValue(CsvConstants.LOCATION_AGE, data.getLocationAge());
 
                         if (data.hasServingCell())
                         {
@@ -591,6 +596,7 @@ public class CellularSurveyRecordLogger extends SurveyRecordLogger implements IC
                         row.setValue(LteMessageConstants.GROUP_NUMBER_COLUMN, data.getGroupNumber());
                         row.setValue(LteCsvConstants.SPEED, data.getSpeed());
                         row.setValue(LteMessageConstants.ACCURACY, MathUtils.roundAccuracy(data.getAccuracy()));
+                        row.setValue(CsvConstants.LOCATION_AGE, data.getLocationAge());
 
                         if (data.hasMcc())
                         {
@@ -706,6 +712,7 @@ public class CellularSurveyRecordLogger extends SurveyRecordLogger implements IC
                         row.setValue(NrMessageConstants.GROUP_NUMBER_COLUMN, data.getGroupNumber());
                         row.setValue(NrCsvConstants.SPEED, data.getSpeed());
                         row.setValue(NrMessageConstants.ACCURACY, MathUtils.roundAccuracy(data.getAccuracy()));
+                        row.setValue(CsvConstants.LOCATION_AGE, data.getLocationAge());
 
                         if (data.hasMcc())
                         {
