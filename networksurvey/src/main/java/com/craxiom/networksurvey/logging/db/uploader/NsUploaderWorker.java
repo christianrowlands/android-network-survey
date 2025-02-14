@@ -95,6 +95,16 @@ public class NsUploaderWorker extends Worker
             boolean isRetryEnabled = getInputData().getBoolean(NetworkSurveyConstants.PROPERTY_UPLOAD_RETRY_ENABLED, false);
 
             UploadResultBundle uploadResultBundle = new UploadResultBundle();
+
+            if (!isOpenCellIdUploadEnabled && !isBeaconDBUploadEnabled)
+            {
+                Timber.d("No upload targets enabled.");
+                uploadResultBundle.setResult(UploadTarget.OpenCelliD, UploadResult.UploadDisabledForTarget);
+                uploadResultBundle.setResult(UploadTarget.BeaconDB, UploadResult.UploadDisabledForTarget);
+                return Result.success(getResultData(uploadResultBundle));
+            }
+
+            // TODO Check counts differently if just OpenCelliD is enabled.
             int totalRecords = getTotalRecordsForUpload(database.surveyRecordDao(), isBeaconDBUploadEnabled);
             if (totalRecords == 0)
             {
@@ -121,7 +131,7 @@ public class NsUploaderWorker extends Worker
                 uploadResultBundle.merge(processUploadBatch(LOCATIONS_PER_PART, isBeaconDBUploadEnabled));
                 if (!uploadResultBundle.isAllSuccess())
                 {
-                    if (isRetryEnabled) // TODO Also check if the error is retryable
+                    if (isRetryEnabled && uploadResultBundle.isRetryableError())
                     {
                         Timber.d("Upload failed, retry enabled.");
                         reportProgress(progress, PROGRESS_MAX_VALUE, "An error occurred, will retry later");
@@ -136,6 +146,8 @@ public class NsUploaderWorker extends Worker
                 // Progress update
                 reportProgress((i + 1) * 100 / partsCount, PROGRESS_MAX_VALUE, "Uploading records...");
             }
+
+            database.surveyRecordDao().deleteAllUploadedRecords();
 
             Timber.d("Upload process completed.");
             return Result.success(getResultData(uploadResultBundle));
@@ -246,12 +258,19 @@ public class NsUploaderWorker extends Worker
                 result.getResult(UploadTarget.BeaconDB)
         );
 
-        if (result.getResult(UploadTarget.OpenCelliD) == UploadResult.Success)
+        if (result.hasAnyFailures())
+        {
+            // If there are any failures, don't continue in this method because we don't want to
+            // delete any records that were not successfully uploaded.
+            return result;
+        }
+
+        if (result.getResult(UploadTarget.OpenCelliD) == UploadResult.Success || result.getResult(UploadTarget.OpenCelliD) == UploadResult.UploadDisabledForTarget)
         {
             markRecordsAsUploadedToOcid(records);
         }
 
-        if (result.getResult(UploadTarget.BeaconDB) == UploadResult.Success)
+        if (result.getResult(UploadTarget.BeaconDB) == UploadResult.Success || result.getResult(UploadTarget.BeaconDB) == UploadResult.UploadDisabledForTarget)
         {
             markRecordsAsUploadedToBeaconDb(records);
         }
@@ -280,7 +299,6 @@ public class NsUploaderWorker extends Worker
                 Response<ResponseBody> response = ocidClient.uploadToOcid(apiKey, appId, multipartFile).execute();
                 try (ResponseBody body = response.body())
                 {
-                    assert body != null;
                     RequestResult requestResult = OpenCelliDUploadClient.handleOcidResponse(response.code(), body);
                     Timber.d("Server response: %s", requestResult);
                     UploadResult uploadResult = OpenCelliDUploadClient.mapRequestResultToUploadResult(requestResult);
@@ -293,8 +311,8 @@ public class NsUploaderWorker extends Worker
             } else
             {
                 Timber.d("OpenCelliD upload not enabled.");
-                // When the user does not enable a target, we still need to mark the records as uploaded so they can be deleted
-                uploadResultBundle.markSuccessful(UploadTarget.OpenCelliD);
+                // When the user does not enable a target, we still need to mark the records so they can be deleted
+                uploadResultBundle.setResult(UploadTarget.OpenCelliD, UploadResult.UploadDisabledForTarget);
             }
 
             if (isBeaconDBUploadEnabled)
@@ -303,7 +321,6 @@ public class NsUploaderWorker extends Worker
                 Response<ResponseBody> response = beaconDbClient.uploadToBeaconDB(recordsWrapper).execute();
                 try (ResponseBody body = response.body())
                 {
-                    assert body != null;
                     RequestResult requestResult = BeaconDbUploadClient.handleBeaconDbResponse(response.code(), body);
                     Timber.d("Upload to BeaconDB: Server response: %s", requestResult);
                     UploadResult uploadResult = BeaconDbUploadClient.mapRequestResultToUploadResult(requestResult);
@@ -316,8 +333,8 @@ public class NsUploaderWorker extends Worker
             } else
             {
                 Timber.d("BeaconDB upload not enabled.");
-                // When the user does not enable a target, we still need to mark the records as uploaded so they can be deleted
-                uploadResultBundle.markSuccessful(UploadTarget.BeaconDB);
+                // When the user does not enable a target, we still need to mark the records so they can be deleted
+                uploadResultBundle.setResult(UploadTarget.BeaconDB, UploadResult.UploadDisabledForTarget);
             }
 
             return uploadResultBundle;

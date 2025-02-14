@@ -1178,6 +1178,7 @@ public class DashboardFragment extends AServiceDataFragment implements LocationL
         CheckBox beaconDbUploadCheckbox = dialogView.findViewById(R.id.checkBeaconDB);
         CheckBox retryUploadCheckbox = dialogView.findViewById(R.id.checkRetry);
 
+        anonymousOcidUploadCheckbox.setEnabled(prefUploadToOpenCellId);
         ocidUploadCheckbox.setOnCheckedChangeListener((buttonView, uploadToOcid) -> {
             anonymousOcidUploadCheckbox.setEnabled(uploadToOcid);
             updateOcidKeyWarningMessage(uploadToOcid, anonymousOcidUploadCheckbox.isChecked(), accessTokenWarningMessage, context);

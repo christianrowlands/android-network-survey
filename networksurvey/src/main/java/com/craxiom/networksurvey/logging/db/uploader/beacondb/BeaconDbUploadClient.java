@@ -3,6 +3,7 @@ package com.craxiom.networksurvey.logging.db.uploader.beacondb;
 import static com.google.common.net.HttpHeaders.USER_AGENT;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 
 import com.craxiom.networksurvey.BuildConfig;
 import com.craxiom.networksurvey.logging.db.model.UploadRecordsWrapper;
@@ -64,7 +65,7 @@ public interface BeaconDbUploadClient
     /**
      * Takes the result of an upload HTTP call to BeaconDB and returns the corresponding RequestResult.
      */
-    static RequestResult handleBeaconDbResponse(int code, ResponseBody body)
+    static RequestResult handleBeaconDbResponse(int code, @Nullable ResponseBody body)
     {
         if (code >= 200 && code <= 299)
         {
@@ -74,7 +75,7 @@ public interface BeaconDbUploadClient
             String bodyString = "";
             try
             {
-                bodyString = body.string();
+                if (body != null) bodyString = body.string();
             } catch (IOException e)
             { //no-op
             }

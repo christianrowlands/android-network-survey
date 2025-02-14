@@ -16,7 +16,7 @@ import java.util.List;
  */
 public enum UploadResult
 {
-    NotStarted, NoData, Success, PartiallySucceeded, ConnectionError, ServerError, InvalidApiKey, InvalidData, Failure, DeleteFailed, Cancelled, PermissionDenied, LimitExceeded;
+    NotStarted, UploadDisabledForTarget, NoData, Success, PartiallySucceeded, ConnectionError, ServerError, InvalidApiKey, InvalidData, Failure, DeleteFailed, Cancelled, PermissionDenied, LimitExceeded;
 
     public static final List<UploadResult> SEVERITY_ORDER = Arrays.asList(
             LimitExceeded,
@@ -31,6 +31,7 @@ public enum UploadResult
             NoData,
             Success,
             PartiallySucceeded,
+            UploadDisabledForTarget,
             NotStarted
     );
 
@@ -38,7 +39,8 @@ public enum UploadResult
     {
         return switch (uploadResult)
         {
-            case NotStarted -> R.string.uploader_disabled;
+            case NotStarted -> R.string.uploader_not_started;
+            case UploadDisabledForTarget -> R.string.uploader_disabled;
             case NoData -> R.string.uploader_no_data;
             case InvalidApiKey -> R.string.uploader_invalid_api_key;
             case InvalidData -> R.string.uploader_invalid_input_data;
@@ -59,7 +61,8 @@ public enum UploadResult
     {
         return switch (this)
         {
-            case NotStarted -> R.string.uploader_disabled_description;
+            case NotStarted -> R.string.uploader_not_started_description;
+            case UploadDisabledForTarget -> R.string.uploader_disabled_description;
             case NoData -> R.string.uploader_no_data_description;
             case InvalidApiKey -> R.string.uploader_invalid_api_key_description;
             case InvalidData -> R.string.uploader_invalid_input_data_description;

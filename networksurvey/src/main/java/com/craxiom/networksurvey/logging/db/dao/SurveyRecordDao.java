@@ -2,6 +2,7 @@ package com.craxiom.networksurvey.logging.db.dao;
 
 import androidx.room.Dao;
 import androidx.room.Query;
+import androidx.room.Transaction;
 
 import com.craxiom.networksurvey.logging.db.model.CdmaRecordEntity;
 import com.craxiom.networksurvey.logging.db.model.GsmRecordEntity;
@@ -89,4 +90,57 @@ public interface SurveyRecordDao
 
     @Query("UPDATE wifi_survey_records SET beaconDbUploaded = 1 WHERE id IN (:recordIds)")
     void markWifiRecordsAsUploadedToBeaconDb(List<Long> recordIds);
+
+    @Query("DELETE FROM gsm_survey_records WHERE ocidUploaded = 1 OR beaconDbUploaded = 1")
+    void deleteUploadedGsmRecords();
+
+    @Query("DELETE FROM cdma_survey_records WHERE ocidUploaded = 1 OR beaconDbUploaded = 1")
+    void deleteUploadedCdmaRecords();
+
+    @Query("DELETE FROM umts_survey_records WHERE ocidUploaded = 1 OR beaconDbUploaded = 1")
+    void deleteUploadedUmtsRecords();
+
+    @Query("DELETE FROM lte_survey_records WHERE ocidUploaded = 1 OR beaconDbUploaded = 1")
+    void deleteUploadedLteRecords();
+
+    @Query("DELETE FROM nr_survey_records WHERE ocidUploaded = 1 OR beaconDbUploaded = 1")
+    void deleteUploadedNrRecords();
+
+    @Query("DELETE FROM wifi_survey_records WHERE beaconDbUploaded = 1")
+    void deleteUploadedWifiRecords();
+
+    @Transaction
+    default void deleteAllUploadedRecords()
+    {
+        deleteUploadedGsmRecords();
+        deleteUploadedCdmaRecords();
+        deleteUploadedUmtsRecords();
+        deleteUploadedLteRecords();
+        deleteUploadedNrRecords();
+        deleteUploadedWifiRecords();
+    }
+
+    @Query("SELECT COUNT(*) FROM gsm_survey_records")
+    int getGsmRecordCount();
+
+    @Query("SELECT COUNT(*) FROM cdma_survey_records")
+    int getCdmaRecordCount();
+
+    @Query("SELECT COUNT(*) FROM umts_survey_records")
+    int getUmtsRecordCount();
+
+    @Query("SELECT COUNT(*) FROM lte_survey_records")
+    int getLteRecordCount();
+
+    @Query("SELECT COUNT(*) FROM nr_survey_records")
+    int getNrRecordCount();
+
+    @Query("SELECT COUNT(*) FROM wifi_survey_records")
+    int getWifiRecordCount();
+
+    @Transaction
+    default int getTotalRecordCount()
+    {
+        return getGsmRecordCount() + getCdmaRecordCount() + getUmtsRecordCount() + getLteRecordCount() + getNrRecordCount() + getWifiRecordCount();
+    }
 }

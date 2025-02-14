@@ -41,12 +41,41 @@ public class UploadResultBundle
     {
         for (UploadTarget target : UploadTarget.values())
         {
-            if (results.get(target) != UploadResult.Success)
+            if (isConsideredFailure(results.get(target)))
             {
                 return false;
             }
         }
         return true;
+    }
+
+    public boolean hasAnyFailures()
+    {
+        for (UploadTarget target : UploadTarget.values())
+        {
+            if (isConsideredFailure(results.get(target)))
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public boolean isRetryableError()
+    {
+        for (UploadTarget target : UploadTarget.values())
+        {
+            UploadResult result = results.get(target);
+            if (result == null) return false;
+            return switch (result)
+            {
+                case ServerError, ConnectionError, Failure -> true;
+                case LimitExceeded, PermissionDenied, InvalidApiKey, InvalidData, DeleteFailed,
+                     Cancelled, NoData, NotStarted, Success, PartiallySucceeded,
+                     UploadDisabledForTarget -> false;
+            };
+        }
+        return false;
     }
 
     public void markAllFailure()
@@ -99,5 +128,17 @@ public class UploadResultBundle
 
         // Higher index means more severe
         return severityOrder.indexOf(newResult) < severityOrder.indexOf(existingResult);
+    }
+
+    private boolean isConsideredFailure(UploadResult uploadResult)
+    {
+        if (uploadResult == null) return true;
+        return switch (uploadResult)
+        {
+            case Success, PartiallySucceeded, UploadDisabledForTarget -> false;
+            case NotStarted, NoData, ConnectionError, ServerError, InvalidApiKey, InvalidData,
+                 Failure,
+                 DeleteFailed, Cancelled, LimitExceeded, PermissionDenied -> true;
+        };
     }
 }

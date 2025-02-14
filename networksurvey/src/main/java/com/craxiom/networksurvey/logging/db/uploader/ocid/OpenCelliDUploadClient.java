@@ -3,6 +3,7 @@ package com.craxiom.networksurvey.logging.db.uploader.ocid;
 import static com.google.common.net.HttpHeaders.USER_AGENT;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 
 import com.craxiom.networksurvey.BuildConfig;
 import com.craxiom.networksurvey.logging.db.uploader.RequestResult;
@@ -68,12 +69,15 @@ public interface OpenCelliDUploadClient
     /**
      * Takes the result of an upload HTTP call to OCID and returns the corresponding RequestResult.
      */
-    static RequestResult handleOcidResponse(int code, ResponseBody body)
+    static RequestResult handleOcidResponse(int code, @Nullable ResponseBody body)
     {
         String bodyString = "";
         try
         {
-            bodyString = body.string().trim();
+            if (body != null)
+            {
+                bodyString = body.string().trim();
+            }
         } catch (IOException e)
         {
             Timber.e(e, "Error reading response body from OCID");

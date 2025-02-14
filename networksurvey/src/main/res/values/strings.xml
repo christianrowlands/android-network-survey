@@ -729,6 +729,8 @@ but work independently, so you have full control over how you handle your data.<
     <string name="uploader_starting">Starting upload&#8230;</string>
     <string name="uploader_aborting">Aborting upload&#8230;</string>
     <string name="uploader_already_running">Upload is already running</string>
+    <string name="uploader_not_started">Not Started</string>
+    <string name="uploader_not_started_description">Did not start the upload</string>
     <string name="uploader_disabled">Upload disabled</string>
     <string name="uploader_disabled_description">Upload disabled for this project</string>
     <string name="uploader_aborted">Upload aborted</string>
