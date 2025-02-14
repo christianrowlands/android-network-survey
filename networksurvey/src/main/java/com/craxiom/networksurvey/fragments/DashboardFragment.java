@@ -104,8 +104,8 @@ public class DashboardFragment extends AServiceDataFragment implements LocationL
         {
             queryUploadQueueCount();
 
-            // Re-run every 10 seconds as long as the UI is visible
-            handler.postDelayed(this, 10_000);
+            // Re-run every 6 seconds as long as the UI is visible
+            handler.postDelayed(this, 6_000);
         }
     };
 
@@ -1140,6 +1140,7 @@ public class DashboardFragment extends AServiceDataFragment implements LocationL
         {
             binding.uploadScanningStatus.setText(R.string.scanning_active);
             binding.uploadScanningStatus.setTextColor(ContextCompat.getColor(context, R.color.md_theme_primary));
+            binding.uploadScanningSpinner.setVisibility(View.VISIBLE);
             binding.startScanningButton.setVisibility(View.GONE);
             binding.stopScanningButton.setVisibility(View.VISIBLE);
             binding.stopScanningButton.setEnabled(true);
@@ -1147,6 +1148,7 @@ public class DashboardFragment extends AServiceDataFragment implements LocationL
         {
             binding.uploadScanningStatus.setText(R.string.scanning_inactive);
             binding.uploadScanningStatus.setTextColor(ContextCompat.getColor(context, R.color.normalText));
+            binding.uploadScanningSpinner.setVisibility(View.GONE);
             binding.startScanningButton.setVisibility(View.VISIBLE);
             binding.startScanningButton.setEnabled(true);
             binding.stopScanningButton.setVisibility(View.GONE);
@@ -1392,6 +1394,8 @@ public class DashboardFragment extends AServiceDataFragment implements LocationL
 
     private void showUploaderFinished(WorkInfo workInfo)
     {
+        queryUploadQueueCount();
+
         binding.uploadButton.setEnabled(true);
         binding.uploadProgressGroup.setVisibility(View.GONE);
 
