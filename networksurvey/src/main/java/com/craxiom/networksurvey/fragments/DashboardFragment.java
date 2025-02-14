@@ -1161,6 +1161,8 @@ public class DashboardFragment extends AServiceDataFragment implements LocationL
         final Context context = getContext();
         if (context == null) return;
 
+        resetUploadUi();
+
         SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(context);
         boolean prefUploadToOpenCellId = preferences.getBoolean(NetworkSurveyConstants.PROPERTY_UPLOAD_TO_OPENCELLID, NetworkSurveyConstants.DEFAULT_UPLOAD_TO_OPENCELLID);
         boolean prefAnonymously = preferences.getBoolean(NetworkSurveyConstants.PROPERTY_ANONYMOUS_OPENCELLID_UPLOAD, NetworkSurveyConstants.DEFAULT_UPLOAD_TO_OPENCELLID);
@@ -1317,6 +1319,20 @@ public class DashboardFragment extends AServiceDataFragment implements LocationL
         showUploadProgress(uploadWorkRequest.getId());
 
         WorkManager.getInstance(context).enqueue(uploadWorkRequest);
+    }
+
+    /**
+     * Resets the upload progress and results UI to the default state.
+     */
+    private void resetUploadUi()
+    {
+        binding.uploadProgressGroup.setVisibility(View.GONE);
+        binding.uploadProgressStatus.setVisibility(View.GONE);
+        binding.uploadResultsGroup.setVisibility(View.GONE);
+        binding.opencellidUploadStatus.setText("");
+        binding.beacondbUploadStatus.setText("");
+        binding.ocidResultMessage.setText("");
+        binding.beacondbResultMessage.setText("");
     }
 
     private void showUploadProgress(UUID workId)

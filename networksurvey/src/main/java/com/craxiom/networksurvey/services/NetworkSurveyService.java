@@ -354,7 +354,6 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
         gnssController.onDestroy();
 
         surveyRecordProcessor.removeDbSink();
-        dbUploadStore.shutdown();
 
         surveyServiceBinder.onDestroy();
         surveyServiceBinder = null;

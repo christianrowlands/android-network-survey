@@ -54,8 +54,6 @@ public class DbUploadStore implements ICellularSurveyRecordListener, IWifiSurvey
     public void onCellularBatch(List<CellularRecordWrapper> cellularGroup, int subscriptionId)
     {
         executorService.execute(() -> {
-            //List<NrRecordEntity> allRecords = database.nrRecordDao().getAllRecords();
-            //Timber.i("The database has %s NR records", allRecords.size());
             final List<GsmRecordEntity> gsmRecords = new ArrayList<>();
             final List<CdmaRecordEntity> cdmaRecords = new ArrayList<>();
             final List<UmtsRecordEntity> umtsRecords = new ArrayList<>();
@@ -539,12 +537,6 @@ public class DbUploadStore implements ICellularSurveyRecordListener, IWifiSurvey
         entity.standard = record.getStandard().name();
 
         return entity;
-    }
-
-    public void shutdown()
-    {
-        database.close();
-        executorService.shutdown();
     }
 }
 
