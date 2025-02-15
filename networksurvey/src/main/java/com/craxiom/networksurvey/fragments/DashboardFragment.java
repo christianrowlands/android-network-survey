@@ -11,6 +11,7 @@ import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.content.res.ColorStateList;
 import android.graphics.Color;
+import android.graphics.Rect;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
@@ -27,6 +28,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.CheckBox;
+import android.widget.ScrollView;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -95,6 +97,7 @@ public class DashboardFragment extends AServiceDataFragment implements LocationL
 
     private FragmentDashboardBinding binding;
     private DashboardViewModel viewModel;
+    private boolean scrolledToBottom;
 
     private final Handler handler = new Handler(Looper.getMainLooper());
     private final Runnable updateUploadCountsRunnable = new Runnable()
@@ -122,6 +125,18 @@ public class DashboardFragment extends AServiceDataFragment implements LocationL
         initializeObservers();
         initializeUploadUiState();
         queryUploadQueueCount();
+
+        binding.dashboardScrollView.getViewTreeObserver().addOnPreDrawListener(() -> {
+            scrolledToBottom = isScrolledToBottom();
+            return true;
+        });
+
+        binding.dashboardScrollView.getViewTreeObserver().addOnGlobalLayoutListener(() -> {
+            if (scrolledToBottom)
+            {
+                binding.dashboardScrollView.fullScroll(ScrollView.FOCUS_DOWN);
+            }
+        });
 
         return binding.getRoot();
     }
@@ -1344,6 +1359,7 @@ public class DashboardFragment extends AServiceDataFragment implements LocationL
 
         binding.uploadProgressGroup.setVisibility(View.VISIBLE);
         binding.uploadProgressBar.setProgress(0);
+        binding.dashboardScrollView.fullScroll(ScrollView.FOCUS_DOWN);
 
         WorkManager.getInstance(context)
                 .getWorkInfoByIdLiveData(workId)
@@ -1400,6 +1416,8 @@ public class DashboardFragment extends AServiceDataFragment implements LocationL
         binding.uploadProgressGroup.setVisibility(View.GONE);
 
         binding.uploadResultsGroup.setVisibility(View.VISIBLE);
+
+        binding.dashboardScrollView.fullScroll(ScrollView.FOCUS_DOWN);
 
         Context context = getContext();
         if (context == null) return;
@@ -1458,5 +1476,17 @@ public class DashboardFragment extends AServiceDataFragment implements LocationL
         }
 
         return true;
+    }
+
+    /**
+     * @return True if the NestedScrollView is scrolled to the bottom. False otherwise.
+     */
+    private boolean isScrolledToBottom()
+    {
+        Rect scrollBounds = new Rect();
+        binding.dashboardScrollView.getDrawingRect(scrollBounds);
+        int bottom = binding.dashboardScrollView.getChildAt(0).getBottom() + binding.dashboardScrollView.getPaddingBottom();
+        int delta = bottom - scrollBounds.bottom;
+        return delta == 0;
     }
 }

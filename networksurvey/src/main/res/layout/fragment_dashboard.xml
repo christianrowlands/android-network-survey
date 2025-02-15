@@ -4,6 +4,7 @@
     xmlns:app="http://schemas.android.com/apk/res-auto">
 
     <androidx.core.widget.NestedScrollView
+        android:id="@+id/dashboard_scroll_view"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:paddingTop="@dimen/fragment_padding_top"
@@ -887,110 +888,14 @@
                             android:layout_height="wrap_content"
                             android:orientation="vertical">
 
-                            <com.google.android.flexbox.FlexboxLayout
-                                android:layout_width="match_parent"
-                                android:layout_height="wrap_content"
-                                app:alignItems="center"
-                                app:justifyContent="space_between"
-                                app:flexWrap="nowrap">
-
-                                <LinearLayout
-                                    android:layout_width="wrap_content"
-                                    android:layout_height="wrap_content"
-                                    android:layout_marginHorizontal="@dimen/small_margin"
-                                    android:layout_marginBottom="@dimen/small_margin"
-                                    android:orientation="vertical">
-
-                                    <TextView
-                                        android:id="@+id/upload_queue_title"
-                                        style="@style/SmallTitleText"
-                                        android:layout_width="wrap_content"
-                                        android:layout_height="wrap_content"
-                                        android:padding="@dimen/x_small_margin"
-                                        android:text="@string/upload_queue_title" />
-
-                                    <LinearLayout
-                                        android:layout_width="wrap_content"
-                                        android:layout_height="match_parent"
-                                        android:orientation="horizontal"
-                                        android:padding="@dimen/x_small_margin">
-
-                                        <ImageView
-                                            android:layout_width="20dp"
-                                            android:layout_height="20dp"
-                                            android:layout_gravity="start"
-                                            android:layout_marginStart="@dimen/x_small_margin"
-                                            android:layout_marginEnd="@dimen/small_margin"
-                                            android:contentDescription="@string/my_location_icon_description"
-                                            android:src="@drawable/ic_cellular" />
-
-                                        <TextView
-                                            android:id="@+id/cellular_upload_queue_count"
-                                            style="@style/SmallStatusText"
-                                            android:layout_width="wrap_content"
-                                            android:layout_height="wrap_content"
-                                            android:text="@string/cellular_upload_queue_count_initial" />
-
-                                    </LinearLayout>
-
-                                    <LinearLayout
-                                        android:layout_width="wrap_content"
-                                        android:layout_height="match_parent"
-                                        android:orientation="horizontal"
-                                        android:padding="@dimen/x_small_margin">
-
-                                        <ImageView
-                                            android:layout_width="20dp"
-                                            android:layout_height="20dp"
-                                            android:layout_gravity="start"
-                                            android:layout_marginStart="@dimen/x_small_margin"
-                                            android:layout_marginEnd="@dimen/small_margin"
-                                            android:contentDescription="@string/my_location_icon_description"
-                                            android:src="@drawable/ic_wifi" />
-
-                                        <TextView
-                                            android:id="@+id/wifi_upload_queue_count"
-                                            style="@style/SmallStatusText"
-                                            android:layout_width="wrap_content"
-                                            android:layout_height="wrap_content"
-                                            android:text="@string/wifi_upload_queue_count_initial" />
-
-                                    </LinearLayout>
-
-                                </LinearLayout>
-
-                                <LinearLayout
-                                    android:layout_width="wrap_content"
-                                    android:layout_height="match_parent"
-                                    android:gravity="end"
-                                    android:orientation="horizontal">
-
-                                    <com.google.android.material.button.MaterialButton
-                                        android:id="@+id/upload_button"
-                                        android:text="@string/upload_button_text"
-                                        android:layout_width="wrap_content"
-                                        android:layout_height="wrap_content"
-                                        android:layout_margin="@dimen/small_margin"
-                                        android:lineSpacingExtra="2dp" />
-
-                                </LinearLayout>
-
-                            </com.google.android.flexbox.FlexboxLayout>
-
                             <!-- Upload Progress -->
                             <LinearLayout
                                 android:id="@+id/upload_progress_group"
                                 android:layout_width="match_parent"
                                 android:layout_height="match_parent"
-                                android:layout_margin="@dimen/small_margin"
+                                android:layout_marginHorizontal="@dimen/small_margin"
                                 android:visibility="gone"
                                 android:orientation="vertical">
-
-                                <View
-                                    android:layout_width="match_parent"
-                                    android:layout_height="2dp"
-                                    android:layout_marginBottom="@dimen/divider_margin"
-                                    android:background="@color/colorAccentFaded" />
 
                                 <TextView
                                     android:id="@+id/upload_progress_title"
@@ -1045,6 +950,12 @@
                                     android:paddingHorizontal="@dimen/small_margin"
                                     android:text="" />
 
+                                <View
+                                    android:layout_width="match_parent"
+                                    android:layout_height="2dp"
+                                    android:layout_marginVertical="@dimen/divider_margin"
+                                    android:background="@color/colorAccentFaded" />
+
                             </LinearLayout>
 
                             <!-- Upload Results -->
@@ -1052,22 +963,17 @@
                                 android:id="@+id/upload_results_group"
                                 android:layout_width="match_parent"
                                 android:layout_height="wrap_content"
-                                android:layout_margin="@dimen/small_margin"
+                                android:layout_marginHorizontal="@dimen/small_margin"
                                 android:visibility="gone"
                                 android:orientation="vertical">
-
-                                <View
-                                    android:layout_width="match_parent"
-                                    android:layout_height="2dp"
-                                    android:layout_marginBottom="@dimen/divider_margin"
-                                    android:background="@color/colorAccentFaded" />
 
                                 <TextView
                                     android:id="@+id/upload_result_title"
                                     style="@style/SmallTitleText"
                                     android:layout_width="wrap_content"
                                     android:layout_height="wrap_content"
-                                    android:padding="@dimen/x_small_margin"
+                                    android:paddingBottom="@dimen/x_small_margin"
+                                    android:paddingHorizontal="@dimen/x_small_margin"
                                     android:text="@string/upload_result" />
 
                                 <LinearLayout
@@ -1146,7 +1052,105 @@
 
                                 </LinearLayout>
 
+                                <View
+                                    android:layout_width="match_parent"
+                                    android:layout_height="2dp"
+                                    android:layout_marginVertical="@dimen/divider_margin"
+                                    android:background="@color/colorAccentFaded" />
+
                             </LinearLayout>
+
+                            <!-- Upload Queue Counts -->
+                            <com.google.android.flexbox.FlexboxLayout
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                app:alignItems="center"
+                                app:justifyContent="space_between"
+                                app:flexWrap="nowrap">
+
+                                <LinearLayout
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:layout_marginHorizontal="@dimen/small_margin"
+                                    android:layout_marginBottom="@dimen/small_margin"
+                                    android:orientation="vertical">
+
+                                    <TextView
+                                        android:id="@+id/upload_queue_title"
+                                        style="@style/SmallTitleText"
+                                        android:layout_width="wrap_content"
+                                        android:layout_height="wrap_content"
+                                        android:paddingBottom="@dimen/x_small_margin"
+                                        android:paddingHorizontal="@dimen/x_small_margin"
+                                        android:text="@string/upload_queue_title" />
+
+                                    <LinearLayout
+                                        android:layout_width="wrap_content"
+                                        android:layout_height="match_parent"
+                                        android:orientation="horizontal"
+                                        android:padding="@dimen/x_small_margin">
+
+                                        <ImageView
+                                            android:layout_width="20dp"
+                                            android:layout_height="20dp"
+                                            android:layout_gravity="start"
+                                            android:layout_marginStart="@dimen/x_small_margin"
+                                            android:layout_marginEnd="@dimen/small_margin"
+                                            android:contentDescription="@string/my_location_icon_description"
+                                            android:src="@drawable/ic_cellular" />
+
+                                        <TextView
+                                            android:id="@+id/cellular_upload_queue_count"
+                                            style="@style/SmallStatusText"
+                                            android:layout_width="wrap_content"
+                                            android:layout_height="wrap_content"
+                                            android:text="@string/cellular_upload_queue_count_initial" />
+
+                                    </LinearLayout>
+
+                                    <LinearLayout
+                                        android:layout_width="wrap_content"
+                                        android:layout_height="match_parent"
+                                        android:orientation="horizontal"
+                                        android:padding="@dimen/x_small_margin">
+
+                                        <ImageView
+                                            android:layout_width="20dp"
+                                            android:layout_height="20dp"
+                                            android:layout_gravity="start"
+                                            android:layout_marginStart="@dimen/x_small_margin"
+                                            android:layout_marginEnd="@dimen/small_margin"
+                                            android:contentDescription="@string/my_location_icon_description"
+                                            android:src="@drawable/ic_wifi" />
+
+                                        <TextView
+                                            android:id="@+id/wifi_upload_queue_count"
+                                            style="@style/SmallStatusText"
+                                            android:layout_width="wrap_content"
+                                            android:layout_height="wrap_content"
+                                            android:text="@string/wifi_upload_queue_count_initial" />
+
+                                    </LinearLayout>
+
+                                </LinearLayout>
+
+                                <LinearLayout
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="match_parent"
+                                    android:gravity="end"
+                                    android:orientation="horizontal">
+
+                                    <com.google.android.material.button.MaterialButton
+                                        android:id="@+id/upload_button"
+                                        android:text="@string/upload_button_text"
+                                        android:layout_width="wrap_content"
+                                        android:layout_height="wrap_content"
+                                        android:layout_margin="@dimen/small_margin"
+                                        android:lineSpacingExtra="2dp" />
+
+                                </LinearLayout>
+
+                            </com.google.android.flexbox.FlexboxLayout>
 
                         </LinearLayout>
 
