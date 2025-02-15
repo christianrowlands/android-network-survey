@@ -197,6 +197,18 @@ you can use the `mqtt_topic_prefix` field to change the topic to something like
 The Network Survey app supports an Intent API that allows other apps to start and stop a survey. The
 Intent API is documented on the [Intent API website](https://www.networksurvey.app/intent-api).
 
+## Upload Feature
+
+The **Upload Feature** allows users to voluntarily contribute collected **cellular and Wi-Fi survey data** to third-party databases. This feature is **optional** and you decide if you want to use it.
+
+### Supported Upload Destinations:
+- **[OpenCelliD](https://opencellid.org/)** – A global open-source cell tower database.
+- **[BeaconDB](https://beacondb.net/)** – A crowdsourced geolocation database.
+
+When started by the user, survey records are stored locally and can be uploaded at any time. No personally identifiable information (such as phone numbers or IMEIs) is included in uploads.
+
+For more details, visit the **[Network Survey User Manual](https://networksurvey.app/manual#data-upload)**.
+
 ## Credits and Acknowledgements
 
 ### Credits

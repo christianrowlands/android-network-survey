@@ -1,74 +1,85 @@
-## Network Survey Android App Privacy Policy
+# Network Survey Android App Privacy Policy
 
-Christian Rowlands built the Network Survey app as an Open Source app. This App is provided by Christian Rowlands at no cost and is intended for use as is.
+Christian Rowlands built the Network Survey app as an Open Source app. This app is provided by Christian Rowlands at no cost and is intended for use as is.
 
-This page is used to inform visitors regarding my policies with the collection, use, and disclosure of Personal Information if anyone decided to use the App.
+This page informs users about my policies regarding the collection, use, and disclosure of information when using the app. By using this app, you agree to the collection and use of information as described in this policy. I do not use or share your information with anyone except as described here.
 
-If you choose to use my Service, then you agree to the collection and use of information in relation to this policy. The Personal Information that I collect is
-used for providing and improving the Service. I will not use or share your information with anyone except as described in this Privacy Policy.
+## Information Collection and Use
 
-**Information Collection and Use**
+The Network Survey app does not collect personally identifiable information. The app may request access to certain device permissions to provide its core functionality. Any collected data remains on the device unless explicitly shared by the user.
 
-For a better experience, while using our Service, I may require you to provide us with certain personally identifiable
-information, including but not limited to Location. The information that I request will be retained on your device and
-is not collected by me in any way.
+The app uses third-party services that may collect information for analytics and crash reporting:
 
-The app does use third party services that may collect information used to identify you.
+- **[Google Play Services](https://www.google.com/policies/privacy/)**
+- **[Google Analytics for Firebase](https://www.google.com/analytics/terms/)**
+- **[Firebase Crashlytics](https://firebase.google.com/support/privacy/)**
 
-Links to the privacy policy of third party service providers used by the app
+If the app was installed via the Google Play Store, anonymous crash and analytics data may be stored in Google Firebase to improve app stability. This data is not shared with or sold to third-party entities.
 
-* [Google Play Services](https://www.google.com/policies/privacy/)
-* [Google Analytics for Firebase](https://www.google.com/analytics/terms/)
-* [Firebase Crashlytics](https://firebase.google.com/support/privacy/)
+## Location Permissions
 
-If you installed this app from the Google Play store then Firebase Crashlytics and Analytics information is stored in Google Firebase. This data is anonymous
-but data related to app crashes and general app usage is set to Google Firebase to improve the stability and functionality of this app. This data is not sold
-or provided to any other 3rd party entities by Christian Rowlands or anyone working on the Network Survey Android project.
+### Background Location Permission
+The app requests background location access to support the automatic start of Network Survey upon device boot. If this permission is denied, the auto-start feature will not function, but other features will remain available.
 
-No other information is stored external to the Network Survey Android app unless configured to by the user. All survey log files remain
-on the phone unless you, the user, moves the. All connections including MQTT and gRPC server connections have to be
-configured and initiated by the user, and a default server is not provided.
+### Foreground Location Permission
+The app requires location access to collect survey records for cellular, Wi-Fi, Bluetooth, and GNSS. Each record is associated with the device’s location for analysis.
 
-**Background Location Permission**
+Location data is stored in:
+- **GeoPackage log files** (if logging is enabled)
+- **MQTT or gRPC streams** (if a remote server is configured)
 
-The Network Survey Android app requests permission to access the device's location in the background. This background location
-permission is needed to start Network Survey at boot. Denying the background location permission will prevent the auto-start
-at boot location feature from working correctly, but all other app functionality will work as expected.
+The app does not provide a default server. Users must configure their own server if they choose to send data externally. Location data is not shared with any third parties beyond those explicitly configured by the user.
 
-**Location Permission**
+## Tower Map View Location Data
 
-In addition to the Background Location Permission, the Network Survey Android app requests the Location Permission. This
-location permission is critical to the apps core functionality. The location permission is needed to obtain cellular,
-Wi-Fi, and GNSS survey records. In addition, each survey record is recorded with the device's current location to enable
-follow on analysis of the Cellular, Wi-Fi, Bluetooth and GNSS survey records.
+If the **Tower Map View** feature is used, the server request will include the user's current map location. This data is:
+- Stored in server logs for **90 days** before deletion.
+- **Anonymous** and not tied to any user.
+- **Optional**, with a privacy notice displayed upon first use.
 
-The location data consumed by the Network Survey app is recorded to the GeoPackage log files, if logging is enabled. The
-location data is also sent over MQTT and gRPC to a remote server, if a remote server is configured. There is not a default
-remote server provided with the app, so it is necessary for the user of the Network Survey app to stand up their own
-server to receive that information. The location data is not used in any other way than defined above. The location data
-is not shared with any 3rd parties, and is not accessible by anyone except for the user. Therefore, the location data
-is not collection, used, or shared by or with anyone that the user has not directly handed the data to by uploading
-the recorded GeoPackage or sent to by connecting to someone else's MQTT or gRPC server.
+## File-Based Survey Data
 
-**Tower Map View Location Data**
+The app allows users to log survey data into GeoPackage and/or CSV files. These files remain on the device unless manually transferred or shared by the user.
 
-If you use the tower map view feature, the request to the server will contain the location of the map view. This 
-location data is stored in the server logs for 90 days and then deleted. The location data is anonymous and is not 
-tied to any specific user. Use of the map view is optional and a privacy warning is displayed when the map view is
-used for the first time.
+## Data Upload Feature
 
-**Log Data**
+The **Upload Feature** allows users to voluntarily contribute cellular and Wi-Fi survey data to third-party databases. This feature is **optional**, and users can choose if they want to use it.
 
-The App has the capability to log information to a GeoPackage file, but that file remains on your device and it is up to you
-if you want to copy the file off the device to another device of your choosing.
+### What Data Is Uploaded?
+When using this feature, the following data may be submitted:
 
-**Changes to This Privacy Policy**
+- **Device Location:** Latitude, longitude, altitude, accuracy, speed
+- **Cellular Data:** Mobile country code (MCC), mobile network code (MNC), cell ID, signal strength, timing advance, network type (e.g., LTE, 5G)
+- **Wi-Fi Data:** Wi-Fi access point BSSID (MAC address), signal strength, channel, frequency, encryption type
+- **Timestamp:** The time the data was collected
 
-I may update our Privacy Policy from time to time. Thus, you are advised to review this page periodically for any changes. I will
-notify you of any changes by posting the new Privacy Policy on this page. These changes are effective immediately after they are posted on this page.
+### Where Is the Data Sent?
+If used, data is uploaded to one or both of the following services:
 
-**Contact Us**
+- **[OpenCelliD](https://opencellid.org/)** – A global open-source cell tower database
+- **[BeaconDB](https://beacondb.net/)** – A crowdsourced geolocation database
 
-If you have any questions or suggestions about my Privacy Policy, do not hesitate to contact me at craxiomdev@gmail.com.
+Users can choose which services to upload to within the app’s settings.
 
-This privacy policy page was created at [privacypolicytemplate.net](https://privacypolicytemplate.net) and modified/generated by [App Privacy Policy Generator](https://app-privacy-policy-generator.firebaseapp.com/)
+### How Is This Data Used?
+Uploaded data helps improve cellular and Wi-Fi coverage mapping, supports research, and enhances public geolocation services.
+
+### Anonymization & Privacy
+The app does not upload personally identifiable information. No user account, phone number, IMEI, or other uniquely identifying data is included in uploads. However, location and network data may still be considered sensitive.
+
+Users should review the privacy policies of the respective third-party services:
+
+- **[OpenCelliD Privacy Policy](https://community.opencellid.org/privacy)**
+- **[BeaconDB Privacy Policy](https://beacondb.net/privacy/)**
+
+For more details, visit the **[Network Survey User Manual](https://networksurvey.app/manual#data-upload)**.
+
+## Changes to This Privacy Policy
+
+I may update this Privacy Policy from time to time. You are encouraged to review this page periodically for any changes. Updates will be posted here and take effect immediately.
+
+## Contact
+
+If you have any questions about this Privacy Policy, feel free to contact me at **craxiomdev@gmail.com**.
+
+This privacy policy was originally created using **[privacypolicytemplate.net](https://privacypolicytemplate.net)** and modified using **[App Privacy Policy Generator](https://app-privacy-policy-generator.firebaseapp.com/)**.
