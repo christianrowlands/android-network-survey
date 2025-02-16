@@ -120,6 +120,35 @@ public interface SurveyRecordDao
         deleteUploadedWifiRecords();
     }
 
+    @Query("DELETE FROM gsm_survey_records")
+    void deleteAllGsmRecords();
+
+    @Query("DELETE FROM cdma_survey_records")
+    void deleteAllCdmaRecords();
+
+    @Query("DELETE FROM umts_survey_records")
+    void deleteAllUmtsRecords();
+
+    @Query("DELETE FROM lte_survey_records")
+    void deleteAllLteRecords();
+
+    @Query("DELETE FROM nr_survey_records")
+    void deleteAllNrRecords();
+
+    @Query("DELETE FROM wifi_survey_records")
+    void deleteAllWifiRecords();
+
+    @Transaction
+    default void deleteAllRecords()
+    {
+        deleteAllGsmRecords();
+        deleteAllCdmaRecords();
+        deleteAllUmtsRecords();
+        deleteAllLteRecords();
+        deleteAllNrRecords();
+        deleteAllWifiRecords();
+    }
+
     @Query("SELECT COUNT(*) FROM gsm_survey_records")
     int getGsmRecordCount();
 

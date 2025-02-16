@@ -145,6 +145,7 @@ public class NetworkSurveyConstants
     public static final String PROPERTY_UPLOAD_RETRY_ENABLED = "upload_retry_enabled";
     public static final String PROPERTY_OCID_API_KEY = "ocid_api_key";
     public static final String UPLOAD_PREFERENCES_GROUP = "upload_preferences_group";
+    public static final String PROPERTY_DELETE_ALL_DATA_IN_UPLOAD_DATABASE = "delete_all_data_in_upload_database";
 
     public static final String PROPERTY_MQTT_CELLULAR_STREAM_ENABLED = "cellular_stream_enabled";
     public static final String PROPERTY_MQTT_WIFI_STREAM_ENABLED = "wifi_stream_enabled";

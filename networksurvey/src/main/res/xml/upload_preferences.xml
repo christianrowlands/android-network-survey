@@ -50,4 +50,15 @@
 
     </PreferenceCategory>
 
+    <PreferenceCategory
+        app:key="data_upload_management"
+        app:title="Data Management">
+
+        <Preference
+            app:key="delete_all_data_in_upload_database"
+            app:title="Delete all data waiting to be uploaded"
+            app:summary="Deletes all data from the internal database that is waiting to be uploaded" />
+
+    </PreferenceCategory>
+
 </PreferenceScreen>
