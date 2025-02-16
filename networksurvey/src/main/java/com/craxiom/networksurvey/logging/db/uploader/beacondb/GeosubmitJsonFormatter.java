@@ -149,6 +149,7 @@ public class GeosubmitJsonFormatter
 
         JSONArray wifiAccessPoints = new JSONArray();
         JSONObject wifiAp = new JSONObject();
+        wifiAp.put("ssid", record.ssid);
         wifiAp.put("macAddress", record.bssid);
         wifiAp.put("channel", record.channel);
         wifiAp.put("frequency", record.frequencyMhz);
