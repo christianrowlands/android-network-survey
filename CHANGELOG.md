@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.33](https://github.com/christianrowlands/android-network-survey/releases/tag/v1.33) - 2025-02-17
+
+* Adds support for uploading cellular and Wi-Fi survey data to OpenCelliD and BeaconDB.
+* Set the locationAge field on all records streamed over MQTT as well as CSV and GeoPackage records (excluding CDR records).
+* Allow the user to select the tower location data source on the Tower Map view (OpenCelliD or BTSearch).
+* Update the tower map view protocol dropdown to show up under the button.
+* Various improvements to the UI to aid with larger font size settings.
+* Update all libraries to the latest versions.
+
 ## [1.32](https://github.com/christianrowlands/android-network-survey/releases/tag/v1.32) - 2025-01-16
 
 * Stale out old locations so they are not set on records and implement a location update rate ceiling - [#59](https://github.com/christianrowlands/android-network-survey/issues/59).
