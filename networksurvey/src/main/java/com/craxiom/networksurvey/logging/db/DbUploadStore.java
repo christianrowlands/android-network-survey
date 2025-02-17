@@ -75,12 +75,13 @@ public class DbUploadStore implements ICellularSurveyRecordListener, IWifiSurvey
                         }
                         break;
                     case CDMA:
-                        CdmaRecordData cdmaRecordData = ((CdmaRecord) cellularRecordWrapper.cellularRecord).getData();
+                        // Skip save CDMA records since we don't upload them
+                        /*CdmaRecordData cdmaRecordData = ((CdmaRecord) cellularRecordWrapper.cellularRecord).getData();
                         if (shouldWriteCdmaRecord(cdmaRecordData, subscriptionId))
                         {
                             CdmaRecordEntity cdmaEntity = mapCdmaRecordToEntity(cdmaRecordData);
                             cdmaRecords.add(cdmaEntity);
-                        }
+                        }*/
                         break;
                     case UMTS:
                         UmtsRecordData umtsRecordData = ((UmtsRecord) cellularRecordWrapper.cellularRecord).getData();

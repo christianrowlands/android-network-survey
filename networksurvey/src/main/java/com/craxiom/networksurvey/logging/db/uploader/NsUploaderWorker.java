@@ -86,7 +86,6 @@ public class NsUploaderWorker extends Worker
             notificationManager.notify(NOTIFICATION_ID, notification);
 
             Timber.d("Starting upload process...");
-            // TODO Prevent a second trigger of this doWork somehow (Tower Collector uses an application static variable)
 
             // Read work input parameters
             isOpenCellIdUploadEnabled = getInputData().getBoolean(NetworkSurveyConstants.PROPERTY_UPLOAD_TO_OPENCELLID, false);
@@ -104,7 +103,6 @@ public class NsUploaderWorker extends Worker
                 return Result.success(getResultData(uploadResultBundle));
             }
 
-            // TODO Check counts differently if just OpenCelliD is enabled.
             int totalRecords = getTotalRecordsForUpload(database.surveyRecordDao(), isBeaconDBUploadEnabled);
             if (totalRecords == 0)
             {
@@ -127,7 +125,6 @@ public class NsUploaderWorker extends Worker
                 int progress = (int) (100.0 * i / partsCount);
                 reportProgress(progress, PROGRESS_MAX_VALUE, "Uploading records...");
 
-                // TODO Keep track using partially uploaded status, and then switch to success at the end
                 uploadResultBundle.merge(processUploadBatch(LOCATIONS_PER_PART, isBeaconDBUploadEnabled));
                 if (!uploadResultBundle.isAllSuccess())
                 {
@@ -451,13 +448,13 @@ public class NsUploaderWorker extends Worker
      */
     public static int getTotalRecordsForUpload(SurveyRecordDao surveyRecordDao, boolean isBeaconDBUploadEnabled)
     {
-        if (!isBeaconDBUploadEnabled)
-        {
-            return getTotalCellularRecordsForUpload(surveyRecordDao);
-        } else
+        if (isBeaconDBUploadEnabled)
         {
             return getTotalCellularRecordsForUpload(surveyRecordDao)
                     + surveyRecordDao.getWifiRecordCountForUpload();
+        } else
+        {
+            return getTotalCellularRecordsForUpload(surveyRecordDao);
         }
     }
 
@@ -467,7 +464,7 @@ public class NsUploaderWorker extends Worker
     public static int getTotalCellularRecordsForUpload(SurveyRecordDao surveyRecordDao)
     {
         return surveyRecordDao.getGsmRecordCountForUpload()
-                + surveyRecordDao.getCdmaRecordCountForUpload() // TODO Remove CDMA since we don't actually upload them?
+                + surveyRecordDao.getCdmaRecordCountForUpload()
                 + surveyRecordDao.getUmtsRecordCountForUpload()
                 + surveyRecordDao.getLteRecordCountForUpload()
                 + surveyRecordDao.getNrRecordCountForUpload();
