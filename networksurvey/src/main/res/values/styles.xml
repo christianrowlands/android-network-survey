@@ -124,6 +124,16 @@
         <item name="android:textStyle">bold</item>
     </style>
 
+    <style name="TwoLineButtonText" parent="TextAppearance.AppCompat">
+        <item name="android:textSize">16sp</item>
+        <item name="android:autoSizeMaxTextSize">16sp</item>
+        <item name="android:autoSizeMinTextSize">8sp</item>
+        <item name="android:minLines">2</item>
+        <item name="android:autoSizeTextType">uniform</item>
+        <item name="android:autoSizeStepGranularity">2sp</item>
+        <item name="android:textColor">@color/normalText</item>
+    </style>
+
     <style name="StatusText" parent="TextAppearance.AppCompat">
         <item name="android:textSize">20sp</item>
         <item name="android:textColor">#FFFFFF</item>

@@ -1061,6 +1061,16 @@
                             </LinearLayout>
 
                             <!-- Upload Queue Counts -->
+                            <TextView
+                                android:id="@+id/upload_queue_title"
+                                style="@style/SmallTitleText"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginHorizontal="@dimen/small_margin"
+                                android:paddingBottom="@dimen/x_small_margin"
+                                android:paddingHorizontal="@dimen/x_small_margin"
+                                android:text="@string/upload_queue_title" />
+
                             <com.google.android.flexbox.FlexboxLayout
                                 android:layout_width="match_parent"
                                 android:layout_height="wrap_content"
@@ -1075,15 +1085,6 @@
                                     android:layout_marginBottom="@dimen/small_margin"
                                     android:orientation="vertical">
 
-                                    <TextView
-                                        android:id="@+id/upload_queue_title"
-                                        style="@style/SmallTitleText"
-                                        android:layout_width="wrap_content"
-                                        android:layout_height="wrap_content"
-                                        android:paddingBottom="@dimen/x_small_margin"
-                                        android:paddingHorizontal="@dimen/x_small_margin"
-                                        android:text="@string/upload_queue_title" />
-
                                     <LinearLayout
                                         android:layout_width="wrap_content"
                                         android:layout_height="match_parent"
@@ -1093,7 +1094,7 @@
                                         <ImageView
                                             android:layout_width="20dp"
                                             android:layout_height="20dp"
-                                            android:layout_gravity="start"
+                                            android:layout_gravity="center_vertical"
                                             android:layout_marginStart="@dimen/x_small_margin"
                                             android:layout_marginEnd="@dimen/small_margin"
                                             android:contentDescription="@string/my_location_icon_description"
@@ -1117,7 +1118,7 @@
                                         <ImageView
                                             android:layout_width="20dp"
                                             android:layout_height="20dp"
-                                            android:layout_gravity="start"
+                                            android:layout_gravity="center_vertical"
                                             android:layout_marginStart="@dimen/x_small_margin"
                                             android:layout_marginEnd="@dimen/small_margin"
                                             android:contentDescription="@string/my_location_icon_description"
@@ -1143,9 +1144,11 @@
                                     <com.google.android.material.button.MaterialButton
                                         android:id="@+id/upload_button"
                                         android:text="@string/upload_button_text"
+                                        style="@style/TwoLineButtonText"
                                         android:layout_width="wrap_content"
                                         android:layout_height="wrap_content"
-                                        android:layout_margin="@dimen/small_margin"
+                                        android:layout_marginHorizontal="@dimen/small_margin"
+                                        android:layout_marginBottom="@dimen/small_margin"
                                         android:lineSpacingExtra="2dp" />
 
                                 </LinearLayout>
