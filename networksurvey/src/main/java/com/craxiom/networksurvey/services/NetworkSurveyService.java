@@ -285,7 +285,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
 
                     if (mqttConnection.getConnectionState() != ConnectionState.DISCONNECTED)
                     {
-                        mqttConnection.disconnect(); // TODO Do we want to disconnect if already connected?
+                        mqttConnection.disconnect();
                     }
 
                     connectToMqttBroker(mqttConnectionSettings.toMqttConnectionInfo());

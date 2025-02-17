@@ -275,8 +275,6 @@ public class DashboardFragment extends AServiceDataFragment implements LocationL
      */
     private void initializeUiListeners()
     {
-        // TODO remove all of the enabled code initializeLoggingSwitch(binding.uploadEnabledToggleSwitch, (newEnabledState, toggleSwitch) -> viewModel.setUploadEnabled(newEnabledState));
-
         binding.startScanningButton.setOnClickListener(v -> startSavingRecordsForUpload());
         binding.stopScanningButton.setOnClickListener(v -> stopSavingRecordsForUpload());
         binding.uploadSettingsButton.setOnClickListener(v -> navigateToUploadSettings());
@@ -467,7 +465,9 @@ public class DashboardFragment extends AServiceDataFragment implements LocationL
     {
         if (missingAnyPermissions(NetworkSurveyActivity.BLUETOOTH_PERMISSIONS))
         {
-            ActivityCompat.requestPermissions(getActivity(), NetworkSurveyActivity.BLUETOOTH_PERMISSIONS, ACCESS_BLUETOOTH_PERMISSION_REQUEST_ID);
+            FragmentActivity activity = getActivity();
+            if (activity == null) return;
+            ActivityCompat.requestPermissions(activity, NetworkSurveyActivity.BLUETOOTH_PERMISSIONS, ACCESS_BLUETOOTH_PERMISSION_REQUEST_ID);
         }
     }
 
@@ -479,7 +479,9 @@ public class DashboardFragment extends AServiceDataFragment implements LocationL
     {
         if (missingAnyPermissions(CDR_REQUIRED_PERMISSIONS))
         {
-            ActivityCompat.requestPermissions(getActivity(), CDR_REQUIRED_PERMISSIONS, ACCESS_REQUIRED_PERMISSION_REQUEST_ID);
+            FragmentActivity activity = getActivity();
+            if (activity == null) return;
+            ActivityCompat.requestPermissions(activity, CDR_REQUIRED_PERMISSIONS, ACCESS_REQUIRED_PERMISSION_REQUEST_ID);
         }
     }
 
@@ -491,7 +493,9 @@ public class DashboardFragment extends AServiceDataFragment implements LocationL
     {
         if (missingAnyPermissions(CDR_OPTIONAL_PERMISSIONS))
         {
-            ActivityCompat.requestPermissions(getActivity(), CDR_OPTIONAL_PERMISSIONS, ACCESS_OPTIONAL_PERMISSION_REQUEST_ID);
+            FragmentActivity activity = getActivity();
+            if (activity == null) return;
+            ActivityCompat.requestPermissions(activity, CDR_OPTIONAL_PERMISSIONS, ACCESS_OPTIONAL_PERMISSION_REQUEST_ID);
         }
     }
 
@@ -645,7 +649,6 @@ public class DashboardFragment extends AServiceDataFragment implements LocationL
 
     private synchronized void updateLoggingState(NetworkSurveyService networkSurveyService)
     {
-        // TODO Should we reflect the logging file types in the status?
         viewModel.setCellularLoggingEnabled(networkSurveyService.isCellularLoggingEnabled());
         viewModel.setWifiLoggingEnabled(networkSurveyService.isWifiLoggingEnabled());
         viewModel.setBluetoothLoggingEnabled(networkSurveyService.isBluetoothLoggingEnabled());
@@ -1374,7 +1377,6 @@ public class DashboardFragment extends AServiceDataFragment implements LocationL
                         {
                             Timber.tag(innerTag).w("onChanged(): WorkInfo is null");
                             binding.uploadProgressGroup.setVisibility(View.GONE);
-                            // TODO Display a snackbar, toast, or something else to the user
                             return;
                         }
 

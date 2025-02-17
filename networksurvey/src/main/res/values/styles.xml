@@ -98,6 +98,9 @@
 
     <style name="CellularTitleText" parent="TextAppearance.AppCompat">
         <item name="android:textSize">22sp</item>
+        <item name="android:autoSizeMaxTextSize">22sp</item>
+        <item name="android:autoSizeMinTextSize">12sp</item>
+        <item name="android:maxLines">1</item>
         <item name="android:textColor">@color/colorAccent</item>
     </style>
 

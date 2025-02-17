@@ -14,10 +14,12 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.text.selection.SelectionContainer
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Clear
@@ -898,16 +900,17 @@ fun CircleButtonWithLine(
 
 @Composable
 fun TowerMapInfoDialog(onDismiss: () -> Unit) {
-    // TODO Make scrollable
     AlertDialog(
         onDismissRequest = onDismiss,
         title = {
             Text(text = "Tower Map Information")
         },
         text = {
-            SelectionContainer {
-                Text(
-                    text = """
+            Box {
+                Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
+                    SelectionContainer {
+                        Text(
+                            text = """
                     The tower locations are sourced from various database, for example OpenCelliD ( https://opencellid.org ).
                     
                     Please note that these locations may not be accurate as they are generated from crowd-sourced data and based on survey results. The tower locations are provided for your convenience, but they should not be relied upon for precise accuracy. We recommend verifying tower locations through additional sources if accuracy is critical.
@@ -916,7 +919,9 @@ fun TowerMapInfoDialog(onDismiss: () -> Unit) {
                     - Purple: Your Current Serving Cell
                     - Blue: Non-Serving Cells
                 """.trimIndent()
-                )
+                        )
+                    }
+                }
             }
         },
         confirmButton = {
@@ -935,57 +940,59 @@ fun PlmnFilterDialog(
 ) {
     var mccInput by remember { mutableStateOf(currentPlmn.mcc.toString()) }
     var mncInput by remember { mutableStateOf(currentPlmn.mnc.toString()) }
-    // TODO Make scrollable
+
     AlertDialog(
         onDismissRequest = onDismiss,
         title = {
             Text(text = "Set PLMN Filter")
         },
         text = {
-            Column {
-                SelectionContainer {
-                    Text(
-                        text = """
+            Box {
+                Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
+                    SelectionContainer {
+                        Text(
+                            text = """
                         A PLMN (Public Land Mobile Network) is a network uniquely identified by a Mobile Country Code (MCC) and a Mobile Network Code (MNC). In other words, a PLMN identifies a specific cellular provider. 
                         
                         This filter allows you to display towers for a specific cellular provider.
                     """.trimIndent()
+                        )
+                    }
+                    Spacer(modifier = Modifier.height(16.dp))
+                    OutlinedTextField(
+                        value = if (mccInput == "0") "" else mccInput,
+                        onValueChange = { mccInput = it },
+                        label = { Text("MCC") },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        trailingIcon = {
+                            if (mccInput.isNotEmpty() && mccInput != "0") {
+                                IconButton(onClick = { mccInput = "" }) {
+                                    Icon(
+                                        imageVector = Icons.Default.Clear,
+                                        contentDescription = "Clear MCC"
+                                    )
+                                }
+                            }
+                        }
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    OutlinedTextField(
+                        value = if (mncInput == "0") "" else mncInput,
+                        onValueChange = { mncInput = it },
+                        label = { Text("MNC") },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        trailingIcon = {
+                            if (mncInput.isNotEmpty() && mncInput != "0") {
+                                IconButton(onClick = { mncInput = "" }) {
+                                    Icon(
+                                        imageVector = Icons.Default.Clear,
+                                        contentDescription = "Clear MNC"
+                                    )
+                                }
+                            }
+                        }
                     )
                 }
-                Spacer(modifier = Modifier.height(16.dp))
-                OutlinedTextField(
-                    value = if (mccInput == "0") "" else mccInput,
-                    onValueChange = { mccInput = it },
-                    label = { Text("MCC") },
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                    trailingIcon = {
-                        if (mccInput.isNotEmpty() && mccInput != "0") {
-                            IconButton(onClick = { mccInput = "" }) {
-                                Icon(
-                                    imageVector = Icons.Default.Clear,
-                                    contentDescription = "Clear MCC"
-                                )
-                            }
-                        }
-                    }
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-                OutlinedTextField(
-                    value = if (mncInput == "0") "" else mncInput,
-                    onValueChange = { mncInput = it },
-                    label = { Text("MNC") },
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                    trailingIcon = {
-                        if (mncInput.isNotEmpty() && mncInput != "0") {
-                            IconButton(onClick = { mncInput = "" }) {
-                                Icon(
-                                    imageVector = Icons.Default.Clear,
-                                    contentDescription = "Clear MNC"
-                                )
-                            }
-                        }
-                    }
-                )
             }
         },
         confirmButton = {
@@ -1022,35 +1029,37 @@ fun TowerSourceSelectionDialog(
             Text(text = "Select Tower Data Source")
         },
         text = {
-            Column {
-                SelectionContainer {
-                    Text(
-                        text = """
+            Box {
+                Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
+                    SelectionContainer {
+                        Text(
+                            text = """
                         Select a data source to display tower information. Each source provides data from different origins:
                         
                         - OpenCelliD: Crowdsourced tower data from around the world.
                         - BTSearch: Poland specific tower database.
                     """.trimIndent()
-                    )
-                }
-                Spacer(modifier = Modifier.height(16.dp))
+                        )
+                    }
+                    Spacer(modifier = Modifier.height(16.dp))
 
-                TowerSource.entries.forEach { source ->
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .selectable(
+                    TowerSource.entries.forEach { source ->
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .selectable(
+                                    selected = (source == selectedSource),
+                                    onClick = { selectedSource = source }
+                                ),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            RadioButton(
                                 selected = (source == selectedSource),
                                 onClick = { selectedSource = source }
-                            ),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        RadioButton(
-                            selected = (source == selectedSource),
-                            onClick = { selectedSource = source }
-                        )
-                        Spacer(modifier = Modifier.width(2.dp))
-                        Text(text = source.displayName)
+                            )
+                            Spacer(modifier = Modifier.width(2.dp))
+                            Text(text = source.displayName)
+                        }
                     }
                 }
             }

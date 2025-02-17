@@ -162,7 +162,7 @@ public abstract class CsvRecordLogger
     {
         if (lazyFileCreation) lazyCreateFileIfNecessary();
         printer.printRecord(row);
-        if (flush) printer.flush(); // TODO could we get away with not flushing on every record?
+        if (flush) printer.flush();
         checkIfRolloverNeeded();
     }
 

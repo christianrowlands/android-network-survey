@@ -2,7 +2,6 @@ package com.craxiom.networksurvey.logging.db;
 
 import android.content.Context;
 
-import com.craxiom.messaging.CdmaRecord;
 import com.craxiom.messaging.CdmaRecordData;
 import com.craxiom.messaging.GsmRecord;
 import com.craxiom.messaging.GsmRecordData;
