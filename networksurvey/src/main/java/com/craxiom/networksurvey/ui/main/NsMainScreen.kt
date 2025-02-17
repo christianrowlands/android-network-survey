@@ -33,7 +33,6 @@ fun MainCompose(
     drawerState: DrawerState = rememberDrawerState(initialValue = DrawerValue.Closed),
     appVersion: String
 ) {
-    // TODO Is this needed? HandleBackPress(navController)
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
 

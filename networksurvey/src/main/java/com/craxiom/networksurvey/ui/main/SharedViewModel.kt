@@ -111,15 +111,14 @@ class SharedViewModel @Inject constructor(application: Application) :
     }
 
     fun resetNavigationFlag() {
-        // TODO is this a good idea to set them all in one method?
         _navigateToQrCodeScanner.value = false
         _navigateToQrCodeShare.value = false
         _navigateToTowerMap.value = false
-        //_navigateToWifiSpectrum.value = false
         _navigateToWifiDetails.value = false
         _navigateToBluetoothDetails.value = false
         _navigateToMqttConnection.value = false
         _navigateToSettings.value = false
+        _navigateToUploadSettings.value = false
     }
 
     fun resetMqttConnectionSettings() {

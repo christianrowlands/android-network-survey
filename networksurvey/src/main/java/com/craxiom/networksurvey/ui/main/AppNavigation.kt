@@ -44,7 +44,6 @@ fun NavGraphBuilder.mainGraph(
     sharedViewModel: SharedViewModel
 ) {
     navigation(startDestination = NavDrawerOption.None.name, route = NavRoutes.MainRoute.name) {
-        // TODO Need to add a header like the old display for all of these
         composable(NavDrawerOption.None.name) {
             HomeScreen(drawerState, mainNavController = mainNavController)
         }
@@ -238,7 +237,6 @@ fun QrCodeShareInCompose(mainNavController: NavHostController) {
 
 @Composable
 fun TowerMapInCompose(paddingValues: PaddingValues) {
-    // TODO Add a back button
     AndroidViewBinding(
         ContainerTowerMapFragmentBinding::inflate
     ) {
