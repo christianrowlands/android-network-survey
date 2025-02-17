@@ -343,8 +343,10 @@
                     <LinearLayout
                         android:layout_width="0dp"
                         android:layout_height="match_parent"
-                        android:layout_weight="1"
-                        android:layout_margin="@dimen/small_margin"
+                        android:layout_weight=".7"
+                        android:layout_marginTop="@dimen/small_margin"
+                        android:layout_marginStart="@dimen/small_margin"
+                        android:layout_marginBottom="@dimen/small_margin"
                         android:orientation="vertical">
 
                         <LinearLayout
@@ -578,7 +580,8 @@
                     </LinearLayout>
 
                     <LinearLayout
-                        android:layout_width="wrap_content"
+                        android:layout_width="0dp"
+                        android:layout_weight=".30"
                         android:layout_height="match_parent"
                         android:layout_marginStart="@dimen/small_margin"
                         android:layout_marginEnd="@dimen/medium_margin"
@@ -594,7 +597,7 @@
 
                             <com.mackhartley.roundedprogressbar.RoundedProgressBar
                                 android:id="@+id/progress_bar_signal_one"
-                                android:layout_width="100dp"
+                                android:layout_width="match_parent"
                                 android:layout_height="32dp"
                                 app:layout_constraintBottom_toBottomOf="parent"
                                 app:layout_constraintLeft_toLeftOf="parent"
@@ -642,7 +645,7 @@
 
                             <com.mackhartley.roundedprogressbar.RoundedProgressBar
                                 android:id="@+id/progress_bar_signal_two"
-                                android:layout_width="100dp"
+                                android:layout_width="match_parent"
                                 android:layout_height="32dp"
                                 app:layout_constraintBottom_toBottomOf="parent"
                                 app:layout_constraintLeft_toLeftOf="parent"
@@ -691,7 +694,7 @@
 
                             <com.mackhartley.roundedprogressbar.RoundedProgressBar
                                 android:id="@+id/progress_bar_signal_three"
-                                android:layout_width="100dp"
+                                android:layout_width="match_parent"
                                 android:layout_height="32dp"
                                 app:layout_constraintBottom_toBottomOf="parent"
                                 app:layout_constraintLeft_toLeftOf="parent"
