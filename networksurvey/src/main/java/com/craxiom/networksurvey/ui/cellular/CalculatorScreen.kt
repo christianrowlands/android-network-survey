@@ -61,6 +61,10 @@ fun CalculatorScreen(viewModel: CalculatorViewModel = viewModel()) {
             CalculatorNetworkType.LTE -> {
                 LteCalculators(viewModel = viewModel)
             }
+
+            CalculatorNetworkType.UMTS -> {
+                UmtsCalculators(viewModel = viewModel)
+            }
         }
     }
 }
@@ -210,7 +214,6 @@ fun ResultsDisplay(gnbIdOutput: String, sectorIdOutput: String, viewModel: Calcu
 
 @Composable
 fun LteCalculators(viewModel: CalculatorViewModel) {
-
     Column {
         // 4G LTE Cell ID calculator
         CardItem {
@@ -320,6 +323,46 @@ fun LteCalculators(viewModel: CalculatorViewModel) {
         }
     }
 }
+
+@Composable
+fun UmtsCalculators(viewModel: CalculatorViewModel) {
+    val umtsCellIdInput by viewModel.umtsCellIdInput.collectAsState()
+    val rncIdOutput by viewModel.rncIdOutput.collectAsState()
+    val shortCellIdOutput by viewModel.shortCellIdOutput.collectAsState()
+    val umtsCidError by viewModel.umtsCidError.collectAsState()
+
+    CardItem {
+        Column {
+            TitleText(text = "UMTS Cell ID to RNC ID and Short Cell ID")
+
+            OutlinedTextField(
+                value = umtsCellIdInput,
+                onValueChange = {
+                    viewModel.setUmtsCellIdInput(it)
+                },
+                label = { Text("UMTS Cell ID") },
+                keyboardOptions = KeyboardOptions.Default.copy(keyboardType = KeyboardType.Number),
+                modifier = Modifier.fillMaxWidth(),
+                singleLine = true,
+                isError = umtsCidError != null
+            )
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            Text(text = "RNC ID: $rncIdOutput", style = MaterialTheme.typography.bodyLarge)
+            Text(
+                text = "Short Cell ID: $shortCellIdOutput",
+                style = MaterialTheme.typography.bodyLarge
+            )
+
+            if (umtsCidError != null) {
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(text = umtsCidError.orEmpty(), color = MaterialTheme.colorScheme.error)
+            }
+        }
+    }
+}
+
 
 @Composable
 private fun CardItem(content: @Composable () -> Unit) {

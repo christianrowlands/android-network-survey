@@ -7,7 +7,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
-enum class CalculatorNetworkType { LTE, NR }
+enum class CalculatorNetworkType { UMTS, LTE, NR }
 
 class CalculatorViewModel : ViewModel() {
     private val _networkType = MutableStateFlow(CalculatorNetworkType.LTE)
@@ -80,6 +80,19 @@ class CalculatorViewModel : ViewModel() {
 
     private val _bandOutput = MutableStateFlow("")
     val bandOutput: StateFlow<String> = _bandOutput.asStateFlow()
+
+    // UMTS
+    private val _umtsCellIdInput = MutableStateFlow("")
+    val umtsCellIdInput: StateFlow<String> = _umtsCellIdInput
+
+    private val _rncIdOutput = MutableStateFlow("")
+    val rncIdOutput: StateFlow<String> = _rncIdOutput
+
+    private val _shortCellIdOutput = MutableStateFlow("")
+    val shortCellIdOutput: StateFlow<String> = _shortCellIdOutput
+
+    private val _umtsCidError = MutableStateFlow<String?>(null)
+    val umtsCidError: StateFlow<String?> = _umtsCidError
 
     fun setNetworkType(type: CalculatorNetworkType) {
         _networkType.value = type
@@ -188,5 +201,29 @@ class CalculatorViewModel : ViewModel() {
             _lteEarfcnError.value = null
             _bandOutput.value = band.toString()
         }
+    }
+
+    // Function to update input
+    fun setUmtsCellIdInput(input: String) {
+        _umtsCellIdInput.value = input
+        calculateUmtsCellId()
+    }
+
+    // Function to compute RNC ID and Short Cell ID
+    private fun calculateUmtsCellId() {
+        val cellId = _umtsCellIdInput.value.toLongOrNull()
+        if (cellId == null || cellId < 0 || cellId > 268_435_455) {
+            _umtsCidError.value = "Invalid UMTS Cell ID. Valid Range is 0 - 268435455"
+            _rncIdOutput.value = ""
+            _shortCellIdOutput.value = ""
+            return
+        }
+
+        val rncId = (cellId shr 16) and 0xFFFF
+        val shortCellId = cellId and 0xFFFF
+
+        _rncIdOutput.value = rncId.toString()
+        _shortCellIdOutput.value = shortCellId.toString()
+        _umtsCidError.value = null
     }
 }
