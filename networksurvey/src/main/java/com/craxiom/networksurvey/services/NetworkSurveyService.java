@@ -1613,20 +1613,19 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
      */
     public void updateServiceNotification()
     {
-        execute(() -> {
-            try
+        try
+        {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q)
             {
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q)
-                {
-                    startForeground(NetworkSurveyConstants.LOGGING_NOTIFICATION_ID, buildNotification(), ServiceInfo.FOREGROUND_SERVICE_TYPE_LOCATION);
-                } else
-                {
-                    startForeground(NetworkSurveyConstants.LOGGING_NOTIFICATION_ID, buildNotification());
-                }
-            } catch (Exception e)
+                startForeground(NetworkSurveyConstants.LOGGING_NOTIFICATION_ID, buildNotification(), ServiceInfo.FOREGROUND_SERVICE_TYPE_LOCATION);
+            } else
             {
-                Timber.e(e, "Could not start the foreground service for Network Survey");
-                // TODO This is one possible option for the crash on Samsung S22 devices running Android 13
+                startForeground(NetworkSurveyConstants.LOGGING_NOTIFICATION_ID, buildNotification());
+            }
+        } catch (Exception e)
+        {
+            Timber.e(e, "Could not start the foreground service for Network Survey");
+            // TODO This is one possible option for the crash on Samsung S22 devices running Android 13
             /*AlarmManager alarmManager = (AlarmManager) getSystemService(Context.ALARM_SERVICE);
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S)
             {
@@ -1640,8 +1639,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
                     Timber.e("Can't schedule an exact alarm in place of startForeground");
                 }
             }*/
-            }
-        });
+        }
     }
 
     /**
