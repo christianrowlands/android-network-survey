@@ -173,6 +173,19 @@
     </PreferenceCategory>
 
     <PreferenceCategory
+        app:icon="@drawable/ic_cell_tower"
+        app:key="tower_map"
+        app:title="@string/tower_map_config_title">
+
+        <Preference
+            app:key="tower_map_preferences_group"
+            app:title="Tower Map Settings"
+            app:summary="Configure tower map options"
+            app:fragment="com.craxiom.networksurvey.fragments.TowerMapSettingsFragment" />
+
+    </PreferenceCategory>
+
+    <PreferenceCategory
         app:icon="@drawable/ic_info"
         app:key="about"
         app:title="About">

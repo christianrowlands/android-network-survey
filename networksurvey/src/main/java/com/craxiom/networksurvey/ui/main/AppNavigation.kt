@@ -22,6 +22,7 @@ import com.craxiom.networksurvey.databinding.ContainerMqttQrCodeScannerFragmentB
 import com.craxiom.networksurvey.databinding.ContainerMqttQrCodeShareFragmentBinding
 import com.craxiom.networksurvey.databinding.ContainerSettingsFragmentBinding
 import com.craxiom.networksurvey.databinding.ContainerTowerMapFragmentBinding
+import com.craxiom.networksurvey.databinding.ContainerTowerMapSettingsFragmentBinding
 import com.craxiom.networksurvey.databinding.ContainerUploadSettingsFragmentBinding
 import com.craxiom.networksurvey.databinding.ContainerWifiDetailsFragmentBinding
 import com.craxiom.networksurvey.databinding.ContainerWifiSpectrumFragmentBinding
@@ -90,6 +91,10 @@ fun NavGraphBuilder.mainGraph(
             UploadSettingsFragmentInCompose(mainNavController)
         }
 
+        composable(NavOption.TowerMapSettings.name) {
+            TowerMapSettingsFragmentInCompose(mainNavController)
+        }
+
         composable(NavOption.QrCodeScanner.name) {
             QrCodeScannerInCompose(mainNavController)
         }
@@ -142,6 +147,7 @@ enum class NavDrawerOption {
 
 enum class NavOption {
     UploadSettings,
+    TowerMapSettings,
     QrCodeScanner,
     QrCodeShare,
     TowerMap,
@@ -201,6 +207,19 @@ fun UploadSettingsFragmentInCompose(mainNavController: NavHostController) {
     ) { innerPadding ->
         AndroidViewBinding(
             ContainerUploadSettingsFragmentBinding::inflate,
+            modifier = Modifier.padding(paddingValues = innerPadding)
+        ) {
+        }
+    }
+}
+
+@Composable
+fun TowerMapSettingsFragmentInCompose(mainNavController: NavHostController) {
+    Scaffold(
+        topBar = { TitleBar("Tower Map Settings") { mainNavController.navigateUp() } },
+    ) { innerPadding ->
+        AndroidViewBinding(
+            ContainerTowerMapSettingsFragmentBinding::inflate,
             modifier = Modifier.padding(paddingValues = innerPadding)
         ) {
         }

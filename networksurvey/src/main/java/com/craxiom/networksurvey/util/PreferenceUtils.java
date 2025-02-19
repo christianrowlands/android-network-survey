@@ -864,4 +864,9 @@ public class PreferenceUtils
         // If not valid or not set, fallback to the shared API key
         return getSharedApiKey(context);
     }
+
+    public static boolean displayServingCellCoverageOnMap(Context context)
+    {
+        return PreferenceManager.getDefaultSharedPreferences(context).getBoolean(NetworkSurveyConstants.PROPERTY_MAP_DISPLAY_SERVING_CELL_COVERAGE, true);
+    }
 }

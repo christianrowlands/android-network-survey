@@ -92,6 +92,16 @@ public class SettingsFragment extends PreferenceFragmentCompat implements Shared
             });
         }
 
+        final Preference towerMapSettings = findPreference(NetworkSurveyConstants.TOWER_MAP_PREFERENCES_GROUP);
+        if (towerMapSettings != null)
+        {
+            towerMapSettings.setOnPreferenceClickListener(preference -> {
+                SharedViewModel viewModel = new ViewModelProvider(requireActivity()).get(SharedViewModel.class);
+                viewModel.triggerNavigationToTowerMapSettings();
+                return true;
+            });
+        }
+
         final Preference privacyPolicy = findPreference(NetworkSurveyConstants.PROPERTY_PRIVACY_POLICY);
         if (privacyPolicy != null)
         {

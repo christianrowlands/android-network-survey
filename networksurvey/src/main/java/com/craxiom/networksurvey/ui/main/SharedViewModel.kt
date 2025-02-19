@@ -18,6 +18,9 @@ class SharedViewModel @Inject constructor(application: Application) :
     private val _navigateToUploadSettings = MutableLiveData(false)
     val navigateToUploadSettings: LiveData<Boolean> = _navigateToUploadSettings
 
+    private val _navigateToTowerMapSettings = MutableLiveData(false)
+    val navigateToTowerMapSettings: LiveData<Boolean> = _navigateToTowerMapSettings
+
     private val _navigateToQrCodeScanner = MutableLiveData(false)
     val navigateToQrCodeScanner: LiveData<Boolean> = _navigateToQrCodeScanner
 
@@ -30,8 +33,6 @@ class SharedViewModel @Inject constructor(application: Application) :
     val latestServingCellInfo: ServingCellInfo?
         get() = _latestServingCellInfo
 
-    /*private val _navigateToWifiSpectrum = MutableLiveData(false)
-    val navigateToWifiSpectrum: LiveData<Boolean> = _navigateToWifiSpectrum*/
     private var _wifiNetworkList: WifiNetworkInfoList? = null
     val wifiNetworkList: WifiNetworkInfoList?
         get() = _wifiNetworkList
@@ -59,6 +60,10 @@ class SharedViewModel @Inject constructor(application: Application) :
 
     fun triggerNavigationToUploadSettings() {
         _navigateToUploadSettings.value = true
+    }
+
+    fun triggerNavigationToTowerMapSettings() {
+        _navigateToTowerMapSettings.value = true
     }
 
     fun triggerNavigationToQrCodeScanner(mqttConnectionSettings: MqttConnectionSettings) {
@@ -119,6 +124,7 @@ class SharedViewModel @Inject constructor(application: Application) :
         _navigateToMqttConnection.value = false
         _navigateToSettings.value = false
         _navigateToUploadSettings.value = false
+        _navigateToTowerMapSettings.value = false
     }
 
     fun resetMqttConnectionSettings() {

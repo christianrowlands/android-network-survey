@@ -46,6 +46,15 @@ fun MainCompose(
         }
     }
 
+    LaunchedEffect(viewModel.navigateToTowerMapSettings) {
+        viewModel.navigateToTowerMapSettings.observe(lifecycleOwner) { shouldNavigate ->
+            if (shouldNavigate) {
+                mainNavController.navigate(NavOption.TowerMapSettings.name)
+                viewModel.resetNavigationFlag()
+            }
+        }
+    }
+
     LaunchedEffect(viewModel.navigateToQrCodeScanner) {
         viewModel.navigateToQrCodeScanner.observe(lifecycleOwner) { shouldNavigate ->
             if (shouldNavigate) {

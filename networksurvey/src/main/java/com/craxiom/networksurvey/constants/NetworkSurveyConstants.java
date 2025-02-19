@@ -137,6 +137,9 @@ public class NetworkSurveyConstants
     public static final String PROPERTY_APP_INSTANCE_ID = "app_instance_id";
     public static final String PROPERTY_PRIVACY_POLICY = "privacy_policy";
 
+    public static final String TOWER_MAP_PREFERENCES_GROUP = "tower_map_preferences_group";
+    public static final String PROPERTY_MAP_DISPLAY_SERVING_CELL_COVERAGE = "map_display_serving_cell_coverage_area";
+
     // The following key is used in the app_restrictions.xml file and in the app's shared preferences
     public static final String PROPERTY_MQTT_START_ON_BOOT = "mqtt_start_on_boot";
 

@@ -9,6 +9,7 @@ import com.craxiom.networksurvey.model.CellularRecordWrapper
 import com.craxiom.networksurvey.model.Plmn
 import com.craxiom.networksurvey.ui.ASignalChartViewModel
 import com.craxiom.networksurvey.util.CellularUtils
+import com.craxiom.networksurvey.util.PreferenceUtils
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
@@ -49,6 +50,7 @@ internal class TowerMapViewModel : ASignalChartViewModel() {
 
     lateinit var towerOverlayGroup: RadiusMarkerClusterer
     val servingCellLinesOverlayGroup: FolderOverlay = FolderOverlay()
+    val servingCellCoverageOverlayGroup: FolderOverlay = FolderOverlay()
 
     private val _towers = MutableStateFlow(LinkedHashSet<TowerMarker>(LinkedHashSet()))
     val towers = _towers.asStateFlow()
@@ -207,6 +209,7 @@ internal class TowerMapViewModel : ASignalChartViewModel() {
             }
 
             drawServingCellLine()
+            drawServingCellCoverage()
 
             // .clusterer can cause a NPE if the markers are changed while the map is being drawn
             towerOverlayGroup.clusterer(mapView)
@@ -249,6 +252,28 @@ internal class TowerMapViewModel : ASignalChartViewModel() {
             // Sometimes the servingCellLinesOverlayGroup will throw a NPE on the #add call because
             // the mOverlayManager is assigned null on cleanup
             Timber.e(e, "Something went wrong while drawing the serving cell lines on the map")
+        }
+    }
+
+    @Synchronized
+    fun drawServingCellCoverage() {
+        try {
+            servingCellCoverageOverlayGroup.items?.clear()
+
+            if (subIdToServingCellLocations.isEmpty()) return
+
+            PreferenceUtils.displayServingCellCoverageOnMap(mapView?.context)
+                .let { displayCoverage ->
+                    if (!displayCoverage) return
+                }
+
+            subIdToServingCellLocations.forEach { (_, geoPoint) ->
+                val coverageArea =
+                    CoverageAreaOverlay(geoPoint, 1000f) // TODO Get the actual radius
+                servingCellCoverageOverlayGroup.add(coverageArea)
+            }
+        } catch (e: Exception) {
+            Timber.e(e, "Something went wrong while drawing the serving cell coverage on the map")
         }
     }
 

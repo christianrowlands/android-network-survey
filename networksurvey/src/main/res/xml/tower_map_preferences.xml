@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <PreferenceCategory
+        app:key="general_tower_map_settings"
+        app:title="@string/settings">
+
+        <SwitchPreferenceCompat
+            app:defaultValue="true"
+            app:key="map_display_serving_cell_coverage_area"
+            app:title="@string/display_coverage_area_title"
+            app:summaryOff="@string/display_coverage_area_summary_off"
+            app:summaryOn="@string/display_coverage_area_summary_on" />
+
+    </PreferenceCategory>
+
+</PreferenceScreen>

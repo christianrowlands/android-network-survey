@@ -120,9 +120,9 @@ private const val MAX_TOWERS_ON_MAP = 5000
 @Composable
 internal fun TowerMapScreen(
     viewModel: TowerMapViewModel = viewModel(),
-    onBackButtonPressed: () -> Unit
+    onBackButtonPressed: () -> Unit,
+    onNavigateToTowerMapSettings: () -> Unit
 ) {
-
     val paddingInsets by viewModel.paddingInsets.collectAsStateWithLifecycle()
 
     val isLoadingInProgress by viewModel.isLoadingInProgress.collectAsStateWithLifecycle()
@@ -281,6 +281,38 @@ internal fun TowerMapScreen(
                     .padding(vertical = paddingInsets.calculateBottomPadding(), horizontal = 16.dp)
             ) {
                 Column {
+                    Surface(
+                        modifier = Modifier
+                            .size(40.dp)
+                            .clip(CircleShape)
+                            .background(MaterialTheme.colorScheme.primary),
+                        color = MaterialTheme.colorScheme.primary
+                    ) {
+                        Box(
+                            contentAlignment = Alignment.Center,
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(8.dp)
+                        ) {
+                            Image(
+                                painter = painterResource(id = R.drawable.ic_settings),
+                                contentDescription = "Tower Map Settings",
+                                modifier = Modifier.size(24.dp)
+                            )
+                            Button(
+                                onClick = { onNavigateToTowerMapSettings.invoke() },
+                                modifier = Modifier
+                                    .size(48.dp)
+                                    .clip(CircleShape),
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = Color.Transparent
+                                )
+                            ) {}
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
                     Surface(
                         modifier = Modifier
                             .size(40.dp)
@@ -487,6 +519,7 @@ internal fun OsmdroidMapView(
             )
             mapView.overlays.add(viewModel.towerOverlayGroup)
             mapView.overlays.add(viewModel.servingCellLinesOverlayGroup)
+            mapView.overlays.add(viewModel.servingCellCoverageOverlayGroup)
 
             // Listener to detect when map movement stops
             mapView.addMapListener(DelayedMapListener(object : MapListener {

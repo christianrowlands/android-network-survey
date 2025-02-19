@@ -224,7 +224,11 @@ class TowerMapFragment : AServiceDataFragment(), ICellularSurveyRecordListener {
             }
 
             NsTheme {
-                TowerMapScreen(viewModel = viewModel!!, onBackButtonPressed = ::navigateBack)
+                TowerMapScreen(
+                    viewModel = viewModel!!,
+                    onBackButtonPressed = ::navigateBack,
+                    onNavigateToTowerMapSettings = ::navigateToTowerMapSettings
+                )
             }
 
             if (servingCell != null)
@@ -233,6 +237,13 @@ class TowerMapFragment : AServiceDataFragment(), ICellularSurveyRecordListener {
                     servingCell.subscriptionId
                 )
         }
+    }
+
+    private fun navigateToTowerMapSettings() {
+        val nsActivity = activity ?: return
+
+        val viewModel = ViewModelProvider(nsActivity)[SharedViewModel::class.java]
+        viewModel.triggerNavigationToTowerMapSettings()
     }
 
     private fun navigateBack() {

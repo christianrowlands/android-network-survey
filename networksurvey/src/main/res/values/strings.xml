@@ -521,6 +521,11 @@ but work independently, so you have full control over how you handle your data.<
     <string name="allow_intent_control_summary_on">Other apps can start Network Survey</string>
     <string name="allow_intent_control_summary_off">Other apps will be blocked from starting Network Survey</string>
 
+    <string name="tower_map_config_title">Tower Map Config</string>
+    <string name="display_coverage_area_title">Display Serving Cell Coverage</string>
+    <string name="display_coverage_area_summary_on">Serving cell coverage will be displayed on the map</string>
+    <string name="display_coverage_area_summary_off">Serving cell coverage won\'t be displayed on the map</string>
+
     <string name="allow_data_upload">External Data Upload</string>
     <string name="allow_data_upload_mdm_description">True to allow users to upload survey records to 3rd Party databases such as OpenCelliD and BeaconDB, false to prevent it</string>
 
