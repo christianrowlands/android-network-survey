@@ -6,10 +6,12 @@ import static com.craxiom.networksurvey.fragments.DashboardFragment.ACCESS_OPTIO
 import static com.craxiom.networksurvey.fragments.DashboardFragment.ACCESS_REQUIRED_PERMISSION_REQUEST_ID;
 
 import android.content.Context;
+import android.content.Intent;
 import android.content.RestrictionsManager;
 import android.content.SharedPreferences;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
+import android.net.Uri;
 import android.os.Bundle;
 import android.text.InputType;
 
@@ -86,6 +88,17 @@ public class SettingsFragment extends PreferenceFragmentCompat implements Shared
             uploadSettings.setOnPreferenceClickListener(preference -> {
                 SharedViewModel viewModel = new ViewModelProvider(requireActivity()).get(SharedViewModel.class);
                 viewModel.triggerNavigationToUploadSettings();
+                return true;
+            });
+        }
+
+        final Preference privacyPolicy = findPreference(NetworkSurveyConstants.PROPERTY_PRIVACY_POLICY);
+        if (privacyPolicy != null)
+        {
+            privacyPolicy.setOnPreferenceClickListener(preference -> {
+                Intent browserIntent = new Intent(Intent.ACTION_VIEW, Uri.parse("https://networksurvey.app/privacy-policy"));
+                Context context = getContext();
+                if (context != null) context.startActivity(browserIntent);
                 return true;
             });
         }

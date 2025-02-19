@@ -187,6 +187,11 @@
             app:title="App Instance ID"
             app:defaultValue="None" />
 
+        <Preference
+            app:key="privacy_policy"
+            app:title="@string/privacy_policy"
+            app:summary="@string/privacy_policy_preference_summary" />
+
     </PreferenceCategory>
 
 </PreferenceScreen>

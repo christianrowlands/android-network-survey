@@ -135,6 +135,7 @@ public class NetworkSurveyConstants
     public static final String PROPERTY_APP_VERSION = "app_version";
     // A read only value in the preferences that shows the App Instance ID if applicable
     public static final String PROPERTY_APP_INSTANCE_ID = "app_instance_id";
+    public static final String PROPERTY_PRIVACY_POLICY = "privacy_policy";
 
     // The following key is used in the app_restrictions.xml file and in the app's shared preferences
     public static final String PROPERTY_MQTT_START_ON_BOOT = "mqtt_start_on_boot";

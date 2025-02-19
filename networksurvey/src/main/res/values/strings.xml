@@ -548,6 +548,9 @@ but work independently, so you have full control over how you handle your data.<
     <string name="preferences_preferred_speed_units_option_kilometers_per_hour">Kilometers per hour</string>
     <string name="preferences_preferred_speed_units_option_miles_per_hour">Miles per hour</string>
 
+    <string name="privacy_policy">Privacy Policy</string>
+    <string name="privacy_policy_preference_summary">Click here to view the privacy policy</string>
+
     <!-- Bottom Navigation -->
     <string name="nav_dashboard">Dashboard</string>
     <string name="nav_cellular">Cellular</string>
