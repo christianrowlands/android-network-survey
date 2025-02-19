@@ -2,6 +2,9 @@ package com.craxiom.networksurvey.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
+val ColorTower = Color(0xFF0273A6)
+val ColorServingCell = Color(0xFF8052D2)
+
 val ColorBlack = Color(0xFF000000)
 val ColorOffBlack = Color(0xFF161616)
 val ColorWhiteCultured = Color(0xFFF4F4F4)

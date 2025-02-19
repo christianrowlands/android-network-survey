@@ -74,9 +74,6 @@ internal class TowerMapViewModel : ASignalChartViewModel() {
     private val _lastQueriedBounds = MutableStateFlow<BoundingBox?>(null)
     val lastQueriedBounds = _lastQueriedBounds.asStateFlow()
 
-    private val _mapZoomLevel = MutableStateFlow(0.0)
-    val mapZoomLevel = _mapZoomLevel.asStateFlow()
-
     fun setPaddingInsets(paddingValues: PaddingValues) {
         _paddingInsets.value = paddingValues
     }
@@ -107,10 +104,6 @@ internal class TowerMapViewModel : ASignalChartViewModel() {
 
     fun setLastQueriedBounds(bounds: BoundingBox) {
         _lastQueriedBounds.value = bounds
-    }
-
-    fun setMapZoomLevel(zoomLevel: Double) {
-        _mapZoomLevel.value = zoomLevel
     }
 
     /**

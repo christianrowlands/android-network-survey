@@ -403,6 +403,8 @@ internal fun TowerMapScreen(
         ) {
             Text(
                 text = "Missing the API Key. Please report this bug at https://github.com/christianrowlands/android-network-survey/issues/new/choose",
+                color = MaterialTheme.colorScheme.surface,
+                softWrap = true,
                 fontWeight = FontWeight.Bold,
                 textAlign = TextAlign.Center
             )
@@ -731,7 +733,6 @@ private fun runListener(
     }
 
     val area = calculateArea(bounds)
-    viewModel.setMapZoomLevel(mapView.zoomLevelDouble)
     if (mapView.zoomLevelDouble >= MIN_ZOOM_LEVEL && area <= MAX_AREA_SQ_METERS) {
         viewModel.setIsZoomedOutTooFar(false)
         viewModel.setLastQueriedBounds(bounds)

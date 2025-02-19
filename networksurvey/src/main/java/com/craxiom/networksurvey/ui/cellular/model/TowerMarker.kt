@@ -2,12 +2,15 @@ package com.craxiom.networksurvey.ui.cellular.model
 
 import android.graphics.PorterDuff
 import androidx.appcompat.content.res.AppCompatResources
+import androidx.compose.ui.graphics.toArgb
 import androidx.core.content.ContextCompat
 import androidx.core.graphics.BlendModeColorFilterCompat
 import androidx.core.graphics.BlendModeCompat
 import androidx.core.graphics.drawable.DrawableCompat
 import com.craxiom.networksurvey.R
 import com.craxiom.networksurvey.ui.cellular.Tower
+import com.craxiom.networksurvey.ui.theme.ColorServingCell
+import com.craxiom.networksurvey.ui.theme.ColorTower
 import com.craxiom.networksurvey.util.CellularUtils
 import org.osmdroid.util.GeoPoint
 import org.osmdroid.views.MapView
@@ -19,11 +22,7 @@ class TowerMarker(private val mapView: MapView, private val tower: Tower) : Mark
 
     init {
         val towerDrawable =
-            AppCompatResources.getDrawable(mapView.context, R.drawable.ic_cellular)
-        towerDrawable!!.colorFilter =
-            BlendModeColorFilterCompat.createBlendModeColorFilterCompat(
-                R.color.colorPrimary, BlendModeCompat.SRC_ATOP
-            )
+            AppCompatResources.getDrawable(mapView.context, R.drawable.ic_cell_tower_map)
         position = GeoPoint(tower.lat, tower.lon)
         setAnchor(ANCHOR_CENTER, ANCHOR_BOTTOM)
         icon = towerDrawable
@@ -71,15 +70,12 @@ class TowerMarker(private val mapView: MapView, private val tower: Tower) : Mark
         val towerDrawable =
             AppCompatResources.getDrawable(
                 mapView.context,
-                if (isServingCell) R.drawable.ic_cell_tower_48 else R.drawable.ic_cell_tower
+                if (isServingCell) R.drawable.ic_cell_tower_48 else R.drawable.ic_cell_tower_map
             )
-        val color = ContextCompat.getColor(
-            mapView.context,
-            if (isServingCell) R.color.colorServingCell else R.color.colorTower
-        )
+        val color = if (isServingCell) ColorServingCell else ColorTower
 
         val wrappedDrawable = DrawableCompat.wrap(towerDrawable!!)
-        DrawableCompat.setTint(wrappedDrawable, color)
+        DrawableCompat.setTint(wrappedDrawable, color.toArgb())
         DrawableCompat.setTintMode(wrappedDrawable, PorterDuff.Mode.SRC_IN)
 
         icon = wrappedDrawable
