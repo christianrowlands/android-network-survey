@@ -1,7 +1,5 @@
 package com.craxiom.networksurvey.ui.cellular
 
-import android.content.Context
-import androidx.appcompat.content.res.AppCompatResources
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -48,6 +46,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
@@ -55,7 +54,6 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
-import androidx.core.graphics.drawable.toBitmap
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -68,39 +66,29 @@ import com.craxiom.networksurvey.BuildConfig
 import com.craxiom.networksurvey.R
 import com.craxiom.networksurvey.model.CellularProtocol
 import com.craxiom.networksurvey.model.Plmn
-import com.craxiom.networksurvey.ui.cellular.model.CustomLocationOverlay
 import com.craxiom.networksurvey.ui.cellular.model.FollowMyLocationChangeListener
 import com.craxiom.networksurvey.ui.cellular.model.ServingCellInfo
 import com.craxiom.networksurvey.ui.cellular.model.ServingSignalInfo
 import com.craxiom.networksurvey.ui.cellular.model.TowerMapViewModel
-import com.craxiom.networksurvey.ui.cellular.model.TowerMarker
 import com.craxiom.networksurvey.ui.cellular.model.TowerSource
 import com.google.gson.annotations.SerializedName
 import com.google.protobuf.GeneratedMessage
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.suspendCancellableCoroutine
 import okhttp3.OkHttpClient
-import org.osmdroid.bonuspack.clustering.RadiusMarkerClusterer
 import org.osmdroid.events.DelayedMapListener
 import org.osmdroid.events.MapListener
 import org.osmdroid.events.ScrollEvent
 import org.osmdroid.events.ZoomEvent
 import org.osmdroid.tileprovider.tilesource.TileSourceFactory
 import org.osmdroid.util.BoundingBox
-import org.osmdroid.util.GeoPoint
 import org.osmdroid.views.CustomZoomButtonsController
 import org.osmdroid.views.MapView
-import org.osmdroid.views.overlay.mylocation.GpsMyLocationProvider
-import org.osmdroid.views.overlay.mylocation.IMyLocationConsumer
-import org.osmdroid.views.overlay.mylocation.MyLocationNewOverlay
 import retrofit2.Response
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import retrofit2.http.GET
 import retrofit2.http.Query
 import timber.log.Timber
-import java.util.Collections
 import kotlin.math.atan2
 import kotlin.math.cos
 import kotlin.math.sin
@@ -110,8 +98,6 @@ import kotlin.math.sqrt
 const val INITIAL_ZOOM: Double = 15.0
 const val MIN_ZOOM_LEVEL = 13.0
 const val MAX_AREA_SQ_METERS = 400_000_000.0
-
-private const val MAX_TOWERS_ON_MAP = 5000
 
 /**
  * Creates the map view for displaying the tower locations. The tower locations are pulled from the
@@ -246,7 +232,7 @@ internal fun TowerMapScreen(
                                             viewModel.setSelectedRadioType(label)
                                             viewModel.towers.value.clear()
                                             viewModel.viewModelScope.launch {
-                                                runTowerQuery(viewModel)
+                                                viewModel.runTowerQuery()
                                             }
                                         }
                                         expanded = false
@@ -332,7 +318,7 @@ internal fun TowerMapScreen(
                                 modifier = Modifier.size(24.dp)
                             )
                             Button(
-                                onClick = { goToMyLocation(viewModel) },
+                                onClick = { viewModel.goToMyLocation() },
                                 modifier = Modifier
                                     .size(48.dp)
                                     .clip(CircleShape),
@@ -402,7 +388,7 @@ internal fun TowerMapScreen(
                     viewModel.setPlmnFilter(Plmn(mcc, mnc))
                     viewModel.towers.value.clear()
                     viewModel.viewModelScope.launch {
-                        runTowerQuery(viewModel)
+                        viewModel.runTowerQuery()
                     }
                 },
                 onDismiss = { showPlmnDialog = false }
@@ -417,7 +403,7 @@ internal fun TowerMapScreen(
                         viewModel.setTowerSource(source)
                         viewModel.towers.value.clear()
                         viewModel.viewModelScope.launch {
-                            runTowerQuery(viewModel)
+                            viewModel.runTowerQuery()
                         }
                     }
                 },
@@ -488,53 +474,44 @@ internal fun OsmdroidMapView(
     viewModel: TowerMapViewModel,
     followMyLocationChangeListener: FollowMyLocationChangeListener
 ) {
+    val localContext = LocalContext.current
+    val mapView = remember {
+        val mapView = MapView(localContext)
+        viewModel.followMyLocationChangeListener = followMyLocationChangeListener
+        viewModel.initMapView(mapView)
+        mapView
+    }
+
     AndroidView(
         modifier = Modifier.fillMaxSize(),
-        factory = { context ->
-            val mapView = MapView(context)
-            viewModel.mapView = mapView
-            viewModel.gpsMyLocationProvider = GpsMyLocationProvider(mapView.context)
-            viewModel.towerOverlayGroup = RadiusMarkerClusterer(context)
-            viewModel.towerOverlayGroup.setMaxClusteringZoomLevel(14)
+        factory = {
+            mapView.apply {
+                mapView.setTileSource(TileSourceFactory.MAPNIK)
+                mapView.zoomController.display.setMarginPadding(.75f, .5f)
+                mapView.zoomController.setVisibility(CustomZoomButtonsController.Visibility.ALWAYS)
+                mapView.setMultiTouchControls(true)
 
-            mapView.setTileSource(TileSourceFactory.MAPNIK)
-            mapView.zoomController.display.setMarginPadding(.75f, .5f)
-            mapView.zoomController.setVisibility(CustomZoomButtonsController.Visibility.ALWAYS)
-            mapView.setMultiTouchControls(true)
+                // I pulled the idea for setting this from: https://github.com/osmdroid/osmdroid/wiki/Important-notes-on-using-osmdroid-in-your-app#changing-the-loading-tile-grid-colors
+                mapView.overlayManager.tilesOverlay.loadingBackgroundColor = android.R.color.black
+                mapView.overlayManager.tilesOverlay.loadingLineColor =
+                    context.getColor(R.color.colorPrimary)
 
-            // I pulled the idea for setting this from: https://github.com/osmdroid/osmdroid/wiki/Important-notes-on-using-osmdroid-in-your-app#changing-the-loading-tile-grid-colors
-            mapView.overlayManager.tilesOverlay.loadingBackgroundColor = android.R.color.black
-            mapView.overlayManager.tilesOverlay.loadingLineColor =
-                context.getColor(R.color.colorPrimary)
+                val mapController = mapView.controller
+                mapController.setZoom(INITIAL_ZOOM)
 
-            val mapController = mapView.controller
-            mapController.setZoom(INITIAL_ZOOM)
+                // Listener to detect when map movement stops
+                mapView.addMapListener(DelayedMapListener(object : MapListener {
+                    override fun onScroll(event: ScrollEvent?): Boolean {
+                        runListener(mapView, viewModel)
+                        return true
+                    }
 
-            addDefaultOverlays(
-                context,
-                mapView,
-                viewModel.gpsMyLocationProvider,
-                viewModel,
-                followMyLocationChangeListener
-            )
-            mapView.overlays.add(viewModel.towerOverlayGroup)
-            mapView.overlays.add(viewModel.servingCellLinesOverlayGroup)
-            mapView.overlays.add(viewModel.servingCellCoverageOverlayGroup)
-
-            // Listener to detect when map movement stops
-            mapView.addMapListener(DelayedMapListener(object : MapListener {
-                override fun onScroll(event: ScrollEvent?): Boolean {
-                    runListener(mapView, viewModel)
-                    return true
-                }
-
-                override fun onZoom(event: ZoomEvent?): Boolean {
-                    runListener(mapView, viewModel)
-                    return true
-                }
-            }, 400))
-
-            mapView
+                    override fun onZoom(event: ZoomEvent?): Boolean {
+                        runListener(mapView, viewModel)
+                        return true
+                    }
+                }, 400))
+            }
         },
         update = {
             viewModel.recreateOverlaysFromTowerData(it)
@@ -644,23 +621,6 @@ fun ServingCellInfoDisplay(cellInfo: ServingCellInfo?, servingSignalInfo: Servin
 }
 
 /**
- * Moves the map view to the user's current location.
- */
-private fun goToMyLocation(viewModel: TowerMapViewModel) {
-    val lastKnownLocation = viewModel.gpsMyLocationProvider.lastKnownLocation
-    if (lastKnownLocation == null) {
-        Timber.w("The last known location is null")
-        return
-    }
-    viewModel.mapView!!.controller.animateTo(
-        GeoPoint(
-            lastKnownLocation.latitude,
-            lastKnownLocation.longitude
-        )
-    )
-}
-
-/**
  * Toggles the option to continuously move the map view to the user's current location.
  */
 private fun toggleFollowMe(viewModel: TowerMapViewModel, newIsFollowing: Boolean) {
@@ -671,81 +631,6 @@ private fun toggleFollowMe(viewModel: TowerMapViewModel, newIsFollowing: Boolean
     } else {
         viewModel.myLocationOverlay?.disableFollowLocation()
     }
-}
-
-/**
- * Adds the default overlays to the map view such as the my location overlay.
- */
-private fun addDefaultOverlays(
-    context: Context,
-    mapView: MapView,
-    gpsMyLocationProvider: GpsMyLocationProvider,
-    viewModel: TowerMapViewModel,
-    followMyLocationChangeListener: FollowMyLocationChangeListener
-) {
-    val locationConsumer = IMyLocationConsumer { location, _ ->
-        viewModel.myLocation = location
-        viewModel.drawServingCellLine()
-    }
-
-    viewModel.myLocationOverlay =
-        CustomLocationOverlay(
-            gpsMyLocationProvider,
-            mapView,
-            locationConsumer,
-            followMyLocationChangeListener
-        )
-    val locationOverlay: MyLocationNewOverlay = viewModel.myLocationOverlay!!
-
-    val icon = AppCompatResources.getDrawable(context, R.drawable.ic_location_pin)?.toBitmap()
-    if (icon != null) {
-        locationOverlay.setPersonIcon(icon)
-        locationOverlay.setPersonAnchor(0.5f, .8725f)
-    }
-
-    val directionIcon =
-        AppCompatResources.getDrawable(context, R.drawable.ic_navigation)?.toBitmap()
-    if (icon != null) {
-        locationOverlay.setDirectionIcon(directionIcon)
-        locationOverlay.setDirectionAnchor(0.5f, 0.5f)
-    }
-
-    locationOverlay.enableMyLocation()
-    mapView.overlays.add(locationOverlay)
-}
-
-/**
- * Runs the tower query to get the towers from the back end for the current map view.
- */
-private suspend fun runTowerQuery(viewModel: TowerMapViewModel) {
-    viewModel.setIsLoadingInProgress(true)
-
-    Timber.i("Running the towerQuery")
-
-    val towerPoints = getTowersFromServer(viewModel)
-    Timber.d("Loaded ${towerPoints.size} towers")
-
-    val towers = viewModel.towers.value
-
-    towerPoints.forEach {
-        val towerMarker = TowerMarker(viewModel.mapView!!, it)
-
-        if (towers.size >= MAX_TOWERS_ON_MAP) {
-            val towerToRemove = towers.first()
-            towers.remove(towerToRemove)
-            towerToRemove.destroy()
-        }
-
-        if (towers.contains(towerMarker)) {
-            towers.remove(towerMarker)
-        }
-
-        towers.add(towerMarker)
-    }
-
-    viewModel.setNoTowersFound(towers.isEmpty())
-
-    viewModel.setIsLoadingInProgress(false)
 }
 
 /**
@@ -772,7 +657,7 @@ private fun runListener(
         Timber.d("The zoom level is appropriate to show the towers")
 
         viewModel.viewModelScope.launch {
-            runTowerQuery(viewModel)
+            viewModel.runTowerQuery()
         }
     } else {
         viewModel.setIsLoadingInProgress(false)
@@ -781,70 +666,6 @@ private fun runListener(
             "The zoom level is too high or the area is too large to show the towers %s",
             area.toBigDecimal().toPlainString()
         )
-    }
-}
-
-/**
- * Loads the towers from the NS backend for the given bounding box.
- */
-@OptIn(ExperimentalCoroutinesApi::class)
-private suspend fun getTowersFromServer(
-    viewModel: TowerMapViewModel
-): List<Tower> {
-    return suspendCancellableCoroutine { continuation ->
-        try {
-            viewModel.viewModelScope.launch {
-                try {
-                    val bounds = viewModel.lastQueriedBounds.value ?: return@launch
-
-                    // Format the bounding box coordinates to the required "bbox" string format
-                    val bbox =
-                        "${bounds.latSouth},${bounds.lonWest},${bounds.latNorth},${bounds.lonEast}"
-
-                    val response: Response<TowerResponse>
-                    if (viewModel.plmnFilter.value.isSet()) {
-                        val plmn = viewModel.plmnFilter.value
-                        response = nsApi.getTowers(
-                            bbox,
-                            viewModel.selectedRadioType.value,
-                            plmn.mcc,
-                            plmn.mnc,
-                            viewModel.selectedSource.value.apiName
-                        )
-                    } else {
-                        response = nsApi.getTowers(
-                            bbox,
-                            viewModel.selectedRadioType.value,
-                            viewModel.selectedSource.value.apiName
-                        )
-                    }
-
-                    // Process the response
-                    if (response.code() == 204) {
-                        // No towers found, return an empty list
-                        Timber.w("No towers found; raw: ${response.raw()}")
-                        continuation.resume(Collections.emptyList(), onCancellation = null)
-                        Collections.emptyList<GeoPoint>()
-                    } else if (response.isSuccessful && response.body() != null) {
-                        Timber.i("Successfully loaded towers")
-                        val towerData = response.body()!!
-
-                        continuation.resume(towerData.cells, onCancellation = {
-                            Timber.e("The tower data fetch was cancelled")
-                        })
-                    } else {
-                        Timber.w("Failed to load towers; raw: ${response.raw()}")
-                        continuation.resume(Collections.emptyList(), onCancellation = null)
-                    }
-                } catch (e: Exception) {
-                    Timber.e(e, "Failed to fetch towers")
-                    continuation.resume(Collections.emptyList(), onCancellation = null)
-                }
-            }
-        } catch (e: Exception) {
-            Timber.e(e, "Failed to fetch towers")
-            continuation.resume(Collections.emptyList(), onCancellation = null)
-        }
     }
 }
 
