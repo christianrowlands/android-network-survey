@@ -213,6 +213,7 @@ class TowerMapFragment : AServiceDataFragment(), ICellularSurveyRecordListener {
         composeView.setContent {
             viewModel = viewModel()
             viewModel!!.setPaddingInsets(paddingValues)
+            viewModel!!.setTowerSource(PreferenceUtils.getLastSelectedTowerSource(requireContext()))
             if (servingCell?.servingCell != null) {
                 if (servingCell.servingCell.cellularProtocol != CellularProtocol.NONE) {
                     viewModel!!.setSelectedRadioType(servingCell.servingCell.cellularProtocol.name)

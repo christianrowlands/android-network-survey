@@ -42,6 +42,7 @@ import com.craxiom.networksurvey.fragments.model.MqttConnectionSettings;
 import com.craxiom.networksurvey.model.GnssType;
 import com.craxiom.networksurvey.model.LogTypeState;
 import com.craxiom.networksurvey.mqtt.MqttConnectionInfo;
+import com.craxiom.networksurvey.ui.cellular.model.TowerSource;
 
 import java.util.Arrays;
 import java.util.LinkedHashSet;
@@ -868,5 +869,17 @@ public class PreferenceUtils
     public static boolean displayServingCellCoverageOnMap(Context context)
     {
         return PreferenceManager.getDefaultSharedPreferences(context).getBoolean(NetworkSurveyConstants.PROPERTY_MAP_DISPLAY_SERVING_CELL_COVERAGE, true);
+    }
+
+    public static void setLastSelectedTowerSource(Context context, TowerSource towerSource)
+    {
+        PreferenceManager.getDefaultSharedPreferences(context).edit().putString(NetworkSurveyConstants.PROPERTY_LAST_SELECTED_TOWER_SOURCE, towerSource.toString()).apply();
+    }
+
+    public static TowerSource getLastSelectedTowerSource(Context context)
+    {
+        String savedTowerSourceString = PreferenceManager.getDefaultSharedPreferences(context).getString(NetworkSurveyConstants.PROPERTY_LAST_SELECTED_TOWER_SOURCE, TowerSource.OpenCelliD.toString());
+
+        return TowerSource.valueOf(savedTowerSourceString);
     }
 }

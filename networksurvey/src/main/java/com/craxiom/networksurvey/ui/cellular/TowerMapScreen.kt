@@ -71,6 +71,7 @@ import com.craxiom.networksurvey.ui.cellular.model.ServingCellInfo
 import com.craxiom.networksurvey.ui.cellular.model.ServingSignalInfo
 import com.craxiom.networksurvey.ui.cellular.model.TowerMapViewModel
 import com.craxiom.networksurvey.ui.cellular.model.TowerSource
+import com.craxiom.networksurvey.util.PreferenceUtils
 import com.google.gson.annotations.SerializedName
 import com.google.protobuf.GeneratedMessage
 import kotlinx.coroutines.launch
@@ -396,11 +397,13 @@ internal fun TowerMapScreen(
         }
 
         if (showTowerSourceDialog) {
+            val context = LocalContext.current
             TowerSourceSelectionDialog(
                 currentSource = currentSource,
                 onSetSource = { source ->
                     if (source != currentSource) {
                         viewModel.setTowerSource(source)
+                        PreferenceUtils.setLastSelectedTowerSource(context, source)
                         viewModel.towers.value.clear()
                         viewModel.viewModelScope.launch {
                             viewModel.runTowerQuery()
