@@ -783,7 +783,7 @@ but work independently, so you have full control over how you handle your data.<
     This action will permanently delete all survey records stored for upload.
     \n\nAre you sure you want to proceed?
 </string>
-    <string name="delete_upload_data_success">All upload data has been deleted.</string>
-    <string name="delete_upload_data_failed">Failed to delete upload data.</string>
+    <string name="delete_upload_data_success">All upload data has been deleted</string>
+    <string name="delete_upload_data_failed">Failed to delete upload data</string>
     <string name="delete">Delete</string>
 </resources>

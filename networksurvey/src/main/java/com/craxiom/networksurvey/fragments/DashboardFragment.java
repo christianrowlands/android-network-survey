@@ -1107,6 +1107,7 @@ public class DashboardFragment extends AServiceDataFragment implements LocationL
 
         binding.startScanningButton.setEnabled(false);
         toggleUploadRecordSaving(true);
+        resetUploadUi();
     }
 
     /**

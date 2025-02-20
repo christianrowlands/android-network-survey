@@ -174,6 +174,13 @@ public class DbUploadStore implements ICellularSurveyRecordListener, IWifiSurvey
         });
     }
 
+    public void resetLastLocations()
+    {
+        lastKnownCellularLocations.clear();
+        lastWifiLatitude = Double.NaN;
+        lastWifiLongitude = Double.NaN;
+    }
+
     private boolean shouldWriteGsmRecord(GsmRecordData data, int subscriptionId)
     {
         // Yes, I know that 0.0 is a valid location, but I am filtering on 0.0 anyway

@@ -1040,6 +1040,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
 
                 if (enable)
                 {
+                    dbUploadStore.resetLastLocations();
                     surveyRecordProcessor.addDbSink(dbUploadStore);
                     cellularController.startCellularRecordScanning(); // Only starts scanning if it is not already active.
                     wifiController.startWifiRecordScanning(); // Only starts scanning if it is not already active.
