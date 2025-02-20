@@ -3,9 +3,6 @@ package com.craxiom.networksurvey.ui.cellular.model
 import android.graphics.PorterDuff
 import androidx.appcompat.content.res.AppCompatResources
 import androidx.compose.ui.graphics.toArgb
-import androidx.core.content.ContextCompat
-import androidx.core.graphics.BlendModeColorFilterCompat
-import androidx.core.graphics.BlendModeCompat
 import androidx.core.graphics.drawable.DrawableCompat
 import com.craxiom.networksurvey.R
 import com.craxiom.networksurvey.ui.cellular.Tower
@@ -17,7 +14,7 @@ import org.osmdroid.views.MapView
 import org.osmdroid.views.overlay.Marker
 import org.osmdroid.views.overlay.infowindow.MarkerInfoWindow
 
-class TowerMarker(private val mapView: MapView, private val tower: Tower) : Marker(mapView) {
+class TowerMarker(private val mapView: MapView, val tower: Tower) : Marker(mapView) {
     var cgiId: String
 
     init {

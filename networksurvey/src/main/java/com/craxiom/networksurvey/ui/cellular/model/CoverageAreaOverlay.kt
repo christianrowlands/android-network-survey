@@ -12,7 +12,7 @@ import org.osmdroid.views.overlay.Overlay
 
 class CoverageAreaOverlay(
     private val center: GeoPoint,
-    private val radius: Float // Radius in meters
+    private val radius: Int // Radius in meters
 ) : Overlay() {
 
     private val paint: Paint = Paint().apply {
@@ -27,7 +27,7 @@ class CoverageAreaOverlay(
         val projection: Projection = mapView.projection
         val screenPoint = Point()
         projection.toPixels(center, screenPoint)
-        val projectedRadius = projection.metersToPixels(radius)
+        val projectedRadius = projection.metersToPixels(radius.toFloat())
 
         paint.alpha = 20
         paint.style = Paint.Style.FILL

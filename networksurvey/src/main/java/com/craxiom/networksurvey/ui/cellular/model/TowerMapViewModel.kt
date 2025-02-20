@@ -52,7 +52,7 @@ internal class TowerMapViewModel : ASignalChartViewModel() {
         MutableStateFlow<HashMap<Int, ServingCellInfo>>(HashMap()) // <SubscriptionId, ServingCellInfo>
     val servingCells = _servingCells.asStateFlow()
 
-    val subIdToServingCellLocations = HashMap<Int, GeoPoint>()
+    val subIdToServingCellLocations = HashMap<Int, GeoPointRange>()
     var myLocation: Location? = null
 
     private var _servingSignals =
@@ -281,7 +281,7 @@ internal class TowerMapViewModel : ASignalChartViewModel() {
                     // Get the value form servingCellToSubscriptionMap to be the key for the
                     // subIdToServingCellLocations so that we can set the value as marker.position
                     subIdToServingCellLocations[servingCellToSubscriptionMap[marker.cgiId]!!] =
-                        marker.position
+                        GeoPointRange(marker.position, marker.tower.range)
                 }
                 marker.setServingCell(isServingCell)
                 towerOverlayGroup.add(marker)
@@ -316,7 +316,7 @@ internal class TowerMapViewModel : ASignalChartViewModel() {
 
             val myGeoPoint = GeoPoint(currentLocation.latitude, currentLocation.longitude)
 
-            subIdToServingCellLocations.forEach { (_, geoPoint) ->
+            subIdToServingCellLocations.forEach { (_, geoPointRange) ->
                 val polyline = Polyline()
                 polyline.outlinePaint.strokeWidth = 4f
                 polyline.outlinePaint.setPathEffect(DashPathEffect(floatArrayOf(10f, 20f), 0f))
@@ -324,7 +324,7 @@ internal class TowerMapViewModel : ASignalChartViewModel() {
 
                 val pathPoints = ArrayList<GeoPoint>()
                 pathPoints.add(myGeoPoint)
-                pathPoints.add(geoPoint)
+                pathPoints.add(geoPointRange.geoPoint)
                 polyline.setPoints(pathPoints)
             }
         } catch (e: Exception) {
@@ -346,10 +346,12 @@ internal class TowerMapViewModel : ASignalChartViewModel() {
                     if (!displayCoverage) return
                 }
 
-            subIdToServingCellLocations.forEach { (_, geoPoint) ->
-                val coverageArea =
-                    CoverageAreaOverlay(geoPoint, 1000f) // TODO Get the actual radius
-                servingCellCoverageOverlayGroup.add(coverageArea)
+            subIdToServingCellLocations.forEach { (_, geoPointRange) ->
+                if (geoPointRange.range > 0) {
+                    val coverageArea =
+                        CoverageAreaOverlay(geoPointRange.geoPoint, geoPointRange.range)
+                    servingCellCoverageOverlayGroup.add(coverageArea)
+                }
             }
         } catch (e: Exception) {
             Timber.e(e, "Something went wrong while drawing the serving cell coverage on the map")
