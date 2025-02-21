@@ -143,6 +143,7 @@ public class NetworkSurveyConstants
     // The following key is used in the app_restrictions.xml file and in the app's shared preferences
     public static final String PROPERTY_MQTT_START_ON_BOOT = "mqtt_start_on_boot";
 
+    public static final String PROPERTY_SHOW_CONFIG_UPLOAD_DIALOG = "show_configuration_upload_dialog";
     public static final String PROPERTY_UPLOAD_TO_OPENCELLID = "upload_to_opencellid";
     public static final String PROPERTY_ANONYMOUS_OPENCELLID_UPLOAD = "anonymous_opencellid_upload";
     public static final String PROPERTY_UPLOAD_TO_BEACONDB = "upload_to_beacondb";

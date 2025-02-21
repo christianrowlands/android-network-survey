@@ -7,6 +7,13 @@
         app:title="@string/settings">
 
         <SwitchPreferenceCompat
+            app:key="show_configuration_upload_dialog"
+            android:defaultValue="true"
+            app:title="@string/show_upload_dialog_pref_title"
+            app:summaryOff="@string/show_upload_dialog_summary_off"
+            app:summaryOn="@string/show_upload_dialog_summary_on" />
+
+        <SwitchPreferenceCompat
             app:key="upload_retry_enabled"
             app:title="Retry Failed Uploads"
             app:summary="Automatically retry uploads on failure" />

@@ -55,12 +55,27 @@
             android:text="@string/upload_to_beacondb"
             android:paddingTop="8dp" />
 
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="2dp"
+            android:layout_marginHorizontal="@dimen/x_small_margin"
+            android:layout_marginVertical="@dimen/small_margin"
+            android:background="@color/colorAccentFaded" />
+
         <CheckBox
             android:id="@+id/checkRetry"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:padding="@dimen/x_small_margin"
             android:text="@string/retry_on_failure"
+            android:paddingTop="8dp" />
+
+        <CheckBox
+            android:id="@+id/checkDontShowAgain"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:padding="@dimen/x_small_margin"
+            android:text="@string/dont_show_again"
             android:paddingTop="8dp" />
 
     </LinearLayout>

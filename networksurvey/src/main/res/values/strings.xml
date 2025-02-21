@@ -190,6 +190,7 @@ but work independently, so you have full control over how you handle your data.<
     <string name="access_token_warning">You have to enter a valid access token in preferences</string>
     <string name="upload_to_beacondb">Upload to BeaconDB</string>
     <string name="retry_on_failure">Retry on failure</string>
+    <string name="dont_show_again">Don\'t show this again</string>
 
     <string name="card_title_logging_details">Local File Logging Control</string>
     <string name="card_title_mqtt_details">MQTT Connection</string>
@@ -772,6 +773,7 @@ but work independently, so you have full control over how you handle your data.<
     <string name="uploader_no_internet_message">Cannot upload due to no Internet connection.</string>
     <string name="cancel">Cancel</string>
     <string name="preferences">Preferences</string>
+    <string name="show_upload_dialog_pref_title">Show Upload Config Dialog</string>
     <string name="uploader_enqueued">An error occurred, will retry later</string>
     <string name="upload_disabled_via_mdm">External upload has been disabled via MDM</string>
     <string name="upload_saving_toggle_failed">An error occurred when trying to start saving records for upload</string>
@@ -786,4 +788,6 @@ but work independently, so you have full control over how you handle your data.<
     <string name="delete_upload_data_success">All upload data has been deleted</string>
     <string name="delete_upload_data_failed">Failed to delete upload data</string>
     <string name="delete">Delete</string>
+    <string name="show_upload_dialog_summary_off">Upload dialog will be skipped and the settings below will be used</string>
+    <string name="show_upload_dialog_summary_on">The config dialog will be shown before each upload</string>
 </resources>
