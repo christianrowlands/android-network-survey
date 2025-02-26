@@ -99,8 +99,8 @@ public class NetworkSurveyConstants
 
     public static final String DEFAULT_ROLLOVER_SIZE_MB = "5";
 
-    public static final boolean DEFAULT_UPLOAD_TO_OPENCELLID = false;
-    public static final boolean DEFAULT_UPLOAD_TO_BEACONDB = false;
+    public static final boolean DEFAULT_UPLOAD_TO_OPENCELLID = true;
+    public static final boolean DEFAULT_UPLOAD_TO_BEACONDB = true;
     public static final boolean DEFAULT_UPLOAD_RETRY_ENABLED = true;
 
     public static final int LOCATION_PROVIDER_FUSED = 0;

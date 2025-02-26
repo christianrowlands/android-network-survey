@@ -26,6 +26,7 @@
 
         <SwitchPreferenceCompat
             app:key="upload_to_opencellid"
+            android:defaultValue="true"
             app:title="Upload to OpenCellID"
             app:summary="Enable or disable uploading to OpenCellID" />
 
@@ -52,6 +53,7 @@
 
         <SwitchPreferenceCompat
             app:key="upload_to_beacondb"
+            android:defaultValue="true"
             app:title="Upload to BeaconDB"
             app:summary="Enable or disable uploading to BeaconDB" />
 
