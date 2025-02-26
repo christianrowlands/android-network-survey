@@ -452,9 +452,6 @@ public class SurveyRecordProcessor
         {
             try
             {
-                /* Timber.v("currentTechnology=%s", currentTechnology);
-                Timber.v("allCellInfo: ");
-                allCellInfo.forEach(cellInfo -> Timber.v(cellInfo.toString()));*/
                 notifyNetworkTypeListeners(dataNetworkType, voiceNetworkType, subscriptionId, overrideNetworkType);
 
                 if (allCellInfo != null && !allCellInfo.isEmpty())
@@ -491,10 +488,6 @@ public class SurveyRecordProcessor
      */
     public void onWifiScanUpdate(List<ScanResult> apScanResults)
     {
-        /*Timber.v("SCAN RESULTS:");
-        apScanResults.forEach(scanResult -> Timber.v(scanResult.toString()));
-        Timber.v("");*/
-
         execute(() -> processAccessPoints(apScanResults));
     }
 
@@ -529,10 +522,6 @@ public class SurveyRecordProcessor
      */
     public void onBluetoothScanUpdate(List<android.bluetooth.le.ScanResult> results)
     {
-        /*Timber.v("SCAN RESULTS:");
-        results.forEach(scanResult -> Timber.v(scanResult.toString()));
-        Timber.v("");*/
-
         execute(() -> processBluetoothResults(results));
     }
 
@@ -914,8 +903,6 @@ public class SurveyRecordProcessor
         lastGnssLogTimeMs = System.currentTimeMillis();
 
         final Collection<GnssMeasurement> gnssMeasurements = event.getMeasurements();
-        //Timber.i("GnssMeasurement length=%s", (long) gnssMeasurements.size());
-        //gnssMeasurements.forEach(m -> Timber.i("GnssMeasurement: Constellation=%s, CarrierFreq=%s, AGC=%s", GnssMessageConstants.getProtobufConstellation(m.getConstellationType()), (long) m.getCarrierFrequencyHz(), m.getAutomaticGainControlLevelDb()));
 
         final Map<ConstellationFreqKey, Float> agcMap = new HashMap<>();
         if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU)
@@ -1438,15 +1425,6 @@ public class SurveyRecordProcessor
         {
             dataBuilder.setSlot(Int32Value.newBuilder().setValue(subscriptionId).build());
         }
-
-        /*Timber.i("CellSignalStrengthLte: %s", cellSignalStrengthLte.toString());
-        if (signalStrength != null)
-        {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q)
-            {
-                Timber.i("SignalStrength: %s", signalStrength.getCellSignalStrengths().stream().filter(v -> v instanceof CellSignalStrengthLte).collect(Collectors.toList()).get(0).toString());
-            }
-        }*/
 
         // The signalStrength object is only for the serving cell
         if (cellInfoLte.isRegistered())

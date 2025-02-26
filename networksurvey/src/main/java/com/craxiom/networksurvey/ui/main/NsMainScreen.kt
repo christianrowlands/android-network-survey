@@ -227,17 +227,6 @@ fun MainCompose(
     }
 }
 
-@Composable
-fun HandleBackPress(navController: NavController) {
-    BackHandler {
-        if (navController.currentDestination?.route == "dashboard") {
-            // TODO Handle closing or moving the task to the back
-        } else {
-            navController.navigateUp()
-        }
-    }
-}
-
 enum class NavRoutes {
     MainRoute,
 }

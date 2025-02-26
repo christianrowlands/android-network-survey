@@ -49,7 +49,6 @@ public class SatelliteUtils
      */
     public static SatelliteName getSatelliteName(GnssType gnssType, int svid)
     {
-        // TODO - support more satellite names
         switch (gnssType)
         {
             case NAVSTAR:
