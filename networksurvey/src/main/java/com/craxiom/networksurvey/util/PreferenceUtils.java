@@ -44,9 +44,12 @@ import com.craxiom.networksurvey.model.LogTypeState;
 import com.craxiom.networksurvey.mqtt.MqttConnectionInfo;
 import com.craxiom.networksurvey.ui.cellular.model.TowerSource;
 
+import org.osmdroid.util.BoundingBox;
+
 import java.util.Arrays;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Random;
 import java.util.Set;
 
@@ -881,5 +884,43 @@ public class PreferenceUtils
         String savedTowerSourceString = PreferenceManager.getDefaultSharedPreferences(context).getString(NetworkSurveyConstants.PROPERTY_LAST_SELECTED_TOWER_SOURCE, TowerSource.OpenCelliD.toString());
 
         return TowerSource.valueOf(savedTowerSourceString);
+    }
+
+    public static void saveTowerMapViewBoundingBox(Context context, BoundingBox boundingBox)
+    {
+        if (boundingBox == null) return;
+
+        String boundingBoxString = String.format(Locale.US, "%f,%f,%f,%f",
+                boundingBox.getLatNorth(),
+                boundingBox.getLonEast(),
+                boundingBox.getLatSouth(),
+                boundingBox.getLonWest());
+
+        SharedPreferences prefs = context.getSharedPreferences(NetworkSurveyConstants.TOWER_MAP_SHARED_PREFERENCES, Context.MODE_PRIVATE);
+        prefs.edit().putString(NetworkSurveyConstants.PROPERTY_LAST_TOWER_MAP_VIEW_LOCATION, boundingBoxString).apply();
+    }
+
+    public static BoundingBox getBoundingBoxFromPreferences(Context context)
+    {
+        SharedPreferences prefs = context.getSharedPreferences(NetworkSurveyConstants.TOWER_MAP_SHARED_PREFERENCES, Context.MODE_PRIVATE);
+        String boundingBoxString = prefs.getString(NetworkSurveyConstants.PROPERTY_LAST_TOWER_MAP_VIEW_LOCATION, null);
+
+        if (boundingBoxString == null) return null;
+
+        String[] parts = boundingBoxString.split(",");
+        if (parts.length != 4) return null;
+
+        try
+        {
+            double latNorth = Double.parseDouble(parts[0]);
+            double lonEast = Double.parseDouble(parts[1]);
+            double latSouth = Double.parseDouble(parts[2]);
+            double lonWest = Double.parseDouble(parts[3]);
+            return new BoundingBox(latNorth, lonEast, latSouth, lonWest);
+        } catch (NumberFormatException e)
+        {
+            Timber.e(e, "Error parsing the save tower map view bounding box from preferences");
+            return null;
+        }
     }
 }

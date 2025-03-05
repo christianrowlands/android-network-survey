@@ -176,4 +176,7 @@ public class NetworkSurveyConstants
     public static final String PROPERTY_KEY_DENIED_BACKGROUND_LOCATION_PERMISSION = "denied_background_location_permission";
 
     public static final String PROPERTY_LAST_SELECTED_TOWER_SOURCE = "last_selected_tower_source";
+
+    public static final String TOWER_MAP_SHARED_PREFERENCES = "tower_map_prefs";
+    public static final String PROPERTY_LAST_TOWER_MAP_VIEW_LOCATION = "last_tower_map_view_location";
 }

@@ -96,6 +96,10 @@ class TowerMapFragment : AServiceDataFragment(), ICellularSurveyRecordListener {
     }
 
     override fun onPause() {
+        viewModel?.mapView?.boundingBox?.let {
+            PreferenceUtils.saveTowerMapViewBoundingBox(requireContext(), it)
+        }
+
         viewModel?.mapView?.onPause()
         super.onPause()
     }
