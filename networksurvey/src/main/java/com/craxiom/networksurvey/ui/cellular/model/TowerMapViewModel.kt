@@ -316,7 +316,7 @@ internal class TowerMapViewModel : ASignalChartViewModel() {
 
             val currentLocation = myLocation ?: return
 
-            if (subIdToServingCellLocations.isEmpty) return
+            if (subIdToServingCellLocations.isEmpty()) return
 
             val myGeoPoint = GeoPoint(currentLocation.latitude, currentLocation.longitude)
 
@@ -343,7 +343,7 @@ internal class TowerMapViewModel : ASignalChartViewModel() {
         try {
             servingCellCoverageOverlayGroup.items?.clear()
 
-            if (subIdToServingCellLocations.isEmpty) return
+            if (subIdToServingCellLocations.isEmpty()) return
 
             PreferenceUtils.displayServingCellCoverageOnMap(mapView?.context)
                 .let { displayCoverage ->
@@ -426,7 +426,7 @@ internal class TowerMapViewModel : ASignalChartViewModel() {
             towers.add(towerMarker)
         }
 
-        setNoTowersFound(towers.isEmpty)
+        setNoTowersFound(towers.isEmpty())
 
         setIsLoadingInProgress(false)
     }
