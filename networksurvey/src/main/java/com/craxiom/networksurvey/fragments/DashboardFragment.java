@@ -241,6 +241,12 @@ public class DashboardFragment extends AServiceDataFragment implements LocationL
     }
 
     @Override
+    public void onStatusChanged(String provider, int status, Bundle extras)
+    {
+        // No-op, old method that is no longer called on Android Q and above.
+    }
+
+    @Override
     public void onConnectionStateChange(ConnectionState connectionState)
     {
         viewModel.setMqttConnectionState(connectionState);

@@ -2,6 +2,7 @@ package com.craxiom.networksurvey.listeners;
 
 import android.location.Location;
 import android.location.LocationListener;
+import android.os.Bundle;
 
 import androidx.annotation.NonNull;
 
@@ -50,6 +51,12 @@ public class ExtraLocationListener implements LocationListener
         {
             latestLocation = null;
         }
+    }
+
+    @Override
+    public void onStatusChanged(String provider, int status, Bundle extras)
+    {
+        // No-op
     }
 
     public Location getLatestLocation()

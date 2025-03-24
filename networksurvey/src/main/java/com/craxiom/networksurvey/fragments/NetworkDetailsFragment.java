@@ -226,6 +226,12 @@ public class NetworkDetailsFragment extends AServiceDataFragment implements ICel
         viewModel.setLocation(location);
     }
 
+    @Override
+    public void onStatusChanged(String provider, int status, Bundle extras)
+    {
+        // No-op
+    }
+
     /**
      * Initialize the UI listeners for the various buttons and other UI elements.
      */

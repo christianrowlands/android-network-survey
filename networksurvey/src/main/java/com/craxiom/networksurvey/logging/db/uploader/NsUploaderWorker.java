@@ -1,15 +1,19 @@
 package com.craxiom.networksurvey.logging.db.uploader;
 
 import android.app.Notification;
+import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.content.Context;
 
 import androidx.annotation.NonNull;
+import androidx.core.app.NotificationCompat;
 import androidx.work.Data;
+import androidx.work.ForegroundInfo;
 import androidx.work.Worker;
 import androidx.work.WorkerParameters;
 
 import com.craxiom.networksurvey.BuildConfig;
+import com.craxiom.networksurvey.R;
 import com.craxiom.networksurvey.constants.NetworkSurveyConstants;
 import com.craxiom.networksurvey.logging.db.SurveyDatabase;
 import com.craxiom.networksurvey.logging.db.dao.SurveyRecordDao;
@@ -24,6 +28,8 @@ import com.craxiom.networksurvey.logging.db.uploader.beacondb.BeaconDbUploadClie
 import com.craxiom.networksurvey.logging.db.uploader.ocid.OpenCelliDCsvFormatter;
 import com.craxiom.networksurvey.logging.db.uploader.ocid.OpenCelliDUploadClient;
 import com.craxiom.networksurvey.util.PreferenceUtils;
+import com.google.common.util.concurrent.Futures;
+import com.google.common.util.concurrent.ListenableFuture;
 
 import java.util.Collections;
 import java.util.List;
@@ -166,6 +172,34 @@ public class NsUploaderWorker extends Worker
         Timber.d("onStopped: Upload cancelled");
         notificationManager.cancel(NOTIFICATION_ID);
         super.onStopped();
+    }
+
+    @NonNull
+    @Override
+    public ListenableFuture<ForegroundInfo> getForegroundInfoAsync()
+    {
+        // getForegroundInfo is needed for Android SDK prior to S (API 31, Android 12). This is
+        // not used on later versions of Android.
+        Context context = getApplicationContext();
+        String channelId = "ns_upload_channel";
+
+        NotificationChannel channel = new NotificationChannel(
+                channelId,
+                "Upload Worker",
+                NotificationManager.IMPORTANCE_LOW
+        );
+        NotificationManager manager = context.getSystemService(NotificationManager.class);
+        if (manager != null) manager.createNotificationChannel(channel);
+
+        Notification notification = new NotificationCompat.Builder(context, channelId)
+                .setContentTitle("Network Survey Upload")
+                .setContentText("Uploading data...")
+                .setSmallIcon(R.drawable.ic_upload)
+                .setOngoing(true)
+                .build();
+
+        ForegroundInfo foregroundInfo = new ForegroundInfo(1337, notification);
+        return Futures.immediateFuture(foregroundInfo);
     }
 
     private UploadResultBundle processUploadBatch(int batchSize, boolean isBeaconDBUploadEnabled)
