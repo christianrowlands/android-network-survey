@@ -1,5 +1,20 @@
 # Changelog
 
+## [1.34](https://github.com/christianrowlands/android-network-survey/releases/tag/v1.34) - 2025-03-25
+
+* Ensure the app notification is displayed when the MQTT connection is lost.
+* Adds a UMTS Cell Id to RNC ID and Short Cell ID calculator - [#69](https://github.com/christianrowlands/android-network-survey/issues/69).
+* Adds a link to the privacy policy in the app's settings.
+* Fix a bug where the cellular icon would have a blue tint after opening the tower map view.
+* Display the serving cell coverage area on the tower map - [#58](https://github.com/christianrowlands/android-network-survey/issues/58).
+* Adds tower map settings, and link to the tower map settings from the map screen.
+* Save and restore the last selected tower source for the map view.
+* Reset the upload status when a new upload scan is started.
+* Adds a preference for hiding the upload dialog.
+* Move the upload to database section up on the dashboard.
+* Save the last view position so it can be restored the next time the map is opened - [#65](https://github.com/christianrowlands/android-network-survey/issues/65).
+* Fix a bug with uploading records on Android 11 and below - [#73](https://github.com/christianrowlands/android-network-survey/issues/73).
+
 ## [1.33](https://github.com/christianrowlands/android-network-survey/releases/tag/v1.33) - 2025-02-17
 
 * Adds support for uploading cellular and Wi-Fi survey data to OpenCelliD and BeaconDB.
