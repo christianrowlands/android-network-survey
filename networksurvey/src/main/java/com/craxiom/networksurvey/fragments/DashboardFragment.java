@@ -410,7 +410,7 @@ public class DashboardFragment extends AServiceDataFragment implements LocationL
         {
             AlertDialog.Builder alertBuilder = new AlertDialog.Builder(context);
             alertBuilder.setCancelable(true);
-            alertBuilder.setTitle(getString(R.string.bluetooth_permissions_rationale_title));
+            alertBuilder.setTitle(context.getString(R.string.bluetooth_permissions_rationale_title));
             alertBuilder.setMessage(getText(R.string.bluetooth_permissions_rationale));
             alertBuilder.setPositiveButton(android.R.string.ok, (dialog, which) -> requestBluetoothPermissions());
 
@@ -437,7 +437,7 @@ public class DashboardFragment extends AServiceDataFragment implements LocationL
         {
             AlertDialog.Builder alertBuilder = new AlertDialog.Builder(context);
             alertBuilder.setCancelable(true);
-            alertBuilder.setTitle(getString(R.string.cdr_required_permissions_rationale_title));
+            alertBuilder.setTitle(context.getString(R.string.cdr_required_permissions_rationale_title));
             alertBuilder.setMessage(getText(R.string.cdr_required_permissions_rationale));
             alertBuilder.setPositiveButton(R.string.request, (dialog, which) -> requestRequiredCdrPermissions());
 
@@ -450,7 +450,7 @@ public class DashboardFragment extends AServiceDataFragment implements LocationL
         {
             AlertDialog.Builder alertBuilder = new AlertDialog.Builder(context);
             alertBuilder.setCancelable(true);
-            alertBuilder.setTitle(getString(R.string.cdr_optional_permissions_rationale_title));
+            alertBuilder.setTitle(context.getString(R.string.cdr_optional_permissions_rationale_title));
             alertBuilder.setMessage(getText(R.string.cdr_optional_permissions_rationale));
             alertBuilder.setPositiveButton(R.string.request, (dialog, which) -> requestOptionalCdrPermissions());
             alertBuilder.setNegativeButton(R.string.ignore, (dialog, which) -> {
@@ -516,13 +516,13 @@ public class DashboardFragment extends AServiceDataFragment implements LocationL
         LayoutInflater inflater = LayoutInflater.from(context);
         View dialogView = inflater.inflate(R.layout.dialog_upload_help, null);
         TextView helpTextView = dialogView.findViewById(R.id.tvUploadHelpText);
-        helpTextView.setText(Html.fromHtml(getString(R.string.upload_help), Html.FROM_HTML_MODE_LEGACY));
+        helpTextView.setText(Html.fromHtml(context.getString(R.string.upload_help), Html.FROM_HTML_MODE_LEGACY));
         helpTextView.setMovementMethod(LinkMovementMethod.getInstance()); // Enable link clicking
 
         AlertDialog.Builder alertBuilder = new AlertDialog.Builder(context);
         alertBuilder.setView(dialogView);
         alertBuilder.setCancelable(true);
-        alertBuilder.setTitle(getString(R.string.upload_help_title));
+        alertBuilder.setTitle(context.getString(R.string.upload_help_title));
         alertBuilder.setPositiveButton(android.R.string.ok, (dialog, which) -> {
         });
         alertBuilder.setNeutralButton(R.string.view_manual, (dialog, which) -> {
@@ -546,7 +546,7 @@ public class DashboardFragment extends AServiceDataFragment implements LocationL
         AlertDialog.Builder alertBuilder = new AlertDialog.Builder(context);
         alertBuilder.setView(dialogView);
         alertBuilder.setCancelable(true);
-        alertBuilder.setTitle(getString(R.string.cdr_help_title));
+        alertBuilder.setTitle(context.getString(R.string.cdr_help_title));
         alertBuilder.setPositiveButton(android.R.string.ok, (dialog, which) -> {
         });
         alertBuilder.create().show();
@@ -562,7 +562,7 @@ public class DashboardFragment extends AServiceDataFragment implements LocationL
 
         AlertDialog.Builder alertBuilder = new AlertDialog.Builder(context);
         alertBuilder.setCancelable(true);
-        alertBuilder.setTitle(getString(R.string.file_help_title));
+        alertBuilder.setTitle(context.getString(R.string.file_help_title));
         alertBuilder.setMessage(getText(R.string.file_help));
         alertBuilder.setPositiveButton(android.R.string.ok, (dialog, which) -> {
         });
@@ -836,9 +836,9 @@ public class DashboardFragment extends AServiceDataFragment implements LocationL
             }
             return null;
         }, enabled -> {
-            if (enabled == null) return getString(R.string.cellular_logging_toggle_failed);
+            if (enabled == null) return context.getString(R.string.cellular_logging_toggle_failed);
             updateCellularLogging(enabled);
-            return getString(enabled ? R.string.cellular_logging_start_toast : R.string.cellular_logging_stop_toast);
+            return context.getString(enabled ? R.string.cellular_logging_start_toast : R.string.cellular_logging_stop_toast);
         }, context).executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
     }
 
@@ -859,9 +859,9 @@ public class DashboardFragment extends AServiceDataFragment implements LocationL
             }
             return null;
         }, enabled -> {
-            if (enabled == null) return getString(R.string.wifi_logging_toggle_failed);
+            if (enabled == null) return context.getString(R.string.wifi_logging_toggle_failed);
             updateWifiLogging(enabled);
-            return getString(enabled ? R.string.wifi_logging_start_toast : R.string.wifi_logging_stop_toast);
+            return context.getString(enabled ? R.string.wifi_logging_start_toast : R.string.wifi_logging_stop_toast);
         }, context).executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
     }
 
@@ -882,9 +882,9 @@ public class DashboardFragment extends AServiceDataFragment implements LocationL
             }
             return null;
         }, enabled -> {
-            if (enabled == null) return getString(R.string.bluetooth_logging_toggle_failed);
+            if (enabled == null) return context.getString(R.string.bluetooth_logging_toggle_failed);
             updateBluetoothLogging(enabled);
-            return getString(enabled ? R.string.bluetooth_logging_start_toast : R.string.bluetooth_logging_stop_toast);
+            return context.getString(enabled ? R.string.bluetooth_logging_start_toast : R.string.bluetooth_logging_stop_toast);
         }, context).executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
     }
 
@@ -905,9 +905,9 @@ public class DashboardFragment extends AServiceDataFragment implements LocationL
             }
             return null;
         }, enabled -> {
-            if (enabled == null) return getString(R.string.gnss_logging_toggle_failed);
+            if (enabled == null) return context.getString(R.string.gnss_logging_toggle_failed);
             updateGnssLogging(enabled);
-            return getString(enabled ? R.string.gnss_logging_start_toast : R.string.gnss_logging_stop_toast);
+            return context.getString(enabled ? R.string.gnss_logging_start_toast : R.string.gnss_logging_stop_toast);
         }, context).executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
     }
 
@@ -928,9 +928,9 @@ public class DashboardFragment extends AServiceDataFragment implements LocationL
             }
             return null;
         }, enabled -> {
-            if (enabled == null) return getString(R.string.cdr_logging_toggle_failed);
+            if (enabled == null) return context.getString(R.string.cdr_logging_toggle_failed);
             updateCdrLogging(enabled);
-            return getString(enabled ? R.string.cdr_logging_start_toast : R.string.cdr_logging_stop_toast);
+            return context.getString(enabled ? R.string.cdr_logging_start_toast : R.string.cdr_logging_stop_toast);
         }, context).executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
     }
 
@@ -1144,10 +1144,10 @@ public class DashboardFragment extends AServiceDataFragment implements LocationL
             if (enabled == null)
             {
                 viewModel.setUploadScanningActive(false);
-                return getString(R.string.upload_saving_toggle_failed);
+                return context.getString(R.string.upload_saving_toggle_failed);
             }
             viewModel.setUploadScanningActive(enabled);
-            return getString(enabled ? R.string.upload_saving_start_toast : R.string.upload_saving_stop_toast);
+            return context.getString(enabled ? R.string.upload_saving_start_toast : R.string.upload_saving_stop_toast);
         }, context).executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
     }
 
@@ -1229,7 +1229,7 @@ public class DashboardFragment extends AServiceDataFragment implements LocationL
         beaconDbUploadCheckbox.setChecked(prefUploadToBeaconDb);
         retryUploadCheckbox.setChecked(prefRetryUpload);
 
-        builder.setTitle(getString(R.string.upload_survey_records))
+        builder.setTitle(context.getString(R.string.upload_survey_records))
                 .setPositiveButton("Upload", (dialog, which) -> {
                     boolean uploadToOpenCellId = ocidUploadCheckbox.isChecked();
                     boolean anonymously = anonymousOcidUploadCheckbox.isChecked();
@@ -1408,13 +1408,13 @@ public class DashboardFragment extends AServiceDataFragment implements LocationL
                         Timber.tag(innerTag).d("onChanged(): Updating progress: current=%s max=%s", currentPercent, maxPercent);
                         currentPercent = Math.min(currentPercent, maxPercent);
                         binding.uploadProgressBar.setProgress(currentPercent);
-                        binding.uploadPercentage.setText(getString(R.string.upload_percentage, currentPercent));
+                        binding.uploadPercentage.setText(context.getString(R.string.upload_percentage, currentPercent));
 
                         if (!Strings.isNullOrEmpty(statusMessage) || workInfo.getState() == WorkInfo.State.ENQUEUED)
                         {
                             if (workInfo.getState() == WorkInfo.State.ENQUEUED)
                             {
-                                statusMessage = getString(R.string.uploader_enqueued);
+                                statusMessage = context.getString(R.string.uploader_enqueued);
                             }
                             binding.uploadProgressStatus.setVisibility(View.VISIBLE);
                             binding.uploadProgressStatus.setText(statusMessage);
