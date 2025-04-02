@@ -18,7 +18,7 @@ if (file("google-services.json").exists() && !gradle.startParameter.taskNames.an
 }
 
 ext.androidVersion = '28.0.0'
-ext.grpcVersion = '1.68.0'
+ext.grpcVersion = '1.69.1'
 ext.networkSurveyMessagingVersion = '1.7.0'
 ext.navigationVersion = '2.8.9'
 
@@ -164,7 +164,7 @@ dependencies {
     implementation "androidx.work:work-runtime:2.10.0"
 
     // Compose
-    def composeBom = platform('androidx.compose:compose-bom:2025.03.00')
+    def composeBom = platform('androidx.compose:compose-bom:2025.03.01')
     implementation(composeBom)
     androidTestImplementation(composeBom)
 
