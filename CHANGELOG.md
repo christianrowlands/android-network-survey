@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.35](https://github.com/christianrowlands/android-network-survey/releases/tag/v1.35) - 2025-04-07
+
+* Fixes a crash that occurs when the user quickly navigates to another app after enabling logging.
+* Switches the default location provider to ALL (previously FUSED).
+* Clarifies the description of the FUSED and ALL location providers in the app's Settings.
+* Fixes a crash when uploading records to OpenCelliD or BeaconDB when running on Android 10 or lower.
+
 ## [1.34](https://github.com/christianrowlands/android-network-survey/releases/tag/v1.34) - 2025-03-25
 
 * Ensure the app notification is displayed when the MQTT connection is lost.
