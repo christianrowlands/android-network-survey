@@ -401,6 +401,12 @@ internal class TowerMapViewModel : ASignalChartViewModel() {
      * Runs the tower query to get the towers from the back end for the current map view.
      */
     suspend fun runTowerQuery() {
+        val mapViewLocal = mapView
+        if (mapViewLocal == null) {
+            Timber.w("The map view is null")
+            return
+        }
+
         setIsLoadingInProgress(true)
 
         Timber.i("Running the towerQuery")
@@ -411,7 +417,7 @@ internal class TowerMapViewModel : ASignalChartViewModel() {
         val towers = towers.value
 
         towerPoints.forEach {
-            val towerMarker = TowerMarker(mapView!!, it)
+            val towerMarker = TowerMarker(mapViewLocal, it)
 
             if (towers.size >= MAX_TOWERS_ON_MAP) {
                 val towerToRemove = towers.first()
