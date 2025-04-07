@@ -147,7 +147,7 @@
 
         <ListPreference
             android:dialogLayout="@layout/custom_list_preference_layout"
-            app:defaultValue="0"
+            app:defaultValue="3"
             app:dialogTitle="@string/location_provider_title"
             app:dialogMessage="@string/location_provider_description"
             app:entries="@array/location_provider_option_labels"

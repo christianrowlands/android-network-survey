@@ -512,7 +512,7 @@ but work independently, so you have full control over how you handle your data.<
         <b>FUSED</b>: Combines inputs from GNSS and NETWORK location providers to provide the most battery efficient location fix, but can be less accurate.\n\n
         <b>GNSS</b>: Determines location using GNSS satellites (e.g. GPS). This uses more battery than NETWORK based, but is typically more accurate.\n\n
         <b>NETWORK</b>: Determines location based on nearby cell towers and Wi-Fi access points.\n\n
-        <b>ALL</b>: Uses all the location providers and adds each location to the device status message, which results in multiple locations written in the device status message. Only useful if you want to compare the locations for analysis purpose; otherwise, just select FUSED.\n\n
+        <b>ALL</b>: Uses all the location providers and adds each location to the device status message, which results in multiple locations written in the device status message. Useful if you want to compare the locations for analysis purpose; or the best possible location fix.\n\n
     </string>
     <string name="location_provider_mdm_description">Specifies what provider to use for getting the device\'s location. The options are 0, 1, 2, or 3. 0 is for FUSED, 1 is for GNSS, 2 is for NETWORK, and 3 is for ALL.</string>
 

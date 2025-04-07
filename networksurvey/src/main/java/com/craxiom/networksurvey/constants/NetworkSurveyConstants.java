@@ -107,7 +107,7 @@ public class NetworkSurveyConstants
     public static final int LOCATION_PROVIDER_GNSS = 1;
     public static final int LOCATION_PROVIDER_NETWORK = 2;
     public static final int LOCATION_PROVIDER_ALL = 3;
-    public static final int DEFAULT_LOCATION_PROVIDER = LOCATION_PROVIDER_FUSED;
+    public static final int DEFAULT_LOCATION_PROVIDER = LOCATION_PROVIDER_ALL;
 
     public static final String PROPERTY_MDM_OVERRIDE_KEY = MqttConstants.PROPERTY_MQTT_MDM_OVERRIDE;
 
