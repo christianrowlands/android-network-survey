@@ -122,10 +122,13 @@ class NetworkSurveyActivity : AppCompatActivity() {
                         }
                         .create()
 
-                    gnssFailureDialog.show()
-                    val viewById =
-                        gnssFailureDialog.findViewById<TextView>(R.id.failureDescriptionTextView)
-                    if (viewById != null) viewById.movementMethod = LinkMovementMethod.getInstance()
+                    if (!this@NetworkSurveyActivity.isFinishing) {
+                        gnssFailureDialog.show()
+                        val viewById =
+                            gnssFailureDialog.findViewById<TextView>(R.id.failureDescriptionTextView)
+                        if (viewById != null) viewById.movementMethod =
+                            LinkMovementMethod.getInstance()
+                    }
                 }
             } catch (t: Throwable) {
                 Timber.e(t, "Something went wrong when trying to show the GNSS Failure Dialog")
