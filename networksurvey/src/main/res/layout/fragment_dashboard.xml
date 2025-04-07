@@ -50,7 +50,7 @@
                             android:layout_marginStart="@dimen/small_margin"
                             android:layout_marginEnd="@dimen/small_margin"
                             android:contentDescription="@string/card_title_upload"
-                            android:src="@drawable/ic_upload" />
+                            android:src="@drawable/ic_upload_24" />
 
                         <TextView
                             android:id="@+id/upload_section_title"

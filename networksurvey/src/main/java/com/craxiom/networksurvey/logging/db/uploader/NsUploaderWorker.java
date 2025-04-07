@@ -194,7 +194,7 @@ public class NsUploaderWorker extends Worker
         Notification notification = new NotificationCompat.Builder(context, channelId)
                 .setContentTitle("Network Survey Upload")
                 .setContentText("Uploading data...")
-                .setSmallIcon(R.drawable.ic_upload)
+                .setSmallIcon(R.drawable.ic_upload_24)
                 .setOngoing(true)
                 .build();
 
