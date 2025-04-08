@@ -29,18 +29,8 @@
     </string-array>
 
     <!-- Let the user choose between map views -->
-    <string-array name="map_type_entries">
-        <item>Map View</item>
-        <item>Hybrid View</item>
-        <item>Satellite View</item>
-        <item>Terrain View</item>
-    </string-array>
 
     <!-- Help -->
-    <string-array name="main_help_options">
-        <item>What\'s New?</item>
-        <item>About</item>
-    </string-array>
 
     <!-- CAUTION!!! The values in this array need to stay in sync with the code from
     com.craxiom.networksurvey.fragments.model.WifiViewModel.WifiRecordSortedListCallback -->

@@ -92,7 +92,6 @@ but work independently, so you have full control over how you handle your data.<
     <string name="location_permission_rationale_title">Location Permission</string>
     <string name="location_permission_rationale">The location permission is needed to access Wi-Fi details, Cellular details, GNSS details,
         and also to write geo-relevant log files.\n\nDenying the location permission will result in pretty much all of the features of this app not working.</string>
-    <string name="cdr_location_permission_rationale">The location permission is needed to access Cellular details that are used to create the Call Detail Record (CDR) file.\n\nDenying the location permission will result in the CDR file logging to fail.</string>
 
     <string name="background_location_permission_rationale_title">Background Location</string>
     <string name="background_location_permission_rationale">Network Survey collects location data to enable starting Cellular, Wi-Fi, Bluetooth, and GNSS survey at boot, even when the app is closed or not in use.
@@ -101,16 +100,12 @@ but work independently, so you have full control over how you handle your data.<
     <string name="open_settings">Open Settings</string>
     <string name="deny_permission">Deny Permission</string>
 
-    <string name="app_version">v%1$s</string>
     <string name="version_suffix" />
 
     <string name="drawer_menu_description">Menu navigation button</string>
 
-    <string name="logging_not_ready">Could not turn on logging, the app is not ready</string>
-
     <string name="turn_on_wifi">Please turn on Wi-Fi</string>
     <string name="turn_on_bluetooth">Please turn on Bluetooth</string>
-    <string name="check_bluetooth_is_on">Make sure Bluetooth is on</string>
     <string name="grant_bluetooth_scan_permission">The Find Nearby Devices Permission is required for Bluetooth Survey</string>
     <string name="grant_bluetooth_connect_permission">The Bluetooth Connect permission is not required for BT survey, but it does allow for getting the device name</string>
     <string name="grant_camera_permission">The Camera Permission is required for scanning QR codes</string>
@@ -134,8 +129,6 @@ but work independently, so you have full control over how you handle your data.<
     <string name="short_cid_label">Short CID</string>
 
     <!-- LTE and Common labels -->
-    <string name="mcc_label">MCC</string>
-    <string name="mnc_label">MNC</string>
     <string name="mcc_mnc_label">MCC/MNC</string>
     <string name="mcc_mnc_value">%1$s/%2$s</string>
     <string name="tac_label">TAC</string>
@@ -167,7 +160,6 @@ but work independently, so you have full control over how you handle your data.<
     <string name="stop_scanning">Stop Scanning</string>
     <string name="scanning_inactive">Scanning Inactive</string>
     <string name="scanning_active">Scanning Active</string>
-    <string name="enabled_title">Enabled</string>
     <string name="upload_scanning_description_text">Start scanning to collect cellular and Wi-Fi survey data for upload to 3rd party DBs. This operates independently of file logging and MQTT streaming, allowing you to start and stop data collection specifically for upload. Click the question mark icon for more details.</string>
     <string name="upload_queue_title">Records Ready for Upload</string>
     <string name="cellular_upload_queue_count_initial">Cellular:</string>
@@ -227,11 +219,9 @@ but work independently, so you have full control over how you handle your data.<
     <string name="file_help_description">File Help Icon</string>
     <string name="card_title_neighbors">Neighbors</string>
     <string name="card_title_neighbors_gsm">GSM Neighbors</string>
-    <string name="card_title_neighbors_cdma">CDMA Neighbors</string>
     <string name="card_title_neighbors_umts">UMTS Neighbors</string>
     <string name="card_title_neighbors_lte">LTE Neighbors</string>
     <string name="card_title_neighbors_nr">NR Neighbors</string>
-    <string name="neighbors_icon_description">Neighbors Icon</string>
 
     <string name="cellular_info_description">Cellular Information Icon</string>
     <string name="gsm_info_description">GSM Terms Info</string>
@@ -299,20 +289,6 @@ but work independently, so you have full control over how you handle your data.<
     <string name="accuracy_initial">Accuracy: </string>
     <string name="accuracy_value">Accuracy: %1$s meters</string>
 
-    <string name="pss_label">PSS: </string>
-    <string name="sss_label">SSS: </string>
-    <string name="band_label">Band: </string>
-
-    <string name="latitude_label">Latitude: %1$s</string>
-    <string name="longitude_label">Longitude: %1$s</string>
-
-    <string name="lte_cell_id_to_enodeb_title">Cell ID to eNodeB ID</string>
-    <string name="lte_pci_to_pss_sss_title">PCI to PSS and SSS</string>
-    <string name="lte_earfcn_to_band_title">EARFCN to Band Number</string>
-    <string name="lte_cell_id_label">&lt;LTE Cell ID&gt;</string>
-    <string name="lte_pci_label">&lt;LTE PCI&gt;</string>
-    <string name="lte_earfcn_label">&lt;LTE EARFCN&gt;</string>
-
     <string name="cellular_logging_start_toast">Started Writing the Cellular Log File</string>
     <string name="cellular_logging_stop_toast">Cellular Log File Closed</string>
     <string name="cellular_logging_toggle_failed">Failed to toggle the cellular logging state</string>
@@ -346,7 +322,6 @@ but work independently, so you have full control over how you handle your data.<
     <string name="status_connected">Connected</string>
     <string name="status_disconnecting">Disconnecting …</string>
 
-    <string name="cellular_details">Cellular Details</string>
     <string name="cellular_calculators">Cellular Calculators</string>
     <string name="settings">Settings</string>
     <string name="manual">User Manual</string>
@@ -358,18 +333,14 @@ but work independently, so you have full control over how you handle your data.<
     <string name="connection_service_description">The Connection Service handles managing the connection to a remote server to stream Network Survey data</string>
 
     <string name="notification_channel_name">Network Survey</string>
-    <string name="service_notification_title">GPS Active</string>
-    <string name="logging_notification_title">Network Survey Logging Active</string>
     <string name="logging_notification_text">Writing to the log file(s)</string>
     <string name="and">" and "</string>
     <string name="mqtt_connection_notification_text">Streaming records to an MQTT Broker</string>
     <string name="mqtt_reconnecting_notification_text">Reconnecting to MQTT Broker</string>
     <string name="network_survey_notification_title">Network Survey Active</string>
-    <string name="logging_and_mqtt_notification_text">Writing to the log file(s) and streaming records to an MQTT Broker</string>
     <string name="connection_notification_title">Network Survey Server Connection</string>
     <string name="connection_notification_active_text">The Connection is Active</string>
     <string name="connection_notification_connecting_text">Attempting to Connect</string>
-    <string name="title_activity_connection">ConnectionActivity</string>
 
     <!-- Common for Wi-Fi and Bluetooth Lists -->
     <string name="scan_number">Scan #: %1$d</string>
@@ -395,8 +366,6 @@ but work independently, so you have full control over how you handle your data.<
     <string name="android_10_throttling_information">Android 10+ throttles Wi-Fi scans. To disable throttling: System -> Advanced -> Developer options -> WiFi scan throttling to off.</string>
     <string name="enable_developer_options">To enable Developer Options: Settings -> About Phone -> Tap Build Number 7 times.</string>
 
-    <string name="x_axis_rssi">RSSI (dBm)</string>
-
     <!-- Bluetooth Device List -->
     <string name="bluetooth_devices_in_scan"># of Devices: %1$d</string>
     <string name="bluetooth_scan_status_not_supported">Not Supported</string>
@@ -409,7 +378,6 @@ but work independently, so you have full control over how you handle your data.<
 
     <!-- MQTT Connection UI constants -->
     <string name="mqtt_connection_title_full">MQTT Broker Connection</string>
-    <string name="mqtt_connection_title">MQTT Broker</string>
     <string name="stream_cellular_title">Stream Cellular</string>
     <string name="stream_phone_state_title">Stream Cellular Phone State</string>
     <string name="stream_wifi_title">Stream Wi-Fi</string>
@@ -533,36 +501,13 @@ but work independently, so you have full control over how you handle your data.<
     <string name="auto_start_mqtt_summary_on">The MQTT connection will be started when the phone is booted (Note that a valid MQTT broker must be configured in the connection UI)</string>
     <string name="auto_start_mqtt_summary_off">The MQTT connection will only be started manually</string>
 
-    <string name="server_config_title">Connection Config</string>
-    <string name="connection_timeout_title">Connection Timeout</string>
-    <string name="connection_timeout_description">The timeout in seconds when trying to establish a new connection</string>
-
     <string name="pref_file_location_output_title">Location</string>
-    <string name="pref_file_location_output_summary">Logs location fix details to a file</string>
-    <string name="auto_share_preference_key">auto_share_file</string>
-
-    <string name="preferences_coordinate_format_dd">Decimal Degrees</string>
-    <string name="preferences_coordinate_format_dms">Degrees, Minutes, Decimal Seconds</string>
-    <string name="preferences_coordinate_format_ddm">Degrees, Decimal Minutes</string>
-
-    <string name="preferences_preferred_distance_units_title">Preferred distance units</string>
-    <string name="preferences_preferred_distance_units_option_meters">Meters</string>
-    <string name="preferences_preferred_distance_units_option_feet">Feet</string>
-
-    <string name="preferences_preferred_speed_units_title">Preferred speed units</string>
-    <string name="preferences_preferred_speed_units_option_meters_per_second">Meters per second</string>
-    <string name="preferences_preferred_speed_units_option_kilometers_per_hour">Kilometers per hour</string>
-    <string name="preferences_preferred_speed_units_option_miles_per_hour">Miles per hour</string>
 
     <string name="privacy_policy">Privacy Policy</string>
     <string name="privacy_policy_preference_summary">Click here to view the privacy policy</string>
 
     <!-- Bottom Navigation -->
     <string name="nav_dashboard">Dashboard</string>
-    <string name="nav_cellular">Cellular</string>
-    <string name="nav_wifi">Wi-Fi</string>
-    <string name="nav_bluetooth">Bluetooth</string>
-    <string name="nav_gnss">GNSS</string>
 
     <!-- General GNSS Constants -->
     <string name="enable_gps_message">Location (GPS/GNSS) is disabled. It is required for tying cellular survey records to a location and to also get GNSS details.
@@ -590,7 +535,6 @@ but work independently, so you have full control over how you handle your data.<
     <string name="gps_bearing_label">Bearing:</string>
     <string name="gps_bearing_acc_label">B. Acc:</string>
     <string name="gps_num_sats_label"># Sats:</string>
-    <string name="gps_avg_cn0_label">Avg</string>
     <string name="pdop_label">PDOP:</string>
     <string name="hvdop_label">H/V DOP:</string>
     <string name="gnss_not_available">Global Navigation Satellite System (GNSS) satellites not available</string>
@@ -617,15 +561,11 @@ but work independently, so you have full control over how you handle your data.<
     <string name="saccsa_content_description">SACCSA</string>
     <string name="southpan_content_description">SouthPAN</string>
 
-    <string name="gps_snr_column_label">SNR</string>
     <string name="id_column_label">ID</string>
     <string name="gps_cn0_column_label">C/N0</string>
     <string name="avg_cn0_label">Avg</string>
-    <string name="gps_agc_column_label">AGC</string>
     <string name="menu_option_sort_by">Sort by</string>
-    <string name="menu_option_filter">Filter</string>
     <string name="menu_option_filter_content_description">Filter signals</string>
-    <string name="gps_prn_column_label">ID</string>
     <string name="gnss_flag_image_label">GNSS</string>
     <string name="sbas_flag_image_label">SBAS</string>
     <string name="cf_column_label">CF</string>
@@ -633,7 +573,6 @@ but work independently, so you have full control over how you handle your data.<
     <string name="gps_azimuth_column_label">Azim</string>
     <string name="flags_aeu_column_label">Flags</string>
     <string name="copied_to_clipboard">Location copied to clipboard</string>
-    <string name="send_log">"Send log…"</string>
 
     <string name="filter_dialog_title">Show only these GNSS</string>
     <string name="save">"Save"</string>
@@ -697,34 +636,18 @@ but work independently, so you have full control over how you handle your data.<
     <string name="gnss_status_unknown">Unknown status callback</string>
 
     <!-- GNSS Map View -->
-    <string name="ground_truth_marker_title">Your real location</string>
-    <string name="ground_truth_invalid_location_title">Invalid location</string>
-    <string name="ground_truth_invalid_lat">Latitude must be in decimal degrees between -90 and 90</string>
-    <string name="ground_truth_invalid_long">Longitude must be in decimal degrees between -180 and 180</string>
-    <string name="ground_truth_invalid_alt">Altitude must be in WGS84 in meters</string>
 
     <!-- Accuracy View -->
-    <string name="qr_code_instructions_title">Scan a QR Code</string>
-    <string name="qr_code_instructions_text">Import a ground truth location using a QR Code in the Geo URI format (geo:28.38434,-87.24334).  Create your own QR Codes at https://zxing.appspot.com/generator/.</string>
-    <string name="never_show_again">Never show again</string>
     <string name="ok">OK</string>
-    <string name="not_now">Not now</string>
 
     <!-- GNSS Logging -->
-    <string name="data_saved_location">Data saved in </string>
-    <string name="notification">Network Survey is surveying GNSS data…</string>
-    <string name="notification_historical">Network Survey is reviewing old GNSS data…</string>
 
     <string name="scan_button_title">Auto Configure With QR Code</string>
     <string name="share_mqtt_qr_button_title">Share via QR Code</string>
-    <string name="code_scanner">QR Code Scanner</string>
-    <string name="qr_code_share">MQTT Settings QR Code Share</string>
-    <string name="open_spectrum">Wi-Fi Spectrum</string>
     <string name="channel">Channel</string>
     <string name="ssid">SSID\n</string>
 
     <string name="open_tower_map">Open Tower Map</string>
-    <string name="open_tower_map_info">Tower Map Info</string>
     <string name="mqtt_connection_settings">MQTT Connection Settings</string>
     <string name="qr_code">QR Code</string>
     <string name="open_wifi_spectrum">Open Wi-Fi Spectrum View</string>
@@ -733,11 +656,7 @@ but work independently, so you have full control over how you handle your data.<
     <string name="uploader_notification_channel_name">Uploader</string>
     <string name="uploader_notification_title">Uploading</string>
     <string name="uploader_notification_progress_info">Uploaded <xliff:g id="progress_in_percent">%d</xliff:g>%%.</string>
-    <string name="uploader_result_dialog_title">Upload result</string>
-    <string name="uploader_dialog_progress_title">Uploading</string>
     <string name="uploader_starting">Starting upload&#8230;</string>
-    <string name="uploader_aborting">Aborting upload&#8230;</string>
-    <string name="uploader_already_running">Upload is already running</string>
     <string name="uploader_not_started">Not Started</string>
     <string name="uploader_not_started_description">Did not start the upload</string>
     <string name="uploader_disabled">Upload disabled</string>
@@ -767,8 +686,6 @@ but work independently, so you have full control over how you handle your data.<
     <string name="permission_uploader_denied_message">Upload cancelled due to denied internet permission.</string>
     <string name="unknown_error">Unknown error occurred!</string>
     <string name="uploader_limit_exceeded_description">The daily usage limit for the app has been exceeded. Please try again tomorrow.</string>
-    <string name="uploader_result_message" translatable="false"><xliff:g id="message">%1$s</xliff:g> | <xliff:g id="description">%2$s</xliff:g></string>
-    <string name="uploader_result_description" translatable="false">OCID: <xliff:g id="message_for_ocid">%1$s</xliff:g>\n\nBeaconDB: <xliff:g id="message_for_mls">%2$s</xliff:g></string>
     <string name="uploader_no_internet_title">Internet unavailable</string>
     <string name="uploader_no_internet_message">Cannot upload due to no Internet connection.</string>
     <string name="cancel">Cancel</string>
@@ -787,7 +704,6 @@ but work independently, so you have full control over how you handle your data.<
 </string>
     <string name="delete_upload_data_success">All upload data has been deleted</string>
     <string name="delete_upload_data_failed">Failed to delete upload data</string>
-    <string name="delete">Delete</string>
     <string name="show_upload_dialog_summary_off">Upload dialog will be skipped and the settings below will be used</string>
     <string name="show_upload_dialog_summary_on">The config dialog will be shown before each upload</string>
 </resources>
