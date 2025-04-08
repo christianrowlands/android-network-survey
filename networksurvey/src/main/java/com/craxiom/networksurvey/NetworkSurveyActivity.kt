@@ -246,7 +246,7 @@ class NetworkSurveyActivity : AppCompatActivity() {
             alertBuilder.setMessage(getText(R.string.permissions_rationale))
             alertBuilder.setPositiveButton(
                 android.R.string.ok
-            ) { dialog: DialogInterface?, which: Int -> requestPermissions() }
+            ) { _: DialogInterface?, _: Int -> requestPermissions() }
 
             val permissionsExplanationDialog = alertBuilder.create()
             permissionsExplanationDialog.show()
@@ -259,7 +259,7 @@ class NetworkSurveyActivity : AppCompatActivity() {
             alertBuilder.setMessage(getText(R.string.location_permission_rationale))
             alertBuilder.setPositiveButton(
                 android.R.string.ok
-            ) { dialog: DialogInterface?, which: Int -> requestPermissions() }
+            ) { _: DialogInterface?, _: Int -> requestPermissions() }
 
             val permissionsExplanationDialog = alertBuilder.create()
             permissionsExplanationDialog.show()
@@ -296,10 +296,10 @@ class NetworkSurveyActivity : AppCompatActivity() {
             alertBuilder.setMessage(getText(R.string.background_location_permission_rationale))
             alertBuilder.setPositiveButton(
                 R.string.open_settings
-            ) { dialog: DialogInterface?, which: Int -> requestBackgroundLocationPermission() }
+            ) { _: DialogInterface?, _: Int -> requestBackgroundLocationPermission() }
             alertBuilder.setNegativeButton(
                 R.string.deny_permission
-            ) { dialog: DialogInterface?, which: Int ->
+            ) { _: DialogInterface?, which: Int ->
                 if (which == DialogInterface.BUTTON_NEGATIVE) {
                     PreferenceUtils.denyBackgroundLocationPermission(this)
                 }
@@ -400,13 +400,13 @@ class NetworkSurveyActivity : AppCompatActivity() {
             .setMessage(getString(R.string.enable_gps_message))
             .setPositiveButton(
                 getString(R.string.enable_gps_positive_button)
-            ) { dialog: DialogInterface?, which: Int ->
+            ) { _: DialogInterface?, _: Int ->
                 val intent = Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS)
                 startActivity(intent)
             }
             .setNegativeButton(
                 getString(R.string.enable_gps_negative_button)
-            ) { dialog: DialogInterface?, which: Int -> }
+            ) { _: DialogInterface?, _: Int -> }
             .show()
     }
 
