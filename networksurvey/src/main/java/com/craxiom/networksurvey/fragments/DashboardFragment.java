@@ -1383,7 +1383,6 @@ public class DashboardFragment extends AServiceDataFragment implements LocationL
 
         binding.uploadProgressGroup.setVisibility(View.VISIBLE);
         binding.uploadProgressBar.setProgress(0);
-        binding.dashboardScrollView.fullScroll(ScrollView.FOCUS_DOWN);
 
         WorkManager.getInstance(context)
                 .getWorkInfoByIdLiveData(workId)
@@ -1439,8 +1438,6 @@ public class DashboardFragment extends AServiceDataFragment implements LocationL
         binding.uploadProgressGroup.setVisibility(View.GONE);
 
         binding.uploadResultsGroup.setVisibility(View.VISIBLE);
-
-        binding.dashboardScrollView.fullScroll(ScrollView.FOCUS_DOWN);
 
         Context context = getContext();
         if (context == null) return;
