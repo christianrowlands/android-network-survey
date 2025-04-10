@@ -2,8 +2,11 @@ package com.craxiom.networksurvey.constants;
 
 import android.bluetooth.BluetoothDevice;
 
+import com.craxiom.messaging.bluetooth.AddressType;
 import com.craxiom.messaging.bluetooth.SupportedTechnologies;
 import com.craxiom.messaging.bluetooth.Technology;
+
+import timber.log.Timber;
 
 /**
  * The constants associated with the Bluetooth table in the GeoPackage file.
@@ -111,5 +114,29 @@ public class BluetoothMessageConstants extends MessageConstants
         }
 
         return "";
+    }
+
+    /**
+     * Converts the Android OS-provided address type (int) to the protobuf-defined {@link AddressType}.
+     *
+     * @param osAddressType The integer value returned from {@link BluetoothDevice#getAddressType()}.
+     * @return The corresponding {@link AddressType} enum.
+     */
+    public static AddressType mapOsAddressTypeToProto(int osAddressType)
+    {
+        switch (osAddressType)
+        {
+            case BluetoothDevice.ADDRESS_TYPE_PUBLIC:
+                return AddressType.PUBLIC;
+            case BluetoothDevice.ADDRESS_TYPE_RANDOM:
+                return AddressType.RANDOM;
+            case BluetoothDevice.ADDRESS_TYPE_ANONYMOUS:
+                return AddressType.ANONYMOUS;
+            case BluetoothDevice.ADDRESS_TYPE_UNKNOWN:
+                return AddressType.UNKNOWN;
+            default:
+                Timber.w("Unknown OS address type: " + osAddressType + ", defaulting to UNKNOWN");
+                return AddressType.UNKNOWN;
+        }
     }
 }

@@ -5,7 +5,9 @@ import static java.util.concurrent.TimeUnit.NANOSECONDS;
 
 import android.Manifest;
 import android.annotation.SuppressLint;
+import android.bluetooth.BluetoothClass;
 import android.bluetooth.BluetoothDevice;
+import android.bluetooth.le.ScanRecord;
 import android.content.Context;
 import android.content.pm.PackageManager;
 import android.location.GnssAutomaticGainControl;
@@ -16,6 +18,7 @@ import android.location.LocationManager;
 import android.net.wifi.ScanResult;
 import android.os.Build;
 import android.os.CancellationSignal;
+import android.os.ParcelUuid;
 import android.os.SystemClock;
 import android.telephony.CellIdentity;
 import android.telephony.CellIdentityCdma;
@@ -39,6 +42,7 @@ import android.telephony.ServiceState;
 import android.telephony.SignalStrength;
 import android.telephony.SubscriptionManager;
 import android.telephony.TelephonyManager;
+import android.util.SparseArray;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.RequiresApi;
@@ -107,6 +111,7 @@ import com.craxiom.networksurvey.util.NsUtils;
 import com.craxiom.networksurvey.util.ParserUtils;
 import com.craxiom.networksurvey.util.PreferenceUtils;
 import com.craxiom.networksurvey.util.WifiUtils;
+import com.google.common.base.Strings;
 import com.google.protobuf.BoolValue;
 import com.google.protobuf.FloatValue;
 import com.google.protobuf.Int32Value;
@@ -119,6 +124,7 @@ import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -854,7 +860,7 @@ public class SurveyRecordProcessor
      */
     private void processBluetoothClassicResult(BluetoothDevice device, int rssi)
     {
-        notifyBluetoothRecordListeners(generateBluetoothSurveyRecord(device, rssi, UNSET_TX_POWER_LEVEL, ZonedDateTime.now(), SystemClock.elapsedRealtime()));
+        notifyBluetoothRecordListeners(generateBluetoothSurveyRecord(null, device, rssi, UNSET_TX_POWER_LEVEL, ZonedDateTime.now(), SystemClock.elapsedRealtime()));
     }
 
     /**
@@ -1748,16 +1754,17 @@ public class SurveyRecordProcessor
      */
     private BluetoothRecord generateBluetoothSurveyRecord(android.bluetooth.le.ScanResult result, ZonedDateTime deviceTime, long elapsedTimeMillis)
     {
-        return generateBluetoothSurveyRecord(result.getDevice(), result.getRssi(), result.getTxPower(), deviceTime, elapsedTimeMillis);
+        return generateBluetoothSurveyRecord(result, result.getDevice(), result.getRssi(), result.getTxPower(), deviceTime, elapsedTimeMillis);
     }
 
     /**
      * Pull out the appropriate values, and create a {@link BluetoothRecord}.
      *
+     * @param scanResult Will be null for classic scan results, but will be present in the new approach.
      * @return The Bluetooth record to send to any listeners.
      * @since 1.0.0
      */
-    private BluetoothRecord generateBluetoothSurveyRecord(BluetoothDevice device, int rssi, int txPowerLevel, ZonedDateTime deviceTime, long elapsedTimeMillis)
+    private BluetoothRecord generateBluetoothSurveyRecord(android.bluetooth.le.ScanResult scanResult, BluetoothDevice device, int rssi, int txPowerLevel, ZonedDateTime deviceTime, long elapsedTimeMillis)
     {
         final String sourceAddress = device.getAddress();
 
@@ -1805,6 +1812,11 @@ public class SurveyRecordProcessor
             dataBuilder.setSignalStrength(FloatValue.newBuilder().setValue(rssi).build());
         }
 
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.VANILLA_ICE_CREAM)
+        {
+            dataBuilder.setAddressType(BluetoothMessageConstants.mapOsAddressTypeToProto(device.getAddressType()));
+        }
+
         // The TX Power seems to never be set (a value of 127 indicates unset). However, I am including
         // the code here in case it starts being populated in a future version of Android, or if a specific phone model
         // reports it.
@@ -1813,11 +1825,27 @@ public class SurveyRecordProcessor
             dataBuilder.setTxPower(FloatValue.newBuilder().setValue(txPowerLevel).build());
         }
 
+        final ScanRecord scanRecord = scanResult != null ? scanResult.getScanRecord() : null;
+        String scanRecordDeviceName = scanRecord != null ? scanRecord.getDeviceName() : "";
+
+        String otaDeviceName = "";
+        if (!Strings.isNullOrEmpty(scanRecordDeviceName))
+        {
+            otaDeviceName = scanRecordDeviceName;
+        } else
+        {
+            if (ActivityCompat.checkSelfPermission(context, Manifest.permission.BLUETOOTH_CONNECT) == PackageManager.PERMISSION_GRANTED)
+            {
+                otaDeviceName = device.getName();
+            } else
+            {
+                Timber.e("Unable to get the device name, missing BLUETOOTH_CONNECT permission");
+            }
+        }
+        if (otaDeviceName != null) dataBuilder.setOtaDeviceName(otaDeviceName);
+
         if (ActivityCompat.checkSelfPermission(context, Manifest.permission.BLUETOOTH_CONNECT) == PackageManager.PERMISSION_GRANTED)
         {
-            final String otaDeviceName = device.getName();
-            if (otaDeviceName != null) dataBuilder.setOtaDeviceName(otaDeviceName);
-
             final SupportedTechnologies supportedTech = BluetoothMessageConstants.getSupportedTechnologies(device.getType());
             if (supportedTech != null && supportedTech != SupportedTechnologies.UNKNOWN)
             {
@@ -1825,10 +1853,49 @@ public class SurveyRecordProcessor
             }
         }
 
-        /*BluetoothClass bluetoothClass = device.getBluetoothClass();
-        int majorDeviceClass = bluetoothClass.getMajorDeviceClass();
-        int deviceClass = bluetoothClass.getDeviceClass();
-        Timber.i("Bluetooth Major Device Class: %s, Device Class: %s", Integer.toHexString(majorDeviceClass), Integer.toHexString(deviceClass));*/
+        BluetoothClass bluetoothClass = device.getBluetoothClass();
+        if (bluetoothClass != null)
+        {
+            final int deviceClass = bluetoothClass.getDeviceClass();
+
+            // First use the device class, and if it is -1, then use the major device class when setting it on the data builder
+            int deviceClassToUse = (deviceClass == 0 || deviceClass == BluetoothClass.Device.Major.UNCATEGORIZED)
+                    ? bluetoothClass.getMajorDeviceClass()
+                    : deviceClass;
+            if (deviceClassToUse != 0 && deviceClassToUse != BluetoothClass.Device.Major.UNCATEGORIZED)
+            {
+                dataBuilder.setDeviceClass(Integer.toHexString(deviceClassToUse));
+            }
+        }
+
+        if (scanRecord != null)
+        {
+            //Timber.i("Bluetooth Advertise Flags: %s", Integer.toHexString(scanRecord.getAdvertiseFlags()));
+
+            List<String> uuid16Services = null;
+            List<ParcelUuid> serviceUuids = scanRecord.getServiceUuids();
+            if (null != serviceUuids && !serviceUuids.isEmpty())
+            {
+                uuid16Services = new ArrayList<>();
+                for (ParcelUuid u : serviceUuids)
+                {
+                    uuid16Services.add(u.getUuid().toString());
+                }
+            }
+            if (uuid16Services != null) dataBuilder.addAllServiceUuids(uuid16Services);
+
+            Integer companyId = null;
+            if (null == uuid16Services && scanRecord.getManufacturerSpecificData() != null)
+            {
+                SparseArray<byte[]> bytesArray = scanRecord.getManufacturerSpecificData();
+                for (int i = 0; i < bytesArray.size(); i++)
+                {
+                    companyId = bytesArray.keyAt(i);
+                    //Timber.d("index=%s , companyId=%s", i, Integer.toHexString(companyId));
+                }
+            }
+            if (companyId != null) dataBuilder.setCompanyId(Integer.toHexString(companyId));
+        }
 
         final BluetoothRecord.Builder recordBuilder = BluetoothRecord.newBuilder();
         recordBuilder.setMessageType(BluetoothMessageConstants.BLUETOOTH_RECORD_MESSAGE_TYPE);

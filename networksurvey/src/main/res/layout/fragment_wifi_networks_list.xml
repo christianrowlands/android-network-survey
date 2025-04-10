@@ -117,7 +117,7 @@
                     android:scrollbars="vertical"
                     app:layoutManager="LinearLayoutManager"
                     tools:context=".fragments.WifiNetworksFragment"
-                    tools:listitem="@layout/fragment_wifi_network_item" />
+                    tools:listitem="@layout/wifi_network_item" />
 
             </androidx.cardview.widget.CardView>
 

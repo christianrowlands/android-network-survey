@@ -46,7 +46,7 @@ public class MyWifiNetworkRecyclerViewAdapter extends RecyclerView.Adapter<MyWif
     public ViewHolder onCreateViewHolder(ViewGroup parent, int viewType)
     {
         View view = LayoutInflater.from(parent.getContext())
-                .inflate(R.layout.fragment_wifi_network_item, parent, false);
+                .inflate(R.layout.wifi_network_item, parent, false);
         return new ViewHolder(view);
     }
 

@@ -110,7 +110,7 @@
                     android:scrollbars="vertical"
                     app:layoutManager="LinearLayoutManager"
                     tools:context=".fragments.BluetoothFragment"
-                    tools:listitem="@layout/fragment_bluetooth_item" />
+                    tools:listitem="@layout/bluetooth_item" />
 
             </androidx.cardview.widget.CardView>
 

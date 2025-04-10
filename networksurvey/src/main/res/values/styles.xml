@@ -235,6 +235,11 @@
         <item name="android:textColor">@color/colorAccent</item>
     </style>
 
+    <style name="ListLabelText" parent="TextAppearance.AppCompat">
+        <item name="android:textSize">13sp</item>
+        <item name="android:textColor">@color/md_theme_outline</item>
+    </style>
+
     <style name="ListContentText" parent="TextAppearance.AppCompat">
         <item name="android:textSize">13sp</item>
         <item name="android:textColor">@color/normalText</item>

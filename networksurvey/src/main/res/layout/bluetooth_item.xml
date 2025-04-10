@@ -3,6 +3,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="fill_parent"
     android:layout_height="wrap_content"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_margin="4dp"
     android:orientation="vertical">
 
@@ -32,30 +33,66 @@
 
     </LinearLayout>
 
-    <LinearLayout
+    <com.google.android.flexbox.FlexboxLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        app:flexWrap="wrap"
+        app:justifyContent="space_between"
+        app:alignItems="center"
         android:orientation="horizontal">
 
+        <!-- Company name -->
+        <TextView
+            android:id="@+id/companyName"
+            style="@style/ListContentText"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="@dimen/xx_small_margin"
+            android:text="" />
+
+        <!-- Pipe separator -->
+        <TextView
+            android:id="@+id/companySeparator"
+            style="@style/ListContentText"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="4dp"
+            android:layout_marginEnd="4dp"
+            android:text="|"
+            android:textColor="@color/md_theme_primary"
+            tools:ignore="HardcodedText" />
+
+        <!-- Device name label -->
+        <TextView
+            android:id="@+id/otaDeviceLabel"
+            style="@style/ListLabelText"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/device_name"
+            android:layout_marginEnd="4dp" />
+
+        <!-- Device name value -->
         <TextView
             android:id="@+id/otaDeviceName"
             style="@style/ListContentText"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_margin="@dimen/xx_small_margin"
-            android:layout_weight="1"
+            app:layout_flexGrow="1"
+            android:layout_marginEnd="@dimen/xx_small_margin"
             android:text="" />
 
+
+        <!-- Supported technologies -->
         <TextView
             android:id="@+id/supportedTechnologies"
             style="@style/ListContentText"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_margin="@dimen/xx_small_margin"
+            android:layout_marginEnd="@dimen/xx_small_margin"
             android:paddingStart="@dimen/large_margin"
             android:text=""
             tools:ignore="RtlSymmetry" />
+    </com.google.android.flexbox.FlexboxLayout>
 
-    </LinearLayout>
 
 </LinearLayout>

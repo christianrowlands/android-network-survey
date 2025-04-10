@@ -39,3 +39,59 @@ allprojects {
 tasks.register('clean', Delete) {
     delete rootProject.layout.buildDirectory
 }
+
+tasks.register("downloadBluetoothCompanyIdentifiers") {
+    group = "network-survey"
+    description = "Downloads the Bluetooth SIG company_identifiers.yaml file"
+
+    doLast {
+        def targetDir = file("networksurvey/src/main/assets")
+        if (!targetDir.exists()) {
+            targetDir.mkdirs()
+        }
+
+        def fileUrl = "https://bitbucket.org/bluetooth-SIG/public/raw/main/assigned_numbers/company_identifiers/company_identifiers.yaml\n"
+        def outputFile = new File(targetDir, "company_identifiers.yaml")
+
+        println "Downloading file from $fileUrl..."
+        new URL(fileUrl).withInputStream { input ->
+            outputFile.withOutputStream { out ->
+                out << input
+            }
+        }
+        println "Saved to ${outputFile.absolutePath}"
+    }
+}
+
+tasks.register("downloadBluetoothMemberUuids") {
+    group = "network-survey"
+    description = "Downloads the Bluetooth SIG member_uuids.yaml file"
+
+    doLast {
+        def targetDir = file("networksurvey/src/main/assets")
+        if (!targetDir.exists()) {
+            targetDir.mkdirs()
+        }
+
+        def fileUrl = "https://bitbucket.org/bluetooth-SIG/public/raw/main/assigned_numbers/uuids/member_uuids.yaml"
+        def outputFile = new File(targetDir, "member_uuids.yaml")
+
+        println "Downloading file from $fileUrl..."
+        new URL(fileUrl).withInputStream { input ->
+            outputFile.withOutputStream { out ->
+                out << input
+            }
+        }
+        println "Saved to ${outputFile.absolutePath}"
+    }
+}
+
+
+// Only run before release builds
+afterEvaluate {
+    if (tasks.findByName("preReleaseBuild")) {
+        tasks.named("preReleaseBuild") {
+            dependsOn("downloadBluetoothCompanyIdentifiers", "downloadBluetoothMemberUuids")
+        }
+    }
+}

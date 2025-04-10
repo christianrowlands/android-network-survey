@@ -15,7 +15,13 @@ import com.craxiom.messaging.BluetoothRecord;
 import com.craxiom.messaging.BluetoothRecordData;
 import com.craxiom.networksurvey.R;
 import com.craxiom.networksurvey.constants.BluetoothMessageConstants;
+import com.craxiom.networksurvey.data.BluetoothCompanyResolver;
+import com.craxiom.networksurvey.data.BluetoothUuidResolver;
 import com.craxiom.networksurvey.util.ColorUtils;
+import com.google.common.base.Strings;
+import com.google.protobuf.ProtocolStringList;
+
+import java.util.List;
 
 import timber.log.Timber;
 
@@ -29,12 +35,19 @@ public class BluetoothRecyclerViewAdapter extends RecyclerView.Adapter<Bluetooth
     private final SortedList<BluetoothRecord> bluetoothRecords;
     private final Context context;
     private final BluetoothFragment bluetoothFragment;
+    private final BluetoothCompanyResolver bluetoothCompanyResolver;
+    private final BluetoothUuidResolver bluetoothUuidResolver;
 
     BluetoothRecyclerViewAdapter(SortedList<BluetoothRecord> items, Context context, BluetoothFragment bluetoothFragment)
     {
         bluetoothRecords = items;
         this.context = context;
         this.bluetoothFragment = bluetoothFragment;
+
+        long startTime = System.currentTimeMillis();
+        bluetoothCompanyResolver = new BluetoothCompanyResolver(context);
+        bluetoothUuidResolver = new BluetoothUuidResolver(context);
+        Timber.d("BluetoothCompanyResolver and BluetoothUuidResolver took %d ms to create", System.currentTimeMillis() - startTime);
     }
 
     @NonNull
@@ -42,7 +55,7 @@ public class BluetoothRecyclerViewAdapter extends RecyclerView.Adapter<Bluetooth
     public ViewHolder onCreateViewHolder(ViewGroup parent, int viewType)
     {
         View view = LayoutInflater.from(parent.getContext())
-                .inflate(R.layout.fragment_bluetooth_item, parent, false);
+                .inflate(R.layout.bluetooth_item, parent, false);
         return new ViewHolder(view);
     }
 
@@ -70,13 +83,34 @@ public class BluetoothRecyclerViewAdapter extends RecyclerView.Adapter<Bluetooth
             holder.signalStrength.setText("");
         }
 
-        final String otaDeviceName = data.getOtaDeviceName();
-        if (otaDeviceName != null && !otaDeviceName.isEmpty())
+        final ProtocolStringList serviceUuidsList = data.getServiceUuidsList();
+        final String companyId = data.getCompanyId();
+        String companyName = convertToCompanyName(serviceUuidsList, companyId);
+        if (!Strings.isNullOrEmpty(companyName))
         {
-            holder.otaDeviceName.setText(context.getString(R.string.ota_device_name_value, otaDeviceName));
+            holder.companyName.setText(companyName);
         } else
         {
+            holder.companyName.setText("");
+        }
+
+        final String otaDeviceName = data.getOtaDeviceName();
+        if (!otaDeviceName.isEmpty())
+        {
+            holder.otaDeviceNameLabel.setVisibility(View.VISIBLE);
+            holder.otaDeviceName.setText(otaDeviceName);
+        } else
+        {
+            holder.otaDeviceNameLabel.setVisibility(View.GONE);
             holder.otaDeviceName.setText("");
+        }
+
+        if (!Strings.isNullOrEmpty(companyName) && !otaDeviceName.isEmpty())
+        {
+            holder.companySeparator.setVisibility(View.VISIBLE);
+        } else
+        {
+            holder.companySeparator.setVisibility(View.GONE);
         }
 
         holder.supportedTechnologies.setText(BluetoothMessageConstants.getSupportedTechString(data.getSupportedTechnologies()));
@@ -97,6 +131,59 @@ public class BluetoothRecyclerViewAdapter extends RecyclerView.Adapter<Bluetooth
     }
 
     /**
+     * Takes in the company ID and the vendor id from the service UUID and tries to resolve the associated company name.
+     * <p>
+     * Priority is given to the service UUID vendor id, then the company ID is the fallback. This
+     * is the approach WiGLE takes, not sure if it is better or worse than the other way around.
+     */
+    private String convertToCompanyName(List<String> serviceUuids, String companyId)
+    {
+        String companyNameFromServiceUuid = resolveCompanyNameFromServiceUuids(serviceUuids);
+        Timber.i("The company name from the service UUID (%s) is: %s", serviceUuids, companyNameFromServiceUuid);
+
+        if (!Strings.isNullOrEmpty(companyNameFromServiceUuid))
+        {
+            Timber.i("Using the serviceUuid: %s to resolve the company name: %s", serviceUuids, companyNameFromServiceUuid);
+            return companyNameFromServiceUuid;
+        }
+
+        if (Strings.isNullOrEmpty(companyId)) return "";
+
+        try
+        {
+            String companyName = bluetoothCompanyResolver.getCompanyName(companyId);
+            Timber.i("Using the companyId: %s to resolve the company name: %s", companyId, companyName);
+            return companyName;
+        } catch (Exception e)
+        {
+            Timber.w("Unable to parse the company ID %s to an int.  Returning the company ID as the name.", companyId);
+            return companyId;
+        }
+    }
+
+    /**
+     * Takes in the service UUIDs and tries to resolve the associated company name.
+     */
+    private String resolveCompanyNameFromServiceUuids(List<String> serviceUuids)
+    {
+        if (serviceUuids == null || serviceUuids.isEmpty())
+        {
+            return "";
+        }
+
+        String fullUuid = serviceUuids.get(0);
+        if (fullUuid.length() < 8)
+        {
+            return "";
+        }
+
+        String companyIdHex = fullUuid.substring(4, 8);
+        String companyName = bluetoothUuidResolver.getNameForUuid(companyIdHex);
+
+        return companyName != null ? companyName : "";
+    }
+
+    /**
      * The holder for the view components that go into the View.  These UI components will be updated with the content
      * in the onBindViewHolder method.
      */
@@ -105,6 +192,9 @@ public class BluetoothRecyclerViewAdapter extends RecyclerView.Adapter<Bluetooth
         final View mView;
         final TextView sourceAddress;
         final TextView signalStrength;
+        final TextView companyName;
+        final TextView companySeparator;
+        final TextView otaDeviceNameLabel;
         final TextView otaDeviceName;
         final TextView supportedTechnologies;
         BluetoothRecordData bluetoothData;
@@ -115,6 +205,9 @@ public class BluetoothRecyclerViewAdapter extends RecyclerView.Adapter<Bluetooth
             mView = view;
             sourceAddress = view.findViewById(R.id.sourceAddress);
             signalStrength = view.findViewById(R.id.bluetooth_signal_strength);
+            companyName = view.findViewById(R.id.companyName);
+            companySeparator = view.findViewById(R.id.companySeparator);
+            otaDeviceNameLabel = view.findViewById(R.id.otaDeviceLabel);
             otaDeviceName = view.findViewById(R.id.otaDeviceName);
             supportedTechnologies = view.findViewById(R.id.supportedTechnologies);
 

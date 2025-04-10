@@ -489,6 +489,7 @@ internal class TowerMapViewModel : ASignalChartViewModel() {
                         }
                     } catch (e: Exception) {
                         Timber.e(e, "Failed to fetch towers")
+                        // TODO Display a toast
                         continuation.resume(Collections.emptyList(), onCancellation = null)
                     }
                 }

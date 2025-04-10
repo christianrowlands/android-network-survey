@@ -402,8 +402,6 @@ public class BluetoothFragment extends AServiceDataFragment implements IBluetoot
      */
     private void checkAndRemoveStaleRecords()
     {
-        Timber.d("Removing any stale Bluetooth records");
-
         //noinspection SynchronizeOnNonFinalField
         synchronized (bluetoothRecordSortedSet)
         {
