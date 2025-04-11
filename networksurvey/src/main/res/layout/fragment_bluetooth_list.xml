@@ -29,37 +29,37 @@
                 app:cardCornerRadius="8dp"
                 card_view:contentPadding="6dp">
 
-                <LinearLayout
+                <com.google.android.flexbox.FlexboxLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
+                    app:flexWrap="wrap"
+                    app:justifyContent="space_between"
+                    app:alignItems="center"
                     android:orientation="horizontal">
 
                     <LinearLayout
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_gravity="center_vertical"
-                        android:layout_margin="@dimen/x_small_margin"
-                        android:orientation="vertical">
+                        android:orientation="vertical"
+                        android:layout_margin="@dimen/x_small_margin">
 
                         <TextView
                             android:id="@+id/bt_devices_in_scan"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:gravity="end"
+                            android:gravity="start"
                             android:text="@string/bluetooth_devices_in_scan"
                             android:textSize="13sp" />
 
+                        <TextView
+                            android:id="@+id/scan_status"
+                            style="@style/NetworkStatusText"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:gravity="start"
+                            android:text="@string/scan_status_scanning" />
                     </LinearLayout>
 
-                    <TextView
-                        android:id="@+id/scan_status"
-                        style="@style/NetworkStatusText"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_gravity="center"
-                        android:layout_weight="1"
-                        android:gravity="center"
-                        android:text="@string/scan_status_scanning" />
 
                     <LinearLayout
                         android:layout_width="wrap_content"
@@ -88,7 +88,7 @@
 
                     </LinearLayout>
 
-                </LinearLayout>
+                </com.google.android.flexbox.FlexboxLayout>
 
             </androidx.cardview.widget.CardView>
 

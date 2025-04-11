@@ -66,6 +66,9 @@
                         android:layout_gravity="center"
                         android:layout_weight="1"
                         android:gravity="center"
+                        android:ellipsize="end"
+                        android:maxLines="1"
+                        android:singleLine="true"
                         android:text="@string/scan_status_scanning" />
 
                     <LinearLayout
