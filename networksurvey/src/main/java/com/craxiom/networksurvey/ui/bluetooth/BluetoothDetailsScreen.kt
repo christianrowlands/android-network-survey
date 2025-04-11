@@ -100,35 +100,28 @@ private fun LazyListScope.chartItems(
     onNavigateToSettings: () -> Unit
 ) {
     item {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth(),
-            verticalAlignment = Alignment.Top,
-            horizontalArrangement = Arrangement.SpaceAround
-        ) {
-            SelectionContainer {
-                Card(
+        SelectionContainer {
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = MaterialTheme.shapes.large,
+                colors = CardDefaults.elevatedCardColors()
+            ) {
+                Column(
                     modifier = Modifier
-                        .fillMaxWidth(),
-                    shape = MaterialTheme.shapes.large,
-                    colors = CardDefaults.elevatedCardColors()
+                        .fillMaxWidth()
+                        .padding(vertical = padding / 2)
                 ) {
                     Row(
                         modifier = Modifier
-                            .padding(vertical = padding / 2)
-                            .fillMaxWidth(),
-                        verticalAlignment = Alignment.Top,
+                            .fillMaxWidth()
+                            .padding(vertical = padding / 2),
                         horizontalArrangement = Arrangement.SpaceEvenly
                     ) {
-                        Column(
-                            horizontalAlignment = Alignment.CenterHorizontally
-                        ) {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
                             Text(
                                 text = viewModel.bluetoothData.sourceAddress,
                                 style = MaterialTheme.typography.titleMedium.copy(
-                                    color = Color(
-                                        LocalContext.current.getColor(R.color.colorAccent)
-                                    )
+                                    color = Color(LocalContext.current.getColor(R.color.colorAccent))
                                 )
                             )
                             Text(
@@ -137,9 +130,7 @@ private fun LazyListScope.chartItems(
                             )
                         }
 
-                        Column(
-                            horizontalAlignment = Alignment.CenterHorizontally
-                        ) {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
                             Text(
                                 text = if (rssi == UNKNOWN_RSSI) "Unknown" else "${rssi.toInt()} dBm",
                                 style = MaterialTheme.typography.titleMedium.copy(color = signalStrengthColor)
@@ -151,68 +142,33 @@ private fun LazyListScope.chartItems(
                         }
                     }
 
-                    if (viewModel.bluetoothData.otaDeviceName.isNotEmpty()) {
-                        Row(
-                            modifier = Modifier
-                                .padding(horizontal = padding, vertical = padding / 2)
-                                .fillMaxWidth(),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.Start
-                        ) {
-                            Text(
-                                text = "Device Name: ",
-                                style = MaterialTheme.typography.labelMedium
-                            )
-                            Text(
-                                text = viewModel.bluetoothData.otaDeviceName,
-                                style = MaterialTheme.typography.titleMedium
-                            )
-                        }
+                    viewModel.bluetoothData.otaDeviceName.takeIf { it.isNotEmpty() }?.let {
+                        LabeledRow("Device Name:", it)
                     }
 
-                    Row(
-                        modifier = Modifier
-                            .padding(start = padding, end = padding, bottom = padding / 2)
-                            .fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.Start
-                    ) {
-                        Text(
-                            text = "Supported Technologies: ",
-                            style = MaterialTheme.typography.labelMedium
+                    LabeledRow(
+                        label = "Supported Technologies:",
+                        value = BluetoothMessageConstants.getSupportedTechString(
+                            viewModel.bluetoothData.supportedTechnologies
                         )
-                        Text(
-                            text = BluetoothMessageConstants.getSupportedTechString(
-                                viewModel.bluetoothData.supportedTechnologies
-                            ),
-                            style = MaterialTheme.typography.titleMedium
-                        )
+                    )
+
+                    viewModel.bluetoothData.deviceClass.takeIf { it.isNotEmpty() }?.let {
+                        LabeledRow("Device Class:", it)
                     }
 
-                    Column(
-                        modifier = Modifier
-                            .padding(start = padding, end = padding, bottom = padding)
-                            .fillMaxWidth()
-                    ) {
-                        viewModel.bluetoothData.deviceClass.takeIf { it.isNotEmpty() }?.let {
-                            LabeledRow("Device Class:", it)
-                        }
+                    val formattedAddressType = formatAddressType(viewModel.bluetoothData.addressType)
+                    LabeledRow("Address Type:", formattedAddressType)
 
-                        viewModel.bluetoothData.addressType.let {
-                            val formatted = formatAddressType(it)
-                            LabeledRow("Address Type:", formatted)
-                        }
+                    LabeledRow("Company Name:", companyName)
 
-                        LabeledRow("Company Name:", companyName)
+                    val uuids = viewModel.bluetoothData.serviceUuidsList
+                    if (uuids.isNotEmpty()) {
+                        LabeledRow("Service UUIDs:", uuids.joinToString(", "))
+                    }
 
-                        val uuids = viewModel.bluetoothData.serviceUuidsList
-                        if (uuids.isNotEmpty()) {
-                            LabeledRow("Service UUIDs:", uuids.joinToString(", "))
-                        }
-
-                        viewModel.bluetoothData.companyId.takeIf { it.isNotEmpty() }?.let {
-                            LabeledRow("Company ID:", it)
-                        }
+                    viewModel.bluetoothData.companyId.takeIf { it.isNotEmpty() }?.let {
+                        LabeledRow("Company ID:", it)
                     }
                 }
             }
@@ -221,8 +177,7 @@ private fun LazyListScope.chartItems(
 
     item {
         Card(
-            modifier = Modifier
-                .fillMaxWidth(),
+            modifier = Modifier.fillMaxWidth(),
             shape = MaterialTheme.shapes.large,
             colors = CardDefaults.elevatedCardColors()
         ) {
@@ -245,16 +200,13 @@ private fun LazyListScope.chartItems(
                 Spacer(modifier = Modifier.weight(1f))
 
                 ScanRateInfoButton()
-
                 OpenSettingsButton(onNavigateToSettings)
             }
         }
     }
 
     cardItem {
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Text(
                 text = "Signal Strength (Last 2 Minutes)",
                 style = MaterialTheme.typography.titleMedium
@@ -263,7 +215,6 @@ private fun LazyListScope.chartItems(
         }
     }
 }
-
 
 private fun LazyListScope.cardItem(content: @Composable () -> Unit) {
     item {
@@ -327,7 +278,7 @@ fun OpenSettingsButton(onNavigateToSettings: () -> Unit) {
 private fun LabeledRow(label: String, value: String) {
     Row(
         modifier = Modifier
-            .padding(vertical = 4.dp)
+            .padding(vertical = 4.dp, horizontal = padding)
             .fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically
     ) {
