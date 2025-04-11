@@ -371,11 +371,6 @@ fun BluetoothDetailsScreenPreview() {
         dataField.isAccessible = true
         dataField.set(this, mockRecord)
 
-        val resolverField =
-            BluetoothDetailsViewModel::class.java.getDeclaredField("bluetoothCompanyResolver")
-        resolverField.isAccessible = true
-        resolverField.set(this, BluetoothCompanyResolver(context = LocalContext.current))
-
         addNewRssi(-58f)
     }
 
