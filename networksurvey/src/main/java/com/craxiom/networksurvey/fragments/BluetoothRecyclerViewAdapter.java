@@ -15,13 +15,11 @@ import com.craxiom.messaging.BluetoothRecord;
 import com.craxiom.messaging.BluetoothRecordData;
 import com.craxiom.networksurvey.R;
 import com.craxiom.networksurvey.constants.BluetoothMessageConstants;
-import com.craxiom.networksurvey.data.BluetoothCompanyResolver;
-import com.craxiom.networksurvey.data.BluetoothUuidResolver;
+import com.craxiom.networksurvey.data.BluetoothCompanyNameProvider;
+import com.craxiom.networksurvey.data.BluetoothCompanyNameResolver;
 import com.craxiom.networksurvey.util.ColorUtils;
 import com.google.common.base.Strings;
 import com.google.protobuf.ProtocolStringList;
-
-import java.util.List;
 
 import timber.log.Timber;
 
@@ -35,8 +33,7 @@ public class BluetoothRecyclerViewAdapter extends RecyclerView.Adapter<Bluetooth
     private final SortedList<BluetoothRecord> bluetoothRecords;
     private final Context context;
     private final BluetoothFragment bluetoothFragment;
-    private final BluetoothCompanyResolver bluetoothCompanyResolver;
-    private final BluetoothUuidResolver bluetoothUuidResolver;
+    private final BluetoothCompanyNameResolver companyNameResolver;
 
     BluetoothRecyclerViewAdapter(SortedList<BluetoothRecord> items, Context context, BluetoothFragment bluetoothFragment)
     {
@@ -44,10 +41,7 @@ public class BluetoothRecyclerViewAdapter extends RecyclerView.Adapter<Bluetooth
         this.context = context;
         this.bluetoothFragment = bluetoothFragment;
 
-        long startTime = System.currentTimeMillis();
-        bluetoothCompanyResolver = new BluetoothCompanyResolver(context);
-        bluetoothUuidResolver = new BluetoothUuidResolver(context);
-        Timber.d("BluetoothCompanyResolver and BluetoothUuidResolver took %d ms to create", System.currentTimeMillis() - startTime);
+        companyNameResolver = BluetoothCompanyNameProvider.getInstance(context);
     }
 
     @NonNull
@@ -85,7 +79,8 @@ public class BluetoothRecyclerViewAdapter extends RecyclerView.Adapter<Bluetooth
 
         final ProtocolStringList serviceUuidsList = data.getServiceUuidsList();
         final String companyId = data.getCompanyId();
-        String companyName = convertToCompanyName(serviceUuidsList, companyId);
+        String companyName = companyNameResolver.resolveCompanyName(serviceUuidsList, companyId);
+
         if (!Strings.isNullOrEmpty(companyName))
         {
             holder.companyName.setText(companyName);
@@ -128,59 +123,6 @@ public class BluetoothRecyclerViewAdapter extends RecyclerView.Adapter<Bluetooth
     private void navigateToDetails(BluetoothRecordData bluetoothData)
     {
         bluetoothFragment.navigateToBluetoothDetails(bluetoothData);
-    }
-
-    /**
-     * Takes in the company ID and the vendor id from the service UUID and tries to resolve the associated company name.
-     * <p>
-     * Priority is given to the service UUID vendor id, then the company ID is the fallback. This
-     * is the approach WiGLE takes, not sure if it is better or worse than the other way around.
-     */
-    private String convertToCompanyName(List<String> serviceUuids, String companyId)
-    {
-        String companyNameFromServiceUuid = resolveCompanyNameFromServiceUuids(serviceUuids);
-        Timber.i("The company name from the service UUID (%s) is: %s", serviceUuids, companyNameFromServiceUuid);
-
-        if (!Strings.isNullOrEmpty(companyNameFromServiceUuid))
-        {
-            Timber.i("Using the serviceUuid: %s to resolve the company name: %s", serviceUuids, companyNameFromServiceUuid);
-            return companyNameFromServiceUuid;
-        }
-
-        if (Strings.isNullOrEmpty(companyId)) return "";
-
-        try
-        {
-            String companyName = bluetoothCompanyResolver.getCompanyName(companyId);
-            Timber.i("Using the companyId: %s to resolve the company name: %s", companyId, companyName);
-            return companyName;
-        } catch (Exception e)
-        {
-            Timber.w("Unable to parse the company ID %s to an int.  Returning the company ID as the name.", companyId);
-            return companyId;
-        }
-    }
-
-    /**
-     * Takes in the service UUIDs and tries to resolve the associated company name.
-     */
-    private String resolveCompanyNameFromServiceUuids(List<String> serviceUuids)
-    {
-        if (serviceUuids == null || serviceUuids.isEmpty())
-        {
-            return "";
-        }
-
-        String fullUuid = serviceUuids.get(0);
-        if (fullUuid.length() < 8)
-        {
-            return "";
-        }
-
-        String companyIdHex = fullUuid.substring(4, 8);
-        String companyName = bluetoothUuidResolver.getNameForUuid(companyIdHex);
-
-        return companyName != null ? companyName : "";
     }
 
     /**

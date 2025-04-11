@@ -10,7 +10,7 @@ const val MIN_BLUETOOTH_RSSI = -100f
 /**
  * The view model for the Bluetooth Details screen.
  */
-internal class BluetoothDetailsViewModel : ASignalChartViewModel() {
+internal class BluetoothDetailsViewModel() : ASignalChartViewModel() {
 
     lateinit var bluetoothData: BluetoothRecordData
 

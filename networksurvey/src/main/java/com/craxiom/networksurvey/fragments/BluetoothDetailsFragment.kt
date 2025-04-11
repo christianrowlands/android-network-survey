@@ -76,7 +76,8 @@ class BluetoothDetailsFragment : AServiceDataFragment(), IBluetoothSurveyRecordL
                 NsTheme {
                     BluetoothDetailsScreen(
                         viewModel = viewModel,
-                        bluetoothDetailsFragment = this@BluetoothDetailsFragment
+                        onNavigateBack = { navigateBack() },
+                        onNavigateToSettings = { navigateToSettings() }
                     )
                 }
             }

@@ -35,12 +35,18 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.craxiom.messaging.BluetoothRecordData
+import com.craxiom.messaging.bluetooth.AddressType
+import com.craxiom.messaging.bluetooth.SupportedTechnologies
 import com.craxiom.networksurvey.R
 import com.craxiom.networksurvey.constants.BluetoothMessageConstants
-import com.craxiom.networksurvey.fragments.BluetoothDetailsFragment
+import com.craxiom.networksurvey.data.BluetoothCompanyNameProvider
+import com.craxiom.networksurvey.data.BluetoothCompanyResolver
 import com.craxiom.networksurvey.ui.SignalChart
 import com.craxiom.networksurvey.ui.UNKNOWN_RSSI
 import com.craxiom.networksurvey.ui.main.appbar.TitleBar
+import com.craxiom.networksurvey.ui.preview.NsPreview
+import com.craxiom.networksurvey.ui.preview.PreviewDayNight
 import com.craxiom.networksurvey.util.ColorUtils
 
 /**
@@ -51,19 +57,27 @@ import com.craxiom.networksurvey.util.ColorUtils
 @Composable
 internal fun BluetoothDetailsScreen(
     viewModel: BluetoothDetailsViewModel,
-    bluetoothDetailsFragment: BluetoothDetailsFragment
+    onNavigateBack: () -> Unit,
+    onNavigateToSettings: () -> Unit
 ) {
     val context = LocalContext.current
     val rssi by viewModel.rssiFlow.collectAsStateWithLifecycle()
     val scanRate by viewModel.scanRate.collectAsStateWithLifecycle()
     val colorId = ColorUtils.getColorForSignalStrength(rssi)
     val colorResource = Color(context.getColor(colorId))
+    val companyNameResolver = remember { BluetoothCompanyNameProvider.getInstance(context) }
+    val companyName = remember(viewModel.bluetoothData) {
+        companyNameResolver.resolveCompanyName(
+            viewModel.bluetoothData.serviceUuidsList,
+            viewModel.bluetoothData.companyId
+        )
+    }
 
     Scaffold(
         topBar = {
             TitleBar(
                 "Bluetooth Device Details"
-            ) { bluetoothDetailsFragment.navigateBack() }
+            ) { onNavigateBack() }
         },
     ) { insetPadding ->
         LazyColumn(
@@ -72,7 +86,7 @@ internal fun BluetoothDetailsScreen(
             verticalArrangement = Arrangement.spacedBy(padding),
             modifier = Modifier.padding(insetPadding)
         ) {
-            chartItems(viewModel, colorResource, rssi, scanRate, bluetoothDetailsFragment)
+            chartItems(viewModel, colorResource, rssi, scanRate, companyName, onNavigateToSettings)
         }
     }
 }
@@ -82,7 +96,8 @@ private fun LazyListScope.chartItems(
     signalStrengthColor: Color,
     rssi: Float,
     scanRate: Int,
-    bluetoothDetailsFragment: BluetoothDetailsFragment
+    companyName: String,
+    onNavigateToSettings: () -> Unit
 ) {
     item {
         Row(
@@ -173,6 +188,32 @@ private fun LazyListScope.chartItems(
                             style = MaterialTheme.typography.titleMedium
                         )
                     }
+
+                    Column(
+                        modifier = Modifier
+                            .padding(start = padding, end = padding, bottom = padding)
+                            .fillMaxWidth()
+                    ) {
+                        viewModel.bluetoothData.deviceClass.takeIf { it.isNotEmpty() }?.let {
+                            LabeledRow("Device Class:", it)
+                        }
+
+                        viewModel.bluetoothData.addressType.let {
+                            val formatted = formatAddressType(it)
+                            LabeledRow("Address Type:", formatted)
+                        }
+
+                        LabeledRow("Company Name:", companyName)
+
+                        val uuids = viewModel.bluetoothData.serviceUuidsList
+                        if (uuids.isNotEmpty()) {
+                            LabeledRow("Service UUIDs:", uuids.joinToString(", "))
+                        }
+
+                        viewModel.bluetoothData.companyId.takeIf { it.isNotEmpty() }?.let {
+                            LabeledRow("Company ID:", it)
+                        }
+                    }
                 }
             }
         }
@@ -205,7 +246,7 @@ private fun LazyListScope.chartItems(
 
                 ScanRateInfoButton()
 
-                OpenSettingsButton(bluetoothDetailsFragment)
+                OpenSettingsButton(onNavigateToSettings)
             }
         }
     }
@@ -270,10 +311,10 @@ fun ScanRateInfoButton() {
 }
 
 @Composable
-fun OpenSettingsButton(bluetoothDetailsFragment: BluetoothDetailsFragment) {
+fun OpenSettingsButton(onNavigateToSettings: () -> Unit) {
 
     IconButton(onClick = {
-        bluetoothDetailsFragment.navigateToSettings()
+        onNavigateToSettings()
     }) {
         Icon(
             Icons.Default.Settings,
@@ -282,4 +323,66 @@ fun OpenSettingsButton(bluetoothDetailsFragment: BluetoothDetailsFragment) {
     }
 }
 
+@Composable
+private fun LabeledRow(label: String, value: String) {
+    Row(
+        modifier = Modifier
+            .padding(vertical = 4.dp)
+            .fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelMedium,
+            modifier = Modifier.weight(1f)
+        )
+        Text(
+            text = value,
+            style = MaterialTheme.typography.titleMedium,
+            modifier = Modifier.weight(2f)
+        )
+    }
+}
+
+fun formatAddressType(addressType: AddressType): String {
+    return addressType.name.lowercase().replaceFirstChar { it.uppercase() }
+}
+
 private val padding = 16.dp
+
+@PreviewDayNight()
+@Composable
+fun BluetoothDetailsScreenPreview() {
+    val mockRecord = BluetoothRecordData.newBuilder()
+        .setSourceAddress("00:11:22:33:44:55")
+        .setOtaDeviceName("Mock Device")
+        .setSupportedTechnologies(SupportedTechnologies.DUAL)
+        .setDeviceClass("41C")
+        .setAddressType(AddressType.PUBLIC)
+        .addServiceUuids("0000fe07-0000-1000-8000-00805f9b34fb")
+        .build()
+
+    // Create a real instance of the ViewModel
+    val viewModel = BluetoothDetailsViewModel()
+
+    // Inject the fake BluetoothRecordData (since it's lateinit and internal)
+    viewModel.apply {
+        val dataField = BluetoothDetailsViewModel::class.java.getDeclaredField("bluetoothData")
+        dataField.isAccessible = true
+        dataField.set(this, mockRecord)
+
+        val resolverField =
+            BluetoothDetailsViewModel::class.java.getDeclaredField("bluetoothCompanyResolver")
+        resolverField.isAccessible = true
+        resolverField.set(this, BluetoothCompanyResolver(context = LocalContext.current))
+
+        addNewRssi(-58f)
+    }
+
+    NsPreview {
+        BluetoothDetailsScreen(
+            viewModel = viewModel,
+            onNavigateBack = {},
+            onNavigateToSettings = {})
+    }
+}
