@@ -4,6 +4,7 @@ import android.os.Looper;
 
 import com.craxiom.messaging.BluetoothRecord;
 import com.craxiom.messaging.BluetoothRecordData;
+import com.craxiom.messaging.bluetooth.AddressType;
 import com.craxiom.messaging.bluetooth.SupportedTechnologies;
 import com.craxiom.messaging.bluetooth.Technology;
 import com.craxiom.networksurvey.constants.BluetoothMessageConstants;
@@ -79,8 +80,13 @@ public class BluetoothSurveyRecordLogger extends SurveyRecordLogger implements I
             tableColumns.add(FeatureColumn.createColumn(columnNumber++, BluetoothMessageConstants.TECHNOLOGY_COLUMN, GeoPackageDataType.TEXT, false, null));
             tableColumns.add(FeatureColumn.createColumn(columnNumber++, BluetoothMessageConstants.SUPPORTED_TECHNOLOGIES_COLUMN, GeoPackageDataType.TEXT, false, null));
             tableColumns.add(FeatureColumn.createColumn(columnNumber++, BluetoothMessageConstants.TX_POWER_COLUMN, GeoPackageDataType.FLOAT, false, null));
-            //noinspection UnusedAssignment
             tableColumns.add(FeatureColumn.createColumn(columnNumber++, BluetoothMessageConstants.SIGNAL_STRENGTH_COLUMN, GeoPackageDataType.FLOAT, false, null));
+            tableColumns.add(FeatureColumn.createColumn(columnNumber++, BluetoothCsvConstants.CHANNEL, GeoPackageDataType.SMALLINT, false, null));
+            tableColumns.add(FeatureColumn.createColumn(columnNumber++, BluetoothCsvConstants.ADDRESS_TYPE, GeoPackageDataType.TEXT, false, null));
+            tableColumns.add(FeatureColumn.createColumn(columnNumber++, BluetoothCsvConstants.DEVICE_CLASS, GeoPackageDataType.TEXT, false, null));
+            tableColumns.add(FeatureColumn.createColumn(columnNumber++, BluetoothCsvConstants.SERVICE_UUIDS, GeoPackageDataType.TEXT, false, null));
+            //noinspection UnusedAssignment
+            tableColumns.add(FeatureColumn.createColumn(columnNumber++, BluetoothCsvConstants.COMPANY_ID, GeoPackageDataType.TEXT, false, null));
         });
     }
 
@@ -151,6 +157,35 @@ public class BluetoothSurveyRecordLogger extends SurveyRecordLogger implements I
                         if (!otaDeviceName.isEmpty())
                         {
                             row.setValue(BluetoothMessageConstants.OTA_DEVICE_NAME_COLUMN, otaDeviceName);
+                        }
+
+                        if (data.hasChannel())
+                        {
+                            row.setValue(BluetoothCsvConstants.CHANNEL, data.getChannel());
+                        }
+
+                        final AddressType addressType = data.getAddressType();
+                        if (addressType != AddressType.UNRECOGNIZED)
+                        {
+                            row.setValue(BluetoothCsvConstants.ADDRESS_TYPE, data.getAddressType().name());
+                        }
+
+                        final String deviceClass = data.getDeviceClass();
+                        if (!deviceClass.isEmpty())
+                        {
+                            row.setValue(BluetoothCsvConstants.DEVICE_CLASS, deviceClass);
+                        }
+
+                        final List<String> serviceUuids = data.getServiceUuidsList();
+                        if (!serviceUuids.isEmpty())
+                        {
+                            row.setValue(BluetoothCsvConstants.SERVICE_UUIDS, String.join(";", data.getServiceUuidsList()));
+                        }
+
+                        String companyId = data.getCompanyId();
+                        if (!companyId.isEmpty())
+                        {
+                            row.setValue(BluetoothCsvConstants.COMPANY_ID, companyId);
                         }
 
                         featureDao.insert(row);

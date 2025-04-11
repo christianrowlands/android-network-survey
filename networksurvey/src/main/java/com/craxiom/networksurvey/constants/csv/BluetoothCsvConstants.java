@@ -20,4 +20,8 @@ public class BluetoothCsvConstants extends SurveyCsvConstants
     public static final String SUPPORTED_TECHNOLOGIES = "supportedTechnologies";
     public static final String OTA_DEVICE_NAME = "otaDeviceName";
     public static final String CHANNEL = "channel";
+    public static final String ADDRESS_TYPE = "addressType";
+    public static final String DEVICE_CLASS = "deviceClass";
+    public static final String SERVICE_UUIDS = "serviceUuids";
+    public static final String COMPANY_ID = "companyId";
 }

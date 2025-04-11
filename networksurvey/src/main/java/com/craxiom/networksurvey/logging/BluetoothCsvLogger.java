@@ -1,15 +1,19 @@
 package com.craxiom.networksurvey.logging;
 
 import static com.craxiom.networksurvey.constants.csv.BluetoothCsvConstants.ACCURACY;
+import static com.craxiom.networksurvey.constants.csv.BluetoothCsvConstants.ADDRESS_TYPE;
 import static com.craxiom.networksurvey.constants.csv.BluetoothCsvConstants.ALTITUDE;
 import static com.craxiom.networksurvey.constants.csv.BluetoothCsvConstants.CHANNEL;
+import static com.craxiom.networksurvey.constants.csv.BluetoothCsvConstants.COMPANY_ID;
 import static com.craxiom.networksurvey.constants.csv.BluetoothCsvConstants.DESTINATION_ADDRESS;
+import static com.craxiom.networksurvey.constants.csv.BluetoothCsvConstants.DEVICE_CLASS;
 import static com.craxiom.networksurvey.constants.csv.BluetoothCsvConstants.DEVICE_TIME;
 import static com.craxiom.networksurvey.constants.csv.BluetoothCsvConstants.LATITUDE;
 import static com.craxiom.networksurvey.constants.csv.BluetoothCsvConstants.LONGITUDE;
 import static com.craxiom.networksurvey.constants.csv.BluetoothCsvConstants.MISSION_ID;
 import static com.craxiom.networksurvey.constants.csv.BluetoothCsvConstants.OTA_DEVICE_NAME;
 import static com.craxiom.networksurvey.constants.csv.BluetoothCsvConstants.RECORD_NUMBER;
+import static com.craxiom.networksurvey.constants.csv.BluetoothCsvConstants.SERVICE_UUIDS;
 import static com.craxiom.networksurvey.constants.csv.BluetoothCsvConstants.SIGNAL_STRENGTH;
 import static com.craxiom.networksurvey.constants.csv.BluetoothCsvConstants.SOURCE_ADDRESS;
 import static com.craxiom.networksurvey.constants.csv.BluetoothCsvConstants.SPEED;
@@ -23,6 +27,7 @@ import android.os.Looper;
 
 import com.craxiom.messaging.BluetoothRecord;
 import com.craxiom.messaging.BluetoothRecordData;
+import com.craxiom.messaging.bluetooth.AddressType;
 import com.craxiom.messaging.bluetooth.SupportedTechnologies;
 import com.craxiom.messaging.bluetooth.Technology;
 import com.craxiom.networksurvey.constants.NetworkSurveyConstants;
@@ -52,7 +57,7 @@ public class BluetoothCsvLogger extends CsvRecordLogger implements IBluetoothSur
                 MISSION_ID, RECORD_NUMBER,
                 SOURCE_ADDRESS, DESTINATION_ADDRESS, SIGNAL_STRENGTH, TX_POWER, TECHNOLOGY,
                 SUPPORTED_TECHNOLOGIES, OTA_DEVICE_NAME, CHANNEL,
-                DEVICE_SERIAL_NUMBER, LOCATION_AGE};
+                DEVICE_SERIAL_NUMBER, LOCATION_AGE, ADDRESS_TYPE, DEVICE_CLASS, SERVICE_UUIDS, COMPANY_ID};
     }
 
     @Override
@@ -121,7 +126,12 @@ public class BluetoothCsvLogger extends CsvRecordLogger implements IBluetoothSur
                 data.getOtaDeviceName(),
                 data.hasChannel() ? String.valueOf(data.getChannel().getValue()) : "",
                 data.getDeviceSerialNumber(),
-                data.getLocationAge() == 0 ? "" : String.valueOf(data.getLocationAge())
+                data.getLocationAge() == 0 ? "" : String.valueOf(data.getLocationAge()),
+                data.getAddressType() == AddressType.UNRECOGNIZED ? "" : data.getAddressType().name(),
+                data.getDeviceClass(),
+                // Convert the list of service UUIDs to a semicolon-separated string
+                String.join(";", data.getServiceUuidsList()),
+                data.getCompanyId(),
         };
     }
 }
