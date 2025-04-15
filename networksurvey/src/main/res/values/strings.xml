@@ -100,7 +100,7 @@ but work independently, so you have full control over how you handle your data.<
     <string name="open_settings">Open Settings</string>
     <string name="deny_permission">Deny Permission</string>
 
-    <string name="version_suffix" />
+    <string name="version_suffix" translatable="false" />
 
     <string name="drawer_menu_description">Menu navigation button</string>
 
@@ -169,11 +169,11 @@ but work independently, so you have full control over how you handle your data.<
     <string name="upload_button_text">Upload\nRecords</string>
     <string name="upload_survey_records">Upload Survey Records</string>
     <string name="upload_progress">Upload Progress</string>
-    <string name="upload_percentage_initial">0%</string>
-    <string name="upload_percentage">%1$d%%</string>
+    <string name="upload_percentage_initial" translatable="false">0%</string>
+    <string name="upload_percentage" translatable="false">%1$d%%</string>
     <string name="upload_result">Upload Result</string>
-    <string name="opencellid_upload">OpenCelliD:</string>
-    <string name="beacondb_upload">BeaconDB:</string>
+    <string name="opencellid_upload" translatable="false">OpenCelliD:</string>
+    <string name="beacondb_upload" translatable="false">BeaconDB:</string>
     <string name="upload_pending">Upload Pending…</string>
     <string name="uploader_canceled">Upload canceled</string>
     <string name="upload_to_opencellid">Upload to OpenCelliD</string>
@@ -327,7 +327,7 @@ but work independently, so you have full control over how you handle your data.<
     <string name="manual">User Manual</string>
     <string name="messaging_docs">Messaging Docs</string>
     <string name="report_issue">Report an Issue</string>
-    <string name="github">GitHub</string>
+    <string name="github" translatable="false">GitHub</string>
 
     <string name="network_survey_service_description">The Network Survey Service runs when the app needs to do work in the background such as write to the log file or stream data out over active connection</string>
     <string name="connection_service_description">The Connection Service handles managing the connection to a remote server to stream Network Survey data</string>
