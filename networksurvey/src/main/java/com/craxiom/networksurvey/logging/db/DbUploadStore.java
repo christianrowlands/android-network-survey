@@ -33,6 +33,7 @@ import java.util.concurrent.Executors;
 public class DbUploadStore implements ICellularSurveyRecordListener, IWifiSurveyRecordListener
 {
     public static final int DISTANCE_MOVED_THRESHOLD_METERS = 35;
+    public static final int ACCURACY_THRESHOLD_METERS = 100;
     public static final int EARTH_RADIUS_METERS = 6371000; // Earth's radius in meters
     private final SurveyDatabase database;
     private final ExecutorService executorService;
@@ -142,6 +143,8 @@ public class DbUploadStore implements ICellularSurveyRecordListener, IWifiSurvey
             {
                 WifiBeaconRecordData data = wifiBeaconRecords.get(0).getWifiBeaconRecord().getData();
 
+                if (isAccuracyBad(data.getAccuracy())) return;
+
                 double latitude = data.getLatitude();
                 double longitude = data.getLongitude();
                 boolean hasLocation = latitude != 0d && longitude != 0d;
@@ -183,6 +186,8 @@ public class DbUploadStore implements ICellularSurveyRecordListener, IWifiSurvey
 
     private boolean shouldWriteGsmRecord(GsmRecordData data, int subscriptionId)
     {
+        if (isAccuracyBad(data.getAccuracy())) return false;
+
         // Yes, I know that 0.0 is a valid location, but I am filtering on 0.0 anyway
         double latitude = data.getLatitude();
         double longitude = data.getLongitude();
@@ -228,6 +233,8 @@ public class DbUploadStore implements ICellularSurveyRecordListener, IWifiSurvey
 
     private boolean shouldWriteUmtsRecord(UmtsRecordData data, int subscriptionId)
     {
+        if (isAccuracyBad(data.getAccuracy())) return false;
+
         // Yes, I know that 0.0 is a valid location, but I am filtering on 0.0 anyway
         double latitude = data.getLatitude();
         double longitude = data.getLongitude();
@@ -257,6 +264,8 @@ public class DbUploadStore implements ICellularSurveyRecordListener, IWifiSurvey
 
     private boolean shouldWriteLteRecord(LteRecordData data, int subscriptionId)
     {
+        if (isAccuracyBad(data.getAccuracy())) return false;
+
         // Yes, I know that 0.0 is a valid location, but I am filtering on 0.0 anyway
         double latitude = data.getLatitude();
         double longitude = data.getLongitude();
@@ -286,6 +295,8 @@ public class DbUploadStore implements ICellularSurveyRecordListener, IWifiSurvey
 
     private boolean shouldWriteNrRecord(NrRecordData data, int subscriptionId)
     {
+        if (isAccuracyBad(data.getAccuracy())) return false;
+
         // Yes, I know that 0.0 is a valid location, but I am filtering on 0.0 anyway
         double latitude = data.getLatitude();
         double longitude = data.getLongitude();
@@ -337,6 +348,16 @@ public class DbUploadStore implements ICellularSurveyRecordListener, IWifiSurvey
         double distance = EARTH_RADIUS_METERS * c;
 
         return distance >= DISTANCE_MOVED_THRESHOLD_METERS;
+    }
+
+    /**
+     * Checks to see if the accuracy is within the acceptable range.
+     *
+     * @return True if the accuracy is bad, false otherwise.
+     */
+    private boolean isAccuracyBad(int accuracy)
+    {
+        return accuracy <= 0 || accuracy > ACCURACY_THRESHOLD_METERS;
     }
 
     private GsmRecordEntity mapGsmRecordToEntity(GsmRecordData record)
