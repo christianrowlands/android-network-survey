@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.36](https://github.com/christianrowlands/android-network-survey/releases/tag/v1.36) - 2025-05-08
+
+* Adds the `addressType`, `deviceClass`, `serviceUuids`, and `companyId` fields to the Bluetooth message.
+* Displays the new fields in the Bluetooth UI.
+* Resolve the company name and display it in the Bluetooth UI.
+* Stop scrolling to the bottom when the upload status is updated.
+* UI improvements for larger font settings in Wi-Fi and Bluetooth UIs.
+* For database upload, ignore records that have a location accuracy worse than 100 meters.
+
 ## [1.35](https://github.com/christianrowlands/android-network-survey/releases/tag/v1.35) - 2025-04-07
 
 * Fixes a crash that occurs when the user quickly navigates to another app after enabling logging.
