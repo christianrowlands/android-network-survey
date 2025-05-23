@@ -1,21 +1,21 @@
 // Top-level build file where you can add configuration options common to all sub-projects/modules.
 
 buildscript {
-    ext.hilt_version = '2.52'
-    ext.room_version = '2.6.1'
+    ext.hilt_version = '2.56.1'
+    ext.room_version = '2.7.1'
     ext.useCrashlytics = file("networksurvey/google-services.json").exists()
     repositories {
         google()
         mavenCentral()
     }
     dependencies {
-        classpath 'com.android.tools.build:gradle:8.8.2'
+        classpath 'com.android.tools.build:gradle:8.10.0'
         if (useCrashlytics) {
             classpath 'com.google.gms:google-services:4.4.2'
             classpath 'com.google.firebase:firebase-crashlytics-gradle:3.0.2'
         }
         classpath "com.google.dagger:hilt-android-gradle-plugin:$hilt_version"
-        classpath "com.google.devtools.ksp:com.google.devtools.ksp.gradle.plugin:1.9.24-1.0.20"
+        classpath "com.google.devtools.ksp:com.google.devtools.ksp.gradle.plugin:2.1.20-1.0.32"
     }
 }
 
