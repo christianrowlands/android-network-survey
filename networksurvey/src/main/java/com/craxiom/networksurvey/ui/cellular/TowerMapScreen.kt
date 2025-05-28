@@ -53,7 +53,6 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -69,20 +68,24 @@ import com.craxiom.networksurvey.model.Plmn
 import com.craxiom.networksurvey.ui.cellular.model.FollowMyLocationChangeListener
 import com.craxiom.networksurvey.ui.cellular.model.ServingCellInfo
 import com.craxiom.networksurvey.ui.cellular.model.ServingSignalInfo
+import com.craxiom.networksurvey.ui.cellular.model.TowerMapLibreViewModel
 import com.craxiom.networksurvey.ui.cellular.model.TowerMapViewModel
 import com.craxiom.networksurvey.ui.cellular.model.TowerSource
+import com.craxiom.networksurvey.ui.cellular.towermap.MapLibreMap
+import com.craxiom.networksurvey.ui.cellular.towermap.MapLocationSettings
+import com.craxiom.networksurvey.ui.cellular.towermap.MapUiSettings
+import com.craxiom.networksurvey.ui.cellular.towermap.Symbol
+import com.craxiom.networksurvey.ui.cellular.towermap.rememberCameraPositionState
+import com.craxiom.networksurvey.ui.cellular.towermap.rememberSymbolState
 import com.craxiom.networksurvey.util.PreferenceUtils
 import com.google.gson.annotations.SerializedName
 import com.google.protobuf.GeneratedMessage
 import kotlinx.coroutines.launch
 import okhttp3.OkHttpClient
-import org.osmdroid.events.DelayedMapListener
-import org.osmdroid.events.MapListener
-import org.osmdroid.events.ScrollEvent
-import org.osmdroid.events.ZoomEvent
-import org.osmdroid.tileprovider.tilesource.TileSourceFactory
+import okhttp3.internal.toImmutableMap
+import org.maplibre.android.camera.CameraPosition
+import org.maplibre.android.geometry.LatLng
 import org.osmdroid.util.BoundingBox
-import org.osmdroid.views.CustomZoomButtonsController
 import org.osmdroid.views.MapView
 import retrofit2.Response
 import retrofit2.Retrofit
@@ -106,7 +109,7 @@ const val MAX_AREA_SQ_METERS = 400_000_000.0
  */
 @Composable
 internal fun TowerMapScreen(
-    viewModel: TowerMapViewModel = viewModel(),
+    viewModel: TowerMapLibreViewModel = viewModel(),
     onBackButtonPressed: () -> Unit,
     onNavigateToTowerMapSettings: () -> Unit
 ) {
@@ -138,18 +141,63 @@ internal fun TowerMapScreen(
     var showPlmnDialog by remember { mutableStateOf(false) }
     var showTowerSourceDialog by remember { mutableStateOf(false) }
 
+    val cameraPositionState = rememberCameraPositionState {
+        // Optionally initialize from viewModel.lastQueriedBounds
+        viewModel.lastQueriedBounds.value?.let { bounds ->
+            position = CameraPosition.Builder()
+                .target(LatLng(bounds.center.latitude, bounds.center.longitude))
+                .zoom(INITIAL_ZOOM)
+                .build()
+        }
+    }
+
     val statusBarHeight = paddingInsets.calculateTopPadding()
     Surface(
         modifier = Modifier.fillMaxSize(),
         color = MaterialTheme.colorScheme.background
     ) {
         Box(modifier = Modifier.fillMaxSize()) {
-            OsmdroidMapView(viewModel, object :
+            /*OsmdroidMapView(viewModel, object :
                 FollowMyLocationChangeListener {
                 override fun onFollowMyLocationChanged(enabled: Boolean) {
                     isFollowing = enabled
                 }
-            })
+            })*/
+            val baseUrl = "https://api.maptiler.com/maps"
+            val mapId = "basic-v2-dark" // "basic-v2" for light mode
+            val t = ""
+            val styleUrl = "$baseUrl/$mapId/style.json?key=$t"
+
+            MapLibreMap(
+                styleUri = styleUrl,
+                modifier = Modifier.fillMaxSize(),
+                images = mapOf("tower" to R.drawable.ic_cell_tower_map).toImmutableMap(),
+                cameraPositionState = cameraPositionState,
+                uiSettings = MapUiSettings(
+                    compassEnabled = true,
+                    rotationGesturesEnabled = true,
+                    scrollGesturesEnabled = true,
+                    tiltGesturesEnabled = false,
+                    zoomGesturesEnabled = true
+                ),
+                locationSettings = MapLocationSettings(locationEnabled = false),
+                onMapReady = { mapView, map, style ->
+                    viewModel.initMapLibre(mapView, map, style)
+                }
+            ) {
+                // Render tower symbols
+                val towersData by viewModel.towers.collectAsStateWithLifecycle()
+                towersData.forEach { towerStub ->
+                    val position = LatLng(towerStub.tower.lat, towerStub.tower.lon)
+                    Symbol(
+                        iconId = "tower",
+                        state = rememberSymbolState(
+                            key = "tower_${towerStub.tower.cid}",
+                            position = position
+                        )
+                    )
+                }
+            }
 
             TopAppBarOverlay(statusBarHeight)
 
@@ -332,7 +380,7 @@ internal fun TowerMapScreen(
 
                     Spacer(modifier = Modifier.height(12.dp))
 
-                    CircleButtonWithLine(
+                    /*FIXME CircleButtonWithLine(
                         isFollowing = isFollowing,
                         toggleFollowMe = {
                             if (viewModel.myLocationOverlay == null) return@CircleButtonWithLine
@@ -341,7 +389,7 @@ internal fun TowerMapScreen(
                                 viewModel.myLocationOverlay!!.isFollowLocationEnabled
                             isFollowing = !currentIsFollowing
                             toggleFollowMe(viewModel, isFollowing)
-                        })
+                        })*/
                 }
             }
 
@@ -474,18 +522,19 @@ internal fun TowerMapScreen(
 
 @Composable
 internal fun OsmdroidMapView(
-    viewModel: TowerMapViewModel,
+    viewModel: TowerMapLibreViewModel,
     followMyLocationChangeListener: FollowMyLocationChangeListener
 ) {
-    val localContext = LocalContext.current
+    /*val localContext = LocalContext.current
     val mapView = remember {
         val mapView = MapView(localContext)
         viewModel.followMyLocationChangeListener = followMyLocationChangeListener
         viewModel.initMapView(mapView)
         mapView
-    }
+    }*/
 
-    AndroidView(
+
+    /*AndroidView(
         modifier = Modifier.fillMaxSize(),
         factory = {
             mapView.apply {
@@ -519,7 +568,7 @@ internal fun OsmdroidMapView(
         update = {
             viewModel.recreateOverlaysFromTowerData(it)
         }
-    )
+    )*/
 }
 
 @Composable

@@ -26,7 +26,7 @@ import com.craxiom.networksurvey.model.CellularRecordWrapper
 import com.craxiom.networksurvey.services.NetworkSurveyService
 import com.craxiom.networksurvey.ui.cellular.TowerMapScreen
 import com.craxiom.networksurvey.ui.cellular.model.ServingCellInfo
-import com.craxiom.networksurvey.ui.cellular.model.TowerMapViewModel
+import com.craxiom.networksurvey.ui.cellular.model.TowerMapLibreViewModel
 import com.craxiom.networksurvey.ui.main.SharedViewModel
 import com.craxiom.networksurvey.ui.theme.NsTheme
 import com.craxiom.networksurvey.util.PreferenceUtils
@@ -37,25 +37,22 @@ import java.util.Collections
  * A map view of all the towers in the area as pulled from the NS Tower Service.
  */
 class TowerMapFragment : AServiceDataFragment(), ICellularSurveyRecordListener {
-    private var viewModel: TowerMapViewModel? = null
+    private var viewModel: TowerMapLibreViewModel? = null
     private lateinit var composeView: ComposeView
-    private var paddingValues: PaddingValues = PaddingValues(2.dp, 2.dp, 2.dp, 2.dp)
+    private var paddingValues: PaddingValues = PaddingValues(2.dp)
     private var servingCell: ServingCellInfo? = null
     private var locationListener: LocationListener? = null
-    private var simBroadcastReceiver = object : BroadcastReceiver(
-    ) {
+    private val simBroadcastReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
-            Timber.i("SIM State Change Detected. Updating the tower map view model")
+            Timber.i("SIM State Change Detected. Resetting the tower map VM")
             viewModel?.resetSimCount()
         }
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
-        val context = context
-        if (context != null) {
-            LocalBroadcastManager.getInstance(context).registerReceiver(
+        context?.let {
+            LocalBroadcastManager.getInstance(it).registerReceiver(
                 simBroadcastReceiver,
                 IntentFilter(SimChangeReceiver.SIM_CHANGED_INTENT)
             )
@@ -67,8 +64,9 @@ class TowerMapFragment : AServiceDataFragment(), ICellularSurveyRecordListener {
         container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
-        val viewModel = ViewModelProvider(requireActivity())[SharedViewModel::class.java]
-        servingCell = viewModel.latestServingCellInfo
+        // Grab the last known serving cell from SharedViewModel
+        servingCell = ViewModelProvider(requireActivity())[SharedViewModel::class.java]
+            .latestServingCellInfo
 
         composeView = ComposeView(requireContext()).apply {
             setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed)
@@ -77,39 +75,31 @@ class TowerMapFragment : AServiceDataFragment(), ICellularSurveyRecordListener {
         if (PreferenceUtils.hasAcceptedMapPrivacy(requireContext())) {
             setupComposeView(servingCell)
         }
-
         return composeView
     }
 
     override fun onResume() {
         super.onResume()
-
         if (PreferenceUtils.hasAcceptedMapPrivacy(requireContext())) {
             setupComposeView(servingCell)
-            viewModel?.mapView?.onResume()
         }
-
         checkAcceptedMapPrivacy()
         checkLocationServicesEnabledAndPrompt()
-
         startAndBindToService()
     }
 
     override fun onPause() {
-        viewModel?.mapView?.boundingBox?.let {
-            PreferenceUtils.saveTowerMapViewBoundingBox(requireContext(), it)
-        }
-
-        viewModel?.mapView?.onPause()
         super.onPause()
+        // Save last viewport
+        viewModel?.lastQueriedBounds?.value?.let { bounds ->
+            PreferenceUtils.saveTowerMapViewLatLngBounds(requireContext(), bounds)
+        }
     }
 
     override fun onDestroy() {
-        val context = context
-        if (context != null) {
-            LocalBroadcastManager.getInstance(context).unregisterReceiver(simBroadcastReceiver)
+        context?.let {
+            LocalBroadcastManager.getInstance(it).unregisterReceiver(simBroadcastReceiver)
         }
-
         super.onDestroy()
     }
 
@@ -118,33 +108,27 @@ class TowerMapFragment : AServiceDataFragment(), ICellularSurveyRecordListener {
         service.registerCellularSurveyRecordListener(this)
 
         var removeListener = false
-        val initialLocation = service.primaryLocationListener?.latestLocation
-        initialLocation?.let {
-            if (viewModel == null) {
-                removeListener = false
-            } else {
-                removeListener = viewModel!!.setMapCenterLocation(it)
+        // Try centering map to last known location once
+        service.primaryLocationListener?.latestLocation?.let { loc ->
+            viewModel?.let { vm ->
+                removeListener = vm.setMapCenterLocation(loc)
             }
         }
-
         if (!removeListener) {
             locationListener = LocationListener { location ->
-                if (viewModel == null) return@LocationListener
-                removeListener = viewModel!!.setMapCenterLocation(location)
-                if (removeListener) service.unregisterLocationListener(locationListener)
+                viewModel?.let { vm ->
+                    removeListener = vm.setMapCenterLocation(location)
+                    if (removeListener) service.unregisterLocationListener(locationListener)
+                }
             }
             service.registerLocationListener(locationListener)
         }
     }
 
     override fun onSurveyServiceDisconnecting(service: NetworkSurveyService?) {
-        if (service == null) return
+        service ?: return
         service.unregisterCellularSurveyRecordListener(this)
-
-        locationListener?.let {
-            service.unregisterLocationListener(it)
-        }
-
+        locationListener?.let { service.unregisterLocationListener(it) }
         super.onSurveyServiceDisconnecting(service)
     }
 
@@ -215,17 +199,16 @@ class TowerMapFragment : AServiceDataFragment(), ICellularSurveyRecordListener {
 
     private fun setupComposeView(servingCell: ServingCellInfo?) {
         composeView.setContent {
-            viewModel = viewModel()
-            viewModel!!.setPaddingInsets(paddingValues)
-            viewModel!!.setTowerSource(PreferenceUtils.getLastSelectedTowerSource(requireContext()))
-            if (servingCell?.servingCell != null) {
-                if (servingCell.servingCell.cellularProtocol != CellularProtocol.NONE) {
-                    viewModel!!.setSelectedRadioType(servingCell.servingCell.cellularProtocol.name)
+            viewModel = viewModel<TowerMapLibreViewModel>()
+            viewModel?.setPaddingInsets(paddingValues)
+            viewModel?.setTowerSource(
+                PreferenceUtils.getLastSelectedTowerSource(requireContext())
+            )
+            servingCell?.servingCell?.let { cell ->
+                if (cell.cellularProtocol != CellularProtocol.NONE) {
+                    viewModel?.setSelectedRadioType(cell.cellularProtocol.name)
                 }
-                val plmn = servingCell.servingCell.plmn
-                if (plmn != null) {
-                    viewModel!!.setPlmnFilter(plmn)
-                }
+                cell.plmn?.let { viewModel?.setPlmnFilter(it) }
             }
 
             NsTheme {
@@ -236,23 +219,22 @@ class TowerMapFragment : AServiceDataFragment(), ICellularSurveyRecordListener {
                 )
             }
 
-            if (servingCell != null)
+            // Ensure we display the initial serving cell overlay
+            servingCell?.let { info ->
                 onCellularBatch(
-                    Collections.singletonList(servingCell.servingCell),
-                    servingCell.subscriptionId
+                    Collections.singletonList(info.servingCell),
+                    info.subscriptionId
                 )
+            }
         }
     }
 
     private fun navigateToTowerMapSettings() {
-        val nsActivity = activity ?: return
-
-        val viewModel = ViewModelProvider(nsActivity)[SharedViewModel::class.java]
-        viewModel.triggerNavigationToTowerMapSettings()
+        ViewModelProvider(requireActivity())[SharedViewModel::class.java]
+            .triggerNavigationToTowerMapSettings()
     }
 
     private fun navigateBack() {
-        val nsActivity = activity ?: return
-        nsActivity.onBackPressed()
+        requireActivity().onBackPressed()
     }
 }
