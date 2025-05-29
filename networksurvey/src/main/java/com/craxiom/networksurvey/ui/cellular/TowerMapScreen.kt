@@ -344,7 +344,7 @@ internal fun TowerMapScreen(
             Box(
                 modifier = Modifier
                     .align(Alignment.BottomEnd)
-                    .padding(vertical = paddingInsets.calculateBottomPadding(), horizontal = 16.dp)
+                    .padding(vertical = paddingInsets.calculateBottomPadding(), horizontal = 12.dp)
             ) {
                 Column {
                     Surface(
@@ -409,9 +409,9 @@ internal fun TowerMapScreen(
                         }
                     }
 
-                    Spacer(modifier = Modifier.height(12.dp))
+                    Spacer(modifier = Modifier.height(44.dp))
 
-                    /*FIXME CircleButtonWithLine(
+                    /*CircleButtonWithLine(
                         isFollowing = isFollowing,
                         toggleFollowMe = {
                             if (viewModel.myLocationOverlay == null) return@CircleButtonWithLine
@@ -706,7 +706,7 @@ fun ServingCellInfoDisplay(cellInfo: ServingCellInfo?, servingSignalInfo: Servin
 /**
  * Toggles the option to continuously move the map view to the user's current location.
  */
-private fun toggleFollowMe(viewModel: TowerMapViewModel, newIsFollowing: Boolean) {
+/*private fun toggleFollowMe(viewModel: TowerMapLibreViewModel, newIsFollowing: Boolean) {
     if (viewModel.myLocationOverlay == null) return
 
     if (newIsFollowing) {
@@ -714,7 +714,7 @@ private fun toggleFollowMe(viewModel: TowerMapViewModel, newIsFollowing: Boolean
     } else {
         viewModel.myLocationOverlay?.disableFollowLocation()
     }
-}
+}*/
 
 /**
  * The listener that is called when the map is idle. This is where we will load the towers for the

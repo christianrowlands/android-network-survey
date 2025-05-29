@@ -6,6 +6,7 @@ import android.content.Context
 import android.content.pm.PackageManager
 import android.location.Location
 import android.os.Looper
+import android.view.Gravity
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.ComposeNode
 import androidx.compose.runtime.currentComposer
@@ -187,6 +188,9 @@ internal inline fun MapUpdater(
                 map.locationComponent.isLocationComponentEnabled = it
             }
 
+            map.uiSettings.compassGravity = Gravity.END or Gravity.BOTTOM
+            map.uiSettings.setCompassMargins(0, 0, 24, 20)
+            map.uiSettings.logoGravity = Gravity.CENTER
             set(uiSettings.compassEnabled) { map.uiSettings.isCompassEnabled = it }
             set(uiSettings.rotationGesturesEnabled) { map.uiSettings.isRotateGesturesEnabled = it }
             set(uiSettings.scrollGesturesEnabled) { map.uiSettings.isScrollGesturesEnabled = it }
