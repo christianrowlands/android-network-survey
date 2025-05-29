@@ -1,6 +1,8 @@
 package com.craxiom.networksurvey.ui.cellular.model
 
 import android.location.Location
+import android.os.Handler
+import android.os.Looper
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModel
@@ -47,7 +49,7 @@ class TowerMapLibreViewModel : ViewModel() {
     val servingSignals = _servingSignals.asStateFlow()
 
     // Tower markers (stub) --------------------------
-    private val _towers = MutableStateFlow(LinkedHashSet<TowerMarkerStub>(LinkedHashSet()))
+    private val _towers = MutableStateFlow(LinkedHashSet<TowerWrapper>(LinkedHashSet()))
     val towers = _towers.asStateFlow()
 
     // UI state flags --------------------------------
@@ -80,6 +82,19 @@ class TowerMapLibreViewModel : ViewModel() {
     private var mapView: MapView? = null
     private var mapLibreMap: MapLibreMap? = null
     private var style: Style? = null
+    
+    // Current location for drawing serving cell lines
+    private var myLocation: Location? = null
+    
+    // Serving cell locations with range info
+    private val subIdToServingCellLocations = HashMap<Int, ServingCellLocationInfo>()
+    
+    // Serving cell lines and coverage data ---------
+    private val _servingCellLines = MutableStateFlow<List<ServingCellLineData>>(emptyList())
+    val servingCellLines = _servingCellLines.asStateFlow()
+    
+    private val _servingCellCoverage = MutableStateFlow<List<ServingCellCoverageData>>(emptyList())
+    val servingCellCoverage = _servingCellCoverage.asStateFlow()
 
     fun setPaddingInsets(paddingValues: PaddingValues) {
         _paddingInsets.value = paddingValues
@@ -171,13 +186,18 @@ class TowerMapLibreViewModel : ViewModel() {
      */
     fun setMapCenterLocation(location: Location): Boolean {
         if (!hasCenteredLocation && mapLibreMap != null) {
+            hasCenteredLocation = true
+
             val target = LatLng(location.latitude, location.longitude)
             val camPos = CameraPosition.Builder()
                 .target(target)
                 .zoom(INITIAL_ZOOM)
                 .build()
-            mapLibreMap!!.animateCamera(CameraUpdateFactory.newCameraPosition(camPos))
-            hasCenteredLocation = true
+
+            // Ensure we call animateCamera on the main thread
+            Handler(Looper.getMainLooper()).post {
+                mapLibreMap!!.animateCamera(CameraUpdateFactory.newCameraPosition(camPos))
+            }
         }
         return hasCenteredLocation
     }
@@ -196,6 +216,15 @@ class TowerMapLibreViewModel : ViewModel() {
                 map.animateCamera(CameraUpdateFactory.newCameraPosition(camPos))
             }
         }
+    }
+    
+    /**
+     * Updates the current user location for drawing serving cell lines.
+     */
+    fun updateMyLocation(location: Location) {
+        Timber.i("Updating my location to lat=%s, lon=%s", location.latitude, location.longitude)
+        myLocation = location
+        updateServingCellLines()
     }
 
     /**
@@ -367,12 +396,77 @@ class TowerMapLibreViewModel : ViewModel() {
             _towers.value.clear()
         } else {
             val newCells = response.body()!!.cells
-            // TODO: replace this stub with real MapLibre PointAnnotations
-            _towers.value = LinkedHashSet(newCells.map { TowerMarkerStub(it) })
+            Timber.i("Received %d towers from the API", newCells.size)
+            _towers.value = LinkedHashSet(newCells.map { TowerWrapper(it) })
         }
 
         _noTowersFound.value = _towers.value.isEmpty()
         _isLoadingInProgress.value = false
+        
+        // Update serving cell locations after towers are loaded
+        updateServingCellLocations()
+    }
+
+    /**
+     * Updates serving cell lines based on current location and serving cells.
+     */
+    private fun updateServingCellLines() {
+        val currentLocation = myLocation ?: return
+        val myLatLng = LatLng(currentLocation.latitude, currentLocation.longitude)
+        
+        val lines = subIdToServingCellLocations.map { (subscriptionId, locationInfo) ->
+            ServingCellLineData(
+                subscriptionId = subscriptionId,
+                startPoint = myLatLng,
+                endPoint = locationInfo.location
+            )
+        }
+        
+        _servingCellLines.value = lines
+    }
+    
+    /**
+     * Updates serving cell coverage circles.
+     */
+    private fun updateServingCellCoverage() {
+        val coverage = subIdToServingCellLocations.mapNotNull { (subscriptionId, locationInfo) ->
+            if (locationInfo.range > 0) {
+                ServingCellCoverageData(
+                    subscriptionId = subscriptionId,
+                    center = locationInfo.location,
+                    radiusMeters = locationInfo.range
+                )
+            } else null
+        }
+        
+        _servingCellCoverage.value = coverage
+    }
+    
+    /**
+     * Updates serving cell locations when towers or serving cells change.
+     */
+    private fun updateServingCellLocations() {
+        subIdToServingCellLocations.clear()
+
+        val servingCellToSubscriptionMap: Map<String, Int> = 
+            servingCells.value.entries.associate { entry ->
+                CellularUtils.getTowerId(entry.value) to entry.value.subscriptionId
+            }
+
+        // Find towers that match serving cells
+        towers.value.forEach { towerItem ->
+            val subscriptionId: Int? = servingCellToSubscriptionMap[towerItem.towerId]
+            
+            if (subscriptionId != null) {
+                subIdToServingCellLocations[subscriptionId] = ServingCellLocationInfo(
+                    location = LatLng(towerItem.tower.lat, towerItem.tower.lon),
+                    range = towerItem.tower.range
+                )
+            }
+        }
+        
+        updateServingCellLines()
+        updateServingCellCoverage()
     }
 
     /**
@@ -395,8 +489,6 @@ class TowerMapLibreViewModel : ViewModel() {
     }
 }
 
-/**
- * Temporary placeholder for your TowerMarker until you re-implement it
- * with the MapLibre Annotation API.
- */
-data class TowerMarkerStub(val tower: Tower)
+data class TowerWrapper(val tower: Tower) {
+    internal val towerId: String = CellularUtils.getTowerId(tower)
+}

@@ -3,6 +3,7 @@ package com.craxiom.networksurvey.ui.cellular.towermap
 import android.content.ComponentCallbacks
 import android.content.Context
 import android.content.res.Configuration
+import android.location.Location
 import android.os.Bundle
 import androidx.appcompat.content.res.AppCompatResources
 import androidx.compose.foundation.background
@@ -56,6 +57,7 @@ fun MapLibreMap(
     symbolManagerSettings: MapSymbolManagerSettings = DefaultMapSymbolManagerSettings,
     locationSettings: MapLocationSettings = DefaultMapLocationSettings,
     onMapReady: ((MapView, MapLibreMap, Style) -> Unit)? = null,
+    onMyLocationChanged: (Location) -> Unit = {},
     content: @Composable () -> Unit = {},
 ) {
     if (LocalInspectionMode.current) {
@@ -97,6 +99,7 @@ fun MapLibreMap(
                     uiSettings = currentUiSettings,
                     locationSettings = currentMapLocationSettings,
                     symbolManagerSettings = currentSymbolManagerSettings,
+                    onMyLocationChanged = onMyLocationChanged,
                 )
                 content()
             }

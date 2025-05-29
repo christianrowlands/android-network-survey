@@ -71,12 +71,17 @@ import com.craxiom.networksurvey.ui.cellular.model.ServingSignalInfo
 import com.craxiom.networksurvey.ui.cellular.model.TowerMapLibreViewModel
 import com.craxiom.networksurvey.ui.cellular.model.TowerMapViewModel
 import com.craxiom.networksurvey.ui.cellular.model.TowerSource
+import com.craxiom.networksurvey.ui.cellular.towermap.Circle
+import com.craxiom.networksurvey.ui.cellular.towermap.DefaultMapLocationSettings
+import com.craxiom.networksurvey.ui.cellular.towermap.LineString
 import com.craxiom.networksurvey.ui.cellular.towermap.MapLibreMap
-import com.craxiom.networksurvey.ui.cellular.towermap.MapLocationSettings
 import com.craxiom.networksurvey.ui.cellular.towermap.MapUiSettings
 import com.craxiom.networksurvey.ui.cellular.towermap.Symbol
 import com.craxiom.networksurvey.ui.cellular.towermap.rememberCameraPositionState
+import com.craxiom.networksurvey.ui.cellular.towermap.rememberCircleState
+import com.craxiom.networksurvey.ui.cellular.towermap.rememberLineStringState
 import com.craxiom.networksurvey.ui.cellular.towermap.rememberSymbolState
+import com.craxiom.networksurvey.util.CellularUtils
 import com.craxiom.networksurvey.util.PreferenceUtils
 import com.google.gson.annotations.SerializedName
 import com.google.protobuf.GeneratedMessage
@@ -180,20 +185,54 @@ internal fun TowerMapScreen(
                     tiltGesturesEnabled = false,
                     zoomGesturesEnabled = true
                 ),
-                locationSettings = MapLocationSettings(locationEnabled = false),
+                locationSettings = DefaultMapLocationSettings,
                 onMapReady = { mapView, map, style ->
                     viewModel.initMapLibre(mapView, map, style)
-                }
+                },
+                onMyLocationChanged = viewModel::updateMyLocation,
             ) {
                 // Render tower symbols
                 val towersData by viewModel.towers.collectAsStateWithLifecycle()
+                //Timber.i("Rendering ${towersData.size} towers on the map")
                 towersData.forEach { towerStub ->
                     val position = LatLng(towerStub.tower.lat, towerStub.tower.lon)
+                    val towerId = CellularUtils.getTowerId(towerStub.tower)
+                    //Timber.i("Tower details: Lat=${towerStub.tower.lat}, Lon=${towerStub.tower.lon}, towerId=${towerStub.tower.radio}_$towerId")
                     Symbol(
                         iconId = "tower",
                         state = rememberSymbolState(
-                            key = "tower_${towerStub.tower.cid}",
+                            key = "tower_${towerStub.tower.radio}_${towerId}",
                             position = position
+                        )
+                    )
+                }
+
+                // Render serving cell lines
+                val servingCellLines by viewModel.servingCellLines.collectAsStateWithLifecycle()
+                servingCellLines.forEach { lineData ->
+                    Timber.i("Rendering serving cell line for lat=${lineData.startPoint.latitude}, lon=${lineData.startPoint.longitude}")
+                    LineString(
+                        state = rememberLineStringState(
+                            key = "serving_cell_line_${lineData.subscriptionId}",
+                            points = listOf(lineData.startPoint, lineData.endPoint),
+                            color = Color.Magenta,
+                            width = 3f,
+                            dashArray = listOf(5f, 3f) // Dashed line
+                        )
+                    )
+                }
+
+                // Render serving cell coverage circles
+                val servingCellCoverage by viewModel.servingCellCoverage.collectAsStateWithLifecycle()
+                servingCellCoverage.forEach { coverageData ->
+                    Circle(
+                        state = rememberCircleState(
+                            key = "serving_cell_coverage_${coverageData.subscriptionId}",
+                            center = coverageData.center,
+                            radiusMeters = coverageData.radiusMeters,
+                            fillColor = Color.Magenta.copy(alpha = 0.1f),
+                            strokeColor = Color.Magenta,
+                            strokeWidth = 2f
                         )
                     )
                 }

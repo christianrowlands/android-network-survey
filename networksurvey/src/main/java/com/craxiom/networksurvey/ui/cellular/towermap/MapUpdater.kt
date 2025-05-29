@@ -1,18 +1,27 @@
 package com.craxiom.networksurvey.ui.cellular.towermap
 
+import android.Manifest
 import android.annotation.SuppressLint
 import android.content.Context
+import android.content.pm.PackageManager
+import android.location.Location
+import android.os.Looper
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.ComposeNode
 import androidx.compose.runtime.currentComposer
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
+import androidx.core.app.ActivityCompat
 import org.maplibre.android.location.LocationComponentActivationOptions
 import org.maplibre.android.location.LocationComponentOptions
 import org.maplibre.android.location.OnCameraTrackingChangedListener
+import org.maplibre.android.location.engine.LocationEngine
+import org.maplibre.android.location.engine.LocationEngineCallback
 import org.maplibre.android.location.engine.LocationEngineRequest
+import org.maplibre.android.location.engine.LocationEngineResult
 import org.maplibre.android.maps.MapLibreMap
 import org.maplibre.android.maps.Style
+import timber.log.Timber
 
 private const val LOCATION_REQUEST_INTERVAL = 750L
 
@@ -22,7 +31,26 @@ internal class MapPropertiesNode(
     context: Context,
     cameraPositionState: CameraPositionState,
     locationSettings: MapLocationSettings,
+    private val onMyLocationChanged: (Location) -> Unit,
 ) : MapNode {
+    private val locationCallback: LocationEngineCallback<LocationEngineResult>
+        get() {
+            val locationCallback = object : LocationEngineCallback<LocationEngineResult> {
+                override fun onSuccess(result: LocationEngineResult) {
+                    result.lastLocation?.let { location ->
+                        // FIXME I don't think I need this camera update
+                        //cameraPositionState.location = location
+                        onMyLocationChanged(location)
+                    }
+                }
+
+                override fun onFailure(exception: Exception) {
+                    Timber.e(exception, "Location update for the tower map failed")
+                }
+            }
+            return locationCallback
+        }
+
     init {
         map.locationComponent.activateLocationComponent(
             LocationComponentActivationOptions.Builder(context, style)
@@ -45,8 +73,35 @@ internal class MapPropertiesNode(
                 )
                 .build()
         )
+
+        val locationEngine = map.locationComponent.locationEngine
+        val locationCallback = locationCallback
+        if (locationEngine != null) {
+            val request = LocationEngineRequest.Builder(LOCATION_REQUEST_INTERVAL)
+                .setPriority(LocationEngineRequest.PRIORITY_HIGH_ACCURACY)
+                .setFastestInterval(LOCATION_REQUEST_INTERVAL)
+                .build()
+
+            if (ActivityCompat.checkSelfPermission(
+                    context,
+                    Manifest.permission.ACCESS_FINE_LOCATION
+                ) == PackageManager.PERMISSION_GRANTED || ActivityCompat.checkSelfPermission(
+                    context,
+                    Manifest.permission.ACCESS_COARSE_LOCATION
+                ) == PackageManager.PERMISSION_GRANTED
+            ) {
+                locationEngine.requestLocationUpdates(
+                    request,
+                    locationCallback,
+                    Looper.getMainLooper()
+                )
+            }
+        }
+
         cameraPositionState.setMap(map)
     }
+
+    private lateinit var locationEngine: LocationEngine
 
     var cameraPositionState = cameraPositionState
         set(value) {
@@ -78,7 +133,8 @@ internal class MapPropertiesNode(
             // Updating user location on every camera move due to lack of a better location updates API.
             cameraPositionState.location = map.locationComponent.lastKnownLocation
         }
-        map.locationComponent.addOnCameraTrackingChangedListener(object : OnCameraTrackingChangedListener {
+        map.locationComponent.addOnCameraTrackingChangedListener(object :
+            OnCameraTrackingChangedListener {
             override fun onCameraTrackingDismissed() {}
 
             override fun onCameraTrackingChanged(currentMode: Int) {
@@ -89,6 +145,7 @@ internal class MapPropertiesNode(
 
     override fun onRemoved() {
         cameraPositionState.setMap(null)
+        locationEngine.removeLocationUpdates(locationCallback)
     }
 
     override fun onCleared() {
@@ -107,6 +164,7 @@ internal inline fun MapUpdater(
     locationSettings: MapLocationSettings,
     uiSettings: MapUiSettings,
     symbolManagerSettings: MapSymbolManagerSettings,
+    noinline onMyLocationChanged: (Location) -> Unit,
 ) {
     val mapApplier = currentComposer.applier as MapApplier
     val map = mapApplier.map
@@ -121,10 +179,13 @@ internal inline fun MapUpdater(
                 context = context,
                 cameraPositionState = cameraPositionState,
                 locationSettings = locationSettings,
+                onMyLocationChanged = onMyLocationChanged,
             )
         },
         update = {
-            set(locationSettings.locationEnabled) { map.locationComponent.isLocationComponentEnabled = it }
+            set(locationSettings.locationEnabled) {
+                map.locationComponent.isLocationComponentEnabled = it
+            }
 
             set(uiSettings.compassEnabled) { map.uiSettings.isCompassEnabled = it }
             set(uiSettings.rotationGesturesEnabled) { map.uiSettings.isRotateGesturesEnabled = it }

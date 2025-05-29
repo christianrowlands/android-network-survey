@@ -10,6 +10,7 @@ import org.maplibre.android.maps.Style
 import org.maplibre.android.plugins.annotation.SymbolManager
 
 internal val DefaultMapUiSettings = MapUiSettings()
+internal val DefaultMapLocationSettings = MapLocationSettings()
 
 /**
  * UI-related settings for MapLibre map controls.
@@ -25,13 +26,11 @@ data class MapUiSettings(
     val attributionTintColor: Color = Color.Unspecified
 )
 
-internal val DefaultMapLocationSettings = MapLocationSettings()
-
 /**
  * Location component styling and enablement settings.
  */
 data class MapLocationSettings(
-    val locationEnabled: Boolean = false,
+    val locationEnabled: Boolean = true,
     val backgroundTintColor: Color = Color.White,
     val foregroundTintColor: Color = Color.Blue,
     val backgroundStaleTintColor: Color = Color.Gray,
