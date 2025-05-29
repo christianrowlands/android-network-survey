@@ -162,12 +162,6 @@ internal fun TowerMapScreen(
         color = MaterialTheme.colorScheme.background
     ) {
         Box(modifier = Modifier.fillMaxSize()) {
-            /*OsmdroidMapView(viewModel, object :
-                FollowMyLocationChangeListener {
-                override fun onFollowMyLocationChanged(enabled: Boolean) {
-                    isFollowing = enabled
-                }
-            })*/
             val baseUrl = "https://api.maptiler.com/maps"
             val mapId = "basic-v2-dark" // "basic-v2" for light mode
             val t = ""
@@ -213,7 +207,6 @@ internal fun TowerMapScreen(
                     Timber.i("Rendering serving cell line for lat=${lineData.startPoint.latitude}, lon=${lineData.startPoint.longitude}")
                     LineString(
                         state = rememberLineStringState(
-                            key = "serving_cell_line_${lineData.subscriptionId}",
                             points = listOf(lineData.startPoint, lineData.endPoint),
                             color = Color.Magenta,
                             width = 3f,
@@ -227,7 +220,6 @@ internal fun TowerMapScreen(
                 servingCellCoverage.forEach { coverageData ->
                     Circle(
                         state = rememberCircleState(
-                            key = "serving_cell_coverage_${coverageData.subscriptionId}",
                             center = coverageData.center,
                             radiusMeters = coverageData.radiusMeters,
                             fillColor = Color.Magenta.copy(alpha = 0.1f),

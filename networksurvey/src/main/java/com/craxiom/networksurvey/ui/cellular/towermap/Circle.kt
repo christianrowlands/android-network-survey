@@ -4,11 +4,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.ComposeNode
 import androidx.compose.runtime.currentComposer
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableFloatStateOf
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.saveable.Saver
-import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
@@ -26,151 +23,140 @@ import kotlin.math.PI
 import kotlin.math.cos
 import kotlin.math.sin
 
+/**
+ * Internal node that manages adding/removing a filled circle + stroke layer.
+ */
 internal class CircleNode(
-    val style: Style,
-    val polygon: Polygon,
-    val fillLayerId: String,
-    val strokeLayerId: String,
-    val sourceId: String,
+    private val style: Style,
+    private val sourceId: String,
+    private val fillLayerId: String,
+    private val strokeLayerId: String,
+    polygon: Polygon,
     fillColor: Color,
     strokeColor: Color,
     strokeWidth: Float,
     fillOpacity: Float,
     strokeOpacity: Float
 ) : MapNode {
-    
     init {
-        val feature = Feature.fromGeometry(polygon)
-        val featureCollection = FeatureCollection.fromFeature(feature)
-        val source = GeoJsonSource(sourceId, featureCollection)
-        style.addSource(source)
-        
-        // Add fill layer
-        val fillLayer = FillLayer(fillLayerId, sourceId).apply {
-            setProperties(
-                PropertyFactory.fillColor(fillColor.toArgb()),
-                PropertyFactory.fillOpacity(fillOpacity)
+        // Add source
+        style.addSource(
+            GeoJsonSource(
+                sourceId, FeatureCollection.fromFeatures(
+                    arrayOf(Feature.fromGeometry(polygon))
+                )
             )
-        }
-        style.addLayer(fillLayer)
-        
-        // Add stroke layer
-        val strokeLayer = LineLayer(strokeLayerId, sourceId).apply {
-            setProperties(
-                PropertyFactory.lineColor(strokeColor.toArgb()),
-                PropertyFactory.lineWidth(strokeWidth),
-                PropertyFactory.lineOpacity(strokeOpacity)
-            )
-        }
-        style.addLayer(strokeLayer)
-    }
-
-    override fun onRemoved() {
-        style.removeLayer(fillLayerId)
-        style.removeLayer(strokeLayerId)
-        style.removeSource(sourceId)
-    }
-
-    override fun onCleared() {
-        style.removeLayer(fillLayerId)
-        style.removeLayer(strokeLayerId)
-        style.removeSource(sourceId)
-    }
-}
-
-/**
- * A state object that can be hoisted to control and observe the circle state.
- */
-class CircleState(
-    center: LatLng,
-    radiusMeters: Int,
-    fillColor: Color = Color.Blue.copy(alpha = 0.08f),
-    strokeColor: Color = Color.Blue.copy(alpha = 0.6f),
-    strokeWidth: Float = 3f
-) {
-    /**
-     * Center of the circle.
-     */
-    var center: LatLng by mutableStateOf(center)
-    
-    /**
-     * Radius in meters.
-     */
-    var radiusMeters: Int by mutableIntStateOf(radiusMeters)
-    
-    /**
-     * Fill color of the circle.
-     */
-    var fillColor: Color by mutableStateOf(fillColor)
-    
-    /**
-     * Stroke color of the circle.
-     */
-    var strokeColor: Color by mutableStateOf(strokeColor)
-    
-    /**
-     * Stroke width.
-     */
-    var strokeWidth: Float by mutableFloatStateOf(strokeWidth)
-
-    companion object {
-        /**
-         * The default saver implementation for [CircleState].
-         */
-        val Saver: Saver<CircleState, List<Any>> = Saver(
-            save = { listOf(it.center, it.radiusMeters, it.fillColor, it.strokeColor, it.strokeWidth) },
-            restore = { 
-                CircleState(
-                    it[0] as LatLng,
-                    it[1] as Int,
-                    it[2] as Color,
-                    it[3] as Color,
-                    it[4] as Float
+        )
+        // Fill layer
+        style.addLayer(
+            FillLayer(fillLayerId, sourceId).apply {
+                setProperties(
+                    PropertyFactory.fillColor(fillColor.toArgb()),
+                    PropertyFactory.fillOpacity(fillOpacity)
+                )
+            }
+        )
+        // Stroke layer
+        style.addLayer(
+            LineLayer(strokeLayerId, sourceId).apply {
+                setProperties(
+                    PropertyFactory.lineColor(strokeColor.toArgb()),
+                    PropertyFactory.lineWidth(strokeWidth),
+                    PropertyFactory.lineOpacity(strokeOpacity)
                 )
             }
         )
     }
+
+    override fun onRemoved() {
+        try {
+            style.removeLayer(strokeLayerId)
+        } catch (_: Exception) {
+        }
+        try {
+            style.removeLayer(fillLayerId)
+        } catch (_: Exception) {
+        }
+        try {
+            style.removeSource(sourceId)
+        } catch (_: Exception) {
+        }
+    }
+
+    override fun onCleared() {
+        try {
+            style.removeLayer(strokeLayerId)
+        } catch (_: Exception) {
+        }
+        try {
+            style.removeLayer(fillLayerId)
+        } catch (_: Exception) {
+        }
+        try {
+            style.removeSource(sourceId)
+        } catch (_: Exception) {
+        }
+    }
 }
 
+/**
+ * State holder for a circle's center, radius, and styling.
+ * Purely in-memory; not persisted across recompositions.
+ */
+class CircleState(
+    initialCenter: LatLng,
+    initialRadiusMeters: Int,
+    initialFillColor: Color = Color.Blue.copy(alpha = 0.08f),
+    initialStrokeColor: Color = Color.Blue.copy(alpha = 0.6f),
+    initialStrokeWidth: Float = 3f
+) {
+    var center by mutableStateOf(initialCenter)
+    var radiusMeters by mutableStateOf(initialRadiusMeters)
+    var fillColor by mutableStateOf(initialFillColor)
+    var strokeColor by mutableStateOf(initialStrokeColor)
+    var strokeWidth by mutableStateOf(initialStrokeWidth)
+}
+
+/**
+ * Remember a CircleState for use in Compose. State resets if inputs change.
+ */
 @Composable
 fun rememberCircleState(
-    key: String? = null,
     center: LatLng = LatLng(0.0, 0.0),
     radiusMeters: Int = 1000,
     fillColor: Color = Color.Blue.copy(alpha = 0.08f),
     strokeColor: Color = Color.Blue.copy(alpha = 0.6f),
     strokeWidth: Float = 3f
-): CircleState = rememberSaveable(key = key, saver = CircleState.Saver) {
+): CircleState = remember(center, radiusMeters, fillColor, strokeColor, strokeWidth) {
     CircleState(center, radiusMeters, fillColor, strokeColor, strokeWidth)
 }
 
 /**
- * A composable for a circle on the map.
- *
- * @param state the [CircleState] to be used to control or observe the circle state
+ * Draws the circle on MapLibre via ComposeNode using CircleNode.
  */
 @Composable
 fun Circle(
-    state: CircleState = rememberCircleState()
+    state: CircleState
 ) {
     val mapApplier = currentComposer.applier as MapApplier
     val style = mapApplier.style
-    
+
+    // Unique IDs per state instance
+    val sourceId = "circle-source-${state.hashCode()}"
     val fillLayerId = "circle-fill-layer-${state.hashCode()}"
     val strokeLayerId = "circle-stroke-layer-${state.hashCode()}"
-    val sourceId = "circle-source-${state.hashCode()}"
-    
-    // Create a circle polygon from center and radius
+
+    // Build polygon approximation
     val polygon = createCirclePolygon(state.center, state.radiusMeters)
-    
+
     ComposeNode<CircleNode, MapApplier>(
         factory = {
             CircleNode(
                 style = style,
-                polygon = polygon,
+                sourceId = sourceId,
                 fillLayerId = fillLayerId,
                 strokeLayerId = strokeLayerId,
-                sourceId = sourceId,
+                polygon = polygon,
                 fillColor = state.fillColor,
                 strokeColor = state.strokeColor,
                 strokeWidth = state.strokeWidth,
@@ -179,31 +165,25 @@ fun Circle(
             )
         },
         update = {
-            // For now, we recreate the circle when properties change
-            // A more sophisticated implementation would update the existing source/layer
+            // recreation on state change is handled by ComposeNode keying
         }
     )
 }
 
 /**
- * Create a polygon that approximates a circle.
+ * Create a geojson Polygon approximating a circle.
  */
 private fun createCirclePolygon(center: LatLng, radiusMeters: Int): Polygon {
     val points = mutableListOf<Point>()
-    val numPoints = 64 // Number of points to approximate the circle
-    
-    // Convert radius from meters to degrees (rough approximation)
-    val radiusInDegrees = radiusMeters / 111320.0 // 1 degree ≈ 111,320 meters at equator
-    
-    for (i in 0 until numPoints) {
-        val angle = 2 * PI * i / numPoints
-        val lat = center.latitude + radiusInDegrees * cos(angle)
-        val lng = center.longitude + radiusInDegrees * sin(angle) / cos(Math.toRadians(center.latitude))
-        points.add(Point.fromLngLat(lng, lat))
+    val segments = 64
+    val radiusDeg = radiusMeters / 111320.0
+
+    repeat(segments) { i ->
+        val theta = 2 * PI * i / segments
+        val lat = center.latitude + radiusDeg * cos(theta)
+        val lon = center.longitude + radiusDeg * sin(theta) / cos(Math.toRadians(center.latitude))
+        points += Point.fromLngLat(lon, lat)
     }
-    
-    // Close the polygon by adding the first point again
-    points.add(points[0])
-    
+    points += points.first()
     return Polygon.fromLngLats(listOf(points))
 }
