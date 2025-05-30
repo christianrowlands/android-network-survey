@@ -37,6 +37,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -63,6 +64,7 @@ import com.craxiom.messaging.NrRecord
 import com.craxiom.messaging.UmtsRecord
 import com.craxiom.networksurvey.BuildConfig
 import com.craxiom.networksurvey.R
+import com.craxiom.networksurvey.data.api.Tower
 import com.craxiom.networksurvey.model.CellularProtocol
 import com.craxiom.networksurvey.model.Plmn
 import com.craxiom.networksurvey.ui.cellular.model.INITIAL_ZOOM
@@ -82,18 +84,11 @@ import com.craxiom.networksurvey.ui.cellular.towermap.rememberCircleState
 import com.craxiom.networksurvey.ui.cellular.towermap.rememberLineStringState
 import com.craxiom.networksurvey.ui.cellular.towermap.rememberTowerSymbolsState
 import com.craxiom.networksurvey.util.PreferenceUtils
-import com.google.gson.annotations.SerializedName
 import com.google.protobuf.GeneratedMessage
 import kotlinx.coroutines.launch
-import okhttp3.OkHttpClient
 import okhttp3.internal.toImmutableMap
 import org.maplibre.android.camera.CameraPosition
 import org.maplibre.android.geometry.LatLng
-import retrofit2.Response
-import retrofit2.Retrofit
-import retrofit2.converter.gson.GsonConverterFactory
-import retrofit2.http.GET
-import retrofit2.http.Query
 import timber.log.Timber
 
 /**
@@ -129,7 +124,6 @@ internal fun TowerMapScreen(
         CellularProtocol.NR.name
     )
     var expanded by remember { mutableStateOf(false) }
-    var isFollowing by remember { mutableStateOf(false) }
     var showInfoDialog by remember { mutableStateOf(false) }
     var showPlmnDialog by remember { mutableStateOf(false) }
     var showTowerSourceDialog by remember { mutableStateOf(false) }
@@ -152,11 +146,22 @@ internal fun TowerMapScreen(
         color = MaterialTheme.colorScheme.background
     ) {
         Box(modifier = Modifier.fillMaxSize()) {
-            val baseUrl = "https://api.maptiler.com/maps"
             val mapId = "basic-v2-dark" // "basic-v2" for light mode
-            val t = ""
-            val styleUrl = "$baseUrl/$mapId/style.json?key=$t"
+            val mapTilerKey by viewModel.mapTilerKey.collectAsState()
+            val mapKeyLoadError by viewModel.mapKeyLoadError.collectAsState()
 
+            // decide which style URL to use:
+            val styleUrl = remember(mapTilerKey, mapKeyLoadError) {
+                if (mapKeyLoadError || mapTilerKey.isNullOrEmpty()) {
+                    // generic (OSM) raster‐tiles style
+                    // FIXME Change the colors of the towers so they are visible on the OSM tiles
+                    "https://gist.githubusercontent.com/christianrowlands/7fd13af3c18ea7086ee4b37cc64a65a6/raw/openStreetMap.json"
+                } else {
+                    "https://api.maptiler.com/maps/$mapId/style.json?key=$mapTilerKey"
+                }
+            }
+
+            Timber.i("Using MapLibre style URL: $styleUrl")
             MapLibreMap(
                 styleUri = styleUrl,
                 modifier = Modifier.fillMaxSize(),
@@ -189,7 +194,6 @@ internal fun TowerMapScreen(
                 // Render serving cell lines
                 val servingCellLines by viewModel.servingCellLines.collectAsStateWithLifecycle()
                 servingCellLines.forEach { lineData ->
-                    Timber.i("Rendering serving cell line for lat=${lineData.startPoint.latitude}, lon=${lineData.startPoint.longitude}")
                     LineString(
                         state = rememberLineStringState(
                             points = listOf(lineData.startPoint, lineData.endPoint),
@@ -437,6 +441,24 @@ internal fun TowerMapScreen(
                             servingCellSignals[selectedSimIndex]
                         )
                     }
+                }
+            }
+
+            // show a banner if we failed to fetch
+            // FIXME Move this somewhere it is not covered up by the top bar
+            if (mapKeyLoadError || mapTilerKey.isNullOrEmpty()) {
+                Box(
+                    Modifier
+                        .fillMaxWidth()
+                        .background(Color.Red)
+                        .padding(4.dp)
+                        .align(Alignment.TopCenter)
+                ) {
+                    Text(
+                        "Could not load map API key; using fallback tiles.",
+                        color = Color.White,
+                        modifier = Modifier.align(Alignment.Center)
+                    )
                 }
             }
         }
@@ -904,69 +926,3 @@ fun TowerSourceSelectionDialog(
         }
     )
 }
-
-// The API definition for the NS Tower Service
-interface Api {
-    @GET("cells/area")
-    suspend fun getTowers(
-        @Query("bbox") bbox: String,
-        @Query("radio") radio: String,
-        @Query("source") source: String
-    ): Response<TowerResponse>
-
-    @GET("cells/area")
-    suspend fun getTowers(
-        @Query("bbox") bbox: String,
-        @Query("radio") radio: String,
-        @Query("mcc") mcc: Int,
-        @Query("mnc") mnc: Int,
-        @Query("source") source: String
-    ): Response<TowerResponse>
-}
-
-val okHttpClient = OkHttpClient.Builder()
-    .addInterceptor { chain ->
-        val originalRequest = chain.request()
-        val newRequest = originalRequest.newBuilder()
-            .header("x-api-key", BuildConfig.NS_API_KEY)
-            .build()
-        chain.proceed(newRequest)
-    }
-    .build()
-
-val retrofit: Retrofit = Retrofit.Builder()
-    .baseUrl("https://network-survey-gateway-2z7o328z.uc.gateway.dev/")
-    .client(okHttpClient)
-    .addConverterFactory(GsonConverterFactory.create())
-    .build()
-
-val nsApi: Api = retrofit.create(Api::class.java)
-
-/**
- * The data class that represents a tower from the NS backend. Needs to stay in sync with the API.
- */
-data class Tower(
-    @SerializedName("lat") val lat: Double,
-    @SerializedName("lon") val lon: Double,
-    @SerializedName("mcc") val mcc: Int,
-    @SerializedName("mnc") val mnc: Int,
-    @SerializedName("area") val area: Int,
-    @SerializedName("cid") val cid: Long,
-    @SerializedName("unit") val unit: Int,
-    @SerializedName("average_signal") val averageSignal: Int,
-    @SerializedName("range") val range: Int,
-    @SerializedName("samples") val samples: Int,
-    @SerializedName("changeable") val changeable: Int,
-    @SerializedName("created_at") val createdAt: Long,
-    @SerializedName("updated_at") val updatedAt: Long,
-    @SerializedName("radio") val radio: String,
-    @SerializedName("source") val source: String
-)
-
-/**
- * The data class that represents the response from the NS backend when fetching towers.
- */
-data class TowerResponse(
-    val count: Int,
-    val cells: List<Tower>
-)

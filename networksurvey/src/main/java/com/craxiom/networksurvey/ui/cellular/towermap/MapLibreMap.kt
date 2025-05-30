@@ -29,6 +29,7 @@ import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
+import com.craxiom.networksurvey.data.api.Tower
 import kotlinx.coroutines.awaitCancellation
 import org.maplibre.android.MapLibre
 import org.maplibre.android.maps.MapLibreMap
@@ -36,7 +37,6 @@ import org.maplibre.android.maps.MapView
 import org.maplibre.android.maps.OnMapReadyCallback
 import org.maplibre.android.maps.Style
 import org.maplibre.android.plugins.annotation.SymbolManager
-import com.craxiom.networksurvey.ui.cellular.Tower
 import kotlin.coroutines.resume
 import kotlin.coroutines.suspendCoroutine
 
@@ -119,43 +119,37 @@ private suspend inline fun disposingComposition(factory: () -> Composition) {
     }
 }
 
-private suspend inline fun CompositionContext.newComposition(
+private suspend fun CompositionContext.newComposition(
     context: Context,
     mapView: MapView,
     styleUri: String,
     images: Map<String, Int>,
-    noinline onMapReady: ((MapView, MapLibreMap, Style) -> Unit)?,
-    noinline content: @Composable () -> Unit
-): Composition {
-    val map = mapView.awaitMap()
-    val style = map.awaitStyle(context, styleUri, images)
-    val symbolManager = SymbolManager(mapView, map, style)
-
-    // Call the onMapReady callback if provided
-    onMapReady?.invoke(mapView, map, style)
-
-    return Composition(
-        MapApplier(map, style, symbolManager),
-        this
-    ).apply {
-        setContent(content)
-    }
-}
-
-private suspend fun MapView.awaitMap(): MapLibreMap = suspendCoroutine { cont ->
-    getMapAsync(OnMapReadyCallback { map -> cont.resume(map) })
-}
-
-private suspend fun MapLibreMap.awaitStyle(
-    context: Context,
-    styleUri: String,
-    images: Map<String, Int>
-): Style = suspendCoroutine { cont ->
-    setStyle(Style.Builder().fromUri(styleUri).apply {
-        images.forEach { (id, res) ->
-            withImage(id, requireNotNull(AppCompatResources.getDrawable(context, res)))
+    onMapReady: ((MapView, MapLibreMap, Style) -> Unit)?,
+    content: @Composable () -> Unit
+): Composition = suspendCoroutine { cont ->
+    // 1) Wait for the MapLibreMap instance
+    mapView.getMapAsync { map ->
+        // 2) Ask MapLibre to load the style; this callback only fires once it's fully parsed & ready
+        map.setStyle(Style.Builder().fromUri(styleUri)) { style ->
+            // 3) Inject any custom images into the style
+            images.forEach { (id, res) ->
+                AppCompatResources.getDrawable(context, res)
+                    ?.let { drawable -> style.addImage(id, drawable) }
+            }
+            // 4) Let anyone know the map+style is now ready
+            onMapReady?.invoke(mapView, map, style)
+            // 5) Only now can we safely build the SymbolManager
+            val symbolManager = SymbolManager(mapView, map, style)
+            // 6) Finally hook up your Compose tree
+            val composition = Composition(
+                MapApplier(map, style, symbolManager),
+                this@newComposition
+            ).apply {
+                setContent(content)
+            }
+            cont.resume(composition)
         }
-    }) { style -> cont.resume(style) }
+    }
 }
 
 /**

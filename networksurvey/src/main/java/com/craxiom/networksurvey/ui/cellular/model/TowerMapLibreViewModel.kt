@@ -7,12 +7,13 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.craxiom.networksurvey.data.api.Api
+import com.craxiom.networksurvey.data.api.Tower
+import com.craxiom.networksurvey.data.api.TowerResponse
+import com.craxiom.networksurvey.data.api.retrofit
 import com.craxiom.networksurvey.model.CellularProtocol
 import com.craxiom.networksurvey.model.CellularRecordWrapper
 import com.craxiom.networksurvey.model.Plmn
-import com.craxiom.networksurvey.ui.cellular.Tower
-import com.craxiom.networksurvey.ui.cellular.TowerResponse
-import com.craxiom.networksurvey.ui.cellular.nsApi
 import com.craxiom.networksurvey.util.CellularUtils
 import com.craxiom.networksurvey.util.PreferenceUtils
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -83,7 +84,6 @@ class TowerMapLibreViewModel : ViewModel() {
     // MapLibre handles ------------------------------
     private var mapView: MapView? = null
     private var mapLibreMap: MapLibreMap? = null
-    private var style: Style? = null
 
     // Mutex to prevent concurrent tower queries
     private val towerQueryMutex = Mutex()
@@ -101,12 +101,33 @@ class TowerMapLibreViewModel : ViewModel() {
     private val _servingCellCoverage = MutableStateFlow<List<ServingCellCoverageData>>(emptyList())
     val servingCellCoverage = _servingCellCoverage.asStateFlow()
 
-    fun setPaddingInsets(paddingValues: PaddingValues) {
-        _paddingInsets.value = paddingValues
+    private val _mapTilerKey = MutableStateFlow<String?>(null)
+    val mapTilerKey = _mapTilerKey.asStateFlow()
+
+    private val _mapKeyLoadError = MutableStateFlow(false)
+    val mapKeyLoadError = _mapKeyLoadError.asStateFlow()
+
+    val nsApi: Api = retrofit.create(Api::class.java)
+
+    init {
+        viewModelScope.launch {
+            try {
+                val resp = nsApi.getApiKey()
+                if (resp.isSuccessful && resp.body() != null) {
+                    _mapTilerKey.value = resp.body()!!.apiKey
+                    Timber.i("MapTiler API key loaded successfully (${_mapTilerKey.value})")
+                } else {
+                    _mapKeyLoadError.value = true
+                }
+            } catch (t: Throwable) {
+                Timber.e(t, "Error loading MapTiler API key")
+                _mapKeyLoadError.value = true
+            }
+        }
     }
 
-    fun setNoTowersFound(noTowersFound: Boolean) {
-        _noTowersFound.value = noTowersFound
+    fun setPaddingInsets(paddingValues: PaddingValues) {
+        _paddingInsets.value = paddingValues
     }
 
     fun setSelectedRadioType(radioType: String) {
@@ -130,20 +151,8 @@ class TowerMapLibreViewModel : ViewModel() {
         _noTowersFound.value = false
     }
 
-    fun setIsLoadingInProgress(isLoading: Boolean) {
-        _isLoadingInProgress.value = isLoading
-    }
-
-    fun setIsZoomedOutTooFar(isZoomedOut: Boolean) {
-        _isZoomedOutTooFar.value = isZoomedOut
-    }
-
-    fun setLastQueriedBounds(bounds: LatLngBounds) {
-        _lastQueriedBounds.value = bounds
-    }
-
     /**
-     * Call this from your Composable’s onMapReady.
+     * Call this from the Composable’s onMapReady.
      */
     fun initMapLibre(view: MapView, map: MapLibreMap, style: Style) {
         mapView = view
@@ -531,3 +540,4 @@ class TowerMapLibreViewModel : ViewModel() {
 data class TowerWrapper(val tower: Tower) {
     internal val towerId: String = CellularUtils.getTowerId(tower)
 }
+

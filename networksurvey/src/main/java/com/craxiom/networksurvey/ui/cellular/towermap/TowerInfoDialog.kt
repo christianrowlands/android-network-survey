@@ -14,7 +14,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.craxiom.networksurvey.ui.cellular.Tower
+import com.craxiom.networksurvey.data.api.Tower
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -37,11 +37,18 @@ fun TowerInfoDialog(
                             // Protocol
                             Text(text = "Protocol: ${tower.radio}", fontWeight = FontWeight.Medium)
                             Spacer(modifier = Modifier.height(8.dp))
-                            
+
                             // Location
-                            Text(text = "Location: ${String.format("%.6f", tower.lat)}, ${String.format("%.6f", tower.lon)}")
+                            Text(
+                                text = "Location: ${
+                                    String.format(
+                                        "%.6f",
+                                        tower.lat
+                                    )
+                                }, ${String.format("%.6f", tower.lon)}"
+                            )
                             Spacer(modifier = Modifier.height(8.dp))
-                            
+
                             // Cell identifiers
                             Text(text = "MCC: ${tower.mcc}")
                             Text(text = "MNC: ${tower.mnc}")
@@ -49,21 +56,21 @@ fun TowerInfoDialog(
                             Text(text = "Cell ID: ${tower.cid}")
                             Text(text = "Unit: ${tower.unit}")
                             Spacer(modifier = Modifier.height(8.dp))
-                            
+
                             // Signal information (only for non-BTSearch sources)
                             if (tower.source != "BTSearch") {
                                 Text(text = "Range: ${tower.range} meters")
                                 Text(text = "Samples: ${tower.samples}")
                                 Text(text = "Average Signal: ${tower.averageSignal} dBm")
                                 Spacer(modifier = Modifier.height(8.dp))
-                                
+
                                 Text(text = "Changeable: ${if (tower.changeable == 1) "Yes" else "No"}")
                                 Text(text = "Created: ${formatDateTime(tower.createdAt)}")
                                 Text(text = "Updated: ${formatDateTime(tower.updatedAt)}")
                             } else {
                                 Text(text = "Updated: ${formatDate(tower.updatedAt)}")
                             }
-                            
+
                             Spacer(modifier = Modifier.height(8.dp))
                             Text(text = "Source: ${tower.source}")
                         }

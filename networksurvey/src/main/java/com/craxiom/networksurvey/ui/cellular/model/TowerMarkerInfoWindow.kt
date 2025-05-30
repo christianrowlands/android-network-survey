@@ -1,6 +1,6 @@
 package com.craxiom.networksurvey.ui.cellular.model
 
-import com.craxiom.networksurvey.ui.cellular.Tower
+import com.craxiom.networksurvey.data.api.Tower
 import org.osmdroid.views.MapView
 import org.osmdroid.views.overlay.infowindow.InfoWindow
 import org.osmdroid.views.overlay.infowindow.MarkerInfoWindow
@@ -22,7 +22,7 @@ class TowerMarkerInfoWindow(
 
     override fun onOpen(item: Any?) {
         // Close all other info windows before opening this one
-        InfoWindow.closeAllInfoWindowsOn(mapView)
+        closeAllInfoWindowsOn(mapView)
 
         towerMarker.snippet = getTowerSnippet(tower)
         towerMarker.subDescription = getTowerSubDescription(tower)

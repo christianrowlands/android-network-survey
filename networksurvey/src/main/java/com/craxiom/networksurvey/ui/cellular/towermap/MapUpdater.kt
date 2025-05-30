@@ -13,7 +13,7 @@ import androidx.compose.runtime.currentComposer
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
 import androidx.core.app.ActivityCompat
-import com.craxiom.networksurvey.ui.cellular.Tower
+import com.craxiom.networksurvey.data.api.Tower
 import org.maplibre.android.location.LocationComponentActivationOptions
 import org.maplibre.android.location.LocationComponentOptions
 import org.maplibre.android.location.OnCameraTrackingChangedListener

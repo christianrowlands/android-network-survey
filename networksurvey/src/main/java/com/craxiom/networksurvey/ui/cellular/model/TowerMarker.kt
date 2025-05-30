@@ -5,7 +5,7 @@ import androidx.appcompat.content.res.AppCompatResources
 import androidx.compose.ui.graphics.toArgb
 import androidx.core.graphics.drawable.DrawableCompat
 import com.craxiom.networksurvey.R
-import com.craxiom.networksurvey.ui.cellular.Tower
+import com.craxiom.networksurvey.data.api.Tower
 import com.craxiom.networksurvey.ui.theme.ColorServingCell
 import com.craxiom.networksurvey.ui.theme.ColorTower
 import com.craxiom.networksurvey.util.CellularUtils
