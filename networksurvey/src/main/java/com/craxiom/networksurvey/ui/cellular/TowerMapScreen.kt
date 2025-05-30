@@ -65,14 +65,10 @@ import com.craxiom.networksurvey.BuildConfig
 import com.craxiom.networksurvey.R
 import com.craxiom.networksurvey.model.CellularProtocol
 import com.craxiom.networksurvey.model.Plmn
-import com.craxiom.networksurvey.ui.cellular.model.FollowMyLocationChangeListener
 import com.craxiom.networksurvey.ui.cellular.model.INITIAL_ZOOM
-import com.craxiom.networksurvey.ui.cellular.model.MAX_AREA_SQ_METERS
-import com.craxiom.networksurvey.ui.cellular.model.MIN_ZOOM_LEVEL
 import com.craxiom.networksurvey.ui.cellular.model.ServingCellInfo
 import com.craxiom.networksurvey.ui.cellular.model.ServingSignalInfo
 import com.craxiom.networksurvey.ui.cellular.model.TowerMapLibreViewModel
-import com.craxiom.networksurvey.ui.cellular.model.TowerMapViewModel
 import com.craxiom.networksurvey.ui.cellular.model.TowerSource
 import com.craxiom.networksurvey.ui.cellular.towermap.Circle
 import com.craxiom.networksurvey.ui.cellular.towermap.DefaultMapLocationSettings
@@ -93,18 +89,12 @@ import okhttp3.OkHttpClient
 import okhttp3.internal.toImmutableMap
 import org.maplibre.android.camera.CameraPosition
 import org.maplibre.android.geometry.LatLng
-import org.osmdroid.util.BoundingBox
-import org.osmdroid.views.MapView
 import retrofit2.Response
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import retrofit2.http.GET
 import retrofit2.http.Query
 import timber.log.Timber
-import kotlin.math.atan2
-import kotlin.math.cos
-import kotlin.math.sin
-import kotlin.math.sqrt
 
 /**
  * Creates the map view for displaying the tower locations. The tower locations are pulled from the
@@ -488,7 +478,7 @@ internal fun TowerMapScreen(
         if (showTowerInfoDialog && selectedTower != null) {
             TowerInfoDialog(
                 tower = selectedTower!!,
-                onDismiss = { 
+                onDismiss = {
                     showTowerInfoDialog = false
                     selectedTower = null
                 }
@@ -551,57 +541,6 @@ internal fun TowerMapScreen(
             }
         }
     }
-}
-
-@Composable
-internal fun OsmdroidMapView(
-    viewModel: TowerMapLibreViewModel,
-    followMyLocationChangeListener: FollowMyLocationChangeListener
-) {
-    /*val localContext = LocalContext.current
-    val mapView = remember {
-        val mapView = MapView(localContext)
-        viewModel.followMyLocationChangeListener = followMyLocationChangeListener
-        viewModel.initMapView(mapView)
-        mapView
-    }*/
-
-
-    /*AndroidView(
-        modifier = Modifier.fillMaxSize(),
-        factory = {
-            mapView.apply {
-                mapView.setTileSource(TileSourceFactory.MAPNIK)
-                mapView.zoomController.display.setMarginPadding(.75f, .5f)
-                mapView.zoomController.setVisibility(CustomZoomButtonsController.Visibility.ALWAYS)
-                mapView.setMultiTouchControls(true)
-
-                // I pulled the idea for setting this from: https://github.com/osmdroid/osmdroid/wiki/Important-notes-on-using-osmdroid-in-your-app#changing-the-loading-tile-grid-colors
-                mapView.overlayManager.tilesOverlay.loadingBackgroundColor = android.R.color.black
-                mapView.overlayManager.tilesOverlay.loadingLineColor =
-                    context.getColor(R.color.colorPrimary)
-
-                val mapController = mapView.controller
-                mapController.setZoom(INITIAL_ZOOM)
-
-                // Listener to detect when map movement stops
-                mapView.addMapListener(DelayedMapListener(object : MapListener {
-                    override fun onScroll(event: ScrollEvent?): Boolean {
-                        runListener(mapView, viewModel)
-                        return true
-                    }
-
-                    override fun onZoom(event: ZoomEvent?): Boolean {
-                        runListener(mapView, viewModel)
-                        return true
-                    }
-                }, 400))
-            }
-        },
-        update = {
-            viewModel.recreateOverlaysFromTowerData(it)
-        }
-    )*/
 }
 
 @Composable
@@ -717,63 +656,6 @@ fun ServingCellInfoDisplay(cellInfo: ServingCellInfo?, servingSignalInfo: Servin
         viewModel.myLocationOverlay?.disableFollowLocation()
     }
 }*/
-
-/**
- * The listener that is called when the map is idle. This is where we will load the towers for the
- * current map view.
- */
-// TODO Delete me
-private fun runListener(
-    mapView: MapView,
-    viewModel: TowerMapViewModel
-) {
-    Timber.d("Map is idle")
-
-    val bounds = mapView.boundingBox
-
-    if (viewModel.lastQueriedBounds.value != null && viewModel.lastQueriedBounds.value == bounds) {
-        Timber.d("The bounds have not changed, so we do not need to load the towers")
-        return
-    }
-
-    val area = calculateArea(bounds)
-    if (mapView.zoomLevelDouble >= MIN_ZOOM_LEVEL && area <= MAX_AREA_SQ_METERS) {
-        viewModel.setIsZoomedOutTooFar(false)
-        viewModel.setLastQueriedBounds(bounds)
-        Timber.d("The zoom level is appropriate to show the towers")
-
-        viewModel.viewModelScope.launch {
-            viewModel.runTowerQuery()
-        }
-    } else {
-        viewModel.setIsLoadingInProgress(false)
-        viewModel.setIsZoomedOutTooFar(true)
-        Timber.d(
-            "The zoom level is too high or the area is too large to show the towers %s",
-            area.toBigDecimal().toPlainString()
-        )
-    }
-}
-
-/**
- * Calculates the area of the bounding box in square meters.
- */
-private fun calculateArea(bounds: BoundingBox): Double {
-    val earthRadius = 6371000.0 // meters
-
-    val latDistance = Math.toRadians(bounds.latNorth - bounds.latSouth)
-    val lngDistance = Math.toRadians(bounds.lonEast - bounds.lonWest)
-
-    val a = sin(latDistance / 2) * sin(latDistance / 2) +
-            cos(Math.toRadians(bounds.latSouth)) * cos(Math.toRadians(bounds.latNorth)) *
-            sin(lngDistance / 2) * Math.sin(lngDistance / 2)
-    val c = 2 * atan2(sqrt(a), sqrt(1 - a))
-
-    val width = earthRadius * c
-    val height = width // Approximation as we're not accounting for changes in radius with latitude
-
-    return width * height // area in square meters
-}
 
 private fun getServingCellDisplayString(message: GeneratedMessage): String {
     return when (message) {

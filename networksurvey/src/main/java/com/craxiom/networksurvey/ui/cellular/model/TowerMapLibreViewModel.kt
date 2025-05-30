@@ -84,20 +84,20 @@ class TowerMapLibreViewModel : ViewModel() {
     private var mapView: MapView? = null
     private var mapLibreMap: MapLibreMap? = null
     private var style: Style? = null
-    
+
     // Mutex to prevent concurrent tower queries
     private val towerQueryMutex = Mutex()
-    
+
     // Current location for drawing serving cell lines
     private var myLocation: Location? = null
-    
+
     // Serving cell locations with range info
     private val subIdToServingCellLocations = HashMap<Int, ServingCellLocationInfo>()
-    
+
     // Serving cell lines and coverage data ---------
     private val _servingCellLines = MutableStateFlow<List<ServingCellLineData>>(emptyList())
     val servingCellLines = _servingCellLines.asStateFlow()
-    
+
     private val _servingCellCoverage = MutableStateFlow<List<ServingCellCoverageData>>(emptyList())
     val servingCellCoverage = _servingCellCoverage.asStateFlow()
 
@@ -231,7 +231,7 @@ class TowerMapLibreViewModel : ViewModel() {
             }
         }
     }
-    
+
     /**
      * Updates the current user location for drawing serving cell lines.
      */
@@ -277,6 +277,7 @@ class TowerMapLibreViewModel : ViewModel() {
         }
 
         mapView?.let { mapView ->
+            // FIXME This needs to be updated
             recreateOverlaysFromTowerData(mapView, false)
         }
     }
@@ -371,15 +372,12 @@ class TowerMapLibreViewModel : ViewModel() {
         }
     }
 
-    /**
-     * Fetch towers via your existing API, using the current LatLngBounds.
-     */
     internal suspend fun runTowerQuery() = towerQueryMutex.withLock {
         val map = mapLibreMap ?: return@withLock
         _isLoadingInProgress.value = true
 
+        // 1) Build bbox string for request
         val b = map.projection.visibleRegion.latLngBounds
-        // Format: "south,west,north,east"
         val bboxParam = listOf(
             b.latitudeSouth,
             b.longitudeWest,
@@ -387,6 +385,7 @@ class TowerMapLibreViewModel : ViewModel() {
             b.longitudeEast
         ).joinToString(",")
 
+        // 2) Fetch from API
         val response: Response<TowerResponse> = try {
             if (plmnFilter.value.isSet()) {
                 val p = plmnFilter.value
@@ -401,26 +400,51 @@ class TowerMapLibreViewModel : ViewModel() {
                 nsApi.getTowers(bboxParam, selectedRadioType.value, selectedSource.value.apiName)
             }
         } catch (e: Exception) {
+            Timber.e(e, "Error fetching towers from the NS API")
             _isLoadingInProgress.value = false
             return@withLock
         }
 
-        // Atomic replacement instead of clearing then setting
-        val newTowers = if (response.code() == 204 || !response.isSuccessful || response.body() == null) {
-            LinkedHashSet<TowerWrapper>()
-        } else {
-            val newCells = response.body()!!.cells
-            Timber.i("Received %d towers from the API", newCells.size)
-            LinkedHashSet(newCells.map { TowerWrapper(it) })
+        // 3) Extract body or empty
+        val fetched =
+            if (response.code() == 204 || !response.isSuccessful || response.body() == null) {
+                emptyList<TowerWrapper>()
+            } else {
+                response.body()!!.cells.map { TowerWrapper(it) }
+            }
+        Timber.i("Fetched ${fetched.size} towers")
+
+        // 4) Merge into existing set, evict oldest if > MAX
+        _towers.update { existing ->
+            // Copy to preserve immutability
+            val merged = LinkedHashSet(existing)
+
+            fetched.forEach { wrapper ->
+                // If already present, remove it so we can re-add and move to newest
+                if (merged.remove(wrapper)) {
+                    // no-op; removal done
+                }
+                merged.add(wrapper)
+            }
+
+            // Evict the oldest entries if we exceed the limit
+            val overflow = merged.size - MAX_TOWERS_ON_MAP
+            if (overflow > 0) {
+                val iterator = merged.iterator()
+                repeat(overflow.coerceAtLeast(0)) {
+                    if (iterator.hasNext()) iterator.remove()
+                }
+            }
+            merged
         }
-        
-        _towers.value = newTowers
-        _noTowersFound.value = newTowers.isEmpty()
+
+        _noTowersFound.value = _towers.value.isEmpty()
         _isLoadingInProgress.value = false
-        
-        // Update serving cell locations after towers are loaded
+
+        // 5) Recompute serving-cell overlays in case you need them
         updateServingCellLocations()
     }
+
 
     /**
      * Updates serving cell lines based on current location and serving cells.
@@ -428,7 +452,7 @@ class TowerMapLibreViewModel : ViewModel() {
     private fun updateServingCellLines() {
         val currentLocation = myLocation ?: return
         val myLatLng = LatLng(currentLocation.latitude, currentLocation.longitude)
-        
+
         val lines = subIdToServingCellLocations.map { (subscriptionId, locationInfo) ->
             ServingCellLineData(
                 subscriptionId = subscriptionId,
@@ -436,10 +460,10 @@ class TowerMapLibreViewModel : ViewModel() {
                 endPoint = locationInfo.location
             )
         }
-        
+
         _servingCellLines.value = lines
     }
-    
+
     /**
      * Updates serving cell coverage circles.
      */
@@ -453,17 +477,17 @@ class TowerMapLibreViewModel : ViewModel() {
                 )
             } else null
         }
-        
+
         _servingCellCoverage.value = coverage
     }
-    
+
     /**
      * Updates serving cell locations when towers or serving cells change.
      */
     private fun updateServingCellLocations() {
         subIdToServingCellLocations.clear()
 
-        val servingCellToSubscriptionMap: Map<String, Int> = 
+        val servingCellToSubscriptionMap: Map<String, Int> =
             servingCells.value.entries.associate { entry ->
                 CellularUtils.getTowerId(entry.value) to entry.value.subscriptionId
             }
@@ -471,7 +495,7 @@ class TowerMapLibreViewModel : ViewModel() {
         // Find towers that match serving cells
         towers.value.forEach { towerItem ->
             val subscriptionId: Int? = servingCellToSubscriptionMap[towerItem.towerId]
-            
+
             if (subscriptionId != null) {
                 subIdToServingCellLocations[subscriptionId] = ServingCellLocationInfo(
                     location = LatLng(towerItem.tower.lat, towerItem.tower.lon),
@@ -479,7 +503,7 @@ class TowerMapLibreViewModel : ViewModel() {
                 )
             }
         }
-        
+
         updateServingCellLines()
         updateServingCellCoverage()
     }
@@ -490,7 +514,7 @@ class TowerMapLibreViewModel : ViewModel() {
     private fun calculateArea(bounds: LatLngBounds): Double {
         val sw = bounds.southWest
         val ne = bounds.northEast
-        val earthR = 6_371_000.0
+        val earthRadius = 6_371_000.0 // meters
 
         val dLat = Math.toRadians(ne.latitude - sw.latitude)
         val dLon = Math.toRadians(ne.longitude - sw.longitude)
@@ -499,7 +523,7 @@ class TowerMapLibreViewModel : ViewModel() {
                 kotlin.math.cos(Math.toRadians(ne.latitude)) *
                 kotlin.math.sin(dLon / 2).let { it * it }
         val c = 2 * kotlin.math.atan2(kotlin.math.sqrt(a), kotlin.math.sqrt(1 - a))
-        val width = earthR * c
+        val width = earthRadius * c
         return width * width
     }
 }

@@ -38,7 +38,7 @@ import timber.log.Timber
 import java.util.Collections
 import java.util.Objects
 
-private const val MAX_TOWERS_ON_MAP = 5000
+private const val MAX_TOWERS_ON_MAP = 10_000
 
 /**
  * The view model for the Tower Map screen.
