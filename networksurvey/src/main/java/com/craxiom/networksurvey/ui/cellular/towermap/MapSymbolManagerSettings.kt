@@ -9,5 +9,8 @@ internal val DefaultMapSymbolManagerSettings = MapSymbolManagerSettings()
  * on future changes. See: https://jakewharton.com/public-api-challenges-in-kotlin/
  */
 data class MapSymbolManagerSettings(
-    val iconAllowOverlap: Boolean = false,
+    val iconAllowOverlap: Boolean = true,
+    val iconIgnorePlacement: Boolean = true,
+    val textAllowOverlap: Boolean = true,
+    val textIgnorePlacement: Boolean = true
 )

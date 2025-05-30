@@ -76,12 +76,11 @@ import com.craxiom.networksurvey.ui.cellular.towermap.DefaultMapLocationSettings
 import com.craxiom.networksurvey.ui.cellular.towermap.LineString
 import com.craxiom.networksurvey.ui.cellular.towermap.MapLibreMap
 import com.craxiom.networksurvey.ui.cellular.towermap.MapUiSettings
-import com.craxiom.networksurvey.ui.cellular.towermap.Symbol
+import com.craxiom.networksurvey.ui.cellular.towermap.TowerSymbols
 import com.craxiom.networksurvey.ui.cellular.towermap.rememberCameraPositionState
 import com.craxiom.networksurvey.ui.cellular.towermap.rememberCircleState
 import com.craxiom.networksurvey.ui.cellular.towermap.rememberLineStringState
-import com.craxiom.networksurvey.ui.cellular.towermap.rememberSymbolState
-import com.craxiom.networksurvey.util.CellularUtils
+import com.craxiom.networksurvey.ui.cellular.towermap.rememberTowerSymbolsState
 import com.craxiom.networksurvey.util.PreferenceUtils
 import com.google.gson.annotations.SerializedName
 import com.google.protobuf.GeneratedMessage
@@ -188,7 +187,7 @@ internal fun TowerMapScreen(
                 // Render tower symbols
                 val towersData by viewModel.towers.collectAsStateWithLifecycle()
                 //Timber.i("Rendering ${towersData.size} towers on the map")
-                towersData.forEach { towerStub ->
+                /*towersData.forEach { towerStub ->
                     val position = LatLng(towerStub.tower.lat, towerStub.tower.lon)
                     val towerId = CellularUtils.getTowerId(towerStub.tower)
                     //Timber.i("Tower details: Lat=${towerStub.tower.lat}, Lon=${towerStub.tower.lon}, towerId=${towerStub.tower.radio}_$towerId")
@@ -199,7 +198,13 @@ internal fun TowerMapScreen(
                             position = position
                         )
                     )
-                }
+                }*/
+
+                val towerPositions = towersData.map { LatLng(it.tower.lat, it.tower.lon) }
+                //val towerPositions = viewModel.towers.value.map { LatLng(it.tower.lat, it.tower.lon) }
+                val towerState = rememberTowerSymbolsState(towerPositions)
+                TowerSymbols(state = towerState)
+
 
                 // Render serving cell lines
                 val servingCellLines by viewModel.servingCellLines.collectAsStateWithLifecycle()
@@ -310,7 +315,6 @@ internal fun TowerMapScreen(
                                         if (viewModel.selectedRadioType.value != label) {
                                             Timber.i("The Selected radio type changed to $label")
                                             viewModel.setSelectedRadioType(label)
-                                            viewModel.towers.value.clear()
                                             viewModel.viewModelScope.launch {
                                                 viewModel.runTowerQuery()
                                             }
@@ -466,7 +470,6 @@ internal fun TowerMapScreen(
                 currentPlmn = currentPlmnFilter,
                 onSetPlmnFilter = { mcc, mnc ->
                     viewModel.setPlmnFilter(Plmn(mcc, mnc))
-                    viewModel.towers.value.clear()
                     viewModel.viewModelScope.launch {
                         viewModel.runTowerQuery()
                     }
@@ -483,7 +486,6 @@ internal fun TowerMapScreen(
                     if (source != currentSource) {
                         viewModel.setTowerSource(source)
                         PreferenceUtils.setLastSelectedTowerSource(context, source)
-                        viewModel.towers.value.clear()
                         viewModel.viewModelScope.launch {
                             viewModel.runTowerQuery()
                         }

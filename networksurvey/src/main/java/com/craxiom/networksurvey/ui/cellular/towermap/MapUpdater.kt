@@ -201,6 +201,9 @@ internal inline fun MapUpdater(
             set(uiSettings.attributionTintColor) { map.uiSettings.setAttributionTintColor(it.toArgb()) }
 
             set(symbolManagerSettings.iconAllowOverlap) { symbolManager.iconAllowOverlap = it }
+            set(symbolManagerSettings.iconIgnorePlacement) { symbolManager.iconIgnorePlacement = it }
+            set(symbolManagerSettings.textAllowOverlap) { symbolManager.textAllowOverlap = it }
+            set(symbolManagerSettings.textIgnorePlacement) { symbolManager.textIgnorePlacement = it }
 
             update(cameraPositionState) { this.cameraPositionState = it }
         }

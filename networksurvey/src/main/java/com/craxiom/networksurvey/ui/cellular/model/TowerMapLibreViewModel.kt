@@ -19,6 +19,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import org.maplibre.android.camera.CameraPosition
 import org.maplibre.android.camera.CameraUpdateFactory
 import org.maplibre.android.geometry.LatLng
@@ -83,6 +85,9 @@ class TowerMapLibreViewModel : ViewModel() {
     private var mapLibreMap: MapLibreMap? = null
     private var style: Style? = null
     
+    // Mutex to prevent concurrent tower queries
+    private val towerQueryMutex = Mutex()
+    
     // Current location for drawing serving cell lines
     private var myLocation: Location? = null
     
@@ -106,14 +111,23 @@ class TowerMapLibreViewModel : ViewModel() {
 
     fun setSelectedRadioType(radioType: String) {
         _selectedRadioType.value = radioType
+        // Clear towers when radio type changes
+        _towers.value = LinkedHashSet()
+        _noTowersFound.value = false
     }
 
     fun setPlmnFilter(plmn: Plmn) {
         _plmnFilter.value = plmn
+        // Clear towers when PLMN filter changes
+        _towers.value = LinkedHashSet()
+        _noTowersFound.value = false
     }
 
     fun setTowerSource(towerSource: TowerSource) {
         _selectedSource.value = towerSource
+        // Clear towers when source changes
+        _towers.value = LinkedHashSet()
+        _noTowersFound.value = false
     }
 
     fun setIsLoadingInProgress(isLoading: Boolean) {
@@ -222,7 +236,6 @@ class TowerMapLibreViewModel : ViewModel() {
      * Updates the current user location for drawing serving cell lines.
      */
     fun updateMyLocation(location: Location) {
-        Timber.i("Updating my location to lat=%s, lon=%s", location.latitude, location.longitude)
         myLocation = location
         updateServingCellLines()
     }
@@ -361,8 +374,8 @@ class TowerMapLibreViewModel : ViewModel() {
     /**
      * Fetch towers via your existing API, using the current LatLngBounds.
      */
-    internal suspend fun runTowerQuery() {
-        val map = mapLibreMap ?: return
+    internal suspend fun runTowerQuery() = towerQueryMutex.withLock {
+        val map = mapLibreMap ?: return@withLock
         _isLoadingInProgress.value = true
 
         val b = map.projection.visibleRegion.latLngBounds
@@ -389,18 +402,20 @@ class TowerMapLibreViewModel : ViewModel() {
             }
         } catch (e: Exception) {
             _isLoadingInProgress.value = false
-            return
+            return@withLock
         }
 
-        if (response.code() == 204 || !response.isSuccessful || response.body() == null) {
-            _towers.value.clear()
+        // Atomic replacement instead of clearing then setting
+        val newTowers = if (response.code() == 204 || !response.isSuccessful || response.body() == null) {
+            LinkedHashSet<TowerWrapper>()
         } else {
             val newCells = response.body()!!.cells
             Timber.i("Received %d towers from the API", newCells.size)
-            _towers.value = LinkedHashSet(newCells.map { TowerWrapper(it) })
+            LinkedHashSet(newCells.map { TowerWrapper(it) })
         }
-
-        _noTowersFound.value = _towers.value.isEmpty()
+        
+        _towers.value = newTowers
+        _noTowersFound.value = newTowers.isEmpty()
         _isLoadingInProgress.value = false
         
         // Update serving cell locations after towers are loaded
