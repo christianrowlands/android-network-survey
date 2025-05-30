@@ -36,6 +36,7 @@ import org.maplibre.android.maps.MapView
 import org.maplibre.android.maps.OnMapReadyCallback
 import org.maplibre.android.maps.Style
 import org.maplibre.android.plugins.annotation.SymbolManager
+import com.craxiom.networksurvey.ui.cellular.Tower
 import kotlin.coroutines.resume
 import kotlin.coroutines.suspendCoroutine
 
@@ -58,6 +59,7 @@ fun MapLibreMap(
     locationSettings: MapLocationSettings = DefaultMapLocationSettings,
     onMapReady: ((MapView, MapLibreMap, Style) -> Unit)? = null,
     onMyLocationChanged: (Location) -> Unit = {},
+    onTowerClick: ((Tower) -> Unit)? = null,
     content: @Composable () -> Unit = {},
 ) {
     if (LocalInspectionMode.current) {
@@ -100,6 +102,7 @@ fun MapLibreMap(
                     locationSettings = currentMapLocationSettings,
                     symbolManagerSettings = currentSymbolManagerSettings,
                     onMyLocationChanged = onMyLocationChanged,
+                    onTowerClick = onTowerClick,
                 )
                 content()
             }

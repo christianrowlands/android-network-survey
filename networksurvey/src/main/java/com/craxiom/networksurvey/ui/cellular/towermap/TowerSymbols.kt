@@ -7,14 +7,16 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import com.craxiom.networksurvey.ui.cellular.Tower
 import org.maplibre.android.maps.Style
-import org.maplibre.android.style.layers.PropertyFactory.*
+import org.maplibre.android.style.layers.PropertyFactory.iconAllowOverlap
+import org.maplibre.android.style.layers.PropertyFactory.iconIgnorePlacement
+import org.maplibre.android.style.layers.PropertyFactory.iconImage
 import org.maplibre.android.style.layers.SymbolLayer
 import org.maplibre.android.style.sources.GeoJsonSource
 import org.maplibre.geojson.Feature
 import org.maplibre.geojson.FeatureCollection
 import org.maplibre.geojson.Point
-import org.maplibre.android.geometry.LatLng
 
 /**
  * Node that manages a single source+layer for all tower symbols.
@@ -23,13 +25,34 @@ internal class TowerSymbolsNode(
     private val style: Style,
     private val sourceId: String,
     private val layerId: String,
-    points: List<LatLng>
+    towers: List<Tower>
 ) : MapNode {
     init {
-        val features = points.map { latLng ->
-            Feature.fromGeometry(Point.fromLngLat(latLng.longitude, latLng.latitude))
+        val features = towers.map { tower ->
+            Feature.fromGeometry(Point.fromLngLat(tower.lon, tower.lat)).apply {
+                addStringProperty("towerId", tower.cid.toString())
+                addStringProperty("radio", tower.radio)
+                addNumberProperty("mcc", tower.mcc)
+                addNumberProperty("mnc", tower.mnc)
+                addNumberProperty("area", tower.area)
+                addNumberProperty("unit", tower.unit)
+                addNumberProperty("range", tower.range)
+                addNumberProperty("samples", tower.samples)
+                addNumberProperty("averageSignal", tower.averageSignal)
+                addNumberProperty("changeable", tower.changeable)
+                addNumberProperty("createdAt", tower.createdAt)
+                addNumberProperty("updatedAt", tower.updatedAt)
+                addStringProperty("source", tower.source)
+                addNumberProperty("lat", tower.lat)
+                addNumberProperty("lon", tower.lon)
+            }
         }
-        style.addSource(GeoJsonSource(sourceId, FeatureCollection.fromFeatures(features.toTypedArray())))
+        style.addSource(
+            GeoJsonSource(
+                sourceId,
+                FeatureCollection.fromFeatures(features.toTypedArray())
+            )
+        )
         style.addLayer(SymbolLayer(layerId, sourceId).apply {
             withProperties(
                 iconImage("tower"),
@@ -40,34 +63,62 @@ internal class TowerSymbolsNode(
     }
 
     /**
-     * Update the GeoJSON source with new tower points.
+     * Update the GeoJSON source with new towers.
      */
-    fun updatePoints(newPoints: List<LatLng>) {
-        val features = newPoints.map { latLng ->
-            Feature.fromGeometry(Point.fromLngLat(latLng.longitude, latLng.latitude))
+    fun updateTowers(newTowers: List<Tower>) {
+        val newFeatures = newTowers.map { tower ->
+            Feature.fromGeometry(Point.fromLngLat(tower.lon, tower.lat)).apply {
+                addStringProperty("towerId", tower.cid.toString())
+                addStringProperty("radio", tower.radio)
+                addNumberProperty("mcc", tower.mcc)
+                addNumberProperty("mnc", tower.mnc)
+                addNumberProperty("area", tower.area)
+                addNumberProperty("unit", tower.unit)
+                addNumberProperty("range", tower.range)
+                addNumberProperty("samples", tower.samples)
+                addNumberProperty("averageSignal", tower.averageSignal)
+                addNumberProperty("changeable", tower.changeable)
+                addNumberProperty("createdAt", tower.createdAt)
+                addNumberProperty("updatedAt", tower.updatedAt)
+                addStringProperty("source", tower.source)
+                addNumberProperty("lat", tower.lat)
+                addNumberProperty("lon", tower.lon)
+            }
         }
         (style.getSource(sourceId) as? GeoJsonSource)
-            ?.setGeoJson(FeatureCollection.fromFeatures(features.toTypedArray()))
+            ?.setGeoJson(FeatureCollection.fromFeatures(newFeatures.toTypedArray()))
     }
 
     override fun onRemoved() {
-        try { style.removeLayer(layerId) } catch (_: Exception) {}
-        try { style.removeSource(sourceId) } catch (_: Exception) {}
+        try {
+            style.removeLayer(layerId)
+        } catch (_: Exception) {
+        }
+        try {
+            style.removeSource(sourceId)
+        } catch (_: Exception) {
+        }
     }
 
     override fun onCleared() {
-        try { style.removeLayer(layerId) } catch (_: Exception) {}
-        try { style.removeSource(sourceId) } catch (_: Exception) {}
+        try {
+            style.removeLayer(layerId)
+        } catch (_: Exception) {
+        }
+        try {
+            style.removeSource(sourceId)
+        } catch (_: Exception) {
+        }
     }
 }
 
 /**
- * A state holder for tower positions.
+ * A state holder for towers.
  */
 class TowerSymbolsState(
-    initialPoints: List<LatLng>
+    initialTowers: List<Tower>
 ) {
-    var points by mutableStateOf(initialPoints)
+    var towers by mutableStateOf(initialTowers)
 }
 
 /**
@@ -75,9 +126,9 @@ class TowerSymbolsState(
  */
 @Composable
 fun rememberTowerSymbolsState(
-    points: List<LatLng>
-): TowerSymbolsState = remember(points) {
-    TowerSymbolsState(points)
+    towers: List<Tower>
+): TowerSymbolsState = remember(towers) {
+    TowerSymbolsState(towers)
 }
 
 /**
@@ -100,12 +151,12 @@ fun TowerSymbols(
                 style = style,
                 sourceId = sourceId,
                 layerId = layerId,
-                points = state.points
+                towers = state.towers
             )
         },
         update = {
-            set(state.points) { newPoints ->
-                this.updatePoints(newPoints)
+            set(state.towers) { newTowers ->
+                this.updateTowers(newTowers)
             }
         }
     )

@@ -66,6 +66,9 @@ import com.craxiom.networksurvey.R
 import com.craxiom.networksurvey.model.CellularProtocol
 import com.craxiom.networksurvey.model.Plmn
 import com.craxiom.networksurvey.ui.cellular.model.FollowMyLocationChangeListener
+import com.craxiom.networksurvey.ui.cellular.model.INITIAL_ZOOM
+import com.craxiom.networksurvey.ui.cellular.model.MAX_AREA_SQ_METERS
+import com.craxiom.networksurvey.ui.cellular.model.MIN_ZOOM_LEVEL
 import com.craxiom.networksurvey.ui.cellular.model.ServingCellInfo
 import com.craxiom.networksurvey.ui.cellular.model.ServingSignalInfo
 import com.craxiom.networksurvey.ui.cellular.model.TowerMapLibreViewModel
@@ -76,6 +79,7 @@ import com.craxiom.networksurvey.ui.cellular.towermap.DefaultMapLocationSettings
 import com.craxiom.networksurvey.ui.cellular.towermap.LineString
 import com.craxiom.networksurvey.ui.cellular.towermap.MapLibreMap
 import com.craxiom.networksurvey.ui.cellular.towermap.MapUiSettings
+import com.craxiom.networksurvey.ui.cellular.towermap.TowerInfoDialog
 import com.craxiom.networksurvey.ui.cellular.towermap.TowerSymbols
 import com.craxiom.networksurvey.ui.cellular.towermap.rememberCameraPositionState
 import com.craxiom.networksurvey.ui.cellular.towermap.rememberCircleState
@@ -101,11 +105,6 @@ import kotlin.math.atan2
 import kotlin.math.cos
 import kotlin.math.sin
 import kotlin.math.sqrt
-
-
-const val INITIAL_ZOOM: Double = 15.0
-const val MIN_ZOOM_LEVEL = 13.0
-const val MAX_AREA_SQ_METERS = 400_000_000.0
 
 /**
  * Creates the map view for displaying the tower locations. The tower locations are pulled from the
@@ -144,9 +143,11 @@ internal fun TowerMapScreen(
     var showInfoDialog by remember { mutableStateOf(false) }
     var showPlmnDialog by remember { mutableStateOf(false) }
     var showTowerSourceDialog by remember { mutableStateOf(false) }
+    var showTowerInfoDialog by remember { mutableStateOf(false) }
+    var selectedTower by remember { mutableStateOf<Tower?>(null) }
 
     val cameraPositionState = rememberCameraPositionState {
-        // Optionally initialize from viewModel.lastQueriedBounds
+        // FIXME Is this redundant because there is similar logic in the view model?
         viewModel.lastQueriedBounds.value?.let { bounds ->
             position = CameraPosition.Builder()
                 .target(LatLng(bounds.center.latitude, bounds.center.longitude))
@@ -183,26 +184,15 @@ internal fun TowerMapScreen(
                     viewModel.initMapLibre(mapView, map, style)
                 },
                 onMyLocationChanged = viewModel::updateMyLocation,
+                onTowerClick = { tower ->
+                    selectedTower = tower
+                    showTowerInfoDialog = true
+                },
             ) {
                 // Render tower symbols
                 val towersData by viewModel.towers.collectAsStateWithLifecycle()
-                //Timber.i("Rendering ${towersData.size} towers on the map")
-                /*towersData.forEach { towerStub ->
-                    val position = LatLng(towerStub.tower.lat, towerStub.tower.lon)
-                    val towerId = CellularUtils.getTowerId(towerStub.tower)
-                    //Timber.i("Tower details: Lat=${towerStub.tower.lat}, Lon=${towerStub.tower.lon}, towerId=${towerStub.tower.radio}_$towerId")
-                    Symbol(
-                        iconId = "tower",
-                        state = rememberSymbolState(
-                            key = "tower_${towerStub.tower.radio}_${towerId}",
-                            position = position
-                        )
-                    )
-                }*/
-
-                val towerPositions = towersData.map { LatLng(it.tower.lat, it.tower.lon) }
-                //val towerPositions = viewModel.towers.value.map { LatLng(it.tower.lat, it.tower.lon) }
-                val towerState = rememberTowerSymbolsState(towerPositions)
+                val towers = towersData.map { it.tower }
+                val towerState = rememberTowerSymbolsState(towers)
                 TowerSymbols(state = towerState)
 
 
@@ -494,6 +484,16 @@ internal fun TowerMapScreen(
                 onDismiss = { showTowerSourceDialog = false }
             )
         }
+
+        if (showTowerInfoDialog && selectedTower != null) {
+            TowerInfoDialog(
+                tower = selectedTower!!,
+                onDismiss = { 
+                    showTowerInfoDialog = false
+                    selectedTower = null
+                }
+            )
+        }
     }
 
     if (missingApiKey) {
@@ -722,6 +722,7 @@ fun ServingCellInfoDisplay(cellInfo: ServingCellInfo?, servingSignalInfo: Servin
  * The listener that is called when the map is idle. This is where we will load the towers for the
  * current map view.
  */
+// TODO Delete me
 private fun runListener(
     mapView: MapView,
     viewModel: TowerMapViewModel

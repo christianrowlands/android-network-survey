@@ -32,9 +32,9 @@ import retrofit2.Response
 import timber.log.Timber
 import java.util.Objects
 
-private const val INITIAL_ZOOM = 15.0
-private const val MIN_ZOOM_LEVEL = 13.0
-private const val MAX_AREA_SQ_METERS = 400_000_000.0
+const val INITIAL_ZOOM = 15.0
+const val MIN_ZOOM_LEVEL = 9.0
+const val MAX_AREA_SQ_METERS = 40_000_000_000.0
 private const val MAX_TOWERS_ON_MAP = 5000
 
 class TowerMapLibreViewModel : ViewModel() {
@@ -167,7 +167,7 @@ class TowerMapLibreViewModel : ViewModel() {
                 // fallback, world view
                 val camPos = CameraPosition.Builder()
                     .target(LatLng(0.0, 0.0))
-                    .zoom(INITIAL_ZOOM)
+                    .zoom(1.0)
                     .build()
                 map.moveCamera(CameraUpdateFactory.newCameraPosition(camPos))
             }

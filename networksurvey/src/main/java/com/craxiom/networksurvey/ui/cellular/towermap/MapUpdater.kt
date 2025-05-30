@@ -13,6 +13,7 @@ import androidx.compose.runtime.currentComposer
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
 import androidx.core.app.ActivityCompat
+import com.craxiom.networksurvey.ui.cellular.Tower
 import org.maplibre.android.location.LocationComponentActivationOptions
 import org.maplibre.android.location.LocationComponentOptions
 import org.maplibre.android.location.OnCameraTrackingChangedListener
@@ -33,6 +34,7 @@ internal class MapPropertiesNode(
     cameraPositionState: CameraPositionState,
     locationSettings: MapLocationSettings,
     private val onMyLocationChanged: (Location) -> Unit,
+    onTowerClick: ((Tower) -> Unit)? = null,
 ) : MapNode {
     private val locationCallback: LocationEngineCallback<LocationEngineResult>
         get() {
@@ -96,6 +98,50 @@ internal class MapPropertiesNode(
                     locationCallback,
                     Looper.getMainLooper()
                 )
+            }
+        }
+
+        // Set up tower click listener
+        onTowerClick?.let { clickHandler ->
+            map.addOnMapClickListener { point ->
+                // Query for tower features at the click point
+                val features = map.queryRenderedFeatures(
+                    map.projection.toScreenLocation(point),
+                    "tower-symbols-layer"
+                )
+
+                if (features.isNotEmpty()) {
+                    val feature = features[0]
+                    val properties = feature.properties()
+
+                    // Convert feature properties back to Tower object
+                    if (properties != null) {
+                        try {
+                            val tower = Tower(
+                                lat = properties.get("lat").asDouble,
+                                lon = properties.get("lon").asDouble,
+                                mcc = properties.get("mcc").asInt,
+                                mnc = properties.get("mnc").asInt,
+                                area = properties.get("area").asInt,
+                                cid = properties.get("towerId").asLong,
+                                unit = properties.get("unit").asInt,
+                                averageSignal = properties.get("averageSignal").asInt,
+                                range = properties.get("range").asInt,
+                                samples = properties.get("samples").asInt,
+                                changeable = properties.get("changeable").asInt,
+                                createdAt = properties.get("createdAt").asLong,
+                                updatedAt = properties.get("updatedAt").asLong,
+                                radio = properties.get("radio").asString,
+                                source = properties.get("source").asString
+                            )
+                            clickHandler(tower)
+                            return@addOnMapClickListener true
+                        } catch (e: Exception) {
+                            Timber.e(e, "Error parsing tower data from feature")
+                        }
+                    }
+                }
+                false
             }
         }
 
@@ -166,6 +212,7 @@ internal inline fun MapUpdater(
     uiSettings: MapUiSettings,
     symbolManagerSettings: MapSymbolManagerSettings,
     noinline onMyLocationChanged: (Location) -> Unit,
+    noinline onTowerClick: ((Tower) -> Unit)? = null,
 ) {
     val mapApplier = currentComposer.applier as MapApplier
     val map = mapApplier.map
@@ -181,6 +228,7 @@ internal inline fun MapUpdater(
                 cameraPositionState = cameraPositionState,
                 locationSettings = locationSettings,
                 onMyLocationChanged = onMyLocationChanged,
+                onTowerClick = onTowerClick,
             )
         },
         update = {
@@ -201,9 +249,13 @@ internal inline fun MapUpdater(
             set(uiSettings.attributionTintColor) { map.uiSettings.setAttributionTintColor(it.toArgb()) }
 
             set(symbolManagerSettings.iconAllowOverlap) { symbolManager.iconAllowOverlap = it }
-            set(symbolManagerSettings.iconIgnorePlacement) { symbolManager.iconIgnorePlacement = it }
+            set(symbolManagerSettings.iconIgnorePlacement) {
+                symbolManager.iconIgnorePlacement = it
+            }
             set(symbolManagerSettings.textAllowOverlap) { symbolManager.textAllowOverlap = it }
-            set(symbolManagerSettings.textIgnorePlacement) { symbolManager.textIgnorePlacement = it }
+            set(symbolManagerSettings.textIgnorePlacement) {
+                symbolManager.textIgnorePlacement = it
+            }
 
             update(cameraPositionState) { this.cameraPositionState = it }
         }
