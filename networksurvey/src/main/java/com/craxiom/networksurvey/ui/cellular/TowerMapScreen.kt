@@ -112,6 +112,7 @@ internal fun TowerMapScreen(
     val currentPlmnFilter by viewModel.plmnFilter.collectAsStateWithLifecycle()
     val currentSource by viewModel.selectedSource.collectAsStateWithLifecycle()
     val noTowersFound by viewModel.noTowersFound.collectAsStateWithLifecycle()
+    val isMapInitializing by viewModel.isMapInitializing.collectAsStateWithLifecycle()
 
     val missingApiKey = BuildConfig.NS_API_KEY.isEmpty()
 
@@ -148,149 +149,226 @@ internal fun TowerMapScreen(
         modifier = Modifier.fillMaxSize(),
         color = MaterialTheme.colorScheme.background
     ) {
-        Box(modifier = Modifier.fillMaxSize()) {
-            val mapId = "basic-v2-dark" // "basic-v2" for light mode
-            val mapTilerKey by viewModel.mapTilerKey.collectAsState()
-            val mapKeyLoadError by viewModel.mapKeyLoadError.collectAsState()
-            var darkMap = remember { mutableStateOf(false) }
-
-            // decide which style URL to use:
-            val styleUrl = remember(mapTilerKey, mapKeyLoadError) {
-                if (mapKeyLoadError || mapTilerKey.isNullOrEmpty()) {
-                    // generic (OSM) raster‐tiles style
-                    darkMap.value = false
-                    "https://gist.githubusercontent.com/christianrowlands/7fd13af3c18ea7086ee4b37cc64a65a6/raw/openStreetMap.json"
-                } else {
-                    darkMap.value = true
-                    "https://api.maptiler.com/maps/$mapId/style.json?key=$mapTilerKey"
-                }
-            }
-
-            val iconMap = remember(darkMap.value) {
-                if (darkMap.value) {
-                    mapOf(
-                        KEY_TOWER_ICON to R.drawable.ic_cell_tower_map_dark,
-                        KEY_SERVING_CELL_ICON to R.drawable.ic_cell_tower_map_serving_dark
-                    ).toImmutableMap()
-                } else {
-                    mapOf(
-                        KEY_TOWER_ICON to R.drawable.ic_cell_tower_map_light,
-                        KEY_SERVING_CELL_ICON to R.drawable.ic_cell_tower_map_serving_light
-                    ).toImmutableMap()
-                }
-            }
-            MapLibreMap(
-                styleUri = styleUrl,
-                modifier = Modifier.fillMaxSize(),
-                images = iconMap,
-                cameraPositionState = cameraPositionState,
-                uiSettings = MapUiSettings(
-                    compassEnabled = true,
-                    rotationGesturesEnabled = true,
-                    scrollGesturesEnabled = true,
-                    tiltGesturesEnabled = false,
-                    zoomGesturesEnabled = true
-                ),
-                locationSettings = DefaultMapLocationSettings,
-                onMapReady = { mapView, map, style ->
-                    viewModel.initMapLibre(mapView, map, style)
-                },
-                onMyLocationChanged = viewModel::updateMyLocation,
-                onTowerClick = { tower ->
-                    selectedTower = tower
-                    showTowerInfoDialog = true
-                },
+        if (isMapInitializing) {
+            // Show loading screen while fetching MapTiler key
+            Box(
+                contentAlignment = Alignment.Center,
+                modifier = Modifier.fillMaxSize()
             ) {
-                // 1) Pull your tower wrappers from the VM…
-                val towers by viewModel.towers.collectAsStateWithLifecycle()
-                //val towers = towerWrappers.map { it.tower }
-                val towerWrapperList =
-                    towers.toList() // TODO This will be expensive if called often
-
-                // 2) Pull the “serving cell” IDs so we can highlight them
-                val servingCellInfo by viewModel.servingCells.collectAsStateWithLifecycle()
-                val servingIds = servingCellInfo.values
-                    .map { CellularUtils.getTowerId(it) }
-                    .toSet()
-
-                // 3) One single call to TowerSymbols
-                TowerSymbols(
-                    towerWrapperList = towerWrapperList,
-                    servingIds = servingIds
-                )
-
-                // Render serving cell lines
-                val servingCellLines by viewModel.servingCellLines.collectAsStateWithLifecycle()
-                servingCellLines.forEach { lineData ->
-                    LineString(
-                        state = rememberLineStringState(
-                            points = listOf(lineData.startPoint, lineData.endPoint),
-                            color = colorResource(R.color.serving_cell_line),
-                            width = 3f,
-                            dashArray = listOf(5f, 3f) // Dashed line
-                        )
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(48.dp)
                     )
-                }
-
-                // Render serving cell coverage circles
-                val servingCellCoverage by viewModel.servingCellCoverage.collectAsStateWithLifecycle()
-                servingCellCoverage.forEach { coverageData ->
-                    Circle(
-                        state = rememberCircleState(
-                            center = coverageData.center,
-                            radiusMeters = coverageData.radiusMeters,
-                            //fillColor = colorResource(R.color.serving_cell_coverage).copy(alpha = 0.1f),
-                            strokeColor = colorResource(R.color.serving_cell_dark),
-                            strokeWidth = 2f
-                        )
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Text(
+                        text = "Loading map...",
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.onSurface
                     )
                 }
             }
+        } else {
+            Box(modifier = Modifier.fillMaxSize()) {
+                val mapId = "basic-v2-dark" // "basic-v2" for light mode
+                val mapTilerKey by viewModel.mapTilerKey.collectAsState()
+                val mapKeyLoadError by viewModel.mapKeyLoadError.collectAsState()
+                var darkMap = remember { mutableStateOf(false) }
 
-            TopAppBarOverlay(statusBarHeight)
+                // decide which style URL to use:
+                val styleUrl = remember(mapTilerKey, mapKeyLoadError) {
+                    if (mapKeyLoadError || mapTilerKey.isNullOrEmpty()) {
+                        // generic (OSM) raster‐tiles style
+                        darkMap.value = false
+                        "https://gist.githubusercontent.com/christianrowlands/7fd13af3c18ea7086ee4b37cc64a65a6/raw/openStreetMap.json"
+                    } else {
+                        darkMap.value = true
+                        "https://api.maptiler.com/maps/$mapId/style.json?key=$mapTilerKey"
+                    }
+                }
 
-            Column {
-                Box(
-                    modifier = Modifier
-                        .align(Alignment.End)
-                        .padding(top = statusBarHeight + 4.dp, end = 16.dp)
+                val iconMap = remember(darkMap.value) {
+                    if (darkMap.value) {
+                        mapOf(
+                            KEY_TOWER_ICON to R.drawable.ic_cell_tower_map_dark,
+                            KEY_SERVING_CELL_ICON to R.drawable.ic_cell_tower_map_serving_dark
+                        ).toImmutableMap()
+                    } else {
+                        mapOf(
+                            KEY_TOWER_ICON to R.drawable.ic_cell_tower_map_light,
+                            KEY_SERVING_CELL_ICON to R.drawable.ic_cell_tower_map_serving_light
+                        ).toImmutableMap()
+                    }
+                }
+                MapLibreMap(
+                    styleUri = styleUrl,
+                    modifier = Modifier.fillMaxSize(),
+                    images = iconMap,
+                    cameraPositionState = cameraPositionState,
+                    uiSettings = MapUiSettings(
+                        compassEnabled = true,
+                        rotationGesturesEnabled = true,
+                        scrollGesturesEnabled = true,
+                        tiltGesturesEnabled = false,
+                        zoomGesturesEnabled = true
+                    ),
+                    locationSettings = DefaultMapLocationSettings,
+                    onMapReady = { mapView, map, style ->
+                        viewModel.initMapLibre(mapView, map, style)
+                    },
+                    onMyLocationChanged = viewModel::updateMyLocation,
+                    onTowerClick = { tower ->
+                        selectedTower = tower
+                        showTowerInfoDialog = true
+                    },
                 ) {
-                    Row {
-                        Spacer(modifier = Modifier.width(8.dp))
+                    // 1) Pull your tower wrappers from the VM…
+                    val towers by viewModel.towers.collectAsStateWithLifecycle()
+                    //val towers = towerWrappers.map { it.tower }
+                    val towerWrapperList =
+                        towers.toList() // TODO This will be expensive if called often
 
-                        IconButton(onClick = { onBackButtonPressed() }) {
-                            Icon(
-                                Icons.AutoMirrored.Filled.ArrowBack,
-                                contentDescription = "Back button",
-                                tint = MaterialTheme.colorScheme.onSurface,
-                                modifier = Modifier
-                                    .size(56.dp)
-                                    .padding(0.dp)
-                                    .background(color = MaterialTheme.colorScheme.primary)
+                    // 2) Pull the “serving cell” IDs so we can highlight them
+                    val servingCellInfo by viewModel.servingCells.collectAsStateWithLifecycle()
+                    val servingIds = servingCellInfo.values
+                        .map { CellularUtils.getTowerId(it) }
+                        .toSet()
+
+                    // 3) One single call to TowerSymbols
+                    TowerSymbols(
+                        towerWrapperList = towerWrapperList,
+                        servingIds = servingIds
+                    )
+
+                    // Render serving cell lines
+                    val servingCellLines by viewModel.servingCellLines.collectAsStateWithLifecycle()
+                    servingCellLines.forEach { lineData ->
+                        LineString(
+                            state = rememberLineStringState(
+                                points = listOf(lineData.startPoint, lineData.endPoint),
+                                color = colorResource(R.color.serving_cell_line),
+                                width = 3f,
+                                dashArray = listOf(5f, 3f) // Dashed line
                             )
+                        )
+                    }
+
+                    // Render serving cell coverage circles
+                    val servingCellCoverage by viewModel.servingCellCoverage.collectAsStateWithLifecycle()
+                    servingCellCoverage.forEach { coverageData ->
+                        Circle(
+                            state = rememberCircleState(
+                                center = coverageData.center,
+                                radiusMeters = coverageData.radiusMeters,
+                                //fillColor = colorResource(R.color.serving_cell_coverage).copy(alpha = 0.1f),
+                                strokeColor = colorResource(R.color.serving_cell_dark),
+                                strokeWidth = 2f
+                            )
+                        )
+                    }
+                }
+
+                TopAppBarOverlay(statusBarHeight)
+
+                Column {
+                    Box(
+                        modifier = Modifier
+                            .align(Alignment.End)
+                            .padding(top = statusBarHeight + 4.dp, end = 16.dp)
+                    ) {
+                        Row {
+                            Spacer(modifier = Modifier.width(8.dp))
+
+                            IconButton(onClick = { onBackButtonPressed() }) {
+                                Icon(
+                                    Icons.AutoMirrored.Filled.ArrowBack,
+                                    contentDescription = "Back button",
+                                    tint = MaterialTheme.colorScheme.onSurface,
+                                    modifier = Modifier
+                                        .size(56.dp)
+                                        .padding(0.dp)
+                                        .background(color = MaterialTheme.colorScheme.primary)
+                                )
+                            }
+
+                            Spacer(modifier = Modifier.weight(1f))
+
+                            IconButton(onClick = { showInfoDialog = true }) {
+                                Icon(
+                                    Icons.Default.Info,
+                                    contentDescription = "About Cellular Tower Map",
+                                    tint = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier
+                                        .size(56.dp)
+                                        .padding(0.dp)
+                                        .background(color = MaterialTheme.colorScheme.onSurface)
+                                )
+                            }
+
+                            Spacer(modifier = Modifier.width(16.dp))
+
+                            Button(
+                                onClick = { showPlmnDialog = true },
+                            ) {
+                                val buttonText =
+                                    if (currentPlmnFilter.isSet()) currentPlmnFilter.toString() else "PLMN Filter"
+                                Text(
+                                    text = buttonText,
+                                    color = MaterialTheme.colorScheme.onSurface,
+                                    fontSize = 14.nonScaledSp,
+                                    lineHeight = 14.nonScaledSp,
+                                )
+                            }
+
+                            Spacer(modifier = Modifier.width(8.dp))
+
+                            Button(
+                                onClick = { expanded = true },
+                            ) {
+                                Text(
+                                    text = radio, color = MaterialTheme.colorScheme.onSurface,
+                                    fontSize = 14.nonScaledSp,
+                                    lineHeight = 14.nonScaledSp,
+                                )
+                            }
                         }
 
-                        Spacer(modifier = Modifier.weight(1f))
-
-                        IconButton(onClick = { showInfoDialog = true }) {
-                            Icon(
-                                Icons.Default.Info,
-                                contentDescription = "About Cellular Tower Map",
-                                tint = MaterialTheme.colorScheme.primary,
-                                modifier = Modifier
-                                    .size(56.dp)
-                                    .padding(0.dp)
-                                    .background(color = MaterialTheme.colorScheme.onSurface)
-                            )
-                        }
-
-                        Spacer(modifier = Modifier.width(16.dp))
-
-                        Button(
-                            onClick = { showPlmnDialog = true },
+                        Box(
+                            modifier = Modifier
+                                .align(Alignment.BottomEnd)
                         ) {
-                            val buttonText =
-                                if (currentPlmnFilter.isSet()) currentPlmnFilter.toString() else "PLMN Filter"
+                            DropdownMenu(
+                                expanded = expanded,
+                                onDismissRequest = { expanded = false }
+                            ) {
+                                options.forEach { label ->
+                                    DropdownMenuItem(
+                                        text = { Text(text = label) },
+                                        onClick = {
+                                            if (viewModel.selectedRadioType.value != label) {
+                                                Timber.i("The Selected radio type changed to $label")
+                                                viewModel.setSelectedRadioType(label)
+                                                viewModel.viewModelScope.launch {
+                                                    viewModel.runTowerQuery()
+                                                }
+                                            }
+                                            expanded = false
+                                        })
+                                }
+                            }
+                        }
+                    }
+
+                    Box(
+                        modifier = Modifier
+                            .align(Alignment.End)
+                            .padding(end = 16.dp)
+                    ) {
+                        Button(
+                            onClick = { showTowerSourceDialog = true },
+                        ) {
+                            val buttonText = currentSource.displayName
                             Text(
                                 text = buttonText,
                                 color = MaterialTheme.colorScheme.onSurface,
@@ -298,195 +376,146 @@ internal fun TowerMapScreen(
                                 lineHeight = 14.nonScaledSp,
                             )
                         }
-
-                        Spacer(modifier = Modifier.width(8.dp))
-
-                        Button(
-                            onClick = { expanded = true },
-                        ) {
-                            Text(
-                                text = radio, color = MaterialTheme.colorScheme.onSurface,
-                                fontSize = 14.nonScaledSp,
-                                lineHeight = 14.nonScaledSp,
-                            )
-                        }
-                    }
-
-                    Box(
-                        modifier = Modifier
-                            .align(Alignment.BottomEnd)
-                    ) {
-                        DropdownMenu(
-                            expanded = expanded,
-                            onDismissRequest = { expanded = false }
-                        ) {
-                            options.forEach { label ->
-                                DropdownMenuItem(
-                                    text = { Text(text = label) },
-                                    onClick = {
-                                        if (viewModel.selectedRadioType.value != label) {
-                                            Timber.i("The Selected radio type changed to $label")
-                                            viewModel.setSelectedRadioType(label)
-                                            viewModel.viewModelScope.launch {
-                                                viewModel.runTowerQuery()
-                                            }
-                                        }
-                                        expanded = false
-                                    })
-                            }
-                        }
                     }
                 }
 
                 Box(
                     modifier = Modifier
-                        .align(Alignment.End)
-                        .padding(end = 16.dp)
+                        .align(Alignment.BottomEnd)
+                        .padding(
+                            vertical = paddingInsets.calculateBottomPadding(),
+                            horizontal = 12.dp
+                        )
                 ) {
-                    Button(
-                        onClick = { showTowerSourceDialog = true },
+                    Column {
+                        Surface(
+                            modifier = Modifier
+                                .size(40.dp)
+                                .clip(CircleShape)
+                                .background(MaterialTheme.colorScheme.primary),
+                            color = MaterialTheme.colorScheme.primary
+                        ) {
+                            Box(
+                                contentAlignment = Alignment.Center,
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .padding(8.dp)
+                            ) {
+                                Image(
+                                    painter = painterResource(id = R.drawable.ic_settings),
+                                    contentDescription = "Tower Map Settings",
+                                    modifier = Modifier.size(24.dp)
+                                )
+                                Button(
+                                    onClick = { onNavigateToTowerMapSettings.invoke() },
+                                    modifier = Modifier
+                                        .size(48.dp)
+                                        .clip(CircleShape),
+                                    colors = ButtonDefaults.buttonColors(
+                                        containerColor = Color.Transparent
+                                    )
+                                ) {}
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(12.dp))
+
+                        Surface(
+                            modifier = Modifier
+                                .size(40.dp)
+                                .clip(CircleShape)
+                                .background(MaterialTheme.colorScheme.primary),
+                            color = MaterialTheme.colorScheme.primary
+                        ) {
+                            Box(
+                                contentAlignment = Alignment.Center,
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .padding(8.dp)
+                            ) {
+                                Image(
+                                    painter = painterResource(id = R.drawable.ic_my_location),
+                                    contentDescription = "My Location",
+                                    modifier = Modifier.size(24.dp)
+                                )
+                                Button(
+                                    onClick = { viewModel.goToMyLocation() },
+                                    modifier = Modifier
+                                        .size(48.dp)
+                                        .clip(CircleShape),
+                                    colors = ButtonDefaults.buttonColors(
+                                        containerColor = Color.Transparent
+                                    )
+                                ) {}
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(44.dp))
+
+                        /*CircleButtonWithLine(
+                            isFollowing = isFollowing,
+                            toggleFollowMe = {
+                                if (viewModel.myLocationOverlay == null) return@CircleButtonWithLine
+
+                                val currentIsFollowing =
+                                    viewModel.myLocationOverlay!!.isFollowLocationEnabled
+                                isFollowing = !currentIsFollowing
+                                toggleFollowMe(viewModel, isFollowing)
+                            })*/
+                    }
+                }
+
+                Column(
+                    modifier = Modifier
+                        .align(Alignment.BottomStart)
+                        .padding(
+                            vertical = paddingInsets.calculateBottomPadding(),
+                            horizontal = 16.dp
+                        )
+                ) {
+                    if (servingCells.size > 1) {
+                        // Only show the drop down if there is more than one option
+                        SimCardDropdown(servingCells, selectedSimIndex) { newIndex ->
+                            selectedSimIndex = newIndex
+                        }
+                    }
+
+                    // Display the serving cell info for the selected SIM card
+                    if (servingCells.isNotEmpty()) {
+                        if (servingCells.size == 1) {
+                            ServingCellInfoDisplay(
+                                servingCells.values.first(),
+                                servingCellSignals.values.first()
+                            )
+                        } else {
+                            if (selectedSimIndex == -1) {
+                                // Default to the first key if a SIM card has not been selected
+                                selectedSimIndex = servingCells.keys.first()
+                            }
+                            ServingCellInfoDisplay(
+                                servingCells[selectedSimIndex],
+                                servingCellSignals[selectedSimIndex]
+                            )
+                        }
+                    }
+                }
+
+                // show a banner if we failed to fetch
+                // FIXME Move this somewhere it is not covered up by the top bar
+                if (mapKeyLoadError || mapTilerKey.isNullOrEmpty()) {
+                    Box(
+                        Modifier
+                            .fillMaxWidth()
+                            .background(Color.Red)
+                            .padding(4.dp)
+                            .align(Alignment.TopCenter)
                     ) {
-                        val buttonText = currentSource.displayName
                         Text(
-                            text = buttonText,
-                            color = MaterialTheme.colorScheme.onSurface,
-                            fontSize = 14.nonScaledSp,
-                            lineHeight = 14.nonScaledSp,
+                            "Could not load map API key; using fallback tiles.",
+                            color = Color.White,
+                            modifier = Modifier.align(Alignment.Center)
                         )
                     }
-                }
-            }
-
-            Box(
-                modifier = Modifier
-                    .align(Alignment.BottomEnd)
-                    .padding(vertical = paddingInsets.calculateBottomPadding(), horizontal = 12.dp)
-            ) {
-                Column {
-                    Surface(
-                        modifier = Modifier
-                            .size(40.dp)
-                            .clip(CircleShape)
-                            .background(MaterialTheme.colorScheme.primary),
-                        color = MaterialTheme.colorScheme.primary
-                    ) {
-                        Box(
-                            contentAlignment = Alignment.Center,
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .padding(8.dp)
-                        ) {
-                            Image(
-                                painter = painterResource(id = R.drawable.ic_settings),
-                                contentDescription = "Tower Map Settings",
-                                modifier = Modifier.size(24.dp)
-                            )
-                            Button(
-                                onClick = { onNavigateToTowerMapSettings.invoke() },
-                                modifier = Modifier
-                                    .size(48.dp)
-                                    .clip(CircleShape),
-                                colors = ButtonDefaults.buttonColors(
-                                    containerColor = Color.Transparent
-                                )
-                            ) {}
-                        }
-                    }
-
-                    Spacer(modifier = Modifier.height(12.dp))
-
-                    Surface(
-                        modifier = Modifier
-                            .size(40.dp)
-                            .clip(CircleShape)
-                            .background(MaterialTheme.colorScheme.primary),
-                        color = MaterialTheme.colorScheme.primary
-                    ) {
-                        Box(
-                            contentAlignment = Alignment.Center,
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .padding(8.dp)
-                        ) {
-                            Image(
-                                painter = painterResource(id = R.drawable.ic_my_location),
-                                contentDescription = "My Location",
-                                modifier = Modifier.size(24.dp)
-                            )
-                            Button(
-                                onClick = { viewModel.goToMyLocation() },
-                                modifier = Modifier
-                                    .size(48.dp)
-                                    .clip(CircleShape),
-                                colors = ButtonDefaults.buttonColors(
-                                    containerColor = Color.Transparent
-                                )
-                            ) {}
-                        }
-                    }
-
-                    Spacer(modifier = Modifier.height(44.dp))
-
-                    /*CircleButtonWithLine(
-                        isFollowing = isFollowing,
-                        toggleFollowMe = {
-                            if (viewModel.myLocationOverlay == null) return@CircleButtonWithLine
-
-                            val currentIsFollowing =
-                                viewModel.myLocationOverlay!!.isFollowLocationEnabled
-                            isFollowing = !currentIsFollowing
-                            toggleFollowMe(viewModel, isFollowing)
-                        })*/
-                }
-            }
-
-            Column(
-                modifier = Modifier
-                    .align(Alignment.BottomStart)
-                    .padding(vertical = paddingInsets.calculateBottomPadding(), horizontal = 16.dp)
-            ) {
-                if (servingCells.size > 1) {
-                    // Only show the drop down if there is more than one option
-                    SimCardDropdown(servingCells, selectedSimIndex) { newIndex ->
-                        selectedSimIndex = newIndex
-                    }
-                }
-
-                // Display the serving cell info for the selected SIM card
-                if (servingCells.isNotEmpty()) {
-                    if (servingCells.size == 1) {
-                        ServingCellInfoDisplay(
-                            servingCells.values.first(),
-                            servingCellSignals.values.first()
-                        )
-                    } else {
-                        if (selectedSimIndex == -1) {
-                            // Default to the first key if a SIM card has not been selected
-                            selectedSimIndex = servingCells.keys.first()
-                        }
-                        ServingCellInfoDisplay(
-                            servingCells[selectedSimIndex],
-                            servingCellSignals[selectedSimIndex]
-                        )
-                    }
-                }
-            }
-
-            // show a banner if we failed to fetch
-            // FIXME Move this somewhere it is not covered up by the top bar
-            if (mapKeyLoadError || mapTilerKey.isNullOrEmpty()) {
-                Box(
-                    Modifier
-                        .fillMaxWidth()
-                        .background(Color.Red)
-                        .padding(4.dp)
-                        .align(Alignment.TopCenter)
-                ) {
-                    Text(
-                        "Could not load map API key; using fallback tiles.",
-                        color = Color.White,
-                        modifier = Modifier.align(Alignment.Center)
-                    )
                 }
             }
         }
@@ -580,7 +609,7 @@ internal fun TowerMapScreen(
             }
         }
 
-        if (isLoadingInProgress) {
+        if (!isMapInitializing && isLoadingInProgress) {
             Box(
                 contentAlignment = Alignment.TopCenter,
                 modifier = Modifier

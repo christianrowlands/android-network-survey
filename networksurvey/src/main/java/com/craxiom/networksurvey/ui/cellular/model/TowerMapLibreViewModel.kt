@@ -107,6 +107,9 @@ class TowerMapLibreViewModel : ViewModel() {
     private val _mapKeyLoadError = MutableStateFlow(false)
     val mapKeyLoadError = _mapKeyLoadError.asStateFlow()
 
+    private val _isMapInitializing = MutableStateFlow(true)
+    val isMapInitializing = _isMapInitializing.asStateFlow()
+
     val nsApi: Api = retrofit.create(Api::class.java)
 
     init {
@@ -117,11 +120,14 @@ class TowerMapLibreViewModel : ViewModel() {
                     _mapTilerKey.value = resp.body()!!.apiKey
                     Timber.i("MapTiler API key loaded successfully (${_mapTilerKey.value})")
                 } else {
+                    Timber.w("Failed to load MapTiler API key, falling back to OSM")
                     _mapKeyLoadError.value = true
                 }
             } catch (t: Throwable) {
-                Timber.e(t, "Error loading MapTiler API key")
+                Timber.e(t, "Error loading MapTiler API key, falling back to OSM")
                 _mapKeyLoadError.value = true
+            } finally {
+                _isMapInitializing.value = false
             }
         }
     }
