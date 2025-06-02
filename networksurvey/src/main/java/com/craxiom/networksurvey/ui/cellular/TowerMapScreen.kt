@@ -48,6 +48,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
@@ -165,7 +166,7 @@ internal fun TowerMapScreen(
                 }
             }
 
-            val iconMap = remember(darkMap) {
+            val iconMap = remember(darkMap.value) {
                 if (darkMap.value) {
                     mapOf(
                         KEY_TOWER_ICON to R.drawable.ic_cell_tower_map_dark,
@@ -224,7 +225,7 @@ internal fun TowerMapScreen(
                     LineString(
                         state = rememberLineStringState(
                             points = listOf(lineData.startPoint, lineData.endPoint),
-                            color = Color.Magenta,
+                            color = colorResource(R.color.serving_cell_line),
                             width = 3f,
                             dashArray = listOf(5f, 3f) // Dashed line
                         )
@@ -238,8 +239,8 @@ internal fun TowerMapScreen(
                         state = rememberCircleState(
                             center = coverageData.center,
                             radiusMeters = coverageData.radiusMeters,
-                            fillColor = Color.Magenta.copy(alpha = 0.1f),
-                            strokeColor = Color.Magenta,
+                            //fillColor = colorResource(R.color.serving_cell_coverage).copy(alpha = 0.1f),
+                            strokeColor = colorResource(R.color.serving_cell_dark),
                             strokeWidth = 2f
                         )
                     )

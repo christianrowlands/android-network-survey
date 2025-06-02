@@ -51,6 +51,17 @@
     <color name="black">#000000</color>
     <color name="white">#FFFFFF</color>
 
+    <!-- Map Colors -->
+    <color name="general_tower_dark">#DEE3E6</color>
+    <color name="serving_cell_dark">#4DA6FF</color>
+    <color name="serving_cell_dark_alt">#80CFFF</color>
+
+    <color name="general_tower_light">#606060</color>
+    <color name="serving_cell_light">#005CBF</color>
+
+    <color name="serving_cell_line">#80CFFF</color>
+    <color name="serving_cell_coverage">#80CFFF</color>
+
     <color name="md_theme_primary">#20A1C7</color>
     <color name="md_theme_onPrimary">#E1F2FA</color>
     <color name="md_theme_primaryContainer">#004D63</color>
