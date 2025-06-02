@@ -74,6 +74,8 @@ import com.craxiom.networksurvey.ui.cellular.model.TowerMapLibreViewModel
 import com.craxiom.networksurvey.ui.cellular.model.TowerSource
 import com.craxiom.networksurvey.ui.cellular.towermap.Circle
 import com.craxiom.networksurvey.ui.cellular.towermap.DefaultMapLocationSettings
+import com.craxiom.networksurvey.ui.cellular.towermap.KEY_SERVING_CELL_ICON
+import com.craxiom.networksurvey.ui.cellular.towermap.KEY_TOWER_ICON
 import com.craxiom.networksurvey.ui.cellular.towermap.LineString
 import com.craxiom.networksurvey.ui.cellular.towermap.MapLibreMap
 import com.craxiom.networksurvey.ui.cellular.towermap.MapUiSettings
@@ -82,7 +84,7 @@ import com.craxiom.networksurvey.ui.cellular.towermap.TowerSymbols
 import com.craxiom.networksurvey.ui.cellular.towermap.rememberCameraPositionState
 import com.craxiom.networksurvey.ui.cellular.towermap.rememberCircleState
 import com.craxiom.networksurvey.ui.cellular.towermap.rememberLineStringState
-import com.craxiom.networksurvey.ui.cellular.towermap.rememberTowerSymbolsState
+import com.craxiom.networksurvey.util.CellularUtils
 import com.craxiom.networksurvey.util.PreferenceUtils
 import com.google.protobuf.GeneratedMessage
 import kotlinx.coroutines.launch
@@ -149,23 +151,37 @@ internal fun TowerMapScreen(
             val mapId = "basic-v2-dark" // "basic-v2" for light mode
             val mapTilerKey by viewModel.mapTilerKey.collectAsState()
             val mapKeyLoadError by viewModel.mapKeyLoadError.collectAsState()
+            var darkMap = remember { mutableStateOf(false) }
 
             // decide which style URL to use:
             val styleUrl = remember(mapTilerKey, mapKeyLoadError) {
                 if (mapKeyLoadError || mapTilerKey.isNullOrEmpty()) {
                     // generic (OSM) raster‐tiles style
-                    // FIXME Change the colors of the towers so they are visible on the OSM tiles
+                    darkMap.value = false
                     "https://gist.githubusercontent.com/christianrowlands/7fd13af3c18ea7086ee4b37cc64a65a6/raw/openStreetMap.json"
                 } else {
+                    darkMap.value = true
                     "https://api.maptiler.com/maps/$mapId/style.json?key=$mapTilerKey"
                 }
             }
 
-            Timber.i("Using MapLibre style URL: $styleUrl")
+            val iconMap = remember(darkMap) {
+                if (darkMap.value) {
+                    mapOf(
+                        KEY_TOWER_ICON to R.drawable.ic_cell_tower_map_dark,
+                        KEY_SERVING_CELL_ICON to R.drawable.ic_cell_tower_map_serving_dark
+                    ).toImmutableMap()
+                } else {
+                    mapOf(
+                        KEY_TOWER_ICON to R.drawable.ic_cell_tower_map_light,
+                        KEY_SERVING_CELL_ICON to R.drawable.ic_cell_tower_map_serving_light
+                    ).toImmutableMap()
+                }
+            }
             MapLibreMap(
                 styleUri = styleUrl,
                 modifier = Modifier.fillMaxSize(),
-                images = mapOf("tower" to R.drawable.ic_cell_tower_map).toImmutableMap(),
+                images = iconMap,
                 cameraPositionState = cameraPositionState,
                 uiSettings = MapUiSettings(
                     compassEnabled = true,
@@ -184,12 +200,23 @@ internal fun TowerMapScreen(
                     showTowerInfoDialog = true
                 },
             ) {
-                // Render tower symbols
-                val towersData by viewModel.towers.collectAsStateWithLifecycle()
-                val towers = towersData.map { it.tower }
-                val towerState = rememberTowerSymbolsState(towers)
-                TowerSymbols(state = towerState)
+                // 1) Pull your tower wrappers from the VM…
+                val towers by viewModel.towers.collectAsStateWithLifecycle()
+                //val towers = towerWrappers.map { it.tower }
+                val towerWrapperList =
+                    towers.toList() // TODO This will be expensive if called often
 
+                // 2) Pull the “serving cell” IDs so we can highlight them
+                val servingCellInfo by viewModel.servingCells.collectAsStateWithLifecycle()
+                val servingIds = servingCellInfo.values
+                    .map { CellularUtils.getTowerId(it) }
+                    .toSet()
+
+                // 3) One single call to TowerSymbols
+                TowerSymbols(
+                    towerWrapperList = towerWrapperList,
+                    servingIds = servingIds
+                )
 
                 // Render serving cell lines
                 val servingCellLines by viewModel.servingCellLines.collectAsStateWithLifecycle()

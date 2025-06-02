@@ -19,7 +19,7 @@ class TowerMarker(private val mapView: MapView, val tower: Tower) : Marker(mapVi
 
     init {
         val towerDrawable =
-            AppCompatResources.getDrawable(mapView.context, R.drawable.ic_cell_tower_map)
+            AppCompatResources.getDrawable(mapView.context, R.drawable.ic_cell_tower_map_dark)
         position = GeoPoint(tower.lat, tower.lon)
         setAnchor(ANCHOR_CENTER, ANCHOR_BOTTOM)
         icon = towerDrawable
@@ -67,7 +67,7 @@ class TowerMarker(private val mapView: MapView, val tower: Tower) : Marker(mapVi
         val towerDrawable =
             AppCompatResources.getDrawable(
                 mapView.context,
-                if (isServingCell) R.drawable.ic_cell_tower_48 else R.drawable.ic_cell_tower_map
+                if (isServingCell) R.drawable.ic_cell_tower_map_serving_light else R.drawable.ic_cell_tower_map_dark
             )
         val color = if (isServingCell) ColorServingCell else ColorTower
 

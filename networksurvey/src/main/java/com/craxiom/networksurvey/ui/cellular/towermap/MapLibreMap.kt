@@ -34,7 +34,6 @@ import kotlinx.coroutines.awaitCancellation
 import org.maplibre.android.MapLibre
 import org.maplibre.android.maps.MapLibreMap
 import org.maplibre.android.maps.MapView
-import org.maplibre.android.maps.OnMapReadyCallback
 import org.maplibre.android.maps.Style
 import org.maplibre.android.plugins.annotation.SymbolManager
 import kotlin.coroutines.resume

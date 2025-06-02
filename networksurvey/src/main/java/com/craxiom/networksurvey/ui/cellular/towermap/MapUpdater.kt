@@ -107,7 +107,7 @@ internal class MapPropertiesNode(
                 // Query for tower features at the click point
                 val features = map.queryRenderedFeatures(
                     map.projection.toScreenLocation(point),
-                    "tower-symbols-layer"
+                    TOWER_LAYER_KEY
                 )
 
                 if (features.isNotEmpty()) {
@@ -123,7 +123,7 @@ internal class MapPropertiesNode(
                                 mcc = properties.get("mcc").asInt,
                                 mnc = properties.get("mnc").asInt,
                                 area = properties.get("area").asInt,
-                                cid = properties.get("towerId").asLong,
+                                cid = properties.get("cid").asLong,
                                 unit = properties.get("unit").asInt,
                                 averageSignal = properties.get("averageSignal").asInt,
                                 range = properties.get("range").asInt,

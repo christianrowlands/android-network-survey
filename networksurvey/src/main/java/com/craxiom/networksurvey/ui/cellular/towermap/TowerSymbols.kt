@@ -3,12 +3,11 @@ package com.craxiom.networksurvey.ui.cellular.towermap
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.ComposeNode
 import androidx.compose.runtime.currentComposer
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
-import com.craxiom.networksurvey.data.api.Tower
+import com.craxiom.networksurvey.ui.cellular.model.TowerWrapper
 import org.maplibre.android.maps.Style
+import org.maplibre.android.style.expressions.Expression.get
+import org.maplibre.android.style.expressions.Expression.literal
+import org.maplibre.android.style.expressions.Expression.match
 import org.maplibre.android.style.layers.PropertyFactory.iconAllowOverlap
 import org.maplibre.android.style.layers.PropertyFactory.iconIgnorePlacement
 import org.maplibre.android.style.layers.PropertyFactory.iconImage
@@ -18,61 +17,53 @@ import org.maplibre.geojson.Feature
 import org.maplibre.geojson.FeatureCollection
 import org.maplibre.geojson.Point
 
-/**
- * Node that manages a single source+layer for all tower symbols.
- */
+const val TOWER_LAYER_KEY = "tower-layer"
+const val KEY_SERVING_CELL_ICON = "tower-serving"
+const val KEY_TOWER_ICON = "tower"
+private const val TOWER_ID_PROPERTY = "towerId"
+
 internal class TowerSymbolsNode(
     private val style: Style,
     private val sourceId: String,
     private val layerId: String,
-    towers: List<Tower>
+    initialTowers: List<TowerWrapper>,
+    initialServingIds: Set<String>,
+    private val normalIcon: String,
+    private val servingIcon: String,
 ) : MapNode {
+    private val source = GeoJsonSource(sourceId, FeatureCollection.fromFeatures(emptyArray()))
+    private val layer = SymbolLayer(layerId, sourceId)
+
     init {
-        val features = towers.map { tower ->
-            Feature.fromGeometry(Point.fromLngLat(tower.lon, tower.lat)).apply {
-                addStringProperty("towerId", tower.cid.toString())
-                addStringProperty("radio", tower.radio)
-                addNumberProperty("mcc", tower.mcc)
-                addNumberProperty("mnc", tower.mnc)
-                addNumberProperty("area", tower.area)
-                addNumberProperty("unit", tower.unit)
-                addNumberProperty("range", tower.range)
-                addNumberProperty("samples", tower.samples)
-                addNumberProperty("averageSignal", tower.averageSignal)
-                addNumberProperty("changeable", tower.changeable)
-                addNumberProperty("createdAt", tower.createdAt)
-                addNumberProperty("updatedAt", tower.updatedAt)
-                addStringProperty("source", tower.source)
-                addNumberProperty("lat", tower.lat)
-                addNumberProperty("lon", tower.lon)
-            }
-        }
-        style.addSource(
-            GeoJsonSource(
-                sourceId,
-                FeatureCollection.fromFeatures(features.toTypedArray())
-            )
-        )
-        style.addLayer(SymbolLayer(layerId, sourceId).apply {
-            withProperties(
-                iconImage("tower"),
+        style.addSource(source)
+
+        style.addLayer(
+            layer.withProperties(
+                iconImage(normalIcon),
                 iconAllowOverlap(true),
                 iconIgnorePlacement(true)
             )
-        })
+        )
+
+        // Populate with the initial batch of data
+        updateData(initialTowers, initialServingIds)
     }
 
     /**
-     * Update the GeoJSON source with new towers.
+     * Rebuild both the GeoJSON source and the data‐driven style expression
+     * every time towers or servingIds change.
      */
-    fun updateTowers(newTowers: List<Tower>) {
-        val newFeatures = newTowers.map { tower ->
+    fun updateData(towers: List<TowerWrapper>, servingIds: Set<String>) {
+        // 1) rebuild the GeoJSON FeatureCollection
+        val features = towers.map { towerWrapper ->
+            val tower = towerWrapper.tower
             Feature.fromGeometry(Point.fromLngLat(tower.lon, tower.lat)).apply {
-                addStringProperty("towerId", tower.cid.toString())
+                addStringProperty(TOWER_ID_PROPERTY, towerWrapper.towerId)
                 addStringProperty("radio", tower.radio)
                 addNumberProperty("mcc", tower.mcc)
                 addNumberProperty("mnc", tower.mnc)
                 addNumberProperty("area", tower.area)
+                addNumberProperty("cid", tower.cid)
                 addNumberProperty("unit", tower.unit)
                 addNumberProperty("range", tower.range)
                 addNumberProperty("samples", tower.samples)
@@ -85,8 +76,24 @@ internal class TowerSymbolsNode(
                 addNumberProperty("lon", tower.lon)
             }
         }
-        (style.getSource(sourceId) as? GeoJsonSource)
-            ?.setGeoJson(FeatureCollection.fromFeatures(newFeatures.toTypedArray()))
+        source.setGeoJson(FeatureCollection.fromFeatures(features.toTypedArray()))
+
+        // 2) Recompute the “match” expressions so that any tower whose ID is in servingIds
+        //    gets the “serving” icon, otherwise all others get the “normal” value.
+        layer.setProperties(
+            iconImage(
+                match(
+                    get(TOWER_ID_PROPERTY),
+                    *servingIds.flatMap { id ->
+                        listOf(
+                            literal(id),          // match-value: a tower ID
+                            literal(servingIcon)  // output-value: “tower-serving”
+                        )
+                    }.toTypedArray(),
+                    literal(normalIcon)    // if no match => “tower”
+                )
+            ),
+        )
     }
 
     override fun onRemoved() {
@@ -100,63 +107,39 @@ internal class TowerSymbolsNode(
         }
     }
 
-    override fun onCleared() {
-        try {
-            style.removeLayer(layerId)
-        } catch (_: Exception) {
-        }
-        try {
-            style.removeSource(sourceId)
-        } catch (_: Exception) {
-        }
-    }
+    override fun onCleared() = onRemoved()
 }
 
-/**
- * A state holder for towers.
- */
-class TowerSymbolsState(
-    initialTowers: List<Tower>
-) {
-    var towers by mutableStateOf(initialTowers)
-}
-
-/**
- * Remember tower symbols state in Compose.
- */
-@Composable
-fun rememberTowerSymbolsState(
-    towers: List<Tower>
-): TowerSymbolsState = remember(towers) {
-    TowerSymbolsState(towers)
-}
-
-/**
- * Composable that renders all towers via a single GeoJson source + SymbolLayer.
- */
 @Composable
 fun TowerSymbols(
-    state: TowerSymbolsState
+    towerWrapperList: List<TowerWrapper>,
+    servingIds: Set<String>,
+    normalIcon: String = KEY_TOWER_ICON,
+    servingIcon: String = KEY_SERVING_CELL_ICON,
 ) {
     val mapApplier = currentComposer.applier as MapApplier
     val style = mapApplier.style
-
-    // Unique IDs for this screen
-    val sourceId = "tower-symbols-source"
-    val layerId = "tower-symbols-layer"
 
     ComposeNode<TowerSymbolsNode, MapApplier>(
         factory = {
             TowerSymbolsNode(
                 style = style,
-                sourceId = sourceId,
-                layerId = layerId,
-                towers = state.towers
+                sourceId = "tower-source",
+                layerId = TOWER_LAYER_KEY,
+                initialTowers = towerWrapperList,
+                initialServingIds = servingIds,
+                normalIcon = normalIcon,
+                servingIcon = servingIcon,
             )
         },
         update = {
-            set(state.towers) { newTowers ->
-                this.updateTowers(newTowers)
+            // when `towers` changes, call updateData(newTowers, current servingIds)
+            set(towerWrapperList) { newTowers ->
+                updateData(newTowers, servingIds)
+            }
+            // when `servingIds` changes, call updateData(current towers, newServingIds)
+            set(servingIds) { newServing ->
+                updateData(towerWrapperList, newServing)
             }
         }
     )
