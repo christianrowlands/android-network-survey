@@ -12,7 +12,7 @@
             app:summaryOff="@string/display_coverage_area_summary_off"
             app:summaryOn="@string/display_coverage_area_summary_on" />
 
-        <ListPreference
+        <com.craxiom.networksurvey.ui.ColorListPreference
             app:defaultValue="default"
             app:dialogTitle="@string/coverage_circle_color_dialog_title"
             app:entries="@array/coverage_circle_color_labels"
