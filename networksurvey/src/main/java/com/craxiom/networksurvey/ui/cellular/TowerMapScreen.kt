@@ -182,7 +182,7 @@ internal fun TowerMapScreen(
                     if (mapKeyLoadError || mapTilerKey.isNullOrEmpty()) {
                         // generic (OSM) raster‐tiles style
                         darkMap.value = false
-                        "https://gist.githubusercontent.com/christianrowlands/7fd13af3c18ea7086ee4b37cc64a65a6/raw/openStreetMap.json"
+                        "https://raw.githubusercontent.com/christianrowlands/ns-map-style-uri/refs/heads/main/openstreetmap.json"
                     } else {
                         darkMap.value = true
                         "https://api.maptiler.com/maps/$mapId/style.json?key=$mapTilerKey"
