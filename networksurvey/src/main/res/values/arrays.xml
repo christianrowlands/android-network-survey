@@ -99,4 +99,26 @@
         <item>2</item>
         <item>3</item>
     </string-array>
+
+    <string-array name="coverage_circle_color_labels">
+        <item>Default (Blue)</item>
+        <item>Red</item>
+        <item>Green</item>
+        <item>Orange</item>
+        <item>Purple</item>
+        <item>Yellow</item>
+        <item>Cyan</item>
+        <item>White</item>
+    </string-array>
+
+    <string-array name="coverage_circle_color_values">
+        <item>default</item>
+        <item>red</item>
+        <item>green</item>
+        <item>orange</item>
+        <item>purple</item>
+        <item>yellow</item>
+        <item>cyan</item>
+        <item>white</item>
+    </string-array>
 </resources>

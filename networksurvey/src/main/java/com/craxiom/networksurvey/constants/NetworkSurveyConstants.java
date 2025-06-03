@@ -103,6 +103,8 @@ public class NetworkSurveyConstants
     public static final boolean DEFAULT_UPLOAD_TO_BEACONDB = true;
     public static final boolean DEFAULT_UPLOAD_RETRY_ENABLED = true;
 
+    public static final String DEFAULT_COVERAGE_CIRCLE_COLOR = "default";
+
     public static final int LOCATION_PROVIDER_FUSED = 0;
     public static final int LOCATION_PROVIDER_GNSS = 1;
     public static final int LOCATION_PROVIDER_NETWORK = 2;
@@ -139,6 +141,7 @@ public class NetworkSurveyConstants
 
     public static final String TOWER_MAP_PREFERENCES_GROUP = "tower_map_preferences_group";
     public static final String PROPERTY_MAP_DISPLAY_SERVING_CELL_COVERAGE = "map_display_serving_cell_coverage_area";
+    public static final String PROPERTY_MAP_COVERAGE_CIRCLE_COLOR = "map_coverage_circle_color";
 
     // The following key is used in the app_restrictions.xml file and in the app's shared preferences
     public static final String PROPERTY_MQTT_START_ON_BOOT = "mqtt_start_on_boot";

@@ -494,6 +494,9 @@ but work independently, so you have full control over how you handle your data.<
     <string name="display_coverage_area_title">Display Serving Cell Coverage</string>
     <string name="display_coverage_area_summary_on">Serving cell coverage will be displayed on the map</string>
     <string name="display_coverage_area_summary_off">Serving cell coverage won\'t be displayed on the map</string>
+    
+    <string name="coverage_circle_color_title">Coverage Circle Color</string>
+    <string name="coverage_circle_color_dialog_title">Select Coverage Circle Color</string>
 
     <string name="allow_data_upload">External Data Upload</string>
     <string name="allow_data_upload_mdm_description">True to allow users to upload survey records to 3rd Party databases such as OpenCelliD and BeaconDB, false to prevent it</string>

@@ -58,6 +58,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.preference.PreferenceManager
 import com.craxiom.messaging.CdmaRecord
 import com.craxiom.messaging.GsmRecord
 import com.craxiom.messaging.LteRecord
@@ -65,6 +66,7 @@ import com.craxiom.messaging.NrRecord
 import com.craxiom.messaging.UmtsRecord
 import com.craxiom.networksurvey.BuildConfig
 import com.craxiom.networksurvey.R
+import com.craxiom.networksurvey.constants.NetworkSurveyConstants
 import com.craxiom.networksurvey.data.api.Tower
 import com.craxiom.networksurvey.model.CellularProtocol
 import com.craxiom.networksurvey.model.Plmn
@@ -94,6 +96,7 @@ import okhttp3.internal.toImmutableMap
 import org.maplibre.android.camera.CameraPosition
 import org.maplibre.android.geometry.LatLng
 import timber.log.Timber
+
 
 /**
  * Creates the map view for displaying the tower locations. The tower locations are pulled from the
@@ -257,13 +260,14 @@ internal fun TowerMapScreen(
 
                     // Render serving cell coverage circles
                     val servingCellCoverage by viewModel.servingCellCoverage.collectAsStateWithLifecycle()
+                    val coverageCircleColor = getCoverageCircleColor()
                     servingCellCoverage.forEach { coverageData ->
                         Circle(
                             state = rememberCircleState(
                                 center = coverageData.center,
                                 radiusMeters = coverageData.radiusMeters,
                                 //fillColor = colorResource(R.color.serving_cell_coverage).copy(alpha = 0.1f),
-                                strokeColor = colorResource(R.color.serving_cell_dark),
+                                strokeColor = coverageCircleColor,
                                 strokeWidth = 2f
                             )
                         )
@@ -906,6 +910,27 @@ fun PlmnFilterDialog(
             }
         }
     )
+}
+
+/**
+ * Gets the color resource ID for the coverage circle based on user preference.
+ */
+@Composable
+private fun getCoverageCircleColor(): Color {
+    val context = LocalContext.current
+    val preferences = PreferenceManager.getDefaultSharedPreferences(context)
+    val selectedColor = preferences.getString(NetworkSurveyConstants.PROPERTY_MAP_COVERAGE_CIRCLE_COLOR, NetworkSurveyConstants.DEFAULT_COVERAGE_CIRCLE_COLOR)
+
+    return when (selectedColor) {
+        "red" -> colorResource(R.color.coverage_circle_red)
+        "green" -> colorResource(R.color.coverage_circle_green)
+        "orange" -> colorResource(R.color.coverage_circle_orange)
+        "purple" -> colorResource(R.color.coverage_circle_purple)
+        "yellow" -> colorResource(R.color.coverage_circle_yellow)
+        "cyan" -> colorResource(R.color.coverage_circle_cyan)
+        "white" -> colorResource(R.color.coverage_circle_white)
+        else -> colorResource(R.color.serving_cell_dark) // Default blue
+    }
 }
 
 @Composable

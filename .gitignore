@@ -182,3 +182,5 @@ out
 # End of https://www.gitignore.io/api/java,gradle,windows,androidstudio
 app/release/output.json
 networksurvey/**/release/**
+
+CLAUDE.md

@@ -62,6 +62,15 @@
     <color name="serving_cell_line">#80CFFF</color>
     <color name="serving_cell_coverage">#80CFFF</color>
 
+    <!-- Coverage Circle Color Options -->
+    <color name="coverage_circle_red">#FF4444</color>
+    <color name="coverage_circle_green">#4CAF50</color>
+    <color name="coverage_circle_orange">#FF9800</color>
+    <color name="coverage_circle_purple">#9C27B0</color>
+    <color name="coverage_circle_yellow">#FFEB3B</color>
+    <color name="coverage_circle_cyan">#00BCD4</color>
+    <color name="coverage_circle_white">#FFFFFF</color>
+
     <color name="md_theme_primary">#20A1C7</color>
     <color name="md_theme_onPrimary">#E1F2FA</color>
     <color name="md_theme_primaryContainer">#004D63</color>
