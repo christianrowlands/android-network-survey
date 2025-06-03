@@ -91,6 +91,10 @@ class TowerMapLibreViewModel : ViewModel() {
     // Current location for drawing serving cell lines
     private var myLocation: Location? = null
 
+    // Follow user location state
+    private val _isFollowingUser = MutableStateFlow(false)
+    val isFollowingUser = _isFollowingUser.asStateFlow()
+
     // Serving cell locations with range info
     private val subIdToServingCellLocations = HashMap<Int, ServingCellLocationInfo>()
 
@@ -256,6 +260,13 @@ class TowerMapLibreViewModel : ViewModel() {
     }
 
     /**
+     * Toggles the follow user location mode state.
+     */
+    fun toggleFollowUser() {
+        _isFollowingUser.value = !_isFollowingUser.value
+    }
+
+    /**
      * Handle incoming cellular batches (serving cell updates).
      */
     fun onCellularBatchResults(
@@ -290,6 +301,9 @@ class TowerMapLibreViewModel : ViewModel() {
                 newMap
             }
         }
+
+        // Update serving cell locations and coverage circles when serving cell changes
+        updateServingCellLocations()
 
         mapView?.let { mapView ->
             // FIXME This needs to be updated
@@ -456,7 +470,7 @@ class TowerMapLibreViewModel : ViewModel() {
         _noTowersFound.value = _towers.value.isEmpty()
         _isLoadingInProgress.value = false
 
-        // 5) Recompute serving-cell overlays in case you need them
+        // 5) Recompute serving-cell overlays
         updateServingCellLocations()
     }
 

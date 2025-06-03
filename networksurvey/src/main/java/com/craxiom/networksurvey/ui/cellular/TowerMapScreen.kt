@@ -73,6 +73,7 @@ import com.craxiom.networksurvey.ui.cellular.model.ServingCellInfo
 import com.craxiom.networksurvey.ui.cellular.model.ServingSignalInfo
 import com.craxiom.networksurvey.ui.cellular.model.TowerMapLibreViewModel
 import com.craxiom.networksurvey.ui.cellular.model.TowerSource
+import com.craxiom.networksurvey.ui.cellular.towermap.CameraMode
 import com.craxiom.networksurvey.ui.cellular.towermap.Circle
 import com.craxiom.networksurvey.ui.cellular.towermap.DefaultMapLocationSettings
 import com.craxiom.networksurvey.ui.cellular.towermap.KEY_SERVING_CELL_ICON
@@ -119,6 +120,7 @@ internal fun TowerMapScreen(
     val servingCells by viewModel.servingCells.collectAsStateWithLifecycle()
     var selectedSimIndex by remember { mutableIntStateOf(-1) }
     val servingCellSignals by viewModel.servingSignals.collectAsStateWithLifecycle()
+    val isFollowing by viewModel.isFollowingUser.collectAsStateWithLifecycle()
 
     val options = listOf(
         CellularProtocol.GSM.name,
@@ -450,18 +452,21 @@ internal fun TowerMapScreen(
                             }
                         }
 
-                        Spacer(modifier = Modifier.height(44.dp))
+                        Spacer(modifier = Modifier.height(12.dp))
 
-                        /*CircleButtonWithLine(
+                        CircleButtonWithLine(
                             isFollowing = isFollowing,
                             toggleFollowMe = {
-                                if (viewModel.myLocationOverlay == null) return@CircleButtonWithLine
+                                // Toggle camera mode directly on the state
+                                cameraPositionState.cameraMode = if (isFollowing) {
+                                    CameraMode.NONE
+                                } else {
+                                    CameraMode.TRACKING
+                                }
+                                viewModel.toggleFollowUser()
+                            })
 
-                                val currentIsFollowing =
-                                    viewModel.myLocationOverlay!!.isFollowLocationEnabled
-                                isFollowing = !currentIsFollowing
-                                toggleFollowMe(viewModel, isFollowing)
-                            })*/
+                        Spacer(modifier = Modifier.height(44.dp))
                     }
                 }
 
@@ -723,18 +728,6 @@ fun ServingCellInfoDisplay(cellInfo: ServingCellInfo?, servingSignalInfo: Servin
     }
 }
 
-/**
- * Toggles the option to continuously move the map view to the user's current location.
- */
-/*private fun toggleFollowMe(viewModel: TowerMapLibreViewModel, newIsFollowing: Boolean) {
-    if (viewModel.myLocationOverlay == null) return
-
-    if (newIsFollowing) {
-        viewModel.myLocationOverlay?.enableFollowLocation()
-    } else {
-        viewModel.myLocationOverlay?.disableFollowLocation()
-    }
-}*/
 
 private fun getServingCellDisplayString(message: GeneratedMessage): String {
     return when (message) {
