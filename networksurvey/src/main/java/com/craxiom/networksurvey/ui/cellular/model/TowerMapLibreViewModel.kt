@@ -59,7 +59,7 @@ class TowerMapLibreViewModel : ViewModel() {
     private val _noTowersFound = MutableStateFlow(false)
     val noTowersFound = _noTowersFound.asStateFlow()
 
-    private val _isLoadingInProgress = MutableStateFlow(true)
+    private val _isLoadingInProgress = MutableStateFlow(false)
     val isLoadingInProgress = _isLoadingInProgress.asStateFlow()
 
     private val _isZoomedOutTooFar = MutableStateFlow(false)
@@ -87,6 +87,10 @@ class TowerMapLibreViewModel : ViewModel() {
 
     // Mutex to prevent concurrent tower queries
     private val towerQueryMutex = Mutex()
+    
+    // Debounce timer for tower queries
+    private var lastQueryTime = 0L
+    private val QUERY_DEBOUNCE_MS = 1000L // Minimum 1 second between queries
 
     // Current location for drawing serving cell lines
     private var myLocation: Location? = null
@@ -191,7 +195,16 @@ class TowerMapLibreViewModel : ViewModel() {
         // 2) When the camera stops moving, trigger a tower query
         map.addOnCameraIdleListener {
             val bounds = map.projection.visibleRegion.latLngBounds
-            if (bounds != _lastQueriedBounds.value) {
+            val lastBounds = _lastQueriedBounds.value
+            
+            // Use a more robust bounds comparison to avoid floating point precision issues
+            val boundsChanged = lastBounds == null || !areBoundsEqual(bounds, lastBounds)
+            val currentTime = System.currentTimeMillis()
+            val timeSinceLastQuery = currentTime - lastQueryTime
+            
+            if (boundsChanged && timeSinceLastQuery >= QUERY_DEBOUNCE_MS) {
+                Timber.d("Camera bounds changed, triggering tower query (time since last: ${timeSinceLastQuery}ms)")
+                lastQueryTime = currentTime
                 _lastQueriedBounds.value = bounds
                 val area = calculateArea(bounds)
                 if (map.cameraPosition.zoom >= MIN_ZOOM_LEVEL && area <= MAX_AREA_SQ_METERS) {
@@ -200,6 +213,12 @@ class TowerMapLibreViewModel : ViewModel() {
                 } else {
                     _isZoomedOutTooFar.value = true
                     _isLoadingInProgress.value = false
+                }
+            } else {
+                if (!boundsChanged) {
+                    Timber.d("Camera bounds unchanged, skipping tower query")
+                } else {
+                    Timber.d("Tower query debounced (${timeSinceLastQuery}ms < ${QUERY_DEBOUNCE_MS}ms)")
                 }
             }
         }
@@ -394,7 +413,9 @@ class TowerMapLibreViewModel : ViewModel() {
 
     internal suspend fun runTowerQuery() = towerQueryMutex.withLock {
         val map = mapLibreMap ?: return@withLock
+        
         _isLoadingInProgress.value = true
+        Timber.d("Starting tower query")
 
         // 1) Build bbox string for request
         val b = map.projection.visibleRegion.latLngBounds
@@ -526,6 +547,16 @@ class TowerMapLibreViewModel : ViewModel() {
 
         updateServingCellLines()
         updateServingCellCoverage()
+    }
+
+    /**
+     * Compare two LatLngBounds with tolerance for floating point precision.
+     */
+    private fun areBoundsEqual(bounds1: LatLngBounds, bounds2: LatLngBounds, tolerance: Double = 0.0001): Boolean {
+        return kotlin.math.abs(bounds1.latitudeNorth - bounds2.latitudeNorth) < tolerance &&
+                kotlin.math.abs(bounds1.latitudeSouth - bounds2.latitudeSouth) < tolerance &&
+                kotlin.math.abs(bounds1.longitudeEast - bounds2.longitudeEast) < tolerance &&
+                kotlin.math.abs(bounds1.longitudeWest - bounds2.longitudeWest) < tolerance
     }
 
     /**
