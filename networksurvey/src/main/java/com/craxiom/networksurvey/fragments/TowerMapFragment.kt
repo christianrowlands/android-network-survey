@@ -163,7 +163,7 @@ class TowerMapFragment : AServiceDataFragment(), ICellularSurveyRecordListener {
             """
             When using the tower map feature, a request is made from your device to our Network Survey server. This request will reveal your device's public IP address and the location associated with the map view. 
             
-            By continuing, you accept these terms and allow the feature to function as intended. If you reject, the feature will be disabled.
+            By continuing, you accept these terms and allow the feature to function as intended. If you reject, the feature will be disabled and you won't be able to use the Tower Map.
         """.trimIndent()
         )
         builder.setPositiveButton("Accept") { dialog, _ ->

@@ -120,7 +120,6 @@ internal fun TowerMapScreen(
     val servingCells by viewModel.servingCells.collectAsStateWithLifecycle()
     var selectedSimIndex by remember { mutableIntStateOf(-1) }
     val servingCellSignals by viewModel.servingSignals.collectAsStateWithLifecycle()
-    val isFollowing by viewModel.isFollowingUser.collectAsStateWithLifecycle()
 
     val options = listOf(
         CellularProtocol.GSM.name,
@@ -455,15 +454,14 @@ internal fun TowerMapScreen(
                         Spacer(modifier = Modifier.height(12.dp))
 
                         CircleButtonWithLine(
-                            isFollowing = isFollowing,
+                            isFollowing = cameraPositionState.cameraMode == CameraMode.TRACKING,
                             toggleFollowMe = {
                                 // Toggle camera mode directly on the state
-                                cameraPositionState.cameraMode = if (isFollowing) {
+                                cameraPositionState.cameraMode = if (cameraPositionState.cameraMode == CameraMode.TRACKING) {
                                     CameraMode.NONE
                                 } else {
                                     CameraMode.TRACKING
                                 }
-                                viewModel.toggleFollowUser()
                             })
 
                         Spacer(modifier = Modifier.height(44.dp))

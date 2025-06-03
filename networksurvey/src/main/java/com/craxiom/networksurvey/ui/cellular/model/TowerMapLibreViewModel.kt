@@ -91,9 +91,6 @@ class TowerMapLibreViewModel : ViewModel() {
     // Current location for drawing serving cell lines
     private var myLocation: Location? = null
 
-    // Follow user location state
-    private val _isFollowingUser = MutableStateFlow(false)
-    val isFollowingUser = _isFollowingUser.asStateFlow()
 
     // Serving cell locations with range info
     private val subIdToServingCellLocations = HashMap<Int, ServingCellLocationInfo>()
@@ -259,12 +256,6 @@ class TowerMapLibreViewModel : ViewModel() {
         updateServingCellLines()
     }
 
-    /**
-     * Toggles the follow user location mode state.
-     */
-    fun toggleFollowUser() {
-        _isFollowingUser.value = !_isFollowingUser.value
-    }
 
     /**
      * Handle incoming cellular batches (serving cell updates).
