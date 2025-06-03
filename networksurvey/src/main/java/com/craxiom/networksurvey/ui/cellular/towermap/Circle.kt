@@ -4,6 +4,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.ComposeNode
 import androidx.compose.runtime.currentComposer
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -38,33 +40,59 @@ internal class CircleNode(
     fillOpacity: Float,
     strokeOpacity: Float
 ) : MapNode {
+    private var source: GeoJsonSource? = null
+    private var fillLayer: FillLayer? = null
+    private var strokeLayer: LineLayer? = null
+
     init {
         // Add source
-        style.addSource(
-            GeoJsonSource(
-                sourceId, FeatureCollection.fromFeatures(
-                    arrayOf(Feature.fromGeometry(polygon))
-                )
+        source = GeoJsonSource(
+            sourceId, FeatureCollection.fromFeatures(
+                arrayOf(Feature.fromGeometry(polygon))
             )
         )
+        style.addSource(source!!)
+
         // Fill layer
-        style.addLayer(
-            FillLayer(fillLayerId, sourceId).apply {
-                setProperties(
-                    PropertyFactory.fillColor(fillColor.toArgb()),
-                    PropertyFactory.fillOpacity(fillOpacity)
-                )
-            }
-        )
+        fillLayer = FillLayer(fillLayerId, sourceId).apply {
+            setProperties(
+                PropertyFactory.fillColor(fillColor.toArgb()),
+                PropertyFactory.fillOpacity(fillOpacity)
+            )
+        }
+        style.addLayer(fillLayer!!)
+
         // Stroke layer
-        style.addLayer(
-            LineLayer(strokeLayerId, sourceId).apply {
-                setProperties(
-                    PropertyFactory.lineColor(strokeColor.toArgb()),
-                    PropertyFactory.lineWidth(strokeWidth),
-                    PropertyFactory.lineOpacity(strokeOpacity)
-                )
-            }
+        strokeLayer = LineLayer(strokeLayerId, sourceId).apply {
+            setProperties(
+                PropertyFactory.lineColor(strokeColor.toArgb()),
+                PropertyFactory.lineWidth(strokeWidth),
+                PropertyFactory.lineOpacity(strokeOpacity)
+            )
+        }
+        style.addLayer(strokeLayer!!)
+    }
+
+    fun updateGeometry(polygon: Polygon) {
+        source?.setGeoJson(
+            FeatureCollection.fromFeatures(
+                arrayOf(Feature.fromGeometry(polygon))
+            )
+        )
+    }
+
+    fun updateFillColor(color: Color, opacity: Float) {
+        fillLayer?.setProperties(
+            PropertyFactory.fillColor(color.toArgb()),
+            PropertyFactory.fillOpacity(opacity)
+        )
+    }
+
+    fun updateStroke(color: Color, width: Float, opacity: Float) {
+        strokeLayer?.setProperties(
+            PropertyFactory.lineColor(color.toArgb()),
+            PropertyFactory.lineWidth(width),
+            PropertyFactory.lineOpacity(opacity)
         )
     }
 
@@ -106,15 +134,15 @@ internal class CircleNode(
 class CircleState(
     initialCenter: LatLng,
     initialRadiusMeters: Int,
-    initialFillColor: Color = Color.Blue.copy(alpha = 0.08f),
+    initialFillColor: Color = Color.Transparent,
     initialStrokeColor: Color = Color.Blue.copy(alpha = 0.6f),
     initialStrokeWidth: Float = 3f
 ) {
     var center by mutableStateOf(initialCenter)
-    var radiusMeters by mutableStateOf(initialRadiusMeters)
+    var radiusMeters by mutableIntStateOf(initialRadiusMeters)
     var fillColor by mutableStateOf(initialFillColor)
     var strokeColor by mutableStateOf(initialStrokeColor)
-    var strokeWidth by mutableStateOf(initialStrokeWidth)
+    var strokeWidth by mutableFloatStateOf(initialStrokeWidth)
 }
 
 /**
@@ -165,7 +193,17 @@ fun Circle(
             )
         },
         update = {
-            // recreation on state change is handled by ComposeNode keying
+            // Update geometry when center or radius changes
+            set(polygon) { updateGeometry(it) }
+
+            // Update fill color and opacity  
+            set(state.fillColor) { updateFillColor(it, state.fillColor.alpha) }
+
+            // Update stroke color
+            set(state.strokeColor) { updateStroke(it, state.strokeWidth, it.alpha) }
+
+            // Update stroke width
+            set(state.strokeWidth) { updateStroke(state.strokeColor, it, state.strokeColor.alpha) }
         }
     )
 }
