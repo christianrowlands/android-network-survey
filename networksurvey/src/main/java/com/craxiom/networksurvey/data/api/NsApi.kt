@@ -58,7 +58,7 @@ data class Tower(
     @SerializedName("mnc") val mnc: Int,
     @SerializedName("area") val area: Int,
     @SerializedName("cid") val cid: Long,
-    @SerializedName("unit") val unit: Int,
+    @SerializedName("unit") val unit: Int, // Unit is the PCI for LTE or PCS for UMTS
     @SerializedName("average_signal") val averageSignal: Int,
     @SerializedName("range") val range: Int,
     @SerializedName("samples") val samples: Int,

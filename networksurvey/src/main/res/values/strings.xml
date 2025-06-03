@@ -592,6 +592,7 @@ but work independently, so you have full control over how you handle your data.<
     <string name="filter_dialog_title">Show only these GNSS</string>
     <string name="save">"Save"</string>
     <string name="sbas">SBAS</string>
+    <string name="unknown">Unknown</string>
 
     <!-- GNSS Sky View -->
     <string name="sky_legend_title">Legend</string>

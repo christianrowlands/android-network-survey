@@ -45,7 +45,6 @@ import com.craxiom.networksurvey.mqtt.MqttConnectionInfo;
 import com.craxiom.networksurvey.ui.cellular.model.TowerSource;
 
 import org.maplibre.android.geometry.LatLngBounds;
-import org.osmdroid.util.BoundingBox;
 
 import java.util.Arrays;
 import java.util.LinkedHashSet;
@@ -887,48 +886,11 @@ public class PreferenceUtils
         return TowerSource.valueOf(savedTowerSourceString);
     }
 
-    public static void saveTowerMapViewBoundingBox(Context context, BoundingBox boundingBox)
-    {
-        if (boundingBox == null) return;
-
-        String boundingBoxString = String.format(Locale.US, "%f,%f,%f,%f",
-                boundingBox.getLatNorth(),
-                boundingBox.getLonEast(),
-                boundingBox.getLatSouth(),
-                boundingBox.getLonWest());
-
-        SharedPreferences prefs = context.getSharedPreferences(NetworkSurveyConstants.TOWER_MAP_SHARED_PREFERENCES, Context.MODE_PRIVATE);
-        prefs.edit().putString(NetworkSurveyConstants.PROPERTY_LAST_TOWER_MAP_VIEW_LOCATION, boundingBoxString).apply();
-    }
-
-    public static BoundingBox getBoundingBoxFromPreferences(Context context)
-    {
-        SharedPreferences prefs = context.getSharedPreferences(NetworkSurveyConstants.TOWER_MAP_SHARED_PREFERENCES, Context.MODE_PRIVATE);
-        String boundingBoxString = prefs.getString(NetworkSurveyConstants.PROPERTY_LAST_TOWER_MAP_VIEW_LOCATION, null);
-
-        if (boundingBoxString == null) return null;
-
-        String[] parts = boundingBoxString.split(",");
-        if (parts.length != 4) return null;
-
-        try
-        {
-            double latNorth = Double.parseDouble(parts[0]);
-            double lonEast = Double.parseDouble(parts[1]);
-            double latSouth = Double.parseDouble(parts[2]);
-            double lonWest = Double.parseDouble(parts[3]);
-            return new BoundingBox(latNorth, lonEast, latSouth, lonWest);
-        } catch (NumberFormatException e)
-        {
-            Timber.e(e, "Error parsing the save tower map view bounding box from preferences");
-            return null;
-        }
-    }
-
     /**
      * Save the last visible map viewport.
      */
-    public static void saveTowerMapViewLatLngBounds(Context context, LatLngBounds bounds) {
+    public static void saveTowerMapViewLatLngBounds(Context context, LatLngBounds bounds)
+    {
         if (bounds == null) return;
         // Format: north,east,south,west
         String s = String.format(Locale.US, "%f,%f,%f,%f",
@@ -944,21 +906,24 @@ public class PreferenceUtils
     /**
      * Restore the last saved viewport, or null if none.
      */
-    public static LatLngBounds getLatLngBoundsFromPreferences(Context context) {
+    public static LatLngBounds getLatLngBoundsFromPreferences(Context context)
+    {
         SharedPreferences prefs = context
                 .getSharedPreferences(NetworkSurveyConstants.TOWER_MAP_SHARED_PREFERENCES, Context.MODE_PRIVATE);
         String s = prefs.getString(NetworkSurveyConstants.PROPERTY_LAST_TOWER_MAP_VIEW_LOCATION, null);
         if (s == null) return null;
         String[] p = s.split(",");
         if (p.length != 4) return null;
-        try {
+        try
+        {
             double north = Double.parseDouble(p[0]);
-            double east  = Double.parseDouble(p[1]);
+            double east = Double.parseDouble(p[1]);
             double south = Double.parseDouble(p[2]);
-            double west  = Double.parseDouble(p[3]);
+            double west = Double.parseDouble(p[3]);
             // static from(north, east, south, west)
             return LatLngBounds.from(north, east, south, west);
-        } catch (NumberFormatException e) {
+        } catch (NumberFormatException e)
+        {
             Timber.e(e, "Parsing saved LatLngBounds failed");
             return null;
         }

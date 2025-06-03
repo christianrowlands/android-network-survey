@@ -155,9 +155,6 @@ dependencies {
     implementation "com.google.dagger:hilt-android:$hilt_version"
     kapt "com.google.dagger:hilt-compiler:$hilt_version"
 
-    implementation 'org.osmdroid:osmdroid-android:6.1.20'
-    // Provides additional features including Marker clustering
-    implementation 'com.github.MKergall:osmbonuspack:6.9.0'
     implementation 'org.maplibre.gl:android-sdk:11.9.0'
     implementation 'org.maplibre.gl:android-plugin-annotation-v9:3.0.2'
 

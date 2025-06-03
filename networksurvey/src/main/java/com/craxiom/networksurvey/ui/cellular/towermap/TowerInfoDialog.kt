@@ -54,7 +54,7 @@ fun TowerInfoDialog(
                             Text(text = "MNC: ${tower.mnc}")
                             Text(text = "Area: ${tower.area}")
                             Text(text = "Cell ID: ${tower.cid}")
-                            Text(text = "Unit: ${tower.unit}")
+                            if (tower.unit > 0) Text(text = "PCS/PCI: ${tower.unit}")
                             Spacer(modifier = Modifier.height(8.dp))
 
                             // Signal information (only for non-BTSearch sources)
