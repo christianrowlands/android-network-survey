@@ -142,24 +142,30 @@ class TowerMapLibreViewModel : ViewModel() {
     }
 
     fun setSelectedRadioType(radioType: String) {
-        _selectedRadioType.value = radioType
-        // Clear towers when radio type changes
-        _towers.value = LinkedHashSet()
-        _noTowersFound.value = false
+        if (_selectedRadioType.value != radioType) {
+            _selectedRadioType.value = radioType
+            // Clear towers when radio type changes
+            _towers.value = LinkedHashSet()
+            _noTowersFound.value = false
+        }
     }
 
     fun setPlmnFilter(plmn: Plmn) {
-        _plmnFilter.value = plmn
-        // Clear towers when PLMN filter changes
-        _towers.value = LinkedHashSet()
-        _noTowersFound.value = false
+        if (_plmnFilter.value != plmn) {
+            _plmnFilter.value = plmn
+            // Clear towers when PLMN filter changes
+            _towers.value = LinkedHashSet()
+            _noTowersFound.value = false
+        }
     }
 
     fun setTowerSource(towerSource: TowerSource) {
-        _selectedSource.value = towerSource
-        // Clear towers when source changes
-        _towers.value = LinkedHashSet()
-        _noTowersFound.value = false
+        if (_selectedSource.value != towerSource) {
+            _selectedSource.value = towerSource
+            // Clear towers when source changes
+            _towers.value = LinkedHashSet()
+            _noTowersFound.value = false
+        }
     }
 
     /**
@@ -169,8 +175,8 @@ class TowerMapLibreViewModel : ViewModel() {
         mapView = view
         mapLibreMap = map
 
-        // 1) Restore saved viewport if available
-        PreferenceUtils.getLatLngBoundsFromPreferences(view.context)
+        // 1) Restore saved viewport if available and check if we need to refresh towers
+        val shouldRefreshTowers = PreferenceUtils.getLatLngBoundsFromPreferences(view.context)
             ?.let { bounds ->
                 // center & zoom
                 val center = bounds.center
@@ -180,8 +186,17 @@ class TowerMapLibreViewModel : ViewModel() {
                     .build()
                 map.moveCamera(CameraUpdateFactory.newCameraPosition(camPos))
 
-                // avoid immediately refetching on startup
-                _lastQueriedBounds.value = bounds
+                // If we have tower data but map was recreated (screen off/on), we need to refresh
+                val hasTowerData = _towers.value.isNotEmpty()
+                if (hasTowerData) {
+                    Timber.d("Map recreated with existing tower data, will refresh towers")
+                    // Don't set lastQueriedBounds yet - let the camera idle listener trigger a refresh
+                    true
+                } else {
+                    // No tower data yet, avoid immediate refetching on startup
+                    _lastQueriedBounds.value = bounds
+                    false
+                }
             }
             ?: run {
                 // fallback, world view
@@ -190,6 +205,7 @@ class TowerMapLibreViewModel : ViewModel() {
                     .zoom(1.0)
                     .build()
                 map.moveCamera(CameraUpdateFactory.newCameraPosition(camPos))
+                false
             }
 
         // 2) When the camera stops moving, trigger a tower query
@@ -227,6 +243,25 @@ class TowerMapLibreViewModel : ViewModel() {
         map.uiSettings.apply {
             isZoomGesturesEnabled = true
             isScrollGesturesEnabled = true
+        }
+
+        // 4) If we determined we should refresh towers (map recreated), do it now
+        if (shouldRefreshTowers) {
+            viewModelScope.launch {
+                // Small delay to ensure map is fully initialized
+                kotlinx.coroutines.delay(100)
+                val currentBounds = map.projection.visibleRegion.latLngBounds
+                val area = calculateArea(currentBounds)
+                if (map.cameraPosition.zoom >= MIN_ZOOM_LEVEL && area <= MAX_AREA_SQ_METERS) {
+                    Timber.d("Forcing tower refresh after map recreation")
+                    _isZoomedOutTooFar.value = false
+                    runTowerQuery()
+                    // Now set the bounds so future moves work normally
+                    _lastQueriedBounds.value = currentBounds
+                } else {
+                    _isZoomedOutTooFar.value = true
+                }
+            }
         }
     }
 
@@ -314,11 +349,6 @@ class TowerMapLibreViewModel : ViewModel() {
 
         // Update serving cell locations and coverage circles when serving cell changes
         updateServingCellLocations()
-
-        mapView?.let { mapView ->
-            // FIXME This needs to be updated
-            recreateOverlaysFromTowerData(mapView, false)
-        }
     }
 
     /**
@@ -341,55 +371,6 @@ class TowerMapLibreViewModel : ViewModel() {
         _servingSignals.update {
             it.clear()
             it
-        }
-    }
-
-    /**
-     * Recreates the overlays on the map based on the current tower data.
-     * @param mapView The map view to add the overlays to.
-     * @param invalidate True to invalidate the map view after adding the overlays. Invalidating the
-     * map will trigger a redraw of the map, which is important if the towers have changed, but a
-     * side effect is that it closes any open info windows (shown when a user clicks on a tower).
-     */
-    @Synchronized
-    fun recreateOverlaysFromTowerData(mapView: MapView, invalidate: Boolean = true) {
-        try {
-            /* FIXME towerOverlayGroup.items?.clear()
-            subIdToServingCellLocations.clear()
-
-            val towers = towers.value
-            val servingCellGciIds: List<String>
-            val servingCellToSubscriptionMap =
-                servingCells.value.entries.associate { entry ->
-                    CellularUtils.getTowerId(entry.value) to entry.value.subscriptionId
-                }
-            servingCellToSubscriptionMap.let { servingCellGciIds = it.keys.toList() }
-
-            Timber.i("Adding %s points to the map", towers.size)
-            towers.forEach { marker ->
-                val isServingCell = servingCellGciIds.contains(marker.cgiId)
-                if (isServingCell) {
-                    // Get the value form servingCellToSubscriptionMap to be the key for the
-                    // subIdToServingCellLocations so that we can set the value as marker.position
-                    subIdToServingCellLocations[servingCellToSubscriptionMap[marker.cgiId]!!] =
-                        GeoPointRange(marker.position, marker.tower.range)
-                }
-                marker.setServingCell(isServingCell)
-                towerOverlayGroup.add(marker)
-            }
-
-            drawServingCellLine()
-            drawServingCellCoverage()
-
-            // .clusterer can cause a NPE if the markers are changed while the map is being drawn
-            towerOverlayGroup.clusterer(mapView)
-
-            if (invalidate) {
-                towerOverlayGroup.invalidate()
-            }
-            mapView.postInvalidate()*/
-        } catch (e: Exception) {
-            Timber.e(e, "Something went wrong while recreating the overlays on the map")
         }
     }
 
