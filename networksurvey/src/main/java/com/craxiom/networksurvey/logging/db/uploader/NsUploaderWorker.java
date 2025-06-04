@@ -59,7 +59,7 @@ public class NsUploaderWorker extends Worker
     public static final int PROGRESS_MIN_VALUE = 0;
     public static final int PROGRESS_MAX_VALUE = 100;
     public static final String OCID_RESULT = "OCID_RESULT";
-    public static final String BEACONDB_RESULT = "OCID_RESULT";
+    public static final String BEACONDB_RESULT = "BEACONDB_RESULT";
     public static final String OCID_RESULT_MESSAGE = "OCID_RESULT_MESSAGE";
     public static final String BEACONDB_RESULT_MESSAGE = "BEACONDB_RESULT_MESSAGE";
     public static final int NOTIFICATION_ID = 102;
