@@ -1042,8 +1042,26 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
                 {
                     dbUploadStore.resetLastLocations();
                     surveyRecordProcessor.addDbSink(dbUploadStore);
-                    cellularController.startCellularRecordScanning(); // Only starts scanning if it is not already active.
-                    wifiController.startWifiRecordScanning(); // Only starts scanning if it is not already active.
+
+                    // Only start surveys for protocols needed by the selected upload targets
+                    final boolean shouldStartCellular = PreferenceUtils.shouldStartCellularForUpload(this);
+                    final boolean shouldStartWifi = PreferenceUtils.shouldStartWifiForUpload(this);
+
+                    if (!shouldStartCellular && !shouldStartWifi)
+                    {
+                        Timber.w("No upload targets selected, so no survey scanning will be started");
+                        return null;
+                    }
+
+                    if (shouldStartCellular)
+                    {
+                        cellularController.startCellularRecordScanning(); // Only starts scanning if it is not already active.
+                    }
+
+                    if (shouldStartWifi)
+                    {
+                        wifiController.startWifiRecordScanning(); // Only starts scanning if it is not already active.
+                    }
                 } else
                 {
                     surveyRecordProcessor.removeDbSink();

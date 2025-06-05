@@ -41,6 +41,7 @@ import com.craxiom.networksurvey.constants.NetworkSurveyConstants;
 import com.craxiom.networksurvey.fragments.model.MqttConnectionSettings;
 import com.craxiom.networksurvey.model.GnssType;
 import com.craxiom.networksurvey.model.LogTypeState;
+import com.craxiom.networksurvey.model.SurveyTypes;
 import com.craxiom.networksurvey.mqtt.MqttConnectionInfo;
 import com.craxiom.networksurvey.ui.cellular.model.TowerSource;
 
@@ -927,5 +928,61 @@ public class PreferenceUtils
             Timber.e(e, "Parsing saved LatLngBounds failed");
             return null;
         }
+    }
+
+    /**
+     * Determines which protocols should be surveyed based on the selected upload targets.
+     * This helps optimize battery usage by only running surveys for protocols that are needed.
+     *
+     * @param context The context to read preferences from
+     * @return A set of protocol names that should be surveyed
+     */
+    public static Set<SurveyTypes> getRequiredProtocolsForUpload(Context context)
+    {
+        final SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(context);
+        final Set<SurveyTypes> requiredProtocols = new LinkedHashSet<>();
+
+        final boolean uploadToOpenCelliD = preferences.getBoolean(NetworkSurveyConstants.PROPERTY_UPLOAD_TO_OPENCELLID, NetworkSurveyConstants.DEFAULT_UPLOAD_TO_OPENCELLID);
+        final boolean uploadToBeaconDB = preferences.getBoolean(NetworkSurveyConstants.PROPERTY_UPLOAD_TO_BEACONDB, NetworkSurveyConstants.DEFAULT_UPLOAD_TO_BEACONDB);
+
+        // OpenCelliD only accepts cellular data
+        if (uploadToOpenCelliD)
+        {
+            requiredProtocols.add(SurveyTypes.CELLULAR);
+        }
+
+        // BeaconDB accepts both cellular and Wi-Fi data
+        if (uploadToBeaconDB)
+        {
+            requiredProtocols.add(SurveyTypes.CELLULAR);
+            requiredProtocols.add(SurveyTypes.WIFI);
+        }
+
+        // If no upload targets are selected, don't survey anything for upload purposes
+        // (user can still manually enable surveys for local logging/streaming)
+
+        return requiredProtocols;
+    }
+
+    /**
+     * Checks if cellular surveys should be started based on upload settings.
+     *
+     * @param context The context to read preferences from
+     * @return true if cellular surveys are needed for any enabled upload target
+     */
+    public static boolean shouldStartCellularForUpload(Context context)
+    {
+        return getRequiredProtocolsForUpload(context).contains(SurveyTypes.CELLULAR);
+    }
+
+    /**
+     * Checks if Wi-Fi surveys should be started based on upload settings.
+     *
+     * @param context The context to read preferences from
+     * @return true if Wi-Fi surveys are needed for any enabled upload target
+     */
+    public static boolean shouldStartWifiForUpload(Context context)
+    {
+        return getRequiredProtocolsForUpload(context).contains(SurveyTypes.WIFI);
     }
 }

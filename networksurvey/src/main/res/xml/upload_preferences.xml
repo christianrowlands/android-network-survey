@@ -28,7 +28,7 @@
             app:key="upload_to_opencellid"
             android:defaultValue="true"
             app:title="Upload to OpenCellID"
-            app:summary="Enable or disable uploading to OpenCellID" />
+            app:summary="When enabled (and the Upload to Database survey is started), cellular survey records will be written to the database and then uploaded to OpenCelliD" />
 
         <SwitchPreferenceCompat
             app:key="anonymous_opencellid_upload"
@@ -55,7 +55,7 @@
             app:key="upload_to_beacondb"
             android:defaultValue="true"
             app:title="Upload to BeaconDB"
-            app:summary="Enable or disable uploading to BeaconDB" />
+            app:summary="When enabled (and the Upload to Database survey is started), cellular AND Wi-Fi survey records will be written to the database and then uploaded to BeaconDB" />
 
     </PreferenceCategory>
 
