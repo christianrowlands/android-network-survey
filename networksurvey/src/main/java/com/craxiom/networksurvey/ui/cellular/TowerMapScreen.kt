@@ -811,10 +811,6 @@ fun TowerMapInfoDialog(onDismiss: () -> Unit) {
                     The tower locations are sourced from various database, for example OpenCelliD ( https://opencellid.org ).
                     
                     Please note that these locations may not be accurate as they are generated from crowd-sourced data and based on survey results. The tower locations are provided for your convenience, but they should not be relied upon for precise accuracy. We recommend verifying tower locations through additional sources if accuracy is critical.
-                    
-                    Legend:
-                    - Purple: Your Current Serving Cell
-                    - Blue: Non-Serving Cells
                 """.trimIndent()
                         )
                     }

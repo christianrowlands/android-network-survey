@@ -33,10 +33,10 @@ import retrofit2.Response
 import timber.log.Timber
 import java.util.Objects
 
-const val INITIAL_ZOOM = 15.0
+const val INITIAL_ZOOM = 14.0
 const val MIN_ZOOM_LEVEL = 9.0
 const val MAX_AREA_SQ_METERS = 40_000_000_000.0
-private const val MAX_TOWERS_ON_MAP = 5000
+private const val MAX_TOWERS_ON_MAP = 7_500
 
 class TowerMapLibreViewModel : ViewModel() {
 
@@ -95,6 +95,8 @@ class TowerMapLibreViewModel : ViewModel() {
     // Current location for drawing serving cell lines
     private var myLocation: Location? = null
 
+    // Track previous serving cell technology per subscription to detect changes
+    private val previousServingCellTechnology = HashMap<Int, String>()
 
     // Serving cell locations with range info
     private val subIdToServingCellLocations = HashMap<Int, ServingCellLocationInfo>()
@@ -329,6 +331,9 @@ class TowerMapLibreViewModel : ViewModel() {
 
         updateServingCellSignals(servingCellRecord, subscriptionId)
 
+        // Check if the serving cell technology has changed and update selectedRadioType if needed
+        checkAndUpdateSelectedRadioType(servingCellRecord, subscriptionId)
+
         // No need to update the serving cell if it is the same as the current serving cell. This
         // prevents a map refresh which is expensive.
         val currentServingCell = _servingCells.value[subscriptionId]
@@ -372,6 +377,49 @@ class TowerMapLibreViewModel : ViewModel() {
             it.clear()
             it
         }
+        previousServingCellTechnology.clear()
+    }
+
+    /**
+     * Checks if the serving cell technology has changed and updates selectedRadioType if appropriate.
+     * Only updates when the technology changes for the primary subscription (lowest subscriptionId)
+     * to avoid overriding user manual selection.
+     */
+    private fun checkAndUpdateSelectedRadioType(
+        servingCellRecord: CellularRecordWrapper?,
+        subscriptionId: Int
+    ) {
+        val currentTechnology = servingCellRecord?.cellularProtocol?.name
+        val previousTechnology = previousServingCellTechnology[subscriptionId]
+        
+        // Update the stored technology for this subscription
+        if (currentTechnology != null) {
+            previousServingCellTechnology[subscriptionId] = currentTechnology
+        } else {
+            previousServingCellTechnology.remove(subscriptionId)
+        }
+        
+        // Only update selectedRadioType if:
+        // 1. The technology has actually changed for this subscription
+        // 2. This is the primary subscription (lowest subscriptionId with serving cell)
+        if (currentTechnology != null && currentTechnology != previousTechnology) {
+            val primarySubscriptionId = findPrimarySubscriptionId()
+            
+            if (subscriptionId == primarySubscriptionId) {
+                Timber.d("Serving cell technology changed from $previousTechnology to $currentTechnology for primary subscription $subscriptionId, updating selectedRadioType")
+                setSelectedRadioType(currentTechnology)
+            } else {
+                Timber.d("Serving cell technology changed from $previousTechnology to $currentTechnology for subscription $subscriptionId, but not updating selectedRadioType (primary is $primarySubscriptionId)")
+            }
+        }
+    }
+    
+    /**
+     * Finds the primary subscription ID (lowest subscriptionId that has a serving cell).
+     * Returns null if no serving cells are available.
+     */
+    private fun findPrimarySubscriptionId(): Int? {
+        return _servingCells.value.keys.minOrNull()
     }
 
     private fun updateServingCellSignals(

@@ -606,6 +606,7 @@ public class NetworkDetailsFragment extends AServiceDataFragment implements ICel
         {
             if (CellularUtils.isServingCell(cellularRecord.cellularRecord))
             {
+                // FIXME Only use one subscriptionId for the serving cell info so we don't confuse the TowerMapFragment
                 sharedViewModel.updateLatestServingCellInfo(new ServingCellInfo(cellularRecord, subscriptionId));
             }
 
