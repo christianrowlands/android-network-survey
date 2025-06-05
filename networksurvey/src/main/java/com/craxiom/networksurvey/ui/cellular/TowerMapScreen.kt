@@ -58,7 +58,6 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.preference.PreferenceManager
 import com.craxiom.messaging.CdmaRecord
@@ -93,7 +92,6 @@ import com.craxiom.networksurvey.ui.cellular.towermap.rememberLineStringState
 import com.craxiom.networksurvey.util.CellularUtils
 import com.craxiom.networksurvey.util.PreferenceUtils
 import com.google.protobuf.GeneratedMessage
-import kotlinx.coroutines.launch
 import okhttp3.internal.toImmutableMap
 import org.maplibre.android.camera.CameraPosition
 import org.maplibre.android.geometry.LatLng
@@ -374,9 +372,6 @@ internal fun TowerMapScreen(
                                             if (viewModel.selectedRadioType.value != label) {
                                                 Timber.i("The Selected radio type changed to $label")
                                                 viewModel.setSelectedRadioType(label)
-                                                viewModel.viewModelScope.launch {
-                                                    viewModel.runTowerQuery()
-                                                }
                                             }
                                             expanded = false
                                         })
@@ -557,9 +552,6 @@ internal fun TowerMapScreen(
                 currentPlmn = currentPlmnFilter,
                 onSetPlmnFilter = { mcc, mnc ->
                     viewModel.setPlmnFilter(Plmn(mcc, mnc))
-                    viewModel.viewModelScope.launch {
-                        viewModel.runTowerQuery()
-                    }
                 },
                 onDismiss = { showPlmnDialog = false }
             )
@@ -573,9 +565,6 @@ internal fun TowerMapScreen(
                     if (source != currentSource) {
                         viewModel.setTowerSource(source)
                         PreferenceUtils.setLastSelectedTowerSource(context, source)
-                        viewModel.viewModelScope.launch {
-                            viewModel.runTowerQuery()
-                        }
                     }
                 },
                 onDismiss = { showTowerSourceDialog = false }

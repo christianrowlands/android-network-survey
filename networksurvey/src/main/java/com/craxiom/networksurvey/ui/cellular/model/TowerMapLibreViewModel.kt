@@ -149,6 +149,10 @@ class TowerMapLibreViewModel : ViewModel() {
             // Clear towers when radio type changes
             _towers.value = LinkedHashSet()
             _noTowersFound.value = false
+            // Automatically trigger a new query for the selected radio type
+            viewModelScope.launch {
+                runTowerQuery()
+            }
         }
     }
 
@@ -158,6 +162,10 @@ class TowerMapLibreViewModel : ViewModel() {
             // Clear towers when PLMN filter changes
             _towers.value = LinkedHashSet()
             _noTowersFound.value = false
+            // Automatically trigger a new query for the new filter
+            viewModelScope.launch {
+                runTowerQuery()
+            }
         }
     }
 
@@ -167,6 +175,10 @@ class TowerMapLibreViewModel : ViewModel() {
             // Clear towers when source changes
             _towers.value = LinkedHashSet()
             _noTowersFound.value = false
+            // Automatically trigger a new query for the new source
+            viewModelScope.launch {
+                runTowerQuery()
+            }
         }
     }
 
