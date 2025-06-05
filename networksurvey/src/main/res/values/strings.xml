@@ -164,8 +164,10 @@ but work independently, so you have full control over how you handle your data.<
     <string name="upload_queue_title">Records Ready for Upload</string>
     <string name="cellular_upload_queue_count_initial">Cellular:</string>
     <string name="cellular_upload_queue_count">Cellular:  %1$d</string>
+    <string name="cellular_upload_queue_count_disabled">Cellular:  Disabled</string>
     <string name="wifi_upload_queue_count_initial">Wi-Fi:</string>
     <string name="wifi_upload_queue_count">Wi-Fi:  %1$d</string>
+    <string name="wifi_upload_queue_count_disabled">Wi-Fi:  Disabled</string>
     <string name="upload_button_text">Upload\nRecords</string>
     <string name="upload_survey_records">Upload Survey Records</string>
     <string name="upload_progress">Upload Progress</string>

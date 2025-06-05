@@ -273,6 +273,11 @@ public class DashboardFragment extends AServiceDataFragment implements LocationL
             case NetworkSurveyConstants.PROPERTY_MQTT_DEVICE_STATUS_STREAM_ENABLED:
                 readMqttStreamEnabledProperties();
                 break;
+            case NetworkSurveyConstants.PROPERTY_UPLOAD_TO_OPENCELLID:
+            case NetworkSurveyConstants.PROPERTY_UPLOAD_TO_BEACONDB:
+                // Update upload counts when upload targets change
+                queryUploadQueueCount();
+                break;
             default:
         }
     }
@@ -1063,12 +1068,40 @@ public class DashboardFragment extends AServiceDataFragment implements LocationL
 
     private void updateCellularUploadQueueCountUI(int count)
     {
-        binding.cellularUploadQueueCount.setText(getString(R.string.cellular_upload_queue_count, count));
+        Context context = getContext();
+        if (context == null) return;
+
+        // Check if cellular surveys should be enabled for upload
+        boolean shouldStartCellular = PreferenceUtils.shouldStartCellularForUpload(context);
+
+        if (count == 0 && !shouldStartCellular)
+        {
+            // Show disabled state if count is 0 and cellular isn't needed for any upload target
+            binding.cellularUploadQueueCount.setText(getString(R.string.cellular_upload_queue_count_disabled));
+        } else
+        {
+            // Show normal count (even if disabled, if there are records to upload)
+            binding.cellularUploadQueueCount.setText(getString(R.string.cellular_upload_queue_count, count));
+        }
     }
 
     private void updateWifiUploadQueueCountUI(int count)
     {
-        binding.wifiUploadQueueCount.setText(getString(R.string.wifi_upload_queue_count, count));
+        Context context = getContext();
+        if (context == null) return;
+
+        // Check if Wi-Fi surveys should be enabled for upload
+        boolean shouldStartWifi = PreferenceUtils.shouldStartWifiForUpload(context);
+
+        if (count == 0 && !shouldStartWifi)
+        {
+            // Show disabled state if count is 0 and Wi-Fi isn't needed for any upload target
+            binding.wifiUploadQueueCount.setText(getString(R.string.wifi_upload_queue_count_disabled));
+        } else
+        {
+            // Show normal count (even if disabled, if there are records to upload)
+            binding.wifiUploadQueueCount.setText(getString(R.string.wifi_upload_queue_count, count));
+        }
     }
 
     private void navigateToMqttFragment()
