@@ -178,11 +178,11 @@ but work independently, so you have full control over how you handle your data.<
     <string name="beacondb_upload" translatable="false">BeaconDB:</string>
     <string name="upload_pending">Upload Pending…</string>
     <string name="uploader_canceled">Upload canceled</string>
-    <string name="upload_to_opencellid">Upload to OpenCelliD</string>
+    <string name="upload_to_opencellid">Upload to OpenCelliD (Cellular)</string>
     <string name="anonymously">Anonymously</string>
     <string name="upload_dialog_message">Uploading your survey records will share location data with third-party services. Contributing to these crowdsourced databases helps improve coverage maps and geolocation accuracy. Your participation is entirely voluntary—the choice to share your data is yours and yours alone.</string>
     <string name="access_token_warning">You have to enter a valid access token in preferences</string>
-    <string name="upload_to_beacondb">Upload to BeaconDB</string>
+    <string name="upload_to_beacondb">Upload to BeaconDB (Cellular &amp; Wi-Fi)</string>
     <string name="retry_on_failure">Retry on failure</string>
     <string name="dont_show_again">Don\'t show this again</string>
 
