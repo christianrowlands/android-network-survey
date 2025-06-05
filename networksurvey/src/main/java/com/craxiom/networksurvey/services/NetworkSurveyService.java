@@ -1131,6 +1131,16 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
         return cellularController.isCdrLoggingEnabled();
     }
 
+    public boolean isCellularScanningActive()
+    {
+        return cellularController.isScanningActive();
+    }
+
+    public boolean isWifiScanningActive()
+    {
+        return wifiController.isScanningActive();
+    }
+
     public int getWifiScanRateMs()
     {
         return wifiController.getScanRateMs();

@@ -62,6 +62,7 @@ import com.craxiom.networksurvey.listeners.ILoggingChangeListener;
 import com.craxiom.networksurvey.logging.db.SurveyDatabase;
 import com.craxiom.networksurvey.logging.db.dao.SurveyRecordDao;
 import com.craxiom.networksurvey.logging.db.uploader.NsUploaderWorker;
+import com.craxiom.networksurvey.model.SurveyTypes;
 import com.craxiom.networksurvey.model.UploadScanningResult;
 import com.craxiom.networksurvey.services.NetworkSurveyService;
 import com.craxiom.networksurvey.ui.main.SharedViewModel;
@@ -75,6 +76,8 @@ import com.google.android.material.snackbar.Snackbar;
 import com.google.common.base.Strings;
 
 import java.text.DecimalFormat;
+import java.util.LinkedHashSet;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -100,6 +103,7 @@ public class DashboardFragment extends AServiceDataFragment implements LocationL
     private FragmentDashboardBinding binding;
     private DashboardViewModel viewModel;
     private boolean scrolledToBottom;
+    private Set<SurveyTypes> currentActiveSurveys = new LinkedHashSet<>();
 
     private final Handler handler = new Handler(Looper.getMainLooper());
     private final Runnable updateUploadCountsRunnable = new Runnable()
@@ -205,7 +209,30 @@ public class DashboardFragment extends AServiceDataFragment implements LocationL
         updateMqttUiState(service.getMqttConnectionState());
         readMqttStreamEnabledProperties();
         updateLoggingState(service);
-        viewModel.setUploadScanningActive(service.isUploadScanningActive());
+
+        // Update upload scanning state and determine which surveys are active
+        boolean uploadScanningActive = service.isUploadScanningActive();
+
+        if (uploadScanningActive && context != null)
+        {
+            // When reconnecting to an active service, determine which surveys would be started
+            currentActiveSurveys.clear();
+            if (service.isCellularScanningActive())
+            {
+                currentActiveSurveys.add(SurveyTypes.CELLULAR);
+            }
+            if (service.isWifiScanningActive())
+            {
+                currentActiveSurveys.add(SurveyTypes.WIFI);
+            }
+        } else
+        {
+            currentActiveSurveys.clear();
+        }
+
+        // Manually call the updateScanningIndicators method to ensure that the UI is updated
+        updateScanningIndicators();
+        viewModel.setUploadScanningActive(uploadScanningActive);
     }
 
     @Override
@@ -1180,11 +1207,20 @@ public class DashboardFragment extends AServiceDataFragment implements LocationL
             if (result.getSuccess())
             {
                 viewModel.setUploadScanningActive(result.isEnabled());
+                // Store which surveys are currently active for icon display
+                if (result.isEnabled())
+                {
+                    currentActiveSurveys = result.getSurveysStarted();
+                } else
+                {
+                    currentActiveSurveys.clear();
+                }
             } else
             {
                 // Update the startScanningButton because it is disabled in the startSavingRecordsForUpload method
                 binding.startScanningButton.setEnabled(true);
                 viewModel.setUploadScanningActive(false);
+                currentActiveSurveys.clear();
             }
             // Return the message from the result for the toast
             return result.getMessage();
@@ -1209,6 +1245,9 @@ public class DashboardFragment extends AServiceDataFragment implements LocationL
             binding.startScanningButton.setVisibility(View.GONE);
             binding.stopScanningButton.setVisibility(View.VISIBLE);
             binding.stopScanningButton.setEnabled(true);
+
+            // Show indicators for which survey types are active
+            updateScanningIndicators();
         } else
         {
             binding.uploadScanningStatus.setText(R.string.scanning_inactive);
@@ -1217,6 +1256,40 @@ public class DashboardFragment extends AServiceDataFragment implements LocationL
             binding.startScanningButton.setVisibility(View.VISIBLE);
             binding.startScanningButton.setEnabled(true);
             binding.stopScanningButton.setVisibility(View.GONE);
+
+            // Hide all scanning indicators when not active
+            binding.uploadScanningIndicators.setVisibility(View.GONE);
+            binding.uploadCellularIndicator.setVisibility(View.GONE);
+            binding.uploadWifiIndicator.setVisibility(View.GONE);
+        }
+    }
+
+    /**
+     * Updates the visibility of scanning indicator icons based on which survey types are currently active.
+     */
+    private void updateScanningIndicators()
+    {
+        Context context = getContext();
+        if (context == null) return;
+
+        boolean hasCellular = currentActiveSurveys.contains(SurveyTypes.CELLULAR);
+        boolean hasWifi = currentActiveSurveys.contains(SurveyTypes.WIFI);
+
+        // Show/hide individual indicators
+        binding.uploadCellularIndicator.setVisibility(hasCellular ? View.VISIBLE : View.GONE);
+        binding.uploadWifiIndicator.setVisibility(hasWifi ? View.VISIBLE : View.GONE);
+
+        // Show the indicators container if we have any active surveys
+        binding.uploadScanningIndicators.setVisibility((hasCellular || hasWifi) ? View.VISIBLE : View.GONE);
+
+        // Set icon colors to indicate active state
+        if (hasCellular)
+        {
+            binding.uploadCellularIndicator.setImageTintList(ColorStateList.valueOf(ContextCompat.getColor(context, R.color.md_theme_primary)));
+        }
+        if (hasWifi)
+        {
+            binding.uploadWifiIndicator.setImageTintList(ColorStateList.valueOf(ContextCompat.getColor(context, R.color.md_theme_primary)));
         }
     }
 
