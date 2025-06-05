@@ -64,6 +64,8 @@ import com.craxiom.networksurvey.listeners.IWifiSurveyRecordListener;
 import com.craxiom.networksurvey.logging.DeviceStatusCsvLogger;
 import com.craxiom.networksurvey.logging.db.DbUploadStore;
 import com.craxiom.networksurvey.model.LogTypeState;
+import com.craxiom.networksurvey.model.SurveyTypes;
+import com.craxiom.networksurvey.model.UploadScanningResult;
 import com.craxiom.networksurvey.mqtt.MqttConnection;
 import com.craxiom.networksurvey.mqtt.MqttConnectionInfo;
 import com.craxiom.networksurvey.services.controller.BluetoothController;
@@ -80,6 +82,7 @@ import com.google.protobuf.BoolValue;
 import com.google.protobuf.Int32Value;
 
 import java.time.ZonedDateTime;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArraySet;
@@ -1025,7 +1028,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
         return cellularController.toggleCdrLogging(enable);
     }
 
-    public Boolean toggleUploadRecordSaving(boolean enable)
+    public UploadScanningResult toggleUploadRecordSaving(boolean enable)
     {
         //noinspection SynchronizeOnNonFinalField
         synchronized (dbUploadStore)
@@ -1035,14 +1038,11 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
                 boolean externalDataUploadAllowedForMdm = MdmUtils.isExternalDataUploadAllowed(this);
                 if (!externalDataUploadAllowedForMdm)
                 {
-                    return null;
+                    return new UploadScanningResult(false, false, getString(R.string.upload_disabled_via_mdm));
                 }
 
                 if (enable)
                 {
-                    dbUploadStore.resetLastLocations();
-                    surveyRecordProcessor.addDbSink(dbUploadStore);
-
                     // Only start surveys for protocols needed by the selected upload targets
                     final boolean shouldStartCellular = PreferenceUtils.shouldStartCellularForUpload(this);
                     final boolean shouldStartWifi = PreferenceUtils.shouldStartWifiForUpload(this);
@@ -1050,32 +1050,54 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
                     if (!shouldStartCellular && !shouldStartWifi)
                     {
                         Timber.w("No upload targets selected, so no survey scanning will be started");
-                        return null;
+                        return new UploadScanningResult(false, false, getString(R.string.upload_saving_no_targets));
                     }
+
+                    dbUploadStore.resetLastLocations();
+                    surveyRecordProcessor.addDbSink(dbUploadStore);
+
+                    Set<SurveyTypes> surveysStarted = new LinkedHashSet<>();
 
                     if (shouldStartCellular)
                     {
                         cellularController.startCellularRecordScanning(); // Only starts scanning if it is not already active.
+                        surveysStarted.add(SurveyTypes.CELLULAR);
                     }
 
                     if (shouldStartWifi)
                     {
                         wifiController.startWifiRecordScanning(); // Only starts scanning if it is not already active.
+                        surveysStarted.add(SurveyTypes.WIFI);
                     }
+
+                    // Generate appropriate success message based on what was started
+                    String message;
+                    if (shouldStartCellular && shouldStartWifi)
+                    {
+                        message = getString(R.string.upload_saving_started_cellular_wifi);
+                    } else if (shouldStartCellular)
+                    {
+                        message = getString(R.string.upload_saving_started_cellular);
+                    } else
+                    {
+                        message = getString(R.string.upload_saving_start_toast); // Fallback
+                    }
+
+                    return new UploadScanningResult(true, true, message, surveysStarted);
                 } else
                 {
                     surveyRecordProcessor.removeDbSink();
                     // Check to see if this service is still needed.  It is still needed if we are either logging, the UI is
                     // visible, or a server connection is active.
                     if (!isBeingUsed()) stopSelf();
+
+                    return new UploadScanningResult(true, false, getString(R.string.upload_saving_stop_toast));
                 }
             } catch (Exception e)
             {
                 Timber.e(e, "Failed to toggle upload record saving");
-                return null;
+                return new UploadScanningResult(false, false, getString(R.string.upload_saving_toggle_failed));
             }
-
-            return enable;
         }
     }
 

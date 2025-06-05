@@ -62,6 +62,7 @@ import com.craxiom.networksurvey.listeners.ILoggingChangeListener;
 import com.craxiom.networksurvey.logging.db.SurveyDatabase;
 import com.craxiom.networksurvey.logging.db.dao.SurveyRecordDao;
 import com.craxiom.networksurvey.logging.db.uploader.NsUploaderWorker;
+import com.craxiom.networksurvey.model.UploadScanningResult;
 import com.craxiom.networksurvey.services.NetworkSurveyService;
 import com.craxiom.networksurvey.ui.main.SharedViewModel;
 import com.craxiom.networksurvey.util.MathUtils;
@@ -69,6 +70,7 @@ import com.craxiom.networksurvey.util.MdmUtils;
 import com.craxiom.networksurvey.util.NsUtils;
 import com.craxiom.networksurvey.util.PreferenceUtils;
 import com.craxiom.networksurvey.util.ToggleLoggingTask;
+import com.craxiom.networksurvey.util.UploadScanningTask;
 import com.google.android.material.snackbar.Snackbar;
 import com.google.common.base.Strings;
 
@@ -1134,21 +1136,26 @@ public class DashboardFragment extends AServiceDataFragment implements LocationL
         Context context = getContext();
         if (context == null) return;
 
-        new ToggleLoggingTask(() -> {
+        new UploadScanningTask(() -> {
             if (service != null)
             {
                 return service.toggleUploadRecordSaving(enable);
             }
-            return null;
-        }, enabled -> {
-            if (enabled == null)
+            return new UploadScanningResult(false, false, context.getString(R.string.upload_saving_toggle_failed));
+        }, result -> {
+            // Update the view model based on the result
+            if (result.getSuccess())
             {
+                viewModel.setUploadScanningActive(result.isEnabled());
+            } else
+            {
+                // Update the startScanningButton because it is disabled in the startSavingRecordsForUpload method
+                binding.startScanningButton.setEnabled(true);
                 viewModel.setUploadScanningActive(false);
-                return context.getString(R.string.upload_saving_toggle_failed);
             }
-            viewModel.setUploadScanningActive(enabled);
-            return context.getString(enabled ? R.string.upload_saving_start_toast : R.string.upload_saving_stop_toast);
-        }, context).executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
+            // Return the message from the result for the toast
+            return result.getMessage();
+        }, context).execute();
     }
 
     /**

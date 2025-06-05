@@ -715,6 +715,9 @@ but work independently, so you have full control over how you handle your data.<
     <string name="upload_saving_toggle_failed">An error occurred when trying to start saving records for upload</string>
     <string name="upload_saving_start_toast">Started scanning and saving records for upload</string>
     <string name="upload_saving_stop_toast">Stopped scanning and saving records for upload</string>
+    <string name="upload_saving_no_targets">No upload targets selected. Enable OpenCellID or BeaconDB in upload settings to start scanning.</string>
+    <string name="upload_saving_started_cellular">Started scanning cellular towers for upload</string>
+    <string name="upload_saving_started_cellular_wifi">Started scanning cellular towers and Wi-Fi access points for upload</string>
 
     <string name="delete_upload_data_confirm_title">Confirm Deletion</string>
     <string name="delete_upload_data_confirm_message">
