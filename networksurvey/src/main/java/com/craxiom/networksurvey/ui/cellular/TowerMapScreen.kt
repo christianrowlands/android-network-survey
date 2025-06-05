@@ -37,6 +37,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -48,6 +49,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
@@ -117,6 +119,24 @@ internal fun TowerMapScreen(
     val currentSource by viewModel.selectedSource.collectAsStateWithLifecycle()
     val noTowersFound by viewModel.noTowersFound.collectAsStateWithLifecycle()
     val isMapInitializing by viewModel.isMapInitializing.collectAsStateWithLifecycle()
+
+    // Handle screen wake lock based on preference
+    val context = LocalContext.current
+    val view = LocalView.current
+    val preferences = remember { PreferenceManager.getDefaultSharedPreferences(context) }
+
+    // Read preference value on every recomposition to catch updates
+    val keepScreenOn =
+        preferences.getBoolean(NetworkSurveyConstants.PROPERTY_MAP_KEEP_SCREEN_ON, true)
+
+    DisposableEffect(keepScreenOn) {
+        view.keepScreenOn = keepScreenOn
+
+        onDispose {
+            // Always reset to false when leaving the screen
+            view.keepScreenOn = false
+        }
+    }
 
     val missingApiKey = BuildConfig.NS_API_KEY.isEmpty()
 
@@ -461,11 +481,12 @@ internal fun TowerMapScreen(
                             isFollowing = cameraPositionState.cameraMode == CameraMode.TRACKING,
                             toggleFollowMe = {
                                 // Toggle camera mode directly on the state
-                                cameraPositionState.cameraMode = if (cameraPositionState.cameraMode == CameraMode.TRACKING) {
-                                    CameraMode.NONE
-                                } else {
-                                    CameraMode.TRACKING
-                                }
+                                cameraPositionState.cameraMode =
+                                    if (cameraPositionState.cameraMode == CameraMode.TRACKING) {
+                                        CameraMode.NONE
+                                    } else {
+                                        CameraMode.TRACKING
+                                    }
                             })
 
                         Spacer(modifier = Modifier.height(44.dp))
@@ -597,7 +618,7 @@ internal fun TowerMapScreen(
             ) {
                 Text(
                     text = "Zoom in farther to see towers", fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.surface, softWrap = true,
+                    color = MaterialTheme.colorScheme.primary, softWrap = true,
                     textAlign = TextAlign.Center
                 )
             }
@@ -915,7 +936,10 @@ fun PlmnFilterDialog(
 private fun getCoverageCircleColor(): Color {
     val context = LocalContext.current
     val preferences = PreferenceManager.getDefaultSharedPreferences(context)
-    val selectedColor = preferences.getString(NetworkSurveyConstants.PROPERTY_MAP_COVERAGE_CIRCLE_COLOR, NetworkSurveyConstants.DEFAULT_COVERAGE_CIRCLE_COLOR)
+    val selectedColor = preferences.getString(
+        NetworkSurveyConstants.PROPERTY_MAP_COVERAGE_CIRCLE_COLOR,
+        NetworkSurveyConstants.DEFAULT_COVERAGE_CIRCLE_COLOR
+    )
 
     return when (selectedColor) {
         "red" -> colorResource(R.color.coverage_circle_red)

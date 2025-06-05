@@ -500,6 +500,10 @@ but work independently, so you have full control over how you handle your data.<
     <string name="coverage_circle_color_title">Coverage Circle Color</string>
     <string name="coverage_circle_color_dialog_title">Select Coverage Circle Color</string>
 
+    <string name="keep_screen_on_title">Keep Tower Map Screen On</string>
+    <string name="keep_screen_on_summary_on">Screen will stay on while viewing the Tower Map</string>
+    <string name="keep_screen_on_summary_off">Screen will turn off normally after inactivity</string>
+
     <string name="allow_data_upload">External Data Upload</string>
     <string name="allow_data_upload_mdm_description">True to allow users to upload survey records to 3rd Party databases such as OpenCelliD and BeaconDB, false to prevent it</string>
 

@@ -21,6 +21,13 @@
             app:title="@string/coverage_circle_color_title"
             app:useSimpleSummaryProvider="true" />
 
+        <SwitchPreferenceCompat
+            app:defaultValue="true"
+            app:key="tower_map_keep_screen_on"
+            app:title="@string/keep_screen_on_title"
+            app:summaryOff="@string/keep_screen_on_summary_off"
+            app:summaryOn="@string/keep_screen_on_summary_on" />
+
     </PreferenceCategory>
 
 </PreferenceScreen>

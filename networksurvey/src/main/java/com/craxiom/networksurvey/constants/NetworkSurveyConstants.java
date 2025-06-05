@@ -142,6 +142,7 @@ public class NetworkSurveyConstants
     public static final String TOWER_MAP_PREFERENCES_GROUP = "tower_map_preferences_group";
     public static final String PROPERTY_MAP_DISPLAY_SERVING_CELL_COVERAGE = "map_display_serving_cell_coverage_area";
     public static final String PROPERTY_MAP_COVERAGE_CIRCLE_COLOR = "map_coverage_circle_color";
+    public static final String PROPERTY_MAP_KEEP_SCREEN_ON = "tower_map_keep_screen_on";
 
     // The following key is used in the app_restrictions.xml file and in the app's shared preferences
     public static final String PROPERTY_MQTT_START_ON_BOOT = "mqtt_start_on_boot";
