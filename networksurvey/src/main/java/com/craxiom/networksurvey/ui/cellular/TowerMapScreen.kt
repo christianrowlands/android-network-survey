@@ -247,15 +247,22 @@ internal fun TowerMapScreen(
                 ) {
                     // 1) Pull your tower wrappers from the VM…
                     val towers by viewModel.towers.collectAsStateWithLifecycle()
-                    //val towers = towerWrappers.map { it.tower }
-                    val towerWrapperList =
-                        towers.toList() // TODO This will be expensive if called often
+                    val towerWrapperList = towers.toList()
 
                     // 2) Pull the “serving cell” IDs so we can highlight them
                     val servingCellInfo by viewModel.servingCells.collectAsStateWithLifecycle()
-                    val servingIds = servingCellInfo.values
-                        .map { CellularUtils.getTowerId(it) }
-                        .toSet()
+                    val servingIds =
+                        if (selectedSimIndex != -1 && servingCellInfo.containsKey(selectedSimIndex)) {
+                            // Show only the selected SIM's serving cell
+                            servingCellInfo[selectedSimIndex]?.let {
+                                setOf(CellularUtils.getTowerId(it))
+                            } ?: emptySet()
+                        } else {
+                            // Show all serving cells
+                            servingCellInfo.values
+                                .map { CellularUtils.getTowerId(it) }
+                                .toSet()
+                        }
 
                     // 3) One single call to TowerSymbols
                     TowerSymbols(
@@ -503,6 +510,7 @@ internal fun TowerMapScreen(
                         // Only show the drop down if there is more than one option
                         SimCardDropdown(servingCells, selectedSimIndex) { newIndex ->
                             selectedSimIndex = newIndex
+                            viewModel.setSelectedSimSubscriptionId(newIndex)
                         }
                     }
 
@@ -517,6 +525,7 @@ internal fun TowerMapScreen(
                             if (selectedSimIndex == -1) {
                                 // Default to the first key if a SIM card has not been selected
                                 selectedSimIndex = servingCells.keys.first()
+                                viewModel.setSelectedSimSubscriptionId(selectedSimIndex)
                             }
                             ServingCellInfoDisplay(
                                 servingCells[selectedSimIndex],

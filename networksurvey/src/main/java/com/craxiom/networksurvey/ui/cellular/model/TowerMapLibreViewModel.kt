@@ -87,7 +87,7 @@ class TowerMapLibreViewModel : ViewModel() {
 
     // Mutex to prevent concurrent tower queries
     private val towerQueryMutex = Mutex()
-    
+
     // Debounce timer for tower queries
     private var lastQueryTime = 0L
     private val QUERY_DEBOUNCE_MS = 1000L // Minimum 1 second between queries
@@ -97,6 +97,9 @@ class TowerMapLibreViewModel : ViewModel() {
 
     // Track previous serving cell technology per subscription to detect changes
     private val previousServingCellTechnology = HashMap<Int, String>()
+
+    // Selected SIM subscription ID for display
+    private val _selectedSimSubscriptionId = MutableStateFlow<Int?>(null)
 
     // Serving cell locations with range info
     private val subIdToServingCellLocations = HashMap<Int, ServingCellLocationInfo>()
@@ -182,6 +185,24 @@ class TowerMapLibreViewModel : ViewModel() {
         }
     }
 
+    fun setSelectedSimSubscriptionId(subscriptionId: Int) {
+        if (_selectedSimSubscriptionId.value != subscriptionId) {
+            _selectedSimSubscriptionId.value = subscriptionId
+
+            // Update the radio type based on the selected SIM's serving cell
+            val servingCellInfo = _servingCells.value[subscriptionId]
+            val currentTechnology = servingCellInfo?.servingCell?.cellularProtocol?.name
+            if (currentTechnology != null) {
+                Timber.d("Selected SIM changed to subscription $subscriptionId with technology $currentTechnology")
+                setSelectedRadioType(currentTechnology)
+            }
+
+            // Recompute serving cell overlays for the selected SIM
+            updateServingCellLines()
+            updateServingCellCoverage()
+        }
+    }
+
     /**
      * Call this from the Composable’s onMapReady.
      */
@@ -226,12 +247,12 @@ class TowerMapLibreViewModel : ViewModel() {
         map.addOnCameraIdleListener {
             val bounds = map.projection.visibleRegion.latLngBounds
             val lastBounds = _lastQueriedBounds.value
-            
+
             // Use a more robust bounds comparison to avoid floating point precision issues
             val boundsChanged = lastBounds == null || !areBoundsEqual(bounds, lastBounds)
             val currentTime = System.currentTimeMillis()
             val timeSinceLastQuery = currentTime - lastQueryTime
-            
+
             if (boundsChanged && timeSinceLastQuery >= QUERY_DEBOUNCE_MS) {
                 Timber.d("Camera bounds changed, triggering tower query (time since last: ${timeSinceLastQuery}ms)")
                 lastQueryTime = currentTime
@@ -394,8 +415,7 @@ class TowerMapLibreViewModel : ViewModel() {
 
     /**
      * Checks if the serving cell technology has changed and updates selectedRadioType if appropriate.
-     * Only updates when the technology changes for the primary subscription (lowest subscriptionId)
-     * to avoid overriding user manual selection.
+     * Only updates when the technology changes for the selected SIM subscription.
      */
     private fun checkAndUpdateSelectedRadioType(
         servingCellRecord: CellularRecordWrapper?,
@@ -403,35 +423,27 @@ class TowerMapLibreViewModel : ViewModel() {
     ) {
         val currentTechnology = servingCellRecord?.cellularProtocol?.name
         val previousTechnology = previousServingCellTechnology[subscriptionId]
-        
+
         // Update the stored technology for this subscription
         if (currentTechnology != null) {
             previousServingCellTechnology[subscriptionId] = currentTechnology
         } else {
             previousServingCellTechnology.remove(subscriptionId)
         }
-        
+
         // Only update selectedRadioType if:
         // 1. The technology has actually changed for this subscription
-        // 2. This is the primary subscription (lowest subscriptionId with serving cell)
+        // 2. This is the selected subscription (or no selection made yet)
         if (currentTechnology != null && currentTechnology != previousTechnology) {
-            val primarySubscriptionId = findPrimarySubscriptionId()
-            
-            if (subscriptionId == primarySubscriptionId) {
-                Timber.d("Serving cell technology changed from $previousTechnology to $currentTechnology for primary subscription $subscriptionId, updating selectedRadioType")
+            val selectedSim = _selectedSimSubscriptionId.value
+
+            if (selectedSim == null || subscriptionId == selectedSim) {
+                Timber.d("Serving cell technology changed from $previousTechnology to $currentTechnology for subscription $subscriptionId, updating selectedRadioType")
                 setSelectedRadioType(currentTechnology)
             } else {
-                Timber.d("Serving cell technology changed from $previousTechnology to $currentTechnology for subscription $subscriptionId, but not updating selectedRadioType (primary is $primarySubscriptionId)")
+                Timber.d("Serving cell technology changed from $previousTechnology to $currentTechnology for subscription $subscriptionId, but not updating selectedRadioType (selected is $selectedSim)")
             }
         }
-    }
-    
-    /**
-     * Finds the primary subscription ID (lowest subscriptionId that has a serving cell).
-     * Returns null if no serving cells are available.
-     */
-    private fun findPrimarySubscriptionId(): Int? {
-        return _servingCells.value.keys.minOrNull()
     }
 
     private fun updateServingCellSignals(
@@ -454,7 +466,7 @@ class TowerMapLibreViewModel : ViewModel() {
 
     internal suspend fun runTowerQuery() = towerQueryMutex.withLock {
         val map = mapLibreMap ?: return@withLock
-        
+
         _isLoadingInProgress.value = true
         Timber.d("Starting tower query")
 
@@ -535,12 +547,28 @@ class TowerMapLibreViewModel : ViewModel() {
         val currentLocation = myLocation ?: return
         val myLatLng = LatLng(currentLocation.latitude, currentLocation.longitude)
 
-        val lines = subIdToServingCellLocations.map { (subscriptionId, locationInfo) ->
-            ServingCellLineData(
-                subscriptionId = subscriptionId,
-                startPoint = myLatLng,
-                endPoint = locationInfo.location
-            )
+        // Use selected SIM if set, otherwise show all
+        val selectedSim = _selectedSimSubscriptionId.value
+        val lines = if (selectedSim != null) {
+            // Show only the selected SIM's line
+            subIdToServingCellLocations
+                .filter { (subscriptionId, _) -> subscriptionId == selectedSim }
+                .map { (subscriptionId, locationInfo) ->
+                    ServingCellLineData(
+                        subscriptionId = subscriptionId,
+                        startPoint = myLatLng,
+                        endPoint = locationInfo.location
+                    )
+                }
+        } else {
+            // Show all SIM lines
+            subIdToServingCellLocations.map { (subscriptionId, locationInfo) ->
+                ServingCellLineData(
+                    subscriptionId = subscriptionId,
+                    startPoint = myLatLng,
+                    endPoint = locationInfo.location
+                )
+            }
         }
 
         _servingCellLines.value = lines
@@ -550,14 +578,32 @@ class TowerMapLibreViewModel : ViewModel() {
      * Updates serving cell coverage circles.
      */
     private fun updateServingCellCoverage() {
-        val coverage = subIdToServingCellLocations.mapNotNull { (subscriptionId, locationInfo) ->
-            if (locationInfo.range > 0) {
-                ServingCellCoverageData(
-                    subscriptionId = subscriptionId,
-                    center = locationInfo.location,
-                    radiusMeters = locationInfo.range
-                )
-            } else null
+        // Use selected SIM if set, otherwise show all
+        val selectedSim = _selectedSimSubscriptionId.value
+        val coverage = if (selectedSim != null) {
+            // Show only the selected SIM's coverage
+            subIdToServingCellLocations
+                .filter { (subscriptionId, _) -> subscriptionId == selectedSim }
+                .mapNotNull { (subscriptionId, locationInfo) ->
+                    if (locationInfo.range > 0) {
+                        ServingCellCoverageData(
+                            subscriptionId = subscriptionId,
+                            center = locationInfo.location,
+                            radiusMeters = locationInfo.range
+                        )
+                    } else null
+                }
+        } else {
+            // Show all SIM coverage
+            subIdToServingCellLocations.mapNotNull { (subscriptionId, locationInfo) ->
+                if (locationInfo.range > 0) {
+                    ServingCellCoverageData(
+                        subscriptionId = subscriptionId,
+                        center = locationInfo.location,
+                        radiusMeters = locationInfo.range
+                    )
+                } else null
+            }
         }
 
         _servingCellCoverage.value = coverage
@@ -593,7 +639,11 @@ class TowerMapLibreViewModel : ViewModel() {
     /**
      * Compare two LatLngBounds with tolerance for floating point precision.
      */
-    private fun areBoundsEqual(bounds1: LatLngBounds, bounds2: LatLngBounds, tolerance: Double = 0.0001): Boolean {
+    private fun areBoundsEqual(
+        bounds1: LatLngBounds,
+        bounds2: LatLngBounds,
+        tolerance: Double = 0.0001
+    ): Boolean {
         return kotlin.math.abs(bounds1.latitudeNorth - bounds2.latitudeNorth) < tolerance &&
                 kotlin.math.abs(bounds1.latitudeSouth - bounds2.latitudeSouth) < tolerance &&
                 kotlin.math.abs(bounds1.longitudeEast - bounds2.longitudeEast) < tolerance &&
