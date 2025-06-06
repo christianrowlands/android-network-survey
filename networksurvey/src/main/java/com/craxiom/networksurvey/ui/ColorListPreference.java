@@ -1,6 +1,13 @@
 package com.craxiom.networksurvey.ui;
 
 import android.content.Context;
+import android.graphics.Canvas;
+import android.graphics.Paint;
+import android.graphics.drawable.Drawable;
+import android.graphics.drawable.GradientDrawable;
+import android.text.SpannableString;
+import android.text.SpannableStringBuilder;
+import android.text.style.DynamicDrawableSpan;
 import android.util.AttributeSet;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -56,6 +63,56 @@ public class ColorListPreference extends ListPreference
     public ColorListPreference(Context context)
     {
         super(context);
+    }
+
+    @Override
+    public void setValue(String value)
+    {
+        super.setValue(value);
+        // Force the summary to update when value changes
+        notifyChanged();
+    }
+
+    @Override
+    public CharSequence getSummary()
+    {
+        // Get the selected entry
+        CharSequence entry = getEntry();
+        if (entry == null)
+        {
+            return super.getSummary();
+        }
+
+        // Create a spannable string with color box and text
+        SpannableStringBuilder builder = new SpannableStringBuilder();
+
+        // Add color box as a span
+        String colorValue = getValue();
+        Integer colorResId = COLOR_MAP.get(colorValue);
+        if (colorResId != null)
+        {
+            // Create a small colored rectangle drawable
+            GradientDrawable colorBox = new GradientDrawable();
+            colorBox.setShape(GradientDrawable.RECTANGLE);
+            colorBox.setColor(ContextCompat.getColor(getContext(), colorResId));
+            colorBox.setCornerRadius(4);
+
+            // Set the size of the color box (20dp x 20dp to better match text height)
+            int size = (int) (20 * getContext().getResources().getDisplayMetrics().density);
+            colorBox.setBounds(0, 0, size, size);
+
+            // Add the color box as an image span with custom vertical centering
+            SpannableString colorSpan = new SpannableString("  ");
+            // Use a custom CenteredImageSpan for proper vertical alignment
+            colorSpan.setSpan(new CenteredImageSpan(colorBox), 0, 1, 0);
+            builder.append(colorSpan);
+            builder.append(" ");
+        }
+
+        // Add the text
+        builder.append(entry);
+
+        return builder;
     }
 
     @Override
@@ -148,8 +205,41 @@ public class ColorListPreference extends ListPreference
 
         public void setCheckedPosition(int position)
         {
-            this.checkedPosition = position;
+            checkedPosition = position;
             notifyDataSetChanged();
+        }
+    }
+
+    /**
+     * Custom ImageSpan that centers the drawable vertically with the text.
+     */
+    private static class CenteredImageSpan extends DynamicDrawableSpan
+    {
+        private final Drawable drawable;
+
+        public CenteredImageSpan(Drawable drawable)
+        {
+            this.drawable = drawable;
+        }
+
+        @Override
+        public Drawable getDrawable()
+        {
+            return drawable;
+        }
+
+        @Override
+        public void draw(@NonNull Canvas canvas, CharSequence text, int start, int end,
+                         float x, int top, int y, int bottom, @NonNull Paint paint)
+        {
+            Drawable b = getDrawable();
+            Paint.FontMetricsInt fm = paint.getFontMetricsInt();
+            int transY = (y + fm.descent + y + fm.ascent) / 2 - b.getBounds().bottom / 2;
+
+            canvas.save();
+            canvas.translate(x, transY);
+            b.draw(canvas);
+            canvas.restore();
         }
     }
 }

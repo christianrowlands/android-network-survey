@@ -934,7 +934,8 @@ private fun getCoverageCircleColors(): Pair<Color, Color> {
         NetworkSurveyConstants.PROPERTY_MAP_COVERAGE_CIRCLE_COLOR,
         NetworkSurveyConstants.DEFAULT_COVERAGE_CIRCLE_COLOR
     )
-    val opacity = preferences.getInt(NetworkSurveyConstants.PROPERTY_MAP_COVERAGE_CIRCLE_OPACITY, 0)
+    val opacity =
+        preferences.getInt(NetworkSurveyConstants.PROPERTY_MAP_COVERAGE_CIRCLE_OPACITY, 30)
 
     // Convert opacity percentage (0-100) to alpha float (0.0-1.0)
     val alpha = opacity / 100f
