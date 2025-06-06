@@ -277,18 +277,21 @@ internal fun TowerMapScreen(
                     }
 
                     // Render serving cell coverage circles
-                    val servingCellCoverage by viewModel.servingCellCoverage.collectAsStateWithLifecycle()
-                    val coverageCircleColor = getCoverageCircleColor()
-                    servingCellCoverage.forEach { coverageData ->
-                        Circle(
-                            state = rememberCircleState(
-                                center = coverageData.center,
-                                radiusMeters = coverageData.radiusMeters,
-                                //fillColor = colorResource(R.color.serving_cell_coverage).copy(alpha = 0.1f),
-                                strokeColor = coverageCircleColor,
-                                strokeWidth = 2f
+                    val displayCoverage = PreferenceUtils.displayServingCellCoverageOnMap(context)
+                    if (displayCoverage) {
+                        val servingCellCoverage by viewModel.servingCellCoverage.collectAsStateWithLifecycle()
+                        val (fillColor, strokeColor) = getCoverageCircleColors()
+                        servingCellCoverage.forEach { coverageData ->
+                            Circle(
+                                state = rememberCircleState(
+                                    center = coverageData.center,
+                                    radiusMeters = coverageData.radiusMeters,
+                                    fillColor = fillColor,
+                                    strokeColor = strokeColor,
+                                    strokeWidth = 2f
+                                )
                             )
-                        )
+                        }
                     }
                 }
 
@@ -919,18 +922,24 @@ fun PlmnFilterDialog(
 }
 
 /**
- * Gets the color resource ID for the coverage circle based on user preference.
+ * Gets the color for the coverage circle based on user preference.
+ * Returns a pair of (fillColor, strokeColor) where fillColor has the user-specified opacity
+ * and strokeColor is always 100% opaque.
  */
 @Composable
-private fun getCoverageCircleColor(): Color {
+private fun getCoverageCircleColors(): Pair<Color, Color> {
     val context = LocalContext.current
     val preferences = PreferenceManager.getDefaultSharedPreferences(context)
     val selectedColor = preferences.getString(
         NetworkSurveyConstants.PROPERTY_MAP_COVERAGE_CIRCLE_COLOR,
         NetworkSurveyConstants.DEFAULT_COVERAGE_CIRCLE_COLOR
     )
+    val opacity = preferences.getInt(NetworkSurveyConstants.PROPERTY_MAP_COVERAGE_CIRCLE_OPACITY, 0)
 
-    return when (selectedColor) {
+    // Convert opacity percentage (0-100) to alpha float (0.0-1.0)
+    val alpha = opacity / 100f
+
+    val baseColor = when (selectedColor) {
         "red" -> colorResource(R.color.coverage_circle_red)
         "green" -> colorResource(R.color.coverage_circle_green)
         "orange" -> colorResource(R.color.coverage_circle_orange)
@@ -940,6 +949,9 @@ private fun getCoverageCircleColor(): Color {
         "white" -> colorResource(R.color.coverage_circle_white)
         else -> colorResource(R.color.serving_cell_dark) // Default blue
     }
+
+    // Return fill color with opacity and stroke color with 100% opacity
+    return Pair(baseColor.copy(alpha = alpha), baseColor)
 }
 
 @Composable

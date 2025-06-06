@@ -493,12 +493,16 @@ but work independently, so you have full control over how you handle your data.<
     <string name="allow_intent_control_summary_off">Other apps will be blocked from starting Network Survey</string>
 
     <string name="tower_map_config_title">Tower Map Config</string>
+    <string name="coverage_area_category_title">Serving Cell Coverage</string>
     <string name="display_coverage_area_title">Display Serving Cell Coverage</string>
     <string name="display_coverage_area_summary_on">Serving cell coverage will be displayed on the map</string>
     <string name="display_coverage_area_summary_off">Serving cell coverage won\'t be displayed on the map</string>
 
     <string name="coverage_circle_color_title">Coverage Circle Color</string>
     <string name="coverage_circle_color_dialog_title">Select Coverage Circle Color</string>
+
+    <string name="coverage_circle_opacity_title">Coverage Circle Fill Opacity</string>
+    <string name="coverage_circle_opacity_summary">Adjust transparency of the coverage circle fill (0% = no fill, 100% = solid fill)</string>
 
     <string name="keep_screen_on_title">Keep Tower Map Screen On</string>
     <string name="keep_screen_on_summary_on">Screen will stay on while viewing the Tower Map</string>
