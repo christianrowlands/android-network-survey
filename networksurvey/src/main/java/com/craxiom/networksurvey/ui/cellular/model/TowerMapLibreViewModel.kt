@@ -16,12 +16,14 @@ import com.craxiom.networksurvey.model.CellularRecordWrapper
 import com.craxiom.networksurvey.model.Plmn
 import com.craxiom.networksurvey.util.CellularUtils
 import com.craxiom.networksurvey.util.PreferenceUtils
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.withContext
 import org.maplibre.android.camera.CameraPosition
 import org.maplibre.android.camera.CameraUpdateFactory
 import org.maplibre.android.geometry.LatLng
@@ -29,6 +31,9 @@ import org.maplibre.android.geometry.LatLngBounds
 import org.maplibre.android.maps.MapLibreMap
 import org.maplibre.android.maps.MapView
 import org.maplibre.android.maps.Style
+import org.maplibre.android.style.layers.FillLayer
+import org.maplibre.android.style.layers.PropertyFactory
+import org.maplibre.android.style.sources.VectorSource
 import retrofit2.Response
 import timber.log.Timber
 import java.util.Objects
@@ -37,6 +42,10 @@ const val INITIAL_ZOOM = 14.0
 const val MIN_ZOOM_LEVEL = 9.0
 const val MAX_AREA_SQ_METERS = 40_000_000_000.0
 private const val MAX_TOWERS_ON_MAP = 7_500
+
+private const val BEACONDB_STYLE_SOURCE_NAME = "beacondb-source"
+private const val BEACONDB_COVERAGE_COLOR = "#ff8000"
+private const val BEACONDB_COVERAGE_OPACITY = 0.4f
 
 class TowerMapLibreViewModel : ViewModel() {
 
@@ -100,6 +109,17 @@ class TowerMapLibreViewModel : ViewModel() {
 
     // Selected SIM subscription ID for display
     private val _selectedSimSubscriptionId = MutableStateFlow<Int?>(null)
+    val selectedSimSubscriptionId = _selectedSimSubscriptionId.asStateFlow()
+
+    // Map layer settings
+    private val _selectedMapTileSource = MutableStateFlow(MapTileSource.MAPTILER)
+    val selectedMapTileSource = _selectedMapTileSource.asStateFlow()
+
+    private val _showBeaconDbCoverage = MutableStateFlow(false)
+    val showBeaconDbCoverage = _showBeaconDbCoverage.asStateFlow()
+
+    // BeaconDB layer management
+    private var beaconDbLayerIds: List<String> = emptyList()
 
     // Serving cell locations with range info
     private val subIdToServingCellLocations = HashMap<Int, ServingCellLocationInfo>()
@@ -200,6 +220,126 @@ class TowerMapLibreViewModel : ViewModel() {
             // Recompute serving cell overlays for the selected SIM
             updateServingCellLines()
             updateServingCellCoverage()
+        }
+    }
+
+    fun setSelectedMapTileSource(source: MapTileSource) {
+        _selectedMapTileSource.value = source
+    }
+
+    fun setShowBeaconDbCoverage(show: Boolean) {
+        _showBeaconDbCoverage.value = show
+    }
+
+    fun addBeaconDbCoverageLayer() {
+        mapLibreMap?.let { map ->
+            map.style?.let { style ->
+                try {
+                    val sourceId = BEACONDB_STYLE_SOURCE_NAME
+                    val layerPrefix = "beacondb-layer-"
+                    val tileJsonUrl = "https://cdn.beacondb.net/tiles/beacondb.json"
+
+                    // Add BeaconDB vector source if not already added
+                    val existingSource =
+                        style.getSource(sourceId) as? VectorSource
+                    if (existingSource == null || existingSource.uri != tileJsonUrl) {
+                        style.removeSource(sourceId)
+                        val vectorSource =
+                            VectorSource(sourceId, tileJsonUrl)
+                        style.addSource(vectorSource)
+                    }
+
+                    // Fetch layer IDs from TileJSON and add layers
+                    viewModelScope.launch {
+                        try {
+                            val layerIds = fetchBeaconDbLayerIds(tileJsonUrl)
+                            layerIds.forEach { layerId ->
+                                val fullLayerId = layerPrefix + layerId
+                                if (style.getLayer(fullLayerId) == null) {
+                                    val layer = FillLayer(
+                                        fullLayerId,
+                                        sourceId
+                                    ).apply {
+                                        sourceLayer = layerId
+                                        setProperties(
+                                            PropertyFactory.fillColor(BEACONDB_COVERAGE_COLOR),
+                                            PropertyFactory.fillOpacity(BEACONDB_COVERAGE_OPACITY)
+                                        )
+                                    }
+                                    style.addLayer(layer)
+                                }
+                            }
+                            // Store layer IDs for removal
+                            beaconDbLayerIds = layerIds
+                        } catch (e: Exception) {
+                            Timber.e(e, "Error fetching BeaconDB layer IDs")
+                        }
+                    }
+                } catch (e: Exception) {
+                    Timber.e(e, "Error adding BeaconDB coverage layer")
+                }
+            }
+        }
+    }
+
+    fun removeBeaconDbCoverageLayer() {
+        mapLibreMap?.let { map ->
+            map.style?.let { style ->
+                try {
+                    val layerPrefix = "beacondb-layer-"
+
+                    // Remove all BeaconDB layers
+                    beaconDbLayerIds.forEach { layerId ->
+                        val fullLayerId = layerPrefix + layerId
+                        style.getLayer(fullLayerId)?.let {
+                            style.removeLayer(fullLayerId)
+                        }
+                    }
+
+                    // Remove source
+                    style.getSource(BEACONDB_STYLE_SOURCE_NAME)?.let {
+                        style.removeSource(BEACONDB_STYLE_SOURCE_NAME)
+                    }
+
+                    // Clear stored layer IDs
+                    beaconDbLayerIds = emptyList()
+                } catch (e: Exception) {
+                    Timber.e(e, "Error removing BeaconDB coverage layer")
+                }
+            }
+        }
+    }
+
+    private suspend fun fetchBeaconDbLayerIds(tileJsonUrl: String): List<String> {
+        return withContext(Dispatchers.IO) {
+            try {
+                val url = java.net.URL(tileJsonUrl)
+                val connection = url.openConnection() as java.net.HttpURLConnection
+                connection.requestMethod = "GET"
+                connection.setRequestProperty("Accept", "application/json")
+
+                val response = connection.inputStream.bufferedReader().use { it.readText() }
+                val jsonObject = org.json.JSONObject(response)
+
+                // Extract layer IDs from vector_layers array
+                val vectorLayers = jsonObject.optJSONArray("vector_layers")
+                val layerIds = mutableListOf<String>()
+
+                if (vectorLayers != null) {
+                    for (i in 0 until vectorLayers.length()) {
+                        val layer = vectorLayers.getJSONObject(i)
+                        val id = layer.optString("id")
+                        if (id.isNotEmpty()) {
+                            layerIds.add(id)
+                        }
+                    }
+                }
+
+                layerIds
+            } catch (e: Exception) {
+                Timber.e(e, "Error fetching BeaconDB TileJSON")
+                emptyList()
+            }
         }
     }
 

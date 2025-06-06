@@ -25,6 +25,7 @@ import androidx.compose.material.icons.filled.Info
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -57,6 +58,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.core.content.edit
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.preference.PreferenceManager
@@ -72,6 +74,7 @@ import com.craxiom.networksurvey.data.api.Tower
 import com.craxiom.networksurvey.model.CellularProtocol
 import com.craxiom.networksurvey.model.Plmn
 import com.craxiom.networksurvey.ui.cellular.model.INITIAL_ZOOM
+import com.craxiom.networksurvey.ui.cellular.model.MapTileSource
 import com.craxiom.networksurvey.ui.cellular.model.ServingCellInfo
 import com.craxiom.networksurvey.ui.cellular.model.ServingSignalInfo
 import com.craxiom.networksurvey.ui.cellular.model.TowerMapLibreViewModel
@@ -155,6 +158,7 @@ internal fun TowerMapScreen(
     var showTowerSourceDialog by remember { mutableStateOf(false) }
     var showTowerInfoDialog by remember { mutableStateOf(false) }
     var selectedTower by remember { mutableStateOf<Tower?>(null) }
+    var showLayersDialog by remember { mutableStateOf(false) }
 
     val cameraPositionState = rememberCameraPositionState {
         // FIXME Is this redundant because there is similar logic in the view model?
@@ -196,17 +200,46 @@ internal fun TowerMapScreen(
                 val mapId = "basic-v2-dark" // "basic-v2" for light mode
                 val mapTilerKey by viewModel.mapTilerKey.collectAsState()
                 val mapKeyLoadError by viewModel.mapKeyLoadError.collectAsState()
+                val selectedTileSource by viewModel.selectedMapTileSource.collectAsStateWithLifecycle()
                 var darkMap = remember { mutableStateOf(false) }
 
+                // Load preferences on startup
+                DisposableEffect(Unit) {
+                    val savedTileSource = preferences.getString(
+                        NetworkSurveyConstants.PROPERTY_SELECTED_MAP_TILE_SOURCE,
+                        MapTileSource.MAPTILER.name
+                    )
+                    viewModel.setSelectedMapTileSource(MapTileSource.fromString(savedTileSource!!))
+
+                    val savedShowBeaconDb = preferences.getBoolean(
+                        NetworkSurveyConstants.PROPERTY_SHOW_BEACONDB_COVERAGE,
+                        false
+                    )
+                    viewModel.setShowBeaconDbCoverage(savedShowBeaconDb)
+
+                    onDispose { }
+                }
+
                 // decide which style URL to use:
-                val styleUrl = remember(mapTilerKey, mapKeyLoadError) {
-                    if (mapKeyLoadError || mapTilerKey.isNullOrEmpty()) {
-                        // generic (OSM) raster‐tiles style
-                        darkMap.value = false
-                        "https://raw.githubusercontent.com/christianrowlands/ns-map-style-uri/refs/heads/main/openstreetmap.json"
-                    } else {
-                        darkMap.value = true
-                        "https://api.maptiler.com/maps/$mapId/style.json?key=$mapTilerKey"
+                val styleUrl = remember(mapTilerKey, mapKeyLoadError, selectedTileSource) {
+                    when {
+                        selectedTileSource == MapTileSource.OPENSTREETMAP -> {
+                            // Always use OSM if explicitly selected
+                            darkMap.value = false
+                            "https://raw.githubusercontent.com/christianrowlands/ns-map-style-uri/refs/heads/main/openstreetmap.json"
+                        }
+
+                        mapKeyLoadError || mapTilerKey.isNullOrEmpty() -> {
+                            // Fallback to OSM if MapTiler key unavailable
+                            darkMap.value = false
+                            "https://raw.githubusercontent.com/christianrowlands/ns-map-style-uri/refs/heads/main/openstreetmap.json"
+                        }
+
+                        else -> {
+                            // Use MapTiler
+                            darkMap.value = true
+                            "https://api.maptiler.com/maps/$mapId/style.json?key=$mapTilerKey"
+                        }
                     }
                 }
 
@@ -299,6 +332,19 @@ internal fun TowerMapScreen(
                                 )
                             )
                         }
+                    }
+
+                    // Handle BeaconDB overlay
+                    val showBeaconDbCoverage by viewModel.showBeaconDbCoverage.collectAsStateWithLifecycle()
+                    DisposableEffect(showBeaconDbCoverage) {
+                        if (showBeaconDbCoverage) {
+                            // Add BeaconDB coverage layer
+                            viewModel.addBeaconDbCoverageLayer()
+                        } else {
+                            // Remove BeaconDB coverage layer
+                            viewModel.removeBeaconDbCoverageLayer()
+                        }
+                        onDispose { }
                     }
                 }
 
@@ -418,6 +464,39 @@ internal fun TowerMapScreen(
                         )
                 ) {
                     Column {
+
+                        Surface(
+                            modifier = Modifier
+                                .size(40.dp)
+                                .clip(CircleShape)
+                                .background(MaterialTheme.colorScheme.primary),
+                            color = MaterialTheme.colorScheme.primary
+                        ) {
+                            Box(
+                                contentAlignment = Alignment.Center,
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .padding(8.dp)
+                            ) {
+                                Image(
+                                    painter = painterResource(id = R.drawable.ic_layers),
+                                    contentDescription = "Map Layers",
+                                    modifier = Modifier.size(24.dp)
+                                )
+                                Button(
+                                    onClick = { showLayersDialog = true },
+                                    modifier = Modifier
+                                        .size(48.dp)
+                                        .clip(CircleShape),
+                                    colors = ButtonDefaults.buttonColors(
+                                        containerColor = Color.Transparent
+                                    )
+                                ) {}
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(12.dp))
+
                         Surface(
                             modifier = Modifier
                                 .size(40.dp)
@@ -512,6 +591,7 @@ internal fun TowerMapScreen(
                             selectedSimIndex = newIndex
                             viewModel.setSelectedSimSubscriptionId(newIndex)
                         }
+                        Spacer(modifier = Modifier.height(6.dp))
                     }
 
                     // Display the serving cell info for the selected SIM card
@@ -590,6 +670,34 @@ internal fun TowerMapScreen(
                     showTowerInfoDialog = false
                     selectedTower = null
                 }
+            )
+        }
+
+        if (showLayersDialog) {
+            val currentTileSource by viewModel.selectedMapTileSource.collectAsStateWithLifecycle()
+            val showBeaconDbCoverage by viewModel.showBeaconDbCoverage.collectAsStateWithLifecycle()
+
+            MapLayersDialog(
+                currentTileSource = currentTileSource,
+                showBeaconDbCoverage = showBeaconDbCoverage,
+                onSetTileSource = { source ->
+                    viewModel.setSelectedMapTileSource(source)
+                    // Save preference
+                    preferences.edit {
+                        putString(
+                            NetworkSurveyConstants.PROPERTY_SELECTED_MAP_TILE_SOURCE,
+                            source.name
+                        )
+                    }
+                },
+                onSetShowBeaconDbCoverage = { show ->
+                    viewModel.setShowBeaconDbCoverage(show)
+                    // Save preference
+                    preferences.edit {
+                        putBoolean(NetworkSurveyConstants.PROPERTY_SHOW_BEACONDB_COVERAGE, show)
+                    }
+                },
+                onDismiss = { showLayersDialog = false }
             )
         }
     }
@@ -962,6 +1070,82 @@ private fun getCoverageCircleColors(): Pair<Color, Color> {
 
     // Return fill color with opacity and stroke color with 100% opacity
     return Pair(baseColor.copy(alpha = alpha), baseColor)
+}
+
+@Composable
+fun MapLayersDialog(
+    currentTileSource: MapTileSource,
+    showBeaconDbCoverage: Boolean,
+    onSetTileSource: (MapTileSource) -> Unit,
+    onSetShowBeaconDbCoverage: (Boolean) -> Unit,
+    onDismiss: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Text(text = "Map Layers")
+        },
+        text = {
+            Column {
+                Text(
+                    text = "Map Tile Source",
+                    style = MaterialTheme.typography.titleMedium,
+                    modifier = Modifier.padding(bottom = 8.dp)
+                )
+
+                MapTileSource.entries.forEach { source ->
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .selectable(
+                                selected = (source == currentTileSource),
+                                onClick = { onSetTileSource(source) }
+                            )
+                            .padding(vertical = 4.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        RadioButton(
+                            selected = (source == currentTileSource),
+                            onClick = { onSetTileSource(source) }
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(text = source.displayName)
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                Text(
+                    text = "Map Overlays",
+                    style = MaterialTheme.typography.titleMedium,
+                    modifier = Modifier.padding(bottom = 8.dp)
+                )
+
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .selectable(
+                            selected = showBeaconDbCoverage,
+                            onClick = { onSetShowBeaconDbCoverage(!showBeaconDbCoverage) }
+                        )
+                        .padding(vertical = 4.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Checkbox(
+                        checked = showBeaconDbCoverage,
+                        onCheckedChange = onSetShowBeaconDbCoverage
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(text = "BeaconDB Coverage")
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onDismiss) {
+                Text("OK")
+            }
+        }
+    )
 }
 
 @Composable

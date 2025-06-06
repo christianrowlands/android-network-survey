@@ -91,8 +91,8 @@ class TowerMapFragment : AServiceDataFragment(), ICellularSurveyRecordListener {
     override fun onPause() {
         super.onPause()
         // Save last viewport
-        viewModel?.lastQueriedBounds?.value?.let { bounds ->
-            PreferenceUtils.saveTowerMapViewLatLngBounds(requireContext(), bounds)
+        context?.let { context ->
+            viewModel?.saveViewport(context)
         }
     }
 
