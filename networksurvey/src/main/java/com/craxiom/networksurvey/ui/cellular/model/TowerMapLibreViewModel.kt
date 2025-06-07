@@ -14,6 +14,7 @@ import com.craxiom.networksurvey.data.api.retrofit
 import com.craxiom.networksurvey.model.CellularProtocol
 import com.craxiom.networksurvey.model.CellularRecordWrapper
 import com.craxiom.networksurvey.model.Plmn
+import com.craxiom.networksurvey.ui.cellular.towermap.TOWER_LAYER_KEY
 import com.craxiom.networksurvey.util.CellularUtils
 import com.craxiom.networksurvey.util.PreferenceUtils
 import kotlinx.coroutines.Dispatchers
@@ -43,9 +44,14 @@ const val MIN_ZOOM_LEVEL = 9.0
 const val MAX_AREA_SQ_METERS = 40_000_000_000.0
 private const val MAX_TOWERS_ON_MAP = 7_500
 
+const val SERVING_CELL_LINE_LAYER_PREFIX = "line-layer-"
+const val SERVING_CELL_COVERAGE_FILL_LAYER_PREFIX = "circle-fill-layer-"
+const val SERVING_CELL_COVERAGE_OUTLINE_LAYER_PREFIX = "circle-stroke-layer-"
+
 private const val BEACONDB_STYLE_SOURCE_NAME = "beacondb-source"
 private const val BEACONDB_COVERAGE_COLOR = "#ff8000"
 private const val BEACONDB_COVERAGE_OPACITY = 0.4f
+
 
 class TowerMapLibreViewModel : ViewModel() {
 
@@ -266,7 +272,36 @@ class TowerMapLibreViewModel : ViewModel() {
                                             PropertyFactory.fillOpacity(BEACONDB_COVERAGE_OPACITY)
                                         )
                                     }
-                                    style.addLayer(layer)
+
+                                    // Add the layer below our custom layers but above base map tiles
+                                    // Look for our specific custom layers to insert before them
+                                    val existingLayers = style.layers
+                                    var insertBeforeLayerId: String? = null
+
+                                    // Look for our custom layer IDs first (tower symbols, serving cell lines/circles)
+                                    for (existingLayer in existingLayers) {
+                                        val layerId = existingLayer.id
+                                        // Check if this is one of our custom layers
+                                        if (layerId == TOWER_LAYER_KEY ||  // Tower symbols (exact match)
+                                            layerId.startsWith(SERVING_CELL_LINE_LAYER_PREFIX) ||  // Serving cell lines
+                                            layerId.startsWith(
+                                                SERVING_CELL_COVERAGE_FILL_LAYER_PREFIX
+                                            ) ||  // Coverage circle fills
+                                            layerId.startsWith(
+                                                SERVING_CELL_COVERAGE_OUTLINE_LAYER_PREFIX
+                                            )
+                                        ) {  // Coverage circle strokes
+                                            insertBeforeLayerId = layerId
+                                            break
+                                        }
+                                    }
+
+                                    if (insertBeforeLayerId != null) {
+                                        style.addLayerBelow(layer, insertBeforeLayerId)
+                                    } else {
+                                        // If no custom layers found, add at the end (above base tiles)
+                                        style.addLayer(layer)
+                                    }
                                 }
                             }
                             // Store layer IDs for removal

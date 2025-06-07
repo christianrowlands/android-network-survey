@@ -11,6 +11,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
+import com.craxiom.networksurvey.ui.cellular.model.SERVING_CELL_COVERAGE_FILL_LAYER_PREFIX
+import com.craxiom.networksurvey.ui.cellular.model.SERVING_CELL_COVERAGE_OUTLINE_LAYER_PREFIX
 import org.maplibre.android.geometry.LatLng
 import org.maplibre.android.maps.Style
 import org.maplibre.android.style.layers.FillLayer
@@ -171,8 +173,8 @@ fun Circle(
 
     // Unique IDs per state instance
     val sourceId = "circle-source-${state.hashCode()}"
-    val fillLayerId = "circle-fill-layer-${state.hashCode()}"
-    val strokeLayerId = "circle-stroke-layer-${state.hashCode()}"
+    val fillLayerId = "$SERVING_CELL_COVERAGE_FILL_LAYER_PREFIX${state.hashCode()}"
+    val strokeLayerId = "$SERVING_CELL_COVERAGE_OUTLINE_LAYER_PREFIX${state.hashCode()}"
 
     // Build polygon approximation
     val polygon = createCirclePolygon(state.center, state.radiusMeters)

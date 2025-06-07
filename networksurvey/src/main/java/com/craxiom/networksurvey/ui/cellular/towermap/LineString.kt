@@ -10,6 +10,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
+import com.craxiom.networksurvey.ui.cellular.model.SERVING_CELL_LINE_LAYER_PREFIX
 import org.maplibre.android.geometry.LatLng
 import org.maplibre.android.maps.Style
 import org.maplibre.android.style.layers.LineLayer
@@ -129,7 +130,7 @@ fun LineString(
     if (state.points.size < 2) return
 
     // Unique IDs per state instance
-    val layerId = "line-layer-${state.hashCode()}"
+    val layerId = "${SERVING_CELL_LINE_LAYER_PREFIX}${state.hashCode()}"
     val sourceId = "line-source-${state.hashCode()}"
 
     // Build initial LineString
