@@ -1,6 +1,7 @@
 package com.craxiom.networksurvey.util;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
 
 import org.junit.Test;
 
@@ -13,13 +14,13 @@ public class CellularUtilsTest
     {
         // Test boundary values for Range 1: 0 ≤ ARFCN ≤ 599,999
         // Formula: F_REF = NARFCN * 0.005 (5 kHz steps)
-        
+
         // Lower boundary
         assertEquals(0.0, CellularUtils.narfcnToFrequencyMhz(0), DELTA);
-        
+
         // Mid-range value
         assertEquals(1500.0, CellularUtils.narfcnToFrequencyMhz(300000), DELTA); // 300000 * 0.005 = 1500.0 MHz
-        
+
         // Upper boundary
         assertEquals(2999.995, CellularUtils.narfcnToFrequencyMhz(599999), DELTA); // 599999 * 0.005 = 2999.995 MHz
     }
@@ -29,13 +30,13 @@ public class CellularUtilsTest
     {
         // Test boundary values for Range 2: 600,000 ≤ ARFCN ≤ 2,016,666
         // Formula: F_REF = 3000.0 + (NARFCN - 600000) * 0.015 (15 kHz steps)
-        
+
         // Lower boundary
         assertEquals(3000.0, CellularUtils.narfcnToFrequencyMhz(600000), DELTA); // 3000.0 + (600000 - 600000) * 0.015 = 3000.0 MHz
-        
+
         // Mid-range value
         assertEquals(18249.99, CellularUtils.narfcnToFrequencyMhz(1616666), DELTA); // 3000.0 + (1616666 - 600000) * 0.015 = 18249.99 MHz
-        
+
         // Upper boundary
         assertEquals(24249.99, CellularUtils.narfcnToFrequencyMhz(2016666), DELTA); // 3000.0 + (2016666 - 600000) * 0.015 = 24249.99 MHz
     }
@@ -45,30 +46,30 @@ public class CellularUtilsTest
     {
         // Test boundary values for Range 3: 2,016,667 ≤ ARFCN ≤ 3,279,165
         // Formula: F_REF = 24250.08 + (NARFCN - 2016667) * 0.060 (60 kHz steps)
-        
+
         // Lower boundary
         assertEquals(24250.08, CellularUtils.narfcnToFrequencyMhz(2016667), DELTA); // 24250.08 + (2016667 - 2016667) * 0.060 = 24250.08 MHz
-        
+
         // Mid-range value (calculate a simpler value)
         assertEquals(30250.08, CellularUtils.narfcnToFrequencyMhz(2116667), DELTA); // 24250.08 + (2116667 - 2016667) * 0.060 = 24250.08 + 6000 = 30250.08 MHz
-        
+
         // Upper boundary
-        assertEquals(100000.0, CellularUtils.narfcnToFrequencyMhz(3279165), DELTA); // 24250.08 + (3279165 - 2016667) * 0.060 ≈ 100000.0 MHz
+        assertEquals(99999.96, CellularUtils.narfcnToFrequencyMhz(3279165), DELTA); // 24250.08 + (3279165 - 2016667) * 0.060 ≈ 100000.0 MHz
     }
 
     @Test
     public void narfcnToFrequencyMhz_commonNrBands()
     {
         // Test some common 5G NR band frequencies based on 3GPP specifications
-        
+
         // N1 (2100 MHz): NARFCN around 422000 should give ~2110 MHz
         double frequency = CellularUtils.narfcnToFrequencyMhz(422000);
         assertEquals(2110.0, frequency, DELTA); // 3000 + (422000 - 600000) * 0.015 = 2110.0 MHz
-        
+
         // N78 (3500 MHz): NARFCN around 633333 should give ~3500 MHz  
         frequency = CellularUtils.narfcnToFrequencyMhz(633333);
         assertEquals(3499.995, frequency, DELTA); // 3000 + (633333 - 600000) * 0.015 = 3499.995 MHz
-        
+
         // N41 (2600 MHz): NARFCN around 520000 should give ~2600 MHz in range 1
         frequency = CellularUtils.narfcnToFrequencyMhz(520000);
         assertEquals(2600.0, frequency, DELTA); // 520000 * 0.005 = 2600.0 MHz
@@ -78,11 +79,11 @@ public class CellularUtilsTest
     public void narfcnToFrequencyMhz_invalidValues()
     {
         // Test invalid NARFCN values
-        
+
         // Negative value
         assertEquals(-1.0, CellularUtils.narfcnToFrequencyMhz(-1), DELTA);
         assertEquals(-1.0, CellularUtils.narfcnToFrequencyMhz(-100), DELTA);
-        
+
         // Value above maximum range
         assertEquals(-1.0, CellularUtils.narfcnToFrequencyMhz(3279166), DELTA);
         assertEquals(-1.0, CellularUtils.narfcnToFrequencyMhz(4000000), DELTA);
@@ -92,16 +93,16 @@ public class CellularUtilsTest
     public void narfcnToFrequencyMhz_edgeCases()
     {
         // Test edge cases between ranges
-        
+
         // Last value in range 1
         assertEquals(2999.995, CellularUtils.narfcnToFrequencyMhz(599999), DELTA);
-        
+
         // First value in range 2
         assertEquals(3000.0, CellularUtils.narfcnToFrequencyMhz(600000), DELTA);
-        
+
         // Last value in range 2
         assertEquals(24249.99, CellularUtils.narfcnToFrequencyMhz(2016666), DELTA);
-        
+
         // First value in range 3
         assertEquals(24250.08, CellularUtils.narfcnToFrequencyMhz(2016667), DELTA);
     }
@@ -113,5 +114,65 @@ public class CellularUtilsTest
         assertEquals(0.005, CellularUtils.narfcnToFrequencyMhz(1), DELTA); // 1 * 0.005 = 0.005 MHz
         assertEquals(0.010, CellularUtils.narfcnToFrequencyMhz(2), DELTA); // 2 * 0.005 = 0.010 MHz
         assertEquals(0.050, CellularUtils.narfcnToFrequencyMhz(10), DELTA); // 10 * 0.005 = 0.050 MHz
+    }
+
+    @Test
+    public void getNrBandName_commonBands()
+    {
+        // Test common Sub-6 GHz FDD bands
+        assertEquals("2100", CellularUtils.getNrBandName(1));
+        assertEquals("1900 PCS", CellularUtils.getNrBandName(2));
+        assertEquals("1800", CellularUtils.getNrBandName(3));
+        assertEquals("850", CellularUtils.getNrBandName(5));
+        assertEquals("2600", CellularUtils.getNrBandName(7));
+        assertEquals("900", CellularUtils.getNrBandName(8));
+    }
+
+    @Test
+    public void getNrBandName_tddBands()
+    {
+        // Test common TDD bands
+        assertEquals("TD 2500", CellularUtils.getNrBandName(41));
+        assertEquals("CBRS", CellularUtils.getNrBandName(48));
+        assertEquals("TD 3700 (C-Band)", CellularUtils.getNrBandName(77));
+        assertEquals("TD 3500", CellularUtils.getNrBandName(78));
+        assertEquals("TD 4700", CellularUtils.getNrBandName(79));
+    }
+
+    @Test
+    public void getNrBandName_mmWaveBands()
+    {
+        // Test mmWave bands
+        assertEquals("28 GHz", CellularUtils.getNrBandName(257));
+        assertEquals("26 GHz", CellularUtils.getNrBandName(258));
+        assertEquals("39 GHz", CellularUtils.getNrBandName(260));
+        assertEquals("28 GHz (subset of band n257)", CellularUtils.getNrBandName(261));
+    }
+
+    @Test
+    public void getNrBandName_specialBands()
+    {
+        // Test some special purpose bands
+        assertEquals("700a - Lower SMH blocks A/B/C", CellularUtils.getNrBandName(12));
+        assertEquals("Upper SMH", CellularUtils.getNrBandName(14));
+        assertEquals("Lower 800 (Japan)", CellularUtils.getNrBandName(18));
+        assertEquals("EU Digital Dividend", CellularUtils.getNrBandName(20));
+        assertEquals("Extended PCS blocks A-G", CellularUtils.getNrBandName(25));
+        assertEquals("Extended CLR", CellularUtils.getNrBandName(26));
+        assertEquals("700 APT", CellularUtils.getNrBandName(28));
+        assertEquals("AWS-3", CellularUtils.getNrBandName(66));
+        assertEquals("AWS-4", CellularUtils.getNrBandName(70));
+        assertEquals("600", CellularUtils.getNrBandName(71));
+    }
+
+    @Test
+    public void getNrBandName_unknownBands()
+    {
+        // Test unknown/invalid band numbers
+        assertNull(CellularUtils.getNrBandName(0));
+        assertNull(CellularUtils.getNrBandName(4)); // n4 doesn't exist in NR
+        assertNull(CellularUtils.getNrBandName(99));
+        assertNull(CellularUtils.getNrBandName(-1));
+        assertNull(CellularUtils.getNrBandName(1000));
     }
 }

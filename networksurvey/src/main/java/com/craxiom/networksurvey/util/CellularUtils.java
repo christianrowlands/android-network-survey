@@ -100,6 +100,88 @@ public class CellularUtils
     };
 
     /**
+     * Gets the band name for a given 5G NR band number.
+     * The band names are based on the frequency designations from RF wireless specifications.
+     *
+     * @param bandNumber The NR band number (e.g., 1, 2, 3, etc.).
+     * @return The band name, or null if the band number is not recognized.
+     */
+    public static String getNrBandName(int bandNumber)
+    {
+        switch (bandNumber)
+        {
+            // Sub-6 GHz FDD Bands
+            case 1:
+                return "2100";
+            case 2:
+                return "1900 PCS";
+            case 3:
+                return "1800";
+            case 5:
+                return "850";
+            case 7:
+                return "2600";
+            case 8:
+                return "900";
+            case 12:
+                return "700a - Lower SMH blocks A/B/C";
+            case 14:
+                return "Upper SMH";
+            case 18:
+                return "Lower 800 (Japan)";
+            case 20:
+                return "EU Digital Dividend";
+            case 25:
+                return "Extended PCS blocks A-G";
+            case 26:
+                return "Extended CLR";
+            case 28:
+                return "700 APT";
+            case 29:
+                return "DL 700 blocks D/E";
+            case 30:
+                return "WCS blocks A/B";
+            case 66:
+                return "AWS-3";
+            case 70:
+                return "AWS-4";
+            case 71:
+                return "600";
+            case 74:
+                return "Lower L-Band";
+            case 75:
+                return "DL 1500+";
+            case 76:
+                return "DL 1500-";
+
+            // Sub-6 GHz TDD Bands
+            case 41:
+                return "TD 2500";
+            case 48:
+                return "CBRS";
+            case 77:
+                return "TD 3700 (C-Band)";
+            case 78:
+                return "TD 3500";
+            case 79:
+                return "TD 4700";
+
+            // mmWave Bands
+            case 257:
+                return "28 GHz";
+            case 258:
+                return "26 GHz";
+            case 260:
+                return "39 GHz";
+            case 261:
+                return "28 GHz (subset of band n257)";
+
+            default:
+                return null;
+        }
+    }
+
+    /**
      * Converts 5G NR ARFCN to frequency in MHz according to 3GPP TS 38.104 specification.
      * The formula is: F_REF = F_REF-Offs + (N_REF - N_REF-Offs) * Δf
      * <p>
@@ -121,20 +203,17 @@ public class CellularUtils
             // Range 1: 0 ≤ ARFCN ≤ 599,999
             // Δf = 5 kHz, F_REF-Offs = 0, N_REF-Offs = 0
             return narfcn * 0.005; // 5 kHz = 0.005 MHz
-        }
-        else if (narfcn <= 2016666)
+        } else if (narfcn <= 2016666)
         {
             // Range 2: 600,000 ≤ ARFCN ≤ 2,016,666
             // Δf = 15 kHz, F_REF-Offs = 3000 MHz, N_REF-Offs = 600,000
             return 3000.0 + (narfcn - 600000) * 0.015; // 15 kHz = 0.015 MHz
-        }
-        else if (narfcn <= 3279165)
+        } else if (narfcn <= 3279165)
         {
             // Range 3: 2,016,667 ≤ ARFCN ≤ 3,279,165
             // Δf = 60 kHz, F_REF-Offs = 24,250.08 MHz, N_REF-Offs = 2,016,667
             return 24250.08 + (narfcn - 2016667) * 0.060; // 60 kHz = 0.060 MHz
-        }
-        else
+        } else
         {
             // NARFCN is outside the valid range
             return -1.0;

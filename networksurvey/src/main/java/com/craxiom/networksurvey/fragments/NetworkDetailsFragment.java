@@ -265,6 +265,7 @@ public class NetworkDetailsFragment extends AServiceDataFragment implements ICel
         viewModel.getCellId().observe(viewLifecycleOwner, this::updateCellIdentity);
         viewModel.getChannelNumber().observe(viewLifecycleOwner, s -> binding.earfcn.setText(s));
         viewModel.getFrequency().observe(viewLifecycleOwner, s -> binding.frequency.setText(s));
+        viewModel.getBand().observe(viewLifecycleOwner, s -> binding.band.setText(s));
 
         viewModel.getPci().observe(viewLifecycleOwner, s -> binding.pci.setText(s));
         viewModel.getBandwidth().observe(viewLifecycleOwner, s -> binding.bandwidth.setText(s));
@@ -304,6 +305,7 @@ public class NetworkDetailsFragment extends AServiceDataFragment implements ICel
         viewModel.getCellId().removeObservers(viewLifecycleOwner);
         viewModel.getChannelNumber().removeObservers(viewLifecycleOwner);
         viewModel.getFrequency().removeObservers(viewLifecycleOwner);
+        viewModel.getBand().removeObservers(viewLifecycleOwner);
 
         viewModel.getPci().removeObservers(viewLifecycleOwner);
         viewModel.getBandwidth().removeObservers(viewLifecycleOwner);
@@ -333,6 +335,7 @@ public class NetworkDetailsFragment extends AServiceDataFragment implements ICel
         viewModel.setCellId(null);
         viewModel.setChannelNumber("");
         viewModel.setFrequency("");
+        viewModel.setBand("");
 
         viewModel.setPci("");
         viewModel.setBandwidth("");
@@ -562,7 +565,7 @@ public class NetworkDetailsFragment extends AServiceDataFragment implements ICel
                 binding.tacLabel.setText(R.string.tac_label);
                 binding.enbIdGroup.setVisibility(View.GONE);
                 binding.sectorIdGroup.setVisibility(View.GONE);
-                binding.earfcnLabel.setText(R.string.narfcn_band_label);
+                binding.earfcnLabel.setText(R.string.narfcn_label);
                 binding.frequencyRow.setVisibility(View.VISIBLE);
                 binding.pciLabel.setText(R.string.pci_label);
                 binding.bandwidthGroup.setVisibility(View.GONE);
@@ -802,29 +805,35 @@ public class NetworkDetailsFragment extends AServiceDataFragment implements ICel
         viewModel.setAreaCode(data.hasTac() ? String.valueOf(data.getTac().getValue()) : "");
         viewModel.setCellId(data.hasNci() ? data.getNci().getValue() : null);
 
+        // Set NARFCN without band information
+        viewModel.setChannelNumber(data.hasNarfcn() ? String.valueOf(data.getNarfcn().getValue()) : "");
+
+        // Set band field with band number and name
         if (bands.length > 0)
         {
-            StringBuilder bandsString = new StringBuilder();
+            StringBuilder bandString = new StringBuilder();
             for (int i = 0; i < bands.length; i++)
             {
-                bandsString.append(bands[i]);
+                int bandNumber = bands[i];
+                String bandName = CellularUtils.getNrBandName(bandNumber);
+
+                if (bandName != null)
+                {
+                    bandString.append(bandNumber).append(" (").append(bandName).append(")");
+                } else
+                {
+                    bandString.append(bandNumber);
+                }
+
                 if (i < bands.length - 1)
                 {
-                    bandsString.append(", ");
+                    bandString.append(", ");
                 }
             }
-
-            if (data.hasNarfcn())
-            {
-                int narfcn = data.getNarfcn().getValue();
-                viewModel.setChannelNumber(narfcn + " / " + bandsString);
-            } else
-            {
-                viewModel.setChannelNumber("? / " + bandsString);
-            }
+            viewModel.setBand(bandString.toString());
         } else
         {
-            viewModel.setChannelNumber(data.hasNarfcn() ? String.valueOf(data.getNci().getValue()) : "");
+            viewModel.setBand("");
         }
 
         if (data.hasPci())

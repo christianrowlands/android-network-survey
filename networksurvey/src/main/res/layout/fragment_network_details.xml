@@ -513,13 +513,32 @@
 
                             </androidx.constraintlayout.widget.ConstraintLayout>
 
-                            <!-- Empty space to match the two-column layout -->
                             <androidx.constraintlayout.widget.ConstraintLayout
+                                android:id="@+id/band_group"
                                 android:layout_width="0dp"
                                 android:layout_height="wrap_content"
                                 android:layout_marginTop="@dimen/small_margin"
                                 android:layout_marginBottom="@dimen/small_margin"
                                 android:layout_weight="1">
+
+                                <TextView
+                                    android:id="@+id/band"
+                                    style="@style/StandardText"
+                                    android:layout_width="match_parent"
+                                    android:layout_height="wrap_content"
+                                    app:layout_constraintTop_toTopOf="@id/band_group"
+                                    app:layout_constraintBottom_toTopOf="@id/band_label"
+                                    android:textIsSelectable="true"
+                                    tools:layout_editor_absoluteX="8dp" />
+
+                                <TextView
+                                    android:id="@+id/band_label"
+                                    style="@style/SmallLabelText"
+                                    android:layout_width="match_parent"
+                                    android:layout_height="wrap_content"
+                                    android:text="@string/band_label"
+                                    app:layout_constraintBottom_toBottomOf="@id/band_group" />
+
                             </androidx.constraintlayout.widget.ConstraintLayout>
 
                         </LinearLayout>
