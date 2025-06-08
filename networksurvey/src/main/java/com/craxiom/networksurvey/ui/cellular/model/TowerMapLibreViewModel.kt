@@ -52,6 +52,10 @@ private const val BEACONDB_STYLE_SOURCE_NAME = "beacondb-source"
 private const val BEACONDB_COVERAGE_COLOR = "#ff8000"
 private const val BEACONDB_COVERAGE_OPACITY = 0.4f
 
+// Hysteresis constants for reducing tower queries
+private const val BOUNDS_CHANGE_THRESHOLD_PERCENT = 0.20 // 20% change required
+private const val ZOOM_CHANGE_THRESHOLD = 0.5 // Half zoom level change required
+
 
 class TowerMapLibreViewModel : ViewModel() {
 
@@ -93,6 +97,9 @@ class TowerMapLibreViewModel : ViewModel() {
     // Last-queried viewport bounds ------------------
     private val _lastQueriedBounds = MutableStateFlow<LatLngBounds?>(null)
     val lastQueriedBounds = _lastQueriedBounds.asStateFlow()
+    
+    // Track last zoom level for hysteresis
+    private var lastQueriedZoom = 0.0
 
     private var hasCenteredLocation = false
 
@@ -181,9 +188,11 @@ class TowerMapLibreViewModel : ViewModel() {
             // Clear towers when radio type changes
             _towers.value = LinkedHashSet()
             _noTowersFound.value = false
-            // Automatically trigger a new query for the selected radio type
-            viewModelScope.launch {
-                runTowerQuery()
+            // Automatically trigger a new query for the selected radio type if layer is visible
+            if (_showTowersLayer.value) {
+                viewModelScope.launch {
+                    runTowerQuery()
+                }
             }
         }
     }
@@ -194,9 +203,11 @@ class TowerMapLibreViewModel : ViewModel() {
             // Clear towers when PLMN filter changes
             _towers.value = LinkedHashSet()
             _noTowersFound.value = false
-            // Automatically trigger a new query for the new filter
-            viewModelScope.launch {
-                runTowerQuery()
+            // Automatically trigger a new query for the new filter if layer is visible
+            if (_showTowersLayer.value) {
+                viewModelScope.launch {
+                    runTowerQuery()
+                }
             }
         }
     }
@@ -207,9 +218,11 @@ class TowerMapLibreViewModel : ViewModel() {
             // Clear towers when source changes
             _towers.value = LinkedHashSet()
             _noTowersFound.value = false
-            // Automatically trigger a new query for the new source
-            viewModelScope.launch {
-                runTowerQuery()
+            // Automatically trigger a new query for the new source if layer is visible
+            if (_showTowersLayer.value) {
+                viewModelScope.launch {
+                    runTowerQuery()
+                }
             }
         }
     }
@@ -241,7 +254,23 @@ class TowerMapLibreViewModel : ViewModel() {
     }
 
     fun setShowTowersLayer(show: Boolean) {
+        val wasHidden = !_showTowersLayer.value
         _showTowersLayer.value = show
+        
+        // If the layer was hidden and is now being shown, trigger a tower query
+        if (wasHidden && show) {
+            Timber.d("Tower layer re-enabled, triggering query")
+            val map = mapLibreMap
+            if (map != null) {
+                val bounds = map.projection.visibleRegion.latLngBounds
+                val area = calculateArea(bounds)
+                if (map.cameraPosition.zoom >= MIN_ZOOM_LEVEL && area <= MAX_AREA_SQ_METERS) {
+                    viewModelScope.launch {
+                        runTowerQuery()
+                    }
+                }
+            }
+        }
     }
 
     fun addBeaconDbCoverageLayer() {
@@ -429,28 +458,60 @@ class TowerMapLibreViewModel : ViewModel() {
         map.addOnCameraIdleListener {
             val bounds = map.projection.visibleRegion.latLngBounds
             val lastBounds = _lastQueriedBounds.value
+            val currentZoom = map.cameraPosition.zoom
 
-            // Use a more robust bounds comparison to avoid floating point precision issues
+            // Check if bounds changed (basic check first)
             val boundsChanged = lastBounds == null || !areBoundsEqual(bounds, lastBounds)
+            
+            // Apply hysteresis logic if bounds have changed
+            val shouldQuery = if (boundsChanged && lastBounds != null) {
+                // Calculate the percentage change in bounds
+                val boundsChangePercent = calculateBoundsChangePercent(lastBounds, bounds)
+                val zoomChange = kotlin.math.abs(currentZoom - lastQueriedZoom)
+                
+                // Query if either:
+                // 1. Bounds changed by more than threshold percentage
+                // 2. Zoom changed by more than threshold
+                val exceedsThreshold = boundsChangePercent >= BOUNDS_CHANGE_THRESHOLD_PERCENT || 
+                                      zoomChange >= ZOOM_CHANGE_THRESHOLD
+                
+                if (!exceedsThreshold) {
+                    Timber.d("Bounds changed but below threshold: ${(boundsChangePercent * 100).toInt()}% (threshold: ${(BOUNDS_CHANGE_THRESHOLD_PERCENT * 100).toInt()}%), zoom change: ${"%.1f".format(zoomChange)}")
+                }
+                
+                exceedsThreshold
+            } else {
+                // Always query if this is the first time or bounds haven't changed
+                boundsChanged
+            }
+            
             val currentTime = System.currentTimeMillis()
             val timeSinceLastQuery = currentTime - lastQueryTime
 
-            if (boundsChanged && timeSinceLastQuery >= QUERY_DEBOUNCE_MS) {
-                Timber.d("Camera bounds changed, triggering tower query (time since last: ${timeSinceLastQuery}ms)")
+            if (shouldQuery && timeSinceLastQuery >= QUERY_DEBOUNCE_MS) {
+                Timber.d("Camera bounds changed significantly, triggering tower query (time since last: ${timeSinceLastQuery}ms)")
                 lastQueryTime = currentTime
                 _lastQueriedBounds.value = bounds
+                lastQueriedZoom = currentZoom
+                
                 val area = calculateArea(bounds)
-                if (map.cameraPosition.zoom >= MIN_ZOOM_LEVEL && area <= MAX_AREA_SQ_METERS) {
+                if (currentZoom >= MIN_ZOOM_LEVEL && area <= MAX_AREA_SQ_METERS) {
                     _isZoomedOutTooFar.value = false
-                    viewModelScope.launch { runTowerQuery() }
+                    // Only query towers if the layer is visible
+                    if (_showTowersLayer.value) {
+                        viewModelScope.launch { runTowerQuery() }
+                    } else {
+                        Timber.d("Tower layer is hidden, skipping query")
+                        _isLoadingInProgress.value = false
+                    }
                 } else {
                     _isZoomedOutTooFar.value = true
                     _isLoadingInProgress.value = false
                 }
             } else {
-                if (!boundsChanged) {
-                    Timber.d("Camera bounds unchanged, skipping tower query")
-                } else {
+                if (!shouldQuery) {
+                    Timber.d("Camera movement below hysteresis threshold, skipping tower query")
+                } else if (timeSinceLastQuery < QUERY_DEBOUNCE_MS) {
                     Timber.d("Tower query debounced (${timeSinceLastQuery}ms < ${QUERY_DEBOUNCE_MS}ms)")
                 }
             }
@@ -830,6 +891,37 @@ class TowerMapLibreViewModel : ViewModel() {
                 kotlin.math.abs(bounds1.latitudeSouth - bounds2.latitudeSouth) < tolerance &&
                 kotlin.math.abs(bounds1.longitudeEast - bounds2.longitudeEast) < tolerance &&
                 kotlin.math.abs(bounds1.longitudeWest - bounds2.longitudeWest) < tolerance
+    }
+
+    /**
+     * Calculate the percentage change between two bounds.
+     * Returns the maximum percentage change in any dimension (lat/lng).
+     */
+    private fun calculateBoundsChangePercent(
+        oldBounds: LatLngBounds,
+        newBounds: LatLngBounds
+    ): Double {
+        val oldLatSpan = oldBounds.latitudeNorth - oldBounds.latitudeSouth
+        val oldLngSpan = oldBounds.longitudeEast - oldBounds.longitudeWest
+        val newLatSpan = newBounds.latitudeNorth - newBounds.latitudeSouth
+        val newLngSpan = newBounds.longitudeEast - newBounds.longitudeWest
+        
+        // Calculate center points
+        val oldCenterLat = (oldBounds.latitudeNorth + oldBounds.latitudeSouth) / 2
+        val oldCenterLng = (oldBounds.longitudeEast + oldBounds.longitudeWest) / 2
+        val newCenterLat = (newBounds.latitudeNorth + newBounds.latitudeSouth) / 2
+        val newCenterLng = (newBounds.longitudeEast + newBounds.longitudeWest) / 2
+        
+        // Calculate center movement as percentage of old bounds size
+        val latCenterChange = kotlin.math.abs(newCenterLat - oldCenterLat) / oldLatSpan
+        val lngCenterChange = kotlin.math.abs(newCenterLng - oldCenterLng) / oldLngSpan
+        
+        // Calculate size change
+        val latSizeChange = kotlin.math.abs(newLatSpan - oldLatSpan) / oldLatSpan
+        val lngSizeChange = kotlin.math.abs(newLngSpan - oldLngSpan) / oldLngSpan
+        
+        // Return the maximum change percentage
+        return maxOf(latCenterChange, lngCenterChange, latSizeChange, lngSizeChange)
     }
 
     /**
