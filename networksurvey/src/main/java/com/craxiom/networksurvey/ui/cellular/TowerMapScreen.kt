@@ -29,14 +29,17 @@ import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.collectAsState
@@ -1092,6 +1095,7 @@ private fun getCoverageCircleColors(): Pair<Color, Color> {
     return Pair(baseColor.copy(alpha = alpha), baseColor)
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MapLayersDialog(
     currentTileSource: MapTileSource,
@@ -1102,90 +1106,95 @@ fun MapLayersDialog(
     onSetShowTowersLayer: (Boolean) -> Unit,
     onDismiss: () -> Unit
 ) {
-    AlertDialog(
+    val bottomSheetState = rememberModalBottomSheetState()
+    
+    ModalBottomSheet(
         onDismissRequest = onDismiss,
-        title = {
-            Text(text = "Map Layers")
-        },
-        text = {
-            Column {
-                Text(
-                    text = "Map Tile Source",
-                    style = MaterialTheme.typography.titleMedium,
-                    modifier = Modifier.padding(bottom = 8.dp)
-                )
+        sheetState = bottomSheetState
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp)
+                .padding(bottom = 32.dp)
+        ) {
+            Text(
+                text = "Map Layers",
+                style = MaterialTheme.typography.headlineSmall,
+                modifier = Modifier.padding(bottom = 16.dp)
+            )
 
-                MapTileSource.entries.forEach { source ->
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .selectable(
-                                selected = (source == currentTileSource),
-                                onClick = { onSetTileSource(source) }
-                            )
-                            .padding(vertical = 4.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        RadioButton(
+            Text(
+                text = "Map Tile Source",
+                style = MaterialTheme.typography.titleMedium,
+                modifier = Modifier.padding(bottom = 8.dp)
+            )
+
+            MapTileSource.entries.forEach { source ->
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .selectable(
                             selected = (source == currentTileSource),
                             onClick = { onSetTileSource(source) }
                         )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(text = source.displayName)
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                Text(
-                    text = "Map Overlays",
-                    style = MaterialTheme.typography.titleMedium,
-                    modifier = Modifier.padding(bottom = 8.dp)
-                )
-
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .selectable(
-                            selected = showTowersLayer,
-                            onClick = { onSetShowTowersLayer(!showTowersLayer) }
-                        )
                         .padding(vertical = 4.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Checkbox(
-                        checked = showTowersLayer,
-                        onCheckedChange = onSetShowTowersLayer
+                    RadioButton(
+                        selected = (source == currentTileSource),
+                        onClick = { onSetTileSource(source) }
                     )
                     Spacer(modifier = Modifier.width(8.dp))
-                    Text(text = "Towers")
-                }
-
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .selectable(
-                            selected = showBeaconDbCoverage,
-                            onClick = { onSetShowBeaconDbCoverage(!showBeaconDbCoverage) }
-                        )
-                        .padding(vertical = 4.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Checkbox(
-                        checked = showBeaconDbCoverage,
-                        onCheckedChange = onSetShowBeaconDbCoverage
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(text = "BeaconDB Coverage")
+                    Text(text = source.displayName)
                 }
             }
-        },
-        confirmButton = {
-            TextButton(onClick = onDismiss) {
-                Text("OK")
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Text(
+                text = "Map Overlays",
+                style = MaterialTheme.typography.titleMedium,
+                modifier = Modifier.padding(bottom = 8.dp)
+            )
+
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .selectable(
+                        selected = showTowersLayer,
+                        onClick = { onSetShowTowersLayer(!showTowersLayer) }
+                    )
+                    .padding(vertical = 4.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Checkbox(
+                    checked = showTowersLayer,
+                    onCheckedChange = onSetShowTowersLayer
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(text = "Towers")
+            }
+
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .selectable(
+                        selected = showBeaconDbCoverage,
+                        onClick = { onSetShowBeaconDbCoverage(!showBeaconDbCoverage) }
+                    )
+                    .padding(vertical = 4.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Checkbox(
+                    checked = showBeaconDbCoverage,
+                    onCheckedChange = onSetShowBeaconDbCoverage
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(text = "BeaconDB Coverage")
             }
         }
-    )
+    }
 }
 
 @Composable
