@@ -478,6 +478,53 @@
                         </LinearLayout>
 
                         <LinearLayout
+                            android:id="@+id/frequency_row"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="horizontal"
+                            android:baselineAligned="false"
+                            android:visibility="gone">
+
+                            <androidx.constraintlayout.widget.ConstraintLayout
+                                android:id="@+id/frequency_group"
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="@dimen/small_margin"
+                                android:layout_marginBottom="@dimen/small_margin"
+                                android:layout_weight="1">
+
+                                <TextView
+                                    android:id="@+id/frequency"
+                                    style="@style/StandardText"
+                                    android:layout_width="match_parent"
+                                    android:layout_height="wrap_content"
+                                    app:layout_constraintTop_toTopOf="@id/frequency_group"
+                                    app:layout_constraintBottom_toTopOf="@id/frequency_label"
+                                    android:textIsSelectable="true"
+                                    tools:layout_editor_absoluteX="8dp" />
+
+                                <TextView
+                                    android:id="@+id/frequency_label"
+                                    style="@style/SmallLabelText"
+                                    android:layout_width="match_parent"
+                                    android:layout_height="wrap_content"
+                                    android:text="@string/frequency_label"
+                                    app:layout_constraintBottom_toBottomOf="@id/frequency_group" />
+
+                            </androidx.constraintlayout.widget.ConstraintLayout>
+
+                            <!-- Empty space to match the two-column layout -->
+                            <androidx.constraintlayout.widget.ConstraintLayout
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="@dimen/small_margin"
+                                android:layout_marginBottom="@dimen/small_margin"
+                                android:layout_weight="1">
+                            </androidx.constraintlayout.widget.ConstraintLayout>
+
+                        </LinearLayout>
+
+                        <LinearLayout
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:orientation="horizontal"

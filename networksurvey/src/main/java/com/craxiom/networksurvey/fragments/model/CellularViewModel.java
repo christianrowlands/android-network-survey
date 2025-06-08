@@ -35,6 +35,7 @@ public class CellularViewModel extends ViewModel
     private final MutableLiveData<Long> cellId = new MutableLiveData<>(); // NR requires a long
 
     private final MutableLiveData<String> channelNumber = new MutableLiveData<>(); // AKA ARFCN, EARFCN, etc
+    private final MutableLiveData<String> frequency = new MutableLiveData<>(); // For NR frequency in MHz
 
     // LTE specific fields
     private final MutableLiveData<String> pci = new MutableLiveData<>();
@@ -202,6 +203,19 @@ public class CellularViewModel extends ViewModel
         if (!Objects.equals(channelNumber.getValue(), newChannelNumber))
         {
             channelNumber.postValue(newChannelNumber);
+        }
+    }
+
+    public LiveData<String> getFrequency()
+    {
+        return frequency;
+    }
+
+    public void setFrequency(String newFrequency)
+    {
+        if (!Objects.equals(frequency.getValue(), newFrequency))
+        {
+            frequency.postValue(newFrequency);
         }
     }
 

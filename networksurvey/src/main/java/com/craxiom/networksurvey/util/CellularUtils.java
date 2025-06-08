@@ -100,6 +100,48 @@ public class CellularUtils
     };
 
     /**
+     * Converts 5G NR ARFCN to frequency in MHz according to 3GPP TS 38.104 specification.
+     * The formula is: F_REF = F_REF-Offs + (N_REF - N_REF-Offs) * Δf
+     * <p>
+     * Resource: <a href="https://5g-tools.com/5g-nr-arfcn-calculator/">5G NARFCN Calculator</a>
+     *
+     * @param narfcn The NR-ARFCN (Absolute Radio Frequency Channel Number) to convert.
+     * @return The frequency in MHz, or -1.0 if the NARFCN is not in a valid range.
+     */
+    public static double narfcnToFrequencyMhz(int narfcn)
+    {
+        if (narfcn < 0)
+        {
+            return -1.0;
+        }
+
+        // 3GPP TS 38.104 Table 5.4.2.1-1: Global frequency raster parameters for NR
+        if (narfcn <= 599999)
+        {
+            // Range 1: 0 ≤ ARFCN ≤ 599,999
+            // Δf = 5 kHz, F_REF-Offs = 0, N_REF-Offs = 0
+            return narfcn * 0.005; // 5 kHz = 0.005 MHz
+        }
+        else if (narfcn <= 2016666)
+        {
+            // Range 2: 600,000 ≤ ARFCN ≤ 2,016,666
+            // Δf = 15 kHz, F_REF-Offs = 3000 MHz, N_REF-Offs = 600,000
+            return 3000.0 + (narfcn - 600000) * 0.015; // 15 kHz = 0.015 MHz
+        }
+        else if (narfcn <= 3279165)
+        {
+            // Range 3: 2,016,667 ≤ ARFCN ≤ 3,279,165
+            // Δf = 60 kHz, F_REF-Offs = 24,250.08 MHz, N_REF-Offs = 2,016,667
+            return 24250.08 + (narfcn - 2016667) * 0.060; // 60 kHz = 0.060 MHz
+        }
+        else
+        {
+            // NARFCN is outside the valid range
+            return -1.0;
+        }
+    }
+
+    /**
      * Returns the LTE band for a given EARFCN.
      *
      * @param earfcn The EARFCN to get the band for.
