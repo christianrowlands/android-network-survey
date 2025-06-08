@@ -217,6 +217,12 @@ internal fun TowerMapScreen(
                     )
                     viewModel.setShowBeaconDbCoverage(savedShowBeaconDb)
 
+                    val savedShowTowers = preferences.getBoolean(
+                        NetworkSurveyConstants.PROPERTY_SHOW_TOWERS_LAYER,
+                        true  // Default to showing towers
+                    )
+                    viewModel.setShowTowersLayer(savedShowTowers)
+
                     onDispose { }
                 }
 
@@ -297,40 +303,45 @@ internal fun TowerMapScreen(
                                 .toSet()
                         }
 
-                    // 3) One single call to TowerSymbols
-                    TowerSymbols(
-                        towerWrapperList = towerWrapperList,
-                        servingIds = servingIds
-                    )
-
-                    // Render serving cell lines
-                    val servingCellLines by viewModel.servingCellLines.collectAsStateWithLifecycle()
-                    servingCellLines.forEach { lineData ->
-                        LineString(
-                            state = rememberLineStringState(
-                                points = listOf(lineData.startPoint, lineData.endPoint),
-                                color = colorResource(R.color.serving_cell_line),
-                                width = 3f,
-                                dashArray = listOf(5f, 3f) // Dashed line
-                            )
+                    // Check if towers layer should be shown
+                    val showTowersLayer by viewModel.showTowersLayer.collectAsStateWithLifecycle()
+                    
+                    if (showTowersLayer) {
+                        // 3) One single call to TowerSymbols
+                        TowerSymbols(
+                            towerWrapperList = towerWrapperList,
+                            servingIds = servingIds
                         )
-                    }
 
-                    // Render serving cell coverage circles
-                    val displayCoverage = PreferenceUtils.displayServingCellCoverageOnMap(context)
-                    if (displayCoverage) {
-                        val servingCellCoverage by viewModel.servingCellCoverage.collectAsStateWithLifecycle()
-                        val (fillColor, strokeColor) = getCoverageCircleColors()
-                        servingCellCoverage.forEach { coverageData ->
-                            Circle(
-                                state = rememberCircleState(
-                                    center = coverageData.center,
-                                    radiusMeters = coverageData.radiusMeters,
-                                    fillColor = fillColor,
-                                    strokeColor = strokeColor,
-                                    strokeWidth = 2f
+                        // Render serving cell lines
+                        val servingCellLines by viewModel.servingCellLines.collectAsStateWithLifecycle()
+                        servingCellLines.forEach { lineData ->
+                            LineString(
+                                state = rememberLineStringState(
+                                    points = listOf(lineData.startPoint, lineData.endPoint),
+                                    color = colorResource(R.color.serving_cell_line),
+                                    width = 3f,
+                                    dashArray = listOf(5f, 3f) // Dashed line
                                 )
                             )
+                        }
+
+                        // Render serving cell coverage circles
+                        val displayCoverage = PreferenceUtils.displayServingCellCoverageOnMap(context)
+                        if (displayCoverage) {
+                            val servingCellCoverage by viewModel.servingCellCoverage.collectAsStateWithLifecycle()
+                            val (fillColor, strokeColor) = getCoverageCircleColors()
+                            servingCellCoverage.forEach { coverageData ->
+                                Circle(
+                                    state = rememberCircleState(
+                                        center = coverageData.center,
+                                        radiusMeters = coverageData.radiusMeters,
+                                        fillColor = fillColor,
+                                        strokeColor = strokeColor,
+                                        strokeWidth = 2f
+                                    )
+                                )
+                            }
                         }
                     }
 
@@ -676,10 +687,12 @@ internal fun TowerMapScreen(
         if (showLayersDialog) {
             val currentTileSource by viewModel.selectedMapTileSource.collectAsStateWithLifecycle()
             val showBeaconDbCoverage by viewModel.showBeaconDbCoverage.collectAsStateWithLifecycle()
+            val showTowersLayer by viewModel.showTowersLayer.collectAsStateWithLifecycle()
 
             MapLayersDialog(
                 currentTileSource = currentTileSource,
                 showBeaconDbCoverage = showBeaconDbCoverage,
+                showTowersLayer = showTowersLayer,
                 onSetTileSource = { source ->
                     viewModel.setSelectedMapTileSource(source)
                     // Save preference
@@ -695,6 +708,13 @@ internal fun TowerMapScreen(
                     // Save preference
                     preferences.edit {
                         putBoolean(NetworkSurveyConstants.PROPERTY_SHOW_BEACONDB_COVERAGE, show)
+                    }
+                },
+                onSetShowTowersLayer = { show ->
+                    viewModel.setShowTowersLayer(show)
+                    // Save preference
+                    preferences.edit {
+                        putBoolean(NetworkSurveyConstants.PROPERTY_SHOW_TOWERS_LAYER, show)
                     }
                 },
                 onDismiss = { showLayersDialog = false }
@@ -1076,8 +1096,10 @@ private fun getCoverageCircleColors(): Pair<Color, Color> {
 fun MapLayersDialog(
     currentTileSource: MapTileSource,
     showBeaconDbCoverage: Boolean,
+    showTowersLayer: Boolean,
     onSetTileSource: (MapTileSource) -> Unit,
     onSetShowBeaconDbCoverage: (Boolean) -> Unit,
+    onSetShowTowersLayer: (Boolean) -> Unit,
     onDismiss: () -> Unit
 ) {
     AlertDialog(
@@ -1120,6 +1142,24 @@ fun MapLayersDialog(
                     style = MaterialTheme.typography.titleMedium,
                     modifier = Modifier.padding(bottom = 8.dp)
                 )
+
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .selectable(
+                            selected = showTowersLayer,
+                            onClick = { onSetShowTowersLayer(!showTowersLayer) }
+                        )
+                        .padding(vertical = 4.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Checkbox(
+                        checked = showTowersLayer,
+                        onCheckedChange = onSetShowTowersLayer
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(text = "Towers")
+                }
 
                 Row(
                     modifier = Modifier

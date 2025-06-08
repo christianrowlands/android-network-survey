@@ -124,6 +124,9 @@ class TowerMapLibreViewModel : ViewModel() {
     private val _showBeaconDbCoverage = MutableStateFlow(false)
     val showBeaconDbCoverage = _showBeaconDbCoverage.asStateFlow()
 
+    private val _showTowersLayer = MutableStateFlow(true)
+    val showTowersLayer = _showTowersLayer.asStateFlow()
+
     // BeaconDB layer management
     private var beaconDbLayerIds: List<String> = emptyList()
 
@@ -235,6 +238,10 @@ class TowerMapLibreViewModel : ViewModel() {
 
     fun setShowBeaconDbCoverage(show: Boolean) {
         _showBeaconDbCoverage.value = show
+    }
+
+    fun setShowTowersLayer(show: Boolean) {
+        _showTowersLayer.value = show
     }
 
     fun addBeaconDbCoverageLayer() {
