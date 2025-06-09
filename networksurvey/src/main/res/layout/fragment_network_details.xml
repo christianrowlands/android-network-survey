@@ -442,7 +442,7 @@
                                     style="@style/SmallLabelText"
                                     android:layout_width="match_parent"
                                     android:layout_height="wrap_content"
-                                    android:text="@string/earfcn_band_label"
+                                    android:text="@string/earfcn_label"
                                     app:layout_constraintBottom_toBottomOf="@id/earfcn_group" />
 
                             </androidx.constraintlayout.widget.ConstraintLayout>
@@ -486,34 +486,6 @@
                             android:visibility="gone">
 
                             <androidx.constraintlayout.widget.ConstraintLayout
-                                android:id="@+id/frequency_group"
-                                android:layout_width="0dp"
-                                android:layout_height="wrap_content"
-                                android:layout_marginTop="@dimen/small_margin"
-                                android:layout_marginBottom="@dimen/small_margin"
-                                android:layout_weight="1">
-
-                                <TextView
-                                    android:id="@+id/frequency"
-                                    style="@style/StandardText"
-                                    android:layout_width="match_parent"
-                                    android:layout_height="wrap_content"
-                                    app:layout_constraintTop_toTopOf="@id/frequency_group"
-                                    app:layout_constraintBottom_toTopOf="@id/frequency_label"
-                                    android:textIsSelectable="true"
-                                    tools:layout_editor_absoluteX="8dp" />
-
-                                <TextView
-                                    android:id="@+id/frequency_label"
-                                    style="@style/SmallLabelText"
-                                    android:layout_width="match_parent"
-                                    android:layout_height="wrap_content"
-                                    android:text="@string/frequency_label"
-                                    app:layout_constraintBottom_toBottomOf="@id/frequency_group" />
-
-                            </androidx.constraintlayout.widget.ConstraintLayout>
-
-                            <androidx.constraintlayout.widget.ConstraintLayout
                                 android:id="@+id/band_group"
                                 android:layout_width="0dp"
                                 android:layout_height="wrap_content"
@@ -541,13 +513,72 @@
 
                             </androidx.constraintlayout.widget.ConstraintLayout>
 
+                            <!-- The frequency_group is currently only for 5G NR -->
+                            <androidx.constraintlayout.widget.ConstraintLayout
+                                android:id="@+id/frequency_group"
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="@dimen/small_margin"
+                                android:layout_marginBottom="@dimen/small_margin"
+                                android:layout_weight="1">
+
+                                <TextView
+                                    android:id="@+id/frequency"
+                                    style="@style/StandardText"
+                                    android:layout_width="match_parent"
+                                    android:layout_height="wrap_content"
+                                    app:layout_constraintTop_toTopOf="@id/frequency_group"
+                                    app:layout_constraintBottom_toTopOf="@id/frequency_label"
+                                    android:textIsSelectable="true"
+                                    tools:layout_editor_absoluteX="8dp" />
+
+                                <TextView
+                                    android:id="@+id/frequency_label"
+                                    style="@style/SmallLabelText"
+                                    android:layout_width="match_parent"
+                                    android:layout_height="wrap_content"
+                                    android:text="@string/frequency_label"
+                                    app:layout_constraintBottom_toBottomOf="@id/frequency_group" />
+
+                            </androidx.constraintlayout.widget.ConstraintLayout>
+
                         </LinearLayout>
 
+                        <!-- lte_band_row is only for LTE -->
                         <LinearLayout
+                            android:id="@+id/lte_band_row"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:orientation="horizontal"
                             android:baselineAligned="false">
+
+                            <androidx.constraintlayout.widget.ConstraintLayout
+                                android:id="@+id/lte_band_group"
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="@dimen/small_margin"
+                                android:layout_marginBottom="@dimen/small_margin"
+                                android:layout_weight="1">
+
+                                <TextView
+                                    android:id="@+id/lte_band"
+                                    style="@style/StandardText"
+                                    android:layout_width="match_parent"
+                                    android:layout_height="wrap_content"
+                                    app:layout_constraintTop_toTopOf="@id/lte_band_group"
+                                    app:layout_constraintBottom_toTopOf="@id/lte_band_label"
+                                    android:textIsSelectable="true"
+                                    tools:layout_editor_absoluteX="8dp" />
+
+                                <TextView
+                                    android:id="@+id/lte_band_label"
+                                    style="@style/SmallLabelText"
+                                    android:layout_width="match_parent"
+                                    android:layout_height="wrap_content"
+                                    android:text="@string/band_label"
+                                    app:layout_constraintBottom_toBottomOf="@id/lte_band_group" />
+
+                            </androidx.constraintlayout.widget.ConstraintLayout>
 
                             <androidx.constraintlayout.widget.ConstraintLayout
                                 android:id="@+id/bandwidth_group"
@@ -574,34 +605,6 @@
                                     android:layout_height="wrap_content"
                                     android:text="@string/bandwidth_label"
                                     app:layout_constraintBottom_toBottomOf="@id/bandwidth_group" />
-
-                            </androidx.constraintlayout.widget.ConstraintLayout>
-
-                            <androidx.constraintlayout.widget.ConstraintLayout
-                                android:id="@+id/ta_group"
-                                android:layout_width="0dp"
-                                android:layout_height="wrap_content"
-                                android:layout_marginTop="@dimen/small_margin"
-                                android:layout_marginBottom="@dimen/small_margin"
-                                android:layout_weight="1">
-
-                                <TextView
-                                    android:id="@+id/ta"
-                                    style="@style/StandardText"
-                                    android:layout_width="match_parent"
-                                    android:layout_height="wrap_content"
-                                    app:layout_constraintTop_toTopOf="@id/ta_group"
-                                    app:layout_constraintBottom_toTopOf="@id/ta_label"
-                                    android:textIsSelectable="true"
-                                    tools:layout_editor_absoluteX="8dp" />
-
-                                <TextView
-                                    android:id="@+id/ta_label"
-                                    style="@style/SmallLabelText"
-                                    android:layout_width="match_parent"
-                                    android:layout_height="wrap_content"
-                                    android:text="@string/ta_label"
-                                    app:layout_constraintBottom_toBottomOf="@id/ta_group" />
 
                             </androidx.constraintlayout.widget.ConstraintLayout>
 
@@ -638,6 +641,34 @@
                                     android:layout_height="wrap_content"
                                     android:text="@string/cqi_label"
                                     app:layout_constraintBottom_toBottomOf="@id/cqi_group" />
+
+                            </androidx.constraintlayout.widget.ConstraintLayout>
+
+                            <androidx.constraintlayout.widget.ConstraintLayout
+                                android:id="@+id/ta_group"
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="@dimen/small_margin"
+                                android:layout_marginBottom="@dimen/small_margin"
+                                android:layout_weight="1">
+
+                                <TextView
+                                    android:id="@+id/ta"
+                                    style="@style/StandardText"
+                                    android:layout_width="match_parent"
+                                    android:layout_height="wrap_content"
+                                    app:layout_constraintTop_toTopOf="@id/ta_group"
+                                    app:layout_constraintBottom_toTopOf="@id/ta_label"
+                                    android:textIsSelectable="true"
+                                    tools:layout_editor_absoluteX="8dp" />
+
+                                <TextView
+                                    android:id="@+id/ta_label"
+                                    style="@style/SmallLabelText"
+                                    android:layout_width="match_parent"
+                                    android:layout_height="wrap_content"
+                                    android:text="@string/ta_label"
+                                    app:layout_constraintBottom_toBottomOf="@id/ta_group" />
 
                             </androidx.constraintlayout.widget.ConstraintLayout>
 

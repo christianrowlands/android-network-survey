@@ -266,6 +266,7 @@ public class NetworkDetailsFragment extends AServiceDataFragment implements ICel
         viewModel.getChannelNumber().observe(viewLifecycleOwner, s -> binding.earfcn.setText(s));
         viewModel.getFrequency().observe(viewLifecycleOwner, s -> binding.frequency.setText(s));
         viewModel.getBand().observe(viewLifecycleOwner, s -> binding.band.setText(s));
+        viewModel.getLteBand().observe(viewLifecycleOwner, s -> binding.lteBand.setText(s));
 
         viewModel.getPci().observe(viewLifecycleOwner, s -> binding.pci.setText(s));
         viewModel.getBandwidth().observe(viewLifecycleOwner, s -> binding.bandwidth.setText(s));
@@ -306,6 +307,7 @@ public class NetworkDetailsFragment extends AServiceDataFragment implements ICel
         viewModel.getChannelNumber().removeObservers(viewLifecycleOwner);
         viewModel.getFrequency().removeObservers(viewLifecycleOwner);
         viewModel.getBand().removeObservers(viewLifecycleOwner);
+        viewModel.getLteBand().removeObservers(viewLifecycleOwner);
 
         viewModel.getPci().removeObservers(viewLifecycleOwner);
         viewModel.getBandwidth().removeObservers(viewLifecycleOwner);
@@ -336,6 +338,7 @@ public class NetworkDetailsFragment extends AServiceDataFragment implements ICel
         viewModel.setChannelNumber("");
         viewModel.setFrequency("");
         viewModel.setBand("");
+        viewModel.setLteBand("");
 
         viewModel.setPci("");
         viewModel.setBandwidth("");
@@ -469,6 +472,7 @@ public class NetworkDetailsFragment extends AServiceDataFragment implements ICel
             case NONE:
                 titleTextView.setText(R.string.card_title_cellular_details_initial);
                 binding.frequencyRow.setVisibility(View.GONE);
+                binding.lteBandRow.setVisibility(View.GONE);
 
                 chartViewModel.setChartTitle("RSSI");
                 chartViewModel.setCellularProtocol(protocol);
@@ -480,6 +484,7 @@ public class NetworkDetailsFragment extends AServiceDataFragment implements ICel
                 binding.sectorIdGroup.setVisibility(View.GONE);
                 binding.earfcnLabel.setText(R.string.arfcn_label);
                 binding.frequencyRow.setVisibility(View.GONE);
+                binding.lteBandRow.setVisibility(View.GONE);
                 binding.pciLabel.setText(R.string.bsic_label);
                 binding.bandwidthGroup.setVisibility(View.GONE);
                 binding.taGroup.setVisibility(View.GONE);
@@ -498,6 +503,7 @@ public class NetworkDetailsFragment extends AServiceDataFragment implements ICel
 
             case CDMA:
                 binding.frequencyRow.setVisibility(View.GONE);
+                binding.lteBandRow.setVisibility(View.GONE);
                 binding.cqiGroup.setVisibility(View.GONE);
                 binding.enbIdGroup.setVisibility(View.GONE);
                 binding.sectorIdGroup.setVisibility(View.GONE);
@@ -518,6 +524,7 @@ public class NetworkDetailsFragment extends AServiceDataFragment implements ICel
                 binding.sectorIdGroup.setVisibility(View.VISIBLE);
                 binding.earfcnLabel.setText(R.string.uarfcn_label);
                 binding.frequencyRow.setVisibility(View.GONE);
+                binding.lteBandRow.setVisibility(View.GONE);
                 binding.pciLabel.setText(R.string.psc_label);
                 binding.bandwidthGroup.setVisibility(View.GONE);
                 binding.taGroup.setVisibility(View.GONE);
@@ -541,8 +548,9 @@ public class NetworkDetailsFragment extends AServiceDataFragment implements ICel
                 binding.enbIdGroup.setVisibility(View.VISIBLE);
                 binding.sectorIdLabel.setText(R.string.sector_id_label);
                 binding.sectorIdGroup.setVisibility(View.VISIBLE);
-                binding.earfcnLabel.setText(R.string.earfcn_band_label);
+                binding.earfcnLabel.setText(R.string.earfcn_label);
                 binding.frequencyRow.setVisibility(View.GONE);
+                binding.lteBandRow.setVisibility(View.VISIBLE);
                 binding.pciLabel.setText(R.string.pci_label);
                 binding.bandwidthGroup.setVisibility(View.VISIBLE);
                 binding.taGroup.setVisibility(View.VISIBLE);
@@ -567,6 +575,7 @@ public class NetworkDetailsFragment extends AServiceDataFragment implements ICel
                 binding.sectorIdGroup.setVisibility(View.GONE);
                 binding.earfcnLabel.setText(R.string.narfcn_label);
                 binding.frequencyRow.setVisibility(View.VISIBLE);
+                binding.lteBandRow.setVisibility(View.GONE);
                 binding.pciLabel.setText(R.string.pci_label);
                 binding.bandwidthGroup.setVisibility(View.GONE);
                 binding.taGroup.setVisibility(View.GONE);
@@ -758,14 +767,31 @@ public class NetworkDetailsFragment extends AServiceDataFragment implements ICel
         viewModel.setAreaCode(data.hasTac() ? String.valueOf(data.getTac().getValue()) : "");
         viewModel.setCellId(data.hasEci() ? (long) data.getEci().getValue() : null);
 
+        // Set EARFCN without band information
+        viewModel.setChannelNumber(data.hasEarfcn() ? String.valueOf(data.getEarfcn().getValue()) : "");
+
+        // Set LTE band field with band number and name
         if (data.hasEarfcn())
         {
             int earfcn = data.getEarfcn().getValue();
-            int band = CellularUtils.downlinkEarfcnToBand(earfcn);
-            viewModel.setChannelNumber(earfcn + " / " + (band == -1 ? "?" : band));
+            int bandNumber = CellularUtils.downlinkEarfcnToBand(earfcn);
+            if (bandNumber != -1)
+            {
+                String bandName = CellularUtils.getLteBandName(bandNumber);
+                if (bandName != null)
+                {
+                    viewModel.setLteBand(bandNumber + " (" + bandName + ")");
+                } else
+                {
+                    viewModel.setLteBand(String.valueOf(bandNumber));
+                }
+            } else
+            {
+                viewModel.setLteBand("");
+            }
         } else
         {
-            viewModel.setChannelNumber("");
+            viewModel.setLteBand("");
         }
 
         if (data.hasPci())
@@ -1172,7 +1198,7 @@ public class NetworkDetailsFragment extends AServiceDataFragment implements ICel
         lteNeighborsTable.removeAllViews();
 
         final TableRow headerRow = new TableRow(context);
-        addHeaderToRow(context, headerRow, getString(R.string.earfcn_label));
+        addHeaderToRow(context, headerRow, getString(R.string.earfcn_band_label));
         addHeaderToRow(context, headerRow, getString(R.string.pci_label));
         addHeaderToRow(context, headerRow, getString(R.string.rsrp_label));
         addHeaderToRow(context, headerRow, getString(R.string.rsrq_label));

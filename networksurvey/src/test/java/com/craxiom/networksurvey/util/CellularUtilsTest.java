@@ -125,16 +125,16 @@ public class CellularUtilsTest
         assertEquals("1800", CellularUtils.getNrBandName(3));
         assertEquals("850", CellularUtils.getNrBandName(5));
         assertEquals("2600", CellularUtils.getNrBandName(7));
-        assertEquals("900", CellularUtils.getNrBandName(8));
+        assertEquals("900 GSM", CellularUtils.getNrBandName(8));
     }
 
     @Test
     public void getNrBandName_tddBands()
     {
         // Test common TDD bands
-        assertEquals("TD 2500", CellularUtils.getNrBandName(41));
-        assertEquals("CBRS", CellularUtils.getNrBandName(48));
-        assertEquals("TD 3700 (C-Band)", CellularUtils.getNrBandName(77));
+        assertEquals("TD 2600+", CellularUtils.getNrBandName(41));
+        assertEquals("TD 3600", CellularUtils.getNrBandName(48));
+        assertEquals("TD 3700", CellularUtils.getNrBandName(77));
         assertEquals("TD 3500", CellularUtils.getNrBandName(78));
         assertEquals("TD 4700", CellularUtils.getNrBandName(79));
     }
@@ -145,24 +145,48 @@ public class CellularUtilsTest
         // Test mmWave bands
         assertEquals("28 GHz", CellularUtils.getNrBandName(257));
         assertEquals("26 GHz", CellularUtils.getNrBandName(258));
+        assertEquals("41 GHz", CellularUtils.getNrBandName(259));
         assertEquals("39 GHz", CellularUtils.getNrBandName(260));
-        assertEquals("28 GHz (subset of band n257)", CellularUtils.getNrBandName(261));
+        assertEquals("28 GHz", CellularUtils.getNrBandName(261));
+        assertEquals("47 GHz", CellularUtils.getNrBandName(262));
     }
 
     @Test
     public void getNrBandName_specialBands()
     {
         // Test some special purpose bands
-        assertEquals("700a - Lower SMH blocks A/B/C", CellularUtils.getNrBandName(12));
-        assertEquals("Upper SMH", CellularUtils.getNrBandName(14));
-        assertEquals("Lower 800 (Japan)", CellularUtils.getNrBandName(18));
-        assertEquals("EU Digital Dividend", CellularUtils.getNrBandName(20));
-        assertEquals("Extended PCS blocks A-G", CellularUtils.getNrBandName(25));
-        assertEquals("Extended CLR", CellularUtils.getNrBandName(26));
+        assertEquals("700 a", CellularUtils.getNrBandName(12));
+        assertEquals("700 PS", CellularUtils.getNrBandName(14));
+        assertEquals("800 Lower", CellularUtils.getNrBandName(18));
+        assertEquals("800", CellularUtils.getNrBandName(20));
+        assertEquals("1900+", CellularUtils.getNrBandName(25));
+        assertEquals("850+", CellularUtils.getNrBandName(26));
         assertEquals("700 APT", CellularUtils.getNrBandName(28));
-        assertEquals("AWS-3", CellularUtils.getNrBandName(66));
+        assertEquals("AWS", CellularUtils.getNrBandName(66));
         assertEquals("AWS-4", CellularUtils.getNrBandName(70));
         assertEquals("600", CellularUtils.getNrBandName(71));
+    }
+
+    @Test
+    public void getNrBandName_newAddedBands()
+    {
+        // Test newly added NR bands
+        assertEquals("700 c", CellularUtils.getNrBandName(13));
+        assertEquals("1600 L", CellularUtils.getNrBandName(24));
+        assertEquals("700 d", CellularUtils.getNrBandName(29));
+        assertEquals("450", CellularUtils.getNrBandName(31));
+        assertEquals("TD 2000", CellularUtils.getNrBandName(34));
+        assertEquals("TD 2600", CellularUtils.getNrBandName(38));
+        assertEquals("TD 1900+", CellularUtils.getNrBandName(39));
+        assertEquals("TD 2300", CellularUtils.getNrBandName(40));
+        assertEquals("TD Unlicensed", CellularUtils.getNrBandName(46));
+        assertEquals("TD V2X", CellularUtils.getNrBandName(47));
+        assertEquals("2100+", CellularUtils.getNrBandName(65));
+        assertEquals("SUL 1800", CellularUtils.getNrBandName(80));
+        assertEquals("SUL 700 a", CellularUtils.getNrBandName(85));
+        assertEquals("TD 2500", CellularUtils.getNrBandName(90));
+        assertEquals("DL 2100", CellularUtils.getNrBandName(95));
+        assertEquals("NTN 2100", CellularUtils.getNrBandName(256));
     }
 
     @Test
@@ -171,8 +195,85 @@ public class CellularUtilsTest
         // Test unknown/invalid band numbers
         assertNull(CellularUtils.getNrBandName(0));
         assertNull(CellularUtils.getNrBandName(4)); // n4 doesn't exist in NR
-        assertNull(CellularUtils.getNrBandName(99));
+        assertNull(CellularUtils.getNrBandName(15)); // n15 doesn't exist in NR
         assertNull(CellularUtils.getNrBandName(-1));
         assertNull(CellularUtils.getNrBandName(1000));
+    }
+
+    @Test
+    public void getLteBandName_commonLowBands()
+    {
+        // Test common low frequency bands (600-900 MHz)
+        assertEquals("850", CellularUtils.getLteBandName(5));
+        assertEquals("900 GSM", CellularUtils.getLteBandName(8));
+        assertEquals("700 a", CellularUtils.getLteBandName(12));
+        assertEquals("700 c", CellularUtils.getLteBandName(13));
+        assertEquals("700 PS", CellularUtils.getLteBandName(14));
+        assertEquals("700 b", CellularUtils.getLteBandName(17));
+        assertEquals("800 DD", CellularUtils.getLteBandName(20));
+        assertEquals("850+", CellularUtils.getLteBandName(26));
+        assertEquals("700 APT", CellularUtils.getLteBandName(28));
+        assertEquals("600", CellularUtils.getLteBandName(71));
+    }
+
+    @Test
+    public void getLteBandName_commonMidBands()
+    {
+        // Test common mid frequency bands (1400-2700 MHz)
+        assertEquals("2100 MHz", CellularUtils.getLteBandName(1));
+        assertEquals("1900 PCS", CellularUtils.getLteBandName(2));
+        assertEquals("1800+", CellularUtils.getLteBandName(3));
+        assertEquals("AWS-1", CellularUtils.getLteBandName(4));
+        assertEquals("2600", CellularUtils.getLteBandName(7));
+        assertEquals("1900+", CellularUtils.getLteBandName(25));
+        assertEquals("2300 TDD", CellularUtils.getLteBandName(40));
+        assertEquals("2500 TDD", CellularUtils.getLteBandName(41));
+        assertEquals("AWS", CellularUtils.getLteBandName(66));
+    }
+
+    @Test
+    public void getLteBandName_highBands()
+    {
+        // Test high frequency bands (3300-5900 MHz)
+        assertEquals("3500", CellularUtils.getLteBandName(22));
+        assertEquals("3400 TDD", CellularUtils.getLteBandName(42));
+        assertEquals("3600 TDD", CellularUtils.getLteBandName(43));
+        assertEquals("5200 TDD", CellularUtils.getLteBandName(46));
+        assertEquals("3550 CBRS", CellularUtils.getLteBandName(48));
+    }
+
+    @Test
+    public void getLteBandName_awsBands()
+    {
+        // Test AWS (Advanced Wireless Services) bands
+        assertEquals("AWS-1", CellularUtils.getLteBandName(4));
+        assertEquals("AWS-3", CellularUtils.getLteBandName(10));
+        assertEquals("AWS", CellularUtils.getLteBandName(66));
+        assertEquals("AWS-4", CellularUtils.getLteBandName(70));
+    }
+
+    @Test
+    public void getLteBandName_newIncludedBands()
+    {
+        // Test some of the newly included bands
+        assertEquals("850 Japan", CellularUtils.getLteBandName(6));
+        assertEquals("1800", CellularUtils.getLteBandName(9));
+        assertEquals("1500 Lower", CellularUtils.getLteBandName(11));
+        assertEquals("2000 S-band", CellularUtils.getLteBandName(23));
+        assertEquals("450", CellularUtils.getLteBandName(31));
+        assertEquals("2100+", CellularUtils.getLteBandName(65));
+        assertEquals("NB-IoT", CellularUtils.getLteBandName(103));
+    }
+
+    @Test
+    public void getLteBandName_unknownBands()
+    {
+        // Test unknown/invalid band numbers
+        assertNull(CellularUtils.getLteBandName(0));
+        assertNull(CellularUtils.getLteBandName(15)); // Band 15 doesn't exist
+        assertNull(CellularUtils.getLteBandName(16)); // Band 16 doesn't exist
+        assertNull(CellularUtils.getLteBandName(99));
+        assertNull(CellularUtils.getLteBandName(-1));
+        assertNull(CellularUtils.getLteBandName(1000));
     }
 }

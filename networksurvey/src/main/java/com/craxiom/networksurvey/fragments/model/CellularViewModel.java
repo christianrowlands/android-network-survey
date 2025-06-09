@@ -37,6 +37,7 @@ public class CellularViewModel extends ViewModel
     private final MutableLiveData<String> channelNumber = new MutableLiveData<>(); // AKA ARFCN, EARFCN, etc
     private final MutableLiveData<String> frequency = new MutableLiveData<>(); // For NR frequency in MHz
     private final MutableLiveData<String> band = new MutableLiveData<>(); // For NR band with name
+    private final MutableLiveData<String> lteBand = new MutableLiveData<>(); // For LTE band with name
 
     // LTE specific fields
     private final MutableLiveData<String> pci = new MutableLiveData<>();
@@ -230,6 +231,19 @@ public class CellularViewModel extends ViewModel
         if (!Objects.equals(band.getValue(), newBand))
         {
             band.postValue(newBand);
+        }
+    }
+
+    public LiveData<String> getLteBand()
+    {
+        return lteBand;
+    }
+
+    public void setLteBand(String newLteBand)
+    {
+        if (!Objects.equals(lteBand.getValue(), newLteBand))
+        {
+            lteBand.postValue(newLteBand);
         }
     }
 
