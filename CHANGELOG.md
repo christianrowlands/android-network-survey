@@ -1,5 +1,15 @@
 # Changelog
 
+## [1.37](https://github.com/christianrowlands/android-network-survey/releases/tag/v1.37) - 2025-06-09
+
+* **Tower Map Improvements**: Switched from OSM to MapLibre for enhanced map performance and visual quality.
+* **Enhanced Cellular Details**: LTE and 5G NR bands are now displayed in their own dedicated sections with both band numbers and descriptive names - [#85](https://github.com/christianrowlands/android-network-survey/issues/85).
+* **Improved Band Information**: Added frequency details for 5G NR bands (NARFCN) in the cellular details view.
+* **Customizable Tower Display**: Added option to toggle cellular towers on/off on the map view.
+* **Enhanced Coverage Visualization**: BeaconDB coverage areas now display as a layer on the tower map - [#83](https://github.com/christianrowlands/android-network-survey/issues/83).
+* **Multi-SIM Support**: Improved the map serving cell display for devices with multiple SIM cards.
+* **Map Preferences**: Added new settings including tower coverage colors, opacity controls, and screen-on option for the tower map - [#79](https://github.com/christianrowlands/android-network-survey/issues/79), [#82](https://github.com/christianrowlands/android-network-survey/issues/82).
+
 ## [1.36](https://github.com/christianrowlands/android-network-survey/releases/tag/v1.36) - 2025-05-08
 
 * Adds the `addressType`, `deviceClass`, `serviceUuids`, and `companyId` fields to the Bluetooth message.
