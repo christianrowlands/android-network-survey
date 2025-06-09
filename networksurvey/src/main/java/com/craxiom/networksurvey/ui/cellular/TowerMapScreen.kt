@@ -1,5 +1,6 @@
 package com.craxiom.networksurvey.ui.cellular
 
+import android.widget.Toast
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -212,7 +213,11 @@ internal fun TowerMapScreen(
                         NetworkSurveyConstants.PROPERTY_SELECTED_MAP_TILE_SOURCE,
                         MapTileSource.MAPTILER.name
                     )
-                    viewModel.setSelectedMapTileSource(MapTileSource.fromString(savedTileSource!!))
+                    // Only set the saved tile source if there's no map key error
+                    // Otherwise, respect the ViewModel's fallback to OpenStreetMap
+                    if (!mapKeyLoadError) {
+                        viewModel.setSelectedMapTileSource(MapTileSource.fromString(savedTileSource!!))
+                    }
 
                     val savedShowBeaconDb = preferences.getBoolean(
                         NetworkSurveyConstants.PROPERTY_SHOW_BEACONDB_COVERAGE,
@@ -308,7 +313,7 @@ internal fun TowerMapScreen(
 
                     // Check if towers layer should be shown
                     val showTowersLayer by viewModel.showTowersLayer.collectAsStateWithLifecycle()
-                    
+
                     if (showTowersLayer) {
                         // 3) One single call to TowerSymbols
                         TowerSymbols(
@@ -330,7 +335,8 @@ internal fun TowerMapScreen(
                         }
 
                         // Render serving cell coverage circles
-                        val displayCoverage = PreferenceUtils.displayServingCellCoverageOnMap(context)
+                        val displayCoverage =
+                            PreferenceUtils.displayServingCellCoverageOnMap(context)
                         if (displayCoverage) {
                             val servingCellCoverage by viewModel.servingCellCoverage.collectAsStateWithLifecycle()
                             val (fillColor, strokeColor) = getCoverageCircleColors()
@@ -629,22 +635,27 @@ internal fun TowerMapScreen(
                     }
                 }
 
-                // show a banner if we failed to fetch
-                // FIXME Move this somewhere it is not covered up by the top bar
-                if (mapKeyLoadError || mapTilerKey.isNullOrEmpty()) {
-                    Box(
-                        Modifier
-                            .fillMaxWidth()
-                            .background(Color.Red)
-                            .padding(4.dp)
-                            .align(Alignment.TopCenter)
+                // Show toast if we failed to fetch the map key and user's preference was MapTiler
+                DisposableEffect(mapKeyLoadError, selectedTileSource) {
+                    // Check if key failed AND initial preference was MapTiler but we fell back to OSM
+                    val savedTileSource = preferences.getString(
+                        NetworkSurveyConstants.PROPERTY_SELECTED_MAP_TILE_SOURCE,
+                        MapTileSource.MAPTILER.name
+                    )
+                    val initialPreferenceWasMapTiler =
+                        MapTileSource.fromString(savedTileSource!!) == MapTileSource.MAPTILER
+
+                    if ((mapKeyLoadError || mapTilerKey.isNullOrEmpty()) &&
+                        initialPreferenceWasMapTiler &&
+                        selectedTileSource == MapTileSource.OPENSTREETMAP
                     ) {
-                        Text(
+                        Toast.makeText(
+                            context,
                             "Could not load map API key; using fallback tiles.",
-                            color = Color.White,
-                            modifier = Modifier.align(Alignment.Center)
-                        )
+                            Toast.LENGTH_LONG
+                        ).show()
                     }
+                    onDispose { }
                 }
             }
         }
@@ -691,12 +702,15 @@ internal fun TowerMapScreen(
             val currentTileSource by viewModel.selectedMapTileSource.collectAsStateWithLifecycle()
             val showBeaconDbCoverage by viewModel.showBeaconDbCoverage.collectAsStateWithLifecycle()
             val showTowersLayer by viewModel.showTowersLayer.collectAsStateWithLifecycle()
+            val mapKeyLoadError by viewModel.mapKeyLoadError.collectAsState()
+            val mapTilerKey by viewModel.mapTilerKey.collectAsState()
 
             MapLayersDialog(
                 currentTileSource = currentTileSource,
                 showBeaconDbCoverage = showBeaconDbCoverage,
                 showTowersLayer = showTowersLayer,
                 onSetTileSource = { source ->
+                    val previousSource = currentTileSource
                     viewModel.setSelectedMapTileSource(source)
                     // Save preference
                     preferences.edit {
@@ -704,6 +718,17 @@ internal fun TowerMapScreen(
                             NetworkSurveyConstants.PROPERTY_SELECTED_MAP_TILE_SOURCE,
                             source.name
                         )
+                    }
+                    // Show error toast when switching from OSM to MapTiler with failed key
+                    if (previousSource == MapTileSource.OPENSTREETMAP &&
+                        source == MapTileSource.MAPTILER &&
+                        (mapKeyLoadError || mapTilerKey.isNullOrEmpty())
+                    ) {
+                        Toast.makeText(
+                            context,
+                            "Could not load map API key; using fallback tiles.",
+                            Toast.LENGTH_LONG
+                        ).show()
                     }
                 },
                 onSetShowBeaconDbCoverage = { show ->
@@ -1107,7 +1132,7 @@ fun MapLayersDialog(
     onDismiss: () -> Unit
 ) {
     val bottomSheetState = rememberModalBottomSheetState()
-    
+
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = bottomSheetState

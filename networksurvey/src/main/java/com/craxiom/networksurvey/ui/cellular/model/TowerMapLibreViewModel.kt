@@ -97,7 +97,7 @@ class TowerMapLibreViewModel : ViewModel() {
     // Last-queried viewport bounds ------------------
     private val _lastQueriedBounds = MutableStateFlow<LatLngBounds?>(null)
     val lastQueriedBounds = _lastQueriedBounds.asStateFlow()
-    
+
     // Track last zoom level for hysteresis
     private var lastQueriedZoom = 0.0
 
@@ -168,6 +168,7 @@ class TowerMapLibreViewModel : ViewModel() {
                 } else {
                     Timber.w("Failed to load MapTiler API key, falling back to OSM")
                     _mapKeyLoadError.value = true
+                    setSelectedMapTileSource(MapTileSource.OPENSTREETMAP)
                 }
             } catch (t: Throwable) {
                 Timber.e(t, "Error loading MapTiler API key, falling back to OSM")
@@ -256,7 +257,7 @@ class TowerMapLibreViewModel : ViewModel() {
     fun setShowTowersLayer(show: Boolean) {
         val wasHidden = !_showTowersLayer.value
         _showTowersLayer.value = show
-        
+
         // If the layer was hidden and is now being shown, trigger a tower query
         if (wasHidden && show) {
             Timber.d("Tower layer re-enabled, triggering query")
@@ -462,29 +463,35 @@ class TowerMapLibreViewModel : ViewModel() {
 
             // Check if bounds changed (basic check first)
             val boundsChanged = lastBounds == null || !areBoundsEqual(bounds, lastBounds)
-            
+
             // Apply hysteresis logic if bounds have changed
             val shouldQuery = if (boundsChanged && lastBounds != null) {
                 // Calculate the percentage change in bounds
                 val boundsChangePercent = calculateBoundsChangePercent(lastBounds, bounds)
                 val zoomChange = kotlin.math.abs(currentZoom - lastQueriedZoom)
-                
+
                 // Query if either:
                 // 1. Bounds changed by more than threshold percentage
                 // 2. Zoom changed by more than threshold
-                val exceedsThreshold = boundsChangePercent >= BOUNDS_CHANGE_THRESHOLD_PERCENT || 
-                                      zoomChange >= ZOOM_CHANGE_THRESHOLD
-                
+                val exceedsThreshold = boundsChangePercent >= BOUNDS_CHANGE_THRESHOLD_PERCENT ||
+                        zoomChange >= ZOOM_CHANGE_THRESHOLD
+
                 if (!exceedsThreshold) {
-                    Timber.d("Bounds changed but below threshold: ${(boundsChangePercent * 100).toInt()}% (threshold: ${(BOUNDS_CHANGE_THRESHOLD_PERCENT * 100).toInt()}%), zoom change: ${"%.1f".format(zoomChange)}")
+                    Timber.d(
+                        "Bounds changed but below threshold: ${(boundsChangePercent * 100).toInt()}% (threshold: ${(BOUNDS_CHANGE_THRESHOLD_PERCENT * 100).toInt()}%), zoom change: ${
+                            "%.1f".format(
+                                zoomChange
+                            )
+                        }"
+                    )
                 }
-                
+
                 exceedsThreshold
             } else {
                 // Always query if this is the first time or bounds haven't changed
                 boundsChanged
             }
-            
+
             val currentTime = System.currentTimeMillis()
             val timeSinceLastQuery = currentTime - lastQueryTime
 
@@ -493,7 +500,7 @@ class TowerMapLibreViewModel : ViewModel() {
                 lastQueryTime = currentTime
                 _lastQueriedBounds.value = bounds
                 lastQueriedZoom = currentZoom
-                
+
                 val area = calculateArea(bounds)
                 if (currentZoom >= MIN_ZOOM_LEVEL && area <= MAX_AREA_SQ_METERS) {
                     _isZoomedOutTooFar.value = false
@@ -905,21 +912,21 @@ class TowerMapLibreViewModel : ViewModel() {
         val oldLngSpan = oldBounds.longitudeEast - oldBounds.longitudeWest
         val newLatSpan = newBounds.latitudeNorth - newBounds.latitudeSouth
         val newLngSpan = newBounds.longitudeEast - newBounds.longitudeWest
-        
+
         // Calculate center points
         val oldCenterLat = (oldBounds.latitudeNorth + oldBounds.latitudeSouth) / 2
         val oldCenterLng = (oldBounds.longitudeEast + oldBounds.longitudeWest) / 2
         val newCenterLat = (newBounds.latitudeNorth + newBounds.latitudeSouth) / 2
         val newCenterLng = (newBounds.longitudeEast + newBounds.longitudeWest) / 2
-        
+
         // Calculate center movement as percentage of old bounds size
         val latCenterChange = kotlin.math.abs(newCenterLat - oldCenterLat) / oldLatSpan
         val lngCenterChange = kotlin.math.abs(newCenterLng - oldCenterLng) / oldLngSpan
-        
+
         // Calculate size change
         val latSizeChange = kotlin.math.abs(newLatSpan - oldLatSpan) / oldLatSpan
         val lngSizeChange = kotlin.math.abs(newLngSpan - oldLngSpan) / oldLngSpan
-        
+
         // Return the maximum change percentage
         return maxOf(latCenterChange, lngCenterChange, latSizeChange, lngSizeChange)
     }
