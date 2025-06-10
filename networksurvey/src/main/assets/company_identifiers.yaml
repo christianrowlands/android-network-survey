@@ -1,5 +1,179 @@
 company_identifiers:
 
+  - value: 0x0F06
+    name: 'SHENZHEN POWEROAK NEWENER CO., LTD'
+
+  - value: 0x0F05
+    name: 'SHENZHEN GWSTAI TECHNOLOGY CO.,LTD'
+
+  - value: 0x0F04
+    name: 'Lumen Labs (HK) Ltd'
+
+  - value: 0x0F03
+    name: 'Olibra LLC'
+
+  - value: 0x0F02
+    name: 'GE HEALTHCARE TECHNOLOGIES INC.'
+
+  - value: 0x0F01
+    name: 'HAPPLABS SOFTWARE PRIVATE LIMITED'
+
+  - value: 0x0F00
+    name: 'TRACERCO LIMITED'
+
+  - value: 0x0EFF
+    name: 'Healthcare Technology Limited'
+
+  - value: 0x0EFE
+    name: 'Teledyne Instruments, Inc.'
+
+  - value: 0x0EFD
+    name: 'PRIMES GmbH'
+
+  - value: 0x0EFC
+    name: 'Jano Life Inc.'
+
+  - value: 0x0EFB
+    name: 'BLUEPROVIDERZ LLC'
+
+  - value: 0x0EFA
+    name: 'Sensear Pty Ltd'
+
+  - value: 0x0EF9
+    name: 'Aseptico, Inc.'
+
+  - value: 0x0EF8
+    name: 'IoT Solutions Malta Limited'
+
+  - value: 0x0EF7
+    name: 'Trackonomy Systems, Inc.'
+
+  - value: 0x0EF6
+    name: 'Shenzhen Cyber Innovation Technology Co., Ltd.'
+
+  - value: 0x0EF5
+    name: 'LS ELECTRIC Co., Ltd.'
+
+  - value: 0x0EF4
+    name: 'SEMINOLE ELECTRONICS PRIVATE LIMITED'
+
+  - value: 0x0EF3
+    name: 'Monil AS'
+
+  - value: 0x0EF2
+    name: 'CAPTAIN BLINK'
+
+  - value: 0x0EF1
+    name: 'Wuxi Does IOT Co., Ltd'
+
+  - value: 0x0EF0
+    name: 'Seaward Electronic'
+
+  - value: 0x0EEF
+    name: 'Q42 Internet B.V.'
+
+  - value: 0x0EEE
+    name: 'ELLEA INGEGNERIA SRL UNIPERSONALE'
+
+  - value: 0x0EED
+    name: 'BBC Bircher AG'
+
+  - value: 0x0EEC
+    name: 'Willow Laboratories, Inc.'
+
+  - value: 0x0EEB
+    name: 'Fujita Electric Works, Ltd'
+
+  - value: 0x0EEA
+    name: 'Core Devices LLC'
+
+  - value: 0x0EE9
+    name: 'PIXEL TI IND. E COM PROD ELETRONICOS'
+
+  - value: 0x0EE8
+    name: 'SG Armaturen AS'
+
+  - value: 0x0EE7
+    name: 'RICKARD AIR DIFFUSION (PTY) LTD'
+
+  - value: 0x0EE6
+    name: 'NOCTRIX HEALTH, INC'
+
+  - value: 0x0EE5
+    name: 'Ambient Life Inc.'
+
+  - value: 0x0EE4
+    name: 'CAPTEMP, LDA'
+
+  - value: 0x0EE3
+    name: 'TAMRON Co., Ltd.'
+
+  - value: 0x0EE2
+    name: 'shenzhen hongever technology Co,. Ltd'
+
+  - value: 0x0EE1
+    name: 'MA MICRO LIMITED'
+
+  - value: 0x0EE0
+    name: 'MAERSK CONTAINER INDUSTRY A/S'
+
+  - value: 0x0EDF
+    name: 'Dynaudio A/S'
+
+  - value: 0x0EDE
+    name: 'Sony Honda Mobility Inc.'
+
+  - value: 0x0EDD
+    name: 'Ceridwen Limited'
+
+  - value: 0x0EDC
+    name: 'Shenzhen Zoqin Technology Co., Ltd.'
+
+  - value: 0x0EDB
+    name: 'ShenZhen BoYiChuangXin'
+
+  - value: 0x0EDA
+    name: 'Kodira GmbH'
+
+  - value: 0x0ED9
+    name: 'Overhead Door Corporation'
+
+  - value: 0x0ED8
+    name: 'DORAN MFG. LLC'
+
+  - value: 0x0ED7
+    name: 'CS INSTRUMENTS GmbH & Co.KG'
+
+  - value: 0x0ED6
+    name: 'Quintessential Design, Inc.'
+
+  - value: 0x0ED5
+    name: 'Relish Technologies Limited'
+
+  - value: 0x0ED4
+    name: 'Goerdyna Group Co., Ltd'
+
+  - value: 0x0ED3
+    name: 'Lichens Innovation inc.'
+
+  - value: 0x0ED2
+    name: 'SHENZHEN BESTWAY ELECTRONICS CO.,LTD'
+
+  - value: 0x0ED1
+    name: 'VINYL MATT MEDIA LIMITED'
+
+  - value: 0x0ED0
+    name: 'Gibson, Inc.'
+
+  - value: 0x0ECF
+    name: 'GGEC America, Inc.'
+
+  - value: 0x0ECE
+    name: 'Guangzhou Honor Microelectronic Co.,Ltd.'
+
+  - value: 0x0ECD
+    name: 'Nature Inc.'
+
   - value: 0x0ECC
     name: 'Shenzhen NEOECO Technology Co., Ltd.'
 
@@ -6481,7 +6655,7 @@ company_identifiers:
     name: 'Sesam Solutions BV'
 
   - value: 0x065A
-    name: 'Zound Industries International AB'
+    name: 'Marshall Group AB'
 
   - value: 0x0659
     name: 'UnSeen Technologies Oy'

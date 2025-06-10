@@ -1157,7 +1157,7 @@ uuids:
  - uuid: 0xFCCE
    name: "Luna Health, Inc."
  - uuid: 0xFCCD
-   name: Zound Industries International AB
+   name: Marshall Group AB
  - uuid: 0xFCCB
    name: TOTO LTD.
  - uuid: 0xFCCA
@@ -1386,3 +1386,15 @@ uuids:
    name: Time Location Systems AS
  - uuid: 0xFC5A
    name: LAST LOCK INC.
+ - uuid: 0xFC59
+   name: "Ant Group Co., Ltd."
+ - uuid: 0xFC58
+   name: "Shenzhen Minew Technologies Co., Ltd."
+ - uuid: 0xFC57
+   name: Ambient Life Inc.
+ - uuid: 0xFC56
+   name: Google LLC
+ - uuid: 0xFC55
+   name: BYD Company Limited
+ - uuid: 0xFC54
+   name: "Shenzhen Yinwang Intelligent Technologies Co., Ltd."
