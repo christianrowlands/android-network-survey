@@ -34,6 +34,7 @@ import com.craxiom.networksurvey.fragments.WifiDetailsFragment
 import com.craxiom.networksurvey.fragments.WifiSpectrumFragment
 import com.craxiom.networksurvey.fragments.model.MqttConnectionSettings
 import com.craxiom.networksurvey.model.WifiNetwork
+import com.craxiom.networksurvey.ui.activesurvey.SurveyMonitorScreen
 import com.craxiom.networksurvey.ui.cellular.CalculatorScreen
 import com.craxiom.networksurvey.ui.main.appbar.TitleBar
 import com.craxiom.networksurvey.ui.wifi.model.WifiNetworkInfoList
@@ -79,6 +80,15 @@ fun NavGraphBuilder.mainGraph(
                     CalculatorScreen(viewModel = viewModel())
                 }
             }
+        }
+
+        composable(NavDrawerOption.SurveyMonitor.name) {
+            SurveyMonitorScreen(
+                onBackPressed = { mainNavController.navigateUp() },
+                onNavigateToTowerMapSettings = {
+                    mainNavController.navigate(NavOption.TowerMapSettings.name)
+                }
+            )
         }
 
         composable(NavDrawerOption.Settings.name) {
@@ -128,6 +138,15 @@ fun NavGraphBuilder.mainGraph(
 
             BluetoothDetailsInCompose(paddingValues, bluetoothRecordData)
         }
+
+        composable(NavOption.SurveyMonitor.name) {
+            SurveyMonitorScreen(
+                onBackPressed = { mainNavController.navigateUp() },
+                onNavigateToTowerMapSettings = {
+                    mainNavController.navigate(NavOption.TowerMapSettings.name)
+                }
+            )
+        }
     }
 }
 
@@ -136,6 +155,7 @@ enum class NavDrawerOption {
     ServerConnection,
     MqttBrokerConnection,
     CellularCalculators,
+    SurveyMonitor,
     Settings,
 
     // External Links
@@ -153,7 +173,8 @@ enum class NavOption {
     TowerMap,
     WifiSpectrum,
     WifiDetails,
-    BluetoothDetails
+    BluetoothDetails,
+    SurveyMonitor
 }
 
 @Composable

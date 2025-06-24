@@ -185,6 +185,12 @@ public class NetworkSurveyConstants
     public static final String PROPERTY_SHOW_BEACONDB_COVERAGE = "show_beacondb_coverage";
     public static final String PROPERTY_SHOW_TOWERS_LAYER = "show_towers_layer";
 
+    // Survey Monitor specific map preferences
+    public static final String PROPERTY_SURVEY_MAP_TILE_SOURCE = "survey_map_tile_source";
+    public static final String PROPERTY_SURVEY_SHOW_BEACONDB_COVERAGE = "survey_show_beacondb_coverage";
+    public static final String PROPERTY_SURVEY_SHOW_TOWERS_LAYER = "survey_show_towers_layer";
+    public static final String PROPERTY_SURVEY_MAP_KEEP_SCREEN_ON = "survey_map_keep_screen_on";
+
     public static final String TOWER_MAP_SHARED_PREFERENCES = "tower_map_prefs";
     public static final String PROPERTY_LAST_TOWER_MAP_VIEW_LOCATION = "last_tower_map_view_location";
 }

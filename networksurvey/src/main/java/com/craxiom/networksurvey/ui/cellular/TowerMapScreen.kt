@@ -77,6 +77,7 @@ import com.craxiom.networksurvey.constants.NetworkSurveyConstants
 import com.craxiom.networksurvey.data.api.Tower
 import com.craxiom.networksurvey.model.CellularProtocol
 import com.craxiom.networksurvey.model.Plmn
+import com.craxiom.networksurvey.ui.activesurvey.model.SurveyTrack
 import com.craxiom.networksurvey.ui.cellular.model.INITIAL_ZOOM
 import com.craxiom.networksurvey.ui.cellular.model.MapTileSource
 import com.craxiom.networksurvey.ui.cellular.model.ServingCellInfo
@@ -104,6 +105,55 @@ import org.maplibre.android.camera.CameraPosition
 import org.maplibre.android.geometry.LatLng
 import timber.log.Timber
 
+// Helper functions to get the correct preference key based on context
+private fun getMapTileSourceKey(context: MapContext): String {
+    return when (context) {
+        MapContext.TOWER_MAP -> NetworkSurveyConstants.PROPERTY_SELECTED_MAP_TILE_SOURCE
+        MapContext.SURVEY_MONITOR -> NetworkSurveyConstants.PROPERTY_SURVEY_MAP_TILE_SOURCE
+    }
+}
+
+private fun getBeaconDbCoverageKey(context: MapContext): String {
+    return when (context) {
+        MapContext.TOWER_MAP -> NetworkSurveyConstants.PROPERTY_SHOW_BEACONDB_COVERAGE
+        MapContext.SURVEY_MONITOR -> NetworkSurveyConstants.PROPERTY_SURVEY_SHOW_BEACONDB_COVERAGE
+    }
+}
+
+private fun getTowersLayerKey(context: MapContext): String {
+    return when (context) {
+        MapContext.TOWER_MAP -> NetworkSurveyConstants.PROPERTY_SHOW_TOWERS_LAYER
+        MapContext.SURVEY_MONITOR -> NetworkSurveyConstants.PROPERTY_SURVEY_SHOW_TOWERS_LAYER
+    }
+}
+
+private fun getKeepScreenOnKey(context: MapContext): String {
+    return when (context) {
+        MapContext.TOWER_MAP -> NetworkSurveyConstants.PROPERTY_MAP_KEEP_SCREEN_ON
+        MapContext.SURVEY_MONITOR -> NetworkSurveyConstants.PROPERTY_SURVEY_MAP_KEEP_SCREEN_ON
+    }
+}
+
+private fun getDefaultBeaconDbCoverage(context: MapContext): Boolean {
+    return when (context) {
+        MapContext.TOWER_MAP -> false      // Default for tower map
+        MapContext.SURVEY_MONITOR -> true   // Default for survey monitor
+    }
+}
+
+private fun getDefaultShowTowers(context: MapContext): Boolean {
+    return when (context) {
+        MapContext.TOWER_MAP -> true       // Default for tower map
+        MapContext.SURVEY_MONITOR -> false  // Default for survey monitor
+    }
+}
+
+private fun getDefaultKeepScreenOn(context: MapContext): Boolean {
+    return when (context) {
+        MapContext.TOWER_MAP -> true
+        MapContext.SURVEY_MONITOR -> true
+    }
+}
 
 /**
  * Creates the map view for displaying the tower locations. The tower locations are pulled from the
@@ -113,7 +163,12 @@ import timber.log.Timber
 internal fun TowerMapScreen(
     viewModel: TowerMapLibreViewModel = viewModel(),
     onBackButtonPressed: () -> Unit,
-    onNavigateToTowerMapSettings: () -> Unit
+    onNavigateToTowerMapSettings: () -> Unit,
+    mapContext: MapContext = MapContext.TOWER_MAP,
+    surveyTracks: List<SurveyTrack>? = null,
+    initialBeaconDbEnabled: Boolean? = null,
+    initialShowTowers: Boolean? = null,
+    initialCameraMode: CameraMode? = null
 ) {
     val paddingInsets by viewModel.paddingInsets.collectAsStateWithLifecycle()
 
@@ -132,7 +187,7 @@ internal fun TowerMapScreen(
 
     // Read preference value on every recomposition to catch updates
     val keepScreenOn =
-        preferences.getBoolean(NetworkSurveyConstants.PROPERTY_MAP_KEEP_SCREEN_ON, true)
+        preferences.getBoolean(getKeepScreenOnKey(mapContext), getDefaultKeepScreenOn(mapContext))
 
     DisposableEffect(keepScreenOn) {
         view.keepScreenOn = keepScreenOn
@@ -172,6 +227,8 @@ internal fun TowerMapScreen(
                 .zoom(INITIAL_ZOOM)
                 .build()
         }
+        // Set initial camera mode if provided
+        initialCameraMode?.let { cameraMode = it }
     }
 
     val statusBarHeight = paddingInsets.calculateTopPadding()
@@ -210,7 +267,7 @@ internal fun TowerMapScreen(
                 // Load preferences on startup
                 DisposableEffect(Unit) {
                     val savedTileSource = preferences.getString(
-                        NetworkSurveyConstants.PROPERTY_SELECTED_MAP_TILE_SOURCE,
+                        getMapTileSourceKey(mapContext),
                         MapTileSource.MAPTILER.name
                     )
                     // Only set the saved tile source if there's no map key error
@@ -219,17 +276,18 @@ internal fun TowerMapScreen(
                         viewModel.setSelectedMapTileSource(MapTileSource.fromString(savedTileSource!!))
                     }
 
-                    val savedShowBeaconDb = preferences.getBoolean(
-                        NetworkSurveyConstants.PROPERTY_SHOW_BEACONDB_COVERAGE,
-                        false
+                    // Use initial values if provided, otherwise load from preferences
+                    val showBeaconDb = initialBeaconDbEnabled ?: preferences.getBoolean(
+                        getBeaconDbCoverageKey(mapContext),
+                        getDefaultBeaconDbCoverage(mapContext)
                     )
-                    viewModel.setShowBeaconDbCoverage(savedShowBeaconDb)
+                    viewModel.setShowBeaconDbCoverage(showBeaconDb)
 
-                    val savedShowTowers = preferences.getBoolean(
-                        NetworkSurveyConstants.PROPERTY_SHOW_TOWERS_LAYER,
-                        true  // Default to showing towers
+                    val showTowers = initialShowTowers ?: preferences.getBoolean(
+                        getTowersLayerKey(mapContext),
+                        getDefaultShowTowers(mapContext)
                     )
-                    viewModel.setShowTowersLayer(savedShowTowers)
+                    viewModel.setShowTowersLayer(showTowers)
 
                     onDispose { }
                 }
@@ -332,6 +390,20 @@ internal fun TowerMapScreen(
                                     dashArray = listOf(5f, 3f) // Dashed line
                                 )
                             )
+                        }
+
+                        // Render survey tracks if provided
+                        surveyTracks?.forEach { track ->
+                            if (track.points.size >= 2) {
+                                LineString(
+                                    state = rememberLineStringState(
+                                        points = track.points,
+                                        color = track.color,
+                                        width = 4f,
+                                        dashArray = null // Solid line for tracks
+                                    )
+                                )
+                            }
                         }
 
                         // Render serving cell coverage circles
@@ -715,7 +787,7 @@ internal fun TowerMapScreen(
                     // Save preference
                     preferences.edit {
                         putString(
-                            NetworkSurveyConstants.PROPERTY_SELECTED_MAP_TILE_SOURCE,
+                            getMapTileSourceKey(mapContext),
                             source.name
                         )
                     }
@@ -735,14 +807,14 @@ internal fun TowerMapScreen(
                     viewModel.setShowBeaconDbCoverage(show)
                     // Save preference
                     preferences.edit {
-                        putBoolean(NetworkSurveyConstants.PROPERTY_SHOW_BEACONDB_COVERAGE, show)
+                        putBoolean(getBeaconDbCoverageKey(mapContext), show)
                     }
                 },
                 onSetShowTowersLayer = { show ->
                     viewModel.setShowTowersLayer(show)
                     // Save preference
                     preferences.edit {
-                        putBoolean(NetworkSurveyConstants.PROPERTY_SHOW_TOWERS_LAYER, show)
+                        putBoolean(getTowersLayerKey(mapContext), show)
                     }
                 },
                 onDismiss = { showLayersDialog = false }
