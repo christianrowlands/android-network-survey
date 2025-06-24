@@ -36,22 +36,20 @@ internal class MapPropertiesNode(
     private val onMyLocationChanged: (Location) -> Unit,
     onTowerClick: ((Tower) -> Unit)? = null,
 ) : MapNode {
-    private val locationCallback: LocationEngineCallback<LocationEngineResult>
-        get() {
-            val locationCallback = object : LocationEngineCallback<LocationEngineResult> {
-                override fun onSuccess(result: LocationEngineResult) {
-                    result.lastLocation?.let { location ->
-                        // FIXME I don't think I need this camera update
-                        //cameraPositionState.location = location
-                        onMyLocationChanged(location)
-                    }
-                }
-
-                override fun onFailure(exception: Exception) {
-                    Timber.e(exception, "Location update for the tower map failed")
+    private var locationEngine: LocationEngine? = null
+    private val locationCallback: LocationEngineCallback<LocationEngineResult> = 
+        object : LocationEngineCallback<LocationEngineResult> {
+            override fun onSuccess(result: LocationEngineResult) {
+                result.lastLocation?.let { location ->
+                    // FIXME I don't think I need this camera update
+                    //cameraPositionState.location = location
+                    onMyLocationChanged(location)
                 }
             }
-            return locationCallback
+
+            override fun onFailure(exception: Exception) {
+                Timber.e(exception, "Location update for the tower map failed")
+            }
         }
 
     init {
@@ -77,8 +75,7 @@ internal class MapPropertiesNode(
                 .build()
         )
 
-        val locationEngine = map.locationComponent.locationEngine
-        val locationCallback = locationCallback
+        locationEngine = map.locationComponent.locationEngine
         if (locationEngine != null) {
             val request = LocationEngineRequest.Builder(LOCATION_REQUEST_INTERVAL)
                 .setPriority(LocationEngineRequest.PRIORITY_HIGH_ACCURACY)
@@ -93,7 +90,7 @@ internal class MapPropertiesNode(
                     Manifest.permission.ACCESS_COARSE_LOCATION
                 ) == PackageManager.PERMISSION_GRANTED
             ) {
-                locationEngine.requestLocationUpdates(
+                locationEngine?.requestLocationUpdates(
                     request,
                     locationCallback,
                     Looper.getMainLooper()
@@ -148,7 +145,23 @@ internal class MapPropertiesNode(
         cameraPositionState.setMap(map)
     }
 
-    private lateinit var locationEngine: LocationEngine
+    fun cleanup() {
+        try {
+            // Remove location updates first
+            locationEngine?.removeLocationUpdates(locationCallback)
+            
+            // Disable location component to prevent any further updates
+            val locationComponent = map.locationComponent
+            if (locationComponent.isLocationComponentActivated && locationComponent.isLocationComponentEnabled) {
+                locationComponent.isLocationComponentEnabled = false
+            }
+            
+            // Clear the camera position state map reference
+            cameraPositionState.setMap(null)
+        } catch (e: Exception) {
+            Timber.e(e, "Error during MapPropertiesNode cleanup")
+        }
+    }
 
     var cameraPositionState = cameraPositionState
         set(value) {
@@ -191,8 +204,7 @@ internal class MapPropertiesNode(
     }
 
     override fun onRemoved() {
-        cameraPositionState.setMap(null)
-        locationEngine.removeLocationUpdates(locationCallback)
+        cleanup()
     }
 
     override fun onCleared() {

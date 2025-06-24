@@ -188,7 +188,19 @@ private fun MapView.lifecycleObserver(prev: MutableState<Lifecycle.Event>) =
             Lifecycle.Event.ON_START -> this.onStart()
             Lifecycle.Event.ON_RESUME -> this.onResume()
             Lifecycle.Event.ON_PAUSE -> this.onPause()
-            Lifecycle.Event.ON_STOP -> this.onStop()
+            Lifecycle.Event.ON_STOP -> {
+                // Disable location component before stopping to prevent location updates after destroy
+                try {
+                    this.getMapAsync { map ->
+                        if (map.locationComponent.isLocationComponentActivated) {
+                            map.locationComponent.isLocationComponentEnabled = false
+                        }
+                    }
+                } catch (e: Exception) {
+                    // Ignore errors during cleanup
+                }
+                this.onStop()
+            }
             else -> {}
         }
         prev.value = event
