@@ -203,6 +203,7 @@ internal fun TowerMapScreen(
     val servingCells by viewModel.servingCells.collectAsStateWithLifecycle()
     var selectedSimIndex by remember { mutableIntStateOf(-1) }
     val servingCellSignals by viewModel.servingSignals.collectAsStateWithLifecycle()
+    val showTowersLayer by viewModel.showTowersLayer.collectAsStateWithLifecycle()
 
     val options = listOf(
         CellularProtocol.GSM.name,
@@ -370,8 +371,6 @@ internal fun TowerMapScreen(
                         }
 
                     // Check if towers layer should be shown
-                    val showTowersLayer by viewModel.showTowersLayer.collectAsStateWithLifecycle()
-
                     if (showTowersLayer) {
                         // 3) One single call to TowerSymbols
                         TowerSymbols(
@@ -451,16 +450,19 @@ internal fun TowerMapScreen(
                         Row {
                             Spacer(modifier = Modifier.width(8.dp))
 
-                            IconButton(onClick = { onBackButtonPressed() }) {
-                                Icon(
-                                    Icons.AutoMirrored.Filled.ArrowBack,
-                                    contentDescription = "Back button",
-                                    tint = MaterialTheme.colorScheme.onSurface,
-                                    modifier = Modifier
-                                        .size(56.dp)
-                                        .padding(0.dp)
-                                        .background(color = MaterialTheme.colorScheme.primary)
-                                )
+                            // Only show back button if not in Survey Monitor context
+                            if (mapContext != MapContext.SURVEY_MONITOR) {
+                                IconButton(onClick = { onBackButtonPressed() }) {
+                                    Icon(
+                                        Icons.AutoMirrored.Filled.ArrowBack,
+                                        contentDescription = "Back button",
+                                        tint = MaterialTheme.colorScheme.onSurface,
+                                        modifier = Modifier
+                                            .size(56.dp)
+                                            .padding(0.dp)
+                                            .background(color = MaterialTheme.colorScheme.primary)
+                                    )
+                                }
                             }
 
                             Spacer(modifier = Modifier.weight(1f))
@@ -477,31 +479,34 @@ internal fun TowerMapScreen(
                                 )
                             }
 
-                            Spacer(modifier = Modifier.width(16.dp))
+                            // Only show tower-related controls when towers layer is enabled
+                            if (showTowersLayer) {
+                                Spacer(modifier = Modifier.width(16.dp))
 
-                            Button(
-                                onClick = { showPlmnDialog = true },
-                            ) {
-                                val buttonText =
-                                    if (currentPlmnFilter.isSet()) currentPlmnFilter.toString() else "PLMN Filter"
-                                Text(
-                                    text = buttonText,
-                                    color = MaterialTheme.colorScheme.onSurface,
-                                    fontSize = 14.nonScaledSp,
-                                    lineHeight = 14.nonScaledSp,
-                                )
-                            }
+                                Button(
+                                    onClick = { showPlmnDialog = true },
+                                ) {
+                                    val buttonText =
+                                        if (currentPlmnFilter.isSet()) currentPlmnFilter.toString() else "PLMN Filter"
+                                    Text(
+                                        text = buttonText,
+                                        color = MaterialTheme.colorScheme.onSurface,
+                                        fontSize = 14.nonScaledSp,
+                                        lineHeight = 14.nonScaledSp,
+                                    )
+                                }
 
-                            Spacer(modifier = Modifier.width(8.dp))
+                                Spacer(modifier = Modifier.width(8.dp))
 
-                            Button(
-                                onClick = { expanded = true },
-                            ) {
-                                Text(
-                                    text = radio, color = MaterialTheme.colorScheme.onSurface,
-                                    fontSize = 14.nonScaledSp,
-                                    lineHeight = 14.nonScaledSp,
-                                )
+                                Button(
+                                    onClick = { expanded = true },
+                                ) {
+                                    Text(
+                                        text = radio, color = MaterialTheme.colorScheme.onSurface,
+                                        fontSize = 14.nonScaledSp,
+                                        lineHeight = 14.nonScaledSp,
+                                    )
+                                }
                             }
                         }
 
@@ -528,21 +533,24 @@ internal fun TowerMapScreen(
                         }
                     }
 
-                    Box(
-                        modifier = Modifier
-                            .align(Alignment.End)
-                            .padding(end = 16.dp)
-                    ) {
-                        Button(
-                            onClick = { showTowerSourceDialog = true },
+                    // Only show tower source button when towers layer is enabled
+                    if (showTowersLayer) {
+                        Box(
+                            modifier = Modifier
+                                .align(Alignment.End)
+                                .padding(end = 16.dp)
                         ) {
-                            val buttonText = currentSource.displayName
-                            Text(
-                                text = buttonText,
-                                color = MaterialTheme.colorScheme.onSurface,
-                                fontSize = 14.nonScaledSp,
-                                lineHeight = 14.nonScaledSp,
-                            )
+                            Button(
+                                onClick = { showTowerSourceDialog = true },
+                            ) {
+                                val buttonText = currentSource.displayName
+                                Text(
+                                    text = buttonText,
+                                    color = MaterialTheme.colorScheme.onSurface,
+                                    fontSize = 14.nonScaledSp,
+                                    lineHeight = 14.nonScaledSp,
+                                )
+                            }
                         }
                     }
                 }
@@ -773,7 +781,6 @@ internal fun TowerMapScreen(
         if (showLayersDialog) {
             val currentTileSource by viewModel.selectedMapTileSource.collectAsStateWithLifecycle()
             val showBeaconDbCoverage by viewModel.showBeaconDbCoverage.collectAsStateWithLifecycle()
-            val showTowersLayer by viewModel.showTowersLayer.collectAsStateWithLifecycle()
             val mapKeyLoadError by viewModel.mapKeyLoadError.collectAsState()
             val mapTilerKey by viewModel.mapTilerKey.collectAsState()
 

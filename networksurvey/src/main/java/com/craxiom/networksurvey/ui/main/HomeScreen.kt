@@ -194,6 +194,16 @@ fun getAppBarActions(
     showGnssSortDialog: (Boolean) -> Unit
 ): List<AppBarAction> {
     return when (currentScreen) {
+        MainScreens.Dashboard -> listOf(
+            AppBarAction(
+                icon = R.drawable.ic_survey_monitor,
+                description = R.string.survey_monitor,
+                onClick = {
+                    navController.navigate(NavDrawerOption.SurveyMonitor.name)
+                }
+            )
+        )
+
         MainScreens.Cellular -> listOf(
             AppBarAction(
                 icon = android.R.drawable.ic_dialog_map,
