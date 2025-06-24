@@ -247,8 +247,7 @@ private fun SurveyMapTab(
         onNavigateToTowerMapSettings = onNavigateToTowerMapSettings,
         mapContext = MapContext.SURVEY_MONITOR,
         surveyTracks = surveyState.currentTrack?.let { listOf(it) },
-        initialBeaconDbEnabled = true, // Default BeaconDB coverage to ON for survey monitoring
-        initialShowTowers = true,
+        // Don't override the saved preferences - let TowerMapScreen load them based on context
         initialCameraMode = CameraMode.TRACKING
     )
 }
