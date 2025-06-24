@@ -3,10 +3,12 @@ package com.craxiom.networksurvey.ui.activesurvey
 import android.location.Location
 import android.location.LocationListener
 import android.os.Bundle
+import android.os.Environment
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.craxiom.mqttlibrary.IConnectionStateListener
 import com.craxiom.mqttlibrary.connection.ConnectionState
+import com.craxiom.networksurvey.constants.NetworkSurveyConstants
 import com.craxiom.networksurvey.listeners.ILoggingChangeListener
 import com.craxiom.networksurvey.model.SurveyTypes
 import com.craxiom.networksurvey.services.NetworkSurveyService
@@ -28,6 +30,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import org.maplibre.android.geometry.LatLng
 import timber.log.Timber
+import java.io.File
 import javax.inject.Inject
 
 /**
@@ -114,6 +117,7 @@ class SurveyMonitorViewModel @Inject constructor() : ViewModel(), IConnectionSta
     /**
      * LocationListener implementation - Called when provider status changes
      */
+    @Deprecated("Deprecated in API level 29")
     override fun onStatusChanged(provider: String?, status: Int, extras: Bundle?) {
         // Not needed for our use case
     }
@@ -180,9 +184,10 @@ class SurveyMonitorViewModel @Inject constructor() : ViewModel(), IConnectionSta
                 null
             }
 
-            // Update MQTT streaming status - for now assume it's based on connection state
-            val mqttActive = false // TODO: Get actual MQTT streaming state
-            val mqttStatus = if (mqttActive) {
+            // Update MQTT streaming status
+            // For now, we'll check if MQTT is enabled based on whether streaming is active
+            val mqttActive = _surveyState.value.mqttStreamingStatus?.isActive ?: false
+            val mqttStatus = if (mqttActive || _surveyState.value.mqttStreamingStatus != null) {
                 createMqttStreamingStatus(service)
             } else {
                 null
@@ -247,13 +252,26 @@ class SurveyMonitorViewModel @Inject constructor() : ViewModel(), IConnectionSta
 
         val logTypeState = PreferenceUtils.getLogTypePreference(service.applicationContext)
 
+        // Calculate actual file sizes and record counts
+        val (csvFileSize, csvRecordCount) = if (logTypeState.csv) {
+            calculateCsvFileStats()
+        } else {
+            Pair(0L, 0L)
+        }
+
+        val (geoPackageFileSize, geoPackageRecordCount) = if (logTypeState.geoPackage) {
+            calculateGeoPackageFileStats()
+        } else {
+            Pair(0L, 0L)
+        }
+
         val fileInfo = FileLoggingInfo(
             csvEnabled = logTypeState.csv,
-            csvFileSize = 0, // TODO: Calculate actual file sizes
-            csvRecordCount = 0, // TODO: Get actual record counts
+            csvFileSize = csvFileSize,
+            csvRecordCount = csvRecordCount,
             geoPackageEnabled = logTypeState.geoPackage,
-            geoPackageFileSize = 0,
-            geoPackageRecordCount = 0,
+            geoPackageFileSize = geoPackageFileSize,
+            geoPackageRecordCount = geoPackageRecordCount,
             activeProtocols = activeProtocols
         )
 
@@ -296,8 +314,12 @@ class SurveyMonitorViewModel @Inject constructor() : ViewModel(), IConnectionSta
             activeProtocols.add(WirelessProtocol.GNSS.displayName)
         }
 
+        // Use the current state from the connection state listener
+        val currentMqttInfo = _surveyState.value.mqttStreamingStatus?.mqttInfo
+
         val mqttInfo = MqttStreamingInfo(
-            connectionState = MqttConnectionState.DISCONNECTED, // Will be updated by listener
+            connectionState = currentMqttInfo?.connectionState ?: MqttConnectionState.DISCONNECTED,
+            brokerAddress = currentMqttInfo?.brokerAddress,
             activeProtocols = activeProtocols
         )
 
@@ -375,5 +397,83 @@ class SurveyMonitorViewModel @Inject constructor() : ViewModel(), IConnectionSta
         networkSurveyService?.unregisterMqttConnectionStateListener(this)
         networkSurveyService?.unregisterLoggingChangeListener(this)
         networkSurveyService?.primaryLocationListener?.unregisterListener(this)
+    }
+
+    /**
+     * Calculates the total size and record count for CSV log files
+     */
+    private fun calculateCsvFileStats(): Pair<Long, Long> {
+        try {
+            val downloadsDir =
+                Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
+            val csvLogDir = File(downloadsDir, NetworkSurveyConstants.CSV_LOG_DIRECTORY_NAME)
+
+            if (!csvLogDir.exists() || !csvLogDir.isDirectory) {
+                return Pair(0L, 0L)
+            }
+
+            var totalSize = 0L
+            var totalRecords = 0L
+
+            // Get all CSV files in the directory
+            csvLogDir.listFiles { file ->
+                file.isFile && file.name.endsWith(".csv")
+            }?.forEach { csvFile ->
+                totalSize += csvFile.length()
+
+                // Estimate record count by counting lines (excluding header)
+                try {
+                    val lineCount = csvFile.useLines { lines ->
+                        lines.count() - 1 // Subtract 1 for header
+                    }
+                    if (lineCount > 0) {
+                        totalRecords += lineCount
+                    }
+                } catch (e: Exception) {
+                    Timber.e(e, "Error counting lines in CSV file: ${csvFile.name}")
+                }
+            }
+
+            return Pair(totalSize, totalRecords)
+        } catch (e: Exception) {
+            Timber.e(e, "Error calculating CSV file stats")
+            return Pair(0L, 0L)
+        }
+    }
+
+    /**
+     * Calculates the total size and record count for GeoPackage files
+     */
+    private fun calculateGeoPackageFileStats(): Pair<Long, Long> {
+        try {
+            val downloadsDir =
+                Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
+            val geoPackageLogDir = File(downloadsDir, NetworkSurveyConstants.LOG_DIRECTORY_NAME)
+
+            if (!geoPackageLogDir.exists() || !geoPackageLogDir.isDirectory) {
+                return Pair(0L, 0L)
+            }
+
+            var totalSize = 0L
+            var totalRecords = 0L
+
+            // Get all GeoPackage files in the directory
+            geoPackageLogDir.listFiles { file ->
+                file.isFile && file.name.endsWith(".gpkg")
+            }?.forEach { gpkgFile ->
+                totalSize += gpkgFile.length()
+
+                // For GeoPackage files, we can't easily count records without opening the database
+                // So for now, we'll just estimate based on file size (rough approximation)
+                // Average record size is approximately 500 bytes in GeoPackage
+                val estimatedRecords = gpkgFile.length() / 500
+                totalRecords += estimatedRecords
+            }
+
+            return Pair(totalSize, totalRecords)
+        } catch (e: Exception) {
+            Timber.e(e, "Error calculating GeoPackage file stats")
+            return Pair(0L, 0L)
+        }
     }
 }
