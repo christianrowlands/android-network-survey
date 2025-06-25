@@ -97,7 +97,7 @@ public class NetworkSurveyConstants
     public static final int DEFAULT_GNSS_SCAN_INTERVAL_SECONDS = 20;
     public static final int DEFAULT_DEVICE_STATUS_SCAN_INTERVAL_SECONDS = 120;
 
-    public static final String DEFAULT_ROLLOVER_SIZE_MB = "5";
+    public static final String DEFAULT_ROLLOVER_SIZE_MB = "10";
 
     public static final boolean DEFAULT_UPLOAD_TO_OPENCELLID = true;
     public static final boolean DEFAULT_UPLOAD_TO_BEACONDB = true;
