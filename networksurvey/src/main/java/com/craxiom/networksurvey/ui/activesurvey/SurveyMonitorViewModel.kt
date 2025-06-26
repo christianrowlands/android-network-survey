@@ -43,9 +43,6 @@ class SurveyMonitorViewModel @Inject constructor() : ViewModel(), IConnectionSta
     private val _surveyState = MutableStateFlow(ActiveSurveyState())
     val surveyState: StateFlow<ActiveSurveyState> = _surveyState.asStateFlow()
 
-    private val _keepScreenOn = MutableStateFlow(true)
-    val keepScreenOn: StateFlow<Boolean> = _keepScreenOn.asStateFlow()
-
     private var networkSurveyService: NetworkSurveyService? = null
 
     // Track points for the current session
@@ -83,12 +80,6 @@ class SurveyMonitorViewModel @Inject constructor() : ViewModel(), IConnectionSta
         }
     }
 
-    /**
-     * Updates the keep screen on preference
-     */
-    fun setKeepScreenOn(enabled: Boolean) {
-        _keepScreenOn.value = enabled
-    }
 
     /**
      * LocationListener implementation - Called when location is updated

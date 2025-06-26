@@ -14,8 +14,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Build
-import androidx.compose.material.icons.filled.Lock
-import androidx.compose.material.icons.outlined.Lock
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -66,17 +64,16 @@ fun SurveyMonitorScreen(
     onNavigateToTowerMapSettings: () -> Unit
 ) {
     val surveyState by viewModel.surveyState.collectAsStateWithLifecycle()
-    val keepScreenOn by viewModel.keepScreenOn.collectAsStateWithLifecycle()
 
     var selectedTab by remember { mutableIntStateOf(0) }
 
     // Handle service connection
     ServiceConnectionHandler(viewModel)
 
-    // Handle screen wake lock
+    // Keep screen always on when viewing Survey Monitor
     val view = LocalView.current
-    DisposableEffect(keepScreenOn) {
-        view.keepScreenOn = keepScreenOn
+    DisposableEffect(Unit) {
+        view.keepScreenOn = true
         onDispose {
             view.keepScreenOn = false
         }
@@ -85,9 +82,7 @@ fun SurveyMonitorScreen(
     Scaffold(
         topBar = {
             ActiveSurveyTopBar(
-                onBackPressed = onBackPressed,
-                keepScreenOn = keepScreenOn,
-                onKeepScreenOnToggle = { viewModel.setKeepScreenOn(!keepScreenOn) }
+                onBackPressed = onBackPressed
             )
         }
     ) { paddingValues ->
@@ -133,9 +128,7 @@ fun SurveyMonitorScreen(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun ActiveSurveyTopBar(
-    onBackPressed: () -> Unit,
-    keepScreenOn: Boolean,
-    onKeepScreenOnToggle: () -> Unit
+    onBackPressed: () -> Unit
 ) {
     TopAppBar(
         title = {
@@ -149,22 +142,6 @@ private fun ActiveSurveyTopBar(
                 Icon(
                     imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                     contentDescription = "Back"
-                )
-            }
-        },
-        actions = {
-            IconButton(onClick = onKeepScreenOnToggle) {
-                Icon(
-                    imageVector = if (keepScreenOn) {
-                        Icons.Filled.Lock
-                    } else {
-                        Icons.Outlined.Lock
-                    },
-                    contentDescription = if (keepScreenOn) {
-                        "Screen will stay on"
-                    } else {
-                        "Screen may turn off"
-                    }
                 )
             }
         }
