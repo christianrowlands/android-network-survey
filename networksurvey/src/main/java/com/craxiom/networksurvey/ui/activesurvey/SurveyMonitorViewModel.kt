@@ -227,15 +227,7 @@ class SurveyMonitorViewModel @Inject constructor() : ViewModel(), IConnectionSta
         val activeProtocols = mutableSetOf<String>()
 
         if (service.isCellularLoggingEnabled) {
-            activeProtocols.addAll(
-                listOf(
-                    WirelessProtocol.GSM.displayName,
-                    WirelessProtocol.CDMA.displayName,
-                    WirelessProtocol.UMTS.displayName,
-                    WirelessProtocol.LTE.displayName,
-                    WirelessProtocol.NR.displayName
-                )
-            )
+            activeProtocols.add("Cellular")
         }
 
         if (service.isWifiLoggingEnabled) {
@@ -291,15 +283,7 @@ class SurveyMonitorViewModel @Inject constructor() : ViewModel(), IConnectionSta
 
         // Similar protocol detection as file logging
         if (service.isCellularLoggingEnabled) {
-            activeProtocols.addAll(
-                listOf(
-                    WirelessProtocol.GSM.displayName,
-                    WirelessProtocol.CDMA.displayName,
-                    WirelessProtocol.UMTS.displayName,
-                    WirelessProtocol.LTE.displayName,
-                    WirelessProtocol.NR.displayName
-                )
-            )
+            activeProtocols.add("Cellular")
         }
 
         if (service.isWifiLoggingEnabled) {
