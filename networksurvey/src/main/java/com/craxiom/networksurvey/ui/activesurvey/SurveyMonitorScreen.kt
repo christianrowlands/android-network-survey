@@ -1,5 +1,13 @@
 package com.craxiom.networksurvey.ui.activesurvey
 
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -11,16 +19,14 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Build
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Tab
@@ -29,6 +35,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -36,22 +43,20 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.scale
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.craxiom.networksurvey.ui.activesurvey.components.BaseSurveyStatusCard
-import com.craxiom.networksurvey.ui.activesurvey.components.ConnectionStatusIndicator
-import com.craxiom.networksurvey.ui.activesurvey.components.StatRow
-import com.craxiom.networksurvey.ui.activesurvey.components.StatusChip
-import com.craxiom.networksurvey.ui.activesurvey.components.formatFileSize
-import com.craxiom.networksurvey.ui.activesurvey.components.formatTimestamp
 import com.craxiom.networksurvey.ui.activesurvey.model.ActiveSurveyState
-import com.craxiom.networksurvey.ui.activesurvey.model.SurveyStatus
 import com.craxiom.networksurvey.ui.cellular.MapContext
 import com.craxiom.networksurvey.ui.cellular.TowerMapScreen
 import com.craxiom.networksurvey.ui.cellular.towermap.CameraMode
+import kotlinx.coroutines.delay
 
 /**
  * Main screen for monitoring active surveys with status and map views
@@ -153,61 +158,40 @@ private fun SurveyStatusTab(
     surveyState: ActiveSurveyState,
     modifier: Modifier = Modifier
 ) {
-    if (!surveyState.isAnyActive) {
-        // Show empty state when no surveys are active
-        Box(
-            modifier = modifier.fillMaxSize(),
-            contentAlignment = Alignment.Center
-        ) {
-            Column(
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
-                Text(
-                    text = "No Active Surveys",
-                    style = MaterialTheme.typography.headlineMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                Text(
-                    text = "Start a survey from the Dashboard to see status here",
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-        }
-    } else {
-        // Show active survey cards
+    Box(
+        modifier = modifier.fillMaxSize(),
+        contentAlignment = Alignment.Center
+    ) {
         Column(
-            modifier = modifier
-                .fillMaxSize()
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(24.dp)
         ) {
-            // File Logging Card
-            surveyState.fileLoggingStatus?.let { status ->
-                FileLoggingStatusCard(
-                    status = status,
-                    modifier = Modifier.fillMaxWidth()
+            // Status Indicator
+            SurveyStatusIndicator(
+                isActive = surveyState.isAnyActive
+            )
+            
+            // Status Text
+            Text(
+                text = if (surveyState.isAnyActive) "SCANNING" else "STOPPED",
+                style = MaterialTheme.typography.headlineLarge.copy(
+                    fontSize = 36.sp,
+                    fontWeight = FontWeight.Bold
+                ),
+                color = if (surveyState.isAnyActive) {
+                    MaterialTheme.colorScheme.primary
+                } else {
+                    MaterialTheme.colorScheme.error
+                },
+                textAlign = TextAlign.Center
+            )
+            
+            // Statistics when active
+            if (surveyState.isAnyActive) {
+                SurveyStatistics(
+                    surveyState = surveyState
                 )
             }
-
-            // MQTT Streaming Card
-            surveyState.mqttStreamingStatus?.let { status ->
-                MqttStreamingStatusCard(
-                    status = status,
-                    modifier = Modifier.fillMaxWidth()
-                )
-            }
-
-            // Upload Survey Card
-            surveyState.uploadSurveyStatus?.let { status ->
-                UploadSurveyStatusCard(
-                    status = status,
-                    modifier = Modifier.fillMaxWidth()
-                )
-            }
-
-            // TODO Add a gRPC streaming card
         }
     }
 }
@@ -230,282 +214,153 @@ private fun SurveyMapTab(
 }
 
 @Composable
-private fun FileLoggingStatusCard(
-    status: SurveyStatus,
+private fun SurveyStatusIndicator(
+    isActive: Boolean,
     modifier: Modifier = Modifier
 ) {
-    var isExpanded by remember { mutableStateOf(false) }
-    val fileInfo = status.fileInfo
-
-    BaseSurveyStatusCard(
-        title = "File Logging",
-        icon = Icons.Default.Build, // TODO replace with a more appropriate icon
-        isActive = status.isActive,
-        isExpanded = isExpanded,
-        onExpandToggle = { isExpanded = !isExpanded },
-        modifier = modifier,
-        headerContent = {
-            if (status.isActive && fileInfo != null) {
-                val activeCount = listOfNotNull(
-                    if (fileInfo.csvEnabled) "CSV" else null,
-                    if (fileInfo.geoPackageEnabled) "GeoPackage" else null
-                ).size
-                Text(
-                    text = "$activeCount Active",
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.primary
-                )
-            }
-        }
+    val infiniteTransition = rememberInfiniteTransition(label = "pulse")
+    
+    val scale by infiniteTransition.animateFloat(
+        initialValue = 1f,
+        targetValue = if (isActive) 1.1f else 1f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(1000, easing = LinearEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "scale"
+    )
+    
+    val backgroundColor by animateColorAsState(
+        targetValue = if (isActive) {
+            MaterialTheme.colorScheme.primary
+        } else {
+            MaterialTheme.colorScheme.surfaceVariant
+        },
+        label = "background_color"
+    )
+    
+    Box(
+        modifier = modifier
+            .size(200.dp)
+            .scale(if (isActive) scale else 1f)
+            .background(
+                color = backgroundColor,
+                shape = CircleShape
+            ),
+        contentAlignment = Alignment.Center
     ) {
-        if (fileInfo != null) {
-            // File types row
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+        // Inner circle for visual depth
+        Box(
+            modifier = Modifier
+                .size(160.dp)
+                .background(
+                    color = backgroundColor.copy(alpha = 0.7f),
+                    shape = CircleShape
+                )
+        )
+    }
+}
+
+@Composable
+private fun SurveyStatistics(
+    surveyState: ActiveSurveyState,
+    modifier: Modifier = Modifier
+) {
+    // Calculate elapsed time
+    var elapsedSeconds by remember { mutableIntStateOf(0) }
+    
+    LaunchedEffect(surveyState.isAnyActive) {
+        if (surveyState.isAnyActive) {
+            val startTime = System.currentTimeMillis()
+            while (surveyState.isAnyActive) {
+                elapsedSeconds = ((System.currentTimeMillis() - startTime) / 1000).toInt()
+                kotlinx.coroutines.delay(1000)
+            }
+        } else {
+            elapsedSeconds = 0
+        }
+    }
+    
+    // Calculate total records
+    val totalRecords = calculateTotalRecords(surveyState)
+    
+    Column(
+        modifier = modifier,
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
+        // Elapsed Time
+        Card(
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surfaceVariant
+            )
+        ) {
+            Column(
+                modifier = Modifier.padding(horizontal = 24.dp, vertical = 12.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                StatusChip(
-                    text = "CSV",
-                    isActive = fileInfo.csvEnabled
+                Text(
+                    text = "Time Elapsed",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
-                StatusChip(
-                    text = "GeoPackage",
-                    isActive = fileInfo.geoPackageEnabled
+                Text(
+                    text = formatElapsedTime(elapsedSeconds),
+                    style = MaterialTheme.typography.headlineMedium,
+                    fontWeight = FontWeight.Bold
                 )
             }
-
-            Spacer(modifier = Modifier.height(12.dp))
-
-            // CSV stats
-            if (fileInfo.csvEnabled) {
+        }
+        
+        // Total Records
+        Card(
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surfaceVariant
+            )
+        ) {
+            Column(
+                modifier = Modifier.padding(horizontal = 24.dp, vertical = 12.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
                 Text(
-                    text = "CSV File",
-                    style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.Medium
+                    text = "Total Records",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
-                Spacer(modifier = Modifier.height(4.dp))
-                StatRow(
-                    label = "Size:",
-                    value = formatFileSize(fileInfo.csvFileSize)
-                )
-                StatRow(
-                    label = "Records:",
-                    value = fileInfo.csvRecordCount.toString()
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-            }
-
-            // GeoPackage stats
-            if (fileInfo.geoPackageEnabled) {
                 Text(
-                    text = "GeoPackage",
-                    style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.Medium
+                    text = String.format("%,d", totalRecords),
+                    style = MaterialTheme.typography.headlineMedium,
+                    fontWeight = FontWeight.Bold
                 )
-                Spacer(modifier = Modifier.height(4.dp))
-                StatRow(
-                    label = "Size:",
-                    value = formatFileSize(fileInfo.geoPackageFileSize)
-                )
-                StatRow(
-                    label = "Records:",
-                    value = fileInfo.geoPackageRecordCount.toString()
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-            }
-
-            // Active protocols
-            if (fileInfo.activeProtocols.isNotEmpty()) {
-                Text(
-                    text = "Active Protocols",
-                    style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.Medium
-                )
-                Spacer(modifier = Modifier.height(4.dp))
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(4.dp)
-                ) {
-                    fileInfo.activeProtocols.forEach { protocol ->
-                        StatusChip(
-                            text = protocol,
-                            isActive = true
-                        )
-                    }
-                }
             }
         }
     }
 }
 
-@Composable
-private fun MqttStreamingStatusCard(
-    status: SurveyStatus,
-    modifier: Modifier = Modifier
-) {
-    var isExpanded by remember { mutableStateOf(false) }
-    val mqttInfo = status.mqttInfo
-
-    BaseSurveyStatusCard(
-        title = "MQTT Streaming",
-        icon = Icons.Default.Build, // TODO replace with a more appropriate icon
-        isActive = status.isActive,
-        isExpanded = isExpanded,
-        onExpandToggle = { isExpanded = !isExpanded },
-        modifier = modifier,
-        headerContent = {
-            if (mqttInfo != null) {
-                ConnectionStatusIndicator(
-                    state = mqttInfo.connectionState
-                )
-            }
-        }
-    ) {
-        if (mqttInfo != null) {
-            // Broker info
-            if (!mqttInfo.brokerAddress.isNullOrEmpty()) {
-                StatRow(
-                    label = "Broker:",
-                    value = mqttInfo.brokerAddress
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-            }
-
-            // Connection stats
-            StatRow(
-                label = "Messages Sent:",
-                value = mqttInfo.messagesSent.toString()
-            )
-            StatRow(
-                label = "Last Message:",
-                value = formatTimestamp(mqttInfo.lastMessageTime)
-            )
-
-            Spacer(modifier = Modifier.height(12.dp))
-
-            // Active protocols
-            if (mqttInfo.activeProtocols.isNotEmpty()) {
-                Text(
-                    text = "Streaming Protocols",
-                    style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.Medium
-                )
-                Spacer(modifier = Modifier.height(4.dp))
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(4.dp)
-                ) {
-                    mqttInfo.activeProtocols.forEach { protocol ->
-                        StatusChip(
-                            text = protocol,
-                            isActive = true
-                        )
-                    }
-                }
-            }
-
-            // Error message if any
-            if (!mqttInfo.errorMessage.isNullOrEmpty()) {
-                Spacer(modifier = Modifier.height(8.dp))
-                Card(
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.errorContainer
-                    )
-                ) {
-                    Text(
-                        text = mqttInfo.errorMessage,
-                        modifier = Modifier.padding(8.dp),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onErrorContainer
-                    )
-                }
-            }
-        }
-    }
+private fun formatElapsedTime(seconds: Int): String {
+    val hours = seconds / 3600
+    val minutes = (seconds % 3600) / 60
+    val secs = seconds % 60
+    return String.format("%02d:%02d:%02d", hours, minutes, secs)
 }
 
-@Composable
-private fun UploadSurveyStatusCard(
-    status: SurveyStatus,
-    modifier: Modifier = Modifier
-) {
-    var isExpanded by remember { mutableStateOf(false) }
-    val uploadInfo = status.uploadInfo
-
-    BaseSurveyStatusCard(
-        title = "Upload Survey",
-        icon = Icons.Default.Build, // TODO replace with a more appropriate icon
-        isActive = status.isActive,
-        isExpanded = isExpanded,
-        onExpandToggle = { isExpanded = !isExpanded },
-        modifier = modifier,
-        headerContent = {
-            if (uploadInfo != null && uploadInfo.isUploading) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(16.dp),
-                        strokeWidth = 2.dp
-                    )
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Text(
-                        text = "Uploading",
-                        style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.primary
-                    )
-                }
-            }
-        }
-    ) {
-        if (uploadInfo != null) {
-            // OpenCelliD stats
-            Text(
-                text = "OpenCelliD",
-                style = MaterialTheme.typography.titleSmall,
-                fontWeight = FontWeight.Medium
-            )
-            Spacer(modifier = Modifier.height(4.dp))
-            StatRow(
-                label = "Pending:",
-                value = uploadInfo.openCellidPending.toString()
-            )
-            StatRow(
-                label = "Uploaded:",
-                value = uploadInfo.openCellidUploaded.toString()
-            )
-
-            Spacer(modifier = Modifier.height(12.dp))
-
-            // BeaconDB stats
-            Text(
-                text = "BeaconDB",
-                style = MaterialTheme.typography.titleSmall,
-                fontWeight = FontWeight.Medium
-            )
-            Spacer(modifier = Modifier.height(4.dp))
-            StatRow(
-                label = "Pending:",
-                value = uploadInfo.beaconDbPending.toString()
-            )
-            StatRow(
-                label = "Uploaded:",
-                value = uploadInfo.beaconDbUploaded.toString()
-            )
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            // Last upload time
-            StatRow(
-                label = "Last Upload:",
-                value = formatTimestamp(uploadInfo.lastUploadTime)
-            )
-
-            // Progress indicator if uploading
-            if (uploadInfo.isUploading) {
-                Spacer(modifier = Modifier.height(8.dp))
-                LinearProgressIndicator(
-                    modifier = Modifier.fillMaxWidth()
-                )
-            }
-        }
+private fun calculateTotalRecords(surveyState: ActiveSurveyState): Int {
+    var total = 0
+    
+    // Add file logging records
+    surveyState.fileLoggingStatus?.fileInfo?.let { fileInfo ->
+        total += (fileInfo.csvRecordCount + fileInfo.geoPackageRecordCount).toInt()
     }
+    
+    // Add MQTT messages sent
+    surveyState.mqttStreamingStatus?.mqttInfo?.let { mqttInfo ->
+        total += mqttInfo.messagesSent.toInt()
+    }
+    
+    // Add upload records
+    surveyState.uploadSurveyStatus?.uploadInfo?.let { uploadInfo ->
+        total += (uploadInfo.openCellidUploaded + uploadInfo.beaconDbUploaded).toInt()
+    }
+    
+    return total
 }
