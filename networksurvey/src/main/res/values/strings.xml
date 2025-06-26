@@ -516,6 +516,13 @@ but work independently, so you have full control over how you handle your data.<
     <string name="map_overlays_title">Map Overlays</string>
     <string name="beacondb_coverage_title">BeaconDB Coverage</string>
 
+    <string name="survey_monitor_config_title">Survey Monitor</string>
+    <string name="alert_new_tower_title">Alert on New Tower</string>
+    <string name="alert_new_tower_summary">Get notified when a cell tower not in the database is detected</string>
+    <string name="alert_new_tower_sound_title">Play Sound</string>
+    <string name="alert_new_tower_ringtone_title">Notification Sound</string>
+    <string name="alert_new_tower_vibrate_title">Vibrate</string>
+
     <string name="allow_data_upload">External Data Upload</string>
     <string name="allow_data_upload_mdm_description">True to allow users to upload survey records to 3rd Party databases such as OpenCelliD and BeaconDB, false to prevent it</string>
 

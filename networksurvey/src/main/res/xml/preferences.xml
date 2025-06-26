@@ -186,6 +186,37 @@
     </PreferenceCategory>
 
     <PreferenceCategory
+        app:icon="@drawable/ic_survey_monitor"
+        app:key="survey_monitor"
+        app:title="@string/survey_monitor_config_title">
+
+        <SwitchPreferenceCompat
+            app:defaultValue="false"
+            app:key="alert_new_tower"
+            app:title="@string/alert_new_tower_title"
+            app:summary="@string/alert_new_tower_summary" />
+
+        <SwitchPreferenceCompat
+            app:defaultValue="false"
+            app:key="alert_new_tower_sound"
+            app:dependency="alert_new_tower"
+            app:title="@string/alert_new_tower_sound_title" />
+
+        <Preference
+            app:key="alert_new_tower_ringtone"
+            app:dependency="alert_new_tower_sound"
+            app:title="@string/alert_new_tower_ringtone_title"
+            app:summary="Select notification sound" />
+
+        <SwitchPreferenceCompat
+            app:defaultValue="false"
+            app:key="alert_new_tower_vibrate"
+            app:dependency="alert_new_tower"
+            app:title="@string/alert_new_tower_vibrate_title" />
+
+    </PreferenceCategory>
+
+    <PreferenceCategory
         app:icon="@drawable/ic_info"
         app:key="about"
         app:title="About">
