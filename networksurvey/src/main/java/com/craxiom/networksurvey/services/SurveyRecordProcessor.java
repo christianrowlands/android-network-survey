@@ -176,6 +176,7 @@ public class SurveyRecordProcessor
     private final String deviceId;
     private final String missionId;
     private final Context context;
+    private NetworkSurveyService networkSurveyService;
 
     private int recordNumber = 1;
     private int groupNumber = 0; // This will be incremented to 1 the first time it is used.
@@ -213,6 +214,15 @@ public class SurveyRecordProcessor
 
         gnssScanRateMs = PreferenceUtils.getScanRatePreferenceMs(NetworkSurveyConstants.PROPERTY_GNSS_SCAN_INTERVAL_SECONDS,
                 NetworkSurveyConstants.DEFAULT_GNSS_SCAN_INTERVAL_SECONDS, context);
+    }
+
+    /**
+     * Set the reference to the NetworkSurveyService for session tracking.
+     * @param service The NetworkSurveyService instance
+     */
+    void setNetworkSurveyService(NetworkSurveyService service)
+    {
+        this.networkSurveyService = service;
     }
 
     void registerCellularSurveyRecordListener(ICellularSurveyRecordListener surveyRecordListener)
@@ -2399,6 +2409,10 @@ public class SurveyRecordProcessor
     private void notifyGsmRecordListeners(GsmRecord gsmRecord)
     {
         if (gsmRecord == null) return;
+
+        // Increment session record count
+        if (networkSurveyService != null) networkSurveyService.incrementSurveySessionRecordCount();
+
         for (ICellularSurveyRecordListener listener : cellularSurveyRecordListeners)
         {
             try
@@ -2419,6 +2433,10 @@ public class SurveyRecordProcessor
     private void notifyCdmaRecordListeners(CdmaRecord cdmaRecord)
     {
         if (cdmaRecord == null) return;
+
+        // Increment session record count
+        if (networkSurveyService != null) networkSurveyService.incrementSurveySessionRecordCount();
+
         for (ICellularSurveyRecordListener listener : cellularSurveyRecordListeners)
         {
             try
@@ -2439,6 +2457,10 @@ public class SurveyRecordProcessor
     private void notifyUmtsRecordListeners(UmtsRecord umtsRecord)
     {
         if (umtsRecord == null) return;
+
+        // Increment session record count
+        if (networkSurveyService != null) networkSurveyService.incrementSurveySessionRecordCount();
+
         for (ICellularSurveyRecordListener listener : cellularSurveyRecordListeners)
         {
             try
@@ -2459,6 +2481,10 @@ public class SurveyRecordProcessor
     private void notifyLteRecordListeners(LteRecord lteRecord)
     {
         if (lteRecord == null) return;
+
+        // Increment session record count
+        if (networkSurveyService != null) networkSurveyService.incrementSurveySessionRecordCount();
+
         for (ICellularSurveyRecordListener listener : cellularSurveyRecordListeners)
         {
             try
@@ -2480,6 +2506,9 @@ public class SurveyRecordProcessor
     private void notifyNrRecordListeners(NrRecord nrRecord)
     {
         if (nrRecord == null) return;
+
+        // Increment session record count
+        if (networkSurveyService != null) networkSurveyService.incrementSurveySessionRecordCount();
 
         cellularSurveyRecordListeners.forEach(l -> {
             try
@@ -2503,6 +2532,15 @@ public class SurveyRecordProcessor
      */
     private void notifyCellularListeners(List<CellularRecordWrapper> cellularRecords, int subscriptionId)
     {
+        // Increment session record count for each record
+        if (networkSurveyService != null && cellularRecords != null)
+        {
+            for (int i = 0; i < cellularRecords.size(); i++)
+            {
+                networkSurveyService.incrementSurveySessionRecordCount();
+            }
+        }
+
         cellularSurveyRecordListeners.forEach(l -> {
             try
             {
@@ -2555,6 +2593,15 @@ public class SurveyRecordProcessor
     {
         if (wifiBeaconRecords == null || wifiBeaconRecords.isEmpty()) return;
 
+        // Increment session record count for each record
+        if (networkSurveyService != null)
+        {
+            for (int i = 0; i < wifiBeaconRecords.size(); i++)
+            {
+                networkSurveyService.incrementSurveySessionRecordCount();
+            }
+        }
+
         for (IWifiSurveyRecordListener listener : wifiSurveyRecordListeners)
         {
             try
@@ -2586,6 +2633,9 @@ public class SurveyRecordProcessor
     {
         if (bluetoothRecord == null) return;
 
+        // Increment session record count
+        if (networkSurveyService != null) networkSurveyService.incrementSurveySessionRecordCount();
+
         for (IBluetoothSurveyRecordListener listener : bluetoothSurveyRecordListeners)
         {
             try
@@ -2608,6 +2658,15 @@ public class SurveyRecordProcessor
     {
         if (bluetoothRecords == null || bluetoothRecords.isEmpty()) return;
 
+        // Increment session record count for each record
+        if (networkSurveyService != null)
+        {
+            for (int i = 0; i < bluetoothRecords.size(); i++)
+            {
+                networkSurveyService.incrementSurveySessionRecordCount();
+            }
+        }
+
         for (IBluetoothSurveyRecordListener listener : bluetoothSurveyRecordListeners)
         {
             try
@@ -2629,6 +2688,10 @@ public class SurveyRecordProcessor
     private void notifyGnssRecordListeners(GnssRecord gnssRecord)
     {
         if (gnssRecord == null) return;
+
+        // Increment session record count
+        if (networkSurveyService != null) networkSurveyService.incrementSurveySessionRecordCount();
+
         for (IGnssSurveyRecordListener listener : gnssSurveyRecordListeners)
         {
             try

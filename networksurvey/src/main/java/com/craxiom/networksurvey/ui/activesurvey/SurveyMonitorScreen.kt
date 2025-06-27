@@ -266,14 +266,19 @@ private fun SurveyStatistics(
     surveyState: ActiveSurveyState,
     modifier: Modifier = Modifier
 ) {
-    // Calculate elapsed time
+    // Pass viewModel to access session data
+    val viewModel: SurveyMonitorViewModel = viewModel()
+    
+    // Calculate elapsed time from session start
     var elapsedSeconds by remember { mutableIntStateOf(0) }
     
     LaunchedEffect(surveyState.isAnyActive) {
         if (surveyState.isAnyActive) {
-            val startTime = System.currentTimeMillis()
             while (surveyState.isAnyActive) {
-                elapsedSeconds = ((System.currentTimeMillis() - startTime) / 1000).toInt()
+                val sessionStartTime = viewModel.getSurveySessionStartTime()
+                if (sessionStartTime != null) {
+                    elapsedSeconds = ((System.currentTimeMillis() - sessionStartTime) / 1000).toInt()
+                }
                 kotlinx.coroutines.delay(1000)
             }
         } else {
@@ -281,8 +286,8 @@ private fun SurveyStatistics(
         }
     }
     
-    // Calculate total records
-    val totalRecords = calculateTotalRecords(surveyState)
+    // Get total records from session
+    val totalRecords = viewModel.getSurveySessionRecordCount()
     
     Column(
         modifier = modifier,
@@ -342,25 +347,4 @@ private fun formatElapsedTime(seconds: Int): String {
     val minutes = (seconds % 3600) / 60
     val secs = seconds % 60
     return String.format("%02d:%02d:%02d", hours, minutes, secs)
-}
-
-private fun calculateTotalRecords(surveyState: ActiveSurveyState): Int {
-    var total = 0
-    
-    // Add file logging records
-    surveyState.fileLoggingStatus?.fileInfo?.let { fileInfo ->
-        total += (fileInfo.csvRecordCount + fileInfo.geoPackageRecordCount).toInt()
-    }
-    
-    // Add MQTT messages sent
-    surveyState.mqttStreamingStatus?.mqttInfo?.let { mqttInfo ->
-        total += mqttInfo.messagesSent.toInt()
-    }
-    
-    // Add upload records
-    surveyState.uploadSurveyStatus?.uploadInfo?.let { uploadInfo ->
-        total += (uploadInfo.openCellidUploaded + uploadInfo.beaconDbUploaded).toInt()
-    }
-    
-    return total
 }

@@ -141,6 +141,10 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
     private final Set<ILoggingChangeListener> loggingChangeListeners = new CopyOnWriteArraySet<>();
 
     private int locationProviderPreference = NetworkSurveyConstants.DEFAULT_LOCATION_PROVIDER;
+    
+    // Survey session tracking
+    private Long surveySessionStartTime = null;
+    private final AtomicInteger surveySessionRecordCount = new AtomicInteger(0);
 
     public NetworkSurveyService()
     {
@@ -171,6 +175,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
         networkLocationListener = new ExtraLocationListener(LocationManager.NETWORK_PROVIDER);
 
         surveyRecordProcessor = new SurveyRecordProcessor(primaryLocationListener, deviceId, context, executorService);
+        surveyRecordProcessor.setNetworkSurveyService(this);
 
         dbUploadStore = new DbUploadStore(context);
 
@@ -462,6 +467,9 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
     {
         mqttConnection.connect(getApplicationContext(), connectionInfo);
         MqttConnectionInfo networkSurveyConnection = (MqttConnectionInfo) connectionInfo;
+        
+        // Track survey session when MQTT streaming starts
+        onSurveyStarted();
 
         // Saving the MQTT protocol streaming flags here allows the Dashboard UI to get notified
         // of the updates since otherwise MDM specified flags won't get propagated to the Dashboard
@@ -506,6 +514,9 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
         unregisterBluetoothSurveyRecordListener(mqttConnection);
         unregisterGnssSurveyRecordListener(mqttConnection);
         unregisterDeviceStatusListener(mqttConnection);
+        
+        // Track survey session end
+        onSurveyStopped();
     }
 
     /**
@@ -965,7 +976,13 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
      */
     public Boolean toggleCellularLogging(boolean enable)
     {
-        return cellularController.toggleLogging(enable);
+        Boolean result = cellularController.toggleLogging(enable);
+        if (result != null)
+        {
+            if (enable && result) onSurveyStarted();
+            else if (!enable && !result) onSurveyStopped();
+        }
+        return result;
     }
 
     /**
@@ -980,7 +997,13 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
      */
     public Boolean toggleWifiLogging(boolean enable)
     {
-        return wifiController.toggleLogging(enable);
+        Boolean result = wifiController.toggleLogging(enable);
+        if (result != null)
+        {
+            if (enable && result) onSurveyStarted();
+            else if (!enable && !result) onSurveyStopped();
+        }
+        return result;
     }
 
     /**
@@ -995,7 +1018,13 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
      */
     public Boolean toggleBluetoothLogging(boolean enable)
     {
-        return bluetoothController.toggleLogging(enable);
+        Boolean result = bluetoothController.toggleLogging(enable);
+        if (result != null)
+        {
+            if (enable && result) onSurveyStarted();
+            else if (!enable && !result) onSurveyStopped();
+        }
+        return result;
     }
 
     /**
@@ -1010,7 +1039,13 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
      */
     public Boolean toggleGnssLogging(boolean enable)
     {
-        return gnssController.toggleLogging(enable);
+        Boolean result = gnssController.toggleLogging(enable);
+        if (result != null)
+        {
+            if (enable && result) onSurveyStarted();
+            else if (!enable && !result) onSurveyStopped();
+        }
+        return result;
     }
 
     /**
@@ -1025,7 +1060,13 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
      */
     public Boolean toggleCdrLogging(boolean enable)
     {
-        return cellularController.toggleCdrLogging(enable);
+        Boolean result = cellularController.toggleCdrLogging(enable);
+        if (result != null)
+        {
+            if (enable && result) onSurveyStarted();
+            else if (!enable && !result) onSurveyStopped();
+        }
+        return result;
     }
 
     public UploadScanningResult toggleUploadRecordSaving(boolean enable)
@@ -1069,6 +1110,9 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
                         wifiController.startWifiRecordScanning(); // Only starts scanning if it is not already active.
                         surveysStarted.add(SurveyTypes.WIFI);
                     }
+                    
+                    // Track survey session
+                    onSurveyStarted();
 
                     // Generate appropriate success message based on what was started
                     String message;
@@ -1087,6 +1131,10 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
                 } else
                 {
                     surveyRecordProcessor.removeDbSink();
+                    
+                    // Track survey session end
+                    onSurveyStopped();
+                    
                     // Check to see if this service is still needed.  It is still needed if we are either logging, the UI is
                     // visible, or a server connection is active.
                     if (!isBeingUsed()) stopSelf();
@@ -1147,6 +1195,23 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
     }
 
     /**
+     * @return true if MQTT streaming is currently active (connected or connecting)
+     */
+    public boolean isMqttStreamingActive()
+    {
+        final com.craxiom.mqttlibrary.connection.ConnectionState state = mqttConnection.getConnectionState();
+        return state == ConnectionState.CONNECTED || state == ConnectionState.CONNECTING;
+    }
+
+    /**
+     * @return true if gRPC streaming is currently active
+     */
+    public boolean isGrpcConnectionActive()
+    {
+        return GrpcConnectionService.getConnectedState() == ConnectionState.CONNECTED;
+    }
+
+    /**
      * Triggers the creation of a single device status message and notifies the listeners.
      *
      * @since 1.10.0
@@ -1178,6 +1243,72 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
     public List<SubscriptionInfo> getActiveSubscriptionInfoList()
     {
         return cellularController.getActiveSubscriptionInfoList();
+    }
+
+    /**
+     * Check if any type of survey is currently active (logging or streaming).
+     * This includes file logging, MQTT streaming, gRPC streaming, and upload scanning.
+     *
+     * @return true if any survey is active
+     */
+    public boolean isAnySurveyActive()
+    {
+        return isCellularLoggingEnabled() || isWifiLoggingEnabled() || isBluetoothLoggingEnabled() ||
+                isGnssLoggingEnabled() || isCdrLoggingEnabled() || isUploadScanningActive() ||
+                isMqttStreamingActive() || isGrpcConnectionActive();
+    }
+
+    /**
+     * Get the start time of the current survey session.
+     * @return Start time in milliseconds since epoch, or null if no session is active
+     */
+    public Long getSurveySessionStartTime()
+    {
+        return surveySessionStartTime;
+    }
+
+    /**
+     * Get the count of records processed during the current survey session.
+     * @return Number of records processed
+     */
+    public int getSurveySessionRecordCount()
+    {
+        return surveySessionRecordCount.get();
+    }
+
+    /**
+     * Called when any survey starts. Initializes session tracking if this is the first survey.
+     */
+    private synchronized void onSurveyStarted()
+    {
+        if (surveySessionStartTime == null)
+        {
+            Timber.i("Starting new survey session");
+            surveySessionStartTime = System.currentTimeMillis();
+            surveySessionRecordCount.set(0);
+        }
+    }
+
+    /**
+     * Called when any survey stops. Clears session tracking if all surveys have stopped.
+     */
+    private synchronized void onSurveyStopped()
+    {
+        if (!isAnySurveyActive())
+        {
+            Timber.i("All surveys stopped, ending survey session. Total records: %d", surveySessionRecordCount.get());
+            surveySessionStartTime = null;
+            surveySessionRecordCount.set(0);
+        }
+    }
+
+    /**
+     * Increment the survey session record count. This should be called by the SurveyRecordProcessor
+     * for each record processed.
+     */
+    public void incrementSurveySessionRecordCount()
+    {
+        surveySessionRecordCount.incrementAndGet();
     }
 
     /**
