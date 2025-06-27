@@ -214,7 +214,7 @@ private fun SurveyStatusIndicator(
 ) {
     // Particle system state
     val particles = remember {
-        List(20) {
+        List(12) {  // Reduced from 20 to 12 for better performance
             Particle(
                 initialY = (0..100).random() / 100f,
                 x = (10..90).random() / 100f,  // Wider distribution
@@ -235,14 +235,14 @@ private fun SurveyStatusIndicator(
             fallTime = 0f
             // Continue from current animation time
             while (isActive) {
-                animationTime += 0.016f // ~60 FPS (16ms per frame)
-                kotlinx.coroutines.delay(16)
+                animationTime += 0.033f // ~30 FPS (33ms per frame) for better performance
+                kotlinx.coroutines.delay(33)
             }
         } else {
             // When stopped, animate particles falling
-            repeat(100) {
-                fallTime += 0.016f
-                kotlinx.coroutines.delay(16)
+            repeat(50) {  // Reduced iterations since we have longer delays
+                fallTime += 0.033f
+                kotlinx.coroutines.delay(33)
             }
         }
     }
@@ -281,16 +281,19 @@ private fun SurveyStatusIndicator(
                     height * minOf(fallY, 0.95f)
                 }
 
-                // Draw particle with trail effect
+                // Draw particle with simplified trail effect
                 if (isActive && yPos < height * 0.9f) {
-                    // Trail
-                    for (i in 1..5) {
-                        drawCircle(
-                            color = primaryColor.copy(alpha = 0.1f / i),
-                            radius = particleSize / 2,
-                            center = Offset(xPos, yPos + (i * particleSize))
-                        )
-                    }
+                    // Simplified trail - only 2 circles instead of 5
+                    drawCircle(
+                        color = primaryColor.copy(alpha = 0.1f),
+                        radius = particleSize / 2,
+                        center = Offset(xPos, yPos + particleSize)
+                    )
+                    drawCircle(
+                        color = primaryColor.copy(alpha = 0.05f),
+                        radius = particleSize / 2,
+                        center = Offset(xPos, yPos + (2 * particleSize))
+                    )
                 }
 
                 // Main particle
@@ -305,14 +308,7 @@ private fun SurveyStatusIndicator(
                     center = Offset(xPos, yPos)
                 )
 
-                // Glow effect
-                if (isActive && normalizedY < 0.5f) {
-                    drawCircle(
-                        color = primaryColor.copy(alpha = (0.5f - normalizedY) * 0.3f),
-                        radius = particleSize,
-                        center = Offset(xPos, yPos)
-                    )
-                }
+                // Glow effect removed for better performance
             }
         }
 
