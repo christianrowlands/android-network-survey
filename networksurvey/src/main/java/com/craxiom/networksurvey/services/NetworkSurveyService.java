@@ -60,6 +60,7 @@ import com.craxiom.networksurvey.listeners.IDeviceStatusListener;
 import com.craxiom.networksurvey.listeners.IGnssFailureListener;
 import com.craxiom.networksurvey.listeners.IGnssSurveyRecordListener;
 import com.craxiom.networksurvey.listeners.ILoggingChangeListener;
+import com.craxiom.networksurvey.listeners.IUploadRecordCountListener;
 import com.craxiom.networksurvey.listeners.IWifiSurveyRecordListener;
 import com.craxiom.networksurvey.logging.DeviceStatusCsvLogger;
 import com.craxiom.networksurvey.logging.db.DbUploadStore;
@@ -105,7 +106,7 @@ import timber.log.Timber;
  *
  * @since 0.0.9
  */
-public class NetworkSurveyService extends Service implements IConnectionStateListener, SharedPreferences.OnSharedPreferenceChangeListener, IMqttService
+public class NetworkSurveyService extends Service implements IConnectionStateListener, SharedPreferences.OnSharedPreferenceChangeListener, IMqttService, IUploadRecordCountListener
 {
     public static final String ACTION_START_SURVEY = "com.craxiom.networksurvey.START_SURVEY";
     public static final String ACTION_STOP_SURVEY = "com.craxiom.networksurvey.STOP_SURVEY";
@@ -141,10 +142,11 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
     private final Set<ILoggingChangeListener> loggingChangeListeners = new CopyOnWriteArraySet<>();
 
     private int locationProviderPreference = NetworkSurveyConstants.DEFAULT_LOCATION_PROVIDER;
-    
+
     // Survey session tracking
     private Long surveySessionStartTime = null;
     private final AtomicInteger surveySessionRecordCount = new AtomicInteger(0);
+    private final AtomicInteger surveySessionUploadRecordCount = new AtomicInteger(0);
 
     public NetworkSurveyService()
     {
@@ -178,6 +180,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
         surveyRecordProcessor.setNetworkSurveyService(this);
 
         dbUploadStore = new DbUploadStore(context);
+        dbUploadStore.setUploadRecordCountListener(this);
 
         cellularController = new CellularController(this, executorService, serviceLooper, serviceHandler, surveyRecordProcessor);
         wifiController = new WifiController(this, executorService, serviceLooper, serviceHandler, surveyRecordProcessor, uiThreadHandler);
@@ -467,7 +470,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
     {
         mqttConnection.connect(getApplicationContext(), connectionInfo);
         MqttConnectionInfo networkSurveyConnection = (MqttConnectionInfo) connectionInfo;
-        
+
         // Track survey session when MQTT streaming starts
         onSurveyStarted();
 
@@ -514,7 +517,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
         unregisterBluetoothSurveyRecordListener(mqttConnection);
         unregisterGnssSurveyRecordListener(mqttConnection);
         unregisterDeviceStatusListener(mqttConnection);
-        
+
         // Track survey session end
         onSurveyStopped();
     }
@@ -979,8 +982,10 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
         Boolean result = cellularController.toggleLogging(enable);
         if (result != null)
         {
-            if (enable && result) onSurveyStarted();
-            else if (!enable && !result) onSurveyStopped();
+            if (enable && result)
+            {
+                onSurveyStarted();
+            } else if (!enable && !result) onSurveyStopped();
         }
         return result;
     }
@@ -1000,8 +1005,10 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
         Boolean result = wifiController.toggleLogging(enable);
         if (result != null)
         {
-            if (enable && result) onSurveyStarted();
-            else if (!enable && !result) onSurveyStopped();
+            if (enable && result)
+            {
+                onSurveyStarted();
+            } else if (!enable && !result) onSurveyStopped();
         }
         return result;
     }
@@ -1021,8 +1028,10 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
         Boolean result = bluetoothController.toggleLogging(enable);
         if (result != null)
         {
-            if (enable && result) onSurveyStarted();
-            else if (!enable && !result) onSurveyStopped();
+            if (enable && result)
+            {
+                onSurveyStarted();
+            } else if (!enable && !result) onSurveyStopped();
         }
         return result;
     }
@@ -1042,8 +1051,10 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
         Boolean result = gnssController.toggleLogging(enable);
         if (result != null)
         {
-            if (enable && result) onSurveyStarted();
-            else if (!enable && !result) onSurveyStopped();
+            if (enable && result)
+            {
+                onSurveyStarted();
+            } else if (!enable && !result) onSurveyStopped();
         }
         return result;
     }
@@ -1063,8 +1074,10 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
         Boolean result = cellularController.toggleCdrLogging(enable);
         if (result != null)
         {
-            if (enable && result) onSurveyStarted();
-            else if (!enable && !result) onSurveyStopped();
+            if (enable && result)
+            {
+                onSurveyStarted();
+            } else if (!enable && !result) onSurveyStopped();
         }
         return result;
     }
@@ -1110,7 +1123,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
                         wifiController.startWifiRecordScanning(); // Only starts scanning if it is not already active.
                         surveysStarted.add(SurveyTypes.WIFI);
                     }
-                    
+
                     // Track survey session
                     onSurveyStarted();
 
@@ -1131,10 +1144,10 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
                 } else
                 {
                     surveyRecordProcessor.removeDbSink();
-                    
+
                     // Track survey session end
                     onSurveyStopped();
-                    
+
                     // Check to see if this service is still needed.  It is still needed if we are either logging, the UI is
                     // visible, or a server connection is active.
                     if (!isBeingUsed()) stopSelf();
@@ -1260,6 +1273,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
 
     /**
      * Get the start time of the current survey session.
+     *
      * @return Start time in milliseconds since epoch, or null if no session is active
      */
     public Long getSurveySessionStartTime()
@@ -1269,6 +1283,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
 
     /**
      * Get the count of records processed during the current survey session.
+     *
      * @return Number of records processed
      */
     public int getSurveySessionRecordCount()
@@ -1286,6 +1301,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
             Timber.i("Starting new survey session");
             surveySessionStartTime = System.currentTimeMillis();
             surveySessionRecordCount.set(0);
+            surveySessionUploadRecordCount.set(0);
         }
     }
 
@@ -1296,9 +1312,11 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
     {
         if (!isAnySurveyActive())
         {
-            Timber.i("All surveys stopped, ending survey session. Total records: %d", surveySessionRecordCount.get());
+            Timber.i("All surveys stopped, ending survey session. Total records: %d, Upload records: %d",
+                    surveySessionRecordCount.get(), surveySessionUploadRecordCount.get());
             surveySessionStartTime = null;
             surveySessionRecordCount.set(0);
+            surveySessionUploadRecordCount.set(0);
         }
     }
 
@@ -1309,6 +1327,29 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
     public void incrementSurveySessionRecordCount()
     {
         surveySessionRecordCount.incrementAndGet();
+    }
+
+    /**
+     * Get the count of records that passed upload filters during the current survey session.
+     *
+     * @return Number of records written to upload database
+     */
+    public int getSurveySessionUploadRecordCount()
+    {
+        return surveySessionUploadRecordCount.get();
+    }
+
+    // IUploadRecordCountListener implementation
+    @Override
+    public void onCellularUploadRecordsWritten(int recordCount)
+    {
+        surveySessionUploadRecordCount.addAndGet(recordCount);
+    }
+
+    @Override
+    public void onWifiUploadRecordsWritten(int recordCount)
+    {
+        surveySessionUploadRecordCount.addAndGet(recordCount);
     }
 
     /**

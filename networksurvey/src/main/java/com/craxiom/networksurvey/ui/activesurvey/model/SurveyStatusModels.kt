@@ -84,7 +84,10 @@ data class ActiveSurveyState(
     val uploadSurveyStatus: SurveyStatus? = null,
     val currentTrack: SurveyTrack? = null,
     val isAnyActive: Boolean = false,
-    val lastUpdateTime: Long = System.currentTimeMillis()
+    val lastUpdateTime: Long = System.currentTimeMillis(),
+    val totalRecordCount: Int = 0,
+    val uploadRecordCount: Int = 0,
+    val isUploadActive: Boolean = false
 )
 
 /**

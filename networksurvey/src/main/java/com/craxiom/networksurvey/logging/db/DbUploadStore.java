@@ -13,6 +13,7 @@ import com.craxiom.messaging.UmtsRecord;
 import com.craxiom.messaging.UmtsRecordData;
 import com.craxiom.messaging.WifiBeaconRecordData;
 import com.craxiom.networksurvey.listeners.ICellularSurveyRecordListener;
+import com.craxiom.networksurvey.listeners.IUploadRecordCountListener;
 import com.craxiom.networksurvey.listeners.IWifiSurveyRecordListener;
 import com.craxiom.networksurvey.logging.db.model.CdmaRecordEntity;
 import com.craxiom.networksurvey.logging.db.model.GsmRecordEntity;
@@ -44,10 +45,22 @@ public class DbUploadStore implements ICellularSurveyRecordListener, IWifiSurvey
     private volatile double lastWifiLatitude = Double.NaN;
     private volatile double lastWifiLongitude = Double.NaN;
 
+    private IUploadRecordCountListener uploadRecordCountListener;
+
     public DbUploadStore(Context context)
     {
         database = SurveyDatabase.getInstance(context);
         executorService = Executors.newSingleThreadExecutor();
+    }
+
+    /**
+     * Set the listener to be notified when records are written to the upload database.
+     *
+     * @param listener The listener to notify of upload counts
+     */
+    public void setUploadRecordCountListener(IUploadRecordCountListener listener)
+    {
+        uploadRecordCountListener = listener;
     }
 
     @Override
@@ -130,6 +143,17 @@ public class DbUploadStore implements ICellularSurveyRecordListener, IWifiSurvey
             {
                 if (database.isOpen()) database.nrRecordDao().insertRecords(nrRecords);
             }
+
+            // Notify listener of total cellular records written
+            if (uploadRecordCountListener != null)
+            {
+                int totalCellularRecords = gsmRecords.size() + cdmaRecords.size() +
+                        umtsRecords.size() + lteRecords.size() + nrRecords.size();
+                if (totalCellularRecords > 0)
+                {
+                    uploadRecordCountListener.onCellularUploadRecordsWritten(totalCellularRecords);
+                }
+            }
         });
     }
 
@@ -173,6 +197,12 @@ public class DbUploadStore implements ICellularSurveyRecordListener, IWifiSurvey
             if (!wifiRecords.isEmpty())
             {
                 if (database.isOpen()) database.wifiRecordDao().insertRecords(wifiRecords);
+
+                // Notify listener of Wi-Fi records written
+                if (uploadRecordCountListener != null)
+                {
+                    uploadRecordCountListener.onWifiUploadRecordsWritten(wifiRecords.size());
+                }
             }
         });
     }

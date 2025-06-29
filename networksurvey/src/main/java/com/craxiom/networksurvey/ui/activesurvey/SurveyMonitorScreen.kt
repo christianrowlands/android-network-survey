@@ -344,6 +344,8 @@ private fun SurveyStatistics(
 
     // Get total records from session
     val totalRecords = viewModel.getSurveySessionRecordCount()
+    val uploadRecords = viewModel.getSurveySessionUploadRecordCount()
+    val isUploadActive = surveyState.isUploadActive
 
     Column(
         modifier = modifier,
@@ -393,6 +395,32 @@ private fun SurveyStatistics(
                     style = MaterialTheme.typography.headlineMedium,
                     fontWeight = FontWeight.Bold
                 )
+            }
+        }
+
+        // Upload Records (only show if upload is active)
+        if (isUploadActive) {
+            Card(
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.tertiaryContainer
+                )
+            ) {
+                Column(
+                    modifier = Modifier.padding(horizontal = 24.dp, vertical = 12.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(
+                        text = "Upload Records",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onTertiaryContainer
+                    )
+                    Text(
+                        text = String.format("%,d", uploadRecords),
+                        style = MaterialTheme.typography.headlineMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.tertiary
+                    )
+                }
             }
         }
     }

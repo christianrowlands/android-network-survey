@@ -170,7 +170,10 @@ class SurveyMonitorViewModel @Inject constructor() : ViewModel(), IConnectionSta
                     mqttStreamingStatus = null,  // Not needed for simplified UI
                     uploadSurveyStatus = null,  // Not needed for simplified UI
                     isAnyActive = isAnyActive,
-                    lastUpdateTime = System.currentTimeMillis()
+                    lastUpdateTime = System.currentTimeMillis(),
+                    totalRecordCount = getSurveySessionRecordCount(),
+                    uploadRecordCount = getSurveySessionUploadRecordCount(),
+                    isUploadActive = uploadActive
                 )
             }
         }
@@ -196,7 +199,7 @@ class SurveyMonitorViewModel @Inject constructor() : ViewModel(), IConnectionSta
      * @return Start time in milliseconds since epoch, or null if no session
      */
     fun getSurveySessionStartTime(): Long? {
-        return networkSurveyService?.getSurveySessionStartTime()
+        return networkSurveyService?.surveySessionStartTime
     }
 
     /**
@@ -204,7 +207,15 @@ class SurveyMonitorViewModel @Inject constructor() : ViewModel(), IConnectionSta
      * @return Number of records processed in the current session
      */
     fun getSurveySessionRecordCount(): Int {
-        return networkSurveyService?.getSurveySessionRecordCount() ?: 0
+        return networkSurveyService?.surveySessionRecordCount ?: 0
+    }
+
+    /**
+     * Get the survey session upload record count from the service
+     * @return Number of records written to upload database in the current session
+     */
+    fun getSurveySessionUploadRecordCount(): Int {
+        return networkSurveyService?.surveySessionUploadRecordCount ?: 0
     }
 
     override fun onCleared() {
