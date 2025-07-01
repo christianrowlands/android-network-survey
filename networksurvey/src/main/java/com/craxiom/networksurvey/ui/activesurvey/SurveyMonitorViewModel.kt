@@ -153,11 +153,12 @@ class SurveyMonitorViewModel @Inject constructor() : ViewModel(), IConnectionSta
                     service.isBluetoothLoggingEnabled ||
                     service.isGnssLoggingEnabled
 
-            // Check MQTT and upload status
+            // Check MQTT, gRPC and upload status
             val mqttActive = service.isMqttStreamingActive
+            val grpcActive = service.isGrpcConnectionActive
             val uploadActive = service.isUploadScanningActive
 
-            val isAnyActive = fileLoggingActive || mqttActive || uploadActive
+            val isAnyActive = fileLoggingActive || mqttActive || grpcActive || uploadActive
 
             // Start new tracking session if surveys just became active
             if (isAnyActive && !_surveyState.value.isAnyActive) {
@@ -173,7 +174,10 @@ class SurveyMonitorViewModel @Inject constructor() : ViewModel(), IConnectionSta
                     lastUpdateTime = System.currentTimeMillis(),
                     totalRecordCount = getSurveySessionRecordCount(),
                     uploadRecordCount = getSurveySessionUploadRecordCount(),
-                    isUploadActive = uploadActive
+                    isUploadActive = uploadActive,
+                    isFileLoggingActive = fileLoggingActive,
+                    isMqttActive = mqttActive,
+                    isGrpcActive = grpcActive
                 )
             }
         }

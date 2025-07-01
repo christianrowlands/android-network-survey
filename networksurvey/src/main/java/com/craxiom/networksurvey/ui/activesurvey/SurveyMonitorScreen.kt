@@ -4,12 +4,14 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -20,6 +22,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Tab
 import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -27,18 +30,22 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.craxiom.networksurvey.R
 import com.craxiom.networksurvey.ui.activesurvey.model.ActiveSurveyState
 import com.craxiom.networksurvey.ui.cellular.MapContext
 import com.craxiom.networksurvey.ui.cellular.TowerMapScreen
@@ -346,12 +353,36 @@ private fun SurveyStatistics(
     val totalRecords = viewModel.getSurveySessionRecordCount()
     val uploadRecords = viewModel.getSurveySessionUploadRecordCount()
     val isUploadActive = surveyState.isUploadActive
+    val hasNonUploadSurvey = surveyState.hasNonUploadSurvey
+    val activeSurveyTypes = surveyState.activeSurveyTypes
+
+    // State for help dialog
+    var showHelpDialog by remember { mutableStateOf(false) }
 
     Column(
         modifier = modifier,
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
+        // Header with help icon
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.Center,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = stringResource(R.string.survey_statistics_header),
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold
+            )
+            IconButton(onClick = { showHelpDialog = true }) {
+                Icon(
+                    painter = painterResource(id = R.drawable.ic_help),
+                    contentDescription = "Help",
+                    modifier = Modifier.size(20.dp)
+                )
+            }
+        }
         // Elapsed Time
         Card(
             colors = CardDefaults.cardColors(
@@ -375,26 +406,36 @@ private fun SurveyStatistics(
             }
         }
 
-        // Total Records
-        Card(
-            colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surfaceVariant
-            )
-        ) {
-            Column(
-                modifier = Modifier.padding(horizontal = 24.dp, vertical = 12.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
+        // Total Records (only show if non-upload surveys are active)
+        if (hasNonUploadSurvey) {
+            Card(
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant
+                )
             ) {
-                Text(
-                    text = "Total Records",
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                Text(
-                    text = String.format("%,d", totalRecords),
-                    style = MaterialTheme.typography.headlineMedium,
-                    fontWeight = FontWeight.Bold
-                )
+                Column(
+                    modifier = Modifier.padding(horizontal = 24.dp, vertical = 12.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(
+                        text = stringResource(R.string.records_captured_label),
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    // Show active survey types as subtitle
+                    if (activeSurveyTypes.isNotEmpty()) {
+                        Text(
+                            text = activeSurveyTypes.joinToString(" & "),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+                        )
+                    }
+                    Text(
+                        text = String.format("%,d", totalRecords),
+                        style = MaterialTheme.typography.headlineMedium,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
             }
         }
 
@@ -410,7 +451,7 @@ private fun SurveyStatistics(
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     Text(
-                        text = "Upload Records",
+                        text = stringResource(R.string.ready_for_upload_label),
                         style = MaterialTheme.typography.labelMedium,
                         color = MaterialTheme.colorScheme.onTertiaryContainer
                     )
@@ -423,6 +464,31 @@ private fun SurveyStatistics(
                 }
             }
         }
+    }
+
+    // Help Dialog
+    if (showHelpDialog) {
+        AlertDialog(
+            onDismissRequest = { showHelpDialog = false },
+            title = {
+                Text(text = stringResource(R.string.help_dialog_title))
+            },
+            text = {
+                val helpText = if (hasNonUploadSurvey && isUploadActive) {
+                    // Both counts are shown
+                    stringResource(R.string.help_dialog_both_counts)
+                } else {
+                    // Only upload count is shown
+                    stringResource(R.string.help_dialog_upload_only)
+                }
+                Text(text = helpText)
+            },
+            confirmButton = {
+                TextButton(onClick = { showHelpDialog = false }) {
+                    Text(stringResource(R.string.help_dialog_got_it))
+                }
+            }
+        )
     }
 }
 

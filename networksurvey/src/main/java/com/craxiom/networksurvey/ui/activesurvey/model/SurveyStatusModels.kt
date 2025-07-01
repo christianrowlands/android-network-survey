@@ -87,8 +87,27 @@ data class ActiveSurveyState(
     val lastUpdateTime: Long = System.currentTimeMillis(),
     val totalRecordCount: Int = 0,
     val uploadRecordCount: Int = 0,
-    val isUploadActive: Boolean = false
-)
+    val isUploadActive: Boolean = false,
+    val isFileLoggingActive: Boolean = false,
+    val isMqttActive: Boolean = false,
+    val isGrpcActive: Boolean = false
+) {
+    /**
+     * Get list of active survey types for display
+     */
+    val activeSurveyTypes: List<String> 
+        get() = buildList {
+            if (isFileLoggingActive) add("File")
+            if (isMqttActive) add("MQTT")
+            if (isGrpcActive) add("gRPC")
+        }
+    
+    /**
+     * Check if any non-upload survey is active
+     */
+    val hasNonUploadSurvey: Boolean
+        get() = isFileLoggingActive || isMqttActive || isGrpcActive
+}
 
 /**
  * Supported wireless protocols
