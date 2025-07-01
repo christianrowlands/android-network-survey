@@ -468,7 +468,8 @@ public class BluetoothController extends AController
                 surveyService.unregisterReceiver(bluetoothBroadcastReceiver);
             } catch (Exception e)
             {
-                Timber.v(e, "Could not stop the Bluetooth Scan Callback");
+                // Ignore cleanup errors
+                // Timber.v(e, "Could not stop the Bluetooth Scan Callback");
             }
 
             surveyService.updateLocationListener();

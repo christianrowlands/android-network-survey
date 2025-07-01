@@ -37,7 +37,7 @@ internal class MapPropertiesNode(
     onTowerClick: ((Tower) -> Unit)? = null,
 ) : MapNode {
     private var locationEngine: LocationEngine? = null
-    private val locationCallback: LocationEngineCallback<LocationEngineResult> = 
+    private val locationCallback: LocationEngineCallback<LocationEngineResult> =
         object : LocationEngineCallback<LocationEngineResult> {
             override fun onSuccess(result: LocationEngineResult) {
                 result.lastLocation?.let { location ->
@@ -150,20 +150,20 @@ internal class MapPropertiesNode(
             // Remove location updates first - force synchronous removal
             locationEngine?.removeLocationUpdates(locationCallback)
             locationEngine = null
-            
+
             // Disable location component to prevent any further updates
             try {
                 val locationComponent = map.locationComponent
                 if (locationComponent != null && locationComponent.isLocationComponentActivated) {
                     // Force disable the component
                     locationComponent.isLocationComponentEnabled = false
-                    
+
                     // Engine reference is already stopped in our own locationEngine variable
                 }
             } catch (e: Exception) {
                 Timber.w(e, "Failed to disable location component during cleanup")
             }
-            
+
             // Remove all map listeners to prevent callbacks after cleanup
             try {
                 map.removeOnCameraIdleListener { }
@@ -174,7 +174,7 @@ internal class MapPropertiesNode(
             } catch (e: Exception) {
                 Timber.w(e, "Failed to remove map listeners during cleanup")
             }
-            
+
             // Clear the camera position state map reference
             cameraPositionState.setMap(null)
         } catch (e: Exception) {

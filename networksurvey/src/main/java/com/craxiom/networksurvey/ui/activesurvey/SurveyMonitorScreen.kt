@@ -1,6 +1,5 @@
 package com.craxiom.networksurvey.ui.activesurvey
 
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.Canvas
@@ -122,7 +121,7 @@ fun SurveyMonitorScreen(
                         modifier = Modifier.fillMaxSize()
                     )
                 }
-                
+
                 // Map tab with animated visibility
                 androidx.compose.animation.AnimatedVisibility(
                     visible = selectedTab == 1,

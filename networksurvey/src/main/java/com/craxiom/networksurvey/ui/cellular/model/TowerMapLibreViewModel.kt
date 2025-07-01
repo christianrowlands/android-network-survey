@@ -953,14 +953,14 @@ class TowerMapLibreViewModel : ViewModel() {
     override fun onCleared() {
         super.onCleared()
         Timber.d("TowerMapLibreViewModel onCleared - cleaning up map references")
-        
+
         // Clear map references to prevent memory leaks
         mapLibreMap = null
         mapView = null
-        
+
         // Clear location reference
         myLocation = null
-        
+
         // Clear any stored layer IDs
         beaconDbLayerIds = emptyList()
     }

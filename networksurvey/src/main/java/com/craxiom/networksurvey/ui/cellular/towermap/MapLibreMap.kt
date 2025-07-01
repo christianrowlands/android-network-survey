@@ -178,14 +178,14 @@ private fun MapLifecycle(mapView: MapView) {
                 val mapField = mapView.javaClass.getDeclaredField("mapLibreMap")
                 mapField.isAccessible = true
                 val map = mapField.get(mapView) as? MapLibreMap
-                
+
                 if (map != null) {
                     // Force stop all location updates
                     if (map.locationComponent.isLocationComponentActivated) {
                         map.locationComponent.isLocationComponentEnabled = false
                         // Can't remove updates without callback reference
                     }
-                    
+
                     // Clear any pending camera idle listeners
                     map.removeOnCameraIdleListener { }
                 }
@@ -203,7 +203,7 @@ private fun MapLifecycle(mapView: MapView) {
                     // Ignore cleanup errors
                 }
             }
-            
+
             // Then destroy the map view
             mapView.onDestroy()
             mapView.removeAllViews()
@@ -228,13 +228,13 @@ private fun MapView.lifecycleObserver(prev: MutableState<Lifecycle.Event>) =
                     val mapField = this.javaClass.getDeclaredField("mapLibreMap")
                     mapField.isAccessible = true
                     val map = mapField.get(this) as? MapLibreMap
-                    
+
                     if (map != null && map.locationComponent.isLocationComponentActivated) {
                         // Disable location updates immediately
                         map.locationComponent.isLocationComponentEnabled = false
-                        
+
                         // Force stop location engine
-                        val locationEngine = map.locationComponent.locationEngine
+                        map.locationComponent.locationEngine
                         // We can't remove updates without the callback reference, just disable the component
                     }
                 } catch (e: Exception) {
@@ -252,6 +252,7 @@ private fun MapView.lifecycleObserver(prev: MutableState<Lifecycle.Event>) =
                 }
                 this.onStop()
             }
+
             else -> {}
         }
         prev.value = event
