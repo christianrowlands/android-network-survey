@@ -1,5 +1,8 @@
 package com.craxiom.networksurvey.ui.activesurvey
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -107,17 +110,31 @@ fun SurveyMonitorScreen(
             }
 
             // Tab Content
-            when (selectedTab) {
-                0 -> SurveyStatusTab(
-                    surveyState = surveyState,
-                    modifier = Modifier.fillMaxSize()
-                )
-
-                1 -> SurveyMapTab(
-                    surveyState = surveyState,
-                    onNavigateToTowerMapSettings = onNavigateToTowerMapSettings,
-                    modifier = Modifier.fillMaxSize()
-                )
+            Box(modifier = Modifier.fillMaxSize()) {
+                // Status tab with animated visibility
+                androidx.compose.animation.AnimatedVisibility(
+                    visible = selectedTab == 0,
+                    enter = fadeIn(),
+                    exit = fadeOut()
+                ) {
+                    SurveyStatusTab(
+                        surveyState = surveyState,
+                        modifier = Modifier.fillMaxSize()
+                    )
+                }
+                
+                // Map tab with animated visibility
+                androidx.compose.animation.AnimatedVisibility(
+                    visible = selectedTab == 1,
+                    enter = fadeIn(),
+                    exit = fadeOut()
+                ) {
+                    SurveyMapTab(
+                        surveyState = surveyState,
+                        onNavigateToTowerMapSettings = onNavigateToTowerMapSettings,
+                        modifier = Modifier.fillMaxSize()
+                    )
+                }
             }
         }
     }

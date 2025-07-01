@@ -147,13 +147,32 @@ internal class MapPropertiesNode(
 
     fun cleanup() {
         try {
-            // Remove location updates first
+            // Remove location updates first - force synchronous removal
             locationEngine?.removeLocationUpdates(locationCallback)
+            locationEngine = null
             
             // Disable location component to prevent any further updates
-            val locationComponent = map.locationComponent
-            if (locationComponent.isLocationComponentActivated && locationComponent.isLocationComponentEnabled) {
-                locationComponent.isLocationComponentEnabled = false
+            try {
+                val locationComponent = map.locationComponent
+                if (locationComponent != null && locationComponent.isLocationComponentActivated) {
+                    // Force disable the component
+                    locationComponent.isLocationComponentEnabled = false
+                    
+                    // Engine reference is already stopped in our own locationEngine variable
+                }
+            } catch (e: Exception) {
+                Timber.w(e, "Failed to disable location component during cleanup")
+            }
+            
+            // Remove all map listeners to prevent callbacks after cleanup
+            try {
+                map.removeOnCameraIdleListener { }
+                map.removeOnCameraMoveCancelListener { }
+                map.removeOnCameraMoveStartedListener { }
+                map.removeOnCameraMoveListener { }
+                map.removeOnMapClickListener { true }
+            } catch (e: Exception) {
+                Timber.w(e, "Failed to remove map listeners during cleanup")
             }
             
             // Clear the camera position state map reference

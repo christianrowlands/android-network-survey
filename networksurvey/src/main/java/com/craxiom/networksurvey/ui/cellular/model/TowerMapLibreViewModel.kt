@@ -949,6 +949,21 @@ class TowerMapLibreViewModel : ViewModel() {
         val width = earthRadius * c
         return width * width
     }
+
+    override fun onCleared() {
+        super.onCleared()
+        Timber.d("TowerMapLibreViewModel onCleared - cleaning up map references")
+        
+        // Clear map references to prevent memory leaks
+        mapLibreMap = null
+        mapView = null
+        
+        // Clear location reference
+        myLocation = null
+        
+        // Clear any stored layer IDs
+        beaconDbLayerIds = emptyList()
+    }
 }
 
 data class TowerWrapper(val tower: Tower) {
