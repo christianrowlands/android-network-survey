@@ -93,7 +93,7 @@ This test verifies proper wake lock management - acquisition when surveys start 
    
    Should show something like:
    ```
-   PARTIAL_WAKE_LOCK 'NetworkSurvey:WakeLock' (uid=10123)
+   (com.craxiom.networksurvey.dev) - ACQ NetworkSurvey:WakeLock (partial)
    ```
 
 4. **Start additional surveys** (e.g., if cellular is running, start wifi)

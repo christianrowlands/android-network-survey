@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.38](https://github.com/christianrowlands/android-network-survey/releases/tag/v1.38) - 2025-07-02
+
+* Acquire a wake lock when starting a survey to make sure the Android OS does not pause the survey. This prevents gaps in the survey data.
+* Created a new Survey Monitor UI that keeps the screen active and lets the user know when a survey is running.
+* Adds a new map view to the Survey Monitor UI that displays the user's survey path and the BeaconDB coverage area.
+* Update the Bluetooth company identifiers and member UUIDs.
+
 ## [1.37](https://github.com/christianrowlands/android-network-survey/releases/tag/v1.37) - 2025-06-09
 
 * **Tower Map Improvements**: Switched from OSM to MapLibre for enhanced map performance and visual quality.

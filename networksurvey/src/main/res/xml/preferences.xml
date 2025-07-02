@@ -185,7 +185,7 @@
 
     </PreferenceCategory>
 
-    <PreferenceCategory
+    <!--<PreferenceCategory
         app:icon="@drawable/ic_survey_monitor"
         app:key="survey_monitor"
         app:title="@string/survey_monitor_config_title">
@@ -214,7 +214,7 @@
             app:dependency="alert_new_tower"
             app:title="@string/alert_new_tower_vibrate_title" />
 
-    </PreferenceCategory>
+    </PreferenceCategory>-->
 
     <PreferenceCategory
         app:icon="@drawable/ic_info"

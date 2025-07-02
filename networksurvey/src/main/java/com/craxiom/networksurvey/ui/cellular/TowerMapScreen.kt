@@ -673,7 +673,12 @@ internal fun TowerMapScreen(
                                     }
                             })
 
-                        Spacer(modifier = Modifier.height(44.dp))
+                        if (mapContext == MapContext.TOWER_MAP) {
+                            Spacer(modifier = Modifier.height(44.dp))
+                        } else {
+                            // Add extra space for Survey Monitor context because we are not extending the map to the very bottom
+                            Spacer(modifier = Modifier.height(64.dp))
+                        }
                     }
                 }
 

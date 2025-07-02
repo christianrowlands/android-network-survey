@@ -1398,3 +1398,7 @@ uuids:
    name: BYD Company Limited
  - uuid: 0xFC54
    name: "Shenzhen Yinwang Intelligent Technologies Co., Ltd."
+ - uuid: 0xFC53
+   name: LEGIC Identsystems AG
+ - uuid: 0xFC52
+   name: LG Electronics Inc.

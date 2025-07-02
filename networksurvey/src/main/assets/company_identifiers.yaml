@@ -1,5 +1,95 @@
 company_identifiers:
 
+  - value: 0x0F24
+    name: 'Easy Measure Co., Ltd.'
+
+  - value: 0x0F23
+    name: 'Yuquan Semiconductor (Xiamen) Co., Ltd.'
+
+  - value: 0x0F22
+    name: 'ONESPACE TECHNOLOGIES (PTY) LTD'
+
+  - value: 0x0F21
+    name: 'Rokk Limited'
+
+  - value: 0x0F20
+    name: 'Beijing Spring Creation Technology Co., Ltd.'
+
+  - value: 0x0F1F
+    name: 'Ninebot (Changzhou) Tech Co., Ltd.'
+
+  - value: 0x0F1E
+    name: 'Yolni Inc.'
+
+  - value: 0x0F1D
+    name: 'ZIMMERMANN PV-Steel Group GmbH & Co. KG'
+
+  - value: 0x0F1C
+    name: 'Edge Semiconductors Inc.'
+
+  - value: 0x0F1B
+    name: 'PalatiumCare LLC'
+
+  - value: 0x0F1A
+    name: 'FLO SCIENCES, LLC'
+
+  - value: 0x0F19
+    name: 'Shenzhen SuperSound Technology Co.,Ltd'
+
+  - value: 0x0F18
+    name: 'iKeyless, LLC'
+
+  - value: 0x0F17
+    name: 'RORENTECH Co., Ltd.'
+
+  - value: 0x0F16
+    name: 'ADHD Friendly co.Ltd'
+
+  - value: 0x0F15
+    name: 'Oval Corporation'
+
+  - value: 0x0F14
+    name: 'PreEvnt, LLC'
+
+  - value: 0x0F13
+    name: 'Freshape SA'
+
+  - value: 0x0F12
+    name: 'Endur ID, Inc.'
+
+  - value: 0x0F11
+    name: 'Deep and Steep LLC'
+
+  - value: 0x0F10
+    name: 'ShenZhen Doctors of Intelligence & Technology Co.,Ltd'
+
+  - value: 0x0F0F
+    name: 'caive Inc.'
+
+  - value: 0x0F0E
+    name: 'IDEATRONIK Limited Liability Company'
+
+  - value: 0x0F0D
+    name: 'Maennl Elektronik GmbH'
+
+  - value: 0x0F0C
+    name: 'Hitachi Industrial Equipment Systems Co.,Ltd.'
+
+  - value: 0x0F0B
+    name: 'Brightway Innovation Intelligent Technology (Suzhou) Co., Ltd.'
+
+  - value: 0x0F0A
+    name: 'LION GROUP, INC.'
+
+  - value: 0x0F09
+    name: 'ANC CHINA LIMITED'
+
+  - value: 0x0F08
+    name: 'Lezyne USA Inc.'
+
+  - value: 0x0F07
+    name: 'Tech OVN Private Limited'
+
   - value: 0x0F06
     name: 'SHENZHEN POWEROAK NEWENER CO., LTD'
 
