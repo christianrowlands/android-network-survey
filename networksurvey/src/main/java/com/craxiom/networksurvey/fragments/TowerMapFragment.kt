@@ -72,18 +72,13 @@ class TowerMapFragment : AServiceDataFragment(), ICellularSurveyRecordListener {
             setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed)
         }
 
-        if (PreferenceUtils.hasAcceptedMapPrivacy(requireContext())) {
-            setupComposeView(servingCell)
-        }
+        setupComposeView(servingCell)
         return composeView
     }
 
     override fun onResume() {
         super.onResume()
-        if (PreferenceUtils.hasAcceptedMapPrivacy(requireContext())) {
-            setupComposeView(servingCell)
-        }
-        checkAcceptedMapPrivacy()
+        setupComposeView(servingCell)
         checkLocationServicesEnabledAndPrompt()
         startAndBindToService()
     }
@@ -143,41 +138,6 @@ class TowerMapFragment : AServiceDataFragment(), ICellularSurveyRecordListener {
         paddingValues = paddingInsets
     }
 
-    /**
-     * Checks if the user has accepted the privacy implications of using the tower map feature. If they have not,
-     * then a dialog is shown to them explaining the privacy implications.
-     */
-    private fun checkAcceptedMapPrivacy() {
-        if (!PreferenceUtils.hasAcceptedMapPrivacy(requireContext())) {
-            showPrivacyDialog()
-        }
-    }
-
-    /**
-     * Shows a dialog to the user explaining the privacy implications of using the tower map feature.
-     */
-    private fun showPrivacyDialog() {
-        val builder = AlertDialog.Builder(requireContext())
-        builder.setTitle("Privacy Notice")
-        builder.setMessage(
-            """
-            When using the tower map feature, a request is made from your device to our Network Survey server. This request will reveal your device's public IP address and the location associated with the map view. 
-            
-            By continuing, you accept these terms and allow the feature to function as intended. If you reject, the feature will be disabled and you won't be able to use the Tower Map.
-        """.trimIndent()
-        )
-        builder.setPositiveButton("Accept") { dialog, _ ->
-            PreferenceUtils.setAcceptMapPrivacy(requireContext(), true)
-            setupComposeView(servingCell)
-            dialog.dismiss()
-        }
-        builder.setNegativeButton("Reject") { dialog, _ ->
-            PreferenceUtils.setAcceptMapPrivacy(requireContext(), false)
-            dialog.dismiss()
-            navigateBack()
-        }
-        builder.show()
-    }
 
     /**
      * Checks if the location services are enabled on the device. If they are not, then a dialog is shown to the user

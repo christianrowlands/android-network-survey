@@ -391,20 +391,6 @@ internal fun TowerMapScreen(
                             )
                         }
 
-                        // Render survey tracks if provided
-                        surveyTracks?.forEach { track ->
-                            if (track.points.size >= 2) {
-                                LineString(
-                                    state = rememberLineStringState(
-                                        points = track.points,
-                                        color = track.color,
-                                        width = 4f,
-                                        dashArray = null // Solid line for tracks
-                                    )
-                                )
-                            }
-                        }
-
                         // Render serving cell coverage circles
                         val displayCoverage =
                             PreferenceUtils.displayServingCellCoverageOnMap(context)
@@ -422,6 +408,20 @@ internal fun TowerMapScreen(
                                     )
                                 )
                             }
+                        }
+                    }
+
+                    // Render survey tracks if provided (independent of tower layer visibility)
+                    surveyTracks?.forEach { track ->
+                        if (track.points.size >= 2) {
+                            LineString(
+                                state = rememberLineStringState(
+                                    points = track.points,
+                                    color = track.color,
+                                    width = 4f,
+                                    dashArray = null // Solid line for tracks
+                                )
+                            )
                         }
                     }
 
