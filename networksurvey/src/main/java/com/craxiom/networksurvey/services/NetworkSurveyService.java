@@ -28,6 +28,7 @@ import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.IBinder;
 import android.os.Looper;
+import android.os.PowerManager;
 import android.provider.Settings;
 import android.telephony.SubscriptionInfo;
 
@@ -89,6 +90,9 @@ import java.util.Set;
 import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -112,14 +116,17 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
     public static final String ACTION_STOP_SURVEY = "com.craxiom.networksurvey.STOP_SURVEY";
 
     private final AtomicBoolean deviceStatusActive = new AtomicBoolean(false);
-
-    private final AtomicInteger deviceStatusGeneratorTaskId = new AtomicInteger();
+    private final ScheduledThreadPoolExecutor deviceStatusExecutor = new ScheduledThreadPoolExecutor(1);
+    private ScheduledFuture<?> deviceStatusFuture;
 
     private SurveyServiceBinder surveyServiceBinder;
     private final Handler uiThreadHandler;
     private final ExecutorService executorService;
 
     private volatile int deviceStatusScanRateMs;
+    
+    private PowerManager.WakeLock wakeLock;
+    private final AtomicBoolean wakeLockActive = new AtomicBoolean(false);
 
     private CellularController cellularController;
     private WifiController wifiController;
@@ -162,6 +169,19 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
         Timber.i("Creating the Network Survey Service");
 
         final Context context = getApplicationContext();
+        
+        // Initialize wake lock
+        PowerManager powerManager = (PowerManager) getSystemService(POWER_SERVICE);
+        if (powerManager != null)
+        {
+            wakeLock = powerManager.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, 
+                    NetworkSurveyConstants.WAKE_LOCK_TAG);
+            wakeLock.setReferenceCounted(false);
+            Timber.d("Wake lock initialized");
+        } else 
+        {
+            Timber.e("PowerManager is null, wake lock not initialized");
+        }
 
         final HandlerThread handlerThread = new HandlerThread("NetworkSurveyService");
         handlerThread.start();
@@ -335,6 +355,22 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
     public void onDestroy()
     {
         Timber.i("onDestroy");
+        
+        // Release wake lock if held
+        if (wakeLock != null && wakeLockActive.getAndSet(false))
+        {
+            Timber.d("Releasing wake lock in onDestroy");
+            try 
+            {
+                if (wakeLock.isHeld())
+                {
+                    wakeLock.release();
+                }
+            } catch (Exception e) 
+            {
+                Timber.e(e, "Failed to release wake lock in onDestroy");
+            }
+        }
 
         unregisterManagedConfigurationListener();
 
@@ -358,6 +394,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
         serviceLooper.quitSafely();
         shutdownNotifications();
         executorService.shutdown();
+        deviceStatusExecutor.shutdown();
 
         cellularController.onDestroy();
         wifiController.onDestroy();
@@ -473,6 +510,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
 
         // Track survey session when MQTT streaming starts
         onSurveyStarted();
+        updateWakeLock();
 
         // Saving the MQTT protocol streaming flags here allows the Dashboard UI to get notified
         // of the updates since otherwise MDM specified flags won't get propagated to the Dashboard
@@ -520,6 +558,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
 
         // Track survey session end
         onSurveyStopped();
+        updateWakeLock();
     }
 
     /**
@@ -986,6 +1025,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
             {
                 onSurveyStarted();
             } else if (!enable && !result) onSurveyStopped();
+            updateWakeLock();
         }
         return result;
     }
@@ -1009,6 +1049,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
             {
                 onSurveyStarted();
             } else if (!enable && !result) onSurveyStopped();
+            updateWakeLock();
         }
         return result;
     }
@@ -1032,6 +1073,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
             {
                 onSurveyStarted();
             } else if (!enable && !result) onSurveyStopped();
+            updateWakeLock();
         }
         return result;
     }
@@ -1055,6 +1097,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
             {
                 onSurveyStarted();
             } else if (!enable && !result) onSurveyStopped();
+            updateWakeLock();
         }
         return result;
     }
@@ -1078,6 +1121,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
             {
                 onSurveyStarted();
             } else if (!enable && !result) onSurveyStopped();
+            updateWakeLock();
         }
         return result;
     }
@@ -1126,6 +1170,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
 
                     // Track survey session
                     onSurveyStarted();
+                    updateWakeLock();
 
                     // Generate appropriate success message based on what was started
                     String message;
@@ -1147,6 +1192,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
 
                     // Track survey session end
                     onSurveyStopped();
+                    updateWakeLock();
 
                     // Check to see if this service is still needed.  It is still needed if we are either logging, the UI is
                     // visible, or a server connection is active.
@@ -1279,6 +1325,50 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
     public Long getSurveySessionStartTime()
     {
         return surveySessionStartTime;
+    }
+    
+    /**
+     * Acquires the wake lock if any survey is active. This ensures the device
+     * doesn't go to sleep while collecting survey data.
+     * 
+     * @since 1.37
+     */
+    @SuppressLint("WakelockTimeout")
+    private void updateWakeLock()
+    {
+        if (wakeLock == null) 
+        {
+            Timber.w("Wake lock is null, cannot update wake lock state");
+            return;
+        }
+        
+        boolean shouldHoldWakeLock = isAnySurveyActive();
+        
+        if (shouldHoldWakeLock && !wakeLockActive.getAndSet(true))
+        {
+            Timber.d("Acquiring wake lock for survey operations");
+            try 
+            {
+                wakeLock.acquire();
+            } catch (Exception e) 
+            {
+                Timber.e(e, "Failed to acquire wake lock");
+                wakeLockActive.set(false);
+            }
+        } else if (!shouldHoldWakeLock && wakeLockActive.getAndSet(false))
+        {
+            Timber.d("Releasing wake lock - no surveys active");
+            try 
+            {
+                if (wakeLock.isHeld())
+                {
+                    wakeLock.release();
+                }
+            } catch (Exception e) 
+            {
+                Timber.e(e, "Failed to release wake lock");
+            }
+        }
     }
 
     /**
@@ -1680,32 +1770,37 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
     private void startDeviceStatusReport()
     {
         if (deviceStatusActive.getAndSet(true)) return;
+        
+        updateWakeLock();
 
-        final int handlerTaskId = deviceStatusGeneratorTaskId.incrementAndGet();
-
-        serviceHandler.postDelayed(new Runnable()
+        // Cancel any existing device status task
+        if (deviceStatusFuture != null)
         {
-            @Override
-            public void run()
+            deviceStatusFuture.cancel(true);
+            deviceStatusFuture = null;
+        }
+
+        // Schedule the device status task at a fixed rate
+        deviceStatusFuture = deviceStatusExecutor.scheduleWithFixedDelay(() -> {
+            try
             {
-                try
+                if (!deviceStatusActive.get())
                 {
-                    if (!deviceStatusActive.get() || deviceStatusGeneratorTaskId.get() != handlerTaskId)
-                    {
-                        Timber.i("Stopping the handler that generates the device status message; taskId=%d", handlerTaskId);
-                        return;
-                    }
-
-                    surveyRecordProcessor.onDeviceStatus(generateDeviceStatus());
-
-                    serviceHandler.postDelayed(this, deviceStatusScanRateMs);
-                } catch (SecurityException e)
-                {
-                    Timber.e(e, "Could not get the required permissions to generate a device status message");
+                    Timber.i("Device status reporting is no longer active, skipping status generation");
+                    return;
                 }
-            }
-        }, 1000L);
 
+                surveyRecordProcessor.onDeviceStatus(generateDeviceStatus());
+            } catch (SecurityException e)
+            {
+                Timber.e(e, "Could not get the required permissions to generate a device status message");
+            } catch (Exception e)
+            {
+                Timber.e(e, "Unexpected error generating device status message");
+            }
+        }, 1000L, deviceStatusScanRateMs, TimeUnit.MILLISECONDS);
+
+        Timber.d("Started device status reporting with interval %d ms", deviceStatusScanRateMs);
         cellularController.startPhoneStateListener();
     }
 
@@ -1826,8 +1921,17 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
         cellularController.stopPhoneStateListener();
 
         deviceStatusActive.set(false);
+        
+        // Cancel the scheduled device status task
+        if (deviceStatusFuture != null)
+        {
+            deviceStatusFuture.cancel(true);
+            deviceStatusFuture = null;
+            Timber.d("Cancelled device status reporting task");
+        }
 
         updateLocationListener();
+        updateWakeLock();
     }
 
     /**

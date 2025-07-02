@@ -274,7 +274,7 @@ public class GnssController extends AController
                     {
                         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R)
                         {
-                            if (gnssScanRateMs <= BATTERY_OPTIMIZATION_SCAN_RATE_THRESHOLD_MS)
+                            if (gnssScanRateMs < BATTERY_OPTIMIZATION_SCAN_RATE_THRESHOLD_MS)
                             {
                                 Timber.i("Registering the normal GNSS measurements listener since the scan rate was frequent enough");
                                 batteryOptimizedGnssMeasurement.set(false);
@@ -288,7 +288,7 @@ public class GnssController extends AController
                                 // measurements on drains the battery, we will remove the listener after each batch.
                                 Timber.i("Using the approach of registering and unregistering for GNSS measurements to improve battery life");
                                 batteryOptimizedGnssMeasurement.set(true);
-                                batteryOptimizedScanFuture = pool.scheduleAtFixedRate(this::runOneMeasurement,
+                                batteryOptimizedScanFuture = pool.scheduleWithFixedDelay(this::runOneMeasurement,
                                         0, gnssScanRateMs, TimeUnit.MILLISECONDS);
                             }
                         } else
