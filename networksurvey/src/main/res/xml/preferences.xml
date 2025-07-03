@@ -97,7 +97,7 @@
             app:useSimpleSummaryProvider="true" />
 
         <EditTextPreference
-            app:defaultValue="8"
+            app:defaultValue="10"
             app:dialogMessage="@string/wifi_scan_interval_description"
             app:key="wifi_scan_interval_seconds"
             app:title="@string/wifi_scan_interval_title"

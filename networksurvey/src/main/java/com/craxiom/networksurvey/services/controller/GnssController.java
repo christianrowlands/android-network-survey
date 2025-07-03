@@ -495,7 +495,7 @@ public class GnssController extends AController
      * measurements it returns one batch of results every 1 second. Since this is more than we need, and having GNSS
      * measurements on drains the battery, we will remove the listener after each batch. However, the first several
      * batches of results are not complete as there is a warm up period. So we need to ignore those results. This
-     * method ignores the first 9 batches of results, and then unregisters the listener after the 10th batch. In
+     * method ignores the first 14 batches of results, and then unregisters the listener after the 15th batch. In
      * practice on a Pixel 8 Pro, the 7th batch of results was the first complete batch.
      *
      * @return True if the results are good to be used for sending to listeners.
@@ -506,7 +506,7 @@ public class GnssController extends AController
         {
             synchronized (gnssLoggingEnabled)
             {
-                if (batteryOptimizedMeasurementCount.incrementAndGet() >= 10)
+                if (batteryOptimizedMeasurementCount.incrementAndGet() >= 15)
                 {
                     Timber.i("Saw the 10th GNSS measurement; unregistering the GNSS measurements callback to save battery");
                     locationManager.unregisterGnssMeasurementsCallback(measurementListener);

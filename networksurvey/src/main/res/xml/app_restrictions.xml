@@ -56,7 +56,7 @@
         android:title="@string/cellular_scan_interval_title" />
 
     <restriction
-        android:defaultValue="8"
+        android:defaultValue="10"
         android:description="@string/wifi_scan_interval_description"
         android:key="wifi_scan_interval_seconds"
         android:restrictionType="integer"
