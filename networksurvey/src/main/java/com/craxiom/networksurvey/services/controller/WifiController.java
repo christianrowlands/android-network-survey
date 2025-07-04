@@ -27,6 +27,9 @@ import com.craxiom.networksurvey.util.PreferenceUtils;
 
 import java.util.List;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -43,6 +46,8 @@ public class WifiController extends AController
     private final AtomicBoolean wifiScanningActive = new AtomicBoolean(false);
     private final AtomicBoolean wifiLoggingEnabled = new AtomicBoolean(false);
     private final AtomicInteger wifiScanningTaskId = new AtomicInteger();
+    private final ScheduledThreadPoolExecutor wifiScanExecutor = new ScheduledThreadPoolExecutor(1);
+    private ScheduledFuture<?> wifiScanFuture;
 
     private final Handler serviceHandler;
     private final SurveyRecordProcessor surveyRecordProcessor;
@@ -76,6 +81,7 @@ public class WifiController extends AController
         {
             wifiSurveyRecordLogger.onDestroy();
             wifiCsvLogger.onDestroy();
+            wifiScanExecutor.shutdown();
             super.onDestroy();
         }
     }
@@ -291,32 +297,38 @@ public class WifiController extends AController
                 return;
             }
 
-            final int handlerTaskId = wifiScanningTaskId.incrementAndGet();
-
-            serviceHandler.postDelayed(new Runnable()
+            // Cancel any existing Wi-Fi scan task
+            if (wifiScanFuture != null)
             {
-                @Override
-                public void run()
+                wifiScanFuture.cancel(true);
+                wifiScanFuture = null;
+            }
+
+            // Schedule the Wi-Fi scan task at a fixed rate
+            wifiScanFuture = wifiScanExecutor.scheduleWithFixedDelay(() -> {
+                try
                 {
-                    try
+                    if (!wifiScanningActive.get())
                     {
-                        if (!wifiScanningActive.get() || wifiScanningTaskId.get() != handlerTaskId)
-                        {
-                            Timber.i("Stopping the handler that pulls the latest wifi information, taskId=%d", handlerTaskId);
-                            return;
-                        }
-
-                        boolean success = wifiManager.startScan();
-
-                        if (!success) Timber.e("Kicking off a Wi-Fi scan failed");
-
-                        serviceHandler.postDelayed(this, wifiScanRateMs);
-                    } catch (Exception e)
-                    {
-                        Timber.e(e, "Could not run a Wi-Fi scan");
+                        Timber.i("Wi-Fi scanning is no longer active, skipping scan");
+                        return;
                     }
+
+                    boolean success = wifiManager.startScan();
+
+                    if (!success)
+                    {
+                        Timber.e("Kicking off a Wi-Fi scan failed");
+                        // Continue trying on next iteration - don't stop the scheduled task
+                    }
+                } catch (Exception e)
+                {
+                    Timber.e(e, "Could not run a Wi-Fi scan");
+                    // Continue trying on next iteration - don't stop the scheduled task
                 }
-            }, 2_000);
+            }, 2000L, wifiScanRateMs, TimeUnit.MILLISECONDS);
+
+            Timber.d("Started Wi-Fi scanning with interval %d ms", wifiScanRateMs);
 
             surveyService.updateLocationListener();
         }
@@ -334,6 +346,14 @@ public class WifiController extends AController
 
             wifiScanningActive.set(false);
 
+            // Cancel the scheduled Wi-Fi scan task
+            if (wifiScanFuture != null)
+            {
+                wifiScanFuture.cancel(true);
+                wifiScanFuture = null;
+                Timber.d("Cancelled Wi-Fi scanning task");
+            }
+
             try
             {
                 surveyService.unregisterReceiver(wifiScanReceiver);
@@ -342,7 +362,7 @@ public class WifiController extends AController
                 // Because we are extra cautious and want to make sure that we unregister the receiver, when the service
                 // is shutdown we call this method to make sure we stop any active scan and unregister the receiver even if
                 // we don't have one registered.
-                Timber.v(e, "Could not unregister the NetworkSurveyService Wi-Fi Scan Receiver");
+                //Timber.v(e, "Could not unregister the NetworkSurveyService Wi-Fi Scan Receiver");
             }
 
             surveyService.updateLocationListener();

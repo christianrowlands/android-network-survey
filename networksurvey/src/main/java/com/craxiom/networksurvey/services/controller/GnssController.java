@@ -236,6 +236,7 @@ public class GnssController extends AController
                 gnssRawSupportKnown = true;
                 if (handleBatteryOptimization() && surveyRecordProcessor != null)
                 {
+                    Timber.d("GNSS measurement received at %s", System.currentTimeMillis());
                     surveyRecordProcessor.onGnssMeasurements(event);
                 }
             }
@@ -276,7 +277,7 @@ public class GnssController extends AController
                         {
                             if (gnssScanRateMs < BATTERY_OPTIMIZATION_SCAN_RATE_THRESHOLD_MS)
                             {
-                                Timber.i("Registering the normal GNSS measurements listener since the scan rate was frequent enough");
+                                Timber.d("Registering the normal GNSS measurements listener since the scan rate was frequent enough");
                                 batteryOptimizedGnssMeasurement.set(false);
                                 locationManager.registerGnssMeasurementsCallback(executorService, measurementListener);
                             } else
@@ -286,10 +287,10 @@ public class GnssController extends AController
                                 // We take this approach because once you register for GNSS measurements it returns one
                                 // batch of results every 1 second. Since this is more than we need, and having GNSS
                                 // measurements on drains the battery, we will remove the listener after each batch.
-                                Timber.i("Using the approach of registering and unregistering for GNSS measurements to improve battery life");
                                 batteryOptimizedGnssMeasurement.set(true);
                                 batteryOptimizedScanFuture = pool.scheduleWithFixedDelay(this::runOneMeasurement,
                                         0, gnssScanRateMs, TimeUnit.MILLISECONDS);
+                                Timber.d("Started battery-optimized GNSS scanning with interval %d ms", gnssScanRateMs);
                             }
                         } else
                         {
@@ -303,28 +304,33 @@ public class GnssController extends AController
                     Timber.w("The location manager was null when registering the GNSS listeners");
                 }
 
-                serviceHandler.postDelayed(new Runnable()
+                // Only check for missed measurements when not in battery optimized mode
+                // In battery optimized mode, we expect gaps between measurements
+                if (!batteryOptimizedGnssMeasurement.get())
                 {
-                    @Override
-                    public void run()
+                    serviceHandler.postDelayed(new Runnable()
                     {
-                        try
+                        @Override
+                        public void run()
                         {
-                            if (!gnssStarted.get() || gnssScanningTaskId.get() != handlerTaskId)
+                            try
                             {
-                                Timber.i("Stopping the handler that checks for missed GNSS measurements");
-                                return;
+                                if (!gnssStarted.get() || gnssScanningTaskId.get() != handlerTaskId)
+                                {
+                                    Timber.i("Stopping the handler that checks for missed GNSS measurements");
+                                    return;
+                                }
+
+                                surveyRecordProcessor.checkForMissedGnssMeasurement();
+
+                                serviceHandler.postDelayed(this, GpsTestUtil.getGnssTimeoutIntervalMs(gnssScanRateMs));
+                            } catch (SecurityException e)
+                            {
+                                Timber.e(e, "Could not get the required permissions to check for missed GNSS measurement");
                             }
-
-                            surveyRecordProcessor.checkForMissedGnssMeasurement();
-
-                            serviceHandler.postDelayed(this, GpsTestUtil.getGnssTimeoutIntervalMs(gnssScanRateMs));
-                        } catch (SecurityException e)
-                        {
-                            Timber.e(e, "Could not get the required permissions to check for missed GNSS measurement");
                         }
-                    }
-                }, GpsTestUtil.getGnssTimeoutIntervalMs(gnssScanRateMs));
+                    }, GpsTestUtil.getGnssTimeoutIntervalMs(gnssScanRateMs));
+                }
 
                 success = true;
             }
@@ -508,7 +514,7 @@ public class GnssController extends AController
             {
                 if (batteryOptimizedMeasurementCount.incrementAndGet() >= 15)
                 {
-                    Timber.i("Saw the 10th GNSS measurement; unregistering the GNSS measurements callback to save battery");
+                    Timber.i("Saw the 15th GNSS measurement; unregistering the GNSS measurements callback to save battery");
                     locationManager.unregisterGnssMeasurementsCallback(measurementListener);
                     return true;
                 } else

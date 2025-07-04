@@ -772,6 +772,7 @@ public class CellularController extends AController
                         {
                             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q)
                             {
+                                Timber.d("Requesting cellular info update at %s", System.currentTimeMillis());
                                 for (TelephonyManagerWrapper wrapper : telephonyManagerList)
                                 {
                                     TelephonyManager.CellInfoCallback callback = cellInfoCallbackMap.get(wrapper.getSubscriptionId());
@@ -788,6 +789,7 @@ public class CellularController extends AController
                                 execute(() -> {
                                     try
                                     {
+                                        Timber.d("Getting cellular info (legacy API) at %s", System.currentTimeMillis());
                                         for (TelephonyManagerWrapper wrapper : telephonyManagerList)
                                         {
                                             TelephonyManager subscriptionTelephonyManager = wrapper.getTelephonyManager();
@@ -917,7 +919,7 @@ public class CellularController extends AController
             Runtime runtime = Runtime.getRuntime();
             Process ipAddressProcess = runtime.exec("/system/bin/ping -c 1 8.8.8.8");
             int exitValue = ipAddressProcess.waitFor();
-            Timber.v("Ping Exit Value: %s", exitValue);
+            //Timber.v("Ping Exit Value: %s", exitValue);
         } catch (Exception e)
         {
             Timber.e(e, "An exception occurred trying to send out a ping ");
