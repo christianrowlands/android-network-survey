@@ -688,7 +688,7 @@
 
                         <androidx.constraintlayout.widget.ConstraintLayout
                             android:id="@+id/signal_one_group"
-                            android:layout_width="wrap_content"
+                            android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:layout_gravity="end">
 
@@ -736,7 +736,7 @@
 
                         <androidx.constraintlayout.widget.ConstraintLayout
                             android:id="@+id/signal_two_group"
-                            android:layout_width="wrap_content"
+                            android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:layout_gravity="end">
 
@@ -785,7 +785,7 @@
 
                         <androidx.constraintlayout.widget.ConstraintLayout
                             android:id="@+id/signal_three_group"
-                            android:layout_width="wrap_content"
+                            android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:layout_gravity="end">
 
