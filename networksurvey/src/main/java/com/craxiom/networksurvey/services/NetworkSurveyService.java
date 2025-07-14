@@ -124,7 +124,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
     private final ExecutorService executorService;
 
     private volatile int deviceStatusScanRateMs;
-    
+
     private PowerManager.WakeLock wakeLock;
     private final AtomicBoolean wakeLockActive = new AtomicBoolean(false);
 
@@ -169,16 +169,16 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
         Timber.i("Creating the Network Survey Service");
 
         final Context context = getApplicationContext();
-        
+
         // Initialize wake lock
         PowerManager powerManager = (PowerManager) getSystemService(POWER_SERVICE);
         if (powerManager != null)
         {
-            wakeLock = powerManager.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, 
+            wakeLock = powerManager.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK,
                     NetworkSurveyConstants.WAKE_LOCK_TAG);
             wakeLock.setReferenceCounted(false);
             Timber.d("Wake lock initialized");
-        } else 
+        } else
         {
             Timber.e("PowerManager is null, wake lock not initialized");
         }
@@ -355,18 +355,18 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
     public void onDestroy()
     {
         Timber.i("onDestroy");
-        
+
         // Release wake lock if held
         if (wakeLock != null && wakeLockActive.getAndSet(false))
         {
             Timber.d("Releasing wake lock in onDestroy");
-            try 
+            try
             {
                 if (wakeLock.isHeld())
                 {
                     wakeLock.release();
                 }
-            } catch (Exception e) 
+            } catch (Exception e)
             {
                 Timber.e(e, "Failed to release wake lock in onDestroy");
             }
@@ -1326,31 +1326,31 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
     {
         return surveySessionStartTime;
     }
-    
+
     /**
      * Acquires the wake lock if any survey is active. This ensures the device
      * doesn't go to sleep while collecting survey data.
-     * 
+     *
      * @since 1.37
      */
     @SuppressLint("WakelockTimeout")
     private void updateWakeLock()
     {
-        if (wakeLock == null) 
+        if (wakeLock == null)
         {
             Timber.w("Wake lock is null, cannot update wake lock state");
             return;
         }
-        
+
         boolean shouldHoldWakeLock = isAnySurveyActive();
-        
+
         if (shouldHoldWakeLock && !wakeLockActive.getAndSet(true))
         {
             Timber.d("Acquiring wake lock for survey operations");
-            try 
+            try
             {
                 wakeLock.acquire();
-            } catch (Exception e) 
+            } catch (Exception e)
             {
                 Timber.e(e, "Failed to acquire wake lock");
                 wakeLockActive.set(false);
@@ -1358,13 +1358,13 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
         } else if (!shouldHoldWakeLock && wakeLockActive.getAndSet(false))
         {
             Timber.d("Releasing wake lock - no surveys active");
-            try 
+            try
             {
                 if (wakeLock.isHeld())
                 {
                     wakeLock.release();
                 }
-            } catch (Exception e) 
+            } catch (Exception e)
             {
                 Timber.e(e, "Failed to release wake lock");
             }
@@ -1770,7 +1770,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
     private void startDeviceStatusReport()
     {
         if (deviceStatusActive.getAndSet(true)) return;
-        
+
         updateWakeLock();
 
         // Cancel any existing device status task
@@ -1921,7 +1921,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
         cellularController.stopPhoneStateListener();
 
         deviceStatusActive.set(false);
-        
+
         // Cancel the scheduled device status task
         if (deviceStatusFuture != null)
         {

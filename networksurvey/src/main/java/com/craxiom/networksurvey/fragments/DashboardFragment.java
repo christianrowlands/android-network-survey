@@ -66,6 +66,7 @@ import com.craxiom.networksurvey.model.SurveyTypes;
 import com.craxiom.networksurvey.model.UploadScanningResult;
 import com.craxiom.networksurvey.services.NetworkSurveyService;
 import com.craxiom.networksurvey.ui.main.SharedViewModel;
+import com.craxiom.networksurvey.util.BatteryOptimizationHelper;
 import com.craxiom.networksurvey.util.MathUtils;
 import com.craxiom.networksurvey.util.MdmUtils;
 import com.craxiom.networksurvey.util.NsUtils;
@@ -322,11 +323,23 @@ public class DashboardFragment extends AServiceDataFragment implements LocationL
         binding.uploadCancelButton.setOnClickListener(v -> cancelUploads());
 
         initializeLoggingSwitch(binding.cellularLoggingToggleSwitch, (newEnabledState, toggleSwitch) -> {
+            if (newEnabledState && checkBatteryOptimizationBeforeLogging())
+            {
+                // Battery optimization dialog will be shown, don't start logging yet
+                toggleSwitch.setChecked(false);
+                return;
+            }
             viewModel.setCellularLoggingEnabled(newEnabledState);
             toggleCellularLogging(newEnabledState);
         });
 
         initializeLoggingSwitch(binding.wifiLoggingToggleSwitch, (newEnabledState, toggleSwitch) -> {
+            if (newEnabledState && checkBatteryOptimizationBeforeLogging())
+            {
+                // Battery optimization dialog will be shown, don't start logging yet
+                toggleSwitch.setChecked(false);
+                return;
+            }
             viewModel.setWifiLoggingEnabled(newEnabledState);
             toggleWifiLogging(newEnabledState);
         });
@@ -339,11 +352,23 @@ public class DashboardFragment extends AServiceDataFragment implements LocationL
                 return;
             }
 
+            if (newEnabledState && checkBatteryOptimizationBeforeLogging())
+            {
+                // Battery optimization dialog will be shown, don't start logging yet
+                toggleSwitch.setChecked(false);
+                return;
+            }
             viewModel.setBluetoothLoggingEnabled(newEnabledState);
             toggleBluetoothLogging(newEnabledState);
         });
 
         initializeLoggingSwitch(binding.gnssLoggingToggleSwitch, (newEnabledState, toggleSwitch) -> {
+            if (newEnabledState && checkBatteryOptimizationBeforeLogging())
+            {
+                // Battery optimization dialog will be shown, don't start logging yet
+                toggleSwitch.setChecked(false);
+                return;
+            }
             viewModel.setGnssLoggingEnabled(newEnabledState);
             toggleGnssLogging(newEnabledState);
         });
@@ -356,6 +381,12 @@ public class DashboardFragment extends AServiceDataFragment implements LocationL
                 return;
             }
 
+            if (newEnabledState && checkBatteryOptimizationBeforeLogging())
+            {
+                // Battery optimization dialog will be shown, don't start logging yet
+                toggleSwitch.setChecked(false);
+                return;
+            }
             viewModel.setCdrLoggingEnabled(newEnabledState);
             toggleCdrLogging(newEnabledState);
         });
@@ -1173,6 +1204,13 @@ public class DashboardFragment extends AServiceDataFragment implements LocationL
         Context context = getContext();
         if (context == null) return;
 
+        // Check battery optimization before starting upload scanning
+        if (checkBatteryOptimizationBeforeLogging())
+        {
+            // Battery optimization dialog will be shown, don't start scanning yet
+            return;
+        }
+
         binding.startScanningButton.setEnabled(false);
         toggleUploadRecordSaving(true);
         resetUploadUi();
@@ -1291,6 +1329,32 @@ public class DashboardFragment extends AServiceDataFragment implements LocationL
         {
             binding.uploadWifiIndicator.setImageTintList(ColorStateList.valueOf(ContextCompat.getColor(context, R.color.md_theme_primary)));
         }
+    }
+
+    /**
+     * Checks if battery optimization should be prompted before starting logging.
+     * If battery optimization is enabled and should be prompted, triggers the dialog.
+     *
+     * @return true if battery optimization dialog was shown, false otherwise
+     */
+    private boolean checkBatteryOptimizationBeforeLogging()
+    {
+        Context context = getContext();
+        if (context == null) return false;
+
+        BatteryOptimizationHelper batteryHelper = new BatteryOptimizationHelper(context);
+        if (batteryHelper.shouldPromptForBatteryOptimization())
+        {
+            // Trigger the battery optimization dialog through SharedViewModel
+            FragmentActivity activity = getActivity();
+            if (activity != null)
+            {
+                SharedViewModel sharedViewModel = new ViewModelProvider(requireActivity()).get(SharedViewModel.class);
+                sharedViewModel.triggerBatteryOptimizationDialog();
+                return true;
+            }
+        }
+        return false;
     }
 
     /**

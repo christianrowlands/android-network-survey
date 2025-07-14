@@ -753,7 +753,7 @@ but work independently, so you have full control over how you handle your data.<
     <string name="delete_upload_data_failed">Failed to delete upload data</string>
     <string name="show_upload_dialog_summary_off">Upload dialog will be skipped and the settings below will be used</string>
     <string name="show_upload_dialog_summary_on">The config dialog will be shown before each upload</string>
-    
+
     <!-- Survey Monitor Screen -->
     <string name="survey_statistics_header">Survey Statistics</string>
     <string name="records_captured_label">Records Captured</string>
@@ -762,4 +762,18 @@ but work independently, so you have full control over how you handle your data.<
     <string name="help_dialog_both_counts">• <b>Records Captured:</b> Total number of survey records being saved to files or sent to servers. Includes all data regardless of quality.\n\n• <b>Ready for Upload:</b> Records that meet quality standards for uploading to crowd-sourced databases.\n\nFilters applied:\n  - GPS accuracy must be &lt; 100 meters\n  - Device must move > 35 meters between records\n  - Records must have complete tower/network info\n\nWhy the difference? Upload databases need high-quality data for accurate tower/network mapping.</string>
     <string name="help_dialog_upload_only">This shows records ready for upload to crowd-sourced databases like OpenCellID and BeaconDB.\n\nOnly high-quality records are counted:\n  - GPS accuracy &lt; 100 meters\n  - Device moved > 35 meters from last position\n  - Complete tower/network information\n\nRecords are filtered to ensure database quality.</string>
     <string name="help_dialog_got_it">Got it</string>
+
+    <!-- Battery Optimization -->
+    <string name="battery_optimization_title">Important: Disable Battery Optimization</string>
+    <string name="battery_optimization_message">Android\'s battery optimization can stop Network Survey during data collection, causing you to lose important survey data. This is especially critical when your screen is off.</string>
+    <string name="battery_optimization_recommendation">To prevent data loss and ensure reliable surveys, please disable battery optimization for Network Survey now.</string>
+    <string name="battery_optimization_device_specific">Device-Specific Instructions:</string>
+    <string name="battery_optimization_dont_show_again">Don\'t show this again</string>
+    <string name="battery_optimization_go_to_settings">Go to Settings</string>
+    <string name="battery_optimization_later">Later</string>
+    <string name="battery_optimization_status_enabled">Battery optimization is enabled</string>
+    <string name="battery_optimization_status_disabled">Battery optimization is disabled</string>
+    <string name="battery_optimization_settings_summary_enabled">Tap to disable battery optimization for better survey reliability</string>
+    <string name="battery_optimization_settings_summary_disabled">Battery optimization is disabled - surveys will run reliably</string>
+    <string name="battery_optimization_settings_title">Battery Optimization</string>
 </resources>

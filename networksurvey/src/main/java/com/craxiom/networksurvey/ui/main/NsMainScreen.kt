@@ -9,6 +9,10 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.lifecycle.compose.LocalLifecycleOwner
@@ -23,6 +27,7 @@ import com.craxiom.networksurvey.model.WifiNetwork
 import com.craxiom.networksurvey.ui.main.appdrawer.AppDrawerContent
 import com.craxiom.networksurvey.ui.main.appdrawer.AppDrawerItemInfo
 import com.craxiom.networksurvey.ui.theme.NsTheme
+import com.craxiom.networksurvey.util.BatteryOptimizationHelper
 
 
 @Composable
@@ -35,6 +40,12 @@ fun MainCompose(
     val lifecycleOwner = LocalLifecycleOwner.current
 
     val viewModel = viewModel<SharedViewModel>()
+    // Ensure we use activity context for proper intent launching
+    val activity = context as? android.app.Activity
+    val batteryOptimizationHelper = remember {
+        BatteryOptimizationHelper(activity ?: context)
+    }
+    var showBatteryDialog by remember { mutableStateOf(false) }
     LaunchedEffect(viewModel.navigateToUploadSettings) {
         viewModel.navigateToUploadSettings.observe(lifecycleOwner) { shouldNavigate ->
             if (shouldNavigate) {
@@ -131,7 +142,38 @@ fun MainCompose(
         }
     }
 
+    // Handle battery optimization dialog trigger from SharedViewModel
+    LaunchedEffect(viewModel.showBatteryOptimizationDialog) {
+        viewModel.showBatteryOptimizationDialog.observe(lifecycleOwner) { shouldShow ->
+            if (shouldShow) {
+                if (batteryOptimizationHelper.shouldPromptForBatteryOptimization()) {
+                    showBatteryDialog = true
+                }
+                viewModel.resetBatteryOptimizationDialogFlag()
+            }
+        }
+    }
+
     NsTheme {
+        // Show battery optimization dialog on first launch
+        LaunchedEffect(Unit) {
+            if (batteryOptimizationHelper.shouldShowFirstTimePrompt()) {
+                showBatteryDialog = true
+            }
+        }
+
+        // Show battery dialog when triggered
+        if (showBatteryDialog) {
+            BatteryOptimizationDialog(
+                onDismiss = { showBatteryDialog = false },
+                onGoToSettings = {
+                    showBatteryDialog = false
+                    batteryOptimizationHelper.openBatteryOptimizationSettings()
+                },
+                batteryOptimizationHelper = batteryOptimizationHelper
+            )
+        }
+
         Scaffold { paddingValues ->
             ModalNavigationDrawer(
                 drawerState = drawerState,

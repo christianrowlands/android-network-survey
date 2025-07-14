@@ -31,6 +31,7 @@ import androidx.preference.SwitchPreferenceCompat;
 import com.craxiom.networksurvey.R;
 import com.craxiom.networksurvey.constants.NetworkSurveyConstants;
 import com.craxiom.networksurvey.ui.main.SharedViewModel;
+import com.craxiom.networksurvey.util.BatteryOptimizationHelper;
 import com.craxiom.networksurvey.util.MdmUtils;
 import com.craxiom.networksurvey.util.SettingsUtils;
 
@@ -109,6 +110,19 @@ public class SettingsFragment extends PreferenceFragmentCompat implements Shared
                 Intent browserIntent = new Intent(Intent.ACTION_VIEW, Uri.parse("https://networksurvey.app/privacy-policy"));
                 Context context = getContext();
                 if (context != null) context.startActivity(browserIntent);
+                return true;
+            });
+        }
+
+        // Battery optimization preference
+        final Preference batteryOptimization = findPreference("battery_optimization");
+        if (batteryOptimization != null && getContext() != null)
+        {
+            BatteryOptimizationHelper batteryHelper = new BatteryOptimizationHelper(getContext());
+            updateBatteryOptimizationPreference(batteryOptimization, batteryHelper);
+
+            batteryOptimization.setOnPreferenceClickListener(preference -> {
+                batteryHelper.openBatteryOptimizationSettings();
                 return true;
             });
         }
@@ -193,6 +207,34 @@ public class SettingsFragment extends PreferenceFragmentCompat implements Shared
         getPreferenceManager().getSharedPreferences().unregisterOnSharedPreferenceChangeListener(this);
 
         super.onDestroyView();
+    }
+
+    @Override
+    public void onResume()
+    {
+        super.onResume();
+
+        // Update battery optimization status when returning to settings
+        final Preference batteryOptimization = findPreference("battery_optimization");
+        if (batteryOptimization != null && getContext() != null)
+        {
+            BatteryOptimizationHelper batteryHelper = new BatteryOptimizationHelper(getContext());
+            updateBatteryOptimizationPreference(batteryOptimization, batteryHelper);
+        }
+    }
+
+    /**
+     * Updates the battery optimization preference summary based on current status.
+     */
+    private void updateBatteryOptimizationPreference(Preference preference, BatteryOptimizationHelper batteryHelper)
+    {
+        if (batteryHelper.isBatteryOptimizationDisabled())
+        {
+            preference.setSummary(R.string.battery_optimization_settings_summary_disabled);
+        } else
+        {
+            preference.setSummary(R.string.battery_optimization_settings_summary_enabled);
+        }
     }
 
     /**

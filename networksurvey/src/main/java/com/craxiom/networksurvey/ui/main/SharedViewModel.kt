@@ -58,6 +58,9 @@ class SharedViewModel @Inject constructor(application: Application) :
     private val _navigateToSettings = MutableLiveData(false)
     val navigateToSettings: LiveData<Boolean> = _navigateToSettings
 
+    private val _showBatteryOptimizationDialog = MutableLiveData(false)
+    val showBatteryOptimizationDialog: LiveData<Boolean> = _showBatteryOptimizationDialog
+
     fun triggerNavigationToUploadSettings() {
         _navigateToUploadSettings.value = true
     }
@@ -113,6 +116,14 @@ class SharedViewModel @Inject constructor(application: Application) :
 
     fun triggerNavigationToSettings() {
         _navigateToSettings.value = true
+    }
+
+    fun triggerBatteryOptimizationDialog() {
+        _showBatteryOptimizationDialog.value = true
+    }
+
+    fun resetBatteryOptimizationDialogFlag() {
+        _showBatteryOptimizationDialog.value = false
     }
 
     fun resetNavigationFlag() {

@@ -217,6 +217,17 @@
     </PreferenceCategory>-->
 
     <PreferenceCategory
+        app:icon="@android:drawable/ic_lock_idle_low_battery"
+        app:key="system_settings"
+        app:title="System Settings">
+
+        <Preference
+            app:key="battery_optimization"
+            app:title="@string/battery_optimization_settings_title" />
+
+    </PreferenceCategory>
+
+    <PreferenceCategory
         app:icon="@drawable/ic_info"
         app:key="about"
         app:title="About">

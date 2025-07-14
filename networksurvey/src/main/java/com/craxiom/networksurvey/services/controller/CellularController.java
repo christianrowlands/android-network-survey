@@ -772,7 +772,6 @@ public class CellularController extends AController
                         {
                             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q)
                             {
-                                Timber.d("Requesting cellular info update at %s", System.currentTimeMillis());
                                 for (TelephonyManagerWrapper wrapper : telephonyManagerList)
                                 {
                                     TelephonyManager.CellInfoCallback callback = cellInfoCallbackMap.get(wrapper.getSubscriptionId());
@@ -789,7 +788,6 @@ public class CellularController extends AController
                                 execute(() -> {
                                     try
                                     {
-                                        Timber.d("Getting cellular info (legacy API) at %s", System.currentTimeMillis());
                                         for (TelephonyManagerWrapper wrapper : telephonyManagerList)
                                         {
                                             TelephonyManager subscriptionTelephonyManager = wrapper.getTelephonyManager();
