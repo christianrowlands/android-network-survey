@@ -111,7 +111,7 @@
             app:useSimpleSummaryProvider="true" />
 
         <EditTextPreference
-            app:defaultValue="20"
+            app:defaultValue="30"
             app:dialogMessage="@string/gnss_scan_interval_description"
             app:key="gnss_scan_interval_seconds"
             app:title="@string/gnss_scan_interval_title"
