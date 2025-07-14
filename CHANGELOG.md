@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.39](https://github.com/christianrowlands/android-network-survey/releases/tag/v1.39) - 2025-07-14
+
+* Prompt the user to disable Android's battery optimization for the app. This prevents the Android OS from silently pausing the survey due to battery optimizations.
+* Increase the default scan rate for GNSS to 30 seconds (previously 20 seconds) and 10 seconds (previously 8 seconds) for Wi-Fi.
+* Improve the interval of the bluetooth scanning to prevent multiple back to back scans.
+* Fix a bug where the signal strength bars in the Cellular Details view would not go past a certain value.
+
 ## [1.38](https://github.com/christianrowlands/android-network-survey/releases/tag/v1.38) - 2025-07-02
 
 * Acquire a wake lock when starting a survey to make sure the Android OS does not pause the survey. This prevents gaps in the survey data.
