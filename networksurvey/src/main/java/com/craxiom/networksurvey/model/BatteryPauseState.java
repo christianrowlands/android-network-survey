@@ -12,8 +12,6 @@ import timber.log.Timber;
  * Represents the state of all survey operations before a battery-triggered pause.
  * This class tracks which operations were active so they can be resumed when
  * the battery level rises above the threshold.
- *
- * @since 1.40.0
  */
 public class BatteryPauseState implements Parcelable
 {
@@ -168,7 +166,7 @@ public class BatteryPauseState implements Parcelable
         {
             JSONObject json = new JSONObject(jsonString);
             BatteryPauseState state = new BatteryPauseState();
-            
+
             state.wasCellularScanningActive = json.optBoolean(KEY_CELLULAR_SCANNING, false);
             state.wasWifiScanningActive = json.optBoolean(KEY_WIFI_SCANNING, false);
             state.wasBluetoothScanningActive = json.optBoolean(KEY_BLUETOOTH_SCANNING, false);
@@ -182,7 +180,7 @@ public class BatteryPauseState implements Parcelable
             state.wasMqttConnectionActive = json.optBoolean(KEY_MQTT_CONNECTION, false);
             state.wasGrpcConnectionActive = json.optBoolean(KEY_GRPC_CONNECTION, false);
             state.wasDeviceStatusActive = json.optBoolean(KEY_DEVICE_STATUS, false);
-            
+
             return state;
         } catch (JSONException e)
         {

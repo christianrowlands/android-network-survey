@@ -32,8 +32,6 @@ public class AController
      * Pauses scanning operations without releasing resources or changing configuration.
      * This is used for battery management to temporarily halt operations.
      * Subclasses should override this to pause their specific scanning operations.
-     *
-     * @since 1.40.0
      */
     public void pauseScanning()
     {
@@ -45,8 +43,6 @@ public class AController
      * Resumes scanning operations that were previously paused.
      * This only resumes scanning if it was active before the pause.
      * Subclasses should override this to resume their specific scanning operations.
-     *
-     * @since 1.40.0
      */
     public void resumeScanning()
     {
@@ -57,8 +53,7 @@ public class AController
     /**
      * Checks if scanning is currently paused.
      *
-     * @return true if scanning is paused, false otherwise
-     * @since 1.40.0
+     * @return true if scanning is paused, false otherwise.
      */
     public boolean isPaused()
     {

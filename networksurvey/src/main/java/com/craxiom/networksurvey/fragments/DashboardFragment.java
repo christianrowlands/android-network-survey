@@ -234,8 +234,7 @@ public class DashboardFragment extends AServiceDataFragment implements LocationL
         // Manually call the updateScanningIndicators method to ensure that the UI is updated
         updateScanningIndicators();
         viewModel.setUploadScanningActive(uploadScanningActive);
-        
-        // Update battery management status
+
         updateBatteryManagementStatus(service);
     }
 
@@ -1094,37 +1093,34 @@ public class DashboardFragment extends AServiceDataFragment implements LocationL
 
         binding.cdrIcon.setImageTintList(colorStateList);
     }
-    
+
     /**
      * Updates the battery management status UI based on the service state.
-     *
-     * @param service The network survey service
-     * @since 1.40.0
      */
     private void updateBatteryManagementStatus(NetworkSurveyService service)
     {
         if (service == null || binding == null) return;
-        
+
         final Context context = getContext();
         if (context == null) return;
-        
+
         boolean batteryManagementEnabled = PreferenceUtils.isBatteryManagementEnabled(context);
-        
+
         if (!batteryManagementEnabled)
         {
             // Hide battery status if feature is disabled
             binding.batteryStatusGroup.setVisibility(View.GONE);
             return;
         }
-        
+
         // Show battery status group
         binding.batteryStatusGroup.setVisibility(View.VISIBLE);
-        
+
         // Get current battery level and threshold
         int batteryLevel = service.getCurrentBatteryLevel();
         int batteryThreshold = PreferenceUtils.getBatteryThresholdPercent(context);
         boolean isPaused = service.isPausedForBattery();
-        
+
         if (isPaused)
         {
             // Show paused status with battery levels
@@ -1137,7 +1133,7 @@ public class DashboardFragment extends AServiceDataFragment implements LocationL
             // Show normal battery status
             String normalText = getString(R.string.battery_status_normal, batteryLevel);
             binding.batteryStatusText.setText(normalText);
-            
+
             // Color based on battery level
             int color;
             if (batteryLevel <= batteryThreshold + 5)
@@ -1149,7 +1145,7 @@ public class DashboardFragment extends AServiceDataFragment implements LocationL
                 // Normal
                 color = getResources().getColor(R.color.normalText, null);
             }
-            
+
             binding.batteryStatusText.setTextColor(color);
             binding.batteryStatusIcon.setImageTintList(ColorStateList.valueOf(color));
         }

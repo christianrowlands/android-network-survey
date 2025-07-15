@@ -999,7 +999,6 @@ public class PreferenceUtils
      *
      * @param context The context to use when getting the Shared Preferences and Restriction Manager.
      * @return True if battery management should be enabled, false otherwise.
-     * @since 1.40.0
      */
     public static boolean isBatteryManagementEnabled(Context context)
     {
@@ -1037,7 +1036,6 @@ public class PreferenceUtils
      *
      * @param context The context to use when getting the Shared Preferences and Restriction Manager.
      * @return The battery threshold percentage (0-95) below which operations should be paused.
-     * @since 1.40.0
      */
     public static int getBatteryThresholdPercent(Context context)
     {

@@ -3,8 +3,6 @@ package com.craxiom.networksurvey.listeners;
 /**
  * Interface for components that need to be notified when operations are paused or resumed
  * for battery management.
- *
- * @since 1.40.0
  */
 public interface IPauseAware
 {
@@ -14,7 +12,7 @@ public interface IPauseAware
      * connection state.
      */
     void onPause();
-    
+
     /**
      * Called when operations should resume after being paused.
      * Implementations should restore normal processing.
