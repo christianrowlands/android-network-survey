@@ -63,7 +63,9 @@ public class SettingsFragment extends PreferenceFragmentCompat implements Shared
             NetworkSurveyConstants.PROPERTY_DEVICE_STATUS_SCAN_INTERVAL_SECONDS,
             NetworkSurveyConstants.PROPERTY_MQTT_START_ON_BOOT,
             NetworkSurveyConstants.PROPERTY_LOCATION_PROVIDER,
-            NetworkSurveyConstants.PROPERTY_ALLOW_INTENT_CONTROL};
+            NetworkSurveyConstants.PROPERTY_ALLOW_INTENT_CONTROL,
+            NetworkSurveyConstants.PROPERTY_BATTERY_MANAGEMENT_ENABLED,
+            NetworkSurveyConstants.PROPERTY_BATTERY_THRESHOLD_PERCENT};
 
     @Override
     public void onCreatePreferences(Bundle savedInstanceState, String rootKey)
@@ -77,6 +79,7 @@ public class SettingsFragment extends PreferenceFragmentCompat implements Shared
         setPreferenceAsIntegerOnly(findPreference(NetworkSurveyConstants.PROPERTY_BLUETOOTH_SCAN_INTERVAL_SECONDS));
         setPreferenceAsIntegerOnly(findPreference(NetworkSurveyConstants.PROPERTY_GNSS_SCAN_INTERVAL_SECONDS));
         setPreferenceAsIntegerOnly(findPreference(NetworkSurveyConstants.PROPERTY_DEVICE_STATUS_SCAN_INTERVAL_SECONDS));
+        setPreferenceAsIntegerOnly(findPreference(NetworkSurveyConstants.PROPERTY_BATTERY_THRESHOLD_PERCENT));
 
         setAppVersion();
         setAppInstanceId();
@@ -181,6 +184,27 @@ public class SettingsFragment extends PreferenceFragmentCompat implements Shared
                 {
                     // Verify the app has the necessary permissions to start CDR logging
                     showCdrPermissionRationaleAndRequestPermissions();
+                }
+                break;
+                
+            case NetworkSurveyConstants.PROPERTY_BATTERY_THRESHOLD_PERCENT:
+                // Validate battery threshold is between 5 and 95
+                try
+                {
+                    int threshold = Integer.parseInt(sharedPreferences.getString(key, "20"));
+                    if (threshold < 5 || threshold > 95)
+                    {
+                        Timber.w("Battery threshold %d is out of range (5-95). Reverting to 20%%", threshold);
+                        final SharedPreferences.Editor edit = sharedPreferences.edit();
+                        edit.putString(key, "20");
+                        edit.apply();
+                    }
+                } catch (Exception e)
+                {
+                    Timber.e(e, "Invalid battery threshold value. Reverting to 20%%");
+                    final SharedPreferences.Editor edit = sharedPreferences.edit();
+                    edit.putString(key, "20");
+                    edit.apply();
                 }
                 break;
         }
@@ -333,6 +357,8 @@ public class SettingsFragment extends PreferenceFragmentCompat implements Shared
         updateBooleanPreferenceForMdm(preferenceScreen, mdmProperties, NetworkSurveyConstants.PROPERTY_MQTT_START_ON_BOOT);
         updateListProviderPreferenceForMdm(preferenceScreen, mdmProperties, NetworkSurveyConstants.PROPERTY_LOCATION_PROVIDER);
         updateBooleanPreferenceForMdm(preferenceScreen, mdmProperties, NetworkSurveyConstants.PROPERTY_ALLOW_INTENT_CONTROL);
+        updateBooleanPreferenceForMdm(preferenceScreen, mdmProperties, NetworkSurveyConstants.PROPERTY_BATTERY_MANAGEMENT_ENABLED);
+        updateIntPreferenceForMdm(preferenceScreen, mdmProperties, NetworkSurveyConstants.PROPERTY_BATTERY_THRESHOLD_PERCENT);
     }
 
     /**

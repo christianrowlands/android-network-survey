@@ -415,6 +415,11 @@ public class CellularController extends AController
                             @Override
                             public void onServiceStateChanged(ServiceState serviceState)
                             {
+                                if (isPaused())
+                                {
+                                    Timber.v("Service state changed but scanning is paused, ignoring");
+                                    return;
+                                }
                                 execute(() -> surveyRecordProcessor.onServiceStateChanged(serviceState, wrapper.getTelephonyManager(), subscriptionId));
                             }
 
@@ -560,6 +565,13 @@ public class CellularController extends AController
                         @Override
                         public void onCellInfo(@NonNull List<CellInfo> cellInfo)
                         {
+                            // Skip processing if paused for battery management
+                            if (isPaused())
+                            {
+                                Timber.v("Cell info received but scanning is paused, ignoring");
+                                return;
+                            }
+                            
                             String dataNetworkType = "Unknown";
                             String voiceNetworkType = "Unknown";
                             TelephonyManager telephonyManager = wrapper.getTelephonyManager();
@@ -763,6 +775,14 @@ public class CellularController extends AController
                         if (!cellularScanningActive.get() || cellularScanningTaskId.get() != handlerTaskId)
                         {
                             Timber.i("Stopping the handler that pulls the latest cellular information; taskId=%d", handlerTaskId);
+                            return;
+                        }
+
+                        // Check if scanning is paused for battery management
+                        if (isPaused())
+                        {
+                            // Keep the handler alive but skip actual scanning
+                            serviceHandler.postDelayed(this, cellularScanRateMs);
                             return;
                         }
 
@@ -973,6 +993,11 @@ public class CellularController extends AController
                                 @Override
                                 public void onCallStateChanged(int state, String otherPhoneNumber)
                                 {
+                                    if (isPaused())
+                                    {
+                                        Timber.v("Call state changed but scanning is paused, ignoring");
+                                        return;
+                                    }
                                     execute(() -> surveyRecordProcessor.onCallStateChanged(state, otherPhoneNumber,
                                             wrapper.getTelephonyManager(), wrapper.getPhoneNumber(), wrapper.getSubscriptionId()));
                                 }
@@ -980,6 +1005,11 @@ public class CellularController extends AController
                                 @Override
                                 public void onServiceStateChanged(ServiceState serviceState)
                                 {
+                                    if (isPaused())
+                                    {
+                                        Timber.v("CDR service state changed but scanning is paused, ignoring");
+                                        return;
+                                    }
                                     execute(() -> surveyRecordProcessor.onCdrServiceStateChanged(serviceState,
                                             wrapper.getTelephonyManager(), wrapper.getSubscriptionId()));
                                 }

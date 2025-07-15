@@ -51,6 +51,13 @@ public class CdrSmsObserver extends ContentObserver
     @Override
     public void onChange(boolean selfChange)
     {
+        // Skip processing if paused for battery management
+        if (cellularController.isPaused())
+        {
+            Timber.v("SMS event received but scanning is paused, ignoring");
+            return;
+        }
+        
         // Do I need "date DESC" in the query?
         try (Cursor cursor = contentResolver.query(SMS_URI, null, null, null, null))
         {

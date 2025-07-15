@@ -308,6 +308,12 @@ public class BluetoothController extends AController
                 {
                     if (BluetoothDevice.ACTION_FOUND.equals(intent.getAction()))
                     {
+                        if (isPaused())
+                        {
+                            Timber.v("Bluetooth classic device found but scanning is paused, ignoring");
+                            return;
+                        }
+                        
                         final BluetoothDevice device = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
                         if (device == null)
                         {
@@ -336,6 +342,12 @@ public class BluetoothController extends AController
                 @Override
                 public void onScanResult(int callbackType, android.bluetooth.le.ScanResult result)
                 {
+                    if (isPaused())
+                    {
+                        Timber.v("Bluetooth scan result received but scanning is paused, ignoring");
+                        return;
+                    }
+                    
                     if (shouldLogDevice(result.getDevice(), result.getRssi()))
                     {
                         surveyRecordProcessor.onBluetoothScanUpdate(result);
@@ -345,6 +357,12 @@ public class BluetoothController extends AController
                 @Override
                 public void onBatchScanResults(List<ScanResult> results)
                 {
+                    if (isPaused())
+                    {
+                        Timber.v("Bluetooth batch scan results received but scanning is paused, ignoring");
+                        return;
+                    }
+                    
                     List<ScanResult> filteredResults = new ArrayList<>();
                     for (ScanResult result : results)
                     {
@@ -687,6 +705,16 @@ public class BluetoothController extends AController
         if (!bluetoothScanningActive.get())
         {
             Timber.d("Bluetooth scanning is inactive, stopping scan cycle");
+            return;
+        }
+        
+        // Check if scanning is paused for battery management
+        if (isPaused())
+        {
+            Timber.d("Bluetooth scanning is paused for battery management");
+            // Schedule next check after a delay
+            bluetoothScanFuture = bluetoothScanExecutor.schedule(this::startNextScanCycle,
+                bluetoothScanRateMs, TimeUnit.MILLISECONDS);
             return;
         }
         

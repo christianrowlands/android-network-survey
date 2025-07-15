@@ -224,6 +224,22 @@
         <Preference
             app:key="battery_optimization"
             app:title="@string/battery_optimization_settings_title" />
+        
+        <SwitchPreferenceCompat
+            app:defaultValue="false"
+            app:icon="@android:drawable/ic_lock_idle_low_battery"
+            app:key="battery_management_enabled"
+            app:summaryOff="@string/battery_management_enabled_summary_off"
+            app:summaryOn="@string/battery_management_enabled_summary_on"
+            app:title="@string/battery_management_enabled_title" />
+        
+        <EditTextPreference
+            app:defaultValue="20"
+            app:dependency="battery_management_enabled"
+            app:dialogMessage="@string/battery_threshold_description"
+            app:key="battery_threshold_percent"
+            app:title="@string/battery_threshold_title"
+            app:useSimpleSummaryProvider="true" />
 
     </PreferenceCategory>
 

@@ -234,6 +234,9 @@ public class DashboardFragment extends AServiceDataFragment implements LocationL
         // Manually call the updateScanningIndicators method to ensure that the UI is updated
         updateScanningIndicators();
         viewModel.setUploadScanningActive(uploadScanningActive);
+        
+        // Update battery management status
+        updateBatteryManagementStatus(service);
     }
 
     @Override
@@ -285,7 +288,12 @@ public class DashboardFragment extends AServiceDataFragment implements LocationL
     @Override
     public void onLoggingChanged()
     {
-        if (service != null) updateLoggingState(service);
+        if (service != null)
+        {
+            updateLoggingState(service);
+            // Also update battery status as operations may have been paused/resumed
+            updateBatteryManagementStatus(service);
+        }
     }
 
     @Override
@@ -305,6 +313,14 @@ public class DashboardFragment extends AServiceDataFragment implements LocationL
             case NetworkSurveyConstants.PROPERTY_UPLOAD_TO_BEACONDB:
                 // Update upload counts when upload targets change
                 queryUploadQueueCount();
+                break;
+            case NetworkSurveyConstants.PROPERTY_BATTERY_MANAGEMENT_ENABLED:
+            case NetworkSurveyConstants.PROPERTY_BATTERY_THRESHOLD_PERCENT:
+                // Update battery management status when settings change
+                if (service != null)
+                {
+                    updateBatteryManagementStatus(service);
+                }
                 break;
             default:
         }
@@ -1077,6 +1093,66 @@ public class DashboardFragment extends AServiceDataFragment implements LocationL
         if (enabled) colorStateList = ColorStateList.valueOf(Color.GREEN);
 
         binding.cdrIcon.setImageTintList(colorStateList);
+    }
+    
+    /**
+     * Updates the battery management status UI based on the service state.
+     *
+     * @param service The network survey service
+     * @since 1.40.0
+     */
+    private void updateBatteryManagementStatus(NetworkSurveyService service)
+    {
+        if (service == null || binding == null) return;
+        
+        final Context context = getContext();
+        if (context == null) return;
+        
+        boolean batteryManagementEnabled = PreferenceUtils.isBatteryManagementEnabled(context);
+        
+        if (!batteryManagementEnabled)
+        {
+            // Hide battery status if feature is disabled
+            binding.batteryStatusGroup.setVisibility(View.GONE);
+            return;
+        }
+        
+        // Show battery status group
+        binding.batteryStatusGroup.setVisibility(View.VISIBLE);
+        
+        // Get current battery level and threshold
+        int batteryLevel = service.getCurrentBatteryLevel();
+        int batteryThreshold = PreferenceUtils.getBatteryThresholdPercent(context);
+        boolean isPaused = service.isPausedForBattery();
+        
+        if (isPaused)
+        {
+            // Show paused status with battery levels
+            String pausedText = getString(R.string.battery_status_paused_with_level, batteryLevel, batteryThreshold);
+            binding.batteryStatusText.setText(pausedText);
+            binding.batteryStatusText.setTextColor(getResources().getColor(R.color.connectionStatusDisconnected, null));
+            binding.batteryStatusIcon.setImageTintList(ColorStateList.valueOf(getResources().getColor(R.color.connectionStatusDisconnected, null)));
+        } else
+        {
+            // Show normal battery status
+            String normalText = getString(R.string.battery_status_normal, batteryLevel);
+            binding.batteryStatusText.setText(normalText);
+            
+            // Color based on battery level
+            int color;
+            if (batteryLevel <= batteryThreshold + 5)
+            {
+                // Warning - close to threshold
+                color = getResources().getColor(R.color.connectionStatusConnecting, null);
+            } else
+            {
+                // Normal
+                color = getResources().getColor(R.color.normalText, null);
+            }
+            
+            binding.batteryStatusText.setTextColor(color);
+            binding.batteryStatusIcon.setImageTintList(ColorStateList.valueOf(color));
+        }
     }
 
     /**

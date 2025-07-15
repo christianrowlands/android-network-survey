@@ -71,6 +71,9 @@ public class GnssController extends AController
     private long firstGpsAcqTime = Long.MIN_VALUE;
     private boolean gnssRawSupportKnown = false;
     private boolean hasGnssRawFailureNagLaunched = false;
+    
+    // Track state for pause/resume
+    private final AtomicBoolean wasActiveBeforePause = new AtomicBoolean(false);
 
     public GnssController(NetworkSurveyService surveyService, ExecutorService executorService,
                           Looper serviceLooper, Handler serviceHandler,
@@ -141,6 +144,65 @@ public class GnssController extends AController
                 if (originalLoggingState != newLoggingState)
                 {
                     Timber.i("Logging state changed from %s to %s", originalLoggingState, newLoggingState);
+                }
+            }
+        }
+    }
+
+    @Override
+    public void pauseScanning()
+    {
+        synchronized (gnssLoggingEnabled)
+        {
+            if (surveyService == null) return;
+            
+            // Remember if scanning was active before pause
+            wasActiveBeforePause.set(gnssStarted.get());
+            
+            // Call parent to set isPaused flag
+            super.pauseScanning();
+            
+            // Unregister GNSS measurements callback to save battery
+            if (gnssStarted.get() && locationManager != null)
+            {
+                try
+                {
+                    locationManager.unregisterGnssMeasurementsCallback(measurementListener);
+                    Timber.d("Unregistered GNSS measurements callback for battery pause");
+                } catch (Exception e)
+                {
+                    Timber.v(e, "Could not unregister GNSS measurements callback during pause");
+                }
+            }
+        }
+    }
+
+    @Override
+    public void resumeScanning()
+    {
+        synchronized (gnssLoggingEnabled)
+        {
+            if (surveyService == null) return;
+            
+            // Call parent to clear isPaused flag
+            super.resumeScanning();
+            
+            // Re-register GNSS measurements callback if it was active before pause
+            if (wasActiveBeforePause.get() && gnssStarted.get() && locationManager != null)
+            {
+                try
+                {
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R)
+                    {
+                        locationManager.registerGnssMeasurementsCallback(executorService, measurementListener);
+                    } else
+                    {
+                        locationManager.registerGnssMeasurementsCallback(measurementListener);
+                    }
+                    Timber.d("Re-registered GNSS measurements callback after battery resume");
+                } catch (Exception e)
+                {
+                    Timber.e(e, "Could not re-register GNSS measurements callback after resume");
                 }
             }
         }
@@ -234,6 +296,14 @@ public class GnssController extends AController
             public void onGnssMeasurementsReceived(GnssMeasurementsEvent event)
             {
                 gnssRawSupportKnown = true;
+                
+                // Skip processing if paused for battery management
+                if (isPaused())
+                {
+                    Timber.d("GNSS measurement processing skipped - paused for battery management");
+                    return;
+                }
+                
                 if (handleBatteryOptimization() && surveyRecordProcessor != null)
                 {
                     Timber.d("GNSS measurement received at %s", System.currentTimeMillis());
@@ -474,6 +544,13 @@ public class GnssController extends AController
         synchronized (gnssLoggingEnabled)
         {
             if (surveyService == null) return;
+            
+            // Skip measurement if paused for battery management
+            if (isPaused())
+            {
+                Timber.d("GNSS scanning is paused for battery management");
+                return;
+            }
 
             boolean hasPermissions = ContextCompat.checkSelfPermission(surveyService,
                     Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED;

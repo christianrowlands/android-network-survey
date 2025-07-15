@@ -57,6 +57,7 @@ public class WifiController extends AController
     private final WifiSurveyRecordLogger wifiSurveyRecordLogger;
     private final WifiCsvLogger wifiCsvLogger;
     private BroadcastReceiver wifiScanReceiver;
+    private final AtomicBoolean wasActiveBeforePause = new AtomicBoolean(false);
 
     public WifiController(NetworkSurveyService surveyService, ExecutorService executorService,
                           Looper serviceLooper, Handler serviceHandler,
@@ -145,6 +146,56 @@ public class WifiController extends AController
 
         wifiScanRateMs = PreferenceUtils.getScanRatePreferenceMs(NetworkSurveyConstants.PROPERTY_WIFI_SCAN_INTERVAL_SECONDS,
                 NetworkSurveyConstants.DEFAULT_WIFI_SCAN_INTERVAL_SECONDS, surveyService.getApplicationContext());
+    }
+
+    @Override
+    public void pauseScanning()
+    {
+        synchronized (wifiLoggingEnabled)
+        {
+            if (surveyService == null) return;
+
+            // Remember if scanning was active before pause
+            wasActiveBeforePause.set(wifiScanningActive.get());
+
+            // Call parent to set isPaused flag
+            super.pauseScanning();
+
+            // If scanning is active, unregister the broadcast receiver to stop receiving scan results
+            if (wifiScanningActive.get())
+            {
+                try
+                {
+                    surveyService.unregisterReceiver(wifiScanReceiver);
+                    Timber.d("Unregistered Wi-Fi scan receiver for battery pause");
+                } catch (Exception e)
+                {
+                    // Receiver might not be registered
+                    Timber.v(e, "Could not unregister the Wi-Fi scan receiver during pause");
+                }
+            }
+        }
+    }
+
+    @Override
+    public void resumeScanning()
+    {
+        synchronized (wifiLoggingEnabled)
+        {
+            if (surveyService == null) return;
+
+            // Call parent to clear isPaused flag
+            super.resumeScanning();
+
+            // If scanning was active before pause, re-register the broadcast receiver
+            if (wasActiveBeforePause.get() && wifiScanningActive.get())
+            {
+                final IntentFilter scanResultsIntentFilter = new IntentFilter();
+                scanResultsIntentFilter.addAction(WifiManager.SCAN_RESULTS_AVAILABLE_ACTION);
+                surveyService.registerReceiver(wifiScanReceiver, scanResultsIntentFilter);
+                Timber.d("Re-registered Wi-Fi scan receiver after battery resume");
+            }
+        }
     }
 
     /**
@@ -311,6 +362,13 @@ public class WifiController extends AController
                     if (!wifiScanningActive.get())
                     {
                         Timber.i("Wi-Fi scanning is no longer active, skipping scan");
+                        return;
+                    }
+
+                    // Skip scan if paused for battery management
+                    if (isPaused())
+                    {
+                        Timber.d("Wi-Fi scanning is paused for battery management");
                         return;
                     }
 

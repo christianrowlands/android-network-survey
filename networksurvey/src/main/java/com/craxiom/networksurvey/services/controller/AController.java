@@ -14,6 +14,7 @@ public class AController
 {
     protected NetworkSurveyService surveyService;
     protected ExecutorService executorService;
+    protected volatile boolean isPaused = false;
 
     public AController(NetworkSurveyService surveyService, ExecutorService executorService)
     {
@@ -25,6 +26,43 @@ public class AController
     {
         surveyService = null;
         executorService = null;
+    }
+
+    /**
+     * Pauses scanning operations without releasing resources or changing configuration.
+     * This is used for battery management to temporarily halt operations.
+     * Subclasses should override this to pause their specific scanning operations.
+     *
+     * @since 1.40.0
+     */
+    public void pauseScanning()
+    {
+        isPaused = true;
+        Timber.i("%s scanning paused", getClass().getSimpleName());
+    }
+
+    /**
+     * Resumes scanning operations that were previously paused.
+     * This only resumes scanning if it was active before the pause.
+     * Subclasses should override this to resume their specific scanning operations.
+     *
+     * @since 1.40.0
+     */
+    public void resumeScanning()
+    {
+        isPaused = false;
+        Timber.i("%s scanning resumed", getClass().getSimpleName());
+    }
+
+    /**
+     * Checks if scanning is currently paused.
+     *
+     * @return true if scanning is paused, false otherwise
+     * @since 1.40.0
+     */
+    public boolean isPaused()
+    {
+        return isPaused;
     }
 
     /**
