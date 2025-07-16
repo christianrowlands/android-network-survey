@@ -475,7 +475,6 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
                 updateLocationListener();
                 break;
                 
-            case NetworkSurveyConstants.PROPERTY_BATTERY_MANAGEMENT_ENABLED:
             case NetworkSurveyConstants.PROPERTY_BATTERY_THRESHOLD_PERCENT:
                 handleBatteryPreferenceChange();
                 break;

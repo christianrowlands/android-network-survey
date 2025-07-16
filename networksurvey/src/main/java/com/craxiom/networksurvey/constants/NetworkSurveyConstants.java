@@ -197,7 +197,6 @@ public class NetworkSurveyConstants
     public static final String PROPERTY_LAST_TOWER_MAP_VIEW_LOCATION = "last_tower_map_view_location";
 
     // Battery Management preferences
-    public static final String PROPERTY_BATTERY_MANAGEMENT_ENABLED = "battery_management_enabled";
     public static final String PROPERTY_BATTERY_THRESHOLD_PERCENT = "battery_threshold_percent";
     public static final int DEFAULT_BATTERY_THRESHOLD_PERCENT = 0;
 }

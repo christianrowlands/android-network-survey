@@ -1002,25 +1002,7 @@ public class PreferenceUtils
      */
     public static boolean isBatteryManagementEnabled(Context context)
     {
-        final RestrictionsManager restrictionsManager = (RestrictionsManager) context.getSystemService(Context.RESTRICTIONS_SERVICE);
-
-        final boolean mdmOverride = PreferenceManager.getDefaultSharedPreferences(context).getBoolean(NetworkSurveyConstants.PROPERTY_MDM_OVERRIDE_KEY, false);
-
-        // First try to use the MDM provided value.
-        if (restrictionsManager != null && !mdmOverride)
-        {
-            final Bundle mdmProperties = restrictionsManager.getApplicationRestrictions();
-
-            if (mdmProperties.containsKey(NetworkSurveyConstants.PROPERTY_BATTERY_MANAGEMENT_ENABLED))
-            {
-                return mdmProperties.getBoolean(NetworkSurveyConstants.PROPERTY_BATTERY_MANAGEMENT_ENABLED);
-            }
-        }
-
-        final SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(context);
-
-        // Next, try to use the value from user preferences, with a default fallback of false (disabled)
-        return preferences.getBoolean(NetworkSurveyConstants.PROPERTY_BATTERY_MANAGEMENT_ENABLED, false);
+        return getBatteryThresholdPercent(context) > 0;
     }
 
     /**
@@ -1029,13 +1011,13 @@ public class PreferenceUtils
      * First, this method tries to pull the MDM provided battery threshold value. If it is not set (either because the device
      * is not under MDM control, or if that specific value is not set by the MDM administrator) then the value is pulled
      * from the Android Shared Preferences (aka from the user settings). If it is not set there then the default value
-     * of 0 is returned (which effectively disables the feature).
+     * of 0 is returned (which disables battery management).
      * <p>
      * The only exception to this sequence is that if the user has toggled the MDM override switch in user settings,
      * then the user preference value will be used instead of the MDM value.
      *
      * @param context The context to use when getting the Shared Preferences and Restriction Manager.
-     * @return The battery threshold percentage (0-95) below which operations should be paused.
+     * @return The battery threshold percentage (0-95). Operations pause when battery drops to or below this value. 0 disables battery management.
      */
     public static int getBatteryThresholdPercent(Context context)
     {
@@ -1062,17 +1044,33 @@ public class PreferenceUtils
         final SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(context);
 
         // Next, try to use the value from user preferences.
-        final String thresholdString = preferences.getString(NetworkSurveyConstants.PROPERTY_BATTERY_THRESHOLD_PERCENT,
-                String.valueOf(NetworkSurveyConstants.DEFAULT_BATTERY_THRESHOLD_PERCENT));
         try
         {
-            final int threshold = Integer.parseInt(thresholdString);
+            // Try to get as int first (new format)
+            final int threshold = preferences.getInt(NetworkSurveyConstants.PROPERTY_BATTERY_THRESHOLD_PERCENT,
+                    NetworkSurveyConstants.DEFAULT_BATTERY_THRESHOLD_PERCENT);
             // Validate the threshold is in valid range
             return (threshold >= 0 && threshold <= 95) ? threshold : NetworkSurveyConstants.DEFAULT_BATTERY_THRESHOLD_PERCENT;
-        } catch (Exception e)
+        } catch (ClassCastException e)
         {
-            Timber.e(e, "Could not convert the battery threshold preference (%s) to an int", thresholdString);
-            return NetworkSurveyConstants.DEFAULT_BATTERY_THRESHOLD_PERCENT;
+            // Fall back to string format (old format) for migration
+            try
+            {
+                final String thresholdString = preferences.getString(NetworkSurveyConstants.PROPERTY_BATTERY_THRESHOLD_PERCENT,
+                        String.valueOf(NetworkSurveyConstants.DEFAULT_BATTERY_THRESHOLD_PERCENT));
+                final int threshold = Integer.parseInt(thresholdString);
+                
+                // Migrate to int for future use
+                preferences.edit().remove(NetworkSurveyConstants.PROPERTY_BATTERY_THRESHOLD_PERCENT)
+                        .putInt(NetworkSurveyConstants.PROPERTY_BATTERY_THRESHOLD_PERCENT, threshold).apply();
+                
+                // Validate the threshold is in valid range
+                return (threshold >= 0 && threshold <= 95) ? threshold : NetworkSurveyConstants.DEFAULT_BATTERY_THRESHOLD_PERCENT;
+            } catch (Exception ex)
+            {
+                Timber.e(ex, "Could not convert the battery threshold preference to an int");
+                return NetworkSurveyConstants.DEFAULT_BATTERY_THRESHOLD_PERCENT;
+            }
         }
     }
 }

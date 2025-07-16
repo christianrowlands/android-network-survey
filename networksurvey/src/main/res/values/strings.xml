@@ -779,12 +779,12 @@ but work independently, so you have full control over how you handle your data.<
     
     <!-- Battery Management -->
     <string name="battery_management_title">Battery Management</string>
-    <string name="battery_management_enabled_title">Enable Battery Management</string>
-    <string name="battery_management_enabled_summary_on">Surveys will pause when battery is low</string>
-    <string name="battery_management_enabled_summary_off">Surveys will continue until battery is depleted</string>
-    <string name="battery_threshold_title">Battery Threshold</string>
-    <string name="battery_threshold_summary">Pause surveys when battery drops below %1$s%%</string>
-    <string name="battery_threshold_description">Set the battery percentage threshold (5-95%). When the battery level drops to or below this value, all survey operations will pause to conserve battery. Operations will automatically resume when the battery level rises above this threshold after charging.</string>
+    <string name="battery_pause_title">Pause scanning on low battery</string>
+    <string name="battery_pause_description">Slide to set the battery level at which all survey operations will pause. Set to 0 to disable battery management. Operations will automatically resume when the battery level rises above this threshold after charging.</string>
+    <string name="battery_management_disabled">Disabled</string>
+    <string name="battery_management_disabled_description">Surveys will continue until battery is depleted</string>
+    <string name="battery_pause_active_description">Surveys will pause when battery drops to %1$d%% or below</string>
+    <string name="battery_threshold_summary">Pause when battery ≤ %1$d%%</string>
     <string name="battery_status_paused">Paused for Battery Management</string>
     <string name="battery_status_normal">Battery: %1$d%%</string>
     <string name="battery_status_paused_with_level">Paused (Battery: %1$d%% &lt; %2$d%%)</string>

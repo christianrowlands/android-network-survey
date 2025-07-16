@@ -64,7 +64,6 @@ public class SettingsFragment extends PreferenceFragmentCompat implements Shared
             NetworkSurveyConstants.PROPERTY_MQTT_START_ON_BOOT,
             NetworkSurveyConstants.PROPERTY_LOCATION_PROVIDER,
             NetworkSurveyConstants.PROPERTY_ALLOW_INTENT_CONTROL,
-            NetworkSurveyConstants.PROPERTY_BATTERY_MANAGEMENT_ENABLED,
             NetworkSurveyConstants.PROPERTY_BATTERY_THRESHOLD_PERCENT};
 
     @Override
@@ -79,7 +78,6 @@ public class SettingsFragment extends PreferenceFragmentCompat implements Shared
         setPreferenceAsIntegerOnly(findPreference(NetworkSurveyConstants.PROPERTY_BLUETOOTH_SCAN_INTERVAL_SECONDS));
         setPreferenceAsIntegerOnly(findPreference(NetworkSurveyConstants.PROPERTY_GNSS_SCAN_INTERVAL_SECONDS));
         setPreferenceAsIntegerOnly(findPreference(NetworkSurveyConstants.PROPERTY_DEVICE_STATUS_SCAN_INTERVAL_SECONDS));
-        setPreferenceAsIntegerOnly(findPreference(NetworkSurveyConstants.PROPERTY_BATTERY_THRESHOLD_PERCENT));
 
         setAppVersion();
         setAppInstanceId();
@@ -188,23 +186,36 @@ public class SettingsFragment extends PreferenceFragmentCompat implements Shared
                 break;
                 
             case NetworkSurveyConstants.PROPERTY_BATTERY_THRESHOLD_PERCENT:
-                // Validate battery threshold is between 5 and 95
+                // Validate battery threshold is between 0 and 95
                 try
                 {
-                    int threshold = Integer.parseInt(sharedPreferences.getString(key, "20"));
-                    if (threshold < 5 || threshold > 95)
+                    int threshold = sharedPreferences.getInt(key, 0);
+                    if (threshold < 0 || threshold > 95)
                     {
-                        Timber.w("Battery threshold %d is out of range (5-95). Reverting to 20%%", threshold);
+                        Timber.w("Battery threshold %d is out of range (0-95). Reverting to 0 (disabled)", threshold);
                         final SharedPreferences.Editor edit = sharedPreferences.edit();
-                        edit.putString(key, "20");
+                        edit.putInt(key, 0);
                         edit.apply();
                     }
                 } catch (Exception e)
                 {
-                    Timber.e(e, "Invalid battery threshold value. Reverting to 20%%");
-                    final SharedPreferences.Editor edit = sharedPreferences.edit();
-                    edit.putString(key, "20");
-                    edit.apply();
+                    // Handle migration from string to int
+                    try
+                    {
+                        String strValue = sharedPreferences.getString(key, "0");
+                        int threshold = Integer.parseInt(strValue);
+                        if (threshold < 0 || threshold > 95) threshold = 0;
+                        
+                        // Migrate to int
+                        final SharedPreferences.Editor edit = sharedPreferences.edit();
+                        edit.remove(key).putInt(key, threshold).apply();
+                    } catch (Exception ex)
+                    {
+                        Timber.e(ex, "Invalid battery threshold value. Reverting to 0 (disabled)");
+                        final SharedPreferences.Editor edit = sharedPreferences.edit();
+                        edit.putInt(key, 0);
+                        edit.apply();
+                    }
                 }
                 break;
         }
@@ -357,7 +368,6 @@ public class SettingsFragment extends PreferenceFragmentCompat implements Shared
         updateBooleanPreferenceForMdm(preferenceScreen, mdmProperties, NetworkSurveyConstants.PROPERTY_MQTT_START_ON_BOOT);
         updateListProviderPreferenceForMdm(preferenceScreen, mdmProperties, NetworkSurveyConstants.PROPERTY_LOCATION_PROVIDER);
         updateBooleanPreferenceForMdm(preferenceScreen, mdmProperties, NetworkSurveyConstants.PROPERTY_ALLOW_INTENT_CONTROL);
-        updateBooleanPreferenceForMdm(preferenceScreen, mdmProperties, NetworkSurveyConstants.PROPERTY_BATTERY_MANAGEMENT_ENABLED);
         updateIntPreferenceForMdm(preferenceScreen, mdmProperties, NetworkSurveyConstants.PROPERTY_BATTERY_THRESHOLD_PERCENT);
     }
 

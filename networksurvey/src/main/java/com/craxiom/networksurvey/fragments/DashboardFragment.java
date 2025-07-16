@@ -313,7 +313,6 @@ public class DashboardFragment extends AServiceDataFragment implements LocationL
                 // Update upload counts when upload targets change
                 queryUploadQueueCount();
                 break;
-            case NetworkSurveyConstants.PROPERTY_BATTERY_MANAGEMENT_ENABLED:
             case NetworkSurveyConstants.PROPERTY_BATTERY_THRESHOLD_PERCENT:
                 // Update battery management status when settings change
                 if (service != null)
