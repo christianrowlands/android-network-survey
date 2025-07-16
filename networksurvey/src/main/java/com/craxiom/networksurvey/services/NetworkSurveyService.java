@@ -1536,6 +1536,13 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
     {
         if (!isBeingUsed()) return;
 
+        // Don't register location listeners if paused for battery
+        if (isPausedForBattery())
+        {
+            Timber.d("Skipping location listener registration - paused for battery");
+            return;
+        }
+
         Timber.d("Registering the location listener");
 
         if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED)
@@ -2426,6 +2433,9 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
         bluetoothController.pauseScanning();
         gnssController.pauseScanning();
         
+        // Remove location listeners to save battery
+        removeLocationListener();
+        
         // Note: We don't disconnect MQTT/gRPC or stop logging completely
         // The controllers will skip their work when isPaused() returns true
         
@@ -2451,6 +2461,9 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
         wifiController.resumeScanning();
         bluetoothController.resumeScanning();
         gnssController.resumeScanning();
+        
+        // Restore location listeners
+        updateLocationListener();
         
         // Clear the saved state
         batteryPauseState = null;
