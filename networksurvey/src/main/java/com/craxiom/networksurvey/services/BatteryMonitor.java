@@ -10,6 +10,9 @@ import android.os.Looper;
 
 import com.craxiom.networksurvey.util.PreferenceUtils;
 
+import java.util.Set;
+import java.util.concurrent.CopyOnWriteArraySet;
+
 import timber.log.Timber;
 
 /**
@@ -26,7 +29,7 @@ public class BatteryMonitor extends BroadcastReceiver
     private static final long DEBOUNCE_DELAY_MS = 5000; // 5 seconds
 
     private final Context context;
-    private BatteryLevelListener listener;
+    private final Set<IBatteryLevelListener> listeners = new CopyOnWriteArraySet<>();
     private int currentBatteryLevel = -1;
     private boolean isRegistered = false;
     private boolean isPausedDueToBattery = false;
@@ -36,10 +39,17 @@ public class BatteryMonitor extends BroadcastReceiver
     private Runnable pendingNotification;
 
     /**
-     * Interface for receiving battery level threshold crossing notifications.
+     * Interface for receiving battery level notifications.
      */
-    public interface BatteryLevelListener
+    public interface IBatteryLevelListener
     {
+        /**
+         * Called when battery level changes.
+         *
+         * @param newLevel The new battery level percentage
+         */
+        void onBatteryLevelChanged(int newLevel);
+
         /**
          * Called when battery level drops to or below the threshold.
          *
@@ -68,19 +78,16 @@ public class BatteryMonitor extends BroadcastReceiver
     }
 
     /**
-     * Registers the battery monitor to receive battery change broadcasts.
-     *
-     * @param listener The listener to notify of threshold crossings
+     * Starts the battery monitor and registers it to receive battery change broadcasts.
+     * This should be called once when the service starts.
      */
-    public void register(BatteryLevelListener listener)
+    public void startMonitoring()
     {
         if (isRegistered)
         {
             Timber.w("BatteryMonitor is already registered");
             return;
         }
-
-        this.listener = listener;
 
         final IntentFilter filter = new IntentFilter(Intent.ACTION_BATTERY_CHANGED);
         final Intent batteryStatus = context.registerReceiver(this, filter);
@@ -92,13 +99,47 @@ public class BatteryMonitor extends BroadcastReceiver
             updateBatteryLevel(batteryStatus);
         }
 
-        Timber.i("BatteryMonitor registered");
+        Timber.i("BatteryMonitor started");
     }
 
     /**
-     * Unregisters the battery monitor from receiving broadcasts.
+     * Registers a listener to receive battery level notifications.
+     *
+     * @param listener The listener to add
      */
-    public void unregister()
+    public void register(IBatteryLevelListener listener)
+    {
+        if (listener != null)
+        {
+            listeners.add(listener);
+            // Notify the new listener of the current battery level
+            if (currentBatteryLevel >= 0)
+            {
+                listener.onBatteryLevelChanged(currentBatteryLevel);
+            }
+            Timber.d("Battery listener registered, total listeners: %d", listeners.size());
+        }
+    }
+
+    /**
+     * Unregisters a listener from receiving battery level notifications.
+     *
+     * @param listener The listener to remove
+     */
+    public void unregister(IBatteryLevelListener listener)
+    {
+        if (listener != null)
+        {
+            listeners.remove(listener);
+            Timber.d("Battery listener unregistered, remaining listeners: %d", listeners.size());
+        }
+    }
+
+    /**
+     * Stops the battery monitor and unregisters it from receiving broadcasts.
+     * This should be called when the service is destroyed.
+     */
+    public void stopMonitoring()
     {
         if (!isRegistered)
         {
@@ -110,7 +151,7 @@ public class BatteryMonitor extends BroadcastReceiver
         {
             context.unregisterReceiver(this);
             isRegistered = false;
-            listener = null;
+            listeners.clear();
 
             // Cancel any pending notifications
             if (pendingNotification != null)
@@ -119,10 +160,10 @@ public class BatteryMonitor extends BroadcastReceiver
                 pendingNotification = null;
             }
 
-            Timber.i("BatteryMonitor unregistered");
+            Timber.i("BatteryMonitor stopped");
         } catch (Exception e)
         {
-            Timber.e(e, "Error unregistering BatteryMonitor");
+            Timber.e(e, "Error stopping BatteryMonitor");
         }
     }
 
@@ -164,6 +205,18 @@ public class BatteryMonitor extends BroadcastReceiver
 
         Timber.d("Battery level changed from %d%% to %d%%", previousLevel, currentBatteryLevel);
 
+        // Notify all listeners of battery level change
+        for (IBatteryLevelListener listener : listeners)
+        {
+            try
+            {
+                listener.onBatteryLevelChanged(currentBatteryLevel);
+            } catch (Exception e)
+            {
+                Timber.e(e, "Error notifying listener of battery level change");
+            }
+        }
+
         // Check if we need to notify about threshold crossing
         checkThresholdCrossing(previousLevel, currentBatteryLevel);
     }
@@ -177,11 +230,6 @@ public class BatteryMonitor extends BroadcastReceiver
      */
     private void checkThresholdCrossing(int previousLevel, int currentLevel)
     {
-        if (listener == null)
-        {
-            return;
-        }
-
         // Get the threshold from preferences
         final int threshold = PreferenceUtils.getBatteryThresholdPercent(context);
 
@@ -192,7 +240,32 @@ public class BatteryMonitor extends BroadcastReceiver
             if (isPausedDueToBattery)
             {
                 isPausedDueToBattery = false;
-                notifyAboveThresholdDebounced(currentLevel, threshold);
+                if (!listeners.isEmpty())
+                {
+                    notifyAboveThresholdDebounced(currentLevel, threshold);
+                }
+            }
+            return;
+        }
+
+        // Special handling for initialization (previousLevel is -1)
+        if (previousLevel < 0)
+        {
+            // This is the first battery reading, set state based on current level
+            if (currentLevel <= threshold)
+            {
+                isPausedDueToBattery = true;
+                Timber.i("Initial battery level %d%% is at or below threshold %d%%, setting paused state",
+                        currentLevel, threshold);
+                if (!listeners.isEmpty())
+                {
+                    notifyBelowThresholdDebounced(currentLevel, threshold);
+                }
+            } else
+            {
+                isPausedDueToBattery = false;
+                Timber.i("Initial battery level %d%% is above threshold %d%%, not pausing",
+                        currentLevel, threshold);
             }
             return;
         }
@@ -202,14 +275,20 @@ public class BatteryMonitor extends BroadcastReceiver
         {
             // Battery dropped to or below threshold
             isPausedDueToBattery = true;
-            notifyBelowThresholdDebounced(currentLevel, threshold);
+            if (!listeners.isEmpty())
+            {
+                notifyBelowThresholdDebounced(currentLevel, threshold);
+            }
         }
         // Check for crossing above threshold (must be coming from below)
         else if (isPausedDueToBattery && currentLevel > threshold && previousLevel <= threshold)
         {
             // Battery rose above threshold after being below it
             isPausedDueToBattery = false;
-            notifyAboveThresholdDebounced(currentLevel, threshold);
+            if (!listeners.isEmpty())
+            {
+                notifyAboveThresholdDebounced(currentLevel, threshold);
+            }
         }
     }
 
@@ -225,11 +304,20 @@ public class BatteryMonitor extends BroadcastReceiver
         }
 
         pendingNotification = () -> {
-            if (listener != null && isPausedDueToBattery)
+            if (isPausedDueToBattery)
             {
-                Timber.i("Battery level %d%% is at or below threshold %d%%, notifying listener to pause",
+                Timber.i("Battery level %d%% is at or below threshold %d%%, notifying listeners to pause",
                         currentLevel, threshold);
-                listener.onBatteryLevelBelowThreshold(currentLevel, threshold);
+                for (IBatteryLevelListener listener : listeners)
+                {
+                    try
+                    {
+                        listener.onBatteryLevelBelowThreshold(currentLevel, threshold);
+                    } catch (Exception e)
+                    {
+                        Timber.e(e, "Error notifying listener of battery below threshold");
+                    }
+                }
             }
             pendingNotification = null;
         };
@@ -249,11 +337,20 @@ public class BatteryMonitor extends BroadcastReceiver
         }
 
         pendingNotification = () -> {
-            if (listener != null && !isPausedDueToBattery)
+            if (!isPausedDueToBattery)
             {
-                Timber.i("Battery level %d%% is above threshold %d%%, notifying listener to resume",
+                Timber.i("Battery level %d%% is above threshold %d%%, notifying listeners to resume",
                         currentLevel, threshold);
-                listener.onBatteryLevelAboveThreshold(currentLevel, threshold);
+                for (IBatteryLevelListener listener : listeners)
+                {
+                    try
+                    {
+                        listener.onBatteryLevelAboveThreshold(currentLevel, threshold);
+                    } catch (Exception e)
+                    {
+                        Timber.e(e, "Error notifying listener of battery above threshold");
+                    }
+                }
             }
             pendingNotification = null;
         };
@@ -286,12 +383,44 @@ public class BatteryMonitor extends BroadcastReceiver
      */
     public void reevaluateThreshold()
     {
-        if (currentBatteryLevel > 0)
+        if (currentBatteryLevel <= 0)
         {
-            // Simulate a battery level change to trigger threshold checking
-            final int tempLevel = currentBatteryLevel;
-            currentBatteryLevel = -1;
-            checkThresholdCrossing(tempLevel - 1, tempLevel);
+            Timber.w("Cannot reevaluate threshold - no battery level available");
+            return;
+        }
+
+        // Get the current threshold from preferences
+        final int threshold = PreferenceUtils.getBatteryThresholdPercent(context);
+        final boolean batteryManagementEnabled = PreferenceUtils.isBatteryManagementEnabled(context);
+
+        Timber.d("Reevaluating battery threshold - current level: %d%%, threshold: %d%%, enabled: %b",
+                currentBatteryLevel, threshold, batteryManagementEnabled);
+
+        // Determine what the state should be based on current level and threshold
+        final boolean shouldBePaused = batteryManagementEnabled && threshold > 0 && currentBatteryLevel <= threshold;
+
+        // If state needs to change, update it and notify
+        if (shouldBePaused != isPausedDueToBattery)
+        {
+            isPausedDueToBattery = shouldBePaused;
+
+            if (!listeners.isEmpty())
+            {
+                if (shouldBePaused)
+                {
+                    Timber.i("Battery threshold changed - pausing operations (level %d%% <= threshold %d%%)",
+                            currentBatteryLevel, threshold);
+                    notifyBelowThresholdDebounced(currentBatteryLevel, threshold);
+                } else
+                {
+                    Timber.i("Battery threshold changed - resuming operations (level %d%% > threshold %d%% or disabled)",
+                            currentBatteryLevel, threshold);
+                    notifyAboveThresholdDebounced(currentBatteryLevel, threshold);
+                }
+            }
+        } else
+        {
+            Timber.d("Battery threshold reevaluated - no state change needed");
         }
     }
 }

@@ -776,7 +776,7 @@ but work independently, so you have full control over how you handle your data.<
     <string name="battery_optimization_settings_summary_enabled">Tap to disable battery optimization for better survey reliability</string>
     <string name="battery_optimization_settings_summary_disabled">Battery optimization is disabled - surveys will run reliably</string>
     <string name="battery_optimization_settings_title">Battery Optimization</string>
-    
+
     <!-- Battery Management -->
     <string name="battery_management_title">Battery Management</string>
     <string name="battery_pause_title">Pause scanning on low battery</string>
@@ -787,6 +787,10 @@ but work independently, so you have full control over how you handle your data.<
     <string name="battery_threshold_summary">Pause when battery ≤ %1$d%%</string>
     <string name="battery_status_paused">Paused for Battery Management</string>
     <string name="battery_status_normal">Battery: %1$d%%</string>
-    <string name="battery_status_paused_with_level">Paused (Battery: %1$d%% &lt; %2$d%%)</string>
+    <string name="battery_status_paused_with_level">Paused (Battery: %1$d%% ≤ %2$d%%)</string>
     <string name="battery_paused_notification_text">Surveys paused - Battery low (%1$d%%)</string>
+    <string name="battery_warning_title">Battery Warning</string>
+    <string name="battery_paused_title">Surveys Paused - Low Battery</string>
+    <string name="battery_warning_message">Battery approaching pause threshold (%1$d%% remaining)</string>
+    <string name="battery_management_paused_description">All survey operations are paused to preserve battery. Operations will resume automatically when battery level rises above %1$d%% after charging.</string>
 </resources>

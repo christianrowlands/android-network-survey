@@ -64,6 +64,7 @@ import com.craxiom.networksurvey.logging.db.dao.SurveyRecordDao;
 import com.craxiom.networksurvey.logging.db.uploader.NsUploaderWorker;
 import com.craxiom.networksurvey.model.SurveyTypes;
 import com.craxiom.networksurvey.model.UploadScanningResult;
+import com.craxiom.networksurvey.services.BatteryMonitor;
 import com.craxiom.networksurvey.services.NetworkSurveyService;
 import com.craxiom.networksurvey.ui.main.SharedViewModel;
 import com.craxiom.networksurvey.util.BatteryOptimizationHelper;
@@ -91,8 +92,7 @@ import timber.log.Timber;
  *
  * @since 1.10.0
  */
-public class DashboardFragment extends AServiceDataFragment implements LocationListener, IConnectionStateListener,
-        ILoggingChangeListener, SharedPreferences.OnSharedPreferenceChangeListener
+public class DashboardFragment extends AServiceDataFragment implements LocationListener, IConnectionStateListener, ILoggingChangeListener, SharedPreferences.OnSharedPreferenceChangeListener, BatteryMonitor.IBatteryLevelListener
 {
     public static final int ACCESS_REQUIRED_PERMISSION_REQUEST_ID = 20;
     public static final int ACCESS_OPTIONAL_PERMISSION_REQUEST_ID = 21;
@@ -193,6 +193,13 @@ public class DashboardFragment extends AServiceDataFragment implements LocationL
         service.registerMqttConnectionStateListener(this);
         service.registerLoggingChangeListener(this);
 
+        // Register as battery listener
+        BatteryMonitor batteryMonitor = service.getBatteryMonitor();
+        if (batteryMonitor != null)
+        {
+            batteryMonitor.register(this);
+        }
+
         // Refresh the location views because we might have missed something between the
         // initial call and when we registered as a listener, but only if the location is not null
         // because the initializeLocationTextView method might have set the UI to indicate that the
@@ -250,6 +257,13 @@ public class DashboardFragment extends AServiceDataFragment implements LocationL
         service.unregisterLocationListener(this);
         service.unregisterLoggingChangeListener(this);
         service.unregisterMqttConnectionStateListener(this);
+
+        // Unregister as battery listener
+        BatteryMonitor batteryMonitor = service.getBatteryMonitor();
+        if (batteryMonitor != null)
+        {
+            batteryMonitor.unregister(this);
+        }
 
         super.onSurveyServiceDisconnecting(service);
     }
@@ -425,9 +439,7 @@ public class DashboardFragment extends AServiceDataFragment implements LocationL
                 if (!attempting)
                 {
                     toggleSwitch.setChecked(false);
-                    final Snackbar snackbar = Snackbar.make(requireView(), "Could not try to connect to the MQTT broker because the connection information is not set", Snackbar.LENGTH_LONG)
-                            .setAction("Open", v -> navigateToMqttFragment())
-                            .setBackgroundTint(getResources().getColor(R.color.rssi_orange, null));
+                    final Snackbar snackbar = Snackbar.make(requireView(), "Could not try to connect to the MQTT broker because the connection information is not set", Snackbar.LENGTH_LONG).setAction("Open", v -> navigateToMqttFragment()).setBackgroundTint(getResources().getColor(R.color.rssi_orange, null));
 
                     if (snackbar.isShown()) return;
 
@@ -806,8 +818,7 @@ public class DashboardFragment extends AServiceDataFragment implements LocationL
         final TextView accuracyTextView = binding.locationCard.accuracy;
         if (latestLocation != null)
         {
-            final String latLonString = locationFormat.format(latestLocation.getLatitude()) + ", " +
-                    locationFormat.format(latestLocation.getLongitude());
+            final String latLonString = locationFormat.format(latestLocation.getLatitude()) + ", " + locationFormat.format(latestLocation.getLongitude());
             locationTextView.setText(latLonString);
             locationTextView.setTextColor(getResources().getColor(R.color.normalText, null));
 
@@ -876,8 +887,7 @@ public class DashboardFragment extends AServiceDataFragment implements LocationL
         final Context context = getContext();
         if (context == null)
         {
-            Timber.w("Could not get the context to read the MQTT streaming preferences, " +
-                    "maybe the dashboard fragment has been removed");
+            Timber.w("Could not get the context to read the MQTT streaming preferences, " + "maybe the dashboard fragment has been removed");
             return;
         }
         final SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(context);
@@ -1105,48 +1115,107 @@ public class DashboardFragment extends AServiceDataFragment implements LocationL
 
         boolean batteryManagementEnabled = PreferenceUtils.isBatteryManagementEnabled(context);
 
-        if (!batteryManagementEnabled)
+        int batteryLevel = service.getCurrentBatteryLevel();
+
+        if (!batteryManagementEnabled || batteryLevel < 0)
         {
-            // Hide battery status if feature is disabled
-            binding.batteryStatusGroup.setVisibility(View.GONE);
+            // Hide battery card if feature is disabled or if we fail to get the current battery level
+            binding.batteryStatusCard.batteryStatusCardView.setVisibility(View.GONE);
             return;
         }
 
-        // Show battery status group
-        binding.batteryStatusGroup.setVisibility(View.VISIBLE);
-
-        // Get current battery level and threshold
-        int batteryLevel = service.getCurrentBatteryLevel();
         int batteryThreshold = PreferenceUtils.getBatteryThresholdPercent(context);
         boolean isPaused = service.isPausedForBattery();
+        boolean isWarning = !isPaused && batteryLevel <= batteryThreshold + 5;
+
+        // Only show card if paused or in warning state
+        if (!isPaused && !isWarning)
+        {
+            binding.batteryStatusCard.batteryStatusCardView.setVisibility(View.GONE);
+            return;
+        }
+
+        // Show battery card
+        binding.batteryStatusCard.batteryStatusCardView.setVisibility(View.VISIBLE);
 
         if (isPaused)
         {
-            // Show paused status with battery levels
-            String pausedText = getString(R.string.battery_status_paused_with_level, batteryLevel, batteryThreshold);
-            binding.batteryStatusText.setText(pausedText);
-            binding.batteryStatusText.setTextColor(getResources().getColor(R.color.connectionStatusDisconnected, null));
-            binding.batteryStatusIcon.setImageTintList(ColorStateList.valueOf(getResources().getColor(R.color.connectionStatusDisconnected, null)));
+            // Paused state
+            binding.batteryStatusCard.batteryCardTitle.setText(R.string.battery_paused_title);
+            binding.batteryStatusCard.batteryCardContent.setBackgroundColor(getResources().getColor(R.color.battery_paused_background, null));
+
+            String pausedMessage = getString(R.string.battery_status_paused_with_level, batteryLevel, batteryThreshold);
+            binding.batteryStatusCard.batteryStatusMessage.setText(pausedMessage);
+            binding.batteryStatusCard.batteryStatusMessage.setTextColor(getResources().getColor(R.color.battery_paused_text, null));
+
+            String pausedDescription = getString(R.string.battery_management_paused_description, batteryThreshold);
+            binding.batteryStatusCard.batteryStatusDescription.setText(pausedDescription);
+            binding.batteryStatusCard.batteryStatusDescription.setTextColor(getResources().getColor(R.color.battery_paused_text, null));
+
+            binding.batteryStatusCard.batteryStatusIcon.setImageTintList(ColorStateList.valueOf(getResources().getColor(R.color.battery_icon_paused, null)));
+            binding.batteryStatusCard.batteryHeaderIcon.setImageTintList(ColorStateList.valueOf(getResources().getColor(R.color.battery_icon_paused, null)));
         } else
         {
-            // Show normal battery status
-            String normalText = getString(R.string.battery_status_normal, batteryLevel);
-            binding.batteryStatusText.setText(normalText);
+            // Warning state
+            binding.batteryStatusCard.batteryCardTitle.setText(R.string.battery_warning_title);
+            binding.batteryStatusCard.batteryCardContent.setBackgroundColor(getResources().getColor(R.color.battery_warning_background, null));
 
-            // Color based on battery level
-            int color;
-            if (batteryLevel <= batteryThreshold + 5)
-            {
-                // Warning - close to threshold
-                color = getResources().getColor(R.color.connectionStatusConnecting, null);
-            } else
-            {
-                // Normal
-                color = getResources().getColor(R.color.normalText, null);
-            }
+            String warningMessage = getString(R.string.battery_warning_message, batteryLevel);
+            binding.batteryStatusCard.batteryStatusMessage.setText(warningMessage);
+            binding.batteryStatusCard.batteryStatusMessage.setTextColor(getResources().getColor(R.color.battery_warning_text, null));
 
-            binding.batteryStatusText.setTextColor(color);
-            binding.batteryStatusIcon.setImageTintList(ColorStateList.valueOf(color));
+            String warningDescription = getString(R.string.battery_pause_active_description, batteryThreshold);
+            binding.batteryStatusCard.batteryStatusDescription.setText(warningDescription);
+            binding.batteryStatusCard.batteryStatusDescription.setTextColor(getResources().getColor(R.color.battery_warning_text, null));
+
+            binding.batteryStatusCard.batteryStatusIcon.setImageTintList(ColorStateList.valueOf(getResources().getColor(R.color.battery_icon_warning, null)));
+            binding.batteryStatusCard.batteryHeaderIcon.setImageTintList(ColorStateList.valueOf(getResources().getColor(R.color.battery_icon_warning, null)));
+        }
+    }
+
+    // Battery Monitor Listener implementations
+    @Override
+    public void onBatteryLevelChanged(int newLevel)
+    {
+        // Update the battery UI on the UI thread
+        if (getActivity() != null)
+        {
+            getActivity().runOnUiThread(() -> {
+                if (service != null)
+                {
+                    updateBatteryManagementStatus(service);
+                }
+            });
+        }
+    }
+
+    @Override
+    public void onBatteryLevelBelowThreshold(int currentLevel, int threshold)
+    {
+        // Service handles pausing operations, we just update UI
+        if (getActivity() != null)
+        {
+            getActivity().runOnUiThread(() -> {
+                if (service != null)
+                {
+                    updateBatteryManagementStatus(service);
+                }
+            });
+        }
+    }
+
+    @Override
+    public void onBatteryLevelAboveThreshold(int currentLevel, int threshold)
+    {
+        // Service handles resuming operations, we just update UI
+        if (getActivity() != null)
+        {
+            getActivity().runOnUiThread(() -> {
+                if (service != null)
+                {
+                    updateBatteryManagementStatus(service);
+                }
+            });
         }
     }
 
@@ -1469,31 +1538,27 @@ public class DashboardFragment extends AServiceDataFragment implements LocationL
             updateOcidKeyWarningMessage(uploadToOcid, anonymousOcidUploadCheckbox.isChecked(), accessTokenWarningMessage, context);
         });
 
-        anonymousOcidUploadCheckbox.setOnCheckedChangeListener((buttonView, anonymousOcidUpload) ->
-                updateOcidKeyWarningMessage(ocidUploadCheckbox.isChecked(), anonymousOcidUpload, accessTokenWarningMessage, context));
+        anonymousOcidUploadCheckbox.setOnCheckedChangeListener((buttonView, anonymousOcidUpload) -> updateOcidKeyWarningMessage(ocidUploadCheckbox.isChecked(), anonymousOcidUpload, accessTokenWarningMessage, context));
 
         ocidUploadCheckbox.setChecked(prefUploadToOpenCellId);
         anonymousOcidUploadCheckbox.setChecked(prefAnonymously);
         beaconDbUploadCheckbox.setChecked(prefUploadToBeaconDb);
         retryUploadCheckbox.setChecked(prefRetryUpload);
 
-        builder.setTitle(context.getString(R.string.upload_survey_records))
-                .setPositiveButton("Upload", (dialog, which) -> {
-                    boolean uploadToOpenCellId = ocidUploadCheckbox.isChecked();
-                    boolean anonymously = anonymousOcidUploadCheckbox.isChecked();
-                    boolean uploadToBeaconDB = beaconDbUploadCheckbox.isChecked();
-                    boolean enableRetry = retryUploadCheckbox.isChecked();
-                    boolean dontShowAgain = dontShowAgainCheckbox.isChecked();
+        builder.setTitle(context.getString(R.string.upload_survey_records)).setPositiveButton("Upload", (dialog, which) -> {
+            boolean uploadToOpenCellId = ocidUploadCheckbox.isChecked();
+            boolean anonymously = anonymousOcidUploadCheckbox.isChecked();
+            boolean uploadToBeaconDB = beaconDbUploadCheckbox.isChecked();
+            boolean enableRetry = retryUploadCheckbox.isChecked();
+            boolean dontShowAgain = dontShowAgainCheckbox.isChecked();
 
-                    SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context);
-                    final SharedPreferences.Editor edit = sharedPreferences.edit();
-                    edit.putBoolean(NetworkSurveyConstants.PROPERTY_SHOW_CONFIG_UPLOAD_DIALOG, !dontShowAgain);
-                    edit.apply();
+            SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context);
+            final SharedPreferences.Editor edit = sharedPreferences.edit();
+            edit.putBoolean(NetworkSurveyConstants.PROPERTY_SHOW_CONFIG_UPLOAD_DIALOG, !dontShowAgain);
+            edit.apply();
 
-                    startUploadWorker(uploadToOpenCellId, anonymously, uploadToBeaconDB, enableRetry);
-                })
-                .setNeutralButton(R.string.preferences, (dialog, which) -> navigateToUploadSettings())
-                .setNegativeButton("Cancel", (dialog, which) -> dialog.dismiss());
+            startUploadWorker(uploadToOpenCellId, anonymously, uploadToBeaconDB, enableRetry);
+        }).setNeutralButton(R.string.preferences, (dialog, which) -> navigateToUploadSettings()).setNegativeButton("Cancel", (dialog, which) -> dialog.dismiss());
 
         AlertDialog dialog = builder.create();
         dialog.show();
@@ -1530,38 +1595,36 @@ public class DashboardFragment extends AServiceDataFragment implements LocationL
         Context context = getContext();
         if (context == null) return;
 
-        WorkManager.getInstance(context)
-                .getWorkInfosByTagLiveData(NsUploaderWorker.WORKER_TAG)
-                .observe(getViewLifecycleOwner(), workInfos -> {
-                    Timber.d("observeUploadWork(): Found %s work tasks with the tag: %s", workInfos.size(), NsUploaderWorker.WORKER_TAG);
+        WorkManager.getInstance(context).getWorkInfosByTagLiveData(NsUploaderWorker.WORKER_TAG).observe(getViewLifecycleOwner(), workInfos -> {
+            Timber.d("observeUploadWork(): Found %s work tasks with the tag: %s", workInfos.size(), NsUploaderWorker.WORKER_TAG);
 
-                    if (workInfos.size() > 1)
-                    {
-                        Timber.e("observeUploadWork(): Multiple active upload tasks found! Expected only one.");
-                    }
+            if (workInfos.size() > 1)
+            {
+                Timber.e("observeUploadWork(): Multiple active upload tasks found! Expected only one.");
+            }
 
-                    boolean hasActiveUpload = false;
-                    UUID activeWorkId = null;
+            boolean hasActiveUpload = false;
+            UUID activeWorkId = null;
 
-                    for (WorkInfo workInfo : workInfos)
-                    {
-                        if (workInfo.getState() == WorkInfo.State.ENQUEUED || workInfo.getState() == WorkInfo.State.RUNNING)
-                        {
-                            hasActiveUpload = true;
-                            activeWorkId = workInfo.getId();
-                            break; // Stop iterating after finding one active upload
-                        }
-                    }
+            for (WorkInfo workInfo : workInfos)
+            {
+                if (workInfo.getState() == WorkInfo.State.ENQUEUED || workInfo.getState() == WorkInfo.State.RUNNING)
+                {
+                    hasActiveUpload = true;
+                    activeWorkId = workInfo.getId();
+                    break; // Stop iterating after finding one active upload
+                }
+            }
 
-                    if (hasActiveUpload)
-                    {
-                        showUploadProgress(activeWorkId); // Update UI for the active task
-                    } else
-                    {
-                        binding.uploadButton.setEnabled(true);
-                        binding.uploadProgressGroup.setVisibility(View.GONE);
-                    }
-                });
+            if (hasActiveUpload)
+            {
+                showUploadProgress(activeWorkId); // Update UI for the active task
+            } else
+            {
+                binding.uploadButton.setEnabled(true);
+                binding.uploadProgressGroup.setVisibility(View.GONE);
+            }
+        });
     }
 
     /**
@@ -1582,29 +1645,15 @@ public class DashboardFragment extends AServiceDataFragment implements LocationL
 
         if (!NsUtils.isNetworkAvailable(context))
         {
-            new android.app.AlertDialog.Builder(context)
-                    .setTitle(R.string.uploader_no_internet_title)
-                    .setMessage(R.string.uploader_no_internet_message)
-                    .setCancelable(true)
-                    .setPositiveButton(R.string.ok, null)
-                    .show();
+            new android.app.AlertDialog.Builder(context).setTitle(R.string.uploader_no_internet_title).setMessage(R.string.uploader_no_internet_message).setCancelable(true).setPositiveButton(R.string.ok, null).show();
             return;
         }
 
         binding.uploadButton.setEnabled(false);
 
-        Data inputData = new Data.Builder()
-                .putBoolean(NetworkSurveyConstants.PROPERTY_UPLOAD_TO_OPENCELLID, uploadToOpenCellId)
-                .putBoolean(NetworkSurveyConstants.PROPERTY_ANONYMOUS_OPENCELLID_UPLOAD, anonymouslyToOpencelliD)
-                .putBoolean(NetworkSurveyConstants.PROPERTY_UPLOAD_TO_BEACONDB, uploadToBeaconDB)
-                .putBoolean(NetworkSurveyConstants.PROPERTY_UPLOAD_RETRY_ENABLED, retry)
-                .build();
+        Data inputData = new Data.Builder().putBoolean(NetworkSurveyConstants.PROPERTY_UPLOAD_TO_OPENCELLID, uploadToOpenCellId).putBoolean(NetworkSurveyConstants.PROPERTY_ANONYMOUS_OPENCELLID_UPLOAD, anonymouslyToOpencelliD).putBoolean(NetworkSurveyConstants.PROPERTY_UPLOAD_TO_BEACONDB, uploadToBeaconDB).putBoolean(NetworkSurveyConstants.PROPERTY_UPLOAD_RETRY_ENABLED, retry).build();
 
-        OneTimeWorkRequest uploadWorkRequest = new OneTimeWorkRequest.Builder(NsUploaderWorker.class)
-                .addTag(NsUploaderWorker.WORKER_TAG)
-                .setInputData(inputData)
-                .setExpedited(OutOfQuotaPolicy.RUN_AS_NON_EXPEDITED_WORK_REQUEST)
-                .build();
+        OneTimeWorkRequest uploadWorkRequest = new OneTimeWorkRequest.Builder(NsUploaderWorker.class).addTag(NsUploaderWorker.WORKER_TAG).setInputData(inputData).setExpedited(OutOfQuotaPolicy.RUN_AS_NON_EXPEDITED_WORK_REQUEST).build();
         showUploadProgress(uploadWorkRequest.getId());
 
         WorkManager.getInstance(context).enqueue(uploadWorkRequest);
@@ -1632,50 +1681,48 @@ public class DashboardFragment extends AServiceDataFragment implements LocationL
         binding.uploadProgressGroup.setVisibility(View.VISIBLE);
         binding.uploadProgressBar.setProgress(0);
 
-        WorkManager.getInstance(context)
-                .getWorkInfoByIdLiveData(workId)
-                .observe(getViewLifecycleOwner(), new Observer<>()
+        WorkManager.getInstance(context).getWorkInfoByIdLiveData(workId).observe(getViewLifecycleOwner(), new Observer<>()
+        {
+            private final String innerTag = NetworkSurveyActivity.class.getSimpleName() + "." + NsUploaderWorker.class.getSimpleName();
+
+            @Override
+            public void onChanged(WorkInfo workInfo)
+            {
+                if (workInfo == null)
                 {
-                    private final String innerTag = NetworkSurveyActivity.class.getSimpleName() + "." + NsUploaderWorker.class.getSimpleName();
+                    Timber.tag(innerTag).w("onChanged(): WorkInfo is null");
+                    binding.uploadProgressGroup.setVisibility(View.GONE);
+                    return;
+                }
 
-                    @Override
-                    public void onChanged(WorkInfo workInfo)
+                Data progress = workInfo.getProgress();
+                int currentPercent = progress.getInt(NsUploaderWorker.PROGRESS, NsUploaderWorker.PROGRESS_MIN_VALUE);
+                int maxPercent = progress.getInt(NsUploaderWorker.PROGRESS_MAX, NsUploaderWorker.PROGRESS_MAX_VALUE);
+                String statusMessage = progress.getString(NsUploaderWorker.PROGRESS_STATUS_MESSAGE);
+                Timber.tag(innerTag).d("onChanged(): Updating progress: current=%s max=%s", currentPercent, maxPercent);
+                currentPercent = Math.min(currentPercent, maxPercent);
+                binding.uploadProgressBar.setProgress(currentPercent);
+                binding.uploadPercentage.setText(context.getString(R.string.upload_percentage, currentPercent));
+
+                if (!Strings.isNullOrEmpty(statusMessage) || workInfo.getState() == WorkInfo.State.ENQUEUED)
+                {
+                    if (workInfo.getState() == WorkInfo.State.ENQUEUED)
                     {
-                        if (workInfo == null)
-                        {
-                            Timber.tag(innerTag).w("onChanged(): WorkInfo is null");
-                            binding.uploadProgressGroup.setVisibility(View.GONE);
-                            return;
-                        }
-
-                        Data progress = workInfo.getProgress();
-                        int currentPercent = progress.getInt(NsUploaderWorker.PROGRESS, NsUploaderWorker.PROGRESS_MIN_VALUE);
-                        int maxPercent = progress.getInt(NsUploaderWorker.PROGRESS_MAX, NsUploaderWorker.PROGRESS_MAX_VALUE);
-                        String statusMessage = progress.getString(NsUploaderWorker.PROGRESS_STATUS_MESSAGE);
-                        Timber.tag(innerTag).d("onChanged(): Updating progress: current=%s max=%s", currentPercent, maxPercent);
-                        currentPercent = Math.min(currentPercent, maxPercent);
-                        binding.uploadProgressBar.setProgress(currentPercent);
-                        binding.uploadPercentage.setText(context.getString(R.string.upload_percentage, currentPercent));
-
-                        if (!Strings.isNullOrEmpty(statusMessage) || workInfo.getState() == WorkInfo.State.ENQUEUED)
-                        {
-                            if (workInfo.getState() == WorkInfo.State.ENQUEUED)
-                            {
-                                statusMessage = context.getString(R.string.uploader_enqueued);
-                            }
-                            binding.uploadProgressStatus.setVisibility(View.VISIBLE);
-                            binding.uploadProgressStatus.setText(statusMessage);
-                        } else
-                        {
-                            binding.uploadProgressStatus.setVisibility(View.GONE);
-                        }
-
-                        if (workInfo.getState().isFinished())
-                        {
-                            showUploaderFinished(workInfo);
-                        }
+                        statusMessage = context.getString(R.string.uploader_enqueued);
                     }
-                });
+                    binding.uploadProgressStatus.setVisibility(View.VISIBLE);
+                    binding.uploadProgressStatus.setText(statusMessage);
+                } else
+                {
+                    binding.uploadProgressStatus.setVisibility(View.GONE);
+                }
+
+                if (workInfo.getState().isFinished())
+                {
+                    showUploaderFinished(workInfo);
+                }
+            }
+        });
     }
 
     private void showUploaderFinished(WorkInfo workInfo)

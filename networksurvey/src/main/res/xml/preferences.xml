@@ -218,8 +218,8 @@
 
     <PreferenceCategory
         app:icon="@android:drawable/ic_lock_idle_low_battery"
-        app:key="system_settings"
-        app:title="System Settings">
+        app:key="battery_settings"
+        app:title="Battery Settings">
 
         <Preference
             app:key="battery_optimization"
@@ -228,7 +228,6 @@
         <com.craxiom.networksurvey.ui.BatteryThresholdPreference
             app:defaultValue="0"
             app:dialogMessage="@string/battery_pause_description"
-            app:icon="@android:drawable/ic_lock_idle_low_battery"
             app:key="battery_threshold_percent"
             app:title="@string/battery_pause_title"
             app:useSimpleSummaryProvider="true" />

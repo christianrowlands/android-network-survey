@@ -213,4 +213,12 @@
     <color name="md_theme_surfaceContainer_highContrast">#1B2023</color>
     <color name="md_theme_surfaceContainerHigh_highContrast">#262B2D</color>
     <color name="md_theme_surfaceContainerHighest_highContrast">#303538</color>
+
+    <!-- Battery Management Colors -->
+    <color name="battery_warning_background">#FFF8E1</color>
+    <color name="battery_paused_background">#FFEBEE</color>
+    <color name="battery_warning_text">#E65100</color>
+    <color name="battery_paused_text">#C62828</color>
+    <color name="battery_icon_warning">#FF6F00</color>
+    <color name="battery_icon_paused">#D32F2F</color>
 </resources>

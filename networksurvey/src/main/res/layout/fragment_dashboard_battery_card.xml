@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <androidx.cardview.widget.CardView
+        android:id="@+id/battery_status_card_view"
+        style="?attr/cardStyle"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:visibility="gone"
+        app:cardElevation="4dp"
+        app:contentPadding="0dp">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+
+            <!-- Card Header -->
+            <LinearLayout
+                android:id="@+id/battery_card_header"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="@drawable/card_title"
+                android:orientation="horizontal"
+                android:padding="@dimen/small_margin">
+
+                <ImageView
+                    android:id="@+id/battery_header_icon"
+                    android:layout_width="24dp"
+                    android:layout_height="24dp"
+                    android:layout_gravity="center_vertical"
+                    android:layout_marginEnd="@dimen/small_margin"
+                    android:contentDescription="@string/battery_management_title"
+                    android:src="@android:drawable/ic_lock_idle_low_battery" />
+
+                <TextView
+                    android:id="@+id/battery_card_title"
+                    style="@style/CardTitleStyle"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="@string/battery_warning_title" />
+
+            </LinearLayout>
+
+            <!-- Card Content -->
+            <LinearLayout
+                android:id="@+id/battery_card_content"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="@dimen/medium_margin">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical">
+
+                    <ImageView
+                        android:id="@+id/battery_status_icon"
+                        android:layout_width="48dp"
+                        android:layout_height="48dp"
+                        android:layout_marginEnd="@dimen/medium_margin"
+                        android:contentDescription="@string/battery_management_title"
+                        android:src="@android:drawable/ic_lock_idle_low_battery" />
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:orientation="vertical">
+
+                        <TextView
+                            android:id="@+id/battery_status_message"
+                            style="@style/StandardText"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:textStyle="bold"
+                            android:text="@string/battery_status_paused_with_level" />
+
+                        <TextView
+                            android:id="@+id/battery_status_description"
+                            style="@style/DescriptionText"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="@dimen/x_small_margin"
+                            android:text="@string/battery_management_paused_description" />
+
+                    </LinearLayout>
+
+                </LinearLayout>
+
+            </LinearLayout>
+
+        </LinearLayout>
+
+    </androidx.cardview.widget.CardView>
+
+</layout>

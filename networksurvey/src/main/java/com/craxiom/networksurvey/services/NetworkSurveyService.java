@@ -71,7 +71,6 @@ import com.craxiom.networksurvey.model.SurveyTypes;
 import com.craxiom.networksurvey.model.UploadScanningResult;
 import com.craxiom.networksurvey.mqtt.MqttConnection;
 import com.craxiom.networksurvey.mqtt.MqttConnectionInfo;
-import com.craxiom.networksurvey.services.BatteryMonitor;
 import com.craxiom.networksurvey.services.controller.BluetoothController;
 import com.craxiom.networksurvey.services.controller.CellularController;
 import com.craxiom.networksurvey.services.controller.GnssController;
@@ -112,11 +111,11 @@ import timber.log.Timber;
  *
  * @since 0.0.9
  */
-public class NetworkSurveyService extends Service implements IConnectionStateListener, SharedPreferences.OnSharedPreferenceChangeListener, IMqttService, IUploadRecordCountListener, BatteryMonitor.BatteryLevelListener
+public class NetworkSurveyService extends Service implements IConnectionStateListener, SharedPreferences.OnSharedPreferenceChangeListener, IMqttService, IUploadRecordCountListener, BatteryMonitor.IBatteryLevelListener
 {
     public static final String ACTION_START_SURVEY = "com.craxiom.networksurvey.START_SURVEY";
     public static final String ACTION_STOP_SURVEY = "com.craxiom.networksurvey.STOP_SURVEY";
-    
+
     private static final String PROPERTY_BATTERY_PAUSE_STATE = "battery_pause_state";
 
     private final AtomicBoolean deviceStatusActive = new AtomicBoolean(false);
@@ -149,7 +148,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
     private MqttConnection mqttConnection;
     private BroadcastReceiver managedConfigurationListener;
     private boolean mdmOverride = false;
-    
+
     private BatteryMonitor batteryMonitor;
     private BatteryPauseState batteryPauseState;
 
@@ -227,16 +226,22 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
         wifiController.initializeWifiScanningResources();
         bluetoothController.initializeBtScanningResources();
         gnssController.initializeGnssScanningResources();
-        
+
         // Initialize battery management
         batteryMonitor = new BatteryMonitor(this);
         batteryPauseState = loadBatteryPauseState();
-        
+
+        // Start battery monitoring
+        batteryMonitor.startMonitoring();
+
         // Register battery monitor if battery management is enabled
         if (PreferenceUtils.isBatteryManagementEnabled(context))
         {
             batteryMonitor.register(this);
-            
+
+            // Force a threshold evaluation in case the initial battery reading hasn't completed yet
+            batteryMonitor.reevaluateThreshold();
+
             // Check if we should start paused
             if (batteryMonitor.isPausedDueToBattery())
             {
@@ -379,11 +384,12 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
     public void onDestroy()
     {
         Timber.i("onDestroy");
-        
-        // Unregister battery monitor
+
+        // Unregister and stop battery monitor
         if (batteryMonitor != null)
         {
-            batteryMonitor.unregister();
+            batteryMonitor.unregister(this);
+            batteryMonitor.stopMonitoring();
         }
 
         // Release wake lock if held
@@ -474,7 +480,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
             case NetworkSurveyConstants.PROPERTY_LOCATION_PROVIDER:
                 updateLocationListener();
                 break;
-                
+
             case NetworkSurveyConstants.PROPERTY_BATTERY_THRESHOLD_PERCENT:
                 handleBatteryPreferenceChange();
                 break;
@@ -1830,7 +1836,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
                     Timber.i("Device status reporting is no longer active, skipping status generation");
                     return;
                 }
-                
+
                 // Skip device status generation if paused for battery management
                 if (isPausedForBattery())
                 {
@@ -2074,7 +2080,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
             final int batteryLevel = batteryMonitor.getCurrentBatteryLevel();
             return getString(R.string.battery_paused_notification_text, batteryLevel);
         }
-        
+
         String notificationText = "";
 
         if (logging)
@@ -2340,35 +2346,34 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
             Timber.w(t, "Could not submit to the executor service");
         }
     }
-    
+
     // ========================================
     // Battery Management Methods
     // ========================================
-    
+
     /**
      * Handles changes to battery management preferences.
      */
     private void handleBatteryPreferenceChange()
     {
         final boolean batteryManagementEnabled = PreferenceUtils.isBatteryManagementEnabled(this);
-        
+
         if (batteryManagementEnabled)
         {
             // Register battery monitor if not already registered
             if (batteryMonitor != null)
             {
-                batteryMonitor.unregister(); // Unregister first to avoid duplicate registration
+                batteryMonitor.unregister(this); // Unregister first to avoid duplicate registration
                 batteryMonitor.register(this);
                 batteryMonitor.reevaluateThreshold(); // Force re-check with new threshold
             }
-        }
-        else
+        } else
         {
             // Unregister battery monitor and resume if paused
             if (batteryMonitor != null)
             {
-                batteryMonitor.unregister();
-                
+                batteryMonitor.unregister(this);
+
                 // If we were paused, resume operations
                 if (batteryPauseState != null && batteryPauseState.hasActiveOperations())
                 {
@@ -2378,7 +2383,13 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
             }
         }
     }
-    
+
+    @Override
+    public void onBatteryLevelChanged(int newLevel)
+    {
+        // Dashboard will handle updating the battery level display
+    }
+
     @Override
     public void onBatteryLevelBelowThreshold(int currentLevel, int threshold)
     {
@@ -2386,7 +2397,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
         pauseAllOperations();
         updateServiceNotification();
     }
-    
+
     @Override
     public void onBatteryLevelAboveThreshold(int currentLevel, int threshold)
     {
@@ -2394,7 +2405,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
         resumePreviousOperations();
         updateServiceNotification();
     }
-    
+
     /**
      * Pauses all active survey operations and saves their state.
      */
@@ -2402,49 +2413,49 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
     {
         // Create new pause state to track what was active
         batteryPauseState = new BatteryPauseState();
-        
+
         // Save current scanning states
         batteryPauseState.setWasCellularScanningActive(cellularController.isScanningActive());
         batteryPauseState.setWasWifiScanningActive(wifiController.isScanningActive());
         batteryPauseState.setWasBluetoothScanningActive(bluetoothController.isScanningActive());
         batteryPauseState.setWasGnssScanningActive(gnssController.isScanningActive());
         batteryPauseState.setWasCdrScanningActive(cellularController.isCdrLoggingEnabled());
-        
+
         // Save current logging states
         batteryPauseState.setWasCellularLoggingEnabled(cellularController.isLoggingEnabled());
         batteryPauseState.setWasWifiLoggingEnabled(wifiController.isLoggingEnabled());
         batteryPauseState.setWasBluetoothLoggingEnabled(bluetoothController.isLoggingEnabled());
         batteryPauseState.setWasGnssLoggingEnabled(gnssController.isLoggingEnabled());
         batteryPauseState.setWasCdrLoggingEnabled(cellularController.isCdrLoggingEnabled());
-        
+
         // Save connection states
         batteryPauseState.setWasMqttConnectionActive(getMqttConnectionState() == ConnectionState.CONNECTED);
         batteryPauseState.setWasGrpcConnectionActive(isGrpcConnectionActive());
-        
+
         // Save device status state
         batteryPauseState.setWasDeviceStatusActive(deviceStatusActive.get());
-        
+
         // Persist the state
         saveBatteryPauseState();
-        
+
         // Pause all controllers
         cellularController.pauseScanning();
         wifiController.pauseScanning();
         bluetoothController.pauseScanning();
         gnssController.pauseScanning();
-        
+
         // Remove location listeners to save battery
         removeLocationListener();
-        
+
         // Note: We don't disconnect MQTT/gRPC or stop logging completely
         // The controllers will skip their work when isPaused() returns true
-        
+
         // Future optimization: Implement IPauseAware for connections to reduce battery usage
         // Currently, connections stay active but receive no data when controllers are paused
         // This is acceptable as it avoids reconnection overhead, but gRPC queue polling
         // could be optimized to reduce battery drain during pause
     }
-    
+
     /**
      * Resumes operations that were active before the battery pause.
      */
@@ -2455,31 +2466,31 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
             Timber.w("No battery pause state found, nothing to resume");
             return;
         }
-        
+
         // Resume all controllers (they will check their internal state)
         cellularController.resumeScanning();
         wifiController.resumeScanning();
         bluetoothController.resumeScanning();
         gnssController.resumeScanning();
-        
+
         // Restore location listeners
         updateLocationListener();
-        
+
         // Clear the saved state
         batteryPauseState = null;
         clearBatteryPauseState();
     }
-    
+
     /**
      * Saves the battery pause state to preferences.
      */
     private void saveBatteryPauseState()
     {
         if (batteryPauseState == null) return;
-        
+
         final SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
         final SharedPreferences.Editor editor = prefs.edit();
-        
+
         final String json = batteryPauseState.toJson();
         if (json != null)
         {
@@ -2487,7 +2498,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
             editor.apply();
         }
     }
-    
+
     /**
      * Loads the battery pause state from preferences.
      */
@@ -2495,15 +2506,15 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
     {
         final SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
         final String json = prefs.getString(PROPERTY_BATTERY_PAUSE_STATE, null);
-        
+
         if (json != null)
         {
             return BatteryPauseState.fromJson(json);
         }
-        
+
         return null;
     }
-    
+
     /**
      * Clears the saved battery pause state.
      */
@@ -2514,7 +2525,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
         editor.remove(PROPERTY_BATTERY_PAUSE_STATE);
         editor.apply();
     }
-    
+
     /**
      * Checks if operations are currently paused due to low battery.
      *
@@ -2524,7 +2535,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
     {
         return batteryMonitor != null && batteryMonitor.isPausedDueToBattery();
     }
-    
+
     /**
      * Gets the current battery level percentage.
      *
@@ -2533,5 +2544,15 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
     public int getCurrentBatteryLevel()
     {
         return batteryMonitor != null ? batteryMonitor.getCurrentBatteryLevel() : -1;
+    }
+
+    /**
+     * Gets the battery monitor instance.
+     *
+     * @return The BatteryMonitor instance, or null if not initialized
+     */
+    public BatteryMonitor getBatteryMonitor()
+    {
+        return batteryMonitor;
     }
 }

@@ -18,6 +18,10 @@
             android:padding="3dp">
 
             <include
+                layout="@layout/fragment_dashboard_battery_card"
+                android:id="@+id/battery_status_card" />
+
+            <include
                 layout="@layout/location_card"
                 android:id="@+id/location_card" />
 
@@ -527,36 +531,6 @@
                             android:contentDescription="@string/file_help_description"
                             android:src="@drawable/ic_help" />
 
-                    </LinearLayout>
-                    
-                    <!-- Battery Management Status -->
-                    <LinearLayout
-                        android:id="@+id/battery_status_group"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:visibility="gone"
-                        android:background="@color/colorAccentFaded"
-                        android:orientation="horizontal"
-                        android:padding="@dimen/small_margin">
-                        
-                        <ImageView
-                            android:id="@+id/battery_status_icon"
-                            android:layout_width="24dp"
-                            android:layout_height="24dp"
-                            android:layout_gravity="center_vertical"
-                            android:layout_marginEnd="@dimen/small_margin"
-                            android:src="@android:drawable/ic_lock_idle_low_battery"
-                            android:contentDescription="@string/battery_management_title" />
-                        
-                        <TextView
-                            android:id="@+id/battery_status_text"
-                            style="@style/StandardText"
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:layout_gravity="center_vertical"
-                            android:text="@string/battery_status_paused" />
-                            
                     </LinearLayout>
 
                     <LinearLayout
