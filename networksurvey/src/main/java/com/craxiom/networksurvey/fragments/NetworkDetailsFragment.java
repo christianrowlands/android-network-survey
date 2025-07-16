@@ -66,8 +66,6 @@ import java.util.SortedSet;
 import java.util.TreeSet;
 import java.util.stream.Collectors;
 
-import app.futured.donut.DonutProgressView;
-import app.futured.donut.DonutSection;
 import timber.log.Timber;
 
 /**
@@ -1108,29 +1106,6 @@ public class NetworkDetailsFragment extends AServiceDataFragment implements ICel
         signalStrengthBar.setBackgroundColor(ColorUtils.getFadedColor(color));
         // We want there to be at least a small amount of the bar visible, so we set the minimum to 5%.
         signalStrengthBar.setProgressPercentage(Math.max(5, scaledNormalizedValue), true);
-    }
-
-    /**
-     * Updates the first signal strength indicator UI element with the provided value. If the value is null, then
-     * the current value is cleared and a blank UI element is show.
-     *
-     * @param signalValue The new signal value to set, or null if the current value should be cleared.
-     */
-    private void setSignalStrengthDonut(DonutProgressView signalStrengthBar, Integer signalValue, int minValue, int maxNormalizedValue)
-    {
-        if (signalValue == null)
-        {
-            signalStrengthBar.clear();
-            return;
-        }
-
-        int normalizedValue = signalValue <= minValue ? 0 : Math.abs(minValue - signalValue);
-
-        final int color = ColorUtils.getSignalColorForValue(normalizedValue, maxNormalizedValue);
-
-        final DonutSection fillSection = new DonutSection("fill", color, normalizedValue);
-        signalStrengthBar.setCap(maxNormalizedValue);
-        signalStrengthBar.submitData(Collections.singletonList(fillSection));
     }
 
     /**

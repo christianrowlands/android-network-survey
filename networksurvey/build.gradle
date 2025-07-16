@@ -18,19 +18,19 @@ if (file("google-services.json").exists() && !gradle.startParameter.taskNames.an
 }
 
 ext.androidVersion = '28.0.0'
-ext.grpcVersion = '1.69.1'
+ext.grpcVersion = '1.73.0'
 ext.networkSurveyMessagingVersion = '1.8.0'
-ext.navigationVersion = '2.9.0'
+ext.navigationVersion = '2.9.2'
 
 android {
-    compileSdk 35
+    compileSdk 36
     defaultConfig {
         buildConfigField "String", "MESSAGING_API_VERSION", "\"${networkSurveyMessagingVersion}\""
         buildConfigField 'String', "NS_API_KEY", "\"${nsApiKey}\""
         buildConfigField 'String', "OCID_API_KEY", "\"${ocidApiKey}\""
         applicationId "com.craxiom.networksurvey"
         minSdkVersion 26
-        targetSdkVersion 35
+        targetSdkVersion 36
         versionCode 94
         versionName "1.39"
         setProperty("archivesBaseName", "$applicationName-$versionName")
@@ -103,7 +103,7 @@ configurations.configureEach {
 }
 
 dependencies {
-    implementation 'androidx.appcompat:appcompat:1.7.0'
+    implementation 'androidx.appcompat:appcompat:1.7.1'
     implementation 'com.jakewharton.timber:timber:5.0.1'
     implementation 'com.google.android.material:material:1.12.0'
     implementation 'androidx.legacy:legacy-support-v4:1.0.0'
@@ -119,7 +119,7 @@ dependencies {
     implementation 'com.google.android.flexbox:flexbox:3.0.0'
 
     implementation 'com.craxiom:mqtt-library:0.7.5'
-    implementation "com.google.protobuf:protobuf-java-util:4.28.2"
+    implementation "com.google.protobuf:protobuf-java-util:4.31.1"
     implementation "io.grpc:grpc-okhttp:${grpcVersion}"
     implementation "io.grpc:grpc-android:${grpcVersion}"
     implementation "io.grpc:grpc-stub:${grpcVersion}"
@@ -131,13 +131,12 @@ dependencies {
         exclude group: 'com.google.api.grpc', module: 'proto-google-common-protos'
     }
 
-    implementation "mil.nga.geopackage:geopackage-android:6.7.3"
-    implementation 'org.apache.commons:commons-csv:1.12.0'
+    implementation "mil.nga.geopackage:geopackage-android:6.7.4"
+    implementation 'org.apache.commons:commons-csv:1.14.0'
 
     implementation 'androidx.constraintlayout:constraintlayout:2.2.1'
     implementation 'androidx.recyclerview:recyclerview:1.4.0'
 
-    implementation 'app.futured.donut:donut:2.2.3'
     implementation 'com.github.MackHartley:RoundedProgressBar:3.0.0'
     implementation 'com.patrykandpatrick.vico:core:2.0.0-alpha.6'
     implementation 'com.patrykandpatrick.vico:compose-m3:2.0.0-alpha.6'
@@ -149,23 +148,23 @@ dependencies {
     implementation "androidx.room:room-runtime:$room_version"
 
     implementation "com.google.dagger:dagger:$hilt_version"
-    implementation 'androidx.compose.ui:ui-viewbinding:1.8.2'
+    implementation 'androidx.compose.ui:ui-viewbinding:1.8.3'
     ksp "androidx.room:room-compiler:$room_version"
     kapt "com.google.dagger:dagger-compiler:$hilt_version"
     implementation "com.google.dagger:hilt-android:$hilt_version"
     kapt "com.google.dagger:hilt-compiler:$hilt_version"
 
-    implementation 'org.maplibre.gl:android-sdk:11.9.0'
+    implementation 'org.maplibre.gl:android-sdk:11.12.1'
     implementation 'org.maplibre.gl:android-plugin-annotation-v9:3.0.2'
 
-    implementation 'com.squareup.retrofit2:retrofit:2.11.0'
-    implementation 'com.squareup.retrofit2:converter-gson:2.11.0'
+    implementation 'com.squareup.retrofit2:retrofit:3.0.0'
+    implementation 'com.squareup.retrofit2:converter-gson:3.0.0'
     implementation 'org.yaml:snakeyaml:2.4'
 
-    implementation "androidx.work:work-runtime:2.10.1"
+    implementation "androidx.work:work-runtime:2.10.2"
 
     // Compose
-    def composeBom = platform('androidx.compose:compose-bom:2025.05.01')
+    def composeBom = platform('androidx.compose:compose-bom:2025.07.00')
     implementation(composeBom)
     androidTestImplementation(composeBom)
 
@@ -179,11 +178,11 @@ dependencies {
     implementation "androidx.compose.ui:ui-tooling-preview"
     implementation "androidx.lifecycle:lifecycle-viewmodel-compose"
     implementation "androidx.lifecycle:lifecycle-runtime-compose"
-    implementation 'androidx.compose.ui:ui-tooling:1.8.2'
+    implementation 'androidx.compose.ui:ui-tooling:1.8.3'
     implementation "com.google.accompanist:accompanist-themeadapter-material:0.36.0"
 
     // Only include firebase in the google play build
-    regularImplementation platform('com.google.firebase:firebase-bom:33.5.1')
+    regularImplementation platform('com.google.firebase:firebase-bom:33.16.0')
     regularImplementation 'com.google.firebase:firebase-analytics'
     regularImplementation 'com.google.firebase:firebase-crashlytics'
 
@@ -199,7 +198,7 @@ dependencies {
     androidTestImplementation 'com.adevinta.android:barista:4.3.0'
     androidTestImplementation 'com.google.truth:truth:1.4.4'
     androidTestImplementation "com.craxiom:network-survey-messaging:${networkSurveyMessagingVersion}"
-    androidTestImplementation "mil.nga.geopackage:geopackage-android:6.7.3"
+    androidTestImplementation "mil.nga.geopackage:geopackage-android:6.7.4"
 }
 
 import com.github.jk1.license.filter.LicenseBundleNormalizer
