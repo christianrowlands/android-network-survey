@@ -237,7 +237,9 @@
                                         android:layout_height="wrap_content"
                                         android:layout_weight="1"
                                         android:paddingHorizontal="@dimen/small_margin"
-                                        android:layout_gravity="center" />
+                                        android:layout_gravity="center"
+                                        app:indicatorTrackGapSize="0dp"
+                                        app:trackStopIndicatorSize="0dp" />
 
                                     <TextView
                                         android:id="@+id/upload_percentage"
