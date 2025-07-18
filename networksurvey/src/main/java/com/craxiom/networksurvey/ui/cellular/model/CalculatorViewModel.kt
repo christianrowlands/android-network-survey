@@ -100,6 +100,7 @@ class CalculatorViewModel : ViewModel() {
 
     fun setSelectedGnbIdLength(option: GnbIdLengthOption) {
         _selectedGnbIdLength.value = option
+        calculate5GNrGnbIdAndSectorId()
     }
 
     fun setCellIdInput(input: String) {
