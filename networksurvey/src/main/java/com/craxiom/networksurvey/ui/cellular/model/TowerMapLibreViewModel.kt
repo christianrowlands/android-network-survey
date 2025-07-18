@@ -120,6 +120,9 @@ class TowerMapLibreViewModel : ViewModel() {
     // Track previous serving cell technology per subscription to detect changes
     private val previousServingCellTechnology = HashMap<Int, String>()
 
+    // Track if the current radio type selection is manual (user-selected) vs automatic
+    private var isManualRadioTypeSelection = false
+
     // Selected SIM subscription ID for display
     private val _selectedSimSubscriptionId = MutableStateFlow<Int?>(null)
     val selectedSimSubscriptionId = _selectedSimSubscriptionId.asStateFlow()
@@ -183,9 +186,10 @@ class TowerMapLibreViewModel : ViewModel() {
         _paddingInsets.value = paddingValues
     }
 
-    fun setSelectedRadioType(radioType: String) {
+    fun setSelectedRadioType(radioType: String, isManualSelection: Boolean = false) {
         if (_selectedRadioType.value != radioType) {
             _selectedRadioType.value = radioType
+            isManualRadioTypeSelection = isManualSelection
             // Clear towers when radio type changes
             _towers.value = LinkedHashSet()
             _noTowersFound.value = false
@@ -195,6 +199,9 @@ class TowerMapLibreViewModel : ViewModel() {
                     runTowerQuery()
                 }
             }
+        } else if (isManualSelection) {
+            // Even if the radio type is the same, update the manual selection flag
+            isManualRadioTypeSelection = true
         }
     }
 
@@ -231,6 +238,9 @@ class TowerMapLibreViewModel : ViewModel() {
     fun setSelectedSimSubscriptionId(subscriptionId: Int) {
         if (_selectedSimSubscriptionId.value != subscriptionId) {
             _selectedSimSubscriptionId.value = subscriptionId
+
+            // Clear manual selection when switching SIMs to allow automatic updates
+            isManualRadioTypeSelection = false
 
             // Update the radio type based on the selected SIM's serving cell
             val servingCellInfo = _servingCells.value[subscriptionId]
@@ -661,6 +671,8 @@ class TowerMapLibreViewModel : ViewModel() {
             it
         }
         previousServingCellTechnology.clear()
+        // Clear manual selection when SIM changes
+        isManualRadioTypeSelection = false
     }
 
     /**
@@ -684,7 +696,8 @@ class TowerMapLibreViewModel : ViewModel() {
         // Only update selectedRadioType if:
         // 1. The technology has actually changed for this subscription
         // 2. This is the selected subscription (or no selection made yet)
-        if (currentTechnology != null && currentTechnology != previousTechnology) {
+        // 3. The user hasn't manually selected a radio type
+        if (currentTechnology != null && currentTechnology != previousTechnology && !isManualRadioTypeSelection) {
             val selectedSim = _selectedSimSubscriptionId.value
 
             if (selectedSim == null || subscriptionId == selectedSim) {

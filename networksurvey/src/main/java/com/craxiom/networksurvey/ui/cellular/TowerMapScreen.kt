@@ -524,7 +524,10 @@ internal fun TowerMapScreen(
                                         onClick = {
                                             if (viewModel.selectedRadioType.value != label) {
                                                 Timber.i("The Selected radio type changed to $label")
-                                                viewModel.setSelectedRadioType(label)
+                                                viewModel.setSelectedRadioType(
+                                                    label,
+                                                    isManualSelection = true
+                                                )
                                             }
                                             expanded = false
                                         })

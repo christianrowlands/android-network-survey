@@ -78,9 +78,10 @@ class TowerMapFragment : AServiceDataFragment(), ICellularSurveyRecordListener {
 
     override fun onResume() {
         super.onResume()
-        setupComposeView(servingCell)
         checkLocationServicesEnabledAndPrompt()
         startAndBindToService()
+        // Update serving cell overlay without resetting the entire UI
+        updateServingCellOverlay()
     }
 
     override fun onPause() {
@@ -180,12 +181,20 @@ class TowerMapFragment : AServiceDataFragment(), ICellularSurveyRecordListener {
             }
 
             // Ensure we display the initial serving cell overlay
-            servingCell?.let { info ->
-                onCellularBatch(
-                    Collections.singletonList(info.servingCell),
-                    info.subscriptionId
-                )
-            }
+            updateServingCellOverlay()
+        }
+    }
+    
+    /**
+     * Updates the serving cell overlay without resetting the radio type selection.
+     * This is called from onResume to ensure the overlay is current after screen lock/unlock.
+     */
+    private fun updateServingCellOverlay() {
+        servingCell?.let { info ->
+            onCellularBatch(
+                Collections.singletonList(info.servingCell),
+                info.subscriptionId
+            )
         }
     }
 
