@@ -75,7 +75,7 @@ fun MapLibreMap(
     }
 
     AndroidView(factory = { mapView }, modifier = modifier)
-    MapLifecycle(mapView)
+    MapLifecycle(mapView, locationSettings)
 
     // Remember state
     val currentCameraState by rememberUpdatedState(cameraPositionState)
@@ -155,13 +155,13 @@ private suspend fun CompositionContext.newComposition(
  * Registers lifecycle observers to drive MapView lifecycle events from Compose.
  */
 @Composable
-private fun MapLifecycle(mapView: MapView) {
+private fun MapLifecycle(mapView: MapView, locationSettings: MapLocationSettings) {
     val context = LocalContext.current
     val lifecycle = LocalLifecycleOwner.current.lifecycle
     val prev = remember { mutableStateOf(Lifecycle.Event.ON_CREATE) }
 
     DisposableEffect(context, lifecycle, mapView) {
-        val observer = mapView.lifecycleObserver(prev)
+        val observer = mapView.lifecycleObserver(prev, locationSettings)
         val callbacks = mapView.componentCallbacks()
         lifecycle.addObserver(observer)
         context.registerComponentCallbacks(callbacks)
@@ -211,7 +211,7 @@ private fun MapLifecycle(mapView: MapView) {
     }
 }
 
-private fun MapView.lifecycleObserver(prev: MutableState<Lifecycle.Event>) =
+private fun MapView.lifecycleObserver(prev: MutableState<Lifecycle.Event>, locationSettings: MapLocationSettings) =
     LifecycleEventObserver { _, event ->
         when (event) {
             Lifecycle.Event.ON_CREATE -> if (prev.value != Lifecycle.Event.ON_STOP) this.onCreate(
@@ -219,7 +219,30 @@ private fun MapView.lifecycleObserver(prev: MutableState<Lifecycle.Event>) =
             )
 
             Lifecycle.Event.ON_START -> this.onStart()
-            Lifecycle.Event.ON_RESUME -> this.onResume()
+            Lifecycle.Event.ON_RESUME -> {
+                this.onResume()
+                // Re-enable location component if it should be enabled
+                try {
+                    val mapField = this.javaClass.getDeclaredField("mapLibreMap")
+                    mapField.isAccessible = true
+                    val map = mapField.get(this) as? MapLibreMap
+                    
+                    if (map != null && map.locationComponent.isLocationComponentActivated && locationSettings.locationEnabled) {
+                        map.locationComponent.isLocationComponentEnabled = true
+                    }
+                } catch (e: Exception) {
+                    // Try async as fallback
+                    try {
+                        this.getMapAsync { map ->
+                            if (map.locationComponent.isLocationComponentActivated && locationSettings.locationEnabled) {
+                                map.locationComponent.isLocationComponentEnabled = true
+                            }
+                        }
+                    } catch (ex: Exception) {
+                        // Ignore errors during resume
+                    }
+                }
+            }
             Lifecycle.Event.ON_PAUSE -> this.onPause()
             Lifecycle.Event.ON_STOP -> {
                 // Immediately disable location component to prevent updates after destroy
