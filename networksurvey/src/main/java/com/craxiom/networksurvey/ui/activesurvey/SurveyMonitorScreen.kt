@@ -169,40 +169,41 @@ private fun SurveyStatusTab(
     surveyState: ActiveSurveyState,
     modifier: Modifier = Modifier
 ) {
-    Box(
-        modifier = modifier.fillMaxSize(),
-        contentAlignment = Alignment.Center
+    Column(
+        modifier = modifier
+            .fillMaxSize()
+            .verticalScroll(rememberScrollState())
+            .padding(vertical = 24.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
     ) {
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(24.dp)
-        ) {
-            // Status Indicator
-            SurveyStatusIndicator(
-                isActive = surveyState.isAnyActive
-            )
+        // Status Indicator
+        SurveyStatusIndicator(
+            isActive = surveyState.isAnyActive
+        )
 
-            // Status Text
-            Text(
-                text = if (surveyState.isAnyActive) "Survey Running" else "Survey Stopped",
-                style = MaterialTheme.typography.headlineLarge.copy(
-                    fontSize = 36.sp,
-                    fontWeight = FontWeight.Bold
-                ),
-                color = if (surveyState.isAnyActive) {
-                    MaterialTheme.colorScheme.primary
-                } else {
-                    MaterialTheme.colorScheme.error
-                },
-                textAlign = TextAlign.Center
-            )
+        // Status Text
+        Text(
+            text = if (surveyState.isAnyActive) "Survey Running" else "Survey Stopped",
+            style = MaterialTheme.typography.headlineLarge.copy(
+                fontSize = 36.sp,
+                fontWeight = FontWeight.Bold
+            ),
+            color = if (surveyState.isAnyActive) {
+                MaterialTheme.colorScheme.primary
+            } else {
+                MaterialTheme.colorScheme.error
+            },
+            textAlign = TextAlign.Center,
+            modifier = Modifier.padding(top = 24.dp)
+        )
 
-            // Statistics when active
-            if (surveyState.isAnyActive) {
-                SurveyStatistics(
-                    surveyState = surveyState
-                )
-            }
+        // Statistics when active
+        if (surveyState.isAnyActive) {
+            SurveyStatistics(
+                surveyState = surveyState,
+                modifier = Modifier.padding(top = 24.dp)
+            )
         }
     }
 }
