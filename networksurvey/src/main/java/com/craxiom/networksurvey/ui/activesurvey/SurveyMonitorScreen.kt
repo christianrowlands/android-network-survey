@@ -11,6 +11,8 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.AlertDialog
@@ -497,7 +499,11 @@ private fun SurveyStatistics(
                     // Only upload count is shown
                     stringResource(R.string.help_dialog_upload_only)
                 }
-                Text(text = helpText)
+                Column(
+                    modifier = Modifier.verticalScroll(rememberScrollState())
+                ) {
+                    Text(text = helpText)
+                }
             },
             confirmButton = {
                 TextButton(onClick = { showHelpDialog = false }) {
