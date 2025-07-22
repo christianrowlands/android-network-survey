@@ -201,4 +201,11 @@
         android:restrictionType="bool"
         android:title="@string/allow_data_upload" />
 
+    <restriction
+        android:defaultValue="0"
+        android:description="@string/battery_pause_mdm_description"
+        android:key="battery_threshold_percent"
+        android:restrictionType="integer"
+        android:title="@string/battery_pause_title" />
+
 </restrictions>
