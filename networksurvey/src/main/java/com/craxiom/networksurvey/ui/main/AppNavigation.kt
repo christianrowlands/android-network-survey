@@ -105,6 +105,15 @@ fun NavGraphBuilder.mainGraph(
             TowerMapSettingsFragmentInCompose(mainNavController)
         }
 
+        composable(NavOption.SsidExclusionList.name) {
+            val viewModel =
+                viewModel<com.craxiom.networksurvey.ui.wifi.SsidExclusionListViewModel>()
+            com.craxiom.networksurvey.ui.wifi.SsidExclusionListScreen(
+                viewModel = viewModel,
+                onNavigateUp = { mainNavController.navigateUp() }
+            )
+        }
+
         composable(NavOption.QrCodeScanner.name) {
             QrCodeScannerInCompose(mainNavController)
         }
@@ -174,7 +183,8 @@ enum class NavOption {
     WifiSpectrum,
     WifiDetails,
     BluetoothDetails,
-    SurveyMonitor
+    SurveyMonitor,
+    SsidExclusionList
 }
 
 @Composable

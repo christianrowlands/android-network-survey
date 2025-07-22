@@ -52,6 +52,7 @@ import com.craxiom.networksurvey.NetworkSurveyActivity;
 import com.craxiom.networksurvey.R;
 import com.craxiom.networksurvey.constants.DeviceStatusMessageConstants;
 import com.craxiom.networksurvey.constants.NetworkSurveyConstants;
+import com.craxiom.networksurvey.data.SsidExclusionManager;
 import com.craxiom.networksurvey.fragments.model.MqttConnectionSettings;
 import com.craxiom.networksurvey.listeners.ExtraLocationListener;
 import com.craxiom.networksurvey.listeners.IBluetoothSurveyRecordListener;
@@ -684,6 +685,18 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
     public String getNsDeviceId()
     {
         return deviceId;
+    }
+
+    /**
+     * @return The SsidExclusionManager instance for managing excluded WiFi SSIDs.
+     */
+    public SsidExclusionManager getSsidExclusionManager()
+    {
+        if (surveyRecordProcessor != null)
+        {
+            return surveyRecordProcessor.getSsidExclusionManager();
+        }
+        return null;
     }
 
     /**

@@ -127,6 +127,17 @@ public class SettingsFragment extends PreferenceFragmentCompat implements Shared
                 return true;
             });
         }
+
+        // SSID Exclusion List preference
+        final Preference ssidExclusionList = findPreference("ssid_exclusion_list");
+        if (ssidExclusionList != null)
+        {
+            ssidExclusionList.setOnPreferenceClickListener(preference -> {
+                SharedViewModel viewModel = new ViewModelProvider(requireActivity()).get(SharedViewModel.class);
+                viewModel.triggerNavigationToSsidExclusionList();
+                return true;
+            });
+        }
     }
 
     @Override
@@ -184,7 +195,7 @@ public class SettingsFragment extends PreferenceFragmentCompat implements Shared
                     showCdrPermissionRationaleAndRequestPermissions();
                 }
                 break;
-                
+
             case NetworkSurveyConstants.PROPERTY_BATTERY_THRESHOLD_PERCENT:
                 // Validate battery threshold is between 0 and 95
                 try
@@ -205,7 +216,7 @@ public class SettingsFragment extends PreferenceFragmentCompat implements Shared
                         String strValue = sharedPreferences.getString(key, "0");
                         int threshold = Integer.parseInt(strValue);
                         if (threshold < 0 || threshold > 95) threshold = 0;
-                        
+
                         // Migrate to int
                         final SharedPreferences.Editor edit = sharedPreferences.edit();
                         edit.remove(key).putInt(key, threshold).apply();

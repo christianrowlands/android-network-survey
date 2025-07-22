@@ -89,6 +89,7 @@ import com.craxiom.networksurvey.constants.NetworkSurveyConstants;
 import com.craxiom.networksurvey.constants.NrMessageConstants;
 import com.craxiom.networksurvey.constants.UmtsMessageConstants;
 import com.craxiom.networksurvey.constants.WifiBeaconMessageConstants;
+import com.craxiom.networksurvey.data.SsidExclusionManager;
 import com.craxiom.networksurvey.listeners.IBluetoothSurveyRecordListener;
 import com.craxiom.networksurvey.listeners.ICdrEventListener;
 import com.craxiom.networksurvey.listeners.ICellularSurveyRecordListener;
@@ -177,6 +178,7 @@ public class SurveyRecordProcessor
     private final String missionId;
     private final Context context;
     private NetworkSurveyService networkSurveyService;
+    private final SsidExclusionManager ssidExclusionManager;
 
     private int recordNumber = 1;
     private int groupNumber = 0; // This will be incremented to 1 the first time it is used.
@@ -214,15 +216,28 @@ public class SurveyRecordProcessor
 
         gnssScanRateMs = PreferenceUtils.getScanRatePreferenceMs(NetworkSurveyConstants.PROPERTY_GNSS_SCAN_INTERVAL_SECONDS,
                 NetworkSurveyConstants.DEFAULT_GNSS_SCAN_INTERVAL_SECONDS, context);
+
+        ssidExclusionManager = new SsidExclusionManager(context);
     }
 
     /**
      * Set the reference to the NetworkSurveyService for session tracking.
+     *
      * @param service The NetworkSurveyService instance
      */
     void setNetworkSurveyService(NetworkSurveyService service)
     {
-        this.networkSurveyService = service;
+        networkSurveyService = service;
+    }
+
+    /**
+     * Get the SSID exclusion manager for managing excluded WiFi networks.
+     *
+     * @return The SsidExclusionManager instance
+     */
+    public SsidExclusionManager getSsidExclusionManager()
+    {
+        return ssidExclusionManager;
     }
 
     void registerCellularSurveyRecordListener(ICellularSurveyRecordListener surveyRecordListener)
@@ -1751,7 +1766,10 @@ public class SurveyRecordProcessor
         recordBuilder.setVersion(BuildConfig.MESSAGING_API_VERSION);
         recordBuilder.setData(dataBuilder);
 
-        return new WifiRecordWrapper(recordBuilder.build(), apScanResult.capabilities);
+        // Check if this SSID is in the exclusion list
+        final boolean isExcluded = ssidExclusionManager.isExcluded(ssid);
+
+        return new WifiRecordWrapper(recordBuilder.build(), apScanResult.capabilities, isExcluded);
     }
 
     /**
@@ -2593,20 +2611,37 @@ public class SurveyRecordProcessor
     {
         if (wifiBeaconRecords == null || wifiBeaconRecords.isEmpty()) return;
 
-        // Increment session record count for each record
+        // Filter out excluded SSIDs for persistence and streaming
+        List<WifiRecordWrapper> nonExcludedRecords = wifiBeaconRecords.stream()
+                .filter(record -> !record.isExcluded())
+                .collect(Collectors.toList());
+
+        // Increment session record count for non-excluded records only
         if (networkSurveyService != null)
         {
-            for (int i = 0; i < wifiBeaconRecords.size(); i++)
+            for (int i = 0; i < nonExcludedRecords.size(); i++)
             {
                 networkSurveyService.incrementSurveySessionRecordCount();
             }
         }
 
+        // Send ALL records (including excluded) to UI listeners for display
+        // but only non-excluded records to logging/streaming listeners
         for (IWifiSurveyRecordListener listener : wifiSurveyRecordListeners)
         {
             try
             {
-                listener.onWifiBeaconSurveyRecords(wifiBeaconRecords);
+                // Check if this is a UI listener (WifiViewModel) or a logging listener
+                String listenerClass = listener.getClass().getSimpleName();
+                if (listenerClass.contains("ViewModel") || listenerClass.contains("Fragment"))
+                {
+                    // UI listeners get all records so they can show excluded SSIDs
+                    listener.onWifiBeaconSurveyRecords(wifiBeaconRecords);
+                } else
+                {
+                    // Logging and streaming listeners only get non-excluded records
+                    listener.onWifiBeaconSurveyRecords(nonExcludedRecords);
+                }
             } catch (Exception e)
             {
                 Timber.e(e, "Unable to notify a Wi-Fi Survey Record Listener because of an exception");
@@ -2618,7 +2653,8 @@ public class SurveyRecordProcessor
         {
             if (uploadDbSink != null)
             {
-                uploadDbSink.onWifiBeaconSurveyRecords(wifiBeaconRecords);
+                // Only send non-excluded records to the upload database
+                uploadDbSink.onWifiBeaconSurveyRecords(nonExcludedRecords);
             }
         }
     }

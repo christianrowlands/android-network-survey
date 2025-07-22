@@ -49,6 +49,9 @@ class SharedViewModel @Inject constructor(application: Application) :
     val bluetoothData: BluetoothRecordData?
         get() = _bluetoothData
 
+    private val _navigateToSsidExclusionList = MutableLiveData(false)
+    val navigateToSsidExclusionList: LiveData<Boolean> = _navigateToSsidExclusionList
+
     private val _navigateToMqttConnection = MutableLiveData(false)
     val navigateToMqttConnection: LiveData<Boolean> = _navigateToMqttConnection
     private var _mqttConnectionSettings: MqttConnectionSettings? = null
@@ -67,6 +70,10 @@ class SharedViewModel @Inject constructor(application: Application) :
 
     fun triggerNavigationToTowerMapSettings() {
         _navigateToTowerMapSettings.value = true
+    }
+
+    fun triggerNavigationToSsidExclusionList() {
+        _navigateToSsidExclusionList.value = true
     }
 
     fun triggerNavigationToQrCodeScanner(mqttConnectionSettings: MqttConnectionSettings) {
@@ -124,6 +131,10 @@ class SharedViewModel @Inject constructor(application: Application) :
 
     fun resetBatteryOptimizationDialogFlag() {
         _showBatteryOptimizationDialog.value = false
+    }
+
+    fun resetSsidExclusionListNavigationFlag() {
+        _navigateToSsidExclusionList.value = false
     }
 
     fun resetNavigationFlag() {

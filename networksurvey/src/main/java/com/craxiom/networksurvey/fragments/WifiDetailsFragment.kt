@@ -21,6 +21,9 @@ import com.craxiom.networksurvey.ui.theme.NsTheme
 import com.craxiom.networksurvey.ui.wifi.WifiDetailsScreen
 import com.craxiom.networksurvey.ui.wifi.model.WifiDetailsViewModel
 import com.craxiom.networksurvey.util.PreferenceUtils
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import timber.log.Timber
 
 /**
@@ -42,6 +45,9 @@ class WifiDetailsFragment : AServiceDataFragment(), IWifiSurveyRecordListener {
                 viewModel.setScanRateSeconds(wifiScanRateMs / 1_000)
             }
         }
+
+    private val _serviceFlow = MutableStateFlow<NetworkSurveyService?>(null)
+    val serviceFlow: StateFlow<NetworkSurveyService?> = _serviceFlow.asStateFlow()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -111,12 +117,14 @@ class WifiDetailsFragment : AServiceDataFragment(), IWifiSurveyRecordListener {
 
     override fun onSurveyServiceConnected(service: NetworkSurveyService?) {
         if (service == null) return
+        _serviceFlow.value = service
         service.registerWifiSurveyRecordListener(this)
     }
 
     override fun onSurveyServiceDisconnecting(service: NetworkSurveyService?) {
         if (service == null) return
         service.unregisterWifiSurveyRecordListener(this)
+        _serviceFlow.value = null
 
         super.onSurveyServiceDisconnecting(service)
     }
@@ -162,5 +170,15 @@ class WifiDetailsFragment : AServiceDataFragment(), IWifiSurveyRecordListener {
     fun navigateBack() {
         val nsActivity = activity ?: return
         nsActivity.onBackPressed()
+    }
+
+    /**
+     * Navigates to the SSID Exclusion List UI
+     */
+    fun navigateToExclusionList() {
+        val nsActivity = activity ?: return
+
+        val viewModel = ViewModelProvider(nsActivity)[SharedViewModel::class.java]
+        viewModel.triggerNavigationToSsidExclusionList()
     }
 }

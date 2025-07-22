@@ -794,4 +794,26 @@ but work independently, so you have full control over how you handle your data.<
     <string name="battery_paused_title">Surveys Paused - Low Battery</string>
     <string name="battery_warning_message">Battery approaching pause threshold (%1$d%% remaining)</string>
     <string name="battery_management_paused_description">All survey operations are paused to preserve battery. Operations will resume automatically when battery level rises above %1$d%% after charging.</string>
+
+    <!-- SSID Exclusion List -->
+    <string name="ssid_exclusion_list_title">SSID Exclusion List</string>
+    <string name="ssid_exclusion_list_description">Manage SSIDs to exclude from survey data</string>
+    <string name="ssid_exclusion_list_summary">%1$d SSIDs excluded</string>
+    <string name="ssid_exclusion_list_empty">No SSIDs excluded</string>
+    <string name="add_to_exclusion_list">Add to Exclusion List</string>
+    <string name="remove_from_exclusion_list">Remove from Exclusion List</string>
+    <string name="ssid_added_to_exclusion">Added "%1$s" to exclusion list</string>
+    <string name="ssid_removed_from_exclusion">Removed "%1$s" from exclusion list</string>
+    <string name="ssid_already_excluded">"%1$s" is already in the exclusion list</string>
+    <string name="exclusion_list_full">Exclusion list is full (maximum 30 SSIDs)</string>
+    <string name="exclusion_list_full_message">The exclusion list has reached its maximum capacity of 30 SSIDs. Please remove some SSIDs before adding new ones.</string>
+    <string name="add_ssid_manually">Add SSID Manually</string>
+    <string name="enter_ssid">Enter SSID</string>
+    <string name="add">Add</string>
+    <string name="remove">Remove</string>
+    <string name="clear_all">Clear All</string>
+    <string name="confirm_clear_exclusion_list_title">Clear Exclusion List</string>
+    <string name="confirm_clear_exclusion_list_message">Are you sure you want to remove all SSIDs from the exclusion list?</string>
+    <string name="excluded_label">(Excluded)</string>
+    <string name="wifi_exclusion_info">Excluded SSIDs will not be saved to files or uploaded to databases</string>
 </resources>

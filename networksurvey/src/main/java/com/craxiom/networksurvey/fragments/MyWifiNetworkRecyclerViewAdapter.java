@@ -66,8 +66,16 @@ public class MyWifiNetworkRecyclerViewAdapter extends RecyclerView.Adapter<MyWif
             holder.ssid.setTextColor(context.getResources().getColor(R.color.red, null));
         } else
         {
-            holder.ssid.setText(ssid);
-            holder.ssid.setTextColor(context.getResources().getColor(R.color.colorAccent, null));
+            // Check if this SSID is excluded
+            if (wifiRecordWrapper.isExcluded())
+            {
+                holder.ssid.setText(ssid + " " + context.getString(R.string.excluded_label));
+                holder.ssid.setTextColor(context.getResources().getColor(R.color.gray, null));
+            } else
+            {
+                holder.ssid.setText(ssid);
+                holder.ssid.setTextColor(context.getResources().getColor(R.color.colorAccent, null));
+            }
         }
 
         if (data.hasSignalStrength())

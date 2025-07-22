@@ -64,6 +64,15 @@ fun MainCompose(
         }
     }
 
+    LaunchedEffect(viewModel.navigateToSsidExclusionList) {
+        viewModel.navigateToSsidExclusionList.observe(lifecycleOwner) { shouldNavigate ->
+            if (shouldNavigate) {
+                mainNavController.navigate(NavOption.SsidExclusionList.name)
+                viewModel.resetSsidExclusionListNavigationFlag()
+            }
+        }
+    }
+
     LaunchedEffect(viewModel.navigateToQrCodeScanner) {
         viewModel.navigateToQrCodeScanner.observe(lifecycleOwner) { shouldNavigate ->
             if (shouldNavigate) {

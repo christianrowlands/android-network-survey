@@ -217,6 +217,18 @@
     </PreferenceCategory>-->
 
     <PreferenceCategory
+        app:icon="@drawable/ic_wifi"
+        app:key="wifi_settings"
+        app:title="Wi-Fi Settings">
+
+        <Preference
+            app:key="ssid_exclusion_list"
+            app:title="@string/ssid_exclusion_list_title"
+            app:summary="@string/ssid_exclusion_list_description" />
+
+    </PreferenceCategory>
+
+    <PreferenceCategory
         app:icon="@android:drawable/ic_lock_idle_low_battery"
         app:key="battery_settings"
         app:title="Battery Settings">
@@ -224,7 +236,7 @@
         <Preference
             app:key="battery_optimization"
             app:title="@string/battery_optimization_settings_title" />
-        
+
         <com.craxiom.networksurvey.ui.BatteryThresholdPreference
             app:defaultValue="0"
             app:dialogMessage="@string/battery_pause_description"
