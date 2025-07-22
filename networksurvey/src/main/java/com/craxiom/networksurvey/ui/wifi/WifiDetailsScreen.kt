@@ -408,7 +408,7 @@ internal fun ExclusionCard(
                 text = when {
                     hiddenSsid -> "Hidden networks cannot be excluded"
                     isExcluded -> "This network is excluded from survey data"
-                    else -> "This network is included in survey data exports"
+                    else -> "This network is included in survey data"
                 },
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,

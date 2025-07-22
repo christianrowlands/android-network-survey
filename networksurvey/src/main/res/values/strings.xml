@@ -365,6 +365,7 @@ but work independently, so you have full control over how you handle your data.<
     <string name="wifi_bandwidth_value">BW %1$s</string>
 
     <string name="content_description_sort_wifi_networks_button">Sort Wi-Fi Networks Button</string>
+    <string name="content_description_ssid_exclusion_list">SSID Exclusion List</string>
     <string name="content_description_pause_wifi_network_scan_ui_updates">Pause Wi-Fi network scan UI updates</string>
 
     <string name="android_9_throttling_information">Android 9 throttles Wi-Fi scans to 2 per minute. Upgrade Android if possible.</string>

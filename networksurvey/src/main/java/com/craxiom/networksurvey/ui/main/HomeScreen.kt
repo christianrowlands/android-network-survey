@@ -221,6 +221,13 @@ fun getAppBarActions(
                 onClick = {
                     navController.navigate(NavOption.WifiSpectrum.name)
                 }
+            ),
+            AppBarAction(
+                icon = R.drawable.ic_filter,
+                description = R.string.ssid_exclusion_list_title,
+                onClick = {
+                    navController.navigate(NavOption.SsidExclusionList.name)
+                }
             )
         )
 
