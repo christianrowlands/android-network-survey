@@ -781,7 +781,7 @@ but work independently, so you have full control over how you handle your data.<
     <string name="battery_management_title">Battery Management</string>
     <string name="battery_pause_title">Pause scanning on low battery</string>
     <string name="battery_pause_description">Slide to set the battery level at which all survey operations will pause. Set to 0 to disable pausing. Operations will automatically resume when the battery level rises above this threshold after charging.</string>
-    <string name="battery_pause_mdm_description">Set the battery level at which all survey operations will pause. Set to 0 to disable pausing. Operations will automatically resume when the battery level rises above this threshold after charging.</string>
+    <string name="battery_pause_mdm_description">Set the battery level at which all survey operations will pause. Set to 0 to disable pausing. Operations will automatically resume when the battery level rises above this threshold after charging. Valid values between 0 – 95</string>
     <string name="battery_management_disabled">Disabled</string>
     <string name="battery_management_disabled_description">Surveys will continue until battery is depleted</string>
     <string name="battery_pause_active_description">Surveys will pause when battery drops to %1$d%% or below</string>
