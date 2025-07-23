@@ -187,6 +187,8 @@ dependencies {
     regularImplementation 'com.google.firebase:firebase-crashlytics'
 
     testImplementation 'junit:junit:4.13.2'
+    testImplementation 'org.mockito:mockito-core:5.5.0'
+    testImplementation 'org.mockito.kotlin:mockito-kotlin:5.1.0'
     implementation 'androidx.annotation:annotation:1.9.1'
 
     // Uncomment if you want to hunt for memory leaks
