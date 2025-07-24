@@ -1840,6 +1840,13 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
             deviceStatusFuture = null;
         }
 
+        // Ensure scan rate is valid before scheduling
+        if (deviceStatusScanRateMs <= 0)
+        {
+            Timber.w("Invalid device status scan rate: %d ms. Using default value.", deviceStatusScanRateMs);
+            deviceStatusScanRateMs = NetworkSurveyConstants.DEFAULT_DEVICE_STATUS_SCAN_INTERVAL_SECONDS * 1000;
+        }
+
         // Schedule the device status task at a fixed rate
         deviceStatusFuture = deviceStatusExecutor.scheduleWithFixedDelay(() -> {
             try
