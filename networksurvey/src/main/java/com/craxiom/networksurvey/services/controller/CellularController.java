@@ -605,7 +605,18 @@ public class CellularController extends AController
                         @Override
                         public void onError(int errorCode, @Nullable Throwable detail)
                         {
-                            super.onError(errorCode, detail);
+                            // Don't call super.onError() on Android 10 due to framework bug with ParcelableException
+                            // https://issuetracker.google.com/issues/141438333
+                            if (Build.VERSION.SDK_INT != Build.VERSION_CODES.Q)
+                            {
+                                try
+                                {
+                                    super.onError(errorCode, detail);
+                                } catch (Throwable t)
+                                {
+                                    Timber.e(t, "Error calling super.onError(), likely due to framework bug");
+                                }
+                            }
                             Timber.w(detail, "Received an error from the Telephony Manager when requesting a cell info update; errorCode=%s", errorCode);
                         }
                     });
