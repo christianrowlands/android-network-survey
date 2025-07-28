@@ -186,6 +186,7 @@ public class NetworkSurveyConstants
     public static final String PROPERTY_SELECTED_MAP_TILE_SOURCE = "selected_map_tile_source";
     public static final String PROPERTY_SHOW_BEACONDB_COVERAGE = "show_beacondb_coverage";
     public static final String PROPERTY_SHOW_TOWERS_LAYER = "show_towers_layer";
+    public static final String PROPERTY_NEW_TOWER_ALERTS_ENABLED = "new_tower_alerts_enabled";
 
     // Survey Monitor specific map preferences
     public static final String PROPERTY_SURVEY_MAP_TILE_SOURCE = "survey_map_tile_source";

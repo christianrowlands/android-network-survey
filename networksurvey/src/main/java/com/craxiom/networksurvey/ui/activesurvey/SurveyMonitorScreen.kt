@@ -1,8 +1,17 @@
 package com.craxiom.networksurvey.ui.activesurvey
 
+import android.media.RingtoneManager
+import android.net.Uri
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -23,6 +32,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Tab
 import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
@@ -40,19 +50,22 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
+import androidx.core.content.edit
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.preference.PreferenceManager
 import com.craxiom.networksurvey.R
+import com.craxiom.networksurvey.constants.NetworkSurveyConstants
 import com.craxiom.networksurvey.ui.activesurvey.model.ActiveSurveyState
 import com.craxiom.networksurvey.ui.cellular.MapContext
 import com.craxiom.networksurvey.ui.cellular.TowerMapScreen
+import com.craxiom.networksurvey.ui.cellular.model.ServingCellInfo
 import com.craxiom.networksurvey.ui.cellular.towermap.CameraMode
 
 /**
@@ -66,11 +79,109 @@ fun SurveyMonitorScreen(
     onNavigateToTowerMapSettings: () -> Unit
 ) {
     val surveyState by viewModel.surveyState.collectAsStateWithLifecycle()
+    val servingCellInfo by viewModel.servingCellInfo.collectAsStateWithLifecycle()
+    val isNewTowerDetected by viewModel.isNewTowerDetected.collectAsStateWithLifecycle()
+
+    // Sound playback
+    val context = LocalContext.current
+    val notificationSound: Uri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)
+
+    // New tower alert states - load from SharedPreferences
+    val prefs = remember { PreferenceManager.getDefaultSharedPreferences(context) }
+    var isNewTowerAlertsEnabled by remember {
+        mutableStateOf(
+            prefs.getBoolean(
+                NetworkSurveyConstants.PROPERTY_NEW_TOWER_ALERTS_ENABLED,
+                false
+            )
+        )
+    }
 
     var selectedTab by remember { mutableIntStateOf(0) }
 
     // Handle service connection
     ServiceConnectionHandler(viewModel)
+
+    // Initialize TowerDetectionManager with context
+    LaunchedEffect(Unit) {
+        viewModel.initializeTowerDetectionManager(context)
+    }
+
+    // Check for new towers when serving cell changes and upload scanning is active
+    LaunchedEffect(servingCellInfo, isNewTowerAlertsEnabled, surveyState.isUploadActive) {
+        // Only check if upload scanning is active AND user has enabled alerts
+        val shouldCheckForNewTowers = surveyState.isUploadActive && isNewTowerAlertsEnabled
+
+        viewModel.checkServingCellForNewTower(
+            servingCellInfo = servingCellInfo,
+            isNewTowerAlertsEnabled = shouldCheckForNewTowers,
+            onNewTowerDetected = {
+                // Play notification sound when new tower is detected
+                // Only play if the Survey Monitor screen is visible
+                try {
+                    val ringtone = RingtoneManager.getRingtone(context, notificationSound)
+                    ringtone?.play()
+                } catch (_: Exception) {
+                    // Handle error silently - don't crash if sound fails
+                }
+
+                // Show notification with tower details
+                servingCellInfo?.servingCell?.let { wrapper ->
+                    val protocol = wrapper.cellularProtocol
+                    val record = wrapper.cellularRecord
+
+                    val (technology, mcc, mnc, area, cellId) = when (protocol) {
+                        com.craxiom.networksurvey.model.CellularProtocol.LTE -> {
+                            val lte = record as com.craxiom.messaging.LteRecord
+                            val data = lte.data
+                            listOf(
+                                "LTE", data.mcc?.value ?: 0, data.mnc?.value ?: 0,
+                                data.tac?.value ?: 0, data.eci?.value ?: 0L
+                            )
+                        }
+
+                        com.craxiom.networksurvey.model.CellularProtocol.NR -> {
+                            val nr = record as com.craxiom.messaging.NrRecord
+                            val data = nr.data
+                            listOf(
+                                "5G NR", data.mcc?.value ?: 0, data.mnc?.value ?: 0,
+                                data.tac?.value ?: 0, data.nci?.value ?: 0L
+                            )
+                        }
+
+                        com.craxiom.networksurvey.model.CellularProtocol.GSM -> {
+                            val gsm = record as com.craxiom.messaging.GsmRecord
+                            val data = gsm.data
+                            listOf(
+                                "GSM", data.mcc?.value ?: 0, data.mnc?.value ?: 0,
+                                data.lac?.value ?: 0, data.ci?.value ?: 0L
+                            )
+                        }
+
+                        com.craxiom.networksurvey.model.CellularProtocol.UMTS -> {
+                            val umts = record as com.craxiom.messaging.UmtsRecord
+                            val data = umts.data
+                            listOf(
+                                "UMTS", data.mcc?.value ?: 0, data.mnc?.value ?: 0,
+                                data.lac?.value ?: 0, data.cid?.value ?: 0L
+                            )
+                        }
+
+                        else -> return@let
+                    }
+
+                    NewTowerNotificationHelper.showNewTowerNotification(
+                        context = context,
+                        mcc = mcc as Int,
+                        mnc = mnc as Int,
+                        area = area as Int,
+                        cellId = cellId as Long,
+                        technology = technology as String
+                    )
+                }
+            }
+        )
+    }
 
     // Keep screen always on when viewing Survey Monitor
     val view = LocalView.current
@@ -120,6 +231,19 @@ fun SurveyMonitorScreen(
                 ) {
                     SurveyStatusTab(
                         surveyState = surveyState,
+                        servingCellInfo = servingCellInfo,
+                        isNewTowerAlertsEnabled = isNewTowerAlertsEnabled,
+                        onNewTowerAlertsToggle = { enabled ->
+                            isNewTowerAlertsEnabled = enabled
+                            // Save to SharedPreferences
+                            prefs.edit {
+                                putBoolean(
+                                    NetworkSurveyConstants.PROPERTY_NEW_TOWER_ALERTS_ENABLED,
+                                    enabled
+                                )
+                            }
+                        },
+                        isNewTowerDetected = isNewTowerDetected,
                         modifier = Modifier.fillMaxSize()
                     )
                 }
@@ -132,8 +256,7 @@ fun SurveyMonitorScreen(
                 ) {
                     SurveyMapTab(
                         surveyState = surveyState,
-                        onNavigateToTowerMapSettings = onNavigateToTowerMapSettings,
-                        modifier = Modifier.fillMaxSize()
+                        onNavigateToTowerMapSettings = onNavigateToTowerMapSettings
                     )
                 }
             }
@@ -167,6 +290,10 @@ private fun ActiveSurveyTopBar(
 @Composable
 private fun SurveyStatusTab(
     surveyState: ActiveSurveyState,
+    servingCellInfo: ServingCellInfo?,
+    isNewTowerAlertsEnabled: Boolean,
+    onNewTowerAlertsToggle: (Boolean) -> Unit,
+    isNewTowerDetected: Boolean,
     modifier: Modifier = Modifier
 ) {
     Column(
@@ -177,26 +304,78 @@ private fun SurveyStatusTab(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
-        // Status Indicator
-        SurveyStatusIndicator(
-            isActive = surveyState.isAnyActive
-        )
+        // Compact Status Indicator and Text
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.Center,
+            modifier = Modifier.padding(bottom = 24.dp)
+        ) {
+            CompactSurveyStatusIndicator(
+                isActive = surveyState.isAnyActive,
+                isNewTowerDetected = isNewTowerDetected
+            )
 
-        // Status Text
-        Text(
-            text = if (surveyState.isAnyActive) "Survey Running" else "Survey Stopped",
-            style = MaterialTheme.typography.headlineLarge.copy(
-                fontSize = 36.sp,
-                fontWeight = FontWeight.Bold
-            ),
-            color = if (surveyState.isAnyActive) {
-                MaterialTheme.colorScheme.primary
-            } else {
-                MaterialTheme.colorScheme.error
-            },
-            textAlign = TextAlign.Center,
-            modifier = Modifier.padding(top = 24.dp)
-        )
+            Text(
+                text = if (surveyState.isAnyActive) "Survey Running" else "Survey Stopped",
+                style = MaterialTheme.typography.headlineMedium.copy(
+                    fontWeight = FontWeight.Bold
+                ),
+                color = if (surveyState.isAnyActive) {
+                    MaterialTheme.colorScheme.primary
+                } else {
+                    MaterialTheme.colorScheme.error
+                },
+                modifier = Modifier.padding(start = 16.dp)
+            )
+        }
+
+        // Serving Cell Details (always show when available)
+        if (servingCellInfo != null) {
+            ServingCellCard(
+                servingCellInfo = servingCellInfo,
+                isNewTowerDetected = isNewTowerDetected,
+                modifier = Modifier.padding(bottom = 16.dp)
+            )
+
+            // New Tower Alerts Toggle
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 24.dp, vertical = 8.dp)
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "New Tower Alerts",
+                            style = MaterialTheme.typography.titleMedium
+                        )
+                        Switch(
+                            checked = isNewTowerAlertsEnabled,
+                            onCheckedChange = onNewTowerAlertsToggle,
+                            enabled = surveyState.isUploadActive
+                        )
+                    }
+
+                    // Show explanatory text when disabled
+                    if (!surveyState.isUploadActive) {
+                        Text(
+                            text = "Enable upload scanning to detect new towers",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(top = 4.dp)
+                        )
+                    }
+                }
+            }
+        }
 
         // Statistics when active
         if (surveyState.isAnyActive) {
@@ -211,8 +390,7 @@ private fun SurveyStatusTab(
 @Composable
 private fun SurveyMapTab(
     surveyState: ActiveSurveyState,
-    onNavigateToTowerMapSettings: () -> Unit,
-    modifier: Modifier = Modifier
+    onNavigateToTowerMapSettings: () -> Unit
 ) {
     // Use TowerMapScreen with Survey Monitor context and specific defaults
     TowerMapScreen(
@@ -520,4 +698,204 @@ private fun formatElapsedTime(seconds: Int): String {
     val minutes = (seconds % 3600) / 60
     val secs = seconds % 60
     return String.format("%02d:%02d:%02d", hours, minutes, secs)
+}
+
+@Composable
+private fun CompactSurveyStatusIndicator(
+    isActive: Boolean,
+    isNewTowerDetected: Boolean,
+    modifier: Modifier = Modifier
+) {
+    val infiniteTransition = rememberInfiniteTransition(label = "status")
+
+    // Pulsing animation for active state
+    val pulseAlpha by infiniteTransition.animateFloat(
+        initialValue = 0.3f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(1000),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "pulse"
+    )
+
+    // Color animation for new tower detected
+    val indicatorColor by animateColorAsState(
+        targetValue = when {
+            isNewTowerDetected -> MaterialTheme.colorScheme.tertiary
+            isActive -> MaterialTheme.colorScheme.primary
+            else -> MaterialTheme.colorScheme.error
+        },
+        animationSpec = tween(500),
+        label = "color"
+    )
+
+    Box(
+        modifier = modifier.size(24.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        // Outer pulsing ring when active
+        if (isActive) {
+            Canvas(
+                modifier = Modifier.fillMaxSize()
+            ) {
+                drawCircle(
+                    color = indicatorColor,
+                    radius = size.minDimension / 2,
+                    alpha = pulseAlpha * 0.3f
+                )
+            }
+        }
+
+        // Inner dot
+        Canvas(
+            modifier = Modifier.size(12.dp)
+        ) {
+            drawCircle(
+                color = indicatorColor,
+                radius = size.minDimension / 2
+            )
+        }
+    }
+}
+
+@Composable
+private fun ServingCellCard(
+    servingCellInfo: ServingCellInfo,
+    isNewTowerDetected: Boolean,
+    modifier: Modifier = Modifier
+) {
+    val borderColor by animateColorAsState(
+        targetValue = if (isNewTowerDetected) {
+            MaterialTheme.colorScheme.tertiary
+        } else {
+            MaterialTheme.colorScheme.surfaceVariant
+        },
+        animationSpec = tween(500),
+        label = "border"
+    )
+
+    Card(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(horizontal = 24.dp)
+            .then(
+                if (isNewTowerDetected) {
+                    Modifier.border(
+                        width = 2.dp,
+                        color = borderColor,
+                        shape = MaterialTheme.shapes.medium
+                    )
+                } else Modifier
+            ),
+        colors = CardDefaults.cardColors(
+            containerColor = if (isNewTowerDetected) {
+                MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.3f)
+            } else {
+                MaterialTheme.colorScheme.surface
+            }
+        )
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp)
+        ) {
+            Text(
+                text = "Serving Cell",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.padding(bottom = 8.dp)
+            )
+
+            servingCellInfo.servingCell?.let { wrapper ->
+                val protocol = wrapper.cellularProtocol
+                val record = wrapper.cellularRecord
+
+                // Extract common fields based on protocol
+                val cellInfo = when (protocol) {
+                    com.craxiom.networksurvey.model.CellularProtocol.LTE -> {
+                        val lte = record as com.craxiom.messaging.LteRecord
+                        val data = lte.data
+                        listOf(
+                            "LTE", data.mcc?.value ?: 0, data.mnc?.value ?: 0,
+                            data.tac?.value ?: 0, data.eci?.value ?: 0L,
+                            "RSRP: ${data.rsrp?.value ?: "N/A"} dBm"
+                        )
+                    }
+
+                    com.craxiom.networksurvey.model.CellularProtocol.NR -> {
+                        val nr = record as com.craxiom.messaging.NrRecord
+                        val data = nr.data
+                        listOf(
+                            "5G NR", data.mcc?.value ?: 0, data.mnc?.value ?: 0,
+                            data.tac?.value ?: 0, data.nci?.value ?: 0L,
+                            "SS-RSRP: ${data.ssRsrp?.value ?: "N/A"} dBm"
+                        )
+                    }
+
+                    com.craxiom.networksurvey.model.CellularProtocol.GSM -> {
+                        val gsm = record as com.craxiom.messaging.GsmRecord
+                        val data = gsm.data
+                        listOf(
+                            "GSM", data.mcc?.value ?: 0, data.mnc?.value ?: 0,
+                            data.lac?.value ?: 0, data.ci?.value ?: 0L,
+                            "RSSI: ${data.signalStrength?.value ?: "N/A"} dBm"
+                        )
+                    }
+
+                    com.craxiom.networksurvey.model.CellularProtocol.UMTS -> {
+                        val umts = record as com.craxiom.messaging.UmtsRecord
+                        val data = umts.data
+                        listOf(
+                            "UMTS", data.mcc?.value ?: 0, data.mnc?.value ?: 0,
+                            data.lac?.value ?: 0, data.cid?.value ?: 0L,
+                            "RSCP: ${data.rscp?.value ?: "N/A"} dBm"
+                        )
+                    }
+
+                    else -> listOf("Unknown", 0, 0, 0, 0L, "N/A")
+                }
+
+                val technology = cellInfo[0] as String
+                val mcc = cellInfo[1] as Int
+                val mnc = cellInfo[2] as Int
+                val area = cellInfo[3] as Int
+                val cellId = cellInfo[4] as Long
+                val signalStrength = cellInfo[5] as String
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Column {
+                        Text(
+                            text = technology,
+                            style = MaterialTheme.typography.labelLarge,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                        Text(
+                            text = "MCC-MNC: $mcc-$mnc",
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                        Text(
+                            text = "TAC/LAC: $area",
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                    }
+                    Column(
+                        horizontalAlignment = Alignment.End
+                    ) {
+                        Text(
+                            text = "Cell ID: $cellId",
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                        Text(
+                            text = signalStrength,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.secondary
+                        )
+                    }
+                }
+            }
+        }
+    }
 }

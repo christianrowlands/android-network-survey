@@ -5,13 +5,21 @@ import android.location.LocationListener
 import android.os.Bundle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.craxiom.messaging.GsmRecord
+import com.craxiom.messaging.LteRecord
+import com.craxiom.messaging.NrRecord
+import com.craxiom.messaging.UmtsRecord
 import com.craxiom.mqttlibrary.IConnectionStateListener
 import com.craxiom.mqttlibrary.connection.ConnectionState
+import com.craxiom.networksurvey.listeners.ICellularSurveyRecordListener
 import com.craxiom.networksurvey.listeners.ILoggingChangeListener
+import com.craxiom.networksurvey.model.CellularProtocol
+import com.craxiom.networksurvey.model.CellularRecordWrapper
 import com.craxiom.networksurvey.services.NetworkSurveyService
 import com.craxiom.networksurvey.ui.activesurvey.model.ActiveSurveyState
 import com.craxiom.networksurvey.ui.activesurvey.model.SurveyTrack
-import dagger.hilt.android.lifecycle.HiltViewModel
+import com.craxiom.networksurvey.ui.cellular.model.ServingCellInfo
+import com.craxiom.networksurvey.util.CellularUtils
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -20,17 +28,25 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import org.maplibre.android.geometry.LatLng
 import timber.log.Timber
-import javax.inject.Inject
 
 /**
  * ViewModel for the Active Survey screen that manages survey status monitoring
  */
-@HiltViewModel
-class SurveyMonitorViewModel @Inject constructor() : ViewModel(), IConnectionStateListener,
-    ILoggingChangeListener, LocationListener {
+class SurveyMonitorViewModel : ViewModel(), IConnectionStateListener,
+    ILoggingChangeListener, LocationListener, ICellularSurveyRecordListener {
+
+    private var towerDetectionManager: TowerDetectionManager? = null
 
     private val _surveyState = MutableStateFlow(ActiveSurveyState())
     val surveyState: StateFlow<ActiveSurveyState> = _surveyState.asStateFlow()
+
+    private val _isNewTowerDetected = MutableStateFlow(false)
+    val isNewTowerDetected: StateFlow<Boolean> = _isNewTowerDetected.asStateFlow()
+
+    private val _lastServingCellKey = MutableStateFlow<String?>(null)
+
+    private val _servingCellInfo = MutableStateFlow<ServingCellInfo?>(null)
+    val servingCellInfo: StateFlow<ServingCellInfo?> = _servingCellInfo.asStateFlow()
 
     private var networkSurveyService: NetworkSurveyService? = null
 
@@ -48,12 +64,23 @@ class SurveyMonitorViewModel @Inject constructor() : ViewModel(), IConnectionSta
     }
 
     /**
+     * Initialize the TowerDetectionManager with a Context.
+     * This should be called from the UI layer where Context is available.
+     */
+    fun initializeTowerDetectionManager(context: android.content.Context) {
+        if (towerDetectionManager == null) {
+            towerDetectionManager = TowerDetectionManager(context)
+        }
+    }
+
+    /**
      * Sets the NetworkSurveyService reference
      */
     fun setNetworkSurveyService(service: NetworkSurveyService?) {
         // Unregister from old service
         networkSurveyService?.unregisterMqttConnectionStateListener(this)
         networkSurveyService?.unregisterLoggingChangeListener(this)
+        networkSurveyService?.unregisterCellularSurveyRecordListener(this)
         networkSurveyService?.primaryLocationListener?.unregisterListener(this)
 
         networkSurveyService = service
@@ -62,6 +89,7 @@ class SurveyMonitorViewModel @Inject constructor() : ViewModel(), IConnectionSta
         service?.let {
             it.registerMqttConnectionStateListener(this)
             it.registerLoggingChangeListener(this)
+            it.registerCellularSurveyRecordListener(this)
             it.primaryLocationListener?.registerListener(this)
 
             // Get initial states
@@ -222,10 +250,123 @@ class SurveyMonitorViewModel @Inject constructor() : ViewModel(), IConnectionSta
         return networkSurveyService?.surveySessionUploadRecordCount ?: 0
     }
 
+    /**
+     * Check if the serving cell is a new tower.
+     * Called when new tower alerts are enabled and serving cell changes.
+     */
+    fun checkServingCellForNewTower(
+        servingCellInfo: ServingCellInfo?,
+        isNewTowerAlertsEnabled: Boolean,
+        onNewTowerDetected: () -> Unit
+    ) {
+        // Use the parameter if provided, otherwise use the local state
+        val cellInfo = servingCellInfo ?: _servingCellInfo.value
+
+        if (!isNewTowerAlertsEnabled || cellInfo?.servingCell == null) {
+            return
+        }
+
+        val cellularRecord = cellInfo.servingCell
+        val protocol = cellularRecord.cellularProtocol
+        val record = cellularRecord.cellularRecord
+
+        // Extract cell identity based on protocol
+        val (mcc, mnc, area, cellId, radio) = when (protocol) {
+            CellularProtocol.LTE -> {
+                val lte = record as LteRecord
+                val data = lte.data
+                listOf(
+                    data.mcc?.value ?: 0, data.mnc?.value ?: 0,
+                    data.tac?.value ?: 0, data.eci?.value ?: 0L, "LTE"
+                )
+            }
+
+            CellularProtocol.NR -> {
+                val nr = record as NrRecord
+                val data = nr.data
+                listOf(
+                    data.mcc?.value ?: 0, data.mnc?.value ?: 0,
+                    data.tac?.value ?: 0, data.nci?.value ?: 0L, "NR"
+                )
+            }
+
+            CellularProtocol.GSM -> {
+                val gsm = record as GsmRecord
+                val data = gsm.data
+                listOf(
+                    data.mcc?.value ?: 0, data.mnc?.value ?: 0,
+                    data.lac?.value ?: 0, data.ci?.value ?: 0L, "GSM"
+                )
+            }
+
+            CellularProtocol.UMTS -> {
+                val umts = record as UmtsRecord
+                val data = umts.data
+                listOf(
+                    data.mcc?.value ?: 0, data.mnc?.value ?: 0,
+                    data.lac?.value ?: 0, data.cid?.value ?: 0L, "UMTS"
+                )
+            }
+
+            else -> return
+        }
+
+        val mccInt = mcc as Int
+        val mncInt = mnc as Int
+        val areaInt = area as Int
+        val cellIdLong = cellId as Long
+        val radioStr = radio as String
+
+        // Create a unique key for this cell
+        val cellKey = "$mccInt-$mncInt-$areaInt-$cellIdLong"
+
+        // Check if this is a different cell than the last one
+        if (_lastServingCellKey.value != cellKey) {
+            _lastServingCellKey.value = cellKey
+
+            // Check if this is a new tower
+            viewModelScope.launch {
+                val manager = towerDetectionManager
+                if (manager == null) {
+                    Timber.w("TowerDetectionManager not initialized")
+                    return@launch
+                }
+
+                val isNew = manager.checkIfTowerIsNew(
+                    mccInt, mncInt, areaInt, cellIdLong, radioStr
+                )
+
+                if (isNew) {
+                    _isNewTowerDetected.value = true
+                    onNewTowerDetected()
+
+                    // Keep the indicator visible until next cell change
+                    // (handled by next cell change)
+                } else {
+                    _isNewTowerDetected.value = false
+                }
+            }
+        }
+    }
+
+    /**
+     * ICellularSurveyRecordListener implementation - Called when new cellular records are received
+     */
+    override fun onCellularBatch(cellularGroup: List<CellularRecordWrapper>, subscriptionId: Int) {
+        // Find the serving cell in the batch
+        cellularGroup.forEach { cellularRecord ->
+            if (CellularUtils.isServingCell(cellularRecord.cellularRecord)) {
+                _servingCellInfo.value = ServingCellInfo(cellularRecord, subscriptionId)
+                Timber.d("Updated serving cell info: ${cellularRecord.cellularProtocol}")
+            }
+        }
+    }
+
     override fun onCleared() {
         super.onCleared()
         networkSurveyService?.unregisterMqttConnectionStateListener(this)
         networkSurveyService?.unregisterLoggingChangeListener(this)
+        networkSurveyService?.unregisterCellularSurveyRecordListener(this)
         networkSurveyService?.primaryLocationListener?.unregisterListener(this)
     }
 

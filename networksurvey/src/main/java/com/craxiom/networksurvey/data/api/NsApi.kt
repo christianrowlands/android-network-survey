@@ -30,6 +30,14 @@ interface Api {
 
     @GET("/maptiler/key")
     suspend fun getApiKey(): Response<MapTilerKeyResponse>
+
+    @GET("cells/single")
+    suspend fun checkSingleTower(
+        @Query("mcc") mcc: Int,
+        @Query("mnc") mnc: Int,
+        @Query("area") area: Int,
+        @Query("cid") cid: Long
+    ): Response<Tower>
 }
 
 val okHttpClient = OkHttpClient.Builder()
