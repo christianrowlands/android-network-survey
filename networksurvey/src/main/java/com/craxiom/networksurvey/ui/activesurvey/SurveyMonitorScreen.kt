@@ -11,22 +11,27 @@ import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -329,8 +334,7 @@ private fun SurveyStatusTab(
             )
         }
 
-        // Serving Cell Details (always show when available)
-        if (servingCellInfo != null) {
+        // Serving Cell Details (always show card space)
             ServingCellCard(
                 servingCellInfo = servingCellInfo,
                 isNewTowerDetected = isNewTowerDetected,
@@ -375,7 +379,6 @@ private fun SurveyStatusTab(
                     }
                 }
             }
-        }
 
         // Statistics when active
         if (surveyState.isAnyActive) {
@@ -761,7 +764,7 @@ private fun CompactSurveyStatusIndicator(
 
 @Composable
 private fun ServingCellCard(
-    servingCellInfo: ServingCellInfo,
+    servingCellInfo: ServingCellInfo?,
     isNewTowerDetected: Boolean,
     modifier: Modifier = Modifier
 ) {
@@ -775,7 +778,7 @@ private fun ServingCellCard(
         label = "border"
     )
 
-    Card(
+    ElevatedCard(
         modifier = modifier
             .fillMaxWidth()
             .padding(horizontal = 24.dp)
@@ -788,7 +791,7 @@ private fun ServingCellCard(
                     )
                 } else Modifier
             ),
-        colors = CardDefaults.cardColors(
+        colors = CardDefaults.elevatedCardColors(
             containerColor = if (isNewTowerDetected) {
                 MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.3f)
             } else {
@@ -803,10 +806,11 @@ private fun ServingCellCard(
                 text = "Serving Cell",
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
-                modifier = Modifier.padding(bottom = 8.dp)
+                modifier = Modifier.padding(bottom = 16.dp)
             )
 
-            servingCellInfo.servingCell?.let { wrapper ->
+            if (servingCellInfo?.servingCell != null) {
+                val wrapper = servingCellInfo.servingCell
                 val protocol = wrapper.cellularProtocol
                 val record = wrapper.cellularRecord
 
@@ -818,7 +822,7 @@ private fun ServingCellCard(
                         listOf(
                             "LTE", data.mcc?.value ?: 0, data.mnc?.value ?: 0,
                             data.tac?.value ?: 0, data.eci?.value ?: 0L,
-                            "RSRP: ${data.rsrp?.value ?: "N/A"} dBm"
+                            data.rsrp?.value?.let { "$it" } ?: "---"
                         )
                     }
 
@@ -828,7 +832,7 @@ private fun ServingCellCard(
                         listOf(
                             "5G NR", data.mcc?.value ?: 0, data.mnc?.value ?: 0,
                             data.tac?.value ?: 0, data.nci?.value ?: 0L,
-                            "SS-RSRP: ${data.ssRsrp?.value ?: "N/A"} dBm"
+                            data.ssRsrp?.value?.let { "$it" } ?: "---"
                         )
                     }
 
@@ -838,7 +842,7 @@ private fun ServingCellCard(
                         listOf(
                             "GSM", data.mcc?.value ?: 0, data.mnc?.value ?: 0,
                             data.lac?.value ?: 0, data.ci?.value ?: 0L,
-                            "RSSI: ${data.signalStrength?.value ?: "N/A"} dBm"
+                            data.signalStrength?.value?.let { "$it" } ?: "---"
                         )
                     }
 
@@ -848,11 +852,11 @@ private fun ServingCellCard(
                         listOf(
                             "UMTS", data.mcc?.value ?: 0, data.mnc?.value ?: 0,
                             data.lac?.value ?: 0, data.cid?.value ?: 0L,
-                            "RSCP: ${data.rscp?.value ?: "N/A"} dBm"
+                            data.rscp?.value?.let { "$it" } ?: "---"
                         )
                     }
 
-                    else -> listOf("Unknown", 0, 0, 0, 0L, "N/A")
+                    else -> listOf("Unknown", 0, 0, 0, 0L, "---")
                 }
 
                 val technology = cellInfo[0] as String
@@ -862,40 +866,204 @@ private fun ServingCellCard(
                 val cellId = cellInfo[4] as Long
                 val signalStrength = cellInfo[5] as String
 
+                // Technology and Signal Row
                 Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 16.dp),
+                    horizontalArrangement = Arrangement.spacedBy(32.dp)
                 ) {
-                    Column {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = "TECHNOLOGY",
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(bottom = 4.dp)
+                        )
                         Text(
                             text = technology,
-                            style = MaterialTheme.typography.labelLarge,
-                            color = MaterialTheme.colorScheme.primary
-                        )
-                        Text(
-                            text = "MCC-MNC: $mcc-$mnc",
-                            style = MaterialTheme.typography.bodyMedium
-                        )
-                        Text(
-                            text = "TAC/LAC: $area",
-                            style = MaterialTheme.typography.bodyMedium
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = MaterialTheme.colorScheme.primary,
+                            fontWeight = FontWeight.Medium
                         )
                     }
-                    Column(
-                        horizontalAlignment = Alignment.End
-                    ) {
+                    Column(modifier = Modifier.weight(1f)) {
                         Text(
-                            text = "Cell ID: $cellId",
-                            style = MaterialTheme.typography.bodyMedium
+                            text = "SIGNAL",
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(bottom = 4.dp)
                         )
                         Text(
-                            text = signalStrength,
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.secondary
+                            text = "$signalStrength dBm",
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = MaterialTheme.colorScheme.onSurface
                         )
                     }
                 }
+
+                // Network and Area Row
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 16.dp),
+                    horizontalArrangement = Arrangement.spacedBy(32.dp)
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = "NETWORK",
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(bottom = 4.dp)
+                        )
+                        Text(
+                            text = "$mcc-$mnc",
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                    }
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = if (protocol == com.craxiom.networksurvey.model.CellularProtocol.GSM || 
+                                       protocol == com.craxiom.networksurvey.model.CellularProtocol.UMTS) "LAC" else "TAC",
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(bottom = 4.dp)
+                        )
+                        Text(
+                            text = area.toString(),
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                    }
+                }
+
+                // Cell ID
+                Column(modifier = Modifier.fillMaxWidth()) {
+                    Text(
+                        text = "CELL ID",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(bottom = 4.dp)
+                    )
+                    Text(
+                        text = cellId.toString(),
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                }
+            } else {
+                // Loading state
+                ServingCellCardSkeleton()
             }
+        }
+    }
+}
+
+@Composable
+private fun ServingCellCardSkeleton() {
+    val infiniteTransition = rememberInfiniteTransition(label = "shimmer")
+    val alpha by infiniteTransition.animateFloat(
+        initialValue = 0.2f,
+        targetValue = 0.6f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(1000),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "shimmer_alpha"
+    )
+    
+    val shimmerColor = MaterialTheme.colorScheme.onSurface.copy(alpha = alpha)
+    
+    Column {
+        // Technology and Signal Row
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = 16.dp),
+            horizontalArrangement = Arrangement.spacedBy(32.dp)
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = "TECHNOLOGY",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(bottom = 4.dp)
+                )
+                Box(
+                    modifier = Modifier
+                        .height(20.dp)
+                        .fillMaxWidth(0.6f)
+                        .background(shimmerColor, RoundedCornerShape(4.dp))
+                )
+            }
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = "SIGNAL",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(bottom = 4.dp)
+                )
+                Box(
+                    modifier = Modifier
+                        .height(20.dp)
+                        .fillMaxWidth(0.7f)
+                        .background(shimmerColor, RoundedCornerShape(4.dp))
+                )
+            }
+        }
+
+        // Network and Area Row
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = 16.dp),
+            horizontalArrangement = Arrangement.spacedBy(32.dp)
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = "NETWORK",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(bottom = 4.dp)
+                )
+                Box(
+                    modifier = Modifier
+                        .height(20.dp)
+                        .fillMaxWidth(0.5f)
+                        .background(shimmerColor, RoundedCornerShape(4.dp))
+                )
+            }
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = "TAC",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(bottom = 4.dp)
+                )
+                Box(
+                    modifier = Modifier
+                        .height(20.dp)
+                        .fillMaxWidth(0.4f)
+                        .background(shimmerColor, RoundedCornerShape(4.dp))
+                )
+            }
+        }
+
+        // Cell ID
+        Column(modifier = Modifier.fillMaxWidth()) {
+            Text(
+                text = "CELL ID",
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(bottom = 4.dp)
+            )
+            Box(
+                modifier = Modifier
+                    .height(20.dp)
+                    .fillMaxWidth(0.8f)
+                    .background(shimmerColor, RoundedCornerShape(4.dp))
+            )
         }
     }
 }
