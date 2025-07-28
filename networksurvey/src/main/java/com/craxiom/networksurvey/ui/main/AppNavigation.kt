@@ -84,7 +84,6 @@ fun NavGraphBuilder.mainGraph(
 
         composable(NavDrawerOption.SurveyMonitor.name) {
             SurveyMonitorScreen(
-                sharedViewModel = sharedViewModel,
                 onBackPressed = { mainNavController.navigateUp() },
                 onNavigateToTowerMapSettings = {
                     mainNavController.navigate(NavOption.TowerMapSettings.name)
@@ -147,16 +146,6 @@ fun NavGraphBuilder.mainGraph(
                 )
 
             BluetoothDetailsInCompose(paddingValues, bluetoothRecordData)
-        }
-
-        composable(NavOption.SurveyMonitor.name) {
-            SurveyMonitorScreen(
-                sharedViewModel = sharedViewModel,
-                onBackPressed = { mainNavController.navigateUp() },
-                onNavigateToTowerMapSettings = {
-                    mainNavController.navigate(NavOption.TowerMapSettings.name)
-                }
-            )
         }
     }
 }
