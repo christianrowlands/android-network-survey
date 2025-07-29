@@ -2,15 +2,18 @@ package com.craxiom.networksurvey.ui.activesurvey
 
 import android.media.RingtoneManager
 import android.net.Uri
+import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.animateIntAsState
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -24,6 +27,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -113,6 +117,17 @@ fun SurveyMonitorScreen(
     // Initialize TowerDetectionManager with context
     LaunchedEffect(Unit) {
         viewModel.initializeTowerDetectionManager(context)
+    }
+
+    // Auto-disable alerts when survey stops
+    LaunchedEffect(surveyState.isAnyActive) {
+        if (!surveyState.isAnyActive && isNewTowerAlertsEnabled) {
+            isNewTowerAlertsEnabled = false
+            // Save to SharedPreferences
+            prefs.edit {
+                putBoolean(NetworkSurveyConstants.PROPERTY_NEW_TOWER_ALERTS_ENABLED, false)
+            }
+        }
     }
 
     // Check for new towers when serving cell changes and upload scanning is active
@@ -304,6 +319,9 @@ private fun SurveyStatusTab(
     isNewTowerDetected: Boolean,
     modifier: Modifier = Modifier
 ) {
+    // State for New Tower Alerts help dialog
+    var showNewTowerAlertsHelpDialog by remember { mutableStateOf(false) }
+
     Column(
         modifier = modifier
             .fillMaxSize()
@@ -314,14 +332,14 @@ private fun SurveyStatusTab(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(top = 24.dp),
+                .padding(top = 16.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             // Compact Status Indicator and Text
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.Center,
-                modifier = Modifier.padding(bottom = 24.dp)
+                modifier = Modifier.padding(bottom = 16.dp)
             ) {
                 CompactSurveyStatusIndicator(
                     isActive = surveyState.isAnyActive,
@@ -346,7 +364,7 @@ private fun SurveyStatusTab(
             if (surveyState.isAnyActive) {
                 SurveyStatistics(
                     surveyState = surveyState,
-                    modifier = Modifier.padding(bottom = 24.dp)
+                    modifier = Modifier.padding(bottom = 16.dp)
                 )
             }
         }
@@ -354,91 +372,188 @@ private fun SurveyStatusTab(
         // Spacer to push bottom content down
         Spacer(modifier = Modifier.weight(1f))
 
-        // Bottom Section - Serving Cell and Alerts
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(bottom = 24.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            // Serving Cell Card with enhanced styling
-            ServingCellCard(
-                servingCellInfo = servingCellInfo,
-                isNewTowerDetected = isNewTowerDetected,
-                modifier = Modifier
-            )
-
-            // New Tower Alerts integrated with bottom section
-            Card(
+        // Bottom Section - Serving Cell and Alerts (only show when survey is active)
+        if (surveyState.isAnyActive) {
+            Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 16.dp),
-                shape = RoundedCornerShape(12.dp),
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceContainerLow
-                ),
-                elevation = CardDefaults.cardElevation(
-                    defaultElevation = 0.dp
-                )
+                    .padding(bottom = 16.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                Row(
+                // Serving Cell Card with enhanced styling
+                ServingCellCard(
+                    servingCellInfo = servingCellInfo,
+                    isNewTowerDetected = isNewTowerDetected,
+                    modifier = Modifier
+                )
+
+                // New Tower Alerts integrated with bottom section
+                Card(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 16.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Column(modifier = Modifier.weight(1f)) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            Icon(
-                                painter = painterResource(id = R.drawable.ic_cell_tower),
-                                contentDescription = null,
-                                modifier = Modifier.size(20.dp),
-                                tint = if (isNewTowerAlertsEnabled && surveyState.isUploadActive) {
-                                    MaterialTheme.colorScheme.primary
-                                } else {
-                                    MaterialTheme.colorScheme.onSurfaceVariant
-                                }
-                            )
-                            Text(
-                                text = "New Tower Alerts",
-                                style = MaterialTheme.typography.bodyLarge,
-                                fontWeight = FontWeight.Medium,
-                                color = if (surveyState.isUploadActive) {
-                                    MaterialTheme.colorScheme.onSurface
-                                } else {
-                                    MaterialTheme.colorScheme.onSurfaceVariant
-                                }
-                            )
-                        }
-                        if (!surveyState.isUploadActive) {
-                            Text(
-                                text = "Requires upload scanning",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
-                                modifier = Modifier.padding(top = 4.dp, start = 28.dp)
-                            )
-                        } else if (isNewTowerAlertsEnabled) {
-                            Text(
-                                text = "Alerts when new towers are detected",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier.padding(top = 4.dp, start = 28.dp)
-                            )
-                        }
-                    }
-                    Switch(
-                        checked = isNewTowerAlertsEnabled,
-                        onCheckedChange = onNewTowerAlertsToggle,
-                        enabled = surveyState.isUploadActive,
-                        modifier = Modifier.padding(start = 8.dp)
+                        .padding(horizontal = 16.dp),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.surfaceContainerLow
+                    ),
+                    elevation = CardDefaults.cardElevation(
+                        defaultElevation = 0.dp
                     )
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp, vertical = 12.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                Icon(
+                                    painter = painterResource(id = R.drawable.ic_cell_tower),
+                                    contentDescription = null,
+                                    modifier = Modifier.size(20.dp),
+                                    tint = if (isNewTowerAlertsEnabled && surveyState.isUploadActive) {
+                                        MaterialTheme.colorScheme.primary
+                                    } else {
+                                        MaterialTheme.colorScheme.onSurfaceVariant
+                                    }
+                                )
+                                Text(
+                                    text = "New Tower Alerts",
+                                    style = MaterialTheme.typography.bodyLarge,
+                                    fontWeight = FontWeight.Medium,
+                                    color = if (surveyState.isUploadActive) {
+                                        MaterialTheme.colorScheme.onSurface
+                                    } else {
+                                        MaterialTheme.colorScheme.onSurfaceVariant
+                                    }
+                                )
+                                IconButton(
+                                    onClick = { showNewTowerAlertsHelpDialog = true },
+                                    modifier = Modifier.size(24.dp)
+                                ) {
+                                    Icon(
+                                        painter = painterResource(id = R.drawable.ic_info),
+                                        contentDescription = "Help",
+                                        modifier = Modifier.size(16.dp),
+                                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+                            }
+                            if (!surveyState.isUploadActive) {
+                                Text(
+                                    text = "Requires upload scanning",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+                                    modifier = Modifier.padding(top = 4.dp, start = 28.dp)
+                                )
+                            } else if (isNewTowerAlertsEnabled) {
+                                Text(
+                                    text = "Alerts when new towers are detected",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    modifier = Modifier.padding(top = 4.dp, start = 28.dp)
+                                )
+                            }
+                        }
+                        Switch(
+                            checked = isNewTowerAlertsEnabled,
+                            onCheckedChange = onNewTowerAlertsToggle,
+                            enabled = surveyState.isUploadActive,
+                            modifier = Modifier.padding(start = 8.dp)
+                        )
+                    }
                 }
             }
         }
+    }
+
+    // New Tower Alerts Help Dialog
+    if (showNewTowerAlertsHelpDialog) {
+        AlertDialog(
+            onDismissRequest = { showNewTowerAlertsHelpDialog = false },
+            title = {
+                Text(
+                    text = stringResource(R.string.new_tower_alerts_help_title),
+                    style = MaterialTheme.typography.headlineSmall
+                )
+            },
+            text = {
+                Column(
+                    modifier = Modifier.verticalScroll(rememberScrollState()),
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    // What are New Tower Alerts?
+                    Column {
+                        Text(
+                            text = stringResource(R.string.new_tower_alerts_what),
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.SemiBold,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = stringResource(R.string.new_tower_alerts_what_desc),
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                    }
+
+                    // How it works
+                    Column {
+                        Text(
+                            text = stringResource(R.string.new_tower_alerts_how),
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.SemiBold,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = stringResource(R.string.new_tower_alerts_how_desc),
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                    }
+
+                    // Requirements
+                    Column {
+                        Text(
+                            text = stringResource(R.string.new_tower_alerts_requirements),
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.SemiBold,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = stringResource(R.string.new_tower_alerts_requirements_desc),
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                    }
+
+                    // Benefits
+                    Column {
+                        Text(
+                            text = stringResource(R.string.new_tower_alerts_benefits),
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.SemiBold,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = stringResource(R.string.new_tower_alerts_benefits_desc),
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { showNewTowerAlertsHelpDialog = false }) {
+                    Text(stringResource(R.string.help_dialog_got_it))
+                }
+            }
+        )
     }
 }
 
@@ -620,8 +735,9 @@ private fun SurveyStatistics(
         label = "upload_records"
     )
 
-    // State for help dialog
+    // State for help dialogs
     var showHelpDialog by remember { mutableStateOf(false) }
+    var showNewTowerAlertsHelpDialog by remember { mutableStateOf(false) }
 
     Column(
         modifier = modifier
@@ -653,15 +769,13 @@ private fun SurveyStatistics(
                 )
             }
         }
-        
+
         // Statistics Cards Grid
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            // Elapsed Time Card
+        // Show different layouts based on active survey types
+        if (hasNonUploadSurvey && isUploadActive) {
+            // Both survey types active - show only Time Elapsed card
             ElevatedCard(
-                modifier = Modifier.weight(1f),
+                modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(16.dp),
                 elevation = CardDefaults.elevatedCardElevation(
                     defaultElevation = 1.dp
@@ -676,29 +790,36 @@ private fun SurveyStatistics(
                         .padding(16.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    Icon(
-                        painter = painterResource(id = R.drawable.ic_info),
-                        contentDescription = null,
-                        modifier = Modifier.size(24.dp),
-                        tint = MaterialTheme.colorScheme.primary
-                    )
-                    Spacer(modifier = Modifier.height(8.dp))
                     Text(
                         text = "Time Elapsed",
                         style = MaterialTheme.typography.labelLarge,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
-                    Text(
-                        text = formatElapsedTime(elapsedSeconds),
-                        style = MaterialTheme.typography.headlineSmall,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    AnimatedContent(
+                        targetState = formatElapsedTime(elapsedSeconds),
+                        transitionSpec = {
+                            fadeIn(animationSpec = tween(300)) togetherWith
+                                    fadeOut(animationSpec = tween(300))
+                        },
+                        label = "elapsed_time"
+                    ) { time ->
+                        Text(
+                            text = time,
+                            style = MaterialTheme.typography.headlineSmall,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                    }
                 }
             }
-
-            // Records Card (show either total or upload based on survey type)
-            if (hasNonUploadSurvey || isUploadActive) {
+        } else {
+            // Single survey type active - show Time Elapsed and Records side by side
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                // Elapsed Time Card
                 ElevatedCard(
                     modifier = Modifier.weight(1f),
                     shape = RoundedCornerShape(16.dp),
@@ -706,11 +827,7 @@ private fun SurveyStatistics(
                         defaultElevation = 1.dp
                     ),
                     colors = CardDefaults.elevatedCardColors(
-                        containerColor = if (isUploadActive && !hasNonUploadSurvey) {
-                            MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.3f)
-                        } else {
-                            MaterialTheme.colorScheme.surfaceContainer
-                        }
+                        containerColor = MaterialTheme.colorScheme.surfaceContainer
                     )
                 ) {
                     Column(
@@ -719,53 +836,85 @@ private fun SurveyStatistics(
                             .padding(16.dp),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
-                        Icon(
-                            painter = painterResource(
-                                id = if (isUploadActive && !hasNonUploadSurvey) {
-                                    R.drawable.ic_upload_24
-                                } else {
-                                    R.drawable.ic_schema
-                                }
-                            ),
-                            contentDescription = null,
-                            modifier = Modifier.size(24.dp),
-                            tint = if (isUploadActive && !hasNonUploadSurvey) {
-                                MaterialTheme.colorScheme.tertiary
-                            } else {
-                                MaterialTheme.colorScheme.primary
-                            }
+                        Text(
+                            text = "Time Elapsed",
+                            style = MaterialTheme.typography.labelLarge,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                         Spacer(modifier = Modifier.height(8.dp))
-                        Text(
-                            text = if (isUploadActive && !hasNonUploadSurvey) {
-                                stringResource(R.string.ready_for_upload_label)
-                            } else {
-                                stringResource(R.string.records_captured_label)
+                        AnimatedContent(
+                            targetState = formatElapsedTime(elapsedSeconds),
+                            transitionSpec = {
+                                fadeIn(animationSpec = tween(300)) togetherWith
+                                        fadeOut(animationSpec = tween(300))
                             },
-                            style = MaterialTheme.typography.labelLarge,
-                            color = if (isUploadActive && !hasNonUploadSurvey) {
-                                MaterialTheme.colorScheme.onTertiaryContainer
+                            label = "elapsed_time"
+                        ) { time ->
+                            Text(
+                                text = time,
+                                style = MaterialTheme.typography.headlineSmall,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                        }
+                    }
+                }
+
+                // Records Card (show either total or upload based on survey type)
+                if (hasNonUploadSurvey || isUploadActive) {
+                    ElevatedCard(
+                        modifier = Modifier.weight(1f),
+                        shape = RoundedCornerShape(16.dp),
+                        elevation = CardDefaults.elevatedCardElevation(
+                            defaultElevation = 1.dp
+                        ),
+                        colors = CardDefaults.elevatedCardColors(
+                            containerColor = if (isUploadActive && !hasNonUploadSurvey) {
+                                MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.3f)
                             } else {
-                                MaterialTheme.colorScheme.onSurfaceVariant
+                                MaterialTheme.colorScheme.surfaceContainer
                             }
                         )
-                        Text(
-                            text = String.format(
-                                "%,d",
-                                if (isUploadActive && !hasNonUploadSurvey) {
-                                    animatedUploadRecords
+                    ) {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(16.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            // Removed icon to match Time Elapsed card height
+                            Text(
+                                text = if (isUploadActive && !hasNonUploadSurvey) {
+                                    stringResource(R.string.ready_for_upload_label)
                                 } else {
-                                    animatedTotalRecords
+                                    stringResource(R.string.records_captured_label)
+                                },
+                                style = MaterialTheme.typography.labelLarge,
+                                color = if (isUploadActive && !hasNonUploadSurvey) {
+                                    MaterialTheme.colorScheme.onTertiaryContainer
+                                } else {
+                                    MaterialTheme.colorScheme.onSurfaceVariant
                                 }
-                            ),
-                            style = MaterialTheme.typography.headlineSmall,
-                            fontWeight = FontWeight.Bold,
-                            color = if (isUploadActive && !hasNonUploadSurvey) {
-                                MaterialTheme.colorScheme.tertiary
-                            } else {
-                                MaterialTheme.colorScheme.onSurface
-                            }
-                        )
+                            )
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text(
+                                text = String.format(
+                                    "%,d",
+                                    if (isUploadActive && !hasNonUploadSurvey) {
+                                        animatedUploadRecords
+                                    } else {
+                                        animatedTotalRecords
+                                    }
+                                ),
+                                style = MaterialTheme.typography.headlineSmall,
+                                fontWeight = FontWeight.Bold,
+                                color = if (isUploadActive && !hasNonUploadSurvey) {
+                                    MaterialTheme.colorScheme.tertiary
+                                } else {
+                                    MaterialTheme.colorScheme.onSurface
+                                }
+                            )
+                        }
                     }
                 }
             }
@@ -965,7 +1114,7 @@ private fun CompactSurveyStatusIndicator(
                     alpha = pulseAlpha * 0.2f
                 )
             }
-            
+
             // Second ripple
             Canvas(
                 modifier = Modifier
@@ -993,7 +1142,7 @@ private fun CompactSurveyStatusIndicator(
                 radius = size.minDimension / 2 + 2.dp.toPx(),
                 alpha = 0.3f
             )
-            
+
             // Core dot
             drawCircle(
                 color = indicatorColor,
@@ -1052,7 +1201,7 @@ private fun ServingCellCard(
         )
     ) {
         Column(
-            modifier = Modifier.padding(20.dp)
+            modifier = Modifier.padding(16.dp)
         ) {
             // Header with icon
             Row(
@@ -1077,19 +1226,77 @@ private fun ServingCellCard(
                 )
                 if (isNewTowerDetected) {
                     Spacer(modifier = Modifier.weight(1f))
-                    Card(
-                        colors = CardDefaults.cardColors(
-                            containerColor = MaterialTheme.colorScheme.tertiary
+
+                    // Animated NEW badge with pulse effect
+                    val infiniteTransition = rememberInfiniteTransition(label = "new_badge")
+                    val scale by infiniteTransition.animateFloat(
+                        initialValue = 1f,
+                        targetValue = 1.1f,
+                        animationSpec = infiniteRepeatable(
+                            animation = tween(
+                                2000,
+                                easing = androidx.compose.animation.core.EaseInOutCubic
+                            ),
+                            repeatMode = RepeatMode.Reverse
                         ),
-                        shape = RoundedCornerShape(12.dp)
-                    ) {
-                        Text(
-                            text = "NEW",
-                            style = MaterialTheme.typography.labelSmall,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onTertiary,
-                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
-                        )
+                        label = "new_badge_scale"
+                    )
+                    val glowAlpha by infiniteTransition.animateFloat(
+                        initialValue = 0.3f,
+                        targetValue = 0.7f,
+                        animationSpec = infiniteRepeatable(
+                            animation = tween(2000),
+                            repeatMode = RepeatMode.Reverse
+                        ),
+                        label = "new_badge_glow"
+                    )
+
+                    Box(contentAlignment = Alignment.Center) {
+                        // Glow effect
+                        Card(
+                            modifier = Modifier
+                                .graphicsLayer(
+                                    scaleX = scale * 1.2f,
+                                    scaleY = scale * 1.2f,
+                                    alpha = glowAlpha * 0.5f
+                                ),
+                            colors = CardDefaults.cardColors(
+                                containerColor = MaterialTheme.colorScheme.tertiary
+                            ),
+                            shape = RoundedCornerShape(12.dp)
+                        ) {
+                            Box(modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)) {
+                                Text(
+                                    text = "NEW",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color.Transparent
+                                )
+                            }
+                        }
+
+                        // Main badge
+                        Card(
+                            modifier = Modifier.graphicsLayer(
+                                scaleX = scale,
+                                scaleY = scale
+                            ),
+                            colors = CardDefaults.cardColors(
+                                containerColor = MaterialTheme.colorScheme.tertiary
+                            ),
+                            shape = RoundedCornerShape(12.dp),
+                            elevation = CardDefaults.cardElevation(
+                                defaultElevation = 2.dp
+                            )
+                        ) {
+                            Text(
+                                text = "NEW",
+                                style = MaterialTheme.typography.labelSmall,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onTertiary,
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                            )
+                        }
                     }
                 }
             }
@@ -1173,30 +1380,38 @@ private fun ServingCellCard(
                                 text = "TECHNOLOGY",
                                 style = MaterialTheme.typography.labelSmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier.padding(bottom = 4.dp)
+                                modifier = Modifier.padding(bottom = 2.dp)
                             )
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                // Technology badge
-                                Card(
-                                    colors = CardDefaults.cardColors(
-                                        containerColor = when (technology) {
-                                            "5G NR" -> MaterialTheme.colorScheme.primary
-                                            "LTE" -> MaterialTheme.colorScheme.secondary
-                                            else -> MaterialTheme.colorScheme.surfaceVariant
-                                        }
-                                    ),
-                                    shape = RoundedCornerShape(8.dp)
-                                ) {
-                                    Text(
-                                        text = technology,
-                                        style = MaterialTheme.typography.labelMedium,
-                                        fontWeight = FontWeight.Bold,
-                                        color = when (technology) {
-                                            "5G NR", "LTE" -> MaterialTheme.colorScheme.onPrimary
-                                            else -> MaterialTheme.colorScheme.onSurfaceVariant
-                                        },
-                                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
-                                    )
+                            Box(
+                                modifier = Modifier.fillMaxWidth(),
+                                contentAlignment = Alignment.CenterStart
+                            ) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    // Technology badge
+                                    Card(
+                                        colors = CardDefaults.cardColors(
+                                            containerColor = when (technology) {
+                                                "5G NR" -> MaterialTheme.colorScheme.primary
+                                                "LTE" -> MaterialTheme.colorScheme.secondary
+                                                else -> MaterialTheme.colorScheme.surfaceVariant
+                                            }
+                                        ),
+                                        shape = RoundedCornerShape(8.dp)
+                                    ) {
+                                        Text(
+                                            text = technology,
+                                            style = MaterialTheme.typography.labelMedium,
+                                            fontWeight = FontWeight.Bold,
+                                            color = when (technology) {
+                                                "5G NR", "LTE" -> MaterialTheme.colorScheme.onPrimary
+                                                else -> MaterialTheme.colorScheme.onSurfaceVariant
+                                            },
+                                            modifier = Modifier.padding(
+                                                horizontal = 8.dp,
+                                                vertical = 4.dp
+                                            )
+                                        )
+                                    }
                                 }
                             }
                         }
@@ -1205,30 +1420,69 @@ private fun ServingCellCard(
                                 text = "SIGNAL",
                                 style = MaterialTheme.typography.labelSmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier.padding(bottom = 4.dp)
+                                modifier = Modifier.padding(bottom = 2.dp)
                             )
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                // Signal strength indicator
+                            Column(horizontalAlignment = Alignment.Start) {
+                                // Signal strength bars visualization
                                 val signalValue = signalStrength.toIntOrNull() ?: -999
-                                val signalColor = when {
-                                    signalValue > -70 -> Color(0xFF4CAF50) // Green - Excellent
-                                    signalValue > -85 -> Color(0xFFFFC107) // Yellow - Good
-                                    signalValue > -100 -> Color(0xFFFF9800) // Orange - Fair
-                                    else -> Color(0xFFF44336) // Red - Poor
+                                val signalBars = when {
+                                    signalValue > -70 -> 4 // Excellent
+                                    signalValue > -85 -> 3 // Good
+                                    signalValue > -100 -> 2 // Fair
+                                    signalValue > -110 -> 1 // Poor
+                                    else -> 0 // No signal
                                 }
-                                Canvas(
-                                    modifier = Modifier
-                                        .size(8.dp)
-                                        .padding(end = 4.dp)
+                                val signalColor = when (signalBars) {
+                                    4 -> Color(0xFF4CAF50) // Green
+                                    3 -> Color(0xFF8BC34A) // Light Green
+                                    2 -> Color(0xFFFFC107) // Yellow
+                                    1 -> Color(0xFFFF9800) // Orange
+                                    else -> Color(0xFFF44336) // Red
+                                }
+
+                                Row(
+                                    verticalAlignment = Alignment.Bottom,
+                                    horizontalArrangement = Arrangement.spacedBy(2.dp)
                                 ) {
-                                    drawCircle(color = signalColor)
+                                    val inactiveColor = MaterialTheme.colorScheme.onSurfaceVariant
+
+                                    for (i in 1..4) {
+                                        val barHeight = (i * 5 + 2).dp
+                                        val isActive = i <= signalBars
+                                        val barAlpha by animateFloatAsState(
+                                            targetValue = if (isActive) 1f else 0.3f,
+                                            animationSpec = tween(200),
+                                            label = "bar_alpha_$i"
+                                        )
+
+                                        Canvas(
+                                            modifier = Modifier
+                                                .width(4.dp)
+                                                .height(barHeight)
+                                        ) {
+                                            drawRoundRect(
+                                                color = if (isActive) signalColor else inactiveColor,
+                                                alpha = barAlpha,
+                                                cornerRadius = androidx.compose.ui.geometry.CornerRadius(
+                                                    2.dp.toPx()
+                                                ),
+                                                size = androidx.compose.ui.geometry.Size(
+                                                    size.width,
+                                                    size.height
+                                                )
+                                            )
+                                        }
+                                    }
+
+                                    Spacer(modifier = Modifier.width(4.dp))
+
+                                    Text(
+                                        text = "$signalStrength dBm",
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        fontWeight = FontWeight.Medium,
+                                        color = MaterialTheme.colorScheme.onSurface
+                                    )
                                 }
-                                Text(
-                                    text = "$signalStrength dBm",
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    fontWeight = FontWeight.Medium,
-                                    color = MaterialTheme.colorScheme.onSurface
-                                )
                             }
                         }
                     }
@@ -1238,15 +1492,15 @@ private fun ServingCellCard(
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(bottom = 12.dp),
-                    horizontalArrangement = Arrangement.spacedBy(16.dp)
+                        .padding(bottom = 8.dp, start = 12.dp),
+                    horizontalArrangement = Arrangement.spacedBy(20.dp)
                 ) {
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
                             text = "NETWORK",
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.padding(bottom = 4.dp)
+                            modifier = Modifier.padding(bottom = 2.dp)
                         )
                         Text(
                             text = "$mcc-$mnc",
@@ -1257,11 +1511,12 @@ private fun ServingCellCard(
                     }
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
-                            text = if (protocol == com.craxiom.networksurvey.model.CellularProtocol.GSM || 
-                                       protocol == com.craxiom.networksurvey.model.CellularProtocol.UMTS) "LAC" else "TAC",
+                            text = if (protocol == com.craxiom.networksurvey.model.CellularProtocol.GSM ||
+                                protocol == com.craxiom.networksurvey.model.CellularProtocol.UMTS
+                            ) "LAC" else "TAC",
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.padding(bottom = 4.dp)
+                            modifier = Modifier.padding(bottom = 2.dp)
                         )
                         Text(
                             text = area.toString(),
@@ -1290,7 +1545,7 @@ private fun ServingCellCard(
                             text = "CELL ID",
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.padding(bottom = 4.dp)
+                            modifier = Modifier.padding(bottom = 2.dp)
                         )
                         Text(
                             text = cellId.toString(),
@@ -1320,9 +1575,9 @@ private fun ServingCellCardSkeleton() {
         ),
         label = "shimmer_alpha"
     )
-    
+
     val shimmerColor = MaterialTheme.colorScheme.onSurface.copy(alpha = alpha)
-    
+
     Column {
         // Technology and Signal Row
         Row(
