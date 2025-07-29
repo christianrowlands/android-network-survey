@@ -5,6 +5,7 @@ import android.net.Uri
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.animateIntAsState
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
@@ -55,6 +56,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.painterResource
@@ -304,88 +307,137 @@ private fun SurveyStatusTab(
     Column(
         modifier = modifier
             .fillMaxSize()
-            .verticalScroll(rememberScrollState())
-            .padding(vertical = 24.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
+            .verticalScroll(rememberScrollState()),
+        horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        // Compact Status Indicator and Text
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.Center,
-            modifier = Modifier.padding(bottom = 24.dp)
+        // Top Section - Status and Statistics
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = 24.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            CompactSurveyStatusIndicator(
-                isActive = surveyState.isAnyActive,
-                isNewTowerDetected = isNewTowerDetected
-            )
+            // Compact Status Indicator and Text
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.Center,
+                modifier = Modifier.padding(bottom = 24.dp)
+            ) {
+                CompactSurveyStatusIndicator(
+                    isActive = surveyState.isAnyActive,
+                    isNewTowerDetected = isNewTowerDetected
+                )
 
-            Text(
-                text = if (surveyState.isAnyActive) "Survey Running" else "Survey Stopped",
-                style = MaterialTheme.typography.headlineMedium.copy(
-                    fontWeight = FontWeight.Bold
-                ),
-                color = if (surveyState.isAnyActive) {
-                    MaterialTheme.colorScheme.primary
-                } else {
-                    MaterialTheme.colorScheme.error
-                },
-                modifier = Modifier.padding(start = 16.dp)
-            )
+                Text(
+                    text = if (surveyState.isAnyActive) "Survey Running" else "Survey Stopped",
+                    style = MaterialTheme.typography.headlineMedium.copy(
+                        fontWeight = FontWeight.Bold
+                    ),
+                    color = if (surveyState.isAnyActive) {
+                        MaterialTheme.colorScheme.primary
+                    } else {
+                        MaterialTheme.colorScheme.error
+                    },
+                    modifier = Modifier.padding(start = 16.dp)
+                )
+            }
+
+            // Statistics at the top
+            if (surveyState.isAnyActive) {
+                SurveyStatistics(
+                    surveyState = surveyState,
+                    modifier = Modifier.padding(bottom = 24.dp)
+                )
+            }
         }
 
-        // Serving Cell Details (always show card space)
+        // Spacer to push bottom content down
+        Spacer(modifier = Modifier.weight(1f))
+
+        // Bottom Section - Serving Cell and Alerts
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = 24.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            // Serving Cell Card with enhanced styling
             ServingCellCard(
                 servingCellInfo = servingCellInfo,
                 isNewTowerDetected = isNewTowerDetected,
-                modifier = Modifier.padding(bottom = 16.dp)
+                modifier = Modifier
             )
 
-            // New Tower Alerts Toggle
+            // New Tower Alerts integrated with bottom section
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 24.dp, vertical = 8.dp)
+                    .padding(horizontal = 16.dp),
+                shape = RoundedCornerShape(12.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceContainerLow
+                ),
+                elevation = CardDefaults.cardElevation(
+                    defaultElevation = 0.dp
+                )
             ) {
-                Column(
+                Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(16.dp)
+                        .padding(horizontal = 16.dp, vertical = 16.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            text = "New Tower Alerts",
-                            style = MaterialTheme.typography.titleMedium
-                        )
-                        Switch(
-                            checked = isNewTowerAlertsEnabled,
-                            onCheckedChange = onNewTowerAlertsToggle,
-                            enabled = surveyState.isUploadActive
-                        )
+                    Column(modifier = Modifier.weight(1f)) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Icon(
+                                painter = painterResource(id = R.drawable.ic_cell_tower),
+                                contentDescription = null,
+                                modifier = Modifier.size(20.dp),
+                                tint = if (isNewTowerAlertsEnabled && surveyState.isUploadActive) {
+                                    MaterialTheme.colorScheme.primary
+                                } else {
+                                    MaterialTheme.colorScheme.onSurfaceVariant
+                                }
+                            )
+                            Text(
+                                text = "New Tower Alerts",
+                                style = MaterialTheme.typography.bodyLarge,
+                                fontWeight = FontWeight.Medium,
+                                color = if (surveyState.isUploadActive) {
+                                    MaterialTheme.colorScheme.onSurface
+                                } else {
+                                    MaterialTheme.colorScheme.onSurfaceVariant
+                                }
+                            )
+                        }
+                        if (!surveyState.isUploadActive) {
+                            Text(
+                                text = "Requires upload scanning",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+                                modifier = Modifier.padding(top = 4.dp, start = 28.dp)
+                            )
+                        } else if (isNewTowerAlertsEnabled) {
+                            Text(
+                                text = "Alerts when new towers are detected",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.padding(top = 4.dp, start = 28.dp)
+                            )
+                        }
                     }
-
-                    // Show explanatory text when disabled
-                    if (!surveyState.isUploadActive) {
-                        Text(
-                            text = "Enable upload scanning to detect new towers",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.padding(top = 4.dp)
-                        )
-                    }
+                    Switch(
+                        checked = isNewTowerAlertsEnabled,
+                        onCheckedChange = onNewTowerAlertsToggle,
+                        enabled = surveyState.isUploadActive,
+                        modifier = Modifier.padding(start = 8.dp)
+                    )
                 }
             }
-
-        // Statistics when active
-        if (surveyState.isAnyActive) {
-            SurveyStatistics(
-                surveyState = surveyState,
-                modifier = Modifier.padding(top = 24.dp)
-            )
         }
     }
 }
@@ -549,120 +601,268 @@ private fun SurveyStatistics(
         }
     }
 
-    // Get total records from session
+    // Get total records from session with animation
     val totalRecords = viewModel.getSurveySessionRecordCount()
     val uploadRecords = viewModel.getSurveySessionUploadRecordCount()
     val isUploadActive = surveyState.isUploadActive
     val hasNonUploadSurvey = surveyState.hasNonUploadSurvey
     val activeSurveyTypes = surveyState.activeSurveyTypes
 
+    // Animated values for smooth transitions
+    val animatedTotalRecords by animateIntAsState(
+        targetValue = totalRecords,
+        animationSpec = tween(300),
+        label = "total_records"
+    )
+    val animatedUploadRecords by animateIntAsState(
+        targetValue = uploadRecords,
+        animationSpec = tween(300),
+        label = "upload_records"
+    )
+
     // State for help dialog
     var showHelpDialog by remember { mutableStateOf(false) }
 
     Column(
-        modifier = modifier,
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+        verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         // Header with help icon
         Row(
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier.padding(bottom = 8.dp),
             horizontalArrangement = Arrangement.Center,
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
                 text = stringResource(R.string.survey_statistics_header),
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.SemiBold
             )
-            IconButton(onClick = { showHelpDialog = true }) {
+            IconButton(
+                onClick = { showHelpDialog = true },
+                modifier = Modifier.size(40.dp)
+            ) {
                 Icon(
                     painter = painterResource(id = R.drawable.ic_help),
                     contentDescription = "Help",
-                    modifier = Modifier.size(20.dp)
+                    modifier = Modifier.size(20.dp),
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
         }
-        // Elapsed Time
-        Card(
-            colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surfaceVariant
-            )
+        
+        // Statistics Cards Grid
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            Column(
-                modifier = Modifier.padding(horizontal = 24.dp, vertical = 12.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                Text(
-                    text = "Time Elapsed",
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                Text(
-                    text = formatElapsedTime(elapsedSeconds),
-                    style = MaterialTheme.typography.headlineMedium,
-                    fontWeight = FontWeight.Bold
-                )
-            }
-        }
-
-        // Total Records (only show if non-upload surveys are active)
-        if (hasNonUploadSurvey) {
-            Card(
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceVariant
+            // Elapsed Time Card
+            ElevatedCard(
+                modifier = Modifier.weight(1f),
+                shape = RoundedCornerShape(16.dp),
+                elevation = CardDefaults.elevatedCardElevation(
+                    defaultElevation = 1.dp
+                ),
+                colors = CardDefaults.elevatedCardColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceContainer
                 )
             ) {
                 Column(
-                    modifier = Modifier.padding(horizontal = 24.dp, vertical = 12.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
+                    Icon(
+                        painter = painterResource(id = R.drawable.ic_info),
+                        contentDescription = null,
+                        modifier = Modifier.size(24.dp),
+                        tint = MaterialTheme.colorScheme.primary
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
                     Text(
-                        text = stringResource(R.string.records_captured_label),
-                        style = MaterialTheme.typography.labelMedium,
+                        text = "Time Elapsed",
+                        style = MaterialTheme.typography.labelLarge,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
-                    // Show active survey types as subtitle
-                    if (activeSurveyTypes.isNotEmpty()) {
+                    Text(
+                        text = formatElapsedTime(elapsedSeconds),
+                        style = MaterialTheme.typography.headlineSmall,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                }
+            }
+
+            // Records Card (show either total or upload based on survey type)
+            if (hasNonUploadSurvey || isUploadActive) {
+                ElevatedCard(
+                    modifier = Modifier.weight(1f),
+                    shape = RoundedCornerShape(16.dp),
+                    elevation = CardDefaults.elevatedCardElevation(
+                        defaultElevation = 1.dp
+                    ),
+                    colors = CardDefaults.elevatedCardColors(
+                        containerColor = if (isUploadActive && !hasNonUploadSurvey) {
+                            MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.3f)
+                        } else {
+                            MaterialTheme.colorScheme.surfaceContainer
+                        }
+                    )
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Icon(
+                            painter = painterResource(
+                                id = if (isUploadActive && !hasNonUploadSurvey) {
+                                    R.drawable.ic_upload_24
+                                } else {
+                                    R.drawable.ic_schema
+                                }
+                            ),
+                            contentDescription = null,
+                            modifier = Modifier.size(24.dp),
+                            tint = if (isUploadActive && !hasNonUploadSurvey) {
+                                MaterialTheme.colorScheme.tertiary
+                            } else {
+                                MaterialTheme.colorScheme.primary
+                            }
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
                         Text(
-                            text = activeSurveyTypes.joinToString(" & "),
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+                            text = if (isUploadActive && !hasNonUploadSurvey) {
+                                stringResource(R.string.ready_for_upload_label)
+                            } else {
+                                stringResource(R.string.records_captured_label)
+                            },
+                            style = MaterialTheme.typography.labelLarge,
+                            color = if (isUploadActive && !hasNonUploadSurvey) {
+                                MaterialTheme.colorScheme.onTertiaryContainer
+                            } else {
+                                MaterialTheme.colorScheme.onSurfaceVariant
+                            }
+                        )
+                        Text(
+                            text = String.format(
+                                "%,d",
+                                if (isUploadActive && !hasNonUploadSurvey) {
+                                    animatedUploadRecords
+                                } else {
+                                    animatedTotalRecords
+                                }
+                            ),
+                            style = MaterialTheme.typography.headlineSmall,
+                            fontWeight = FontWeight.Bold,
+                            color = if (isUploadActive && !hasNonUploadSurvey) {
+                                MaterialTheme.colorScheme.tertiary
+                            } else {
+                                MaterialTheme.colorScheme.onSurface
+                            }
                         )
                     }
-                    Text(
-                        text = String.format("%,d", totalRecords),
-                        style = MaterialTheme.typography.headlineMedium,
-                        fontWeight = FontWeight.Bold
-                    )
                 }
             }
         }
 
-        // Upload Records (only show if upload is active)
-        if (isUploadActive) {
-            Card(
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.tertiaryContainer
-                )
+        // Show both counters if both survey types are active
+        if (hasNonUploadSurvey && isUploadActive) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                Column(
-                    modifier = Modifier.padding(horizontal = 24.dp, vertical = 12.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally
+                // Regular Records Mini Card
+                Card(
+                    modifier = Modifier.weight(1f),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.surfaceContainerLow
+                    ),
+                    elevation = CardDefaults.cardElevation(
+                        defaultElevation = 0.dp
+                    )
                 ) {
-                    Text(
-                        text = stringResource(R.string.ready_for_upload_label),
-                        style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.onTertiaryContainer
+                    Row(
+                        modifier = Modifier.padding(12.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Icon(
+                            painter = painterResource(id = R.drawable.ic_schema),
+                            contentDescription = null,
+                            modifier = Modifier.size(20.dp),
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Column {
+                            Text(
+                                text = "Logged",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            Text(
+                                text = String.format("%,d", animatedTotalRecords),
+                                style = MaterialTheme.typography.bodyLarge,
+                                fontWeight = FontWeight.Medium,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                        }
+                    }
+                }
+
+                // Upload Records Mini Card
+                Card(
+                    modifier = Modifier.weight(1f),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.2f)
+                    ),
+                    elevation = CardDefaults.cardElevation(
+                        defaultElevation = 0.dp
                     )
-                    Text(
-                        text = String.format("%,d", uploadRecords),
-                        style = MaterialTheme.typography.headlineMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.tertiary
-                    )
+                ) {
+                    Row(
+                        modifier = Modifier.padding(12.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Icon(
+                            painter = painterResource(id = R.drawable.ic_upload_24),
+                            contentDescription = null,
+                            modifier = Modifier.size(20.dp),
+                            tint = MaterialTheme.colorScheme.tertiary
+                        )
+                        Column {
+                            Text(
+                                text = "To Upload",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onTertiaryContainer
+                            )
+                            Text(
+                                text = String.format("%,d", animatedUploadRecords),
+                                style = MaterialTheme.typography.bodyLarge,
+                                fontWeight = FontWeight.Medium,
+                                color = MaterialTheme.colorScheme.tertiary
+                            )
+                        }
+                    }
                 }
             }
+        }
+
+        // Active survey types indicator
+        if (activeSurveyTypes.isNotEmpty()) {
+            Text(
+                text = "Active: ${activeSurveyTypes.joinToString(", ")}",
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+                modifier = Modifier.padding(top = 4.dp)
+            )
         }
     }
 
@@ -713,13 +913,24 @@ private fun CompactSurveyStatusIndicator(
 
     // Pulsing animation for active state
     val pulseAlpha by infiniteTransition.animateFloat(
-        initialValue = 0.3f,
-        targetValue = 1f,
+        initialValue = 0.2f,
+        targetValue = 0.8f,
         animationSpec = infiniteRepeatable(
-            animation = tween(1000),
+            animation = tween(1200, easing = androidx.compose.animation.core.FastOutSlowInEasing),
             repeatMode = RepeatMode.Reverse
         ),
         label = "pulse"
+    )
+
+    // Ripple scale animation
+    val rippleScale by infiniteTransition.animateFloat(
+        initialValue = 0.8f,
+        targetValue = 1.2f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(1200, easing = androidx.compose.animation.core.LinearEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "ripple"
     )
 
     // Color animation for new tower detected
@@ -729,18 +940,40 @@ private fun CompactSurveyStatusIndicator(
             isActive -> MaterialTheme.colorScheme.primary
             else -> MaterialTheme.colorScheme.error
         },
-        animationSpec = tween(500),
+        animationSpec = tween(600, easing = androidx.compose.animation.core.FastOutSlowInEasing),
         label = "color"
     )
 
     Box(
-        modifier = modifier.size(24.dp),
+        modifier = modifier.size(32.dp),
         contentAlignment = Alignment.Center
     ) {
-        // Outer pulsing ring when active
+        // Outer pulsing rings when active
         if (isActive) {
+            // First ripple
             Canvas(
-                modifier = Modifier.fillMaxSize()
+                modifier = Modifier
+                    .size(32.dp)
+                    .graphicsLayer(
+                        scaleX = rippleScale,
+                        scaleY = rippleScale
+                    )
+            ) {
+                drawCircle(
+                    color = indicatorColor,
+                    radius = size.minDimension / 2,
+                    alpha = pulseAlpha * 0.2f
+                )
+            }
+            
+            // Second ripple
+            Canvas(
+                modifier = Modifier
+                    .size(24.dp)
+                    .graphicsLayer(
+                        scaleX = rippleScale * 0.8f,
+                        scaleY = rippleScale * 0.8f
+                    )
             ) {
                 drawCircle(
                     color = indicatorColor,
@@ -750,10 +983,18 @@ private fun CompactSurveyStatusIndicator(
             }
         }
 
-        // Inner dot
+        // Inner dot with glow
         Canvas(
-            modifier = Modifier.size(12.dp)
+            modifier = Modifier.size(14.dp)
         ) {
+            // Glow effect
+            drawCircle(
+                color = indicatorColor,
+                radius = size.minDimension / 2 + 2.dp.toPx(),
+                alpha = 0.3f
+            )
+            
+            // Core dot
             drawCircle(
                 color = indicatorColor,
                 radius = size.minDimension / 2
@@ -772,42 +1013,86 @@ private fun ServingCellCard(
         targetValue = if (isNewTowerDetected) {
             MaterialTheme.colorScheme.tertiary
         } else {
-            MaterialTheme.colorScheme.surfaceVariant
+            Color.Transparent
         },
-        animationSpec = tween(500),
+        animationSpec = tween(600),
         label = "border"
+    )
+
+    val containerColor by animateColorAsState(
+        targetValue = if (isNewTowerDetected) {
+            MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.15f)
+        } else {
+            MaterialTheme.colorScheme.surfaceContainerHigh
+        },
+        animationSpec = tween(600),
+        label = "container"
     )
 
     ElevatedCard(
         modifier = modifier
             .fillMaxWidth()
-            .padding(horizontal = 24.dp)
+            .padding(horizontal = 16.dp)
             .then(
                 if (isNewTowerDetected) {
                     Modifier.border(
                         width = 2.dp,
                         color = borderColor,
-                        shape = MaterialTheme.shapes.medium
+                        shape = RoundedCornerShape(16.dp)
                     )
                 } else Modifier
             ),
+        shape = RoundedCornerShape(16.dp),
+        elevation = CardDefaults.elevatedCardElevation(
+            defaultElevation = 2.dp,
+            pressedElevation = 4.dp
+        ),
         colors = CardDefaults.elevatedCardColors(
-            containerColor = if (isNewTowerDetected) {
-                MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.3f)
-            } else {
-                MaterialTheme.colorScheme.surface
-            }
+            containerColor = containerColor
         )
     ) {
         Column(
-            modifier = Modifier.padding(16.dp)
+            modifier = Modifier.padding(20.dp)
         ) {
-            Text(
-                text = "Serving Cell",
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
+            // Header with icon
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier.padding(bottom = 16.dp)
-            )
+            ) {
+                Icon(
+                    painter = painterResource(id = R.drawable.ic_cell_tower),
+                    contentDescription = null,
+                    modifier = Modifier.size(24.dp),
+                    tint = if (isNewTowerDetected) {
+                        MaterialTheme.colorScheme.tertiary
+                    } else {
+                        MaterialTheme.colorScheme.primary
+                    }
+                )
+                Text(
+                    text = "Serving Cell",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    modifier = Modifier.padding(start = 8.dp)
+                )
+                if (isNewTowerDetected) {
+                    Spacer(modifier = Modifier.weight(1f))
+                    Card(
+                        colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.tertiary
+                        ),
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Text(
+                            text = "NEW",
+                            style = MaterialTheme.typography.labelSmall,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onTertiary,
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                        )
+                    }
+                }
+            }
 
             if (servingCellInfo?.servingCell != null) {
                 val wrapper = servingCellInfo.servingCell
@@ -866,39 +1151,86 @@ private fun ServingCellCard(
                 val cellId = cellInfo[4] as Long
                 val signalStrength = cellInfo[5] as String
 
-                // Technology and Signal Row
-                Row(
+                // Technology and Signal Row with enhanced styling
+                Card(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(bottom = 16.dp),
-                    horizontalArrangement = Arrangement.spacedBy(32.dp)
+                        .padding(bottom = 12.dp),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.surfaceContainerLowest.copy(alpha = 0.5f)
+                    ),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
                 ) {
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            text = "TECHNOLOGY",
-                            style = MaterialTheme.typography.labelMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.padding(bottom = 4.dp)
-                        )
-                        Text(
-                            text = technology,
-                            style = MaterialTheme.typography.bodyLarge,
-                            color = MaterialTheme.colorScheme.primary,
-                            fontWeight = FontWeight.Medium
-                        )
-                    }
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            text = "SIGNAL",
-                            style = MaterialTheme.typography.labelMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.padding(bottom = 4.dp)
-                        )
-                        Text(
-                            text = "$signalStrength dBm",
-                            style = MaterialTheme.typography.bodyLarge,
-                            color = MaterialTheme.colorScheme.onSurface
-                        )
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(12.dp),
+                        horizontalArrangement = Arrangement.spacedBy(24.dp)
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = "TECHNOLOGY",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.padding(bottom = 4.dp)
+                            )
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                // Technology badge
+                                Card(
+                                    colors = CardDefaults.cardColors(
+                                        containerColor = when (technology) {
+                                            "5G NR" -> MaterialTheme.colorScheme.primary
+                                            "LTE" -> MaterialTheme.colorScheme.secondary
+                                            else -> MaterialTheme.colorScheme.surfaceVariant
+                                        }
+                                    ),
+                                    shape = RoundedCornerShape(8.dp)
+                                ) {
+                                    Text(
+                                        text = technology,
+                                        style = MaterialTheme.typography.labelMedium,
+                                        fontWeight = FontWeight.Bold,
+                                        color = when (technology) {
+                                            "5G NR", "LTE" -> MaterialTheme.colorScheme.onPrimary
+                                            else -> MaterialTheme.colorScheme.onSurfaceVariant
+                                        },
+                                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                                    )
+                                }
+                            }
+                        }
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = "SIGNAL",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.padding(bottom = 4.dp)
+                            )
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                // Signal strength indicator
+                                val signalValue = signalStrength.toIntOrNull() ?: -999
+                                val signalColor = when {
+                                    signalValue > -70 -> Color(0xFF4CAF50) // Green - Excellent
+                                    signalValue > -85 -> Color(0xFFFFC107) // Yellow - Good
+                                    signalValue > -100 -> Color(0xFFFF9800) // Orange - Fair
+                                    else -> Color(0xFFF44336) // Red - Poor
+                                }
+                                Canvas(
+                                    modifier = Modifier
+                                        .size(8.dp)
+                                        .padding(end = 4.dp)
+                                ) {
+                                    drawCircle(color = signalColor)
+                                }
+                                Text(
+                                    text = "$signalStrength dBm",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    fontWeight = FontWeight.Medium,
+                                    color = MaterialTheme.colorScheme.onSurface
+                                )
+                            }
+                        }
                     }
                 }
 
@@ -906,19 +1238,20 @@ private fun ServingCellCard(
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(bottom = 16.dp),
-                    horizontalArrangement = Arrangement.spacedBy(32.dp)
+                        .padding(bottom = 12.dp),
+                    horizontalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
                             text = "NETWORK",
-                            style = MaterialTheme.typography.labelMedium,
+                            style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.padding(bottom = 4.dp)
                         )
                         Text(
                             text = "$mcc-$mnc",
                             style = MaterialTheme.typography.bodyLarge,
+                            fontWeight = FontWeight.Medium,
                             color = MaterialTheme.colorScheme.onSurface
                         )
                     }
@@ -926,31 +1259,46 @@ private fun ServingCellCard(
                         Text(
                             text = if (protocol == com.craxiom.networksurvey.model.CellularProtocol.GSM || 
                                        protocol == com.craxiom.networksurvey.model.CellularProtocol.UMTS) "LAC" else "TAC",
-                            style = MaterialTheme.typography.labelMedium,
+                            style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.padding(bottom = 4.dp)
                         )
                         Text(
                             text = area.toString(),
                             style = MaterialTheme.typography.bodyLarge,
+                            fontWeight = FontWeight.Medium,
                             color = MaterialTheme.colorScheme.onSurface
                         )
                     }
                 }
 
-                // Cell ID
-                Column(modifier = Modifier.fillMaxWidth()) {
-                    Text(
-                        text = "CELL ID",
-                        style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(bottom = 4.dp)
-                    )
-                    Text(
-                        text = cellId.toString(),
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
+                // Cell ID with enhanced styling
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.2f)
+                    ),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(12.dp)
+                    ) {
+                        Text(
+                            text = "CELL ID",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(bottom = 4.dp)
+                        )
+                        Text(
+                            text = cellId.toString(),
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.SemiBold,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                    }
                 }
             } else {
                 // Loading state
@@ -980,19 +1328,19 @@ private fun ServingCellCardSkeleton() {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(bottom = 16.dp),
-            horizontalArrangement = Arrangement.spacedBy(32.dp)
+                .padding(bottom = 8.dp),
+            horizontalArrangement = Arrangement.spacedBy(24.dp)
         ) {
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = "TECHNOLOGY",
-                    style = MaterialTheme.typography.labelMedium,
+                    style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(bottom = 4.dp)
+                    modifier = Modifier.padding(bottom = 2.dp)
                 )
                 Box(
                     modifier = Modifier
-                        .height(20.dp)
+                        .height(16.dp)
                         .fillMaxWidth(0.6f)
                         .background(shimmerColor, RoundedCornerShape(4.dp))
                 )
@@ -1000,13 +1348,13 @@ private fun ServingCellCardSkeleton() {
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = "SIGNAL",
-                    style = MaterialTheme.typography.labelMedium,
+                    style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(bottom = 4.dp)
+                    modifier = Modifier.padding(bottom = 2.dp)
                 )
                 Box(
                     modifier = Modifier
-                        .height(20.dp)
+                        .height(16.dp)
                         .fillMaxWidth(0.7f)
                         .background(shimmerColor, RoundedCornerShape(4.dp))
                 )
@@ -1017,19 +1365,19 @@ private fun ServingCellCardSkeleton() {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(bottom = 16.dp),
-            horizontalArrangement = Arrangement.spacedBy(32.dp)
+                .padding(bottom = 8.dp),
+            horizontalArrangement = Arrangement.spacedBy(24.dp)
         ) {
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = "NETWORK",
-                    style = MaterialTheme.typography.labelMedium,
+                    style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(bottom = 4.dp)
+                    modifier = Modifier.padding(bottom = 2.dp)
                 )
                 Box(
                     modifier = Modifier
-                        .height(20.dp)
+                        .height(16.dp)
                         .fillMaxWidth(0.5f)
                         .background(shimmerColor, RoundedCornerShape(4.dp))
                 )
@@ -1037,13 +1385,13 @@ private fun ServingCellCardSkeleton() {
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = "TAC",
-                    style = MaterialTheme.typography.labelMedium,
+                    style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(bottom = 4.dp)
+                    modifier = Modifier.padding(bottom = 2.dp)
                 )
                 Box(
                     modifier = Modifier
-                        .height(20.dp)
+                        .height(16.dp)
                         .fillMaxWidth(0.4f)
                         .background(shimmerColor, RoundedCornerShape(4.dp))
                 )
@@ -1054,13 +1402,13 @@ private fun ServingCellCardSkeleton() {
         Column(modifier = Modifier.fillMaxWidth()) {
             Text(
                 text = "CELL ID",
-                style = MaterialTheme.typography.labelMedium,
+                style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(bottom = 4.dp)
+                modifier = Modifier.padding(bottom = 2.dp)
             )
             Box(
                 modifier = Modifier
-                    .height(20.dp)
+                    .height(16.dp)
                     .fillMaxWidth(0.8f)
                     .background(shimmerColor, RoundedCornerShape(4.dp))
             )
