@@ -184,6 +184,6 @@ public record MqttConnectionSettings(
                 wifiStreamEnabled != null ? wifiStreamEnabled : false,
                 bluetoothStreamEnabled != null ? bluetoothStreamEnabled : false,
                 gnssStreamEnabled != null ? gnssStreamEnabled : false,
-                deviceStatusStreamEnabled != null ? deviceStatusStreamEnabled : false, mqttTopicPrefix);
+                deviceStatusStreamEnabled != null ? deviceStatusStreamEnabled : false, mqttTopicPrefix, null);
     }
 }

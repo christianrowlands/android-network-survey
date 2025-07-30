@@ -117,6 +117,7 @@ public class NetworkSurveyConstants
 
     // MDM Only Preferences
     public static final String MDM_PROPERTY_ALLOW_EXTERNAL_DATA_UPLOAD = "allow_external_data_upload";
+    public static final String PROPERTY_MDM_MQTT_DEVICE_NAME = "mqtt_device_name";
 
     // Preferences
     public static final String PROPERTY_AUTO_START_CELLULAR_LOGGING = "auto_start_logging";

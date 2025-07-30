@@ -250,7 +250,8 @@ public class MqttFragment extends AConnectionFragment<NetworkSurveyService.Surve
                 bluetoothStreamEnabled,
                 gnssStreamEnabled,
                 deviceStatusStreamEnabled,
-                topicPrefix);
+                topicPrefix,
+                null);
     }
 
     @Override

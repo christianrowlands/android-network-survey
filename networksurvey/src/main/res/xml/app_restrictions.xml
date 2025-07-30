@@ -37,6 +37,13 @@
         android:title="@string/mqtt_client_id_title" />
 
     <restriction
+        android:defaultValue=""
+        android:description="@string/mqtt_device_name_description"
+        android:key="mqtt_device_name"
+        android:restrictionType="string"
+        android:title="@string/mqtt_device_name_title" />
+
+    <restriction
         android:description="@string/mqtt_username_description"
         android:key="mqtt_username"
         android:restrictionType="string"

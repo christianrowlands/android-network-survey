@@ -1,5 +1,7 @@
 package com.craxiom.networksurvey.mqtt;
 
+import android.content.Context;
+
 import com.craxiom.messaging.BluetoothRecord;
 import com.craxiom.messaging.CdmaRecord;
 import com.craxiom.messaging.DeviceStatus;
@@ -10,6 +12,7 @@ import com.craxiom.messaging.NrRecord;
 import com.craxiom.messaging.PhoneState;
 import com.craxiom.messaging.UmtsRecord;
 import com.craxiom.messaging.WifiBeaconRecord;
+import com.craxiom.mqttlibrary.connection.BrokerConnectionInfo;
 import com.craxiom.mqttlibrary.connection.DefaultMqttConnection;
 import com.craxiom.networksurvey.listeners.IBluetoothSurveyRecordListener;
 import com.craxiom.networksurvey.listeners.ICellularSurveyRecordListener;
@@ -28,6 +31,7 @@ import java.util.List;
 public class MqttConnection extends DefaultMqttConnection implements ICellularSurveyRecordListener, IWifiSurveyRecordListener,
         IBluetoothSurveyRecordListener, IGnssSurveyRecordListener, IDeviceStatusListener
 {
+    private String effectiveDeviceName;
     private static final String MQTT_GSM_MESSAGE_TOPIC = "gsm_message";
     private static final String MQTT_CDMA_MESSAGE_TOPIC = "cdma_message";
     private static final String MQTT_UMTS_MESSAGE_TOPIC = "umts_message";
@@ -39,13 +43,36 @@ public class MqttConnection extends DefaultMqttConnection implements ICellularSu
     private static final String MQTT_DEVICE_STATUS_MESSAGE_TOPIC = "device_status_message";
 
     @Override
+    public void connect(Context context, BrokerConnectionInfo brokerConnectionInfo)
+    {
+        super.connect(context, brokerConnectionInfo);
+
+        // Extract device name from MqttConnectionInfo if available and compute effective device name once
+        String deviceName = null;
+        if (brokerConnectionInfo instanceof MqttConnectionInfo)
+        {
+            deviceName = ((MqttConnectionInfo) brokerConnectionInfo).getDeviceName();
+        }
+        
+        // Determine effective device name once during connection
+        if (deviceName != null && !deviceName.isEmpty())
+        {
+            effectiveDeviceName = deviceName;
+        }
+        else
+        {
+            effectiveDeviceName = mqttClientId;
+        }
+    }
+
+    @Override
     public void onGsmSurveyRecord(GsmRecord gsmRecord)
     {
-        // Set the device name to the user entered value in the MQTT connection UI (or the value provided via MDM)
-        if (mqttClientId != null)
+        // Set the device name using the pre-computed effective device name
+        if (effectiveDeviceName != null)
         {
             final GsmRecord.Builder recordBuilder = gsmRecord.toBuilder();
-            gsmRecord = recordBuilder.setData(recordBuilder.getDataBuilder().setDeviceName(mqttClientId)).build();
+            gsmRecord = recordBuilder.setData(recordBuilder.getDataBuilder().setDeviceName(effectiveDeviceName)).build();
         }
 
         publishMessage(MQTT_GSM_MESSAGE_TOPIC, gsmRecord);
@@ -54,11 +81,11 @@ public class MqttConnection extends DefaultMqttConnection implements ICellularSu
     @Override
     public void onCdmaSurveyRecord(CdmaRecord cdmaRecord)
     {
-        // Set the device name to the user entered value in the MQTT connection UI (or the value provided via MDM)
-        if (mqttClientId != null)
+        // Set the device name using the pre-computed effective device name
+        if (effectiveDeviceName != null)
         {
             final CdmaRecord.Builder recordBuilder = cdmaRecord.toBuilder();
-            cdmaRecord = recordBuilder.setData(recordBuilder.getDataBuilder().setDeviceName(mqttClientId)).build();
+            cdmaRecord = recordBuilder.setData(recordBuilder.getDataBuilder().setDeviceName(effectiveDeviceName)).build();
         }
 
         publishMessage(MQTT_CDMA_MESSAGE_TOPIC, cdmaRecord);
@@ -67,11 +94,11 @@ public class MqttConnection extends DefaultMqttConnection implements ICellularSu
     @Override
     public void onUmtsSurveyRecord(UmtsRecord umtsRecord)
     {
-        // Set the device name to the user entered value in the MQTT connection UI (or the value provided via MDM)
-        if (mqttClientId != null)
+        // Set the device name using the pre-computed effective device name
+        if (effectiveDeviceName != null)
         {
             final UmtsRecord.Builder recordBuilder = umtsRecord.toBuilder();
-            umtsRecord = recordBuilder.setData(recordBuilder.getDataBuilder().setDeviceName(mqttClientId)).build();
+            umtsRecord = recordBuilder.setData(recordBuilder.getDataBuilder().setDeviceName(effectiveDeviceName)).build();
         }
 
         publishMessage(MQTT_UMTS_MESSAGE_TOPIC, umtsRecord);
@@ -80,11 +107,11 @@ public class MqttConnection extends DefaultMqttConnection implements ICellularSu
     @Override
     public void onLteSurveyRecord(LteRecord lteRecord)
     {
-        // Set the device name to the user entered value in the MQTT connection UI (or the value provided via MDM)
-        if (mqttClientId != null)
+        // Set the device name using the pre-computed effective device name
+        if (effectiveDeviceName != null)
         {
             final LteRecord.Builder recordBuilder = lteRecord.toBuilder();
-            lteRecord = recordBuilder.setData(recordBuilder.getDataBuilder().setDeviceName(mqttClientId)).build();
+            lteRecord = recordBuilder.setData(recordBuilder.getDataBuilder().setDeviceName(effectiveDeviceName)).build();
         }
 
         publishMessage(MQTT_LTE_MESSAGE_TOPIC, lteRecord);
@@ -93,10 +120,10 @@ public class MqttConnection extends DefaultMqttConnection implements ICellularSu
     @Override
     public void onNrSurveyRecord(NrRecord nrRecord)
     {
-        if (mqttClientId != null)
+        if (effectiveDeviceName != null)
         {
             final NrRecord.Builder recordBuilder = nrRecord.toBuilder();
-            nrRecord = recordBuilder.setData(recordBuilder.getDataBuilder().setDeviceName(mqttClientId)).build();
+            nrRecord = recordBuilder.setData(recordBuilder.getDataBuilder().setDeviceName(effectiveDeviceName)).build();
         }
 
         publishMessage(MQTT_NR_MESSAGE_TOPIC, nrRecord);
@@ -107,10 +134,10 @@ public class MqttConnection extends DefaultMqttConnection implements ICellularSu
     {
         wifiBeaconRecords.forEach(wifiRecord -> {
             WifiBeaconRecord wifiBeaconRecord = wifiRecord.getWifiBeaconRecord();
-            if (mqttClientId != null)
+            if (effectiveDeviceName != null)
             {
                 final WifiBeaconRecord.Builder recordBuilder = wifiBeaconRecord.toBuilder();
-                wifiBeaconRecord = recordBuilder.setData(recordBuilder.getDataBuilder().setDeviceName(mqttClientId)).build();
+                wifiBeaconRecord = recordBuilder.setData(recordBuilder.getDataBuilder().setDeviceName(effectiveDeviceName)).build();
             }
             publishMessage(MQTT_WIFI_BEACON_MESSAGE_TOPIC, wifiBeaconRecord);
         });
@@ -119,11 +146,11 @@ public class MqttConnection extends DefaultMqttConnection implements ICellularSu
     @Override
     public void onBluetoothSurveyRecord(BluetoothRecord bluetoothRecord)
     {
-        // Set the device name to the user entered value in the MQTT connection UI (or the value provided via MDM)
-        if (mqttClientId != null)
+        // Set the device name using the pre-computed effective device name
+        if (effectiveDeviceName != null)
         {
             final BluetoothRecord.Builder recordBuilder = bluetoothRecord.toBuilder();
-            bluetoothRecord = recordBuilder.setData(recordBuilder.getDataBuilder().setDeviceName(mqttClientId)).build();
+            bluetoothRecord = recordBuilder.setData(recordBuilder.getDataBuilder().setDeviceName(effectiveDeviceName)).build();
         }
 
         publishMessage(MQTT_BLUETOOTH_MESSAGE_TOPIC, bluetoothRecord);
@@ -133,10 +160,10 @@ public class MqttConnection extends DefaultMqttConnection implements ICellularSu
     public void onBluetoothSurveyRecords(List<BluetoothRecord> bluetoothRecords)
     {
         bluetoothRecords.forEach(bluetoothRecord -> {
-            if (mqttClientId != null)
+            if (effectiveDeviceName != null)
             {
                 final BluetoothRecord.Builder recordBuilder = bluetoothRecord.toBuilder();
-                bluetoothRecord = recordBuilder.setData(recordBuilder.getDataBuilder().setDeviceName(mqttClientId)).build();
+                bluetoothRecord = recordBuilder.setData(recordBuilder.getDataBuilder().setDeviceName(effectiveDeviceName)).build();
             }
             publishMessage(MQTT_BLUETOOTH_MESSAGE_TOPIC, bluetoothRecord);
         });
@@ -145,10 +172,10 @@ public class MqttConnection extends DefaultMqttConnection implements ICellularSu
     @Override
     public void onGnssSurveyRecord(GnssRecord gnssRecord)
     {
-        if (mqttClientId != null)
+        if (effectiveDeviceName != null)
         {
             final GnssRecord.Builder gnssRecordBuilder = gnssRecord.toBuilder();
-            gnssRecord = gnssRecordBuilder.setData(gnssRecordBuilder.getDataBuilder().setDeviceName(mqttClientId)).build();
+            gnssRecord = gnssRecordBuilder.setData(gnssRecordBuilder.getDataBuilder().setDeviceName(effectiveDeviceName)).build();
         }
 
         publishMessage(MQTT_GNSS_MESSAGE_TOPIC, gnssRecord);
@@ -157,10 +184,10 @@ public class MqttConnection extends DefaultMqttConnection implements ICellularSu
     @Override
     public void onDeviceStatus(DeviceStatus deviceStatus)
     {
-        if (mqttClientId != null)
+        if (effectiveDeviceName != null)
         {
             final DeviceStatus.Builder deviceStatusBuilder = deviceStatus.toBuilder();
-            deviceStatus = deviceStatusBuilder.setData(deviceStatusBuilder.getDataBuilder().setDeviceName(mqttClientId)).build();
+            deviceStatus = deviceStatusBuilder.setData(deviceStatusBuilder.getDataBuilder().setDeviceName(effectiveDeviceName)).build();
         }
 
         publishMessage(MQTT_DEVICE_STATUS_MESSAGE_TOPIC, deviceStatus);
@@ -169,10 +196,10 @@ public class MqttConnection extends DefaultMqttConnection implements ICellularSu
     @Override
     public void onPhoneState(PhoneState phoneState)
     {
-        if (mqttClientId != null)
+        if (effectiveDeviceName != null)
         {
             final PhoneState.Builder messageBuilder = phoneState.toBuilder();
-            phoneState = messageBuilder.setData(messageBuilder.getDataBuilder().setDeviceName(mqttClientId)).build();
+            phoneState = messageBuilder.setData(messageBuilder.getDataBuilder().setDeviceName(effectiveDeviceName)).build();
         }
 
         publishMessage(MQTT_DEVICE_STATUS_MESSAGE_TOPIC, phoneState);

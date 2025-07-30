@@ -2239,13 +2239,21 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
             final boolean deviceStatusStreamEnabled = mdmProperties.getBoolean(NetworkSurveyConstants.PROPERTY_MQTT_DEVICE_STATUS_STREAM_ENABLED, NetworkSurveyConstants.DEFAULT_MQTT_DEVICE_STATUS_STREAM_SETTING);
             final String topicPrefix = mdmProperties.getString(MqttConstants.PROPERTY_MQTT_TOPIC_PREFIX, MqttConstants.DEFAULT_MQTT_TOPIC_PREFIX);
 
+            String deviceName = mdmProperties.getString(NetworkSurveyConstants.PROPERTY_MDM_MQTT_DEVICE_NAME);
+            // Validate and truncate device name to 100 characters if needed
+            if (deviceName != null && deviceName.length() > 100)
+            {
+                deviceName = deviceName.substring(0, 100);
+                Timber.w("MDM device name was truncated to 100 characters");
+            }
+
             if (mqttBrokerHost == null || clientId == null)
             {
                 return null;
             }
 
             return new MqttConnectionInfo(mqttBrokerHost, portNumber, tlsEnabled, clientId, username, password,
-                    cellularStreamEnabled, wifiStreamEnabled, bluetoothStreamEnabled, gnssStreamEnabled, deviceStatusStreamEnabled, topicPrefix);
+                    cellularStreamEnabled, wifiStreamEnabled, bluetoothStreamEnabled, gnssStreamEnabled, deviceStatusStreamEnabled, topicPrefix, deviceName);
         }
 
         return null;
@@ -2282,7 +2290,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
         final String topicPrefix = preferences.getString(MqttConstants.PROPERTY_MQTT_TOPIC_PREFIX, MqttConstants.DEFAULT_MQTT_TOPIC_PREFIX);
 
         return new MqttConnectionInfo(mqttBrokerHost, portNumber, tlsEnabled, clientId, username, password,
-                cellularStreamEnabled, wifiStreamEnabled, bluetoothStreamEnabled, gnssStreamEnabled, deviceStatusStreamEnabled, topicPrefix);
+                cellularStreamEnabled, wifiStreamEnabled, bluetoothStreamEnabled, gnssStreamEnabled, deviceStatusStreamEnabled, topicPrefix, null);
     }
 
     /**

@@ -405,6 +405,8 @@ but work independently, so you have full control over how you handle your data.<
     <string name="mqtt_tls_enabled_description">True to use SSL/TLS for the MQTT connection, false to use a plaintext connection</string>
     <string name="mqtt_client_id_title">MQTT Client ID</string>
     <string name="mqtt_client_id_description">The name this device should use to represent itself to the MQTT broker</string>
+    <string name="mqtt_device_name_title">MQTT Device Name</string>
+    <string name="mqtt_device_name_description">Custom device name for MQTT records (if unset, then Client ID is used; max 100 chars)</string>
     <string name="mqtt_username_title">MQTT Broker Username</string>
     <string name="mqtt_username_description">The username to use when authenticating to the MQTT broker</string>
     <string name="mqtt_password_title">MQTT Broker Password</string>
