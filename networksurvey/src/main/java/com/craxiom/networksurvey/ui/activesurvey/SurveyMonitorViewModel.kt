@@ -277,7 +277,7 @@ class SurveyMonitorViewModel : ViewModel(), IConnectionStateListener,
                 val data = lte.data
                 listOf(
                     data.mcc?.value ?: 0, data.mnc?.value ?: 0,
-                    data.tac?.value ?: 0, data.eci?.value ?: 0L, "LTE"
+                    data.tac?.value ?: 0, data.eci?.value?.toLong() ?: 0L, "LTE"
                 )
             }
 
@@ -295,7 +295,7 @@ class SurveyMonitorViewModel : ViewModel(), IConnectionStateListener,
                 val data = gsm.data
                 listOf(
                     data.mcc?.value ?: 0, data.mnc?.value ?: 0,
-                    data.lac?.value ?: 0, data.ci?.value ?: 0L, "GSM"
+                    data.lac?.value ?: 0, data.ci?.value?.toLong() ?: 0L, "GSM"
                 )
             }
 
@@ -304,17 +304,17 @@ class SurveyMonitorViewModel : ViewModel(), IConnectionStateListener,
                 val data = umts.data
                 listOf(
                     data.mcc?.value ?: 0, data.mnc?.value ?: 0,
-                    data.lac?.value ?: 0, data.cid?.value ?: 0L, "UMTS"
+                    data.lac?.value ?: 0, data.cid?.value?.toLong() ?: 0L, "UMTS"
                 )
             }
 
             else -> return
         }
 
-        val mccInt = mcc as Int
-        val mncInt = mnc as Int
-        val areaInt = area as Int
-        val cellIdLong = cellId as Long
+        val mccInt = (mcc as Number).toInt()
+        val mncInt = (mnc as Number).toInt()
+        val areaInt = (area as Number).toInt()
+        val cellIdLong = (cellId as Number).toLong()
         val radioStr = radio as String
 
         // Create a unique key for this cell
@@ -353,11 +353,39 @@ class SurveyMonitorViewModel : ViewModel(), IConnectionStateListener,
      * ICellularSurveyRecordListener implementation - Called when new cellular records are received
      */
     override fun onCellularBatch(cellularGroup: List<CellularRecordWrapper>, subscriptionId: Int) {
+        Timber.d("onCellularBatch called with ${cellularGroup.size} records")
+
         // Find the serving cell in the batch
         cellularGroup.forEach { cellularRecord ->
             if (CellularUtils.isServingCell(cellularRecord.cellularRecord)) {
-                _servingCellInfo.value = ServingCellInfo(cellularRecord, subscriptionId)
-                Timber.d("Updated serving cell info: ${cellularRecord.cellularProtocol}")
+                // Extract signal value for logging
+                val signalValue = when (cellularRecord.cellularProtocol) {
+                    CellularProtocol.LTE -> {
+                        val lte = cellularRecord.cellularRecord as LteRecord
+                        lte.data?.rsrp?.value
+                    }
+
+                    CellularProtocol.NR -> {
+                        val nr = cellularRecord.cellularRecord as NrRecord
+                        nr.data?.ssRsrp?.value
+                    }
+
+                    CellularProtocol.GSM -> {
+                        val gsm = cellularRecord.cellularRecord as GsmRecord
+                        gsm.data?.signalStrength?.value
+                    }
+
+                    CellularProtocol.UMTS -> {
+                        val umts = cellularRecord.cellularRecord as UmtsRecord
+                        umts.data?.rscp?.value
+                    }
+
+                    else -> null
+                }
+
+                _servingCellInfo.value =
+                    ServingCellInfo(cellularRecord, subscriptionId, System.currentTimeMillis())
+                Timber.d("Updated serving cell: ${cellularRecord.cellularProtocol}, Signal: $signalValue")
             }
         }
     }

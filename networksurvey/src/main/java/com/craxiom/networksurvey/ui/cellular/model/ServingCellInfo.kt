@@ -5,5 +5,6 @@ import java.io.Serializable
 
 data class ServingCellInfo(
     val servingCell: CellularRecordWrapper?,
-    val subscriptionId: Int
+    val subscriptionId: Int,
+    val timestamp: Long = System.currentTimeMillis()
 ) : Serializable

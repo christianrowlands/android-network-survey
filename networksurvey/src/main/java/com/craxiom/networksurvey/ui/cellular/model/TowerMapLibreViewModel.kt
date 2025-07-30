@@ -640,7 +640,8 @@ class TowerMapLibreViewModel : ViewModel() {
         } else {
             _servingCells.update { oldMap ->
                 val newMap = HashMap(oldMap)
-                newMap[subscriptionId] = ServingCellInfo(servingCellRecord, subscriptionId)
+                newMap[subscriptionId] =
+                    ServingCellInfo(servingCellRecord, subscriptionId, System.currentTimeMillis())
                 newMap
             }
         }

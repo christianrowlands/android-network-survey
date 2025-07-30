@@ -763,7 +763,7 @@ but work independently, so you have full control over how you handle your data.<
     <string name="help_dialog_both_counts">• <b>Records Captured:</b> Total number of survey records being saved to files or sent to servers. Includes all data regardless of quality.\n\n• <b>Ready for Upload:</b> Records that meet quality standards for uploading to crowd-sourced databases.\n\nFilters applied:\n  - GPS accuracy must be &lt; 100 meters\n  - Device must move > 35 meters between records\n  - Records must have complete tower/network info\n\nWhy the difference? Upload databases need high-quality data for accurate tower/network mapping.</string>
     <string name="help_dialog_upload_only">This shows records ready for upload to crowd-sourced databases like OpenCellID and BeaconDB.\n\nOnly high-quality records are counted:\n  - GPS accuracy &lt; 100 meters\n  - Device moved > 35 meters from last position\n  - Complete tower/network information\n\nRecords are filtered to ensure database quality.</string>
     <string name="help_dialog_got_it">Got it</string>
-    
+
     <!-- New Tower Alerts Help Dialog -->
     <string name="new_tower_alerts_help_title">New Tower Alerts</string>
     <string name="new_tower_alerts_what">What are New Tower Alerts?</string>
@@ -771,7 +771,7 @@ but work independently, so you have full control over how you handle your data.<
     <string name="new_tower_alerts_how">How it works</string>
     <string name="new_tower_alerts_how_desc">Your current tower is compared against Network Survey\'s OpenCelliD database, which is updated every 24 hours with tower locations contributed by users worldwide. When an unknown tower is detected, you\'ll hear a notification sound.</string>
     <string name="new_tower_alerts_requirements">Requirements</string>
-    <string name="new_tower_alerts_requirements_desc">• Upload scanning must be active</string>
+    <string name="new_tower_alerts_requirements_desc">• Upload scanning must be active\n• The Survey Monitor UI must be visible</string>
     <string name="new_tower_alerts_benefits">Why use this feature?</string>
     <string name="new_tower_alerts_benefits_desc">• Discover newly installed cell towers\n• Identify temporary or mobile towers\n• Help improve cellular coverage maps\n• Track network changes in your area</string>
 

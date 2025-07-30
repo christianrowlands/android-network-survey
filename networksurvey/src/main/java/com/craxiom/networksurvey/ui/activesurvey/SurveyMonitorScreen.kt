@@ -119,15 +119,18 @@ fun SurveyMonitorScreen(
         viewModel.initializeTowerDetectionManager(context)
     }
 
-    // Auto-disable alerts when survey stops
+    // Auto-disable alerts when survey TRANSITIONS from active to stopped
+    var wasSurveyActive by remember { mutableStateOf(surveyState.isAnyActive) }
     LaunchedEffect(surveyState.isAnyActive) {
-        if (!surveyState.isAnyActive && isNewTowerAlertsEnabled) {
+        if (wasSurveyActive && !surveyState.isAnyActive && isNewTowerAlertsEnabled) {
+            // Survey just stopped, disable alerts
             isNewTowerAlertsEnabled = false
             // Save to SharedPreferences
             prefs.edit {
                 putBoolean(NetworkSurveyConstants.PROPERTY_NEW_TOWER_ALERTS_ENABLED, false)
             }
         }
+        wasSurveyActive = surveyState.isAnyActive
     }
 
     // Check for new towers when serving cell changes and upload scanning is active
@@ -159,7 +162,7 @@ fun SurveyMonitorScreen(
                             val data = lte.data
                             listOf(
                                 "LTE", data.mcc?.value ?: 0, data.mnc?.value ?: 0,
-                                data.tac?.value ?: 0, data.eci?.value ?: 0L
+                                data.tac?.value ?: 0, data.eci?.value?.toLong() ?: 0L
                             )
                         }
 
@@ -177,7 +180,7 @@ fun SurveyMonitorScreen(
                             val data = gsm.data
                             listOf(
                                 "GSM", data.mcc?.value ?: 0, data.mnc?.value ?: 0,
-                                data.lac?.value ?: 0, data.ci?.value ?: 0L
+                                data.lac?.value ?: 0, data.ci?.value?.toLong() ?: 0L
                             )
                         }
 
@@ -186,7 +189,7 @@ fun SurveyMonitorScreen(
                             val data = umts.data
                             listOf(
                                 "UMTS", data.mcc?.value ?: 0, data.mnc?.value ?: 0,
-                                data.lac?.value ?: 0, data.cid?.value ?: 0L
+                                data.lac?.value ?: 0, data.cid?.value?.toLong() ?: 0L
                             )
                         }
 
@@ -195,10 +198,10 @@ fun SurveyMonitorScreen(
 
                     NewTowerNotificationHelper.showNewTowerNotification(
                         context = context,
-                        mcc = mcc as Int,
-                        mnc = mnc as Int,
-                        area = area as Int,
-                        cellId = cellId as Long,
+                        mcc = (mcc as Number).toInt(),
+                        mnc = (mnc as Number).toInt(),
+                        area = (area as Number).toInt(),
+                        cellId = (cellId as Number).toLong(),
                         technology = technology as String
                     )
                 }
@@ -737,7 +740,6 @@ private fun SurveyStatistics(
 
     // State for help dialogs
     var showHelpDialog by remember { mutableStateOf(false) }
-    var showNewTowerAlertsHelpDialog by remember { mutableStateOf(false) }
 
     Column(
         modifier = modifier
@@ -1313,8 +1315,8 @@ private fun ServingCellCard(
                         val data = lte.data
                         listOf(
                             "LTE", data.mcc?.value ?: 0, data.mnc?.value ?: 0,
-                            data.tac?.value ?: 0, data.eci?.value ?: 0L,
-                            data.rsrp?.value?.let { "$it" } ?: "---"
+                            data.tac?.value ?: 0, data.eci?.value?.toLong() ?: 0L,
+                            data.rsrp?.value?.toInt()?.toString() ?: "---"
                         )
                     }
 
@@ -1324,7 +1326,7 @@ private fun ServingCellCard(
                         listOf(
                             "5G NR", data.mcc?.value ?: 0, data.mnc?.value ?: 0,
                             data.tac?.value ?: 0, data.nci?.value ?: 0L,
-                            data.ssRsrp?.value?.let { "$it" } ?: "---"
+                            data.ssRsrp?.value?.toInt()?.toString() ?: "---"
                         )
                     }
 
@@ -1333,8 +1335,8 @@ private fun ServingCellCard(
                         val data = gsm.data
                         listOf(
                             "GSM", data.mcc?.value ?: 0, data.mnc?.value ?: 0,
-                            data.lac?.value ?: 0, data.ci?.value ?: 0L,
-                            data.signalStrength?.value?.let { "$it" } ?: "---"
+                            data.lac?.value ?: 0, data.ci?.value?.toLong() ?: 0L,
+                            data.signalStrength?.value?.toInt()?.toString() ?: "---"
                         )
                     }
 
@@ -1343,8 +1345,8 @@ private fun ServingCellCard(
                         val data = umts.data
                         listOf(
                             "UMTS", data.mcc?.value ?: 0, data.mnc?.value ?: 0,
-                            data.lac?.value ?: 0, data.cid?.value ?: 0L,
-                            data.rscp?.value?.let { "$it" } ?: "---"
+                            data.lac?.value ?: 0, data.cid?.value?.toLong() ?: 0L,
+                            data.rscp?.value?.toInt()?.toString() ?: "---"
                         )
                     }
 
@@ -1352,10 +1354,10 @@ private fun ServingCellCard(
                 }
 
                 val technology = cellInfo[0] as String
-                val mcc = cellInfo[1] as Int
-                val mnc = cellInfo[2] as Int
-                val area = cellInfo[3] as Int
-                val cellId = cellInfo[4] as Long
+                val mcc = (cellInfo[1] as Number).toInt()
+                val mnc = (cellInfo[2] as Number).toInt()
+                val area = (cellInfo[3] as Number).toInt()
+                val cellId = (cellInfo[4] as Number).toLong()
                 val signalStrength = cellInfo[5] as String
 
                 // Technology and Signal Row with enhanced styling
