@@ -859,7 +859,7 @@ internal fun TowerMapScreen(
             )
         }
     } else {
-        if (isZoomedOutTooFar) {
+        if (showTowersLayer && isZoomedOutTooFar) {
             Box(
                 contentAlignment = Alignment.Center,
                 modifier = Modifier
@@ -872,7 +872,7 @@ internal fun TowerMapScreen(
                     textAlign = TextAlign.Center
                 )
             }
-        } else if (noTowersFound) {
+        } else if (showTowersLayer && noTowersFound) {
             Box(
                 contentAlignment = Alignment.Center,
                 modifier = Modifier
