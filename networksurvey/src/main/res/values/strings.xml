@@ -526,8 +526,8 @@ but work independently, so you have full control over how you handle your data.<
     <string name="alert_new_tower_ringtone_title">Notification Sound</string>
     <string name="alert_new_tower_vibrate_title">Vibrate</string>
     <string name="new_tower_alerts_title">New Tower Alerts</string>
-    <string name="new_tower_alerts_summary_off">Alerts disabled for new cellular towers</string>
-    <string name="new_tower_alerts_summary_on">Get notified when connecting to unknown towers (requires upload scanning)</string>
+    <string name="new_tower_alerts_summary_off">Notifications disabled for new cellular towers</string>
+    <string name="new_tower_alerts_summary_on">Receive notifications when connected to a tower that hasn\'t been uploaded to the OpenCelliD database yet (requires upload scanning to be active)</string>
 
     <string name="allow_data_upload">External Data Upload</string>
     <string name="allow_data_upload_mdm_description">True to allow users to upload survey records to 3rd Party databases such as OpenCelliD and BeaconDB, false to prevent it</string>

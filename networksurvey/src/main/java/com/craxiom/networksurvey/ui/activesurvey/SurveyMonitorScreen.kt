@@ -1327,11 +1327,7 @@ private fun ServingCellCard(
                                     // Technology badge
                                     Card(
                                         colors = CardDefaults.cardColors(
-                                            containerColor = when (technology) {
-                                                "5G NR" -> MaterialTheme.colorScheme.primary
-                                                "LTE" -> MaterialTheme.colorScheme.secondary
-                                                else -> MaterialTheme.colorScheme.surfaceVariant
-                                            }
+                                            containerColor = MaterialTheme.colorScheme.primary
                                         ),
                                         shape = RoundedCornerShape(8.dp)
                                     ) {
