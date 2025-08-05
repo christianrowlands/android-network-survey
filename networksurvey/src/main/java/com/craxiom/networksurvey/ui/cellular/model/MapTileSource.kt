@@ -5,7 +5,8 @@ package com.craxiom.networksurvey.ui.cellular.model
  */
 enum class MapTileSource(val displayName: String) {
     MAPTILER("MapTiler"),
-    OPENSTREETMAP("OpenStreetMap");
+    OPENSTREETMAP("OpenStreetMap"),
+    OPENFREEMAP("OpenFreeMap");
 
     companion object {
         fun fromString(value: String): MapTileSource {

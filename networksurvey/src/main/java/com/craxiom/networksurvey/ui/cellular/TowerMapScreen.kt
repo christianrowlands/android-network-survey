@@ -302,6 +302,12 @@ internal fun TowerMapScreen(
                             "https://raw.githubusercontent.com/christianrowlands/ns-map-style-uri/refs/heads/main/openstreetmap.json"
                         }
 
+                        selectedTileSource == MapTileSource.OPENFREEMAP -> {
+                            // Use OpenFreeMap if explicitly selected
+                            darkMap.value = false
+                            "https://tiles.openfreemap.org/styles/liberty"
+                        }
+
                         mapKeyLoadError || mapTilerKey.isNullOrEmpty() -> {
                             // Fallback to OSM if MapTiler key unavailable
                             darkMap.value = false
