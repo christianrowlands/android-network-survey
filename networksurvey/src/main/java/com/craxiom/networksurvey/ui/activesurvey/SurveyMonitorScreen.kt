@@ -1,7 +1,6 @@
 package com.craxiom.networksurvey.ui.activesurvey
 
-import android.media.RingtoneManager
-import android.net.Uri
+import android.content.SharedPreferences
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.RepeatMode
@@ -94,9 +93,7 @@ fun SurveyMonitorScreen(
     val servingCellInfo by viewModel.servingCellInfo.collectAsStateWithLifecycle()
     val isNewTowerDetected by viewModel.isNewTowerDetected.collectAsStateWithLifecycle()
 
-    // Sound playback
     val context = LocalContext.current
-    val notificationSound: Uri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)
 
     // New tower alert states - load from SharedPreferences
     val prefs = remember { PreferenceManager.getDefaultSharedPreferences(context) }
@@ -109,6 +106,19 @@ fun SurveyMonitorScreen(
         )
     }
 
+    // Observe preference changes to keep UI in sync with global preference
+    DisposableEffect(Unit) {
+        val listener = SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
+            if (key == NetworkSurveyConstants.PROPERTY_NEW_TOWER_ALERTS_ENABLED) {
+                isNewTowerAlertsEnabled = prefs.getBoolean(key, false)
+            }
+        }
+        prefs.registerOnSharedPreferenceChangeListener(listener)
+        onDispose {
+            prefs.unregisterOnSharedPreferenceChangeListener(listener)
+        }
+    }
+
     var selectedTab by remember { mutableIntStateOf(0) }
 
     // Handle service connection
@@ -119,92 +129,18 @@ fun SurveyMonitorScreen(
         viewModel.initializeTowerDetectionManager(context)
     }
 
-    // Auto-disable alerts when survey TRANSITIONS from active to stopped
-    var wasSurveyActive by remember { mutableStateOf(surveyState.isAnyActive) }
-    LaunchedEffect(surveyState.isAnyActive) {
-        if (wasSurveyActive && !surveyState.isAnyActive && isNewTowerAlertsEnabled) {
-            // Survey just stopped, disable alerts
-            isNewTowerAlertsEnabled = false
-            // Save to SharedPreferences
-            prefs.edit {
-                putBoolean(NetworkSurveyConstants.PROPERTY_NEW_TOWER_ALERTS_ENABLED, false)
-            }
-        }
-        wasSurveyActive = surveyState.isAnyActive
-    }
-
-    // Check for new towers when serving cell changes and upload scanning is active
-    LaunchedEffect(servingCellInfo, isNewTowerAlertsEnabled, surveyState.isUploadActive) {
-        // Only check if upload scanning is active AND user has enabled alerts
-        val shouldCheckForNewTowers = surveyState.isUploadActive && isNewTowerAlertsEnabled
+    // Check for new towers for UI visual feedback only (NEW badge)
+    // Notifications are handled by NetworkSurveyService
+    LaunchedEffect(servingCellInfo, surveyState.isUploadActive) {
+        // Only check for UI feedback when upload scanning is active
+        val shouldCheckForNewTowers = surveyState.isUploadActive
 
         viewModel.checkServingCellForNewTower(
             servingCellInfo = servingCellInfo,
             isNewTowerAlertsEnabled = shouldCheckForNewTowers,
             onNewTowerDetected = {
-                // Play notification sound when new tower is detected
-                // Only play if the Survey Monitor screen is visible
-                try {
-                    val ringtone = RingtoneManager.getRingtone(context, notificationSound)
-                    ringtone?.play()
-                } catch (_: Exception) {
-                    // Handle error silently - don't crash if sound fails
-                }
-
-                // Show notification with tower details
-                servingCellInfo?.servingCell?.let { wrapper ->
-                    val protocol = wrapper.cellularProtocol
-                    val record = wrapper.cellularRecord
-
-                    val (technology, mcc, mnc, area, cellId) = when (protocol) {
-                        com.craxiom.networksurvey.model.CellularProtocol.LTE -> {
-                            val lte = record as com.craxiom.messaging.LteRecord
-                            val data = lte.data
-                            listOf(
-                                "LTE", data.mcc?.value ?: 0, data.mnc?.value ?: 0,
-                                data.tac?.value ?: 0, data.eci?.value?.toLong() ?: 0L
-                            )
-                        }
-
-                        com.craxiom.networksurvey.model.CellularProtocol.NR -> {
-                            val nr = record as com.craxiom.messaging.NrRecord
-                            val data = nr.data
-                            listOf(
-                                "5G NR", data.mcc?.value ?: 0, data.mnc?.value ?: 0,
-                                data.tac?.value ?: 0, data.nci?.value ?: 0L
-                            )
-                        }
-
-                        com.craxiom.networksurvey.model.CellularProtocol.GSM -> {
-                            val gsm = record as com.craxiom.messaging.GsmRecord
-                            val data = gsm.data
-                            listOf(
-                                "GSM", data.mcc?.value ?: 0, data.mnc?.value ?: 0,
-                                data.lac?.value ?: 0, data.ci?.value?.toLong() ?: 0L
-                            )
-                        }
-
-                        com.craxiom.networksurvey.model.CellularProtocol.UMTS -> {
-                            val umts = record as com.craxiom.messaging.UmtsRecord
-                            val data = umts.data
-                            listOf(
-                                "UMTS", data.mcc?.value ?: 0, data.mnc?.value ?: 0,
-                                data.lac?.value ?: 0, data.cid?.value?.toLong() ?: 0L
-                            )
-                        }
-
-                        else -> return@let
-                    }
-
-                    NewTowerNotificationHelper.showNewTowerNotification(
-                        context = context,
-                        mcc = (mcc as Number).toInt(),
-                        mnc = (mnc as Number).toInt(),
-                        area = (area as Number).toInt(),
-                        cellId = (cellId as Number).toLong(),
-                        technology = technology as String
-                    )
-                }
+                // UI feedback is handled by the isNewTowerDetected state
+                // Notifications are now handled by the service
             }
         )
     }
@@ -260,8 +196,7 @@ fun SurveyMonitorScreen(
                         servingCellInfo = servingCellInfo,
                         isNewTowerAlertsEnabled = isNewTowerAlertsEnabled,
                         onNewTowerAlertsToggle = { enabled ->
-                            isNewTowerAlertsEnabled = enabled
-                            // Save to SharedPreferences
+                            // Update the preference (UI will update via the listener)
                             prefs.edit {
                                 putBoolean(
                                     NetworkSurveyConstants.PROPERTY_NEW_TOWER_ALERTS_ENABLED,

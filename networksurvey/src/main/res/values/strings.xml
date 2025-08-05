@@ -525,6 +525,9 @@ but work independently, so you have full control over how you handle your data.<
     <string name="alert_new_tower_sound_title">Play Sound</string>
     <string name="alert_new_tower_ringtone_title">Notification Sound</string>
     <string name="alert_new_tower_vibrate_title">Vibrate</string>
+    <string name="new_tower_alerts_title">New Tower Alerts</string>
+    <string name="new_tower_alerts_summary_off">Alerts disabled for new cellular towers</string>
+    <string name="new_tower_alerts_summary_on">Get notified when connecting to unknown towers (requires upload scanning)</string>
 
     <string name="allow_data_upload">External Data Upload</string>
     <string name="allow_data_upload_mdm_description">True to allow users to upload survey records to 3rd Party databases such as OpenCelliD and BeaconDB, false to prevent it</string>
@@ -773,7 +776,7 @@ but work independently, so you have full control over how you handle your data.<
     <string name="new_tower_alerts_how">How it works</string>
     <string name="new_tower_alerts_how_desc">Your current tower is compared against Network Survey\'s OpenCelliD database, which is updated every 24 hours with tower locations contributed by users worldwide. When an unknown tower is detected, you\'ll hear a notification sound.</string>
     <string name="new_tower_alerts_requirements">Requirements</string>
-    <string name="new_tower_alerts_requirements_desc">• Upload scanning must be active\n• The Survey Monitor UI must be visible</string>
+    <string name="new_tower_alerts_requirements_desc">• Upload scanning must be active\n• Alerts are enabled</string>
     <string name="new_tower_alerts_benefits">Why use this feature?</string>
     <string name="new_tower_alerts_benefits_desc">• Discover newly installed cell towers\n• Identify temporary or mobile towers\n• Help improve cellular coverage maps\n• Track network changes in your area</string>
 

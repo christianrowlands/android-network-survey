@@ -18,6 +18,14 @@
             app:title="Retry Failed Uploads"
             app:summary="Automatically retry uploads on failure" />
 
+        <SwitchPreferenceCompat
+            app:defaultValue="false"
+            app:icon="@drawable/ic_cell_tower"
+            app:key="new_tower_alerts_enabled"
+            app:title="@string/new_tower_alerts_title"
+            app:summaryOff="@string/new_tower_alerts_summary_off"
+            app:summaryOn="@string/new_tower_alerts_summary_on" />
+
     </PreferenceCategory>
 
     <PreferenceCategory

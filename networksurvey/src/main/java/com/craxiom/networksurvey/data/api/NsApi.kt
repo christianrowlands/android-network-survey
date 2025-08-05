@@ -36,7 +36,8 @@ interface Api {
         @Query("mcc") mcc: Int,
         @Query("mnc") mnc: Int,
         @Query("area") area: Int,
-        @Query("cid") cid: Long
+        @Query("cid") cid: Long,
+        @Query("radio") radio: String
     ): Response<Tower>
 }
 

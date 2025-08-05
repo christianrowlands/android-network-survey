@@ -50,19 +50,19 @@ class TowerDetectionManager(
             }
 
             // Not in cache, check backend API
-            Timber.d("Checking backend for tower: MCC=$mcc, MNC=$mnc, Area=$area, CID=$cid")
-            val response = api.checkSingleTower(mcc, mnc, area, cid)
+            Timber.d("Checking backend for tower: MCC=$mcc, MNC=$mnc, Area=$area, CID=$cid, Radio=$radio")
+            val response = api.checkSingleTower(mcc, mnc, area, cid, radio)
 
             val isNew = when (response.code()) {
-                204 -> {
+                204, 404 -> {
                     // Tower not found in backend - it's new!
-                    Timber.i("New tower detected: MCC=$mcc, MNC=$mnc, Area=$area, CID=$cid")
+                    Timber.i("New tower detected: MCC=$mcc, MNC=$mnc, Area=$area, CID=$cid, Radio=$radio")
                     true
                 }
 
                 200 -> {
                     // Tower exists in backend
-                    Timber.d("Tower exists in backend: MCC=$mcc, MNC=$mnc, Area=$area, CID=$cid")
+                    Timber.d("Tower exists in backend: MCC=$mcc, MNC=$mnc, Area=$area, CID=$cid, Radio=$radio")
                     false
                 }
 

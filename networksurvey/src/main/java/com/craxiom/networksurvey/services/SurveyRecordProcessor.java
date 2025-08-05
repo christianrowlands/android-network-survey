@@ -9,6 +9,7 @@ import android.bluetooth.BluetoothClass;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.le.ScanRecord;
 import android.content.Context;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.location.GnssAutomaticGainControl;
 import android.location.GnssMeasurement;
@@ -20,6 +21,7 @@ import android.os.Build;
 import android.os.CancellationSignal;
 import android.os.ParcelUuid;
 import android.os.SystemClock;
+import android.preference.PreferenceManager;
 import android.telephony.CellIdentity;
 import android.telephony.CellIdentityCdma;
 import android.telephony.CellIdentityGsm;
@@ -105,6 +107,9 @@ import com.craxiom.networksurvey.model.ConstellationFreqKey;
 import com.craxiom.networksurvey.model.NrRecordWrapper;
 import com.craxiom.networksurvey.model.WifiRecordWrapper;
 import com.craxiom.networksurvey.services.controller.CellularController;
+import com.craxiom.networksurvey.ui.activesurvey.NewTowerNotificationHelper;
+import com.craxiom.networksurvey.ui.activesurvey.TowerDetectionJavaWrapper;
+import com.craxiom.networksurvey.util.CellularUtils;
 import com.craxiom.networksurvey.util.FormatUtils;
 import com.craxiom.networksurvey.util.LocationUtils;
 import com.craxiom.networksurvey.util.MathUtils;
@@ -115,6 +120,7 @@ import com.craxiom.networksurvey.util.WifiUtils;
 import com.google.common.base.Strings;
 import com.google.protobuf.BoolValue;
 import com.google.protobuf.FloatValue;
+import com.google.protobuf.GeneratedMessage;
 import com.google.protobuf.Int32Value;
 import com.google.protobuf.Int64Value;
 import com.google.protobuf.UInt32Value;
@@ -179,6 +185,8 @@ public class SurveyRecordProcessor
     private final Context context;
     private NetworkSurveyService networkSurveyService;
     private final SsidExclusionManager ssidExclusionManager;
+    private final TowerDetectionJavaWrapper towerDetectionWrapper;
+    private String lastServingCellKey = null;
 
     private int recordNumber = 1;
     private int groupNumber = 0; // This will be incremented to 1 the first time it is used.
@@ -218,6 +226,7 @@ public class SurveyRecordProcessor
                 NetworkSurveyConstants.DEFAULT_GNSS_SCAN_INTERVAL_SECONDS, context);
 
         ssidExclusionManager = new SsidExclusionManager(context);
+        towerDetectionWrapper = new TowerDetectionJavaWrapper(context);
     }
 
     /**
@@ -2577,6 +2586,9 @@ public class SurveyRecordProcessor
                 uploadDbSink.onCellularBatch(cellularRecords, subscriptionId);
             }
         }
+
+        // Check for new towers if the preference is enabled and upload scanning is active
+        checkForNewTowers(cellularRecords);
     }
 
     /**
@@ -2599,6 +2611,150 @@ public class SurveyRecordProcessor
                 Timber.e(e, "Unable to notify a Cellular Survey Record Listener because of an exception");
             }
         });
+    }
+
+    /**
+     * Check if the serving cell is a new tower and show notification if enabled.
+     *
+     * @param cellularRecords The batch of cellular records to check
+     * @since 1.15.0
+     */
+    private void checkForNewTowers(List<CellularRecordWrapper> cellularRecords)
+    {
+        // Check if new tower alerts are enabled
+        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(context);
+        boolean newTowerAlertsEnabled = prefs.getBoolean(NetworkSurveyConstants.PROPERTY_NEW_TOWER_ALERTS_ENABLED, false);
+
+        if (!newTowerAlertsEnabled || cellularRecords == null || cellularRecords.isEmpty())
+        {
+            return;
+        }
+
+        // Check if upload scanning is active
+        if (networkSurveyService == null || !networkSurveyService.isUploadScanningActive())
+        {
+            return;
+        }
+
+        // Find the serving cell
+        for (CellularRecordWrapper cellularRecord : cellularRecords)
+        {
+            if (CellularUtils.isServingCell(cellularRecord.cellularRecord))
+            {
+                checkServingCellForNewTower(cellularRecord);
+                break; // Only process the first serving cell
+            }
+        }
+    }
+
+    /**
+     * Check if the serving cell is a new tower and fire notification if needed.
+     *
+     * @param cellularRecord The serving cell record to check
+     * @since 1.15.0
+     */
+    private void checkServingCellForNewTower(CellularRecordWrapper cellularRecord)
+    {
+        final CellularProtocol protocol = cellularRecord.cellularProtocol;
+        final GeneratedMessage record = cellularRecord.cellularRecord;
+
+        // Extract cell identity based on protocol
+        String cellKey = null;
+        int mcc = 0, mnc = 0, area = 0;
+        long cellId = 0;
+        String radio = "";
+
+        switch (protocol)
+        {
+            case LTE:
+                LteRecord lte = (LteRecord) record;
+                LteRecordData lteData = lte.getData();
+                if (lteData != null)
+                {
+                    mcc = lteData.hasMcc() ? lteData.getMcc().getValue() : 0;
+                    mnc = lteData.hasMnc() ? lteData.getMnc().getValue() : 0;
+                    area = lteData.hasTac() ? lteData.getTac().getValue() : 0;
+                    cellId = lteData.hasEci() ? lteData.getEci().getValue() : 0L;
+                    radio = "LTE";
+                    cellKey = mcc + "-" + mnc + "-" + area + "-" + cellId;
+                }
+                break;
+
+            case NR:
+                NrRecord nr = (NrRecord) record;
+                NrRecordData nrData = nr.getData();
+                if (nrData != null)
+                {
+                    mcc = nrData.hasMcc() ? nrData.getMcc().getValue() : 0;
+                    mnc = nrData.hasMnc() ? nrData.getMnc().getValue() : 0;
+                    area = nrData.hasTac() ? nrData.getTac().getValue() : 0;
+                    cellId = nrData.hasNci() ? nrData.getNci().getValue() : 0L;
+                    radio = "NR";
+                    cellKey = mcc + "-" + mnc + "-" + area + "-" + cellId;
+                }
+                break;
+
+            case GSM:
+                GsmRecord gsm = (GsmRecord) record;
+                GsmRecordData gsmData = gsm.getData();
+                if (gsmData != null)
+                {
+                    mcc = gsmData.hasMcc() ? gsmData.getMcc().getValue() : 0;
+                    mnc = gsmData.hasMnc() ? gsmData.getMnc().getValue() : 0;
+                    area = gsmData.hasLac() ? gsmData.getLac().getValue() : 0;
+                    cellId = gsmData.hasCi() ? gsmData.getCi().getValue() : 0L;
+                    radio = "GSM";
+                    cellKey = mcc + "-" + mnc + "-" + area + "-" + cellId;
+                }
+                break;
+
+            case UMTS:
+                UmtsRecord umts = (UmtsRecord) record;
+                UmtsRecordData umtsData = umts.getData();
+                if (umtsData != null)
+                {
+                    mcc = umtsData.hasMcc() ? umtsData.getMcc().getValue() : 0;
+                    mnc = umtsData.hasMnc() ? umtsData.getMnc().getValue() : 0;
+                    area = umtsData.hasLac() ? umtsData.getLac().getValue() : 0;
+                    cellId = umtsData.hasCid() ? umtsData.getCid().getValue() : 0L;
+                    radio = "UMTS";
+                    cellKey = mcc + "-" + mnc + "-" + area + "-" + cellId;
+                }
+                break;
+
+            default:
+                return; // Unsupported protocol
+        }
+
+        // Check if this is a different cell than the last one
+        if (cellKey != null && !cellKey.equals(lastServingCellKey) && mcc > 0 && cellId > 0)
+        {
+            lastServingCellKey = cellKey;
+
+            // Check if this is a new tower using TowerDetectionManager
+            final int finalMcc = mcc;
+            final int finalMnc = mnc;
+            final int finalArea = area;
+            final long finalCellId = cellId;
+            final String finalRadio = radio;
+
+            towerDetectionWrapper.checkIfTowerIsNewAsync(
+                    mcc, mnc, area, cellId, radio,
+                    (Boolean isNewTower) -> {
+                        if (isNewTower)
+                        {
+                            Timber.i("New tower detected: %s-%s-%s-%s (%s)",
+                                    finalMcc, finalMnc, finalArea, finalCellId, finalRadio);
+
+                            // Show notification
+                            NewTowerNotificationHelper.INSTANCE.showNewTowerNotification(
+                                    context,
+                                    finalMcc, finalMnc, finalArea, finalCellId, finalRadio
+                            );
+                        }
+                    }
+            );
+        }
     }
 
     /**
