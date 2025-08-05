@@ -206,6 +206,13 @@ fun getAppBarActions(
 
         MainScreens.Cellular -> listOf(
             AppBarAction(
+                icon = R.drawable.ic_survey_monitor,
+                description = R.string.survey_monitor,
+                onClick = {
+                    navController.navigate(NavDrawerOption.SurveyMonitor.name)
+                }
+            ),
+            AppBarAction(
                 icon = android.R.drawable.ic_dialog_map,
                 description = R.string.open_tower_map,
                 onClick = {
