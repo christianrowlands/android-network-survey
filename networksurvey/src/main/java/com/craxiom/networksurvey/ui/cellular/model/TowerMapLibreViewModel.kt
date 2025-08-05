@@ -40,6 +40,7 @@ import timber.log.Timber
 import java.util.Objects
 
 const val INITIAL_ZOOM = 14.0
+const val SEARCH_RESULT_ZOOM = 17.0
 const val MIN_ZOOM_LEVEL = 9.0
 const val MAX_AREA_SQ_METERS = 40_000_000_000.0
 private const val MAX_TOWERS_ON_MAP = 7_500
@@ -159,6 +160,29 @@ class TowerMapLibreViewModel : ViewModel() {
     private val _isMapInitializing = MutableStateFlow(true)
     val isMapInitializing = _isMapInitializing.asStateFlow()
 
+    // Search functionality
+    private val _searchedTower = MutableStateFlow<Tower?>(null)
+    val searchedTower = _searchedTower.asStateFlow()
+
+    private val _isSearchInProgress = MutableStateFlow(false)
+    val isSearchInProgress = _isSearchInProgress.asStateFlow()
+
+    private val _searchError = MutableStateFlow<String?>(null)
+    val searchError = _searchError.asStateFlow()
+
+    // Search input state
+    private val _searchMccInput = MutableStateFlow("")
+    val searchMccInput = _searchMccInput.asStateFlow()
+
+    private val _searchMncInput = MutableStateFlow("")
+    val searchMncInput = _searchMncInput.asStateFlow()
+
+    private val _searchAreaInput = MutableStateFlow("")
+    val searchAreaInput = _searchAreaInput.asStateFlow()
+
+    private val _searchCidInput = MutableStateFlow("")
+    val searchCidInput = _searchCidInput.asStateFlow()
+
     val nsApi: Api = retrofit.create(Api::class.java)
 
     init {
@@ -267,6 +291,11 @@ class TowerMapLibreViewModel : ViewModel() {
     fun setShowTowersLayer(show: Boolean) {
         val wasHidden = !_showTowersLayer.value
         _showTowersLayer.value = show
+
+        // Clear search result when towers layer is hidden
+        if (!show) {
+            clearSearchResult()
+        }
 
         // If the layer was hidden and is now being shown, trigger a tower query
         if (wasHidden && show) {
@@ -962,6 +991,130 @@ class TowerMapLibreViewModel : ViewModel() {
         val c = 2 * kotlin.math.atan2(kotlin.math.sqrt(a), kotlin.math.sqrt(1 - a))
         val width = earthRadius * c
         return width * width
+    }
+
+    /**
+     * Searches for a tower with the given parameters and centers the map on the result.
+     */
+    fun searchForTower(mcc: Int, mnc: Int, area: Int, cid: Long) {
+        viewModelScope.launch {
+            // Clear any previous search result
+            _searchedTower.value = null
+
+            _isSearchInProgress.value = true
+            _searchError.value = null
+
+            try {
+                val response = nsApi.searchTowers(mcc, mnc, area, cid)
+
+                // Check for 204 No Content specifically
+                if (response.code() == 204) {
+                    _searchError.value = "No towers found with the specified parameters"
+                    _searchedTower.value = null
+                } else if (response.isSuccessful && response.body() != null) {
+                    val towerResponse = response.body()!!
+
+                    if (towerResponse.cells.isNotEmpty()) {
+                        val tower = towerResponse.cells.first()
+                        _searchedTower.value = tower
+
+                        // Center map on the search result with closer zoom
+                        mapLibreMap?.let { map ->
+                            val target = LatLng(tower.lat, tower.lon)
+                            val camPos = CameraPosition.Builder()
+                                .target(target)
+                                .zoom(SEARCH_RESULT_ZOOM)
+                                .build()
+
+                            // Ensure we animate on the main thread
+                            Handler(Looper.getMainLooper()).post {
+                                map.animateCamera(CameraUpdateFactory.newCameraPosition(camPos))
+                            }
+                        }
+
+                        if (towerResponse.cells.size > 1) {
+                            Timber.d("Search returned ${towerResponse.cells.size} towers, using first result")
+                        }
+                    } else {
+                        _searchError.value = "No towers found with the specified values"
+                        _searchedTower.value = null
+                    }
+                } else {
+                    _searchError.value = "Error searching for towers. Please try again."
+                    _searchedTower.value = null
+                    Timber.e("Tower search failed with response code: ${response.code()}")
+                }
+            } catch (e: Exception) {
+                Timber.e(e, "Error searching for tower")
+                _searchError.value = "Error searching for tower: ${e.message}"
+                _searchedTower.value = null
+            } finally {
+                _isSearchInProgress.value = false
+            }
+        }
+    }
+
+    /**
+     * Clears the current search result.
+     */
+    fun clearSearchResult() {
+        _searchedTower.value = null
+        _searchError.value = null
+    }
+
+    /**
+     * Updates the search MCC input value.
+     */
+    fun updateSearchMcc(value: String) {
+        _searchMccInput.value = value
+        // Clear error when user starts typing
+        if (_searchError.value != null) {
+            _searchError.value = null
+        }
+    }
+
+    /**
+     * Updates the search MNC input value.
+     */
+    fun updateSearchMnc(value: String) {
+        _searchMncInput.value = value
+        // Clear error when user starts typing
+        if (_searchError.value != null) {
+            _searchError.value = null
+        }
+    }
+
+    /**
+     * Updates the search Area input value.
+     */
+    fun updateSearchArea(value: String) {
+        _searchAreaInput.value = value
+        // Clear error when user starts typing
+        if (_searchError.value != null) {
+            _searchError.value = null
+        }
+    }
+
+    /**
+     * Updates the search CID input value.
+     */
+    fun updateSearchCid(value: String) {
+        _searchCidInput.value = value
+        // Clear error when user starts typing
+        if (_searchError.value != null) {
+            _searchError.value = null
+        }
+    }
+
+    /**
+     * Clears all search input fields.
+     */
+    fun clearSearchInputs() {
+        _searchMccInput.value = ""
+        _searchMncInput.value = ""
+        _searchAreaInput.value = ""
+        _searchCidInput.value = ""
+        _searchError.value = null
     }
 
     override fun onCleared() {

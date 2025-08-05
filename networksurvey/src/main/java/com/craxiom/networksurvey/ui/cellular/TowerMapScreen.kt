@@ -3,6 +3,7 @@ package com.craxiom.networksurvey.ui.cellular
 import android.widget.Toast
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -23,6 +24,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -35,6 +37,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Surface
@@ -87,11 +90,13 @@ import com.craxiom.networksurvey.ui.cellular.model.TowerSource
 import com.craxiom.networksurvey.ui.cellular.towermap.CameraMode
 import com.craxiom.networksurvey.ui.cellular.towermap.Circle
 import com.craxiom.networksurvey.ui.cellular.towermap.DefaultMapLocationSettings
+import com.craxiom.networksurvey.ui.cellular.towermap.KEY_SEARCH_TOWER_ICON
 import com.craxiom.networksurvey.ui.cellular.towermap.KEY_SERVING_CELL_ICON
 import com.craxiom.networksurvey.ui.cellular.towermap.KEY_TOWER_ICON
 import com.craxiom.networksurvey.ui.cellular.towermap.LineString
 import com.craxiom.networksurvey.ui.cellular.towermap.MapLibreMap
 import com.craxiom.networksurvey.ui.cellular.towermap.MapUiSettings
+import com.craxiom.networksurvey.ui.cellular.towermap.SearchResultSymbols
 import com.craxiom.networksurvey.ui.cellular.towermap.TowerInfoDialog
 import com.craxiom.networksurvey.ui.cellular.towermap.TowerSymbols
 import com.craxiom.networksurvey.ui.cellular.towermap.rememberCameraPositionState
@@ -204,6 +209,13 @@ internal fun TowerMapScreen(
     var selectedSimIndex by remember { mutableIntStateOf(-1) }
     val servingCellSignals by viewModel.servingSignals.collectAsStateWithLifecycle()
     val showTowersLayer by viewModel.showTowersLayer.collectAsStateWithLifecycle()
+    val searchedTower by viewModel.searchedTower.collectAsStateWithLifecycle()
+    val isSearchInProgress by viewModel.isSearchInProgress.collectAsStateWithLifecycle()
+    val searchError by viewModel.searchError.collectAsStateWithLifecycle()
+    val searchMccInput by viewModel.searchMccInput.collectAsStateWithLifecycle()
+    val searchMncInput by viewModel.searchMncInput.collectAsStateWithLifecycle()
+    val searchAreaInput by viewModel.searchAreaInput.collectAsStateWithLifecycle()
+    val searchCidInput by viewModel.searchCidInput.collectAsStateWithLifecycle()
 
     val options = listOf(
         CellularProtocol.GSM.name,
@@ -219,6 +231,7 @@ internal fun TowerMapScreen(
     var showTowerInfoDialog by remember { mutableStateOf(false) }
     var selectedTower by remember { mutableStateOf<Tower?>(null) }
     var showLayersDialog by remember { mutableStateOf(false) }
+    var showSearchDialog by remember { mutableStateOf(false) }
 
     val cameraPositionState = rememberCameraPositionState {
         // FIXME Is this redundant because there is similar logic in the view model?
@@ -326,12 +339,14 @@ internal fun TowerMapScreen(
                     if (darkMap.value) {
                         mapOf(
                             KEY_TOWER_ICON to R.drawable.ic_cell_tower_map_dark,
-                            KEY_SERVING_CELL_ICON to R.drawable.ic_cell_tower_map_serving_dark
+                            KEY_SERVING_CELL_ICON to R.drawable.ic_cell_tower_map_serving_dark,
+                            KEY_SEARCH_TOWER_ICON to R.drawable.ic_cell_tower_search_dark
                         ).toImmutableMap()
                     } else {
                         mapOf(
                             KEY_TOWER_ICON to R.drawable.ic_cell_tower_map_light,
-                            KEY_SERVING_CELL_ICON to R.drawable.ic_cell_tower_map_serving_light
+                            KEY_SERVING_CELL_ICON to R.drawable.ic_cell_tower_map_serving_light,
+                            KEY_SEARCH_TOWER_ICON to R.drawable.ic_cell_tower_search_dark
                         ).toImmutableMap()
                     }
                 }
@@ -383,6 +398,13 @@ internal fun TowerMapScreen(
                             towerWrapperList = towerWrapperList,
                             servingIds = servingIds
                         )
+
+                        // Display search result if available
+                        searchedTower?.let { tower ->
+                            SearchResultSymbols(
+                                searchedTower = tower
+                            )
+                        }
 
                         // Render serving cell lines
                         val servingCellLines by viewModel.servingCellLines.collectAsStateWithLifecycle()
@@ -573,7 +595,42 @@ internal fun TowerMapScreen(
                         )
                 ) {
                     Column {
+                        // Search button at the top when towers layer is enabled
+                        if (showTowersLayer) {
+                            Surface(
+                                modifier = Modifier
+                                    .size(40.dp)
+                                    .clip(CircleShape)
+                                    .background(MaterialTheme.colorScheme.primary),
+                                color = MaterialTheme.colorScheme.primary
+                            ) {
+                                Box(
+                                    contentAlignment = Alignment.Center,
+                                    modifier = Modifier
+                                        .fillMaxSize()
+                                        .padding(8.dp)
+                                ) {
+                                    Image(
+                                        painter = painterResource(id = R.drawable.ic_search_24),
+                                        contentDescription = "Search Tower",
+                                        modifier = Modifier.size(24.dp)
+                                    )
+                                    Button(
+                                        onClick = { showSearchDialog = true },
+                                        modifier = Modifier
+                                            .size(48.dp)
+                                            .clip(CircleShape),
+                                        colors = ButtonDefaults.buttonColors(
+                                            containerColor = Color.Transparent
+                                        )
+                                    ) {}
+                                }
+                            }
 
+                            Spacer(modifier = Modifier.height(12.dp))
+                        }
+
+                        // Layers button
                         Surface(
                             modifier = Modifier
                                 .size(40.dp)
@@ -839,6 +896,28 @@ internal fun TowerMapScreen(
                     }
                 },
                 onDismiss = { showLayersDialog = false }
+            )
+        }
+
+        if (showSearchDialog) {
+            CellSearchBottomSheet(
+                mccValue = searchMccInput,
+                mncValue = searchMncInput,
+                areaValue = searchAreaInput,
+                cidValue = searchCidInput,
+                onMccChange = viewModel::updateSearchMcc,
+                onMncChange = viewModel::updateSearchMnc,
+                onAreaChange = viewModel::updateSearchArea,
+                onCidChange = viewModel::updateSearchCid,
+                onClearAll = viewModel::clearSearchInputs,
+                onSearch = { mcc, mnc, area, cid ->
+                    viewModel.searchForTower(mcc, mnc, area, cid)
+                },
+                onDismiss = { showSearchDialog = false },
+                isSearching = isSearchInProgress,
+                searchError = searchError,
+                hasSearchResult = searchedTower != null,
+                onClearSearchResult = viewModel::clearSearchResult
             )
         }
     }
@@ -1310,6 +1389,179 @@ fun MapLayersDialog(
                 )
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(text = "BeaconDB Coverage")
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun CellSearchBottomSheet(
+    mccValue: String,
+    mncValue: String,
+    areaValue: String,
+    cidValue: String,
+    onMccChange: (String) -> Unit,
+    onMncChange: (String) -> Unit,
+    onAreaChange: (String) -> Unit,
+    onCidChange: (String) -> Unit,
+    onClearAll: () -> Unit,
+    onSearch: (mcc: Int, mnc: Int, area: Int, cid: Long) -> Unit,
+    onDismiss: () -> Unit,
+    isSearching: Boolean = false,
+    searchError: String? = null,
+    hasSearchResult: Boolean = false,
+    onClearSearchResult: () -> Unit = {}
+) {
+    val bottomSheetState = rememberModalBottomSheetState()
+
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = bottomSheetState
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .verticalScroll(rememberScrollState())
+                .padding(16.dp)
+                .padding(bottom = 32.dp)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "Cell Tower Search",
+                    style = MaterialTheme.typography.headlineSmall,
+                    modifier = Modifier.weight(1f)
+                )
+                TextButton(
+                    onClick = onClearAll,
+                    enabled = mccValue.isNotEmpty() || mncValue.isNotEmpty() ||
+                            areaValue.isNotEmpty() || cidValue.isNotEmpty()
+                ) {
+                    Text("Clear All")
+                }
+            }
+
+            Text(
+                text = "Enter the cell tower parameters to search for it on the map.",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(bottom = 16.dp, top = 8.dp)
+            )
+
+            OutlinedTextField(
+                value = mccValue,
+                onValueChange = onMccChange,
+                label = { Text("MCC (Mobile Country Code)") },
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                modifier = Modifier.fillMaxWidth(),
+                singleLine = true,
+                isError = mccValue.isNotEmpty() && mccValue.toIntOrNull() == null
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+
+            OutlinedTextField(
+                value = mncValue,
+                onValueChange = onMncChange,
+                label = { Text("MNC (Mobile Network Code)") },
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                modifier = Modifier.fillMaxWidth(),
+                singleLine = true,
+                isError = mncValue.isNotEmpty() && mncValue.toIntOrNull() == null
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+
+            OutlinedTextField(
+                value = areaValue,
+                onValueChange = onAreaChange,
+                label = { Text("LAC/TAC") },
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                modifier = Modifier.fillMaxWidth(),
+                singleLine = true,
+                isError = areaValue.isNotEmpty() && areaValue.toIntOrNull() == null
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+
+            OutlinedTextField(
+                value = cidValue,
+                onValueChange = onCidChange,
+                label = { Text("CID (Cell ID)") },
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                modifier = Modifier.fillMaxWidth(),
+                singleLine = true,
+                isError = cidValue.isNotEmpty() && cidValue.toLongOrNull() == null
+            )
+
+            searchError?.let {
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = it,
+                    color = MaterialTheme.colorScheme.error,
+                    style = MaterialTheme.typography.bodySmall
+                )
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                // Clear Result button - shown only when there's a search result
+                if (hasSearchResult) {
+                    OutlinedButton(
+                        onClick = onClearSearchResult,
+                        modifier = Modifier.weight(1f),
+                        colors = ButtonDefaults.outlinedButtonColors(
+                            contentColor = MaterialTheme.colorScheme.error
+                        )
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Clear,
+                            contentDescription = "Clear Result",
+                            modifier = Modifier.size(16.dp)
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text("Clear Result")
+                    }
+                }
+
+                // Search button
+                Button(
+                    onClick = {
+                        val mcc = mccValue.toIntOrNull()
+                        val mnc = mncValue.toIntOrNull()
+                        val area = areaValue.toIntOrNull()
+                        val cid = cidValue.toLongOrNull()
+
+                        if (mcc != null && mnc != null && area != null && cid != null) {
+                            onSearch(mcc, mnc, area, cid)
+                        }
+                    },
+                    modifier = if (hasSearchResult) Modifier.weight(1f) else Modifier.fillMaxWidth(),
+                    enabled = !isSearching &&
+                            mccValue.toIntOrNull() != null &&
+                            mncValue.toIntOrNull() != null &&
+                            areaValue.toIntOrNull() != null &&
+                            cidValue.toLongOrNull() != null
+                ) {
+                    if (isSearching) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(16.dp),
+                            color = MaterialTheme.colorScheme.onPrimary
+                        )
+                    } else {
+                        Icon(
+                            imageVector = Icons.Default.Search,
+                            contentDescription = "Search",
+                            modifier = Modifier.size(16.dp)
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text("Search")
+                    }
+                }
             }
         }
     }

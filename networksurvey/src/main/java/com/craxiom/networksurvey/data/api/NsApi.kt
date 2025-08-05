@@ -39,6 +39,14 @@ interface Api {
         @Query("cid") cid: Long,
         @Query("radio") radio: String
     ): Response<Tower>
+
+    @GET("cells/search")
+    suspend fun searchTowers(
+        @Query("mcc") mcc: Int,
+        @Query("mnc") mnc: Int,
+        @Query("area") area: Int,
+        @Query("cid") cid: Long
+    ): Response<TowerResponse>
 }
 
 val okHttpClient = OkHttpClient.Builder()

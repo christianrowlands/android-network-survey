@@ -101,11 +101,19 @@ internal class MapPropertiesNode(
         // Set up tower click listener
         onTowerClick?.let { clickHandler ->
             map.addOnMapClickListener { point ->
-                // Query for tower features at the click point
-                val features = map.queryRenderedFeatures(
+                // Query for tower features at the click point - check both regular towers and search results
+                val regularFeatures = map.queryRenderedFeatures(
                     map.projection.toScreenLocation(point),
                     TOWER_LAYER_KEY
                 )
+
+                val searchFeatures = map.queryRenderedFeatures(
+                    map.projection.toScreenLocation(point),
+                    SEARCH_TOWER_LAYER_KEY
+                )
+
+                // Prioritize search results over regular towers
+                val features = searchFeatures.ifEmpty { regularFeatures }
 
                 if (features.isNotEmpty()) {
                     val feature = features[0]
