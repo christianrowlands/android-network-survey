@@ -5,8 +5,12 @@ import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
+import android.media.AudioAttributes
+import android.media.RingtoneManager
+import android.net.Uri
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
+import androidx.core.net.toUri
 import com.craxiom.networksurvey.NetworkSurveyActivity
 import com.craxiom.networksurvey.R
 import timber.log.Timber
@@ -24,22 +28,43 @@ object NewTowerNotificationHelper {
     private var notificationIdCounter = NOTIFICATION_ID_BASE
 
     /**
+     * Get the notification sound URI with fallback to system default.
+     * First tries to find a custom sound in res/raw, then falls back to system default.
+     */
+    private fun getNotificationSoundUri(context: Context): Uri {
+        return try {
+            // Directly reference the custom sound resource
+            "android.resource://${context.packageName}/${R.raw.new_tower_alert}".toUri()
+        } catch (_: Exception) {
+            // If resource doesn't exist, fall back to system default
+            RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)
+        }
+    }
+
+    /**
      * Create the notification channel for new tower alerts.
      * Must be called before showing notifications on Android O+.
      */
     fun createNotificationChannel(context: Context) {
+        val notificationManager =
+            context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+
         val importance = NotificationManager.IMPORTANCE_HIGH
         val channel = NotificationChannel(CHANNEL_ID, CHANNEL_NAME, importance).apply {
             description = CHANNEL_DESCRIPTION
             enableVibration(true)
             setShowBadge(true)
+
+            // Set notification sound (custom or default)
+            val soundUri = getNotificationSoundUri(context)
+            val audioAttributes = AudioAttributes.Builder()
+                .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+                .setUsage(AudioAttributes.USAGE_NOTIFICATION)
+                .build()
+            setSound(soundUri, audioAttributes)
         }
 
-        val notificationManager =
-            context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         notificationManager.createNotificationChannel(channel)
-
-        Timber.d("New tower notification channel created")
     }
 
     /**
@@ -90,6 +115,7 @@ object NewTowerNotificationHelper {
             .setOngoing(false) // Can be swiped away
             .setContentIntent(pendingIntent)
             .setVibrate(longArrayOf(0, 250, 250, 250))
+            .setSound(getNotificationSoundUri(context))
 
         // Show the notification
         try {
