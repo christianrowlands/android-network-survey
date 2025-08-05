@@ -21,8 +21,8 @@ class TowerDetectionManager(
         SurveyDatabase.getInstance(context).towerCacheDao()
     }
 
-    // Cache cleanup interval - 24 hours
-    private val CACHE_RETENTION_MS = 24 * 60 * 60 * 1000L
+    // Cache cleanup interval - 48 hours
+    private val CACHE_RETENTION_MS = 48 * 60 * 60 * 1000L
 
     /**
      * Check if a tower is new (not in the backend database).

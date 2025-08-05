@@ -2675,7 +2675,7 @@ public class SurveyRecordProcessor
                     mnc = lteData.hasMnc() ? lteData.getMnc().getValue() : 0;
                     area = lteData.hasTac() ? lteData.getTac().getValue() : 0;
                     cellId = lteData.hasEci() ? lteData.getEci().getValue() : 0L;
-                    radio = "LTE";
+                    radio = CellularProtocol.LTE.name();
                     cellKey = mcc + "-" + mnc + "-" + area + "-" + cellId;
                 }
                 break;
@@ -2689,7 +2689,7 @@ public class SurveyRecordProcessor
                     mnc = nrData.hasMnc() ? nrData.getMnc().getValue() : 0;
                     area = nrData.hasTac() ? nrData.getTac().getValue() : 0;
                     cellId = nrData.hasNci() ? nrData.getNci().getValue() : 0L;
-                    radio = "NR";
+                    radio = CellularProtocol.NR.name();
                     cellKey = mcc + "-" + mnc + "-" + area + "-" + cellId;
                 }
                 break;
@@ -2703,7 +2703,7 @@ public class SurveyRecordProcessor
                     mnc = gsmData.hasMnc() ? gsmData.getMnc().getValue() : 0;
                     area = gsmData.hasLac() ? gsmData.getLac().getValue() : 0;
                     cellId = gsmData.hasCi() ? gsmData.getCi().getValue() : 0L;
-                    radio = "GSM";
+                    radio = CellularProtocol.GSM.name();
                     cellKey = mcc + "-" + mnc + "-" + area + "-" + cellId;
                 }
                 break;
@@ -2717,7 +2717,7 @@ public class SurveyRecordProcessor
                     mnc = umtsData.hasMnc() ? umtsData.getMnc().getValue() : 0;
                     area = umtsData.hasLac() ? umtsData.getLac().getValue() : 0;
                     cellId = umtsData.hasCid() ? umtsData.getCid().getValue() : 0L;
-                    radio = "UMTS";
+                    radio = CellularProtocol.UMTS.name();
                     cellKey = mcc + "-" + mnc + "-" + area + "-" + cellId;
                 }
                 break;
