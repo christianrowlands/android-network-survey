@@ -1,5 +1,23 @@
 # Changelog
 
+## [1.40](https://github.com/christianrowlands/android-network-survey/releases/tag/v1.40) - 2025-08-06
+
+* Pause all survey operations when the battery drops below a user defined value. - [#90](https://github.com/christianrowlands/android-network-survey/issues/90)
+* Adds an exclusion filter for WiFi SSIDs that allows the user to specify SSIDs to exclude from the survey data. - [#91](https://github.com/christianrowlands/android-network-survey/issues/91)
+* Play a sound alert and show a notification when a new tower is seen that is not in the OpenCelliD DB. - [#81](https://github.com/christianrowlands/android-network-survey/issues/81)
+* Adds a tower search feature to the tower map and survey monitor map. - [#89](https://github.com/christianrowlands/android-network-survey/issues/89)
+* Improve the Survey Monitor Status UI.
+* Adds an MDM field for setting the deviceName field when sending messages over MQTT.
+* Improve the Tower Information Dialog for the towers on the map.
+* Keep the protocol selection when locking and unlocking the tower map screen (it was previously being reverted).
+* Fix a bug by triggering an update to the NR NCI calculator when the gNB ID bit length is changed.
+* Restore the "my location" dot on the map after locking and unlocking the screen.
+* Remove the extra dot at the end of the upload progress bar.
+* Make the record count help dialog scrollable for larger font sizes.
+* Prevent a crash on Android 8.1 where the device scan rate was 0 because of a race condition.
+* Prevent a crash on Android 10 due to a known Android 10 bug.
+* Add OpenFreeMap as a map tile option.
+
 ## [1.39](https://github.com/christianrowlands/android-network-survey/releases/tag/v1.39) - 2025-07-14
 
 * Prompt the user to disable Android's battery optimization for the app. This prevents the Android OS from silently pausing the survey due to battery optimizations.
