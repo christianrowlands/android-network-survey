@@ -164,6 +164,9 @@ class TowerMapLibreViewModel : ViewModel() {
     private val _searchedTower = MutableStateFlow<Tower?>(null)
     val searchedTower = _searchedTower.asStateFlow()
 
+    private val _searchedTowerCoverage = MutableStateFlow<ServingCellCoverageData?>(null)
+    val searchedTowerCoverage = _searchedTowerCoverage.asStateFlow()
+
     private val _isSearchInProgress = MutableStateFlow(false)
     val isSearchInProgress = _isSearchInProgress.asStateFlow()
 
@@ -1000,6 +1003,7 @@ class TowerMapLibreViewModel : ViewModel() {
         viewModelScope.launch {
             // Clear any previous search result
             _searchedTower.value = null
+            _searchedTowerCoverage.value = null
 
             _isSearchInProgress.value = true
             _searchError.value = null
@@ -1011,12 +1015,24 @@ class TowerMapLibreViewModel : ViewModel() {
                 if (response.code() == 204) {
                     _searchError.value = "No towers found with the specified parameters"
                     _searchedTower.value = null
+                    _searchedTowerCoverage.value = null
                 } else if (response.isSuccessful && response.body() != null) {
                     val towerResponse = response.body()!!
 
                     if (towerResponse.cells.isNotEmpty()) {
                         val tower = towerResponse.cells.first()
                         _searchedTower.value = tower
+
+                        // Set coverage data if tower has range
+                        if (tower.range > 0) {
+                            _searchedTowerCoverage.value = ServingCellCoverageData(
+                                subscriptionId = -999, // Use a special ID for search results
+                                center = LatLng(tower.lat, tower.lon),
+                                radiusMeters = tower.range
+                            )
+                        } else {
+                            _searchedTowerCoverage.value = null
+                        }
 
                         // Center map on the search result with closer zoom
                         mapLibreMap?.let { map ->
@@ -1038,16 +1054,19 @@ class TowerMapLibreViewModel : ViewModel() {
                     } else {
                         _searchError.value = "No towers found with the specified values"
                         _searchedTower.value = null
+                        _searchedTowerCoverage.value = null
                     }
                 } else {
                     _searchError.value = "Error searching for towers. Please try again."
                     _searchedTower.value = null
+                    _searchedTowerCoverage.value = null
                     Timber.e("Tower search failed with response code: ${response.code()}")
                 }
             } catch (e: Exception) {
                 Timber.e(e, "Error searching for tower")
                 _searchError.value = "Error searching for tower: ${e.message}"
                 _searchedTower.value = null
+                _searchedTowerCoverage.value = null
             } finally {
                 _isSearchInProgress.value = false
             }
@@ -1059,6 +1078,7 @@ class TowerMapLibreViewModel : ViewModel() {
      */
     fun clearSearchResult() {
         _searchedTower.value = null
+        _searchedTowerCoverage.value = null
         _searchError.value = null
     }
 

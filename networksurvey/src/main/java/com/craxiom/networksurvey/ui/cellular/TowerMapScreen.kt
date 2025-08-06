@@ -399,7 +399,22 @@ internal fun TowerMapScreen(
                             servingIds = servingIds
                         )
 
-                        // Display search result if available
+                        // Display search result coverage circle first (behind the icon)
+                        val searchedTowerCoverage by viewModel.searchedTowerCoverage.collectAsStateWithLifecycle()
+                        searchedTowerCoverage?.let { coverageData ->
+                            val (fillColor, strokeColor) = getCoverageCircleColors()
+                            Circle(
+                                state = rememberCircleState(
+                                    center = coverageData.center,
+                                    radiusMeters = coverageData.radiusMeters,
+                                    fillColor = fillColor,
+                                    strokeColor = strokeColor,
+                                    strokeWidth = 2f
+                                )
+                            )
+                        }
+
+                        // Display search result icon on top
                         searchedTower?.let { tower ->
                             SearchResultSymbols(
                                 searchedTower = tower
