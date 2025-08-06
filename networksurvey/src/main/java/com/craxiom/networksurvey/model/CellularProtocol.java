@@ -33,7 +33,7 @@ public enum CellularProtocol
      * Signal 2 is SS_RSRQ
      * Signal 3 is SS_SINR
      */
-    NR(-110, 40, -31, 28, -5, 29);
+    NR(-130, 50, -20, 17, -5, 29);
 
     private final int minSignalOne;
     private final int maxNormalizedSignalOne;
