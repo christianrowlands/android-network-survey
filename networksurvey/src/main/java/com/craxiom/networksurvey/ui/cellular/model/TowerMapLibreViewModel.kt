@@ -1034,17 +1034,40 @@ class TowerMapLibreViewModel : ViewModel() {
                             _searchedTowerCoverage.value = null
                         }
 
-                        // Center map on the search result with closer zoom
+                        // Center map on the search result and ensure coverage area is visible
                         mapLibreMap?.let { map ->
                             val target = LatLng(tower.lat, tower.lon)
-                            val camPos = CameraPosition.Builder()
-                                .target(target)
-                                .zoom(SEARCH_RESULT_ZOOM)
-                                .build()
-
-                            // Ensure we animate on the main thread
-                            Handler(Looper.getMainLooper()).post {
-                                map.animateCamera(CameraUpdateFactory.newCameraPosition(camPos))
+                            
+                            if (tower.range > 0) {
+                                // Calculate bounds that encompass the coverage circle
+                                val radiusInDegrees = tower.range / 111320.0
+                                val latRadians = Math.toRadians(tower.lat)
+                                val lngOffset = radiusInDegrees / kotlin.math.cos(latRadians)
+                                
+                                val bounds = LatLngBounds.Builder()
+                                    .include(LatLng(tower.lat + radiusInDegrees, tower.lon + lngOffset)) // NE
+                                    .include(LatLng(tower.lat - radiusInDegrees, tower.lon - lngOffset)) // SW
+                                    .build()
+                                
+                                // Ensure we animate on the main thread with padding to show full circle
+                                Handler(Looper.getMainLooper()).post {
+                                    // Use padding to ensure the circle edge is visible
+                                    val padding = 100 // pixels
+                                    map.animateCamera(
+                                        CameraUpdateFactory.newLatLngBounds(bounds, padding)
+                                    )
+                                }
+                            } else {
+                                // No range info, just center with default zoom
+                                val camPos = CameraPosition.Builder()
+                                    .target(target)
+                                    .zoom(SEARCH_RESULT_ZOOM)
+                                    .build()
+                                
+                                // Ensure we animate on the main thread
+                                Handler(Looper.getMainLooper()).post {
+                                    map.animateCamera(CameraUpdateFactory.newCameraPosition(camPos))
+                                }
                             }
                         }
 
