@@ -1466,48 +1466,59 @@ fun CellSearchBottomSheet(
                 modifier = Modifier.padding(bottom = 16.dp, top = 8.dp)
             )
 
-            OutlinedTextField(
-                value = mccValue,
-                onValueChange = onMccChange,
-                label = { Text("MCC (Mobile Country Code)") },
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+            // First row: MCC and MNC
+            Row(
                 modifier = Modifier.fillMaxWidth(),
-                singleLine = true,
-                isError = mccValue.isNotEmpty() && mccValue.toIntOrNull() == null
-            )
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                OutlinedTextField(
+                    value = mccValue,
+                    onValueChange = onMccChange,
+                    label = { Text("MCC") },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    modifier = Modifier.weight(1f),
+                    singleLine = true,
+                    isError = mccValue.isNotEmpty() && mccValue.toIntOrNull() == null
+                )
+                
+                OutlinedTextField(
+                    value = mncValue,
+                    onValueChange = onMncChange,
+                    label = { Text("MNC") },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    modifier = Modifier.weight(1f),
+                    singleLine = true,
+                    isError = mncValue.isNotEmpty() && mncValue.toIntOrNull() == null
+                )
+            }
+            
             Spacer(modifier = Modifier.height(8.dp))
 
-            OutlinedTextField(
-                value = mncValue,
-                onValueChange = onMncChange,
-                label = { Text("MNC (Mobile Network Code)") },
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+            // Second row: LAC/TAC and CID
+            Row(
                 modifier = Modifier.fillMaxWidth(),
-                singleLine = true,
-                isError = mncValue.isNotEmpty() && mncValue.toIntOrNull() == null
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-
-            OutlinedTextField(
-                value = areaValue,
-                onValueChange = onAreaChange,
-                label = { Text("LAC/TAC") },
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                modifier = Modifier.fillMaxWidth(),
-                singleLine = true,
-                isError = areaValue.isNotEmpty() && areaValue.toIntOrNull() == null
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-
-            OutlinedTextField(
-                value = cidValue,
-                onValueChange = onCidChange,
-                label = { Text("CID (Cell ID)") },
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                modifier = Modifier.fillMaxWidth(),
-                singleLine = true,
-                isError = cidValue.isNotEmpty() && cidValue.toLongOrNull() == null
-            )
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                OutlinedTextField(
+                    value = areaValue,
+                    onValueChange = onAreaChange,
+                    label = { Text("LAC/TAC") },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    modifier = Modifier.weight(1f),
+                    singleLine = true,
+                    isError = areaValue.isNotEmpty() && areaValue.toIntOrNull() == null
+                )
+                
+                OutlinedTextField(
+                    value = cidValue,
+                    onValueChange = onCidChange,
+                    label = { Text("CID") },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    modifier = Modifier.weight(1f),
+                    singleLine = true,
+                    isError = cidValue.isNotEmpty() && cidValue.toLongOrNull() == null
+                )
+            }
 
             searchError?.let {
                 Spacer(modifier = Modifier.height(8.dp))
