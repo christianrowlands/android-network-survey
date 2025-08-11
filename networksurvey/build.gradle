@@ -18,12 +18,14 @@ if (file("google-services.json").exists() && !gradle.startParameter.taskNames.an
 }
 
 ext.androidVersion = '28.0.0'
-ext.grpcVersion = '1.73.0'
+ext.grpcVersion = '1.74.0'
 ext.networkSurveyMessagingVersion = '1.8.0'
-ext.navigationVersion = '2.9.2'
+ext.navigationVersion = '2.9.3'
+
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 android {
-    compileSdk 36
+    compileSdk = 36
     defaultConfig {
         buildConfigField "String", "MESSAGING_API_VERSION", "\"${networkSurveyMessagingVersion}\""
         buildConfigField 'String', "NS_API_KEY", "\"${nsApiKey}\""
@@ -62,8 +64,11 @@ android {
     composeOptions {
         kotlinCompilerExtensionVersion '1.5.14'
     }
-    kotlinOptions {
-        jvmTarget = "17"
+
+    kotlin {
+        compilerOptions {
+            jvmTarget = JvmTarget.JVM_17
+        }
     }
 
     packagingOptions {
@@ -132,7 +137,7 @@ dependencies {
     }
 
     implementation "mil.nga.geopackage:geopackage-android:6.7.4"
-    implementation 'org.apache.commons:commons-csv:1.14.0'
+    implementation 'org.apache.commons:commons-csv:1.14.1'
 
     implementation 'androidx.constraintlayout:constraintlayout:2.2.1'
     implementation 'androidx.recyclerview:recyclerview:1.4.0'
@@ -154,14 +159,14 @@ dependencies {
     implementation "com.google.dagger:hilt-android:$hilt_version"
     kapt "com.google.dagger:hilt-compiler:$hilt_version"
 
-    implementation 'org.maplibre.gl:android-sdk:11.12.1'
+    implementation 'org.maplibre.gl:android-sdk:11.13.0'
     implementation 'org.maplibre.gl:android-plugin-annotation-v9:3.0.2'
 
     implementation 'com.squareup.retrofit2:retrofit:3.0.0'
     implementation 'com.squareup.retrofit2:converter-gson:3.0.0'
     implementation 'org.yaml:snakeyaml:2.4'
 
-    implementation "androidx.work:work-runtime:2.10.2"
+    implementation "androidx.work:work-runtime:2.10.3"
 
     // Compose
     def composeBom = platform('androidx.compose:compose-bom:2025.07.00')
@@ -182,21 +187,21 @@ dependencies {
     implementation "com.google.accompanist:accompanist-themeadapter-material:0.36.0"
 
     // Only include firebase in the google play build
-    regularImplementation platform('com.google.firebase:firebase-bom:33.16.0')
+    regularImplementation platform('com.google.firebase:firebase-bom:34.1.0')
     regularImplementation 'com.google.firebase:firebase-analytics'
     regularImplementation 'com.google.firebase:firebase-crashlytics'
 
     testImplementation 'junit:junit:4.13.2'
-    testImplementation 'org.mockito:mockito-core:5.5.0'
-    testImplementation 'org.mockito.kotlin:mockito-kotlin:5.1.0'
+    testImplementation 'org.mockito:mockito-core:5.18.0'
+    testImplementation 'org.mockito.kotlin:mockito-kotlin:6.0.0'
     implementation 'androidx.annotation:annotation:1.9.1'
 
     // Uncomment if you want to hunt for memory leaks
     //debugImplementation 'com.squareup.leakcanary:leakcanary-android:3.0-alpha-1'
 
-    androidTestImplementation 'androidx.test.ext:junit:1.2.1'
-    androidTestImplementation 'androidx.test:runner:1.6.2'
-    androidTestImplementation 'androidx.test:rules:1.6.1'
+    androidTestImplementation 'androidx.test.ext:junit:1.3.0'
+    androidTestImplementation 'androidx.test:runner:1.7.0'
+    androidTestImplementation 'androidx.test:rules:1.7.0'
     androidTestImplementation 'com.adevinta.android:barista:4.3.0'
     androidTestImplementation 'com.google.truth:truth:1.4.4'
     androidTestImplementation "com.craxiom:network-survey-messaging:${networkSurveyMessagingVersion}"
