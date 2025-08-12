@@ -54,7 +54,17 @@ private fun ComposeChart(viewModel: ASignalChartViewModel) {
             ),
             startAxis = VerticalAxis.rememberStart(
                 horizontalLabelPosition = VerticalAxis.HorizontalLabelPosition.Inside,
-                itemPlacer = VerticalAxis.ItemPlacer.step({ 5.0 }),
+                itemPlacer = VerticalAxis.ItemPlacer.step({
+                    // Use different tick spacing based on the chart range
+                    val range = maxRssi - minRssi
+                    if (range == 80f) {
+                        // Wi-Fi chart range (-100 to -20)
+                        20.0
+                    } else {
+                        // Default for other charts
+                        5.0
+                    }
+                }),
             ),
             persistentMarkers = if (markerList.isNotEmpty()) {
                 { _ ->
