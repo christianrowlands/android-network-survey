@@ -80,6 +80,7 @@ private fun ComposeChart(
                 listOf(
                     LineCartesianLayer.Line(
                         fill = LineCartesianLayer.LineFill.single(fill(color1)),
+                        stroke = LineCartesianLayer.LineStroke.Continuous(thicknessDp = 3f),
                         pointConnector = SpectrumPointConnector()
                     )
                 )
@@ -87,6 +88,7 @@ private fun ComposeChart(
                 wifiList.map { wifiNetwork ->
                     LineCartesianLayer.Line(
                         fill = LineCartesianLayer.LineFill.single(fill(getColorForSsid(wifiNetwork.ssid))),
+                        stroke = LineCartesianLayer.LineStroke.Continuous(thicknessDp = 3f),
                         pointConnector = SpectrumPointConnector()
                     )
                 }
