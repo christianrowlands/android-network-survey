@@ -1062,7 +1062,7 @@ public class NetworkDetailsFragment extends AServiceDataFragment implements ICel
         final CellularProtocol protocol = viewModel.getServingCellProtocol().getValue();
         if (protocol == null) return;
 
-        binding.signalOneGroup.setVisibility(signalValue == null ? View.GONE : View.VISIBLE);
+        binding.signalOneGroup.setVisibility(signalValue == null ? View.INVISIBLE : View.VISIBLE);
         binding.signalOneValue.setText(signalValue != null ? getString(R.string.dbm_value_label, String.valueOf(signalValue)) : "");
         setSignalStrengthBar(binding.progressBarSignalOne, signalValue, protocol.getMinSignalOne(), protocol.getMaxNormalizedSignalOne());
     }
@@ -1089,7 +1089,7 @@ public class NetworkDetailsFragment extends AServiceDataFragment implements ICel
         // For UMTS, the second signal strength is RSCP, and the units is dbm
         if (protocol == CellularProtocol.UMTS) valueLabelResourceId = R.string.dbm_value_label;
 
-        binding.signalTwoGroup.setVisibility(signalValue == null ? View.GONE : View.VISIBLE);
+        binding.signalTwoGroup.setVisibility(signalValue == null ? View.INVISIBLE : View.VISIBLE);
         binding.signalTwoValue.setText(signalValue != null ? getString(valueLabelResourceId, String.valueOf(signalValue)) : "");
         setSignalStrengthBar(binding.progressBarSignalTwo, signalValue, protocol.getMinSignalTwo(), protocol.getMaxNormalizedSignalTwo());
     }
@@ -1105,13 +1105,13 @@ public class NetworkDetailsFragment extends AServiceDataFragment implements ICel
         final CellularProtocol protocol = viewModel.getServingCellProtocol().getValue();
         if (protocol == null) return;
 
-        if (protocol != CellularProtocol.LTE && protocol != CellularProtocol.NR)
+        if (signalValue != null && protocol != CellularProtocol.LTE && protocol != CellularProtocol.NR)
         {
             Timber.e("Somehow the protocol is incorrect for the third signal strength. protocol=%s", protocol);
             return;
         }
 
-        binding.signalThreeGroup.setVisibility(signalValue == null ? View.GONE : View.VISIBLE);
+        binding.signalThreeGroup.setVisibility(signalValue == null ? View.INVISIBLE : View.VISIBLE);
         binding.signalThreeValue.setText(signalValue != null ? getString(R.string.db_value_label, String.valueOf(signalValue)) : "");
         setSignalStrengthBar(binding.progressBarSignalThree, signalValue, protocol.getMinSignalThree(), protocol.getMaxNormalizedSignalThree());
     }
