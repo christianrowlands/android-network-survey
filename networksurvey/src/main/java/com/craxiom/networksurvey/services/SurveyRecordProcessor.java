@@ -165,6 +165,12 @@ public class SurveyRecordProcessor
     private static final int UNSET_RSSI = 127;
     private static final int MAX_CDR_LOCATION_WAIT_TIME = 5_000;
 
+    /**
+     * Maximum age for cell info data in nanoseconds (60 seconds).
+     * Cell info older than this will be considered stale and ignored.
+     */
+    private static final long MAX_CELL_INFO_AGE_NS = 60_000_000_000L; // 60 seconds in nanoseconds
+
     private final Object cellInfoProcessingLock = new Object();
     private final Object activityUpdateLock = new Object();
 
@@ -794,6 +800,15 @@ public class SurveyRecordProcessor
         // means logging, sending to a server, or updating the UI with the latest LTE information.
         if (!cellularSurveyRecordListeners.isEmpty())
         {
+            // Check if the CellInfo data is stale (older than 5 seconds)
+            long cellInfoAgeNs = SystemClock.elapsedRealtimeNanos() - cellInfo.getTimeStamp();
+            if (cellInfoAgeNs > MAX_CELL_INFO_AGE_NS)
+            {
+                Timber.w("Ignoring stale cellular record. Age: %d ms, subscriptionId: %d",
+                        cellInfoAgeNs / 1_000_000, subscriptionId);
+                return null;
+            }
+
             final String carrierName = getCarrierName(cellInfo, networkOperatorName);
             final ZonedDateTime deviceTime = ZonedDateTime.now();
             final long elapsedTimeMillis = SystemClock.elapsedRealtime();
@@ -2669,57 +2684,45 @@ public class SurveyRecordProcessor
             case LTE:
                 LteRecord lte = (LteRecord) record;
                 LteRecordData lteData = lte.getData();
-                if (lteData != null)
-                {
-                    mcc = lteData.hasMcc() ? lteData.getMcc().getValue() : 0;
-                    mnc = lteData.hasMnc() ? lteData.getMnc().getValue() : 0;
-                    area = lteData.hasTac() ? lteData.getTac().getValue() : 0;
-                    cellId = lteData.hasEci() ? lteData.getEci().getValue() : 0L;
-                    radio = CellularProtocol.LTE.name();
-                    cellKey = mcc + "-" + mnc + "-" + area + "-" + cellId;
-                }
+                mcc = lteData.hasMcc() ? lteData.getMcc().getValue() : 0;
+                mnc = lteData.hasMnc() ? lteData.getMnc().getValue() : 0;
+                area = lteData.hasTac() ? lteData.getTac().getValue() : 0;
+                cellId = lteData.hasEci() ? lteData.getEci().getValue() : 0L;
+                radio = CellularProtocol.LTE.name();
+                cellKey = mcc + "-" + mnc + "-" + area + "-" + cellId;
                 break;
 
             case NR:
                 NrRecord nr = (NrRecord) record;
                 NrRecordData nrData = nr.getData();
-                if (nrData != null)
-                {
-                    mcc = nrData.hasMcc() ? nrData.getMcc().getValue() : 0;
-                    mnc = nrData.hasMnc() ? nrData.getMnc().getValue() : 0;
-                    area = nrData.hasTac() ? nrData.getTac().getValue() : 0;
-                    cellId = nrData.hasNci() ? nrData.getNci().getValue() : 0L;
-                    radio = CellularProtocol.NR.name();
-                    cellKey = mcc + "-" + mnc + "-" + area + "-" + cellId;
-                }
+                mcc = nrData.hasMcc() ? nrData.getMcc().getValue() : 0;
+                mnc = nrData.hasMnc() ? nrData.getMnc().getValue() : 0;
+                area = nrData.hasTac() ? nrData.getTac().getValue() : 0;
+                cellId = nrData.hasNci() ? nrData.getNci().getValue() : 0L;
+                radio = CellularProtocol.NR.name();
+                cellKey = mcc + "-" + mnc + "-" + area + "-" + cellId;
                 break;
 
             case GSM:
                 GsmRecord gsm = (GsmRecord) record;
                 GsmRecordData gsmData = gsm.getData();
-                if (gsmData != null)
-                {
-                    mcc = gsmData.hasMcc() ? gsmData.getMcc().getValue() : 0;
-                    mnc = gsmData.hasMnc() ? gsmData.getMnc().getValue() : 0;
-                    area = gsmData.hasLac() ? gsmData.getLac().getValue() : 0;
-                    cellId = gsmData.hasCi() ? gsmData.getCi().getValue() : 0L;
-                    radio = CellularProtocol.GSM.name();
-                    cellKey = mcc + "-" + mnc + "-" + area + "-" + cellId;
-                }
+                mcc = gsmData.hasMcc() ? gsmData.getMcc().getValue() : 0;
+                mnc = gsmData.hasMnc() ? gsmData.getMnc().getValue() : 0;
+                area = gsmData.hasLac() ? gsmData.getLac().getValue() : 0;
+                cellId = gsmData.hasCi() ? gsmData.getCi().getValue() : 0L;
+                radio = CellularProtocol.GSM.name();
+                cellKey = mcc + "-" + mnc + "-" + area + "-" + cellId;
                 break;
 
             case UMTS:
                 UmtsRecord umts = (UmtsRecord) record;
                 UmtsRecordData umtsData = umts.getData();
-                if (umtsData != null)
-                {
-                    mcc = umtsData.hasMcc() ? umtsData.getMcc().getValue() : 0;
-                    mnc = umtsData.hasMnc() ? umtsData.getMnc().getValue() : 0;
-                    area = umtsData.hasLac() ? umtsData.getLac().getValue() : 0;
-                    cellId = umtsData.hasCid() ? umtsData.getCid().getValue() : 0L;
-                    radio = CellularProtocol.UMTS.name();
-                    cellKey = mcc + "-" + mnc + "-" + area + "-" + cellId;
-                }
+                mcc = umtsData.hasMcc() ? umtsData.getMcc().getValue() : 0;
+                mnc = umtsData.hasMnc() ? umtsData.getMnc().getValue() : 0;
+                area = umtsData.hasLac() ? umtsData.getLac().getValue() : 0;
+                cellId = umtsData.hasCid() ? umtsData.getCid().getValue() : 0L;
+                radio = CellularProtocol.UMTS.name();
+                cellKey = mcc + "-" + mnc + "-" + area + "-" + cellId;
                 break;
 
             default:

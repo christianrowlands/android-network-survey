@@ -26,6 +26,7 @@ public class CellularViewModel extends ViewModel
 
     private final MutableLiveData<Location> location = new MutableLiveData<>();
     private final MutableLiveData<Boolean> providerEnabled = new MutableLiveData<>(true);
+    private final MutableLiveData<Boolean> airplaneModeActive = new MutableLiveData<>(false);
 
     // Common Cellular fields
     private final MutableLiveData<CellularProtocol> servingCellProtocol = new MutableLiveData<>(CellularProtocol.NONE);
@@ -127,6 +128,19 @@ public class CellularViewModel extends ViewModel
         if (!Objects.equals(providerEnabled.getValue(), isProviderEnabled))
         {
             providerEnabled.postValue(isProviderEnabled);
+        }
+    }
+
+    public LiveData<Boolean> getAirplaneModeActive()
+    {
+        return airplaneModeActive;
+    }
+
+    public void setAirplaneModeActive(boolean isAirplaneModeActive)
+    {
+        if (!Objects.equals(airplaneModeActive.getValue(), isAirplaneModeActive))
+        {
+            airplaneModeActive.postValue(isAirplaneModeActive);
         }
     }
 

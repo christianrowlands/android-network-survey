@@ -3,7 +3,10 @@ package com.craxiom.networksurvey.fragments;
 import static com.craxiom.networksurvey.ui.ASignalChartViewModelKt.UNKNOWN_RSSI;
 
 import android.Manifest;
+import android.content.BroadcastReceiver;
 import android.content.Context;
+import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.location.Location;
@@ -11,6 +14,7 @@ import android.location.LocationListener;
 import android.location.LocationManager;
 import android.location.LocationProvider;
 import android.os.Bundle;
+import android.provider.Settings;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -93,6 +97,7 @@ public class NetworkDetailsFragment extends AServiceDataFragment implements ICel
     private CellularViewModel viewModel;
     private CellularChartViewModel chartViewModel;
     private SharedViewModel sharedViewModel;
+    private AirplaneModeReceiver airplaneModeReceiver;
 
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState)
@@ -133,6 +138,20 @@ public class NetworkDetailsFragment extends AServiceDataFragment implements ICel
     {
         chartViewModel.pauseChartUpdates();
 
+        // Unregister airplane mode receiver
+        if (airplaneModeReceiver != null)
+        {
+            try
+            {
+                requireContext().unregisterReceiver(airplaneModeReceiver);
+                Timber.d("Unregistered airplane mode receiver");
+            } catch (IllegalArgumentException e)
+            {
+                Timber.w(e, "Airplane mode receiver was not registered");
+            }
+            airplaneModeReceiver = null;
+        }
+
         super.onPause();
     }
 
@@ -145,6 +164,21 @@ public class NetworkDetailsFragment extends AServiceDataFragment implements ICel
         // we need to update the UI to show the new location in this onResume method. There might be better approaches
         // instead of recalling the initialize view method each time the fragment is resumed.
         initializeLocationTextView();
+
+        // Register airplane mode receiver
+        airplaneModeReceiver = new AirplaneModeReceiver();
+        IntentFilter filter = new IntentFilter(Intent.ACTION_AIRPLANE_MODE_CHANGED);
+        requireContext().registerReceiver(airplaneModeReceiver, filter);
+        Timber.d("Registered airplane mode receiver");
+
+        // Check initial airplane mode state
+        boolean isAirplaneModeOn = isAirplaneModeOn(requireContext());
+        Timber.d("Initial airplane mode state: %s", isAirplaneModeOn ? "ON" : "OFF");
+        viewModel.setAirplaneModeActive(isAirplaneModeOn);
+        if (isAirplaneModeOn)
+        {
+            clearCellularUi();
+        }
 
         startAndBindToService();
 
@@ -254,6 +288,7 @@ public class NetworkDetailsFragment extends AServiceDataFragment implements ICel
 
         viewModel.getProviderEnabled().observe(viewLifecycleOwner, this::updateLocationProviderStatus);
         viewModel.getLocation().observe(viewLifecycleOwner, this::updateLocationTextView);
+        viewModel.getAirplaneModeActive().observe(viewLifecycleOwner, this::updateAirplaneModeStatus);
 
         viewModel.getServingCellProtocol().observe(viewLifecycleOwner, this::updateServingCellProtocol);
 
@@ -295,6 +330,7 @@ public class NetworkDetailsFragment extends AServiceDataFragment implements ICel
 
         viewModel.getProviderEnabled().removeObservers(viewLifecycleOwner);
         viewModel.getLocation().removeObservers(viewLifecycleOwner);
+        viewModel.getAirplaneModeActive().removeObservers(viewLifecycleOwner);
 
         viewModel.getServingCellProtocol().removeObservers(viewLifecycleOwner);
 
@@ -1358,6 +1394,56 @@ public class NetworkDetailsFragment extends AServiceDataFragment implements ICel
     }
 
     /**
+     * Updates the UI to reflect airplane mode status.
+     *
+     * @param isAirplaneModeActive True if airplane mode is active, false otherwise.
+     */
+    private void updateAirplaneModeStatus(boolean isAirplaneModeActive)
+    {
+        Timber.d("updateAirplaneModeStatus called with isAirplaneModeActive=%s", isAirplaneModeActive);
+
+        if (isAirplaneModeActive)
+        {
+            // Hide normal technology card content
+            binding.carrierGroup.setVisibility(View.GONE);
+
+            // Hide the horizontal LinearLayout that contains both network columns
+            // This is the parent of the parent of voiceNetworkGroup
+            View voiceNetworkParent = binding.voiceNetworkGroup.getParent() instanceof View ?
+                    (View) binding.voiceNetworkGroup.getParent() : binding.voiceNetworkGroup;
+            View networkColumnsParent = voiceNetworkParent.getParent() instanceof View ?
+                    (View) voiceNetworkParent.getParent() : voiceNetworkParent;
+            networkColumnsParent.setVisibility(View.GONE);
+
+            // Show airplane mode message with icon
+            binding.airplaneModeMessage.setVisibility(View.VISIBLE);
+
+            clearCellularUi();
+        } else
+        {
+            // Show normal technology card content
+            binding.carrierGroup.setVisibility(View.VISIBLE);
+
+            // Show the horizontal LinearLayout that contains both network columns
+            View voiceNetworkParent = binding.voiceNetworkGroup.getParent() instanceof View ?
+                    (View) binding.voiceNetworkGroup.getParent() : binding.voiceNetworkGroup;
+            View networkColumnsParent = voiceNetworkParent.getParent() instanceof View ?
+                    (View) voiceNetworkParent.getParent() : voiceNetworkParent;
+            networkColumnsParent.setVisibility(View.VISIBLE);
+
+            // Hide airplane mode message
+            binding.airplaneModeMessage.setVisibility(View.GONE);
+
+            // Restore visibility based on current protocol
+            CellularProtocol protocol = viewModel.getServingCellProtocol().getValue();
+            if (protocol != null)
+            {
+                updateServingCellProtocol(protocol);
+            }
+        }
+    }
+
+    /**
      * Displays a dialog with some information about cellular terms.
      */
     private void showCellularInfoDialog()
@@ -1408,5 +1494,45 @@ public class NetworkDetailsFragment extends AServiceDataFragment implements ICel
         alertBuilder.setPositiveButton(android.R.string.ok, (dialog, which) -> {
         });
         alertBuilder.create().show();
+    }
+
+    /**
+     * BroadcastReceiver to detect airplane mode changes.
+     * This is independent of the PhoneStateListener and provides immediate UI updates.
+     */
+    private class AirplaneModeReceiver extends BroadcastReceiver
+    {
+        @Override
+        public void onReceive(Context context, Intent intent)
+        {
+            if (Intent.ACTION_AIRPLANE_MODE_CHANGED.equals(intent.getAction()))
+            {
+                boolean isAirplaneModeOn = intent.getBooleanExtra("state", false);
+                Timber.d("Airplane mode broadcast received: %s, subscriptionId: %d",
+                        isAirplaneModeOn ? "ON" : "OFF", subscriptionId);
+
+                // Update view model
+                viewModel.setAirplaneModeActive(isAirplaneModeOn);
+
+                // Clear cellular UI if airplane mode is on
+                if (isAirplaneModeOn)
+                {
+                    Timber.d("Clearing cellular UI due to airplane mode");
+                    clearCellularUi();
+                }
+            }
+        }
+    }
+
+    /**
+     * Helper method to check if airplane mode is currently enabled.
+     *
+     * @param context The context to use for checking the setting.
+     * @return True if airplane mode is on, false otherwise.
+     */
+    private static boolean isAirplaneModeOn(Context context)
+    {
+        return Settings.Global.getInt(context.getContentResolver(),
+                Settings.Global.AIRPLANE_MODE_ON, 0) != 0;
     }
 }

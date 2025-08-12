@@ -71,6 +71,7 @@ public class CellularController extends AController
     public static final int DEFAULT_SUBSCRIPTION_ID = Integer.MAX_VALUE; // AKA SubscriptionManager.DEFAULT_SUBSCRIPTION_ID
 
     private final AtomicBoolean cellularScanningActive = new AtomicBoolean(false);
+    private final AtomicBoolean airplaneModeActive = new AtomicBoolean(false);
 
     private final AtomicBoolean cellularLoggingEnabled = new AtomicBoolean(false);
 
@@ -155,6 +156,11 @@ public class CellularController extends AController
     public boolean isCdrLoggingEnabled()
     {
         return cdrLoggingEnabled.get();
+    }
+
+    public boolean isAirplaneModeActive()
+    {
+        return airplaneModeActive.get();
     }
 
     public int getScanRateMs()
@@ -415,12 +421,22 @@ public class CellularController extends AController
                             @Override
                             public void onServiceStateChanged(ServiceState serviceState)
                             {
+                                // Check for airplane mode
+                                boolean wasInAirplaneMode = airplaneModeActive.get();
+                                boolean isInAirplaneMode = serviceState.getState() == ServiceState.STATE_POWER_OFF;
+                                airplaneModeActive.set(isInAirplaneMode);
+
                                 if (isPaused())
                                 {
                                     Timber.v("Service state changed but scanning is paused, ignoring");
                                     return;
                                 }
-                                execute(() -> surveyRecordProcessor.onServiceStateChanged(serviceState, wrapper.getTelephonyManager(), subscriptionId));
+
+                                // Don't process service state changes when in airplane mode
+                                if (!isInAirplaneMode)
+                                {
+                                    execute(() -> surveyRecordProcessor.onServiceStateChanged(serviceState, wrapper.getTelephonyManager(), subscriptionId));
+                                }
                             }
 
                             // We can't use this because you have to be a system app to get the READ_PRECISE_PHONE_STATE permission.
@@ -565,13 +581,20 @@ public class CellularController extends AController
                         @Override
                         public void onCellInfo(@NonNull List<CellInfo> cellInfo)
                         {
+                            // Skip processing if in airplane mode
+                            if (airplaneModeActive.get())
+                            {
+                                Timber.v("Cell info received but airplane mode is active, ignoring");
+                                return;
+                            }
+
                             // Skip processing if paused for battery management
                             if (isPaused())
                             {
                                 Timber.v("Cell info received but scanning is paused, ignoring");
                                 return;
                             }
-                            
+
                             String dataNetworkType = "Unknown";
                             String voiceNetworkType = "Unknown";
                             TelephonyManager telephonyManager = wrapper.getTelephonyManager();
@@ -1016,6 +1039,16 @@ public class CellularController extends AController
                                 @Override
                                 public void onServiceStateChanged(ServiceState serviceState)
                                 {
+                                    // Check for airplane mode
+                                    boolean isInAirplaneMode = serviceState.getState() == ServiceState.STATE_POWER_OFF;
+                                    airplaneModeActive.set(isInAirplaneMode);
+
+                                    if (isInAirplaneMode)
+                                    {
+                                        Timber.v("CDR service state changed but airplane mode is active, ignoring");
+                                        return;
+                                    }
+
                                     if (isPaused())
                                     {
                                         Timber.v("CDR service state changed but scanning is paused, ignoring");

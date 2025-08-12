@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.foundation.verticalScroll
@@ -53,14 +54,19 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
@@ -1409,7 +1415,43 @@ fun MapLayersDialog(
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
+/**
+ * Helper function to robustly dismiss the keyboard in ModalBottomSheet.
+ * Uses multiple approaches due to known issues with keyboard dismissal in bottom sheets.
+ */
+@OptIn(ExperimentalComposeUiApi::class)
+@Composable
+private fun rememberKeyboardDismisser(): () -> Unit {
+    val focusManager = LocalFocusManager.current
+    val keyboardController = LocalSoftwareKeyboardController.current
+    val view = LocalView.current
+    val context = LocalContext.current
+
+    return remember(focusManager, keyboardController, view) {
+        {
+            // 1. Clear focus first (removes cursor from TextFields)
+            focusManager.clearFocus()
+
+            // 2. Hide keyboard using Compose API
+            keyboardController?.hide()
+
+            // 3. Fallback: Use Android's InputMethodManager for extra reliability
+            try {
+                val activity = context as? android.app.Activity
+                if (activity != null) {
+                    val imm =
+                        activity.getSystemService(android.content.Context.INPUT_METHOD_SERVICE)
+                                as? android.view.inputmethod.InputMethodManager
+                    imm?.hideSoftInputFromWindow(view.windowToken, 0)
+                }
+            } catch (_: Exception) {
+                // Silently fail if we can't get the activity or IMM
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalComposeUiApi::class)
 @Composable
 fun CellSearchBottomSheet(
     mccValue: String,
@@ -1429,6 +1471,8 @@ fun CellSearchBottomSheet(
     onClearSearchResult: () -> Unit = {}
 ) {
     val bottomSheetState = rememberModalBottomSheetState()
+    val dismissKeyboard = rememberKeyboardDismisser()
+    val focusManager = LocalFocusManager.current
 
     ModalBottomSheet(
         onDismissRequest = onDismiss,
@@ -1451,7 +1495,10 @@ fun CellSearchBottomSheet(
                     modifier = Modifier.weight(1f)
                 )
                 TextButton(
-                    onClick = onClearAll,
+                    onClick = {
+                        dismissKeyboard()
+                        onClearAll()
+                    },
                     enabled = mccValue.isNotEmpty() || mncValue.isNotEmpty() ||
                             areaValue.isNotEmpty() || cidValue.isNotEmpty()
                 ) {
@@ -1475,23 +1522,35 @@ fun CellSearchBottomSheet(
                     value = mccValue,
                     onValueChange = onMccChange,
                     label = { Text("MCC") },
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    keyboardOptions = KeyboardOptions(
+                        keyboardType = KeyboardType.Number,
+                        imeAction = ImeAction.Next
+                    ),
+                    keyboardActions = KeyboardActions(
+                        onNext = { focusManager.moveFocus(FocusDirection.Right) }
+                    ),
                     modifier = Modifier.weight(1f),
                     singleLine = true,
                     isError = mccValue.isNotEmpty() && mccValue.toIntOrNull() == null
                 )
-                
+
                 OutlinedTextField(
                     value = mncValue,
                     onValueChange = onMncChange,
                     label = { Text("MNC") },
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    keyboardOptions = KeyboardOptions(
+                        keyboardType = KeyboardType.Number,
+                        imeAction = ImeAction.Next
+                    ),
+                    keyboardActions = KeyboardActions(
+                        onNext = { focusManager.moveFocus(FocusDirection.Down) }
+                    ),
                     modifier = Modifier.weight(1f),
                     singleLine = true,
                     isError = mncValue.isNotEmpty() && mncValue.toIntOrNull() == null
                 )
             }
-            
+
             Spacer(modifier = Modifier.height(8.dp))
 
             // Second row: LAC/TAC and CID
@@ -1503,17 +1562,39 @@ fun CellSearchBottomSheet(
                     value = areaValue,
                     onValueChange = onAreaChange,
                     label = { Text("LAC/TAC") },
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    keyboardOptions = KeyboardOptions(
+                        keyboardType = KeyboardType.Number,
+                        imeAction = ImeAction.Next
+                    ),
+                    keyboardActions = KeyboardActions(
+                        onNext = { focusManager.moveFocus(FocusDirection.Right) }
+                    ),
                     modifier = Modifier.weight(1f),
                     singleLine = true,
                     isError = areaValue.isNotEmpty() && areaValue.toIntOrNull() == null
                 )
-                
+
                 OutlinedTextField(
                     value = cidValue,
                     onValueChange = onCidChange,
                     label = { Text("CID") },
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    keyboardOptions = KeyboardOptions(
+                        keyboardType = KeyboardType.Number,
+                        imeAction = ImeAction.Done
+                    ),
+                    keyboardActions = KeyboardActions(
+                        onDone = {
+                            dismissKeyboard()
+                            // Optionally trigger search if all fields are valid
+                            val mcc = mccValue.toIntOrNull()
+                            val mnc = mncValue.toIntOrNull()
+                            val area = areaValue.toIntOrNull()
+                            val cid = cidValue.toLongOrNull()
+                            if (mcc != null && mnc != null && area != null && cid != null) {
+                                onSearch(mcc, mnc, area, cid)
+                            }
+                        }
+                    ),
                     modifier = Modifier.weight(1f),
                     singleLine = true,
                     isError = cidValue.isNotEmpty() && cidValue.toLongOrNull() == null
@@ -1557,6 +1638,9 @@ fun CellSearchBottomSheet(
                 // Search button
                 Button(
                     onClick = {
+                        // Dismiss keyboard first
+                        dismissKeyboard()
+
                         val mcc = mccValue.toIntOrNull()
                         val mnc = mncValue.toIntOrNull()
                         val area = areaValue.toIntOrNull()

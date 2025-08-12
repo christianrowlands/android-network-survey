@@ -292,6 +292,12 @@ but work independently, so you have full control over how you handle your data.<
     <string name="accuracy_initial">Accuracy: </string>
     <string name="accuracy_value">Accuracy: %1$s meters</string>
 
+    <!-- Airplane Mode Messages -->
+    <string name="airplane_mode_active">Airplane Mode Active</string>
+    <string name="airplane_mode_message">Cellular scanning disabled while airplane mode is on</string>
+    <string name="airplane_mode_ui_message">Your phone is in airplane mode. Please disable it to view cellular survey data.</string>
+    <string name="stale_data_warning">Ignoring outdated cellular data</string>
+
     <string name="cellular_logging_start_toast">Started Writing the Cellular Log File</string>
     <string name="cellular_logging_stop_toast">Cellular Log File Closed</string>
     <string name="cellular_logging_toggle_failed">Failed to toggle the cellular logging state</string>
