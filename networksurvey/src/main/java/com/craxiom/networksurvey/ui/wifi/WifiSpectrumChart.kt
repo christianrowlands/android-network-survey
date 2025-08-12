@@ -14,34 +14,24 @@ import com.craxiom.networksurvey.R
 import com.craxiom.networksurvey.fragments.WifiNetworkInfo
 import com.craxiom.networksurvey.ui.wifi.model.WIFI_SPECTRUM_MAX
 import com.craxiom.networksurvey.ui.wifi.model.WIFI_SPECTRUM_MIN
-import com.patrykandpatrick.vico.compose.axis.axisLabelComponent
-import com.patrykandpatrick.vico.compose.axis.horizontal.rememberBottomAxis
-import com.patrykandpatrick.vico.compose.axis.vertical.rememberStartAxis
-import com.patrykandpatrick.vico.compose.chart.CartesianChartHost
-import com.patrykandpatrick.vico.compose.chart.layer.rememberLineCartesianLayer
-import com.patrykandpatrick.vico.compose.chart.layout.fullWidth
-import com.patrykandpatrick.vico.compose.chart.rememberCartesianChart
-import com.patrykandpatrick.vico.compose.chart.scroll.rememberChartScrollSpec
-import com.patrykandpatrick.vico.compose.component.rememberShapeComponent
-import com.patrykandpatrick.vico.compose.component.rememberTextComponent
-import com.patrykandpatrick.vico.compose.component.shape.shader.color
-import com.patrykandpatrick.vico.compose.dimensions.dimensionsOf
-import com.patrykandpatrick.vico.compose.legend.horizontalLegend
-import com.patrykandpatrick.vico.compose.legend.legendItem
-import com.patrykandpatrick.vico.compose.legend.verticalLegend
-import com.patrykandpatrick.vico.compose.style.ProvideChartStyle
-import com.patrykandpatrick.vico.compose.style.currentChartStyle
-import com.patrykandpatrick.vico.core.axis.AxisItemPlacer
-import com.patrykandpatrick.vico.core.axis.vertical.VerticalAxis
-import com.patrykandpatrick.vico.core.chart.layer.LineCartesianLayer
-import com.patrykandpatrick.vico.core.chart.layout.HorizontalLayout
-import com.patrykandpatrick.vico.core.chart.values.AxisValueOverrider
-import com.patrykandpatrick.vico.core.component.shape.Shapes
-import com.patrykandpatrick.vico.core.component.shape.shader.DynamicShaders
-import com.patrykandpatrick.vico.core.dimensions.MutableDimensions
-import com.patrykandpatrick.vico.core.legend.HorizontalLegend
-import com.patrykandpatrick.vico.core.legend.LegendItem
-import com.patrykandpatrick.vico.core.model.CartesianChartModelProducer
+import com.patrykandpatrick.vico.compose.cartesian.CartesianChartHost
+import com.patrykandpatrick.vico.compose.cartesian.axis.rememberAxisLabelComponent
+import com.patrykandpatrick.vico.compose.cartesian.axis.rememberBottom
+import com.patrykandpatrick.vico.compose.cartesian.axis.rememberStart
+import com.patrykandpatrick.vico.compose.cartesian.layer.rememberLineCartesianLayer
+import com.patrykandpatrick.vico.compose.cartesian.rememberCartesianChart
+import com.patrykandpatrick.vico.compose.cartesian.rememberVicoScrollState
+import com.patrykandpatrick.vico.compose.common.component.rememberShapeComponent
+import com.patrykandpatrick.vico.compose.common.component.rememberTextComponent
+import com.patrykandpatrick.vico.compose.common.fill
+import com.patrykandpatrick.vico.compose.common.insets
+import com.patrykandpatrick.vico.core.cartesian.axis.HorizontalAxis
+import com.patrykandpatrick.vico.core.cartesian.axis.VerticalAxis
+import com.patrykandpatrick.vico.core.cartesian.data.CartesianChartModelProducer
+import com.patrykandpatrick.vico.core.cartesian.data.CartesianLayerRangeProvider
+import com.patrykandpatrick.vico.core.cartesian.layer.LineCartesianLayer
+import com.patrykandpatrick.vico.core.common.Insets
+import com.patrykandpatrick.vico.core.common.shape.CorneredShape
 import kotlin.math.absoluteValue
 
 /**
@@ -73,95 +63,81 @@ private fun ComposeChart(
             ssid = wifiNetwork.ssid,
             signalStrength = wifiNetwork.signalStrength,
             channel = wifiNetwork.centerChannel,
-            rememberTextComponent(
+            labelComponent = rememberTextComponent(
                 color = getColorForSsid(wifiNetwork.ssid),
                 textSize = 10.sp,
                 margins = bottomAxisTitleMargins,
                 typeface = Typeface.MONOSPACE,
-            )
+            ),
+            minX = minX,
+            maxX = maxX
         )
     }
 
-    val lines: List<LineCartesianLayer.LineSpec>
-    if (wifiList.isEmpty()) {
-        lines = listOf(
-            LineCartesianLayer.LineSpec(
-                pointConnector = SpectrumPointConnector(),
-                thicknessDp = 3f,
-                shader = remember { DynamicShaders.color(color1) },
-            )
-        )
-    } else {
-        lines = wifiList.map { wifiNetwork ->
-            LineCartesianLayer.LineSpec(
-                pointConnector = SpectrumPointConnector(),
-                thicknessDp = 3f,
-                shader = DynamicShaders.color(getColorForSsid(wifiNetwork.ssid)),
-            )
-        }
-    }
-    ProvideChartStyle(rememberSpectrumChartStyle(chartColors)) {
-        //val defaultLines = currentChartStyle.lineLayer.lines
-        CartesianChartHost(
-            modifier = Modifier.height(210.dp),
-            modelProducer = modelProducer,
-            marker = null,//rememberMarker(""),
-            runInitialAnimation = false,
-            chartScrollSpec = rememberChartScrollSpec(isScrollEnabled = false),
-            getXStep = { 1f },
-            chart =
-            rememberCartesianChart(
-                rememberLineCartesianLayer(
-                    axisValueOverrider = AxisValueOverrider.fixed(
-                        minX = minX,
-                        maxX = maxX,
-                        maxY = WIFI_SPECTRUM_MAX,
-                        minY = WIFI_SPECTRUM_MIN
-                    ),
-                    lines = lines
-                    //remember(defaultLines) { defaultLines.map { it.copy(backgroundShader = null) } },
-                ),
-                startAxis =
-                rememberStartAxis(
+    val lines = rememberLineCartesianLayer(
+        lineProvider = LineCartesianLayer.LineProvider.series(
+            if (wifiList.isEmpty()) {
+                listOf(
+                    LineCartesianLayer.Line(
+                        fill = LineCartesianLayer.LineFill.single(fill(color1)),
+                        pointConnector = SpectrumPointConnector()
+                    )
+                )
+            } else {
+                wifiList.map { wifiNetwork ->
+                    LineCartesianLayer.Line(
+                        fill = LineCartesianLayer.LineFill.single(fill(getColorForSsid(wifiNetwork.ssid))),
+                        pointConnector = SpectrumPointConnector()
+                    )
+                }
+            }
+        ),
+        rangeProvider = CartesianLayerRangeProvider.fixed(
+            minX = minX.toDouble(),
+            maxX = maxX.toDouble(),
+            maxY = WIFI_SPECTRUM_MAX.toDouble(),
+            minY = WIFI_SPECTRUM_MIN.toDouble()
+        ),
+    )
+    CartesianChartHost(
+        rememberCartesianChart(
+            lines,
+            startAxis =
+                VerticalAxis.rememberStart(
                     horizontalLabelPosition = VerticalAxis.HorizontalLabelPosition.Inside,
-                    itemPlacer = remember { AxisItemPlacer.Vertical.default({ _ -> 5 }) },
+                    itemPlacer = VerticalAxis.ItemPlacer.step({ 5.0 }),
                 ),
-                bottomAxis =
-                rememberBottomAxis(
+            bottomAxis =
+                HorizontalAxis.rememberBottom(
                     title = stringResource(R.string.channel),
-                    label = axisLabelComponent(
+                    label = rememberAxisLabelComponent(
                         textSize = 12.sp,
-                        padding = MutableDimensions(1f, 1f)
+                        padding = Insets(1f, 1f)
                     ),
                     itemPlacer = remember {
-                        /*AxisItemPlacer.Horizontal.default(
-                            spacing = xSpacing,
-                            offset = xOffset
-                        )*/
                         ChannelAxisItemPlacer(
                             labelInterval = labelInterval,
                             customLabelValues = customLabelValues
                         )
                     },
                     titleComponent =
-                    rememberTextComponent(
-                        background = rememberShapeComponent(
-                            Shapes.pillShape,
-                            colorResource(id = R.color.colorAccent)
+                        rememberTextComponent(
+                            background = rememberShapeComponent(
+                                fill = fill(colorResource(id = R.color.colorAccent)),
+                                shape = CorneredShape.Pill
+                            ),
+                            color = Color.White,
+                            padding = axisTitlePadding,
+                            margins = bottomAxisTitleMargins,
+                            typeface = Typeface.MONOSPACE,
                         ),
-                        color = Color.White,
-                        padding = axisTitlePadding,
-                        margins = bottomAxisTitleMargins,
-                        typeface = Typeface.MONOSPACE,
-                    ),
                 ),
-                decorations = decorationList,
-                //legend = rememberSsidLegend(wifiList),
-                //fadingEdges = rememberFadingEdges(),
-            ),
-            horizontalLayout = horizontalLayout,
-        )
-    }
+            decorations = decorationList,
+        ),
+        modelProducer,
+        Modifier.height(210.dp),
+        rememberVicoScrollState(scrollEnabled = false),
+    )
 }
 
 /**
@@ -174,73 +150,7 @@ fun getColorForSsid(ssid: String): Color {
     return chartColors[index]
 }
 
-@Composable
-private fun rememberSsidLegend(
-    wifiList: List<WifiNetworkInfo>
-): HorizontalLegend {
-
-    val legendItems: List<LegendItem>
-    if (wifiList.isEmpty()) {
-        legendItems = listOf(
-            legendItem(
-                icon = rememberShapeComponent(Shapes.pillShape, chartColors[0]),
-                label =
-                rememberTextComponent(
-                    color = currentChartStyle.axis.axisLabelColor,
-                    textSize = legendItemLabelTextSize,
-                    typeface = Typeface.MONOSPACE,
-                ),
-                labelText = "No Wifi Networks Found",
-            )
-        )
-    } else {
-        // For this to work the list would need to be filtered for 2.4 GHz and non null ssids
-        legendItems = wifiList.mapIndexed { index, wifiNetworkInfo ->
-            legendItem(
-                icon = rememberShapeComponent(
-                    Shapes.pillShape,
-                    chartColors[index % chartColors.size]
-                ),
-                label =
-                rememberTextComponent(
-                    color = currentChartStyle.axis.axisLabelColor,
-                    textSize = legendItemLabelTextSize,
-                    typeface = Typeface.MONOSPACE,
-                ),
-                labelText = wifiNetworkInfo.ssid,
-            )
-        }
-    }
-    return horizontalLegend(
-        items = legendItems,
-        iconSize = legendItemIconSize,
-        iconPadding = legendItemIconPaddingValue,
-        spacing = legendItemSpacing,
-        padding = legendPadding,
-    )
-}
-
-@Composable
-private fun rememberLegend() =
-    verticalLegend(
-        items =
-        chartColors.mapIndexed { index, chartColor ->
-            legendItem(
-                icon = rememberShapeComponent(Shapes.pillShape, chartColor),
-                label =
-                rememberTextComponent(
-                    color = currentChartStyle.axis.axisLabelColor,
-                    textSize = legendItemLabelTextSize,
-                    typeface = Typeface.MONOSPACE,
-                ),
-                labelText = stringResource(R.string.ssid, index + 1),
-            )
-        },
-        iconSize = legendItemIconSize,
-        iconPadding = legendItemIconPaddingValue,
-        spacing = legendItemSpacing,
-        padding = legendPadding,
-    )
+// Legends are not currently used in this chart implementation
 
 private val color1 = Color(0xFF835DB1)
 private val color2 = Color(0xFF852659)
@@ -281,18 +191,11 @@ private val chartColors = listOf(
     color17,
     color18
 )
-private val legendItemLabelTextSize = 12.sp
-private val legendItemIconSize = 8.dp
-private val legendItemIconPaddingValue = 10.dp
-private val legendItemSpacing = 4.dp
-private val legendTopPaddingValue = 8.dp
-private val legendPadding = dimensionsOf(top = legendTopPaddingValue)
-
 private val axisTitleHorizontalPaddingValue = 8.dp
 private val axisTitleVerticalPaddingValue = 2.dp
 private val axisTitlePadding =
-    dimensionsOf(axisTitleHorizontalPaddingValue, axisTitleVerticalPaddingValue)
+    insets(axisTitleHorizontalPaddingValue, axisTitleVerticalPaddingValue)
 private val axisTitleMarginValue = 4.dp
-private val bottomAxisTitleMargins = dimensionsOf(top = axisTitleMarginValue)
+private val bottomAxisTitleMargins =
+    insets(axisTitleHorizontalPaddingValue, axisTitleVerticalPaddingValue)
 
-private val horizontalLayout = HorizontalLayout.fullWidth()

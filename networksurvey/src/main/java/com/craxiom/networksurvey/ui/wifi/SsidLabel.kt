@@ -1,10 +1,10 @@
 package com.craxiom.networksurvey.ui.wifi
 
-import android.graphics.RectF
-import com.patrykandpatrick.vico.core.chart.decoration.Decoration
-import com.patrykandpatrick.vico.core.chart.draw.ChartDrawContext
-import com.patrykandpatrick.vico.core.component.text.TextComponent
-import com.patrykandpatrick.vico.core.component.text.textComponent
+import com.craxiom.networksurvey.ui.wifi.model.WIFI_SPECTRUM_MAX
+import com.craxiom.networksurvey.ui.wifi.model.WIFI_SPECTRUM_MIN
+import com.patrykandpatrick.vico.core.cartesian.CartesianDrawingContext
+import com.patrykandpatrick.vico.core.cartesian.decoration.Decoration
+import com.patrykandpatrick.vico.core.common.component.TextComponent
 
 /**
  * Draws the SSID name just above the peak of the signal arc.
@@ -13,35 +13,30 @@ data class SsidLabel(
     val ssid: String,
     val signalStrength: Int,
     val channel: Int,
-    val labelComponent: TextComponent = textComponent(),
+    val labelComponent: TextComponent,
+    val minX: Float,
+    val maxX: Float,
 ) : Decoration {
-    override fun onDrawAboveChart(
-        context: ChartDrawContext,
-        bounds: RectF,
-    ): Unit =
-        with(context) {
-            val yRange = chartValues.getYRange(null)
+    override fun drawOverLayers(context: CartesianDrawingContext) {
+        val bounds = context.layerBounds
 
-            val textHeight = labelComponent.getHeight(
-                context = context,
-                text = ssid,
-                rotationDegrees = 0f,
-            )
+        // Calculate x position based on channel mapping to chart coordinates
+        val xRange = maxX - minX
+        val xPixelPerUnit = bounds.width() / xRange
+        val xPosition = bounds.left + ((channel - minX) * xPixelPerUnit)
 
-            val xRange = chartValues.maxX - chartValues.minX
-            val xPixelPerChannel = chartBounds.width() / xRange
-            val xPosition = chartBounds.left + (channel - chartValues.minX) * xPixelPerChannel
+        // Calculate y position based on signal strength mapping to chart coordinates
+        val yRange = WIFI_SPECTRUM_MAX - WIFI_SPECTRUM_MIN
+        val yPixelPerUnit = bounds.height() / yRange
+        // Chart y-axis is inverted (top is max, bottom is min)
+        val yPosition = bounds.bottom - ((signalStrength - WIFI_SPECTRUM_MIN) * yPixelPerUnit)
 
-            val yPixelPerUnit = chartBounds.height() / yRange.length
-            val yPosition =
-                chartBounds.bottom - (signalStrength - yRange.minY) * yPixelPerUnit - (textHeight / 2)
-
-            labelComponent.drawText(
-                context = context,
-                text = ssid,
-                maxTextWidth = bounds.width().toInt(),
-                textX = xPosition,
-                textY = yPosition,
-            )
-        }
+        // Draw label above the signal peak
+        labelComponent.draw(
+            context = context,
+            text = ssid,
+            x = xPosition,
+            y = yPosition - 20f, // Offset above the peak
+        )
+    }
 }

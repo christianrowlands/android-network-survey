@@ -2,12 +2,14 @@ package com.craxiom.networksurvey.ui.wifi.model
 
 
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import com.craxiom.messaging.wifi.WifiBandwidth
 import com.craxiom.networksurvey.fragments.WifiNetworkInfo
-import com.patrykandpatrick.vico.core.model.CartesianChartModelProducer
-import com.patrykandpatrick.vico.core.model.LineCartesianLayerModel
+import com.patrykandpatrick.vico.core.cartesian.data.CartesianChartModelProducer
+import com.patrykandpatrick.vico.core.cartesian.data.lineSeries
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.launch
 import timber.log.Timber
 
 // Subtracting 10 from the max and min so that the chart shows spectrum usage a bit better
@@ -162,7 +164,7 @@ val CHANNELS_6_GHZ_CHART_VIEW = listOf(
  */
 abstract class AWifiSpectrumChartViewModel : ViewModel() {
 
-    internal val modelProducer = CartesianChartModelProducer.build()
+    internal val modelProducer = CartesianChartModelProducer()
 
     private val _wifiNetworkInfoList = MutableStateFlow<List<WifiNetworkInfo>>(emptyList())
     val wifiNetworkInfoList: StateFlow<List<WifiNetworkInfo>> = _wifiNetworkInfoList
@@ -181,8 +183,8 @@ abstract class AWifiSpectrumChartViewModel : ViewModel() {
         throw UnsupportedOperationException("The function filterWifiNetworks is unsupported on the base class")
     }
 
-    open fun createSeriesModel(wifiNetworkInfoList: List<WifiNetworkInfo>): LineCartesianLayerModel.Partial {
-        throw UnsupportedOperationException("The function createSeriesModel is unsupported on the base class")
+    open fun createSeriesData(wifiNetworkInfoList: List<WifiNetworkInfo>): List<Pair<List<Number>, List<Number>>> {
+        throw UnsupportedOperationException("The function createSeriesData is unsupported on the base class")
     }
 
     open fun clearChart() {
@@ -201,33 +203,36 @@ abstract class AWifiSpectrumChartViewModel : ViewModel() {
             return
         }
 
-        modelProducer.tryRunTransaction {
-            add(
-                createSeriesModel(wifiNetworkInfoList = filteredWifiNetworkInfoList)
-            )
+        viewModelScope.launch {
+            modelProducer.runTransaction {
+                lineSeries {
+                    val seriesData = createSeriesData(filteredWifiNetworkInfoList)
+                    seriesData.forEach { (xValues, yValues) ->
+                        series(xValues, yValues)
+                    }
+                }
+            }
         }
     }
 
     /**
-     * Creates a chart series for the provided list of Wifi networks that creates a line series
+     * Creates chart series data for the provided list of Wifi networks that creates a line series
      * that is larger than the channel number (since channels overlap in Wi-Fi).
      */
-    fun createSeriesForNetworks(matchedWifiNetworks: List<WifiNetworkInfo>): LineCartesianLayerModel.Partial {
-        return LineCartesianLayerModel.partial {
-            matchedWifiNetworks.forEach { wifiNetwork ->
-                val offset = getHalfOffset(wifiNetwork.bandwidth)
-                val channels = listOf(
-                    wifiNetwork.centerChannel - offset,
-                    wifiNetwork.centerChannel,
-                    wifiNetwork.centerChannel + offset
-                )
-                val signalStrengths = listOf(
-                    WIFI_CHART_MIN,
-                    constrictSignalStrength(wifiNetwork.signalStrength.toFloat()),
-                    WIFI_CHART_MIN
-                )
-                series(channels, signalStrengths)
-            }
+    fun createSeriesForNetworks(matchedWifiNetworks: List<WifiNetworkInfo>): List<Pair<List<Number>, List<Number>>> {
+        return matchedWifiNetworks.map { wifiNetwork ->
+            val offset = getHalfOffset(wifiNetwork.bandwidth)
+            val channels = listOf(
+                wifiNetwork.centerChannel - offset,
+                wifiNetwork.centerChannel,
+                wifiNetwork.centerChannel + offset
+            )
+            val signalStrengths = listOf(
+                WIFI_CHART_MIN,
+                constrictSignalStrength(wifiNetwork.signalStrength.toFloat()),
+                WIFI_CHART_MIN
+            )
+            channels to signalStrengths
         }
     }
 
@@ -251,7 +256,7 @@ abstract class AWifiSpectrumChartViewModel : ViewModel() {
     }
 
     /**
-     * Brings the provided signal strength value within the range of the chart.
+     * Ensures that the signal strength value is within the bounds that we want to use for the spectrum chart.
      */
     private fun constrictSignalStrength(signalStrength: Float): Float {
         return if (signalStrength > WIFI_SPECTRUM_MAX) {

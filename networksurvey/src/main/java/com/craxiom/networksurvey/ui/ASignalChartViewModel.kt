@@ -5,8 +5,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.craxiom.networksurvey.ui.wifi.model.MAX_WIFI_RSSI
 import com.craxiom.networksurvey.ui.wifi.model.MIN_WIFI_RSSI
-import com.patrykandpatrick.vico.core.model.CartesianChartModelProducer
-import com.patrykandpatrick.vico.core.model.LineCartesianLayerModel
+import com.patrykandpatrick.vico.core.cartesian.data.CartesianChartModelProducer
+import com.patrykandpatrick.vico.core.cartesian.data.lineSeries
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.delay
@@ -29,7 +29,7 @@ private const val UPDATE_FREQUENCY = 1000L
  */
 abstract class ASignalChartViewModel : ViewModel() {
 
-    internal val modelProducer = CartesianChartModelProducer.build()
+    internal val modelProducer = CartesianChartModelProducer()
 
     private val _markerList = MutableStateFlow<List<Int>>(emptyList())
     val markerList: StateFlow<List<Int>> = _markerList
@@ -210,12 +210,20 @@ abstract class ASignalChartViewModel : ViewModel() {
         rssiQueue.add(rssi)
         xValueQueue.add(lastXValue + 1)
 
-        val lineLayerModelPartial: LineCartesianLayerModel.Partial =
-            LineCartesianLayerModel.partial {
-                series(xValueQueue, rssiQueue)
-            }
+        // Create defensive copies while still synchronized to prevent concurrent modification
+        val xValues = ArrayList(xValueQueue)
+        val rssiValues = ArrayList(rssiQueue)
 
-        modelProducer.tryRunTransaction { add(lineLayerModelPartial) }
+        // Only update the chart if we have data to display
+        if (xValues.isNotEmpty() && rssiValues.isNotEmpty()) {
+            viewModelScope.launch {
+                modelProducer.runTransaction {
+                    lineSeries {
+                        series(xValues, rssiValues)
+                    }
+                }
+            }
+        }
 
         // Remove any makers that have moved "off screen"
         xValueQueue.firstOrNull()?.let { xValue ->
