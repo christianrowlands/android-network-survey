@@ -25,14 +25,14 @@ class TowerDetectionManager(
     private val CACHE_RETENTION_MS = 48 * 60 * 60 * 1000L
 
     /**
-     * Check if a tower is new (not in the backend database).
+     * Check if a tower is new (not seen before by us AND not in the backend database).
      *
      * @param mcc Mobile Country Code
      * @param mnc Mobile Network Code
      * @param area TAC/LAC
      * @param cid Cell ID
      * @param radio Radio technology (LTE, NR, GSM, UMTS)
-     * @return true if the tower is new (not in backend), false if known
+     * @return true if the tower is new (not seen before AND not in backend), false otherwise
      */
     suspend fun checkIfTowerIsNew(
         mcc: Int,
@@ -42,26 +42,27 @@ class TowerDetectionManager(
         radio: String
     ): Boolean = withContext(Dispatchers.IO) {
         try {
-            // First check local cache
+            // If tower is in cache, we've seen it before - no alert needed
             val cachedTower = towerCacheDao.getTower(mcc, mnc, area, cid)
             if (cachedTower != null) {
-                Timber.d("Tower found in cache: MCC=$mcc, MNC=$mnc, Area=$area, CID=$cid, isKnown=${cachedTower.isKnown}")
-                return@withContext !cachedTower.isKnown
+                Timber.d("Tower found in cache (seen before): MCC=$mcc, MNC=$mnc, Area=$area, CID=$cid")
+                return@withContext false
             }
 
-            // Not in cache, check backend API
-            Timber.d("Checking backend for tower: MCC=$mcc, MNC=$mnc, Area=$area, CID=$cid, Radio=$radio")
+            // Not in cache - this is our first time seeing this tower
+            // Check backend API to see if it's a new discovery
+            Timber.d("Tower not in cache, checking backend: MCC=$mcc, MNC=$mnc, Area=$area, CID=$cid, Radio=$radio")
             val response = api.checkSingleTower(mcc, mnc, area, cid, radio)
 
             val isNew = when (response.code()) {
                 204, 404 -> {
-                    // Tower not found in backend - it's new!
-                    Timber.i("New tower detected: MCC=$mcc, MNC=$mnc, Area=$area, CID=$cid, Radio=$radio")
+                    // Tower not found in backend - it's a new discovery!
+                    Timber.i("New tower discovered: MCC=$mcc, MNC=$mnc, Area=$area, CID=$cid, Radio=$radio")
                     true
                 }
 
                 200 -> {
-                    // Tower exists in backend
+                    // Tower exists in backend - not a new discovery
                     Timber.d("Tower exists in backend: MCC=$mcc, MNC=$mnc, Area=$area, CID=$cid, Radio=$radio")
                     false
                 }
@@ -72,13 +73,12 @@ class TowerDetectionManager(
                 }
             }
 
-            // Cache the result
+            // Cache the tower (regardless of whether it's new or not - we've now seen it)
             val cacheEntry = TowerCacheEntity().apply {
                 this.mcc = mcc
                 this.mnc = mnc
                 this.area = area
                 this.cid = cid
-                this.isKnown = !isNew
                 this.timestamp = System.currentTimeMillis()
                 this.radio = radio
             }
@@ -119,7 +119,6 @@ class TowerDetectionManager(
                             this.mnc = tower.mnc
                             this.area = tower.area
                             this.cid = tower.cid
-                            this.isKnown = true
                             this.timestamp = System.currentTimeMillis()
                             this.radio = tower.radio
                         }

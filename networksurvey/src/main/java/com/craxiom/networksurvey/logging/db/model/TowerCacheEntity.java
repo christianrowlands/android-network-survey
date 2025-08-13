@@ -5,8 +5,9 @@ import androidx.room.Index;
 import androidx.room.PrimaryKey;
 
 /**
- * Entity for caching tower lookup results from the backend API.
- * This helps reduce API calls by storing whether a tower has been checked.
+ * Entity for caching towers that have been seen before.
+ * This prevents duplicate new tower alerts by tracking which towers we've already encountered,
+ * and reduces backend API calls.
  *
  * @since 1.0.0
  */
@@ -37,11 +38,6 @@ public class TowerCacheEntity
      * Cell ID
      */
     public long cid;
-
-    /**
-     * Whether this tower exists in the backend database (true = known, false = new)
-     */
-    public boolean isKnown;
 
     /**
      * Timestamp when this cache entry was created (milliseconds since epoch)
