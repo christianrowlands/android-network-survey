@@ -838,5 +838,6 @@ but work independently, so you have full control over how you handle your data.<
     <string name="confirm_clear_exclusion_list_title">Clear Exclusion List</string>
     <string name="confirm_clear_exclusion_list_message">Are you sure you want to remove all SSIDs from the exclusion list?</string>
     <string name="excluded_label">(Excluded)</string>
+    <string name="connected_label">(Connected)</string>
     <string name="wifi_exclusion_info">Excluded SSIDs will not be saved to files or uploaded to databases</string>
 </resources>

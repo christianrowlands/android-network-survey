@@ -5,6 +5,7 @@ import android.content.Context;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ImageView;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
@@ -33,12 +34,23 @@ public class MyWifiNetworkRecyclerViewAdapter extends RecyclerView.Adapter<MyWif
     private final SortedList<WifiRecordWrapper> wifiRecords;
     private final Context context;
     private final WifiNetworksFragment wifiNetworksFragment;
+    private String connectedBssid;
 
     MyWifiNetworkRecyclerViewAdapter(SortedList<WifiRecordWrapper> items, Context context, WifiNetworksFragment wifiNetworksFragment)
     {
         wifiRecords = items;
         this.context = context;
         this.wifiNetworksFragment = wifiNetworksFragment;
+    }
+
+    /**
+     * Sets the BSSID of the currently connected WiFi network.
+     *
+     * @param bssid The BSSID of the connected network, or null if not connected.
+     */
+    public void setConnectedBssid(String bssid)
+    {
+        connectedBssid = bssid;
     }
 
     @NonNull
@@ -59,6 +71,10 @@ public class MyWifiNetworkRecyclerViewAdapter extends RecyclerView.Adapter<MyWif
         final WifiBeaconRecord wifiBeaconRecord = wifiRecordWrapper.getWifiBeaconRecord();
         holder.wifiRecord = wifiBeaconRecord;
         final WifiBeaconRecordData data = wifiBeaconRecord.getData();
+        
+        // Check if this network is currently connected
+        final boolean isConnected = connectedBssid != null && connectedBssid.equalsIgnoreCase(data.getBssid());
+        
         final String ssid = data.getSsid();
         if (ssid.isEmpty())
         {
@@ -71,11 +87,22 @@ public class MyWifiNetworkRecyclerViewAdapter extends RecyclerView.Adapter<MyWif
             {
                 holder.ssid.setText(ssid + " " + context.getString(R.string.excluded_label));
                 holder.ssid.setTextColor(context.getResources().getColor(R.color.gray, null));
+            } else if (isConnected)
+            {
+                // Show connected indicator for connected network
+                holder.ssid.setText(ssid + " " + context.getString(R.string.connected_label));
+                holder.ssid.setTextColor(context.getResources().getColor(R.color.colorPrimary, null));
             } else
             {
                 holder.ssid.setText(ssid);
                 holder.ssid.setTextColor(context.getResources().getColor(R.color.colorAccent, null));
             }
+        }
+        
+        // Show/hide connection icon based on connection status
+        if (holder.connectionIcon != null)
+        {
+            holder.connectionIcon.setVisibility(isConnected ? View.VISIBLE : View.GONE);
         }
 
         if (data.hasSignalStrength())
@@ -159,6 +186,7 @@ public class MyWifiNetworkRecyclerViewAdapter extends RecyclerView.Adapter<MyWif
         final TextView standard;
         final TextView passpoint;
         final TextView capabilities;
+        final ImageView connectionIcon;
         WifiBeaconRecord wifiRecord;
 
         ViewHolder(View view)
@@ -175,6 +203,7 @@ public class MyWifiNetworkRecyclerViewAdapter extends RecyclerView.Adapter<MyWif
             standard = view.findViewById(R.id.wifi_standard);
             passpoint = view.findViewById(R.id.wifi_passpoint);
             capabilities = view.findViewById(R.id.wifi_capabilities);
+            connectionIcon = view.findViewById(R.id.connection_icon);
 
             mView.setOnClickListener(v -> {
                 Float signalStrength = null;

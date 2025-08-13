@@ -5,6 +5,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
+import android.net.wifi.WifiInfo;
 import android.net.wifi.WifiManager;
 import android.os.Build;
 import android.os.Bundle;
@@ -60,6 +61,7 @@ public class WifiNetworksFragment extends AServiceDataFragment implements IWifiS
 
     private Context applicationContext;
     private MyWifiNetworkRecyclerViewAdapter wifiNetworkRecyclerViewAdapter;
+    private String currentConnectedBssid = null;
 
     private long lastScanTime = 0;
     private boolean throttlingNotificationShown = false;
@@ -146,6 +148,10 @@ public class WifiNetworksFragment extends AServiceDataFragment implements IWifiS
         startAndBindToService();
 
         checkForScanThrottlingAndroid11();
+        
+        // Update the connected BSSID when returning to this fragment
+        // This ensures the connection indicator is shown immediately when navigating back from details
+        updateConnectedNetworkStatus();
     }
 
     @Override
@@ -201,6 +207,9 @@ public class WifiNetworksFragment extends AServiceDataFragment implements IWifiS
             {
                 checkForScanThrottling();
 
+                // Update the currently connected BSSID
+                currentConnectedBssid = getCurrentConnectedBssid();
+
                 viewModel.incrementScanNumber();
                 viewModel.setApsInLastScan(wifiBeaconRecords.size());
 
@@ -210,6 +219,7 @@ public class WifiNetworksFragment extends AServiceDataFragment implements IWifiS
                     wifiRecordSortedList.addAll(wifiBeaconRecords);
                     if (wifiNetworkRecyclerViewAdapter != null)
                     {
+                        wifiNetworkRecyclerViewAdapter.setConnectedBssid(currentConnectedBssid);
                         wifiNetworkRecyclerViewAdapter.notifyDataSetChanged();
                     }
 
@@ -584,5 +594,60 @@ public class WifiNetworksFragment extends AServiceDataFragment implements IWifiS
     private boolean areDeveloperOptionsEnabled()
     {
         return Settings.Global.getInt(requireContext().getContentResolver(), Settings.Global.DEVELOPMENT_SETTINGS_ENABLED, 0) != 0;
+    }
+
+    /**
+     * Updates the connected network status by refreshing the current BSSID and notifying the adapter.
+     * This is called when the fragment resumes and when new scan results arrive.
+     */
+    private void updateConnectedNetworkStatus()
+    {
+        currentConnectedBssid = getCurrentConnectedBssid();
+        if (wifiNetworkRecyclerViewAdapter != null)
+        {
+            wifiNetworkRecyclerViewAdapter.setConnectedBssid(currentConnectedBssid);
+            wifiNetworkRecyclerViewAdapter.notifyDataSetChanged();
+        }
+    }
+
+    /**
+     * Gets the BSSID of the currently connected WiFi network.
+     * <p>
+     * Note: This method uses the deprecated WifiManager.getConnectionInfo() API because:
+     * 1. It still works reliably on all Android versions including Android 16
+     * 2. The new ConnectivityManager approach requires complex asynchronous NetworkCallback
+     * with FLAG_INCLUDE_LOCATION_INFO to get the actual BSSID (otherwise returns "02:00:00:00:00:00")
+     * 3. Since we only need this for UI display when the fragment is visible, the simpler
+     * synchronous deprecated method is the pragmatic choice
+     *
+     * @return The BSSID of the connected WiFi network, or null if not connected to WiFi.
+     */
+    @SuppressWarnings("deprecation")
+    private String getCurrentConnectedBssid()
+    {
+        try
+        {
+            Context context = getContext();
+            if (context == null) return null;
+
+            WifiManager wifiManager = (WifiManager) context.getApplicationContext().getSystemService(Context.WIFI_SERVICE);
+            if (wifiManager != null)
+            {
+                WifiInfo wifiInfo = wifiManager.getConnectionInfo();
+                if (wifiInfo != null)
+                {
+                    String bssid = wifiInfo.getBSSID();
+                    // Check if it's a valid BSSID (not the default "02:00:00:00:00:00" placeholder)
+                    if (bssid != null && !bssid.equals("02:00:00:00:00:00"))
+                    {
+                        return bssid;
+                    }
+                }
+            }
+        } catch (Exception e)
+        {
+            Timber.e(e, "Failed to get current connected WiFi BSSID");
+        }
+        return null;
     }
 }

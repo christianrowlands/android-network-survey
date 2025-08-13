@@ -12,6 +12,17 @@
         android:layout_height="wrap_content"
         android:orientation="horizontal">
 
+        <ImageView
+            android:id="@+id/connection_icon"
+            android:layout_width="16dp"
+            android:layout_height="16dp"
+            android:layout_gravity="center_vertical"
+            android:layout_marginStart="@dimen/xx_small_margin"
+            android:layout_marginEnd="@dimen/xx_small_margin"
+            android:src="@drawable/ic_wifi"
+            android:visibility="gone"
+            android:contentDescription="@string/connected_label" />
+
         <TextView
             android:id="@+id/ssid"
             style="@style/ListTitleText"
