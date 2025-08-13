@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.41](https://github.com/christianrowlands/android-network-survey/releases/tag/v1.41) - 2025-08-13
+
+* Set better values for the SS_RSRP SS_RSRQ chart ranges for NR on the cellular details UI.
+* Make the tower search fields in the bottom sheet a 2x2 grid instead of stacked to save vertical space.
+* Make sure the tower coverage area is visible when searching for a tower on the map.
+* Adds a status message and pauses cellular record processing when in airplane mode.
+* Fixed duplicate alerts for the same tower.
+* Indicate the currently connected wifi network in the network list.
+
 ## [1.40](https://github.com/christianrowlands/android-network-survey/releases/tag/v1.40) - 2025-08-06
 
 * Pause all survey operations when the battery drops below a user defined value. - [#90](https://github.com/christianrowlands/android-network-survey/issues/90)
