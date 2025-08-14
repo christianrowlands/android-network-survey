@@ -13,7 +13,9 @@ import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.net.Uri;
 import android.os.Bundle;
+import android.provider.Settings;
 import android.text.InputType;
+import android.widget.Toast;
 
 import androidx.appcompat.app.AlertDialog;
 import androidx.core.app.ActivityCompat;
@@ -80,6 +82,7 @@ public class SettingsFragment extends PreferenceFragmentCompat implements Shared
         setPreferenceAsIntegerOnly(findPreference(NetworkSurveyConstants.PROPERTY_DEVICE_STATUS_SCAN_INTERVAL_SECONDS));
 
         setAppVersion();
+        setDeviceSerialNumber();
         setAppInstanceId();
 
         updateUiForMdmIfNecessary();
@@ -547,6 +550,31 @@ public class SettingsFragment extends PreferenceFragmentCompat implements Shared
         } catch (Exception e)
         {
             Timber.wtf(e, "Could not set the app version number");
+        }
+    }
+
+    private void setDeviceSerialNumber()
+    {
+        Context context = getContext();
+        if (context == null) return;
+
+        final Preference deviceSerialNumberPreference = findPreference(NetworkSurveyConstants.PREFERENCE_DEVICE_SERIAL_NUMBER);
+        if (deviceSerialNumberPreference != null)
+        {
+            String serialNumber = Settings.Secure.getString(context.getContentResolver(), Settings.Secure.ANDROID_ID);
+            deviceSerialNumberPreference.setSummary(serialNumber != null ? serialNumber : "Unknown");
+
+            deviceSerialNumberPreference.setOnPreferenceClickListener(preference -> {
+                // Copy the id to the clipboard
+                CharSequence ids = preference.getSummary();
+                android.content.ClipboardManager clipboard = (android.content.ClipboardManager) context.getSystemService(Context.CLIPBOARD_SERVICE);
+                android.content.ClipData clip = android.content.ClipData.newPlainText("NS Device Serial Number", ids);
+                clipboard.setPrimaryClip(clip);
+
+                Toast.makeText(context, "App SN copied to clipboard", Toast.LENGTH_SHORT).show();
+
+                return true;
+            });
         }
     }
 

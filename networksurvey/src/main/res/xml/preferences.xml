@@ -257,6 +257,11 @@
             app:defaultValue="None" />
 
         <Preference
+            app:key="preference_device_serial_number"
+            app:title="Device Serial Number"
+            app:defaultValue="None" />
+
+        <Preference
             app:key="app_instance_id"
             app:title="App Instance ID"
             app:defaultValue="None" />

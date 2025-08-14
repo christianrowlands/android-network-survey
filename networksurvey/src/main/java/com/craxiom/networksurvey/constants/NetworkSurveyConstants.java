@@ -138,6 +138,8 @@ public class NetworkSurveyConstants
 
     // A read only value in the preferences that shows the App Version
     public static final String PROPERTY_APP_VERSION = "app_version";
+    // A read only value in the preferences that shows the Device ID, which is called the Device Serial Number in NS Messaging API
+    public static final String PREFERENCE_DEVICE_SERIAL_NUMBER = "preference_device_serial_number";
     // A read only value in the preferences that shows the App Instance ID if applicable
     public static final String PROPERTY_APP_INSTANCE_ID = "app_instance_id";
     public static final String PROPERTY_PRIVACY_POLICY = "privacy_policy";
