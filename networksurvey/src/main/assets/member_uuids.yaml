@@ -1257,7 +1257,7 @@ uuids:
  - uuid: 0xFC9B
    name: Merry Electronics (S) Pte Ltd
  - uuid: 0xFC9A
-   name: Plockat Solutions AB
+   name: Koppli AB
  - uuid: 0xFC99
    name: Badger Meter
  - uuid: 0xFC98
@@ -1285,7 +1285,7 @@ uuids:
  - uuid: 0xFC8D
    name: Caire Inc.
  - uuid: 0xFC8C
-   name: SES-Imagotag
+   name: VusionGroup
  - uuid: 0xFC8B
    name: Kaspersky Lab Middle East FZ-LLC
  - uuid: 0xFC8A
@@ -1402,3 +1402,11 @@ uuids:
    name: LEGIC Identsystems AG
  - uuid: 0xFC52
    name: LG Electronics Inc.
+ - uuid: 0xFC51
+   name: "Ant Group Co., Ltd."
+ - uuid: 0xFC50
+   name: "Ant Group Co., Ltd."
+ - uuid: 0xFC4F
+   name: "WaveRF, Corp."
+ - uuid: 0xFC4E
+   name: Lodestar Technology Inc.

@@ -1,5 +1,143 @@
 company_identifiers:
 
+  - value: 0x0F52
+    name: 'Shenzhen Yunke Intelligent Co.Ltd'
+
+  - value: 0x0F51
+    name: 'ebm-papst Mulfingen GmbH & Co. KGaA & Co. KG'
+
+  - value: 0x0F50
+    name: 'Lantern Innovations Incorporated'
+
+  - value: 0x0F4F
+    name: 'G-Vision GmbH'
+
+  - value: 0x0F4E
+    name: 'Ningbo Dooya Mechanic & Electronic Technology Co., Ltd'
+
+  - value: 0x0F4D
+    name: 'Qulinda AB'
+
+  - value: 0x0F4C
+    name: 'JL WORLD CORPORATION LIMITED'
+
+  - value: 0x0F4B
+    name: 'desamisCo.,Ltd.'
+
+  - value: 0x0F4A
+    name: 'Mitsubishi Motors Corporation'
+
+  - value: 0x0F49
+    name: 'IYO INC.'
+
+  - value: 0x0F48
+    name: 'Shenzhen Xinfeiyi Technology Co., Ltd.'
+
+  - value: 0x0F47
+    name: 'Lodestar Technology Inc.'
+
+  - value: 0x0F46
+    name: 'Huizhou Meicanxin Electronics Technology Co.,Ltd'
+
+  - value: 0x0F45
+    name: 'Tactica Defense LLC'
+
+  - value: 0x0F44
+    name: 'MAVERICK ENERGY SOLUTIONS INTERNATIONAL,INC'
+
+  - value: 0x0F43
+    name: '12mm Health Technology (Hainan) Co., Ltd.'
+
+  - value: 0x0F42
+    name: 'LINKEDCHIP TECHNOLOGY INC'
+
+  - value: 0x0F41
+    name: 'BONX INC.'
+
+  - value: 0x0F40
+    name: 'Health Data Insight C.I.C.'
+
+  - value: 0x0F3F
+    name: 'Landig + Lava GmbH & Co. KG'
+
+  - value: 0x0F3E
+    name: 'Salyx Medical Inc.'
+
+  - value: 0x0F3D
+    name: 'Vitio Medical S.L.'
+
+  - value: 0x0F3C
+    name: 'Mobile Technology Solutions LLC'
+
+  - value: 0x0F3B
+    name: 'SANWA NEWTEC CO.,LTD.'
+
+  - value: 0x0F3A
+    name: 'Southern Audio Services, Inc'
+
+  - value: 0x0F39
+    name: 'Seitron Spa'
+
+  - value: 0x0F38
+    name: 'GILL INSTRUMENTS LIMITED'
+
+  - value: 0x0F37
+    name: 'Schueco International KG'
+
+  - value: 0x0F36
+    name: 'NODER Joint Stock Company'
+
+  - value: 0x0F35
+    name: 'Audeze LLC'
+
+  - value: 0x0F34
+    name: 'NINGBO SHARKWARD ELECTRONICS CO.,LTD'
+
+  - value: 0x0F33
+    name: 'TETNET'
+
+  - value: 0x0F32
+    name: 'FLINTEC UK LIMITED'
+
+  - value: 0x0F31
+    name: 'TECHNOLOGIES FOR FREERIDE s.r.o'
+
+  - value: 0x0F30
+    name: 'Opal Camera, Inc.'
+
+  - value: 0x0F2F
+    name: 'ThingCo Limited'
+
+  - value: 0x0F2E
+    name: 'BRITZ INTERNATIONAL CO.,LTD'
+
+  - value: 0x0F2D
+    name: 'ClipsClips LLC'
+
+  - value: 0x0F2C
+    name: 'Vision Group Inc.'
+
+  - value: 0x0F2B
+    name: 'ElitEngineering LLC'
+
+  - value: 0x0F2A
+    name: 'KELLER Druckmesstechnik AG'
+
+  - value: 0x0F29
+    name: 'Trezor Company s.r.o.'
+
+  - value: 0x0F28
+    name: 'Amp Fit Israel LTD'
+
+  - value: 0x0F27
+    name: 'Global Link Distribution Corp.'
+
+  - value: 0x0F26
+    name: 'Centromere Holding B.V.'
+
+  - value: 0x0F25
+    name: 'Sichuan Changhong Neonet Technologies Co.,Ltd.'
+
   - value: 0x0F24
     name: 'Easy Measure Co., Ltd.'
 
@@ -1015,7 +1153,7 @@ company_identifiers:
     name: 'Global Satellite Engineering'
 
   - value: 0x0DD2
-    name: 'Sitecom Europe B.V.'
+    name: 'Fresh n Rebel B.V.'
 
   - value: 0x0DD1
     name: 'OrangeMicro Limited'
@@ -3535,7 +3673,7 @@ company_identifiers:
     name: 'HAINBUCH GMBH SPANNENDE TECHNIK'
 
   - value: 0x0A89
-    name: 'SES-Imagotag'
+    name: 'VusionGroup'
 
   - value: 0x0A88
     name: 'PSA Peugeot Citroen'
