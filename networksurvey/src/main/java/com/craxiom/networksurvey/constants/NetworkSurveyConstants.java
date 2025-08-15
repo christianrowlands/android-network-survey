@@ -99,6 +99,13 @@ public class NetworkSurveyConstants
     public static final int DEFAULT_GNSS_SCAN_INTERVAL_SECONDS = 30;
     public static final int DEFAULT_DEVICE_STATUS_SCAN_INTERVAL_SECONDS = 120;
 
+    /**
+     * Minimum Bluetooth scan interval in seconds. The Bluetooth scanning process requires
+     * at least 23 seconds: 10 seconds for BLE scanning, 12 seconds for Classic Bluetooth
+     * discovery, and 1 second minimum wait between cycles.
+     */
+    public static final int MINIMUM_BLUETOOTH_SCAN_INTERVAL_SECONDS = 23;
+
     public static final String DEFAULT_ROLLOVER_SIZE_MB = "10";
 
     public static final boolean DEFAULT_UPLOAD_TO_OPENCELLID = true;

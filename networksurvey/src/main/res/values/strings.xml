@@ -478,7 +478,8 @@ but work independently, so you have full control over how you handle your data.<
     <string name="wifi_scan_interval_description">The rate at which Wi-Fi networks will be scanned for in seconds. Smaller values will decrease battery life.</string>
 
     <string name="bluetooth_scan_interval_title">Bluetooth Scan Interval</string>
-    <string name="bluetooth_scan_interval_description">The rate at which Bluetooth devices will be scanned for in seconds. Smaller values will decrease battery life.</string>
+    <string name="bluetooth_scan_interval_description">The rate at which Bluetooth devices will be scanned for in seconds. Minimum value is 23 seconds due to BLE (10s) and Classic (12s) scan durations. Smaller values will decrease battery life.</string>
+    <string name="bluetooth_scan_interval_below_minimum">Bluetooth scan interval must be at least %d seconds. Value has been adjusted to the minimum.</string>
 
     <string name="gnss_scan_interval_title">GNSS Scan Interval</string>
     <string name="gnss_scan_interval_description">The rate at which GNSS satellites will be scanned for in seconds. Smaller values will decrease battery life.</string>

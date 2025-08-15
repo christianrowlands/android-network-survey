@@ -124,6 +124,8 @@ public class PreferenceUtils
      * <p>
      * The only exception to this sequence is that if the user has toggled the MDM override switch in user settings,
      * then the user preference value will be used instead of the MDM value.
+     * <p>
+     * For Bluetooth scanning, a minimum interval is enforced to ensure proper operation.
      *
      * @param scanRatePreferenceKey  The preference key to use when pulling the scan rate from MDM and Shared Preferences.
      * @param defaultScanRateSeconds The default scan rate to fall back on if the scan rate could not be found.
@@ -137,14 +139,21 @@ public class PreferenceUtils
 
         final boolean mdmOverride = PreferenceManager.getDefaultSharedPreferences(context).getBoolean(NetworkSurveyConstants.PROPERTY_MDM_OVERRIDE_KEY, false);
 
+        int scanRateSeconds = 0;
+
         // First try to use the MDM provided value.
         if (restrictionsManager != null && !mdmOverride)
         {
             final Bundle mdmProperties = restrictionsManager.getApplicationRestrictions();
 
-            final int scanRateSeconds = mdmProperties.getInt(scanRatePreferenceKey);
+            scanRateSeconds = mdmProperties.getInt(scanRatePreferenceKey);
             if (scanRateSeconds > 0)
             {
+                // Apply minimum for Bluetooth scan rate
+                if (NetworkSurveyConstants.PROPERTY_BLUETOOTH_SCAN_INTERVAL_SECONDS.equals(scanRatePreferenceKey))
+                {
+                    scanRateSeconds = Math.max(scanRateSeconds, NetworkSurveyConstants.MINIMUM_BLUETOOTH_SCAN_INTERVAL_SECONDS);
+                }
                 return scanRateSeconds * 1_000;
             }
         }
@@ -156,12 +165,28 @@ public class PreferenceUtils
                 String.valueOf(defaultScanRateSeconds));
         try
         {
-            final int scanRateSeconds = Integer.parseInt(scanInterval);
-            return scanRateSeconds > 0 ? scanRateSeconds * 1_000 : defaultScanRateSeconds * 1_000;
+            scanRateSeconds = Integer.parseInt(scanInterval);
+            scanRateSeconds = scanRateSeconds > 0 ? scanRateSeconds : defaultScanRateSeconds;
+
+            // Apply minimum for Bluetooth scan rate
+            if (NetworkSurveyConstants.PROPERTY_BLUETOOTH_SCAN_INTERVAL_SECONDS.equals(scanRatePreferenceKey))
+            {
+                scanRateSeconds = Math.max(scanRateSeconds, NetworkSurveyConstants.MINIMUM_BLUETOOTH_SCAN_INTERVAL_SECONDS);
+            }
+
+            return scanRateSeconds * 1_000;
         } catch (Exception e)
         {
-            Timber.e(e, "Could not convert the GNSS scan interval user preference (%s) to an int", scanInterval);
-            return defaultScanRateSeconds * 1_000;
+            Timber.e(e, "Could not convert the scan interval user preference (%s) to an int", scanInterval);
+            scanRateSeconds = defaultScanRateSeconds;
+
+            // Apply minimum for Bluetooth scan rate even for default
+            if (NetworkSurveyConstants.PROPERTY_BLUETOOTH_SCAN_INTERVAL_SECONDS.equals(scanRatePreferenceKey))
+            {
+                scanRateSeconds = Math.max(scanRateSeconds, NetworkSurveyConstants.MINIMUM_BLUETOOTH_SCAN_INTERVAL_SECONDS);
+            }
+
+            return scanRateSeconds * 1_000;
         }
     }
 
@@ -1059,11 +1084,11 @@ public class PreferenceUtils
                 final String thresholdString = preferences.getString(NetworkSurveyConstants.PROPERTY_BATTERY_THRESHOLD_PERCENT,
                         String.valueOf(NetworkSurveyConstants.DEFAULT_BATTERY_THRESHOLD_PERCENT));
                 final int threshold = Integer.parseInt(thresholdString);
-                
+
                 // Migrate to int for future use
                 preferences.edit().remove(NetworkSurveyConstants.PROPERTY_BATTERY_THRESHOLD_PERCENT)
                         .putInt(NetworkSurveyConstants.PROPERTY_BATTERY_THRESHOLD_PERCENT, threshold).apply();
-                
+
                 // Validate the threshold is in valid range
                 return (threshold >= 0 && threshold <= 95) ? threshold : NetworkSurveyConstants.DEFAULT_BATTERY_THRESHOLD_PERCENT;
             } catch (Exception ex)

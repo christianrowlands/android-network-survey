@@ -46,6 +46,11 @@ import timber.log.Timber;
 /**
  * Handles all of the Bluetooth related logic for Network Survey Service to include file logging
  * and managing Bluetooth scanning.
+ * <p>
+ * The Bluetooth scanning process alternates between BLE scanning (10 seconds) and Classic
+ * Bluetooth discovery (12 seconds), with a minimum wait time of 1 second between cycles.
+ * This results in an implicit minimum scan interval of 23 seconds that cannot be overridden,
+ * even if users set a lower value in preferences.
  *
  * @noinspection NonPrivateFieldAccessedInSynchronizedContext
  */
@@ -55,26 +60,29 @@ public class BluetoothController extends AController
     private static final long CLASSIC_SCAN_DURATION_MS = 12000; // 12 seconds (Android default)
     private static final long DUPLICATE_WINDOW_MS = 30000; // 30 seconds
     private static final int RSSI_CHANGE_THRESHOLD = 10; // dBm
-    
-    private enum ScanPhase {
+
+    private enum ScanPhase
+    {
         IDLE,
         BLE_SCANNING,
         CLASSIC_SCANNING,
         WAITING_NEXT_INTERVAL
     }
-    
+
     private final AtomicBoolean bluetoothScanningActive = new AtomicBoolean(false);
     private final AtomicBoolean bluetoothLoggingEnabled = new AtomicBoolean(false);
     private final ScheduledThreadPoolExecutor bluetoothScanExecutor = new ScheduledThreadPoolExecutor(1);
     private ScheduledFuture<?> bluetoothScanFuture;
     private volatile ScanPhase currentScanPhase = ScanPhase.IDLE;
     private final Map<String, DeviceInfo> recentDevices = new HashMap<>();
-    
-    private static class DeviceInfo {
+
+    private static class DeviceInfo
+    {
         final long lastSeenTime;
         final int lastRssi;
-        
-        DeviceInfo(long lastSeenTime, int lastRssi) {
+
+        DeviceInfo(long lastSeenTime, int lastRssi)
+        {
             this.lastSeenTime = lastSeenTime;
             this.lastRssi = lastRssi;
         }
@@ -113,14 +121,14 @@ public class BluetoothController extends AController
         {
             bluetoothSurveyRecordLogger.onDestroy();
             bluetoothCsvLogger.onDestroy();
-            
+
             // Cancel any pending tasks
             if (bluetoothScanFuture != null)
             {
                 bluetoothScanFuture.cancel(true);
                 bluetoothScanFuture = null;
             }
-            
+
             bluetoothScanExecutor.shutdown();
             try
             {
@@ -135,7 +143,7 @@ public class BluetoothController extends AController
 
             bluetoothBroadcastReceiver = null;
             bluetoothScanCallback = null;
-            
+
             // Clear recent devices to free memory
             synchronized (recentDevices)
             {
@@ -313,7 +321,7 @@ public class BluetoothController extends AController
                             Timber.v("Bluetooth classic device found but scanning is paused, ignoring");
                             return;
                         }
-                        
+
                         final BluetoothDevice device = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
                         if (device == null)
                         {
@@ -347,7 +355,7 @@ public class BluetoothController extends AController
                         Timber.v("Bluetooth scan result received but scanning is paused, ignoring");
                         return;
                     }
-                    
+
                     if (shouldLogDevice(result.getDevice(), result.getRssi()))
                     {
                         surveyRecordProcessor.onBluetoothScanUpdate(result);
@@ -507,7 +515,7 @@ public class BluetoothController extends AController
             if (surveyService == null) return;
 
             bluetoothScanningActive.set(false);
-            
+
             // Cancel any scheduled tasks
             if (bluetoothScanFuture != null)
             {
@@ -537,7 +545,7 @@ public class BluetoothController extends AController
                     // Nothing to stop
                     break;
             }
-            
+
             currentScanPhase = ScanPhase.IDLE;
 
             try
@@ -646,7 +654,7 @@ public class BluetoothController extends AController
 
         return isEnabled;
     }
-    
+
     /**
      * Determines if a device should be logged based on duplicate filtering.
      * A device is logged if:
@@ -655,49 +663,49 @@ public class BluetoothController extends AController
      * - Its RSSI changed significantly (more than RSSI_CHANGE_THRESHOLD)
      *
      * @param device The Bluetooth device
-     * @param rssi The current RSSI value
+     * @param rssi   The current RSSI value
      * @return true if the device should be logged, false otherwise
      */
     private boolean shouldLogDevice(BluetoothDevice device, int rssi)
     {
         if (device == null || device.getAddress() == null) return false;
-        
+
         String address = device.getAddress();
         long currentTime = System.currentTimeMillis();
-        
+
         synchronized (recentDevices)
         {
             DeviceInfo oldInfo = recentDevices.get(address);
-            
+
             if (oldInfo == null)
             {
                 // New device - log it
                 recentDevices.put(address, new DeviceInfo(currentTime, rssi));
                 return true;
             }
-            
+
             // Check if enough time has passed or RSSI changed significantly
             long timeSinceLastSeen = currentTime - oldInfo.lastSeenTime;
             int rssiDiff = Math.abs(rssi - oldInfo.lastRssi);
             boolean shouldLog = (timeSinceLastSeen > DUPLICATE_WINDOW_MS) ||
-                                (rssiDiff > RSSI_CHANGE_THRESHOLD);
-            
+                    (rssiDiff > RSSI_CHANGE_THRESHOLD);
+
             if (shouldLog)
             {
                 recentDevices.put(address, new DeviceInfo(currentTime, rssi));
             }
-            
+
             // Clean up old entries to prevent memory growth
             if (recentDevices.size() > 100)
             {
                 recentDevices.entrySet().removeIf(entry ->
-                    currentTime - entry.getValue().lastSeenTime > DUPLICATE_WINDOW_MS * 2);
+                        currentTime - entry.getValue().lastSeenTime > DUPLICATE_WINDOW_MS * 2);
             }
-            
+
             return shouldLog;
         }
     }
-    
+
     /**
      * Starts the next scan cycle based on the current phase.
      * The scan cycle goes: BLE -> Classic -> Wait -> Repeat
@@ -709,21 +717,21 @@ public class BluetoothController extends AController
             Timber.d("Bluetooth scanning is inactive, stopping scan cycle");
             return;
         }
-        
+
         // Check if scanning is paused for battery management
         if (isPaused())
         {
             Timber.d("Bluetooth scanning is paused for battery management");
             // Schedule next check after a delay
             bluetoothScanFuture = bluetoothScanExecutor.schedule(this::startNextScanCycle,
-                bluetoothScanRateMs, TimeUnit.MILLISECONDS);
+                    bluetoothScanRateMs, TimeUnit.MILLISECONDS);
             return;
         }
-        
+
         synchronized (bluetoothLoggingEnabled)
         {
             if (surveyService == null) return;
-            
+
             switch (currentScanPhase)
             {
                 case IDLE:
@@ -731,13 +739,13 @@ public class BluetoothController extends AController
                     // Start with BLE scanning
                     startBleScanning();
                     break;
-                    
+
                 case BLE_SCANNING:
                     // Move to Classic scanning
                     stopBleScanning();
                     startClassicDiscovery();
                     break;
-                    
+
                 case CLASSIC_SCANNING:
                     // Classic discovery auto-stops, move to waiting
                     waitForNextInterval();
@@ -745,7 +753,7 @@ public class BluetoothController extends AController
             }
         }
     }
-    
+
     /**
      * Starts BLE scanning for a limited duration.
      */
@@ -758,7 +766,7 @@ public class BluetoothController extends AController
             waitForNextInterval();
             return;
         }
-        
+
         final BluetoothAdapter bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
         if (bluetoothAdapter == null)
         {
@@ -766,7 +774,7 @@ public class BluetoothController extends AController
             waitForNextInterval();
             return;
         }
-        
+
         final BluetoothLeScanner bluetoothLeScanner = bluetoothAdapter.getBluetoothLeScanner();
         if (bluetoothLeScanner == null)
         {
@@ -774,12 +782,12 @@ public class BluetoothController extends AController
             waitForNextInterval();
             return;
         }
-        
+
         currentScanPhase = ScanPhase.BLE_SCANNING;
-        
+
         final ScanSettings.Builder scanSettingsBuilder = new ScanSettings.Builder();
         scanSettingsBuilder.setScanMode(ScanSettings.SCAN_MODE_LOW_POWER);
-        
+
         // Always use immediate reporting to ensure we get advertisement data
         // Batch scanning with report delay equal to scan duration was causing
         // results to be lost when stopScan() was called
@@ -788,10 +796,10 @@ public class BluetoothController extends AController
         bluetoothLeScanner.startScan(Collections.emptyList(), scanSettingsBuilder.build(), bluetoothScanCallback);
 
         // Schedule BLE scan stop after duration
-        bluetoothScanFuture = bluetoothScanExecutor.schedule(this::startNextScanCycle, 
-            BLE_SCAN_DURATION_MS, TimeUnit.MILLISECONDS);
+        bluetoothScanFuture = bluetoothScanExecutor.schedule(this::startNextScanCycle,
+                BLE_SCAN_DURATION_MS, TimeUnit.MILLISECONDS);
     }
-    
+
     /**
      * Stops BLE scanning.
      */
@@ -803,7 +811,7 @@ public class BluetoothController extends AController
             Timber.w("Missing Bluetooth scan permission, cannot stop BLE scanning");
             return;
         }
-        
+
         final BluetoothAdapter bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
         if (bluetoothAdapter != null)
         {
@@ -815,7 +823,7 @@ public class BluetoothController extends AController
             }
         }
     }
-    
+
     /**
      * Starts Classic Bluetooth discovery.
      */
@@ -828,7 +836,7 @@ public class BluetoothController extends AController
             waitForNextInterval();
             return;
         }
-        
+
         final BluetoothAdapter bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
         if (bluetoothAdapter == null)
         {
@@ -836,9 +844,9 @@ public class BluetoothController extends AController
             waitForNextInterval();
             return;
         }
-        
+
         currentScanPhase = ScanPhase.CLASSIC_SCANNING;
-        
+
         if (!bluetoothAdapter.isDiscovering())
         {
             bluetoothAdapter.startDiscovery();
@@ -847,28 +855,28 @@ public class BluetoothController extends AController
         {
             Timber.d("Classic discovery already in progress");
         }
-        
+
         // Classic discovery stops automatically after ~12 seconds
         // Schedule check to move to next phase
         bluetoothScanFuture = bluetoothScanExecutor.schedule(this::startNextScanCycle,
-            CLASSIC_SCAN_DURATION_MS + 1000, TimeUnit.MILLISECONDS);
+                CLASSIC_SCAN_DURATION_MS + 1000, TimeUnit.MILLISECONDS);
     }
-    
+
     /**
      * Waits for the next scan interval.
      */
     private void waitForNextInterval()
     {
         currentScanPhase = ScanPhase.WAITING_NEXT_INTERVAL;
-        
+
         // Calculate time to wait
         // Total cycle time is scan interval - time spent scanning
         long scanningTime = BLE_SCAN_DURATION_MS + CLASSIC_SCAN_DURATION_MS;
         long waitTime = Math.max(1000, bluetoothScanRateMs - scanningTime);
-        
+
         Timber.d("Waiting %d ms until next scan cycle", waitTime);
-        
+
         bluetoothScanFuture = bluetoothScanExecutor.schedule(this::startNextScanCycle,
-            waitTime, TimeUnit.MILLISECONDS);
+                waitTime, TimeUnit.MILLISECONDS);
     }
 }

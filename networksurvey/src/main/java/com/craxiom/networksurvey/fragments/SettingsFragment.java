@@ -180,6 +180,37 @@ public class SettingsFragment extends PreferenceFragmentCompat implements Shared
 
             case NetworkSurveyConstants.PROPERTY_BLUETOOTH_SCAN_INTERVAL_SECONDS:
                 defaultValue = NetworkSurveyConstants.DEFAULT_BLUETOOTH_SCAN_INTERVAL_SECONDS;
+                // Validate and enforce minimum Bluetooth scan interval
+                try
+                {
+                    int scanInterval = Integer.parseInt(sharedPreferences.getString(key, String.valueOf(defaultValue)));
+                    if (scanInterval < NetworkSurveyConstants.MINIMUM_BLUETOOTH_SCAN_INTERVAL_SECONDS)
+                    {
+                        Timber.w("Bluetooth scan interval %d is below minimum (%d seconds). Adjusting to minimum",
+                                scanInterval, NetworkSurveyConstants.MINIMUM_BLUETOOTH_SCAN_INTERVAL_SECONDS);
+                        final SharedPreferences.Editor edit = sharedPreferences.edit();
+                        edit.putString(key, String.valueOf(NetworkSurveyConstants.MINIMUM_BLUETOOTH_SCAN_INTERVAL_SECONDS));
+                        edit.apply();
+
+                        // Update the preference UI if it exists
+                        Preference preference = findPreference(key);
+                        if (preference instanceof EditTextPreference)
+                        {
+                            ((EditTextPreference) preference).setText(String.valueOf(NetworkSurveyConstants.MINIMUM_BLUETOOTH_SCAN_INTERVAL_SECONDS));
+                        }
+
+                        // Show toast to inform user
+                        if (getActivity() != null)
+                        {
+                            Toast.makeText(getActivity(),
+                                    getString(R.string.bluetooth_scan_interval_below_minimum, NetworkSurveyConstants.MINIMUM_BLUETOOTH_SCAN_INTERVAL_SECONDS),
+                                    Toast.LENGTH_LONG).show();
+                        }
+                    }
+                } catch (Exception e)
+                {
+                    Timber.e(e, "Could not validate Bluetooth scan interval");
+                }
                 break;
 
             case NetworkSurveyConstants.PROPERTY_GNSS_SCAN_INTERVAL_SECONDS:
