@@ -362,7 +362,7 @@ public class BluetoothController extends AController
                         Timber.v("Bluetooth batch scan results received but scanning is paused, ignoring");
                         return;
                     }
-                    
+
                     List<ScanResult> filteredResults = new ArrayList<>();
                     for (ScanResult result : results)
                     {
@@ -677,8 +677,10 @@ public class BluetoothController extends AController
             }
             
             // Check if enough time has passed or RSSI changed significantly
-            boolean shouldLog = (currentTime - oldInfo.lastSeenTime > DUPLICATE_WINDOW_MS) ||
-                                (Math.abs(rssi - oldInfo.lastRssi) > RSSI_CHANGE_THRESHOLD);
+            long timeSinceLastSeen = currentTime - oldInfo.lastSeenTime;
+            int rssiDiff = Math.abs(rssi - oldInfo.lastRssi);
+            boolean shouldLog = (timeSinceLastSeen > DUPLICATE_WINDOW_MS) ||
+                                (rssiDiff > RSSI_CHANGE_THRESHOLD);
             
             if (shouldLog)
             {
@@ -688,7 +690,7 @@ public class BluetoothController extends AController
             // Clean up old entries to prevent memory growth
             if (recentDevices.size() > 100)
             {
-                recentDevices.entrySet().removeIf(entry -> 
+                recentDevices.entrySet().removeIf(entry ->
                     currentTime - entry.getValue().lastSeenTime > DUPLICATE_WINDOW_MS * 2);
             }
             
@@ -778,22 +780,13 @@ public class BluetoothController extends AController
         final ScanSettings.Builder scanSettingsBuilder = new ScanSettings.Builder();
         scanSettingsBuilder.setScanMode(ScanSettings.SCAN_MODE_LOW_POWER);
         
-        // Check if batch scanning is supported
-        if (bluetoothAdapter.isOffloadedScanBatchingSupported())
-        {
-            // Use batch scanning with 10 second batches
-            scanSettingsBuilder.setReportDelay(BLE_SCAN_DURATION_MS);
-            Timber.d("Using batch BLE scanning with %d ms report delay", BLE_SCAN_DURATION_MS);
-        } else
-        {
-            // Use immediate reporting
-            scanSettingsBuilder.setReportDelay(0);
-            Timber.d("Using immediate BLE scanning (batch not supported)");
-        }
-        
+        // Always use immediate reporting to ensure we get advertisement data
+        // Batch scanning with report delay equal to scan duration was causing
+        // results to be lost when stopScan() was called
+        scanSettingsBuilder.setReportDelay(0);
+
         bluetoothLeScanner.startScan(Collections.emptyList(), scanSettingsBuilder.build(), bluetoothScanCallback);
-        Timber.d("Started BLE scanning at %s", System.currentTimeMillis());
-        
+
         // Schedule BLE scan stop after duration
         bluetoothScanFuture = bluetoothScanExecutor.schedule(this::startNextScanCycle, 
             BLE_SCAN_DURATION_MS, TimeUnit.MILLISECONDS);
