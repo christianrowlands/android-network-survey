@@ -822,7 +822,10 @@ class TowerMapLibreViewModel : ViewModel() {
             if (overflow > 0) {
                 val iterator = merged.iterator()
                 repeat(overflow.coerceAtLeast(0)) {
-                    if (iterator.hasNext()) iterator.remove()
+                    if (iterator.hasNext()) {
+                        iterator.next()  // Must call next() before remove()
+                        iterator.remove()
+                    }
                 }
             }
             merged
