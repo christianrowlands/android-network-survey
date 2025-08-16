@@ -2999,10 +2999,33 @@ public class SurveyRecordProcessor
             final String provider = LocationUtils.getLocationProvider(locationManager);
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R)
             {
-                locationManager.getCurrentLocation(provider, cancellationSignal, executorService, consumer);
+                try
+                {
+                    locationManager.getCurrentLocation(provider, cancellationSignal, executorService, consumer);
+                } catch (SecurityException e)
+                {
+                    // Fallback to getLastKnownLocation if getCurrentLocation fails due to security issues
+                    // This can happen on devices with certain security software (e.g., VLite SDK)
+                    Timber.w(e, "SecurityException when calling getCurrentLocation, falling back to getLastKnownLocation");
+                    try
+                    {
+                        consumer.accept(locationManager.getLastKnownLocation(provider));
+                    } catch (Exception fallbackException)
+                    {
+                        Timber.e(fallbackException, "Failed to get last known location as fallback");
+                        consumer.accept(null);
+                    }
+                }
             } else
             {
-                consumer.accept(locationManager.getLastKnownLocation(provider));
+                try
+                {
+                    consumer.accept(locationManager.getLastKnownLocation(provider));
+                } catch (SecurityException e)
+                {
+                    Timber.w(e, "SecurityException when calling getLastKnownLocation");
+                    consumer.accept(null);
+                }
             }
         }
     }

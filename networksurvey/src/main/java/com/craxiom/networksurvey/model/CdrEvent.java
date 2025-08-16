@@ -12,9 +12,12 @@ import static com.craxiom.networksurvey.constants.csv.CdrCsvConstants.START_TIME
 import static com.craxiom.networksurvey.constants.csv.CsvConstants.ACCURACY;
 import static com.craxiom.networksurvey.constants.csv.CsvConstants.ALTITUDE;
 import static com.craxiom.networksurvey.constants.csv.CsvConstants.LATITUDE;
+import static com.craxiom.networksurvey.constants.csv.CsvConstants.LOCATION_AGE;
 import static com.craxiom.networksurvey.constants.csv.CsvConstants.LONGITUDE;
 
 import android.location.Location;
+import android.os.Build;
+import android.os.SystemClock;
 
 import com.craxiom.messaging.phonestate.NetworkType;
 import com.craxiom.networksurvey.services.controller.CellularController;
@@ -57,7 +60,7 @@ public class CdrEvent
     {
         return new String[]{START_TIME, LATITUDE, LONGITUDE, ALTITUDE, ACCURACY, EVENT,
                 ORIGINATING_ADDRESS, DESTINATION_ADDRESS, CS_RANT, CS_CELL_IDENTIFIER, PS_RANT,
-                PS_CELL_IDENTIFIER, SLOT};
+                PS_CELL_IDENTIFIER, SLOT, LOCATION_AGE};
     }
 
     public void setLocation(Location location)
@@ -83,6 +86,17 @@ public class CdrEvent
      */
     public String[] getCsvRowArray()
     {
+        final String locationAgeMillisString;
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU && location != null)
+        {
+            final long elapsedTimeMillis = SystemClock.elapsedRealtime();
+            long elapsedRealtimeAgeMillis = location.getElapsedRealtimeAgeMillis(elapsedTimeMillis);
+            locationAgeMillisString = String.valueOf(elapsedRealtimeAgeMillis);
+        } else
+        {
+            locationAgeMillisString = "";
+        }
+
         // The order of these values in the array matters. It MUST be kept in sync with the
         // getHeaders method, and new columns should not be inserted in the middle since consuming
         // applications need to trust that the order will not change.
@@ -99,7 +113,8 @@ public class CdrEvent
                 csCellIdentifier,
                 psRant.toString(),
                 psCellIdentifier,
-                slot != CellularController.DEFAULT_SUBSCRIPTION_ID ? String.valueOf(slot) : ""
+                slot != CellularController.DEFAULT_SUBSCRIPTION_ID ? String.valueOf(slot) : "",
+                locationAgeMillisString
         };
     }
 

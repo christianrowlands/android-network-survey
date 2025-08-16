@@ -33,7 +33,7 @@ public class CdrLogger extends CsvRecordLogger implements ICdrEventListener
     @Override
     String[] getHeaderComments()
     {
-        return new String[]{"CSV Version=0.1.0"};
+        return new String[]{"CSV Version=0.2.0"};
     }
 
     // Needs to be synchronized so we don't write two records at the same time... which I saw happen
