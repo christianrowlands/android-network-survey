@@ -88,6 +88,7 @@ import com.craxiom.networksurvey.model.CellularProtocol
 import com.craxiom.networksurvey.model.Plmn
 import com.craxiom.networksurvey.ui.activesurvey.model.SurveyTrack
 import com.craxiom.networksurvey.ui.cellular.model.INITIAL_ZOOM
+import com.craxiom.networksurvey.ui.cellular.model.MINIMUM_LOCATION_ZOOM
 import com.craxiom.networksurvey.ui.cellular.model.MapTileSource
 import com.craxiom.networksurvey.ui.cellular.model.ServingCellInfo
 import com.craxiom.networksurvey.ui.cellular.model.ServingSignalInfo
@@ -716,48 +717,29 @@ internal fun TowerMapScreen(
 
                         Spacer(modifier = Modifier.height(12.dp))
 
-                        Surface(
-                            modifier = Modifier
-                                .size(40.dp)
-                                .clip(CircleShape)
-                                .background(MaterialTheme.colorScheme.primary),
-                            color = MaterialTheme.colorScheme.primary
-                        ) {
-                            Box(
-                                contentAlignment = Alignment.Center,
-                                modifier = Modifier
-                                    .fillMaxSize()
-                                    .padding(8.dp)
-                            ) {
-                                Image(
-                                    painter = painterResource(id = R.drawable.ic_my_location),
-                                    contentDescription = "My Location",
-                                    modifier = Modifier.size(24.dp)
-                                )
-                                Button(
-                                    onClick = { viewModel.goToMyLocation() },
-                                    modifier = Modifier
-                                        .size(48.dp)
-                                        .clip(CircleShape),
-                                    colors = ButtonDefaults.buttonColors(
-                                        containerColor = Color.Transparent
-                                    )
-                                ) {}
-                            }
-                        }
-
-                        Spacer(modifier = Modifier.height(12.dp))
-
                         CircleButtonWithLine(
                             isFollowing = cameraPositionState.cameraMode == CameraMode.TRACKING,
                             toggleFollowMe = {
                                 // Toggle camera mode directly on the state
-                                cameraPositionState.cameraMode =
-                                    if (cameraPositionState.cameraMode == CameraMode.TRACKING) {
-                                        CameraMode.NONE
-                                    } else {
-                                        CameraMode.TRACKING
+                                if (cameraPositionState.cameraMode == CameraMode.TRACKING) {
+                                    cameraPositionState.cameraMode = CameraMode.NONE
+                                } else {
+                                    // Get current location and zoom
+                                    viewModel.getMyLocation()?.let { location ->
+                                        val currentZoom = viewModel.getCurrentZoom()
+                                        // Apply minimum zoom threshold while preserving user preference
+                                        val targetZoom =
+                                            kotlin.math.max(currentZoom, MINIMUM_LOCATION_ZOOM)
+
+                                        // Update camera position with location and zoom
+                                        cameraPositionState.position = CameraPosition.Builder()
+                                            .target(location)
+                                            .zoom(targetZoom)
+                                            .build()
                                     }
+                                    // Enable tracking mode after setting position
+                                    cameraPositionState.cameraMode = CameraMode.TRACKING
+                                }
                             })
 
                         if (mapContext == MapContext.TOWER_MAP) {
@@ -1149,8 +1131,8 @@ fun CircleButtonWithLine(
                 .padding(8.dp)
         ) {
             Image(
-                painter = painterResource(id = if (isFollowing) R.drawable.ic_follow_me_enabled else R.drawable.ic_follow_me_disabled),
-                contentDescription = "Follow Me",
+                painter = painterResource(id = if (isFollowing) R.drawable.ic_my_location else R.drawable.ic_location_not_following),
+                contentDescription = if (isFollowing) "Stop Following" else "Follow My Location",
                 modifier = Modifier.size(24.dp)
             )
             Button(

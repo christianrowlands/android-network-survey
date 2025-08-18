@@ -42,6 +42,7 @@ import java.util.Objects
 const val INITIAL_ZOOM = 14.0
 const val SEARCH_RESULT_ZOOM = 17.0
 const val MIN_ZOOM_LEVEL = 9.0
+const val MINIMUM_LOCATION_ZOOM = 12.0  // Minimum zoom when centering on user location
 const val MAX_AREA_SQ_METERS = 40_000_000_000.0
 private const val MAX_TOWERS_ON_MAP = 7_500
 
@@ -614,18 +615,18 @@ class TowerMapLibreViewModel : ViewModel() {
     }
 
     /**
-     * Centers the map on the user's current location.
+     * Gets the current zoom level of the map.
      */
-    fun goToMyLocation() {
-        mapLibreMap?.let { map ->
-            map.locationComponent.lastKnownLocation?.let { location ->
-                val target = LatLng(location.latitude, location.longitude)
-                val camPos = CameraPosition.Builder()
-                    .target(target)
-                    .zoom(INITIAL_ZOOM)
-                    .build()
-                map.animateCamera(CameraUpdateFactory.newCameraPosition(camPos))
-            }
+    fun getCurrentZoom(): Double {
+        return mapLibreMap?.cameraPosition?.zoom ?: INITIAL_ZOOM
+    }
+
+    /**
+     * Gets the user's current location if available.
+     */
+    fun getMyLocation(): LatLng? {
+        return mapLibreMap?.locationComponent?.lastKnownLocation?.let { location ->
+            LatLng(location.latitude, location.longitude)
         }
     }
 
@@ -1040,18 +1041,28 @@ class TowerMapLibreViewModel : ViewModel() {
                         // Center map on the search result and ensure coverage area is visible
                         mapLibreMap?.let { map ->
                             val target = LatLng(tower.lat, tower.lon)
-                            
+
                             if (tower.range > 0) {
                                 // Calculate bounds that encompass the coverage circle
                                 val radiusInDegrees = tower.range / 111320.0
                                 val latRadians = Math.toRadians(tower.lat)
                                 val lngOffset = radiusInDegrees / kotlin.math.cos(latRadians)
-                                
+
                                 val bounds = LatLngBounds.Builder()
-                                    .include(LatLng(tower.lat + radiusInDegrees, tower.lon + lngOffset)) // NE
-                                    .include(LatLng(tower.lat - radiusInDegrees, tower.lon - lngOffset)) // SW
+                                    .include(
+                                        LatLng(
+                                            tower.lat + radiusInDegrees,
+                                            tower.lon + lngOffset
+                                        )
+                                    ) // NE
+                                    .include(
+                                        LatLng(
+                                            tower.lat - radiusInDegrees,
+                                            tower.lon - lngOffset
+                                        )
+                                    ) // SW
                                     .build()
-                                
+
                                 // Ensure we animate on the main thread with padding to show full circle
                                 Handler(Looper.getMainLooper()).post {
                                     // Use padding to ensure the circle edge is visible
@@ -1066,7 +1077,7 @@ class TowerMapLibreViewModel : ViewModel() {
                                     .target(target)
                                     .zoom(SEARCH_RESULT_ZOOM)
                                     .build()
-                                
+
                                 // Ensure we animate on the main thread
                                 Handler(Looper.getMainLooper()).post {
                                     map.animateCamera(CameraUpdateFactory.newCameraPosition(camPos))
