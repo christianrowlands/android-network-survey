@@ -963,7 +963,7 @@ internal fun TowerMapScreen(
             ) {
                 Text(
                     text = "No towers found in the area", fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.surface, softWrap = true,
+                    color = MaterialTheme.colorScheme.primary, softWrap = true,
                     textAlign = TextAlign.Center
                 )
             }
