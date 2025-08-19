@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.42](https://github.com/christianrowlands/android-network-survey/releases/tag/v1.42) - 2025-08-19
+
+* Reverting to 8.11.1 of AGP because of an F-Droid build issue. [#97](https://github.com/christianrowlands/android-network-survey/issues/97)
+* Include the NS App Serial Number in the settings UI for easy reference.
+* Rename the upload card on the dashboard to OpenCelliD & BeaconDB Upload.
+* Update the Bluetooth company identifiers and member UUIDs.
+* Fix BT Survey: Don't use batch scanning as it causes BT records to never be seen and change the filtering approach to be more permissive of record updates.
+* Set a minimum scan rate of 23 seconds for Bluetooth in the user settings and MDM config.
+* Prevent a crash on devices with extra security software that restrict location permissions further and set the location age on the CDR csv records.
+* Fix a crash when loading more than 7,500 towers to the map.
+* Remove the extra map view location button by consolidating the "My Location" and "Follow Me" buttons. [#99](https://github.com/christianrowlands/android-network-survey/issues/99)
+* Fix the text color of "No towers found in area" to make it more readable over the map.
+
 ## [1.41](https://github.com/christianrowlands/android-network-survey/releases/tag/v1.41) - 2025-08-13
 
 * Set better values for the SS_RSRP SS_RSRQ chart ranges for NR on the cellular details UI.
