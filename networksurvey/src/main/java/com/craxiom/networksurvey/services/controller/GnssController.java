@@ -35,6 +35,7 @@ import timber.log.Timber;
 /**
  * Handles all of the GNSS related logic for Network Survey Service to include file logging
  * and managing the GNSS scanning.
+ * @noinspection NonPrivateFieldAccessedInSynchronizedContext
  */
 public class GnssController extends AController
 {
@@ -216,8 +217,31 @@ public class GnssController extends AController
     {
         if (surveyService == null) return;
 
+        final int oldScanRateMs = gnssScanRateMs;
         gnssScanRateMs = PreferenceUtils.getScanRatePreferenceMs(NetworkSurveyConstants.PROPERTY_GNSS_SCAN_INTERVAL_SECONDS,
                 NetworkSurveyConstants.DEFAULT_GNSS_SCAN_INTERVAL_SECONDS, surveyService.getApplicationContext());
+        
+        // If scanning is active and the rate has changed, restart scanning to apply the new rate
+        if (gnssStarted.get() && oldScanRateMs != gnssScanRateMs)
+        {
+            Timber.i("GNSS scan rate changed from %d ms to %d ms, restarting scanning to apply new rate", 
+                    oldScanRateMs, gnssScanRateMs);
+            
+            // Check if we're crossing the battery optimization threshold
+            boolean wasOptimized = oldScanRateMs >= BATTERY_OPTIMIZATION_SCAN_RATE_THRESHOLD_MS;
+            boolean shouldBeOptimized = gnssScanRateMs >= BATTERY_OPTIMIZATION_SCAN_RATE_THRESHOLD_MS;
+            
+            // Only restart if we're crossing the threshold or in battery-optimized mode
+            // (since battery-optimized mode uses a scheduled task with fixed delay)
+            if (wasOptimized != shouldBeOptimized || wasOptimized)
+            {
+                // Stop current scanning (this handles cleanup of listeners and scheduled tasks)
+                stopGnssRecordScanning();
+                
+                // Restart scanning with the new rate
+                startGnssRecordScanning();
+            }
+        }
     }
 
     /**
