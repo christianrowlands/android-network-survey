@@ -425,7 +425,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
         gnssController.stopGnssRecordScanning();
         cellularController.stopCdrEvents();
         removeLocationListener();
-        stopDeviceStatusReport();
+        stopDeviceStatusReport(true);
         stopAllLogging();
 
         serviceLooper.quitSafely();
@@ -978,7 +978,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
                 surveyRecordProcessor.registerDeviceStatusListener(deviceStatusListener);
             }
 
-            startDeviceStatusReport(); // Only starts scanning if it is not already active.
+            startDeviceStatusReport(true); // Only starts scanning if it is not already active.
         }
     }
 
@@ -998,7 +998,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
             if (surveyRecordProcessor != null)
             {
                 surveyRecordProcessor.unregisterDeviceStatusListener(deviceStatusListener);
-                if (!surveyRecordProcessor.isDeviceStatusBeingUsed()) stopDeviceStatusReport();
+                if (!surveyRecordProcessor.isDeviceStatusBeingUsed()) stopDeviceStatusReport(true);
             }
         }
 
@@ -1521,8 +1521,18 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
         bluetoothController.refreshScanRate();
         gnssController.refreshScanRate();
 
+        final int oldDeviceStatusScanRateMs = deviceStatusScanRateMs;
         deviceStatusScanRateMs = PreferenceUtils.getScanRatePreferenceMs(NetworkSurveyConstants.PROPERTY_DEVICE_STATUS_SCAN_INTERVAL_SECONDS,
                 NetworkSurveyConstants.DEFAULT_DEVICE_STATUS_SCAN_INTERVAL_SECONDS, applicationContext);
+        
+        // If device status reporting is active and the rate has changed, restart it with the new rate
+        if (deviceStatusActive.get() && oldDeviceStatusScanRateMs != deviceStatusScanRateMs)
+        {
+            Timber.i("Device status scan rate changed from %d ms to %d ms, restarting to apply new rate", 
+                    oldDeviceStatusScanRateMs, deviceStatusScanRateMs);
+            
+            restartDeviceStatusReport();
+        }
 
         surveyRecordProcessor.setGnssScanRateMs(gnssController.getScanRateMs());
 
@@ -1816,7 +1826,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
                 deviceStatusCsvLogger.enableLogging(true);
                 surveyRecordProcessor.registerDeviceStatusListener(deviceStatusCsvLogger);
             }
-            startDeviceStatusReport();
+            startDeviceStatusReport(true);
         }
     }
 
@@ -1825,13 +1835,17 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
      * <p>
      * This method only starts scanning if the scan is not already active.
      *
-     * @since 1.1.0
+     * @param fullStart If true, also starts the phone state listener and updates wake lock.
+     *                  If false, only starts the device status task itself.
      */
-    private void startDeviceStatusReport()
+    private void startDeviceStatusReport(boolean fullStart)
     {
         if (deviceStatusActive.getAndSet(true)) return;
 
-        updateWakeLock();
+        if (fullStart)
+        {
+            updateWakeLock();
+        }
 
         // Cancel any existing device status task
         if (deviceStatusFuture != null)
@@ -1875,7 +1889,11 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
         }, 1000L, deviceStatusScanRateMs, TimeUnit.MILLISECONDS);
 
         Timber.d("Started device status reporting with interval %d ms", deviceStatusScanRateMs);
-        cellularController.startPhoneStateListener();
+        
+        if (fullStart)
+        {
+            cellularController.startPhoneStateListener();
+        }
     }
 
     /**
@@ -1984,15 +2002,30 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
     }
 
     /**
+     * Restarts the device status report with a new scan rate.
+     * This method stops and restarts the device status task without affecting
+     * the phone state listener, wake lock, or location listener.
+     */
+    private void restartDeviceStatusReport()
+    {
+        stopDeviceStatusReport(false);
+        startDeviceStatusReport(false);
+    }
+
+    /**
      * Stop generating device status messages.
      *
-     * @since 1.1.0
+     * @param fullStop If true, also stops the phone state listener and updates wake lock/location listener.
+     *                 If false, only stops the device status task itself.
      */
-    private void stopDeviceStatusReport()
+    private void stopDeviceStatusReport(boolean fullStop)
     {
         Timber.d("Setting the device status active flag to false");
 
-        cellularController.stopPhoneStateListener();
+        if (fullStop)
+        {
+            cellularController.stopPhoneStateListener();
+        }
 
         deviceStatusActive.set(false);
 
@@ -2004,8 +2037,11 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
             Timber.d("Cancelled device status reporting task");
         }
 
-        updateLocationListener();
-        updateWakeLock();
+        if (fullStop)
+        {
+            updateLocationListener();
+            updateWakeLock();
+        }
     }
 
     /**

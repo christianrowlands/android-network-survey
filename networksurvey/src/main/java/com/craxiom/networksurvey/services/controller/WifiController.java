@@ -144,8 +144,20 @@ public class WifiController extends AController
     {
         if (surveyService == null) return;
 
+        final int oldScanRateMs = wifiScanRateMs;
         wifiScanRateMs = PreferenceUtils.getScanRatePreferenceMs(NetworkSurveyConstants.PROPERTY_WIFI_SCAN_INTERVAL_SECONDS,
                 NetworkSurveyConstants.DEFAULT_WIFI_SCAN_INTERVAL_SECONDS, surveyService.getApplicationContext());
+        
+        // If scanning is active and the rate has changed, restart scanning to apply the new rate
+        if (wifiScanningActive.get() && oldScanRateMs != wifiScanRateMs)
+        {
+            Timber.i("Wi-Fi scan rate changed from %d ms to %d ms, restarting scanning to apply new rate", 
+                    oldScanRateMs, wifiScanRateMs);
+            
+            // Stop and restart scanning to use the new rate
+            stopWifiRecordScanning();
+            startWifiRecordScanning();
+        }
     }
 
     @Override
