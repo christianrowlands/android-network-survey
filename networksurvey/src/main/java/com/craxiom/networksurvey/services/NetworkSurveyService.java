@@ -1997,7 +1997,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
             deviceStatusCsvLogger.enableLogging(false);
 
             // Need to check the survey record processor because MQTT could be using the device status message
-            if (!surveyRecordProcessor.isDeviceStatusBeingUsed()) stopDeviceStatusReport();
+            if (!surveyRecordProcessor.isDeviceStatusBeingUsed()) stopDeviceStatusReport(true);
         }
     }
 
