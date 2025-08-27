@@ -32,6 +32,7 @@ import com.craxiom.messaging.bluetooth.SupportedTechnologies;
 import com.craxiom.messaging.bluetooth.Technology;
 import com.craxiom.networksurvey.constants.NetworkSurveyConstants;
 import com.craxiom.networksurvey.listeners.IBluetoothSurveyRecordListener;
+import com.craxiom.networksurvey.model.BluetoothRecordWrapper;
 import com.craxiom.networksurvey.services.NetworkSurveyService;
 
 import java.io.IOException;
@@ -67,11 +68,11 @@ public class BluetoothCsvLogger extends CsvRecordLogger implements IBluetoothSur
     }
 
     @Override
-    public synchronized void onBluetoothSurveyRecord(BluetoothRecord bluetoothRecord)
+    public synchronized void onBluetoothSurveyRecord(BluetoothRecordWrapper bluetoothRecordWrapper)
     {
         try
         {
-            writeCsvRecord(convertToObjectArray(bluetoothRecord), false);
+            writeCsvRecord(convertToObjectArray(bluetoothRecordWrapper.bluetoothRecord()), false);
         } catch (IOException e)
         {
             Timber.e(e, "Could not log the Bluetooth record to the CSV file");
@@ -79,12 +80,12 @@ public class BluetoothCsvLogger extends CsvRecordLogger implements IBluetoothSur
     }
 
     @Override
-    public synchronized void onBluetoothSurveyRecords(List<BluetoothRecord> bluetoothRecords)
+    public synchronized void onBluetoothSurveyRecords(List<BluetoothRecordWrapper> bluetoothRecordWrappers)
     {
-        bluetoothRecords.forEach(record -> {
+        bluetoothRecordWrappers.forEach(wrapper -> {
             try
             {
-                writeCsvRecord(convertToObjectArray(record), false);
+                writeCsvRecord(convertToObjectArray(wrapper.bluetoothRecord()), false);
             } catch (IOException e)
             {
                 Timber.e(e, "Could not log the Bluetooth record to the CSV file");

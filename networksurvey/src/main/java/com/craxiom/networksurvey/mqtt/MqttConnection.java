@@ -19,6 +19,7 @@ import com.craxiom.networksurvey.listeners.ICellularSurveyRecordListener;
 import com.craxiom.networksurvey.listeners.IDeviceStatusListener;
 import com.craxiom.networksurvey.listeners.IGnssSurveyRecordListener;
 import com.craxiom.networksurvey.listeners.IWifiSurveyRecordListener;
+import com.craxiom.networksurvey.model.BluetoothRecordWrapper;
 import com.craxiom.networksurvey.model.WifiRecordWrapper;
 
 import java.util.List;
@@ -53,13 +54,12 @@ public class MqttConnection extends DefaultMqttConnection implements ICellularSu
         {
             deviceName = ((MqttConnectionInfo) brokerConnectionInfo).getDeviceName();
         }
-        
+
         // Determine effective device name once during connection
         if (deviceName != null && !deviceName.isEmpty())
         {
             effectiveDeviceName = deviceName;
-        }
-        else
+        } else
         {
             effectiveDeviceName = mqttClientId;
         }
@@ -144,8 +144,9 @@ public class MqttConnection extends DefaultMqttConnection implements ICellularSu
     }
 
     @Override
-    public void onBluetoothSurveyRecord(BluetoothRecord bluetoothRecord)
+    public void onBluetoothSurveyRecord(BluetoothRecordWrapper bluetoothRecordWrapper)
     {
+        BluetoothRecord bluetoothRecord = bluetoothRecordWrapper.bluetoothRecord();
         // Set the device name using the pre-computed effective device name
         if (effectiveDeviceName != null)
         {
@@ -157,9 +158,10 @@ public class MqttConnection extends DefaultMqttConnection implements ICellularSu
     }
 
     @Override
-    public void onBluetoothSurveyRecords(List<BluetoothRecord> bluetoothRecords)
+    public void onBluetoothSurveyRecords(List<BluetoothRecordWrapper> bluetoothRecordWrappers)
     {
-        bluetoothRecords.forEach(bluetoothRecord -> {
+        bluetoothRecordWrappers.forEach(wrapper -> {
+            BluetoothRecord bluetoothRecord = wrapper.bluetoothRecord();
             if (effectiveDeviceName != null)
             {
                 final BluetoothRecord.Builder recordBuilder = bluetoothRecord.toBuilder();

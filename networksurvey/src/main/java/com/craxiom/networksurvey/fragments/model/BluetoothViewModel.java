@@ -1,6 +1,7 @@
 package com.craxiom.networksurvey.fragments.model;
 
 import android.bluetooth.BluetoothAdapter;
+import android.util.SparseArray;
 
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
@@ -12,6 +13,8 @@ import com.craxiom.networksurvey.R;
 import com.craxiom.networksurvey.constants.BluetoothMessageConstants;
 import com.craxiom.networksurvey.model.SortedSet;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Objects;
 
 /**
@@ -28,6 +31,7 @@ public class BluetoothViewModel extends ViewModel
     private final MutableLiveData<Integer> scanStatusId = new MutableLiveData<>(R.string.scan_status_scanning);
     private final MutableLiveData<Integer> devicesInScan = new MutableLiveData<>(0);
     private final MutableLiveData<Boolean> updatesPaused = new MutableLiveData<>(false);
+    private final Map<String, SparseArray<byte[]>> manufacturerDataMap = new HashMap<>();
 
     private int sortByIndex = 0;
 
@@ -88,6 +92,31 @@ public class BluetoothViewModel extends ViewModel
         {
             setScanStatusId(newPausedValue ? R.string.scan_status_paused : R.string.scan_status_scanning);
         }
+    }
+
+    /**
+     * Store the manufacturer data for a Bluetooth device.
+     *
+     * @param sourceAddress    The Bluetooth device address
+     * @param manufacturerData The manufacturer specific data from the BLE advertisement
+     */
+    public void updateManufacturerData(String sourceAddress, SparseArray<byte[]> manufacturerData)
+    {
+        if (sourceAddress != null)
+        {
+            manufacturerDataMap.put(sourceAddress, manufacturerData);
+        }
+    }
+
+    /**
+     * Get the manufacturer data for a Bluetooth device.
+     *
+     * @param sourceAddress The Bluetooth device address
+     * @return The manufacturer data, or null if not available
+     */
+    public SparseArray<byte[]> getManufacturerData(String sourceAddress)
+    {
+        return manufacturerDataMap.get(sourceAddress);
     }
 
     /**

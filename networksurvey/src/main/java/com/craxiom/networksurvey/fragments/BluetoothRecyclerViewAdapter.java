@@ -2,6 +2,7 @@ package com.craxiom.networksurvey.fragments;
 
 import android.annotation.SuppressLint;
 import android.content.Context;
+import android.util.SparseArray;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -17,6 +18,7 @@ import com.craxiom.networksurvey.R;
 import com.craxiom.networksurvey.constants.BluetoothMessageConstants;
 import com.craxiom.networksurvey.data.BluetoothCompanyNameProvider;
 import com.craxiom.networksurvey.data.BluetoothCompanyNameResolver;
+import com.craxiom.networksurvey.fragments.model.BluetoothViewModel;
 import com.craxiom.networksurvey.util.ColorUtils;
 import com.google.common.base.Strings;
 import com.google.protobuf.ProtocolStringList;
@@ -33,13 +35,15 @@ public class BluetoothRecyclerViewAdapter extends RecyclerView.Adapter<Bluetooth
     private final SortedList<BluetoothRecord> bluetoothRecords;
     private final Context context;
     private final BluetoothFragment bluetoothFragment;
+    private final BluetoothViewModel viewModel;
     private final BluetoothCompanyNameResolver companyNameResolver;
 
-    BluetoothRecyclerViewAdapter(SortedList<BluetoothRecord> items, Context context, BluetoothFragment bluetoothFragment)
+    BluetoothRecyclerViewAdapter(SortedList<BluetoothRecord> items, Context context, BluetoothFragment bluetoothFragment, BluetoothViewModel viewModel)
     {
         bluetoothRecords = items;
         this.context = context;
         this.bluetoothFragment = bluetoothFragment;
+        this.viewModel = viewModel;
 
         companyNameResolver = BluetoothCompanyNameProvider.getInstance(context);
     }
@@ -65,6 +69,39 @@ public class BluetoothRecyclerViewAdapter extends RecyclerView.Adapter<Bluetooth
         {
             holder.sourceAddress.setText(sourceAddress);
             holder.sourceAddress.setTextColor(context.getResources().getColor(R.color.colorAccent, null));
+        }
+
+        // Check if this device is an AirTag
+        boolean isAirTag = false;
+        SparseArray<byte[]> manufacturerData = viewModel.getManufacturerData(sourceAddress);
+        if (manufacturerData != null && manufacturerData.size() > 0)
+        {
+            for (int i = 0; i < manufacturerData.size(); i++)
+            {
+                int manufacturerId = manufacturerData.keyAt(i);
+                if (manufacturerId == 0x004C) // Apple's manufacturer ID
+                {
+                    byte[] data_bytes = manufacturerData.valueAt(i);
+                    if (data_bytes != null && data_bytes.length > 0)
+                    {
+                        // Check for AirTag data prefixes (0x12 for registered, 0x07 for unregistered)
+                        if (data_bytes[0] == 0x12 || data_bytes[0] == 0x07)
+                        {
+                            isAirTag = true;
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+
+        // Show or hide the AirTag indicator
+        if (isAirTag)
+        {
+            holder.airTagIndicator.setVisibility(View.VISIBLE);
+        } else
+        {
+            holder.airTagIndicator.setVisibility(View.GONE);
         }
 
         if (data.hasSignalStrength())
@@ -100,12 +137,23 @@ public class BluetoothRecyclerViewAdapter extends RecyclerView.Adapter<Bluetooth
             holder.otaDeviceName.setText("");
         }
 
-        if (!Strings.isNullOrEmpty(companyName) && !otaDeviceName.isEmpty())
+        // Update separator visibility logic
+        // Company separator shows if company name exists and either AirTag or device name follows
+        if (!Strings.isNullOrEmpty(companyName) && (isAirTag || !otaDeviceName.isEmpty()))
         {
             holder.companySeparator.setVisibility(View.VISIBLE);
         } else
         {
             holder.companySeparator.setVisibility(View.GONE);
+        }
+
+        // AirTag separator shows if AirTag is detected and device name follows
+        if (isAirTag && !otaDeviceName.isEmpty())
+        {
+            holder.airTagSeparator.setVisibility(View.VISIBLE);
+        } else
+        {
+            holder.airTagSeparator.setVisibility(View.GONE);
         }
 
         holder.supportedTechnologies.setText(BluetoothMessageConstants.getSupportedTechString(data.getSupportedTechnologies()));
@@ -133,6 +181,8 @@ public class BluetoothRecyclerViewAdapter extends RecyclerView.Adapter<Bluetooth
     {
         final View mView;
         final TextView sourceAddress;
+        final TextView airTagIndicator;
+        final TextView airTagSeparator;
         final TextView signalStrength;
         final TextView companyName;
         final TextView companySeparator;
@@ -146,6 +196,8 @@ public class BluetoothRecyclerViewAdapter extends RecyclerView.Adapter<Bluetooth
             super(view);
             mView = view;
             sourceAddress = view.findViewById(R.id.sourceAddress);
+            airTagIndicator = view.findViewById(R.id.airTagIndicator);
+            airTagSeparator = view.findViewById(R.id.airTagSeparator);
             signalStrength = view.findViewById(R.id.bluetooth_signal_strength);
             companyName = view.findViewById(R.id.companyName);
             companySeparator = view.findViewById(R.id.companySeparator);

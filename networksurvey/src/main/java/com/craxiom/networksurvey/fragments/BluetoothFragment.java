@@ -36,6 +36,7 @@ import com.craxiom.networksurvey.constants.NetworkSurveyConstants;
 import com.craxiom.networksurvey.databinding.FragmentBluetoothListBinding;
 import com.craxiom.networksurvey.fragments.model.BluetoothViewModel;
 import com.craxiom.networksurvey.listeners.IBluetoothSurveyRecordListener;
+import com.craxiom.networksurvey.model.BluetoothRecordWrapper;
 import com.craxiom.networksurvey.model.SortedSet;
 import com.craxiom.networksurvey.services.NetworkSurveyService;
 import com.craxiom.networksurvey.ui.main.SharedViewModel;
@@ -103,7 +104,7 @@ public class BluetoothFragment extends AServiceDataFragment implements IBluetoot
         final SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(applicationContext);
         viewModel.setSortByIndex(preferences.getInt(NetworkSurveyConstants.PROPERTY_BLUETOOTH_DEVICES_SORT_ORDER, 0));
 
-        bluetoothRecyclerViewAdapter = new BluetoothRecyclerViewAdapter(bluetoothRecordSortedSet, getContext(), this);
+        bluetoothRecyclerViewAdapter = new BluetoothRecyclerViewAdapter(bluetoothRecordSortedSet, getContext(), this, viewModel);
         binding.bluetoothDeviceList.setAdapter(bluetoothRecyclerViewAdapter);
 
         binding.bluetoothDeviceList.addItemDecoration(new DividerItemDecoration(binding.bluetoothDeviceList.getContext(), DividerItemDecoration.VERTICAL));
@@ -199,7 +200,7 @@ public class BluetoothFragment extends AServiceDataFragment implements IBluetoot
     }
 
     @Override
-    public void onBluetoothSurveyRecord(BluetoothRecord bluetoothRecord)
+    public void onBluetoothSurveyRecord(BluetoothRecordWrapper bluetoothRecordWrapper)
     {
         //noinspection ConstantConditions
         if (viewModel.areUpdatesPaused().getValue()) return;
@@ -208,7 +209,10 @@ public class BluetoothFragment extends AServiceDataFragment implements IBluetoot
             //noinspection SynchronizeOnNonFinalField
             synchronized (bluetoothRecordSortedSet)
             {
+                BluetoothRecord bluetoothRecord = bluetoothRecordWrapper.bluetoothRecord();
                 bluetoothRecordSortedSet.add(bluetoothRecord);
+                // Store the manufacturer data in the ViewModel
+                viewModel.updateManufacturerData(bluetoothRecord.getData().getSourceAddress(), bluetoothRecordWrapper.manufacturerData());
 
                 checkAndRemoveStaleRecords();
 
@@ -223,7 +227,7 @@ public class BluetoothFragment extends AServiceDataFragment implements IBluetoot
     }
 
     @Override
-    public void onBluetoothSurveyRecords(List<BluetoothRecord> bluetoothRecords)
+    public void onBluetoothSurveyRecords(List<BluetoothRecordWrapper> bluetoothRecordWrappers)
     {
         //noinspection ConstantConditions
         if (viewModel.areUpdatesPaused().getValue()) return;
@@ -234,7 +238,13 @@ public class BluetoothFragment extends AServiceDataFragment implements IBluetoot
             {
                 // We can't use the SortedList#addAll method because we have not overridden that method in our custom
                 // SortedSet implementation of SortedList.
-                bluetoothRecords.forEach(bluetoothRecordSortedSet::add);
+                for (BluetoothRecordWrapper wrapper : bluetoothRecordWrappers)
+                {
+                    BluetoothRecord bluetoothRecord = wrapper.bluetoothRecord();
+                    bluetoothRecordSortedSet.add(bluetoothRecord);
+                    // Store the manufacturer data in the ViewModel
+                    viewModel.updateManufacturerData(bluetoothRecord.getData().getSourceAddress(), wrapper.manufacturerData());
+                }
 
                 checkAndRemoveStaleRecords();
 

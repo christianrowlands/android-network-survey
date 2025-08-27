@@ -1,6 +1,6 @@
 package com.craxiom.networksurvey.listeners;
 
-import com.craxiom.messaging.BluetoothRecord;
+import com.craxiom.networksurvey.model.BluetoothRecordWrapper;
 
 import java.util.List;
 
@@ -14,14 +14,14 @@ public interface IBluetoothSurveyRecordListener
     /**
      * Called when a new Bluetooth survey record is ready.
      *
-     * @param bluetoothRecord the Bluetooth record.
+     * @param bluetoothRecordWrapper the Bluetooth record wrapper containing the record and manufacturer data.
      */
-    void onBluetoothSurveyRecord(BluetoothRecord bluetoothRecord);
+    void onBluetoothSurveyRecord(BluetoothRecordWrapper bluetoothRecordWrapper);
 
     /**
      * Called when a new collection of Bluetooth survey records are ready.
      *
-     * @param bluetoothRecords the list of Bluetooth records.
+     * @param bluetoothRecordWrappers the list of Bluetooth record wrappers.
      */
-    void onBluetoothSurveyRecords(List<BluetoothRecord> bluetoothRecords);
+    void onBluetoothSurveyRecords(List<BluetoothRecordWrapper> bluetoothRecordWrappers);
 }

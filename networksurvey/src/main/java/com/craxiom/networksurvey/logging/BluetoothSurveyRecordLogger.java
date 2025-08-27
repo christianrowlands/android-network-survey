@@ -12,6 +12,7 @@ import com.craxiom.networksurvey.constants.NetworkSurveyConstants;
 import com.craxiom.networksurvey.constants.csv.BluetoothCsvConstants;
 import com.craxiom.networksurvey.constants.csv.CsvConstants;
 import com.craxiom.networksurvey.listeners.IBluetoothSurveyRecordListener;
+import com.craxiom.networksurvey.model.BluetoothRecordWrapper;
 import com.craxiom.networksurvey.services.NetworkSurveyService;
 import com.craxiom.networksurvey.util.MathUtils;
 import com.craxiom.networksurvey.util.NsUtils;
@@ -48,15 +49,15 @@ public class BluetoothSurveyRecordLogger extends SurveyRecordLogger implements I
     }
 
     @Override
-    public void onBluetoothSurveyRecord(BluetoothRecord bluetoothRecord)
+    public void onBluetoothSurveyRecord(BluetoothRecordWrapper bluetoothRecordWrapper)
     {
-        writeBluetoothRecordToLogFile(bluetoothRecord);
+        writeBluetoothRecordToLogFile(bluetoothRecordWrapper.bluetoothRecord());
     }
 
     @Override
-    public void onBluetoothSurveyRecords(List<BluetoothRecord> bluetoothRecords)
+    public void onBluetoothSurveyRecords(List<BluetoothRecordWrapper> bluetoothRecordWrappers)
     {
-        bluetoothRecords.forEach(this::writeBluetoothRecordToLogFile);
+        bluetoothRecordWrappers.forEach(wrapper -> writeBluetoothRecordToLogFile(wrapper.bluetoothRecord()));
     }
 
     @Override

@@ -10,11 +10,11 @@ import androidx.compose.ui.platform.ViewCompositionStrategy
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.preference.PreferenceManager
-import com.craxiom.messaging.BluetoothRecord
 import com.craxiom.messaging.BluetoothRecordData
 import com.craxiom.networksurvey.constants.NetworkSurveyConstants
 import com.craxiom.networksurvey.constants.NetworkSurveyConstants.PROPERTY_BLUETOOTH_SCAN_INTERVAL_SECONDS
 import com.craxiom.networksurvey.listeners.IBluetoothSurveyRecordListener
+import com.craxiom.networksurvey.model.BluetoothRecordWrapper
 import com.craxiom.networksurvey.services.NetworkSurveyService
 import com.craxiom.networksurvey.ui.UNKNOWN_RSSI
 import com.craxiom.networksurvey.ui.bluetooth.BluetoothDetailsScreen
@@ -114,8 +114,9 @@ class BluetoothDetailsFragment : AServiceDataFragment(), IBluetoothSurveyRecordL
         super.onSurveyServiceDisconnecting(service)
     }
 
-    override fun onBluetoothSurveyRecord(bluetoothRecord: BluetoothRecord?) {
-        if (bluetoothRecord == null) return
+    override fun onBluetoothSurveyRecord(bluetoothRecordWrapper: BluetoothRecordWrapper?) {
+        if (bluetoothRecordWrapper == null) return
+        val bluetoothRecord = bluetoothRecordWrapper.bluetoothRecord()
         if (bluetoothRecord.data.sourceAddress.equals(bluetoothData.sourceAddress)) {
             if (bluetoothRecord.data.hasSignalStrength()) {
                 viewModel.addNewRssi(bluetoothRecord.data.signalStrength.value)
@@ -126,16 +127,21 @@ class BluetoothDetailsFragment : AServiceDataFragment(), IBluetoothSurveyRecordL
         }
     }
 
-    override fun onBluetoothSurveyRecords(bluetoothRecords: MutableList<BluetoothRecord>?) {
-        val matchedRecord =
-            bluetoothRecords?.find { it.data.sourceAddress.equals(bluetoothData.sourceAddress) }
+    override fun onBluetoothSurveyRecords(bluetoothRecordWrappers: MutableList<BluetoothRecordWrapper>?) {
+        val matchedWrapper =
+            bluetoothRecordWrappers?.find {
+                it.bluetoothRecord().data.sourceAddress.equals(
+                    bluetoothData.sourceAddress
+                )
+            }
 
-        if (matchedRecord == null) {
+        if (matchedWrapper == null) {
             Timber.i("No bluetooth record found for ${bluetoothData.sourceAddress} in the bluetooth scan results")
             viewModel.addNewRssi(UNKNOWN_RSSI)
             return
         }
 
+        val matchedRecord = matchedWrapper.bluetoothRecord()
         if (matchedRecord.data.hasSignalStrength()) {
             viewModel.addNewRssi(matchedRecord.data.signalStrength.value)
         } else {
@@ -153,8 +159,6 @@ class BluetoothDetailsFragment : AServiceDataFragment(), IBluetoothSurveyRecordL
      */
     fun setBluetoothData(bluetoothRecordData: BluetoothRecordData) {
         this.bluetoothData = bluetoothRecordData
-        // TODO We might need to update the ViewModel with the new BluetoothRecordData if it has already
-        // been initialized
     }
 
     /**

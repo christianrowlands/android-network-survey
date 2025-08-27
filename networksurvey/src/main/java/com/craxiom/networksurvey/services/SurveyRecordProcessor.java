@@ -99,6 +99,7 @@ import com.craxiom.networksurvey.listeners.IDeviceStatusListener;
 import com.craxiom.networksurvey.listeners.IGnssSurveyRecordListener;
 import com.craxiom.networksurvey.listeners.IWifiSurveyRecordListener;
 import com.craxiom.networksurvey.logging.db.DbUploadStore;
+import com.craxiom.networksurvey.model.BluetoothRecordWrapper;
 import com.craxiom.networksurvey.model.CdrEvent;
 import com.craxiom.networksurvey.model.CdrEventType;
 import com.craxiom.networksurvey.model.CellularProtocol;
@@ -908,7 +909,13 @@ public class SurveyRecordProcessor
      */
     private void processBluetoothClassicResult(BluetoothDevice device, int rssi)
     {
-        notifyBluetoothRecordListeners(generateBluetoothSurveyRecord(null, device, rssi, UNSET_TX_POWER_LEVEL, ZonedDateTime.now(), SystemClock.elapsedRealtime()));
+        BluetoothRecord bluetoothRecord = generateBluetoothSurveyRecord(null, device, rssi, UNSET_TX_POWER_LEVEL, ZonedDateTime.now(), SystemClock.elapsedRealtime());
+        if (bluetoothRecord != null)
+        {
+            // Classic Bluetooth doesn't have manufacturer data in the same way as BLE
+            BluetoothRecordWrapper wrapper = new BluetoothRecordWrapper(bluetoothRecord, null);
+            notifyBluetoothRecordListeners(wrapper);
+        }
     }
 
     /**
@@ -919,7 +926,13 @@ public class SurveyRecordProcessor
      */
     private void processBluetoothResult(android.bluetooth.le.ScanResult result)
     {
-        notifyBluetoothRecordListeners(generateBluetoothSurveyRecord(result, ZonedDateTime.now(), SystemClock.elapsedRealtime()));
+        BluetoothRecord bluetoothRecord = generateBluetoothSurveyRecord(result, ZonedDateTime.now(), SystemClock.elapsedRealtime());
+        if (bluetoothRecord != null)
+        {
+            SparseArray<byte[]> manufacturerData = result.getScanRecord() != null ? result.getScanRecord().getManufacturerSpecificData() : null;
+            BluetoothRecordWrapper wrapper = new BluetoothRecordWrapper(bluetoothRecord, manufacturerData);
+            notifyBluetoothRecordListeners(wrapper);
+        }
     }
 
     /**
@@ -932,10 +945,17 @@ public class SurveyRecordProcessor
     {
         final ZonedDateTime deviceTime = ZonedDateTime.now();
         final long elapsedTimeMillis = SystemClock.elapsedRealtime();
-        final List<BluetoothRecord> bluetoothRecords = results.stream()
-                .map(scanResult -> generateBluetoothSurveyRecord(scanResult, deviceTime, elapsedTimeMillis))
-                .collect(Collectors.toList());
-        notifyBluetoothRecordListeners(bluetoothRecords);
+        final List<BluetoothRecordWrapper> bluetoothRecordWrappers = new ArrayList<>();
+        for (android.bluetooth.le.ScanResult scanResult : results)
+        {
+            BluetoothRecord bluetoothRecord = generateBluetoothSurveyRecord(scanResult, deviceTime, elapsedTimeMillis);
+            if (bluetoothRecord != null)
+            {
+                SparseArray<byte[]> manufacturerData = scanResult.getScanRecord() != null ? scanResult.getScanRecord().getManufacturerSpecificData() : null;
+                bluetoothRecordWrappers.add(new BluetoothRecordWrapper(bluetoothRecord, manufacturerData));
+            }
+        }
+        notifyBluetoothRecordListeners(bluetoothRecordWrappers);
     }
 
     /**
@@ -2820,12 +2840,12 @@ public class SurveyRecordProcessor
     /**
      * Notify all the listeners that we have a new single Bluetooth Record available.
      *
-     * @param bluetoothRecord The new Bluetooth Survey Record to send to the listeners.
+     * @param bluetoothRecordWrapper The new Bluetooth Survey Record wrapper to send to the listeners.
      * @since 1.0.0
      */
-    private void notifyBluetoothRecordListeners(BluetoothRecord bluetoothRecord)
+    private void notifyBluetoothRecordListeners(BluetoothRecordWrapper bluetoothRecordWrapper)
     {
-        if (bluetoothRecord == null) return;
+        if (bluetoothRecordWrapper == null) return;
 
         // Increment session record count
         if (networkSurveyService != null) networkSurveyService.incrementSurveySessionRecordCount();
@@ -2834,7 +2854,7 @@ public class SurveyRecordProcessor
         {
             try
             {
-                listener.onBluetoothSurveyRecord(bluetoothRecord);
+                listener.onBluetoothSurveyRecord(bluetoothRecordWrapper);
             } catch (Exception e)
             {
                 Timber.e(e, "Unable to notify a Bluetooth Survey Record Listener because of an exception");
@@ -2845,17 +2865,17 @@ public class SurveyRecordProcessor
     /**
      * Notify all the listeners that we have a new group of Bluetooth Records available.
      *
-     * @param bluetoothRecords The new list Bluetooth Survey Records to send to the listeners.
+     * @param bluetoothRecordWrappers The new list Bluetooth Survey Record wrappers to send to the listeners.
      * @since 1.0.0
      */
-    private void notifyBluetoothRecordListeners(List<BluetoothRecord> bluetoothRecords)
+    private void notifyBluetoothRecordListeners(List<BluetoothRecordWrapper> bluetoothRecordWrappers)
     {
-        if (bluetoothRecords == null || bluetoothRecords.isEmpty()) return;
+        if (bluetoothRecordWrappers == null || bluetoothRecordWrappers.isEmpty()) return;
 
         // Increment session record count for each record
         if (networkSurveyService != null)
         {
-            for (int i = 0; i < bluetoothRecords.size(); i++)
+            for (int i = 0; i < bluetoothRecordWrappers.size(); i++)
             {
                 networkSurveyService.incrementSurveySessionRecordCount();
             }
@@ -2865,7 +2885,7 @@ public class SurveyRecordProcessor
         {
             try
             {
-                listener.onBluetoothSurveyRecords(bluetoothRecords);
+                listener.onBluetoothSurveyRecords(bluetoothRecordWrappers);
             } catch (Exception e)
             {
                 Timber.e(e, "Unable to notify a Bluetooth Survey Record Listener because of an exception");

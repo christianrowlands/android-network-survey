@@ -71,6 +71,9 @@
     <color name="coverage_circle_cyan">#00BCD4</color>
     <color name="coverage_circle_white">#FFFFFF</color>
 
+    <!-- AirTag indicator color -->
+    <color name="airtag_purple">#BA68C8</color>
+
     <color name="md_theme_primary">#20A1C7</color>
     <color name="md_theme_onPrimary">#E1F2FA</color>
     <color name="md_theme_primaryContainer">#004D63</color>
