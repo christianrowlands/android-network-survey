@@ -1,6 +1,7 @@
 package com.craxiom.networksurvey.util;
 
 import android.annotation.SuppressLint;
+import android.bluetooth.le.ScanRecord;
 import android.os.Build;
 import android.telephony.CellIdentity;
 import android.telephony.CellIdentityCdma;
@@ -21,6 +22,8 @@ import com.craxiom.networksurvey.constants.DeviceStatusMessageConstants;
 import com.google.protobuf.BoolValue;
 import com.google.protobuf.Int32Value;
 import com.google.protobuf.Int64Value;
+
+import java.util.Map;
 
 import timber.log.Timber;
 
@@ -434,5 +437,101 @@ public class ParserUtils
         int lowerValue = bsic % 8;
 
         return upperValue + "-" + lowerValue;
+    }
+
+    /**
+     * Logs the BLE Advertising Data in a human readable format to assist with discovering what
+     * is in the advertising data.
+     *
+     * @param scanRecord The ScanRecord object from a BLE scan result.
+     */
+    @SuppressLint("DefaultLocale")
+    public static void bluetoothAdvertisingLogging(ScanRecord scanRecord) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU)
+        {
+            Map<Integer, byte[]> advertisingDataMap = scanRecord.getAdvertisingDataMap();
+            if (!advertisingDataMap.isEmpty()) {
+                StringBuilder adDataLog = new StringBuilder("BLE Advertising Data:\n");
+
+                for (Map.Entry<Integer, byte[]> entry : advertisingDataMap.entrySet()) {
+                    int adType = entry.getKey();
+                    byte[] adData = entry.getValue();
+
+                    // Format AD Type with known type names
+                    String adTypeName = getAdTypeName(adType);
+                    adDataLog.append(String.format("  AD Type: 0x%02X (%s)\n", adType, adTypeName));
+
+                    // Format the data as hex string
+                    if (adData != null && adData.length > 0) {
+                        StringBuilder hexString = new StringBuilder();
+                        StringBuilder asciiString = new StringBuilder();
+
+                        for (byte b : adData) {
+                            hexString.append(String.format("%02X ", b));
+                            // Add ASCII representation for printable characters
+                            if (b >= 32 && b <= 126) {
+                                asciiString.append((char) b);
+                            } else {
+                                asciiString.append(".");
+                            }
+                        }
+
+                        adDataLog.append(String.format("    Data (hex): %s\n", hexString.toString().trim()));
+                        adDataLog.append(String.format("    Data (ASCII): %s\n", asciiString));
+                        adDataLog.append(String.format("    Data length: %d bytes\n", adData.length));
+                    } else {
+                        adDataLog.append("    Data: empty or null\n");
+                    }
+                }
+
+                Timber.d(adDataLog.toString());
+            }
+        }
+    }
+
+    /**
+     * Provides a human-readable name for common BLE Advertising Data Types.
+     *
+     * @param adType The AD Type byte value.
+     * @return A string representing the name of the AD Type, or "Unknown" if not recognized.
+     */
+    private static String getAdTypeName(int adType) {
+        return switch (adType)
+        {
+            case 0x01 -> "Flags";
+            case 0x02 -> "16-bit Service UUID (partial)";
+            case 0x03 -> "16-bit Service UUID (complete)";
+            case 0x04 -> "32-bit Service UUID (partial)";
+            case 0x05 -> "32-bit Service UUID (complete)";
+            case 0x06 -> "128-bit Service UUID (partial)";
+            case 0x07 -> "128-bit Service UUID (complete)";
+            case 0x08 -> "Short Local Name";
+            case 0x09 -> "Complete Local Name";
+            case 0x0A -> "TX Power Level";
+            case 0x0D -> "Class of Device";
+            case 0x0E -> "Simple Pairing Hash";
+            case 0x0F -> "Simple Pairing Randomizer";
+            case 0x10 -> "Device ID";
+            case 0x12 -> "Slave Connection Interval Range";
+            case 0x14 -> "16-bit Service Solicitation UUID";
+            case 0x15 -> "128-bit Service Solicitation UUID";
+            case 0x16 -> "Service Data - 16-bit UUID";
+            case 0x17 -> "Public Target Address";
+            case 0x18 -> "Random Target Address";
+            case 0x19 -> "Appearance";
+            case 0x1A -> "Advertising Interval";
+            case 0x1B -> "LE Bluetooth Device Address";
+            case 0x1C -> "LE Role";
+            case 0x1D -> "Simple Pairing Hash C-256";
+            case 0x1E -> "Simple Pairing Randomizer R-256";
+            case 0x20 -> "Service Data - 32-bit UUID";
+            case 0x21 -> "Service Data - 128-bit UUID";
+            case 0x24 -> "URI";
+            case 0x25 -> "Indoor Positioning";
+            case 0x26 -> "Transport Discovery Data";
+            case 0x29 -> "3D Information Data";
+            case 0xFF -> "Manufacturer Specific Data";
+            default -> String.format("Unknown (0x%02X)", adType);
+        };
     }
 }

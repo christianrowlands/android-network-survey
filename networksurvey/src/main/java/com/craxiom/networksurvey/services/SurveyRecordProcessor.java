@@ -1921,8 +1921,7 @@ public class SurveyRecordProcessor
 
         if (scanRecord != null)
         {
-            //Timber.i("Bluetooth Advertise Flags: %s", Integer.toHexString(scanRecord.getAdvertiseFlags()));
-
+            //ParserUtils.bluetoothAdvertisingLogging(scanRecord);
             List<String> uuid16Services = null;
             List<ParcelUuid> serviceUuids = scanRecord.getServiceUuids();
             if (null != serviceUuids && !serviceUuids.isEmpty())

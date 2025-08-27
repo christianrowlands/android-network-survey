@@ -246,8 +246,8 @@ fun ScanRateInfoButton() {
                 Text(
                     "The rate at which Bluetooth devices will be scanned for in " +
                             "seconds. Smaller values will decrease battery life but larger values will " +
-                            "cause the Signal Strength Graph to be out of date. If you want values " +
-                            "closer to real time then set the scan rate to 4 seconds or less."
+                            "cause the Signal Strength Graph to be out of date. 23 seconds is the smallest" +
+                            "Bluetooth scan rate supported because that is how long one full scan takes."
                 )
             },
             confirmButton = {
