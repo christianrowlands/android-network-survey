@@ -1936,13 +1936,13 @@ public class SurveyRecordProcessor
             if (uuid16Services != null) dataBuilder.addAllServiceUuids(uuid16Services);
 
             Integer companyId = null;
-            if (null == uuid16Services && scanRecord.getManufacturerSpecificData() != null)
+            SparseArray<byte[]> manufacturerSpecificData = scanRecord.getManufacturerSpecificData();
+            if (manufacturerSpecificData != null)
             {
-                SparseArray<byte[]> bytesArray = scanRecord.getManufacturerSpecificData();
-                for (int i = 0; i < bytesArray.size(); i++)
+                // It is expected that there will only be one entry for manufacturer specific data
+                for (int i = 0; i < manufacturerSpecificData.size(); i++)
                 {
-                    companyId = bytesArray.keyAt(i);
-                    //Timber.d("index=%s , companyId=%s", i, Integer.toHexString(companyId));
+                    companyId = manufacturerSpecificData.keyAt(i);
                 }
             }
             if (companyId != null) dataBuilder.setCompanyId(Integer.toHexString(companyId));
