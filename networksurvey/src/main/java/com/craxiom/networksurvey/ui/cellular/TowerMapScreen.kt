@@ -11,9 +11,11 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.shape.CircleShape
@@ -111,7 +113,6 @@ import com.craxiom.networksurvey.ui.cellular.towermap.rememberCircleState
 import com.craxiom.networksurvey.ui.cellular.towermap.rememberLineStringState
 import com.craxiom.networksurvey.util.CellularUtils
 import com.craxiom.networksurvey.util.PreferenceUtils
-import com.google.protobuf.GeneratedMessage
 import okhttp3.internal.toImmutableMap
 import org.maplibre.android.camera.CameraPosition
 import org.maplibre.android.geometry.LatLng
@@ -751,12 +752,13 @@ internal fun TowerMapScreen(
                     }
                 }
 
+                // Serving cell info on the left side near the top
                 Column(
                     modifier = Modifier
-                        .align(Alignment.BottomStart)
+                        .align(Alignment.TopStart)
                         .padding(
-                            vertical = paddingInsets.calculateBottomPadding(),
-                            horizontal = 16.dp
+                            top = statusBarHeight + 100.dp,
+                            start = 0.dp
                         )
                 ) {
                     if (servingCells.size > 1) {
@@ -1027,88 +1029,144 @@ fun SimCardDropdown(
 fun ServingCellInfoDisplay(cellInfo: ServingCellInfo?, servingSignalInfo: ServingSignalInfo?) {
     Column(
         modifier = Modifier
-            .background(Color(0xA6EEEEEE))
-            .padding(16.dp),
+            .wrapContentWidth()
+            .background(
+                color = MaterialTheme.colorScheme.surface.copy(alpha = 0.80f),
+                shape = MaterialTheme.shapes.medium
+            )
+            .padding(12.dp),
         horizontalAlignment = Alignment.Start
     ) {
-        val fontSize = 14.nonScaledSp
-        val lineHeight = 20.nonScaledSp
-        Text(
-            text = "Serving Cell Info",
-            fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.surface,
-            fontSize = fontSize,
-            lineHeight = lineHeight
-        )
-        Spacer(modifier = Modifier.height(8.dp))
-
-        if (cellInfo != null) {
-            val servingCell = cellInfo.servingCell ?: return Text(
-                "No serving cell found",
-                color = MaterialTheme.colorScheme.surface,
-                fontSize = fontSize,
-                lineHeight = lineHeight
-            )
+        if (cellInfo != null && cellInfo.servingCell != null) {
+            val servingCell = cellInfo.servingCell
             val record = servingCell.cellularRecord
 
-            // Display technology and signal strengths based on CellularRecord
-            Text(
-                "Technology: ${servingCell.cellularProtocol}",
-                color = MaterialTheme.colorScheme.surface,
-                fontSize = fontSize,
-                lineHeight = lineHeight
-            )
-            if (servingSignalInfo != null) {
+            // Technology badge at the top
+            Surface(
+                color = when (servingCell.cellularProtocol) {
+                    CellularProtocol.NR -> Color(0xFFA855F7)
+                    CellularProtocol.LTE -> Color(0xFF009688)
+                    CellularProtocol.UMTS -> Color(0xFF2196F3)
+                    CellularProtocol.CDMA -> Color(0xFF795548)
+                    CellularProtocol.GSM -> Color(0xFFF97316)
+                    else -> MaterialTheme.colorScheme.secondary
+                },
+                shape = MaterialTheme.shapes.small,
+                modifier = Modifier.align(Alignment.CenterHorizontally)
+            ) {
                 Text(
-                    servingSignalInfo.toString(),
-                    color = MaterialTheme.colorScheme.surface,
-                    fontSize = fontSize,
-                    lineHeight = lineHeight
+                    text = servingCell.cellularProtocol.toString(),
+                    color = Color.White,
+                    fontSize = 12.nonScaledSp,
+                    lineHeight = 24.nonScaledSp,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 0.dp),
+                    textAlign = TextAlign.Center
                 )
             }
 
-            val servingCellDisplayString = getServingCellDisplayString(record)
-            Text(
-                servingCellDisplayString, color = MaterialTheme.colorScheme.surface,
-                fontSize = fontSize,
-                lineHeight = lineHeight
-            )
+            Spacer(modifier = Modifier.height(8.dp))
+
+            // Signal info with vertical layout
+            if (servingSignalInfo != null) {
+                when (servingCell.cellularProtocol) {
+                    CellularProtocol.GSM -> {
+                        VerticalMetric("RSSI", servingSignalInfo.signalOne.toString())
+                    }
+
+                    CellularProtocol.CDMA -> {
+                        VerticalMetric("ECIO", servingSignalInfo.signalOne.toString())
+                    }
+
+                    CellularProtocol.UMTS -> {
+                        VerticalMetric("RSSI", servingSignalInfo.signalOne.toString())
+                        VerticalMetric("RSCP", servingSignalInfo.signalTwo.toString())
+                    }
+
+                    CellularProtocol.LTE -> {
+                        VerticalMetric("RSRP", servingSignalInfo.signalOne.toString())
+                        VerticalMetric("RSRQ", servingSignalInfo.signalTwo.toString())
+                    }
+
+                    CellularProtocol.NR -> {
+                        VerticalMetric("SS-RSRP", servingSignalInfo.signalOne.toString())
+                        VerticalMetric("SS-RSRQ", servingSignalInfo.signalTwo.toString())
+                    }
+
+                    else -> {}
+                }
+            }
+
+            // Cell ID info with vertical layout
+            when (record) {
+                is GsmRecord -> {
+                    VerticalMetric("MCC", record.data.mcc.value.toString())
+                    VerticalMetric("MNC", record.data.mnc.value.toString())
+                    VerticalMetric("LAC", record.data.lac.value.toString())
+                    VerticalMetric("CellId", record.data.ci.value.toString())
+                }
+
+                is CdmaRecord -> {
+                    VerticalMetric("SID", record.data.sid.value.toString())
+                    VerticalMetric("NID", record.data.nid.value.toString())
+                    VerticalMetric("BSID", record.data.bsid.value.toString())
+                }
+
+                is UmtsRecord -> {
+                    VerticalMetric("MCC", record.data.mcc.value.toString())
+                    VerticalMetric("MNC", record.data.mnc.value.toString())
+                    VerticalMetric("LAC", record.data.lac.value.toString())
+                    VerticalMetric("CellId", record.data.cid.value.toString())
+                }
+
+                is LteRecord -> {
+                    VerticalMetric("MCC", record.data.mcc.value.toString())
+                    VerticalMetric("MNC", record.data.mnc.value.toString())
+                    VerticalMetric("TAC", record.data.tac.value.toString())
+                    VerticalMetric("eCI", record.data.eci.value.toString())
+                }
+
+                is NrRecord -> {
+                    VerticalMetric("MCC", record.data.mcc.value.toString())
+                    VerticalMetric("MNC", record.data.mnc.value.toString())
+                    VerticalMetric("TAC", record.data.tac.value.toString())
+                    VerticalMetric("NCI", record.data.nci.value.toString())
+                }
+
+                else -> {}
+            }
         } else {
             Text(
-                "No serving cell info available", color = MaterialTheme.colorScheme.surface,
-                fontSize = fontSize,
-                lineHeight = lineHeight
+                "No serving cell",
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                fontSize = 12.nonScaledSp,
+                textAlign = TextAlign.Center,
             )
         }
     }
 }
 
-
-private fun getServingCellDisplayString(message: GeneratedMessage): String {
-    return when (message) {
-        is GsmRecord -> {
-            "MCC: ${message.data.mcc.value}\nMNC: ${message.data.mnc.value}\nLAC: ${message.data.lac.value}\nCellId: ${message.data.ci.value}"
-        }
-
-        is CdmaRecord -> {
-            "SID: ${message.data.sid.value}\nNID: ${message.data.nid.value}\nBSID: ${message.data.bsid.value}"
-        }
-
-        is UmtsRecord -> {
-            "MCC: ${message.data.mcc.value}\nMNC: ${message.data.mnc.value}\nLAC: ${message.data.lac.value}\nCellId: ${message.data.cid.value}"
-        }
-
-        is LteRecord -> {
-            "MCC: ${message.data.mcc.value}\nMNC: ${message.data.mnc.value}\nTAC: ${message.data.tac.value}\nECI: ${message.data.eci.value}"
-        }
-
-        is NrRecord -> {
-            "MCC: ${message.data.mcc.value}\nMNC: ${message.data.mnc.value}\nTAC: ${message.data.tac.value}\nNCI: ${message.data.nci.value}"
-        }
-
-        else -> {
-            "Unknown Protocol"
-        }
+@Composable
+private fun VerticalMetric(label: String, value: String) {
+    Column(
+        modifier = Modifier
+            .padding(vertical = 2.dp)
+    ) {
+        Text(
+            text = label,
+            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+            fontSize = 10.nonScaledSp,
+            lineHeight = 12.nonScaledSp,
+            fontWeight = FontWeight.Normal
+        )
+        Text(
+            text = value,
+            color = MaterialTheme.colorScheme.onSurface,
+            fontSize = 14.nonScaledSp,
+            lineHeight = 20.nonScaledSp,
+            fontWeight = FontWeight.Bold,
+            modifier = Modifier.offset(y = (-2).dp)  // Pull value up slightly to reduce gap
+        )
     }
 }
 
