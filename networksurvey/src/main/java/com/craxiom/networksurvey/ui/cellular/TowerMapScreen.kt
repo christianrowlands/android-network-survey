@@ -1103,7 +1103,7 @@ fun ServingCellInfoDisplay(cellInfo: ServingCellInfo?, servingSignalInfo: Servin
                     VerticalMetric("MCC", record.data.mcc.value.toString())
                     VerticalMetric("MNC", record.data.mnc.value.toString())
                     VerticalMetric("LAC", record.data.lac.value.toString())
-                    VerticalMetric("CellId", record.data.ci.value.toString())
+                    VerticalMetric("CID", record.data.ci.value.toString())
                 }
 
                 is CdmaRecord -> {
@@ -1116,14 +1116,14 @@ fun ServingCellInfoDisplay(cellInfo: ServingCellInfo?, servingSignalInfo: Servin
                     VerticalMetric("MCC", record.data.mcc.value.toString())
                     VerticalMetric("MNC", record.data.mnc.value.toString())
                     VerticalMetric("LAC", record.data.lac.value.toString())
-                    VerticalMetric("CellId", record.data.cid.value.toString())
+                    VerticalMetric("CID", record.data.cid.value.toString())
                 }
 
                 is LteRecord -> {
                     VerticalMetric("MCC", record.data.mcc.value.toString())
                     VerticalMetric("MNC", record.data.mnc.value.toString())
                     VerticalMetric("TAC", record.data.tac.value.toString())
-                    VerticalMetric("eCI", record.data.eci.value.toString())
+                    VerticalMetric("ECI", record.data.eci.value.toString())
                 }
 
                 is NrRecord -> {
