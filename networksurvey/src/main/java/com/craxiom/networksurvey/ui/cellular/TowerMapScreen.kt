@@ -64,6 +64,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
@@ -494,17 +495,13 @@ internal fun TowerMapScreen(
                             .align(Alignment.TopStart)
                             .padding(top = statusBarHeight + 4.dp, start = 16.dp)
                     ) {
-                        IconButton(onClick = { onBackButtonPressed() }) {
-                            Icon(
-                                Icons.AutoMirrored.Filled.ArrowBack,
-                                contentDescription = "Back button",
-                                tint = MaterialTheme.colorScheme.onSurface,
-                                modifier = Modifier
-                                    .size(56.dp)
-                                    .padding(0.dp)
-                                    .background(color = MaterialTheme.colorScheme.primary)
-                            )
-                        }
+                        MapButton(
+                            icon = Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = "Back button",
+                            onClick = { onBackButtonPressed() },
+                            containerColor = MaterialTheme.colorScheme.surface,
+                            contentColor = MaterialTheme.colorScheme.onSurface
+                        )
                     }
                 }
 
@@ -1057,7 +1054,8 @@ private fun VerticalMetric(label: String, value: String) {
  */
 @Composable
 fun MapButton(
-    iconRes: Int,
+    iconRes: Int? = null,
+    icon: ImageVector? = null,
     contentDescription: String,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
@@ -1065,6 +1063,8 @@ fun MapButton(
     containerColor: Color = MaterialTheme.colorScheme.secondaryContainer,
     contentColor: Color = MaterialTheme.colorScheme.onSecondaryContainer
 ) {
+    require(iconRes != null || icon != null) { "Either iconRes or icon must be provided" }
+
     val interactionSource = remember { MutableInteractionSource() }
     val isPressed by interactionSource.collectIsPressedAsState()
     val scale by animateFloatAsState(
@@ -1088,11 +1088,19 @@ fun MapButton(
             ),
             interactionSource = interactionSource
         ) {
-            Icon(
-                painter = painterResource(id = iconRes),
-                contentDescription = contentDescription,
-                modifier = Modifier.size(36.dp)
-            )
+            if (icon != null) {
+                Icon(
+                    imageVector = icon,
+                    contentDescription = contentDescription,
+                    modifier = Modifier.size(36.dp)
+                )
+            } else {
+                Icon(
+                    painter = painterResource(id = iconRes!!),
+                    contentDescription = contentDescription,
+                    modifier = Modifier.size(36.dp)
+                )
+            }
         }
     } else {
         FloatingActionButton(
@@ -1110,11 +1118,19 @@ fun MapButton(
             ),
             interactionSource = interactionSource
         ) {
-            Icon(
-                painter = painterResource(id = iconRes),
-                contentDescription = contentDescription,
-                modifier = Modifier.size(28.dp)
-            )
+            if (icon != null) {
+                Icon(
+                    imageVector = icon,
+                    contentDescription = contentDescription,
+                    modifier = Modifier.size(28.dp)
+                )
+            } else {
+                Icon(
+                    painter = painterResource(id = iconRes!!),
+                    contentDescription = contentDescription,
+                    modifier = Modifier.size(28.dp)
+                )
+            }
         }
     }
 }

@@ -283,21 +283,15 @@ internal inline fun MapUpdater(
                 map.locationComponent.isLocationComponentEnabled = it
             }
 
+            map.uiSettings.isLogoEnabled = false
+            map.uiSettings.isAttributionEnabled = false
             map.uiSettings.compassGravity = Gravity.END or Gravity.TOP
             map.uiSettings.setCompassMargins(0, totalTopPaddingPxPx, 24, 0)
-            map.uiSettings.logoGravity = Gravity.END or Gravity.BOTTOM
-            map.uiSettings.setLogoMargins(0, 0, 200, 8)
-            map.uiSettings.attributionGravity = Gravity.END or Gravity.BOTTOM
-            map.uiSettings.setAttributionMargins(0, 0, 150, 8)
             set(uiSettings.compassEnabled) { map.uiSettings.isCompassEnabled = it }
             set(uiSettings.rotationGesturesEnabled) { map.uiSettings.isRotateGesturesEnabled = it }
             set(uiSettings.scrollGesturesEnabled) { map.uiSettings.isScrollGesturesEnabled = it }
             set(uiSettings.tiltGesturesEnabled) { map.uiSettings.isTiltGesturesEnabled = it }
             set(uiSettings.zoomGesturesEnabled) { map.uiSettings.isZoomGesturesEnabled = it }
-            // Logo and attribution gravity are hardcoded above to ensure proper positioning
-            // set(uiSettings.logoGravity) { map.uiSettings.logoGravity = it }
-            // set(uiSettings.attributionGravity) { map.uiSettings.attributionGravity = it }
-            set(uiSettings.attributionTintColor) { map.uiSettings.setAttributionTintColor(it.toArgb()) }
 
             set(symbolManagerSettings.iconAllowOverlap) { symbolManager.iconAllowOverlap = it }
             set(symbolManagerSettings.iconIgnorePlacement) {
