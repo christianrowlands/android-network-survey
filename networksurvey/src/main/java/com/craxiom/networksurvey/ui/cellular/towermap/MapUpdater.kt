@@ -7,11 +7,14 @@ import android.content.pm.PackageManager
 import android.location.Location
 import android.os.Looper
 import android.view.Gravity
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.ComposeNode
 import androidx.compose.runtime.currentComposer
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.dp
 import androidx.core.app.ActivityCompat
 import com.craxiom.networksurvey.data.api.Tower
 import org.maplibre.android.location.LocationComponentActivationOptions
@@ -250,6 +253,7 @@ internal inline fun MapUpdater(
     locationSettings: MapLocationSettings,
     uiSettings: MapUiSettings,
     symbolManagerSettings: MapSymbolManagerSettings,
+    paddingInsets: PaddingValues,
     noinline onMyLocationChanged: (Location) -> Unit,
     noinline onTowerClick: ((Tower) -> Unit)? = null,
 ) {
@@ -258,6 +262,10 @@ internal inline fun MapUpdater(
     val style = mapApplier.style
     val symbolManager = mapApplier.symbolManager
     val context = LocalContext.current
+
+    val statusBarHeight = paddingInsets.calculateTopPadding()
+    val totalTopPaddingPxPx = with(LocalDensity.current) { (statusBarHeight + 4.dp).toPx().toInt() }
+
     ComposeNode<MapPropertiesNode, MapApplier>(
         factory = {
             MapPropertiesNode(
@@ -275,8 +283,8 @@ internal inline fun MapUpdater(
                 map.locationComponent.isLocationComponentEnabled = it
             }
 
-            map.uiSettings.compassGravity = Gravity.END or Gravity.BOTTOM
-            map.uiSettings.setCompassMargins(0, 0, 24, 20)
+            map.uiSettings.compassGravity = Gravity.END or Gravity.TOP
+            map.uiSettings.setCompassMargins(0, totalTopPaddingPxPx, 24, 0)
             map.uiSettings.logoGravity = Gravity.END or Gravity.BOTTOM
             map.uiSettings.setLogoMargins(0, 0, 200, 8)
             map.uiSettings.attributionGravity = Gravity.END or Gravity.BOTTOM

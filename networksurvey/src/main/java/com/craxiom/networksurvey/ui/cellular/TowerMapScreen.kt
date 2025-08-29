@@ -1,8 +1,10 @@
 package com.craxiom.networksurvey.ui.cellular
 
 import android.widget.Toast
-import androidx.compose.foundation.Image
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -26,7 +28,6 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Clear
-import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -36,6 +37,8 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.FloatingActionButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -58,7 +61,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
@@ -225,21 +228,12 @@ internal fun TowerMapScreen(
     val searchAreaInput by viewModel.searchAreaInput.collectAsStateWithLifecycle()
     val searchCidInput by viewModel.searchCidInput.collectAsStateWithLifecycle()
 
-    val options = listOf(
-        CellularProtocol.GSM.name,
-        CellularProtocol.CDMA.name,
-        CellularProtocol.UMTS.name,
-        CellularProtocol.LTE.name,
-        CellularProtocol.NR.name
-    )
-    var expanded by remember { mutableStateOf(false) }
     var showInfoDialog by remember { mutableStateOf(false) }
-    var showPlmnDialog by remember { mutableStateOf(false) }
-    var showTowerSourceDialog by remember { mutableStateOf(false) }
     var showTowerInfoDialog by remember { mutableStateOf(false) }
     var selectedTower by remember { mutableStateOf<Tower?>(null) }
     var showLayersDialog by remember { mutableStateOf(false) }
     var showSearchDialog by remember { mutableStateOf(false) }
+    var showFiltersDialog by remember { mutableStateOf(false) }
 
     val cameraPositionState = rememberCameraPositionState {
         // FIXME Is this redundant because there is similar logic in the view model?
@@ -284,7 +278,7 @@ internal fun TowerMapScreen(
                 val mapTilerKey by viewModel.mapTilerKey.collectAsState()
                 val mapKeyLoadError by viewModel.mapKeyLoadError.collectAsState()
                 val selectedTileSource by viewModel.selectedMapTileSource.collectAsStateWithLifecycle()
-                var darkMap = remember { mutableStateOf(false) }
+                val darkMap = remember { mutableStateOf(false) }
 
                 // Load preferences on startup
                 DisposableEffect(Unit) {
@@ -361,6 +355,7 @@ internal fun TowerMapScreen(
                 MapLibreMap(
                     styleUri = styleUrl,
                     modifier = Modifier.fillMaxSize(),
+                    paddingInsets = paddingInsets,
                     images = iconMap,
                     cameraPositionState = cameraPositionState,
                     uiSettings = MapUiSettings(
@@ -492,263 +487,149 @@ internal fun TowerMapScreen(
 
                 TopAppBarOverlay(statusBarHeight)
 
-                Column {
+                // Top area - only show back button if not in Survey Monitor context
+                if (mapContext != MapContext.SURVEY_MONITOR) {
                     Box(
                         modifier = Modifier
-                            .align(Alignment.End)
-                            .padding(top = statusBarHeight + 4.dp, end = 16.dp)
+                            .align(Alignment.TopStart)
+                            .padding(top = statusBarHeight + 4.dp, start = 16.dp)
                     ) {
-                        Row {
-                            Spacer(modifier = Modifier.width(8.dp))
-
-                            // Only show back button if not in Survey Monitor context
-                            if (mapContext != MapContext.SURVEY_MONITOR) {
-                                IconButton(onClick = { onBackButtonPressed() }) {
-                                    Icon(
-                                        Icons.AutoMirrored.Filled.ArrowBack,
-                                        contentDescription = "Back button",
-                                        tint = MaterialTheme.colorScheme.onSurface,
-                                        modifier = Modifier
-                                            .size(56.dp)
-                                            .padding(0.dp)
-                                            .background(color = MaterialTheme.colorScheme.primary)
-                                    )
-                                }
-                            }
-
-                            Spacer(modifier = Modifier.weight(1f))
-
-                            IconButton(onClick = { showInfoDialog = true }) {
-                                Icon(
-                                    Icons.Default.Info,
-                                    contentDescription = "About Cellular Tower Map",
-                                    tint = MaterialTheme.colorScheme.primary,
-                                    modifier = Modifier
-                                        .size(56.dp)
-                                        .padding(0.dp)
-                                        .background(color = MaterialTheme.colorScheme.onSurface)
-                                )
-                            }
-
-                            // Only show tower-related controls when towers layer is enabled
-                            if (showTowersLayer) {
-                                Spacer(modifier = Modifier.width(16.dp))
-
-                                Button(
-                                    onClick = { showPlmnDialog = true },
-                                ) {
-                                    val buttonText =
-                                        if (currentPlmnFilter.isSet()) currentPlmnFilter.toString() else "PLMN Filter"
-                                    Text(
-                                        text = buttonText,
-                                        color = MaterialTheme.colorScheme.onSurface,
-                                        fontSize = 14.nonScaledSp,
-                                        lineHeight = 14.nonScaledSp,
-                                    )
-                                }
-
-                                Spacer(modifier = Modifier.width(8.dp))
-
-                                Button(
-                                    onClick = { expanded = true },
-                                ) {
-                                    Text(
-                                        text = radio, color = MaterialTheme.colorScheme.onSurface,
-                                        fontSize = 14.nonScaledSp,
-                                        lineHeight = 14.nonScaledSp,
-                                    )
-                                }
-                            }
-                        }
-
-                        Box(
-                            modifier = Modifier
-                                .align(Alignment.BottomEnd)
-                        ) {
-                            DropdownMenu(
-                                expanded = expanded,
-                                onDismissRequest = { expanded = false }
-                            ) {
-                                options.forEach { label ->
-                                    DropdownMenuItem(
-                                        text = { Text(text = label) },
-                                        onClick = {
-                                            if (viewModel.selectedRadioType.value != label) {
-                                                Timber.i("The Selected radio type changed to $label")
-                                                viewModel.setSelectedRadioType(
-                                                    label,
-                                                    isManualSelection = true
-                                                )
-                                            }
-                                            expanded = false
-                                        })
-                                }
-                            }
-                        }
-                    }
-
-                    // Only show tower source button when towers layer is enabled
-                    if (showTowersLayer) {
-                        Box(
-                            modifier = Modifier
-                                .align(Alignment.End)
-                                .padding(end = 16.dp)
-                        ) {
-                            Button(
-                                onClick = { showTowerSourceDialog = true },
-                            ) {
-                                val buttonText = currentSource.displayName
-                                Text(
-                                    text = buttonText,
-                                    color = MaterialTheme.colorScheme.onSurface,
-                                    fontSize = 14.nonScaledSp,
-                                    lineHeight = 14.nonScaledSp,
-                                )
-                            }
+                        IconButton(onClick = { onBackButtonPressed() }) {
+                            Icon(
+                                Icons.AutoMirrored.Filled.ArrowBack,
+                                contentDescription = "Back button",
+                                tint = MaterialTheme.colorScheme.onSurface,
+                                modifier = Modifier
+                                    .size(56.dp)
+                                    .padding(0.dp)
+                                    .background(color = MaterialTheme.colorScheme.primary)
+                            )
                         }
                     }
                 }
 
-                Box(
+                // Bottom button bar
+                Column(
                     modifier = Modifier
-                        .align(Alignment.BottomEnd)
-                        .padding(
-                            vertical = paddingInsets.calculateBottomPadding(),
-                            horizontal = 12.dp
-                        )
+                        .align(Alignment.BottomCenter)
+                        .padding(bottom = paddingInsets.calculateBottomPadding())
                 ) {
-                    Column {
-                        // Search button at the top when towers layer is enabled
-                        if (showTowersLayer) {
-                            Surface(
-                                modifier = Modifier
-                                    .size(40.dp)
-                                    .clip(CircleShape)
-                                    .background(MaterialTheme.colorScheme.primary),
-                                color = MaterialTheme.colorScheme.primary
-                            ) {
-                                Box(
-                                    contentAlignment = Alignment.Center,
-                                    modifier = Modifier
-                                        .fillMaxSize()
-                                        .padding(8.dp)
-                                ) {
-                                    Image(
-                                        painter = painterResource(id = R.drawable.ic_search_24),
-                                        contentDescription = "Search Tower",
-                                        modifier = Modifier.size(24.dp)
-                                    )
-                                    Button(
-                                        onClick = { showSearchDialog = true },
-                                        modifier = Modifier
-                                            .size(48.dp)
-                                            .clip(CircleShape),
-                                        colors = ButtonDefaults.buttonColors(
-                                            containerColor = Color.Transparent
-                                        )
-                                    ) {}
-                                }
-                            }
-
-                            Spacer(modifier = Modifier.height(12.dp))
-                        }
-
-                        // Layers button
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 12.dp),
+                        horizontalArrangement = Arrangement.End
+                    ) {
                         Surface(
-                            modifier = Modifier
-                                .size(40.dp)
-                                .clip(CircleShape)
-                                .background(MaterialTheme.colorScheme.primary),
-                            color = MaterialTheme.colorScheme.primary
+                            modifier = Modifier,
+                            color = MaterialTheme.colorScheme.surface.copy(alpha = 0.85f),
+                            shape = CircleShape,
+                            shadowElevation = 6.dp
                         ) {
                             Box(
-                                contentAlignment = Alignment.Center,
-                                modifier = Modifier
-                                    .fillMaxSize()
-                                    .padding(8.dp)
+                                modifier = Modifier.padding(4.dp)
                             ) {
-                                Image(
-                                    painter = painterResource(id = R.drawable.ic_layers),
-                                    contentDescription = "Map Layers",
-                                    modifier = Modifier.size(24.dp)
-                                )
-                                Button(
-                                    onClick = { showLayersDialog = true },
-                                    modifier = Modifier
-                                        .size(48.dp)
-                                        .clip(CircleShape),
-                                    colors = ButtonDefaults.buttonColors(
-                                        containerColor = Color.Transparent
-                                    )
-                                ) {}
+                                LocationButton(
+                                    isFollowing = cameraPositionState.cameraMode == CameraMode.TRACKING,
+                                    toggleFollowMe = {
+                                        if (cameraPositionState.cameraMode == CameraMode.TRACKING) {
+                                            cameraPositionState.cameraMode = CameraMode.NONE
+                                        } else {
+                                            viewModel.getMyLocation()?.let { location ->
+                                                val currentZoom = viewModel.getCurrentZoom()
+                                                // Apply minimum zoom threshold
+                                                val targetZoom =
+                                                    kotlin.math.max(
+                                                        currentZoom,
+                                                        MINIMUM_LOCATION_ZOOM
+                                                    )
+
+                                                cameraPositionState.position =
+                                                    CameraPosition.Builder()
+                                                        .target(location)
+                                                        .zoom(targetZoom)
+                                                        .build()
+                                            }
+                                            // Enable tracking mode after setting position
+                                            cameraPositionState.cameraMode = CameraMode.TRACKING
+                                        }
+                                    })
                             }
                         }
+                    }
 
-                        Spacer(modifier = Modifier.height(12.dp))
+                    Spacer(modifier = Modifier.height(12.dp))
 
-                        Surface(
+                    Surface(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 12.dp),
+                        color = MaterialTheme.colorScheme.surface.copy(alpha = 0.85f),
+                        shape = MaterialTheme.shapes.large,
+                        shadowElevation = 8.dp
+                    ) {
+                        Row(
                             modifier = Modifier
-                                .size(40.dp)
-                                .clip(CircleShape)
-                                .background(MaterialTheme.colorScheme.primary),
-                            color = MaterialTheme.colorScheme.primary
+                                .fillMaxWidth()
+                                .padding(horizontal = 16.dp, vertical = 8.dp),
+                            horizontalArrangement = Arrangement.SpaceEvenly,
+                            verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Box(
-                                contentAlignment = Alignment.Center,
-                                modifier = Modifier
-                                    .fillMaxSize()
-                                    .padding(8.dp)
-                            ) {
-                                Image(
-                                    painter = painterResource(id = R.drawable.ic_settings),
-                                    contentDescription = "Tower Map Settings",
-                                    modifier = Modifier.size(24.dp)
+                            // Info button (leftmost)
+                            MapButton(
+                                iconRes = R.drawable.ic_info,
+                                contentDescription = "About Tower Map",
+                                onClick = { showInfoDialog = true },
+                                containerColor = MaterialTheme.colorScheme.surface,
+                                contentColor = MaterialTheme.colorScheme.onSurface
+                            )
+
+                            // Settings button
+                            MapButton(
+                                iconRes = R.drawable.ic_settings,
+                                contentDescription = "Tower Map Settings",
+                                onClick = { onNavigateToTowerMapSettings() },
+                                containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                                contentColor = MaterialTheme.colorScheme.onSecondaryContainer
+                            )
+
+                            // Filters button (center, larger) - only show when towers layer is enabled
+                            if (showTowersLayer) {
+                                MapButton(
+                                    iconRes = R.drawable.ic_filter,
+                                    contentDescription = "Filters",
+                                    onClick = { showFiltersDialog = true },
+                                    isLarge = true,
+                                    containerColor = MaterialTheme.colorScheme.primaryContainer,
+                                    contentColor = MaterialTheme.colorScheme.onPrimaryContainer
                                 )
-                                Button(
-                                    onClick = { onNavigateToTowerMapSettings.invoke() },
-                                    modifier = Modifier
-                                        .size(48.dp)
-                                        .clip(CircleShape),
-                                    colors = ButtonDefaults.buttonColors(
-                                        containerColor = Color.Transparent
-                                    )
-                                ) {}
                             }
+
+                            // Search button - only show when towers layer is enabled
+                            if (showTowersLayer) {
+                                MapButton(
+                                    iconRes = R.drawable.ic_search_24,
+                                    contentDescription = "Search Tower",
+                                    onClick = { showSearchDialog = true },
+                                    containerColor = MaterialTheme.colorScheme.tertiaryContainer,
+                                    contentColor = MaterialTheme.colorScheme.onTertiaryContainer
+                                )
+                            }
+
+                            // Layers button (rightmost)
+                            MapButton(
+                                iconRes = R.drawable.ic_layers,
+                                contentDescription = "Map Layers",
+                                onClick = { showLayersDialog = true },
+                                containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                                contentColor = MaterialTheme.colorScheme.onSecondaryContainer
+                            )
                         }
+                    }
 
-                        Spacer(modifier = Modifier.height(12.dp))
-
-                        CircleButtonWithLine(
-                            isFollowing = cameraPositionState.cameraMode == CameraMode.TRACKING,
-                            toggleFollowMe = {
-                                // Toggle camera mode directly on the state
-                                if (cameraPositionState.cameraMode == CameraMode.TRACKING) {
-                                    cameraPositionState.cameraMode = CameraMode.NONE
-                                } else {
-                                    // Get current location and zoom
-                                    viewModel.getMyLocation()?.let { location ->
-                                        val currentZoom = viewModel.getCurrentZoom()
-                                        // Apply minimum zoom threshold while preserving user preference
-                                        val targetZoom =
-                                            kotlin.math.max(currentZoom, MINIMUM_LOCATION_ZOOM)
-
-                                        // Update camera position with location and zoom
-                                        cameraPositionState.position = CameraPosition.Builder()
-                                            .target(location)
-                                            .zoom(targetZoom)
-                                            .build()
-                                    }
-                                    // Enable tracking mode after setting position
-                                    cameraPositionState.cameraMode = CameraMode.TRACKING
-                                }
-                            })
-
-                        if (mapContext == MapContext.TOWER_MAP) {
-                            Spacer(modifier = Modifier.height(44.dp))
-                        } else {
-                            // Add extra space for Survey Monitor context because we are not extending the map to the very bottom
-                            Spacer(modifier = Modifier.height(64.dp))
-                        }
+                    if (mapContext != MapContext.TOWER_MAP) {
+                        // Add extra space for Survey Monitor context because we are not extending the map to the very bottom
+                        Spacer(modifier = Modifier.height(24.dp))
                     }
                 }
 
@@ -757,7 +638,7 @@ internal fun TowerMapScreen(
                     modifier = Modifier
                         .align(Alignment.TopStart)
                         .padding(
-                            top = statusBarHeight + 100.dp,
+                            top = statusBarHeight + 70.dp,
                             start = 0.dp
                         )
                 ) {
@@ -818,30 +699,6 @@ internal fun TowerMapScreen(
 
         if (showInfoDialog) {
             TowerMapInfoDialog(onDismiss = { showInfoDialog = false })
-        }
-
-        if (showPlmnDialog) {
-            PlmnFilterDialog(
-                currentPlmn = currentPlmnFilter,
-                onSetPlmnFilter = { mcc, mnc ->
-                    viewModel.setPlmnFilter(Plmn(mcc, mnc))
-                },
-                onDismiss = { showPlmnDialog = false }
-            )
-        }
-
-        if (showTowerSourceDialog) {
-            val context = LocalContext.current
-            TowerSourceSelectionDialog(
-                currentSource = currentSource,
-                onSetSource = { source ->
-                    if (source != currentSource) {
-                        viewModel.setTowerSource(source)
-                        PreferenceUtils.setLastSelectedTowerSource(context, source)
-                    }
-                },
-                onDismiss = { showTowerSourceDialog = false }
-            )
         }
 
         if (showTowerInfoDialog && selectedTower != null) {
@@ -923,6 +780,31 @@ internal fun TowerMapScreen(
                 searchError = searchError,
                 hasSearchResult = searchedTower != null,
                 onClearSearchResult = viewModel::clearSearchResult
+            )
+        }
+
+        if (showFiltersDialog) {
+            val context = LocalContext.current
+            CombinedFiltersBottomSheet(
+                currentPlmn = currentPlmnFilter,
+                currentRadio = radio,
+                currentSource = currentSource,
+                onSetPlmnFilter = { mcc, mnc ->
+                    viewModel.setPlmnFilter(Plmn(mcc, mnc))
+                },
+                onSetRadioType = { protocol ->
+                    if (viewModel.selectedRadioType.value != protocol) {
+                        Timber.i("The Selected radio type changed to $protocol")
+                        viewModel.setSelectedRadioType(protocol, isManualSelection = true)
+                    }
+                },
+                onSetTowerSource = { source ->
+                    if (source != currentSource) {
+                        viewModel.setTowerSource(source)
+                        PreferenceUtils.setLastSelectedTowerSource(context, source)
+                    }
+                },
+                onDismiss = { showFiltersDialog = false }
             )
         }
     }
@@ -1170,39 +1052,123 @@ private fun VerticalMetric(label: String, value: String) {
     }
 }
 
+/**
+ * Reusable map button with press animation.
+ */
 @Composable
-fun CircleButtonWithLine(
-    isFollowing: Boolean,
-    toggleFollowMe: () -> Unit
+fun MapButton(
+    iconRes: Int,
+    contentDescription: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    isLarge: Boolean = false,
+    containerColor: Color = MaterialTheme.colorScheme.secondaryContainer,
+    contentColor: Color = MaterialTheme.colorScheme.onSecondaryContainer
 ) {
-    Surface(
-        modifier = Modifier
-            .size(40.dp)
-            .clip(CircleShape)
-            .background(MaterialTheme.colorScheme.primary),
-        color = MaterialTheme.colorScheme.primary
-    ) {
-        Box(
-            contentAlignment = Alignment.Center,
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(8.dp)
+    val interactionSource = remember { MutableInteractionSource() }
+    val isPressed by interactionSource.collectIsPressedAsState()
+    val scale by animateFloatAsState(
+        targetValue = if (isPressed) 0.90f else 1f,
+        label = "button_scale"
+    )
+
+    if (isLarge) {
+        FloatingActionButton(
+            onClick = onClick,
+            modifier = modifier
+                .size(64.dp)
+                .scale(scale),
+            containerColor = containerColor.copy(alpha = 0.95f),
+            contentColor = contentColor,
+            shape = CircleShape,
+            elevation = FloatingActionButtonDefaults.elevation(
+                defaultElevation = 8.dp,
+                pressedElevation = 12.dp,
+                hoveredElevation = 10.dp
+            ),
+            interactionSource = interactionSource
         ) {
-            Image(
-                painter = painterResource(id = if (isFollowing) R.drawable.ic_my_location else R.drawable.ic_location_not_following),
-                contentDescription = if (isFollowing) "Stop Following" else "Follow My Location",
-                modifier = Modifier.size(24.dp)
+            Icon(
+                painter = painterResource(id = iconRes),
+                contentDescription = contentDescription,
+                modifier = Modifier.size(36.dp)
             )
-            Button(
-                onClick = { toggleFollowMe() },
-                modifier = Modifier
-                    .size(48.dp)
-                    .clip(CircleShape),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = Color.Transparent
-                )
-            ) {}
         }
+    } else {
+        FloatingActionButton(
+            onClick = onClick,
+            modifier = modifier
+                .size(48.dp)
+                .scale(scale),
+            containerColor = containerColor.copy(alpha = 0.95f),
+            contentColor = contentColor,
+            shape = CircleShape,
+            elevation = FloatingActionButtonDefaults.elevation(
+                defaultElevation = 6.dp,
+                pressedElevation = 10.dp,
+                hoveredElevation = 8.dp
+            ),
+            interactionSource = interactionSource
+        ) {
+            Icon(
+                painter = painterResource(id = iconRes),
+                contentDescription = contentDescription,
+                modifier = Modifier.size(28.dp)
+            )
+        }
+    }
+}
+
+/**
+ * Location tracking button with two states: following and not following.
+ */
+@Composable
+fun LocationButton(
+    isFollowing: Boolean,
+    toggleFollowMe: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val interactionSource = remember { MutableInteractionSource() }
+    val isPressed by interactionSource.collectIsPressedAsState()
+    val scale by animateFloatAsState(
+        targetValue = if (isPressed) 0.90f else 1f,
+        label = "location_button_scale"
+    )
+
+    FloatingActionButton(
+        onClick = toggleFollowMe,
+        modifier = modifier
+            .size(48.dp)
+            .scale(scale),
+        containerColor = if (isFollowing)
+            MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.95f)
+        else
+            MaterialTheme.colorScheme.surface.copy(alpha = 0.95f),
+        contentColor = if (isFollowing)
+            MaterialTheme.colorScheme.onPrimaryContainer
+        else
+            MaterialTheme.colorScheme.onSurface,
+        shape = CircleShape,
+        elevation = FloatingActionButtonDefaults.elevation(
+            defaultElevation = if (isFollowing) 8.dp else 6.dp,
+            pressedElevation = 10.dp,
+            hoveredElevation = 9.dp
+        ),
+        interactionSource = interactionSource
+    ) {
+        Icon(
+            painter = painterResource(
+                id = if (isFollowing)
+                    R.drawable.ic_my_location
+                else
+                    R.drawable.ic_location_not_following
+            ),
+            contentDescription = if (isFollowing)
+                "Stop Following"
+            else
+                "Follow My Location",
+            modifier = Modifier.size(24.dp)
+        )
     }
 }
 
@@ -1782,4 +1748,221 @@ fun TowerSourceSelectionDialog(
             }
         }
     )
+}
+
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalComposeUiApi::class)
+@Composable
+fun CombinedFiltersBottomSheet(
+    currentPlmn: Plmn,
+    currentRadio: String,
+    currentSource: TowerSource,
+    onSetPlmnFilter: (Int, Int) -> Unit,
+    onSetRadioType: (String) -> Unit,
+    onSetTowerSource: (TowerSource) -> Unit,
+    onDismiss: () -> Unit
+) {
+    val bottomSheetState = rememberModalBottomSheetState()
+    val dismissKeyboard = rememberKeyboardDismisser()
+    val focusManager = LocalFocusManager.current
+
+    var mccInput by remember { mutableStateOf(currentPlmn.mcc.toString()) }
+    var mncInput by remember { mutableStateOf(currentPlmn.mnc.toString()) }
+    var selectedRadio by remember { mutableStateOf(currentRadio) }
+    var selectedSource by remember { mutableStateOf(currentSource) }
+
+    val radioOptions = listOf(
+        CellularProtocol.GSM.name,
+        CellularProtocol.CDMA.name,
+        CellularProtocol.UMTS.name,
+        CellularProtocol.LTE.name,
+        CellularProtocol.NR.name
+    )
+
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = bottomSheetState
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .verticalScroll(rememberScrollState())
+                .padding(16.dp)
+                .padding(bottom = 32.dp)
+        ) {
+            Text(
+                text = "Filters",
+                style = MaterialTheme.typography.headlineSmall,
+                modifier = Modifier.padding(bottom = 16.dp)
+            )
+
+            // PLMN Filter Section
+            Text(
+                text = "PLMN Filter",
+                style = MaterialTheme.typography.titleMedium,
+                modifier = Modifier.padding(bottom = 8.dp)
+            )
+
+            Text(
+                text = "Filter towers by specific cellular provider (MCC/MNC)",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(bottom = 8.dp)
+            )
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                OutlinedTextField(
+                    value = if (mccInput == "0") "" else mccInput,
+                    onValueChange = { mccInput = it },
+                    label = { Text("MCC") },
+                    keyboardOptions = KeyboardOptions(
+                        keyboardType = KeyboardType.Number,
+                        imeAction = ImeAction.Next
+                    ),
+                    keyboardActions = KeyboardActions(
+                        onNext = { focusManager.moveFocus(FocusDirection.Right) }
+                    ),
+                    trailingIcon = {
+                        if (mccInput.isNotEmpty() && mccInput != "0") {
+                            IconButton(onClick = { mccInput = "" }) {
+                                Icon(
+                                    imageVector = Icons.Default.Clear,
+                                    contentDescription = "Clear MCC"
+                                )
+                            }
+                        }
+                    },
+                    modifier = Modifier.weight(1f),
+                    singleLine = true
+                )
+
+                OutlinedTextField(
+                    value = if (mncInput == "0") "" else mncInput,
+                    onValueChange = { mncInput = it },
+                    label = { Text("MNC") },
+                    keyboardOptions = KeyboardOptions(
+                        keyboardType = KeyboardType.Number,
+                        imeAction = ImeAction.Done
+                    ),
+                    keyboardActions = KeyboardActions(
+                        onDone = { dismissKeyboard() }
+                    ),
+                    trailingIcon = {
+                        if (mncInput.isNotEmpty() && mncInput != "0") {
+                            IconButton(onClick = { mncInput = "" }) {
+                                Icon(
+                                    imageVector = Icons.Default.Clear,
+                                    contentDescription = "Clear MNC"
+                                )
+                            }
+                        }
+                    },
+                    modifier = Modifier.weight(1f),
+                    singleLine = true
+                )
+            }
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            // Protocol Selection Section
+            Text(
+                text = "Protocol",
+                style = MaterialTheme.typography.titleMedium,
+                modifier = Modifier.padding(bottom = 8.dp)
+            )
+
+            Text(
+                text = "Filter towers by cellular protocol type",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(bottom = 8.dp)
+            )
+
+            radioOptions.forEach { protocol ->
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .selectable(
+                            selected = (protocol == selectedRadio),
+                            onClick = { selectedRadio = protocol }
+                        )
+                        .padding(vertical = 4.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    RadioButton(
+                        selected = (protocol == selectedRadio),
+                        onClick = { selectedRadio = protocol }
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(text = protocol)
+                }
+            }
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            // Tower Source Section
+            Text(
+                text = "Tower Data Source",
+                style = MaterialTheme.typography.titleMedium,
+                modifier = Modifier.padding(bottom = 8.dp)
+            )
+
+            Text(
+                text = "Select which database to use for tower locations",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(bottom = 8.dp)
+            )
+
+            TowerSource.entries.forEach { source ->
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .selectable(
+                            selected = (source == selectedSource),
+                            onClick = { selectedSource = source }
+                        )
+                        .padding(vertical = 4.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    RadioButton(
+                        selected = (source == selectedSource),
+                        onClick = { selectedSource = source }
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Column {
+                        Text(text = source.displayName)
+                        Text(
+                            text = when (source) {
+                                TowerSource.OpenCelliD -> "Crowdsourced tower data from around the world"
+                                TowerSource.BTSearch -> "Poland specific tower database"
+                            },
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            // Apply button
+            Button(
+                onClick = {
+                    dismissKeyboard()
+                    val mcc = mccInput.toIntOrNull() ?: 0
+                    val mnc = mncInput.toIntOrNull() ?: 0
+                    onSetPlmnFilter(mcc, mnc)
+                    onSetRadioType(selectedRadio)
+                    onSetTowerSource(selectedSource)
+                    onDismiss()
+                },
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text("Apply Filters")
+            }
+        }
+    }
 }

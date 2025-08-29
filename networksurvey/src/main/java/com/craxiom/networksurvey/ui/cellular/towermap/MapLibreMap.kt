@@ -8,6 +8,7 @@ import android.os.Bundle
 import androidx.appcompat.content.res.AppCompatResources
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Composition
@@ -51,6 +52,7 @@ import kotlin.coroutines.suspendCoroutine
 fun MapLibreMap(
     styleUri: String,
     modifier: Modifier = Modifier,
+    paddingInsets: PaddingValues,
     images: Map<String, Int> = mapOf(),
     cameraPositionState: CameraPositionState = rememberCameraPositionState(),
     uiSettings: MapUiSettings = DefaultMapUiSettings,
@@ -100,6 +102,7 @@ fun MapLibreMap(
                     uiSettings = currentUiSettings,
                     locationSettings = currentMapLocationSettings,
                     symbolManagerSettings = currentSymbolManagerSettings,
+                    paddingInsets = paddingInsets,
                     onMyLocationChanged = onMyLocationChanged,
                     onTowerClick = onTowerClick,
                 )
