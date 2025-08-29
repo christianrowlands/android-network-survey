@@ -639,15 +639,6 @@ internal fun TowerMapScreen(
                             start = 0.dp
                         )
                 ) {
-                    if (servingCells.size > 1) {
-                        // Only show the drop down if there is more than one option
-                        SimCardDropdown(servingCells, selectedSimIndex) { newIndex ->
-                            selectedSimIndex = newIndex
-                            viewModel.setSelectedSimSubscriptionId(newIndex)
-                        }
-                        Spacer(modifier = Modifier.height(6.dp))
-                    }
-
                     // Display the serving cell info for the selected SIM card
                     if (servingCells.isNotEmpty()) {
                         if (servingCells.size == 1) {
@@ -666,6 +657,16 @@ internal fun TowerMapScreen(
                                 servingCellSignals[selectedSimIndex]
                             )
                         }
+                    }
+
+                    if (servingCells.size > 1) {
+                        // Only show the SIM card selection drop down if there is more than one option
+                        Spacer(modifier = Modifier.height(6.dp))
+                        SimCardDropdown(servingCells, selectedSimIndex) { newIndex ->
+                            selectedSimIndex = newIndex
+                            viewModel.setSelectedSimSubscriptionId(newIndex)
+                        }
+                        Spacer(modifier = Modifier.height(6.dp))
                     }
                 }
 
