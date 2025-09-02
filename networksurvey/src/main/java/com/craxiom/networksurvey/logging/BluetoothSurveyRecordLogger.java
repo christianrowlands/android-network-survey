@@ -85,8 +85,9 @@ public class BluetoothSurveyRecordLogger extends SurveyRecordLogger implements I
             tableColumns.add(FeatureColumn.createColumn(columnNumber++, BluetoothCsvConstants.ADDRESS_TYPE, GeoPackageDataType.TEXT, false, null));
             tableColumns.add(FeatureColumn.createColumn(columnNumber++, BluetoothCsvConstants.DEVICE_CLASS, GeoPackageDataType.TEXT, false, null));
             tableColumns.add(FeatureColumn.createColumn(columnNumber++, BluetoothCsvConstants.SERVICE_UUIDS, GeoPackageDataType.TEXT, false, null));
-            //noinspection UnusedAssignment
             tableColumns.add(FeatureColumn.createColumn(columnNumber++, BluetoothCsvConstants.COMPANY_ID, GeoPackageDataType.TEXT, false, null));
+            //noinspection UnusedAssignment
+            tableColumns.add(FeatureColumn.createColumn(columnNumber++, BluetoothCsvConstants.MANUFACTURER_SPECIFIC_DATA, GeoPackageDataType.TEXT, false, null));
         });
     }
 
@@ -186,6 +187,12 @@ public class BluetoothSurveyRecordLogger extends SurveyRecordLogger implements I
                         if (!companyId.isEmpty())
                         {
                             row.setValue(BluetoothCsvConstants.COMPANY_ID, companyId);
+                        }
+
+                        String mfgData = data.getMfgData();
+                        if (!mfgData.isEmpty())
+                        {
+                            row.setValue(BluetoothCsvConstants.MANUFACTURER_SPECIFIC_DATA, mfgData);
                         }
 
                         featureDao.insert(row);

@@ -1985,9 +1985,9 @@ public class SurveyRecordProcessor
                         if (manufacturerRawData.length > 2)
                         {
                             StringBuilder hexBuilder = new StringBuilder();
-                            for (int i = 2; i < manufacturerRawData.length; i++)
+                            for (byte manufacturerRawDatum : manufacturerRawData)
                             {
-                                hexBuilder.append(String.format("%02x", manufacturerRawData[i] & 0xFF));
+                                hexBuilder.append(String.format("%02x", manufacturerRawDatum & 0xFF));
                             }
                             mfgDataHex = hexBuilder.toString();
                         }
