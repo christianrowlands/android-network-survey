@@ -99,7 +99,6 @@ import com.craxiom.networksurvey.listeners.IDeviceStatusListener;
 import com.craxiom.networksurvey.listeners.IGnssSurveyRecordListener;
 import com.craxiom.networksurvey.listeners.IWifiSurveyRecordListener;
 import com.craxiom.networksurvey.logging.db.DbUploadStore;
-import com.craxiom.networksurvey.model.BluetoothRecordWrapper;
 import com.craxiom.networksurvey.model.CdrEvent;
 import com.craxiom.networksurvey.model.CdrEventType;
 import com.craxiom.networksurvey.model.CellularProtocol;
@@ -912,9 +911,7 @@ public class SurveyRecordProcessor
         BluetoothRecord bluetoothRecord = generateBluetoothSurveyRecord(null, device, rssi, UNSET_TX_POWER_LEVEL, ZonedDateTime.now(), SystemClock.elapsedRealtime());
         if (bluetoothRecord != null)
         {
-            // Classic Bluetooth doesn't have manufacturer data in the same way as BLE
-            BluetoothRecordWrapper wrapper = new BluetoothRecordWrapper(bluetoothRecord, null);
-            notifyBluetoothRecordListeners(wrapper);
+            notifyBluetoothRecordListeners(bluetoothRecord);
         }
     }
 
@@ -929,9 +926,7 @@ public class SurveyRecordProcessor
         BluetoothRecord bluetoothRecord = generateBluetoothSurveyRecord(result, ZonedDateTime.now(), SystemClock.elapsedRealtime());
         if (bluetoothRecord != null)
         {
-            SparseArray<byte[]> manufacturerData = result.getScanRecord() != null ? result.getScanRecord().getManufacturerSpecificData() : null;
-            BluetoothRecordWrapper wrapper = new BluetoothRecordWrapper(bluetoothRecord, manufacturerData);
-            notifyBluetoothRecordListeners(wrapper);
+            notifyBluetoothRecordListeners(bluetoothRecord);
         }
     }
 
@@ -945,17 +940,16 @@ public class SurveyRecordProcessor
     {
         final ZonedDateTime deviceTime = ZonedDateTime.now();
         final long elapsedTimeMillis = SystemClock.elapsedRealtime();
-        final List<BluetoothRecordWrapper> bluetoothRecordWrappers = new ArrayList<>();
+        final List<BluetoothRecord> bluetoothRecords = new ArrayList<>();
         for (android.bluetooth.le.ScanResult scanResult : results)
         {
             BluetoothRecord bluetoothRecord = generateBluetoothSurveyRecord(scanResult, deviceTime, elapsedTimeMillis);
             if (bluetoothRecord != null)
             {
-                SparseArray<byte[]> manufacturerData = scanResult.getScanRecord() != null ? scanResult.getScanRecord().getManufacturerSpecificData() : null;
-                bluetoothRecordWrappers.add(new BluetoothRecordWrapper(bluetoothRecord, manufacturerData));
+                bluetoothRecords.add(bluetoothRecord);
             }
         }
-        notifyBluetoothRecordListeners(bluetoothRecordWrappers);
+        notifyBluetoothRecordListeners(bluetoothRecords);
     }
 
     /**
@@ -1955,16 +1949,77 @@ public class SurveyRecordProcessor
             if (uuid16Services != null) dataBuilder.addAllServiceUuids(uuid16Services);
 
             Integer companyId = null;
-            SparseArray<byte[]> manufacturerSpecificData = scanRecord.getManufacturerSpecificData();
-            if (manufacturerSpecificData != null)
+            String mfgDataHex = null;
+
+            /*
+             * IMPORTANT: We use raw advertisement data instead of getManufacturerSpecificData() due to an
+             * Android BLE API bug where getManufacturerSpecificData() sometimes returns data with extra bytes.
+             *
+             * Example from actual logs:
+             * - Raw AD Type 0xFF data: A7 05 08 F5 EC 47 7F 80 33 92 E9 (11 bytes total)
+             * - Expected: Company ID = 0x05A7, Data = 08 F5 EC 47 7F 80 33 92 E9
+             * - But getManufacturerSpecificData() returns:
+             *   Company ID: 05a7 (correct)
+             *   Data: 060012202900ca0000080000000000000008f5ec477f803392e9 (wrong - has extra bytes)
+             *
+             * The API correctly extracts the company ID but the manufacturer data payload contains
+             * extra bytes prepended that don't exist in the actual advertisement.
+             *
+             * Solution: Parse the raw advertisement data directly from getAdvertisingDataMap() (API 33+)
+             * or fall back to the buggy API for older Android versions.
+             */
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU)
             {
-                // It is expected that there will only be one entry for manufacturer specific data
-                for (int i = 0; i < manufacturerSpecificData.size(); i++)
+                // Use raw advertisement data for accurate manufacturer data extraction
+                Map<Integer, byte[]> advertisingDataMap = scanRecord.getAdvertisingDataMap();
+                if (!advertisingDataMap.isEmpty())
                 {
-                    companyId = manufacturerSpecificData.keyAt(i);
+                    // AD Type 0xFF is manufacturer specific data
+                    byte[] manufacturerRawData = advertisingDataMap.get(0xFF);
+                    if (manufacturerRawData != null && manufacturerRawData.length >= 2)
+                    {
+                        // First 2 bytes are the company ID in little-endian format
+                        companyId = ((manufacturerRawData[1] & 0xFF) << 8) | (manufacturerRawData[0] & 0xFF);
+
+                        // Remaining bytes are the manufacturer data payload
+                        if (manufacturerRawData.length > 2)
+                        {
+                            StringBuilder hexBuilder = new StringBuilder();
+                            for (int i = 2; i < manufacturerRawData.length; i++)
+                            {
+                                hexBuilder.append(String.format("%02x", manufacturerRawData[i] & 0xFF));
+                            }
+                            mfgDataHex = hexBuilder.toString();
+                        }
+                    }
+                }
+            } else
+            {
+                // Fall back to the potentially buggy API for older Android versions
+                SparseArray<byte[]> manufacturerSpecificData = scanRecord.getManufacturerSpecificData();
+                if (manufacturerSpecificData != null && manufacturerSpecificData.size() > 0)
+                {
+                    // It is expected that there will only be one entry for manufacturer specific data
+                    for (int i = 0; i < manufacturerSpecificData.size(); i++)
+                    {
+                        companyId = manufacturerSpecificData.keyAt(i);
+                        byte[] mfgDataBytes = manufacturerSpecificData.valueAt(i);
+                        if (mfgDataBytes != null && mfgDataBytes.length > 0)
+                        {
+                            // Convert the manufacturer data payload to hex string
+                            StringBuilder hexBuilder = new StringBuilder();
+                            for (byte b : mfgDataBytes)
+                            {
+                                hexBuilder.append(String.format("%02x", b & 0xFF));
+                            }
+                            mfgDataHex = hexBuilder.toString();
+                        }
+                    }
                 }
             }
+
             if (companyId != null) dataBuilder.setCompanyId(Integer.toHexString(companyId));
+            if (mfgDataHex != null) dataBuilder.setMfgData(mfgDataHex);
         }
 
         final BluetoothRecord.Builder recordBuilder = BluetoothRecord.newBuilder();
@@ -2840,12 +2895,12 @@ public class SurveyRecordProcessor
     /**
      * Notify all the listeners that we have a new single Bluetooth Record available.
      *
-     * @param bluetoothRecordWrapper The new Bluetooth Survey Record wrapper to send to the listeners.
+     * @param bluetoothRecord The new Bluetooth Survey Record to send to the listeners.
      * @since 1.0.0
      */
-    private void notifyBluetoothRecordListeners(BluetoothRecordWrapper bluetoothRecordWrapper)
+    private void notifyBluetoothRecordListeners(BluetoothRecord bluetoothRecord)
     {
-        if (bluetoothRecordWrapper == null) return;
+        if (bluetoothRecord == null) return;
 
         // Increment session record count
         if (networkSurveyService != null) networkSurveyService.incrementSurveySessionRecordCount();
@@ -2854,7 +2909,7 @@ public class SurveyRecordProcessor
         {
             try
             {
-                listener.onBluetoothSurveyRecord(bluetoothRecordWrapper);
+                listener.onBluetoothSurveyRecord(bluetoothRecord);
             } catch (Exception e)
             {
                 Timber.e(e, "Unable to notify a Bluetooth Survey Record Listener because of an exception");
@@ -2865,17 +2920,17 @@ public class SurveyRecordProcessor
     /**
      * Notify all the listeners that we have a new group of Bluetooth Records available.
      *
-     * @param bluetoothRecordWrappers The new list Bluetooth Survey Record wrappers to send to the listeners.
+     * @param bluetoothRecords The new list Bluetooth Survey Records to send to the listeners.
      * @since 1.0.0
      */
-    private void notifyBluetoothRecordListeners(List<BluetoothRecordWrapper> bluetoothRecordWrappers)
+    private void notifyBluetoothRecordListeners(List<BluetoothRecord> bluetoothRecords)
     {
-        if (bluetoothRecordWrappers == null || bluetoothRecordWrappers.isEmpty()) return;
+        if (bluetoothRecords == null || bluetoothRecords.isEmpty()) return;
 
         // Increment session record count for each record
         if (networkSurveyService != null)
         {
-            for (int i = 0; i < bluetoothRecordWrappers.size(); i++)
+            for (int i = 0; i < bluetoothRecords.size(); i++)
             {
                 networkSurveyService.incrementSurveySessionRecordCount();
             }
@@ -2885,7 +2940,7 @@ public class SurveyRecordProcessor
         {
             try
             {
-                listener.onBluetoothSurveyRecords(bluetoothRecordWrappers);
+                listener.onBluetoothSurveyRecords(bluetoothRecords);
             } catch (Exception e)
             {
                 Timber.e(e, "Unable to notify a Bluetooth Survey Record Listener because of an exception");

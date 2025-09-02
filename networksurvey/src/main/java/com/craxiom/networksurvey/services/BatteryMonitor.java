@@ -131,7 +131,6 @@ public class BatteryMonitor extends BroadcastReceiver
         if (listener != null)
         {
             listeners.remove(listener);
-            Timber.d("Battery listener unregistered, remaining listeners: %d", listeners.size());
         }
     }
 

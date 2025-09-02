@@ -24,4 +24,5 @@ public class BluetoothCsvConstants extends SurveyCsvConstants
     public static final String DEVICE_CLASS = "deviceClass";
     public static final String SERVICE_UUIDS = "serviceUuids";
     public static final String COMPANY_ID = "companyId";
+    public static final String MANUFACTURER_SPECIFIC_DATA = "mfgData";
 }

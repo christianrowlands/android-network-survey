@@ -1524,13 +1524,13 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
         final int oldDeviceStatusScanRateMs = deviceStatusScanRateMs;
         deviceStatusScanRateMs = PreferenceUtils.getScanRatePreferenceMs(NetworkSurveyConstants.PROPERTY_DEVICE_STATUS_SCAN_INTERVAL_SECONDS,
                 NetworkSurveyConstants.DEFAULT_DEVICE_STATUS_SCAN_INTERVAL_SECONDS, applicationContext);
-        
+
         // If device status reporting is active and the rate has changed, restart it with the new rate
         if (deviceStatusActive.get() && oldDeviceStatusScanRateMs != deviceStatusScanRateMs)
         {
-            Timber.i("Device status scan rate changed from %d ms to %d ms, restarting to apply new rate", 
+            Timber.i("Device status scan rate changed from %d ms to %d ms, restarting to apply new rate",
                     oldDeviceStatusScanRateMs, deviceStatusScanRateMs);
-            
+
             restartDeviceStatusReport();
         }
 
@@ -1571,8 +1571,6 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
             Timber.d("Skipping location listener registration - paused for battery");
             return;
         }
-
-        Timber.d("Registering the location listener");
 
         if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED)
         {
@@ -1889,7 +1887,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
         }, 1000L, deviceStatusScanRateMs, TimeUnit.MILLISECONDS);
 
         Timber.d("Started device status reporting with interval %d ms", deviceStatusScanRateMs);
-        
+
         if (fullStart)
         {
             cellularController.startPhoneStateListener();

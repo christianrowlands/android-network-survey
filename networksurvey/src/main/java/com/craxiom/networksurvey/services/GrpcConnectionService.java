@@ -60,7 +60,6 @@ import com.craxiom.networksurvey.listeners.IDeviceStatusListener;
 import com.craxiom.networksurvey.listeners.IGnssSurveyRecordListener;
 import com.craxiom.networksurvey.listeners.IWifiSurveyRecordListener;
 import com.craxiom.networksurvey.messaging.NetworkSurveyStatusGrpc;
-import com.craxiom.networksurvey.model.BluetoothRecordWrapper;
 import com.craxiom.networksurvey.model.WifiRecordWrapper;
 import com.craxiom.networksurvey.util.LegacyRecordConversion;
 
@@ -414,23 +413,20 @@ public class GrpcConnectionService extends Service implements IDeviceStatusListe
     }
 
     @Override
-    public void onBluetoothSurveyRecord(BluetoothRecordWrapper bluetoothRecordWrapper)
+    public void onBluetoothSurveyRecord(BluetoothRecord bluetoothRecord)
     {
         if (isConnected() && bluetoothRecordGrpcTask != null && bluetoothRecordGrpcTask.getStatus() != AsyncTask.Status.FINISHED)
         {
-            bluetoothRecordQueue.add(bluetoothRecordWrapper.bluetoothRecord());
+            bluetoothRecordQueue.add(bluetoothRecord);
         }
     }
 
     @Override
-    public void onBluetoothSurveyRecords(List<BluetoothRecordWrapper> bluetoothRecordWrappers)
+    public void onBluetoothSurveyRecords(List<BluetoothRecord> bluetoothRecords)
     {
         if (isConnected() && bluetoothRecordGrpcTask != null && bluetoothRecordGrpcTask.getStatus() != AsyncTask.Status.FINISHED)
         {
-            for (BluetoothRecordWrapper wrapper : bluetoothRecordWrappers)
-            {
-                bluetoothRecordQueue.add(wrapper.bluetoothRecord());
-            }
+            bluetoothRecordQueue.addAll(bluetoothRecords);
         }
     }
 

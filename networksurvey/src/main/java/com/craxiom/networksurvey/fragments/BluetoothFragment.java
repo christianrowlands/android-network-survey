@@ -13,6 +13,7 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
+import android.util.SparseArray;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -36,7 +37,6 @@ import com.craxiom.networksurvey.constants.NetworkSurveyConstants;
 import com.craxiom.networksurvey.databinding.FragmentBluetoothListBinding;
 import com.craxiom.networksurvey.fragments.model.BluetoothViewModel;
 import com.craxiom.networksurvey.listeners.IBluetoothSurveyRecordListener;
-import com.craxiom.networksurvey.model.BluetoothRecordWrapper;
 import com.craxiom.networksurvey.model.SortedSet;
 import com.craxiom.networksurvey.services.NetworkSurveyService;
 import com.craxiom.networksurvey.ui.main.SharedViewModel;
@@ -200,7 +200,7 @@ public class BluetoothFragment extends AServiceDataFragment implements IBluetoot
     }
 
     @Override
-    public void onBluetoothSurveyRecord(BluetoothRecordWrapper bluetoothRecordWrapper)
+    public void onBluetoothSurveyRecord(BluetoothRecord bluetoothRecord)
     {
         //noinspection ConstantConditions
         if (viewModel.areUpdatesPaused().getValue()) return;
@@ -209,10 +209,13 @@ public class BluetoothFragment extends AServiceDataFragment implements IBluetoot
             //noinspection SynchronizeOnNonFinalField
             synchronized (bluetoothRecordSortedSet)
             {
-                BluetoothRecord bluetoothRecord = bluetoothRecordWrapper.bluetoothRecord();
                 bluetoothRecordSortedSet.add(bluetoothRecord);
-                // Store the manufacturer data in the ViewModel
-                viewModel.updateManufacturerData(bluetoothRecord.getData().getSourceAddress(), bluetoothRecordWrapper.manufacturerData());
+                // Parse and store the manufacturer data in the ViewModel
+                SparseArray<byte[]> manufacturerData = parseManufacturerData(bluetoothRecord);
+                if (manufacturerData != null)
+                {
+                    viewModel.updateManufacturerData(bluetoothRecord.getData().getSourceAddress(), manufacturerData);
+                }
 
                 checkAndRemoveStaleRecords();
 
@@ -227,7 +230,7 @@ public class BluetoothFragment extends AServiceDataFragment implements IBluetoot
     }
 
     @Override
-    public void onBluetoothSurveyRecords(List<BluetoothRecordWrapper> bluetoothRecordWrappers)
+    public void onBluetoothSurveyRecords(List<BluetoothRecord> bluetoothRecords)
     {
         //noinspection ConstantConditions
         if (viewModel.areUpdatesPaused().getValue()) return;
@@ -238,12 +241,15 @@ public class BluetoothFragment extends AServiceDataFragment implements IBluetoot
             {
                 // We can't use the SortedList#addAll method because we have not overridden that method in our custom
                 // SortedSet implementation of SortedList.
-                for (BluetoothRecordWrapper wrapper : bluetoothRecordWrappers)
+                for (BluetoothRecord bluetoothRecord : bluetoothRecords)
                 {
-                    BluetoothRecord bluetoothRecord = wrapper.bluetoothRecord();
                     bluetoothRecordSortedSet.add(bluetoothRecord);
-                    // Store the manufacturer data in the ViewModel
-                    viewModel.updateManufacturerData(bluetoothRecord.getData().getSourceAddress(), wrapper.manufacturerData());
+                    // Parse and store the manufacturer data in the ViewModel
+                    SparseArray<byte[]> manufacturerData = parseManufacturerData(bluetoothRecord);
+                    if (manufacturerData != null)
+                    {
+                        viewModel.updateManufacturerData(bluetoothRecord.getData().getSourceAddress(), manufacturerData);
+                    }
                 }
 
                 checkAndRemoveStaleRecords();
@@ -614,6 +620,49 @@ public class BluetoothFragment extends AServiceDataFragment implements IBluetoot
         } catch (Exception e)
         {
             Timber.e(e, "Something went wrong when trying to prompt the user to enable Bluetooth");
+        }
+    }
+
+    /**
+     * Parses the manufacturer data from the mfgData hex string and company ID.
+     *
+     * @param bluetoothRecord The Bluetooth record containing the mfgData and companyId fields.
+     * @return A SparseArray with the company ID as the key and the manufacturer data bytes as the value, or null if no data is available.
+     */
+    private SparseArray<byte[]> parseManufacturerData(BluetoothRecord bluetoothRecord)
+    {
+        BluetoothRecordData data = bluetoothRecord.getData();
+
+        String mfgDataHex = data.getMfgData();
+        String companyIdHex = data.getCompanyId();
+
+        if (mfgDataHex.isEmpty() || companyIdHex.isEmpty())
+        {
+            return null;
+        }
+
+        try
+        {
+            // Parse the company ID from hex
+            int companyId = Integer.parseInt(companyIdHex, 16);
+
+            // Parse the manufacturer data from hex string to byte array
+            int len = mfgDataHex.length();
+            byte[] mfgDataBytes = new byte[len / 2];
+            for (int i = 0; i < len; i += 2)
+            {
+                mfgDataBytes[i / 2] = (byte) ((Character.digit(mfgDataHex.charAt(i), 16) << 4)
+                        + Character.digit(mfgDataHex.charAt(i + 1), 16));
+            }
+
+            // Create SparseArray with the parsed data
+            SparseArray<byte[]> manufacturerData = new SparseArray<>();
+            manufacturerData.put(companyId, mfgDataBytes);
+            return manufacturerData;
+        } catch (Exception e)
+        {
+            Timber.e(e, "Failed to parse manufacturer data from BluetoothRecord");
+            return null;
         }
     }
 }

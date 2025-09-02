@@ -1131,8 +1131,6 @@ public class CellularController extends AController
                     final TelephonyManager telephonyManager = wrapper.getTelephonyManager();
                     if (telephonyManager != null && surveyService.getPackageManager().hasSystemFeature(PackageManager.FEATURE_TELEPHONY))
                     {
-                        Timber.d("Removing the CDR Telephony Manager Service State Listener");
-
                         try
                         {
                             int subscriptionId = wrapper.getSubscriptionId();

@@ -10,6 +10,7 @@ import static com.craxiom.networksurvey.constants.csv.BluetoothCsvConstants.DEVI
 import static com.craxiom.networksurvey.constants.csv.BluetoothCsvConstants.DEVICE_TIME;
 import static com.craxiom.networksurvey.constants.csv.BluetoothCsvConstants.LATITUDE;
 import static com.craxiom.networksurvey.constants.csv.BluetoothCsvConstants.LONGITUDE;
+import static com.craxiom.networksurvey.constants.csv.BluetoothCsvConstants.MANUFACTURER_SPECIFIC_DATA;
 import static com.craxiom.networksurvey.constants.csv.BluetoothCsvConstants.MISSION_ID;
 import static com.craxiom.networksurvey.constants.csv.BluetoothCsvConstants.OTA_DEVICE_NAME;
 import static com.craxiom.networksurvey.constants.csv.BluetoothCsvConstants.RECORD_NUMBER;
@@ -32,7 +33,6 @@ import com.craxiom.messaging.bluetooth.SupportedTechnologies;
 import com.craxiom.messaging.bluetooth.Technology;
 import com.craxiom.networksurvey.constants.NetworkSurveyConstants;
 import com.craxiom.networksurvey.listeners.IBluetoothSurveyRecordListener;
-import com.craxiom.networksurvey.model.BluetoothRecordWrapper;
 import com.craxiom.networksurvey.services.NetworkSurveyService;
 
 import java.io.IOException;
@@ -58,7 +58,8 @@ public class BluetoothCsvLogger extends CsvRecordLogger implements IBluetoothSur
                 MISSION_ID, RECORD_NUMBER,
                 SOURCE_ADDRESS, DESTINATION_ADDRESS, SIGNAL_STRENGTH, TX_POWER, TECHNOLOGY,
                 SUPPORTED_TECHNOLOGIES, OTA_DEVICE_NAME, CHANNEL,
-                DEVICE_SERIAL_NUMBER, LOCATION_AGE, ADDRESS_TYPE, DEVICE_CLASS, SERVICE_UUIDS, COMPANY_ID};
+                DEVICE_SERIAL_NUMBER, LOCATION_AGE, ADDRESS_TYPE, DEVICE_CLASS, SERVICE_UUIDS, COMPANY_ID,
+                MANUFACTURER_SPECIFIC_DATA};
     }
 
     @Override
@@ -68,11 +69,11 @@ public class BluetoothCsvLogger extends CsvRecordLogger implements IBluetoothSur
     }
 
     @Override
-    public synchronized void onBluetoothSurveyRecord(BluetoothRecordWrapper bluetoothRecordWrapper)
+    public synchronized void onBluetoothSurveyRecord(BluetoothRecord bluetoothRecord)
     {
         try
         {
-            writeCsvRecord(convertToObjectArray(bluetoothRecordWrapper.bluetoothRecord()), false);
+            writeCsvRecord(convertToObjectArray(bluetoothRecord), false);
         } catch (IOException e)
         {
             Timber.e(e, "Could not log the Bluetooth record to the CSV file");
@@ -80,12 +81,12 @@ public class BluetoothCsvLogger extends CsvRecordLogger implements IBluetoothSur
     }
 
     @Override
-    public synchronized void onBluetoothSurveyRecords(List<BluetoothRecordWrapper> bluetoothRecordWrappers)
+    public synchronized void onBluetoothSurveyRecords(List<BluetoothRecord> bluetoothRecords)
     {
-        bluetoothRecordWrappers.forEach(wrapper -> {
+        bluetoothRecords.forEach(record -> {
             try
             {
-                writeCsvRecord(convertToObjectArray(wrapper.bluetoothRecord()), false);
+                writeCsvRecord(convertToObjectArray(record), false);
             } catch (IOException e)
             {
                 Timber.e(e, "Could not log the Bluetooth record to the CSV file");
@@ -133,6 +134,7 @@ public class BluetoothCsvLogger extends CsvRecordLogger implements IBluetoothSur
                 // Convert the list of service UUIDs to a semicolon-separated string
                 String.join(";", data.getServiceUuidsList()),
                 data.getCompanyId(),
+                data.getMfgData(),
         };
     }
 }

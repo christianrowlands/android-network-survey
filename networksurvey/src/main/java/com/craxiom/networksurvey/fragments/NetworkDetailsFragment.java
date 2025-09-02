@@ -107,7 +107,6 @@ public class NetworkDetailsFragment extends AServiceDataFragment implements ICel
         Bundle args = getArguments();
         //noinspection DataFlowIssue
         subscriptionId = args.getInt(SUBSCRIPTION_ID_KEY, -1);
-        Timber.d("Retrieving the subscriptionId from the arguments. subscriptionId=%d", subscriptionId);
     }
 
     @Nullable
@@ -169,11 +168,9 @@ public class NetworkDetailsFragment extends AServiceDataFragment implements ICel
         airplaneModeReceiver = new AirplaneModeReceiver();
         IntentFilter filter = new IntentFilter(Intent.ACTION_AIRPLANE_MODE_CHANGED);
         requireContext().registerReceiver(airplaneModeReceiver, filter);
-        Timber.d("Registered airplane mode receiver");
 
         // Check initial airplane mode state
         boolean isAirplaneModeOn = isAirplaneModeOn(requireContext());
-        Timber.d("Initial airplane mode state: %s", isAirplaneModeOn ? "ON" : "OFF");
         viewModel.setAirplaneModeActive(isAirplaneModeOn);
         if (isAirplaneModeOn)
         {
