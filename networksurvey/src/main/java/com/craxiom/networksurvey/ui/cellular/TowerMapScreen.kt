@@ -577,8 +577,8 @@ internal fun TowerMapScreen(
                                 iconRes = R.drawable.ic_info,
                                 contentDescription = "About Tower Map",
                                 onClick = { showInfoDialog = true },
-                                containerColor = MaterialTheme.colorScheme.surface,
-                                contentColor = MaterialTheme.colorScheme.onSurface
+                                containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                                contentColor = MaterialTheme.colorScheme.onSecondaryContainer
                             )
 
                             // Settings button
