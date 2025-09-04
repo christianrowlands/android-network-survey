@@ -52,6 +52,9 @@ class SharedViewModel @Inject constructor(application: Application) :
     private val _navigateToSsidExclusionList = MutableLiveData(false)
     val navigateToSsidExclusionList: LiveData<Boolean> = _navigateToSsidExclusionList
 
+    private val _navigateToAcknowledgments = MutableLiveData(false)
+    val navigateToAcknowledgments: LiveData<Boolean> = _navigateToAcknowledgments
+
     private val _navigateToMqttConnection = MutableLiveData(false)
     val navigateToMqttConnection: LiveData<Boolean> = _navigateToMqttConnection
     private var _mqttConnectionSettings: MqttConnectionSettings? = null
@@ -74,6 +77,10 @@ class SharedViewModel @Inject constructor(application: Application) :
 
     fun triggerNavigationToSsidExclusionList() {
         _navigateToSsidExclusionList.value = true
+    }
+
+    fun triggerNavigationToAcknowledgments() {
+        _navigateToAcknowledgments.value = true
     }
 
     fun triggerNavigationToQrCodeScanner(mqttConnectionSettings: MqttConnectionSettings) {
@@ -135,6 +142,10 @@ class SharedViewModel @Inject constructor(application: Application) :
 
     fun resetSsidExclusionListNavigationFlag() {
         _navigateToSsidExclusionList.value = false
+    }
+
+    fun resetAcknowledgmentsNavigationFlag() {
+        _navigateToAcknowledgments.value = false
     }
 
     fun resetNavigationFlag() {

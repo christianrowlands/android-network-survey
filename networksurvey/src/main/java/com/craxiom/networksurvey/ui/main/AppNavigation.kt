@@ -34,6 +34,7 @@ import com.craxiom.networksurvey.fragments.WifiDetailsFragment
 import com.craxiom.networksurvey.fragments.WifiSpectrumFragment
 import com.craxiom.networksurvey.fragments.model.MqttConnectionSettings
 import com.craxiom.networksurvey.model.WifiNetwork
+import com.craxiom.networksurvey.ui.acknowledgments.AcknowledgmentsScreen
 import com.craxiom.networksurvey.ui.activesurvey.SurveyMonitorScreen
 import com.craxiom.networksurvey.ui.cellular.CalculatorScreen
 import com.craxiom.networksurvey.ui.main.appbar.TitleBar
@@ -114,6 +115,12 @@ fun NavGraphBuilder.mainGraph(
             )
         }
 
+        composable(NavOption.Acknowledgments.name) {
+            AcknowledgmentsScreen(
+                onNavigateUp = { mainNavController.navigateUp() }
+            )
+        }
+
         composable(NavOption.QrCodeScanner.name) {
             QrCodeScannerInCompose(mainNavController)
         }
@@ -175,7 +182,8 @@ enum class NavOption {
     WifiDetails,
     BluetoothDetails,
     SurveyMonitor,
-    SsidExclusionList
+    SsidExclusionList,
+    Acknowledgments
 }
 
 @Composable

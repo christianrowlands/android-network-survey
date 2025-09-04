@@ -118,6 +118,16 @@ public class SettingsFragment extends PreferenceFragmentCompat implements Shared
             });
         }
 
+        final Preference acknowledgments = findPreference("acknowledgments");
+        if (acknowledgments != null)
+        {
+            acknowledgments.setOnPreferenceClickListener(preference -> {
+                SharedViewModel viewModel = new ViewModelProvider(requireActivity()).get(SharedViewModel.class);
+                viewModel.triggerNavigationToAcknowledgments();
+                return true;
+            });
+        }
+
         // Battery optimization preference
         final Preference batteryOptimization = findPreference("battery_optimization");
         if (batteryOptimization != null && getContext() != null)

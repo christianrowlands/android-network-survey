@@ -73,6 +73,15 @@ fun MainCompose(
         }
     }
 
+    LaunchedEffect(viewModel.navigateToAcknowledgments) {
+        viewModel.navigateToAcknowledgments.observe(lifecycleOwner) { shouldNavigate ->
+            if (shouldNavigate) {
+                mainNavController.navigate(NavOption.Acknowledgments.name)
+                viewModel.resetAcknowledgmentsNavigationFlag()
+            }
+        }
+    }
+
     LaunchedEffect(viewModel.navigateToQrCodeScanner) {
         viewModel.navigateToQrCodeScanner.observe(lifecycleOwner) { shouldNavigate ->
             if (shouldNavigate) {

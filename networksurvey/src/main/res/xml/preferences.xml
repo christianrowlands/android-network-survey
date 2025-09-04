@@ -271,6 +271,11 @@
             app:title="@string/privacy_policy"
             app:summary="@string/privacy_policy_preference_summary" />
 
+        <Preference
+            app:key="acknowledgments"
+            app:title="@string/acknowledgments_title"
+            app:summary="@string/acknowledgments_summary" />
+
     </PreferenceCategory>
 
 </PreferenceScreen>
