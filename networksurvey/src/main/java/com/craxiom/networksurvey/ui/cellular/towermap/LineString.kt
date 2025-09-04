@@ -31,7 +31,8 @@ internal class LineStringNode(
     lineString: LineString,
     color: Color,
     width: Float,
-    dashArray: List<Float>?
+    dashArray: List<Float>?,
+    symbolLayerId: String? = null
 ) : MapNode {
     init {
         // Create source
@@ -43,17 +44,27 @@ internal class LineStringNode(
             )
         )
         // Create layer
-        style.addLayer(
-            LineLayer(layerId, sourceId).apply {
-                setProperties(
-                    PropertyFactory.lineColor(color.toArgb()),
-                    PropertyFactory.lineWidth(width)
-                )
-                dashArray?.let { dash ->
-                    setProperties(PropertyFactory.lineDasharray(dash.toTypedArray()))
-                }
+        val lineLayer = LineLayer(layerId, sourceId).apply {
+            setProperties(
+                PropertyFactory.lineColor(color.toArgb()),
+                PropertyFactory.lineWidth(width)
+            )
+            dashArray?.let { dash ->
+                setProperties(PropertyFactory.lineDasharray(dash.toTypedArray()))
             }
-        )
+        }
+
+        // Add layer below the symbol layer if specified, otherwise add normally
+        if (symbolLayerId != null) {
+            try {
+                style.addLayerBelow(lineLayer, symbolLayerId)
+            } catch (e: Exception) {
+                // Fallback to normal addLayer if the symbol layer doesn't exist yet
+                style.addLayer(lineLayer)
+            }
+        } else {
+            style.addLayer(lineLayer)
+        }
     }
 
     /**
@@ -125,6 +136,7 @@ fun LineString(
 ) {
     val mapApplier = currentComposer.applier as MapApplier
     val style = mapApplier.style
+    val symbolManager = mapApplier.symbolManager
 
     // Need at least two points
     if (state.points.size < 2) return
@@ -137,6 +149,13 @@ fun LineString(
     val coords = state.points.map { Point.fromLngLat(it.longitude, it.latitude) }
     val lineString = LineString.fromLngLats(coords)
 
+    // Get the symbol manager's layer ID to ensure lines are drawn below symbols
+    val symbolLayerId = try {
+        symbolManager.layerId
+    } catch (e: Exception) {
+        null
+    }
+
     ComposeNode<LineStringNode, MapApplier>(
         factory = {
             LineStringNode(
@@ -146,7 +165,8 @@ fun LineString(
                 lineString = lineString,
                 color = state.color,
                 width = state.width,
-                dashArray = state.dashArray
+                dashArray = state.dashArray,
+                symbolLayerId = symbolLayerId
             )
         },
         update = {

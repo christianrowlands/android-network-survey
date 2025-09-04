@@ -103,6 +103,7 @@ import com.craxiom.networksurvey.ui.cellular.model.TowerSource
 import com.craxiom.networksurvey.ui.cellular.towermap.CameraMode
 import com.craxiom.networksurvey.ui.cellular.towermap.Circle
 import com.craxiom.networksurvey.ui.cellular.towermap.DefaultMapLocationSettings
+import com.craxiom.networksurvey.ui.cellular.towermap.DistanceSymbol
 import com.craxiom.networksurvey.ui.cellular.towermap.KEY_SEARCH_TOWER_ICON
 import com.craxiom.networksurvey.ui.cellular.towermap.KEY_SERVING_CELL_ICON
 import com.craxiom.networksurvey.ui.cellular.towermap.KEY_TOWER_ICON
@@ -220,6 +221,7 @@ internal fun TowerMapScreen(
     val servingCells by viewModel.servingCells.collectAsStateWithLifecycle()
     var selectedSimIndex by remember { mutableIntStateOf(-1) }
     val servingCellSignals by viewModel.servingSignals.collectAsStateWithLifecycle()
+    val servingCellLines by viewModel.servingCellLines.collectAsStateWithLifecycle()
     val showTowersLayer by viewModel.showTowersLayer.collectAsStateWithLifecycle()
     val searchedTower by viewModel.searchedTower.collectAsStateWithLifecycle()
     val isSearchInProgress by viewModel.isSearchInProgress.collectAsStateWithLifecycle()
@@ -425,8 +427,7 @@ internal fun TowerMapScreen(
                             )
                         }
 
-                        // Render serving cell lines
-                        val servingCellLines by viewModel.servingCellLines.collectAsStateWithLifecycle()
+                        // Render serving cell lines first (continuous dashed line)
                         servingCellLines.forEach { lineData ->
                             LineString(
                                 state = rememberLineStringState(
@@ -435,6 +436,15 @@ internal fun TowerMapScreen(
                                     width = 3f,
                                     dashArray = listOf(5f, 3f) // Dashed line
                                 )
+                            )
+                        }
+
+                        // Then render distance symbols on top of lines
+                        servingCellLines.forEach { lineData ->
+                            DistanceSymbol(
+                                startPoint = lineData.startPoint,
+                                endPoint = lineData.endPoint,
+                                distanceMeters = lineData.distanceMeters
                             )
                         }
 

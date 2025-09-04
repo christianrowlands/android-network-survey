@@ -857,7 +857,8 @@ class TowerMapLibreViewModel : ViewModel() {
                     ServingCellLineData(
                         subscriptionId = subscriptionId,
                         startPoint = myLatLng,
-                        endPoint = locationInfo.location
+                        endPoint = locationInfo.location,
+                        distanceMeters = haversineDistance(myLatLng, locationInfo.location)
                     )
                 }
         } else {
@@ -866,7 +867,8 @@ class TowerMapLibreViewModel : ViewModel() {
                 ServingCellLineData(
                     subscriptionId = subscriptionId,
                     startPoint = myLatLng,
-                    endPoint = locationInfo.location
+                    endPoint = locationInfo.location,
+                    distanceMeters = haversineDistance(myLatLng, locationInfo.location)
                 )
             }
         }
@@ -998,6 +1000,30 @@ class TowerMapLibreViewModel : ViewModel() {
         val c = 2 * kotlin.math.atan2(kotlin.math.sqrt(a), kotlin.math.sqrt(1 - a))
         val width = earthRadius * c
         return width * width
+    }
+
+    /**
+     * Calculates the distance between two LatLng points using the haversine formula.
+     *
+     * @param point1 The first point
+     * @param point2 The second point
+     * @return The distance in meters
+     */
+    private fun haversineDistance(point1: LatLng, point2: LatLng): Double {
+        val earthRadius = 6_371_000.0 // meters
+
+        val lat1Rad = Math.toRadians(point1.latitude)
+        val lat2Rad = Math.toRadians(point2.latitude)
+        val deltaLat = Math.toRadians(point2.latitude - point1.latitude)
+        val deltaLon = Math.toRadians(point2.longitude - point1.longitude)
+
+        val a = kotlin.math.sin(deltaLat / 2) * kotlin.math.sin(deltaLat / 2) +
+                kotlin.math.cos(lat1Rad) * kotlin.math.cos(lat2Rad) *
+                kotlin.math.sin(deltaLon / 2) * kotlin.math.sin(deltaLon / 2)
+
+        val c = 2 * kotlin.math.atan2(kotlin.math.sqrt(a), kotlin.math.sqrt(1 - a))
+
+        return earthRadius * c
     }
 
     /**
