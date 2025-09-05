@@ -48,6 +48,7 @@
 
     <application
         android:name=".Application"
+        android:allowBackup="false"
         android:dataExtractionRules="@xml/backup_rules"
         android:fullBackupContent="true"
         android:icon="@mipmap/ic_launcher"
@@ -57,7 +58,7 @@
         android:supportsRtl="true"
         android:theme="@style/NetworkSurveyTheme"
         tools:ignore="GoogleAppIndexingWarning"
-        tools:replace="android:usesCleartextTraffic"
+        tools:replace="android:allowBackup,android:usesCleartextTraffic"
         android:usesCleartextTraffic="false">
 
         <activity
