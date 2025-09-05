@@ -1,6 +1,6 @@
 package com.craxiom.networksurvey.view;
 
-import static com.craxiom.networksurvey.model.SatelliteStatus.NO_DATA;
+import static com.craxiom.networksurvey.gpstest.model.SatelliteStatus.NO_DATA;
 import static java.util.Collections.emptyList;
 
 import android.content.Context;
@@ -19,9 +19,9 @@ import androidx.annotation.Nullable;
 import androidx.core.content.ContextCompat;
 
 import com.craxiom.networksurvey.R;
-import com.craxiom.networksurvey.model.GnssType;
-import com.craxiom.networksurvey.model.SatelliteStatus;
-import com.craxiom.networksurvey.util.LibUIUtils;
+import com.craxiom.networksurvey.gpstest.model.GnssType;
+import com.craxiom.networksurvey.gpstest.model.SatelliteStatus;
+import com.craxiom.networksurvey.gpstest.util.LibUIUtils;
 
 import java.util.List;
 

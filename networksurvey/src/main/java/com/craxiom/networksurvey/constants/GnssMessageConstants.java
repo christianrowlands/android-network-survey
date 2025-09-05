@@ -3,7 +3,7 @@ package com.craxiom.networksurvey.constants;
 import android.location.GnssStatus;
 
 import com.craxiom.messaging.gnss.Constellation;
-import com.craxiom.networksurvey.model.GnssType;
+import com.craxiom.networksurvey.gpstest.model.GnssType;
 
 /**
  * The constants associated with the GNSS table in the GeoPackage file.

@@ -13,7 +13,7 @@ import com.craxiom.networksurvey.constants.csv.BluetoothCsvConstants;
 import com.craxiom.networksurvey.constants.csv.CsvConstants;
 import com.craxiom.networksurvey.listeners.IBluetoothSurveyRecordListener;
 import com.craxiom.networksurvey.services.NetworkSurveyService;
-import com.craxiom.networksurvey.util.MathUtils;
+import com.craxiom.networksurvey.gpstest.util.MathUtils;
 import com.craxiom.networksurvey.util.NsUtils;
 
 import java.sql.SQLException;

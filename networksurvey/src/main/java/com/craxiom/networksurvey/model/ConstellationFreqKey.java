@@ -2,8 +2,9 @@ package com.craxiom.networksurvey.model;
 
 import android.location.GnssStatus;
 
-import com.craxiom.networksurvey.util.CarrierFreqUtils;
-import com.craxiom.networksurvey.util.MathUtils;
+import com.craxiom.networksurvey.gpstest.model.GnssType;
+import com.craxiom.networksurvey.gpstest.util.CarrierFreqUtils;
+import com.craxiom.networksurvey.gpstest.util.MathUtils;
 
 import java.util.Objects;
 

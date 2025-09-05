@@ -28,7 +28,7 @@ import com.craxiom.networksurvey.constants.csv.NrCsvConstants;
 import com.craxiom.networksurvey.constants.csv.UmtsCsvConstants;
 import com.craxiom.networksurvey.listeners.ICellularSurveyRecordListener;
 import com.craxiom.networksurvey.services.NetworkSurveyService;
-import com.craxiom.networksurvey.util.MathUtils;
+import com.craxiom.networksurvey.gpstest.util.MathUtils;
 import com.craxiom.networksurvey.util.NsUtils;
 import com.google.common.base.Strings;
 

@@ -58,7 +58,7 @@ import com.craxiom.networksurvey.ui.main.SharedViewModel;
 import com.craxiom.networksurvey.util.CalculationUtils;
 import com.craxiom.networksurvey.util.CellularUtils;
 import com.craxiom.networksurvey.util.ColorUtils;
-import com.craxiom.networksurvey.util.MathUtils;
+import com.craxiom.networksurvey.gpstest.util.MathUtils;
 import com.craxiom.networksurvey.util.ParserUtils;
 import com.mackhartley.roundedprogressbar.RoundedProgressBar;
 

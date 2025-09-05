@@ -29,7 +29,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.craxiom.networksurvey.Application
 import com.craxiom.networksurvey.R
-import com.craxiom.networksurvey.model.GnssType
+import com.craxiom.networksurvey.gpstest.model.GnssType
 import com.craxiom.networksurvey.util.PreferenceUtils
 
 @Composable

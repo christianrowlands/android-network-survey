@@ -20,7 +20,7 @@ import com.craxiom.networksurvey.logging.GnssRecordLogger;
 import com.craxiom.networksurvey.model.LogTypeState;
 import com.craxiom.networksurvey.services.NetworkSurveyService;
 import com.craxiom.networksurvey.services.SurveyRecordProcessor;
-import com.craxiom.networksurvey.util.GpsTestUtil;
+import com.craxiom.networksurvey.gpstest.util.GpsTestUtil;
 import com.craxiom.networksurvey.util.PreferenceUtils;
 
 import java.util.concurrent.ExecutorService;

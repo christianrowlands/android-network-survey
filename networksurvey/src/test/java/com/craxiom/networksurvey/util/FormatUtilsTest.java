@@ -2,6 +2,8 @@ package com.craxiom.networksurvey.util;
 
 import static org.junit.Assert.assertEquals;
 
+import com.craxiom.networksurvey.gpstest.util.FormatUtils;
+
 import org.junit.Test;
 
 public class FormatUtilsTest

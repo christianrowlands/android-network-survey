@@ -1,6 +1,6 @@
 package com.craxiom.networksurvey.services;
 
-import static com.craxiom.networksurvey.util.GpsTestUtil.getGnssTimeoutIntervalMs;
+import static com.craxiom.networksurvey.gpstest.util.GpsTestUtil.getGnssTimeoutIntervalMs;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
 
 import android.Manifest;
@@ -92,6 +92,7 @@ import com.craxiom.networksurvey.constants.NrMessageConstants;
 import com.craxiom.networksurvey.constants.UmtsMessageConstants;
 import com.craxiom.networksurvey.constants.WifiBeaconMessageConstants;
 import com.craxiom.networksurvey.data.SsidExclusionManager;
+import com.craxiom.networksurvey.gpstest.util.GpsTestUtil;
 import com.craxiom.networksurvey.listeners.IBluetoothSurveyRecordListener;
 import com.craxiom.networksurvey.listeners.ICdrEventListener;
 import com.craxiom.networksurvey.listeners.ICellularSurveyRecordListener;
@@ -110,9 +111,9 @@ import com.craxiom.networksurvey.services.controller.CellularController;
 import com.craxiom.networksurvey.ui.activesurvey.NewTowerNotificationHelper;
 import com.craxiom.networksurvey.ui.activesurvey.TowerDetectionJavaWrapper;
 import com.craxiom.networksurvey.util.CellularUtils;
-import com.craxiom.networksurvey.util.FormatUtils;
+import com.craxiom.networksurvey.gpstest.util.FormatUtils;
 import com.craxiom.networksurvey.util.LocationUtils;
-import com.craxiom.networksurvey.util.MathUtils;
+import com.craxiom.networksurvey.gpstest.util.MathUtils;
 import com.craxiom.networksurvey.util.NsUtils;
 import com.craxiom.networksurvey.util.ParserUtils;
 import com.craxiom.networksurvey.util.PreferenceUtils;
@@ -1000,7 +1001,7 @@ public class SurveyRecordProcessor
     /**
      * Generates an empty GNSS message in cases where the Location Provider is enabled, we are given
      * permissions to access the device location, but we don't receive a location update within the GNSS Timeout
-     * interval as defined in {@link com.craxiom.networksurvey.util.GpsTestUtil#getGnssTimeoutIntervalMs(long)}.
+     * interval as defined in {@link GpsTestUtil#getGnssTimeoutIntervalMs(long)}.
      *
      * @since 1.8.0
      */

@@ -15,7 +15,10 @@ import androidx.viewpager2.adapter.FragmentStateAdapter
 import androidx.viewpager2.widget.ViewPager2
 import com.craxiom.networksurvey.Application
 import com.craxiom.networksurvey.R
-import com.craxiom.networksurvey.ui.gnss.model.SignalInfoViewModel
+import com.craxiom.networksurvey.gpstest.fragments.GnssDetailsFragment
+import com.craxiom.networksurvey.gpstest.fragments.SkyFragment
+import com.craxiom.networksurvey.gpstest.fragments.TITLE
+import com.craxiom.networksurvey.gpstest.ui.gnss.model.SignalInfoViewModel
 import com.google.android.material.tabs.TabLayout
 import com.google.android.material.tabs.TabLayoutMediator
 import kotlinx.coroutines.ExperimentalCoroutinesApi

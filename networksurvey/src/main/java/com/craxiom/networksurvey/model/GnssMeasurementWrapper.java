@@ -2,8 +2,11 @@ package com.craxiom.networksurvey.model;
 
 import android.location.GnssMeasurement;
 
-import com.craxiom.networksurvey.util.CarrierFreqUtils;
-import com.craxiom.networksurvey.util.MathUtils;
+import com.craxiom.networksurvey.gpstest.model.GnssType;
+import com.craxiom.networksurvey.gpstest.model.SatelliteStatus;
+import com.craxiom.networksurvey.gpstest.util.CarrierFreqUtils;
+import com.craxiom.networksurvey.gpstest.util.GpsTestUtil;
+import com.craxiom.networksurvey.gpstest.util.MathUtils;
 
 import java.util.Objects;
 
@@ -30,7 +33,7 @@ public class GnssMeasurementWrapper
     /**
      * @param svid               from {@link GnssMeasurement#getSvid()}
      * @param gnssType           from {@link GnssMeasurement#getConstellationType()} converted into GnssType
-     *                           via {@link com.craxiom.networksurvey.util.GpsTestUtil#getGnssConstellationType(int)}
+     *                           via {@link GpsTestUtil#getGnssConstellationType(int)}
      * @param carrierFrequencyHz from {@link GnssMeasurement#getCarrierFrequencyHz()}
      */
     public GnssMeasurementWrapper(int svid, GnssType gnssType, float carrierFrequencyHz)

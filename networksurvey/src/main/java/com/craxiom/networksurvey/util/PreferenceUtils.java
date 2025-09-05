@@ -39,7 +39,7 @@ import com.craxiom.networksurvey.BuildConfig;
 import com.craxiom.networksurvey.R;
 import com.craxiom.networksurvey.constants.NetworkSurveyConstants;
 import com.craxiom.networksurvey.fragments.model.MqttConnectionSettings;
-import com.craxiom.networksurvey.model.GnssType;
+import com.craxiom.networksurvey.gpstest.model.GnssType;
 import com.craxiom.networksurvey.model.LogTypeState;
 import com.craxiom.networksurvey.model.SurveyTypes;
 import com.craxiom.networksurvey.mqtt.MqttConnectionInfo;

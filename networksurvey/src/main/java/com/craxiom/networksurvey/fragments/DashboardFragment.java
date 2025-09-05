@@ -68,7 +68,7 @@ import com.craxiom.networksurvey.services.BatteryMonitor;
 import com.craxiom.networksurvey.services.NetworkSurveyService;
 import com.craxiom.networksurvey.ui.main.SharedViewModel;
 import com.craxiom.networksurvey.util.BatteryOptimizationHelper;
-import com.craxiom.networksurvey.util.MathUtils;
+import com.craxiom.networksurvey.gpstest.util.MathUtils;
 import com.craxiom.networksurvey.util.MdmUtils;
 import com.craxiom.networksurvey.util.NsUtils;
 import com.craxiom.networksurvey.util.PreferenceUtils;

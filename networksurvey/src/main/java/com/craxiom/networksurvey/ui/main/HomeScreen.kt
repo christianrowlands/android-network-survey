@@ -41,10 +41,10 @@ import com.craxiom.networksurvey.fragments.DashboardFragment
 import com.craxiom.networksurvey.fragments.MainCellularFragment
 import com.craxiom.networksurvey.fragments.MainGnssFragment
 import com.craxiom.networksurvey.fragments.WifiNetworksFragment
-import com.craxiom.networksurvey.model.GnssType
+import com.craxiom.networksurvey.gpstest.model.GnssType
 import com.craxiom.networksurvey.ui.main.appbar.AppBar
 import com.craxiom.networksurvey.ui.main.appbar.AppBarAction
-import com.craxiom.networksurvey.util.LibUIUtils
+import com.craxiom.networksurvey.gpstest.util.LibUIUtils
 import com.craxiom.networksurvey.util.PreferenceUtils
 
 @Composable

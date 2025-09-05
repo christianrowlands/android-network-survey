@@ -12,7 +12,7 @@ import com.craxiom.networksurvey.constants.csv.WifiCsvConstants;
 import com.craxiom.networksurvey.listeners.IWifiSurveyRecordListener;
 import com.craxiom.networksurvey.model.WifiRecordWrapper;
 import com.craxiom.networksurvey.services.NetworkSurveyService;
-import com.craxiom.networksurvey.util.MathUtils;
+import com.craxiom.networksurvey.gpstest.util.MathUtils;
 import com.craxiom.networksurvey.util.NsUtils;
 
 import java.sql.SQLException;
