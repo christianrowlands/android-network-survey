@@ -275,7 +275,6 @@ public class WifiNetworksFragment extends AServiceDataFragment implements IWifiS
         WifiNetworkInfoList wifiNetworkInfoList = new WifiNetworkInfoList(wifiNetworks);
 
         SharedViewModel viewModel = new ViewModelProvider(activity).get(SharedViewModel.class);
-        Timber.i("Updating viewModel with the latest Wi-Fi scan results %s", wifiNetworkInfoList);
         viewModel.updateWifiNetworkInfoList(wifiNetworkInfoList);
     }
 
@@ -578,7 +577,8 @@ public class WifiNetworksFragment extends AServiceDataFragment implements IWifiS
 
         final Snackbar snackbar = Snackbar.make(requireView(), snackbarMessage, Snackbar.LENGTH_INDEFINITE)
                 .setAction("Open", v -> startActivity(new Intent(devOptionsEnabled ? Settings.ACTION_APPLICATION_DEVELOPMENT_SETTINGS : Settings.ACTION_DEVICE_INFO_SETTINGS)))
-                .setBackgroundTint(getResources().getColor(R.color.alert_red, null));
+                .setBackgroundTint(getResources().getColor(R.color.alert_red, null))
+                .setTextColor(getResources().getColor(R.color.body_text_1_dark, null));
 
         if (snackbar.isShown()) return;
 
