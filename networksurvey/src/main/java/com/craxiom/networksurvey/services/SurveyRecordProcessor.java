@@ -1499,7 +1499,7 @@ public class SurveyRecordProcessor
         if (cellInfoLte.isRegistered())
         {
             int signalStrengthSnr = getLteRssnr(signalStrength);
-            if (signalStrengthSnr != Integer.MIN_VALUE)
+            if (signalStrengthSnr != Integer.MIN_VALUE && signalStrengthSnr != CellInfo.UNAVAILABLE)
             {
                 dataBuilder.setSnr(FloatValue.newBuilder().setValue(signalStrengthSnr).build());
             }
