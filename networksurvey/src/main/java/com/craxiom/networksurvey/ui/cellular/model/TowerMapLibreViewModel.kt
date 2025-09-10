@@ -7,6 +7,10 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.craxiom.messaging.GsmRecord
+import com.craxiom.messaging.LteRecord
+import com.craxiom.messaging.NrRecord
+import com.craxiom.messaging.UmtsRecord
 import com.craxiom.networksurvey.data.api.Api
 import com.craxiom.networksurvey.data.api.Tower
 import com.craxiom.networksurvey.data.api.TowerResponse
@@ -138,6 +142,9 @@ class TowerMapLibreViewModel : ViewModel() {
 
     private val _showTowersLayer = MutableStateFlow(true)
     val showTowersLayer = _showTowersLayer.asStateFlow()
+
+    private val _showOnlyServingCell = MutableStateFlow(false)
+    val showOnlyServingCell = _showOnlyServingCell.asStateFlow()
 
     // BeaconDB layer management
     private var beaconDbLayerIds: List<String> = emptyList()
@@ -312,6 +319,21 @@ class TowerMapLibreViewModel : ViewModel() {
                     viewModelScope.launch {
                         runTowerQuery()
                     }
+                }
+            }
+        }
+    }
+
+    fun setShowOnlyServingCell(show: Boolean) {
+        if (_showOnlyServingCell.value != show) {
+            _showOnlyServingCell.value = show
+            // Clear existing towers to force a fresh query with the new mode
+            _towers.value = LinkedHashSet()
+            _noTowersFound.value = false
+            // Trigger a new query with the updated mode
+            if (_showTowersLayer.value) {
+                viewModelScope.launch {
+                    runTowerQuery()
                 }
             }
         }
@@ -547,9 +569,13 @@ class TowerMapLibreViewModel : ViewModel() {
                 val area = calculateArea(bounds)
                 if (currentZoom >= MIN_ZOOM_LEVEL && area <= MAX_AREA_SQ_METERS) {
                     _isZoomedOutTooFar.value = false
-                    // Only query towers if the layer is visible
-                    if (_showTowersLayer.value) {
+                    // Only query towers if the layer is visible and not in serving cell only mode
+                    if (_showTowersLayer.value && !_showOnlyServingCell.value) {
                         viewModelScope.launch { runTowerQuery() }
+                    } else if (_showTowersLayer.value && _showOnlyServingCell.value) {
+                        // In serving cell only mode, we don't query based on camera movement
+                        Timber.d("Serving cell only mode, skipping area query")
+                        _isLoadingInProgress.value = false
                     } else {
                         Timber.d("Tower layer is hidden, skipping query")
                         _isLoadingInProgress.value = false
@@ -681,6 +707,13 @@ class TowerMapLibreViewModel : ViewModel() {
 
         // Update serving cell locations and coverage circles when serving cell changes
         updateServingCellLocations()
+
+        // If in serving cell only mode, re-query to update displayed towers
+        if (_showOnlyServingCell.value && _showTowersLayer.value) {
+            viewModelScope.launch {
+                runTowerQuery()
+            }
+        }
     }
 
     /**
@@ -762,10 +795,118 @@ class TowerMapLibreViewModel : ViewModel() {
     }
 
     internal suspend fun runTowerQuery() = towerQueryMutex.withLock {
-        val map = mapLibreMap ?: return@withLock
+        // Branch based on display mode
+        if (_showOnlyServingCell.value) {
+            queryServingCellsOnly()
+        } else {
+            queryAllTowersInArea()
+        }
+    }
+
+    private suspend fun queryServingCellsOnly() {
+        _isLoadingInProgress.value = true
+        Timber.d("Starting serving cell only query")
+
+        val servingCells = _servingCells.value
+        if (servingCells.isEmpty()) {
+            Timber.d("No serving cells to query")
+            _towers.value = LinkedHashSet()
+            _noTowersFound.value = false
+            _isLoadingInProgress.value = false
+            return
+        }
+
+        val fetchedTowers = mutableListOf<Tower>()
+
+        servingCells.values.forEach { servingCellInfo ->
+            val wrapper = servingCellInfo.servingCell ?: return@forEach
+            val record = wrapper.cellularRecord
+
+            try {
+                // Extract parameters based on protocol type
+                val response = when (record) {
+                    is GsmRecord -> {
+                        val data = record.data
+                        nsApi.checkSingleTower(
+                            data.mcc.value,
+                            data.mnc.value,
+                            data.lac.value,
+                            data.ci.value.toLong(),
+                            "GSM"
+                        )
+                    }
+
+                    is UmtsRecord -> {
+                        val data = record.data
+                        nsApi.checkSingleTower(
+                            data.mcc.value,
+                            data.mnc.value,
+                            data.lac.value,
+                            data.cid.value.toLong(),
+                            "UMTS"
+                        )
+                    }
+
+                    is LteRecord -> {
+                        val data = record.data
+                        nsApi.checkSingleTower(
+                            data.mcc.value,
+                            data.mnc.value,
+                            data.tac.value,
+                            data.eci.value.toLong(),
+                            "LTE"
+                        )
+                    }
+
+                    is NrRecord -> {
+                        val data = record.data
+                        nsApi.checkSingleTower(
+                            data.mcc.value,
+                            data.mnc.value,
+                            data.tac.value,
+                            data.nci.value,
+                            "NR"
+                        )
+                    }
+
+                    else -> null
+                }
+
+                if (response != null && response.isSuccessful) {
+                    response.body()?.let { tower ->
+                        fetchedTowers.add(tower)
+                        Timber.d(
+                            "Successfully fetched serving cell tower: ${
+                                CellularUtils.getTowerId(
+                                    tower
+                                )
+                            }"
+                        )
+                    }
+                } else if (response?.code() == 404) {
+                    Timber.d("Serving cell tower not found in database")
+                }
+            } catch (e: Exception) {
+                Timber.w(e, "Failed to fetch serving cell tower")
+            }
+        }
+
+        // Update towers with fetched serving cells
+        val towerWrappers = LinkedHashSet(fetchedTowers.map { tower ->
+            TowerWrapper(tower)
+        })
+        _towers.value = towerWrappers
+        _noTowersFound.value = fetchedTowers.isEmpty()
+        _isLoadingInProgress.value = false
+
+        Timber.d("Serving cell query complete. Found ${fetchedTowers.size} towers")
+    }
+
+    private suspend fun queryAllTowersInArea() {
+        val map = mapLibreMap ?: return
 
         _isLoadingInProgress.value = true
-        Timber.d("Starting tower query")
+        Timber.d("Starting area tower query")
 
         // 1) Build bbox string for request
         val b = map.projection.visibleRegion.latLngBounds
@@ -793,7 +934,7 @@ class TowerMapLibreViewModel : ViewModel() {
         } catch (e: Exception) {
             Timber.e(e, "Error fetching towers from the NS API")
             _isLoadingInProgress.value = false
-            return@withLock
+            return
         }
 
         // 3) Extract body or empty

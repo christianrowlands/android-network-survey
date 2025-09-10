@@ -308,6 +308,16 @@ internal fun TowerMapScreen(
                     )
                     viewModel.setShowTowersLayer(showTowers)
 
+                    // Load serving cell only preference
+                    val showOnlyServingCell = preferences.getBoolean(
+                        when (mapContext) {
+                            MapContext.TOWER_MAP -> NetworkSurveyConstants.PROPERTY_MAP_SHOW_ONLY_SERVING_CELL
+                            MapContext.SURVEY_MONITOR -> NetworkSurveyConstants.PROPERTY_SURVEY_MAP_SHOW_ONLY_SERVING_CELL
+                        },
+                        false // Default to showing all towers
+                    )
+                    viewModel.setShowOnlyServingCell(showOnlyServingCell)
+
                     onDispose { }
                 }
 
@@ -722,6 +732,7 @@ internal fun TowerMapScreen(
         if (showLayersDialog) {
             val currentTileSource by viewModel.selectedMapTileSource.collectAsStateWithLifecycle()
             val showBeaconDbCoverage by viewModel.showBeaconDbCoverage.collectAsStateWithLifecycle()
+            val showOnlyServingCell by viewModel.showOnlyServingCell.collectAsStateWithLifecycle()
             val mapKeyLoadError by viewModel.mapKeyLoadError.collectAsState()
             val mapTilerKey by viewModel.mapTilerKey.collectAsState()
 
@@ -729,6 +740,7 @@ internal fun TowerMapScreen(
                 currentTileSource = currentTileSource,
                 showBeaconDbCoverage = showBeaconDbCoverage,
                 showTowersLayer = showTowersLayer,
+                showOnlyServingCell = showOnlyServingCell,
                 onSetTileSource = { source ->
                     val previousSource = currentTileSource
                     viewModel.setSelectedMapTileSource(source)
@@ -763,6 +775,17 @@ internal fun TowerMapScreen(
                     // Save preference
                     preferences.edit {
                         putBoolean(getTowersLayerKey(mapContext), show)
+                    }
+                },
+                onSetShowOnlyServingCell = { show ->
+                    viewModel.setShowOnlyServingCell(show)
+                    // Save preference based on context
+                    preferences.edit {
+                        val key = when (mapContext) {
+                            MapContext.TOWER_MAP -> NetworkSurveyConstants.PROPERTY_MAP_SHOW_ONLY_SERVING_CELL
+                            MapContext.SURVEY_MONITOR -> NetworkSurveyConstants.PROPERTY_SURVEY_MAP_SHOW_ONLY_SERVING_CELL
+                        }
+                        putBoolean(key, show)
                     }
                 },
                 onDismiss = { showLayersDialog = false }
@@ -1352,9 +1375,11 @@ fun MapLayersDialog(
     currentTileSource: MapTileSource,
     showBeaconDbCoverage: Boolean,
     showTowersLayer: Boolean,
+    showOnlyServingCell: Boolean,
     onSetTileSource: (MapTileSource) -> Unit,
     onSetShowBeaconDbCoverage: (Boolean) -> Unit,
     onSetShowTowersLayer: (Boolean) -> Unit,
+    onSetShowOnlyServingCell: (Boolean) -> Unit,
     onDismiss: () -> Unit
 ) {
     val bottomSheetState = rememberModalBottomSheetState()
@@ -1409,22 +1434,87 @@ fun MapLayersDialog(
                 modifier = Modifier.padding(bottom = 8.dp)
             )
 
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .selectable(
-                        selected = showTowersLayer,
-                        onClick = { onSetShowTowersLayer(!showTowersLayer) }
+            Column {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .selectable(
+                            selected = showTowersLayer,
+                            onClick = { onSetShowTowersLayer(!showTowersLayer) }
+                        )
+                        .padding(vertical = 4.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Checkbox(
+                        checked = showTowersLayer,
+                        onCheckedChange = onSetShowTowersLayer
                     )
-                    .padding(vertical = 4.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Checkbox(
-                    checked = showTowersLayer,
-                    onCheckedChange = onSetShowTowersLayer
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(text = "Towers")
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(text = "Towers")
+                }
+
+                // Show display mode options when towers are enabled
+                if (showTowersLayer) {
+                    Column(
+                        modifier = Modifier.padding(start = 40.dp, top = 4.dp, bottom = 8.dp)
+                    ) {
+                        Text(
+                            text = "Display mode",
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(bottom = 4.dp)
+                        )
+
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .selectable(
+                                    selected = !showOnlyServingCell,
+                                    onClick = { onSetShowOnlyServingCell(false) }
+                                )
+                                .padding(vertical = 2.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            RadioButton(
+                                selected = !showOnlyServingCell,
+                                onClick = { onSetShowOnlyServingCell(false) }
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = "All towers in area",
+                                style = MaterialTheme.typography.bodyMedium
+                            )
+                        }
+
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .selectable(
+                                    selected = showOnlyServingCell,
+                                    onClick = { onSetShowOnlyServingCell(true) }
+                                )
+                                .padding(vertical = 2.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            RadioButton(
+                                selected = showOnlyServingCell,
+                                onClick = { onSetShowOnlyServingCell(true) }
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Column {
+                                Text(
+                                    text = "Serving cell only",
+                                    style = MaterialTheme.typography.bodyMedium
+                                )
+                                Text(
+                                    text = "Shows only towers you're connected to",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        }
+                    }
+                }
             }
 
             Row(

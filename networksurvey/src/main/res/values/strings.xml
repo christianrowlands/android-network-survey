@@ -526,6 +526,10 @@ but work independently, so you have full control over how you handle your data.<
     <string name="map_tile_source_title">Map Tile Source</string>
     <string name="map_overlays_title">Map Overlays</string>
     <string name="beacondb_coverage_title">BeaconDB Coverage</string>
+    <string name="towers_display_mode_title">Display mode</string>
+    <string name="towers_all_in_area">All towers in area</string>
+    <string name="towers_serving_cell_only">Serving cell only</string>
+    <string name="towers_serving_cell_only_desc">Shows only towers you\'re connected to</string>
 
     <string name="survey_monitor_config_title">Survey Monitor</string>
     <string name="alert_new_tower_title">Alert on New Tower</string>
