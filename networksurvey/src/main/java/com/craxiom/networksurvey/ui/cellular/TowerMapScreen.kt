@@ -547,40 +547,58 @@ internal fun TowerMapScreen(
                             .padding(horizontal = 12.dp),
                         horizontalArrangement = Arrangement.End
                     ) {
-                        Surface(
-                            modifier = Modifier,
-                            color = MaterialTheme.colorScheme.surface.copy(alpha = 0.85f),
-                            shape = CircleShape,
-                            shadowElevation = 6.dp
+                        Column(
+                            verticalArrangement = Arrangement.spacedBy(8.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally
                         ) {
-                            Box(
-                                modifier = Modifier.padding(4.dp)
-                            ) {
-                                LocationButton(
-                                    isFollowing = cameraPositionState.cameraMode == CameraMode.TRACKING,
-                                    toggleFollowMe = {
-                                        if (cameraPositionState.cameraMode == CameraMode.TRACKING) {
-                                            cameraPositionState.cameraMode = CameraMode.NONE
-                                        } else {
-                                            viewModel.getMyLocation()?.let { location ->
-                                                val currentZoom = viewModel.getCurrentZoom()
-                                                // Apply minimum zoom threshold
-                                                val targetZoom =
-                                                    kotlin.math.max(
-                                                        currentZoom,
-                                                        MINIMUM_LOCATION_ZOOM
-                                                    )
+                            // Show zoom controls if preference is enabled
+                            val showZoomControls = preferences.getBoolean(
+                                NetworkSurveyConstants.PROPERTY_MAP_SHOW_ZOOM_CONTROLS,
+                                false
+                            )
 
-                                                cameraPositionState.position =
-                                                    CameraPosition.Builder()
-                                                        .target(location)
-                                                        .zoom(targetZoom)
-                                                        .build()
+                            if (showZoomControls) {
+                                ZoomControls(
+                                    onZoomIn = { cameraPositionState.zoomIn() },
+                                    onZoomOut = { cameraPositionState.zoomOut() }
+                                )
+                            }
+
+                            Surface(
+                                modifier = Modifier,
+                                color = MaterialTheme.colorScheme.surface.copy(alpha = 0.85f),
+                                shape = CircleShape,
+                                shadowElevation = 6.dp
+                            ) {
+                                Box(
+                                    modifier = Modifier.padding(4.dp)
+                                ) {
+                                    LocationButton(
+                                        isFollowing = cameraPositionState.cameraMode == CameraMode.TRACKING,
+                                        toggleFollowMe = {
+                                            if (cameraPositionState.cameraMode == CameraMode.TRACKING) {
+                                                cameraPositionState.cameraMode = CameraMode.NONE
+                                            } else {
+                                                viewModel.getMyLocation()?.let { location ->
+                                                    val currentZoom = viewModel.getCurrentZoom()
+                                                    // Apply minimum zoom threshold
+                                                    val targetZoom =
+                                                        kotlin.math.max(
+                                                            currentZoom,
+                                                            MINIMUM_LOCATION_ZOOM
+                                                        )
+
+                                                    cameraPositionState.position =
+                                                        CameraPosition.Builder()
+                                                            .target(location)
+                                                            .zoom(targetZoom)
+                                                            .build()
+                                                }
+                                                // Enable tracking mode after setting position
+                                                cameraPositionState.cameraMode = CameraMode.TRACKING
                                             }
-                                            // Enable tracking mode after setting position
-                                            cameraPositionState.cameraMode = CameraMode.TRACKING
-                                        }
-                                    })
+                                        })
+                                }
                             }
                         }
                     }
@@ -1245,6 +1263,88 @@ fun LocationButton(
                 "Follow My Location",
             modifier = Modifier.size(24.dp)
         )
+    }
+}
+
+/**
+ * Zoom controls with zoom in and zoom out buttons in a vertical layout.
+ */
+@Composable
+fun ZoomControls(
+    onZoomIn: () -> Unit,
+    onZoomOut: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Surface(
+        modifier = modifier,
+        color = MaterialTheme.colorScheme.surface.copy(alpha = 0.85f),
+        shape = CircleShape,
+        shadowElevation = 6.dp
+    ) {
+        Column(
+            modifier = Modifier.padding(4.dp),
+            verticalArrangement = Arrangement.spacedBy(4.dp)
+        ) {
+            // Zoom in button
+            val zoomInInteractionSource = remember { MutableInteractionSource() }
+            val zoomInPressed by zoomInInteractionSource.collectIsPressedAsState()
+            val zoomInScale by animateFloatAsState(
+                targetValue = if (zoomInPressed) 0.90f else 1f,
+                label = "zoom_in_scale"
+            )
+
+            FloatingActionButton(
+                onClick = onZoomIn,
+                modifier = Modifier
+                    .size(40.dp)
+                    .scale(zoomInScale),
+                containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.95f),
+                contentColor = MaterialTheme.colorScheme.onSurface,
+                shape = CircleShape,
+                elevation = FloatingActionButtonDefaults.elevation(
+                    defaultElevation = 0.dp,
+                    pressedElevation = 2.dp,
+                    hoveredElevation = 1.dp
+                ),
+                interactionSource = zoomInInteractionSource
+            ) {
+                Text(
+                    text = "+",
+                    fontSize = 20.nonScaledSp,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+
+            // Zoom out button
+            val zoomOutInteractionSource = remember { MutableInteractionSource() }
+            val zoomOutPressed by zoomOutInteractionSource.collectIsPressedAsState()
+            val zoomOutScale by animateFloatAsState(
+                targetValue = if (zoomOutPressed) 0.90f else 1f,
+                label = "zoom_out_scale"
+            )
+
+            FloatingActionButton(
+                onClick = onZoomOut,
+                modifier = Modifier
+                    .size(40.dp)
+                    .scale(zoomOutScale),
+                containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.95f),
+                contentColor = MaterialTheme.colorScheme.onSurface,
+                shape = CircleShape,
+                elevation = FloatingActionButtonDefaults.elevation(
+                    defaultElevation = 0.dp,
+                    pressedElevation = 2.dp,
+                    hoveredElevation = 1.dp
+                ),
+                interactionSource = zoomOutInteractionSource
+            ) {
+                Text(
+                    text = "−",  // Using minus sign character
+                    fontSize = 20.nonScaledSp,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+        }
     }
 }
 

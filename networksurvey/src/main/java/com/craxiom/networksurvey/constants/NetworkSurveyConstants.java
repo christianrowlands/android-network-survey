@@ -156,6 +156,7 @@ public class NetworkSurveyConstants
     public static final String PROPERTY_MAP_DISPLAY_SERVING_CELL_COVERAGE = "map_display_serving_cell_coverage_area";
     public static final String PROPERTY_MAP_COVERAGE_CIRCLE_COLOR = "map_coverage_circle_color";
     public static final String PROPERTY_MAP_COVERAGE_CIRCLE_OPACITY = "map_coverage_circle_opacity";
+    public static final String PROPERTY_MAP_SHOW_ZOOM_CONTROLS = "map_show_zoom_controls";
 
     // The following key is used in the app_restrictions.xml file and in the app's shared preferences
     public static final String PROPERTY_MQTT_START_ON_BOOT = "mqtt_start_on_boot";

@@ -13,6 +13,13 @@
             app:summaryOff="@string/keep_screen_on_summary_off"
             app:summaryOn="@string/keep_screen_on_summary_on" />
 
+        <SwitchPreferenceCompat
+            app:defaultValue="false"
+            app:key="map_show_zoom_controls"
+            app:title="@string/show_zoom_controls_title"
+            app:summaryOff="@string/show_zoom_controls_summary_off"
+            app:summaryOn="@string/show_zoom_controls_summary_on" />
+
     </PreferenceCategory>
 
     <PreferenceCategory

@@ -521,6 +521,9 @@ but work independently, so you have full control over how you handle your data.<
     <string name="keep_screen_on_title">Keep Tower Map Screen On</string>
     <string name="keep_screen_on_summary_on">Screen will stay on while viewing the Tower Map</string>
     <string name="keep_screen_on_summary_off">Screen will turn off normally after inactivity</string>
+    <string name="show_zoom_controls_title">Show Zoom Controls</string>
+    <string name="show_zoom_controls_summary_on">Zoom in/out buttons are displayed on the map</string>
+    <string name="show_zoom_controls_summary_off">Zoom in/out buttons are hidden (use pinch gestures)</string>
 
     <string name="map_layers_title">Map Layers</string>
     <string name="map_tile_source_title">Map Tile Source</string>

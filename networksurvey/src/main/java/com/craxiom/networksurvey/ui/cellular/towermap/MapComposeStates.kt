@@ -61,6 +61,30 @@ class CameraPositionState(
     private var map: MapLibreMap? by mutableStateOf(null)
     private val lock = Any()
 
+    /**
+     * Zooms in the map by one level with animation.
+     */
+    fun zoomIn() {
+        synchronized(lock) {
+            map?.animateCamera(
+                org.maplibre.android.camera.CameraUpdateFactory.zoomIn(),
+                300 // 300ms animation duration
+            )
+        }
+    }
+
+    /**
+     * Zooms out the map by one level with animation.
+     */
+    fun zoomOut() {
+        synchronized(lock) {
+            map?.animateCamera(
+                org.maplibre.android.camera.CameraUpdateFactory.zoomOut(),
+                300 // 300ms animation duration
+            )
+        }
+    }
+
     internal fun setMap(map: MapLibreMap?) {
         synchronized(lock) {
             if (this.map != null && map != null) {
