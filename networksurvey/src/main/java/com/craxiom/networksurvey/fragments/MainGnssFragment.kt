@@ -52,9 +52,7 @@ class MainGnssFragment : Fragment() {
         viewPager.setAdapter(gnssCollectionAdapter)
         val tabLayout = view.findViewById<TabLayout>(R.id.tab_layout)
         TabLayoutMediator(tabLayout, viewPager) { tab: TabLayout.Tab, position: Int ->
-            tab.setText(
-                getTabTitle(position)
-            )
+            tab.text = getTabTitle(position)
         }.attach()
 
         viewPager.registerOnPageChangeCallback(object : ViewPager2.OnPageChangeCallback() {
@@ -69,6 +67,12 @@ class MainGnssFragment : Fragment() {
     @ExperimentalCoroutinesApi
     override fun onResume() {
         super.onResume()
+
+        // Reset keepScreenOn to false to ensure screen doesn't stay on
+        // This fixes the issue where navigating from Survey Monitor or Tower Map
+        // leaves the screen permanently on
+        view?.keepScreenOn = false
+
         if (!hasLocationPermission()) return
         viewModel.setStarted(requireContext(), true, Application.getPrefs())
     }

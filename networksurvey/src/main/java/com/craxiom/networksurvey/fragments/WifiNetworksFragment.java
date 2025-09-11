@@ -141,6 +141,15 @@ public class WifiNetworksFragment extends AServiceDataFragment implements IWifiS
     {
         super.onResume();
 
+        // Reset keepScreenOn to false to ensure screen doesn't stay on
+        // This fixes the issue where navigating from Survey Monitor or Tower Map
+        // leaves the screen permanently on
+        View view = getView();
+        if (view != null)
+        {
+            view.setKeepScreenOn(false);
+        }
+
         registerWifiBroadcastReceiver();
 
         checkWifiEnabled();
@@ -148,7 +157,7 @@ public class WifiNetworksFragment extends AServiceDataFragment implements IWifiS
         startAndBindToService();
 
         checkForScanThrottlingAndroid11();
-        
+
         // Update the connected BSSID when returning to this fragment
         // This ensures the connection indicator is shown immediately when navigating back from details
         updateConnectedNetworkStatus();

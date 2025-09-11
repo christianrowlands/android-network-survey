@@ -209,7 +209,7 @@ internal fun TowerMapScreen(
     val keepScreenOn =
         preferences.getBoolean(getKeepScreenOnKey(mapContext), getDefaultKeepScreenOn(mapContext))
 
-    DisposableEffect(keepScreenOn) {
+    DisposableEffect(Unit, keepScreenOn) {
         view.keepScreenOn = keepScreenOn
 
         onDispose {

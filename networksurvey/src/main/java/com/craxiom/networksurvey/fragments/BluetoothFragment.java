@@ -135,6 +135,15 @@ public class BluetoothFragment extends AServiceDataFragment implements IBluetoot
     {
         super.onResume();
 
+        // Reset keepScreenOn to false to ensure screen doesn't stay on
+        // This fixes the issue where navigating from Survey Monitor or Tower Map
+        // leaves the screen permanently on
+        View view = getView();
+        if (view != null)
+        {
+            view.setKeepScreenOn(false);
+        }
+
         showBluetoothPermissionRationaleAndRequestPermissions();
 
         if (!hasBtScanPermission())
