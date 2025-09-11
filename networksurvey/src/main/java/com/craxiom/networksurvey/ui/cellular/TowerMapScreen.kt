@@ -52,6 +52,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -186,7 +187,8 @@ internal fun TowerMapScreen(
     surveyTracks: List<SurveyTrack>? = null,
     initialBeaconDbEnabled: Boolean? = null,
     initialShowTowers: Boolean? = null,
-    initialCameraMode: CameraMode? = null
+    initialCameraMode: CameraMode? = null,
+    externalServingCellInfo: ServingCellInfo? = null
 ) {
     val paddingInsets by viewModel.paddingInsets.collectAsStateWithLifecycle()
 
@@ -319,6 +321,14 @@ internal fun TowerMapScreen(
                     viewModel.setShowOnlyServingCell(showOnlyServingCell)
 
                     onDispose { }
+                }
+
+                // Update ViewModel with external serving cell info if provided (for Survey Monitor)
+                LaunchedEffect(externalServingCellInfo) {
+                    externalServingCellInfo?.let { cellInfo ->
+                        // Use the subscriptionId from the ServingCellInfo
+                        viewModel.setServingCell(cellInfo.servingCell, cellInfo.subscriptionId)
+                    }
                 }
 
                 // decide which style URL to use:

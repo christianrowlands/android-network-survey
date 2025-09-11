@@ -217,6 +217,7 @@ fun SurveyMonitorScreen(
                 ) {
                     SurveyMapTab(
                         surveyState = surveyState,
+                        servingCellInfo = servingCellInfo,
                         onNavigateToTowerMapSettings = onNavigateToTowerMapSettings
                     )
                 }
@@ -498,6 +499,7 @@ private fun SurveyStatusTab(
 @Composable
 private fun SurveyMapTab(
     surveyState: ActiveSurveyState,
+    servingCellInfo: ServingCellInfo?,
     onNavigateToTowerMapSettings: () -> Unit
 ) {
     // Use TowerMapScreen with Survey Monitor context and specific defaults
@@ -507,7 +509,8 @@ private fun SurveyMapTab(
         mapContext = MapContext.SURVEY_MONITOR,
         surveyTracks = surveyState.currentTrack?.let { listOf(it) },
         // Don't override the saved preferences - let TowerMapScreen load them based on context
-        initialCameraMode = CameraMode.TRACKING
+        initialCameraMode = CameraMode.TRACKING,
+        externalServingCellInfo = servingCellInfo
     )
 }
 

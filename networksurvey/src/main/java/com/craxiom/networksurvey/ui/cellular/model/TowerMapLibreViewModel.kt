@@ -743,6 +743,43 @@ class TowerMapLibreViewModel : ViewModel() {
     }
 
     /**
+     * Updates the serving cell for a given subscription.
+     * Used by Survey Monitor to pass serving cell data from its ViewModel.
+     */
+    fun setServingCell(servingCellRecord: CellularRecordWrapper?, subscriptionId: Int) {
+        updateServingCellSignals(servingCellRecord, subscriptionId)
+        checkAndUpdateSelectedRadioType(servingCellRecord, subscriptionId)
+
+        // No need to update the serving cell if it is the same as the current serving cell
+        val currentServingCell = _servingCells.value[subscriptionId]
+        if (Objects.equals(currentServingCell?.servingCell, servingCellRecord)) return
+
+        if (servingCellRecord == null) {
+            _servingCells.update { map ->
+                map.remove(subscriptionId)
+                map
+            }
+        } else {
+            _servingCells.update { oldMap ->
+                val newMap = HashMap(oldMap)
+                newMap[subscriptionId] = 
+                    ServingCellInfo(servingCellRecord, subscriptionId, System.currentTimeMillis())
+                newMap
+            }
+        }
+
+        // Update serving cell locations and coverage circles when serving cell changes
+        updateServingCellLocations()
+        
+        // If in serving cell only mode, re-query to update displayed towers
+        if (_showOnlyServingCell.value && _showTowersLayer.value) {
+            viewModelScope.launch {
+                runTowerQuery()
+            }
+        }
+    }
+
+    /**
      * Checks if the serving cell technology has changed and updates selectedRadioType if appropriate.
      * Only updates when the technology changes for the selected SIM subscription.
      */
