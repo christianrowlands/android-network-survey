@@ -1023,37 +1023,53 @@ fun ServingCellInfoDisplay(cellInfo: ServingCellInfo?, servingSignalInfo: Servin
             // Cell ID info with vertical layout
             when (record) {
                 is GsmRecord -> {
-                    VerticalMetric("MCC", record.data.mcc.value.toString())
-                    VerticalMetric("MNC", record.data.mnc.value.toString())
+                    VerticalMetric("MCC/MNC", "${record.data.mcc.value}/${record.data.mnc.value}")
                     VerticalMetric("LAC", record.data.lac.value.toString())
                     VerticalMetric("CID", record.data.ci.value.toString())
+                    if (record.data.hasArfcn()) {
+                        VerticalMetric("ARFCN", record.data.arfcn.value.toString())
+                    }
+                    if (record.data.hasTa()) {
+                        VerticalMetric("TA", record.data.ta.value.toString())
+                    }
                 }
 
                 is CdmaRecord -> {
-                    VerticalMetric("SID", record.data.sid.value.toString())
-                    VerticalMetric("NID", record.data.nid.value.toString())
+                    VerticalMetric("SID/NID", "${record.data.sid.value}/${record.data.nid.value}")
                     VerticalMetric("BSID", record.data.bsid.value.toString())
                 }
 
                 is UmtsRecord -> {
-                    VerticalMetric("MCC", record.data.mcc.value.toString())
-                    VerticalMetric("MNC", record.data.mnc.value.toString())
+                    VerticalMetric("MCC/MNC", "${record.data.mcc.value}/${record.data.mnc.value}")
                     VerticalMetric("LAC", record.data.lac.value.toString())
                     VerticalMetric("CID", record.data.cid.value.toString())
+                    if (record.data.hasUarfcn()) {
+                        VerticalMetric("UARFCN", record.data.uarfcn.value.toString())
+                    }
                 }
 
                 is LteRecord -> {
-                    VerticalMetric("MCC", record.data.mcc.value.toString())
-                    VerticalMetric("MNC", record.data.mnc.value.toString())
+                    VerticalMetric("MCC/MNC", "${record.data.mcc.value}/${record.data.mnc.value}")
                     VerticalMetric("TAC", record.data.tac.value.toString())
                     VerticalMetric("ECI", record.data.eci.value.toString())
+                    if (record.data.hasEarfcn()) {
+                        VerticalMetric("EARFCN", record.data.earfcn.value.toString())
+                    }
+                    if (record.data.hasTa()) {
+                        VerticalMetric("TA", record.data.ta.value.toString())
+                    }
                 }
 
                 is NrRecord -> {
-                    VerticalMetric("MCC", record.data.mcc.value.toString())
-                    VerticalMetric("MNC", record.data.mnc.value.toString())
+                    VerticalMetric("MCC/MNC", "${record.data.mcc.value}/${record.data.mnc.value}")
                     VerticalMetric("TAC", record.data.tac.value.toString())
                     VerticalMetric("NCI", record.data.nci.value.toString())
+                    if (record.data.hasNarfcn()) {
+                        VerticalMetric("NARFCN", record.data.narfcn.value.toString())
+                    }
+                    if (record.data.hasTa()) {
+                        VerticalMetric("TA", record.data.ta.value.toString())
+                    }
                 }
 
                 else -> {}
