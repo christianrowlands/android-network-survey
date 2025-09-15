@@ -1,5 +1,21 @@
 # Changelog
 
+## [1.42](https://github.com/christianrowlands/android-network-survey/releases/tag/v1.43) - 2025-09-15
+
+* Restart the GNSS survey when the user changes the scan rate for GNSS, and change the min and max gps listener rates.
+* Ensure scan rate changes for WiFi and Device Status are applied even if the survey is already started.
+* Include both the Service UUID and Manufacturer Specific Data Company ID in the Bluetooth record if both are present (previously only included the Service UUID if it was present and ignored the Manufacturer Specific Data Advertisement).
+* Detect if a Bluetooth record is from an Apple AirTag, and if so display an indicator in the Bluetooth devices list.
+* Rework the serving cell info box to have a better UI. [#99](https://github.com/christianrowlands/android-network-survey/issues/99)
+* Rework of the tower map UI. [#99](https://github.com/christianrowlands/android-network-survey/issues/99)
+* Parse and set the manufacturer specific advertisement on the bluetooth record. Logs it to CSV, GeoPackage, and send over MQTT and gRPC.
+* Show the distance to the tower over the serving cell line. [#99](https://github.com/christianrowlands/android-network-survey/issues/99)
+* Added an acknowledgement section to the app.
+* Improved the font color contrast for the wifi scan throttling snackbar message.
+* Added an option to tower map layers for displaying only the serving cell. [#103](https://github.com/christianrowlands/android-network-survey/issues/103)
+* Fix for displaying out of range SNR values on the cellular details UI. [#107](https://github.com/christianrowlands/android-network-survey/issues/107)
+* Allow for viewing the serving cell info on the survey monitor view.
+
 ## [1.42](https://github.com/christianrowlands/android-network-survey/releases/tag/v1.42) - 2025-08-19
 
 * Reverting to 8.11.1 of AGP because of an F-Droid build issue. [#97](https://github.com/christianrowlands/android-network-survey/issues/97)
