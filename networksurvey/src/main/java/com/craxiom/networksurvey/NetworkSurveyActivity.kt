@@ -122,7 +122,7 @@ class NetworkSurveyActivity : AppCompatActivity() {
                         }
                         .create()
 
-                    if (!this@NetworkSurveyActivity.isFinishing) {
+                    if (!this@NetworkSurveyActivity.isFinishing && !this@NetworkSurveyActivity.isDestroyed) {
                         gnssFailureDialog.show()
                         val viewById =
                             gnssFailureDialog.findViewById<TextView>(R.id.failureDescriptionTextView)
@@ -187,6 +187,8 @@ class NetworkSurveyActivity : AppCompatActivity() {
     }
 
     override fun onDestroy() {
+        // Clear the GNSS failure listener to prevent callbacks to a destroyed activity
+        networkSurveyService?.clearGnssFailureListener()
         networkSurveyService = null
         super.onDestroy()
     }
