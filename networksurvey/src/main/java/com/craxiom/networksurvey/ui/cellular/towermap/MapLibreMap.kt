@@ -165,7 +165,7 @@ private fun MapLifecycle(mapView: MapView, locationSettings: MapLocationSettings
 
     DisposableEffect(context, lifecycle, mapView) {
         val observer = mapView.lifecycleObserver(prev, locationSettings)
-        val callbacks = mapView.componentCallbacks()
+        val callbacks = componentCallbacks()
         lifecycle.addObserver(observer)
         context.registerComponentCallbacks(callbacks)
         onDispose {
@@ -214,7 +214,10 @@ private fun MapLifecycle(mapView: MapView, locationSettings: MapLocationSettings
     }
 }
 
-private fun MapView.lifecycleObserver(prev: MutableState<Lifecycle.Event>, locationSettings: MapLocationSettings) =
+private fun MapView.lifecycleObserver(
+    prev: MutableState<Lifecycle.Event>,
+    locationSettings: MapLocationSettings
+) =
     LifecycleEventObserver { _, event ->
         when (event) {
             Lifecycle.Event.ON_CREATE -> if (prev.value != Lifecycle.Event.ON_STOP) this.onCreate(
@@ -229,7 +232,7 @@ private fun MapView.lifecycleObserver(prev: MutableState<Lifecycle.Event>, locat
                     val mapField = this.javaClass.getDeclaredField("mapLibreMap")
                     mapField.isAccessible = true
                     val map = mapField.get(this) as? MapLibreMap
-                    
+
                     if (map != null && map.locationComponent.isLocationComponentActivated && locationSettings.locationEnabled) {
                         map.locationComponent.isLocationComponentEnabled = true
                     }
@@ -246,6 +249,7 @@ private fun MapView.lifecycleObserver(prev: MutableState<Lifecycle.Event>, locat
                     }
                 }
             }
+
             Lifecycle.Event.ON_PAUSE -> this.onPause()
             Lifecycle.Event.ON_STOP -> {
                 // Immediately disable location component to prevent updates after destroy
@@ -284,9 +288,9 @@ private fun MapView.lifecycleObserver(prev: MutableState<Lifecycle.Event>, locat
         prev.value = event
     }
 
-private fun MapView.componentCallbacks() = object : ComponentCallbacks {
+private fun componentCallbacks() = object : ComponentCallbacks {
     override fun onConfigurationChanged(config: Configuration) {}
     override fun onLowMemory() {
-        this.onLowMemory()
+        // No-op based on super method javadoc deprecation description
     }
 }
