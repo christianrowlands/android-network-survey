@@ -178,14 +178,9 @@ private fun MapLifecycle(mapView: MapView, locationSettings: MapLocationSettings
         onDispose {
             Timber.d("MapLibreMap DisposableEffect onDispose called - cleaning up map")
 
-            // First ensure location updates are stopped before destroying the map
+            // Ensure location updates are stopped before destroying the map
             try {
-                // Try direct access first for immediate cleanup
-                val mapField = mapView.javaClass.getDeclaredField("mapLibreMap")
-                mapField.isAccessible = true
-                val map = mapField.get(mapView) as? MapLibreMap
-
-                if (map != null) {
+                mapView.getMapAsync { map ->
                     // Force stop all location updates
                     if (map.locationComponent.isLocationComponentActivated) {
                         map.locationComponent.isLocationComponentEnabled = false
@@ -206,21 +201,7 @@ private fun MapLifecycle(mapView: MapView, locationSettings: MapLocationSettings
                     map.removeOnCameraMoveListener { }
                 }
             } catch (e: Exception) {
-                Timber.w(e, "Failed to cleanup map synchronously, trying async")
-                // Try async as fallback
-                try {
-                    mapView.getMapAsync { map ->
-                        if (map.locationComponent.isLocationComponentActivated) {
-                            map.locationComponent.isLocationComponentEnabled = false
-                        }
-                        map.removeOnCameraIdleListener { }
-                        map.removeOnCameraMoveCancelListener { }
-                        map.removeOnCameraMoveStartedListener { }
-                        map.removeOnCameraMoveListener { }
-                    }
-                } catch (ex: Exception) {
-                    Timber.w(ex, "Failed async map cleanup")
-                }
+                Timber.w(e, "Failed to cleanup map")
             }
 
             // Then destroy the map view
@@ -245,37 +226,25 @@ private fun MapView.lifecycleObserver(
                 this.onResume()
                 // Re-enable location component if it should be enabled
                 try {
-                    val mapField = this.javaClass.getDeclaredField("mapLibreMap")
-                    mapField.isAccessible = true
-                    val map = mapField.get(this) as? MapLibreMap
-
-                    if (map != null && map.locationComponent.isLocationComponentActivated && locationSettings.locationEnabled) {
-                        map.locationComponent.isLocationComponentEnabled = true
+                    this.getMapAsync { map ->
+                        if (map.locationComponent.isLocationComponentActivated && locationSettings.locationEnabled) {
+                            map.locationComponent.isLocationComponentEnabled = true
+                            Timber.d("Location tracking re-enabled on RESUME")
+                        }
                     }
                 } catch (e: Exception) {
-                    // Try async as fallback
-                    try {
-                        this.getMapAsync { map ->
-                            if (map.locationComponent.isLocationComponentActivated && locationSettings.locationEnabled) {
-                                map.locationComponent.isLocationComponentEnabled = true
-                            }
-                        }
-                    } catch (ex: Exception) {
-                        // Ignore errors during resume
-                    }
+                    Timber.w(e, "Failed to re-enable location tracking on resume")
                 }
             }
 
             Lifecycle.Event.ON_PAUSE -> {
                 // Disable location tracking on pause to save battery
                 try {
-                    val mapField = this.javaClass.getDeclaredField("mapLibreMap")
-                    mapField.isAccessible = true
-                    val map = mapField.get(this) as? MapLibreMap
-
-                    if (map != null && map.locationComponent.isLocationComponentActivated) {
-                        map.locationComponent.isLocationComponentEnabled = false
-                        Timber.d("Location tracking disabled on PAUSE")
+                    this.getMapAsync { map ->
+                        if (map.locationComponent.isLocationComponentActivated) {
+                            map.locationComponent.isLocationComponentEnabled = false
+                            Timber.d("Location tracking disabled on PAUSE")
+                        }
                     }
                 } catch (e: Exception) {
                     Timber.w(e, "Failed to disable location tracking on pause")
@@ -286,38 +255,25 @@ private fun MapView.lifecycleObserver(
             Lifecycle.Event.ON_STOP -> {
                 // Immediately disable location component to prevent updates after destroy
                 try {
-                    // Access the map directly if available (it should be by this point)
-                    val mapField = this.javaClass.getDeclaredField("mapLibreMap")
-                    mapField.isAccessible = true
-                    val map = mapField.get(this) as? MapLibreMap
+                    this.getMapAsync { map ->
+                        if (map.locationComponent.isLocationComponentActivated) {
+                            // Disable location updates immediately
+                            map.locationComponent.isLocationComponentEnabled = false
 
-                    if (map != null && map.locationComponent.isLocationComponentActivated) {
-                        // Disable location updates immediately
-                        map.locationComponent.isLocationComponentEnabled = false
+                            // Try to stop location engine updates
+                            try {
+                                val locationEngine = map.locationComponent.locationEngine
+                                // This might fail if we don't have the callback reference, but try anyway
+                                locationEngine?.removeLocationUpdates(null)
+                            } catch (e: Exception) {
+                                Timber.w(e, "Failed to remove location engine updates on stop")
+                            }
 
-                        // Try to stop location engine updates
-                        try {
-                            val locationEngine = map.locationComponent.locationEngine
-                            // This might fail if we don't have the callback reference, but try anyway
-                            locationEngine?.removeLocationUpdates(null)
-                        } catch (e: Exception) {
-                            Timber.w(e, "Failed to remove location engine updates on stop")
+                            Timber.d("Location tracking disabled on STOP")
                         }
-
-                        Timber.d("Location tracking disabled on STOP")
                     }
                 } catch (e: Exception) {
                     Timber.w(e, "Failed to disable location component on stop")
-                    // Fallback to async approach if reflection fails
-                    try {
-                        this.getMapAsync { map ->
-                            if (map.locationComponent.isLocationComponentActivated) {
-                                map.locationComponent.isLocationComponentEnabled = false
-                            }
-                        }
-                    } catch (ex: Exception) {
-                        Timber.w(ex, "Failed async location disable on stop")
-                    }
                 }
                 this.onStop()
             }
