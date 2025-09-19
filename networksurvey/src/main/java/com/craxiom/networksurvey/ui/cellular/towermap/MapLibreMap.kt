@@ -37,6 +37,7 @@ import org.maplibre.android.maps.MapLibreMap
 import org.maplibre.android.maps.MapView
 import org.maplibre.android.maps.Style
 import org.maplibre.android.plugins.annotation.SymbolManager
+import timber.log.Timber
 import kotlin.coroutines.resume
 import kotlin.coroutines.suspendCoroutine
 
@@ -175,9 +176,11 @@ private fun MapLifecycle(mapView: MapView, locationSettings: MapLocationSettings
     }
     DisposableEffect(mapView) {
         onDispose {
+            Timber.d("MapLibreMap DisposableEffect onDispose called - cleaning up map")
+
             // First ensure location updates are stopped before destroying the map
             try {
-                // Try direct access first
+                // Try direct access first for immediate cleanup
                 val mapField = mapView.javaClass.getDeclaredField("mapLibreMap")
                 mapField.isAccessible = true
                 val map = mapField.get(mapView) as? MapLibreMap
@@ -186,24 +189,37 @@ private fun MapLifecycle(mapView: MapView, locationSettings: MapLocationSettings
                     // Force stop all location updates
                     if (map.locationComponent.isLocationComponentActivated) {
                         map.locationComponent.isLocationComponentEnabled = false
-                        // Can't remove updates without callback reference
+
+                        // Try to forcefully remove any location engine callbacks
+                        try {
+                            val locationEngine = map.locationComponent.locationEngine
+                            locationEngine?.removeLocationUpdates(null)
+                        } catch (e: Exception) {
+                            Timber.w(e, "Failed to remove location engine callbacks")
+                        }
                     }
 
-                    // Clear any pending camera idle listeners
+                    // Clear any pending listeners
                     map.removeOnCameraIdleListener { }
+                    map.removeOnCameraMoveCancelListener { }
+                    map.removeOnCameraMoveStartedListener { }
+                    map.removeOnCameraMoveListener { }
                 }
             } catch (e: Exception) {
+                Timber.w(e, "Failed to cleanup map synchronously, trying async")
                 // Try async as fallback
                 try {
                     mapView.getMapAsync { map ->
                         if (map.locationComponent.isLocationComponentActivated) {
                             map.locationComponent.isLocationComponentEnabled = false
-                            // Can't remove updates without callback reference
                         }
                         map.removeOnCameraIdleListener { }
+                        map.removeOnCameraMoveCancelListener { }
+                        map.removeOnCameraMoveStartedListener { }
+                        map.removeOnCameraMoveListener { }
                     }
                 } catch (ex: Exception) {
-                    // Ignore cleanup errors
+                    Timber.w(ex, "Failed async map cleanup")
                 }
             }
 
@@ -250,7 +266,23 @@ private fun MapView.lifecycleObserver(
                 }
             }
 
-            Lifecycle.Event.ON_PAUSE -> this.onPause()
+            Lifecycle.Event.ON_PAUSE -> {
+                // Disable location tracking on pause to save battery
+                try {
+                    val mapField = this.javaClass.getDeclaredField("mapLibreMap")
+                    mapField.isAccessible = true
+                    val map = mapField.get(this) as? MapLibreMap
+
+                    if (map != null && map.locationComponent.isLocationComponentActivated) {
+                        map.locationComponent.isLocationComponentEnabled = false
+                        Timber.d("Location tracking disabled on PAUSE")
+                    }
+                } catch (e: Exception) {
+                    Timber.w(e, "Failed to disable location tracking on pause")
+                }
+                this.onPause()
+            }
+
             Lifecycle.Event.ON_STOP -> {
                 // Immediately disable location component to prevent updates after destroy
                 try {
@@ -263,21 +295,28 @@ private fun MapView.lifecycleObserver(
                         // Disable location updates immediately
                         map.locationComponent.isLocationComponentEnabled = false
 
-                        // Force stop location engine
-                        map.locationComponent.locationEngine
-                        // We can't remove updates without the callback reference, just disable the component
+                        // Try to stop location engine updates
+                        try {
+                            val locationEngine = map.locationComponent.locationEngine
+                            // This might fail if we don't have the callback reference, but try anyway
+                            locationEngine?.removeLocationUpdates(null)
+                        } catch (e: Exception) {
+                            Timber.w(e, "Failed to remove location engine updates on stop")
+                        }
+
+                        Timber.d("Location tracking disabled on STOP")
                     }
                 } catch (e: Exception) {
+                    Timber.w(e, "Failed to disable location component on stop")
                     // Fallback to async approach if reflection fails
                     try {
                         this.getMapAsync { map ->
                             if (map.locationComponent.isLocationComponentActivated) {
                                 map.locationComponent.isLocationComponentEnabled = false
-                                // Can't remove updates without callback reference
                             }
                         }
                     } catch (ex: Exception) {
-                        // Ignore errors during cleanup
+                        Timber.w(ex, "Failed async location disable on stop")
                     }
                 }
                 this.onStop()

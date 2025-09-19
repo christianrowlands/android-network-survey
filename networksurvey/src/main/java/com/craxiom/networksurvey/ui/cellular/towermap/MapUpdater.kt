@@ -40,6 +40,7 @@ internal class MapPropertiesNode(
     onTowerClick: ((Tower) -> Unit)? = null,
 ) : MapNode {
     private var locationEngine: LocationEngine? = null
+    private var isLocationCallbackRegistered = false
     private val locationCallback: LocationEngineCallback<LocationEngineResult> =
         object : LocationEngineCallback<LocationEngineResult> {
             override fun onSuccess(result: LocationEngineResult) {
@@ -98,6 +99,7 @@ internal class MapPropertiesNode(
                     locationCallback,
                     Looper.getMainLooper()
                 )
+                isLocationCallbackRegistered = true
             }
         }
 
@@ -158,8 +160,16 @@ internal class MapPropertiesNode(
 
     fun cleanup() {
         try {
-            // Remove location updates first - force synchronous removal
-            locationEngine?.removeLocationUpdates(locationCallback)
+            // Remove location updates first - only if they were registered
+            if (isLocationCallbackRegistered && locationEngine != null) {
+                try {
+                    locationEngine?.removeLocationUpdates(locationCallback)
+                    isLocationCallbackRegistered = false
+                    Timber.d("Successfully removed location updates from MapPropertiesNode")
+                } catch (e: Exception) {
+                    Timber.w(e, "Failed to remove location updates during cleanup")
+                }
+            }
             locationEngine = null
 
             // Disable location component to prevent any further updates
@@ -169,7 +179,8 @@ internal class MapPropertiesNode(
                     // Force disable the component
                     locationComponent.isLocationComponentEnabled = false
 
-                    // Engine reference is already stopped in our own locationEngine variable
+                    // Try to stop the location engine if accessible
+                    locationComponent.locationEngine?.removeLocationUpdates(locationCallback)
                 }
             } catch (e: Exception) {
                 Timber.w(e, "Failed to disable location component during cleanup")
@@ -234,11 +245,13 @@ internal class MapPropertiesNode(
     }
 
     override fun onRemoved() {
+        Timber.d("MapPropertiesNode onRemoved called - performing cleanup")
         cleanup()
     }
 
     override fun onCleared() {
-        cameraPositionState.setMap(null)
+        Timber.d("MapPropertiesNode onCleared called - performing cleanup")
+        cleanup()
     }
 }
 
