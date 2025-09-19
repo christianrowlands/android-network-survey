@@ -19,6 +19,7 @@ import android.location.LocationManager;
 import android.net.wifi.ScanResult;
 import android.os.Build;
 import android.os.CancellationSignal;
+import android.os.OperationCanceledException;
 import android.os.ParcelUuid;
 import android.os.SystemClock;
 import android.preference.PreferenceManager;
@@ -92,7 +93,9 @@ import com.craxiom.networksurvey.constants.NrMessageConstants;
 import com.craxiom.networksurvey.constants.UmtsMessageConstants;
 import com.craxiom.networksurvey.constants.WifiBeaconMessageConstants;
 import com.craxiom.networksurvey.data.SsidExclusionManager;
+import com.craxiom.networksurvey.gpstest.util.FormatUtils;
 import com.craxiom.networksurvey.gpstest.util.GpsTestUtil;
+import com.craxiom.networksurvey.gpstest.util.MathUtils;
 import com.craxiom.networksurvey.listeners.IBluetoothSurveyRecordListener;
 import com.craxiom.networksurvey.listeners.ICdrEventListener;
 import com.craxiom.networksurvey.listeners.ICellularSurveyRecordListener;
@@ -111,9 +114,7 @@ import com.craxiom.networksurvey.services.controller.CellularController;
 import com.craxiom.networksurvey.ui.activesurvey.NewTowerNotificationHelper;
 import com.craxiom.networksurvey.ui.activesurvey.TowerDetectionJavaWrapper;
 import com.craxiom.networksurvey.util.CellularUtils;
-import com.craxiom.networksurvey.gpstest.util.FormatUtils;
 import com.craxiom.networksurvey.util.LocationUtils;
-import com.craxiom.networksurvey.gpstest.util.MathUtils;
 import com.craxiom.networksurvey.util.NsUtils;
 import com.craxiom.networksurvey.util.ParserUtils;
 import com.craxiom.networksurvey.util.PreferenceUtils;
@@ -3077,10 +3078,11 @@ public class SurveyRecordProcessor
                 try
                 {
                     locationManager.getCurrentLocation(provider, cancellationSignal, executorService, consumer);
-                } catch (SecurityException e)
+                } catch (SecurityException | OperationCanceledException e)
                 {
-                    // Fallback to getLastKnownLocation if getCurrentLocation fails due to security issues
-                    // This can happen on devices with certain security software (e.g., VLite SDK)
+                    // Fallback to getLastKnownLocation if getCurrentLocation fails due to security issues or a timeout cancellation
+                    // This can happen on devices with certain security software (e.g., VLite SDK) or
+                    // just because of a regular timeout.
                     Timber.w(e, "SecurityException when calling getCurrentLocation, falling back to getLastKnownLocation");
                     try
                     {
