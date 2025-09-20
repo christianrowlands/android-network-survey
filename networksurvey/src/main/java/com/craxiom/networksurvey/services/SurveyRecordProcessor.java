@@ -168,10 +168,10 @@ public class SurveyRecordProcessor
     private static final int MAX_CDR_LOCATION_WAIT_TIME = 5_000;
 
     /**
-     * Maximum age for cell info data in nanoseconds (60 seconds).
+     * Maximum age for cell info data in milliseconds (60 seconds).
      * Cell info older than this will be considered stale and ignored.
      */
-    private static final long MAX_CELL_INFO_AGE_NS = 60_000_000_000L; // 60 seconds in nanoseconds
+    private static final long MAX_CELL_INFO_AGE_MS = 60_000L; // 60 seconds in milliseconds
 
     private final Object cellInfoProcessingLock = new Object();
     private final Object activityUpdateLock = new Object();
@@ -802,13 +802,18 @@ public class SurveyRecordProcessor
         // means logging, sending to a server, or updating the UI with the latest LTE information.
         if (!cellularSurveyRecordListeners.isEmpty())
         {
-            // Check if the CellInfo data is stale (older than 5 seconds)
-            long cellInfoAgeNs = SystemClock.elapsedRealtimeNanos() - cellInfo.getTimeStamp();
-            if (cellInfoAgeNs > MAX_CELL_INFO_AGE_NS)
+            // Check if the CellInfo data is stale (older than 60 seconds), but only on SDK 30+ where the timestamp is reliable.
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R)
             {
-                Timber.w("Ignoring stale cellular record. Age: %d ms, subscriptionId: %d",
-                        cellInfoAgeNs / 1_000_000, subscriptionId);
-                return null;
+                long cellInfoAgeMs = SystemClock.elapsedRealtime() - cellInfo.getTimestampMillis();
+                if (cellInfoAgeMs > MAX_CELL_INFO_AGE_MS)
+                {
+                    Timber.w("Ignoring stale cellular record. Age: %d ms, subscriptionId: %d",
+                            cellInfoAgeMs, subscriptionId);
+                    Timber.w("Current elapsed realtime ms is %d, CellInfo timestamp ms is %d, cellInfoAgeMs is %d",
+                            SystemClock.elapsedRealtime(), cellInfo.getTimestampMillis(), cellInfoAgeMs);
+                    return null;
+                }
             }
 
             final String carrierName = getCarrierName(cellInfo, networkOperatorName);
