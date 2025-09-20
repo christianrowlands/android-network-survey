@@ -762,7 +762,7 @@ class TowerMapLibreViewModel : ViewModel() {
         } else {
             _servingCells.update { oldMap ->
                 val newMap = HashMap(oldMap)
-                newMap[subscriptionId] = 
+                newMap[subscriptionId] =
                     ServingCellInfo(servingCellRecord, subscriptionId, System.currentTimeMillis())
                 newMap
             }
@@ -770,7 +770,7 @@ class TowerMapLibreViewModel : ViewModel() {
 
         // Update serving cell locations and coverage circles when serving cell changes
         updateServingCellLocations()
-        
+
         // If in serving cell only mode, re-query to update displayed towers
         if (_showOnlyServingCell.value && _showTowersLayer.value) {
             viewModelScope.launch {
@@ -936,6 +936,9 @@ class TowerMapLibreViewModel : ViewModel() {
         _noTowersFound.value = fetchedTowers.isEmpty()
         _isLoadingInProgress.value = false
 
+        // 5) Recompute serving-cell overlays
+        updateServingCellLocations()
+
         Timber.d("Serving cell query complete. Found ${fetchedTowers.size} towers")
     }
 
@@ -990,6 +993,7 @@ class TowerMapLibreViewModel : ViewModel() {
 
             fetched.forEach { wrapper ->
                 // If already present, remove it so we can re-add and move to newest
+                @Suppress("ControlFlowWithEmptyBody")
                 if (merged.remove(wrapper)) {
                     // no-op; removal done
                 }

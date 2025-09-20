@@ -398,27 +398,27 @@ internal fun TowerMapScreen(
                         showTowerInfoDialog = true
                     },
                 ) {
-                    // 1) Pull your tower wrappers from the VM…
-                    val towers by viewModel.towers.collectAsStateWithLifecycle()
-                    val towerWrapperList = towers.toList()
-
-                    // 2) Pull the “serving cell” IDs so we can highlight them
-                    val servingCellInfo by viewModel.servingCells.collectAsStateWithLifecycle()
-                    val servingIds =
-                        if (selectedSimIndex != -1 && servingCellInfo.containsKey(selectedSimIndex)) {
-                            // Show only the selected SIM's serving cell
-                            servingCellInfo[selectedSimIndex]?.let {
-                                setOf(CellularUtils.getTowerId(it))
-                            } ?: emptySet()
-                        } else {
-                            // Show all serving cells
-                            servingCellInfo.values
-                                .map { CellularUtils.getTowerId(it) }
-                                .toSet()
-                        }
-
                     // Check if towers layer should be shown
                     if (showTowersLayer) {
+                        // 1) Pull your tower wrappers from the VM…
+                        val towers by viewModel.towers.collectAsStateWithLifecycle()
+                        val towerWrapperList = towers.toList()
+
+                        // 2) Pull the “serving cell” IDs so we can highlight them
+                        val servingCellInfo by viewModel.servingCells.collectAsStateWithLifecycle()
+                        val servingIds =
+                            if (selectedSimIndex != -1 && servingCellInfo.containsKey(selectedSimIndex)) {
+                                // Show only the selected SIM's serving cell
+                                servingCellInfo[selectedSimIndex]?.let {
+                                    setOf(CellularUtils.getTowerId(it))
+                                } ?: emptySet()
+                            } else {
+                                // Show all serving cells
+                                servingCellInfo.values
+                                    .map { CellularUtils.getTowerId(it) }
+                                    .toSet()
+                            }
+
                         // 3) One single call to TowerSymbols
                         TowerSymbols(
                             towerWrapperList = towerWrapperList,
