@@ -1296,15 +1296,22 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
 
                 // Register for enabled protocols
                 boolean cellularEnabled = preferences.getBoolean(
-                        NsAnalyticsConstants.PROPERTY_NS_ANALYTICS_CELLULAR_ENABLED, false);
+                        NsAnalyticsConstants.PROPERTY_NS_ANALYTICS_CELLULAR_ENABLED, NsAnalyticsConstants.DEFAULT_CELLULAR_ENABLED);
                 boolean wifiEnabled = preferences.getBoolean(
-                        NsAnalyticsConstants.PROPERTY_NS_ANALYTICS_WIFI_ENABLED, false);
+                        NsAnalyticsConstants.PROPERTY_NS_ANALYTICS_WIFI_ENABLED, NsAnalyticsConstants.DEFAULT_WIFI_ENABLED);
                 boolean bluetoothEnabled = preferences.getBoolean(
-                        NsAnalyticsConstants.PROPERTY_NS_ANALYTICS_BLUETOOTH_ENABLED, false);
+                        NsAnalyticsConstants.PROPERTY_NS_ANALYTICS_BLUETOOTH_ENABLED, NsAnalyticsConstants.DEFAULT_BLUETOOTH_ENABLED);
                 boolean gnssEnabled = preferences.getBoolean(
-                        NsAnalyticsConstants.PROPERTY_NS_ANALYTICS_GNSS_ENABLED, false);
+                        NsAnalyticsConstants.PROPERTY_NS_ANALYTICS_GNSS_ENABLED, NsAnalyticsConstants.DEFAULT_GNSS_ENABLED);
 
-                // TODO if all protocols are false, then return an error
+                if (!cellularEnabled && !wifiEnabled && !bluetoothEnabled && !gnssEnabled)
+                {
+                    Timber.w("No NS Analytics protocols enabled, so no survey scanning will be started");
+                    nsAnalyticsDataStore.shutdown();
+                    nsAnalyticsDataStore = null;
+                    return new UploadScanningResult(false, false,
+                            getString(R.string.ns_analytics_survey_no_protocols_enabled));
+                }
 
                 if (cellularEnabled)
                 {

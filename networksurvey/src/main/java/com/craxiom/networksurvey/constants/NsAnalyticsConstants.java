@@ -32,6 +32,10 @@ public class NsAnalyticsConstants
     public static final int UPLOAD_FREQUENCY_MANUAL = -1;
 
     // Default Values
+    public static final boolean DEFAULT_CELLULAR_ENABLED = true;
+    public static final boolean DEFAULT_WIFI_ENABLED = true;
+    public static final boolean DEFAULT_BLUETOOTH_ENABLED = false;
+    public static final boolean DEFAULT_GNSS_ENABLED = false;
     public static final int DEFAULT_UPLOAD_FREQUENCY = UPLOAD_FREQUENCY_15_MIN;
     public static final int DEFAULT_UPLOAD_FREQUENCY_MIN = UPLOAD_FREQUENCY_15_MIN;
     public static final int MAX_BATCH_SIZE = 1000; // Maximum records per upload batch

@@ -63,19 +63,19 @@ class NsAnalyticsConnectionViewModel(
                     val preferences = PreferenceManager.getDefaultSharedPreferences(context)
                     val cellularEnabled = preferences.getBoolean(
                         NsAnalyticsConstants.PROPERTY_NS_ANALYTICS_CELLULAR_ENABLED,
-                        true
+                        NsAnalyticsConstants.DEFAULT_CELLULAR_ENABLED
                     )
                     val wifiEnabled = preferences.getBoolean(
                         NsAnalyticsConstants.PROPERTY_NS_ANALYTICS_WIFI_ENABLED,
-                        true
+                        NsAnalyticsConstants.DEFAULT_WIFI_ENABLED
                     )
                     val bluetoothEnabled = preferences.getBoolean(
                         NsAnalyticsConstants.PROPERTY_NS_ANALYTICS_BLUETOOTH_ENABLED,
-                        false
+                        NsAnalyticsConstants.DEFAULT_BLUETOOTH_ENABLED
                     )
                     val gnssEnabled = preferences.getBoolean(
                         NsAnalyticsConstants.PROPERTY_NS_ANALYTICS_GNSS_ENABLED,
-                        false
+                        NsAnalyticsConstants.DEFAULT_GNSS_ENABLED
                     )
 
                     // Get queue size
@@ -408,9 +408,8 @@ data class NsAnalyticsConnectionUiState(
     val queuedRecords: Int = 0,
     val isUploading: Boolean = false,
     val message: String? = null,
-    // Protocol selection states
-    val cellularEnabled: Boolean = true,
-    val wifiEnabled: Boolean = true,
-    val bluetoothEnabled: Boolean = false,
-    val gnssEnabled: Boolean = false
+    val cellularEnabled: Boolean = NsAnalyticsConstants.DEFAULT_CELLULAR_ENABLED,
+    val wifiEnabled: Boolean = NsAnalyticsConstants.DEFAULT_WIFI_ENABLED,
+    val bluetoothEnabled: Boolean = NsAnalyticsConstants.DEFAULT_BLUETOOTH_ENABLED,
+    val gnssEnabled: Boolean = NsAnalyticsConstants.DEFAULT_GNSS_ENABLED
 )

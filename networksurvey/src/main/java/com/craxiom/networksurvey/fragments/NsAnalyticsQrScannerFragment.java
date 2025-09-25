@@ -54,12 +54,7 @@ public class NsAnalyticsQrScannerFragment extends Fragment
                     // Parse the QR code data
                     NsAnalyticsQrData qrData = new Gson().fromJson(result.getText(), NsAnalyticsQrData.class);
 
-                    // Validate the QR data
-                    // FIXME Validate the actual values not just the non-null check
-                    if (qrData.getWorkspaceId() == null || qrData.getApiUrl() == null || qrData.getToken() == null)
-                    {
-                        throw new IllegalArgumentException("Invalid QR code - missing required fields");
-                    }
+                    validate(qrData);
 
                     // Store the QR data temporarily
                     NsAnalyticsSecureStorage.INSTANCE.storeQrData(context, qrData);
@@ -80,7 +75,7 @@ public class NsAnalyticsQrScannerFragment extends Fragment
                 } catch (Exception e)
                 {
                     Timber.e(e, "Failed to read NS Analytics QR code");
-                    Toast.makeText(context, "Invalid NS Analytics QR code", Toast.LENGTH_LONG).show();
+                    Toast.makeText(context, "Invalid NS Analytics QR code:" + e.getMessage(), Toast.LENGTH_LONG).show();
                     // Continue scanning for valid QR codes
                     codeScanner.startPreview();
                 }
@@ -103,5 +98,38 @@ public class NsAnalyticsQrScannerFragment extends Fragment
     {
         codeScanner.releaseResources();
         super.onPause();
+    }
+
+    private void validate(NsAnalyticsQrData qrData) throws IllegalArgumentException
+    {
+        if (qrData == null)
+        {
+            throw new IllegalArgumentException("QR data is null");
+        }
+
+        // Check token
+        if (qrData.getToken().trim().isEmpty())
+        {
+            throw new IllegalArgumentException("Registration token is missing");
+        }
+
+        // Check workspace ID
+        if (qrData.getWorkspaceId().trim().isEmpty())
+        {
+            throw new IllegalArgumentException("Workspace ID is missing");
+        }
+
+        // Check API URL
+        if (qrData.getApiUrl().trim().isEmpty())
+        {
+            throw new IllegalArgumentException("API URL is missing");
+        }
+
+        // Validate URL format
+        String url = qrData.getApiUrl().trim();
+        if (!url.startsWith("http://") && !url.startsWith("https://"))
+        {
+            throw new IllegalArgumentException("API URL must start with http:// or https://");
+        }
     }
 }

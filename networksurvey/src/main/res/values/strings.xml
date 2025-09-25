@@ -906,4 +906,5 @@ but work independently, so you have full control over how you handle your data.<
     <string name="ns_analytics_survey_already_running">NS Analytics survey is already running</string>
     <string name="ns_analytics_survey_already_stopped">NS Analytics survey is already stopped</string>
     <string name="ns_analytics_survey_toggle_failed">Failed to toggle NS Analytics survey</string>
+    <string name="ns_analytics_survey_no_protocols_enabled">Must enable at least one protocol for the NS Analytics Survey</string>
 </resources>
