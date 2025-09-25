@@ -1,7 +1,6 @@
 package com.craxiom.networksurvey.ui.main
 
 import android.content.Intent
-import android.net.Uri
 import androidx.compose.material3.DrawerState
 import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.ModalNavigationDrawer
@@ -15,6 +14,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.core.net.toUri
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
@@ -160,6 +160,18 @@ fun MainCompose(
         }
     }
 
+    LaunchedEffect(viewModel.navigateToNsAnalyticsConnection) {
+        viewModel.navigateToNsAnalyticsConnection.observe(lifecycleOwner) { shouldNavigate ->
+            if (shouldNavigate) {
+                // Navigate back from QR scanner to NS Analytics connection screen
+                mainNavController.navigate(NavDrawerOption.NsAnalyticsConnection.name) {
+                    popUpTo(NavDrawerOption.None.name)
+                }
+                viewModel.resetNavigationFlag()
+            }
+        }
+    }
+
     // Handle battery optimization dialog trigger from SharedViewModel
     LaunchedEffect(viewModel.showBatteryOptimizationDialog) {
         viewModel.showBatteryOptimizationDialog.observe(lifecycleOwner) { shouldShow ->
@@ -235,6 +247,12 @@ fun MainCompose(
                                 }
                             }
 
+                            NavDrawerOption.NsAnalyticsConnection -> {
+                                mainNavController.navigate(onUserPickedOption.name) {
+                                    popUpTo(NavDrawerOption.None.name)
+                                }
+                            }
+
                             NavDrawerOption.Settings -> {
                                 mainNavController.navigate(onUserPickedOption.name) {
                                     popUpTo(NavDrawerOption.None.name)
@@ -244,7 +262,7 @@ fun MainCompose(
                             NavDrawerOption.UserManual -> {
                                 val intent = Intent(
                                     Intent.ACTION_VIEW,
-                                    Uri.parse("https://networksurvey.app/manual")
+                                    "https://networksurvey.app/manual".toUri()
                                 )
                                 context.startActivity(intent)
                             }
@@ -252,7 +270,7 @@ fun MainCompose(
                             NavDrawerOption.MessagingDocs -> {
                                 val intent = Intent(
                                     Intent.ACTION_VIEW,
-                                    Uri.parse("https://messaging.networksurvey.app/")
+                                    "https://messaging.networksurvey.app/".toUri()
                                 )
                                 context.startActivity(intent)
                             }
@@ -260,7 +278,7 @@ fun MainCompose(
                             NavDrawerOption.ReportAnIssue -> {
                                 val intent = Intent(
                                     Intent.ACTION_VIEW,
-                                    Uri.parse("https://github.com/christianrowlands/android-network-survey/issues/new/choose")
+                                    "https://github.com/christianrowlands/android-network-survey/issues/new/choose".toUri()
                                 )
                                 context.startActivity(intent)
                             }
@@ -268,7 +286,7 @@ fun MainCompose(
                             NavDrawerOption.GitHub -> {
                                 val intent = Intent(
                                     Intent.ACTION_VIEW,
-                                    Uri.parse("https://github.com/christianrowlands/android-network-survey")
+                                    "https://github.com/christianrowlands/android-network-survey".toUri()
                                 )
                                 context.startActivity(intent)
                             }
@@ -320,6 +338,12 @@ object DrawerParams {
             R.string.survey_monitor,
             R.drawable.ic_survey_monitor,
             R.string.survey_monitor_description
+        ),
+        AppDrawerItemInfo(
+            NavDrawerOption.NsAnalyticsConnection,
+            R.string.ns_analytics,
+            R.drawable.ic_cloud_connection,
+            R.string.ns_analytics_description
         ),
         AppDrawerItemInfo(
             NavDrawerOption.Settings,

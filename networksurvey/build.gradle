@@ -171,6 +171,7 @@ dependencies {
 
     implementation 'com.squareup.retrofit2:retrofit:3.0.0'
     implementation 'com.squareup.retrofit2:converter-gson:3.0.0'
+    implementation 'com.squareup.okhttp3:logging-interceptor:4.12.0'
     implementation 'org.yaml:snakeyaml:2.5'
 
     implementation "androidx.work:work-runtime:2.10.3"

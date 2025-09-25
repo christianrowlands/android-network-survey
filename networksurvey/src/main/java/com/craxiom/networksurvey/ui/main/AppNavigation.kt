@@ -20,6 +20,7 @@ import com.craxiom.networksurvey.databinding.ContainerGrpcFragmentBinding
 import com.craxiom.networksurvey.databinding.ContainerMqttFragmentBinding
 import com.craxiom.networksurvey.databinding.ContainerMqttQrCodeScannerFragmentBinding
 import com.craxiom.networksurvey.databinding.ContainerMqttQrCodeShareFragmentBinding
+import com.craxiom.networksurvey.databinding.ContainerNsAnalyticsQrScannerFragmentBinding
 import com.craxiom.networksurvey.databinding.ContainerSettingsFragmentBinding
 import com.craxiom.networksurvey.databinding.ContainerTowerMapFragmentBinding
 import com.craxiom.networksurvey.databinding.ContainerTowerMapSettingsFragmentBinding
@@ -38,6 +39,8 @@ import com.craxiom.networksurvey.ui.acknowledgments.AcknowledgmentsScreen
 import com.craxiom.networksurvey.ui.activesurvey.SurveyMonitorScreen
 import com.craxiom.networksurvey.ui.cellular.CalculatorScreen
 import com.craxiom.networksurvey.ui.main.appbar.TitleBar
+import com.craxiom.networksurvey.ui.nsanalytics.NsAnalyticsConnectionScreen
+import com.craxiom.networksurvey.ui.nsanalytics.NsAnalyticsConnectionViewModel
 import com.craxiom.networksurvey.ui.wifi.model.WifiNetworkInfoList
 
 fun NavGraphBuilder.mainGraph(
@@ -88,6 +91,17 @@ fun NavGraphBuilder.mainGraph(
                 onBackPressed = { mainNavController.navigateUp() },
                 onNavigateToTowerMapSettings = {
                     mainNavController.navigate(NavOption.TowerMapSettings.name)
+                }
+            )
+        }
+
+        composable(NavDrawerOption.NsAnalyticsConnection.name) {
+            val viewModel: NsAnalyticsConnectionViewModel = viewModel()
+            NsAnalyticsConnectionScreen(
+                viewModel = viewModel,
+                onNavigateUp = { mainNavController.navigateUp() },
+                onNavigateToQrScanner = {
+                    mainNavController.navigate(NavOption.NsAnalyticsQrScanner.name)
                 }
             )
         }
@@ -154,6 +168,10 @@ fun NavGraphBuilder.mainGraph(
 
             BluetoothDetailsInCompose(paddingValues, bluetoothRecordData)
         }
+
+        composable(NavOption.NsAnalyticsQrScanner.name) {
+            NsAnalyticsQrScannerInCompose(mainNavController)
+        }
     }
 }
 
@@ -163,6 +181,7 @@ enum class NavDrawerOption {
     MqttBrokerConnection,
     CellularCalculators,
     SurveyMonitor,
+    NsAnalyticsConnection,
     Settings,
 
     // External Links
@@ -181,9 +200,9 @@ enum class NavOption {
     WifiSpectrum,
     WifiDetails,
     BluetoothDetails,
-    SurveyMonitor,
     SsidExclusionList,
-    Acknowledgments
+    Acknowledgments,
+    NsAnalyticsQrScanner
 }
 
 @Composable
@@ -340,6 +359,20 @@ fun BluetoothDetailsInCompose(
             val fragment =
                 bluetoothDetailsFragmentContainerView.getFragment<BluetoothDetailsFragment>()
             fragment.setBluetoothData(bluetoothRecordData)
+        }
+    }
+}
+
+@Composable
+fun NsAnalyticsQrScannerInCompose(mainNavController: NavHostController) {
+    Scaffold(
+        topBar = { TitleBar("Scan NS Analytics QR Code") { mainNavController.navigateUp() } },
+    ) { innerPadding ->
+        AndroidViewBinding(
+            ContainerNsAnalyticsQrScannerFragmentBinding::inflate,
+            modifier = Modifier.padding(paddingValues = innerPadding)
+        ) {
+            // Fragment is defined in the layout XML
         }
     }
 }

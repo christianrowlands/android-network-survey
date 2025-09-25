@@ -361,9 +361,12 @@ public class SurveyRecordProcessor
      */
     public synchronized void addDbSink(DbUploadStore dbSink)
     {
-        registerCellularSurveyRecordListener(dbSink);
-        registerWifiSurveyRecordListener(dbSink);
         uploadDbSink = dbSink;
+        // FIXME We don't need to handle the db sink outside of the normal Service#register calls,
+        //  so stop bypassing the normal listener registration methods because this could cause problems
+        //  because we don't call the stopWifiRecordScanning method when we bypass the service register method.
+        registerCellularSurveyRecordListener(uploadDbSink);
+        registerWifiSurveyRecordListener(uploadDbSink);
     }
 
     public synchronized void removeDbSink()

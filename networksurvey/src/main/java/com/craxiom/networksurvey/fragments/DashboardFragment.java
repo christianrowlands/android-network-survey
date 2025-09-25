@@ -55,12 +55,15 @@ import com.craxiom.mqttlibrary.connection.ConnectionState;
 import com.craxiom.networksurvey.NetworkSurveyActivity;
 import com.craxiom.networksurvey.R;
 import com.craxiom.networksurvey.constants.NetworkSurveyConstants;
+import com.craxiom.networksurvey.constants.NsAnalyticsConstants;
 import com.craxiom.networksurvey.databinding.FragmentDashboardBinding;
 import com.craxiom.networksurvey.databinding.MqttStreamItemBinding;
 import com.craxiom.networksurvey.fragments.model.DashboardViewModel;
+import com.craxiom.networksurvey.gpstest.util.MathUtils;
 import com.craxiom.networksurvey.listeners.ILoggingChangeListener;
 import com.craxiom.networksurvey.logging.db.SurveyDatabase;
 import com.craxiom.networksurvey.logging.db.dao.SurveyRecordDao;
+import com.craxiom.networksurvey.logging.db.uploader.NsAnalyticsUploadWorker;
 import com.craxiom.networksurvey.logging.db.uploader.NsUploaderWorker;
 import com.craxiom.networksurvey.model.SurveyTypes;
 import com.craxiom.networksurvey.model.UploadScanningResult;
@@ -68,7 +71,6 @@ import com.craxiom.networksurvey.services.BatteryMonitor;
 import com.craxiom.networksurvey.services.NetworkSurveyService;
 import com.craxiom.networksurvey.ui.main.SharedViewModel;
 import com.craxiom.networksurvey.util.BatteryOptimizationHelper;
-import com.craxiom.networksurvey.gpstest.util.MathUtils;
 import com.craxiom.networksurvey.util.MdmUtils;
 import com.craxiom.networksurvey.util.NsUtils;
 import com.craxiom.networksurvey.util.PreferenceUtils;
@@ -97,6 +99,8 @@ public class DashboardFragment extends AServiceDataFragment implements LocationL
     public static final int ACCESS_REQUIRED_PERMISSION_REQUEST_ID = 20;
     public static final int ACCESS_OPTIONAL_PERMISSION_REQUEST_ID = 21;
     private static final int ACCESS_BLUETOOTH_PERMISSION_REQUEST_ID = 22;
+    private static final String UPLOAD_MODE_MANUAL = "manual";
+    private static final String UPLOAD_MODE_AUTOMATIC = "automatic";
 
     private final DecimalFormat locationFormat = new DecimalFormat("###.#####");
     private final ExecutorService executorService = Executors.newSingleThreadExecutor();
@@ -131,6 +135,7 @@ public class DashboardFragment extends AServiceDataFragment implements LocationL
         initializeUiListeners();
         initializeObservers();
         initializeUploadUiState();
+        initializeNsAnalyticsCard();
         queryUploadQueueCount();
 
         binding.dashboardScrollView.getViewTreeObserver().addOnPreDrawListener(() -> {
@@ -243,6 +248,7 @@ public class DashboardFragment extends AServiceDataFragment implements LocationL
         viewModel.setUploadScanningActive(uploadScanningActive);
 
         updateBatteryManagementStatus(service);
+        updateNsAnalyticsCard();
     }
 
     @Override
@@ -334,6 +340,12 @@ public class DashboardFragment extends AServiceDataFragment implements LocationL
                     updateBatteryManagementStatus(service);
                 }
                 break;
+
+            case NsAnalyticsConstants.PROPERTY_NS_ANALYTICS_WORKSPACE_NAME:
+            case NsAnalyticsConstants.PROPERTY_NS_ANALYTICS_URL:
+                updateNsAnalyticsCard();
+                break;
+
             default:
         }
     }
@@ -1171,6 +1183,335 @@ public class DashboardFragment extends AServiceDataFragment implements LocationL
             binding.batteryStatusCard.batteryStatusIcon.setImageTintList(ColorStateList.valueOf(getResources().getColor(R.color.battery_icon_warning, null)));
             binding.batteryStatusCard.batteryHeaderIcon.setImageTintList(ColorStateList.valueOf(getResources().getColor(R.color.battery_icon_warning, null)));
         }
+    }
+
+    /**
+     * Initializes the NS Analytics card UI components and sets up button listeners.
+     * This method should be called once during view creation.
+     */
+    private void initializeNsAnalyticsCard()
+    {
+        if (binding == null) return;
+
+        setupNsAnalyticsButtonListeners();
+    }
+
+    /**
+     * Sets up all button click listeners for the NS Analytics card.
+     */
+    private void setupNsAnalyticsButtonListeners()
+    {
+        final Context context = getContext();
+        if (context == null || binding == null) return;
+
+        // Settings button - navigate to NS Analytics connection screen
+        binding.nsAnalyticsCard.nsAnalyticsSettingsButton.setOnClickListener(v -> {
+            SharedViewModel sharedViewModel = new ViewModelProvider(requireActivity()).get(SharedViewModel.class);
+            sharedViewModel.triggerNavigationToNsAnalyticsConnection();
+        });
+
+        // Survey button - start/stop NS Analytics survey
+        binding.nsAnalyticsCard.nsAnalyticsSurveyButton.setOnClickListener(v -> {
+            if (service == null) return;
+
+            try
+            {
+                boolean isCurrentlyScanning = service.isNsAnalyticsScanningActive();
+                UploadScanningResult result = service.toggleNsAnalyticsScanning(!isCurrentlyScanning);
+
+                if (!result.getSuccess())
+                {
+                    Toast.makeText(context, result.getMessage(), Toast.LENGTH_LONG).show();
+                }
+
+                // Update UI
+                updateNsAnalyticsCard();
+            } catch (Exception e)
+            {
+                Timber.e(e, "Error toggling NS Analytics scanning");
+                Toast.makeText(context, "Failed to toggle NS Analytics survey", Toast.LENGTH_SHORT).show();
+            }
+        });
+
+        // Manual upload button - trigger immediate upload
+        binding.nsAnalyticsCard.nsAnalyticsManualUploadButton.setOnClickListener(v -> {
+            WorkManager workManager = WorkManager.getInstance(context);
+            OneTimeWorkRequest uploadRequest = new OneTimeWorkRequest.Builder(NsAnalyticsUploadWorker.class)
+                    .setExpedited(OutOfQuotaPolicy.RUN_AS_NON_EXPEDITED_WORK_REQUEST)
+                    .build();
+            workManager.enqueue(uploadRequest);
+
+            Toast.makeText(context, R.string.ns_analytics_uploading, Toast.LENGTH_SHORT).show();
+        });
+    }
+
+    /**
+     * Updates the NS Analytics status card UI.
+     * This is the main orchestrator method that delegates to specific update methods.
+     */
+    private void updateNsAnalyticsCard()
+    {
+        if (binding == null) return;
+
+        final Context context = getContext();
+        if (context == null) return;
+
+        if (!isNsAnalyticsCardVisible(context))
+        {
+            binding.nsAnalyticsCard.nsAnalyticsCardView.setVisibility(View.GONE);
+            return;
+        }
+
+        binding.nsAnalyticsCard.nsAnalyticsCardView.setVisibility(View.VISIBLE);
+
+        boolean isRegistered = PreferenceUtils.isNsAnalyticsRegistered(context);
+        if (!isRegistered)
+        {
+            showNsAnalyticsNotRegistered();
+        } else
+        {
+            showNsAnalyticsRegistered(context);
+        }
+    }
+
+    /**
+     * Checks if the NS Analytics card should be visible based on if the device is registered to a workspace.
+     *
+     * @param context The context
+     * @return true if the card should be visible, false otherwise
+     */
+    private boolean isNsAnalyticsCardVisible(Context context)
+    {
+        return PreferenceUtils.isNsAnalyticsRegistered(context);
+    }
+
+    /**
+     * Updates the UI to show the not registered state for NS Analytics.
+     */
+    private void showNsAnalyticsNotRegistered()
+    {
+        if (binding == null) return;
+
+        binding.nsAnalyticsCard.nsAnalyticsStatusIndicator.setBackgroundResource(R.drawable.status_indicator_disconnected);
+        binding.nsAnalyticsCard.nsAnalyticsStatusText.setText(R.string.ns_analytics_not_registered);
+        binding.nsAnalyticsCard.nsAnalyticsProtocolsSection.setVisibility(View.GONE);
+        binding.nsAnalyticsCard.nsAnalyticsInfoSection.setVisibility(View.GONE);
+        binding.nsAnalyticsCard.nsAnalyticsUploadModeSection.setVisibility(View.GONE);
+        binding.nsAnalyticsCard.nsAnalyticsActionButtons.setVisibility(View.GONE);
+    }
+
+    /**
+     * Updates the UI to show the registered state for NS Analytics.
+     *
+     * @param context The context
+     */
+    private void showNsAnalyticsRegistered(Context context)
+    {
+        if (binding == null || context == null) return;
+
+        // Check if survey is running
+        boolean isSurveyRunning = isNsAnalyticsSurveyRunning();
+
+        // Update survey status
+        updateNsAnalyticsSurveyStatus(isSurveyRunning);
+
+        // Show info sections
+        binding.nsAnalyticsCard.nsAnalyticsInfoSection.setVisibility(View.VISIBLE);
+        binding.nsAnalyticsCard.nsAnalyticsActionButtons.setVisibility(View.VISIBLE);
+
+        // Update workspace info
+        String workspace = PreferenceUtils.getNsAnalyticsWorkspace(context);
+        updateNsAnalyticsWorkspace(workspace);
+
+        // Update queue size asynchronously
+        updateNsAnalyticsQueueSize(context);
+
+        // Update last upload time
+        long lastUploadTime = PreferenceUtils.getLastNsAnalyticsUploadTime(context);
+        updateNsAnalyticsLastUpload(lastUploadTime);
+
+        // Update upload mode
+        updateNsAnalyticsUploadMode(context);
+    }
+
+    /**
+     * Checks if the NS Analytics survey is currently running.
+     *
+     * @return true if survey is running, false otherwise
+     */
+    private boolean isNsAnalyticsSurveyRunning()
+    {
+        if (service == null) return false;
+
+        try
+        {
+            return service.isNsAnalyticsScanningActive();
+        } catch (Exception e)
+        {
+            Timber.e(e, "Error checking NS Analytics scanning status");
+            return false;
+        }
+    }
+
+    /**
+     * Updates the survey status indicators based on whether survey is running.
+     *
+     * @param isSurveyRunning true if survey is currently running
+     */
+    private void updateNsAnalyticsSurveyStatus(boolean isSurveyRunning)
+    {
+        if (binding == null) return;
+
+        if (isSurveyRunning)
+        {
+            binding.nsAnalyticsCard.nsAnalyticsStatusIndicator.setBackgroundResource(R.drawable.status_indicator_connected);
+            binding.nsAnalyticsCard.nsAnalyticsStatusText.setText(R.string.ns_analytics_survey_running);
+            binding.nsAnalyticsCard.nsAnalyticsProtocolsSection.setVisibility(View.VISIBLE);
+            binding.nsAnalyticsCard.nsAnalyticsSurveyButton.setText(R.string.ns_analytics_stop_survey);
+
+            updateNsAnalyticsProtocolIndicators();
+        } else
+        {
+            binding.nsAnalyticsCard.nsAnalyticsStatusIndicator.setBackgroundResource(R.drawable.status_indicator_disconnected);
+            binding.nsAnalyticsCard.nsAnalyticsStatusText.setText(R.string.ns_analytics_survey_stopped);
+            binding.nsAnalyticsCard.nsAnalyticsProtocolsSection.setVisibility(View.GONE);
+            binding.nsAnalyticsCard.nsAnalyticsSurveyButton.setText(R.string.ns_analytics_start_survey);
+        }
+    }
+
+    /**
+     * Updates the workspace display value.
+     *
+     * @param workspace The workspace name to display
+     */
+    private void updateNsAnalyticsWorkspace(String workspace)
+    {
+        if (binding == null) return;
+
+        binding.nsAnalyticsCard.nsAnalyticsWorkspaceValue.setText(workspace);
+    }
+
+    /**
+     * Asynchronously fetches and updates the NS Analytics queue size.
+     *
+     * @param context The context
+     */
+    private void updateNsAnalyticsQueueSize(Context context)
+    {
+        if (binding == null || context == null) return;
+
+        executorService.execute(() -> {
+            try
+            {
+                SurveyDatabase database = SurveyDatabase.getInstance(context);
+                int queueSize = database.nsAnalyticsDao().getPendingRecordCount();
+
+                // Update UI on main thread
+                if (getActivity() != null)
+                {
+                    getActivity().runOnUiThread(() -> {
+                        if (binding != null)
+                        {
+                            binding.nsAnalyticsCard.nsAnalyticsQueueSizeValue.setText(String.valueOf(queueSize));
+
+                            // Update manual upload button state if in manual mode
+                            SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(context);
+                            String uploadMode = preferences.getString(NsAnalyticsConstants.PROPERTY_NS_ANALYTICS_UPLOAD_MODE, UPLOAD_MODE_AUTOMATIC);
+                            if (UPLOAD_MODE_MANUAL.equals(uploadMode) &&
+                                    binding.nsAnalyticsCard.nsAnalyticsManualUploadButton.getVisibility() == View.VISIBLE)
+                            {
+                                binding.nsAnalyticsCard.nsAnalyticsManualUploadButton.setEnabled(queueSize > 0);
+                            }
+                        }
+                    });
+                }
+            } catch (Exception e)
+            {
+                Timber.e(e, "Error getting NS Analytics queue size");
+                if (getActivity() != null)
+                {
+                    getActivity().runOnUiThread(() -> {
+                        if (binding != null)
+                        {
+                            binding.nsAnalyticsCard.nsAnalyticsQueueSizeValue.setText("0");
+                        }
+                    });
+                }
+            }
+        });
+    }
+
+    /**
+     * Updates the last upload time display.
+     *
+     * @param lastUploadTime The timestamp of the last upload
+     */
+    private void updateNsAnalyticsLastUpload(long lastUploadTime)
+    {
+        if (binding == null) return;
+
+        if (lastUploadTime > 0)
+        {
+            // Format time ago
+            long timeDiff = System.currentTimeMillis() - lastUploadTime;
+            String timeAgo = NsUtils.getTimeAgo(timeDiff);
+            binding.nsAnalyticsCard.nsAnalyticsLastUploadValue.setText(timeAgo);
+        } else
+        {
+            binding.nsAnalyticsCard.nsAnalyticsLastUploadValue.setText(R.string.ns_analytics_never);
+        }
+    }
+
+    /**
+     * Updates the upload mode section based on current settings.
+     *
+     * @param context The context
+     */
+    private void updateNsAnalyticsUploadMode(Context context)
+    {
+        if (binding == null || context == null) return;
+
+        SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(context);
+        String uploadMode = preferences.getString(NsAnalyticsConstants.PROPERTY_NS_ANALYTICS_UPLOAD_MODE, UPLOAD_MODE_AUTOMATIC);
+
+        binding.nsAnalyticsCard.nsAnalyticsUploadModeSection.setVisibility(View.VISIBLE);
+
+        if (UPLOAD_MODE_MANUAL.equals(uploadMode))
+        {
+            binding.nsAnalyticsCard.nsAnalyticsUploadModeValue.setText(R.string.ns_analytics_upload_mode_manual);
+            binding.nsAnalyticsCard.nsAnalyticsManualUploadButton.setVisibility(View.VISIBLE);
+            // Button state will be updated when queue size is fetched asynchronously
+            binding.nsAnalyticsCard.nsAnalyticsManualUploadButton.setEnabled(false);
+        } else
+        {
+            binding.nsAnalyticsCard.nsAnalyticsUploadModeValue.setText(R.string.ns_analytics_upload_mode_automatic);
+            binding.nsAnalyticsCard.nsAnalyticsManualUploadButton.setVisibility(View.GONE);
+        }
+    }
+
+    /**
+     * Updates the protocol indicators in the NS Analytics card based on which protocols are active.
+     */
+    private void updateNsAnalyticsProtocolIndicators()
+    {
+        if (binding == null) return;
+
+        Context context = getContext();
+        if (context == null) return;
+
+        SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(context);
+
+        // Check which protocols are enabled for NS Analytics
+        boolean cellularEnabled = preferences.getBoolean(NsAnalyticsConstants.PROPERTY_NS_ANALYTICS_CELLULAR_ENABLED, true);
+        boolean wifiEnabled = preferences.getBoolean(NsAnalyticsConstants.PROPERTY_NS_ANALYTICS_WIFI_ENABLED, true);
+        boolean bluetoothEnabled = preferences.getBoolean(NsAnalyticsConstants.PROPERTY_NS_ANALYTICS_BLUETOOTH_ENABLED, false);
+        boolean gnssEnabled = preferences.getBoolean(NsAnalyticsConstants.PROPERTY_NS_ANALYTICS_GNSS_ENABLED, false);
+
+        // Update visibility of protocol indicators
+        binding.nsAnalyticsCard.nsAnalyticsCellularIndicator.setVisibility(cellularEnabled ? View.VISIBLE : View.GONE);
+        binding.nsAnalyticsCard.nsAnalyticsWifiIndicator.setVisibility(wifiEnabled ? View.VISIBLE : View.GONE);
+        binding.nsAnalyticsCard.nsAnalyticsBluetoothIndicator.setVisibility(bluetoothEnabled ? View.VISIBLE : View.GONE);
+        binding.nsAnalyticsCard.nsAnalyticsGnssIndicator.setVisibility(gnssEnabled ? View.VISIBLE : View.GONE);
     }
 
     // Battery Monitor Listener implementations

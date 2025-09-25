@@ -38,8 +38,10 @@ import com.craxiom.networksurvey.Application;
 import com.craxiom.networksurvey.BuildConfig;
 import com.craxiom.networksurvey.R;
 import com.craxiom.networksurvey.constants.NetworkSurveyConstants;
+import com.craxiom.networksurvey.constants.NsAnalyticsConstants;
 import com.craxiom.networksurvey.fragments.model.MqttConnectionSettings;
 import com.craxiom.networksurvey.gpstest.model.GnssType;
+import com.craxiom.networksurvey.logging.db.SurveyDatabase;
 import com.craxiom.networksurvey.model.LogTypeState;
 import com.craxiom.networksurvey.model.SurveyTypes;
 import com.craxiom.networksurvey.mqtt.MqttConnectionInfo;
@@ -1097,5 +1099,70 @@ public class PreferenceUtils
                 return NetworkSurveyConstants.DEFAULT_BATTERY_THRESHOLD_PERCENT;
             }
         }
+    }
+
+    // ============================================================================
+    // NS Analytics Helper Methods
+    // ============================================================================
+
+    /**
+     * Gets the last successful NS Analytics upload time.
+     *
+     * @param context The context to use when getting the SharedPreferences
+     * @return The last upload timestamp in milliseconds, or 0 if never uploaded
+     */
+    public static long getLastNsAnalyticsUploadTime(Context context)
+    {
+        return PreferenceManager.getDefaultSharedPreferences(context)
+                .getLong(NsAnalyticsConstants.PROPERTY_NS_ANALYTICS_LAST_UPLOAD_TIME, 0);
+    }
+
+    /**
+     * Checks if the device is registered with NS Analytics.
+     * This is the authoritative check for registration status.
+     *
+     * @param context The context to use for secure storage access
+     * @return True if the device is registered, false otherwise
+     */
+    public static boolean isNsAnalyticsRegistered(Context context)
+    {
+        return NsAnalyticsSecureStorage.INSTANCE.isRegistered(context);
+    }
+
+    /**
+     * Gets the NS Analytics workspace name.
+     *
+     * @param context The context to use when getting the SharedPreferences
+     * @return The workspace name, or empty string if not set
+     */
+    public static String getNsAnalyticsWorkspace(Context context)
+    {
+        return PreferenceManager.getDefaultSharedPreferences(context)
+                .getString(NsAnalyticsConstants.PROPERTY_NS_ANALYTICS_WORKSPACE_NAME, "");
+    }
+
+    /**
+     * Check if NS Analytics auto upload is enabled.
+     *
+     * @param context The app context.
+     * @return True if NS Analytics auto upload is enabled.
+     */
+    public static boolean isNsAnalyticsAutoUpload(Context context)
+    {
+        return PreferenceManager.getDefaultSharedPreferences(context)
+                .getBoolean(NsAnalyticsConstants.PROPERTY_NS_ANALYTICS_AUTO_UPLOAD, true);
+    }
+
+    /**
+     * Set NS Analytics auto upload preference.
+     *
+     * @param context The app context.
+     * @param enabled True if NS Analytics auto upload should be enabled.
+     */
+    public static void setNsAnalyticsAutoUpload(Context context, boolean enabled)
+    {
+        PreferenceManager.getDefaultSharedPreferences(context).edit()
+                .putBoolean(NsAnalyticsConstants.PROPERTY_NS_ANALYTICS_AUTO_UPLOAD, enabled)
+                .apply();
     }
 }

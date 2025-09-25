@@ -25,6 +25,10 @@
                 layout="@layout/location_card"
                 android:id="@+id/location_card" />
 
+            <include
+                layout="@layout/dashboard_ns_analytics_card"
+                android:id="@+id/ns_analytics_card" />
+
             <androidx.cardview.widget.CardView
                 android:id="@+id/db_logging_card_view"
                 style="?attr/cardStyle"
@@ -39,7 +43,7 @@
                     android:orientation="vertical">
 
                     <LinearLayout
-                        android:layout_width="fill_parent"
+                        android:layout_width="match_parent"
                         android:layout_height="match_parent"
                         android:background="@drawable/card_title"
                         android:padding="3dp"

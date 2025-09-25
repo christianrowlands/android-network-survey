@@ -85,6 +85,18 @@
     </PreferenceCategory>
 
     <PreferenceCategory
+        app:icon="@drawable/ic_cloud_connection"
+        app:key="ns_analytics_config"
+        app:title="NS Analytics">
+
+        <Preference
+            app:key="ns_analytics_connection"
+            app:title="Connection Settings"
+            app:summary="Manage NS Analytics connection and device registration" />
+
+    </PreferenceCategory>
+
+    <PreferenceCategory
         app:icon="@drawable/ic_interval"
         app:key="scan_interval_config"
         app:title="@string/scan_interval_config_title">

@@ -12,6 +12,7 @@ import com.craxiom.networksurvey.logging.db.dao.CdmaRecordDao;
 import com.craxiom.networksurvey.logging.db.dao.GsmRecordDao;
 import com.craxiom.networksurvey.logging.db.dao.LteRecordDao;
 import com.craxiom.networksurvey.logging.db.dao.NrRecordDao;
+import com.craxiom.networksurvey.logging.db.dao.NsAnalyticsDao;
 import com.craxiom.networksurvey.logging.db.dao.SurveyRecordDao;
 import com.craxiom.networksurvey.logging.db.dao.TowerCacheDao;
 import com.craxiom.networksurvey.logging.db.dao.UmtsRecordDao;
@@ -20,12 +21,15 @@ import com.craxiom.networksurvey.logging.db.model.CdmaRecordEntity;
 import com.craxiom.networksurvey.logging.db.model.GsmRecordEntity;
 import com.craxiom.networksurvey.logging.db.model.LteRecordEntity;
 import com.craxiom.networksurvey.logging.db.model.NrRecordEntity;
+import com.craxiom.networksurvey.logging.db.model.NsAnalyticsConnectionEntity;
+import com.craxiom.networksurvey.logging.db.model.NsAnalyticsQueueEntity;
 import com.craxiom.networksurvey.logging.db.model.TowerCacheEntity;
 import com.craxiom.networksurvey.logging.db.model.UmtsRecordEntity;
 import com.craxiom.networksurvey.logging.db.model.WifiBeaconRecordEntity;
 
 @Database(entities = {GsmRecordEntity.class, CdmaRecordEntity.class, UmtsRecordEntity.class,
-        LteRecordEntity.class, NrRecordEntity.class, WifiBeaconRecordEntity.class, TowerCacheEntity.class}, version = 9)
+        LteRecordEntity.class, NrRecordEntity.class, WifiBeaconRecordEntity.class, TowerCacheEntity.class,
+        NsAnalyticsQueueEntity.class, NsAnalyticsConnectionEntity.class}, version = 10)
 public abstract class SurveyDatabase extends RoomDatabase
 {
     public abstract GsmRecordDao gsmRecordDao();
@@ -43,6 +47,8 @@ public abstract class SurveyDatabase extends RoomDatabase
     public abstract SurveyRecordDao surveyRecordDao();
 
     public abstract TowerCacheDao towerCacheDao();
+
+    public abstract NsAnalyticsDao nsAnalyticsDao();
 
     private static volatile SurveyDatabase INSTANCE;
 
@@ -65,17 +71,17 @@ public abstract class SurveyDatabase extends RoomDatabase
                     + "timestamp INTEGER NOT NULL, "
                     + "radio TEXT"
                     + ")");
-            
+
             // Copy data from old table to new table (excluding isKnown and alerted columns)
             database.execSQL("INSERT INTO tower_cache_new (id, mcc, mnc, area, cid, timestamp, radio) "
                     + "SELECT id, mcc, mnc, area, cid, timestamp, radio FROM tower_cache");
-            
+
             // Drop old table
             database.execSQL("DROP TABLE tower_cache");
-            
+
             // Rename new table to original name
             database.execSQL("ALTER TABLE tower_cache_new RENAME TO tower_cache");
-            
+
             // Re-create the unique index
             database.execSQL("CREATE UNIQUE INDEX index_tower_cache_mcc_mnc_area_cid "
                     + "ON tower_cache (mcc, mnc, area, cid)");
@@ -101,20 +107,56 @@ public abstract class SurveyDatabase extends RoomDatabase
                     + "timestamp INTEGER NOT NULL, "
                     + "radio TEXT"
                     + ")");
-            
+
             // Copy data from old table to new table (excluding alerted column)
             database.execSQL("INSERT INTO tower_cache_new (id, mcc, mnc, area, cid, timestamp, radio) "
                     + "SELECT id, mcc, mnc, area, cid, timestamp, radio FROM tower_cache");
-            
+
             // Drop old table
             database.execSQL("DROP TABLE tower_cache");
-            
+
             // Rename new table to original name
             database.execSQL("ALTER TABLE tower_cache_new RENAME TO tower_cache");
-            
+
             // Re-create the unique index
             database.execSQL("CREATE UNIQUE INDEX index_tower_cache_mcc_mnc_area_cid "
                     + "ON tower_cache (mcc, mnc, area, cid)");
+        }
+    };
+
+    /**
+     * Migration from version 9 to 10: Add NS Analytics tables
+     */
+    private static final Migration MIGRATION_9_10 = new Migration(9, 10)
+    {
+        @Override
+        public void migrate(SupportSQLiteDatabase database)
+        {
+            // Create NS Analytics queue table
+            database.execSQL("CREATE TABLE IF NOT EXISTS ns_analytics_queue (" +
+                    "id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, " +
+                    "recordType TEXT, " +
+                    "protobufJson TEXT, " +
+                    "timestamp INTEGER NOT NULL, " +
+                    "batchId TEXT, " +
+                    "uploaded INTEGER NOT NULL DEFAULT 0, " +
+                    "retryCount INTEGER NOT NULL DEFAULT 0, " +
+                    "lastUploadAttempt INTEGER NOT NULL DEFAULT 0, " +
+                    "payloadSize INTEGER NOT NULL DEFAULT 0)");
+
+            // Indices are created automatically by Room from entity annotations
+
+            // Create NS Analytics connection table
+            database.execSQL("CREATE TABLE IF NOT EXISTS ns_analytics_connection (" +
+                    "workspaceId TEXT PRIMARY KEY NOT NULL, " +
+                    "deviceToken TEXT, " +
+                    "apiUrl TEXT, " +
+                    "deviceId TEXT, " +
+                    "registeredAt INTEGER NOT NULL, " +
+                    "lastUploadAt INTEGER NOT NULL DEFAULT 0, " +
+                    "totalRecordsUploaded INTEGER NOT NULL DEFAULT 0, " +
+                    "isActive INTEGER NOT NULL DEFAULT 1, " +
+                    "uploadFrequencyMinutes INTEGER NOT NULL DEFAULT 15)");
         }
     };
 
@@ -128,7 +170,7 @@ public abstract class SurveyDatabase extends RoomDatabase
                 {
                     INSTANCE = Room.databaseBuilder(context.getApplicationContext(),
                                     SurveyDatabase.class, "survey_db")
-                            .addMigrations(MIGRATION_7_9, MIGRATION_8_9)
+                            .addMigrations(MIGRATION_7_9, MIGRATION_8_9, MIGRATION_9_10)
                             .fallbackToDestructiveMigration()
                             .build();
                 }

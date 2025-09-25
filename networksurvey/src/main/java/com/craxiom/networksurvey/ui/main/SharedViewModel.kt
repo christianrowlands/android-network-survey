@@ -67,6 +67,9 @@ class SharedViewModel @Inject constructor(application: Application) :
     private val _showBatteryOptimizationDialog = MutableLiveData(false)
     val showBatteryOptimizationDialog: LiveData<Boolean> = _showBatteryOptimizationDialog
 
+    private val _navigateToNsAnalyticsConnection = MutableLiveData(false)
+    val navigateToNsAnalyticsConnection: LiveData<Boolean> = _navigateToNsAnalyticsConnection
+
     fun triggerNavigationToUploadSettings() {
         _navigateToUploadSettings.value = true
     }
@@ -140,6 +143,10 @@ class SharedViewModel @Inject constructor(application: Application) :
         _showBatteryOptimizationDialog.value = false
     }
 
+    fun triggerNavigationToNsAnalyticsConnection() {
+        _navigateToNsAnalyticsConnection.value = true
+    }
+
     fun resetSsidExclusionListNavigationFlag() {
         _navigateToSsidExclusionList.value = false
     }
@@ -158,6 +165,7 @@ class SharedViewModel @Inject constructor(application: Application) :
         _navigateToSettings.value = false
         _navigateToUploadSettings.value = false
         _navigateToTowerMapSettings.value = false
+        _navigateToNsAnalyticsConnection.value = false
     }
 
     fun resetMqttConnectionSettings() {

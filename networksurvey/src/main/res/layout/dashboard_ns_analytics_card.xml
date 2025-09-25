@@ -1,0 +1,277 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <androidx.cardview.widget.CardView
+        android:id="@+id/ns_analytics_card_view"
+        style="?attr/cardStyle"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:visibility="gone"
+        app:cardElevation="4dp"
+        app:contentPadding="0dp">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+
+            <!-- Card Header -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="@drawable/card_title"
+                android:padding="3dp"
+                android:layout_marginBottom="3dp"
+                android:orientation="horizontal">
+
+                <ImageView
+                    android:id="@+id/ns_analytics_header_icon"
+                    android:layout_width="16dp"
+                    android:layout_height="16dp"
+                    android:layout_gravity="center"
+                    android:layout_marginStart="@dimen/small_margin"
+                    android:layout_marginEnd="@dimen/small_margin"
+                    android:contentDescription="@string/ns_analytics_title"
+                    android:src="@drawable/ic_upload_24" />
+
+                <TextView
+                    android:id="@+id/ns_analytics_card_title"
+                    style="@style/CardTitleStyle"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="@string/ns_analytics_title" />
+
+                <ImageButton
+                    android:id="@+id/ns_analytics_settings_button"
+                    android:layout_width="24dp"
+                    android:layout_height="24dp"
+                    android:layout_gravity="center"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:contentDescription="@string/ns_analytics_settings"
+                    android:src="@drawable/ic_settings" />
+
+            </LinearLayout>
+
+            <!-- Card Content -->
+            <LinearLayout
+                android:id="@+id/ns_analytics_card_content"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="@dimen/medium_margin">
+
+                <!-- Survey Status Section -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:layout_marginBottom="@dimen/small_margin">
+
+                    <View
+                        android:id="@+id/ns_analytics_status_indicator"
+                        android:layout_width="12dp"
+                        android:layout_height="12dp"
+                        android:layout_marginEnd="@dimen/small_margin"
+                        android:background="@drawable/status_indicator_disconnected" />
+
+                    <TextView
+                        android:id="@+id/ns_analytics_status_text"
+                        style="@style/StandardText"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="@string/ns_analytics_survey_stopped" />
+
+                </LinearLayout>
+
+                <!-- Active Protocols Indicators -->
+                <LinearLayout
+                    android:id="@+id/ns_analytics_protocols_section"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center"
+                    android:layout_marginTop="@dimen/small_margin"
+                    android:layout_marginBottom="@dimen/small_margin"
+                    android:visibility="gone">
+
+                    <ImageView
+                        android:id="@+id/ns_analytics_cellular_indicator"
+                        android:layout_width="24dp"
+                        android:layout_height="24dp"
+                        android:layout_marginHorizontal="8dp"
+                        android:contentDescription="@string/cellular_title"
+                        android:src="@drawable/ic_cellular"
+                        android:visibility="visible" />
+
+                    <ImageView
+                        android:id="@+id/ns_analytics_wifi_indicator"
+                        android:layout_width="24dp"
+                        android:layout_height="24dp"
+                        android:layout_marginHorizontal="8dp"
+                        android:contentDescription="@string/wifi_title"
+                        android:src="@drawable/ic_wifi"
+                        android:visibility="visible" />
+
+                    <ImageView
+                        android:id="@+id/ns_analytics_bluetooth_indicator"
+                        android:layout_width="24dp"
+                        android:layout_height="24dp"
+                        android:layout_marginHorizontal="8dp"
+                        android:contentDescription="@string/bluetooth_title"
+                        android:src="@drawable/ic_bluetooth"
+                        android:visibility="gone" />
+
+                    <ImageView
+                        android:id="@+id/ns_analytics_gnss_indicator"
+                        android:layout_width="24dp"
+                        android:layout_height="24dp"
+                        android:layout_marginHorizontal="8dp"
+                        android:contentDescription="@string/gnss_title"
+                        android:src="@drawable/ic_gnss"
+                        android:visibility="gone" />
+
+                </LinearLayout>
+
+                <!-- Survey Info and Queue Status -->
+                <LinearLayout
+                    android:id="@+id/ns_analytics_info_section"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:visibility="gone">
+
+                    <!-- Workspace -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:layout_marginBottom="@dimen/x_small_margin">
+
+                        <TextView
+                            style="@style/DescriptionText"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="@string/ns_analytics_workspace" />
+
+                        <TextView
+                            android:id="@+id/ns_analytics_workspace_value"
+                            style="@style/DescriptionText"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="@dimen/x_small_margin"
+                            android:textStyle="bold" />
+
+                    </LinearLayout>
+
+                    <!-- Queue Size -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:layout_marginBottom="@dimen/x_small_margin">
+
+                        <TextView
+                            style="@style/DescriptionText"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="@string/ns_analytics_queue_size" />
+
+                        <TextView
+                            android:id="@+id/ns_analytics_queue_size_value"
+                            style="@style/DescriptionText"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="@dimen/x_small_margin"
+                            android:textStyle="bold" />
+
+                    </LinearLayout>
+
+                    <!-- Last Upload -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal">
+
+                        <TextView
+                            style="@style/DescriptionText"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="@string/ns_analytics_last_upload" />
+
+                        <TextView
+                            android:id="@+id/ns_analytics_last_upload_value"
+                            style="@style/DescriptionText"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="@dimen/x_small_margin"
+                            android:textStyle="bold" />
+
+                    </LinearLayout>
+
+                </LinearLayout>
+
+                <!-- Upload Mode Display -->
+                <LinearLayout
+                    android:id="@+id/ns_analytics_upload_mode_section"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:layout_marginTop="@dimen/small_margin"
+                    android:layout_marginBottom="@dimen/small_margin"
+                    android:visibility="gone">
+
+                    <TextView
+                        style="@style/DescriptionText"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/ns_analytics_upload_mode" />
+
+                    <TextView
+                        android:id="@+id/ns_analytics_upload_mode_value"
+                        style="@style/DescriptionText"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="@dimen/x_small_margin"
+                        android:textStyle="bold" />
+
+                </LinearLayout>
+
+                <!-- Action Buttons -->
+                <LinearLayout
+                    android:id="@+id/ns_analytics_action_buttons"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:layout_marginTop="@dimen/medium_margin">
+
+                    <!-- Survey Control Button -->
+                    <Button
+                        android:id="@+id/ns_analytics_survey_button"
+                        style="@style/Widget.Material3.Button.TonalButton"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="@string/ns_analytics_start_survey" />
+
+                    <!-- Manual Upload Button (only shown in manual mode) -->
+                    <Button
+                        android:id="@+id/ns_analytics_manual_upload_button"
+                        style="@style/Widget.Material3.Button.OutlinedButton"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="@dimen/small_margin"
+                        android:text="@string/ns_analytics_upload_now"
+                        android:visibility="gone" />
+
+                </LinearLayout>
+
+            </LinearLayout>
+
+        </LinearLayout>
+
+    </androidx.cardview.widget.CardView>
+
+</layout>

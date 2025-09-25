@@ -63,6 +63,28 @@ public class NsUtils
     }
 
     /**
+     * Returns a human readable string representing how long ago the provided time difference was.
+     */
+    public static String getTimeAgo(long timeDiff)
+    {
+        String timeAgo;
+        if (timeDiff < 60000)
+        {
+            timeAgo = "Just now";
+        } else if (timeDiff < 3600000)
+        {
+            timeAgo = (timeDiff / 60000) + " min ago";
+        } else if (timeDiff < 86400000)
+        {
+            timeAgo = (timeDiff / 3600000) + " hours ago";
+        } else
+        {
+            timeAgo = (timeDiff / 86400000) + " days ago";
+        }
+        return timeAgo;
+    }
+
+    /**
      * Copies the provided location string to the clipboard.
      *
      * @param location the location string to copy to the clipboard.

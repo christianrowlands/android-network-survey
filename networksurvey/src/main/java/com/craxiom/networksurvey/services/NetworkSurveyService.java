@@ -52,8 +52,11 @@ import com.craxiom.networksurvey.NetworkSurveyActivity;
 import com.craxiom.networksurvey.R;
 import com.craxiom.networksurvey.constants.DeviceStatusMessageConstants;
 import com.craxiom.networksurvey.constants.NetworkSurveyConstants;
+import com.craxiom.networksurvey.constants.NsAnalyticsConstants;
 import com.craxiom.networksurvey.data.SsidExclusionManager;
 import com.craxiom.networksurvey.fragments.model.MqttConnectionSettings;
+import com.craxiom.networksurvey.gpstest.util.FormatUtils;
+import com.craxiom.networksurvey.gpstest.util.MathUtils;
 import com.craxiom.networksurvey.listeners.ExtraLocationListener;
 import com.craxiom.networksurvey.listeners.IBluetoothSurveyRecordListener;
 import com.craxiom.networksurvey.listeners.ICdrEventListener;
@@ -66,6 +69,7 @@ import com.craxiom.networksurvey.listeners.IUploadRecordCountListener;
 import com.craxiom.networksurvey.listeners.IWifiSurveyRecordListener;
 import com.craxiom.networksurvey.logging.DeviceStatusCsvLogger;
 import com.craxiom.networksurvey.logging.db.DbUploadStore;
+import com.craxiom.networksurvey.logging.db.NsAnalyticsDataStore;
 import com.craxiom.networksurvey.model.BatteryPauseState;
 import com.craxiom.networksurvey.model.LogTypeState;
 import com.craxiom.networksurvey.model.SurveyTypes;
@@ -76,9 +80,8 @@ import com.craxiom.networksurvey.services.controller.BluetoothController;
 import com.craxiom.networksurvey.services.controller.CellularController;
 import com.craxiom.networksurvey.services.controller.GnssController;
 import com.craxiom.networksurvey.services.controller.WifiController;
-import com.craxiom.networksurvey.gpstest.util.FormatUtils;
-import com.craxiom.networksurvey.gpstest.util.MathUtils;
 import com.craxiom.networksurvey.util.MdmUtils;
+import com.craxiom.networksurvey.util.NsAnalyticsSecureStorage;
 import com.craxiom.networksurvey.util.NsUtils;
 import com.craxiom.networksurvey.util.PreferenceUtils;
 import com.google.gson.Gson;
@@ -142,6 +145,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
     private ExtraLocationListener gnssLocationListener;
     private ExtraLocationListener networkLocationListener;
     private DbUploadStore dbUploadStore;
+    private NsAnalyticsDataStore nsAnalyticsDataStore;
 
     private DeviceStatusCsvLogger deviceStatusCsvLogger;
     private Looper serviceLooper;
@@ -1261,9 +1265,108 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
         }
     }
 
-    public boolean isUploadScanningActive()
+    /**
+     * Toggles NS Analytics scanning on or off. When enabled, survey records are queued
+     * to the NS Analytics data store for upload to the NS Analytics backend.
+     *
+     * @param enable True to enable NS Analytics scanning, false to disable
+     * @return Result indicating success/failure and whether scanning was started or stopped
+     */
+    public synchronized UploadScanningResult toggleNsAnalyticsScanning(boolean enable)
     {
-        return surveyRecordProcessor.isDbSinkSet();
+        try
+        {
+            boolean isCurrentlyActive = (nsAnalyticsDataStore != null);
+
+            if (enable && !isCurrentlyActive)
+            {
+                // Check if device is registered with NS Analytics
+                if (!isNsAnalyticsRegistered())
+                {
+                    return new UploadScanningResult(false, false,
+                            getString(R.string.ns_analytics_not_registered));
+                }
+
+                // Create the NS Analytics data store
+                nsAnalyticsDataStore = new NsAnalyticsDataStore(this);
+                nsAnalyticsDataStore.startCollecting();
+
+                // Get preferences to check which protocols are enabled
+                SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(this);
+
+                // Register for enabled protocols
+                boolean cellularEnabled = preferences.getBoolean(
+                        NsAnalyticsConstants.PROPERTY_NS_ANALYTICS_CELLULAR_ENABLED, false);
+                boolean wifiEnabled = preferences.getBoolean(
+                        NsAnalyticsConstants.PROPERTY_NS_ANALYTICS_WIFI_ENABLED, false);
+                boolean bluetoothEnabled = preferences.getBoolean(
+                        NsAnalyticsConstants.PROPERTY_NS_ANALYTICS_BLUETOOTH_ENABLED, false);
+                boolean gnssEnabled = preferences.getBoolean(
+                        NsAnalyticsConstants.PROPERTY_NS_ANALYTICS_GNSS_ENABLED, false);
+
+                // TODO if all protocols are false, then return an error
+
+                if (cellularEnabled)
+                {
+                    registerCellularSurveyRecordListener(nsAnalyticsDataStore);
+                }
+                if (wifiEnabled)
+                {
+                    registerWifiSurveyRecordListener(nsAnalyticsDataStore);
+                }
+                if (bluetoothEnabled)
+                {
+                    registerBluetoothSurveyRecordListener(nsAnalyticsDataStore);
+                }
+                if (gnssEnabled)
+                {
+                    registerGnssSurveyRecordListener(nsAnalyticsDataStore);
+                }
+
+                // Always register for device status and phone state TODO Is this what we want?
+                registerDeviceStatusListener(nsAnalyticsDataStore);
+
+                onSurveyStarted();
+                updateWakeLock();
+
+                Timber.i("NS Analytics survey started - Cellular: %b, WiFi: %b, Bluetooth: %b, GNSS: %b",
+                        cellularEnabled, wifiEnabled, bluetoothEnabled, gnssEnabled);
+
+                return new UploadScanningResult(true, true,
+                        getString(R.string.ns_analytics_survey_started));
+            } else if (!enable && isCurrentlyActive)
+            {
+                // Unregister from all listeners
+                unregisterCellularSurveyRecordListener(nsAnalyticsDataStore);
+                unregisterWifiSurveyRecordListener(nsAnalyticsDataStore);
+                unregisterBluetoothSurveyRecordListener(nsAnalyticsDataStore);
+                unregisterGnssSurveyRecordListener(nsAnalyticsDataStore);
+                unregisterDeviceStatusListener(nsAnalyticsDataStore);
+
+                // Clean up the data store
+                nsAnalyticsDataStore.shutdown();
+                nsAnalyticsDataStore = null;
+
+                onSurveyStopped();
+                updateWakeLock();
+
+                Timber.i("NS Analytics survey stopped");
+
+                return new UploadScanningResult(true, false,
+                        getString(R.string.ns_analytics_survey_stopped));
+            } else
+            {
+                // Already in desired state
+                return new UploadScanningResult(true, enable,
+                        enable ? getString(R.string.ns_analytics_survey_already_running)
+                                : getString(R.string.ns_analytics_survey_already_stopped));
+            }
+        } catch (Exception e)
+        {
+            Timber.e(e, "Failed to toggle NS Analytics scanning");
+            return new UploadScanningResult(false, false,
+                    getString(R.string.ns_analytics_survey_toggle_failed));
+        }
     }
 
     public boolean isCellularLoggingEnabled()
@@ -1323,10 +1426,46 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
         return GrpcConnectionService.getConnectedState() == ConnectionState.CONNECTED;
     }
 
+    public boolean isUploadScanningActive()
+    {
+        return surveyRecordProcessor.isDbSinkSet();
+    }
+
+    /**
+     * @return true if NS Analytics scanning is currently active
+     */
+    public boolean isNsAnalyticsScanningActive()
+    {
+        return nsAnalyticsDataStore != null;
+    }
+
+    /**
+     * @return true if the device is registered with NS Analytics
+     */
+    public boolean isNsAnalyticsRegistered()
+    {
+        return NsAnalyticsSecureStorage.INSTANCE.isRegistered(this);
+    }
+
+    /**
+     * @return the number of records queued for NS Analytics upload
+     */
+    public int getNsAnalyticsQueuedRecordCount()
+    {
+        // FIXME Query the NS Analytics DAO for queued record count
+        return 0;
+    }
+
+    /**
+     * @return the NS Analytics workspace ID if registered
+     */
+    public String getNsAnalyticsWorkspaceId()
+    {
+        return NsAnalyticsSecureStorage.INSTANCE.getWorkspaceId(this);
+    }
+
     /**
      * Triggers the creation of a single device status message and notifies the listeners.
-     *
-     * @since 1.10.0
      */
     public void sendSingleDeviceStatus()
     {
@@ -1367,7 +1506,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
     {
         return isCellularLoggingEnabled() || isWifiLoggingEnabled() || isBluetoothLoggingEnabled() ||
                 isGnssLoggingEnabled() || isCdrLoggingEnabled() || isUploadScanningActive() ||
-                isMqttStreamingActive() || isGrpcConnectionActive();
+                isMqttStreamingActive() || isGrpcConnectionActive() || isNsAnalyticsScanningActive();
     }
 
     /**
@@ -1383,8 +1522,6 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
     /**
      * Acquires the wake lock if any survey is active. This ensures the device
      * doesn't go to sleep while collecting survey data.
-     *
-     * @since 1.37
      */
     @SuppressLint("WakelockTimeout")
     private void updateWakeLock()

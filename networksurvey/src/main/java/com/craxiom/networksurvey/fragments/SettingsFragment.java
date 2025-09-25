@@ -97,6 +97,17 @@ public class SettingsFragment extends PreferenceFragmentCompat implements Shared
             });
         }
 
+        // NS Analytics Connection Settings
+        final Preference nsAnalyticsConnection = findPreference("ns_analytics_connection");
+        if (nsAnalyticsConnection != null)
+        {
+            nsAnalyticsConnection.setOnPreferenceClickListener(preference -> {
+                SharedViewModel viewModel = new ViewModelProvider(requireActivity()).get(SharedViewModel.class);
+                viewModel.triggerNavigationToNsAnalyticsConnection();
+                return true;
+            });
+        }
+
         final Preference towerMapSettings = findPreference(NetworkSurveyConstants.TOWER_MAP_PREFERENCES_GROUP);
         if (towerMapSettings != null)
         {

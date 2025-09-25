@@ -944,6 +944,56 @@ private fun SurveyStatistics(
             }
         }
 
+        // NS Analytics Status Card - show only when NS Analytics is active
+        if (surveyState.isNsAnalyticsActive && surveyState.nsAnalyticsInfo != null) {
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 12.dp),
+                shape = RoundedCornerShape(12.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.2f)
+                ),
+                elevation = CardDefaults.cardElevation(
+                    defaultElevation = 0.dp
+                )
+            ) {
+                Row(
+                    modifier = Modifier.padding(12.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Icon(
+                        painter = painterResource(id = R.drawable.ic_cloud_connection),
+                        contentDescription = null,
+                        modifier = Modifier.size(20.dp),
+                        tint = MaterialTheme.colorScheme.primary
+                    )
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = "NS Analytics",
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.onPrimaryContainer
+                        )
+                        Text(
+                            text = if (surveyState.nsAnalyticsInfo.isRegistered) {
+                                "Queued: ${
+                                    String.format(
+                                        "%,d",
+                                        surveyState.nsAnalyticsInfo.queuedRecords
+                                    )
+                                }"
+                            } else {
+                                "Not registered"
+                            },
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                    }
+                }
+            }
+        }
+
         // Active survey types indicator
         if (activeSurveyTypes.isNotEmpty()) {
             Text(

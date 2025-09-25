@@ -17,6 +17,7 @@ import com.craxiom.networksurvey.model.CellularProtocol
 import com.craxiom.networksurvey.model.CellularRecordWrapper
 import com.craxiom.networksurvey.services.NetworkSurveyService
 import com.craxiom.networksurvey.ui.activesurvey.model.ActiveSurveyState
+import com.craxiom.networksurvey.ui.activesurvey.model.NsAnalyticsInfo
 import com.craxiom.networksurvey.ui.activesurvey.model.SurveyTrack
 import com.craxiom.networksurvey.ui.cellular.model.ServingCellInfo
 import com.craxiom.networksurvey.util.CellularUtils
@@ -186,7 +187,22 @@ class SurveyMonitorViewModel : ViewModel(), IConnectionStateListener,
             val grpcActive = service.isGrpcConnectionActive
             val uploadActive = service.isUploadScanningActive
 
-            val isAnyActive = fileLoggingActive || mqttActive || grpcActive || uploadActive
+            // Check NS Analytics status
+            val nsAnalyticsActive = service.isNsAnalyticsScanningActive
+            val nsAnalyticsInfo = if (nsAnalyticsActive) {
+                NsAnalyticsInfo(
+                    isEnabled = true,
+                    isRegistered = service.isNsAnalyticsRegistered,
+                    queuedRecords = service.nsAnalyticsQueuedRecordCount.toLong(),
+                    uploadedRecords = 0, // FIXME: Get from actual metrics
+                    lastUploadTime = null,
+                    workspaceId = service.nsAnalyticsWorkspaceId,
+                    errorMessage = null
+                )
+            } else null
+
+            val isAnyActive =
+                fileLoggingActive || mqttActive || grpcActive || uploadActive || nsAnalyticsActive
 
             // Start new tracking session if surveys just became active
             if (isAnyActive && !_surveyState.value.isAnyActive) {
@@ -198,6 +214,7 @@ class SurveyMonitorViewModel : ViewModel(), IConnectionStateListener,
                     fileLoggingStatus = null,  // Not needed for simplified UI
                     mqttStreamingStatus = null,  // Not needed for simplified UI
                     uploadSurveyStatus = null,  // Not needed for simplified UI
+                    nsAnalyticsInfo = nsAnalyticsInfo,
                     isAnyActive = isAnyActive,
                     lastUpdateTime = System.currentTimeMillis(),
                     totalRecordCount = getSurveySessionRecordCount(),
@@ -205,7 +222,8 @@ class SurveyMonitorViewModel : ViewModel(), IConnectionStateListener,
                     isUploadActive = uploadActive,
                     isFileLoggingActive = fileLoggingActive,
                     isMqttActive = mqttActive,
-                    isGrpcActive = grpcActive
+                    isGrpcActive = grpcActive,
+                    isNsAnalyticsActive = nsAnalyticsActive
                 )
             }
         }

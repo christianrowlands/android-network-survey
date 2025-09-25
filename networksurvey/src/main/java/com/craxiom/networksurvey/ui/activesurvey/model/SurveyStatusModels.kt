@@ -66,6 +66,19 @@ data class UploadQueueInfo(
 )
 
 /**
+ * Information about NS Analytics status
+ */
+data class NsAnalyticsInfo(
+    val isEnabled: Boolean = false,
+    val isRegistered: Boolean = false,
+    val queuedRecords: Long = 0,
+    val uploadedRecords: Long = 0,
+    val lastUploadTime: Long? = null,
+    val workspaceId: String? = null,
+    val errorMessage: String? = null
+)
+
+/**
  * Represents a GPS track for survey visualization
  */
 data class SurveyTrack(
@@ -82,6 +95,7 @@ data class ActiveSurveyState(
     val fileLoggingStatus: SurveyStatus? = null,
     val mqttStreamingStatus: SurveyStatus? = null,
     val uploadSurveyStatus: SurveyStatus? = null,
+    val nsAnalyticsInfo: NsAnalyticsInfo? = null,
     val currentTrack: SurveyTrack? = null,
     val isAnyActive: Boolean = false,
     val lastUpdateTime: Long = System.currentTimeMillis(),
@@ -90,18 +104,20 @@ data class ActiveSurveyState(
     val isUploadActive: Boolean = false,
     val isFileLoggingActive: Boolean = false,
     val isMqttActive: Boolean = false,
-    val isGrpcActive: Boolean = false
+    val isGrpcActive: Boolean = false,
+    val isNsAnalyticsActive: Boolean = false
 ) {
     /**
      * Get list of active survey types for display
      */
-    val activeSurveyTypes: List<String> 
+    val activeSurveyTypes: List<String>
         get() = buildList {
             if (isFileLoggingActive) add("File")
             if (isMqttActive) add("MQTT")
             if (isGrpcActive) add("gRPC")
+            if (isNsAnalyticsActive) add("NS Analytics")
         }
-    
+
     /**
      * Check if any non-upload survey is active
      */
