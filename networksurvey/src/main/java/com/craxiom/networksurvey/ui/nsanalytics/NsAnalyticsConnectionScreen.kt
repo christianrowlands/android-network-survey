@@ -51,7 +51,6 @@ import androidx.compose.material3.ProgressIndicatorDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -801,72 +800,73 @@ private fun ActiveProtocolsCard(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                ProtocolChip(
-                    label = "Cellular",
-                    isSelected = cellularEnabled,
-                    onClick = { onToggleCellular(!cellularEnabled) },
-                    modifier = Modifier.weight(1f)
-                )
-                ProtocolChip(
-                    label = "Wi-Fi",
-                    isSelected = wifiEnabled,
-                    onClick = { onToggleWifi(!wifiEnabled) },
-                    modifier = Modifier.weight(1f)
-                )
-            }
+            ProtocolToggleRow(
+                label = "Cellular",
+                description = "GSM, CDMA, UMTS, LTE, NR",
+                isEnabled = cellularEnabled,
+                onToggle = onToggleCellular
+            )
 
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(12.dp))
 
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                ProtocolChip(
-                    label = "Bluetooth",
-                    isSelected = bluetoothEnabled,
-                    onClick = { onToggleBluetooth(!bluetoothEnabled) },
-                    modifier = Modifier.weight(1f)
-                )
-                ProtocolChip(
-                    label = "GPS",
-                    isSelected = gnssEnabled,
-                    onClick = { onToggleGnss(!gnssEnabled) },
-                    modifier = Modifier.weight(1f)
-                )
-            }
+            ProtocolToggleRow(
+                label = "Wi-Fi",
+                description = "802.11 networks and access points",
+                isEnabled = wifiEnabled,
+                onToggle = onToggleWifi
+            )
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            ProtocolToggleRow(
+                label = "Bluetooth",
+                description = "BLE and classic devices",
+                isEnabled = bluetoothEnabled,
+                onToggle = onToggleBluetooth
+            )
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            ProtocolToggleRow(
+                label = "GPS/GNSS",
+                description = "Satellite positioning data",
+                isEnabled = gnssEnabled,
+                onToggle = onToggleGnss
+            )
         }
     }
 }
 
 @Composable
-private fun ProtocolChip(
+private fun ProtocolToggleRow(
     label: String,
-    isSelected: Boolean,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier
+    description: String,
+    isEnabled: Boolean,
+    onToggle: (Boolean) -> Unit
 ) {
-    Surface(
-        modifier = modifier,
-        onClick = onClick,
-        shape = RoundedCornerShape(8.dp),
-        color = if (isSelected) MaterialTheme.colorScheme.primary else Color(0xFF2A2B30),
-        border = null
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
     ) {
-        Box(
-            modifier = Modifier.padding(vertical = 12.dp),
-            contentAlignment = Alignment.Center
+        Column(
+            modifier = Modifier.weight(1f)
         ) {
             Text(
                 text = label,
                 style = MaterialTheme.typography.bodyMedium,
-                color = if (isSelected) Color.White else Color.Gray,
-                fontWeight = if (isSelected) FontWeight.Medium else FontWeight.Normal
+                color = Color.White
+            )
+            Text(
+                text = description,
+                style = MaterialTheme.typography.bodySmall,
+                color = Color.Gray
             )
         }
+        Switch(
+            checked = isEnabled,
+            onCheckedChange = onToggle
+        )
     }
 }
 
