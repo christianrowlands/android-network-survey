@@ -82,7 +82,6 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import com.craxiom.networksurvey.R
 import com.craxiom.networksurvey.services.NetworkSurveyService
-import com.craxiom.networksurvey.ui.main.NavDrawerOption
 import timber.log.Timber
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -163,11 +162,7 @@ fun NsAnalyticsConnectionScreen(
         onToggleWifi = { viewModel.toggleWifiProtocol(it) },
         onToggleBluetooth = { viewModel.toggleBluetoothProtocol(it) },
         onToggleGnss = { viewModel.toggleGnssProtocol(it) },
-        onNavigateToDashboard = {
-            mainNavController?.navigate(NavDrawerOption.None.name) {
-                popUpTo(NavDrawerOption.NsAnalyticsConnection.name)
-            }
-        }
+        onToggleSurvey = { viewModel.toggleSurvey() },
     )
 
     if (showDisconnectDialog) {
@@ -207,7 +202,7 @@ private fun NsAnalyticsConnectionContent(
     onToggleWifi: (Boolean) -> Unit,
     onToggleBluetooth: (Boolean) -> Unit,
     onToggleGnss: (Boolean) -> Unit,
-    onNavigateToDashboard: () -> Unit
+    onToggleSurvey: () -> Unit,
 ) {
     Scaffold(
         topBar = {
@@ -268,7 +263,7 @@ private fun NsAnalyticsConnectionContent(
                             wifiCount = uiState.wifiRecordCount,
                             bluetoothCount = uiState.bluetoothRecordCount,
                             gnssCount = uiState.gnssRecordCount,
-                            onNavigateToDashboard = onNavigateToDashboard
+                            onToggleSurvey = onToggleSurvey
                         )
 
                         UploadSettingsCard(
@@ -469,7 +464,7 @@ private fun SurveyStatusCard(
     wifiCount: Int,
     bluetoothCount: Int,
     gnssCount: Int,
-    onNavigateToDashboard: () -> Unit
+    onToggleSurvey: () -> Unit
 ) {
     val totalCount = cellularCount + wifiCount + bluetoothCount + gnssCount
 
@@ -484,108 +479,123 @@ private fun SurveyStatusCard(
                 .fillMaxWidth()
                 .padding(16.dp)
         ) {
-            if (isSurveyActive) {
+            // Survey Status Header
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
                 Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .size(10.dp)
-                                .background(Color(0xFF4285F4), shape = RoundedCornerShape(50))
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(
-                            text = "Survey in Progress",
-                            style = MaterialTheme.typography.titleMedium,
-                            color = Color.White,
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
-
-                    Text(
-                        text = getElapsedTime(surveyStartTime),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = Color.Gray
+                    Box(
+                        modifier = Modifier
+                            .size(10.dp)
+                            .background(
+                                if (isSurveyActive) Color(0xFF4285F4) else Color.Gray,
+                                shape = RoundedCornerShape(50)
+                            )
                     )
-                }
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
+                    Spacer(modifier = Modifier.width(8.dp))
                     Text(
-                        text = "Records Collected",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = Color.Gray
-                    )
-                    Text(
-                        text = "$totalCount total",
+                        text = if (isSurveyActive) "Survey in Progress" else "Survey Inactive",
                         style = MaterialTheme.typography.titleMedium,
                         color = Color.White,
                         fontWeight = FontWeight.Bold
                     )
                 }
 
-                Spacer(modifier = Modifier.height(8.dp))
-
-                // Protocol distribution bar
-                if (totalCount > 0) {
-                    ProtocolDistributionBar(
-                        cellularCount = cellularCount,
-                        wifiCount = wifiCount,
-                        bluetoothCount = bluetoothCount,
-                        gnssCount = gnssCount
-                    )
-
-                    Spacer(modifier = Modifier.height(8.dp))
-
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceEvenly
-                    ) {
-                        ProtocolCountLabel("Cell", cellularCount, Color(0xFFA855F7))
-                        ProtocolCountLabel("Wi-Fi", wifiCount, Color(0xFF06B6D4))
-                        ProtocolCountLabel("BT", bluetoothCount, Color(0xFF3B82F6))
-                        ProtocolCountLabel("GPS", gnssCount, Color(0xFF22C55E))
-                    }
-                }
-            } else {
-                // No active survey
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clickable { onNavigateToDashboard() },
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Clear,
-                        contentDescription = null,
-                        tint = Color.Gray,
-                        modifier = Modifier.size(40.dp)
-                    )
-
-                    Spacer(modifier = Modifier.height(8.dp))
-
+                if (isSurveyActive) {
                     Text(
-                        text = "No active survey",
+                        text = getElapsedTime(surveyStartTime),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = Color.Gray
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Records Section
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column {
+                    Text(
+                        text = if (isSurveyActive) "Records Collected" else "Pending Records",
                         style = MaterialTheme.typography.bodyMedium,
                         color = Color.Gray
                     )
-
-                    Text(
-                        text = "Start a survey from the dashboard",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = Color(0xFF4285F4)
-                    )
+                    if (!isSurveyActive && totalCount > 0) {
+                        Text(
+                            text = "Ready to upload",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = Color(0xFF4CAF50)
+                        )
+                    }
                 }
+                Text(
+                    text = "$totalCount total",
+                    style = MaterialTheme.typography.titleMedium,
+                    color = Color.White,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+
+            // Protocol distribution - Always show if records exist
+            if (totalCount > 0) {
+                Spacer(modifier = Modifier.height(8.dp))
+
+                ProtocolDistributionBar(
+                    cellularCount = cellularCount,
+                    wifiCount = wifiCount,
+                    bluetoothCount = bluetoothCount,
+                    gnssCount = gnssCount
+                )
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceEvenly
+                ) {
+                    ProtocolCountLabel("Cell", cellularCount, Color(0xFFA855F7))
+                    ProtocolCountLabel("Wi-Fi", wifiCount, Color(0xFF06B6D4))
+                    ProtocolCountLabel("BT", bluetoothCount, Color(0xFF3B82F6))
+                    ProtocolCountLabel("GPS", gnssCount, Color(0xFF22C55E))
+                }
+            } else if (!isSurveyActive) {
+                // No records and survey inactive
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = "Start a survey to begin collecting data",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = Color.Gray,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+
+            // Survey Control Button
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Button(
+                onClick = onToggleSurvey,
+                modifier = Modifier.fillMaxWidth(),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = if (isSurveyActive) Color(0xFFE53935) else Color(0xFF4CAF50)
+                )
+            ) {
+                Icon(
+                    imageVector = if (isSurveyActive) Icons.Default.Clear else Icons.Default.CheckCircle,
+                    contentDescription = null,
+                    modifier = Modifier.padding(end = 8.dp)
+                )
+                Text(
+                    text = if (isSurveyActive) "Stop Survey" else "Start Survey"
+                )
             }
         }
     }

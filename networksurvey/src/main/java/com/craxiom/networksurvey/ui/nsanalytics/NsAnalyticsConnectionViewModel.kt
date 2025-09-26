@@ -263,7 +263,10 @@ class NsAnalyticsConnectionViewModel(
                     }
                 }
             } catch (e: Exception) {
-                Timber.w(e, "Failed to fetch device status in background, continuing with cached data")
+                Timber.w(
+                    e,
+                    "Failed to fetch device status in background, continuing with cached data"
+                )
             }
         }
     }
@@ -614,6 +617,51 @@ class NsAnalyticsConnectionViewModel(
             } catch (e: Exception) {
                 Timber.e(e, "Failed to toggle GNSS protocol")
                 showMessage("Failed to update GNSS protocol setting")
+            }
+        }
+    }
+
+    /**
+     * Toggle NS Analytics survey scanning on or off.
+     * This starts or stops the data collection for NS Analytics.
+     */
+    fun toggleSurvey() {
+        viewModelScope.launch {
+            try {
+                val service = surveyService
+                if (service == null) {
+                    showMessage("Service not connected. Please try again.")
+                    return@launch
+                }
+
+                // Check if device is registered
+                if (!_uiState.value.isRegistered) {
+                    showMessage("Please connect to NS Analytics first")
+                    return@launch
+                }
+
+                val isCurrentlyScanning = service.isNsAnalyticsScanningActive
+                val result = service.toggleNsAnalyticsScanning(!isCurrentlyScanning)
+
+                if (result.success) {
+                    val message = if (!isCurrentlyScanning) {
+                        "Survey started"
+                    } else {
+                        "Survey stopped"
+                    }
+                    showMessage(message)
+
+                    // Update the UI state immediately
+                    _uiState.value = _uiState.value.copy(
+                        isSurveyActive = !isCurrentlyScanning,
+                        surveyStartTime = if (!isCurrentlyScanning) System.currentTimeMillis() else 0L
+                    )
+                } else {
+                    showMessage(result.message)
+                }
+            } catch (e: Exception) {
+                Timber.e(e, "Failed to toggle NS Analytics survey")
+                showMessage("Failed to toggle survey: ${e.message}")
             }
         }
     }
