@@ -1471,6 +1471,15 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
         return NsAnalyticsSecureStorage.INSTANCE.getWorkspaceId(this);
     }
 
+    public long getNsAnalyticsSurveyStartTime()
+    {
+        if (nsAnalyticsDataStore != null)
+        {
+            return nsAnalyticsDataStore.getNsAnalyticsSurveyStartTime();
+        }
+        return 0L;
+    }
+
     /**
      * Triggers the creation of a single device status message and notifies the listeners.
      */

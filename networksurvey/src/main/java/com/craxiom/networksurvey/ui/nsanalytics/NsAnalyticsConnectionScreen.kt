@@ -1,30 +1,40 @@
 package com.craxiom.networksurvey.ui.nsanalytics
 
 import android.Manifest
+import android.content.ClipData
+import android.content.ComponentName
+import android.content.Context
+import android.content.Intent
+import android.content.ServiceConnection
 import android.content.pm.PackageManager
+import android.os.IBinder
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.Refresh
-import androidx.compose.material.icons.filled.Send
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -34,16 +44,21 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.ProgressIndicatorDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -51,14 +66,25 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalClipboard
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.navigation.NavController
 import com.craxiom.networksurvey.R
+import com.craxiom.networksurvey.services.NetworkSurveyService
+import com.craxiom.networksurvey.ui.main.NavDrawerOption
+import timber.log.Timber
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -70,7 +96,8 @@ import java.util.Locale
 fun NsAnalyticsConnectionScreen(
     viewModel: NsAnalyticsConnectionViewModel,
     onNavigateUp: () -> Unit,
-    onNavigateToQrScanner: () -> Unit
+    onNavigateToQrScanner: () -> Unit,
+    mainNavController: NavController? = null
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
@@ -106,6 +133,9 @@ fun NsAnalyticsConnectionScreen(
         viewModel.checkAndProcessQrData()
     }
 
+    // Handle service connection with proper lifecycle management
+    NsAnalyticsServiceConnectionHandler(viewModel)
+
     // Check camera permission and navigate to QR scanner
     val handleQrScanClick = {
         when (PackageManager.PERMISSION_GRANTED) {
@@ -130,11 +160,15 @@ fun NsAnalyticsConnectionScreen(
         onUploadNowClick = { viewModel.uploadNow() },
         onDisconnectClick = { showDisconnectDialog = true },
         onClearQueueClick = { showClearQueueDialog = true },
-        onRefreshStatus = { viewModel.refreshStatus() },
         onToggleCellular = { viewModel.toggleCellularProtocol(it) },
         onToggleWifi = { viewModel.toggleWifiProtocol(it) },
         onToggleBluetooth = { viewModel.toggleBluetoothProtocol(it) },
-        onToggleGnss = { viewModel.toggleGnssProtocol(it) }
+        onToggleGnss = { viewModel.toggleGnssProtocol(it) },
+        onNavigateToDashboard = {
+            mainNavController?.navigate(NavDrawerOption.None.name) {
+                popUpTo(NavDrawerOption.NsAnalyticsConnection.name)
+            }
+        }
     )
 
     if (showDisconnectDialog) {
@@ -170,49 +204,45 @@ private fun NsAnalyticsConnectionContent(
     onUploadNowClick: () -> Unit,
     onDisconnectClick: () -> Unit,
     onClearQueueClick: () -> Unit,
-    onRefreshStatus: () -> Unit,
     onToggleCellular: (Boolean) -> Unit,
     onToggleWifi: (Boolean) -> Unit,
     onToggleBluetooth: (Boolean) -> Unit,
-    onToggleGnss: (Boolean) -> Unit
+    onToggleGnss: (Boolean) -> Unit,
+    onNavigateToDashboard: () -> Unit
 ) {
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("NS Analytics") },
+                title = { Text("NS Analytics Connection", color = Color.White) },
                 navigationIcon = {
                     IconButton(onClick = onNavigateUp) {
                         Icon(
-                            imageVector = Icons.Default.ArrowBack,
-                            contentDescription = "Navigate back"
+                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = "Navigate back",
+                            tint = Color.White
                         )
                     }
                 },
-                actions = {
-                    if (uiState.isRegistered) {
-                        IconButton(onClick = onRefreshStatus) {
-                            Icon(
-                                imageVector = Icons.Default.Refresh,
-                                contentDescription = "Refresh status"
-                            )
-                        }
-                    }
-                }
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = Color(0xFF1A1B1F)
+                )
             )
         },
-        snackbarHost = { SnackbarHost(snackbarHostState) }
+        snackbarHost = { SnackbarHost(snackbarHostState) },
+        containerColor = Color(0xFF121316)
     ) { paddingValues ->
         Box(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
+                .background(Color(0xFF121316))
         ) {
             if (uiState.isLoading) {
                 Box(
                     modifier = Modifier.fillMaxSize(),
                     contentAlignment = Alignment.Center
                 ) {
-                    CircularProgressIndicator()
+                    CircularProgressIndicator(color = Color(0xFF4CAF50))
                 }
             } else {
                 Column(
@@ -220,25 +250,41 @@ private fun NsAnalyticsConnectionContent(
                         .fillMaxSize()
                         .verticalScroll(rememberScrollState())
                         .padding(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     if (!uiState.isRegistered) {
                         // Not registered - show connection setup
                         NotConnectedCard(onQrScanClick = onQrScanClick)
                     } else {
-                        // Registered - show status and controls
-                        ConnectionStatusCard(
-                            workspace = uiState.workspace,
-                            apiUrl = uiState.apiUrl,
-                            isConnected = uiState.isConnected,
-                            lastUploadTime = uiState.lastUploadTime
+                        // Registered - show new design
+                        WorkspaceStatusCard(
+                            workspaceName = uiState.workspaceName,
+                            workspaceId = uiState.workspace
                         )
 
-                        DataCollectionCard(
-                            queuedRecords = uiState.queuedRecords
+                        SurveyStatusCard(
+                            isSurveyActive = uiState.isSurveyActive,
+                            surveyStartTime = uiState.surveyStartTime,
+                            cellularCount = uiState.cellularRecordCount,
+                            wifiCount = uiState.wifiRecordCount,
+                            bluetoothCount = uiState.bluetoothRecordCount,
+                            gnssCount = uiState.gnssRecordCount,
+                            onNavigateToDashboard = onNavigateToDashboard
                         )
 
-                        ProtocolSelectionCard(
+                        UploadSettingsCard(
+                            autoUploadEnabled = uiState.autoUploadEnabled,
+                            onToggleAutoUpload = onToggleAutoUpload,
+                            uploadFrequencyMinutes = uiState.uploadFrequencyMinutes,
+                            lastUploadTime = uiState.lastUploadTime,
+                            isUploading = uiState.isUploading,
+                            uploadProgress = uiState.uploadProgress,
+                            uploadedRecords = uiState.uploadedRecords,
+                            totalRecordsToUpload = uiState.totalRecordsToUpload,
+                            onUploadNowClick = onUploadNowClick
+                        )
+
+                        ActiveProtocolsCard(
                             cellularEnabled = uiState.cellularEnabled,
                             wifiEnabled = uiState.wifiEnabled,
                             bluetoothEnabled = uiState.bluetoothEnabled,
@@ -249,21 +295,22 @@ private fun NsAnalyticsConnectionContent(
                             onToggleGnss = onToggleGnss
                         )
 
-                        UploadSettingsCard(
-                            autoUploadEnabled = uiState.autoUploadEnabled,
-                            onToggleAutoUpload = onToggleAutoUpload,
-                            uploadFrequencyMinutes = uiState.uploadFrequencyMinutes,
-                            isUploading = uiState.isUploading,
-                            onUploadNowClick = onUploadNowClick
-                        )
-
-                        ActionsCard(
+                        DangerZoneCard(
                             queuedRecords = uiState.queuedRecords,
                             onClearQueueClick = onClearQueueClick,
                             onDisconnectClick = onDisconnectClick
                         )
                     }
                 }
+            }
+
+            // Upload progress overlay
+            if (uiState.isUploading) {
+                UploadProgressOverlay(
+                    progress = uiState.uploadProgress,
+                    uploadedRecords = uiState.uploadedRecords,
+                    totalRecords = uiState.totalRecordsToUpload
+                )
             }
         }
     }
@@ -276,7 +323,7 @@ private fun NotConnectedCard(
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.primaryContainer
+            containerColor = Color(0xFF1E1F24)
         )
     ) {
         Column(
@@ -290,24 +337,29 @@ private fun NotConnectedCard(
                 imageVector = Icons.Default.Clear,
                 contentDescription = null,
                 modifier = Modifier.size(48.dp),
-                tint = MaterialTheme.colorScheme.onPrimaryContainer
+                tint = Color(0xFFE53935)
             )
 
             Text(
                 text = "Not Connected",
                 style = MaterialTheme.typography.headlineSmall,
-                fontWeight = FontWeight.Bold
+                fontWeight = FontWeight.Bold,
+                color = Color.White
             )
 
             Text(
                 text = "Connect to NS Analytics to start uploading survey data",
                 style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f)
+                color = Color.Gray,
+                textAlign = TextAlign.Center
             )
 
             Button(
                 onClick = onQrScanClick,
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth(),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color(0xFF4285F4)
+                )
             ) {
                 Icon(
                     imageVector = Icons.Default.Add,
@@ -321,115 +373,405 @@ private fun NotConnectedCard(
 }
 
 @Composable
-private fun ConnectionStatusCard(
-    workspace: String?,
-    apiUrl: String?,
-    isConnected: Boolean,
-    lastUploadTime: Long
+private fun WorkspaceStatusCard(
+    workspaceName: String?,
+    workspaceId: String?
 ) {
+    val context = LocalContext.current
+    val clipboard = LocalClipboard.current
+
     Card(
-        modifier = Modifier.fillMaxWidth()
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+            containerColor = Color(0xFF1E1F24)
+        )
     ) {
-        Column(
+        Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp)
+                .padding(16.dp),
+            verticalAlignment = Alignment.Top
         ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+            Icon(
+                imageVector = Icons.Default.CheckCircle,
+                contentDescription = null,
+                tint = Color(0xFF4CAF50),
+                modifier = Modifier
+                    .size(24.dp)
+                    .padding(top = 2.dp)
+            )
+
+            Spacer(modifier = Modifier.width(12.dp))
+
+            Column(
+                modifier = Modifier.weight(1f)
             ) {
                 Text(
-                    text = "Connection Status",
+                    text = "Workspace Registered",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = Color(0xFF4CAF50),
+                    fontWeight = FontWeight.Medium
+                )
+
+                Text(
+                    text = workspaceName ?: "Unknown Workspace",
                     style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold
+                    color = Color.White,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.padding(vertical = 4.dp)
                 )
 
-                Icon(
-                    imageVector = Icons.Default.CheckCircle,
-                    contentDescription = null,
-                    tint = if (isConnected) Color(0xFF4CAF50) else Color.Gray,
-                    modifier = Modifier.size(24.dp)
-                )
-            }
-
-            Spacer(modifier = Modifier.height(12.dp))
-
-            workspace?.let {
-                InfoRow(label = "Workspace", value = it)
-            }
-
-            apiUrl?.let {
-                InfoRow(label = "Server", value = it.replace("https://", "").replace("http://", ""))
-            }
-
-            if (lastUploadTime > 0) {
-                val dateFormat = SimpleDateFormat("MMM dd, HH:mm", Locale.getDefault())
-                InfoRow(label = "Last Upload", value = dateFormat.format(Date(lastUploadTime)))
-            }
-        }
-    }
-}
-
-@Composable
-private fun DataCollectionCard(
-    queuedRecords: Int
-) {
-    Card(
-        modifier = Modifier.fillMaxWidth()
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp)
-        ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = "Data Collection",
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold
-                    )
-                }
-            }
-
-            if (queuedRecords > 0) {
-                Spacer(modifier = Modifier.height(12.dp))
-                Card(
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.secondaryContainer
-                    ),
-                    modifier = Modifier.fillMaxWidth()
-                ) {
+                workspaceId?.let { id ->
                     Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(12.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.clickable {
+                            clipboard.nativeClipboard.setPrimaryClip(
+                                ClipData.newPlainText(
+                                    "Workspace ID",
+                                    id
+                                )
+                            )
+                            Toast.makeText(context, "Workspace ID copied", Toast.LENGTH_SHORT)
+                                .show()
+                        }
                     ) {
                         Text(
-                            text = "Queued Records",
-                            style = MaterialTheme.typography.bodyMedium
+                            text = "ID: ${id.take(8)}...",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = Color.Gray
                         )
-                        Text(
-                            text = queuedRecords.toString(),
-                            style = MaterialTheme.typography.bodyMedium,
-                            fontWeight = FontWeight.Bold
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Icon(
+                            painter = painterResource(R.drawable.ic_copy),
+                            contentDescription = "Copy ID",
+                            tint = Color.Gray,
+                            modifier = Modifier.size(14.dp)
                         )
                     }
                 }
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                Text(
+                    text = "Ready to collect and upload survey data",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = Color.Gray
+                )
             }
         }
     }
 }
 
 @Composable
-private fun ProtocolSelectionCard(
+private fun SurveyStatusCard(
+    isSurveyActive: Boolean,
+    surveyStartTime: Long,
+    cellularCount: Int,
+    wifiCount: Int,
+    bluetoothCount: Int,
+    gnssCount: Int,
+    onNavigateToDashboard: () -> Unit
+) {
+    val totalCount = cellularCount + wifiCount + bluetoothCount + gnssCount
+
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+            containerColor = Color(0xFF1E1F24)
+        )
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp)
+        ) {
+            if (isSurveyActive) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(10.dp)
+                                .background(Color(0xFF4285F4), shape = RoundedCornerShape(50))
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = "Survey in Progress",
+                            style = MaterialTheme.typography.titleMedium,
+                            color = Color.White,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+
+                    Text(
+                        text = getElapsedTime(surveyStartTime),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = Color.Gray
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "Records Collected",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = Color.Gray
+                    )
+                    Text(
+                        text = "$totalCount total",
+                        style = MaterialTheme.typography.titleMedium,
+                        color = Color.White,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                // Protocol distribution bar
+                if (totalCount > 0) {
+                    ProtocolDistributionBar(
+                        cellularCount = cellularCount,
+                        wifiCount = wifiCount,
+                        bluetoothCount = bluetoothCount,
+                        gnssCount = gnssCount
+                    )
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceEvenly
+                    ) {
+                        ProtocolCountLabel("Cell", cellularCount, Color(0xFFA855F7))
+                        ProtocolCountLabel("Wi-Fi", wifiCount, Color(0xFF06B6D4))
+                        ProtocolCountLabel("BT", bluetoothCount, Color(0xFF3B82F6))
+                        ProtocolCountLabel("GPS", gnssCount, Color(0xFF22C55E))
+                    }
+                }
+            } else {
+                // No active survey
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { onNavigateToDashboard() },
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Clear,
+                        contentDescription = null,
+                        tint = Color.Gray,
+                        modifier = Modifier.size(40.dp)
+                    )
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    Text(
+                        text = "No active survey",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = Color.Gray
+                    )
+
+                    Text(
+                        text = "Start a survey from the dashboard",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = Color(0xFF4285F4)
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun ProtocolDistributionBar(
+    cellularCount: Int,
+    wifiCount: Int,
+    bluetoothCount: Int,
+    gnssCount: Int
+) {
+    val total = cellularCount + wifiCount + bluetoothCount + gnssCount
+    if (total == 0) return
+
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(8.dp)
+            .clip(RoundedCornerShape(4.dp))
+    ) {
+        if (cellularCount > 0) {
+            Box(
+                modifier = Modifier
+                    .weight(cellularCount.toFloat())
+                    .fillMaxHeight()
+                    .background(Color(0xFFA855F7))
+            )
+        }
+        if (wifiCount > 0) {
+            Box(
+                modifier = Modifier
+                    .weight(wifiCount.toFloat())
+                    .fillMaxHeight()
+                    .background(Color(0xFF06B6D4))
+            )
+        }
+        if (bluetoothCount > 0) {
+            Box(
+                modifier = Modifier
+                    .weight(bluetoothCount.toFloat())
+                    .fillMaxHeight()
+                    .background(Color(0xFF3B82F6))
+            )
+        }
+        if (gnssCount > 0) {
+            Box(
+                modifier = Modifier
+                    .weight(gnssCount.toFloat())
+                    .fillMaxHeight()
+                    .background(Color(0xFF22C55E))
+            )
+        }
+    }
+}
+
+@Composable
+private fun ProtocolCountLabel(
+    label: String,
+    count: Int,
+    color: Color
+) {
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.bodySmall,
+            fontWeight = FontWeight.Bold,
+            color = color
+        )
+        Text(
+            text = count.toString(),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.outline
+        )
+    }
+}
+
+@Composable
+private fun UploadSettingsCard(
+    autoUploadEnabled: Boolean,
+    onToggleAutoUpload: (Boolean) -> Unit,
+    uploadFrequencyMinutes: Int,
+    lastUploadTime: Long,
+    isUploading: Boolean,
+    uploadProgress: Float,
+    uploadedRecords: Int,
+    totalRecordsToUpload: Int,
+    onUploadNowClick: () -> Unit
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+            containerColor = Color(0xFF1E1F24)
+        )
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp)
+        ) {
+            Text(
+                text = "Upload Settings",
+                style = MaterialTheme.typography.titleMedium,
+                color = Color.White,
+                fontWeight = FontWeight.Bold
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column {
+                    Text(
+                        text = "Auto Upload",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = Color.White
+                    )
+                    Text(
+                        text = if (autoUploadEnabled) "Every $uploadFrequencyMinutes min" else "Disabled",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = Color.Gray
+                    )
+                }
+                Switch(
+                    checked = autoUploadEnabled,
+                    onCheckedChange = onToggleAutoUpload
+                )
+            }
+
+            if (lastUploadTime > 0) {
+                Spacer(modifier = Modifier.height(12.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text(
+                        text = "Last Upload",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = Color.Gray
+                    )
+                    val dateFormat =
+                        SimpleDateFormat("MMM dd, yyyy 'at' h:mm a", Locale.getDefault())
+                    Text(
+                        text = dateFormat.format(Date(lastUploadTime)),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = Color.Gray
+                    )
+                }
+
+                Text(
+                    text = getTimeAgo(lastUploadTime),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = Color.Gray
+                )
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Button(
+                onClick = onUploadNowClick,
+                modifier = Modifier.fillMaxWidth(),
+                enabled = !isUploading,
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    disabledContainerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f)
+                )
+            ) {
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.Send,
+                    contentDescription = null,
+                    modifier = Modifier.padding(end = 8.dp)
+                )
+                Text("Upload Now")
+            }
+        }
+    }
+}
+
+@Composable
+private fun ActiveProtocolsCard(
     cellularEnabled: Boolean,
     wifiEnabled: Boolean,
     bluetoothEnabled: Boolean,
@@ -440,7 +782,10 @@ private fun ProtocolSelectionCard(
     onToggleGnss: (Boolean) -> Unit
 ) {
     Card(
-        modifier = Modifier.fillMaxWidth()
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+            containerColor = Color(0xFF1E1F24)
+        )
     ) {
         Column(
             modifier = Modifier
@@ -448,79 +793,49 @@ private fun ProtocolSelectionCard(
                 .padding(16.dp)
         ) {
             Text(
-                text = "Protocol Selection",
+                text = "Active Protocols",
                 style = MaterialTheme.typography.titleMedium,
+                color = Color.White,
                 fontWeight = FontWeight.Bold
             )
 
-            Text(
-                text = "Choose which protocols to collect data for",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(bottom = 12.dp)
-            )
+            Spacer(modifier = Modifier.height(16.dp))
 
-            // Cellular protocol toggle
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                Text(
-                    text = "Cellular (GSM, LTE, 5G)",
-                    style = MaterialTheme.typography.bodyMedium
+                ProtocolChip(
+                    label = "Cellular",
+                    isSelected = cellularEnabled,
+                    onClick = { onToggleCellular(!cellularEnabled) },
+                    modifier = Modifier.weight(1f)
                 )
-                Switch(
-                    checked = cellularEnabled,
-                    onCheckedChange = onToggleCellular
+                ProtocolChip(
+                    label = "Wi-Fi",
+                    isSelected = wifiEnabled,
+                    onClick = { onToggleWifi(!wifiEnabled) },
+                    modifier = Modifier.weight(1f)
                 )
             }
 
-            // Wi-Fi protocol toggle
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = "Wi-Fi",
-                    style = MaterialTheme.typography.bodyMedium
-                )
-                Switch(
-                    checked = wifiEnabled,
-                    onCheckedChange = onToggleWifi
-                )
-            }
+            Spacer(modifier = Modifier.height(8.dp))
 
-            // Bluetooth protocol toggle
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                Text(
-                    text = "Bluetooth",
-                    style = MaterialTheme.typography.bodyMedium
+                ProtocolChip(
+                    label = "Bluetooth",
+                    isSelected = bluetoothEnabled,
+                    onClick = { onToggleBluetooth(!bluetoothEnabled) },
+                    modifier = Modifier.weight(1f)
                 )
-                Switch(
-                    checked = bluetoothEnabled,
-                    onCheckedChange = onToggleBluetooth
-                )
-            }
-
-            // GNSS protocol toggle
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = "GNSS (GPS)",
-                    style = MaterialTheme.typography.bodyMedium
-                )
-                Switch(
-                    checked = gnssEnabled,
-                    onCheckedChange = onToggleGnss
+                ProtocolChip(
+                    label = "GPS",
+                    isSelected = gnssEnabled,
+                    onClick = { onToggleGnss(!gnssEnabled) },
+                    modifier = Modifier.weight(1f)
                 )
             }
         }
@@ -528,157 +843,182 @@ private fun ProtocolSelectionCard(
 }
 
 @Composable
-private fun UploadSettingsCard(
-    autoUploadEnabled: Boolean,
-    onToggleAutoUpload: (Boolean) -> Unit,
-    uploadFrequencyMinutes: Int,
-    isUploading: Boolean,
-    onUploadNowClick: () -> Unit
+private fun ProtocolChip(
+    label: String,
+    isSelected: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
 ) {
-    Card(
-        modifier = Modifier.fillMaxWidth()
+    Surface(
+        modifier = modifier,
+        onClick = onClick,
+        shape = RoundedCornerShape(8.dp),
+        color = if (isSelected) MaterialTheme.colorScheme.primary else Color(0xFF2A2B30),
+        border = null
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp)
+        Box(
+            modifier = Modifier.padding(vertical = 12.dp),
+            contentAlignment = Alignment.Center
         ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = "Auto Upload",
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold
-                    )
-                    Text(
-                        text = if (autoUploadEnabled)
-                            "Every $uploadFrequencyMinutes minutes"
-                        else
-                            "Manual upload only",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-                Switch(
-                    checked = autoUploadEnabled,
-                    onCheckedChange = onToggleAutoUpload
-                )
-            }
-
-            Spacer(modifier = Modifier.height(12.dp))
-
-            Button(
-                onClick = onUploadNowClick,
-                modifier = Modifier.fillMaxWidth(),
-                enabled = !isUploading
-            ) {
-                if (isUploading) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(16.dp),
-                        strokeWidth = 2.dp
-                    )
-                    Text(
-                        text = "Uploading...",
-                        modifier = Modifier.padding(start = 8.dp)
-                    )
-                } else {
-                    Icon(
-                        imageVector = Icons.Default.Send,
-                        contentDescription = null,
-                        modifier = Modifier.padding(end = 8.dp)
-                    )
-                    Text("Upload Now")
-                }
-            }
+            Text(
+                text = label,
+                style = MaterialTheme.typography.bodyMedium,
+                color = if (isSelected) Color.White else Color.Gray,
+                fontWeight = if (isSelected) FontWeight.Medium else FontWeight.Normal
+            )
         }
     }
 }
 
 @Composable
-private fun ActionsCard(
+private fun DangerZoneCard(
     queuedRecords: Int,
     onClearQueueClick: () -> Unit,
     onDisconnectClick: () -> Unit
 ) {
-    Card(
+    Column(
         modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.3f)
-        )
+        verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            Text(
-                text = "Danger Zone",
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.error
+        OutlinedButton(
+            onClick = onClearQueueClick,
+            modifier = Modifier.fillMaxWidth(),
+            enabled = queuedRecords > 0,
+            colors = ButtonDefaults.outlinedButtonColors(
+                contentColor = Color(0xFFE57373),
+                disabledContentColor = Color(0xFFE57373).copy(alpha = 0.5f)
+            ),
+            border = ButtonDefaults.outlinedButtonBorder(true).copy(
+                brush = androidx.compose.ui.graphics.SolidColor(Color(0xFFE57373))
             )
+        ) {
+            Icon(
+                imageVector = Icons.Default.Delete,
+                contentDescription = null,
+                modifier = Modifier.padding(end = 8.dp)
+            )
+            Text("Clear Queue ($queuedRecords records)")
+        }
 
-            if (queuedRecords > 0) {
-                OutlinedButton(
-                    onClick = onClearQueueClick,
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = ButtonDefaults.outlinedButtonColors(
-                        contentColor = MaterialTheme.colorScheme.error
-                    )
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Delete,
-                        contentDescription = null,
-                        modifier = Modifier.padding(end = 8.dp)
-                    )
-                    Text("Clear Queue ($queuedRecords records)")
-                }
-            }
-
-            OutlinedButton(
-                onClick = onDisconnectClick,
-                modifier = Modifier.fillMaxWidth(),
-                colors = ButtonDefaults.outlinedButtonColors(
-                    contentColor = MaterialTheme.colorScheme.error
-                )
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Clear,
-                    contentDescription = null,
-                    modifier = Modifier.padding(end = 8.dp)
-                )
-                Text("Disconnect from NS Analytics")
-            }
+        OutlinedButton(
+            onClick = onDisconnectClick,
+            modifier = Modifier.fillMaxWidth(),
+            colors = ButtonDefaults.outlinedButtonColors(
+                contentColor = Color(0xFFE57373)
+            ),
+            border = ButtonDefaults.outlinedButtonBorder(true).copy(
+                brush = androidx.compose.ui.graphics.SolidColor(Color(0xFFE57373))
+            )
+        ) {
+            Icon(
+                imageVector = Icons.Default.Clear,
+                contentDescription = null,
+                modifier = Modifier.padding(end = 8.dp)
+            )
+            Text("Unregister from Workspace")
         }
     }
 }
 
 @Composable
-private fun InfoRow(
-    label: String,
-    value: String
+private fun UploadProgressOverlay(
+    progress: Float,
+    uploadedRecords: Int,
+    totalRecords: Int
 ) {
-    Row(
+    Box(
         modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 4.dp),
-        horizontalArrangement = Arrangement.SpaceBetween
+            .fillMaxSize()
+            .background(Color.Black.copy(alpha = 0.7f)),
+        contentAlignment = Alignment.Center
     ) {
-        Text(
-            text = label,
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-        Text(
-            text = value,
-            style = MaterialTheme.typography.bodyMedium,
-            fontWeight = FontWeight.Medium
-        )
+        Card(
+            modifier = Modifier
+                .fillMaxWidth(0.8f)
+                .padding(16.dp),
+            colors = CardDefaults.cardColors(
+                containerColor = Color(0xFF1E1F24)
+            )
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(24.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                if (progress > 0f && progress < 1f) {
+                    CircularProgressIndicator(
+                        progress = { progress },
+                        modifier = Modifier.size(64.dp),
+                        color = MaterialTheme.colorScheme.primary,
+                        strokeWidth = 4.dp,
+                        trackColor = ProgressIndicatorDefaults.circularIndeterminateTrackColor,
+                        strokeCap = ProgressIndicatorDefaults.CircularDeterminateStrokeCap,
+                    )
+                } else {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(64.dp),
+                        color = MaterialTheme.colorScheme.primary,
+                        strokeWidth = 4.dp
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                Text(
+                    text = "Uploading Records",
+                    style = MaterialTheme.typography.titleMedium,
+                    color = Color.White,
+                    fontWeight = FontWeight.Bold
+                )
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                Text(
+                    text = "$uploadedRecords / $totalRecords",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = Color.Gray
+                )
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                LinearProgressIndicator(
+                    progress = { progress },
+                    modifier = Modifier.fillMaxWidth(),
+                    color = MaterialTheme.colorScheme.primary,
+                    trackColor = Color(0xFF2A2B30),
+                    strokeCap = ProgressIndicatorDefaults.LinearStrokeCap,
+                )
+            }
+        }
+    }
+}
+
+private fun getElapsedTime(startTime: Long): String {
+    if (startTime == 0L) return ""
+    val elapsed = System.currentTimeMillis() - startTime
+    val minutes = (elapsed / 1000 / 60).toInt()
+    val hours = minutes / 60
+
+    return when {
+        hours > 0 -> "Started ${hours}h ${minutes % 60}min ago"
+        minutes > 0 -> "Started ${minutes}min ago"
+        else -> "Just started"
+    }
+}
+
+private fun getTimeAgo(timestamp: Long): String {
+    if (timestamp == 0L) return ""
+    val elapsed = System.currentTimeMillis() - timestamp
+    val minutes = (elapsed / 1000 / 60).toInt()
+    val hours = minutes / 60
+    val days = hours / 24
+
+    return when {
+        days > 0 -> "$days days ago"
+        hours > 0 -> "$hours hours ago"
+        minutes > 0 -> "$minutes minutes ago"
+        else -> "Just now"
     }
 }
 
@@ -739,4 +1079,122 @@ private fun ClearQueueConfirmationDialog(
             }
         }
     )
+}
+
+/**
+ * Handles service connection lifecycle for the NS Analytics screen.
+ * Binds to NetworkSurveyService when the composable enters composition
+ * and unbinds when it leaves composition.
+ */
+@Composable
+private fun NsAnalyticsServiceConnectionHandler(
+    viewModel: NsAnalyticsConnectionViewModel
+) {
+    val context = LocalContext.current
+    val lifecycleOwner = LocalLifecycleOwner.current
+    var isServiceBound by remember { mutableStateOf(false) }
+
+    val serviceConnection = remember {
+        object : ServiceConnection {
+            override fun onServiceConnected(name: ComponentName?, binder: IBinder?) {
+                val serviceBinder = binder as? NetworkSurveyService.SurveyServiceBinder
+                val service = serviceBinder?.service as? NetworkSurveyService
+                viewModel.setNetworkSurveyService(service)
+                viewModel.onStart() // Start polling when service is connected
+            }
+
+            override fun onServiceDisconnected(name: ComponentName?) {
+                viewModel.onStop() // Stop polling when service is disconnected
+                viewModel.setNetworkSurveyService(null)
+            }
+        }
+    }
+
+    // Get application context to avoid leaking activity context
+    val applicationContext = remember { context.applicationContext }
+
+    // Handle lifecycle events to unbind/rebind service when app goes to/from background
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            when (event) {
+                Lifecycle.Event.ON_STOP -> {
+                    // App is going to background - unbind from service
+                    if (isServiceBound) {
+                        try {
+                            // Stop polling
+                            viewModel.onStop()
+                            // Clear service reference in ViewModel
+                            viewModel.setNetworkSurveyService(null)
+                            // Unbind from the service
+                            applicationContext.unbindService(serviceConnection)
+                            isServiceBound = false
+                        } catch (e: Exception) {
+                            Timber.e(e, "Error unbinding service on background")
+                        }
+                    }
+                }
+
+                Lifecycle.Event.ON_START -> {
+                    // App is returning to foreground - rebind to service
+                    if (!isServiceBound) {
+                        try {
+                            val serviceIntent =
+                                Intent(applicationContext, NetworkSurveyService::class.java)
+                            val bound = applicationContext.bindService(
+                                serviceIntent,
+                                serviceConnection,
+                                Context.BIND_AUTO_CREATE
+                            )
+                            if (bound) {
+                                isServiceBound = true
+                            }
+                        } catch (e: Exception) {
+                            Timber.e(e, "Error rebinding service on foreground")
+                        }
+                    }
+                }
+
+                else -> {}
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
+        }
+    }
+
+    DisposableEffect(context) {
+        // Initial binding to the service when the screen is first displayed
+        if (!isServiceBound) {
+            val serviceIntent = Intent(applicationContext, NetworkSurveyService::class.java)
+            val bound = try {
+                applicationContext.bindService(
+                    serviceIntent,
+                    serviceConnection,
+                    Context.BIND_AUTO_CREATE
+                )
+            } catch (e: Exception) {
+                Timber.e(e, "Failed to bind to NetworkSurveyService")
+                false
+            }
+            isServiceBound = bound
+        }
+
+        onDispose {
+            // Stop polling and clean up service reference
+            viewModel.onStop()
+            viewModel.setNetworkSurveyService(null)
+
+            // Unbind from service if still bound
+            if (isServiceBound) {
+                try {
+                    applicationContext.unbindService(serviceConnection)
+                    isServiceBound = false
+                } catch (e: Exception) {
+                    Timber.e(e, "Error unbinding service on disposal")
+                }
+            }
+        }
+    }
 }

@@ -4,9 +4,11 @@ import android.app.Application
 import android.os.Build
 import androidx.core.content.edit
 import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.Observer
 import androidx.lifecycle.viewModelScope
 import androidx.preference.PreferenceManager
 import androidx.work.OneTimeWorkRequestBuilder
+import androidx.work.WorkInfo
 import androidx.work.WorkManager
 import com.craxiom.networksurvey.BuildConfig
 import com.craxiom.networksurvey.constants.NsAnalyticsConstants
@@ -15,12 +17,16 @@ import com.craxiom.networksurvey.data.api.NsAnalyticsApiFactory
 import com.craxiom.networksurvey.data.api.NsAnalyticsQrData
 import com.craxiom.networksurvey.logging.db.SurveyDatabase
 import com.craxiom.networksurvey.logging.db.uploader.NsAnalyticsUploadWorker
+import com.craxiom.networksurvey.services.NetworkSurveyService
 import com.craxiom.networksurvey.util.NsAnalyticsSecureStorage
 import com.craxiom.networksurvey.util.PreferenceUtils
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import timber.log.Timber
@@ -37,6 +43,11 @@ class NsAnalyticsConnectionViewModel(
     private val database = SurveyDatabase.getInstance(context)
     private val workManager = WorkManager.getInstance(context)
 
+    private var surveyService: NetworkSurveyService? = null
+    private var pollingJob: Job? = null
+    private var uploadWorkId: UUID? = null
+    private var uploadProgressObserver: Observer<WorkInfo?>? = null
+
     private val _uiState = MutableStateFlow(NsAnalyticsConnectionUiState())
     val uiState: StateFlow<NsAnalyticsConnectionUiState> = _uiState.asStateFlow()
 
@@ -44,6 +55,116 @@ class NsAnalyticsConnectionViewModel(
         loadConnectionState()
         // Check for pending QR data when screen loads
         checkAndProcessQrData()
+    }
+
+    /**
+     * Called when the screen becomes visible. Starts polling for survey status.
+     */
+    fun onStart() {
+        startPolling()
+    }
+
+    /**
+     * Called when the screen is no longer visible. Stops polling to save resources.
+     */
+    fun onStop() {
+        pollingJob?.cancel()
+        pollingJob = null
+    }
+
+    /**
+     * Sets the NetworkSurveyService instance when bound from the UI.
+     */
+    fun setNetworkSurveyService(service: NetworkSurveyService?) {
+        surveyService = service
+        if (service != null) {
+            // Immediately update status when service is connected
+            viewModelScope.launch {
+                updateSurveyStatus()
+            }
+        }
+    }
+
+    private fun startPolling() {
+        pollingJob?.cancel()
+        pollingJob = viewModelScope.launch {
+            while (isActive) {
+                updateSurveyStatus()
+                delay(2000) // Poll every 2 seconds
+            }
+        }
+    }
+
+    private suspend fun updateSurveyStatus() {
+        try {
+            val service = surveyService ?: return
+
+            val isSurveyActive = service.isNsAnalyticsScanningActive
+            val surveyStartTime = if (isSurveyActive) {
+                service.nsAnalyticsSurveyStartTime
+            } else {
+                0L
+            }
+
+            // Get record counts grouped by type from database in a single efficient query
+            val recordStats = withContext(Dispatchers.IO) {
+                database.nsAnalyticsDao().getPendingRecordStats()
+            }
+
+            // Process the stats to group cellular protocols together
+            var cellularCount = 0
+            var wifiCount = 0
+            var bluetoothCount = 0
+            var gnssCount = 0
+
+            recordStats.forEach { stat ->
+                when (stat.recordType) {
+                    NsAnalyticsConstants.RECORD_TYPE_GSM,
+                    NsAnalyticsConstants.RECORD_TYPE_CDMA,
+                    NsAnalyticsConstants.RECORD_TYPE_UMTS,
+                    NsAnalyticsConstants.RECORD_TYPE_LTE,
+                    NsAnalyticsConstants.RECORD_TYPE_NR -> {
+                        cellularCount += stat.count
+                    }
+                    NsAnalyticsConstants.RECORD_TYPE_WIFI -> {
+                        wifiCount = stat.count
+                    }
+                    NsAnalyticsConstants.RECORD_TYPE_BLUETOOTH -> {
+                        bluetoothCount = stat.count
+                    }
+                    NsAnalyticsConstants.RECORD_TYPE_GNSS -> {
+                        gnssCount = stat.count
+                    }
+                    // Ignore other record types like device_status and phone_state
+                }
+            }
+
+            val totalQueuedRecords = cellularCount + wifiCount + bluetoothCount + gnssCount
+
+            _uiState.value = _uiState.value.copy(
+                isSurveyActive = isSurveyActive,
+                surveyStartTime = surveyStartTime,
+                cellularRecordCount = cellularCount,
+                wifiRecordCount = wifiCount,
+                bluetoothRecordCount = bluetoothCount,
+                gnssRecordCount = gnssCount,
+                queuedRecords = totalQueuedRecords
+            )
+        } catch (e: Exception) {
+            Timber.e(e, "Failed to update survey status")
+        }
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        pollingJob?.cancel()
+        // Clean up upload observer to prevent memory leaks
+        uploadProgressObserver?.let { observer ->
+            uploadWorkId?.let { id ->
+                workManager.getWorkInfoByIdLiveData(id).removeObserver(observer)
+            }
+        }
+        uploadProgressObserver = null
     }
 
     private fun loadConnectionState() {
@@ -86,6 +207,7 @@ class NsAnalyticsConnectionViewModel(
                         isRegistered = isRegistered,
                         isConnected = isRegistered,
                         workspace = workspace,
+                        workspaceName = "Field Research Team Alpha", // TODO: Get from backend API
                         apiUrl = apiUrl,
                         autoUploadEnabled = autoUploadEnabled,
                         uploadFrequencyMinutes = uploadFrequency,
@@ -96,6 +218,9 @@ class NsAnalyticsConnectionViewModel(
                         bluetoothEnabled = bluetoothEnabled,
                         gnssEnabled = gnssEnabled
                     )
+
+                    // Update survey status after loading connection state
+                    updateSurveyStatus()
                 }
             } catch (e: Exception) {
                 Timber.e(e, "Failed to load NS Analytics connection state")
@@ -105,11 +230,6 @@ class NsAnalyticsConnectionViewModel(
                 )
             }
         }
-    }
-
-    fun refreshStatus() {
-        loadConnectionState()
-        checkAndProcessQrData()
     }
 
     fun toggleAutoUpload(enabled: Boolean) {
@@ -138,7 +258,13 @@ class NsAnalyticsConnectionViewModel(
         if (_uiState.value.isUploading) return
 
         viewModelScope.launch {
-            _uiState.value = _uiState.value.copy(isUploading = true)
+            val initialQueueSize = _uiState.value.queuedRecords
+            _uiState.value = _uiState.value.copy(
+                isUploading = true,
+                uploadProgress = 0f,
+                uploadedRecords = 0,
+                totalRecordsToUpload = initialQueueSize
+            )
 
             try {
                 // Trigger immediate upload via WorkManager
@@ -147,16 +273,78 @@ class NsAnalyticsConnectionViewModel(
                     .build()
 
                 workManager.enqueue(uploadWork)
-                showMessage("Upload started")
+                uploadWorkId = uploadWork.id
 
-                // Refresh status after a delay to show updated queue
-                kotlinx.coroutines.delay(2000)
-                loadConnectionState()
+                // Clean up any previous observer
+                uploadProgressObserver?.let { observer ->
+                    uploadWorkId?.let { id ->
+                        workManager.getWorkInfoByIdLiveData(id).removeObserver(observer)
+                    }
+                }
+
+                // Create new observer
+                val observer = Observer<WorkInfo?> { workInfo ->
+                    if (workInfo != null) {
+                        when (workInfo.state) {
+                            WorkInfo.State.RUNNING -> {
+                                // Simulate progress based on queue changes
+                                val currentQueue = _uiState.value.queuedRecords
+                                val uploaded = initialQueueSize - currentQueue
+                                val progress = if (initialQueueSize > 0) {
+                                    uploaded.toFloat() / initialQueueSize
+                                } else {
+                                    0f
+                                }
+                                _uiState.value = _uiState.value.copy(
+                                    uploadProgress = progress,
+                                    uploadedRecords = uploaded
+                                )
+                            }
+
+                            WorkInfo.State.SUCCEEDED -> {
+                                _uiState.value = _uiState.value.copy(
+                                    isUploading = false,
+                                    uploadProgress = 1f,
+                                    lastUploadTime = System.currentTimeMillis()
+                                )
+                                showMessage("Upload completed successfully")
+                                loadConnectionState()
+                                // Clean up observer after completion
+                                uploadProgressObserver?.let {
+                                    workManager.getWorkInfoByIdLiveData(uploadWork.id)
+                                        .removeObserver(it)
+                                    uploadProgressObserver = null
+                                }
+                            }
+
+                            WorkInfo.State.FAILED -> {
+                                _uiState.value = _uiState.value.copy(
+                                    isUploading = false,
+                                    uploadProgress = 0f
+                                )
+                                showMessage("Upload failed")
+                                // Clean up observer after failure
+                                uploadProgressObserver?.let {
+                                    workManager.getWorkInfoByIdLiveData(uploadWork.id)
+                                        .removeObserver(it)
+                                    uploadProgressObserver = null
+                                }
+                            }
+
+                            else -> {}
+                        }
+                    }
+                }
+
+                uploadProgressObserver = observer
+                workManager.getWorkInfoByIdLiveData(uploadWork.id).observeForever(observer)
             } catch (e: Exception) {
                 Timber.e(e, "Failed to trigger upload")
                 showMessage("Failed to start upload")
-            } finally {
-                _uiState.value = _uiState.value.copy(isUploading = false)
+                _uiState.value = _uiState.value.copy(
+                    isUploading = false,
+                    uploadProgress = 0f
+                )
             }
         }
     }
@@ -280,6 +468,7 @@ class NsAnalyticsConnectionViewModel(
                         isRegistered = true,
                         isConnected = true,
                         workspace = registrationResponse.workspaceId,
+                        workspaceName = "Field Research Team Alpha", // TODO: Get from registration response
                         apiUrl = qrData.apiUrl,
                         message = "Device registered successfully. Enable data collection when ready."
                     )
@@ -401,15 +590,25 @@ data class NsAnalyticsConnectionUiState(
     val isRegistered: Boolean = false,
     val isConnected: Boolean = false,
     val workspace: String? = null,
+    val workspaceName: String? = null,
     val apiUrl: String? = null,
     val autoUploadEnabled: Boolean = false,
     val uploadFrequencyMinutes: Int = NsAnalyticsConstants.DEFAULT_UPLOAD_FREQUENCY,
     val lastUploadTime: Long = 0,
     val queuedRecords: Int = 0,
     val isUploading: Boolean = false,
+    val uploadProgress: Float = 0f, // Upload progress 0-1
+    val uploadedRecords: Int = 0,
+    val totalRecordsToUpload: Int = 0,
     val message: String? = null,
     val cellularEnabled: Boolean = NsAnalyticsConstants.DEFAULT_CELLULAR_ENABLED,
     val wifiEnabled: Boolean = NsAnalyticsConstants.DEFAULT_WIFI_ENABLED,
     val bluetoothEnabled: Boolean = NsAnalyticsConstants.DEFAULT_BLUETOOTH_ENABLED,
-    val gnssEnabled: Boolean = NsAnalyticsConstants.DEFAULT_GNSS_ENABLED
+    val gnssEnabled: Boolean = NsAnalyticsConstants.DEFAULT_GNSS_ENABLED,
+    val isSurveyActive: Boolean = false,
+    val surveyStartTime: Long = 0,
+    val cellularRecordCount: Int = 0,
+    val wifiRecordCount: Int = 0,
+    val bluetoothRecordCount: Int = 0,
+    val gnssRecordCount: Int = 0
 )

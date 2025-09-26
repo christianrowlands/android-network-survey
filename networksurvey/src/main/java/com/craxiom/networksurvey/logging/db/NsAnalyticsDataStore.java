@@ -33,6 +33,7 @@ public class NsAnalyticsDataStore implements ICellularSurveyRecordListener, IWif
     private final SurveyDatabase database;
     private final ExecutorService executorService;
     private final JsonFormat.Printer jsonPrinter;
+    private long nsAnalyticsSurveyStartTime = 0;
     private String currentBatchId; // FIXME Is this batch ID needed?
 
     // Counters for statistics
@@ -57,8 +58,17 @@ public class NsAnalyticsDataStore implements ICellularSurveyRecordListener, IWif
      */
     public void startCollecting()
     {
+        nsAnalyticsSurveyStartTime = System.currentTimeMillis();
         generateNewBatchId();
-        Timber.i("NS Analytics data collection started with batch ID: %s", currentBatchId);
+    }
+
+    /**
+     * Shutdown the data store
+     */
+    public void shutdown()
+    {
+        nsAnalyticsSurveyStartTime = 0;
+        executorService.shutdown();
     }
 
     /**
@@ -184,6 +194,11 @@ public class NsAnalyticsDataStore implements ICellularSurveyRecordListener, IWif
         storeRecord(NsAnalyticsConstants.RECORD_TYPE_PHONE_STATE, phoneState);
     }
 
+    public long getNsAnalyticsSurveyStartTime()
+    {
+        return nsAnalyticsSurveyStartTime;
+    }
+
     /**
      * Store a protobuf record in the database
      */
@@ -209,9 +224,6 @@ public class NsAnalyticsDataStore implements ICellularSurveyRecordListener, IWif
                     database.nsAnalyticsDao().insertRecord(entity);
                     totalRecordsStored++;
                     lastRecordTimestamp = entity.timestamp;
-
-                    Timber.d("Stored %s record for NS Analytics (batch: %s)",
-                            recordType, currentBatchId);
                 }
             } catch (Exception e)
             {
@@ -269,14 +281,6 @@ public class NsAnalyticsDataStore implements ICellularSurveyRecordListener, IWif
                 Timber.e(e, "Failed to cleanup old NS Analytics records");
             }
         });
-    }
-
-    /**
-     * Shutdown the data store
-     */
-    public void shutdown()
-    {
-        executorService.shutdown();
     }
 
     /**

@@ -2,7 +2,6 @@ package com.craxiom.networksurvey.data.api
 
 import com.google.gson.annotations.SerializedName
 import okhttp3.OkHttpClient
-import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Response
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
@@ -11,7 +10,6 @@ import retrofit2.http.DELETE
 import retrofit2.http.GET
 import retrofit2.http.Header
 import retrofit2.http.POST
-import timber.log.Timber
 import java.util.concurrent.TimeUnit
 
 /**
@@ -136,19 +134,10 @@ object NsAnalyticsApiFactory {
     private const val DEFAULT_TIMEOUT_SECONDS = 30L
 
     fun createClient(baseUrl: String): NsAnalyticsApi {
-        // Add logging interceptor for debugging
-        val loggingInterceptor = HttpLoggingInterceptor { message ->
-            Timber.d("NS Analytics HTTP: $message")
-        }.apply {
-            // Log headers and body for debugging
-            level = HttpLoggingInterceptor.Level.BODY
-        }
-
         val clientBuilder = OkHttpClient.Builder()
             .connectTimeout(DEFAULT_TIMEOUT_SECONDS, TimeUnit.SECONDS)
             .readTimeout(DEFAULT_TIMEOUT_SECONDS, TimeUnit.SECONDS)
             .writeTimeout(DEFAULT_TIMEOUT_SECONDS, TimeUnit.SECONDS)
-            .addInterceptor(loggingInterceptor)
 
         return Retrofit.Builder()
             .baseUrl(baseUrl)
