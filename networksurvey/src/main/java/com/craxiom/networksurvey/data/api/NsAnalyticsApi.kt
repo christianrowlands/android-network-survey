@@ -60,6 +60,7 @@ data class DeviceRegistrationResponse(
     @SerializedName("device_id") val deviceId: String,
     @SerializedName("device_token") val deviceToken: String,
     @SerializedName("workspace_id") val workspaceId: String,
+    @SerializedName("workspace_name") val workspaceName: String?,
     @SerializedName("message") val message: String
 )
 
@@ -99,7 +100,8 @@ data class UploadResponse(
     @SerializedName("message") val message: String?,
     @SerializedName("processed") val processed: Int,
     @SerializedName("failed") val failed: Int,
-    @SerializedName("total_records") val totalRecords: Int
+    @SerializedName("total_records") val totalRecords: Int,
+    @SerializedName("workspace_name") val workspaceName: String?
 ) {
     /**
      * Helper property to check if the upload was successful
@@ -122,9 +124,13 @@ data class DeregisterResponse(
 data class DeviceStatusResponse(
     @SerializedName("device_id") val deviceId: String,
     @SerializedName("workspace_id") val workspaceId: String,
+    @SerializedName("workspace_name") val workspaceName: String?,
     @SerializedName("is_active") val isActive: Boolean,
     @SerializedName("last_seen") val lastSeen: String?,
-    @SerializedName("total_records") val totalRecords: Long?
+    @SerializedName("total_records") val totalRecords: Long?,
+    @SerializedName("app_version") val appVersion: String?,
+    @SerializedName("os_version") val osVersion: String?,
+    @SerializedName("device_model") val deviceModel: String?
 )
 
 /**

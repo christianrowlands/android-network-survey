@@ -134,6 +134,28 @@ object NsAnalyticsSecureStorage {
     }
 
     /**
+     * Get workspace name
+     */
+    fun getWorkspaceName(context: Context): String? {
+        return getDecryptedString(
+            getPrefs(context),
+            NsAnalyticsConstants.PROPERTY_NS_ANALYTICS_WORKSPACE_NAME
+        )
+    }
+
+    /**
+     * Store workspace name
+     */
+    fun storeWorkspaceName(context: Context, workspaceName: String?) {
+        val prefs = getPrefs(context)
+        putEncryptedString(
+            prefs,
+            NsAnalyticsConstants.PROPERTY_NS_ANALYTICS_WORKSPACE_NAME,
+            workspaceName
+        )
+    }
+
+    /**
      * Get API URL
      */
     fun getApiUrl(context: Context): String? {
@@ -151,7 +173,8 @@ object NsAnalyticsSecureStorage {
         deviceToken: String,
         workspaceId: String,
         apiUrl: String,
-        deviceId: String
+        deviceId: String,
+        workspaceName: String? = null
     ) {
         val prefs = getPrefs(context)
         putEncryptedString(
@@ -166,6 +189,13 @@ object NsAnalyticsSecureStorage {
         )
         putEncryptedString(prefs, NsAnalyticsConstants.PROPERTY_NS_ANALYTICS_API_URL, apiUrl)
         putEncryptedString(prefs, NsAnalyticsConstants.PROPERTY_NS_ANALYTICS_DEVICE_ID, deviceId)
+        if (workspaceName != null) {
+            putEncryptedString(
+                prefs,
+                NsAnalyticsConstants.PROPERTY_NS_ANALYTICS_WORKSPACE_NAME,
+                workspaceName
+            )
+        }
         putEncryptedBoolean(prefs, NsAnalyticsConstants.PROPERTY_NS_ANALYTICS_REGISTERED, true)
         putEncryptedLong(prefs, "ns_analytics_registered_at", System.currentTimeMillis())
     }
@@ -274,6 +304,7 @@ object NsAnalyticsSecureStorage {
         getPrefs(context).edit {
             remove(NsAnalyticsConstants.PROPERTY_NS_ANALYTICS_DEVICE_TOKEN)
             remove(NsAnalyticsConstants.PROPERTY_NS_ANALYTICS_WORKSPACE_ID)
+            remove(NsAnalyticsConstants.PROPERTY_NS_ANALYTICS_WORKSPACE_NAME)
             remove(NsAnalyticsConstants.PROPERTY_NS_ANALYTICS_API_URL)
             remove(NsAnalyticsConstants.PROPERTY_NS_ANALYTICS_REGISTERED)
             remove(NsAnalyticsConstants.PROPERTY_NS_ANALYTICS_DEVICE_ID)

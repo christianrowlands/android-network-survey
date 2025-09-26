@@ -126,12 +126,15 @@ class NsAnalyticsConnectionViewModel(
                     NsAnalyticsConstants.RECORD_TYPE_NR -> {
                         cellularCount += stat.count
                     }
+
                     NsAnalyticsConstants.RECORD_TYPE_WIFI -> {
                         wifiCount = stat.count
                     }
+
                     NsAnalyticsConstants.RECORD_TYPE_BLUETOOTH -> {
                         bluetoothCount = stat.count
                     }
+
                     NsAnalyticsConstants.RECORD_TYPE_GNSS -> {
                         gnssCount = stat.count
                     }
@@ -169,9 +172,8 @@ class NsAnalyticsConnectionViewModel(
 
     private fun loadConnectionState() {
         viewModelScope.launch {
-            _uiState.value = _uiState.value.copy(isLoading = true)
-
             try {
+                // Load cached data immediately without showing loading spinner
                 withContext(Dispatchers.IO) {
                     val isRegistered = NsAnalyticsSecureStorage.isRegistered(context)
                     val workspace = NsAnalyticsSecureStorage.getWorkspaceId(context)
@@ -179,6 +181,8 @@ class NsAnalyticsConnectionViewModel(
                     val autoUploadEnabled = PreferenceUtils.isNsAnalyticsAutoUpload(context)
                     val uploadFrequency = NsAnalyticsSecureStorage.getUploadFrequency(context)
                     val lastUploadTime = NsAnalyticsSecureStorage.getLastUploadTime(context)
+                    val storedWorkspaceName = NsAnalyticsSecureStorage.getWorkspaceName(context)
+                    val deviceToken = NsAnalyticsSecureStorage.getDeviceToken(context)
 
                     // Get protocol preferences
                     val preferences = PreferenceManager.getDefaultSharedPreferences(context)
@@ -202,12 +206,13 @@ class NsAnalyticsConnectionViewModel(
                     // Get queue size
                     val queueSize = database.nsAnalyticsDao().getPendingRecordCount()
 
+                    // Update UI immediately with cached data
                     _uiState.value = _uiState.value.copy(
                         isLoading = false,
                         isRegistered = isRegistered,
                         isConnected = isRegistered,
                         workspace = workspace,
-                        workspaceName = "Field Research Team Alpha", // TODO: Get from backend API
+                        workspaceName = storedWorkspaceName ?: "Unknown Workspace",
                         apiUrl = apiUrl,
                         autoUploadEnabled = autoUploadEnabled,
                         uploadFrequencyMinutes = uploadFrequency,
@@ -221,6 +226,11 @@ class NsAnalyticsConnectionViewModel(
 
                     // Update survey status after loading connection state
                     updateSurveyStatus()
+
+                    // Asynchronously fetch latest device status from backend if registered
+                    if (isRegistered && deviceToken != null && apiUrl != null) {
+                        fetchAndUpdateDeviceStatus(deviceToken, apiUrl)
+                    }
                 }
             } catch (e: Exception) {
                 Timber.e(e, "Failed to load NS Analytics connection state")
@@ -228,6 +238,32 @@ class NsAnalyticsConnectionViewModel(
                     isLoading = false,
                     message = "Failed to load connection state"
                 )
+            }
+        }
+    }
+
+    /**
+     * Asynchronously fetch device status from backend and update workspace name if changed
+     */
+    private fun fetchAndUpdateDeviceStatus(deviceToken: String, apiUrl: String) {
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                val api = NsAnalyticsApiFactory.createClient(apiUrl)
+                val statusResponse = api.getDeviceStatus("Bearer $deviceToken")
+                if (statusResponse.isSuccessful && statusResponse.body() != null) {
+                    val status = statusResponse.body()!!
+                    // Update workspace name if provided and different from current
+                    status.workspaceName?.let { name ->
+                        val currentName = _uiState.value.workspaceName
+                        if (name != currentName) {
+                            NsAnalyticsSecureStorage.storeWorkspaceName(context, name)
+                            _uiState.value = _uiState.value.copy(workspaceName = name)
+                            Timber.d("Updated workspace name from device status: %s", name)
+                        }
+                    }
+                }
+            } catch (e: Exception) {
+                Timber.w(e, "Failed to fetch device status in background, continuing with cached data")
             }
         }
     }
@@ -456,7 +492,8 @@ class NsAnalyticsConnectionViewModel(
                         deviceToken = registrationResponse.deviceToken,
                         workspaceId = registrationResponse.workspaceId,
                         apiUrl = qrData.apiUrl,
-                        deviceId = registrationResponse.deviceId
+                        deviceId = registrationResponse.deviceId,
+                        workspaceName = registrationResponse.workspaceName
                     )
 
                     // Clear the QR data since we've successfully registered
@@ -468,7 +505,7 @@ class NsAnalyticsConnectionViewModel(
                         isRegistered = true,
                         isConnected = true,
                         workspace = registrationResponse.workspaceId,
-                        workspaceName = "Field Research Team Alpha", // TODO: Get from registration response
+                        workspaceName = registrationResponse.workspaceName ?: "Unknown Workspace",
                         apiUrl = qrData.apiUrl,
                         message = "Device registered successfully. Enable data collection when ready."
                     )

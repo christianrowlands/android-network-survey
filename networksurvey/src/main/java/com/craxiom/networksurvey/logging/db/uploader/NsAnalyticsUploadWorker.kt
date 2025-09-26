@@ -141,6 +141,14 @@ class NsAnalyticsUploadWorker(context: Context, params: WorkerParameters) :
                         System.currentTimeMillis()
                     )
 
+                    // Update workspace name if provided in response
+                    responseBody.workspaceName?.let { workspaceName ->
+                        NsAnalyticsSecureStorage.storeWorkspaceName(
+                            applicationContext,
+                            workspaceName
+                        )
+                    }
+
                     totalRecordsUploaded += pendingRecords.size
                     totalRecordsProcessed += responseBody.processed
 
