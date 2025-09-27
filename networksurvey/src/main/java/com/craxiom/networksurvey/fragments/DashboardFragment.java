@@ -36,6 +36,8 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.widget.SwitchCompat;
+import androidx.compose.ui.platform.ComposeView;
+import androidx.compose.ui.platform.ViewCompositionStrategy;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import androidx.fragment.app.FragmentActivity;
@@ -63,13 +65,13 @@ import com.craxiom.networksurvey.gpstest.util.MathUtils;
 import com.craxiom.networksurvey.listeners.ILoggingChangeListener;
 import com.craxiom.networksurvey.logging.db.SurveyDatabase;
 import com.craxiom.networksurvey.logging.db.dao.SurveyRecordDao;
-import com.craxiom.networksurvey.logging.db.uploader.NsAnalyticsUploadWorker;
 import com.craxiom.networksurvey.logging.db.uploader.NsUploaderWorker;
 import com.craxiom.networksurvey.model.SurveyTypes;
 import com.craxiom.networksurvey.model.UploadScanningResult;
 import com.craxiom.networksurvey.services.BatteryMonitor;
 import com.craxiom.networksurvey.services.NetworkSurveyService;
 import com.craxiom.networksurvey.ui.main.SharedViewModel;
+import com.craxiom.networksurvey.ui.nsanalytics.NsAnalyticsComposeHelper;
 import com.craxiom.networksurvey.util.BatteryOptimizationHelper;
 import com.craxiom.networksurvey.util.MdmUtils;
 import com.craxiom.networksurvey.util.NsUtils;
@@ -85,6 +87,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiConsumer;
 
 import timber.log.Timber;
@@ -109,6 +112,14 @@ public class DashboardFragment extends AServiceDataFragment implements LocationL
     private DashboardViewModel viewModel;
     private boolean scrolledToBottom;
     private Set<SurveyTypes> currentActiveSurveys = new LinkedHashSet<>();
+
+    // State for NS Analytics card
+    private boolean nsAnalyticsSurveyActive = false;
+    private long nsAnalyticsSurveyStartTime = 0L;
+    private int nsAnalyticsCellularCount = 0;
+    private int nsAnalyticsWifiCount = 0;
+    private int nsAnalyticsBluetoothCount = 0;
+    private int nsAnalyticsGnssCount = 0;
 
     private final Handler handler = new Handler(Looper.getMainLooper());
     private final Runnable updateUploadCountsRunnable = new Runnable()
@@ -1210,38 +1221,101 @@ public class DashboardFragment extends AServiceDataFragment implements LocationL
             sharedViewModel.triggerNavigationToNsAnalyticsConnection();
         });
 
-        // Survey button - start/stop NS Analytics survey
-        binding.nsAnalyticsCard.nsAnalyticsSurveyButton.setOnClickListener(v -> {
-            if (service == null) return;
+        // Setup the ComposeView with our shared component
+        ComposeView composeView = binding.nsAnalyticsCard.nsAnalyticsComposeView;
+        composeView.setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed.INSTANCE);
 
+        // Update compose view when we have content
+        updateNsAnalyticsComposeView();
+    }
+
+    /**
+     * Toggles the NS Analytics survey on or off.
+     */
+    private void toggleNsAnalyticsSurvey()
+    {
+        if (service == null) return;
+
+        Context context = getContext();
+        if (context == null) return;
+
+        try
+        {
+            boolean isCurrentlyScanning = service.isNsAnalyticsScanningActive();
+            UploadScanningResult result = service.toggleNsAnalyticsScanning(!isCurrentlyScanning);
+
+            if (!result.getSuccess())
+            {
+                Toast.makeText(context, result.getMessage(), Toast.LENGTH_LONG).show();
+            }
+
+            updateNsAnalyticsCard();
+        } catch (Exception e)
+        {
+            Timber.e(e, "Error toggling NS Analytics scanning");
+            Toast.makeText(context, "Failed to toggle NS Analytics survey", Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    /**
+     * Updates the NS Analytics record counts from the database.
+     *
+     * @param context The context
+     */
+    private void updateNsAnalyticsRecordCounts(Context context)
+    {
+        if (context == null) return;
+
+        executorService.execute(() -> {
             try
             {
-                boolean isCurrentlyScanning = service.isNsAnalyticsScanningActive();
-                UploadScanningResult result = service.toggleNsAnalyticsScanning(!isCurrentlyScanning);
+                SurveyDatabase database = SurveyDatabase.getInstance(context);
 
-                if (!result.getSuccess())
+                // Get record counts grouped by type
+                AtomicInteger cellularCount = new AtomicInteger(0);
+                AtomicInteger wifiCount = new AtomicInteger(0);
+                AtomicInteger bluetoothCount = new AtomicInteger(0);
+                AtomicInteger gnssCount = new AtomicInteger(0);
+
+                // Fetch the pending record stats
+                database.nsAnalyticsDao().getPendingRecordStats().forEach(stat -> {
+                    String recordType = stat.recordType;
+                    int count = stat.count;
+
+                    if (NsAnalyticsConstants.RECORD_TYPE_GSM.equals(recordType) ||
+                            NsAnalyticsConstants.RECORD_TYPE_CDMA.equals(recordType) ||
+                            NsAnalyticsConstants.RECORD_TYPE_UMTS.equals(recordType) ||
+                            NsAnalyticsConstants.RECORD_TYPE_LTE.equals(recordType) ||
+                            NsAnalyticsConstants.RECORD_TYPE_NR.equals(recordType))
+                    {
+                        cellularCount.addAndGet(count);
+                    } else if (NsAnalyticsConstants.RECORD_TYPE_WIFI.equals(recordType))
+                    {
+                        wifiCount.set(count);
+                    } else if (NsAnalyticsConstants.RECORD_TYPE_BLUETOOTH.equals(recordType))
+                    {
+                        bluetoothCount.set(count);
+                    } else if (NsAnalyticsConstants.RECORD_TYPE_GNSS.equals(recordType))
+                    {
+                        gnssCount.set(count);
+                    }
+                });
+
+                // Update UI on main thread
+                if (getActivity() != null)
                 {
-                    Toast.makeText(context, result.getMessage(), Toast.LENGTH_LONG).show();
+                    getActivity().runOnUiThread(() -> {
+                        nsAnalyticsCellularCount = cellularCount.get();
+                        nsAnalyticsWifiCount = wifiCount.get();
+                        nsAnalyticsBluetoothCount = bluetoothCount.get();
+                        nsAnalyticsGnssCount = gnssCount.get();
+                        updateNsAnalyticsComposeView();
+                    });
                 }
-
-                // Update UI
-                updateNsAnalyticsCard();
             } catch (Exception e)
             {
-                Timber.e(e, "Error toggling NS Analytics scanning");
-                Toast.makeText(context, "Failed to toggle NS Analytics survey", Toast.LENGTH_SHORT).show();
+                Timber.e(e, "Error getting NS Analytics record counts");
             }
-        });
-
-        // Manual upload button - trigger immediate upload
-        binding.nsAnalyticsCard.nsAnalyticsManualUploadButton.setOnClickListener(v -> {
-            WorkManager workManager = WorkManager.getInstance(context);
-            OneTimeWorkRequest uploadRequest = new OneTimeWorkRequest.Builder(NsAnalyticsUploadWorker.class)
-                    .setExpedited(OutOfQuotaPolicy.RUN_AS_NON_EXPEDITED_WORK_REQUEST)
-                    .build();
-            workManager.enqueue(uploadRequest);
-
-            Toast.makeText(context, R.string.ns_analytics_uploading, Toast.LENGTH_SHORT).show();
         });
     }
 
@@ -1292,12 +1366,8 @@ public class DashboardFragment extends AServiceDataFragment implements LocationL
     {
         if (binding == null) return;
 
-        binding.nsAnalyticsCard.nsAnalyticsStatusIndicator.setBackgroundResource(R.drawable.status_indicator_disconnected);
-        binding.nsAnalyticsCard.nsAnalyticsStatusText.setText(R.string.ns_analytics_not_registered);
-        binding.nsAnalyticsCard.nsAnalyticsProtocolsSection.setVisibility(View.GONE);
-        binding.nsAnalyticsCard.nsAnalyticsInfoSection.setVisibility(View.GONE);
-        binding.nsAnalyticsCard.nsAnalyticsUploadModeSection.setVisibility(View.GONE);
-        binding.nsAnalyticsCard.nsAnalyticsActionButtons.setVisibility(View.GONE);
+        // Hide the entire card when not registered
+        binding.nsAnalyticsCard.nsAnalyticsCardView.setVisibility(View.GONE);
     }
 
     /**
@@ -1309,29 +1379,18 @@ public class DashboardFragment extends AServiceDataFragment implements LocationL
     {
         if (binding == null || context == null) return;
 
-        // Check if survey is running
         boolean isSurveyRunning = isNsAnalyticsSurveyRunning();
+        long surveyStartTime = 0L;
+        if (isSurveyRunning && service != null)
+        {
+            surveyStartTime = service.getNsAnalyticsSurveyStartTime();
+        }
 
-        // Update survey status
-        updateNsAnalyticsSurveyStatus(isSurveyRunning);
+        // Update state
+        nsAnalyticsSurveyActive = isSurveyRunning;
+        nsAnalyticsSurveyStartTime = surveyStartTime;
 
-        // Show info sections
-        binding.nsAnalyticsCard.nsAnalyticsInfoSection.setVisibility(View.VISIBLE);
-        binding.nsAnalyticsCard.nsAnalyticsActionButtons.setVisibility(View.VISIBLE);
-
-        // Update workspace info
-        String workspace = PreferenceUtils.getNsAnalyticsWorkspace(context);
-        updateNsAnalyticsWorkspace(workspace);
-
-        // Update queue size asynchronously
-        updateNsAnalyticsQueueSize(context);
-
-        // Update last upload time
-        long lastUploadTime = PreferenceUtils.getLastNsAnalyticsUploadTime(context);
-        updateNsAnalyticsLastUpload(lastUploadTime);
-
-        // Update upload mode
-        updateNsAnalyticsUploadMode(context);
+        updateNsAnalyticsRecordCounts(context);
     }
 
     /**
@@ -1354,164 +1413,27 @@ public class DashboardFragment extends AServiceDataFragment implements LocationL
     }
 
     /**
-     * Updates the survey status indicators based on whether survey is running.
-     *
-     * @param isSurveyRunning true if survey is currently running
+     * Updates the NS Analytics ComposeView with the current state.
      */
-    private void updateNsAnalyticsSurveyStatus(boolean isSurveyRunning)
+    private void updateNsAnalyticsComposeView()
     {
         if (binding == null) return;
 
-        if (isSurveyRunning)
-        {
-            binding.nsAnalyticsCard.nsAnalyticsStatusIndicator.setBackgroundResource(R.drawable.status_indicator_connected);
-            binding.nsAnalyticsCard.nsAnalyticsStatusText.setText(R.string.ns_analytics_survey_running);
-            binding.nsAnalyticsCard.nsAnalyticsProtocolsSection.setVisibility(View.VISIBLE);
-            binding.nsAnalyticsCard.nsAnalyticsSurveyButton.setText(R.string.ns_analytics_stop_survey);
+        ComposeView composeView = binding.nsAnalyticsCard.nsAnalyticsComposeView;
 
-            updateNsAnalyticsProtocolIndicators();
-        } else
-        {
-            binding.nsAnalyticsCard.nsAnalyticsStatusIndicator.setBackgroundResource(R.drawable.status_indicator_disconnected);
-            binding.nsAnalyticsCard.nsAnalyticsStatusText.setText(R.string.ns_analytics_survey_stopped);
-            binding.nsAnalyticsCard.nsAnalyticsProtocolsSection.setVisibility(View.GONE);
-            binding.nsAnalyticsCard.nsAnalyticsSurveyButton.setText(R.string.ns_analytics_start_survey);
-        }
-    }
+        composeView.setVisibility(View.VISIBLE);
 
-    /**
-     * Updates the workspace display value.
-     *
-     * @param workspace The workspace name to display
-     */
-    private void updateNsAnalyticsWorkspace(String workspace)
-    {
-        if (binding == null) return;
-
-        binding.nsAnalyticsCard.nsAnalyticsWorkspaceValue.setText(workspace);
-    }
-
-    /**
-     * Asynchronously fetches and updates the NS Analytics queue size.
-     *
-     * @param context The context
-     */
-    private void updateNsAnalyticsQueueSize(Context context)
-    {
-        if (binding == null || context == null) return;
-
-        executorService.execute(() -> {
-            try
-            {
-                SurveyDatabase database = SurveyDatabase.getInstance(context);
-                int queueSize = database.nsAnalyticsDao().getPendingRecordCount();
-
-                // Update UI on main thread
-                if (getActivity() != null)
-                {
-                    getActivity().runOnUiThread(() -> {
-                        if (binding != null)
-                        {
-                            binding.nsAnalyticsCard.nsAnalyticsQueueSizeValue.setText(String.valueOf(queueSize));
-
-                            // Update manual upload button state if in manual mode
-                            SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(context);
-                            String uploadMode = preferences.getString(NsAnalyticsConstants.PROPERTY_NS_ANALYTICS_UPLOAD_MODE, UPLOAD_MODE_AUTOMATIC);
-                            if (UPLOAD_MODE_MANUAL.equals(uploadMode) &&
-                                    binding.nsAnalyticsCard.nsAnalyticsManualUploadButton.getVisibility() == View.VISIBLE)
-                            {
-                                binding.nsAnalyticsCard.nsAnalyticsManualUploadButton.setEnabled(queueSize > 0);
-                            }
-                        }
-                    });
-                }
-            } catch (Exception e)
-            {
-                Timber.e(e, "Error getting NS Analytics queue size");
-                if (getActivity() != null)
-                {
-                    getActivity().runOnUiThread(() -> {
-                        if (binding != null)
-                        {
-                            binding.nsAnalyticsCard.nsAnalyticsQueueSizeValue.setText("0");
-                        }
-                    });
-                }
-            }
-        });
-    }
-
-    /**
-     * Updates the last upload time display.
-     *
-     * @param lastUploadTime The timestamp of the last upload
-     */
-    private void updateNsAnalyticsLastUpload(long lastUploadTime)
-    {
-        if (binding == null) return;
-
-        if (lastUploadTime > 0)
-        {
-            // Format time ago
-            long timeDiff = System.currentTimeMillis() - lastUploadTime;
-            String timeAgo = NsUtils.getTimeAgo(timeDiff);
-            binding.nsAnalyticsCard.nsAnalyticsLastUploadValue.setText(timeAgo);
-        } else
-        {
-            binding.nsAnalyticsCard.nsAnalyticsLastUploadValue.setText(R.string.ns_analytics_never);
-        }
-    }
-
-    /**
-     * Updates the upload mode section based on current settings.
-     *
-     * @param context The context
-     */
-    private void updateNsAnalyticsUploadMode(Context context)
-    {
-        if (binding == null || context == null) return;
-
-        SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(context);
-        String uploadMode = preferences.getString(NsAnalyticsConstants.PROPERTY_NS_ANALYTICS_UPLOAD_MODE, UPLOAD_MODE_AUTOMATIC);
-
-        binding.nsAnalyticsCard.nsAnalyticsUploadModeSection.setVisibility(View.VISIBLE);
-
-        if (UPLOAD_MODE_MANUAL.equals(uploadMode))
-        {
-            binding.nsAnalyticsCard.nsAnalyticsUploadModeValue.setText(R.string.ns_analytics_upload_mode_manual);
-            binding.nsAnalyticsCard.nsAnalyticsManualUploadButton.setVisibility(View.VISIBLE);
-            // Button state will be updated when queue size is fetched asynchronously
-            binding.nsAnalyticsCard.nsAnalyticsManualUploadButton.setEnabled(false);
-        } else
-        {
-            binding.nsAnalyticsCard.nsAnalyticsUploadModeValue.setText(R.string.ns_analytics_upload_mode_automatic);
-            binding.nsAnalyticsCard.nsAnalyticsManualUploadButton.setVisibility(View.GONE);
-        }
-    }
-
-    /**
-     * Updates the protocol indicators in the NS Analytics card based on which protocols are active.
-     */
-    private void updateNsAnalyticsProtocolIndicators()
-    {
-        if (binding == null) return;
-
-        Context context = getContext();
-        if (context == null) return;
-
-        SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(context);
-
-        // Check which protocols are enabled for NS Analytics
-        boolean cellularEnabled = preferences.getBoolean(NsAnalyticsConstants.PROPERTY_NS_ANALYTICS_CELLULAR_ENABLED, true);
-        boolean wifiEnabled = preferences.getBoolean(NsAnalyticsConstants.PROPERTY_NS_ANALYTICS_WIFI_ENABLED, true);
-        boolean bluetoothEnabled = preferences.getBoolean(NsAnalyticsConstants.PROPERTY_NS_ANALYTICS_BLUETOOTH_ENABLED, false);
-        boolean gnssEnabled = preferences.getBoolean(NsAnalyticsConstants.PROPERTY_NS_ANALYTICS_GNSS_ENABLED, false);
-
-        // Update visibility of protocol indicators
-        binding.nsAnalyticsCard.nsAnalyticsCellularIndicator.setVisibility(cellularEnabled ? View.VISIBLE : View.GONE);
-        binding.nsAnalyticsCard.nsAnalyticsWifiIndicator.setVisibility(wifiEnabled ? View.VISIBLE : View.GONE);
-        binding.nsAnalyticsCard.nsAnalyticsBluetoothIndicator.setVisibility(bluetoothEnabled ? View.VISIBLE : View.GONE);
-        binding.nsAnalyticsCard.nsAnalyticsGnssIndicator.setVisibility(gnssEnabled ? View.VISIBLE : View.GONE);
+        // Use the helper to set up the Compose content
+        NsAnalyticsComposeHelper.setupNsAnalyticsCard(
+                composeView,
+                nsAnalyticsSurveyActive,
+                nsAnalyticsSurveyStartTime,
+                nsAnalyticsCellularCount,
+                nsAnalyticsWifiCount,
+                nsAnalyticsBluetoothCount,
+                nsAnalyticsGnssCount,
+                this::toggleNsAnalyticsSurvey
+        );
     }
 
     // Battery Monitor Listener implementations

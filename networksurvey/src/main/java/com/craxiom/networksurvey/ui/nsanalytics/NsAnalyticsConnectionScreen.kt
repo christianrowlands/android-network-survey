@@ -18,7 +18,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -26,7 +25,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -65,7 +63,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalClipboard
 import androidx.compose.ui.platform.LocalContext
@@ -256,14 +253,15 @@ private fun NsAnalyticsConnectionContent(
                             workspaceId = uiState.workspace
                         )
 
-                        SurveyStatusCard(
+                        NsAnalyticsStatusCard(
                             isSurveyActive = uiState.isSurveyActive,
                             surveyStartTime = uiState.surveyStartTime,
                             cellularCount = uiState.cellularRecordCount,
                             wifiCount = uiState.wifiRecordCount,
                             bluetoothCount = uiState.bluetoothRecordCount,
                             gnssCount = uiState.gnssRecordCount,
-                            onToggleSurvey = onToggleSurvey
+                            onToggleSurvey = onToggleSurvey,
+                            showDetailedInfo = true
                         )
 
                         UploadSettingsCard(
@@ -456,224 +454,6 @@ private fun WorkspaceStatusCard(
     }
 }
 
-@Composable
-private fun SurveyStatusCard(
-    isSurveyActive: Boolean,
-    surveyStartTime: Long,
-    cellularCount: Int,
-    wifiCount: Int,
-    bluetoothCount: Int,
-    gnssCount: Int,
-    onToggleSurvey: () -> Unit
-) {
-    val totalCount = cellularCount + wifiCount + bluetoothCount + gnssCount
-
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(
-            containerColor = Color(0xFF1E1F24)
-        )
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp)
-        ) {
-            // Survey Status Header
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .size(10.dp)
-                            .background(
-                                if (isSurveyActive) Color(0xFF4285F4) else Color.Gray,
-                                shape = RoundedCornerShape(50)
-                            )
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(
-                        text = if (isSurveyActive) "Survey in Progress" else "Survey Inactive",
-                        style = MaterialTheme.typography.titleMedium,
-                        color = Color.White,
-                        fontWeight = FontWeight.Bold
-                    )
-                }
-
-                if (isSurveyActive) {
-                    Text(
-                        text = getElapsedTime(surveyStartTime),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = Color.Gray
-                    )
-                }
-            }
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // Records Section
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Column {
-                    Text(
-                        text = if (isSurveyActive) "Records Collected" else "Pending Records",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = Color.Gray
-                    )
-                    if (!isSurveyActive && totalCount > 0) {
-                        Text(
-                            text = "Ready to upload",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = Color(0xFF4CAF50)
-                        )
-                    }
-                }
-                Text(
-                    text = "$totalCount total",
-                    style = MaterialTheme.typography.titleMedium,
-                    color = Color.White,
-                    fontWeight = FontWeight.Bold
-                )
-            }
-
-            // Protocol distribution - Always show if records exist
-            if (totalCount > 0) {
-                Spacer(modifier = Modifier.height(8.dp))
-
-                ProtocolDistributionBar(
-                    cellularCount = cellularCount,
-                    wifiCount = wifiCount,
-                    bluetoothCount = bluetoothCount,
-                    gnssCount = gnssCount
-                )
-
-                Spacer(modifier = Modifier.height(8.dp))
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceEvenly
-                ) {
-                    ProtocolCountLabel("Cell", cellularCount, Color(0xFFA855F7))
-                    ProtocolCountLabel("Wi-Fi", wifiCount, Color(0xFF06B6D4))
-                    ProtocolCountLabel("BT", bluetoothCount, Color(0xFF3B82F6))
-                    ProtocolCountLabel("GPS", gnssCount, Color(0xFF22C55E))
-                }
-            } else if (!isSurveyActive) {
-                // No records and survey inactive
-                Spacer(modifier = Modifier.height(8.dp))
-                Text(
-                    text = "Start a survey to begin collecting data",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = Color.Gray,
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier.fillMaxWidth()
-                )
-            }
-
-            // Survey Control Button
-            Spacer(modifier = Modifier.height(16.dp))
-
-            Button(
-                onClick = onToggleSurvey,
-                modifier = Modifier.fillMaxWidth(),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = if (isSurveyActive) Color(0xFFE53935) else Color(0xFF4CAF50)
-                )
-            ) {
-                Icon(
-                    imageVector = if (isSurveyActive) Icons.Default.Clear else Icons.Default.CheckCircle,
-                    contentDescription = null,
-                    modifier = Modifier.padding(end = 8.dp)
-                )
-                Text(
-                    text = if (isSurveyActive) "Stop Survey" else "Start Survey"
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun ProtocolDistributionBar(
-    cellularCount: Int,
-    wifiCount: Int,
-    bluetoothCount: Int,
-    gnssCount: Int
-) {
-    val total = cellularCount + wifiCount + bluetoothCount + gnssCount
-    if (total == 0) return
-
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(8.dp)
-            .clip(RoundedCornerShape(4.dp))
-    ) {
-        if (cellularCount > 0) {
-            Box(
-                modifier = Modifier
-                    .weight(cellularCount.toFloat())
-                    .fillMaxHeight()
-                    .background(Color(0xFFA855F7))
-            )
-        }
-        if (wifiCount > 0) {
-            Box(
-                modifier = Modifier
-                    .weight(wifiCount.toFloat())
-                    .fillMaxHeight()
-                    .background(Color(0xFF06B6D4))
-            )
-        }
-        if (bluetoothCount > 0) {
-            Box(
-                modifier = Modifier
-                    .weight(bluetoothCount.toFloat())
-                    .fillMaxHeight()
-                    .background(Color(0xFF3B82F6))
-            )
-        }
-        if (gnssCount > 0) {
-            Box(
-                modifier = Modifier
-                    .weight(gnssCount.toFloat())
-                    .fillMaxHeight()
-                    .background(Color(0xFF22C55E))
-            )
-        }
-    }
-}
-
-@Composable
-private fun ProtocolCountLabel(
-    label: String,
-    count: Int,
-    color: Color
-) {
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        Text(
-            text = label,
-            style = MaterialTheme.typography.bodySmall,
-            fontWeight = FontWeight.Bold,
-            color = color
-        )
-        Text(
-            text = count.toString(),
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.outline
-        )
-    }
-}
 
 @Composable
 private fun UploadSettingsCard(
@@ -1004,18 +784,6 @@ private fun UploadProgressOverlay(
     }
 }
 
-private fun getElapsedTime(startTime: Long): String {
-    if (startTime == 0L) return ""
-    val elapsed = System.currentTimeMillis() - startTime
-    val minutes = (elapsed / 1000 / 60).toInt()
-    val hours = minutes / 60
-
-    return when {
-        hours > 0 -> "Started ${hours}h ${minutes % 60}min ago"
-        minutes > 0 -> "Started ${minutes}min ago"
-        else -> "Just started"
-    }
-}
 
 private fun getTimeAgo(timestamp: Long): String {
     if (timestamp == 0L) return ""

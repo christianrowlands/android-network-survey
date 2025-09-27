@@ -1,7 +1,7 @@
 // Top-level build file where you can add configuration options common to all sub-projects/modules.
 
 buildscript {
-    ext.hilt_version = '2.57.1'
+    ext.hilt_version = '2.57.2'
     ext.room_version = '2.7.1'
     ext.useCrashlytics = file("networksurvey/google-services.json").exists()
     repositories {
