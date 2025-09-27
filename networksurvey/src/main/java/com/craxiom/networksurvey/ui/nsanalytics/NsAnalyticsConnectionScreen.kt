@@ -204,7 +204,7 @@ private fun NsAnalyticsConnectionContent(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("NS Analytics Connection", color = Color.White) },
+                title = { Text("NS Analytics Details", color = Color.White) },
                 navigationIcon = {
                     IconButton(onClick = onNavigateUp) {
                         Icon(

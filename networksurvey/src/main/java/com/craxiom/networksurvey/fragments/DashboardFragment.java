@@ -683,6 +683,31 @@ public class DashboardFragment extends AServiceDataFragment implements LocationL
         alertBuilder.create().show();
     }
 
+    /**
+     * Displays a dialog with information about NS Analytics functionality.
+     */
+    private void showNsAnalyticsHelpDialog()
+    {
+        final Context context = getContext();
+        if (context == null) return;
+
+        AlertDialog.Builder alertBuilder = new AlertDialog.Builder(context);
+        alertBuilder.setCancelable(true);
+        alertBuilder.setTitle("NS Analytics");
+        alertBuilder.setMessage("""
+                NS Analytics provides cloud-based storage and analysis of network survey data.
+                
+                When connected to a workspace:
+                • NS Analytics Survey data is uploaded to the cloud
+                • Data includes cellular, Wi-Fi, Bluetooth, and GNSS records
+                • You can start and stop surveys specific to NS Analytics
+                
+                Click 'Open Details' to configure upload settings and manage your workspace connection.""");
+        alertBuilder.setPositiveButton(android.R.string.ok, (dialog, which) -> {
+        });
+        alertBuilder.create().show();
+    }
+
     @SuppressLint("ClickableViewAccessibility")
     private void initializeLoggingSwitch(SwitchCompat loggingSwitch, BiConsumer<Boolean, SwitchCompat> switchAction)
     {
@@ -1215,11 +1240,8 @@ public class DashboardFragment extends AServiceDataFragment implements LocationL
         final Context context = getContext();
         if (context == null || binding == null) return;
 
-        // Settings button - navigate to NS Analytics connection screen
-        binding.nsAnalyticsCard.nsAnalyticsSettingsButton.setOnClickListener(v -> {
-            SharedViewModel sharedViewModel = new ViewModelProvider(requireActivity()).get(SharedViewModel.class);
-            sharedViewModel.triggerNavigationToNsAnalyticsConnection();
-        });
+        // Help button - show NS Analytics help dialog
+        binding.nsAnalyticsCard.nsAnalyticsHelpIcon.setOnClickListener(v -> showNsAnalyticsHelpDialog());
 
         // Setup the ComposeView with our shared component
         ComposeView composeView = binding.nsAnalyticsCard.nsAnalyticsComposeView;
@@ -1227,6 +1249,15 @@ public class DashboardFragment extends AServiceDataFragment implements LocationL
 
         // Update compose view when we have content
         updateNsAnalyticsComposeView();
+    }
+
+    /**
+     * Navigate to the NS Analytics connection screen.
+     */
+    private void navigateToNsAnalyticsConnection()
+    {
+        SharedViewModel sharedViewModel = new ViewModelProvider(requireActivity()).get(SharedViewModel.class);
+        sharedViewModel.triggerNavigationToNsAnalyticsConnection();
     }
 
     /**
@@ -1432,7 +1463,8 @@ public class DashboardFragment extends AServiceDataFragment implements LocationL
                 nsAnalyticsWifiCount,
                 nsAnalyticsBluetoothCount,
                 nsAnalyticsGnssCount,
-                this::toggleNsAnalyticsSurvey
+                this::toggleNsAnalyticsSurvey,
+                this::navigateToNsAnalyticsConnection
         );
     }
 

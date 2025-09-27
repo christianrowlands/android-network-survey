@@ -856,7 +856,8 @@ but work independently, so you have full control over how you handle your data.<
     <!-- NS Analytics -->
     <string name="ns_analytics">NS Analytics</string>
     <string name="ns_analytics_description">Manage NS Analytics connection and data uploads</string>
-    <string name="ns_analytics_title">NS Analytics</string>
+    <string name="ns_analytics_title">NS Analytics Upload</string>
+    <string name="ns_analytics_help">NS Analytics help button</string>
     <string name="ns_analytics_settings">NS Analytics Settings</string>
     <string name="ns_analytics_disconnected">Disconnected</string>
     <string name="ns_analytics_connected">Connected</string>

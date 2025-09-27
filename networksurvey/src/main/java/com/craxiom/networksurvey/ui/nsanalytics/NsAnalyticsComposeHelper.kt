@@ -21,7 +21,8 @@ object NsAnalyticsComposeHelper {
         wifiCount: Int,
         bluetoothCount: Int,
         gnssCount: Int,
-        onToggleSurvey: Runnable
+        onToggleSurvey: Runnable,
+        onOpenDetails: Runnable? = null
     ) {
         composeView.setContent {
             NsAnalyticsStatusCard(
@@ -32,6 +33,7 @@ object NsAnalyticsComposeHelper {
                 bluetoothCount = bluetoothCount,
                 gnssCount = gnssCount,
                 onToggleSurvey = { onToggleSurvey.run() },
+                onOpenDetails = onOpenDetails?.let { { it.run() } },
                 showDetailedInfo = false // Dashboard view doesn't need detailed info
             )
         }

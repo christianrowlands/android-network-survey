@@ -22,15 +22,18 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import com.craxiom.networksurvey.R
 
 /**
  * A reusable NS Analytics status card that can be used in both the main NS Analytics screen
@@ -43,6 +46,7 @@ import androidx.compose.ui.unit.dp
  * @param bluetoothCount Number of Bluetooth records collected
  * @param gnssCount Number of GNSS records collected
  * @param onToggleSurvey Callback when the start/stop survey button is clicked
+ * @param onOpenDetails Callback when the open details button is clicked (optional, only shown in dashboard)
  * @param modifier Optional modifier for the card
  * @param showDetailedInfo Whether to show detailed information (for full screen view)
  */
@@ -56,6 +60,7 @@ fun NsAnalyticsStatusCard(
     bluetoothCount: Int = 0,
     gnssCount: Int = 0,
     onToggleSurvey: () -> Unit,
+    onOpenDetails: (() -> Unit)? = null,
     showDetailedInfo: Boolean = true
 ) {
     val totalCount = cellularCount + wifiCount + bluetoothCount + gnssCount
@@ -188,6 +193,25 @@ fun NsAnalyticsStatusCard(
                 Text(
                     text = if (isSurveyActive) "Stop Survey" else "Start Survey"
                 )
+            }
+
+            // Open Details button - only shown when callback is provided (dashboard view)
+            if (onOpenDetails != null) {
+                Spacer(modifier = Modifier.height(8.dp))
+
+                OutlinedButton(
+                    onClick = onOpenDetails,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Icon(
+                        painter = painterResource(R.drawable.ic_open_details),
+                        contentDescription = null,
+                        modifier = Modifier
+                            .size(18.dp)
+                            .padding(end = 8.dp)
+                    )
+                    Text("Open Details")
+                }
             }
         }
     }
