@@ -157,11 +157,11 @@ but work independently, so you have full control over how you handle your data.<
 
     <!-- Dashboard Constants -->
     <string name="card_title_upload">OpenCelliD &amp; BeaconDB Upload</string>
-    <string name="start_scanning">Start Scanning</string>
-    <string name="stop_scanning">Stop Scanning</string>
-    <string name="scanning_inactive">Scanning Inactive</string>
-    <string name="scanning_active">Scanning Active</string>
-    <string name="upload_scanning_description_text">Start scanning to collect cellular and/or Wi-Fi survey data for upload to 3rd party DBs. This operates independently of file logging and MQTT streaming, allowing you to start and stop data collection specifically for upload. Click the question mark icon for more details.</string>
+    <string name="start_scanning">Start Survey</string>
+    <string name="stop_scanning">Stop Survey</string>
+    <string name="scanning_inactive">Survey Inactive</string>
+    <string name="scanning_active">Survey Active</string>
+    <string name="upload_scanning_description_text">Start survey to collect cellular and/or Wi-Fi survey data for upload to 3rd party DBs. This operates independently of file logging and MQTT streaming, allowing you to start and stop data collection specifically for upload. Click the question mark icon for more details.</string>
     <string name="upload_queue_title">Records Ready for Upload</string>
     <string name="cellular_upload_queue_count_initial">Cellular:</string>
     <string name="cellular_upload_queue_count">Cellular:  %1$d</string>
@@ -764,7 +764,7 @@ but work independently, so you have full control over how you handle your data.<
     <string name="upload_saving_toggle_failed">An error occurred when trying to start saving records for upload</string>
     <string name="upload_saving_start_toast">Started scanning and saving records for upload</string>
     <string name="upload_saving_stop_toast">Stopped scanning and saving records for upload</string>
-    <string name="upload_saving_no_targets">No upload targets selected. Enable OpenCellID or BeaconDB in upload settings to start scanning.</string>
+    <string name="upload_saving_no_targets">No upload targets selected. Enable OpenCellID or BeaconDB in upload settings to start the survey.</string>
     <string name="upload_saving_started_cellular">Started scanning cellular towers for upload</string>
     <string name="upload_saving_started_cellular_wifi">Started scanning cellular towers and Wi-Fi access points for upload</string>
 

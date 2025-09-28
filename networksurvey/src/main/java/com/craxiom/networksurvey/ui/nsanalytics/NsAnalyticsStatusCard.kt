@@ -175,42 +175,66 @@ fun NsAnalyticsStatusCard(
                 )
             }
 
-            // Survey Control Button
+            // Survey Control Buttons
             Spacer(modifier = Modifier.height(16.dp))
 
-            Button(
-                onClick = onToggleSurvey,
-                modifier = Modifier.fillMaxWidth(),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = if (isSurveyActive) Color(0xFFE53935) else Color(0xFF4CAF50)
-                )
-            ) {
-                Icon(
-                    imageVector = if (isSurveyActive) Icons.Default.Clear else Icons.Default.CheckCircle,
-                    contentDescription = null,
-                    modifier = Modifier.padding(end = 8.dp)
-                )
-                Text(
-                    text = if (isSurveyActive) "Stop Survey" else "Start Survey"
-                )
-            }
-
-            // Open Details button - only shown when callback is provided (dashboard view)
             if (onOpenDetails != null) {
-                Spacer(modifier = Modifier.height(8.dp))
+                // Dashboard view - show buttons side by side
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Button(
+                        onClick = onToggleSurvey,
+                        modifier = Modifier.weight(1f),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = if (isSurveyActive) Color(0xFFE53935) else Color(
+                                0xFF4CAF50
+                            )
+                        )
+                    ) {
+                        Icon(
+                            imageVector = if (isSurveyActive) Icons.Default.Clear else Icons.Default.CheckCircle,
+                            contentDescription = null,
+                            modifier = Modifier.padding(end = 4.dp),
+                            tint = Color.White
+                        )
+                        Text(
+                            text = if (isSurveyActive) "Stop" else "Start"
+                        )
+                    }
 
-                OutlinedButton(
-                    onClick = onOpenDetails,
-                    modifier = Modifier.fillMaxWidth()
+                    OutlinedButton(
+                        onClick = onOpenDetails,
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Icon(
+                            painter = painterResource(R.drawable.ic_open_details),
+                            contentDescription = null,
+                            modifier = Modifier
+                                .size(18.dp)
+                                .padding(end = 4.dp)
+                        )
+                        Text("Details")
+                    }
+                }
+            } else {
+                // NS Analytics Connection Screen - show full width button
+                Button(
+                    onClick = onToggleSurvey,
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = if (isSurveyActive) Color(0xFFE53935) else Color(0xFF4CAF50)
+                    )
                 ) {
                     Icon(
-                        painter = painterResource(R.drawable.ic_open_details),
+                        imageVector = if (isSurveyActive) Icons.Default.Clear else Icons.Default.CheckCircle,
                         contentDescription = null,
-                        modifier = Modifier
-                            .size(18.dp)
-                            .padding(end = 8.dp)
+                        modifier = Modifier.padding(end = 8.dp)
                     )
-                    Text("Open Details")
+                    Text(
+                        text = if (isSurveyActive) "Stop Survey" else "Start Survey"
+                    )
                 }
             }
         }

@@ -4,8 +4,10 @@ import androidx.annotation.DrawableRes
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.DrawerState
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -42,9 +44,9 @@ import com.craxiom.networksurvey.fragments.MainCellularFragment
 import com.craxiom.networksurvey.fragments.MainGnssFragment
 import com.craxiom.networksurvey.fragments.WifiNetworksFragment
 import com.craxiom.networksurvey.gpstest.model.GnssType
+import com.craxiom.networksurvey.gpstest.util.LibUIUtils
 import com.craxiom.networksurvey.ui.main.appbar.AppBar
 import com.craxiom.networksurvey.ui.main.appbar.AppBarAction
-import com.craxiom.networksurvey.gpstest.util.LibUIUtils
 import com.craxiom.networksurvey.util.PreferenceUtils
 
 @Composable
@@ -154,6 +156,13 @@ fun BottomNavigationBar(
                         contentDescription = navigationItem.label
                     )
                 },
+                colors = NavigationBarItemDefaults.colors(
+                    selectedIconColor = MaterialTheme.colorScheme.primary,
+                    selectedTextColor = MaterialTheme.colorScheme.primary,
+                    indicatorColor = MaterialTheme.colorScheme.primaryContainer,
+                    unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                    unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant
+                ),
                 onClick = {
                     onBottomNavigationItemSelected(index)
                     navController.navigate(navigationItem.route) {
@@ -253,7 +262,8 @@ fun getAppBarActions(
                     )
                 )
 
-                GnssScreen.GNSS_SKY_VIEW -> listOf(AppBarAction(
+                GnssScreen.GNSS_SKY_VIEW -> listOf(
+                    AppBarAction(
                     icon = R.drawable.ic_filter,
                     description = R.string.menu_option_filter_content_description,
                     onClick = { showGnssFilterDialog(true) }
@@ -345,28 +355,28 @@ data class BottomNavItem(
 @Composable
 fun DashboardFragmentInCompose() {
     AndroidViewBinding(ContainerDashboardFragmentBinding::inflate) {
-        val fragment = dashboardFragmentContainerView.getFragment<DashboardFragment>()
+        dashboardFragmentContainerView.getFragment<DashboardFragment>()
     }
 }
 
 @Composable
 fun CellularFragmentInCompose() {
     AndroidViewBinding(ContainerCellularFragmentBinding::inflate) {
-        val fragment = cellularFragmentContainerView.getFragment<MainCellularFragment>()
+        cellularFragmentContainerView.getFragment<MainCellularFragment>()
     }
 }
 
 @Composable
 fun WifiFragmentInCompose() {
     AndroidViewBinding(ContainerWifiFragmentBinding::inflate) {
-        val fragment = wifiFragmentContainerView.getFragment<WifiNetworksFragment>()
+        wifiFragmentContainerView.getFragment<WifiNetworksFragment>()
     }
 }
 
 @Composable
 fun BluetoothFragmentInCompose() {
     AndroidViewBinding(ContainerBluetoothFragmentBinding::inflate) {
-        val fragment = bluetoothFragmentContainerView.getFragment<BluetoothFragment>()
+        bluetoothFragmentContainerView.getFragment<BluetoothFragment>()
     }
 }
 
