@@ -129,6 +129,12 @@ public class DashboardFragment extends AServiceDataFragment implements LocationL
         {
             queryUploadQueueCount();
 
+            final Context context = getContext();
+            if (context != null && PreferenceUtils.isNsAnalyticsRegistered(context))
+            {
+                updateNsAnalyticsRecordCounts(context);
+            }
+
             // Re-run every 6 seconds as long as the UI is visible
             handler.postDelayed(this, 6_000);
         }
@@ -1361,7 +1367,7 @@ public class DashboardFragment extends AServiceDataFragment implements LocationL
         final Context context = getContext();
         if (context == null) return;
 
-        if (!isNsAnalyticsCardVisible(context))
+        if (!PreferenceUtils.isNsAnalyticsRegistered(context))
         {
             binding.nsAnalyticsCard.nsAnalyticsCardView.setVisibility(View.GONE);
             return;
@@ -1377,17 +1383,6 @@ public class DashboardFragment extends AServiceDataFragment implements LocationL
         {
             showNsAnalyticsRegistered(context);
         }
-    }
-
-    /**
-     * Checks if the NS Analytics card should be visible based on if the device is registered to a workspace.
-     *
-     * @param context The context
-     * @return true if the card should be visible, false otherwise
-     */
-    private boolean isNsAnalyticsCardVisible(Context context)
-    {
-        return PreferenceUtils.isNsAnalyticsRegistered(context);
     }
 
     /**
