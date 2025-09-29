@@ -7,7 +7,6 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.Observer
 import androidx.lifecycle.viewModelScope
 import androidx.preference.PreferenceManager
-import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkInfo
 import androidx.work.WorkManager
 import com.craxiom.networksurvey.BuildConfig
@@ -231,6 +230,15 @@ class NsAnalyticsConnectionViewModel(
                     if (isRegistered && deviceToken != null && apiUrl != null) {
                         fetchAndUpdateDeviceStatus(deviceToken, apiUrl)
                     }
+
+                    // Schedule periodic uploads if auto-upload is enabled and there's pending data
+                    if (autoUploadEnabled && queueSize > 0) {
+                        NsAnalyticsUploadWorker.schedulePeriodicUpload(context, uploadFrequency)
+                        Timber.d(
+                            "Scheduled initial periodic uploads on app start (queue size: %d)",
+                            queueSize
+                        )
+                    }
                 }
             } catch (e: Exception) {
                 Timber.e(e, "Failed to load NS Analytics connection state")
@@ -278,12 +286,20 @@ class NsAnalyticsConnectionViewModel(
                 _uiState.value = _uiState.value.copy(autoUploadEnabled = enabled)
 
                 if (enabled) {
-                    // Schedule next upload
-                    scheduleUpload()
-                    showMessage("Auto upload enabled")
+                    // Schedule periodic uploads if survey is active or there's data
+                    val service = surveyService
+                    if (service?.isNsAnalyticsScanningActive == true ||
+                        database.nsAnalyticsDao().getPendingRecordCount() > 0
+                    ) {
+                        val uploadFrequency = NsAnalyticsSecureStorage.getUploadFrequency(context)
+                        NsAnalyticsUploadWorker.schedulePeriodicUpload(context, uploadFrequency)
+                        showMessage("Auto upload enabled (every $uploadFrequency minutes)")
+                    } else {
+                        showMessage("Auto upload enabled")
+                    }
                 } else {
-                    // Cancel scheduled uploads
-                    workManager.cancelAllWorkByTag("ns_analytics_upload")
+                    NsAnalyticsUploadWorker.cancelPeriodicUpload(context)
+                    workManager.cancelAllWorkByTag(NsAnalyticsConstants.NS_ANALYTICS_UPLOAD_WORKER_TAG)
                     showMessage("Auto upload disabled")
                 }
             } catch (e: Exception) {
@@ -306,77 +322,86 @@ class NsAnalyticsConnectionViewModel(
             )
 
             try {
-                // Trigger immediate upload via WorkManager
-                val uploadWork = OneTimeWorkRequestBuilder<NsAnalyticsUploadWorker>()
-                    .addTag("ns_analytics_upload")
-                    .build()
+                // Trigger immediate upload using helper function
+                NsAnalyticsUploadWorker.triggerImmediateUpload(context)
 
-                workManager.enqueue(uploadWork)
-                uploadWorkId = uploadWork.id
+                // Get the work ID for monitoring progress
+                val workInfos =
+                    workManager.getWorkInfosByTag(NsAnalyticsConstants.NS_ANALYTICS_UPLOAD_WORKER_TAG)
+                        .get()
+                val uploadWork =
+                    workInfos.firstOrNull { it.state == WorkInfo.State.ENQUEUED || it.state == WorkInfo.State.RUNNING }
+                uploadWorkId = uploadWork?.id
 
-                // Clean up any previous observer
-                uploadProgressObserver?.let { observer ->
-                    uploadWorkId?.let { id ->
-                        workManager.getWorkInfoByIdLiveData(id).removeObserver(observer)
+                if (uploadWorkId != null) {
+                    // Clean up any previous observer
+                    uploadProgressObserver?.let { observer ->
+                        workManager.getWorkInfoByIdLiveData(uploadWorkId!!).removeObserver(observer)
                     }
-                }
 
-                // Create new observer
-                val observer = Observer<WorkInfo?> { workInfo ->
-                    if (workInfo != null) {
-                        when (workInfo.state) {
-                            WorkInfo.State.RUNNING -> {
-                                // Simulate progress based on queue changes
-                                val currentQueue = _uiState.value.queuedRecords
-                                val uploaded = initialQueueSize - currentQueue
-                                val progress = if (initialQueueSize > 0) {
-                                    uploaded.toFloat() / initialQueueSize
-                                } else {
-                                    0f
+                    // Create new observer
+                    val observer = Observer<WorkInfo?> { workInfo ->
+                        if (workInfo != null) {
+                            when (workInfo.state) {
+                                WorkInfo.State.RUNNING -> {
+                                    // Simulate progress based on queue changes
+                                    val currentQueue = _uiState.value.queuedRecords
+                                    val uploaded = initialQueueSize - currentQueue
+                                    val progress = if (initialQueueSize > 0) {
+                                        uploaded.toFloat() / initialQueueSize
+                                    } else {
+                                        0f
+                                    }
+                                    _uiState.value = _uiState.value.copy(
+                                        uploadProgress = progress,
+                                        uploadedRecords = uploaded
+                                    )
                                 }
-                                _uiState.value = _uiState.value.copy(
-                                    uploadProgress = progress,
-                                    uploadedRecords = uploaded
-                                )
-                            }
 
-                            WorkInfo.State.SUCCEEDED -> {
-                                _uiState.value = _uiState.value.copy(
-                                    isUploading = false,
-                                    uploadProgress = 1f,
-                                    lastUploadTime = System.currentTimeMillis()
-                                )
-                                showMessage("Upload completed successfully")
-                                loadConnectionState()
-                                // Clean up observer after completion
-                                uploadProgressObserver?.let {
-                                    workManager.getWorkInfoByIdLiveData(uploadWork.id)
-                                        .removeObserver(it)
-                                    uploadProgressObserver = null
+                                WorkInfo.State.SUCCEEDED -> {
+                                    _uiState.value = _uiState.value.copy(
+                                        isUploading = false,
+                                        uploadProgress = 1f,
+                                        lastUploadTime = System.currentTimeMillis()
+                                    )
+                                    showMessage("Upload completed successfully")
+                                    loadConnectionState()
+                                    // Clean up observer after completion
+                                    uploadProgressObserver?.let {
+                                        uploadWorkId?.let { id ->
+                                            workManager.getWorkInfoByIdLiveData(id)
+                                                .removeObserver(it)
+                                        }
+                                        uploadProgressObserver = null
+                                    }
                                 }
-                            }
 
-                            WorkInfo.State.FAILED -> {
-                                _uiState.value = _uiState.value.copy(
-                                    isUploading = false,
-                                    uploadProgress = 0f
-                                )
-                                showMessage("Upload failed")
-                                // Clean up observer after failure
-                                uploadProgressObserver?.let {
-                                    workManager.getWorkInfoByIdLiveData(uploadWork.id)
-                                        .removeObserver(it)
-                                    uploadProgressObserver = null
+                                WorkInfo.State.FAILED -> {
+                                    _uiState.value = _uiState.value.copy(
+                                        isUploading = false,
+                                        uploadProgress = 0f
+                                    )
+                                    showMessage("Upload failed")
+                                    // Clean up observer after failure
+                                    uploadProgressObserver?.let {
+                                        uploadWorkId?.let { id ->
+                                            workManager.getWorkInfoByIdLiveData(id)
+                                                .removeObserver(it)
+                                        }
+                                        uploadProgressObserver = null
+                                    }
                                 }
-                            }
 
-                            else -> {}
+                                else -> {}
+                            }
                         }
                     }
-                }
 
-                uploadProgressObserver = observer
-                workManager.getWorkInfoByIdLiveData(uploadWork.id).observeForever(observer)
+                    uploadProgressObserver = observer
+                    workManager.getWorkInfoByIdLiveData(uploadWorkId!!).observeForever(observer)
+                } else {
+                    Timber.w("Could not find upload work to monitor")
+                }
             } catch (e: Exception) {
                 Timber.e(e, "Failed to trigger upload")
                 showMessage("Failed to start upload")
@@ -417,7 +442,8 @@ class NsAnalyticsConnectionViewModel(
                 }
 
                 // Cancel any scheduled uploads
-                workManager.cancelAllWorkByTag("ns_analytics_upload")
+                NsAnalyticsUploadWorker.cancelPeriodicUpload(context)
+                workManager.cancelAllWorkByTag(NsAnalyticsConstants.NS_ANALYTICS_UPLOAD_WORKER_TAG)
 
                 _uiState.value = NsAnalyticsConnectionUiState(
                     isLoading = false,
@@ -431,14 +457,31 @@ class NsAnalyticsConnectionViewModel(
         }
     }
 
-    private fun scheduleUpload() {
-        // This would typically schedule the next upload based on frequency
-        // For now, just enqueue a one-time request
-        val uploadWork = OneTimeWorkRequestBuilder<NsAnalyticsUploadWorker>()
-            .addTag("ns_analytics_upload")
-            .build()
+    /**
+     * Schedule periodic uploads based on current settings.
+     * This is called when survey starts or when there's data to upload.
+     */
+    private fun schedulePeriodicUploadsIfNeeded() {
+        viewModelScope.launch {
+            try {
+                // Only schedule if auto-upload is enabled
+                if (!PreferenceUtils.isNsAnalyticsAutoUpload(context)) return@launch
 
-        workManager.enqueue(uploadWork)
+                // Check if there's work to do (survey active or pending records)
+                val service = surveyService
+                val hasPendingRecords = withContext(Dispatchers.IO) {
+                    database.nsAnalyticsDao().getPendingRecordCount() > 0
+                }
+
+                if (service?.isNsAnalyticsScanningActive == true || hasPendingRecords) {
+                    val uploadFrequency = NsAnalyticsSecureStorage.getUploadFrequency(context)
+                    NsAnalyticsUploadWorker.schedulePeriodicUpload(context, uploadFrequency)
+                    Timber.d("Scheduled periodic uploads every %d minutes", uploadFrequency)
+                }
+            } catch (e: Exception) {
+                Timber.e(e, "Failed to schedule periodic uploads")
+            }
+        }
     }
 
     /**
@@ -645,8 +688,25 @@ class NsAnalyticsConnectionViewModel(
 
                 if (result.success) {
                     val message = if (!isCurrentlyScanning) {
+                        // Survey started - schedule periodic uploads if auto-upload is enabled
+                        schedulePeriodicUploadsIfNeeded()
                         "Survey started"
                     } else {
+                        // Survey stopped - cancel periodic uploads and trigger immediate upload if needed
+                        NsAnalyticsUploadWorker.cancelPeriodicUpload(context)
+                        Timber.d("Canceled periodic uploads after survey stop")
+
+                        // Check if we need to trigger immediate upload
+                        viewModelScope.launch(Dispatchers.IO) {
+                            val pendingCount = database.nsAnalyticsDao().getPendingRecordCount()
+                            if (pendingCount > 0) {
+                                // Trigger immediate upload to send remaining records
+                                NsAnalyticsUploadWorker.triggerImmediateUpload(context)
+                                Timber.i("Survey stopped with $pendingCount pending records - triggered immediate upload")
+                            } else {
+                                Timber.i("Survey stopped with no pending records")
+                            }
+                        }
                         "Survey stopped"
                     }
                     showMessage(message)

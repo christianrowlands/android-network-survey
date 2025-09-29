@@ -270,6 +270,8 @@ class NsAnalyticsUploadWorker(context: Context, params: WorkerParameters) :
     }
 
     companion object {
+        private const val NS_ANALYTICS_PERIODIC_WORK_NAME = "ns_analytics_periodic_upload"
+
         /**
          * Schedule periodic uploads
          */
@@ -292,7 +294,7 @@ class NsAnalyticsUploadWorker(context: Context, params: WorkerParameters) :
                 .build()
 
             WorkManager.getInstance(context).enqueueUniquePeriodicWork(
-                "ns_analytics_periodic_upload",
+                NS_ANALYTICS_PERIODIC_WORK_NAME,
                 ExistingPeriodicWorkPolicy.REPLACE,
                 uploadRequest
             )
@@ -306,7 +308,7 @@ class NsAnalyticsUploadWorker(context: Context, params: WorkerParameters) :
         @Suppress("unused")
         fun cancelPeriodicUpload(context: Context) {
             WorkManager.getInstance(context)
-                .cancelUniqueWork("ns_analytics_periodic_upload")
+                .cancelUniqueWork(NS_ANALYTICS_PERIODIC_WORK_NAME)
             Timber.i("Cancelled NS Analytics periodic uploads")
         }
 

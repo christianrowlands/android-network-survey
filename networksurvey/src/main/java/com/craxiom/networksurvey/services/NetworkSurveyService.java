@@ -70,6 +70,8 @@ import com.craxiom.networksurvey.listeners.IWifiSurveyRecordListener;
 import com.craxiom.networksurvey.logging.DeviceStatusCsvLogger;
 import com.craxiom.networksurvey.logging.db.DbUploadStore;
 import com.craxiom.networksurvey.logging.db.NsAnalyticsDataStore;
+import com.craxiom.networksurvey.logging.db.SurveyDatabase;
+import com.craxiom.networksurvey.logging.db.uploader.NsAnalyticsUploadWorker;
 import com.craxiom.networksurvey.model.BatteryPauseState;
 import com.craxiom.networksurvey.model.LogTypeState;
 import com.craxiom.networksurvey.model.SurveyTypes;
@@ -1353,6 +1355,35 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
                 // Clean up the data store
                 nsAnalyticsDataStore.shutdown();
                 nsAnalyticsDataStore = null;
+
+                // Cancel periodic uploads first
+                NsAnalyticsUploadWorker.Companion.cancelPeriodicUpload(this);
+                Timber.i("Canceled NS Analytics periodic uploads after survey stop");
+
+                // Trigger immediate upload if there are pending records and auto-upload is enabled
+                if (PreferenceUtils.isNsAnalyticsAutoUpload(this))
+                {
+                    // Run in background to avoid blocking
+                    executorService.execute(() -> {
+                        try
+                        {
+                            SurveyDatabase db = SurveyDatabase.getInstance(this);
+                            int pendingCount = db.nsAnalyticsDao().getPendingRecordCount();
+                            if (pendingCount > 0)
+                            {
+                                // Trigger immediate upload to send remaining records
+                                NsAnalyticsUploadWorker.Companion.triggerImmediateUpload(this);
+                                Timber.i("NS Analytics survey stopped with %d pending records - triggered immediate upload", pendingCount);
+                            } else
+                            {
+                                Timber.i("NS Analytics survey stopped with no pending records");
+                            }
+                        } catch (Exception e)
+                        {
+                            Timber.e(e, "Failed to check pending records after stopping NS Analytics survey");
+                        }
+                    });
+                }
 
                 onSurveyStopped();
                 updateWakeLock();
