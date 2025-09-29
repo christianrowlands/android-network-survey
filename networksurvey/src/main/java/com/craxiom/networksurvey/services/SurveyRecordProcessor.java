@@ -733,11 +733,7 @@ public class SurveyRecordProcessor
                 dataBuilder.setAltitude((float) lastKnownLocation.getAltitude());
                 dataBuilder.setAccuracy(MathUtils.roundAccuracy(lastKnownLocation.getAccuracy()));
 
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU)
-                {
-                    long elapsedRealtimeAgeMillis = lastKnownLocation.getElapsedRealtimeAgeMillis(elapsedTimeMillis);
-                    dataBuilder.setLocationAge((int) elapsedRealtimeAgeMillis);
-                }
+                dataBuilder.setLocationAge(getLocationAgeMs(lastKnownLocation, elapsedTimeMillis));
 
                 if (lastKnownLocation.hasSpeed())
                 {
@@ -1036,6 +1032,28 @@ public class SurveyRecordProcessor
     }
 
     /**
+     * Gets the location age in milliseconds, clamped to 0 minimum.
+     * <p>
+     * Negative values can occur when the location fix is fresher than the measurement timestamp.
+     * These negative values cause backend upload failures when parsed as unsigned integers,
+     * as they wrap around to large positive values (e.g., -5 becomes 4294967291).
+     *
+     * @param lastKnownLocation The location to get age from
+     * @param elapsedTimeMillis The elapsed time to compare against
+     * @return Location age in milliseconds, guaranteed to be >= 0
+     * @since 1.12.0
+     */
+    private int getLocationAgeMs(Location lastKnownLocation, long elapsedTimeMillis)
+    {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU)
+        {
+            long elapsedRealtimeAgeMillis = lastKnownLocation.getElapsedRealtimeAgeMillis(elapsedTimeMillis);
+            return Math.max(0, (int) elapsedRealtimeAgeMillis);
+        }
+        return 0;
+    }
+
+    /**
      * Wraps the execute command for the executor service in a try catch to prevent the app from crashing if something
      * goes wrong with submitting the runnable. The most common crash I am seeing seems to be from the executor service
      * shutting down but some scan results are coming in. Hopefully that is the only case because otherwise we are
@@ -1099,11 +1117,7 @@ public class SurveyRecordProcessor
                 dataBuilder.setAltitude((float) lastKnownLocation.getAltitude());
                 dataBuilder.setAccuracy(MathUtils.roundAccuracy(lastKnownLocation.getAccuracy()));
 
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU)
-                {
-                    long elapsedRealtimeAgeMillis = lastKnownLocation.getElapsedRealtimeAgeMillis(elapsedTimeMillis);
-                    dataBuilder.setLocationAge((int) elapsedRealtimeAgeMillis);
-                }
+                dataBuilder.setLocationAge(getLocationAgeMs(lastKnownLocation, elapsedTimeMillis));
 
                 if (lastKnownLocation.hasSpeed())
                 {
@@ -1209,11 +1223,7 @@ public class SurveyRecordProcessor
                 dataBuilder.setAltitude((float) lastKnownLocation.getAltitude());
                 dataBuilder.setAccuracy(MathUtils.roundAccuracy(lastKnownLocation.getAccuracy()));
 
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU)
-                {
-                    long elapsedRealtimeAgeMillis = lastKnownLocation.getElapsedRealtimeAgeMillis(elapsedTimeMillis);
-                    dataBuilder.setLocationAge((int) elapsedRealtimeAgeMillis);
-                }
+                dataBuilder.setLocationAge(getLocationAgeMs(lastKnownLocation, elapsedTimeMillis));
 
                 if (lastKnownLocation.hasSpeed())
                 {
@@ -1307,11 +1317,7 @@ public class SurveyRecordProcessor
                 dataBuilder.setAltitude((float) lastKnownLocation.getAltitude());
                 dataBuilder.setAccuracy(MathUtils.roundAccuracy(lastKnownLocation.getAccuracy()));
 
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU)
-                {
-                    long elapsedRealtimeAgeMillis = lastKnownLocation.getElapsedRealtimeAgeMillis(elapsedTimeMillis);
-                    dataBuilder.setLocationAge((int) elapsedRealtimeAgeMillis);
-                }
+                dataBuilder.setLocationAge(getLocationAgeMs(lastKnownLocation, elapsedTimeMillis));
 
                 if (lastKnownLocation.hasSpeed())
                 {
@@ -1434,11 +1440,7 @@ public class SurveyRecordProcessor
                 dataBuilder.setAltitude((float) lastKnownLocation.getAltitude());
                 dataBuilder.setAccuracy(MathUtils.roundAccuracy(lastKnownLocation.getAccuracy()));
 
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU)
-                {
-                    long elapsedRealtimeAgeMillis = lastKnownLocation.getElapsedRealtimeAgeMillis(elapsedTimeMillis);
-                    dataBuilder.setLocationAge((int) elapsedRealtimeAgeMillis);
-                }
+                dataBuilder.setLocationAge(getLocationAgeMs(lastKnownLocation, elapsedTimeMillis));
 
                 if (lastKnownLocation.hasSpeed())
                 {
@@ -1624,11 +1626,7 @@ public class SurveyRecordProcessor
                 dataBuilder.setAltitude((float) lastKnownLocation.getAltitude());
                 dataBuilder.setAccuracy(MathUtils.roundAccuracy(lastKnownLocation.getAccuracy()));
 
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU)
-                {
-                    long elapsedRealtimeAgeMillis = lastKnownLocation.getElapsedRealtimeAgeMillis(elapsedTimeMillis);
-                    dataBuilder.setLocationAge((int) elapsedRealtimeAgeMillis);
-                }
+                dataBuilder.setLocationAge(getLocationAgeMs(lastKnownLocation, elapsedTimeMillis));
 
                 if (lastKnownLocation.hasSpeed())
                 {
@@ -1745,11 +1743,7 @@ public class SurveyRecordProcessor
                 dataBuilder.setAltitude((float) lastKnownLocation.getAltitude());
                 dataBuilder.setAccuracy(MathUtils.roundAccuracy(lastKnownLocation.getAccuracy()));
 
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU)
-                {
-                    long elapsedRealtimeAgeMillis = lastKnownLocation.getElapsedRealtimeAgeMillis(elapsedTimeMillis);
-                    dataBuilder.setLocationAge((int) elapsedRealtimeAgeMillis);
-                }
+                dataBuilder.setLocationAge(getLocationAgeMs(lastKnownLocation, elapsedTimeMillis));
 
                 if (lastKnownLocation.hasSpeed())
                 {
@@ -1858,11 +1852,7 @@ public class SurveyRecordProcessor
                 dataBuilder.setAltitude((float) lastKnownLocation.getAltitude());
                 dataBuilder.setAccuracy(MathUtils.roundAccuracy(lastKnownLocation.getAccuracy()));
 
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU)
-                {
-                    long elapsedRealtimeAgeMillis = lastKnownLocation.getElapsedRealtimeAgeMillis(elapsedTimeMillis);
-                    dataBuilder.setLocationAge((int) elapsedRealtimeAgeMillis);
-                }
+                dataBuilder.setLocationAge(getLocationAgeMs(lastKnownLocation, elapsedTimeMillis));
 
                 if (lastKnownLocation.hasSpeed())
                 {
@@ -2075,11 +2065,7 @@ public class SurveyRecordProcessor
                             .setValue(lastKnownLocation.getVerticalAccuracyMeters()));
                 }
 
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU)
-                {
-                    long elapsedRealtimeAgeMillis = lastKnownLocation.getElapsedRealtimeAgeMillis(elapsedTimeMillis);
-                    dataBuilder.setLocationAge((int) elapsedRealtimeAgeMillis);
-                }
+                dataBuilder.setLocationAge(getLocationAgeMs(lastKnownLocation, elapsedTimeMillis));
 
                 if (lastKnownLocation.hasSpeed())
                 {
@@ -2166,11 +2152,7 @@ public class SurveyRecordProcessor
                             .setValue(lastKnownLocation.getVerticalAccuracyMeters()));
                 }
 
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU)
-                {
-                    long elapsedRealtimeAgeMillis = lastKnownLocation.getElapsedRealtimeAgeMillis(elapseTimeMillis);
-                    dataBuilder.setLocationAge((int) elapsedRealtimeAgeMillis);
-                }
+                dataBuilder.setLocationAge(getLocationAgeMs(lastKnownLocation, elapseTimeMillis));
 
                 if (lastKnownLocation.hasSpeed())
                 {
