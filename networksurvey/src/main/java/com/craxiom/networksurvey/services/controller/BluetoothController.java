@@ -615,7 +615,8 @@ public class BluetoothController extends AController
     // Permissions are checked in the first part of this method call
     private boolean isBluetoothEnabledAndPermissionsGranted(boolean promptEnable)
     {
-        if (surveyService == null) return false;
+        NetworkSurveyService surveyServiceLocal = surveyService;
+        if (surveyServiceLocal == null) return false;
 
         if (!hasBtConnectPermission() || !hasBtScanPermission())
         {
@@ -636,13 +637,13 @@ public class BluetoothController extends AController
             {
                 Timber.i("Bluetooth is disabled, prompting the user to enable it");
 
-                uiThreadHandler.post(() -> Toast.makeText(surveyService.getApplicationContext(), surveyService.getString(R.string.turn_on_bluetooth), Toast.LENGTH_SHORT).show());
+                uiThreadHandler.post(() -> Toast.makeText(surveyServiceLocal.getApplicationContext(), surveyServiceLocal.getString(R.string.turn_on_bluetooth), Toast.LENGTH_SHORT).show());
                 serviceHandler.post(() -> {
                     try
                     {
                         final Intent enableBtIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
                         enableBtIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-                        surveyService.startActivity(enableBtIntent);
+                        surveyServiceLocal.startActivity(enableBtIntent);
                     } catch (Exception e)
                     {
                         // An IllegalStateException can occur when the fragment is no longer attached to the activity
