@@ -564,7 +564,9 @@ public class CellularController extends AController
                 }
             }
 
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q)
+            // Skip callback creation on Android 10 due to framework bug with ParcelableException
+            // See: https://issuetracker.google.com/issues/141438333
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R)
             {
                 for (TelephonyManagerWrapper wrapper : telephonyManagerList)
                 {
@@ -708,7 +710,11 @@ public class CellularController extends AController
             {
                 synchronized (activeSubscriptionInfoListLock)
                 {
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q)
+                    // Android 10 (API 29) has a framework bug in TelephonyManager.CellInfoCallback where
+                    // ParcelableException can be null, causing NPE in the framework code when onError is called.
+                    // We skip the callback approach on Android 10 and use the same fallback as pre-API 29.
+                    // See: https://issuetracker.google.com/issues/141438333
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R)
                     {
                         for (TelephonyManagerWrapper wrapper : telephonyManagerList)
                         {
@@ -827,7 +833,11 @@ public class CellularController extends AController
                         // changes such as telephonyManagerList
                         synchronized (activeSubscriptionInfoListLock)
                         {
-                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q)
+                            // Android 10 (API 29) has a framework bug in TelephonyManager.CellInfoCallback where
+                            // ParcelableException can be null, causing NPE in the framework code when onError is called.
+                            // We skip the callback approach on Android 10 and use the same fallback as pre-API 29.
+                            // See: https://issuetracker.google.com/issues/141438333
+                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R)
                             {
                                 for (TelephonyManagerWrapper wrapper : telephonyManagerList)
                                 {
