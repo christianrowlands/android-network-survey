@@ -299,7 +299,7 @@ class NsAnalyticsConnectionViewModel(
                     }
                 } else {
                     NsAnalyticsUploadWorker.cancelPeriodicUpload(context)
-                    workManager.cancelAllWorkByTag(NsAnalyticsConstants.NS_ANALYTICS_UPLOAD_WORKER_TAG)
+                    workManager.cancelAllWorkByTag(NsAnalyticsConstants.NS_ANALYTICS_PERIODIC_WORKER_TAG)
                     showMessage("Auto upload disabled")
                 }
             } catch (e: Exception) {
@@ -443,7 +443,7 @@ class NsAnalyticsConnectionViewModel(
 
                 // Cancel any scheduled uploads
                 NsAnalyticsUploadWorker.cancelPeriodicUpload(context)
-                workManager.cancelAllWorkByTag(NsAnalyticsConstants.NS_ANALYTICS_UPLOAD_WORKER_TAG)
+                workManager.cancelAllWorkByTag(NsAnalyticsConstants.NS_ANALYTICS_PERIODIC_WORKER_TAG)
 
                 _uiState.value = NsAnalyticsConnectionUiState(
                     isLoading = false,
@@ -464,8 +464,16 @@ class NsAnalyticsConnectionViewModel(
     private fun schedulePeriodicUploadsIfNeeded() {
         viewModelScope.launch {
             try {
+                // Re-verify auto-upload preference to prevent race conditions
+                val autoUploadEnabled = withContext(Dispatchers.IO) {
+                    PreferenceUtils.isNsAnalyticsAutoUpload(context)
+                }
+
                 // Only schedule if auto-upload is enabled
-                if (!PreferenceUtils.isNsAnalyticsAutoUpload(context)) return@launch
+                if (!autoUploadEnabled) {
+                    Timber.d("Skipping upload scheduling - auto-upload is disabled")
+                    return@launch
+                }
 
                 // Check if there's work to do (survey active or pending records)
                 val service = surveyService
@@ -697,14 +705,16 @@ class NsAnalyticsConnectionViewModel(
                         Timber.d("Canceled periodic uploads after survey stop")
 
                         // Check if we need to trigger immediate upload
-                        viewModelScope.launch(Dispatchers.IO) {
-                            val pendingCount = database.nsAnalyticsDao().getPendingRecordCount()
-                            if (pendingCount > 0) {
-                                // Trigger immediate upload to send remaining records
-                                NsAnalyticsUploadWorker.triggerImmediateUpload(context)
-                                Timber.i("Survey stopped with $pendingCount pending records - triggered immediate upload")
-                            } else {
-                                Timber.i("Survey stopped with no pending records")
+                        if (PreferenceUtils.isNsAnalyticsAutoUpload(context)) {
+                            viewModelScope.launch(Dispatchers.IO) {
+                                val pendingCount = database.nsAnalyticsDao().getPendingRecordCount()
+                                if (pendingCount > 0) {
+                                    // Trigger immediate upload to send remaining records
+                                    NsAnalyticsUploadWorker.triggerImmediateUpload(context)
+                                    Timber.i("Survey stopped with $pendingCount pending records - triggered immediate upload")
+                                } else {
+                                    Timber.i("Survey stopped with no pending records")
+                                }
                             }
                         }
                         "Survey stopped"
