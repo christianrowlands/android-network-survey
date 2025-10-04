@@ -316,7 +316,7 @@ public class PreferenceUtils
         final SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(context);
 
         // Next, try to use the value from user preferences, with a default fallback
-        return convertIndexToLogTypeState(preferences.getString(NetworkSurveyConstants.PROPERTY_LOG_FILE_TYPE, "2"));
+        return convertIndexToLogTypeState(preferences.getString(NetworkSurveyConstants.PROPERTY_LOG_FILE_TYPE, "0"));
     }
 
     /**

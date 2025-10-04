@@ -139,7 +139,7 @@
         android:title="@string/log_rollover_title" />
 
     <restriction
-        android:defaultValue="2"
+        android:defaultValue="0"
         android:description="@string/log_file_description"
         android:key="log_file_type"
         android:restrictionType="integer"
