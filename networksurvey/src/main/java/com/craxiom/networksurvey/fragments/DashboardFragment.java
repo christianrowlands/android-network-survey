@@ -27,6 +27,7 @@ import android.text.method.LinkMovementMethod;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.ViewTreeObserver;
 import android.widget.CheckBox;
 import android.widget.ScrollView;
 import android.widget.TextView;
@@ -112,6 +113,8 @@ public class DashboardFragment extends AServiceDataFragment implements LocationL
     private DashboardViewModel viewModel;
     private boolean scrolledToBottom;
     private Set<SurveyTypes> currentActiveSurveys = new LinkedHashSet<>();
+    private ViewTreeObserver.OnPreDrawListener preDrawListener;
+    private ViewTreeObserver.OnGlobalLayoutListener globalLayoutListener;
 
     // State for NS Analytics card
     private boolean nsAnalyticsSurveyActive = false;
@@ -155,17 +158,19 @@ public class DashboardFragment extends AServiceDataFragment implements LocationL
         initializeNsAnalyticsCard();
         queryUploadQueueCount();
 
-        binding.dashboardScrollView.getViewTreeObserver().addOnPreDrawListener(() -> {
+        preDrawListener = () -> {
             scrolledToBottom = isScrolledToBottom();
             return true;
-        });
+        };
+        binding.dashboardScrollView.getViewTreeObserver().addOnPreDrawListener(preDrawListener);
 
-        binding.dashboardScrollView.getViewTreeObserver().addOnGlobalLayoutListener(() -> {
+        globalLayoutListener = () -> {
             if (scrolledToBottom)
             {
                 binding.dashboardScrollView.fullScroll(ScrollView.FOCUS_DOWN);
             }
-        });
+        };
+        binding.dashboardScrollView.getViewTreeObserver().addOnGlobalLayoutListener(globalLayoutListener);
 
         return binding.getRoot();
     }
@@ -197,6 +202,23 @@ public class DashboardFragment extends AServiceDataFragment implements LocationL
     @Override
     public void onDestroyView()
     {
+        // Remove ViewTreeObserver listeners to prevent memory leak
+        if (binding != null)
+        {
+            ViewTreeObserver observer = binding.dashboardScrollView.getViewTreeObserver();
+            if (observer.isAlive())
+            {
+                if (preDrawListener != null)
+                {
+                    observer.removeOnPreDrawListener(preDrawListener);
+                }
+                if (globalLayoutListener != null)
+                {
+                    observer.removeOnGlobalLayoutListener(globalLayoutListener);
+                }
+            }
+        }
+
         removeObservers();
 
         super.onDestroyView();

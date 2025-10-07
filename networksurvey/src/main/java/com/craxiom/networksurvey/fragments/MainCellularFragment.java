@@ -10,6 +10,7 @@ import android.telephony.SubscriptionInfo;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.ViewTreeObserver;
 import android.widget.ScrollView;
 
 import androidx.annotation.NonNull;
@@ -45,6 +46,8 @@ public class MainCellularFragment extends AServiceDataFragment
     private BroadcastReceiver simBroadcastReceiver;
     private FragmentMainTabsBinding binding;
     private boolean scrolledToBottom;
+    private ViewTreeObserver.OnPreDrawListener preDrawListener;
+    private ViewTreeObserver.OnGlobalLayoutListener globalLayoutListener;
 
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState)
@@ -97,17 +100,19 @@ public class MainCellularFragment extends AServiceDataFragment
     {
         binding = FragmentMainTabsBinding.inflate(inflater, container, false);
 
-        binding.mainTabsScrollView.getViewTreeObserver().addOnPreDrawListener(() -> {
+        preDrawListener = () -> {
             scrolledToBottom = isScrolledToBottom();
             return true;
-        });
+        };
+        binding.mainTabsScrollView.getViewTreeObserver().addOnPreDrawListener(preDrawListener);
 
-        binding.mainTabsScrollView.getViewTreeObserver().addOnGlobalLayoutListener(() -> {
+        globalLayoutListener = () -> {
             if (scrolledToBottom)
             {
                 binding.mainTabsScrollView.fullScroll(ScrollView.FOCUS_DOWN);
             }
-        });
+        };
+        binding.mainTabsScrollView.getViewTreeObserver().addOnGlobalLayoutListener(globalLayoutListener);
 
         return binding.getRoot();
     }
@@ -127,6 +132,29 @@ public class MainCellularFragment extends AServiceDataFragment
         }
 
         startAndBindToService();
+    }
+
+    @Override
+    public void onDestroyView()
+    {
+        // Remove ViewTreeObserver listeners to prevent memory leak
+        if (binding != null)
+        {
+            ViewTreeObserver observer = binding.mainTabsScrollView.getViewTreeObserver();
+            if (observer.isAlive())
+            {
+                if (preDrawListener != null)
+                {
+                    observer.removeOnPreDrawListener(preDrawListener);
+                }
+                if (globalLayoutListener != null)
+                {
+                    observer.removeOnGlobalLayoutListener(globalLayoutListener);
+                }
+            }
+        }
+
+        super.onDestroyView();
     }
 
     @Override

@@ -130,6 +130,13 @@ public class CellularController extends AController
         // to the surveyService) does not cause a NPE if logging is still being enabled or disabled.
         synchronized (cellularLoggingEnabled)
         {
+            // Unregister the SIM broadcast receiver to prevent memory leak
+            if (simBroadcastReceiver != null && surveyService != null)
+            {
+                LocalBroadcastManager.getInstance(surveyService).unregisterReceiver(simBroadcastReceiver);
+                simBroadcastReceiver = null;
+            }
+
             cellularSurveyRecordLogger.onDestroy();
             phoneStateRecordLogger.onDestroy();
             phoneStateCsvLogger.onDestroy();

@@ -12,6 +12,7 @@ import android.graphics.Path;
 import android.graphics.RectF;
 import android.util.AttributeSet;
 import android.view.View;
+import android.view.ViewTreeObserver;
 import android.view.WindowManager;
 
 import androidx.annotation.NonNull;
@@ -73,6 +74,8 @@ public class GnssSkyView extends View
     private float mCn0InViewAvg = 0.0f;
 
     private List<SatelliteStatus> statuses = emptyList();
+
+    private ViewTreeObserver.OnPreDrawListener preDrawListener;
 
     public GnssSkyView(Context context)
     {
@@ -168,13 +171,12 @@ public class GnssSkyView extends View
         setFocusable(true);
 
         // Get the proper height and width of view before drawing
-        getViewTreeObserver().addOnPreDrawListener(
-                () -> {
-                    mHeight = getHeight();
-                    mWidth = getWidth();
-                    return true;
-                }
-        );
+        preDrawListener = () -> {
+            mHeight = getHeight();
+            mWidth = getWidth();
+            return true;
+        };
+        getViewTreeObserver().addOnPreDrawListener(preDrawListener);
     }
 
     public void setStarted()
@@ -575,5 +577,21 @@ public class GnssSkyView extends View
     public synchronized float getCn0UsedAvg()
     {
         return mCn0UsedAvg;
+    }
+
+    @Override
+    protected void onDetachedFromWindow()
+    {
+        // Remove ViewTreeObserver listener to prevent memory leak
+        if (preDrawListener != null)
+        {
+            ViewTreeObserver observer = getViewTreeObserver();
+            if (observer.isAlive())
+            {
+                observer.removeOnPreDrawListener(preDrawListener);
+            }
+        }
+
+        super.onDetachedFromWindow();
     }
 }
