@@ -8,6 +8,7 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.RequiresApi;
 
+import java.lang.ref.WeakReference;
 import java.util.List;
 
 import timber.log.Timber;
@@ -22,7 +23,7 @@ import timber.log.Timber;
 public class CellInfoCallbackImpl implements CellInfoCallbackWrapper
 {
 
-    private final CellInfoCallbackListener listener;
+    private final WeakReference<CellInfoCallbackListener> listenerRef;
     private final TelephonyManager.CellInfoCallback androidCallback;
 
     /**
@@ -38,12 +39,15 @@ public class CellInfoCallbackImpl implements CellInfoCallbackWrapper
 
     /**
      * Creates a new CellInfoCallbackImpl with the given listener.
+     * <p>
+     * The listener is held via WeakReference to prevent memory leaks when framework binder stubs
+     * retain this callback after service destruction.
      *
      * @param listener The listener to receive callback events
      */
     public CellInfoCallbackImpl(@NonNull CellInfoCallbackListener listener)
     {
-        this.listener = listener;
+        listenerRef = new WeakReference<>(listener);
 
         // Create the actual Android callback
         androidCallback = new TelephonyManager.CellInfoCallback()
@@ -77,14 +81,28 @@ public class CellInfoCallbackImpl implements CellInfoCallbackWrapper
     @Override
     public void onCellInfo(List<CellInfo> cellInfo)
     {
-        listener.onCellInfoReceived(cellInfo);
+        CellInfoCallbackListener listener = listenerRef.get();
+        if (listener != null)
+        {
+            listener.onCellInfoReceived(cellInfo);
+        } else
+        {
+            Timber.v("Cell info callback invoked but listener was garbage collected (service likely destroyed)");
+        }
     }
 
     @Override
     public void onError(int errorCode, @Nullable Throwable detail)
     {
-        Timber.w(detail, "Received an error from the Telephony Manager when requesting a cell info update; errorCode=%s", errorCode);
-        listener.onCellInfoError(errorCode, detail);
+        CellInfoCallbackListener listener = listenerRef.get();
+        if (listener != null)
+        {
+            Timber.w(detail, "Received an error from the Telephony Manager when requesting a cell info update; errorCode=%s", errorCode);
+            listener.onCellInfoError(errorCode, detail);
+        } else
+        {
+            Timber.v("Cell info error callback invoked but listener was garbage collected (service likely destroyed)");
+        }
     }
 
     @Override

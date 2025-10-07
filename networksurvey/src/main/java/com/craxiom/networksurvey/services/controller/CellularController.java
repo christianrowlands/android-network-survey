@@ -82,6 +82,7 @@ public class CellularController extends AController
 
     private final List<TelephonyManagerWrapper> telephonyManagerList = new ArrayList<>();
     private final Map<Integer, CellInfoCallbackWrapper> cellInfoCallbackMap = new HashMap<>();
+    private final Map<Integer, CellInfoCallbackImpl.CellInfoCallbackListener> cellInfoListenerMap = new HashMap<>();
     // Using Object type to prevent class loading issues on devices below API 31
     private final Map<Integer, Object> displayInfoCallbackMap = new HashMap<>();
     private final Object activeSubscriptionInfoListLock = new Object();
@@ -135,6 +136,17 @@ public class CellularController extends AController
             {
                 LocalBroadcastManager.getInstance(surveyService).unregisterReceiver(simBroadcastReceiver);
                 simBroadcastReceiver = null;
+            }
+
+            // Clear callback maps to prevent memory leaks from pending TelephonyManager callbacks
+            // The cellInfoListenerMap holds strong references to listeners that capture this controller,
+            // clearing it breaks the reference chain even if framework binder stubs hold the callbacks
+            synchronized (activeSubscriptionInfoListLock)
+            {
+                cellInfoCallbackMap.clear();
+                cellInfoListenerMap.clear();
+                displayInfoCallbackMap.clear();
+                telephonyManagerList.clear();
             }
 
             cellularSurveyRecordLogger.onDestroy();
@@ -533,6 +545,7 @@ public class CellularController extends AController
                 activeSubscriptionInfoList.clear();
                 telephonyManagerList.clear();
                 cellInfoCallbackMap.clear();
+                cellInfoListenerMap.clear();
                 displayInfoCallbackMap.clear();
 
                 SubscriptionManager subscriptionManager = SubscriptionManager.from(surveyService.getApplicationContext());
@@ -589,63 +602,70 @@ public class CellularController extends AController
 
                     // Create cell info callback using factory to avoid class loading issues on older devices
                     final int subscriptionId = wrapper.getSubscriptionId();
-                    CellInfoCallbackWrapper callback = TelephonyCallbackFactory.createCellInfoCallback(
-                            new CellInfoCallbackImpl.CellInfoCallbackListener()
+
+                    // Create the listener and store it with a strong reference to prevent premature GC
+                    CellInfoCallbackImpl.CellInfoCallbackListener listener = new CellInfoCallbackImpl.CellInfoCallbackListener()
+                    {
+                        @Override
+                        public void onCellInfoReceived(@NonNull List<CellInfo> cellInfo)
+                        {
+                            // Skip processing if in airplane mode
+                            if (airplaneModeActive.get())
                             {
-                                @Override
-                                public void onCellInfoReceived(@NonNull List<CellInfo> cellInfo)
+                                Timber.v("Cell info received but airplane mode is active, ignoring");
+                                return;
+                            }
+
+                            // Skip processing if paused for battery management
+                            if (isPaused())
+                            {
+                                Timber.v("Cell info received but scanning is paused, ignoring");
+                                return;
+                            }
+
+                            String dataNetworkType = "Unknown";
+                            String voiceNetworkType = "Unknown";
+                            TelephonyManager telephonyManager = wrapper.getTelephonyManager();
+                            synchronized (cellularLoggingEnabled)
+                            {
+                                if (surveyService == null) return;
+                                if (ActivityCompat.checkSelfPermission(surveyService, Manifest.permission.READ_PHONE_STATE) == PackageManager.PERMISSION_GRANTED)
                                 {
-                                    // Skip processing if in airplane mode
-                                    if (airplaneModeActive.get())
-                                    {
-                                        Timber.v("Cell info received but airplane mode is active, ignoring");
-                                        return;
-                                    }
-
-                                    // Skip processing if paused for battery management
-                                    if (isPaused())
-                                    {
-                                        Timber.v("Cell info received but scanning is paused, ignoring");
-                                        return;
-                                    }
-
-                                    String dataNetworkType = "Unknown";
-                                    String voiceNetworkType = "Unknown";
-                                    TelephonyManager telephonyManager = wrapper.getTelephonyManager();
-                                    synchronized (cellularLoggingEnabled)
-                                    {
-                                        if (surveyService == null) return;
-                                        if (ActivityCompat.checkSelfPermission(surveyService, Manifest.permission.READ_PHONE_STATE) == PackageManager.PERMISSION_GRANTED)
-                                        {
-                                            dataNetworkType = CalculationUtils.getNetworkType(telephonyManager.getDataNetworkType());
-                                            voiceNetworkType = CalculationUtils.getNetworkType(telephonyManager.getVoiceNetworkType());
-                                        }
-                                    }
-
-                                    String networkOperatorName = telephonyManager.getNetworkOperatorName();
-                                    SignalStrength signalStrength = telephonyManager.getSignalStrength();
-
-                                    String overrideNetworkType = "N/A";
-                                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S)
-                                    {
-                                        Object listener = displayInfoCallbackMap.get(subscriptionId);
-                                        if (listener != null)
-                                        {
-                                            int networkType = TelephonyCallbackFactory.getOverrideNetworkType(listener);
-                                            overrideNetworkType = CalculationUtils.getOverrideNetworkType(networkType);
-                                        }
-                                    }
-                                    surveyRecordProcessor.onCellInfoUpdate(cellInfo, dataNetworkType, voiceNetworkType,
-                                            subscriptionId, networkOperatorName, signalStrength,
-                                            overrideNetworkType);
+                                    dataNetworkType = CalculationUtils.getNetworkType(telephonyManager.getDataNetworkType());
+                                    voiceNetworkType = CalculationUtils.getNetworkType(telephonyManager.getVoiceNetworkType());
                                 }
+                            }
 
-                                @Override
-                                public void onCellInfoError(int errorCode, @Nullable Throwable detail)
+                            String networkOperatorName = telephonyManager.getNetworkOperatorName();
+                            SignalStrength signalStrength = telephonyManager.getSignalStrength();
+
+                            String overrideNetworkType = "N/A";
+                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S)
+                            {
+                                Object displayInfoListener = displayInfoCallbackMap.get(subscriptionId);
+                                if (displayInfoListener != null)
                                 {
-                                    // Error logging is handled in CellInfoCallbackImpl
+                                    int networkType = TelephonyCallbackFactory.getOverrideNetworkType(displayInfoListener);
+                                    overrideNetworkType = CalculationUtils.getOverrideNetworkType(networkType);
                                 }
-                            });
+                            }
+                            surveyRecordProcessor.onCellInfoUpdate(cellInfo, dataNetworkType, voiceNetworkType,
+                                    subscriptionId, networkOperatorName, signalStrength,
+                                    overrideNetworkType);
+                        }
+
+                        @Override
+                        public void onCellInfoError(int errorCode, @Nullable Throwable detail)
+                        {
+                            // Error logging is handled in CellInfoCallbackImpl
+                        }
+                    };
+
+                    // Store listener with strong reference to keep it alive during normal operation
+                    cellInfoListenerMap.put(subscriptionId, listener);
+
+                    // Create callback wrapper
+                    CellInfoCallbackWrapper callback = TelephonyCallbackFactory.createCellInfoCallback(listener);
 
                     if (callback != null)
                     {

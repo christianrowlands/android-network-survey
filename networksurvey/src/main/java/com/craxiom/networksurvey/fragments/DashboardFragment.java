@@ -11,7 +11,6 @@ import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.content.res.ColorStateList;
 import android.graphics.Color;
-import android.graphics.Rect;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
@@ -27,9 +26,7 @@ import android.text.method.LinkMovementMethod;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.view.ViewTreeObserver;
 import android.widget.CheckBox;
-import android.widget.ScrollView;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -103,18 +100,13 @@ public class DashboardFragment extends AServiceDataFragment implements LocationL
     public static final int ACCESS_REQUIRED_PERMISSION_REQUEST_ID = 20;
     public static final int ACCESS_OPTIONAL_PERMISSION_REQUEST_ID = 21;
     private static final int ACCESS_BLUETOOTH_PERMISSION_REQUEST_ID = 22;
-    private static final String UPLOAD_MODE_MANUAL = "manual";
-    private static final String UPLOAD_MODE_AUTOMATIC = "automatic";
 
     private final DecimalFormat locationFormat = new DecimalFormat("###.#####");
     private final ExecutorService executorService = Executors.newSingleThreadExecutor();
 
     private FragmentDashboardBinding binding;
     private DashboardViewModel viewModel;
-    private boolean scrolledToBottom;
     private Set<SurveyTypes> currentActiveSurveys = new LinkedHashSet<>();
-    private ViewTreeObserver.OnPreDrawListener preDrawListener;
-    private ViewTreeObserver.OnGlobalLayoutListener globalLayoutListener;
 
     // State for NS Analytics card
     private boolean nsAnalyticsSurveyActive = false;
@@ -158,20 +150,6 @@ public class DashboardFragment extends AServiceDataFragment implements LocationL
         initializeNsAnalyticsCard();
         queryUploadQueueCount();
 
-        preDrawListener = () -> {
-            scrolledToBottom = isScrolledToBottom();
-            return true;
-        };
-        binding.dashboardScrollView.getViewTreeObserver().addOnPreDrawListener(preDrawListener);
-
-        globalLayoutListener = () -> {
-            if (scrolledToBottom)
-            {
-                binding.dashboardScrollView.fullScroll(ScrollView.FOCUS_DOWN);
-            }
-        };
-        binding.dashboardScrollView.getViewTreeObserver().addOnGlobalLayoutListener(globalLayoutListener);
-
         return binding.getRoot();
     }
 
@@ -202,25 +180,7 @@ public class DashboardFragment extends AServiceDataFragment implements LocationL
     @Override
     public void onDestroyView()
     {
-        // Remove ViewTreeObserver listeners to prevent memory leak
-        if (binding != null)
-        {
-            ViewTreeObserver observer = binding.dashboardScrollView.getViewTreeObserver();
-            if (observer.isAlive())
-            {
-                if (preDrawListener != null)
-                {
-                    observer.removeOnPreDrawListener(preDrawListener);
-                }
-                if (globalLayoutListener != null)
-                {
-                    observer.removeOnGlobalLayoutListener(globalLayoutListener);
-                }
-            }
-        }
-
         removeObservers();
-
         super.onDestroyView();
     }
 
@@ -2103,17 +2063,5 @@ public class DashboardFragment extends AServiceDataFragment implements LocationL
         }
 
         return true;
-    }
-
-    /**
-     * @return True if the NestedScrollView is scrolled to the bottom. False otherwise.
-     */
-    private boolean isScrolledToBottom()
-    {
-        Rect scrollBounds = new Rect();
-        binding.dashboardScrollView.getDrawingRect(scrollBounds);
-        int bottom = binding.dashboardScrollView.getChildAt(0).getBottom() + binding.dashboardScrollView.getPaddingBottom();
-        int delta = bottom - scrollBounds.bottom;
-        return delta == 0;
     }
 }

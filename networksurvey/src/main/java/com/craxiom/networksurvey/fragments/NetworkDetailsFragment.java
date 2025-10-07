@@ -46,6 +46,7 @@ import com.craxiom.networksurvey.fragments.model.GsmNeighbor;
 import com.craxiom.networksurvey.fragments.model.LteNeighbor;
 import com.craxiom.networksurvey.fragments.model.NrNeighbor;
 import com.craxiom.networksurvey.fragments.model.UmtsNeighbor;
+import com.craxiom.networksurvey.gpstest.util.MathUtils;
 import com.craxiom.networksurvey.listeners.ICellularSurveyRecordListener;
 import com.craxiom.networksurvey.model.CellularProtocol;
 import com.craxiom.networksurvey.model.CellularRecordWrapper;
@@ -58,7 +59,6 @@ import com.craxiom.networksurvey.ui.main.SharedViewModel;
 import com.craxiom.networksurvey.util.CalculationUtils;
 import com.craxiom.networksurvey.util.CellularUtils;
 import com.craxiom.networksurvey.util.ColorUtils;
-import com.craxiom.networksurvey.gpstest.util.MathUtils;
 import com.craxiom.networksurvey.util.ParserUtils;
 import com.mackhartley.roundedprogressbar.RoundedProgressBar;
 
@@ -1180,6 +1180,9 @@ public class NetworkDetailsFragment extends AServiceDataFragment implements ICel
 
             neighborsTable.addView(row);
         }
+
+        // Auto-scroll to bottom if already at bottom
+        scrollToBottomIfAlreadyAtBottom();
     }
 
     /**
@@ -1224,6 +1227,9 @@ public class NetworkDetailsFragment extends AServiceDataFragment implements ICel
 
             lteNeighborsTable.addView(row);
         }
+
+        // Auto-scroll to bottom if already at bottom
+        scrollToBottomIfAlreadyAtBottom();
     }
 
     /**
@@ -1264,6 +1270,9 @@ public class NetworkDetailsFragment extends AServiceDataFragment implements ICel
 
             umtsNeighborsTable.addView(row);
         }
+
+        // Auto-scroll to bottom if already at bottom
+        scrollToBottomIfAlreadyAtBottom();
     }
 
     /**
@@ -1304,6 +1313,9 @@ public class NetworkDetailsFragment extends AServiceDataFragment implements ICel
 
             gsmNeighborsTable.addView(row);
         }
+
+        // Auto-scroll to bottom if already at bottom
+        scrollToBottomIfAlreadyAtBottom();
     }
 
     /**
@@ -1531,5 +1543,43 @@ public class NetworkDetailsFragment extends AServiceDataFragment implements ICel
     {
         return Settings.Global.getInt(context.getContentResolver(),
                 Settings.Global.AIRPLANE_MODE_ON, 0) != 0;
+    }
+
+    /**
+     * Scrolls to the bottom of the view if the user is already scrolled to the bottom.
+     * This preserves the user's scroll position if they're looking at something specific.
+     */
+    private void scrollToBottomIfAlreadyAtBottom()
+    {
+        if (binding == null || binding.getRoot() == null) return;
+
+        View scrollView = binding.getRoot();
+        if (scrollView instanceof androidx.core.widget.NestedScrollView nestedScrollView)
+        {
+
+            // Check if we're already at the bottom
+            if (isScrolledToBottom(nestedScrollView))
+            {
+                // Post to the UI thread to scroll after layout is complete
+                nestedScrollView.post(() -> nestedScrollView.fullScroll(View.FOCUS_DOWN));
+            }
+        }
+    }
+
+    /**
+     * Checks if the NestedScrollView is scrolled to the bottom.
+     *
+     * @param scrollView The NestedScrollView to check
+     * @return true if scrolled to bottom, false otherwise
+     */
+    private boolean isScrolledToBottom(androidx.core.widget.NestedScrollView scrollView)
+    {
+        if (scrollView.getChildCount() == 0) return true;
+
+        View child = scrollView.getChildAt(0);
+        int diff = (child.getBottom() - (scrollView.getHeight() + scrollView.getScrollY()));
+
+        // Allow a small tolerance for floating point calculations
+        return diff <= 0;
     }
 }

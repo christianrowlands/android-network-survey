@@ -4,14 +4,11 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
-import android.graphics.Rect;
 import android.os.Bundle;
 import android.telephony.SubscriptionInfo;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.view.ViewTreeObserver;
-import android.widget.ScrollView;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -45,9 +42,6 @@ public class MainCellularFragment extends AServiceDataFragment
 
     private BroadcastReceiver simBroadcastReceiver;
     private FragmentMainTabsBinding binding;
-    private boolean scrolledToBottom;
-    private ViewTreeObserver.OnPreDrawListener preDrawListener;
-    private ViewTreeObserver.OnGlobalLayoutListener globalLayoutListener;
 
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState)
@@ -99,21 +93,6 @@ public class MainCellularFragment extends AServiceDataFragment
                              @Nullable Bundle savedInstanceState)
     {
         binding = FragmentMainTabsBinding.inflate(inflater, container, false);
-
-        preDrawListener = () -> {
-            scrolledToBottom = isScrolledToBottom();
-            return true;
-        };
-        binding.mainTabsScrollView.getViewTreeObserver().addOnPreDrawListener(preDrawListener);
-
-        globalLayoutListener = () -> {
-            if (scrolledToBottom)
-            {
-                binding.mainTabsScrollView.fullScroll(ScrollView.FOCUS_DOWN);
-            }
-        };
-        binding.mainTabsScrollView.getViewTreeObserver().addOnGlobalLayoutListener(globalLayoutListener);
-
         return binding.getRoot();
     }
 
@@ -137,23 +116,6 @@ public class MainCellularFragment extends AServiceDataFragment
     @Override
     public void onDestroyView()
     {
-        // Remove ViewTreeObserver listeners to prevent memory leak
-        if (binding != null)
-        {
-            ViewTreeObserver observer = binding.mainTabsScrollView.getViewTreeObserver();
-            if (observer.isAlive())
-            {
-                if (preDrawListener != null)
-                {
-                    observer.removeOnPreDrawListener(preDrawListener);
-                }
-                if (globalLayoutListener != null)
-                {
-                    observer.removeOnGlobalLayoutListener(globalLayoutListener);
-                }
-            }
-        }
-
         super.onDestroyView();
     }
 
@@ -267,17 +229,5 @@ public class MainCellularFragment extends AServiceDataFragment
         int subscriptionId = activeSubscriptionInfoList.get(position).getSubscriptionId();
 
         return "SIM " + subscriptionId;
-    }
-
-    /**
-     * @return True if the NestedScrollView is scrolled to the bottom. False otherwise.
-     */
-    private boolean isScrolledToBottom()
-    {
-        Rect scrollBounds = new Rect();
-        binding.mainTabsScrollView.getDrawingRect(scrollBounds);
-        int bottom = binding.mainTabsScrollView.getChildAt(0).getBottom() + binding.mainTabsScrollView.getPaddingBottom();
-        int delta = bottom - scrollBounds.bottom;
-        return delta == 0;
     }
 }
