@@ -150,8 +150,8 @@ dependencies {
     implementation 'androidx.recyclerview:recyclerview:1.4.0'
 
     implementation 'com.github.MackHartley:RoundedProgressBar:3.0.0'
-    implementation 'com.patrykandpatrick.vico:core:2.2.0'
-    implementation 'com.patrykandpatrick.vico:compose-m3:2.2.0'
+    implementation 'com.patrykandpatrick.vico:core:2.2.1'
+    implementation 'com.patrykandpatrick.vico:compose-m3:2.2.1'
 
     implementation 'com.github.yuriy-budiyev:code-scanner:2.3.2'
     implementation 'com.google.zxing:core:3.5.3'
@@ -166,7 +166,7 @@ dependencies {
     implementation "com.google.dagger:hilt-android:$hilt_version"
     kapt "com.google.dagger:hilt-compiler:$hilt_version"
 
-    implementation 'org.maplibre.gl:android-sdk:11.13.5'
+    implementation 'org.maplibre.gl:android-sdk:12.0.0'
     implementation 'org.maplibre.gl:android-plugin-annotation-v9:3.0.2'
 
     implementation 'com.squareup.retrofit2:retrofit:3.0.0'
@@ -201,7 +201,7 @@ dependencies {
 
     testImplementation 'junit:junit:4.13.2'
     testImplementation 'org.mockito:mockito-core:5.20.0'
-    testImplementation 'org.mockito.kotlin:mockito-kotlin:6.0.0'
+    testImplementation 'org.mockito.kotlin:mockito-kotlin:6.1.0'
     implementation 'androidx.annotation:annotation:1.9.1'
 
     // Uncomment if you want to hunt for memory leaks
