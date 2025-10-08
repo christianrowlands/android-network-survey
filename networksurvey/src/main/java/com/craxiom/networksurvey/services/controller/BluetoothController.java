@@ -76,16 +76,8 @@ public class BluetoothController extends AController
     private volatile ScanPhase currentScanPhase = ScanPhase.IDLE;
     private final Map<String, DeviceInfo> recentDevices = new HashMap<>();
 
-    private static class DeviceInfo
+    private record DeviceInfo(long lastSeenTime, int lastRssi)
     {
-        final long lastSeenTime;
-        final int lastRssi;
-
-        DeviceInfo(long lastSeenTime, int lastRssi)
-        {
-            this.lastSeenTime = lastSeenTime;
-            this.lastRssi = lastRssi;
-        }
     }
 
     private final Handler serviceHandler;
@@ -112,6 +104,7 @@ public class BluetoothController extends AController
         bluetoothCsvLogger = new BluetoothCsvLogger(surveyService, serviceLooper);
     }
 
+    @SuppressLint("MissingPermission")
     @Override
     public void onDestroy()
     {
@@ -139,6 +132,31 @@ public class BluetoothController extends AController
             } catch (InterruptedException e)
             {
                 bluetoothScanExecutor.shutdownNow();
+            }
+
+            // Stop BLE scanning and unregister callback from the Android Framework
+            // to prevent memory leak from binder stub reference
+            if (bluetoothScanCallback != null && hasBtScanPermission())
+            {
+                try
+                {
+                    final BluetoothAdapter bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
+                    if (bluetoothAdapter != null)
+                    {
+                        final BluetoothLeScanner bluetoothLeScanner = bluetoothAdapter.getBluetoothLeScanner();
+                        if (bluetoothLeScanner != null)
+                        {
+                            if (hasBtScanPermission())
+                            {
+                                bluetoothLeScanner.stopScan(bluetoothScanCallback);
+                                Timber.d("Stopped BLE scanner in onDestroy");
+                            }
+                        }
+                    }
+                } catch (Exception e)
+                {
+                    Timber.w(e, "Error stopping BLE scanner in onDestroy");
+                }
             }
 
             bluetoothBroadcastReceiver = null;
