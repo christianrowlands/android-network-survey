@@ -1181,8 +1181,8 @@ public class NetworkDetailsFragment extends AServiceDataFragment implements ICel
             neighborsTable.addView(row);
         }
 
-        // Auto-scroll to bottom if already at bottom
-        scrollToBottomIfAlreadyAtBottom();
+        // Notify parent fragment to scroll if needed
+        notifyParentOfNeighborUpdate();
     }
 
     /**
@@ -1228,8 +1228,8 @@ public class NetworkDetailsFragment extends AServiceDataFragment implements ICel
             lteNeighborsTable.addView(row);
         }
 
-        // Auto-scroll to bottom if already at bottom
-        scrollToBottomIfAlreadyAtBottom();
+        // Notify parent fragment to scroll if needed
+        notifyParentOfNeighborUpdate();
     }
 
     /**
@@ -1271,8 +1271,8 @@ public class NetworkDetailsFragment extends AServiceDataFragment implements ICel
             umtsNeighborsTable.addView(row);
         }
 
-        // Auto-scroll to bottom if already at bottom
-        scrollToBottomIfAlreadyAtBottom();
+        // Notify parent fragment to scroll if needed
+        notifyParentOfNeighborUpdate();
     }
 
     /**
@@ -1314,8 +1314,21 @@ public class NetworkDetailsFragment extends AServiceDataFragment implements ICel
             gsmNeighborsTable.addView(row);
         }
 
-        // Auto-scroll to bottom if already at bottom
-        scrollToBottomIfAlreadyAtBottom();
+        // Notify parent fragment to scroll if needed
+        notifyParentOfNeighborUpdate();
+    }
+
+    /**
+     * Notifies the parent MainCellularFragment that neighbor data was updated,
+     * so it can scroll to bottom if the user was already at bottom.
+     */
+    private void notifyParentOfNeighborUpdate()
+    {
+        androidx.fragment.app.Fragment parent = getParentFragment();
+        if (parent instanceof MainCellularFragment)
+        {
+            ((MainCellularFragment) parent).onNeighborDataUpdated();
+        }
     }
 
     /**
@@ -1543,43 +1556,5 @@ public class NetworkDetailsFragment extends AServiceDataFragment implements ICel
     {
         return Settings.Global.getInt(context.getContentResolver(),
                 Settings.Global.AIRPLANE_MODE_ON, 0) != 0;
-    }
-
-    /**
-     * Scrolls to the bottom of the view if the user is already scrolled to the bottom.
-     * This preserves the user's scroll position if they're looking at something specific.
-     */
-    private void scrollToBottomIfAlreadyAtBottom()
-    {
-        if (binding == null || binding.getRoot() == null) return;
-
-        View scrollView = binding.getRoot();
-        if (scrollView instanceof androidx.core.widget.NestedScrollView nestedScrollView)
-        {
-
-            // Check if we're already at the bottom
-            if (isScrolledToBottom(nestedScrollView))
-            {
-                // Post to the UI thread to scroll after layout is complete
-                nestedScrollView.post(() -> nestedScrollView.fullScroll(View.FOCUS_DOWN));
-            }
-        }
-    }
-
-    /**
-     * Checks if the NestedScrollView is scrolled to the bottom.
-     *
-     * @param scrollView The NestedScrollView to check
-     * @return true if scrolled to bottom, false otherwise
-     */
-    private boolean isScrolledToBottom(androidx.core.widget.NestedScrollView scrollView)
-    {
-        if (scrollView.getChildCount() == 0) return true;
-
-        View child = scrollView.getChildAt(0);
-        int diff = (child.getBottom() - (scrollView.getHeight() + scrollView.getScrollY()));
-
-        // Allow a small tolerance for floating point calculations
-        return diff <= 0;
     }
 }

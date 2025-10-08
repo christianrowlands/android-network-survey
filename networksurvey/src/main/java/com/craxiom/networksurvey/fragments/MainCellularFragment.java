@@ -230,4 +230,31 @@ public class MainCellularFragment extends AServiceDataFragment
 
         return "SIM " + subscriptionId;
     }
+
+    /**
+     * Called by child fragments when neighbor data is updated.
+     * Scrolls to bottom if user was already at bottom.
+     */
+    public void onNeighborDataUpdated()
+    {
+        if (binding == null) return;
+
+        androidx.core.widget.NestedScrollView scrollView = binding.mainTabsScrollView;
+
+        // Capture "at bottom" state BEFORE the content changes/grows
+        // canScrollVertically(1) returns false when we can't scroll down anymore (i.e., we're at bottom)
+        // BUT: Also check that there's actual content, to avoid auto-scrolling on initial load
+        // when scrollY=0 and there's no content yet (which also makes canScrollVertically return false)
+        int scrollY = scrollView.getScrollY();
+        boolean hasScrollableContent = scrollY > 0 ||
+                (scrollView.getChildCount() > 0 && scrollView.getChildAt(0).getBottom() > scrollView.getHeight());
+        boolean wasAtBottom = !scrollView.canScrollVertically(1) && hasScrollableContent;
+
+        if (wasAtBottom)
+        {
+            // Post to wait for neighbor table layout to complete, then scroll to new bottom
+            scrollView.post(() -> scrollView.fullScroll(View.FOCUS_DOWN));
+        }
+    }
+
 }
