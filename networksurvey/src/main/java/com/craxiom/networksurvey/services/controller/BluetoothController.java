@@ -87,8 +87,8 @@ public class BluetoothController extends AController
     private final BluetoothSurveyRecordLogger bluetoothSurveyRecordLogger;
     private final BluetoothCsvLogger bluetoothCsvLogger;
     private volatile int bluetoothScanRateMs;
-    private ScanCallback bluetoothScanCallback;
-    private BroadcastReceiver bluetoothBroadcastReceiver;
+    private BleScanCallbackImpl bluetoothScanCallback;
+    private BluetoothBroadcastReceiverImpl bluetoothBroadcastReceiver;
 
     public BluetoothController(NetworkSurveyService surveyService, ExecutorService executorService,
                                Looper serviceLooper, Handler serviceHandler,
@@ -134,29 +134,24 @@ public class BluetoothController extends AController
                 bluetoothScanExecutor.shutdownNow();
             }
 
-            // Stop BLE scanning and unregister callback from the Android Framework
-            // to prevent memory leak from binder stub reference
-            if (bluetoothScanCallback != null && hasBtScanPermission())
+            try
             {
-                try
-                {
-                    final BluetoothAdapter bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
-                    if (bluetoothAdapter != null)
-                    {
-                        final BluetoothLeScanner bluetoothLeScanner = bluetoothAdapter.getBluetoothLeScanner();
-                        if (bluetoothLeScanner != null)
-                        {
-                            if (hasBtScanPermission())
-                            {
-                                bluetoothLeScanner.stopScan(bluetoothScanCallback);
-                                Timber.d("Stopped BLE scanner in onDestroy");
-                            }
-                        }
-                    }
-                } catch (Exception e)
-                {
-                    Timber.w(e, "Error stopping BLE scanner in onDestroy");
-                }
+                stopBleScanning();
+            } catch (Exception e)
+            {
+                Timber.w(e, "Error stopping BLE scanner in onDestroy");
+            }
+
+            // Clear references in the callback objects to break the reference chain
+            // Even if Android Framework binder stubs retain these callbacks, they won't
+            // hold strong references to the controller/service after this
+            if (bluetoothBroadcastReceiver != null)
+            {
+                bluetoothBroadcastReceiver.onDestroy();
+            }
+            if (bluetoothScanCallback != null)
+            {
+                bluetoothScanCallback.onDestroy();
             }
 
             bluetoothBroadcastReceiver = null;
@@ -327,94 +322,9 @@ public class BluetoothController extends AController
                 return;
             }
 
-            bluetoothBroadcastReceiver = new BroadcastReceiver()
-            {
-                @Override
-                public void onReceive(Context context, Intent intent)
-                {
-                    if (BluetoothDevice.ACTION_FOUND.equals(intent.getAction()))
-                    {
-                        if (isPaused())
-                        {
-                            Timber.v("Bluetooth classic device found but scanning is paused, ignoring");
-                            return;
-                        }
+            bluetoothBroadcastReceiver = new BluetoothBroadcastReceiverImpl(this);
 
-                        final BluetoothDevice device = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
-                        if (device == null)
-                        {
-                            Timber.e("Received a null BluetoothDevice in the broadcast action found call");
-                            return;
-                        }
-
-                        int rssi = Short.MIN_VALUE;
-                        if (intent.hasExtra(BluetoothDevice.EXTRA_RSSI))
-                        {
-                            rssi = intent.getShortExtra(BluetoothDevice.EXTRA_RSSI, Short.MIN_VALUE);
-                        }
-
-                        if (rssi == Short.MIN_VALUE) return;
-
-                        if (shouldLogDevice(device, rssi))
-                        {
-                            surveyRecordProcessor.onBluetoothClassicScanUpdate(device, rssi);
-                        }
-                    }
-                }
-            };
-
-            bluetoothScanCallback = new ScanCallback()
-            {
-                @Override
-                public void onScanResult(int callbackType, android.bluetooth.le.ScanResult result)
-                {
-                    if (isPaused())
-                    {
-                        Timber.v("Bluetooth scan result received but scanning is paused, ignoring");
-                        return;
-                    }
-
-                    if (shouldLogDevice(result.getDevice(), result.getRssi()))
-                    {
-                        surveyRecordProcessor.onBluetoothScanUpdate(result);
-                    }
-                }
-
-                @Override
-                public void onBatchScanResults(List<ScanResult> results)
-                {
-                    if (isPaused())
-                    {
-                        Timber.v("Bluetooth batch scan results received but scanning is paused, ignoring");
-                        return;
-                    }
-
-                    List<ScanResult> filteredResults = new ArrayList<>();
-                    for (ScanResult result : results)
-                    {
-                        if (shouldLogDevice(result.getDevice(), result.getRssi()))
-                        {
-                            filteredResults.add(result);
-                        }
-                    }
-                    if (!filteredResults.isEmpty())
-                    {
-                        surveyRecordProcessor.onBluetoothScanUpdate(filteredResults);
-                    }
-                }
-
-                @Override
-                public void onScanFailed(int errorCode)
-                {
-                    if (errorCode == SCAN_FAILED_ALREADY_STARTED)
-                    {
-                        Timber.i("Bluetooth scan already started, so this scan failed");
-                    } else
-                    {
-                        Timber.e("A Bluetooth scan failed, ignoring the results.");
-                    }
-                }
-            };
+            bluetoothScanCallback = new BleScanCallbackImpl(this);
         }
     }
 
@@ -831,6 +741,12 @@ public class BluetoothController extends AController
             return;
         }
 
+        if (bluetoothScanCallback == null)
+        {
+            Timber.w("BLE scan callback is null, cannot stop BLE scanning");
+            return;
+        }
+
         final BluetoothAdapter bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
         if (bluetoothAdapter != null)
         {
@@ -897,5 +813,138 @@ public class BluetoothController extends AController
 
         bluetoothScanFuture = bluetoothScanExecutor.schedule(this::startNextScanCycle,
                 waitTime, TimeUnit.MILLISECONDS);
+    }
+
+    /**
+     * Static nested class for BLE scan callback to avoid memory leaks.
+     * The Android Framework's BleScanCallbackWrapper may retain the callback reference
+     * after stopScan() is called. By using a static class with a nullable reference,
+     * we can break the reference chain in onDestroy while the binder stub is still held.
+     */
+    private static class BleScanCallbackImpl extends ScanCallback
+    {
+        private BluetoothController controller;
+
+        BleScanCallbackImpl(BluetoothController controller)
+        {
+            this.controller = controller;
+        }
+
+        void onDestroy()
+        {
+            controller = null;
+        }
+
+        @Override
+        public void onScanResult(int callbackType, ScanResult result)
+        {
+            final BluetoothController ctrl = controller;
+            if (ctrl == null) return;
+
+            if (ctrl.isPaused())
+            {
+                Timber.v("Bluetooth scan result received but scanning is paused, ignoring");
+                return;
+            }
+
+            if (ctrl.shouldLogDevice(result.getDevice(), result.getRssi()))
+            {
+                ctrl.surveyRecordProcessor.onBluetoothScanUpdate(result);
+            }
+        }
+
+        @Override
+        public void onBatchScanResults(List<ScanResult> results)
+        {
+            final BluetoothController ctrl = controller;
+            if (ctrl == null) return;
+
+            if (ctrl.isPaused())
+            {
+                Timber.v("Bluetooth batch scan results received but scanning is paused, ignoring");
+                return;
+            }
+
+            List<ScanResult> filteredResults = new ArrayList<>();
+            for (ScanResult result : results)
+            {
+                if (ctrl.shouldLogDevice(result.getDevice(), result.getRssi()))
+                {
+                    filteredResults.add(result);
+                }
+            }
+            if (!filteredResults.isEmpty())
+            {
+                ctrl.surveyRecordProcessor.onBluetoothScanUpdate(filteredResults);
+            }
+        }
+
+        @Override
+        public void onScanFailed(int errorCode)
+        {
+            if (errorCode == SCAN_FAILED_ALREADY_STARTED)
+            {
+                Timber.i("Bluetooth scan already started, so this scan failed");
+            } else
+            {
+                Timber.e("A Bluetooth scan failed, ignoring the results.");
+            }
+        }
+    }
+
+    /**
+     * Static nested class for Bluetooth Classic broadcast receiver to avoid memory leaks.
+     * Similar to BleScanCallbackImpl, this prevents the receiver from holding a strong
+     * reference to the controller after the service is destroyed.
+     */
+    private static class BluetoothBroadcastReceiverImpl extends BroadcastReceiver
+    {
+        private BluetoothController controller;
+
+        BluetoothBroadcastReceiverImpl(BluetoothController controller)
+        {
+            this.controller = controller;
+        }
+
+        void onDestroy()
+        {
+            controller = null;
+        }
+
+        @Override
+        public void onReceive(Context context, Intent intent)
+        {
+            final BluetoothController ctrl = controller;
+            if (ctrl == null) return;
+
+            if (BluetoothDevice.ACTION_FOUND.equals(intent.getAction()))
+            {
+                if (ctrl.isPaused())
+                {
+                    Timber.v("Bluetooth classic device found but scanning is paused, ignoring");
+                    return;
+                }
+
+                final BluetoothDevice device = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
+                if (device == null)
+                {
+                    Timber.e("Received a null BluetoothDevice in the broadcast action found call");
+                    return;
+                }
+
+                int rssi = Short.MIN_VALUE;
+                if (intent.hasExtra(BluetoothDevice.EXTRA_RSSI))
+                {
+                    rssi = intent.getShortExtra(BluetoothDevice.EXTRA_RSSI, Short.MIN_VALUE);
+                }
+
+                if (rssi == Short.MIN_VALUE) return;
+
+                if (ctrl.shouldLogDevice(device, rssi))
+                {
+                    ctrl.surveyRecordProcessor.onBluetoothClassicScanUpdate(device, rssi);
+                }
+            }
+        }
     }
 }
