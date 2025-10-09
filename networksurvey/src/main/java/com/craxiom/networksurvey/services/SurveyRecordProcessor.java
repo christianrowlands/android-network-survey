@@ -22,7 +22,6 @@ import android.os.CancellationSignal;
 import android.os.OperationCanceledException;
 import android.os.ParcelUuid;
 import android.os.SystemClock;
-import android.preference.PreferenceManager;
 import android.telephony.CellIdentity;
 import android.telephony.CellIdentityCdma;
 import android.telephony.CellIdentityGsm;
@@ -50,6 +49,7 @@ import android.util.SparseArray;
 import androidx.annotation.NonNull;
 import androidx.annotation.RequiresApi;
 import androidx.core.app.ActivityCompat;
+import androidx.preference.PreferenceManager;
 
 import com.craxiom.messaging.BluetoothRecord;
 import com.craxiom.messaging.BluetoothRecordData;
@@ -143,6 +143,7 @@ import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
@@ -196,16 +197,16 @@ public class SurveyRecordProcessor
     private final TowerDetectionJavaWrapper towerDetectionWrapper;
     private String lastServingCellKey = null;
 
-    private int cellularRecordNumber = 1;
-    private int groupNumber = 0; // This will be incremented to 1 the first time it is used.
+    private final AtomicInteger cellularRecordNumber = new AtomicInteger(1);
+    private final AtomicInteger cellularGroupNumber = new AtomicInteger(0); // This will be incremented to 1 the first time it is used.
 
-    private int wifiRecordNumber = 1;
-    private int bluetoothRecordNumber = 1;
+    private final AtomicInteger wifiRecordNumber = new AtomicInteger(1);
+    private final AtomicInteger bluetoothRecordNumber = new AtomicInteger(1);
 
-    private int gnssRecordNumber = 1;
-    private int gnssGroupNumber = 0; // This will be incremented to 1 the first time it is used.
+    private final AtomicInteger gnssRecordNumber = new AtomicInteger(1);
+    private final AtomicInteger gnssGroupNumber = new AtomicInteger(0); // This will be incremented to 1 the first time it is used.
 
-    private int phoneStateRecordNumber = 1;
+    private final AtomicInteger phoneStateRecordNumber = new AtomicInteger(1);
 
     private long lastGnssLogTimeMs;
     private int gnssScanRateMs;
@@ -506,7 +507,7 @@ public class SurveyRecordProcessor
 
                 if (allCellInfo != null && !allCellInfo.isEmpty())
                 {
-                    groupNumber++; // Group all the records found in this scan iteration.
+                    cellularGroupNumber.getAndIncrement(); // Group all the records found in this scan iteration.
                     final List<CellularRecordWrapper> cellularRecords = new ArrayList<>(allCellInfo.size());
 
                     for (CellInfo cellInfo : allCellInfo)
@@ -750,7 +751,7 @@ public class SurveyRecordProcessor
         dataBuilder.setDeviceTime(NsUtils.getRfc3339String(deviceTime));
 
         dataBuilder.setMissionId(missionId);
-        dataBuilder.setRecordNumber(phoneStateRecordNumber++);
+        dataBuilder.setRecordNumber(phoneStateRecordNumber.getAndIncrement());
 
         dataBuilder.setSimState(SimState.forNumber(telephonyManager.getSimState()));
         dataBuilder.setSimOperator(telephonyManager.getSimOperator());
@@ -992,7 +993,7 @@ public class SurveyRecordProcessor
             }
         }
 
-        gnssGroupNumber++; // Group all the records found in this scan iteration.
+        gnssGroupNumber.getAndIncrement(); // Group all the records found in this scan iteration.
 
         final ZonedDateTime deviceTime = ZonedDateTime.now();
         final long elapsedTimeMillis = SystemClock.elapsedRealtime();
@@ -1133,8 +1134,8 @@ public class SurveyRecordProcessor
         dataBuilder.setDeviceSerialNumber(deviceId);
         dataBuilder.setDeviceTime(NsUtils.getRfc3339String(deviceTime));
         dataBuilder.setMissionId(missionId);
-        dataBuilder.setRecordNumber(cellularRecordNumber++);
-        dataBuilder.setGroupNumber(groupNumber);
+        dataBuilder.setRecordNumber(cellularRecordNumber.getAndIncrement());
+        dataBuilder.setGroupNumber(cellularGroupNumber.get());
         dataBuilder.setServingCell(BoolValue.newBuilder().setValue(cellInfoGsm.isRegistered()).build());
         if (provider != null) dataBuilder.setProvider(provider.toString());
 
@@ -1239,8 +1240,8 @@ public class SurveyRecordProcessor
         dataBuilder.setDeviceSerialNumber(deviceId);
         dataBuilder.setDeviceTime(NsUtils.getRfc3339String(deviceTime));
         dataBuilder.setMissionId(missionId);
-        dataBuilder.setRecordNumber(cellularRecordNumber++);
-        dataBuilder.setGroupNumber(groupNumber);
+        dataBuilder.setRecordNumber(cellularRecordNumber.getAndIncrement());
+        dataBuilder.setGroupNumber(cellularGroupNumber.get());
         dataBuilder.setServingCell(BoolValue.newBuilder().setValue(cellInfoCdma.isRegistered()).build());
         if (provider != null) dataBuilder.setProvider(provider.toString());
 
@@ -1333,8 +1334,8 @@ public class SurveyRecordProcessor
         dataBuilder.setDeviceSerialNumber(deviceId);
         dataBuilder.setDeviceTime(NsUtils.getRfc3339String(deviceTime));
         dataBuilder.setMissionId(missionId);
-        dataBuilder.setRecordNumber(cellularRecordNumber++);
-        dataBuilder.setGroupNumber(groupNumber);
+        dataBuilder.setRecordNumber(cellularRecordNumber.getAndIncrement());
+        dataBuilder.setGroupNumber(cellularGroupNumber.get());
         dataBuilder.setServingCell(BoolValue.newBuilder().setValue(cellInfoWcdma.isRegistered()).build());
         if (provider != null) dataBuilder.setProvider(provider.toString());
 
@@ -1456,8 +1457,8 @@ public class SurveyRecordProcessor
         dataBuilder.setDeviceSerialNumber(deviceId);
         dataBuilder.setDeviceTime(NsUtils.getRfc3339String(deviceTime));
         dataBuilder.setMissionId(missionId);
-        dataBuilder.setRecordNumber(cellularRecordNumber++);
-        dataBuilder.setGroupNumber(groupNumber);
+        dataBuilder.setRecordNumber(cellularRecordNumber.getAndIncrement());
+        dataBuilder.setGroupNumber(cellularGroupNumber.get());
         dataBuilder.setServingCell(BoolValue.newBuilder().setValue(cellInfoLte.isRegistered()).build());
         if (provider != null) dataBuilder.setProvider(provider.toString());
 
@@ -1642,8 +1643,8 @@ public class SurveyRecordProcessor
         dataBuilder.setDeviceSerialNumber(deviceId);
         dataBuilder.setDeviceTime(NsUtils.getRfc3339String(deviceTime));
         dataBuilder.setMissionId(missionId);
-        dataBuilder.setRecordNumber(cellularRecordNumber++);
-        dataBuilder.setGroupNumber(groupNumber);
+        dataBuilder.setRecordNumber(cellularRecordNumber.getAndIncrement());
+        dataBuilder.setGroupNumber(cellularGroupNumber.get());
         dataBuilder.setServingCell(BoolValue.newBuilder().setValue(cellInfoNr.isRegistered()).build());
         if (provider != null) dataBuilder.setProvider(provider.toString());
 
@@ -1759,7 +1760,7 @@ public class SurveyRecordProcessor
         dataBuilder.setDeviceSerialNumber(deviceId);
         dataBuilder.setDeviceTime(NsUtils.getRfc3339String(deviceTime));
         dataBuilder.setMissionId(missionId);
-        dataBuilder.setRecordNumber(wifiRecordNumber++);
+        dataBuilder.setRecordNumber(wifiRecordNumber.getAndIncrement());
 
         dataBuilder.setBssid(bssid);
         dataBuilder.setSignalStrength(FloatValue.newBuilder().setValue(signalStrength).build());
@@ -1868,7 +1869,7 @@ public class SurveyRecordProcessor
         dataBuilder.setDeviceSerialNumber(deviceId);
         dataBuilder.setDeviceTime(NsUtils.getRfc3339String(deviceTime));
         dataBuilder.setMissionId(missionId);
-        dataBuilder.setRecordNumber(bluetoothRecordNumber++);
+        dataBuilder.setRecordNumber(bluetoothRecordNumber.getAndIncrement());
 
         dataBuilder.setSourceAddress(sourceAddress);
 
@@ -2081,8 +2082,8 @@ public class SurveyRecordProcessor
         dataBuilder.setDeviceSerialNumber(deviceId);
         dataBuilder.setDeviceTime(NsUtils.getRfc3339String(deviceTime));
         dataBuilder.setMissionId(missionId);
-        dataBuilder.setRecordNumber(gnssRecordNumber++);
-        dataBuilder.setGroupNumber(gnssGroupNumber);
+        dataBuilder.setRecordNumber(gnssRecordNumber.getAndIncrement());
+        dataBuilder.setGroupNumber(gnssGroupNumber.get());
         dataBuilder.setDeviceModel(Build.MODEL);
 
         final Constellation constellation = GnssMessageConstants.getProtobufConstellation(gnss.getConstellationType());
@@ -2168,8 +2169,8 @@ public class SurveyRecordProcessor
         dataBuilder.setDeviceSerialNumber(deviceId);
         dataBuilder.setDeviceTime(NsUtils.getRfc3339String(deviceTime));
         dataBuilder.setMissionId(missionId);
-        dataBuilder.setRecordNumber(gnssRecordNumber++);
-        dataBuilder.setGroupNumber(gnssGroupNumber);
+        dataBuilder.setRecordNumber(gnssRecordNumber.getAndIncrement());
+        dataBuilder.setGroupNumber(gnssGroupNumber.get());
         dataBuilder.setDeviceModel(Build.MODEL);
 
         final GnssRecord.Builder recordBuilder = GnssRecord.newBuilder();
@@ -2698,11 +2699,9 @@ public class SurveyRecordProcessor
      * Check if the serving cell is a new tower and show notification if enabled.
      *
      * @param cellularRecords The batch of cellular records to check
-     * @since 1.15.0
      */
     private void checkForNewTowers(List<CellularRecordWrapper> cellularRecords)
     {
-        // Check if new tower alerts are enabled
         SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(context);
         boolean newTowerAlertsEnabled = prefs.getBoolean(NetworkSurveyConstants.PROPERTY_NEW_TOWER_ALERTS_ENABLED, false);
 
@@ -2711,7 +2710,6 @@ public class SurveyRecordProcessor
             return;
         }
 
-        // Check if upload scanning is active
         if (networkSurveyService == null || !networkSurveyService.isUploadScanningActive())
         {
             return;
@@ -2732,18 +2730,18 @@ public class SurveyRecordProcessor
      * Check if the serving cell is a new tower and fire notification if needed.
      *
      * @param cellularRecord The serving cell record to check
-     * @since 1.15.0
      */
     private void checkServingCellForNewTower(CellularRecordWrapper cellularRecord)
     {
         final CellularProtocol protocol = cellularRecord.cellularProtocol;
         final GeneratedMessage record = cellularRecord.cellularRecord;
 
-        // Extract cell identity based on protocol
-        String cellKey = null;
-        int mcc = 0, mnc = 0, area = 0;
-        long cellId = 0;
-        String radio = "";
+        String cellKey;
+        int mcc;
+        int mnc;
+        int area;
+        long cellId;
+        String radio;
 
         switch (protocol)
         {
@@ -2792,15 +2790,14 @@ public class SurveyRecordProcessor
                 break;
 
             default:
-                return; // Unsupported protocol
+                return;
         }
 
         // Check if this is a different cell than the last one
-        if (cellKey != null && !cellKey.equals(lastServingCellKey) && mcc > 0 && cellId > 0)
+        if (!cellKey.equals(lastServingCellKey) && mcc > 0 && cellId > 0)
         {
             lastServingCellKey = cellKey;
 
-            // Check if this is a new tower using TowerDetectionManager
             final int finalMcc = mcc;
             final int finalMnc = mnc;
             final int finalArea = area;
@@ -2815,7 +2812,6 @@ public class SurveyRecordProcessor
                             Timber.i("New tower detected: %s-%s-%s-%s (%s)",
                                     finalMcc, finalMnc, finalArea, finalCellId, finalRadio);
 
-                            // Show notification
                             NewTowerNotificationHelper.INSTANCE.showNewTowerNotification(
                                     context,
                                     finalMcc, finalMnc, finalArea, finalCellId, finalRadio

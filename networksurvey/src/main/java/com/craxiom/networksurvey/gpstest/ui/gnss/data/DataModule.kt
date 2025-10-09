@@ -2,7 +2,7 @@ package com.craxiom.networksurvey.gpstest.ui.gnss.data
 
 import android.content.Context
 import android.content.SharedPreferences
-import android.preference.PreferenceManager
+import androidx.preference.PreferenceManager
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
