@@ -11,6 +11,7 @@ import static com.craxiom.networksurvey.constants.csv.CdrCsvConstants.SLOT;
 import static com.craxiom.networksurvey.constants.csv.CdrCsvConstants.START_TIME;
 import static com.craxiom.networksurvey.constants.csv.CsvConstants.ACCURACY;
 import static com.craxiom.networksurvey.constants.csv.CsvConstants.ALTITUDE;
+import static com.craxiom.networksurvey.constants.csv.CsvConstants.DEVICE_SERIAL_NUMBER;
 import static com.craxiom.networksurvey.constants.csv.CsvConstants.LATITUDE;
 import static com.craxiom.networksurvey.constants.csv.CsvConstants.LOCATION_AGE;
 import static com.craxiom.networksurvey.constants.csv.CsvConstants.LONGITUDE;
@@ -42,14 +43,17 @@ public class CdrEvent
     private String csCellIdentifier = "";
     private String psCellIdentifier = "";
     private final int slot;
+    private final String deviceSerialNumber;
 
-    public CdrEvent(CdrEventType eventType, String callingNumber, String calledNumber, int subscriptionId)
+    public CdrEvent(CdrEventType eventType, String callingNumber, String calledNumber,
+                    int subscriptionId, String deviceId)
     {
         timestamp = ZonedDateTime.now();
         this.eventType = eventType;
         this.callingNumber = callingNumber;
         this.calledNumber = calledNumber;
         slot = subscriptionId;
+        deviceSerialNumber = deviceId;
     }
 
     /**
@@ -60,7 +64,7 @@ public class CdrEvent
     {
         return new String[]{START_TIME, LATITUDE, LONGITUDE, ALTITUDE, ACCURACY, EVENT,
                 ORIGINATING_ADDRESS, DESTINATION_ADDRESS, CS_RANT, CS_CELL_IDENTIFIER, PS_RANT,
-                PS_CELL_IDENTIFIER, SLOT, LOCATION_AGE};
+                PS_CELL_IDENTIFIER, SLOT, LOCATION_AGE, DEVICE_SERIAL_NUMBER};
     }
 
     public void setLocation(Location location)
@@ -114,7 +118,8 @@ public class CdrEvent
                 psRant.toString(),
                 psCellIdentifier,
                 slot != CellularController.DEFAULT_SUBSCRIPTION_ID ? String.valueOf(slot) : "",
-                locationAgeMillisString
+                locationAgeMillisString,
+                deviceSerialNumber
         };
     }
 

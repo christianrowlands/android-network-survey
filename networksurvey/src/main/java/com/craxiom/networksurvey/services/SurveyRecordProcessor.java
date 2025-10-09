@@ -196,7 +196,7 @@ public class SurveyRecordProcessor
     private final TowerDetectionJavaWrapper towerDetectionWrapper;
     private String lastServingCellKey = null;
 
-    private int recordNumber = 1;
+    private int cellularRecordNumber = 1;
     private int groupNumber = 0; // This will be incremented to 1 the first time it is used.
 
     private int wifiRecordNumber = 1;
@@ -211,7 +211,7 @@ public class SurveyRecordProcessor
     private int gnssScanRateMs;
 
     private int currentCallState = TelephonyManager.CALL_STATE_IDLE;
-    private CdrEvent currentCdrCellIdentity = new CdrEvent(CdrEventType.LOCATION_UPDATE, "", "", CellularController.DEFAULT_SUBSCRIPTION_ID);
+    private CdrEvent currentCdrCellIdentity = new CdrEvent(CdrEventType.LOCATION_UPDATE, "", "", CellularController.DEFAULT_SUBSCRIPTION_ID, "");
 
     /**
      * Creates a new processor that can consume the raw survey records in Android format and convert them to the
@@ -622,7 +622,7 @@ public class SurveyRecordProcessor
 
     public void onCdrServiceStateChanged(ServiceState serviceState, TelephonyManager telephonyManager, int subscriptionId)
     {
-        CdrEvent cdrEvent = new CdrEvent(CdrEventType.LOCATION_UPDATE, "", "", subscriptionId);
+        CdrEvent cdrEvent = new CdrEvent(CdrEventType.LOCATION_UPDATE, "", "", subscriptionId, deviceId);
         setCellInfo(cdrEvent, serviceState);
 
         if (currentCdrCellIdentity.locationAreaChanged(cdrEvent))
@@ -654,13 +654,13 @@ public class SurveyRecordProcessor
                 // will also be set on an incoming call, but it will transition from ringing to offhook.
                 if (currentCallState == TelephonyManager.CALL_STATE_IDLE)
                 {
-                    cdrEvent = new CdrEvent(CdrEventType.OUTGOING_CALL, myPhoneNumber, otherPhoneNumber, subscriptionId);
+                    cdrEvent = new CdrEvent(CdrEventType.OUTGOING_CALL, myPhoneNumber, otherPhoneNumber, subscriptionId, deviceId);
                     setCellInfo(cdrEvent, telephonyManager);
                 }
                 break;
 
             case TelephonyManager.CALL_STATE_RINGING: // Incoming
-                cdrEvent = new CdrEvent(CdrEventType.INCOMING_CALL, otherPhoneNumber, myPhoneNumber, subscriptionId);
+                cdrEvent = new CdrEvent(CdrEventType.INCOMING_CALL, otherPhoneNumber, myPhoneNumber, subscriptionId, deviceId);
                 setCellInfo(cdrEvent, telephonyManager);
                 break;
 
@@ -678,7 +678,7 @@ public class SurveyRecordProcessor
         if (cdrListeners.isEmpty()) return;
 
         Timber.d("onSmsEvent outgoingAddress=%s, destinationAddress=%s", originatingAddress, destinationAddress);
-        CdrEvent cdrEvent = new CdrEvent(smsEventType, originatingAddress, destinationAddress, subscriptionId);
+        CdrEvent cdrEvent = new CdrEvent(smsEventType, originatingAddress, destinationAddress, subscriptionId, deviceId);
         setCellInfo(cdrEvent, telephonyManager);
         finishCdrEvent(cdrEvent);
     }
@@ -1133,7 +1133,7 @@ public class SurveyRecordProcessor
         dataBuilder.setDeviceSerialNumber(deviceId);
         dataBuilder.setDeviceTime(NsUtils.getRfc3339String(deviceTime));
         dataBuilder.setMissionId(missionId);
-        dataBuilder.setRecordNumber(recordNumber++);
+        dataBuilder.setRecordNumber(cellularRecordNumber++);
         dataBuilder.setGroupNumber(groupNumber);
         dataBuilder.setServingCell(BoolValue.newBuilder().setValue(cellInfoGsm.isRegistered()).build());
         if (provider != null) dataBuilder.setProvider(provider.toString());
@@ -1239,7 +1239,7 @@ public class SurveyRecordProcessor
         dataBuilder.setDeviceSerialNumber(deviceId);
         dataBuilder.setDeviceTime(NsUtils.getRfc3339String(deviceTime));
         dataBuilder.setMissionId(missionId);
-        dataBuilder.setRecordNumber(recordNumber++);
+        dataBuilder.setRecordNumber(cellularRecordNumber++);
         dataBuilder.setGroupNumber(groupNumber);
         dataBuilder.setServingCell(BoolValue.newBuilder().setValue(cellInfoCdma.isRegistered()).build());
         if (provider != null) dataBuilder.setProvider(provider.toString());
@@ -1333,7 +1333,7 @@ public class SurveyRecordProcessor
         dataBuilder.setDeviceSerialNumber(deviceId);
         dataBuilder.setDeviceTime(NsUtils.getRfc3339String(deviceTime));
         dataBuilder.setMissionId(missionId);
-        dataBuilder.setRecordNumber(recordNumber++);
+        dataBuilder.setRecordNumber(cellularRecordNumber++);
         dataBuilder.setGroupNumber(groupNumber);
         dataBuilder.setServingCell(BoolValue.newBuilder().setValue(cellInfoWcdma.isRegistered()).build());
         if (provider != null) dataBuilder.setProvider(provider.toString());
@@ -1456,7 +1456,7 @@ public class SurveyRecordProcessor
         dataBuilder.setDeviceSerialNumber(deviceId);
         dataBuilder.setDeviceTime(NsUtils.getRfc3339String(deviceTime));
         dataBuilder.setMissionId(missionId);
-        dataBuilder.setRecordNumber(recordNumber++);
+        dataBuilder.setRecordNumber(cellularRecordNumber++);
         dataBuilder.setGroupNumber(groupNumber);
         dataBuilder.setServingCell(BoolValue.newBuilder().setValue(cellInfoLte.isRegistered()).build());
         if (provider != null) dataBuilder.setProvider(provider.toString());
@@ -1642,7 +1642,7 @@ public class SurveyRecordProcessor
         dataBuilder.setDeviceSerialNumber(deviceId);
         dataBuilder.setDeviceTime(NsUtils.getRfc3339String(deviceTime));
         dataBuilder.setMissionId(missionId);
-        dataBuilder.setRecordNumber(recordNumber++);
+        dataBuilder.setRecordNumber(cellularRecordNumber++);
         dataBuilder.setGroupNumber(groupNumber);
         dataBuilder.setServingCell(BoolValue.newBuilder().setValue(cellInfoNr.isRegistered()).build());
         if (provider != null) dataBuilder.setProvider(provider.toString());

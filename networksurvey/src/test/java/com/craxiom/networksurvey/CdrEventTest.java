@@ -10,14 +10,16 @@ import org.junit.Test;
 
 public class CdrEventTest
 {
+    private static final String DEVICE_ID = "SOMEDEVICEID";
+
     @Test
     public void testEmptyCellIdentityToValidCellIdentityCs()
     {
         CdrEvent currentCdrEvent = new CdrEvent(CdrEventType.LOCATION_UPDATE,
-                "1234567890", "1122334455", CellularController.DEFAULT_SUBSCRIPTION_ID);
+                "1234567890", "1122334455", CellularController.DEFAULT_SUBSCRIPTION_ID, DEVICE_ID);
 
         CdrEvent newCdrEvent = new CdrEvent(CdrEventType.LOCATION_UPDATE,
-                "1112223333", "2223334444", CellularController.DEFAULT_SUBSCRIPTION_ID);
+                "1112223333", "2223334444", CellularController.DEFAULT_SUBSCRIPTION_ID, DEVICE_ID);
         newCdrEvent.setCircuitSwitchedInformation(NetworkType.LTE, "310-480-12345-12345678");
 
         boolean changed = currentCdrEvent.locationAreaChanged(newCdrEvent);
@@ -28,10 +30,10 @@ public class CdrEventTest
     public void testEmptyCellIdentityToValidCellIdentityPs()
     {
         CdrEvent currentCdrEvent = new CdrEvent(CdrEventType.LOCATION_UPDATE,
-                "1234567890", "1122334455", CellularController.DEFAULT_SUBSCRIPTION_ID);
+                "1234567890", "1122334455", CellularController.DEFAULT_SUBSCRIPTION_ID, DEVICE_ID);
 
         CdrEvent newCdrEvent = new CdrEvent(CdrEventType.LOCATION_UPDATE,
-                "1112223333", "2223334444", CellularController.DEFAULT_SUBSCRIPTION_ID);
+                "1112223333", "2223334444", CellularController.DEFAULT_SUBSCRIPTION_ID, DEVICE_ID);
         newCdrEvent.setPacketSwitchedInformation(NetworkType.LTE, "310-480-12345-3");
 
         boolean changed = currentCdrEvent.locationAreaChanged(newCdrEvent);
@@ -42,10 +44,10 @@ public class CdrEventTest
     public void testEmptyCellIdentityToValidCellIdentityCsAndPs()
     {
         CdrEvent currentCdrEvent = new CdrEvent(CdrEventType.LOCATION_UPDATE,
-                "1234567890", "1122334455", CellularController.DEFAULT_SUBSCRIPTION_ID);
+                "1234567890", "1122334455", CellularController.DEFAULT_SUBSCRIPTION_ID, DEVICE_ID);
 
         CdrEvent newCdrEvent = new CdrEvent(CdrEventType.LOCATION_UPDATE,
-                "1112223333", "2223334444", CellularController.DEFAULT_SUBSCRIPTION_ID);
+                "1112223333", "2223334444", CellularController.DEFAULT_SUBSCRIPTION_ID, DEVICE_ID);
         newCdrEvent.setPacketSwitchedInformation(NetworkType.LTE, "310-480-12345-12345678");
         newCdrEvent.setCircuitSwitchedInformation(NetworkType.LTE, "310-480-222-3");
 
@@ -57,11 +59,11 @@ public class CdrEventTest
     public void testValidCellIdentityToEmpty()
     {
         CdrEvent currentCdrEvent = new CdrEvent(CdrEventType.LOCATION_UPDATE,
-                "1234567890", "1122334455", CellularController.DEFAULT_SUBSCRIPTION_ID);
+                "1234567890", "1122334455", CellularController.DEFAULT_SUBSCRIPTION_ID, DEVICE_ID);
         currentCdrEvent.setPacketSwitchedInformation(NetworkType.LTE, "310-480-12345-12345678");
 
         CdrEvent newCdrEvent = new CdrEvent(CdrEventType.LOCATION_UPDATE,
-                "1112223333", "2223334444", CellularController.DEFAULT_SUBSCRIPTION_ID);
+                "1112223333", "2223334444", CellularController.DEFAULT_SUBSCRIPTION_ID, DEVICE_ID);
 
         boolean changed = currentCdrEvent.locationAreaChanged(newCdrEvent);
         Assert.assertFalse(changed);
@@ -71,12 +73,12 @@ public class CdrEventTest
     public void testNoChange()
     {
         CdrEvent currentCdrEvent = new CdrEvent(CdrEventType.LOCATION_UPDATE,
-                "1234567890", "1122334455", CellularController.DEFAULT_SUBSCRIPTION_ID);
+                "1234567890", "1122334455", CellularController.DEFAULT_SUBSCRIPTION_ID, DEVICE_ID);
         currentCdrEvent.setCircuitSwitchedInformation(NetworkType.LTE, "310-480-12345-12345678");
         currentCdrEvent.setPacketSwitchedInformation(NetworkType.LTE, "310-480-222-3");
 
         CdrEvent newCdrEvent = new CdrEvent(CdrEventType.LOCATION_UPDATE,
-                "1112223333", "2223334444", CellularController.DEFAULT_SUBSCRIPTION_ID);
+                "1112223333", "2223334444", CellularController.DEFAULT_SUBSCRIPTION_ID, DEVICE_ID);
         newCdrEvent.setCircuitSwitchedInformation(NetworkType.LTE, "310-480-12345-12345678");
         newCdrEvent.setPacketSwitchedInformation(NetworkType.LTE, "310-480-222-3");
 
@@ -88,12 +90,12 @@ public class CdrEventTest
     public void testOnlyPs()
     {
         CdrEvent currentCdrEvent = new CdrEvent(CdrEventType.LOCATION_UPDATE,
-                "1234567890", "1122334455", CellularController.DEFAULT_SUBSCRIPTION_ID);
+                "1234567890", "1122334455", CellularController.DEFAULT_SUBSCRIPTION_ID, DEVICE_ID);
         currentCdrEvent.setCircuitSwitchedInformation(NetworkType.LTE, "310-480-12345-12345678");
         currentCdrEvent.setPacketSwitchedInformation(NetworkType.LTE, "310-480-222-3");
 
         CdrEvent newCdrEvent = new CdrEvent(CdrEventType.LOCATION_UPDATE,
-                "1112223333", "2223334444", CellularController.DEFAULT_SUBSCRIPTION_ID);
+                "1112223333", "2223334444", CellularController.DEFAULT_SUBSCRIPTION_ID, DEVICE_ID);
         newCdrEvent.setCircuitSwitchedInformation(NetworkType.LTE, "310-480-12345-12345678");
         newCdrEvent.setPacketSwitchedInformation(NetworkType.LTE, "310-480-223-3");
 
@@ -105,12 +107,12 @@ public class CdrEventTest
     public void testOnlyCs()
     {
         CdrEvent currentCdrEvent = new CdrEvent(CdrEventType.LOCATION_UPDATE,
-                "1234567890", "1122334455", CellularController.DEFAULT_SUBSCRIPTION_ID);
+                "1234567890", "1122334455", CellularController.DEFAULT_SUBSCRIPTION_ID, DEVICE_ID);
         currentCdrEvent.setCircuitSwitchedInformation(NetworkType.LTE, "310-480-12344-12345678");
         currentCdrEvent.setPacketSwitchedInformation(NetworkType.LTE, "310-480-222-3");
 
         CdrEvent newCdrEvent = new CdrEvent(CdrEventType.LOCATION_UPDATE,
-                "1112223333", "2223334444", CellularController.DEFAULT_SUBSCRIPTION_ID);
+                "1112223333", "2223334444", CellularController.DEFAULT_SUBSCRIPTION_ID, DEVICE_ID);
         newCdrEvent.setCircuitSwitchedInformation(NetworkType.LTE, "310-480-12345-12345678");
         newCdrEvent.setPacketSwitchedInformation(NetworkType.LTE, "310-480-222-3");
 
@@ -122,12 +124,12 @@ public class CdrEventTest
     public void testOnlyCellIdChangeNoTacChange()
     {
         CdrEvent currentCdrEvent = new CdrEvent(CdrEventType.LOCATION_UPDATE,
-                "1234567890", "1122334455", CellularController.DEFAULT_SUBSCRIPTION_ID);
+                "1234567890", "1122334455", CellularController.DEFAULT_SUBSCRIPTION_ID, DEVICE_ID);
         currentCdrEvent.setCircuitSwitchedInformation(NetworkType.LTE, "310-480-12345-12345678");
         currentCdrEvent.setPacketSwitchedInformation(NetworkType.LTE, "310-480-222-3");
 
         CdrEvent newCdrEvent = new CdrEvent(CdrEventType.LOCATION_UPDATE,
-                "1112223333", "2223334444", CellularController.DEFAULT_SUBSCRIPTION_ID);
+                "1112223333", "2223334444", CellularController.DEFAULT_SUBSCRIPTION_ID, DEVICE_ID);
         newCdrEvent.setCircuitSwitchedInformation(NetworkType.LTE, "310-480-12345-1");
         newCdrEvent.setPacketSwitchedInformation(NetworkType.LTE, "310-480-222-4");
 
