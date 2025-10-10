@@ -63,7 +63,7 @@
         android:title="@string/cellular_scan_interval_title" />
 
     <restriction
-        android:defaultValue="10"
+        android:defaultValue="15"
         android:description="@string/wifi_scan_interval_description"
         android:key="wifi_scan_interval_seconds"
         android:restrictionType="integer"
@@ -77,7 +77,7 @@
         android:title="@string/bluetooth_scan_interval_title" />
 
     <restriction
-        android:defaultValue="30"
+        android:defaultValue="45"
         android:description="@string/gnss_scan_interval_description"
         android:key="gnss_scan_interval_seconds"
         android:restrictionType="integer"
