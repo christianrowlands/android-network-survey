@@ -54,6 +54,18 @@ fun NavGraphBuilder.mainGraph(
             HomeScreen(drawerState, mainNavController = mainNavController)
         }
 
+        composable(NavDrawerOption.NsAnalyticsConnection.name) {
+            val viewModel: NsAnalyticsConnectionViewModel = viewModel()
+            NsAnalyticsConnectionScreen(
+                viewModel = viewModel,
+                onNavigateUp = { mainNavController.navigateUp() },
+                onNavigateToQrScanner = {
+                    mainNavController.navigate(NavOption.NsAnalyticsQrScanner.name)
+                },
+                mainNavController = mainNavController
+            )
+        }
+
         composable(
             NavDrawerOption.ServerConnection.name,
             deepLinks = listOf(navDeepLink {
@@ -92,18 +104,6 @@ fun NavGraphBuilder.mainGraph(
                 onNavigateToTowerMapSettings = {
                     mainNavController.navigate(NavOption.TowerMapSettings.name)
                 }
-            )
-        }
-
-        composable(NavDrawerOption.NsAnalyticsConnection.name) {
-            val viewModel: NsAnalyticsConnectionViewModel = viewModel()
-            NsAnalyticsConnectionScreen(
-                viewModel = viewModel,
-                onNavigateUp = { mainNavController.navigateUp() },
-                onNavigateToQrScanner = {
-                    mainNavController.navigate(NavOption.NsAnalyticsQrScanner.name)
-                },
-                mainNavController = mainNavController
             )
         }
 
@@ -178,11 +178,11 @@ fun NavGraphBuilder.mainGraph(
 
 enum class NavDrawerOption {
     None,
+    NsAnalyticsConnection,
     ServerConnection,
     MqttBrokerConnection,
     CellularCalculators,
     SurveyMonitor,
-    NsAnalyticsConnection,
     Settings,
 
     // External Links
@@ -209,7 +209,7 @@ enum class NavOption {
 @Composable
 fun GrpcFragmentInCompose(mainNavController: NavHostController) {
     Scaffold(
-        topBar = { TitleBar("Server Connection") { mainNavController.navigateUp() } },
+        topBar = { TitleBar("gRPC Connection") { mainNavController.navigateUp() } },
     ) { innerPadding ->
         AndroidViewBinding(
             ContainerGrpcFragmentBinding::inflate,

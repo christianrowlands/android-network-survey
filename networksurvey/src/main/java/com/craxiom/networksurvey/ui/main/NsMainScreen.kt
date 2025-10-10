@@ -223,6 +223,13 @@ fun MainCompose(
                                 }
                             }
 
+
+                            NavDrawerOption.NsAnalyticsConnection -> {
+                                mainNavController.navigate(onUserPickedOption.name) {
+                                    popUpTo(NavDrawerOption.None.name)
+                                }
+                            }
+
                             NavDrawerOption.ServerConnection -> {
                                 mainNavController.navigate(onUserPickedOption.name) {
                                     popUpTo(NavDrawerOption.None.name)
@@ -242,12 +249,6 @@ fun MainCompose(
                             }
 
                             NavDrawerOption.SurveyMonitor -> {
-                                mainNavController.navigate(onUserPickedOption.name) {
-                                    popUpTo(NavDrawerOption.None.name)
-                                }
-                            }
-
-                            NavDrawerOption.NsAnalyticsConnection -> {
                                 mainNavController.navigate(onUserPickedOption.name) {
                                     popUpTo(NavDrawerOption.None.name)
                                 }
@@ -316,6 +317,12 @@ enum class NavRoutes {
 object DrawerParams {
     val drawerButtons = arrayListOf(
         AppDrawerItemInfo(
+            NavDrawerOption.NsAnalyticsConnection,
+            R.string.ns_analytics,
+            R.drawable.ic_ns_analytics,
+            R.string.ns_analytics_description
+        ),
+        AppDrawerItemInfo(
             NavDrawerOption.ServerConnection,
             R.string.grpc_connection_title,
             R.drawable.connection_icon,
@@ -338,12 +345,6 @@ object DrawerParams {
             R.string.survey_monitor,
             R.drawable.ic_survey_monitor,
             R.string.survey_monitor_description
-        ),
-        AppDrawerItemInfo(
-            NavDrawerOption.NsAnalyticsConnection,
-            R.string.ns_analytics,
-            R.drawable.ic_cloud_connection,
-            R.string.ns_analytics_description
         ),
         AppDrawerItemInfo(
             NavDrawerOption.Settings,
