@@ -105,7 +105,7 @@ public class GrpcConnectionService extends Service implements IDeviceStatusListe
     private static final String PORT_PARAMETER = "com.craxiom.networksurvey.services.extra.port";
     private static final String DEVICE_NAME_PARAMETER = "com.craxiom.networksurvey.services.extra.devicename";
 
-    private final ConnectionServiceBinder connectionServiceBinder;
+    private ConnectionServiceBinder connectionServiceBinder;
     private final Handler uiThreadHandler;
     private final SurveyServiceConnection surveyServiceConnection;
     private NetworkSurveyService networkSurveyService;
@@ -178,7 +178,7 @@ public class GrpcConnectionService extends Service implements IDeviceStatusListe
     {
         connectionState = ConnectionState.DISCONNECTED;
 
-        connectionServiceBinder = new ConnectionServiceBinder();
+        connectionServiceBinder = new ConnectionServiceBinder(this);
         uiThreadHandler = new Handler(Looper.getMainLooper());
 
         surveyServiceConnection = new SurveyServiceConnection();
@@ -305,6 +305,13 @@ public class GrpcConnectionService extends Service implements IDeviceStatusListe
         }
 
         disconnectFromGrpcServer(true);
+
+        // Clear the binder reference to prevent memory leaks
+        if (connectionServiceBinder != null)
+        {
+            connectionServiceBinder.onDestroy();
+            connectionServiceBinder = null;
+        }
 
         super.onDestroy();
     }
@@ -954,12 +961,28 @@ public class GrpcConnectionService extends Service implements IDeviceStatusListe
     /**
      * Class used for the client Binder.  Because we know this service always runs in the same process as its clients,
      * we don't need to deal with IPC.
+     * <p>
+     * This is a static inner class to prevent memory leaks. The binder can be retained by the Android system
+     * after the service is destroyed, and if it holds an implicit reference to the outer class (non-static),
+     * it will prevent the service from being garbage collected.
      */
-    public class ConnectionServiceBinder extends Binder
+    public static class ConnectionServiceBinder extends Binder
     {
+        private GrpcConnectionService service;
+
+        public ConnectionServiceBinder(GrpcConnectionService service)
+        {
+            this.service = service;
+        }
+
         public GrpcConnectionService getService()
         {
-            return GrpcConnectionService.this;
+            return service;
+        }
+
+        public void onDestroy()
+        {
+            service = null;
         }
     }
 
