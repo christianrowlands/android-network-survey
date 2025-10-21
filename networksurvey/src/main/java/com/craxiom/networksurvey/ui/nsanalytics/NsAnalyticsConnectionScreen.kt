@@ -33,6 +33,7 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.AlertDialog
@@ -331,6 +332,9 @@ private fun NotConnectedCard(
         // Setup Guide
         SetupGuideSection()
 
+        // Setup Tip Banner
+        SetupTipBanner()
+
         // Call to Action Buttons
         CallToActionButtons(
             onGetStartedClick = {
@@ -339,6 +343,9 @@ private fun NotConnectedCard(
             onScanQrClick = onQrScanClick,
             onLearnMoreClick = {
                 openUrlInBrowser(context, "https://www.networksurvey.app/analytics")
+            },
+            onQrCodeUserManualClick = {
+                openUrlInBrowser(context, "https://www.networksurvey.app/manual/ns-analytics/qr-code-registration/")
             }
         )
 
@@ -616,13 +623,61 @@ private fun SetupStepItem(
 }
 
 /**
+ * Setup tip banner recommending desktop setup
+ */
+@Composable
+private fun SetupTipBanner() {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+            containerColor = Color(0xFF1E3A5F) // Blue-tinted background for info
+        )
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            Icon(
+                imageVector = Icons.Filled.Info,
+                contentDescription = null,
+                tint = Color(0xFF64B5F6), // Light blue for the icon
+                modifier = Modifier
+                    .size(24.dp)
+                    .padding(top = 2.dp)
+            )
+
+            Column(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(4.dp)
+            ) {
+                Text(
+                    text = stringResource(R.string.ns_analytics_setup_tip_title),
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.Bold,
+                    color = Color(0xFF64B5F6) // Light blue for title
+                )
+
+                Text(
+                    text = stringResource(R.string.ns_analytics_setup_tip_message),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = Color(0xFFB3D9FF) // Lighter blue for message text
+                )
+            }
+        }
+    }
+}
+
+/**
  * Call-to-action buttons section
  */
 @Composable
 private fun CallToActionButtons(
     onGetStartedClick: () -> Unit,
     onScanQrClick: () -> Unit,
-    onLearnMoreClick: () -> Unit
+    onLearnMoreClick: () -> Unit,
+    onQrCodeUserManualClick: () -> Unit
 ) {
     Column(
         modifier = Modifier.fillMaxWidth(),
@@ -671,6 +726,23 @@ private fun CallToActionButtons(
         ) {
             Text(
                 text = stringResource(R.string.ns_analytics_learn_more),
+                color = Color(0xFF4285F4)
+            )
+            Icon(
+                painter = painterResource(R.drawable.ic_open_details),
+                tint = Color(0xFF4285F4),
+                contentDescription = null,
+                modifier = Modifier.padding(start = 8.dp)
+            )
+        }
+
+        // Text link - User Manual QR Code Registration
+        TextButton(
+            onClick = onQrCodeUserManualClick,
+            modifier = Modifier.align(Alignment.CenterHorizontally)
+        ) {
+            Text(
+                text = stringResource(R.string.ns_analytics_qr_user_manual),
                 color = Color(0xFF4285F4)
             )
             Icon(

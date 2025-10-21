@@ -893,8 +893,6 @@ but work independently, so you have full control over how you handle your data.<
     <string name="ns_analytics_test_connection">Test Connection</string>
     <string name="ns_analytics_connection_successful">Connection successful</string>
     <string name="ns_analytics_connection_failed">Connection failed</string>
-    <string name="ns_analytics_qr_scanner_title">Scan NS Analytics QR Code</string>
-    <string name="ns_analytics_qr_scanner_instruction">Point camera at NS Analytics QR code</string>
     <string name="ns_analytics_survey_stopped">Survey Stopped</string>
     <string name="ns_analytics_survey_running">Survey Running</string>
     <string name="ns_analytics_start_survey">Start Survey</string>
@@ -923,18 +921,23 @@ but work independently, so you have full control over how you handle your data.<
     <!-- Setup Guide Steps -->
     <string name="ns_analytics_setup_guide_title">How to Get Started</string>
     <string name="ns_analytics_step_1_title">Create Account</string>
-    <string name="ns_analytics_step_1_desc">Visit NS Analytics to create your free account</string>
+    <string name="ns_analytics_step_1_desc">Visit NS Analytics to create your free account (recommended on desktop)</string>
     <string name="ns_analytics_step_2_title">Create Workspace</string>
-    <string name="ns_analytics_step_2_desc">Set up a workspace for your project</string>
+    <string name="ns_analytics_step_2_desc">Set up a workspace for your project (on your computer)</string>
     <string name="ns_analytics_step_3_title">Generate QR Code</string>
     <string name="ns_analytics_step_3_desc">Generate a device QR code from your workspace</string>
     <string name="ns_analytics_step_4_title">Scan &amp; Connect</string>
     <string name="ns_analytics_step_4_desc">Return here and scan the QR code to start uploading</string>
 
+    <!-- Setup Tip Banner -->
+    <string name="ns_analytics_setup_tip_title">Setup Tip</string>
+    <string name="ns_analytics_setup_tip_message">For the easiest setup, we recommend using a desktop or laptop computer to create your account and generate the QR code. Then return here to scan the code with this device.</string>
+
     <!-- Call to Action -->
     <string name="ns_analytics_get_started">Get Started</string>
     <string name="ns_analytics_already_have_qr">Already Have a QR Code? Scan Now</string>
     <string name="ns_analytics_learn_more">Learn more about NS Analytics</string>
+    <string name="ns_analytics_qr_user_manual">QR Code User Manual</string>
 
     <!-- What Happens Next -->
     <string name="ns_analytics_what_happens_next_title">What Happens Next</string>
