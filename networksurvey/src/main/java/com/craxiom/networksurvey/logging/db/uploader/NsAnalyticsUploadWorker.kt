@@ -5,9 +5,11 @@ import androidx.work.Constraints
 import androidx.work.CoroutineWorker
 import androidx.work.Data
 import androidx.work.ExistingPeriodicWorkPolicy
+import androidx.work.ExistingWorkPolicy
 import androidx.work.NetworkType
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.PeriodicWorkRequestBuilder
+import androidx.work.WorkInfo
 import androidx.work.WorkManager
 import androidx.work.WorkerParameters
 import com.craxiom.networksurvey.constants.NsAnalyticsConstants
@@ -270,7 +272,24 @@ class NsAnalyticsUploadWorker(context: Context, params: WorkerParameters) :
     }
 
     companion object {
-        private const val NS_ANALYTICS_PERIODIC_WORK_NAME = "ns_analytics_periodic_upload"
+        private const val NS_ANALYTICS_UPLOAD_WORK_NAME = "ns_analytics_upload"
+
+        /**
+         * Check if any upload work (periodic or immediate) is currently running or enqueued
+         */
+        private fun isUploadRunning(context: Context): Boolean {
+            val workManager = WorkManager.getInstance(context)
+
+            // Check unique work for both periodic and one-time uploads
+            // Note: enqueueUniqueWork and enqueueUniquePeriodicWork maintain separate namespaces,
+            // but both will use the same unique name, so we check the shared name
+            val workInfos = workManager.getWorkInfosForUniqueWork(NS_ANALYTICS_UPLOAD_WORK_NAME).get()
+            val hasRunningWork = workInfos.any {
+                it.state == WorkInfo.State.RUNNING || it.state == WorkInfo.State.ENQUEUED
+            }
+
+            return hasRunningWork
+        }
 
         /**
          * Schedule periodic uploads
@@ -291,10 +310,11 @@ class NsAnalyticsUploadWorker(context: Context, params: WorkerParameters) :
             )
                 .setConstraints(constraints)
                 .addTag(NsAnalyticsConstants.NS_ANALYTICS_PERIODIC_WORKER_TAG)
+                .addTag(NsAnalyticsConstants.NS_ANALYTICS_UPLOAD_WORKER_TAG)
                 .build()
 
             WorkManager.getInstance(context).enqueueUniquePeriodicWork(
-                NS_ANALYTICS_PERIODIC_WORK_NAME,
+                NS_ANALYTICS_UPLOAD_WORK_NAME,
                 ExistingPeriodicWorkPolicy.REPLACE,
                 uploadRequest
             )
@@ -308,7 +328,7 @@ class NsAnalyticsUploadWorker(context: Context, params: WorkerParameters) :
         @Suppress("unused")
         fun cancelPeriodicUpload(context: Context) {
             WorkManager.getInstance(context)
-                .cancelUniqueWork(NS_ANALYTICS_PERIODIC_WORK_NAME)
+                .cancelUniqueWork(NS_ANALYTICS_UPLOAD_WORK_NAME)
             Timber.i("Cancelled NS Analytics periodic uploads")
         }
 
@@ -316,7 +336,14 @@ class NsAnalyticsUploadWorker(context: Context, params: WorkerParameters) :
          * Trigger immediate upload
          */
         @Suppress("unused")
+        @Synchronized
         fun triggerImmediateUpload(context: Context) {
+            // Check if any upload work is already running or enqueued
+            if (isUploadRunning(context)) {
+                Timber.d("Upload already running or enqueued, skipping duplicate immediate upload trigger")
+                return
+            }
+
             val constraints = Constraints.Builder()
                 .setRequiredNetworkType(NetworkType.CONNECTED)
                 .build()
@@ -326,7 +353,11 @@ class NsAnalyticsUploadWorker(context: Context, params: WorkerParameters) :
                 .addTag(NsAnalyticsConstants.NS_ANALYTICS_UPLOAD_WORKER_TAG)
                 .build()
 
-            WorkManager.getInstance(context).enqueue(uploadRequest)
+            WorkManager.getInstance(context).enqueueUniqueWork(
+                NS_ANALYTICS_UPLOAD_WORK_NAME,
+                ExistingWorkPolicy.KEEP,
+                uploadRequest
+            )
             Timber.i("Triggered immediate NS Analytics upload")
         }
     }

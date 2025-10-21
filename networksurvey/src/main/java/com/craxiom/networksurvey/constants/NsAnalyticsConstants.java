@@ -68,7 +68,6 @@ public class NsAnalyticsConstants
 
     // Intent Extras
     public static final String EXTRA_UPLOAD_SUCCESS = "upload_success";
-    public static final String EXTRA_UPLOAD_MESSAGE = "upload_message";
     public static final String EXTRA_RECORDS_UPLOADED = "records_uploaded";
 
     private NsAnalyticsConstants()

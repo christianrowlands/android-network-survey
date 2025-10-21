@@ -444,6 +444,7 @@ class NsAnalyticsConnectionViewModel(
                 // Cancel any scheduled uploads
                 NsAnalyticsUploadWorker.cancelPeriodicUpload(context)
                 workManager.cancelAllWorkByTag(NsAnalyticsConstants.NS_ANALYTICS_PERIODIC_WORKER_TAG)
+                workManager.cancelAllWorkByTag(NsAnalyticsConstants.NS_ANALYTICS_UPLOAD_WORKER_TAG)
 
                 _uiState.value = NsAnalyticsConnectionUiState(
                     isLoading = false,
@@ -700,23 +701,10 @@ class NsAnalyticsConnectionViewModel(
                         schedulePeriodicUploadsIfNeeded()
                         "Survey started"
                     } else {
-                        // Survey stopped - cancel periodic uploads and trigger immediate upload if needed
+                        // Survey stopped - cancel periodic uploads
+                        // Note: NetworkSurveyService handles the immediate upload trigger to avoid duplicates
                         NsAnalyticsUploadWorker.cancelPeriodicUpload(context)
                         Timber.d("Canceled periodic uploads after survey stop")
-
-                        // Check if we need to trigger immediate upload
-                        if (PreferenceUtils.isNsAnalyticsAutoUpload(context)) {
-                            viewModelScope.launch(Dispatchers.IO) {
-                                val pendingCount = database.nsAnalyticsDao().getPendingRecordCount()
-                                if (pendingCount > 0) {
-                                    // Trigger immediate upload to send remaining records
-                                    NsAnalyticsUploadWorker.triggerImmediateUpload(context)
-                                    Timber.i("Survey stopped with $pendingCount pending records - triggered immediate upload")
-                                } else {
-                                    Timber.i("Survey stopped with no pending records")
-                                }
-                            }
-                        }
                         "Survey stopped"
                     }
                     showMessage(message)
