@@ -208,9 +208,9 @@
     </style>
 
     <style name="CardTitleStyle" parent="android:Widget.TextView">
-        <item name="android:textSize">18sp</item>
+        <item name="android:textSize">16sp</item>
         <item name="android:textStyle">bold</item>
-        <item name="android:textColor">#c2c1c1</item>
+        <item name="android:textColor">@color/md_theme_onPrimary</item>
     </style>
 
     <style name="LabelStyle" parent="android:Widget.TextView">
