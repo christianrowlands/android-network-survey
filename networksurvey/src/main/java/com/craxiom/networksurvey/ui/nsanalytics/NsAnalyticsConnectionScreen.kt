@@ -33,6 +33,8 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.LocationOn
+import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -72,6 +74,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
+import androidx.core.net.toUri
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
@@ -79,6 +82,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import com.craxiom.networksurvey.R
 import com.craxiom.networksurvey.services.NetworkSurveyService
+import com.craxiom.networksurvey.ui.theme.onPrimaryDark
 import timber.log.Timber
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -312,6 +316,208 @@ private fun NsAnalyticsConnectionContent(
 private fun NotConnectedCard(
     onQrScanClick: () -> Unit
 ) {
+    val context = LocalContext.current
+
+    Column(
+        modifier = Modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
+        // Hero Section
+        NsAnalyticsHeroSection()
+
+        // Benefits Grid
+        BenefitsGrid()
+
+        // Setup Guide
+        SetupGuideSection()
+
+        // Call to Action Buttons
+        CallToActionButtons(
+            onGetStartedClick = {
+                openUrlInBrowser(context, "https://analytics.networksurvey.app")
+            },
+            onScanQrClick = onQrScanClick,
+            onLearnMoreClick = {
+                openUrlInBrowser(context, "https://www.networksurvey.app/analytics")
+            }
+        )
+
+        // What Happens Next
+        WhatHappensNextSection()
+    }
+}
+
+/**
+ * Hero section with NS Analytics branding and tagline
+ */
+@Composable
+private fun NsAnalyticsHeroSection() {
+    Column(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        Icon(
+            painter = painterResource(R.drawable.ic_ns_analytics),
+            contentDescription = null,
+            modifier = Modifier.size(56.dp),
+            tint = Color(0xFF4285F4)
+        )
+
+        Text(
+            text = stringResource(R.string.ns_analytics),
+            style = MaterialTheme.typography.headlineMedium,
+            fontWeight = FontWeight.Bold,
+            color = Color.White
+        )
+
+        Text(
+            text = stringResource(R.string.ns_analytics_tagline),
+            style = MaterialTheme.typography.bodyMedium,
+            color = Color.Gray,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.padding(horizontal = 16.dp)
+        )
+    }
+}
+
+/**
+ * Grid of 3 benefit cards highlighting key value propositions
+ */
+@Composable
+private fun BenefitsGrid() {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        BenefitCardWithImageVector(
+            icon = Icons.Filled.LocationOn,
+            title = stringResource(R.string.ns_analytics_benefit_geospatial_title),
+            description = stringResource(R.string.ns_analytics_benefit_geospatial_desc),
+            modifier = Modifier.weight(1f)
+        )
+
+        BenefitCardWithImageVector(
+            icon = Icons.Filled.Star,
+            title = stringResource(R.string.ns_analytics_benefit_free_title),
+            description = stringResource(R.string.ns_analytics_benefit_free_desc),
+            modifier = Modifier.weight(1f)
+        )
+
+        BenefitCardWithPainter(
+            icon = painterResource(R.drawable.ic_upload_24),
+            title = stringResource(R.string.ns_analytics_benefit_auto_upload_title),
+            description = stringResource(R.string.ns_analytics_benefit_auto_upload_desc),
+            modifier = Modifier.weight(1f)
+        )
+    }
+}
+
+/**
+ * Individual benefit card with Material Icon
+ */
+@Composable
+private fun BenefitCardWithImageVector(
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    title: String,
+    description: String,
+    modifier: Modifier = Modifier
+) {
+    Card(
+        modifier = modifier,
+        colors = CardDefaults.cardColors(
+            containerColor = Color(0xFF1E1F24)
+        )
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(12.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                modifier = Modifier.size(32.dp),
+                tint = Color(0xFF4285F4)
+            )
+
+            Text(
+                text = title,
+                style = MaterialTheme.typography.labelMedium,
+                fontWeight = FontWeight.Bold,
+                color = Color.White,
+                textAlign = TextAlign.Center,
+                maxLines = 2
+            )
+
+            Text(
+                text = description,
+                style = MaterialTheme.typography.bodySmall,
+                color = Color.Gray,
+                textAlign = TextAlign.Center,
+                maxLines = 2
+            )
+        }
+    }
+}
+
+/**
+ * Individual benefit card
+ */
+@Composable
+private fun BenefitCardWithPainter(
+    icon: androidx.compose.ui.graphics.painter.Painter,
+    title: String,
+    description: String,
+    modifier: Modifier = Modifier
+) {
+    Card(
+        modifier = modifier,
+        colors = CardDefaults.cardColors(
+            containerColor = Color(0xFF1E1F24)
+        )
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(12.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            Icon(
+                painter = icon,
+                contentDescription = null,
+                modifier = Modifier.size(32.dp),
+                tint = Color(0xFF4285F4)
+            )
+
+            Text(
+                text = title,
+                style = MaterialTheme.typography.labelMedium,
+                fontWeight = FontWeight.Bold,
+                color = Color.White,
+                textAlign = TextAlign.Center,
+                maxLines = 2
+            )
+
+            Text(
+                text = description,
+                style = MaterialTheme.typography.bodySmall,
+                color = Color.Gray,
+                textAlign = TextAlign.Center,
+                maxLines = 2
+            )
+        }
+    }
+}
+
+/**
+ * Step-by-step setup guide section
+ */
+@Composable
+private fun SetupGuideSection() {
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(
@@ -321,46 +527,209 @@ private fun NotConnectedCard(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(24.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
+                .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            Icon(
-                imageVector = Icons.Default.Clear,
-                contentDescription = null,
-                modifier = Modifier.size(48.dp),
-                tint = Color(0xFFE53935)
+            Text(
+                text = stringResource(R.string.ns_analytics_setup_guide_title),
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                color = Color.White
+            )
+
+            SetupStepItem(
+                stepNumber = 1,
+                title = stringResource(R.string.ns_analytics_step_1_title),
+                description = stringResource(R.string.ns_analytics_step_1_desc)
+            )
+
+            SetupStepItem(
+                stepNumber = 2,
+                title = stringResource(R.string.ns_analytics_step_2_title),
+                description = stringResource(R.string.ns_analytics_step_2_desc)
+            )
+
+            SetupStepItem(
+                stepNumber = 3,
+                title = stringResource(R.string.ns_analytics_step_3_title),
+                description = stringResource(R.string.ns_analytics_step_3_desc)
+            )
+
+            SetupStepItem(
+                stepNumber = 4,
+                title = stringResource(R.string.ns_analytics_step_4_title),
+                description = stringResource(R.string.ns_analytics_step_4_desc)
+            )
+        }
+    }
+}
+
+/**
+ * Individual setup step with number, title, and description
+ */
+@Composable
+private fun SetupStepItem(
+    stepNumber: Int,
+    title: String,
+    description: String
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        // Step number circle
+        Box(
+            modifier = Modifier
+                .size(32.dp)
+                .background(
+                    color = Color(0xFF2A2B30),
+                    shape = MaterialTheme.shapes.small
+                ),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                text = stepNumber.toString(),
+                style = MaterialTheme.typography.labelLarge,
+                fontWeight = FontWeight.Bold,
+                color = Color(0xFF4285F4)
+            )
+        }
+
+        Column(
+            modifier = Modifier.weight(1f),
+            verticalArrangement = Arrangement.spacedBy(4.dp)
+        ) {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = FontWeight.SemiBold,
+                color = Color.White
             )
 
             Text(
-                text = "Not Connected",
-                style = MaterialTheme.typography.headlineSmall,
+                text = description,
+                style = MaterialTheme.typography.bodySmall,
+                color = Color.Gray
+            )
+        }
+    }
+}
+
+/**
+ * Call-to-action buttons section
+ */
+@Composable
+private fun CallToActionButtons(
+    onGetStartedClick: () -> Unit,
+    onScanQrClick: () -> Unit,
+    onLearnMoreClick: () -> Unit
+) {
+    Column(
+        modifier = Modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        // Primary button - Get Started
+        Button(
+            onClick = onGetStartedClick,
+            modifier = Modifier.fillMaxWidth(),
+            colors = ButtonDefaults.buttonColors(
+                containerColor = Color(0xFF4285F4)
+            )
+        ) {
+            Text(stringResource(R.string.ns_analytics_get_started))
+            Icon(
+                painter = painterResource(R.drawable.ic_open_details),
+                tint = onPrimaryDark,
+                contentDescription = null,
+                modifier = Modifier.padding(start = 8.dp)
+            )
+        }
+
+        // Secondary button - Scan QR Code
+        Button(
+            onClick = onScanQrClick,
+            modifier = Modifier.fillMaxWidth(),
+            colors = ButtonDefaults.buttonColors(
+                containerColor = Color(0xFF4285F4)
+            ),
+            border = ButtonDefaults.outlinedButtonBorder(true).copy(
+                brush = androidx.compose.ui.graphics.SolidColor(Color(0xFF4285F4))
+            )
+        ) {
+            Icon(
+                imageVector = Icons.Default.Add,
+                contentDescription = null,
+                modifier = Modifier.padding(end = 8.dp)
+            )
+            Text(stringResource(R.string.ns_analytics_already_have_qr))
+        }
+
+        // Text link - Learn More
+        TextButton(
+            onClick = onLearnMoreClick,
+            modifier = Modifier.align(Alignment.CenterHorizontally)
+        ) {
+            Text(
+                text = stringResource(R.string.ns_analytics_learn_more),
+                color = Color(0xFF4285F4)
+            )
+            Icon(
+                painter = painterResource(R.drawable.ic_open_details),
+                tint = Color(0xFF4285F4),
+                contentDescription = null,
+                modifier = Modifier.padding(start = 8.dp)
+            )
+        }
+    }
+}
+
+/**
+ * What happens next explanation section
+ */
+@Composable
+private fun WhatHappensNextSection() {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+            containerColor = Color(0xFF1E1F24)
+        )
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            Text(
+                text = stringResource(R.string.ns_analytics_what_happens_next_title),
+                style = MaterialTheme.typography.titleSmall,
                 fontWeight = FontWeight.Bold,
                 color = Color.White
             )
 
             Text(
-                text = "Connect to NS Analytics to start uploading survey data",
-                style = MaterialTheme.typography.bodyMedium,
-                color = Color.Gray,
-                textAlign = TextAlign.Center
+                text = stringResource(R.string.ns_analytics_what_happens_next_desc),
+                style = MaterialTheme.typography.bodySmall,
+                color = Color.Gray
             )
-
-            Button(
-                onClick = onQrScanClick,
-                modifier = Modifier.fillMaxWidth(),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFF4285F4)
-                )
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Add,
-                    contentDescription = null,
-                    modifier = Modifier.padding(end = 8.dp)
-                )
-                Text("Scan QR Code")
-            }
         }
+    }
+}
+
+/**
+ * Opens a URL in the default browser
+ */
+private fun openUrlInBrowser(context: Context, url: String) {
+    try {
+        val intent = Intent(Intent.ACTION_VIEW, url.toUri())
+        context.startActivity(intent)
+    } catch (e: Exception) {
+        Timber.e(e, "Failed to open URL: $url")
+        Toast.makeText(
+            context,
+            "Unable to open web browser",
+            Toast.LENGTH_SHORT
+        ).show()
     }
 }
 

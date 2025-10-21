@@ -908,4 +908,35 @@ but work independently, so you have full control over how you handle your data.<
     <string name="ns_analytics_survey_already_stopped">NS Analytics survey is already stopped</string>
     <string name="ns_analytics_survey_toggle_failed">Failed to toggle NS Analytics survey</string>
     <string name="ns_analytics_survey_no_protocols_enabled">Must enable at least one protocol for the NS Analytics Survey</string>
+
+    <!-- NS Analytics Onboarding -->
+    <string name="ns_analytics_tagline">Cloud-based visualization and analysis for your network survey data</string>
+
+    <!-- Benefit Cards -->
+    <string name="ns_analytics_benefit_geospatial_title">Geospatial Visualization</string>
+    <string name="ns_analytics_benefit_geospatial_desc">See your data on interactive maps</string>
+    <string name="ns_analytics_benefit_free_title">Free to Start</string>
+    <string name="ns_analytics_benefit_free_desc">No credit card required</string>
+    <string name="ns_analytics_benefit_auto_upload_title">Automatic Upload</string>
+    <string name="ns_analytics_benefit_auto_upload_desc">Set it once, sync continuously</string>
+
+    <!-- Setup Guide Steps -->
+    <string name="ns_analytics_setup_guide_title">How to Get Started</string>
+    <string name="ns_analytics_step_1_title">Create Account</string>
+    <string name="ns_analytics_step_1_desc">Visit NS Analytics to create your free account</string>
+    <string name="ns_analytics_step_2_title">Create Workspace</string>
+    <string name="ns_analytics_step_2_desc">Set up a workspace for your project</string>
+    <string name="ns_analytics_step_3_title">Generate QR Code</string>
+    <string name="ns_analytics_step_3_desc">Generate a device QR code from your workspace</string>
+    <string name="ns_analytics_step_4_title">Scan &amp; Connect</string>
+    <string name="ns_analytics_step_4_desc">Return here and scan the QR code to start uploading</string>
+
+    <!-- Call to Action -->
+    <string name="ns_analytics_get_started">Get Started</string>
+    <string name="ns_analytics_already_have_qr">Already Have a QR Code? Scan Now</string>
+    <string name="ns_analytics_learn_more">Learn more about NS Analytics</string>
+
+    <!-- What Happens Next -->
+    <string name="ns_analytics_what_happens_next_title">What Happens Next</string>
+    <string name="ns_analytics_what_happens_next_desc">Once connected, your survey data will automatically upload to your workspace when you have an internet connection. You can view and analyze it on the NS Analytics dashboard.</string>
 </resources>
