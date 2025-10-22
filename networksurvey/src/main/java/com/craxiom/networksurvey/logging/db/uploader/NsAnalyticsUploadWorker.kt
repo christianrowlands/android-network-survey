@@ -18,6 +18,7 @@ import com.craxiom.networksurvey.data.api.RecordBatch
 import com.craxiom.networksurvey.data.api.UploadBatchRequest
 import com.craxiom.networksurvey.logging.db.SurveyDatabase
 import com.craxiom.networksurvey.logging.db.model.NsAnalyticsQueueEntity
+import com.craxiom.networksurvey.util.MdmUtils
 import com.craxiom.networksurvey.util.NsAnalyticsSecureStorage
 import com.google.gson.JsonParser
 import kotlinx.coroutines.Dispatchers
@@ -283,7 +284,8 @@ class NsAnalyticsUploadWorker(context: Context, params: WorkerParameters) :
             // Check unique work for both periodic and one-time uploads
             // Note: enqueueUniqueWork and enqueueUniquePeriodicWork maintain separate namespaces,
             // but both will use the same unique name, so we check the shared name
-            val workInfos = workManager.getWorkInfosForUniqueWork(NS_ANALYTICS_UPLOAD_WORK_NAME).get()
+            val workInfos =
+                workManager.getWorkInfosForUniqueWork(NS_ANALYTICS_UPLOAD_WORK_NAME).get()
             val hasRunningWork = workInfos.any {
                 it.state == WorkInfo.State.RUNNING || it.state == WorkInfo.State.ENQUEUED
             }
@@ -296,6 +298,12 @@ class NsAnalyticsUploadWorker(context: Context, params: WorkerParameters) :
          */
         @Suppress("unused")
         fun schedulePeriodicUpload(context: Context, intervalMinutes: Int) {
+            // Check if NS Analytics is allowed via MDM
+            if (!MdmUtils.isNsAnalyticsAllowed(context)) {
+                Timber.w("NS Analytics upload scheduling prevented by MDM policy")
+                return
+            }
+
             if (intervalMinutes <= 0) {
                 // Real-time mode - don't schedule periodic work
                 return
@@ -338,6 +346,12 @@ class NsAnalyticsUploadWorker(context: Context, params: WorkerParameters) :
         @Suppress("unused")
         @Synchronized
         fun triggerImmediateUpload(context: Context) {
+            // Check if NS Analytics is allowed via MDM
+            if (!MdmUtils.isNsAnalyticsAllowed(context)) {
+                Timber.w("NS Analytics immediate upload prevented by MDM policy")
+                return
+            }
+
             // Check if any upload work is already running or enqueued
             if (isUploadRunning(context)) {
                 Timber.d("Upload already running or enqueued, skipping duplicate immediate upload trigger")

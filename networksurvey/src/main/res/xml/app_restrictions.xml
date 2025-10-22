@@ -209,6 +209,13 @@
         android:title="@string/allow_data_upload" />
 
     <restriction
+        android:defaultValue="false"
+        android:description="@string/allow_ns_analytics_mdm_description"
+        android:key="allow_ns_analytics"
+        android:restrictionType="bool"
+        android:title="@string/allow_ns_analytics_title" />
+
+    <restriction
         android:defaultValue="0"
         android:description="@string/battery_pause_mdm_description"
         android:key="battery_threshold_percent"

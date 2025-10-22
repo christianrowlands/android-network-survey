@@ -86,4 +86,23 @@ public class MdmUtils
 
         return true;
     }
+
+    /**
+     * @return True, if the MDM configuration allows NS Analytics uploads or if this device
+     * is not under MDM control, false otherwise.
+     */
+    public static boolean isNsAnalyticsAllowed(Context context)
+    {
+        if (isUnderMdmControl(context, SettingsFragment.MDM_OVERLAP_PROPERTY_KEYS))
+        {
+            final RestrictionsManager restrictionsManager = (RestrictionsManager) context.getSystemService(Context.RESTRICTIONS_SERVICE);
+            if (restrictionsManager != null)
+            {
+                final Bundle mdmProperties = restrictionsManager.getApplicationRestrictions();
+                return mdmProperties.getBoolean(NetworkSurveyConstants.MDM_PROPERTY_ALLOW_NS_ANALYTICS, false);
+            }
+        }
+
+        return true;
+    }
 }

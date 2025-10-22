@@ -28,6 +28,7 @@ import com.craxiom.networksurvey.ui.main.appdrawer.AppDrawerContent
 import com.craxiom.networksurvey.ui.main.appdrawer.AppDrawerItemInfo
 import com.craxiom.networksurvey.ui.theme.NsTheme
 import com.craxiom.networksurvey.util.BatteryOptimizationHelper
+import com.craxiom.networksurvey.util.MdmUtils
 
 
 @Composable
@@ -212,7 +213,7 @@ fun MainCompose(
                     AppDrawerContent(
                         appVersion = appVersion,
                         drawerState = drawerState,
-                        menuItems = DrawerParams.drawerButtons,
+                        menuItems = DrawerParams.drawerButtons(context),
                         externalLinks = DrawerParams.externalDrawerLinks,
                         defaultPick = NavDrawerOption.None
                     ) { onUserPickedOption ->
@@ -315,44 +316,53 @@ enum class NavRoutes {
 }
 
 object DrawerParams {
-    val drawerButtons = arrayListOf(
-        AppDrawerItemInfo(
-            NavDrawerOption.NsAnalyticsConnection,
-            R.string.ns_analytics,
-            R.drawable.ic_ns_analytics,
-            R.string.ns_analytics_description
-        ),
-        AppDrawerItemInfo(
-            NavDrawerOption.ServerConnection,
-            R.string.grpc_connection_title,
-            R.drawable.connection_icon,
-            R.string.grpc_connection_description
-        ),
-        AppDrawerItemInfo(
-            NavDrawerOption.MqttBrokerConnection,
-            R.string.mqtt_connection_title_full,
-            R.drawable.ic_cloud_connection,
-            R.string.device_status_stream_description
-        ),
-        AppDrawerItemInfo(
-            NavDrawerOption.CellularCalculators,
-            R.string.cellular_calculators,
-            R.drawable.ic_calculator,
-            R.string.device_status_stream_description
-        ),
-        AppDrawerItemInfo(
-            NavDrawerOption.SurveyMonitor,
-            R.string.survey_monitor,
-            R.drawable.ic_survey_monitor,
-            R.string.survey_monitor_description
-        ),
-        AppDrawerItemInfo(
-            NavDrawerOption.Settings,
-            R.string.settings,
-            R.drawable.ic_settings,
-            R.string.device_status_stream_description
+    fun drawerButtons(context: android.content.Context): List<AppDrawerItemInfo<NavDrawerOption>> {
+        val buttons = arrayListOf(
+            AppDrawerItemInfo(
+                NavDrawerOption.NsAnalyticsConnection,
+                R.string.ns_analytics,
+                R.drawable.ic_ns_analytics,
+                R.string.ns_analytics_description
+            ),
+            AppDrawerItemInfo(
+                NavDrawerOption.ServerConnection,
+                R.string.grpc_connection_title,
+                R.drawable.connection_icon,
+                R.string.grpc_connection_description
+            ),
+            AppDrawerItemInfo(
+                NavDrawerOption.MqttBrokerConnection,
+                R.string.mqtt_connection_title_full,
+                R.drawable.ic_cloud_connection,
+                R.string.device_status_stream_description
+            ),
+            AppDrawerItemInfo(
+                NavDrawerOption.CellularCalculators,
+                R.string.cellular_calculators,
+                R.drawable.ic_calculator,
+                R.string.device_status_stream_description
+            ),
+            AppDrawerItemInfo(
+                NavDrawerOption.SurveyMonitor,
+                R.string.survey_monitor,
+                R.drawable.ic_survey_monitor,
+                R.string.survey_monitor_description
+            ),
+            AppDrawerItemInfo(
+                NavDrawerOption.Settings,
+                R.string.settings,
+                R.drawable.ic_settings,
+                R.string.device_status_stream_description
+            )
         )
-    )
+
+        // Filter out NS Analytics if not allowed via MDM
+        return if (MdmUtils.isNsAnalyticsAllowed(context)) {
+            buttons
+        } else {
+            buttons.filter { it.drawerOption != NavDrawerOption.NsAnalyticsConnection }
+        }
+    }
 
     val externalDrawerLinks = arrayListOf(
         AppDrawerItemInfo(

@@ -547,6 +547,9 @@ but work independently, so you have full control over how you handle your data.<
     <string name="allow_data_upload">External Data Upload</string>
     <string name="allow_data_upload_mdm_description">True to allow users to upload survey records to 3rd Party databases such as OpenCelliD and BeaconDB, false to prevent it</string>
 
+    <string name="allow_ns_analytics_title">Allow NS Analytics</string>
+    <string name="allow_ns_analytics_mdm_description">True to allow users to register and upload survey records to NS Analytics, false to prevent it</string>
+
     <string name="auto_start_mqtt_summary_on">The MQTT connection will be started when the phone is booted (Note that a valid MQTT broker must be configured in the connection UI)</string>
     <string name="auto_start_mqtt_summary_off">The MQTT connection will only be started manually</string>
 
@@ -761,6 +764,7 @@ but work independently, so you have full control over how you handle your data.<
     <string name="show_upload_dialog_pref_title">Show Upload Config Dialog</string>
     <string name="uploader_enqueued">An error occurred, will retry later</string>
     <string name="upload_disabled_via_mdm">External upload has been disabled via MDM</string>
+    <string name="ns_analytics_disabled_via_mdm">NS Analytics has been disabled by device administrator</string>
     <string name="upload_saving_toggle_failed">An error occurred when trying to start saving records for upload</string>
     <string name="upload_saving_start_toast">Started scanning and saving records for upload</string>
     <string name="upload_saving_stop_toast">Stopped scanning and saving records for upload</string>

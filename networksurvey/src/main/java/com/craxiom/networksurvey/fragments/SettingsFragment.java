@@ -98,7 +98,7 @@ public class SettingsFragment extends PreferenceFragmentCompat implements Shared
         }
 
         // NS Analytics Connection Settings
-        final Preference nsAnalyticsConnection = findPreference("ns_analytics_connection");
+        final Preference nsAnalyticsConnection = findPreference(NetworkSurveyConstants.PROPERTY_NS_ANALYTICS_CONNECTION);
         if (nsAnalyticsConnection != null)
         {
             nsAnalyticsConnection.setOnPreferenceClickListener(preference -> {
@@ -401,6 +401,17 @@ public class SettingsFragment extends PreferenceFragmentCompat implements Shared
             {
                 preference.setEnabled(false);
                 preference.setSummary(R.string.upload_disabled_via_mdm);
+            }
+        }
+
+        // Regardless of MDM override, NS Analytics is disabled if MDM disables it
+        if (!MdmUtils.isNsAnalyticsAllowed(context))
+        {
+            Preference preference = findPreference(NetworkSurveyConstants.PROPERTY_NS_ANALYTICS_CONNECTION);
+            if (preference != null)
+            {
+                preference.setEnabled(false);
+                preference.setSummary(R.string.ns_analytics_disabled_via_mdm);
             }
         }
 

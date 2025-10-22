@@ -138,11 +138,12 @@ fun AppIcon() {
 @Preview
 @Composable
 fun AppDrawerContentPreview() {
+    val context = LocalContext.current
     NsTheme {
         AppDrawerContent(
             appVersion = "1.0",
             drawerState = DrawerState(DrawerValue.Closed),
-            menuItems = DrawerParams.drawerButtons,
+            menuItems = DrawerParams.drawerButtons(context),
             externalLinks = DrawerParams.externalDrawerLinks,
             defaultPick = NavDrawerOption.CellularCalculators,
             onClick = {}

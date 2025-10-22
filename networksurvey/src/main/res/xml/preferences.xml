@@ -90,7 +90,7 @@
         app:title="NS Analytics">
 
         <Preference
-            app:key="ns_analytics_connection"
+            app:key="ns_analytics_connection_pref"
             app:title="Connection Settings"
             app:summary="Manage NS Analytics connection and device registration" />
 

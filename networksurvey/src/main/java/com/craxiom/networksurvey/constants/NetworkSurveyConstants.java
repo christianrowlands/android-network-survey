@@ -124,6 +124,7 @@ public class NetworkSurveyConstants
 
     // MDM Only Preferences
     public static final String MDM_PROPERTY_ALLOW_EXTERNAL_DATA_UPLOAD = "allow_external_data_upload";
+    public static final String MDM_PROPERTY_ALLOW_NS_ANALYTICS = "allow_ns_analytics";
     public static final String PROPERTY_MDM_MQTT_DEVICE_NAME = "mqtt_device_name";
 
     // Preferences
@@ -168,6 +169,7 @@ public class NetworkSurveyConstants
     public static final String PROPERTY_UPLOAD_RETRY_ENABLED = "upload_retry_enabled";
     public static final String PROPERTY_OCID_API_KEY = "ocid_api_key";
     public static final String UPLOAD_PREFERENCES_GROUP = "upload_preferences_group";
+    public static final String PROPERTY_NS_ANALYTICS_CONNECTION = "ns_analytics_connection_pref";
     public static final String PROPERTY_DELETE_ALL_DATA_IN_UPLOAD_DATABASE = "delete_all_data_in_upload_database";
 
     public static final String PROPERTY_MQTT_CELLULAR_STREAM_ENABLED = "cellular_stream_enabled";

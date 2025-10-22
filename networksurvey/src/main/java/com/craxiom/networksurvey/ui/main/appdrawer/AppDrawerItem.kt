@@ -14,6 +14,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
@@ -21,7 +22,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.tooling.preview.PreviewParameterProvider
 import androidx.compose.ui.unit.dp
-import com.craxiom.networksurvey.ui.main.DrawerParams
+import com.craxiom.networksurvey.R
 import com.craxiom.networksurvey.ui.main.NavDrawerOption
 import com.craxiom.networksurvey.ui.theme.NsTheme
 
@@ -59,7 +60,46 @@ fun <T> AppDrawerItem(item: AppDrawerItemInfo<T>, onClick: (options: T) -> Unit)
 
 class MainStateProvider : PreviewParameterProvider<AppDrawerItemInfo<NavDrawerOption>> {
     override val values = sequence {
-        DrawerParams.drawerButtons.forEach { element ->
+        // Hardcoded list for preview purposes (includes all menu items)
+        val previewButtons = arrayListOf(
+            AppDrawerItemInfo(
+                NavDrawerOption.NsAnalyticsConnection,
+                R.string.ns_analytics,
+                R.drawable.ic_ns_analytics,
+                R.string.ns_analytics_description
+            ),
+            AppDrawerItemInfo(
+                NavDrawerOption.ServerConnection,
+                R.string.grpc_connection_title,
+                R.drawable.connection_icon,
+                R.string.grpc_connection_description
+            ),
+            AppDrawerItemInfo(
+                NavDrawerOption.MqttBrokerConnection,
+                R.string.mqtt_connection_title_full,
+                R.drawable.ic_cloud_connection,
+                R.string.device_status_stream_description
+            ),
+            AppDrawerItemInfo(
+                NavDrawerOption.CellularCalculators,
+                R.string.cellular_calculators,
+                R.drawable.ic_calculator,
+                R.string.device_status_stream_description
+            ),
+            AppDrawerItemInfo(
+                NavDrawerOption.SurveyMonitor,
+                R.string.survey_monitor,
+                R.drawable.ic_survey_monitor,
+                R.string.survey_monitor_description
+            ),
+            AppDrawerItemInfo(
+                NavDrawerOption.Settings,
+                R.string.settings,
+                R.drawable.ic_settings,
+                R.string.device_status_stream_description
+            )
+        )
+        previewButtons.forEach { element ->
             yield(element)
         }
     }
@@ -68,6 +108,7 @@ class MainStateProvider : PreviewParameterProvider<AppDrawerItemInfo<NavDrawerOp
 @Preview
 @Composable
 fun AppDrawerItemPreview(@PreviewParameter(MainStateProvider::class) state: AppDrawerItemInfo<NavDrawerOption>) {
+    LocalContext.current
     NsTheme {
         AppDrawerItem(item = state, onClick = {})
     }
