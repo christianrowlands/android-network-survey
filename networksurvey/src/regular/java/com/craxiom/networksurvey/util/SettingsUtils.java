@@ -8,8 +8,6 @@ import androidx.preference.Preference;
 import com.google.android.gms.tasks.Task;
 import com.google.firebase.analytics.FirebaseAnalytics;
 
-import org.checkerframework.checker.nullness.qual.Nullable;
-
 /**
  * A utility class for working with the Network Survey settings.
  */
@@ -20,7 +18,7 @@ public class SettingsUtils
         if (context == null) return;
         if (appInstanceIdPreference == null) return;
 
-        Task<@Nullable String> appInstanceId = FirebaseAnalytics.getInstance(context).getAppInstanceId();
+        Task<String> appInstanceId = FirebaseAnalytics.getInstance(context).getAppInstanceId();
         appInstanceId.addOnSuccessListener(id -> {
             if (id != null)
             {
