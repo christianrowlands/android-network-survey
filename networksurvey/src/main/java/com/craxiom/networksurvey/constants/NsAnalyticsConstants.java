@@ -10,7 +10,7 @@ public class NsAnalyticsConstants
     public static final String PROPERTY_NS_ANALYTICS_DEVICE_ID = "ns_analytics_device_id";
     public static final String PROPERTY_NS_ANALYTICS_DEVICE_TOKEN = "ns_analytics_device_token";
     public static final String PROPERTY_NS_ANALYTICS_WORKSPACE_ID = "ns_analytics_workspace_id";
-    public static final String PROPERTY_NS_ANALYTICS_WORKSPACE_NAME = "ns_analytics_workspace_name"; // FIXME is this the name? If so, use it in the UI
+    public static final String PROPERTY_NS_ANALYTICS_WORKSPACE_NAME = "ns_analytics_workspace_name";
     public static final String PROPERTY_NS_ANALYTICS_API_URL = "ns_analytics_api_url";
     public static final String PROPERTY_NS_ANALYTICS_URL = "ns_analytics_url";
     public static final String PROPERTY_NS_ANALYTICS_UPLOAD_FREQUENCY = "ns_analytics_upload_frequency";

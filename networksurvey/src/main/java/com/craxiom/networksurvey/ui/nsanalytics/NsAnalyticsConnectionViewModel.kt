@@ -2,6 +2,7 @@ package com.craxiom.networksurvey.ui.nsanalytics
 
 import android.app.Application
 import android.os.Build
+import android.provider.Settings
 import androidx.core.content.edit
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.Observer
@@ -520,7 +521,7 @@ class NsAnalyticsConnectionViewModel(
             withContext(Dispatchers.IO) {
                 // Generate a unique device ID if we don't have one
                 val deviceId = NsAnalyticsSecureStorage.getDeviceId(context)
-                    ?: UUID.randomUUID().toString()
+                    ?: Settings.Secure.getString(context.getContentResolver(), Settings.Secure.ANDROID_ID)
 
                 // Create the API client for the specified URL
                 val api = NsAnalyticsApiFactory.createClient(qrData.apiUrl)
