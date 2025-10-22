@@ -18,7 +18,7 @@ if (file("google-services.json").exists() && !gradle.startParameter.taskNames.an
 }
 
 ext.androidVersion = '28.0.0'
-ext.grpcVersion = '1.75.0'
+ext.grpcVersion = '1.76.0'
 ext.networkSurveyMessagingVersion = '1.9.0'
 ext.navigationVersion = '2.9.5'
 
@@ -127,7 +127,7 @@ dependencies {
     implementation 'com.google.android.flexbox:flexbox:3.0.0'
 
     implementation 'com.craxiom:mqtt-library:0.7.5'
-    implementation "com.google.protobuf:protobuf-java-util:4.32.1"
+    implementation "com.google.protobuf:protobuf-java-util:4.33.0"
     implementation "io.grpc:grpc-okhttp:${grpcVersion}"
     implementation "io.grpc:grpc-android:${grpcVersion}"
     implementation "io.grpc:grpc-stub:${grpcVersion}"
@@ -139,11 +139,7 @@ dependencies {
         exclude group: 'com.google.api.grpc', module: 'proto-google-common-protos'
     }
 
-    implementation("mil.nga.geopackage:geopackage-android:6.7.4") {
-        exclude group: 'mil.nga', module: 'sqlite-android'
-    }
-    // Manual Hack because of https://github.com/ngageoint/geopackage-android/issues/79
-    implementation files('libs/sqlite-android-3500400.aar')
+    implementation("mil.nga.geopackage:geopackage-android:6.7.5")
     implementation 'org.apache.commons:commons-csv:1.14.1'
 
     implementation 'androidx.constraintlayout:constraintlayout:2.2.1'
@@ -160,13 +156,13 @@ dependencies {
     implementation "androidx.room:room-runtime:$room_version"
 
     implementation "com.google.dagger:dagger:$hilt_version"
-    implementation 'androidx.compose.ui:ui-viewbinding:1.9.2'
+    implementation 'androidx.compose.ui:ui-viewbinding:1.9.3'
     ksp "androidx.room:room-compiler:$room_version"
     kapt "com.google.dagger:dagger-compiler:$hilt_version"
     implementation "com.google.dagger:hilt-android:$hilt_version"
     kapt "com.google.dagger:hilt-compiler:$hilt_version"
 
-    implementation 'org.maplibre.gl:android-sdk:12.0.0'
+    implementation 'org.maplibre.gl:android-sdk:12.0.1'
     implementation 'org.maplibre.gl:android-plugin-annotation-v9:3.0.2'
 
     implementation 'com.squareup.retrofit2:retrofit:3.0.0'
@@ -176,7 +172,7 @@ dependencies {
     implementation "androidx.work:work-runtime:2.10.5"
 
     // Compose
-    def composeBom = platform('androidx.compose:compose-bom:2025.09.01')
+    def composeBom = platform('androidx.compose:compose-bom:2025.10.00')
     implementation(composeBom)
     androidTestImplementation(composeBom)
 
@@ -205,7 +201,7 @@ dependencies {
     implementation 'androidx.annotation:annotation:1.9.1'
 
     // Uncomment if you want to hunt for memory leaks
-    //debugImplementation 'com.squareup.leakcanary:leakcanary-android:3.0-alpha-8'
+    debugImplementation 'com.squareup.leakcanary:leakcanary-android:3.0-alpha-8'
 
     androidTestImplementation 'androidx.test.ext:junit:1.3.0'
     androidTestImplementation 'androidx.test:runner:1.7.0'
@@ -213,7 +209,7 @@ dependencies {
     androidTestImplementation 'com.adevinta.android:barista:4.3.0'
     androidTestImplementation 'com.google.truth:truth:1.4.5'
     androidTestImplementation "com.craxiom:network-survey-messaging:${networkSurveyMessagingVersion}"
-    androidTestImplementation "mil.nga.geopackage:geopackage-android:6.7.4"
+    androidTestImplementation "mil.nga.geopackage:geopackage-android:6.7.5"
 }
 
 licenseReport {
