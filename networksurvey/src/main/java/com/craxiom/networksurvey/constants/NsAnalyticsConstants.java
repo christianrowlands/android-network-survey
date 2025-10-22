@@ -37,7 +37,7 @@ public class NsAnalyticsConstants
     public static final boolean DEFAULT_BLUETOOTH_ENABLED = false;
     public static final boolean DEFAULT_GNSS_ENABLED = false;
     public static final int DEFAULT_UPLOAD_FREQUENCY = UPLOAD_FREQUENCY_15_MIN;
-    public static final int DEFAULT_UPLOAD_FREQUENCY_MIN = UPLOAD_FREQUENCY_15_MIN;
+    public static final boolean DEFAULT_AUTO_UPLOAD_ENABLED = false;
     public static final int MAX_BATCH_SIZE = 1000; // Maximum records per upload batch
     public static final int MAX_RETRY_COUNT = 3;
     public static final long CLEANUP_AGE_DAYS = 7; // Clean up uploaded records after 7 days

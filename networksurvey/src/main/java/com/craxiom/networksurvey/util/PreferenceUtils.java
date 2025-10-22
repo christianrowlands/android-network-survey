@@ -1150,7 +1150,7 @@ public class PreferenceUtils
     public static boolean isNsAnalyticsAutoUpload(Context context)
     {
         return PreferenceManager.getDefaultSharedPreferences(context)
-                .getBoolean(NsAnalyticsConstants.PROPERTY_NS_ANALYTICS_AUTO_UPLOAD, true);
+                .getBoolean(NsAnalyticsConstants.PROPERTY_NS_ANALYTICS_AUTO_UPLOAD, NsAnalyticsConstants.DEFAULT_AUTO_UPLOAD_ENABLED);
     }
 
     /**

@@ -48,7 +48,7 @@ class NsAnalyticsConnectionViewModel(
     private var uploadWorkId: UUID? = null
     private var uploadProgressObserver: Observer<WorkInfo?>? = null
 
-    private val _uiState = MutableStateFlow(NsAnalyticsConnectionUiState())
+    private val _uiState = MutableStateFlow(NsAnalyticsConnectionUiState(isLoading = true))
     val uiState: StateFlow<NsAnalyticsConnectionUiState> = _uiState.asStateFlow()
 
     init {
@@ -289,9 +289,10 @@ class NsAnalyticsConnectionViewModel(
                 if (enabled) {
                     // Schedule periodic uploads if survey is active or there's data
                     val service = surveyService
-                    if (service?.isNsAnalyticsScanningActive == true ||
+                    val hasPendingRecords = withContext(Dispatchers.IO) {
                         database.nsAnalyticsDao().getPendingRecordCount() > 0
-                    ) {
+                    }
+                    if (service?.isNsAnalyticsScanningActive == true || hasPendingRecords) {
                         val uploadFrequency = NsAnalyticsSecureStorage.getUploadFrequency(context)
                         NsAnalyticsUploadWorker.schedulePeriodicUpload(context, uploadFrequency)
                         showMessage("Auto upload enabled (every $uploadFrequency minutes)")
@@ -434,6 +435,31 @@ class NsAnalyticsConnectionViewModel(
     fun disconnect() {
         viewModelScope.launch {
             try {
+                // Load preferences that should be preserved after disconnect
+                val preservedPreferences = withContext(Dispatchers.IO) {
+                    val preferences = PreferenceManager.getDefaultSharedPreferences(context)
+                    PreservedPreferences(
+                        autoUploadEnabled = PreferenceUtils.isNsAnalyticsAutoUpload(context),
+                        uploadFrequencyMinutes = NsAnalyticsSecureStorage.getUploadFrequency(context),
+                        cellularEnabled = preferences.getBoolean(
+                            NsAnalyticsConstants.PROPERTY_NS_ANALYTICS_CELLULAR_ENABLED,
+                            NsAnalyticsConstants.DEFAULT_CELLULAR_ENABLED
+                        ),
+                        wifiEnabled = preferences.getBoolean(
+                            NsAnalyticsConstants.PROPERTY_NS_ANALYTICS_WIFI_ENABLED,
+                            NsAnalyticsConstants.DEFAULT_WIFI_ENABLED
+                        ),
+                        bluetoothEnabled = preferences.getBoolean(
+                            NsAnalyticsConstants.PROPERTY_NS_ANALYTICS_BLUETOOTH_ENABLED,
+                            NsAnalyticsConstants.DEFAULT_BLUETOOTH_ENABLED
+                        ),
+                        gnssEnabled = preferences.getBoolean(
+                            NsAnalyticsConstants.PROPERTY_NS_ANALYTICS_GNSS_ENABLED,
+                            NsAnalyticsConstants.DEFAULT_GNSS_ENABLED
+                        )
+                    )
+                }
+
                 // Clear all credentials and settings
                 NsAnalyticsSecureStorage.clearAllCredentials(context)
 
@@ -447,9 +473,17 @@ class NsAnalyticsConnectionViewModel(
                 workManager.cancelAllWorkByTag(NsAnalyticsConstants.NS_ANALYTICS_PERIODIC_WORKER_TAG)
                 workManager.cancelAllWorkByTag(NsAnalyticsConstants.NS_ANALYTICS_UPLOAD_WORKER_TAG)
 
+                // Create new state preserving user preferences
                 _uiState.value = NsAnalyticsConnectionUiState(
                     isLoading = false,
                     isRegistered = false,
+                    isConnected = false,
+                    autoUploadEnabled = preservedPreferences.autoUploadEnabled,
+                    uploadFrequencyMinutes = preservedPreferences.uploadFrequencyMinutes,
+                    cellularEnabled = preservedPreferences.cellularEnabled,
+                    wifiEnabled = preservedPreferences.wifiEnabled,
+                    bluetoothEnabled = preservedPreferences.bluetoothEnabled,
+                    gnssEnabled = preservedPreferences.gnssEnabled,
                     message = "Disconnected from NS Analytics"
                 )
             } catch (e: Exception) {
@@ -458,6 +492,18 @@ class NsAnalyticsConnectionViewModel(
             }
         }
     }
+
+    /**
+     * Data class to hold user preferences that should be preserved after disconnect.
+     */
+    private data class PreservedPreferences(
+        val autoUploadEnabled: Boolean,
+        val uploadFrequencyMinutes: Int,
+        val cellularEnabled: Boolean,
+        val wifiEnabled: Boolean,
+        val bluetoothEnabled: Boolean,
+        val gnssEnabled: Boolean
+    )
 
     /**
      * Schedule periodic uploads based on current settings.
@@ -521,7 +567,10 @@ class NsAnalyticsConnectionViewModel(
             withContext(Dispatchers.IO) {
                 // Generate a unique device ID if we don't have one
                 val deviceId = NsAnalyticsSecureStorage.getDeviceId(context)
-                    ?: Settings.Secure.getString(context.getContentResolver(), Settings.Secure.ANDROID_ID)
+                    ?: Settings.Secure.getString(
+                        context.getContentResolver(),
+                        Settings.Secure.ANDROID_ID
+                    )
 
                 // Create the API client for the specified URL
                 val api = NsAnalyticsApiFactory.createClient(qrData.apiUrl)
@@ -736,7 +785,7 @@ data class NsAnalyticsConnectionUiState(
     val workspace: String? = null,
     val workspaceName: String? = null,
     val apiUrl: String? = null,
-    val autoUploadEnabled: Boolean = false,
+    val autoUploadEnabled: Boolean = NsAnalyticsConstants.DEFAULT_AUTO_UPLOAD_ENABLED,
     val uploadFrequencyMinutes: Int = NsAnalyticsConstants.DEFAULT_UPLOAD_FREQUENCY,
     val lastUploadTime: Long = 0,
     val queuedRecords: Int = 0,
