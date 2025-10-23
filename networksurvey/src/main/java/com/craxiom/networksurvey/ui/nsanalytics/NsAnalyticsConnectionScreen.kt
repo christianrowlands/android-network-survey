@@ -34,8 +34,6 @@ import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Info
-import androidx.compose.material.icons.filled.LocationOn
-import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -73,6 +71,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.core.net.toUri
@@ -80,9 +79,9 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.navigation.NavController
 import com.craxiom.networksurvey.R
 import com.craxiom.networksurvey.services.NetworkSurveyService
+import com.craxiom.networksurvey.ui.theme.NsTheme
 import com.craxiom.networksurvey.ui.theme.onPrimaryDark
 import timber.log.Timber
 import java.text.SimpleDateFormat
@@ -96,8 +95,7 @@ import java.util.Locale
 fun NsAnalyticsConnectionScreen(
     viewModel: NsAnalyticsConnectionViewModel,
     onNavigateUp: () -> Unit,
-    onNavigateToQrScanner: () -> Unit,
-    mainNavController: NavController? = null
+    onNavigateToQrScanner: () -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
@@ -105,6 +103,7 @@ fun NsAnalyticsConnectionScreen(
 
     var showDisconnectDialog by remember { mutableStateOf(false) }
     var showClearQueueDialog by remember { mutableStateOf(false) }
+    var showDeregistrationDialog by remember { mutableStateOf(false) }
 
     // Camera permission launcher
     val cameraPermissionLauncher = rememberLauncherForActivityResult(
@@ -167,12 +166,36 @@ fun NsAnalyticsConnectionScreen(
         onToggleSurvey = { viewModel.toggleSurvey() },
     )
 
+    // Show deregistration dialog when device is detected as deregistered
+    LaunchedEffect(uiState.deregistrationInfo) {
+        if (uiState.deregistrationInfo != null) {
+            showDeregistrationDialog = true
+        }
+    }
+
     if (showDisconnectDialog) {
         DisconnectConfirmationDialog(
+            workspaceName = uiState.workspaceName ?: "Unknown Workspace",
             onDismiss = { showDisconnectDialog = false },
             onConfirm = {
-                viewModel.disconnect()
+                viewModel.unregisterDevice()
                 showDisconnectDialog = false
+            }
+        )
+    }
+
+    if (showDeregistrationDialog && uiState.deregistrationInfo != null) {
+        DeviceDeregisteredDialog(
+            deregistrationInfo = uiState.deregistrationInfo!!,
+            workspaceName = uiState.workspaceName ?: "thorkspace",
+            onDismiss = {
+                showDeregistrationDialog = false
+                viewModel.clearDeregistrationInfo()
+            },
+            onRegisterAgain = {
+                showDeregistrationDialog = false
+                viewModel.clearDeregistrationInfo()
+                onNavigateToQrScanner()
             }
         )
     }
@@ -323,19 +346,12 @@ private fun NotConnectedCard(
         modifier = Modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        // Hero Section
         NsAnalyticsHeroSection()
 
-        // Benefits Grid
-        BenefitsGrid()
-
-        // Setup Guide
         SetupGuideSection()
 
-        // Setup Tip Banner
         SetupTipBanner()
 
-        // Call to Action Buttons
         CallToActionButtons(
             onGetStartedClick = {
                 openUrlInBrowser(context, "https://analytics.networksurvey.app")
@@ -345,11 +361,13 @@ private fun NotConnectedCard(
                 openUrlInBrowser(context, "https://www.networksurvey.app/analytics")
             },
             onQrCodeUserManualClick = {
-                openUrlInBrowser(context, "https://www.networksurvey.app/manual/ns-analytics/qr-code-registration/")
+                openUrlInBrowser(
+                    context,
+                    "https://www.networksurvey.app/manual/ns-analytics/qr-code-registration/"
+                )
             }
         )
 
-        // What Happens Next
         WhatHappensNextSection()
     }
 }
@@ -368,7 +386,7 @@ private fun NsAnalyticsHeroSection() {
             painter = painterResource(R.drawable.ic_ns_analytics),
             contentDescription = null,
             modifier = Modifier.size(56.dp),
-            tint = Color(0xFF4285F4)
+            tint = MaterialTheme.colorScheme.primary
         )
 
         Text(
@@ -385,138 +403,6 @@ private fun NsAnalyticsHeroSection() {
             textAlign = TextAlign.Center,
             modifier = Modifier.padding(horizontal = 16.dp)
         )
-    }
-}
-
-/**
- * Grid of 3 benefit cards highlighting key value propositions
- */
-@Composable
-private fun BenefitsGrid() {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(8.dp)
-    ) {
-        BenefitCardWithImageVector(
-            icon = Icons.Filled.LocationOn,
-            title = stringResource(R.string.ns_analytics_benefit_geospatial_title),
-            description = stringResource(R.string.ns_analytics_benefit_geospatial_desc),
-            modifier = Modifier.weight(1f)
-        )
-
-        BenefitCardWithImageVector(
-            icon = Icons.Filled.Star,
-            title = stringResource(R.string.ns_analytics_benefit_free_title),
-            description = stringResource(R.string.ns_analytics_benefit_free_desc),
-            modifier = Modifier.weight(1f)
-        )
-
-        BenefitCardWithPainter(
-            icon = painterResource(R.drawable.ic_upload_24),
-            title = stringResource(R.string.ns_analytics_benefit_auto_upload_title),
-            description = stringResource(R.string.ns_analytics_benefit_auto_upload_desc),
-            modifier = Modifier.weight(1f)
-        )
-    }
-}
-
-/**
- * Individual benefit card with Material Icon
- */
-@Composable
-private fun BenefitCardWithImageVector(
-    icon: androidx.compose.ui.graphics.vector.ImageVector,
-    title: String,
-    description: String,
-    modifier: Modifier = Modifier
-) {
-    Card(
-        modifier = modifier,
-        colors = CardDefaults.cardColors(
-            containerColor = Color(0xFF1E1F24)
-        )
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(12.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            Icon(
-                imageVector = icon,
-                contentDescription = null,
-                modifier = Modifier.size(32.dp),
-                tint = Color(0xFF4285F4)
-            )
-
-            Text(
-                text = title,
-                style = MaterialTheme.typography.labelMedium,
-                fontWeight = FontWeight.Bold,
-                color = Color.White,
-                textAlign = TextAlign.Center,
-                maxLines = 2
-            )
-
-            Text(
-                text = description,
-                style = MaterialTheme.typography.bodySmall,
-                color = Color.Gray,
-                textAlign = TextAlign.Center,
-                maxLines = 2
-            )
-        }
-    }
-}
-
-/**
- * Individual benefit card
- */
-@Composable
-private fun BenefitCardWithPainter(
-    icon: androidx.compose.ui.graphics.painter.Painter,
-    title: String,
-    description: String,
-    modifier: Modifier = Modifier
-) {
-    Card(
-        modifier = modifier,
-        colors = CardDefaults.cardColors(
-            containerColor = Color(0xFF1E1F24)
-        )
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(12.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            Icon(
-                painter = icon,
-                contentDescription = null,
-                modifier = Modifier.size(32.dp),
-                tint = Color(0xFF4285F4)
-            )
-
-            Text(
-                text = title,
-                style = MaterialTheme.typography.labelMedium,
-                fontWeight = FontWeight.Bold,
-                color = Color.White,
-                textAlign = TextAlign.Center,
-                maxLines = 2
-            )
-
-            Text(
-                text = description,
-                style = MaterialTheme.typography.bodySmall,
-                color = Color.Gray,
-                textAlign = TextAlign.Center,
-                maxLines = 2
-            )
-        }
     }
 }
 
@@ -598,7 +484,7 @@ private fun SetupStepItem(
                 text = stepNumber.toString(),
                 style = MaterialTheme.typography.labelLarge,
                 fontWeight = FontWeight.Bold,
-                color = Color(0xFF4285F4)
+                color = MaterialTheme.colorScheme.primary
             )
         }
 
@@ -630,7 +516,7 @@ private fun SetupTipBanner() {
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(
-            containerColor = Color(0xFF1E3A5F) // Blue-tinted background for info
+            containerColor = MaterialTheme.colorScheme.secondaryContainer
         )
     ) {
         Row(
@@ -642,7 +528,7 @@ private fun SetupTipBanner() {
             Icon(
                 imageVector = Icons.Filled.Info,
                 contentDescription = null,
-                tint = Color(0xFF64B5F6), // Light blue for the icon
+                tint = MaterialTheme.colorScheme.primary,
                 modifier = Modifier
                     .size(24.dp)
                     .padding(top = 2.dp)
@@ -656,13 +542,13 @@ private fun SetupTipBanner() {
                     text = stringResource(R.string.ns_analytics_setup_tip_title),
                     style = MaterialTheme.typography.titleSmall,
                     fontWeight = FontWeight.Bold,
-                    color = Color(0xFF64B5F6) // Light blue for title
+                    color = MaterialTheme.colorScheme.onSecondaryContainer
                 )
 
                 Text(
                     text = stringResource(R.string.ns_analytics_setup_tip_message),
                     style = MaterialTheme.typography.bodySmall,
-                    color = Color(0xFFB3D9FF) // Lighter blue for message text
+                    color = MaterialTheme.colorScheme.onSecondaryContainer
                 )
             }
         }
@@ -688,7 +574,7 @@ private fun CallToActionButtons(
             onClick = onGetStartedClick,
             modifier = Modifier.fillMaxWidth(),
             colors = ButtonDefaults.buttonColors(
-                containerColor = Color(0xFF4285F4)
+                containerColor = MaterialTheme.colorScheme.primaryContainer
             )
         ) {
             Text(stringResource(R.string.ns_analytics_get_started))
@@ -705,10 +591,7 @@ private fun CallToActionButtons(
             onClick = onScanQrClick,
             modifier = Modifier.fillMaxWidth(),
             colors = ButtonDefaults.buttonColors(
-                containerColor = Color(0xFF4285F4)
-            ),
-            border = ButtonDefaults.outlinedButtonBorder(true).copy(
-                brush = androidx.compose.ui.graphics.SolidColor(Color(0xFF4285F4))
+                containerColor = MaterialTheme.colorScheme.primaryContainer
             )
         ) {
             Icon(
@@ -726,11 +609,11 @@ private fun CallToActionButtons(
         ) {
             Text(
                 text = stringResource(R.string.ns_analytics_learn_more),
-                color = Color(0xFF4285F4)
+                color = MaterialTheme.colorScheme.onPrimaryContainer
             )
             Icon(
                 painter = painterResource(R.drawable.ic_open_details),
-                tint = Color(0xFF4285F4),
+                tint = MaterialTheme.colorScheme.onPrimaryContainer,
                 contentDescription = null,
                 modifier = Modifier.padding(start = 8.dp)
             )
@@ -743,11 +626,11 @@ private fun CallToActionButtons(
         ) {
             Text(
                 text = stringResource(R.string.ns_analytics_qr_user_manual),
-                color = Color(0xFF4285F4)
+                color = MaterialTheme.colorScheme.onPrimaryContainer
             )
             Icon(
                 painter = painterResource(R.drawable.ic_open_details),
-                tint = Color(0xFF4285F4),
+                tint = MaterialTheme.colorScheme.onPrimaryContainer,
                 contentDescription = null,
                 modifier = Modifier.padding(start = 8.dp)
             )
@@ -1146,7 +1029,7 @@ private fun DangerZoneCard(
                 contentDescription = null,
                 modifier = Modifier.padding(end = 8.dp)
             )
-            Text("Unregister from Workspace")
+            Text(stringResource(R.string.unregister_device))
         }
     }
 }
@@ -1243,14 +1126,15 @@ private fun getTimeAgo(timestamp: Long): String {
 
 @Composable
 private fun DisconnectConfirmationDialog(
+    workspaceName: String,
     onDismiss: () -> Unit,
     onConfirm: () -> Unit
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Disconnect from NS Analytics?") },
+        title = { Text(stringResource(R.string.unregister_device_title)) },
         text = {
-            Text("This will stop data collection and remove your connection to the NS Analytics backend. Queued data will be lost.")
+            Text(stringResource(R.string.unregister_device_message, workspaceName))
         },
         confirmButton = {
             TextButton(
@@ -1259,12 +1143,63 @@ private fun DisconnectConfirmationDialog(
                     contentColor = MaterialTheme.colorScheme.error
                 )
             ) {
-                Text("Disconnect")
+                Text(stringResource(R.string.unregister))
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
                 Text(stringResource(R.string.cancel))
+            }
+        }
+    )
+}
+
+@Composable
+private fun DeviceDeregisteredDialog(
+    deregistrationInfo: DeregistrationInfo,
+    workspaceName: String,
+    onDismiss: () -> Unit,
+    onRegisterAgain: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.device_deregistered_title)) },
+        text = {
+            Column {
+                // Handle different levels of detail in deregistration info
+                when {
+                    deregistrationInfo.source == "web" &&
+                            (deregistrationInfo.deregisteredBy != null || deregistrationInfo.deregisteredAt != null) -> {
+                        // We have details from web deregistration
+                        val byPart = deregistrationInfo.deregisteredBy?.let {
+                            stringResource(R.string.device_deregistered_by, it)
+                        } ?: ""
+                        val onPart = deregistrationInfo.deregisteredAt?.let { " on $it" } ?: ""
+                        Text(stringResource(R.string.device_deregistered_from_web, byPart, onPart))
+                    }
+
+                    deregistrationInfo.source == "web" -> {
+                        // Web deregistration detected but no details available (403 response)
+                        Text(stringResource(R.string.device_deregistered_from_web_no_details))
+                    }
+
+                    else -> {
+                        // Generic deregistration message
+                        Text(stringResource(R.string.device_deregistered_generic, workspaceName))
+                    }
+                }
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(stringResource(R.string.scan_qr_to_reregister))
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onRegisterAgain) {
+                Text(stringResource(R.string.register_again))
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text(stringResource(android.R.string.ok))
             }
         }
     )
@@ -1414,6 +1349,33 @@ private fun NsAnalyticsServiceConnectionHandler(
                     Timber.e(e, "Error unbinding service on disposal")
                 }
             }
+        }
+    }
+}
+
+/**
+ * Preview for the NS Analytics unregistered/not connected screen.
+ * Shows the complete onboarding UI with hero section, setup guide, and CTAs.
+ */
+@Preview(
+    name = "NS Analytics Not Connected - Dark",
+    showBackground = true,
+    backgroundColor = 0xFF121316,
+    widthDp = 360,
+    heightDp = 2000
+)
+@Composable
+private fun NotConnectedCardPreview() {
+    NsTheme {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color(0xFF121316))
+                .padding(16.dp)
+        ) {
+            NotConnectedCard(
+                onQrScanClick = { /* Preview - no action */ }
+            )
         }
     }
 }

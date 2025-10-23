@@ -946,4 +946,24 @@ but work independently, so you have full control over how you handle your data.<
     <!-- What Happens Next -->
     <string name="ns_analytics_what_happens_next_title">What Happens Next</string>
     <string name="ns_analytics_what_happens_next_desc">Once connected, your survey data will automatically upload to your workspace when you have an internet connection. You can view and analyze it on the NS Analytics dashboard.</string>
+
+    <!-- Unregister Device -->
+    <string name="unregister_device">Unregister Device</string>
+    <string name="unregister_device_title">Unregister Device?</string>
+    <string name="unregister_device_message">This device will stop uploading data to the %1$s workspace.\n\nYour queued data will be preserved and can be uploaded if you re-register.\n\nYou can re-register anytime by scanning a new QR code.</string>
+    <string name="unregister">Unregister</string>
+    <string name="unregistering_device">Unregistering device…</string>
+    <string name="device_unregistered_successfully">Device unregistered successfully</string>
+    <string name="device_unregister_failed">Failed to unregister device. Please check your connection and try again.</string>
+    <string name="device_unregister_offline">Cannot unregister while offline. Please connect to the internet and try again.</string>
+    <string name="device_unregister_survey_active">Please stop the active survey before unregistering</string>
+
+    <!-- Device Deregistered (Web) -->
+    <string name="device_deregistered_title">Device Unregistered</string>
+    <string name="device_deregistered_from_web">This device was unregistered from the web dashboard%1$s on %2$s.</string>
+    <string name="device_deregistered_from_web_no_details">This device was unregistered from the web dashboard.</string>
+    <string name="device_deregistered_by"> by %1$s</string>
+    <string name="device_deregistered_generic">This device has been unregistered from %1$s.</string>
+    <string name="scan_qr_to_reregister">Scan a new QR code to re-register and continue uploading.</string>
+    <string name="register_again">Register Again</string>
 </resources>

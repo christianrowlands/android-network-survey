@@ -28,10 +28,10 @@ interface NsAnalyticsApi {
         @Body batch: UploadBatchRequest
     ): Response<UploadResponse>
 
-    @DELETE("api/v1/device/deregister")
-    suspend fun deregisterDevice(
+    @POST("api/v1/device/unregister")
+    suspend fun unregisterDevice(
         @Header("Authorization") token: String
-    ): Response<DeregisterResponse>
+    ): Response<UnregisterResponse>
 
     @GET("api/v1/device/status")
     suspend fun getDeviceStatus(
@@ -111,9 +111,9 @@ data class UploadResponse(
 }
 
 /**
- * Response from device deregistration
+ * Response from device unregistration
  */
-data class DeregisterResponse(
+data class UnregisterResponse(
     @SerializedName("success") val success: Boolean,
     @SerializedName("message") val message: String
 )
@@ -130,7 +130,20 @@ data class DeviceStatusResponse(
     @SerializedName("total_records") val totalRecords: Long?,
     @SerializedName("app_version") val appVersion: String?,
     @SerializedName("os_version") val osVersion: String?,
-    @SerializedName("device_model") val deviceModel: String?
+    @SerializedName("device_model") val deviceModel: String?,
+    // Deregistration fields (only present when is_active = false)
+    @SerializedName("deregistered_at") val deregisteredAt: String? = null,
+    @SerializedName("deregistration_reason") val deregistrationReason: String? = null,
+    @SerializedName("deregistration_source") val deregistrationSource: String? = null,
+    @SerializedName("deregistered_by_email") val deregisteredByEmail: String? = null
+)
+
+/**
+ * API error response for parsing error bodies
+ */
+data class ApiErrorResponse(
+    @SerializedName("error") val error: String,
+    @SerializedName("error_code") val errorCode: String? = null
 )
 
 /**

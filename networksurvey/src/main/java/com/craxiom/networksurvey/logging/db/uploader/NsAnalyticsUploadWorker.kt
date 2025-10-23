@@ -13,6 +13,7 @@ import androidx.work.WorkInfo
 import androidx.work.WorkManager
 import androidx.work.WorkerParameters
 import com.craxiom.networksurvey.constants.NsAnalyticsConstants
+import com.craxiom.networksurvey.data.api.ApiErrorResponse
 import com.craxiom.networksurvey.data.api.NsAnalyticsApiFactory
 import com.craxiom.networksurvey.data.api.RecordBatch
 import com.craxiom.networksurvey.data.api.UploadBatchRequest
@@ -20,6 +21,7 @@ import com.craxiom.networksurvey.logging.db.SurveyDatabase
 import com.craxiom.networksurvey.logging.db.model.NsAnalyticsQueueEntity
 import com.craxiom.networksurvey.util.MdmUtils
 import com.craxiom.networksurvey.util.NsAnalyticsSecureStorage
+import com.google.gson.Gson
 import com.google.gson.JsonParser
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -174,6 +176,22 @@ class NsAnalyticsUploadWorker(context: Context, params: WorkerParameters) :
                         batchIndex + 1, totalBatches, failureReason
                     )
 
+                    // Check for device deregistration errors
+                    if (response.code() == 403 || response.code() == 401) {
+                        val errorCode = parseErrorCode(response)
+                        if (errorCode == NsAnalyticsConstants.ERROR_CODE_DEVICE_DEREGISTERED) {
+                            Timber.w("Device deregistered error detected, checking device status")
+                            // Check device status to update local state
+                            checkDeviceStatusAfterError(apiClient, deviceToken)
+                            // Return failure with reason to stop upload attempts
+                            val outputData = Data.Builder()
+                                .putString("error_type", "DEVICE_DEREGISTERED")
+                                .putString("error_message", "Device has been unregistered")
+                                .build()
+                            return@withContext Result.failure(outputData)
+                        }
+                    }
+
                     // Increment retry count for failed batch
                     val recordIds = pendingRecords.map { it.id }
                     database.nsAnalyticsDao().incrementRetryCount(
@@ -269,6 +287,55 @@ class NsAnalyticsUploadWorker(context: Context, params: WorkerParameters) :
                 type = type,
                 messages = messages
             )
+        }
+    }
+
+    /**
+     * Parse error code from error response body
+     */
+    private fun parseErrorCode(response: retrofit2.Response<*>): String? {
+        return try {
+            val errorBody = response.errorBody()?.string()
+            if (!errorBody.isNullOrEmpty()) {
+                val gson = Gson()
+                val errorResponse = gson.fromJson(errorBody, ApiErrorResponse::class.java)
+                errorResponse.errorCode
+            } else {
+                null
+            }
+        } catch (e: Exception) {
+            Timber.e(e, "Failed to parse error response")
+            null
+        }
+    }
+
+    /**
+     * Check device status after detecting deregistration error.
+     * This clears local credentials if device is indeed deregistered.
+     */
+    private suspend fun checkDeviceStatusAfterError(
+        apiClient: com.craxiom.networksurvey.data.api.NsAnalyticsApi,
+        deviceToken: String
+    ) {
+        try {
+            val statusResponse = apiClient.getDeviceStatus("Bearer $deviceToken")
+            if (statusResponse.isSuccessful && statusResponse.body() != null) {
+                val status = statusResponse.body()!!
+                if (!status.isActive) {
+                    // Device is deregistered - clear local credentials
+                    Timber.i("Device confirmed as deregistered, clearing local credentials")
+                    NsAnalyticsSecureStorage.clearAllCredentials(applicationContext)
+
+                    // Cancel any scheduled uploads
+                    cancelPeriodicUpload(applicationContext)
+                    WorkManager.getInstance(applicationContext)
+                        .cancelAllWorkByTag(NsAnalyticsConstants.NS_ANALYTICS_PERIODIC_WORKER_TAG)
+                    WorkManager.getInstance(applicationContext)
+                        .cancelAllWorkByTag(NsAnalyticsConstants.NS_ANALYTICS_UPLOAD_WORKER_TAG)
+                }
+            }
+        } catch (e: Exception) {
+            Timber.e(e, "Failed to check device status after error")
         }
     }
 

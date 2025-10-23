@@ -3,16 +3,20 @@ package com.craxiom.networksurvey.ui.activesurvey
 import android.location.Location
 import android.location.LocationListener
 import android.os.Bundle
-import androidx.lifecycle.ViewModel
+import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import androidx.work.WorkManager
 import com.craxiom.messaging.GsmRecord
 import com.craxiom.messaging.LteRecord
 import com.craxiom.messaging.NrRecord
 import com.craxiom.messaging.UmtsRecord
 import com.craxiom.mqttlibrary.IConnectionStateListener
 import com.craxiom.mqttlibrary.connection.ConnectionState
+import com.craxiom.networksurvey.constants.NsAnalyticsConstants
+import com.craxiom.networksurvey.data.api.NsAnalyticsApiFactory
 import com.craxiom.networksurvey.listeners.ICellularSurveyRecordListener
 import com.craxiom.networksurvey.listeners.ILoggingChangeListener
+import com.craxiom.networksurvey.logging.db.uploader.NsAnalyticsUploadWorker
 import com.craxiom.networksurvey.model.CellularProtocol
 import com.craxiom.networksurvey.model.CellularRecordWrapper
 import com.craxiom.networksurvey.services.NetworkSurveyService
@@ -21,19 +25,24 @@ import com.craxiom.networksurvey.ui.activesurvey.model.NsAnalyticsInfo
 import com.craxiom.networksurvey.ui.activesurvey.model.SurveyTrack
 import com.craxiom.networksurvey.ui.cellular.model.ServingCellInfo
 import com.craxiom.networksurvey.util.CellularUtils
+import com.craxiom.networksurvey.util.NsAnalyticsSecureStorage
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.maplibre.android.geometry.LatLng
 import timber.log.Timber
 
 /**
  * ViewModel for the Active Survey screen that manages survey status monitoring
  */
-class SurveyMonitorViewModel : ViewModel(), IConnectionStateListener,
+class SurveyMonitorViewModel(
+    private val application: android.app.Application
+) : AndroidViewModel(application), IConnectionStateListener,
     ILoggingChangeListener, LocationListener, ICellularSurveyRecordListener {
 
     private var towerDetectionManager: TowerDetectionManager? = null
@@ -58,6 +67,10 @@ class SurveyMonitorViewModel : ViewModel(), IConnectionStateListener,
 
     // Refresh interval for statistics - increased to reduce main thread load
     private val STATS_REFRESH_INTERVAL_MS = 10000L  // 10 seconds
+
+    // NS Analytics device status check interval (5 minutes)
+    private val NS_ANALYTICS_STATUS_CHECK_INTERVAL_MS = 5 * 60 * 1000L
+    private var lastNsAnalyticsStatusCheckTime = 0L
 
     init {
         // Start periodic updates
@@ -119,7 +132,7 @@ class SurveyMonitorViewModel : ViewModel(), IConnectionStateListener,
                 )
             }
 
-            Timber.d("Added location to track: ${location.latitude}, ${location.longitude}. Total points: ${currentTrackPoints.size}")
+            Timber.d("Added location to track. Total points: ${currentTrackPoints.size}")
         }
     }
 
@@ -190,6 +203,9 @@ class SurveyMonitorViewModel : ViewModel(), IConnectionStateListener,
             // Check NS Analytics status
             val nsAnalyticsActive = service.isNsAnalyticsScanningActive
             val nsAnalyticsInfo = if (nsAnalyticsActive) {
+                // Periodically check device status to detect web-initiated deregistration
+                checkNsAnalyticsDeviceStatusIfNeeded()
+
                 NsAnalyticsInfo(
                     isEnabled = true,
                     isRegistered = service.isNsAnalyticsRegistered,
@@ -240,6 +256,140 @@ class SurveyMonitorViewModel : ViewModel(), IConnectionStateListener,
                     updateSurveyStates()
                 }
                 delay(STATS_REFRESH_INTERVAL_MS)
+            }
+        }
+    }
+
+    /**
+     * Parse error code from error response body.
+     * Used to detect specific error conditions like DEVICE_DEREGISTERED.
+     */
+    private fun parseErrorCode(response: retrofit2.Response<*>): String? {
+        return try {
+            val errorBody = response.errorBody()?.string()
+            if (!errorBody.isNullOrEmpty()) {
+                val gson = com.google.gson.Gson()
+                val errorResponse = gson.fromJson(
+                    errorBody,
+                    com.craxiom.networksurvey.data.api.ApiErrorResponse::class.java
+                )
+                errorResponse.errorCode
+            } else {
+                null
+            }
+        } catch (e: Exception) {
+            Timber.e(e, "Failed to parse error response in Survey Monitor")
+            null
+        }
+    }
+
+    /**
+     * Check NS Analytics device status if enough time has elapsed since last check.
+     * This helps detect if device was deregistered from the web dashboard.
+     */
+    private fun checkNsAnalyticsDeviceStatusIfNeeded() {
+        val now = System.currentTimeMillis()
+        if (now - lastNsAnalyticsStatusCheckTime < NS_ANALYTICS_STATUS_CHECK_INTERVAL_MS) {
+            return // Not time to check yet
+        }
+
+        lastNsAnalyticsStatusCheckTime = now
+
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                // Check if registered
+                if (!NsAnalyticsSecureStorage.isRegistered(application)) {
+                    return@launch
+                }
+
+                // Get credentials
+                val deviceToken = NsAnalyticsSecureStorage.getDeviceToken(application)
+                val apiUrl = NsAnalyticsSecureStorage.getApiUrl(application)
+
+                if (deviceToken == null || apiUrl == null) {
+                    return@launch
+                }
+
+                // Call device status API
+                val api = NsAnalyticsApiFactory.createClient(apiUrl)
+                val statusResponse = api.getDeviceStatus("Bearer $deviceToken")
+
+                // Check for 403/401 first - middleware blocks deregistered devices
+                if (statusResponse.code() == 403 || statusResponse.code() == 401) {
+                    val errorCode = parseErrorCode(statusResponse)
+                    if (errorCode == NsAnalyticsConstants.ERROR_CODE_DEVICE_DEREGISTERED) {
+                        // Device has been deregistered - clean up
+                        Timber.i(
+                            "NS Analytics device deregistration detected in Survey Monitor via %d response",
+                            statusResponse.code()
+                        )
+
+                        // Clear credentials
+                        NsAnalyticsSecureStorage.clearAllCredentials(application)
+
+                        // Cancel uploads
+                        NsAnalyticsUploadWorker.cancelPeriodicUpload(application)
+                        val workManager = WorkManager.getInstance(application)
+                        workManager.cancelAllWorkByTag(NsAnalyticsConstants.NS_ANALYTICS_PERIODIC_WORKER_TAG)
+                        workManager.cancelAllWorkByTag(NsAnalyticsConstants.NS_ANALYTICS_UPLOAD_WORKER_TAG)
+
+                        // Stop NS Analytics survey if running
+                        networkSurveyService?.let { service ->
+                            if (service.isNsAnalyticsScanningActive) {
+                                withContext(Dispatchers.Main) {
+                                    service.toggleNsAnalyticsScanning(false)
+                                }
+                                Timber.i("Stopped NS Analytics survey due to deregistration")
+                            }
+                        }
+
+                        // Update UI state
+                        withContext(Dispatchers.Main) {
+                            updateSurveyStates()
+                        }
+                    } else {
+                        Timber.w(
+                            "Auth error during Survey Monitor status check: %d, error_code: %s",
+                            statusResponse.code(), errorCode
+                        )
+                    }
+                }
+
+                // Check successful responses (for active devices)
+                if (statusResponse.isSuccessful && statusResponse.body() != null) {
+                    val status = statusResponse.body()!!
+
+                    if (!status.isActive) {
+                        // Device has been deregistered (unlikely path with current middleware, but keep for robustness)
+                        Timber.i("NS Analytics device deregistration detected in Survey Monitor via 200 response")
+
+                        // Clear credentials
+                        NsAnalyticsSecureStorage.clearAllCredentials(application)
+
+                        // Cancel uploads
+                        NsAnalyticsUploadWorker.cancelPeriodicUpload(application)
+                        val workManager = WorkManager.getInstance(application)
+                        workManager.cancelAllWorkByTag(NsAnalyticsConstants.NS_ANALYTICS_PERIODIC_WORKER_TAG)
+                        workManager.cancelAllWorkByTag(NsAnalyticsConstants.NS_ANALYTICS_UPLOAD_WORKER_TAG)
+
+                        // Stop NS Analytics survey if running
+                        networkSurveyService?.let { service ->
+                            if (service.isNsAnalyticsScanningActive) {
+                                withContext(Dispatchers.Main) {
+                                    service.toggleNsAnalyticsScanning(false)
+                                }
+                                Timber.i("Stopped NS Analytics survey due to deregistration")
+                            }
+                        }
+
+                        // Update UI state
+                        withContext(Dispatchers.Main) {
+                            updateSurveyStates()
+                        }
+                    }
+                }
+            } catch (e: Exception) {
+                Timber.e(e, "NS Analytics device status check failed in Survey Monitor")
             }
         }
     }

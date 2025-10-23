@@ -61,8 +61,7 @@ fun NavGraphBuilder.mainGraph(
                 onNavigateUp = { mainNavController.navigateUp() },
                 onNavigateToQrScanner = {
                     mainNavController.navigate(NavOption.NsAnalyticsQrScanner.name)
-                },
-                mainNavController = mainNavController
+                }
             )
         }
 
