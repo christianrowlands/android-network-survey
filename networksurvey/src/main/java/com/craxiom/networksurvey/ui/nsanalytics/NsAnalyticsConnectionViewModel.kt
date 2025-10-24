@@ -20,6 +20,7 @@ import com.craxiom.networksurvey.logging.db.SurveyDatabase
 import com.craxiom.networksurvey.logging.db.uploader.NsAnalyticsUploadWorker
 import com.craxiom.networksurvey.services.NetworkSurveyService
 import com.craxiom.networksurvey.util.NsAnalyticsSecureStorage
+import com.craxiom.networksurvey.util.NsAnalyticsUtils
 import com.craxiom.networksurvey.util.PreferenceUtils
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -239,6 +240,7 @@ class NsAnalyticsConnectionViewModel(
 
                     // Update survey status after loading connection state
                     updateSurveyStatus()
+                    fetchAndUpdateDeviceStatus()
 
                     // Check device status to detect web-initiated deregistration
                     if (isRegistered && deviceToken != null && apiUrl != null) {
@@ -270,11 +272,14 @@ class NsAnalyticsConnectionViewModel(
     }
 
     /**
-     * Asynchronously fetch device status from backend and update workspace name if changed
+     * Asynchronously fetch device status from backend and update workspace name if changed.
      */
-    private fun fetchAndUpdateDeviceStatus(deviceToken: String, apiUrl: String) {
+    private fun fetchAndUpdateDeviceStatus() {
         viewModelScope.launch(Dispatchers.IO) {
             try {
+                val deviceToken = NsAnalyticsSecureStorage.getDeviceToken(context) ?: return@launch
+                val apiUrl = NsAnalyticsSecureStorage.getApiUrl(context) ?: return@launch
+
                 val api = NsAnalyticsApiFactory.createClient(apiUrl)
                 val statusResponse = api.getDeviceStatus("Bearer $deviceToken")
                 if (statusResponse.isSuccessful && statusResponse.body() != null) {
@@ -306,96 +311,19 @@ class NsAnalyticsConnectionViewModel(
     suspend fun checkDeviceStatus(): DeregistrationInfo? {
         return withContext(Dispatchers.IO) {
             try {
-                // Check if registered locally
-                if (!NsAnalyticsSecureStorage.isRegistered(context)) {
-                    Timber.d("Device not registered, skipping status check")
-                    return@withContext null
-                }
+                when (val result = NsAnalyticsUtils.checkDeviceRegistrationStatus(context)) {
+                    is NsAnalyticsUtils.DeviceStatusResult.Deregistered -> {
+                        Timber.i("Device deregistration detected via status check")
 
-                // Get credentials
-                val deviceToken = NsAnalyticsSecureStorage.getDeviceToken(context)
-                val apiUrl = NsAnalyticsSecureStorage.getApiUrl(context)
-
-                if (deviceToken == null || apiUrl == null) {
-                    Timber.w("Missing credentials for status check")
-                    return@withContext null
-                }
-
-                // Call API
-                val api = NsAnalyticsApiFactory.createClient(apiUrl)
-                val statusResponse = api.getDeviceStatus("Bearer $deviceToken")
-
-                // Check for 403/401 first - middleware blocks deregistered devices
-                if (statusResponse.code() == 403 || statusResponse.code() == 401) {
-                    val errorCode = parseErrorCode(statusResponse)
-                    if (errorCode == NsAnalyticsConstants.ERROR_CODE_DEVICE_DEREGISTERED) {
-                        // Device is deregistered - middleware blocked the request
-                        Timber.i(
-                            "Device deregistration detected via %d response with DEVICE_DEREGISTERED error code",
-                            statusResponse.code()
+                        NsAnalyticsUtils.cleanupAfterDeregistration(
+                            context
                         )
 
-                        // Clear credentials locally
-                        NsAnalyticsSecureStorage.clearAllCredentials(context)
-
-                        // Cancel any scheduled uploads
-                        NsAnalyticsUploadWorker.cancelPeriodicUpload(context)
-                        workManager.cancelAllWorkByTag(NsAnalyticsConstants.NS_ANALYTICS_PERIODIC_WORKER_TAG)
-                        workManager.cancelAllWorkByTag(NsAnalyticsConstants.NS_ANALYTICS_UPLOAD_WORKER_TAG)
-
-                        // Create DeregistrationInfo with limited data (middleware doesn't provide details)
                         val deregInfo = DeregistrationInfo(
-                            deregisteredAt = null,  // Not available from 403 response
-                            source = null,           // Unknown if web or device
-                            deregisteredBy = null,   // Not available from 403 response
-                            reason = null            // Not available from 403 response
-                        )
-
-                        // Update UI state
-                        _uiState.value = NsAnalyticsConnectionUiState(
-                            isLoading = false,
-                            isRegistered = false,
-                            isConnected = false,
-                            queuedRecords = _uiState.value.queuedRecords, // Preserve queue size
-                            deregistrationInfo = deregInfo
-                        )
-
-                        return@withContext deregInfo
-                    } else {
-                        // Other auth error
-                        Timber.w(
-                            "Auth error during status check: %d %s, error_code: %s",
-                            statusResponse.code(), statusResponse.message(), errorCode
-                        )
-                    }
-                }
-
-                // Check successful responses (for active devices)
-                if (statusResponse.isSuccessful && statusResponse.body() != null) {
-                    val status = statusResponse.body()!!
-
-                    if (!status.isActive) {
-                        // Device has been deregistered (unlikely path with current middleware, but keep for robustness)
-                        Timber.i(
-                            "Device deregistered detected via 200 response - source: %s, at: %s",
-                            status.deregistrationSource,
-                            status.deregisteredAt
-                        )
-
-                        // Clear credentials locally
-                        NsAnalyticsSecureStorage.clearAllCredentials(context)
-
-                        // Cancel any scheduled uploads
-                        NsAnalyticsUploadWorker.cancelPeriodicUpload(context)
-                        workManager.cancelAllWorkByTag(NsAnalyticsConstants.NS_ANALYTICS_PERIODIC_WORKER_TAG)
-                        workManager.cancelAllWorkByTag(NsAnalyticsConstants.NS_ANALYTICS_UPLOAD_WORKER_TAG)
-
-                        // Update UI state with full deregistration details
-                        val deregInfo = DeregistrationInfo(
-                            deregisteredAt = status.deregisteredAt,
-                            source = status.deregistrationSource,
-                            deregisteredBy = status.deregisteredByEmail,
-                            reason = status.deregistrationReason
+                            deregisteredAt = result.deregisteredAt,
+                            source = result.source,
+                            deregisteredBy = result.deregisteredBy,
+                            reason = result.reason
                         )
 
                         _uiState.value = NsAnalyticsConnectionUiState(
@@ -407,27 +335,18 @@ class NsAnalyticsConnectionViewModel(
                         )
 
                         return@withContext deregInfo
-                    } else {
-                        // Device is still active - update workspace name if changed
-                        status.workspaceName?.let { name ->
-                            val currentName = _uiState.value.workspaceName
-                            if (name != currentName) {
-                                NsAnalyticsSecureStorage.storeWorkspaceName(context, name)
-                                _uiState.value = _uiState.value.copy(workspaceName = name)
-                                Timber.d("Updated workspace name from status check: %s", name)
-                            }
-                        }
                     }
-                } else if (statusResponse.code() != 403 && statusResponse.code() != 401) {
-                    // Log non-auth errors (403/401 already handled above)
-                    Timber.w(
-                        "Status check failed: %d %s",
-                        statusResponse.code(),
-                        statusResponse.message()
-                    )
-                }
 
-                return@withContext null
+                    is NsAnalyticsUtils.DeviceStatusResult.Active -> {
+                        Timber.d("Device status check: active")
+                        return@withContext null
+                    }
+
+                    is NsAnalyticsUtils.DeviceStatusResult.CheckFailed -> {
+                        Timber.d("Device status check failed: ${result.reason}")
+                        return@withContext null
+                    }
+                }
             } catch (e: Exception) {
                 Timber.e(e, "Device status check failed")
                 return@withContext null
@@ -442,28 +361,6 @@ class NsAnalyticsConnectionViewModel(
         _uiState.value = _uiState.value.copy(deregistrationInfo = null)
     }
 
-    /**
-     * Parse error code from error response body.
-     * Used to detect specific error conditions like DEVICE_DEREGISTERED.
-     */
-    private fun parseErrorCode(response: retrofit2.Response<*>): String? {
-        return try {
-            val errorBody = response.errorBody()?.string()
-            if (!errorBody.isNullOrEmpty()) {
-                val gson = com.google.gson.Gson()
-                val errorResponse = gson.fromJson(
-                    errorBody,
-                    com.craxiom.networksurvey.data.api.ApiErrorResponse::class.java
-                )
-                errorResponse.errorCode
-            } else {
-                null
-            }
-        } catch (e: Exception) {
-            Timber.e(e, "Failed to parse error response")
-            null
-        }
-    }
 
     fun toggleAutoUpload(enabled: Boolean) {
         viewModelScope.launch {
@@ -661,21 +558,13 @@ class NsAnalyticsConnectionViewModel(
 
                         if (response.isSuccessful && response.body()?.success == true) {
                             // Success - clear credentials locally but preserve queue
-                            NsAnalyticsSecureStorage.clearAllCredentials(context)
-
-                            // Cancel any scheduled uploads
-                            NsAnalyticsUploadWorker.cancelPeriodicUpload(context)
-                            workManager.cancelAllWorkByTag(NsAnalyticsConstants.NS_ANALYTICS_PERIODIC_WORKER_TAG)
-                            workManager.cancelAllWorkByTag(NsAnalyticsConstants.NS_ANALYTICS_UPLOAD_WORKER_TAG)
+                            NsAnalyticsUtils.cleanupAfterDeregistration(context)
 
                             Timber.i("Device unregistered successfully")
                             "success"
                         } else if (response.code() == 401 || response.code() == 403) {
                             // Already unregistered or invalid token - clear credentials anyway
-                            NsAnalyticsSecureStorage.clearAllCredentials(context)
-                            NsAnalyticsUploadWorker.cancelPeriodicUpload(context)
-                            workManager.cancelAllWorkByTag(NsAnalyticsConstants.NS_ANALYTICS_PERIODIC_WORKER_TAG)
-                            workManager.cancelAllWorkByTag(NsAnalyticsConstants.NS_ANALYTICS_UPLOAD_WORKER_TAG)
+                            NsAnalyticsUtils.cleanupAfterDeregistration(context)
 
                             Timber.w("Device already unregistered or invalid token")
                             "success"
