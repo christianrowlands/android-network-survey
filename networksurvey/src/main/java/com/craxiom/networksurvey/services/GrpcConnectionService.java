@@ -59,9 +59,7 @@ import com.craxiom.networksurvey.listeners.ICellularSurveyRecordListener;
 import com.craxiom.networksurvey.listeners.IDeviceStatusListener;
 import com.craxiom.networksurvey.listeners.IGnssSurveyRecordListener;
 import com.craxiom.networksurvey.listeners.IWifiSurveyRecordListener;
-import com.craxiom.networksurvey.messaging.NetworkSurveyStatusGrpc;
 import com.craxiom.networksurvey.model.WifiRecordWrapper;
-import com.craxiom.networksurvey.util.LegacyRecordConversion;
 
 import java.lang.ref.WeakReference;
 import java.net.ConnectException;
@@ -91,8 +89,7 @@ public class GrpcConnectionService extends Service implements IDeviceStatusListe
         IWifiSurveyRecordListener, IBluetoothSurveyRecordListener, IGnssSurveyRecordListener
 {
     public static final long RECONNECTION_ATTEMPT_BACKOFF_TIME = 10_000L;
-    private static final int DEVICE_STATUS_REFRESH_RATE_MS = 15_000;
-    // number of concurrent linked queues. Does not take into account the old queues
+    // number of concurrent linked queues.
     private static final int NUMBER_OF_QUEUES_TO_PROCESS = 10;
     private static final int QUEUE_PROCESSING_SLEEP_TIME = 1_000;
 
@@ -124,18 +121,6 @@ public class GrpcConnectionService extends Service implements IDeviceStatusListe
 
     private final List<IConnectionStateListener> grpcConnectionListeners = new CopyOnWriteArrayList<>();
 
-    // Old connection approach, delete this when we can update all the grpc code
-    private final ConcurrentLinkedQueue<com.craxiom.networksurvey.messaging.DeviceStatus> oldDeviceStatusQueue = new ConcurrentLinkedQueue<>();
-    private final ConcurrentLinkedQueue<com.craxiom.networksurvey.messaging.GsmRecord> oldGsmRecordQueue = new ConcurrentLinkedQueue<>();
-    private final ConcurrentLinkedQueue<com.craxiom.networksurvey.messaging.CdmaRecord> oldCdmaRecordQueue = new ConcurrentLinkedQueue<>();
-    private final ConcurrentLinkedQueue<com.craxiom.networksurvey.messaging.UmtsRecord> oldUmtsRecordQueue = new ConcurrentLinkedQueue<>();
-    private final ConcurrentLinkedQueue<com.craxiom.networksurvey.messaging.LteRecord> oldLteRecordQueue = new ConcurrentLinkedQueue<>();
-    private GrpcTask<com.craxiom.networksurvey.messaging.DeviceStatus, com.craxiom.networksurvey.messaging.StatusUpdateReply> oldDeviceStatusGrpcTask;
-    private GrpcTask<com.craxiom.networksurvey.messaging.GsmRecord, com.craxiom.networksurvey.messaging.GsmSurveyResponse> oldGsmRecordGrpcTask;
-    private GrpcTask<com.craxiom.networksurvey.messaging.CdmaRecord, com.craxiom.networksurvey.messaging.CdmaSurveyResponse> oldCdmaRecordGrpcTask;
-    private GrpcTask<com.craxiom.networksurvey.messaging.UmtsRecord, com.craxiom.networksurvey.messaging.UmtsSurveyResponse> oldUmtsRecordGrpcTask;
-    private GrpcTask<com.craxiom.networksurvey.messaging.LteRecord, com.craxiom.networksurvey.messaging.LteSurveyResponse> oldLteRecordGrpcTask;
-
     // New connection approach
     private GrpcTask<DeviceStatus, StatusUpdateReply> deviceStatusGrpcTask;
     private GrpcTask<PhoneState, PhoneStateResponse> phoneStateGrpcTask;
@@ -165,14 +150,6 @@ public class GrpcConnectionService extends Service implements IDeviceStatusListe
     private boolean bluetoothStreamEnabled = false;
     private boolean gnssStreamEnabled = false;
     private boolean deviceStatusStreamEnabled = false;
-
-    /**
-     * To support both the new and old gRPC connections, we keep track of if we were able to use the newer connection
-     * setup. Eventually we can get rid of this, but for now we support both.
-     *
-     * @since 0.2.0
-     */
-    private boolean oldConnectionApproach = false;
 
     public GrpcConnectionService()
     {
@@ -324,9 +301,6 @@ public class GrpcConnectionService extends Service implements IDeviceStatusListe
             if (deviceStatusGrpcTask != null && deviceStatusGrpcTask.getStatus() != AsyncTask.Status.FINISHED)
             {
                 deviceStatusQueue.add(deviceStatus);
-            } else if (oldConnectionApproach && oldDeviceStatusGrpcTask != null && oldDeviceStatusGrpcTask.getStatus() != AsyncTask.Status.FINISHED)
-            {
-                oldDeviceStatusQueue.add(LegacyRecordConversion.convertDeviceStatus(deviceStatus));
             }
         }
     }
@@ -348,9 +322,6 @@ public class GrpcConnectionService extends Service implements IDeviceStatusListe
             if (gsmRecordGrpcTask != null && gsmRecordGrpcTask.getStatus() != AsyncTask.Status.FINISHED)
             {
                 gsmRecordQueue.add(gsmRecord);
-            } else if (oldConnectionApproach && oldGsmRecordGrpcTask != null && oldGsmRecordGrpcTask.getStatus() != AsyncTask.Status.FINISHED)
-            {
-                oldGsmRecordQueue.add(LegacyRecordConversion.convertGsmRecord(gsmRecord));
             }
         }
     }
@@ -363,9 +334,6 @@ public class GrpcConnectionService extends Service implements IDeviceStatusListe
             if (cdmaRecordGrpcTask != null && cdmaRecordGrpcTask.getStatus() != AsyncTask.Status.FINISHED)
             {
                 cdmaRecordQueue.add(cdmaRecord);
-            } else if (oldConnectionApproach && oldCdmaRecordGrpcTask != null && oldCdmaRecordGrpcTask.getStatus() != AsyncTask.Status.FINISHED)
-            {
-                oldCdmaRecordQueue.add(LegacyRecordConversion.convertCdmaRecord(cdmaRecord));
             }
         }
     }
@@ -378,9 +346,6 @@ public class GrpcConnectionService extends Service implements IDeviceStatusListe
             if (umtsRecordGrpcTask != null && umtsRecordGrpcTask.getStatus() != AsyncTask.Status.FINISHED)
             {
                 umtsRecordQueue.add(umtsRecord);
-            } else if (oldConnectionApproach && oldUmtsRecordGrpcTask != null && oldUmtsRecordGrpcTask.getStatus() != AsyncTask.Status.FINISHED)
-            {
-                oldUmtsRecordQueue.add(LegacyRecordConversion.convertUmtsRecord(umtsRecord));
             }
         }
     }
@@ -393,9 +358,6 @@ public class GrpcConnectionService extends Service implements IDeviceStatusListe
             if (lteRecordGrpcTask != null && lteRecordGrpcTask.getStatus() != AsyncTask.Status.FINISHED)
             {
                 lteRecordQueue.add(lteRecord);
-            } else if (oldConnectionApproach && oldLteRecordGrpcTask != null && oldLteRecordGrpcTask.getStatus() != AsyncTask.Status.FINISHED)
-            {
-                oldLteRecordQueue.add(LegacyRecordConversion.convertLteRecord(lteRecord));
             }
         }
     }
@@ -536,91 +498,68 @@ public class GrpcConnectionService extends Service implements IDeviceStatusListe
                     Timber.i(message);
                     uiThreadHandler.post(() -> Toast.makeText(applicationContext, message, Toast.LENGTH_SHORT).show());
 
-                    if (oldConnectionApproach)
+                    final WirelessSurveyGrpc.WirelessSurveyStub wirelessSurveyStub = WirelessSurveyGrpc.newStub(channel);
+
+                    if (cellularStreamEnabled)
                     {
-                        // TODO Delete all this old approach code once we have a chance to update any older gPRC code
-                        oldDeviceStatusGrpcTask = new GrpcTask<>(this, oldDeviceStatusQueue,
-                                statusUpdateReplyStreamObserver -> NetworkSurveyStatusGrpc.newStub(channel).statusUpdate(statusUpdateReplyStreamObserver));
-                        oldDeviceStatusGrpcTask.executeOnExecutor(executorService);
+                        gsmRecordGrpcTask = new GrpcTask<>(this, gsmRecordQueue, wirelessSurveyStub::streamGsmSurvey);
+                        gsmRecordGrpcTask.executeOnExecutor(executorService);
 
-                        final com.craxiom.networksurvey.messaging.WirelessSurveyGrpc.WirelessSurveyStub wirelessSurveyStub = com.craxiom.networksurvey.messaging.WirelessSurveyGrpc.newStub(channel);
+                        cdmaRecordGrpcTask = new GrpcTask<>(this, cdmaRecordQueue, wirelessSurveyStub::streamCdmaSurvey);
+                        cdmaRecordGrpcTask.executeOnExecutor(executorService);
 
-                        oldGsmRecordGrpcTask = new GrpcTask<>(this, oldGsmRecordQueue, wirelessSurveyStub::streamGsmSurvey);
-                        oldGsmRecordGrpcTask.executeOnExecutor(executorService);
+                        umtsRecordGrpcTask = new GrpcTask<>(this, umtsRecordQueue, wirelessSurveyStub::streamUmtsSurvey);
+                        umtsRecordGrpcTask.executeOnExecutor(executorService);
 
-                        oldCdmaRecordGrpcTask = new GrpcTask<>(this, oldCdmaRecordQueue, wirelessSurveyStub::streamCdmaSurvey);
-                        oldCdmaRecordGrpcTask.executeOnExecutor(executorService);
+                        lteRecordGrpcTask = new GrpcTask<>(this, lteRecordQueue, wirelessSurveyStub::streamLteSurvey);
+                        lteRecordGrpcTask.executeOnExecutor(executorService);
 
-                        oldUmtsRecordGrpcTask = new GrpcTask<>(this, oldUmtsRecordQueue, wirelessSurveyStub::streamUmtsSurvey);
-                        oldUmtsRecordGrpcTask.executeOnExecutor(executorService);
+                        nrRecordGrpcTask = new GrpcTask<>(this, nrRecordQueue, wirelessSurveyStub::streamNrSurvey);
+                        nrRecordGrpcTask.executeOnExecutor(executorService);
 
-                        oldLteRecordGrpcTask = new GrpcTask<>(this, oldLteRecordQueue, wirelessSurveyStub::streamLteSurvey);
-                        oldLteRecordGrpcTask.executeOnExecutor(executorService);
-                    } else
+                        networkSurveyService.registerCellularSurveyRecordListener(this);
+                    }
+
+                    if (wifiStreamEnabled)
                     {
-                        final WirelessSurveyGrpc.WirelessSurveyStub wirelessSurveyStub = WirelessSurveyGrpc.newStub(channel);
+                        wifiBeaconRecordGrpcTask = new GrpcTask<>(this, wifiBeaconRecordQueue, wirelessSurveyStub::streamWifiBeaconSurvey);
+                        wifiBeaconRecordGrpcTask.executeOnExecutor(executorService);
 
-                        if (cellularStreamEnabled)
+                        networkSurveyService.registerWifiSurveyRecordListener(this);
+                    }
+
+                    if (bluetoothStreamEnabled)
+                    {
+                        bluetoothRecordGrpcTask = new GrpcTask<>(this, bluetoothRecordQueue, wirelessSurveyStub::streamBluetoothSurvey);
+                        bluetoothRecordGrpcTask.executeOnExecutor(executorService);
+
+                        networkSurveyService.registerBluetoothSurveyRecordListener(this);
+                    }
+
+                    if (gnssStreamEnabled)
+                    {
+                        gnssRecordGrpcTask = new GrpcTask<>(this, gnssRecordQueue, wirelessSurveyStub::streamGnssSurvey);
+                        gnssRecordGrpcTask.executeOnExecutor(executorService);
+
+                        networkSurveyService.registerGnssSurveyRecordListener(this);
+                    }
+
+                    if (deviceStatusStreamEnabled || phoneStateStreamEnabled)
+                    {
+                        if (deviceStatusStreamEnabled)
                         {
-                            gsmRecordGrpcTask = new GrpcTask<>(this, gsmRecordQueue, wirelessSurveyStub::streamGsmSurvey);
-                            gsmRecordGrpcTask.executeOnExecutor(executorService);
-
-                            cdmaRecordGrpcTask = new GrpcTask<>(this, cdmaRecordQueue, wirelessSurveyStub::streamCdmaSurvey);
-                            cdmaRecordGrpcTask.executeOnExecutor(executorService);
-
-                            umtsRecordGrpcTask = new GrpcTask<>(this, umtsRecordQueue, wirelessSurveyStub::streamUmtsSurvey);
-                            umtsRecordGrpcTask.executeOnExecutor(executorService);
-
-                            lteRecordGrpcTask = new GrpcTask<>(this, lteRecordQueue, wirelessSurveyStub::streamLteSurvey);
-                            lteRecordGrpcTask.executeOnExecutor(executorService);
-
-                            nrRecordGrpcTask = new GrpcTask<>(this, nrRecordQueue, wirelessSurveyStub::streamNrSurvey);
-                            nrRecordGrpcTask.executeOnExecutor(executorService);
-
-                            networkSurveyService.registerCellularSurveyRecordListener(this);
+                            deviceStatusGrpcTask = new GrpcTask<>(this, deviceStatusQueue,
+                                    statusUpdateReplyStreamObserver -> DeviceStatusGrpc.newStub(channel).statusUpdate(statusUpdateReplyStreamObserver));
+                            deviceStatusGrpcTask.executeOnExecutor(executorService);
                         }
 
-                        if (wifiStreamEnabled)
+                        if (phoneStateStreamEnabled)
                         {
-                            wifiBeaconRecordGrpcTask = new GrpcTask<>(this, wifiBeaconRecordQueue, wirelessSurveyStub::streamWifiBeaconSurvey);
-                            wifiBeaconRecordGrpcTask.executeOnExecutor(executorService);
-
-                            networkSurveyService.registerWifiSurveyRecordListener(this);
+                            phoneStateGrpcTask = new GrpcTask<>(this, phoneStateQueue, wirelessSurveyStub::streamPhoneState);
+                            phoneStateGrpcTask.executeOnExecutor(executorService);
                         }
 
-                        if (bluetoothStreamEnabled)
-                        {
-                            bluetoothRecordGrpcTask = new GrpcTask<>(this, bluetoothRecordQueue, wirelessSurveyStub::streamBluetoothSurvey);
-                            bluetoothRecordGrpcTask.executeOnExecutor(executorService);
-
-                            networkSurveyService.registerBluetoothSurveyRecordListener(this);
-                        }
-
-                        if (gnssStreamEnabled)
-                        {
-                            gnssRecordGrpcTask = new GrpcTask<>(this, gnssRecordQueue, wirelessSurveyStub::streamGnssSurvey);
-                            gnssRecordGrpcTask.executeOnExecutor(executorService);
-
-                            networkSurveyService.registerGnssSurveyRecordListener(this);
-                        }
-
-                        if (deviceStatusStreamEnabled || phoneStateStreamEnabled)
-                        {
-                            if (deviceStatusStreamEnabled)
-                            {
-                                deviceStatusGrpcTask = new GrpcTask<>(this, deviceStatusQueue,
-                                        statusUpdateReplyStreamObserver -> DeviceStatusGrpc.newStub(channel).statusUpdate(statusUpdateReplyStreamObserver));
-                                deviceStatusGrpcTask.executeOnExecutor(executorService);
-                            }
-
-                            if (phoneStateStreamEnabled)
-                            {
-                                phoneStateGrpcTask = new GrpcTask<>(this, phoneStateQueue, wirelessSurveyStub::streamPhoneState);
-                                phoneStateGrpcTask.executeOnExecutor(executorService);
-                            }
-
-                            networkSurveyService.registerDeviceStatusListener(this);
-                        }
+                        networkSurveyService.registerDeviceStatusListener(this);
                     }
                 } catch (Throwable t)
                 {
@@ -665,32 +604,6 @@ public class GrpcConnectionService extends Service implements IDeviceStatusListe
         networkSurveyService.unregisterWifiSurveyRecordListener(this);
         networkSurveyService.unregisterBluetoothSurveyRecordListener(this);
         networkSurveyService.unregisterGnssSurveyRecordListener(this);
-
-        if (oldDeviceStatusGrpcTask != null)
-        {
-            oldDeviceStatusGrpcTask.cancel(true);
-            oldDeviceStatusGrpcTask = null;
-        }
-        if (oldGsmRecordGrpcTask != null)
-        {
-            oldGsmRecordGrpcTask.cancel(true);
-            oldGsmRecordGrpcTask = null;
-        }
-        if (oldCdmaRecordGrpcTask != null)
-        {
-            oldCdmaRecordGrpcTask.cancel(true);
-            oldCdmaRecordGrpcTask = null;
-        }
-        if (oldUmtsRecordGrpcTask != null)
-        {
-            oldUmtsRecordGrpcTask.cancel(true);
-            oldUmtsRecordGrpcTask = null;
-        }
-        if (oldLteRecordGrpcTask != null)
-        {
-            oldLteRecordGrpcTask.cancel(true);
-            oldLteRecordGrpcTask = null;
-        }
 
         if (deviceStatusGrpcTask != null)
         {
@@ -750,8 +663,7 @@ public class GrpcConnectionService extends Service implements IDeviceStatusListe
 
     /**
      * Tries to perform a handshake with the gRPC Server. This should be done anytime we start a new connection with the
-     * server. First, a connection is attempted using the newer connection approach. If the method is unimplemented
-     * then try the old connection approach.
+     * server.
      *
      * @return True if the handshake is successful, false otherwise.
      */
@@ -764,9 +676,7 @@ public class GrpcConnectionService extends Service implements IDeviceStatusListe
 
             final ConnectionReply connectionReply = blockingStub.startConnection(ConnectionRequest.newBuilder().build());
 
-            final boolean successful = connectionReply != null && connectionReply.getConnectionAccept();
-            if (successful) oldConnectionApproach = false;
-            return successful;
+            return connectionReply != null && connectionReply.getConnectionAccept();
         } catch (Exception e)
         {
             if (e instanceof StatusRuntimeException)
@@ -774,15 +684,7 @@ public class GrpcConnectionService extends Service implements IDeviceStatusListe
                 if (((StatusRuntimeException) e).getStatus().getCode() == Status.Code.UNIMPLEMENTED)
                 {
                     // Might be using the old server connection methods, so try those before failing the connection
-                    final NetworkSurveyStatusGrpc.NetworkSurveyStatusBlockingStub blockingStub = NetworkSurveyStatusGrpc
-                            .newBlockingStub(channel).withDeadlineAfter(10, TimeUnit.SECONDS);
-
-                    final com.craxiom.networksurvey.messaging.ConnectionReply connectionReply = blockingStub
-                            .startConnection(com.craxiom.networksurvey.messaging.ConnectionRequest.newBuilder().build());
-
-                    final boolean successful = connectionReply != null && connectionReply.getConnectionAccept();
-                    if (successful) oldConnectionApproach = true;
-                    return successful;
+                    Timber.w(e, "Could not connect to the remote gRPC Server, the server might be using the old connection approach: ");
                 }
             } else if (e.getCause() instanceof ConnectException)
             {
