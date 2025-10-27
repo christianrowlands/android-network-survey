@@ -1,6 +1,35 @@
 # Changelog
 
-## [1.42](https://github.com/christianrowlands/android-network-survey/releases/tag/v1.43) - 2025-09-15
+## [1.44](https://github.com/christianrowlands/android-network-survey/releases/tag/v1.43) - 2025-10-27
+
+**NEW FEATURES**
+* A new custom server upload feature was added to allow for uploading survey data to a custom server using HTTP API calls. This will allow for uploading straight to NS Analytics once it is released.
+
+**IMPROVEMENTS**
+* Replace the bottom nav bar png icons with vector icons.
+* Change the default log file type from "Both" to "CSV only".
+* Add the deviceSerialNumber column to the CDR CSV file to help with uniqueness of records and linking to a specific device.
+* Rename "Server Connection" to "gRPC Connection" and reorder the nav menu options.
+* Increase the default wifi scan interval to 15 seconds, and the GNSS scan interval to 45 seconds (from 10 and 30) to improve battery life.
+* Minor UI improvements (lighter card titles and icon colors).
+* Pulled in the latest geopackage android library to resolve the not 16 KB aligned problem and to allow the F-Droid build to work again. [#109](https://github.com/christianrowlands/android-network-survey/issues/109)
+* Remove the deprecated old connection approach for gRPC connections and update to version 2.0.0 of the NS messaging API library (along with other library version updates).
+
+**BUG FIXES**
+* Prevent an edge case crash that occurs when the GNSS failure dialog is displayed after the app is put in the background or the screen is rotated.
+* Fix an edge case crash when starting Network Survey at boot.
+* Handle when the operation is canceled for getting the location for a CDR message to prevent a crash.
+* Fix a crash when the MapLibre tower map runs low on memory causing a stack overflow error.
+* Move CellInfoCallback and TelephonyCallback outside of CellularController to prevent errors when running on older Android versions. [#104](https://github.com/christianrowlands/android-network-survey/issues/104)
+* Only filter cellular scan results based on age on newer devices because of a possible bug where the timestamp is reported incorrectly. [#104](https://github.com/christianrowlands/android-network-survey/issues/104)
+* Properly cleanup the maplibre location listener when exiting the map screen.
+* Update the serving cell range circle and line when only displaying the serving cell tower on the map. [#103](https://github.com/christianrowlands/android-network-survey/issues/103)
+* Fix an edge case crash if the user toggles BT file logging on while BT is turned off on Android, and navigates away from NS before the dialog to turn BT on is displayed.
+* Fix an edge case crash on specific version of Android 10 where there is a framework bug where ParcelableException is null causing an NPE.
+* Several memory leak fixes.
+* Fix a race condition where the same bluetooth record number can be used twice for two different records.
+
+## [1.43](https://github.com/christianrowlands/android-network-survey/releases/tag/v1.43) - 2025-09-15
 
 * Restart the GNSS survey when the user changes the scan rate for GNSS, and change the min and max gps listener rates.
 * Ensure scan rate changes for WiFi and Device Status are applied even if the survey is already started.
