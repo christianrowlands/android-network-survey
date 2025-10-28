@@ -1,6 +1,6 @@
 # Changelog
 
-## [1.44](https://github.com/christianrowlands/android-network-survey/releases/tag/v1.43) - 2025-10-27
+## [1.44](https://github.com/christianrowlands/android-network-survey/releases/tag/v1.44) - 2025-10-27
 
 **NEW FEATURES**
 * A new custom server upload feature was added to allow for uploading survey data to a custom server using HTTP API calls. This will allow for uploading straight to NS Analytics once it is released.
