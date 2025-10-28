@@ -1,5 +1,10 @@
 # Changelog
 
+## [1.44.1](https://github.com/christianrowlands/android-network-survey/releases/tag/v1.44.1) - 2025-10-28
+
+**BUG FIXES**
+* Fix a crash that occurs when staring Network Survey after upgrading from a previous version.
+
 ## [1.44](https://github.com/christianrowlands/android-network-survey/releases/tag/v1.44) - 2025-10-27
 
 **NEW FEATURES**
