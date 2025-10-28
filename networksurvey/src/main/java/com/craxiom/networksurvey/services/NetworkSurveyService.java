@@ -97,6 +97,7 @@ import java.util.Set;
 import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
@@ -2044,31 +2045,37 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
         }
 
         // Schedule the device status task at a fixed rate
-        deviceStatusFuture = deviceStatusExecutor.scheduleWithFixedDelay(() -> {
-            try
-            {
-                if (!deviceStatusActive.get())
+        try
+        {
+            deviceStatusFuture = deviceStatusExecutor.scheduleWithFixedDelay(() -> {
+                try
                 {
-                    Timber.i("Device status reporting is no longer active, skipping status generation");
-                    return;
-                }
+                    if (!deviceStatusActive.get())
+                    {
+                        Timber.i("Device status reporting is no longer active, skipping status generation");
+                        return;
+                    }
 
-                // Skip device status generation if paused for battery management
-                if (isPausedForBattery())
+                    // Skip device status generation if paused for battery management
+                    if (isPausedForBattery())
+                    {
+                        Timber.d("Device status generation is paused for battery management");
+                        return;
+                    }
+
+                    surveyRecordProcessor.onDeviceStatus(generateDeviceStatus());
+                } catch (SecurityException e)
                 {
-                    Timber.d("Device status generation is paused for battery management");
-                    return;
+                    Timber.e(e, "Could not get the required permissions to generate a device status message");
+                } catch (Exception e)
+                {
+                    Timber.e(e, "Unexpected error generating device status message");
                 }
-
-                surveyRecordProcessor.onDeviceStatus(generateDeviceStatus());
-            } catch (SecurityException e)
-            {
-                Timber.e(e, "Could not get the required permissions to generate a device status message");
-            } catch (Exception e)
-            {
-                Timber.e(e, "Unexpected error generating device status message");
-            }
-        }, 1000L, deviceStatusScanRateMs, TimeUnit.MILLISECONDS);
+            }, 1000L, deviceStatusScanRateMs, TimeUnit.MILLISECONDS);
+        } catch (RejectedExecutionException ree)
+        {
+            Timber.w(ree, "Could not schedule device status reporting task - executor may be shut down");
+        }
 
         Timber.d("Started device status reporting with interval %d ms", deviceStatusScanRateMs);
 

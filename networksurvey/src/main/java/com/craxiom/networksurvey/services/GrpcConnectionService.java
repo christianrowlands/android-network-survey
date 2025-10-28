@@ -599,11 +599,17 @@ public class GrpcConnectionService extends Service implements IDeviceStatusListe
     {
         if (stopService) notifyConnectionStateChange(ConnectionState.DISCONNECTING);
 
-        networkSurveyService.unregisterDeviceStatusListener(this);
-        networkSurveyService.unregisterCellularSurveyRecordListener(this);
-        networkSurveyService.unregisterWifiSurveyRecordListener(this);
-        networkSurveyService.unregisterBluetoothSurveyRecordListener(this);
-        networkSurveyService.unregisterGnssSurveyRecordListener(this);
+        if (networkSurveyService != null)
+        {
+            networkSurveyService.unregisterDeviceStatusListener(this);
+            networkSurveyService.unregisterCellularSurveyRecordListener(this);
+            networkSurveyService.unregisterWifiSurveyRecordListener(this);
+            networkSurveyService.unregisterBluetoothSurveyRecordListener(this);
+            networkSurveyService.unregisterGnssSurveyRecordListener(this);
+        } else
+        {
+            Timber.w("NetworkSurveyService is null when disconnecting from the gRPC server, cannot unregister listeners");
+        }
 
         if (deviceStatusGrpcTask != null)
         {
