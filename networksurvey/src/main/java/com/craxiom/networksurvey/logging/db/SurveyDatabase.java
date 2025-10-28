@@ -29,7 +29,7 @@ import com.craxiom.networksurvey.logging.db.model.WifiBeaconRecordEntity;
 
 @Database(entities = {GsmRecordEntity.class, CdmaRecordEntity.class, UmtsRecordEntity.class,
         LteRecordEntity.class, NrRecordEntity.class, WifiBeaconRecordEntity.class, TowerCacheEntity.class,
-        NsAnalyticsQueueEntity.class, NsAnalyticsConnectionEntity.class}, version = 10)
+        NsAnalyticsQueueEntity.class, NsAnalyticsConnectionEntity.class}, version = 11)
 public abstract class SurveyDatabase extends RoomDatabase
 {
     public abstract GsmRecordDao gsmRecordDao();
@@ -132,31 +132,109 @@ public abstract class SurveyDatabase extends RoomDatabase
         @Override
         public void migrate(SupportSQLiteDatabase database)
         {
-            // Create NS Analytics queue table
-            database.execSQL("CREATE TABLE IF NOT EXISTS ns_analytics_queue (" +
+            database.execSQL("CREATE TABLE ns_analytics_queue (" +
                     "id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, " +
                     "recordType TEXT, " +
                     "protobufJson TEXT, " +
                     "timestamp INTEGER NOT NULL, " +
                     "batchId TEXT, " +
-                    "uploaded INTEGER NOT NULL DEFAULT 0, " +
-                    "retryCount INTEGER NOT NULL DEFAULT 0, " +
-                    "lastUploadAttempt INTEGER NOT NULL DEFAULT 0, " +
-                    "payloadSize INTEGER NOT NULL DEFAULT 0)");
+                    "uploaded INTEGER NOT NULL, " +
+                    "retryCount INTEGER NOT NULL, " +
+                    "lastUploadAttempt INTEGER NOT NULL, " +
+                    "payloadSize INTEGER NOT NULL)");
 
-            // Indices are created automatically by Room from entity annotations
+            database.execSQL("CREATE INDEX index_ns_analytics_queue_uploaded ON ns_analytics_queue (uploaded)");
+            database.execSQL("CREATE INDEX index_ns_analytics_queue_timestamp ON ns_analytics_queue (timestamp)");
 
-            // Create NS Analytics connection table
-            database.execSQL("CREATE TABLE IF NOT EXISTS ns_analytics_connection (" +
+            database.execSQL("CREATE TABLE ns_analytics_connection (" +
                     "workspaceId TEXT PRIMARY KEY NOT NULL, " +
                     "deviceToken TEXT, " +
                     "apiUrl TEXT, " +
                     "deviceId TEXT, " +
                     "registeredAt INTEGER NOT NULL, " +
-                    "lastUploadAt INTEGER NOT NULL DEFAULT 0, " +
-                    "totalRecordsUploaded INTEGER NOT NULL DEFAULT 0, " +
-                    "isActive INTEGER NOT NULL DEFAULT 1, " +
-                    "uploadFrequencyMinutes INTEGER NOT NULL DEFAULT 15)");
+                    "lastUploadAt INTEGER NOT NULL, " +
+                    "totalRecordsUploaded INTEGER NOT NULL, " +
+                    "isActive INTEGER NOT NULL, " +
+                    "uploadFrequencyMinutes INTEGER NOT NULL)");
+        }
+    };
+
+    /**
+     * Migration from version 10 to 11: Fix NS Analytics tables schema
+     * This migration fixes the schema for users who upgraded to v1.44 (database version 10)
+     * which had DEFAULT values and missing indices that caused Room validation failures.
+     * Also handles edge cases where tables might already have correct schema (from MIGRATION_9_10).
+     */
+    private static final Migration MIGRATION_10_11 = new Migration(10, 11)
+    {
+        @Override
+        public void migrate(SupportSQLiteDatabase database)
+        {
+            // Check if ns_analytics_queue table exists before attempting migration
+            android.database.Cursor queueCursor = database.query(
+                    "SELECT name FROM sqlite_master WHERE type='table' AND name='ns_analytics_queue'");
+            boolean queueTableExists = queueCursor.getCount() > 0;
+            queueCursor.close();
+
+            if (queueTableExists)
+            {
+                // Recreate ns_analytics_queue table with correct schema (no DEFAULT values)
+                database.execSQL("CREATE TABLE ns_analytics_queue_new (" +
+                        "id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, " +
+                        "recordType TEXT, " +
+                        "protobufJson TEXT, " +
+                        "timestamp INTEGER NOT NULL, " +
+                        "batchId TEXT, " +
+                        "uploaded INTEGER NOT NULL, " +
+                        "retryCount INTEGER NOT NULL, " +
+                        "lastUploadAttempt INTEGER NOT NULL, " +
+                        "payloadSize INTEGER NOT NULL)");
+
+                // Copy existing data (safe even if table is empty)
+                database.execSQL("INSERT INTO ns_analytics_queue_new " +
+                        "(id, recordType, protobufJson, timestamp, batchId, uploaded, retryCount, lastUploadAttempt, payloadSize) " +
+                        "SELECT id, recordType, protobufJson, timestamp, batchId, uploaded, retryCount, lastUploadAttempt, payloadSize " +
+                        "FROM ns_analytics_queue");
+
+                database.execSQL("DROP TABLE ns_analytics_queue");
+
+                database.execSQL("ALTER TABLE ns_analytics_queue_new RENAME TO ns_analytics_queue");
+            }
+
+            // Create indices (using IF NOT EXISTS for idempotency in case they already exist from MIGRATION_9_10)
+            database.execSQL("CREATE INDEX IF NOT EXISTS index_ns_analytics_queue_uploaded ON ns_analytics_queue (uploaded)");
+            database.execSQL("CREATE INDEX IF NOT EXISTS index_ns_analytics_queue_timestamp ON ns_analytics_queue (timestamp)");
+
+            // Check if ns_analytics_connection table exists before attempting migration
+            android.database.Cursor connectionCursor = database.query(
+                    "SELECT name FROM sqlite_master WHERE type='table' AND name='ns_analytics_connection'");
+            boolean connectionTableExists = connectionCursor.getCount() > 0;
+            connectionCursor.close();
+
+            if (connectionTableExists)
+            {
+                // Recreate ns_analytics_connection table with correct schema (no DEFAULT values)
+                database.execSQL("CREATE TABLE ns_analytics_connection_new (" +
+                        "workspaceId TEXT PRIMARY KEY NOT NULL, " +
+                        "deviceToken TEXT, " +
+                        "apiUrl TEXT, " +
+                        "deviceId TEXT, " +
+                        "registeredAt INTEGER NOT NULL, " +
+                        "lastUploadAt INTEGER NOT NULL, " +
+                        "totalRecordsUploaded INTEGER NOT NULL, " +
+                        "isActive INTEGER NOT NULL, " +
+                        "uploadFrequencyMinutes INTEGER NOT NULL)");
+
+                // Copy existing data (safe even if table is empty)
+                database.execSQL("INSERT INTO ns_analytics_connection_new " +
+                        "(workspaceId, deviceToken, apiUrl, deviceId, registeredAt, lastUploadAt, totalRecordsUploaded, isActive, uploadFrequencyMinutes) " +
+                        "SELECT workspaceId, deviceToken, apiUrl, deviceId, registeredAt, lastUploadAt, totalRecordsUploaded, isActive, uploadFrequencyMinutes " +
+                        "FROM ns_analytics_connection");
+
+                database.execSQL("DROP TABLE ns_analytics_connection");
+
+                database.execSQL("ALTER TABLE ns_analytics_connection_new RENAME TO ns_analytics_connection");
+            }
         }
     };
 
@@ -170,7 +248,7 @@ public abstract class SurveyDatabase extends RoomDatabase
                 {
                     INSTANCE = Room.databaseBuilder(context.getApplicationContext(),
                                     SurveyDatabase.class, "survey_db")
-                            .addMigrations(MIGRATION_7_9, MIGRATION_8_9, MIGRATION_9_10)
+                            .addMigrations(MIGRATION_7_9, MIGRATION_8_9, MIGRATION_9_10, MIGRATION_10_11)
                             .fallbackToDestructiveMigration()
                             .build();
                 }
