@@ -213,9 +213,6 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
         surveyRecordProcessor = new SurveyRecordProcessor(primaryLocationListener, deviceId, context, executorService);
         surveyRecordProcessor.setNetworkSurveyService(this);
 
-        dbUploadStore = new DbUploadStore(context);
-        dbUploadStore.setUploadRecordCountListener(this);
-
         cellularController = new CellularController(this, executorService, serviceLooper, serviceHandler, surveyRecordProcessor);
         wifiController = new WifiController(this, executorService, serviceLooper, serviceHandler, surveyRecordProcessor, uiThreadHandler);
         bluetoothController = new BluetoothController(this, executorService, serviceLooper, serviceHandler, surveyRecordProcessor, uiThreadHandler);
@@ -450,8 +447,6 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
         wifiController.onDestroy();
         bluetoothController.onDestroy();
         gnssController.onDestroy();
-
-        surveyRecordProcessor.removeDbSink();
 
         surveyServiceBinder.onDestroy();
         surveyServiceBinder = null;
@@ -1192,85 +1187,85 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
         return result;
     }
 
-    public UploadScanningResult toggleUploadRecordSaving(boolean enable)
+    public synchronized UploadScanningResult toggleUploadRecordSaving(boolean enable)
     {
-        //noinspection SynchronizeOnNonFinalField
-        synchronized (dbUploadStore)
+        try
         {
-            try
+            boolean externalDataUploadAllowedForMdm = MdmUtils.isExternalDataUploadAllowed(this);
+            if (!externalDataUploadAllowedForMdm)
             {
-                boolean externalDataUploadAllowedForMdm = MdmUtils.isExternalDataUploadAllowed(this);
-                if (!externalDataUploadAllowedForMdm)
+                return new UploadScanningResult(false, false, getString(R.string.upload_disabled_via_mdm));
+            }
+
+            if (enable)
+            {
+                // Only start surveys for protocols needed by the selected upload targets
+                final boolean shouldStartCellular = PreferenceUtils.shouldStartCellularForUpload(this);
+                final boolean shouldStartWifi = PreferenceUtils.shouldStartWifiForUpload(this);
+
+                if (!shouldStartCellular && !shouldStartWifi)
                 {
-                    return new UploadScanningResult(false, false, getString(R.string.upload_disabled_via_mdm));
+                    Timber.w("No upload targets selected, so no survey scanning will be started");
+                    return new UploadScanningResult(false, false, getString(R.string.upload_saving_no_targets));
                 }
 
-                if (enable)
+                dbUploadStore = new DbUploadStore(this);
+                dbUploadStore.setUploadRecordCountListener(this);
+                dbUploadStore.resetLastLocations();
+
+                Set<SurveyTypes> surveysStarted = new LinkedHashSet<>();
+
+                if (shouldStartCellular)
                 {
-                    // Only start surveys for protocols needed by the selected upload targets
-                    final boolean shouldStartCellular = PreferenceUtils.shouldStartCellularForUpload(this);
-                    final boolean shouldStartWifi = PreferenceUtils.shouldStartWifiForUpload(this);
+                    registerCellularSurveyRecordListener(dbUploadStore);
+                    surveysStarted.add(SurveyTypes.CELLULAR);
+                }
 
-                    if (!shouldStartCellular && !shouldStartWifi)
-                    {
-                        Timber.w("No upload targets selected, so no survey scanning will be started");
-                        return new UploadScanningResult(false, false, getString(R.string.upload_saving_no_targets));
-                    }
+                if (shouldStartWifi)
+                {
+                    registerWifiSurveyRecordListener(dbUploadStore);
+                    surveysStarted.add(SurveyTypes.WIFI);
+                }
 
-                    dbUploadStore.resetLastLocations();
-                    surveyRecordProcessor.addDbSink(dbUploadStore);
+                // Track survey session
+                onSurveyStarted();
+                updateWakeLock();
 
-                    Set<SurveyTypes> surveysStarted = new LinkedHashSet<>();
-
-                    if (shouldStartCellular)
-                    {
-                        cellularController.startCellularRecordScanning(); // Only starts scanning if it is not already active.
-                        surveysStarted.add(SurveyTypes.CELLULAR);
-                    }
-
-                    if (shouldStartWifi)
-                    {
-                        wifiController.startWifiRecordScanning(); // Only starts scanning if it is not already active.
-                        surveysStarted.add(SurveyTypes.WIFI);
-                    }
-
-                    // Track survey session
-                    onSurveyStarted();
-                    updateWakeLock();
-
-                    // Generate appropriate success message based on what was started
-                    String message;
-                    if (shouldStartCellular && shouldStartWifi)
-                    {
-                        message = getString(R.string.upload_saving_started_cellular_wifi);
-                    } else if (shouldStartCellular)
-                    {
-                        message = getString(R.string.upload_saving_started_cellular);
-                    } else
-                    {
-                        message = getString(R.string.upload_saving_start_toast); // Fallback
-                    }
-
-                    return new UploadScanningResult(true, true, message, surveysStarted);
+                // Generate appropriate success message based on what was started
+                String message;
+                if (shouldStartCellular && shouldStartWifi)
+                {
+                    message = getString(R.string.upload_saving_started_cellular_wifi);
+                } else if (shouldStartCellular)
+                {
+                    message = getString(R.string.upload_saving_started_cellular);
                 } else
                 {
-                    surveyRecordProcessor.removeDbSink();
-
-                    // Track survey session end
-                    onSurveyStopped();
-                    updateWakeLock();
-
-                    // Check to see if this service is still needed.  It is still needed if we are either logging, the UI is
-                    // visible, or a server connection is active.
-                    if (!isBeingUsed()) stopSelf();
-
-                    return new UploadScanningResult(true, false, getString(R.string.upload_saving_stop_toast));
+                    message = getString(R.string.upload_saving_start_toast); // Fallback
                 }
-            } catch (Exception e)
+
+                return new UploadScanningResult(true, true, message, surveysStarted);
+            } else
             {
-                Timber.e(e, "Failed to toggle upload record saving");
-                return new UploadScanningResult(false, false, getString(R.string.upload_saving_toggle_failed));
+                unregisterCellularSurveyRecordListener(dbUploadStore);
+                unregisterWifiSurveyRecordListener(dbUploadStore);
+
+                dbUploadStore = null;
+
+                // Track survey session end
+                onSurveyStopped();
+                updateWakeLock();
+
+                // Check to see if this service is still needed.  It is still needed if we are either logging, the UI is
+                // visible, or a server connection is active.
+                if (!isBeingUsed()) stopSelf();
+
+                return new UploadScanningResult(true, false, getString(R.string.upload_saving_stop_toast));
             }
+        } catch (Exception e)
+        {
+            Timber.e(e, "Failed to toggle upload record saving");
+            return new UploadScanningResult(false, false, getString(R.string.upload_saving_toggle_failed));
         }
     }
 
@@ -1296,7 +1291,6 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
                             getString(R.string.ns_analytics_not_registered));
                 }
 
-                // Create the NS Analytics data store
                 nsAnalyticsDataStore = new NsAnalyticsDataStore(this);
                 nsAnalyticsDataStore.startCollecting();
 
@@ -1473,12 +1467,9 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
 
     public boolean isUploadScanningActive()
     {
-        return surveyRecordProcessor.isDbSinkSet();
+        return dbUploadStore != null;
     }
 
-    /**
-     * @return true if NS Analytics scanning is currently active
-     */
     public boolean isNsAnalyticsScanningActive()
     {
         return nsAnalyticsDataStore != null;
@@ -1923,20 +1914,6 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
         if (networkLocationListener != null)
         {
             if (locationManager != null) locationManager.removeUpdates(networkLocationListener);
-        }
-    }
-
-    /**
-     * Adds or removes the Database Sink from the survey record processor depending on the user
-     * preference.
-     */
-    public void updateUploadAllowedForMdm()
-    {
-        boolean externalDataUploadAllowed = MdmUtils.isExternalDataUploadAllowed(this);
-
-        if (!externalDataUploadAllowed)
-        {
-            surveyRecordProcessor.removeDbSink();
         }
     }
 
@@ -2400,7 +2377,6 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
                 gnssController.onMdmPreferenceChanged();
 
                 deviceStatusCsvLogger.onMdmPreferenceChanged();
-                updateUploadAllowedForMdm();
             }
         };
 

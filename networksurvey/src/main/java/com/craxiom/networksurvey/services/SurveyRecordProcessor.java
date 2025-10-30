@@ -102,7 +102,6 @@ import com.craxiom.networksurvey.listeners.ICellularSurveyRecordListener;
 import com.craxiom.networksurvey.listeners.IDeviceStatusListener;
 import com.craxiom.networksurvey.listeners.IGnssSurveyRecordListener;
 import com.craxiom.networksurvey.listeners.IWifiSurveyRecordListener;
-import com.craxiom.networksurvey.logging.db.DbUploadStore;
 import com.craxiom.networksurvey.model.CdrEvent;
 import com.craxiom.networksurvey.model.CdrEventType;
 import com.craxiom.networksurvey.model.CellularProtocol;
@@ -185,8 +184,6 @@ public class SurveyRecordProcessor
     private final Set<ICdrEventListener> cdrListeners = new CopyOnWriteArraySet<>();
     private final Set<IDeviceStatusListener> deviceStatusListeners = new CopyOnWriteArraySet<>();
     private volatile NetworkSurveyActivity networkSurveyActivity;
-
-    private DbUploadStore uploadDbSink;
 
     private final ExecutorService executorService;
     private final String deviceId;
@@ -355,34 +352,6 @@ public class SurveyRecordProcessor
     }
 
     /**
-     * Adds a sink for the local database that does not follow the typical listener lifecycle.
-     * More specifically, when the last regular listener is removed then the survey service will
-     * be shutdown, but this DB sink will always want to consume records if they are being created
-     * and will not prevent the survey service from being shutdown.
-     */
-    public synchronized void addDbSink(DbUploadStore dbSink)
-    {
-        uploadDbSink = dbSink;
-        // FIXME We don't need to handle the db sink outside of the normal Service#register calls,
-        //  so stop bypassing the normal listener registration methods because this could cause problems
-        //  because we don't call the stopWifiRecordScanning method when we bypass the service register method.
-        registerCellularSurveyRecordListener(uploadDbSink);
-        registerWifiSurveyRecordListener(uploadDbSink);
-    }
-
-    public synchronized void removeDbSink()
-    {
-        unregisterCellularSurveyRecordListener(uploadDbSink);
-        unregisterWifiSurveyRecordListener(uploadDbSink);
-        uploadDbSink = null;
-    }
-
-    public synchronized boolean isDbSinkSet()
-    {
-        return uploadDbSink != null;
-    }
-
-    /**
      * Whenever the UI is visible, we need to pass information to it so it can be displayed to the user.
      *
      * @param networkSurveyActivity The activity that is now visible to the user.
@@ -420,8 +389,7 @@ public class SurveyRecordProcessor
                 || !bluetoothSurveyRecordListeners.isEmpty()
                 || !gnssSurveyRecordListeners.isEmpty()
                 || !cdrListeners.isEmpty()
-                || !deviceStatusListeners.isEmpty()
-                || uploadDbSink != null;
+                || !deviceStatusListeners.isEmpty();
     }
 
     /**
@@ -2660,15 +2628,6 @@ public class SurveyRecordProcessor
             }
         });
 
-        // Synchronized because the user can turn off the DB sink via the UI, which would set it to null
-        synchronized (this)
-        {
-            if (uploadDbSink != null)
-            {
-                uploadDbSink.onCellularBatch(cellularRecords, subscriptionId);
-            }
-        }
-
         // Check for new towers if the preference is enabled and upload scanning is active
         checkForNewTowers(cellularRecords);
     }
@@ -2866,16 +2825,6 @@ public class SurveyRecordProcessor
             } catch (Exception e)
             {
                 Timber.e(e, "Unable to notify a Wi-Fi Survey Record Listener because of an exception");
-            }
-        }
-
-        // Synchronized because the user can turn off the DB sink via the UI, which would set it to null
-        synchronized (this)
-        {
-            if (uploadDbSink != null)
-            {
-                // Only send non-excluded records to the upload database
-                uploadDbSink.onWifiBeaconSurveyRecords(nonExcludedRecords);
             }
         }
     }
