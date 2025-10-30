@@ -543,6 +543,9 @@ but work independently, so you have full control over how you handle your data.<
     <string name="new_tower_alerts_title">New Tower Alerts</string>
     <string name="new_tower_alerts_summary_off">Notifications disabled for new cellular towers</string>
     <string name="new_tower_alerts_summary_on">Receive notifications when connected to a tower that hasn\'t been uploaded to the OpenCelliD database yet (requires upload scanning to be active)</string>
+    <string name="auto_start_community_upload_survey_title">Auto Start Survey on Phone Reboot</string>
+    <string name="auto_start_community_upload_survey_summary_off">Community Survey\'s will only start when manually enabled</string>
+    <string name="auto_start_community_upload_survey_summary_on">Community Survey\'s will be started when the phone is rebooted</string>
 
     <string name="allow_data_upload">External Data Upload</string>
     <string name="allow_data_upload_mdm_description">True to allow users to upload survey records to 3rd Party databases such as OpenCelliD and BeaconDB, false to prevent it</string>

@@ -78,7 +78,7 @@
 
         <Preference
             app:key="upload_preferences_group"
-            app:title="Upload Settings"
+            app:title="OpenCelliD &amp; BeaconDB Upload Settings"
             app:summary="Configure data upload options including OpenCelliD API key"
             app:fragment="com.craxiom.networksurvey.fragments.UploadSettingsFragment" />
 

@@ -304,6 +304,12 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
             {
                 toggleCdrLogging(true);
             }
+
+            final boolean autoStartCommunitySurvey = PreferenceUtils.getCommunitySurveyAutoStartPreference(applicationContext);
+            if (autoStartCommunitySurvey && !isUploadScanningActive())
+            {
+                toggleUploadRecordSaving(true);
+            }
         } else if (ACTION_START_SURVEY.equals(intent.getAction()))
         {
             boolean allowIntentControl = PreferenceUtils.getAllowIntentControlPreference(this);

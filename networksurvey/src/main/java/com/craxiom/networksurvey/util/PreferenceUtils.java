@@ -41,7 +41,6 @@ import com.craxiom.networksurvey.constants.NetworkSurveyConstants;
 import com.craxiom.networksurvey.constants.NsAnalyticsConstants;
 import com.craxiom.networksurvey.fragments.model.MqttConnectionSettings;
 import com.craxiom.networksurvey.gpstest.model.GnssType;
-import com.craxiom.networksurvey.logging.db.SurveyDatabase;
 import com.craxiom.networksurvey.model.LogTypeState;
 import com.craxiom.networksurvey.model.SurveyTypes;
 import com.craxiom.networksurvey.mqtt.MqttConnectionInfo;
@@ -230,6 +229,22 @@ public class PreferenceUtils
 
         // Next, try to use the value from user preferences, with a default fallback
         return preferences.getBoolean(autoStartPreferenceKey, defaultAutoStart);
+    }
+
+    /**
+     * Gets the community survey auto start at phone boot preference.
+     * <p>
+     * Note: This preference will always return false if external data uploads are not allowed by MDM.
+     *
+     * @param context The context to use when getting the Shared Preferences and Restriction Manager.
+     * @return The community survey auto start preference to use.
+     */
+    public static boolean getCommunitySurveyAutoStartPreference(Context context)
+    {
+        if (!MdmUtils.isExternalDataUploadAllowed(context)) return false;
+
+        final SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(context);
+        return preferences.getBoolean(NetworkSurveyConstants.PROPERTY_AUTO_START_COMMUNITY_UPLOAD_SURVEY_AT_BOOT, false);
     }
 
     /**
