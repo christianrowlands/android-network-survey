@@ -31,6 +31,8 @@ import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+import timber.log.Timber;
+
 public class DbUploadStore implements ICellularSurveyRecordListener, IWifiSurveyRecordListener
 {
     public static final int DISTANCE_MOVED_THRESHOLD_METERS = 35;
@@ -51,6 +53,20 @@ public class DbUploadStore implements ICellularSurveyRecordListener, IWifiSurvey
     {
         database = SurveyDatabase.getInstance(context);
         executorService = Executors.newSingleThreadExecutor();
+
+        // Force database to open immediately to avoid race condition at boot time
+        // Room databases are lazily opened - they don't open until the first DB operation
+        // At boot, records can arrive before any operation triggers opening, causing isOpen() to return false
+        executorService.execute(() -> {
+            try
+            {
+                // Force database to open by accessing the underlying SQLite database
+                database.getOpenHelper().getWritableDatabase();
+            } catch (Exception e)
+            {
+                Timber.e(e, "Failed to open database during initialization");
+            }
+        });
     }
 
     /**
