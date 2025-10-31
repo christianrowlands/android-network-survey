@@ -31,8 +31,6 @@ import static com.craxiom.networksurvey.constants.csv.WifiCsvConstants.STANDARD;
 import static com.craxiom.networksurvey.constants.csv.WifiCsvConstants.SUPPORTED_RATES;
 import static com.craxiom.networksurvey.constants.csv.WifiCsvConstants.WPA;
 
-import android.os.Looper;
-
 import com.craxiom.messaging.WifiBeaconRecordData;
 import com.craxiom.messaging.wifi.CipherSuite;
 import com.craxiom.networksurvey.constants.NetworkSurveyConstants;
@@ -51,9 +49,9 @@ import timber.log.Timber;
  */
 public class WifiCsvLogger extends CsvRecordLogger implements IWifiSurveyRecordListener
 {
-    public WifiCsvLogger(NetworkSurveyService networkSurveyService, Looper serviceLooper)
+    public WifiCsvLogger(NetworkSurveyService networkSurveyService)
     {
-        super(networkSurveyService, serviceLooper, NetworkSurveyConstants.CSV_LOG_DIRECTORY_NAME,
+        super(networkSurveyService, NetworkSurveyConstants.CSV_LOG_DIRECTORY_NAME,
                 NetworkSurveyConstants.WIFI_FILE_NAME_PREFIX, true);
     }
 

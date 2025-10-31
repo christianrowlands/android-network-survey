@@ -28,8 +28,6 @@ import static com.craxiom.networksurvey.constants.csv.LteCsvConstants.SPEED;
 import static com.craxiom.networksurvey.constants.csv.LteCsvConstants.TA;
 import static com.craxiom.networksurvey.constants.csv.LteCsvConstants.TAC;
 
-import android.os.Looper;
-
 import com.craxiom.messaging.LteBandwidth;
 import com.craxiom.messaging.LteRecord;
 import com.craxiom.messaging.LteRecordData;
@@ -46,9 +44,9 @@ import timber.log.Timber;
  */
 public class LteCsvLogger extends CsvRecordLogger implements ICellularSurveyRecordListener
 {
-    public LteCsvLogger(NetworkSurveyService networkSurveyService, Looper serviceLooper)
+    public LteCsvLogger(NetworkSurveyService networkSurveyService)
     {
-        super(networkSurveyService, serviceLooper, NetworkSurveyConstants.CSV_LOG_DIRECTORY_NAME,
+        super(networkSurveyService, NetworkSurveyConstants.CSV_LOG_DIRECTORY_NAME,
                 NetworkSurveyConstants.LTE_FILE_NAME_PREFIX, true);
     }
 

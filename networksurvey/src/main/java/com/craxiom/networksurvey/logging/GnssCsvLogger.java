@@ -26,8 +26,6 @@ import static com.craxiom.networksurvey.constants.csv.GnssCsvConstants.UNDULATIO
 import static com.craxiom.networksurvey.constants.csv.GnssCsvConstants.USED_IN_SOLUTION;
 import static com.craxiom.networksurvey.constants.csv.GnssCsvConstants.VDOP;
 
-import android.os.Looper;
-
 import com.craxiom.messaging.GnssRecord;
 import com.craxiom.messaging.GnssRecordData;
 import com.craxiom.networksurvey.constants.NetworkSurveyConstants;
@@ -43,9 +41,9 @@ import timber.log.Timber;
  */
 public class GnssCsvLogger extends CsvRecordLogger implements IGnssSurveyRecordListener
 {
-    public GnssCsvLogger(NetworkSurveyService networkSurveyService, Looper serviceLooper)
+    public GnssCsvLogger(NetworkSurveyService networkSurveyService)
     {
-        super(networkSurveyService, serviceLooper, NetworkSurveyConstants.CSV_LOG_DIRECTORY_NAME,
+        super(networkSurveyService, NetworkSurveyConstants.CSV_LOG_DIRECTORY_NAME,
                 NetworkSurveyConstants.GNSS_FILE_NAME_PREFIX, true);
     }
 

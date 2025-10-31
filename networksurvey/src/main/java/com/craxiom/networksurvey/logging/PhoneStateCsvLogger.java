@@ -16,8 +16,6 @@ import static com.craxiom.networksurvey.constants.csv.PhoneStateCsvConstants.SIM
 import static com.craxiom.networksurvey.constants.csv.PhoneStateCsvConstants.SLOT;
 import static com.craxiom.networksurvey.constants.csv.PhoneStateCsvConstants.SPEED;
 
-import android.os.Looper;
-
 import com.craxiom.messaging.DeviceStatus;
 import com.craxiom.messaging.NetworkRegistrationInfo;
 import com.craxiom.messaging.PhoneState;
@@ -47,9 +45,9 @@ public class PhoneStateCsvLogger extends CsvRecordLogger implements IDeviceStatu
 {
     private final JsonFormat.Printer jsonFormatter;
 
-    public PhoneStateCsvLogger(NetworkSurveyService networkSurveyService, Looper serviceLooper)
+    public PhoneStateCsvLogger(NetworkSurveyService networkSurveyService)
     {
-        super(networkSurveyService, serviceLooper, NetworkSurveyConstants.CSV_LOG_DIRECTORY_NAME,
+        super(networkSurveyService, NetworkSurveyConstants.CSV_LOG_DIRECTORY_NAME,
                 NetworkSurveyConstants.PHONESTATE_FILE_NAME_PREFIX, true);
 
         jsonFormatter = JsonFormat.printer().preservingProtoFieldNames().omittingInsignificantWhitespace();

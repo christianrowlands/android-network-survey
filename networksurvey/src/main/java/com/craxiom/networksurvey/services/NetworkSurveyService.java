@@ -174,7 +174,8 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
         surveyServiceBinder = new SurveyServiceBinder(this);
         uiThreadHandler = new Handler(Looper.getMainLooper());
 
-        executorService = Executors.newFixedThreadPool(8);
+        // Making it single thread to ensure records are processed in the order they are received.
+        executorService = Executors.newSingleThreadExecutor();
     }
 
     @Override
@@ -204,7 +205,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
         serviceHandler = new Handler(serviceLooper);
 
         deviceId = createDeviceId();
-        deviceStatusCsvLogger = new DeviceStatusCsvLogger(this, serviceLooper);
+        deviceStatusCsvLogger = new DeviceStatusCsvLogger(this);
 
         primaryLocationListener = new GpsListener();
         gnssLocationListener = new ExtraLocationListener(LocationManager.GPS_PROVIDER);
@@ -2568,17 +2569,6 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
         public void onDestroy()
         {
             service = null;
-        }
-    }
-
-    private void execute(Runnable runnable)
-    {
-        try
-        {
-            executorService.execute(runnable);
-        } catch (Throwable t)
-        {
-            Timber.w(t, "Could not submit to the executor service");
         }
     }
 

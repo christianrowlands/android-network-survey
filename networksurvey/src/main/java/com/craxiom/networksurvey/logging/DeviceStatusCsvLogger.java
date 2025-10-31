@@ -18,8 +18,6 @@ import static com.craxiom.networksurvey.constants.csv.DeviceStatusCsvConstants.N
 import static com.craxiom.networksurvey.constants.csv.DeviceStatusCsvConstants.NETWORK_LONGITUDE;
 import static com.craxiom.networksurvey.constants.csv.DeviceStatusCsvConstants.SPEED;
 
-import android.os.Looper;
-
 import com.craxiom.messaging.DeviceStatus;
 import com.craxiom.messaging.DeviceStatusData;
 import com.craxiom.networksurvey.constants.NetworkSurveyConstants;
@@ -35,9 +33,9 @@ import timber.log.Timber;
  */
 public class DeviceStatusCsvLogger extends CsvRecordLogger implements IDeviceStatusListener
 {
-    public DeviceStatusCsvLogger(NetworkSurveyService networkSurveyService, Looper serviceLooper)
+    public DeviceStatusCsvLogger(NetworkSurveyService networkSurveyService)
     {
-        super(networkSurveyService, serviceLooper, NetworkSurveyConstants.CSV_LOG_DIRECTORY_NAME,
+        super(networkSurveyService, NetworkSurveyConstants.CSV_LOG_DIRECTORY_NAME,
                 NetworkSurveyConstants.DEVICESTATUS_FILE_NAME_PREFIX, true);
     }
 

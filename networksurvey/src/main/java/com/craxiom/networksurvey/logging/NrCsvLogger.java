@@ -28,8 +28,6 @@ import static com.craxiom.networksurvey.constants.csv.NrCsvConstants.SS_SINR;
 import static com.craxiom.networksurvey.constants.csv.NrCsvConstants.TA;
 import static com.craxiom.networksurvey.constants.csv.NrCsvConstants.TAC;
 
-import android.os.Looper;
-
 import com.craxiom.messaging.NrRecord;
 import com.craxiom.messaging.NrRecordData;
 import com.craxiom.networksurvey.constants.NetworkSurveyConstants;
@@ -45,9 +43,9 @@ import timber.log.Timber;
  */
 public class NrCsvLogger extends CsvRecordLogger implements ICellularSurveyRecordListener
 {
-    public NrCsvLogger(NetworkSurveyService networkSurveyService, Looper serviceLooper)
+    public NrCsvLogger(NetworkSurveyService networkSurveyService)
     {
-        super(networkSurveyService, serviceLooper, NetworkSurveyConstants.CSV_LOG_DIRECTORY_NAME,
+        super(networkSurveyService, NetworkSurveyConstants.CSV_LOG_DIRECTORY_NAME,
                 NetworkSurveyConstants.NR_FILE_NAME_PREFIX, true);
     }
 

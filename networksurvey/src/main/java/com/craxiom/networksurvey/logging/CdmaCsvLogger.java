@@ -23,8 +23,6 @@ import static com.craxiom.networksurvey.constants.csv.CellularCsvConstants.SLOT;
 import static com.craxiom.networksurvey.constants.csv.CsvConstants.DEVICE_SERIAL_NUMBER;
 import static com.craxiom.networksurvey.constants.csv.CsvConstants.LOCATION_AGE;
 
-import android.os.Looper;
-
 import com.craxiom.messaging.CdmaRecord;
 import com.craxiom.messaging.CdmaRecordData;
 import com.craxiom.networksurvey.constants.NetworkSurveyConstants;
@@ -40,9 +38,9 @@ import timber.log.Timber;
  */
 public class CdmaCsvLogger extends CsvRecordLogger implements ICellularSurveyRecordListener
 {
-    public CdmaCsvLogger(NetworkSurveyService networkSurveyService, Looper serviceLooper)
+    public CdmaCsvLogger(NetworkSurveyService networkSurveyService)
     {
-        super(networkSurveyService, serviceLooper, NetworkSurveyConstants.CSV_LOG_DIRECTORY_NAME,
+        super(networkSurveyService, NetworkSurveyConstants.CSV_LOG_DIRECTORY_NAME,
                 NetworkSurveyConstants.CDMA_FILE_NAME_PREFIX, true);
     }
 

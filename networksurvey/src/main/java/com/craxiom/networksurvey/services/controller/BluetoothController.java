@@ -101,7 +101,7 @@ public class BluetoothController extends AController
         this.uiThreadHandler = uiThreadHandler;
 
         bluetoothSurveyRecordLogger = new BluetoothSurveyRecordLogger(surveyService, serviceLooper);
-        bluetoothCsvLogger = new BluetoothCsvLogger(surveyService, serviceLooper);
+        bluetoothCsvLogger = new BluetoothCsvLogger(surveyService);
     }
 
     @SuppressLint("MissingPermission")

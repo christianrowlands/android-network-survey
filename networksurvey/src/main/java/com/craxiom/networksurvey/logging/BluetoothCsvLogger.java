@@ -24,8 +24,6 @@ import static com.craxiom.networksurvey.constants.csv.BluetoothCsvConstants.TX_P
 import static com.craxiom.networksurvey.constants.csv.CsvConstants.DEVICE_SERIAL_NUMBER;
 import static com.craxiom.networksurvey.constants.csv.CsvConstants.LOCATION_AGE;
 
-import android.os.Looper;
-
 import com.craxiom.messaging.BluetoothRecord;
 import com.craxiom.messaging.BluetoothRecordData;
 import com.craxiom.messaging.bluetooth.AddressType;
@@ -45,9 +43,9 @@ import timber.log.Timber;
  */
 public class BluetoothCsvLogger extends CsvRecordLogger implements IBluetoothSurveyRecordListener
 {
-    public BluetoothCsvLogger(NetworkSurveyService networkSurveyService, Looper serviceLooper)
+    public BluetoothCsvLogger(NetworkSurveyService networkSurveyService)
     {
-        super(networkSurveyService, serviceLooper, NetworkSurveyConstants.CSV_LOG_DIRECTORY_NAME,
+        super(networkSurveyService, NetworkSurveyConstants.CSV_LOG_DIRECTORY_NAME,
                 NetworkSurveyConstants.BLUETOOTH_FILE_NAME_PREFIX, true);
     }
 

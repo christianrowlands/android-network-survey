@@ -31,7 +31,6 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import timber.log.Timber;
 
@@ -45,7 +44,6 @@ public class WifiController extends AController
 {
     private final AtomicBoolean wifiScanningActive = new AtomicBoolean(false);
     private final AtomicBoolean wifiLoggingEnabled = new AtomicBoolean(false);
-    private final AtomicInteger wifiScanningTaskId = new AtomicInteger();
     private final ScheduledThreadPoolExecutor wifiScanExecutor = new ScheduledThreadPoolExecutor(1);
     private ScheduledFuture<?> wifiScanFuture;
 
@@ -70,7 +68,7 @@ public class WifiController extends AController
         this.uiThreadHandler = uiThreadHandler;
 
         wifiSurveyRecordLogger = new WifiSurveyRecordLogger(surveyService, serviceLooper);
-        wifiCsvLogger = new WifiCsvLogger(surveyService, serviceLooper);
+        wifiCsvLogger = new WifiCsvLogger(surveyService);
     }
 
     @Override
@@ -147,13 +145,13 @@ public class WifiController extends AController
         final int oldScanRateMs = wifiScanRateMs;
         wifiScanRateMs = PreferenceUtils.getScanRatePreferenceMs(NetworkSurveyConstants.PROPERTY_WIFI_SCAN_INTERVAL_SECONDS,
                 NetworkSurveyConstants.DEFAULT_WIFI_SCAN_INTERVAL_SECONDS, surveyService.getApplicationContext());
-        
+
         // If scanning is active and the rate has changed, restart scanning to apply the new rate
         if (wifiScanningActive.get() && oldScanRateMs != wifiScanRateMs)
         {
-            Timber.i("Wi-Fi scan rate changed from %d ms to %d ms, restarting scanning to apply new rate", 
+            Timber.i("Wi-Fi scan rate changed from %d ms to %d ms, restarting scanning to apply new rate",
                     oldScanRateMs, wifiScanRateMs);
-            
+
             // Stop and restart scanning to use the new rate
             stopWifiRecordScanning();
             startWifiRecordScanning();

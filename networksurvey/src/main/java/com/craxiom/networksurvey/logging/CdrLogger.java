@@ -1,7 +1,5 @@
 package com.craxiom.networksurvey.logging;
 
-import android.os.Looper;
-
 import com.craxiom.networksurvey.constants.NetworkSurveyConstants;
 import com.craxiom.networksurvey.listeners.ICdrEventListener;
 import com.craxiom.networksurvey.model.CdrEvent;
@@ -18,9 +16,9 @@ import timber.log.Timber;
  */
 public class CdrLogger extends CsvRecordLogger implements ICdrEventListener
 {
-    public CdrLogger(NetworkSurveyService networkSurveyService, Looper serviceLooper)
+    public CdrLogger(NetworkSurveyService networkSurveyService)
     {
-        super(networkSurveyService, serviceLooper, NetworkSurveyConstants.CSV_LOG_DIRECTORY_NAME,
+        super(networkSurveyService, NetworkSurveyConstants.CSV_LOG_DIRECTORY_NAME,
                 NetworkSurveyConstants.CDR_FILE_NAME_PREFIX, false);
     }
 

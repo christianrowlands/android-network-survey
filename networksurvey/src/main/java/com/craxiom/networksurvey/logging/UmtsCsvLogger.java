@@ -24,8 +24,6 @@ import static com.craxiom.networksurvey.constants.csv.UmtsCsvConstants.SIGNAL_ST
 import static com.craxiom.networksurvey.constants.csv.UmtsCsvConstants.SPEED;
 import static com.craxiom.networksurvey.constants.csv.UmtsCsvConstants.UARFCN;
 
-import android.os.Looper;
-
 import com.craxiom.messaging.UmtsRecord;
 import com.craxiom.messaging.UmtsRecordData;
 import com.craxiom.networksurvey.constants.NetworkSurveyConstants;
@@ -41,9 +39,9 @@ import timber.log.Timber;
  */
 public class UmtsCsvLogger extends CsvRecordLogger implements ICellularSurveyRecordListener
 {
-    public UmtsCsvLogger(NetworkSurveyService networkSurveyService, Looper serviceLooper)
+    public UmtsCsvLogger(NetworkSurveyService networkSurveyService)
     {
-        super(networkSurveyService, serviceLooper, NetworkSurveyConstants.CSV_LOG_DIRECTORY_NAME,
+        super(networkSurveyService, NetworkSurveyConstants.CSV_LOG_DIRECTORY_NAME,
                 NetworkSurveyConstants.UMTS_FILE_NAME_PREFIX, true);
     }
 

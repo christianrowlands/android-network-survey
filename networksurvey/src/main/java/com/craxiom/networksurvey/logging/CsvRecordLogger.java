@@ -51,7 +51,6 @@ public abstract class CsvRecordLogger
     private final DecimalFormat twoDecimalFormat = new DecimalFormat("#.##");
 
     private Context applicationContext;
-    final Handler handler;
     private final String logDirectoryName;
     private final String fileNamePrefix;
     private final boolean lazyFileCreation;
@@ -67,15 +66,13 @@ public abstract class CsvRecordLogger
      * Constructs a Logger that writes Survey records to a GeoPackage SQLite database.
      *
      * @param networkSurveyService The Service instance that is running this logger.
-     * @param serviceLooper        The Looper associated with the service that can be used to do any background processing.
      * @param logDirectoryName     The parent directory name to write all the files in.
      * @param fileNamePrefix       The prefix to use for the GeoPackage file name.
      */
-    CsvRecordLogger(NetworkSurveyService networkSurveyService, Looper serviceLooper,
+    CsvRecordLogger(NetworkSurveyService networkSurveyService,
                     String logDirectoryName, String fileNamePrefix, boolean lazyFileCreation)
     {
         applicationContext = networkSurveyService.getApplicationContext();
-        handler = new Handler(serviceLooper);
         this.logDirectoryName = logDirectoryName;
         this.fileNamePrefix = fileNamePrefix;
         this.lazyFileCreation = lazyFileCreation;

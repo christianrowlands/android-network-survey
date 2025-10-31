@@ -115,13 +115,13 @@ public class CellularController extends AController
 
         cellularSurveyRecordLogger = new CellularSurveyRecordLogger(surveyService, serviceLooper);
         phoneStateRecordLogger = new PhoneStateRecordLogger(surveyService, serviceLooper);
-        phoneStateCsvLogger = new PhoneStateCsvLogger(surveyService, serviceLooper);
-        nrCsvLogger = new NrCsvLogger(surveyService, serviceLooper);
-        lteCsvLogger = new LteCsvLogger(surveyService, serviceLooper);
-        umtsCsvLogger = new UmtsCsvLogger(surveyService, serviceLooper);
-        cdmaCsvLogger = new CdmaCsvLogger(surveyService, serviceLooper);
-        gsmCsvLogger = new GsmCsvLogger(surveyService, serviceLooper);
-        cdrLogger = new CdrLogger(surveyService, serviceLooper);
+        phoneStateCsvLogger = new PhoneStateCsvLogger(surveyService);
+        nrCsvLogger = new NrCsvLogger(surveyService);
+        lteCsvLogger = new LteCsvLogger(surveyService);
+        umtsCsvLogger = new UmtsCsvLogger(surveyService);
+        cdmaCsvLogger = new CdmaCsvLogger(surveyService);
+        gsmCsvLogger = new GsmCsvLogger(surveyService);
+        cdrLogger = new CdrLogger(surveyService);
     }
 
     @Override
@@ -439,8 +439,6 @@ public class CellularController extends AController
                             @Override
                             public void onServiceStateChanged(ServiceState serviceState)
                             {
-                                // Check for airplane mode
-                                boolean wasInAirplaneMode = airplaneModeActive.get();
                                 boolean isInAirplaneMode = serviceState.getState() == ServiceState.STATE_POWER_OFF;
                                 airplaneModeActive.set(isInAirplaneMode);
 
@@ -1083,7 +1081,6 @@ public class CellularController extends AController
                                 @Override
                                 public void onServiceStateChanged(ServiceState serviceState)
                                 {
-                                    // Check for airplane mode
                                     boolean isInAirplaneMode = serviceState.getState() == ServiceState.STATE_POWER_OFF;
                                     airplaneModeActive.set(isInAirplaneMode);
 

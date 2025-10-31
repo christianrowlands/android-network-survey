@@ -14,13 +14,13 @@ import androidx.core.content.ContextCompat;
 import com.craxiom.networksurvey.Application;
 import com.craxiom.networksurvey.R;
 import com.craxiom.networksurvey.constants.NetworkSurveyConstants;
+import com.craxiom.networksurvey.gpstest.util.GpsTestUtil;
 import com.craxiom.networksurvey.listeners.IGnssFailureListener;
 import com.craxiom.networksurvey.logging.GnssCsvLogger;
 import com.craxiom.networksurvey.logging.GnssRecordLogger;
 import com.craxiom.networksurvey.model.LogTypeState;
 import com.craxiom.networksurvey.services.NetworkSurveyService;
 import com.craxiom.networksurvey.services.SurveyRecordProcessor;
-import com.craxiom.networksurvey.gpstest.util.GpsTestUtil;
 import com.craxiom.networksurvey.util.PreferenceUtils;
 
 import java.util.concurrent.ExecutorService;
@@ -35,6 +35,7 @@ import timber.log.Timber;
 /**
  * Handles all of the GNSS related logic for Network Survey Service to include file logging
  * and managing the GNSS scanning.
+ *
  * @noinspection NonPrivateFieldAccessedInSynchronizedContext
  */
 public class GnssController extends AController
@@ -72,7 +73,7 @@ public class GnssController extends AController
     private long firstGpsAcqTime = Long.MIN_VALUE;
     private boolean gnssRawSupportKnown = false;
     private boolean hasGnssRawFailureNagLaunched = false;
-    
+
     // Track state for pause/resume
     private final AtomicBoolean wasActiveBeforePause = new AtomicBoolean(false);
 
@@ -85,7 +86,7 @@ public class GnssController extends AController
         this.surveyRecordProcessor = surveyRecordProcessor;
 
         gnssRecordLogger = new GnssRecordLogger(surveyService, serviceLooper);
-        gnssCsvLogger = new GnssCsvLogger(surveyService, serviceLooper);
+        gnssCsvLogger = new GnssCsvLogger(surveyService);
     }
 
     @Override
@@ -156,13 +157,13 @@ public class GnssController extends AController
         synchronized (gnssLoggingEnabled)
         {
             if (surveyService == null) return;
-            
+
             // Remember if scanning was active before pause
             wasActiveBeforePause.set(gnssStarted.get());
-            
+
             // Call parent to set isPaused flag
             super.pauseScanning();
-            
+
             // Unregister GNSS measurements callback to save battery
             if (gnssStarted.get() && locationManager != null)
             {
@@ -184,10 +185,10 @@ public class GnssController extends AController
         synchronized (gnssLoggingEnabled)
         {
             if (surveyService == null) return;
-            
+
             // Call parent to clear isPaused flag
             super.resumeScanning();
-            
+
             // Re-register GNSS measurements callback if it was active before pause
             if (wasActiveBeforePause.get() && gnssStarted.get() && locationManager != null)
             {
@@ -220,24 +221,24 @@ public class GnssController extends AController
         final int oldScanRateMs = gnssScanRateMs;
         gnssScanRateMs = PreferenceUtils.getScanRatePreferenceMs(NetworkSurveyConstants.PROPERTY_GNSS_SCAN_INTERVAL_SECONDS,
                 NetworkSurveyConstants.DEFAULT_GNSS_SCAN_INTERVAL_SECONDS, surveyService.getApplicationContext());
-        
+
         // If scanning is active and the rate has changed, restart scanning to apply the new rate
         if (gnssStarted.get() && oldScanRateMs != gnssScanRateMs)
         {
-            Timber.i("GNSS scan rate changed from %d ms to %d ms, restarting scanning to apply new rate", 
+            Timber.i("GNSS scan rate changed from %d ms to %d ms, restarting scanning to apply new rate",
                     oldScanRateMs, gnssScanRateMs);
-            
+
             // Check if we're crossing the battery optimization threshold
             boolean wasOptimized = oldScanRateMs >= BATTERY_OPTIMIZATION_SCAN_RATE_THRESHOLD_MS;
             boolean shouldBeOptimized = gnssScanRateMs >= BATTERY_OPTIMIZATION_SCAN_RATE_THRESHOLD_MS;
-            
+
             // Only restart if we're crossing the threshold or in battery-optimized mode
             // (since battery-optimized mode uses a scheduled task with fixed delay)
             if (wasOptimized != shouldBeOptimized || wasOptimized)
             {
                 // Stop current scanning (this handles cleanup of listeners and scheduled tasks)
                 stopGnssRecordScanning();
-                
+
                 // Restart scanning with the new rate
                 startGnssRecordScanning();
             }
@@ -320,14 +321,14 @@ public class GnssController extends AController
             public void onGnssMeasurementsReceived(GnssMeasurementsEvent event)
             {
                 gnssRawSupportKnown = true;
-                
+
                 // Skip processing if paused for battery management
                 if (isPaused())
                 {
                     Timber.d("GNSS measurement processing skipped - paused for battery management");
                     return;
                 }
-                
+
                 if (handleBatteryOptimization() && surveyRecordProcessor != null)
                 {
                     Timber.d("GNSS measurement received at %s", System.currentTimeMillis());
@@ -568,7 +569,7 @@ public class GnssController extends AController
         synchronized (gnssLoggingEnabled)
         {
             if (surveyService == null) return;
-            
+
             // Skip measurement if paused for battery management
             if (isPaused())
             {

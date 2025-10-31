@@ -23,8 +23,6 @@ import static com.craxiom.networksurvey.constants.csv.GsmCsvConstants.SIGNAL_STR
 import static com.craxiom.networksurvey.constants.csv.GsmCsvConstants.SPEED;
 import static com.craxiom.networksurvey.constants.csv.GsmCsvConstants.TA;
 
-import android.os.Looper;
-
 import com.craxiom.messaging.GsmRecord;
 import com.craxiom.messaging.GsmRecordData;
 import com.craxiom.networksurvey.constants.NetworkSurveyConstants;
@@ -40,9 +38,9 @@ import timber.log.Timber;
  */
 public class GsmCsvLogger extends CsvRecordLogger implements ICellularSurveyRecordListener
 {
-    public GsmCsvLogger(NetworkSurveyService networkSurveyService, Looper serviceLooper)
+    public GsmCsvLogger(NetworkSurveyService networkSurveyService)
     {
-        super(networkSurveyService, serviceLooper, NetworkSurveyConstants.CSV_LOG_DIRECTORY_NAME,
+        super(networkSurveyService, NetworkSurveyConstants.CSV_LOG_DIRECTORY_NAME,
                 NetworkSurveyConstants.GSM_FILE_NAME_PREFIX, true);
     }
 
