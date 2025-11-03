@@ -721,7 +721,8 @@ public class SurveyRecordProcessor
         dataBuilder.setMissionId(missionId);
         dataBuilder.setRecordNumber(phoneStateRecordNumber.getAndIncrement());
 
-        dataBuilder.setSimState(SimState.forNumber(telephonyManager.getSimState()));
+        SimState simState = SimState.forNumber(telephonyManager.getSimState());
+        if (simState != null) dataBuilder.setSimState(simState);
         dataBuilder.setSimOperator(telephonyManager.getSimOperator());
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.VANILLA_ICE_CREAM)
