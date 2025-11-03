@@ -153,8 +153,6 @@ class WifiDetailsFragment : AServiceDataFragment(), IWifiSurveyRecordListener {
      */
     fun setWifiNetwork(wifiNetwork: WifiNetwork) {
         this.wifiNetwork = wifiNetwork
-        // TODO We might need to update the ViewModel with the new WifiNetwork if it has already
-        // been initialized
     }
 
     /**

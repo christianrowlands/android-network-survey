@@ -1485,15 +1485,6 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
     }
 
     /**
-     * @return the number of records queued for NS Analytics upload
-     */
-    public int getNsAnalyticsQueuedRecordCount()
-    {
-        // FIXME Query the NS Analytics DAO for queued record count
-        return 0;
-    }
-
-    /**
      * @return the NS Analytics workspace ID if registered
      */
     public String getNsAnalyticsWorkspaceId()

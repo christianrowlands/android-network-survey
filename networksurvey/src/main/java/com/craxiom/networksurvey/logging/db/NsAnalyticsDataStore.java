@@ -34,7 +34,7 @@ public class NsAnalyticsDataStore implements ICellularSurveyRecordListener, IWif
     private final ExecutorService executorService;
     private final JsonFormat.Printer jsonPrinter;
     private long nsAnalyticsSurveyStartTime = 0;
-    private String currentBatchId; // FIXME Is this batch ID needed?
+    private String currentBatchId;
 
     // Counters for statistics
     private long totalRecordsStored = 0;

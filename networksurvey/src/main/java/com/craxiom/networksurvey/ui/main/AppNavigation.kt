@@ -113,7 +113,7 @@ fun NavGraphBuilder.mainGraph(
         // --------- Deeper navigation (beyond the nav drawer) --------- //
 
         composable(NavOption.UploadSettings.name) {
-            UploadSettingsFragmentInCompose(mainNavController)
+            CommunityUploadSettingsFragmentInCompose(mainNavController)
         }
 
         composable(NavOption.TowerMapSettings.name) {
@@ -250,9 +250,9 @@ fun SettingsFragmentInCompose(mainNavController: NavHostController) {
 }
 
 @Composable
-fun UploadSettingsFragmentInCompose(mainNavController: NavHostController) {
+fun CommunityUploadSettingsFragmentInCompose(mainNavController: NavHostController) {
     Scaffold(
-        topBar = { TitleBar("Upload Settings") { mainNavController.navigateUp() } },
+        topBar = { TitleBar("OpenCelliD & BeaconDB Upload Settings") { mainNavController.navigateUp() } },
     ) { innerPadding ->
         AndroidViewBinding(
             ContainerUploadSettingsFragmentBinding::inflate,

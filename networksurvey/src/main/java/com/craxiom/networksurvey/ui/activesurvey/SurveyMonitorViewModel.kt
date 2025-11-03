@@ -5,18 +5,15 @@ import android.location.LocationListener
 import android.os.Bundle
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
-import androidx.work.WorkManager
 import com.craxiom.messaging.GsmRecord
 import com.craxiom.messaging.LteRecord
 import com.craxiom.messaging.NrRecord
 import com.craxiom.messaging.UmtsRecord
 import com.craxiom.mqttlibrary.IConnectionStateListener
 import com.craxiom.mqttlibrary.connection.ConnectionState
-import com.craxiom.networksurvey.constants.NsAnalyticsConstants
-import com.craxiom.networksurvey.data.api.NsAnalyticsApiFactory
 import com.craxiom.networksurvey.listeners.ICellularSurveyRecordListener
 import com.craxiom.networksurvey.listeners.ILoggingChangeListener
-import com.craxiom.networksurvey.logging.db.uploader.NsAnalyticsUploadWorker
+import com.craxiom.networksurvey.logging.db.SurveyDatabase
 import com.craxiom.networksurvey.model.CellularProtocol
 import com.craxiom.networksurvey.model.CellularRecordWrapper
 import com.craxiom.networksurvey.services.NetworkSurveyService
@@ -25,7 +22,6 @@ import com.craxiom.networksurvey.ui.activesurvey.model.NsAnalyticsInfo
 import com.craxiom.networksurvey.ui.activesurvey.model.SurveyTrack
 import com.craxiom.networksurvey.ui.cellular.model.ServingCellInfo
 import com.craxiom.networksurvey.util.CellularUtils
-import com.craxiom.networksurvey.util.NsAnalyticsSecureStorage
 import com.craxiom.networksurvey.util.NsAnalyticsUtils
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
@@ -60,6 +56,7 @@ class SurveyMonitorViewModel(
     val servingCellInfo: StateFlow<ServingCellInfo?> = _servingCellInfo.asStateFlow()
 
     private var networkSurveyService: NetworkSurveyService? = null
+    private val database = SurveyDatabase.getInstance(application)
 
     // Track points for the current session
     private val currentTrackPoints = mutableListOf<LatLng>()
@@ -210,7 +207,9 @@ class SurveyMonitorViewModel(
                 NsAnalyticsInfo(
                     isEnabled = true,
                     isRegistered = service.isNsAnalyticsRegistered,
-                    queuedRecords = service.nsAnalyticsQueuedRecordCount.toLong(),
+                    queuedRecords = withContext(Dispatchers.IO) {
+                        database.nsAnalyticsDao().getPendingRecordCount()
+                    },
                     uploadedRecords = 0, // FIXME: Get from actual metrics
                     lastUploadTime = null,
                     workspaceId = service.nsAnalyticsWorkspaceId,
@@ -296,10 +295,12 @@ class SurveyMonitorViewModel(
                             updateSurveyStates()
                         }
                     }
+
                     is NsAnalyticsUtils.DeviceStatusResult.Active -> {
                         // Device is still active
                         Timber.d("NS Analytics device status check: active")
                     }
+
                     is NsAnalyticsUtils.DeviceStatusResult.CheckFailed -> {
                         // Check failed - log and continue
                         Timber.d("NS Analytics device status check failed: ${result.reason}")

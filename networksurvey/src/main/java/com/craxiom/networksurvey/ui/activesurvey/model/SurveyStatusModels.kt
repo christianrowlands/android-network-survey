@@ -57,10 +57,10 @@ enum class MqttConnectionState {
  * Information about upload queue status
  */
 data class UploadQueueInfo(
-    val openCellidPending: Long = 0,
-    val openCellidUploaded: Long = 0,
-    val beaconDbPending: Long = 0,
-    val beaconDbUploaded: Long = 0,
+    val openCellidPending: Int = 0,
+    val openCellidUploaded: Int = 0,
+    val beaconDbPending: Int = 0,
+    val beaconDbUploaded: Int = 0,
     val isUploading: Boolean = false,
     val lastUploadTime: Long? = null
 )
@@ -71,8 +71,8 @@ data class UploadQueueInfo(
 data class NsAnalyticsInfo(
     val isEnabled: Boolean = false,
     val isRegistered: Boolean = false,
-    val queuedRecords: Long = 0,
-    val uploadedRecords: Long = 0,
+    val queuedRecords: Int = 0,
+    val uploadedRecords: Int = 0,
     val lastUploadTime: Long? = null,
     val workspaceId: String? = null,
     val errorMessage: String? = null
