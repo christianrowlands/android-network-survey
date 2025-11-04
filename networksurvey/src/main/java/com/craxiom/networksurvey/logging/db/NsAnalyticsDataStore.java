@@ -41,9 +41,21 @@ public class NsAnalyticsDataStore implements ICellularSurveyRecordListener, IWif
         database = SurveyDatabase.getInstance(context);
         executorService = Executors.newSingleThreadExecutor();
 
-        // Configure JSON printer for protobuf serialization
-        jsonPrinter = JsonFormat.printer()
-                .preservingProtoFieldNames();
+        jsonPrinter = JsonFormat.printer().preservingProtoFieldNames();
+
+        // Force database to open immediately
+        // Room databases are lazily opened - they don't open until the first DB operation
+        // At boot, records can arrive before any operation triggers opening, causing isOpen() to return false
+        executorService.execute(() -> {
+            try
+            {
+                // Force database to open by accessing the underlying SQLite database
+                database.getOpenHelper().getWritableDatabase();
+            } catch (Exception e)
+            {
+                Timber.e(e, "Failed to open database during initialization");
+            }
+        });
 
         // Generate initial batch ID
         generateNewBatchId();

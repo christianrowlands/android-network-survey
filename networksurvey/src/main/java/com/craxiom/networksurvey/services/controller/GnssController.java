@@ -1,6 +1,7 @@
 package com.craxiom.networksurvey.services.controller;
 
 import android.Manifest;
+import android.annotation.SuppressLint;
 import android.content.pm.PackageManager;
 import android.location.GnssMeasurementsEvent;
 import android.location.GnssStatus;
@@ -179,6 +180,7 @@ public class GnssController extends AController
         }
     }
 
+    @SuppressLint("MissingPermission")
     @Override
     public void resumeScanning()
     {

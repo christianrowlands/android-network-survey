@@ -480,8 +480,6 @@ public class CellularController extends AController
                 final TelephonyManager telephonyManager = wrapper.getTelephonyManager();
                 if (telephonyManager != null && surveyService.getPackageManager().hasSystemFeature(PackageManager.FEATURE_TELEPHONY))
                 {
-                    Timber.d("Removing the Telephony Manager Service State Listener");
-
                     try
                     {
                         PhoneStateListener phoneStateListener = phoneStateListenerMap.get(wrapper.getSubscriptionId());

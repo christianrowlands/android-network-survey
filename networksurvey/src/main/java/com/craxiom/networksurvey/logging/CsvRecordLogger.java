@@ -107,7 +107,6 @@ public abstract class CsvRecordLogger
         {
             try
             {
-                Timber.i("Toggling CSV logging to %s", enable);
                 if (!enable)
                 {
                     if (loggingEnabled)
