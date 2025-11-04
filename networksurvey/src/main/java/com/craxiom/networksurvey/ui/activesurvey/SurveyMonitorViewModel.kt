@@ -1,5 +1,6 @@
 package com.craxiom.networksurvey.ui.activesurvey
 
+import android.app.Application
 import android.content.Context
 import android.location.Location
 import android.location.LocationListener
@@ -39,7 +40,7 @@ import timber.log.Timber
  * ViewModel for the Active Survey screen that manages survey status monitoring
  */
 class SurveyMonitorViewModel(
-    private val application: android.app.Application
+    private val application: Application
 ) : AndroidViewModel(application), IConnectionStateListener,
     ILoggingChangeListener, LocationListener, ICellularSurveyRecordListener {
 
@@ -82,7 +83,8 @@ class SurveyMonitorViewModel(
      */
     fun initializeTowerDetectionManager(context: Context) {
         if (towerDetectionManager == null) {
-            towerDetectionManager = TowerDetectionManager(context)
+            // Use application context explicitly to avoid any potential Activity context leak
+            towerDetectionManager = TowerDetectionManager(context.applicationContext)
         }
     }
 
@@ -479,6 +481,7 @@ class SurveyMonitorViewModel(
 
     override fun onCleared() {
         super.onCleared()
+        towerDetectionManager = null
         networkSurveyService?.unregisterMqttConnectionStateListener(this)
         networkSurveyService?.unregisterLoggingChangeListener(this)
         networkSurveyService?.unregisterCellularSurveyRecordListener(this)
