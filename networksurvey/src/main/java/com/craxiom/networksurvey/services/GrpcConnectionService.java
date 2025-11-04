@@ -70,6 +70,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -93,7 +94,11 @@ public class GrpcConnectionService extends Service implements IDeviceStatusListe
     private static final int NUMBER_OF_QUEUES_TO_PROCESS = 10;
     private static final int QUEUE_PROCESSING_SLEEP_TIME = 1_000;
 
-    private static ConnectionState connectionState = ConnectionState.DISCONNECTED;
+    /**
+     * Current connection state using AtomicReference for thread-safe access across multiple threads.
+     */
+    private static final AtomicReference<ConnectionState> connectionState =
+            new AtomicReference<>(ConnectionState.DISCONNECTED);
 
     private static final String ACTION_CONNECT = "com.craxiom.networksurvey.services.action.connect";
     private static final String ACTION_DISCONNECT = "com.craxiom.networksurvey.services.action.disconnect";
@@ -153,8 +158,6 @@ public class GrpcConnectionService extends Service implements IDeviceStatusListe
 
     public GrpcConnectionService()
     {
-        connectionState = ConnectionState.DISCONNECTED;
-
         connectionServiceBinder = new ConnectionServiceBinder(this);
         uiThreadHandler = new Handler(Looper.getMainLooper());
 
@@ -172,9 +175,9 @@ public class GrpcConnectionService extends Service implements IDeviceStatusListe
      *
      * @return The current connection state of this service.
      */
-    public static synchronized ConnectionState getConnectedState()
+    public static ConnectionState getConnectedState()
     {
-        return connectionState;
+        return connectionState.get();
     }
 
     /**
@@ -429,13 +432,14 @@ public class GrpcConnectionService extends Service implements IDeviceStatusListe
     }
 
     /**
-     * Synchronized because the connection state can be updated from multiple threads.
+     * Check if the gRPC connection is currently active.
+     * Thread-safe access provided by AtomicReference.
      *
      * @return True if the gRPC connection is active, false otherwise.
      */
-    synchronized boolean isConnected()
+    boolean isConnected()
     {
-        return connectionState == ConnectionState.CONNECTED;
+        return connectionState.get() == ConnectionState.CONNECTED;
     }
 
     /**
@@ -714,9 +718,9 @@ public class GrpcConnectionService extends Service implements IDeviceStatusListe
     private synchronized void updateConnectionNotification()
     {
         // Do nothing if the connection is in a disconnecting state.  We will update the notification once the full disconnection happens.
-        if (connectionState == ConnectionState.DISCONNECTING) return;
+        if (connectionState.get() == ConnectionState.DISCONNECTING) return;
 
-        if (connectionState == ConnectionState.DISCONNECTED)
+        if (connectionState.get() == ConnectionState.DISCONNECTED)
         {
             Timber.i("Removing the connection notification");
 
@@ -756,28 +760,19 @@ public class GrpcConnectionService extends Service implements IDeviceStatusListe
     }
 
     /**
-     * Synchronized because the connection state variable can be updated from multiple threads.
+     * Get the notification text based on the current connection state.
+     * Synchronized for consistency with updateConnectionNotification.
      *
      * @return A String that can be used in the Android notification to represent the current connection state.
      */
     private synchronized CharSequence getNotificationText()
     {
-        final CharSequence notificationText;
-        switch (connectionState)
+        return switch (connectionState.get())
         {
-            case CONNECTING:
-                notificationText = getText(R.string.connection_notification_connecting_text);
-                break;
-
-            case CONNECTED:
-                notificationText = getText(R.string.connection_notification_active_text);
-                break;
-
-            default:
-                notificationText = "";
-        }
-
-        return notificationText;
+            case CONNECTING -> getText(R.string.connection_notification_connecting_text);
+            case CONNECTED -> getText(R.string.connection_notification_active_text);
+            default -> "";
+        };
     }
 
     /**
@@ -848,9 +843,9 @@ public class GrpcConnectionService extends Service implements IDeviceStatusListe
      */
     private synchronized void notifyConnectionStateChange(ConnectionState newConnectionState)
     {
-        Timber.i("gRPC Connection State Changed.  oldConnectionState=%s, newConnectionState=%s", connectionState, newConnectionState);
+        Timber.i("gRPC Connection State Changed.  oldConnectionState=%s, newConnectionState=%s", connectionState.get(), newConnectionState);
 
-        connectionState = newConnectionState;
+        connectionState.set(newConnectionState);
 
         updateConnectionNotification();
 

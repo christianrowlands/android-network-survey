@@ -1561,7 +1561,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
      * doesn't go to sleep while collecting survey data.
      */
     @SuppressLint("WakelockTimeout")
-    private void updateWakeLock()
+    private synchronized void updateWakeLock()
     {
         if (wakeLock == null)
         {

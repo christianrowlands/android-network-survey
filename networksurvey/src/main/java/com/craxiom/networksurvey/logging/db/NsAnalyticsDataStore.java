@@ -36,10 +36,6 @@ public class NsAnalyticsDataStore implements ICellularSurveyRecordListener, IWif
     private long nsAnalyticsSurveyStartTime = 0;
     private String currentBatchId;
 
-    // Counters for statistics
-    private long totalRecordsStored = 0;
-    private long lastRecordTimestamp = 0;
-
     public NsAnalyticsDataStore(Context context)
     {
         database = SurveyDatabase.getInstance(context);
@@ -222,90 +218,11 @@ public class NsAnalyticsDataStore implements ICellularSurveyRecordListener, IWif
                 if (database.isOpen())
                 {
                     database.nsAnalyticsDao().insertRecord(entity);
-                    totalRecordsStored++;
-                    lastRecordTimestamp = entity.timestamp;
                 }
             } catch (Exception e)
             {
                 Timber.e(e, "Failed to store NS Analytics record of type %s", recordType);
             }
         });
-    }
-
-    /**
-     * Get statistics about stored records
-     */
-    public NsAnalyticsStats getStatistics() // FIXME Call this or remove it
-    {
-        NsAnalyticsStats stats = new NsAnalyticsStats();
-        stats.totalRecordsStored = totalRecordsStored;
-        stats.lastRecordTimestamp = lastRecordTimestamp;
-        stats.currentBatchId = currentBatchId;
-
-        try
-        {
-            if (database.isOpen())
-            {
-                stats.pendingRecordCount = database.nsAnalyticsDao().getPendingRecordCount();
-                Long totalSize = database.nsAnalyticsDao().getTotalPendingPayloadSize();
-                stats.totalPendingPayloadSize = totalSize != null ? totalSize : 0L;
-            }
-        } catch (Exception e)
-        {
-            Timber.e(e, "Failed to get NS Analytics statistics");
-        }
-
-        return stats;
-    }
-
-    /**
-     * Clean up old uploaded records
-     */
-    public void cleanupOldRecords() // FIXME Call this or remove it
-    {
-        executorService.execute(() -> {
-            try
-            {
-                long cutoffTime = System.currentTimeMillis() -
-                        (NsAnalyticsConstants.CLEANUP_AGE_DAYS * 24 * 60 * 60 * 1000L);
-
-                if (database.isOpen())
-                {
-                    database.nsAnalyticsDao().cleanupOldUploadedRecords(cutoffTime);
-                    database.nsAnalyticsDao().deleteFailedRecords(NsAnalyticsConstants.MAX_RETRY_COUNT);
-
-                    Timber.i("Cleaned up old NS Analytics records");
-                }
-            } catch (Exception e)
-            {
-                Timber.e(e, "Failed to cleanup old NS Analytics records");
-            }
-        });
-    }
-
-    /**
-     * Statistics class for NS Analytics data
-     */
-    public static class NsAnalyticsStats
-    {
-        public long totalRecordsStored;
-        public long lastRecordTimestamp;
-        public String currentBatchId;
-        public int pendingRecordCount;
-        public long totalPendingPayloadSize;
-
-        public String getPayloadSizeFormatted()
-        {
-            if (totalPendingPayloadSize < 1024)
-            {
-                return totalPendingPayloadSize + " B";
-            } else if (totalPendingPayloadSize < 1024 * 1024)
-            {
-                return String.format("%.2f KB", totalPendingPayloadSize / 1024.0);
-            } else
-            {
-                return String.format("%.2f MB", totalPendingPayloadSize / (1024.0 * 1024));
-            }
-        }
     }
 }
