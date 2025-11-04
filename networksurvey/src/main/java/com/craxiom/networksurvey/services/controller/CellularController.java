@@ -771,9 +771,17 @@ public class CellularController extends AController
                                         signalStrength = subscriptionTelephonyManager.getSignalStrength();
                                     }
 
+                                    String dataNetworkType = "Unknown";
+                                    String voiceNetworkType = "Unknown";
+                                    if (ActivityCompat.checkSelfPermission(surveyService, Manifest.permission.READ_PHONE_STATE) == PackageManager.PERMISSION_GRANTED)
+                                    {
+                                        dataNetworkType = CalculationUtils.getNetworkType(subscriptionTelephonyManager.getDataNetworkType());
+                                        voiceNetworkType = CalculationUtils.getNetworkType(subscriptionTelephonyManager.getVoiceNetworkType());
+                                    }
+
                                     surveyRecordProcessor.onCellInfoUpdate(subscriptionTelephonyManager.getAllCellInfo(),
-                                            CalculationUtils.getNetworkType(subscriptionTelephonyManager.getDataNetworkType()),
-                                            CalculationUtils.getNetworkType(subscriptionTelephonyManager.getVoiceNetworkType()),
+                                            dataNetworkType,
+                                            voiceNetworkType,
                                             wrapper.getSubscriptionId(),
                                             subscriptionTelephonyManager.getNetworkOperatorName(),
                                             signalStrength,
@@ -892,9 +900,17 @@ public class CellularController extends AController
                                                 signalStrength = subscriptionTelephonyManager.getSignalStrength();
                                             }
 
+                                            String dataNetworkType = "Unknown";
+                                            String voiceNetworkType = "Unknown";
+                                            if (ActivityCompat.checkSelfPermission(surveyService, Manifest.permission.READ_PHONE_STATE) == PackageManager.PERMISSION_GRANTED)
+                                            {
+                                                dataNetworkType = CalculationUtils.getNetworkType(subscriptionTelephonyManager.getDataNetworkType());
+                                                voiceNetworkType = CalculationUtils.getNetworkType(subscriptionTelephonyManager.getVoiceNetworkType());
+                                            }
+
                                             surveyRecordProcessor.onCellInfoUpdate(subscriptionTelephonyManager.getAllCellInfo(),
-                                                    CalculationUtils.getNetworkType(subscriptionTelephonyManager.getDataNetworkType()),
-                                                    CalculationUtils.getNetworkType(subscriptionTelephonyManager.getVoiceNetworkType()),
+                                                    dataNetworkType,
+                                                    voiceNetworkType,
                                                     wrapper.getSubscriptionId(),
                                                     subscriptionTelephonyManager.getNetworkOperatorName(),
                                                     signalStrength,

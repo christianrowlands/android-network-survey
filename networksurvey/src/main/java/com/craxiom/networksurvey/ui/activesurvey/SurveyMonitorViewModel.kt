@@ -1,5 +1,6 @@
 package com.craxiom.networksurvey.ui.activesurvey
 
+import android.content.Context
 import android.location.Location
 import android.location.LocationListener
 import android.os.Bundle
@@ -79,7 +80,7 @@ class SurveyMonitorViewModel(
      * Initialize the TowerDetectionManager with a Context.
      * This should be called from the UI layer where Context is available.
      */
-    fun initializeTowerDetectionManager(context: android.content.Context) {
+    fun initializeTowerDetectionManager(context: Context) {
         if (towerDetectionManager == null) {
             towerDetectionManager = TowerDetectionManager(context)
         }

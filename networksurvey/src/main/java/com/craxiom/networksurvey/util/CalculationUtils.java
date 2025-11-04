@@ -132,72 +132,30 @@ public final class CalculationUtils
      */
     public static String getNetworkType(int networkType)
     {
-        switch (networkType)
+        return switch (networkType)
         {
-            case 1:
-                return NetworkSurveyConstants.GPRS;
-
-            case 2:
-                return NetworkSurveyConstants.EDGE;
-
-            case 3:
-                return NetworkSurveyConstants.UMTS;
-
-            case 4:
-                return NetworkSurveyConstants.CDMA;
-
-            case 5:
-                return NetworkSurveyConstants.EVDO_0;
-
-            case 6:
-                return NetworkSurveyConstants.EVDO_A;
-
-            case 7:
-                return NetworkSurveyConstants.RTT1x;
-
-            case 8:
-                return NetworkSurveyConstants.HSDPA;
-
-            case 9:
-                return NetworkSurveyConstants.HSUPA;
-
-            case 10:
-                return NetworkSurveyConstants.HSPA;
-
-            case 11:
-                return NetworkSurveyConstants.IDEN;
-
-            case 12:
-                return NetworkSurveyConstants.EVDO_B;
-
-            case 13:
-                return NetworkSurveyConstants.LTE;
-
-            case 14:
-                return NetworkSurveyConstants.EHRPD;
-
-            case 15:
-                return NetworkSurveyConstants.HSPAP;
-
-            case 16:
-                return NetworkSurveyConstants.GSM;
-
-            case 17:
-                return NetworkSurveyConstants.TD_SCDMA;
-
-            case 18:
-                return NetworkSurveyConstants.IWLAN;
-
-            case 19:
-                return NetworkSurveyConstants.LTE_CA;
-
-            case 20:
-                return NetworkSurveyConstants.NR;
-
-            case 0:
-            default:
-                return "Unknown";
-        }
+            case 1 -> NetworkSurveyConstants.GPRS;
+            case 2 -> NetworkSurveyConstants.EDGE;
+            case 3 -> NetworkSurveyConstants.UMTS;
+            case 4 -> NetworkSurveyConstants.CDMA;
+            case 5 -> NetworkSurveyConstants.EVDO_0;
+            case 6 -> NetworkSurveyConstants.EVDO_A;
+            case 7 -> NetworkSurveyConstants.RTT1x;
+            case 8 -> NetworkSurveyConstants.HSDPA;
+            case 9 -> NetworkSurveyConstants.HSUPA;
+            case 10 -> NetworkSurveyConstants.HSPA;
+            case 11 -> NetworkSurveyConstants.IDEN;
+            case 12 -> NetworkSurveyConstants.EVDO_B;
+            case 13 -> NetworkSurveyConstants.LTE;
+            case 14 -> NetworkSurveyConstants.EHRPD;
+            case 15 -> NetworkSurveyConstants.HSPAP;
+            case 16 -> NetworkSurveyConstants.GSM;
+            case 17 -> NetworkSurveyConstants.TD_SCDMA;
+            case 18 -> NetworkSurveyConstants.IWLAN;
+            case 19 -> NetworkSurveyConstants.LTE_CA;
+            case 20 -> NetworkSurveyConstants.NR;
+            default -> "Unknown";
+        };
     }
 
     /**
