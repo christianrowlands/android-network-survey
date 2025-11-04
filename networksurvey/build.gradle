@@ -125,6 +125,7 @@ dependencies {
     implementation "androidx.activity:activity-compose:1.11.0"
     implementation "androidx.drawerlayout:drawerlayout:1.2.0"
     implementation 'com.google.android.flexbox:flexbox:3.0.0'
+    implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-android:1.10.2'
 
     implementation 'com.craxiom:mqtt-library:0.7.5'
     implementation "com.google.protobuf:protobuf-java-util:4.33.0"

@@ -16,7 +16,6 @@ import android.location.LocationListener;
 import android.location.LocationManager;
 import android.location.LocationProvider;
 import android.net.Uri;
-import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
@@ -74,8 +73,6 @@ import com.craxiom.networksurvey.util.BatteryOptimizationHelper;
 import com.craxiom.networksurvey.util.MdmUtils;
 import com.craxiom.networksurvey.util.NsUtils;
 import com.craxiom.networksurvey.util.PreferenceUtils;
-import com.craxiom.networksurvey.util.ToggleLoggingTask;
-import com.craxiom.networksurvey.util.UploadScanningTask;
 import com.google.android.material.snackbar.Snackbar;
 import com.google.common.base.Strings;
 
@@ -954,17 +951,22 @@ public class DashboardFragment extends AServiceDataFragment implements LocationL
         Context context = getContext();
         if (context == null) return;
 
-        new ToggleLoggingTask(() -> {
-            if (service != null)
-            {
-                return service.toggleCellularLogging(enable);
-            }
-            return null;
-        }, enabled -> {
-            if (enabled == null) return context.getString(R.string.cellular_logging_toggle_failed);
-            updateCellularLogging(enabled);
-            return context.getString(enabled ? R.string.cellular_logging_start_toast : R.string.cellular_logging_stop_toast);
-        }, context).executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
+        executorService.execute(() -> {
+            Boolean enabled = service != null ? service.toggleCellularLogging(enable) : null;
+
+            new Handler(Looper.getMainLooper()).post(() -> {
+                String message;
+                if (enabled == null)
+                {
+                    message = context.getString(R.string.cellular_logging_toggle_failed);
+                } else
+                {
+                    updateCellularLogging(enabled);
+                    message = context.getString(enabled ? R.string.cellular_logging_start_toast : R.string.cellular_logging_stop_toast);
+                }
+                Toast.makeText(context, message, Toast.LENGTH_SHORT).show();
+            });
+        });
     }
 
     /**
@@ -977,17 +979,22 @@ public class DashboardFragment extends AServiceDataFragment implements LocationL
         Context context = getContext();
         if (context == null) return;
 
-        new ToggleLoggingTask(() -> {
-            if (service != null)
-            {
-                return service.toggleWifiLogging(enable);
-            }
-            return null;
-        }, enabled -> {
-            if (enabled == null) return context.getString(R.string.wifi_logging_toggle_failed);
-            updateWifiLogging(enabled);
-            return context.getString(enabled ? R.string.wifi_logging_start_toast : R.string.wifi_logging_stop_toast);
-        }, context).executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
+        executorService.execute(() -> {
+            Boolean enabled = service != null ? service.toggleWifiLogging(enable) : null;
+
+            new Handler(Looper.getMainLooper()).post(() -> {
+                String message;
+                if (enabled == null)
+                {
+                    message = context.getString(R.string.wifi_logging_toggle_failed);
+                } else
+                {
+                    updateWifiLogging(enabled);
+                    message = context.getString(enabled ? R.string.wifi_logging_start_toast : R.string.wifi_logging_stop_toast);
+                }
+                Toast.makeText(context, message, Toast.LENGTH_SHORT).show();
+            });
+        });
     }
 
     /**
@@ -1000,17 +1007,22 @@ public class DashboardFragment extends AServiceDataFragment implements LocationL
         Context context = getContext();
         if (context == null) return;
 
-        new ToggleLoggingTask(() -> {
-            if (service != null)
-            {
-                return service.toggleBluetoothLogging(enable);
-            }
-            return null;
-        }, enabled -> {
-            if (enabled == null) return context.getString(R.string.bluetooth_logging_toggle_failed);
-            updateBluetoothLogging(enabled);
-            return context.getString(enabled ? R.string.bluetooth_logging_start_toast : R.string.bluetooth_logging_stop_toast);
-        }, context).executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
+        executorService.execute(() -> {
+            Boolean enabled = service != null ? service.toggleBluetoothLogging(enable) : null;
+
+            new Handler(Looper.getMainLooper()).post(() -> {
+                String message;
+                if (enabled == null)
+                {
+                    message = context.getString(R.string.bluetooth_logging_toggle_failed);
+                } else
+                {
+                    updateBluetoothLogging(enabled);
+                    message = context.getString(enabled ? R.string.bluetooth_logging_start_toast : R.string.bluetooth_logging_stop_toast);
+                }
+                Toast.makeText(context, message, Toast.LENGTH_SHORT).show();
+            });
+        });
     }
 
     /**
@@ -1023,17 +1035,22 @@ public class DashboardFragment extends AServiceDataFragment implements LocationL
         Context context = getContext();
         if (context == null) return;
 
-        new ToggleLoggingTask(() -> {
-            if (service != null)
-            {
-                return service.toggleGnssLogging(enable);
-            }
-            return null;
-        }, enabled -> {
-            if (enabled == null) return context.getString(R.string.gnss_logging_toggle_failed);
-            updateGnssLogging(enabled);
-            return context.getString(enabled ? R.string.gnss_logging_start_toast : R.string.gnss_logging_stop_toast);
-        }, context).executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
+        executorService.execute(() -> {
+            Boolean enabled = service != null ? service.toggleGnssLogging(enable) : null;
+
+            new Handler(Looper.getMainLooper()).post(() -> {
+                String message;
+                if (enabled == null)
+                {
+                    message = context.getString(R.string.gnss_logging_toggle_failed);
+                } else
+                {
+                    updateGnssLogging(enabled);
+                    message = context.getString(enabled ? R.string.gnss_logging_start_toast : R.string.gnss_logging_stop_toast);
+                }
+                Toast.makeText(context, message, Toast.LENGTH_SHORT).show();
+            });
+        });
     }
 
     /**
@@ -1046,17 +1063,22 @@ public class DashboardFragment extends AServiceDataFragment implements LocationL
         Context context = getContext();
         if (context == null) return;
 
-        new ToggleLoggingTask(() -> {
-            if (service != null)
-            {
-                return service.toggleCdrLogging(enable);
-            }
-            return null;
-        }, enabled -> {
-            if (enabled == null) return context.getString(R.string.cdr_logging_toggle_failed);
-            updateCdrLogging(enabled);
-            return context.getString(enabled ? R.string.cdr_logging_start_toast : R.string.cdr_logging_stop_toast);
-        }, context).executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
+        executorService.execute(() -> {
+            Boolean enabled = service != null ? service.toggleCdrLogging(enable) : null;
+
+            new Handler(Looper.getMainLooper()).post(() -> {
+                String message;
+                if (enabled == null)
+                {
+                    message = context.getString(R.string.cdr_logging_toggle_failed);
+                } else
+                {
+                    updateCdrLogging(enabled);
+                    message = context.getString(enabled ? R.string.cdr_logging_start_toast : R.string.cdr_logging_stop_toast);
+                }
+                Toast.makeText(context, message, Toast.LENGTH_SHORT).show();
+            });
+        });
     }
 
     /**
@@ -1646,35 +1668,40 @@ public class DashboardFragment extends AServiceDataFragment implements LocationL
         Context context = getContext();
         if (context == null) return;
 
-        new UploadScanningTask(() -> {
+        executorService.execute(() -> {
+            UploadScanningResult result;
             if (service != null)
             {
-                return service.toggleUploadRecordSaving(enable);
-            }
-            return new UploadScanningResult(false, false, context.getString(R.string.upload_saving_toggle_failed));
-        }, result -> {
-            // Update the view model based on the result
-            if (result.getSuccess())
-            {
-                viewModel.setUploadScanningActive(result.isEnabled());
-                // Store which surveys are currently active for icon display
-                if (result.isEnabled())
-                {
-                    currentActiveSurveys = result.getSurveysStarted();
-                } else
-                {
-                    currentActiveSurveys.clear();
-                }
+                result = service.toggleUploadRecordSaving(enable);
             } else
             {
-                // Update the startScanningButton because it is disabled in the startSavingRecordsForUpload method
-                binding.startScanningButton.setEnabled(true);
-                viewModel.setUploadScanningActive(false);
-                currentActiveSurveys.clear();
+                result = new UploadScanningResult(false, false, context.getString(R.string.upload_saving_toggle_failed));
             }
-            // Return the message from the result for the toast
-            return result.getMessage();
-        }, context).execute();
+
+            new Handler(Looper.getMainLooper()).post(() -> {
+                // Update the view model based on the result
+                if (result.getSuccess())
+                {
+                    viewModel.setUploadScanningActive(result.isEnabled());
+                    // Store which surveys are currently active for icon display
+                    if (result.isEnabled())
+                    {
+                        currentActiveSurveys = result.getSurveysStarted();
+                    } else
+                    {
+                        currentActiveSurveys.clear();
+                    }
+                } else
+                {
+                    // Update the startScanningButton because it is disabled in the startSavingRecordsForUpload method
+                    binding.startScanningButton.setEnabled(true);
+                    viewModel.setUploadScanningActive(false);
+                    currentActiveSurveys.clear();
+                }
+                // Show toast with the message from the result
+                Toast.makeText(context, result.getMessage(), Toast.LENGTH_SHORT).show();
+            });
+        });
     }
 
     /**

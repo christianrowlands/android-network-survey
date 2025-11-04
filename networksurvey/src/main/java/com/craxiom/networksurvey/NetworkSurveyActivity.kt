@@ -7,7 +7,6 @@ import android.content.Intent
 import android.content.ServiceConnection
 import android.content.pm.PackageManager
 import android.location.LocationManager
-import android.os.AsyncTask
 import android.os.Build
 import android.os.Bundle
 import android.os.IBinder
@@ -23,6 +22,7 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import androidx.lifecycle.lifecycleScope
 import androidx.preference.PreferenceManager
 import com.craxiom.networksurvey.constants.NetworkSurveyConstants
 import com.craxiom.networksurvey.listeners.IGnssFailureListener
@@ -32,11 +32,11 @@ import com.craxiom.networksurvey.services.NetworkSurveyService.SurveyServiceBind
 import com.craxiom.networksurvey.ui.main.MainCompose
 import com.craxiom.networksurvey.util.NsUtils
 import com.craxiom.networksurvey.util.PreferenceUtils
-import com.craxiom.networksurvey.util.ToggleLoggingTask
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import timber.log.Timber
-import java.util.function.Function
-import java.util.function.Supplier
 
 /**
  * The main activity for the Network Survey App.  This app is used to pull LTE Network Survey
@@ -521,15 +521,18 @@ class NetworkSurveyActivity : AppCompatActivity() {
      * @param enable True if logging should be enabled, false if it should be turned off.
      */
     private fun toggleCellularLogging(enable: Boolean) {
-        ToggleLoggingTask(Supplier {
-            if (networkSurveyService != null) {
-                return@Supplier networkSurveyService!!.toggleCellularLogging(enable)
+        lifecycleScope.launch {
+            val enabled = withContext(Dispatchers.IO) {
+                networkSurveyService?.toggleCellularLogging(enable)
             }
-            null
-        }, Function { enabled: Boolean? ->
-            if (enabled == null) return@Function getString(R.string.cellular_logging_toggle_failed)
-            getString(if (enabled) R.string.cellular_logging_start_toast else R.string.cellular_logging_stop_toast)
-        }, applicationContext).executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR)
+
+            val message = when (enabled) {
+                null -> getString(R.string.cellular_logging_toggle_failed)
+                true -> getString(R.string.cellular_logging_start_toast)
+                false -> getString(R.string.cellular_logging_stop_toast)
+            }
+            Toast.makeText(applicationContext, message, Toast.LENGTH_SHORT).show()
+        }
     }
 
     /**
@@ -539,15 +542,18 @@ class NetworkSurveyActivity : AppCompatActivity() {
      * @since 0.1.2
      */
     private fun toggleWifiLogging(enable: Boolean) {
-        ToggleLoggingTask(Supplier {
-            if (networkSurveyService != null) return@Supplier networkSurveyService!!.toggleWifiLogging(
-                enable
-            )
-            null
-        }, Function { enabled: Boolean? ->
-            if (enabled == null) return@Function getString(R.string.wifi_logging_toggle_failed)
-            getString(if (enabled) R.string.wifi_logging_start_toast else R.string.wifi_logging_stop_toast)
-        }, applicationContext).executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR)
+        lifecycleScope.launch {
+            val enabled = withContext(Dispatchers.IO) {
+                networkSurveyService?.toggleWifiLogging(enable)
+            }
+
+            val message = when (enabled) {
+                null -> getString(R.string.wifi_logging_toggle_failed)
+                true -> getString(R.string.wifi_logging_start_toast)
+                false -> getString(R.string.wifi_logging_stop_toast)
+            }
+            Toast.makeText(applicationContext, message, Toast.LENGTH_SHORT).show()
+        }
     }
 
     /**
@@ -557,15 +563,18 @@ class NetworkSurveyActivity : AppCompatActivity() {
      * @since 1.0.0
      */
     private fun toggleBluetoothLogging(enable: Boolean) {
-        ToggleLoggingTask(Supplier {
-            if (networkSurveyService != null) {
-                return@Supplier networkSurveyService!!.toggleBluetoothLogging(enable)
+        lifecycleScope.launch {
+            val enabled = withContext(Dispatchers.IO) {
+                networkSurveyService?.toggleBluetoothLogging(enable)
             }
-            null
-        }, Function { enabled: Boolean? ->
-            if (enabled == null) return@Function getString(R.string.bluetooth_logging_toggle_failed)
-            getString(if (enabled) R.string.bluetooth_logging_start_toast else R.string.bluetooth_logging_stop_toast)
-        }, applicationContext).executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR)
+
+            val message = when (enabled) {
+                null -> getString(R.string.bluetooth_logging_toggle_failed)
+                true -> getString(R.string.bluetooth_logging_start_toast)
+                false -> getString(R.string.bluetooth_logging_stop_toast)
+            }
+            Toast.makeText(applicationContext, message, Toast.LENGTH_SHORT).show()
+        }
     }
 
     /**
@@ -574,16 +583,19 @@ class NetworkSurveyActivity : AppCompatActivity() {
      * @param enable True if logging should be enabled, false if it should be turned off.
      */
     private fun toggleGnssLogging(enable: Boolean) {
-        ToggleLoggingTask(Supplier {
-            if (!checkLocationProvider(false)) return@Supplier null
-            if (networkSurveyService != null) return@Supplier networkSurveyService!!.toggleGnssLogging(
-                enable
-            )
-            null
-        }, Function { enabled: Boolean? ->
-            if (enabled == null) return@Function getString(R.string.gnss_logging_toggle_failed)
-            getString(if (enabled) R.string.gnss_logging_start_toast else R.string.gnss_logging_stop_toast)
-        }, applicationContext).executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR)
+        lifecycleScope.launch {
+            val enabled = withContext(Dispatchers.IO) {
+                if (!checkLocationProvider(false)) return@withContext null
+                networkSurveyService?.toggleGnssLogging(enable)
+            }
+
+            val message = when (enabled) {
+                null -> getString(R.string.gnss_logging_toggle_failed)
+                true -> getString(R.string.gnss_logging_start_toast)
+                false -> getString(R.string.gnss_logging_stop_toast)
+            }
+            Toast.makeText(applicationContext, message, Toast.LENGTH_SHORT).show()
+        }
     }
 
     /**
@@ -592,16 +604,19 @@ class NetworkSurveyActivity : AppCompatActivity() {
      * @param enable True if logging should be enabled, false if it should be turned off.
      */
     private fun toggleCdrLogging(enable: Boolean) {
-        ToggleLoggingTask(Supplier {
-            if (!checkLocationProvider(false)) return@Supplier null
-            if (networkSurveyService != null) return@Supplier networkSurveyService!!.toggleCdrLogging(
-                enable
-            )
-            null
-        }, Function { enabled: Boolean? ->
-            if (enabled == null) return@Function getString(R.string.cdr_logging_toggle_failed)
-            getString(if (enabled) R.string.cdr_logging_start_toast else R.string.cdr_logging_stop_toast)
-        }, applicationContext).executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR)
+        lifecycleScope.launch {
+            val enabled = withContext(Dispatchers.IO) {
+                if (!checkLocationProvider(false)) return@withContext null
+                networkSurveyService?.toggleCdrLogging(enable)
+            }
+
+            val message = when (enabled) {
+                null -> getString(R.string.cdr_logging_toggle_failed)
+                true -> getString(R.string.cdr_logging_start_toast)
+                false -> getString(R.string.cdr_logging_stop_toast)
+            }
+            Toast.makeText(applicationContext, message, Toast.LENGTH_SHORT).show()
+        }
     }
 
     /**
