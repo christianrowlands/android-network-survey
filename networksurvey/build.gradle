@@ -27,6 +27,11 @@ import com.github.jk1.license.filter.LicenseBundleNormalizer
 import com.github.jk1.license.render.SimpleHtmlReportRenderer
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
+def appVersion = "1.44.1"
+base {
+    archivesName = "$applicationName-$appVersion"
+}
+
 android {
     compileSdk = 36
     defaultConfig {
@@ -37,8 +42,7 @@ android {
         minSdkVersion 26
         targetSdkVersion 36
         versionCode 100
-        versionName "1.44.1"
-        setProperty("archivesBaseName", "$applicationName-$versionName")
+        versionName appVersion
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         testInstrumentationRunnerArguments clearPackageData: 'true'
     }
@@ -59,13 +63,13 @@ android {
         targetCompatibility = JavaVersion.VERSION_17
     }
     buildFeatures {
-        viewBinding true
-        dataBinding true
-        compose true
-        buildConfig true
+        viewBinding = true
+        dataBinding = true
+        compose = true
+        buildConfig = true
     }
     composeOptions {
-        kotlinCompilerExtensionVersion '1.5.14'
+        kotlinCompilerExtensionVersion = '1.5.14'
     }
 
     kotlin {
@@ -86,9 +90,9 @@ android {
     }
 
     lint {
-        abortOnError false
+        abortOnError = false
     }
-    namespace 'com.craxiom.networksurvey'
+    namespace = 'com.craxiom.networksurvey'
 
     flavorDimensions = ["version"]
     productFlavors {

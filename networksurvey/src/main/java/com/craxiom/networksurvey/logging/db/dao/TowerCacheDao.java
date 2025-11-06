@@ -1,5 +1,6 @@
 package com.craxiom.networksurvey.logging.db.dao;
 
+import androidx.annotation.NonNull;
 import androidx.room.Dao;
 import androidx.room.Insert;
 import androidx.room.OnConflictStrategy;
@@ -47,6 +48,7 @@ public interface TowerCacheDao
      * @return List of cached towers in the area
      */
     @Query("SELECT * FROM tower_cache WHERE mcc = :mcc AND mnc = :mnc AND area = :area")
+    @NonNull
     List<TowerCacheEntity> getTowersInArea(int mcc, int mnc, int area);
 
     /**

@@ -1,5 +1,6 @@
 package com.craxiom.networksurvey.logging.db.dao;
 
+import androidx.annotation.NonNull;
 import androidx.room.Dao;
 import androidx.room.Insert;
 import androidx.room.OnConflictStrategy;
@@ -16,5 +17,6 @@ public interface WifiRecordDao
     void insertRecords(List<WifiBeaconRecordEntity> record);
 
     @Query("SELECT * FROM wifi_survey_records")
+    @NonNull
     List<WifiBeaconRecordEntity> getAllRecords();
 }

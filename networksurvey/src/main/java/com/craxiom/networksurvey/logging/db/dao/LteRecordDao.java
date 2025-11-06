@@ -1,5 +1,6 @@
 package com.craxiom.networksurvey.logging.db.dao;
 
+import androidx.annotation.NonNull;
 import androidx.room.Dao;
 import androidx.room.Insert;
 import androidx.room.OnConflictStrategy;
@@ -19,5 +20,6 @@ public interface LteRecordDao
     void insertRecords(List<LteRecordEntity> records);
 
     @Query("SELECT * FROM lte_survey_records")
+    @NonNull
     List<LteRecordEntity> getAllRecords();
 }

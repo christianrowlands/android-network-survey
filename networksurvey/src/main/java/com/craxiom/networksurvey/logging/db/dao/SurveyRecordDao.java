@@ -1,5 +1,6 @@
 package com.craxiom.networksurvey.logging.db.dao;
 
+import androidx.annotation.NonNull;
 import androidx.room.Dao;
 import androidx.room.Query;
 import androidx.room.Transaction;
@@ -21,6 +22,7 @@ public interface SurveyRecordDao
     int getGsmRecordCountForUpload();
 
     @Query("SELECT * FROM gsm_survey_records WHERE ocidUploaded = 0 OR beaconDbUploaded = 0 LIMIT :limit")
+    @NonNull
     List<GsmRecordEntity> getGsmRecordsForUpload(int limit);
 
     @Query("UPDATE gsm_survey_records SET ocidUploaded = 1 WHERE id IN (:recordIds)")
@@ -34,6 +36,7 @@ public interface SurveyRecordDao
     int getCdmaRecordCountForUpload();
 
     @Query("SELECT * FROM cdma_survey_records WHERE ocidUploaded = 0 OR beaconDbUploaded = 0 LIMIT :limit")
+    @NonNull
     List<CdmaRecordEntity> getCdmaRecordsForUpload(int limit);
 
     @Query("UPDATE cdma_survey_records SET ocidUploaded = 1 WHERE id IN (:recordIds)")
@@ -47,6 +50,7 @@ public interface SurveyRecordDao
     int getUmtsRecordCountForUpload();
 
     @Query("SELECT * FROM umts_survey_records WHERE ocidUploaded = 0 OR beaconDbUploaded = 0 LIMIT :limit")
+    @NonNull
     List<UmtsRecordEntity> getUmtsRecordsForUpload(int limit);
 
     @Query("UPDATE umts_survey_records SET ocidUploaded = 1 WHERE id IN (:recordIds)")
@@ -60,6 +64,7 @@ public interface SurveyRecordDao
     int getLteRecordCountForUpload();
 
     @Query("SELECT * FROM lte_survey_records WHERE ocidUploaded = 0 OR beaconDbUploaded = 0 LIMIT :limit")
+    @NonNull
     List<LteRecordEntity> getLteRecordsForUpload(int limit);
 
     @Query("UPDATE lte_survey_records SET ocidUploaded = 1 WHERE id IN (:recordIds)")
@@ -73,6 +78,7 @@ public interface SurveyRecordDao
     int getNrRecordCountForUpload();
 
     @Query("SELECT * FROM nr_survey_records WHERE ocidUploaded = 0 OR beaconDbUploaded = 0 LIMIT :limit")
+    @NonNull
     List<NrRecordEntity> getNrRecordsForUpload(int limit);
 
     @Query("UPDATE nr_survey_records SET ocidUploaded = 1 WHERE id IN (:recordIds)")
@@ -86,6 +92,7 @@ public interface SurveyRecordDao
     int getWifiRecordCountForUpload();
 
     @Query("SELECT * FROM wifi_survey_records WHERE beaconDbUploaded = 0 LIMIT :limit")
+    @NonNull
     List<WifiBeaconRecordEntity> getWifiRecordsForUpload(int limit);
 
     @Query("UPDATE wifi_survey_records SET beaconDbUploaded = 1 WHERE id IN (:recordIds)")

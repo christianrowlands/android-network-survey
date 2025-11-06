@@ -1,5 +1,6 @@
 package com.craxiom.networksurvey.logging.db.dao;
 
+import androidx.annotation.NonNull;
 import androidx.room.Dao;
 import androidx.room.Insert;
 import androidx.room.OnConflictStrategy;
@@ -26,9 +27,11 @@ public interface NsAnalyticsDao
     void insertRecords(List<NsAnalyticsQueueEntity> records);
 
     @Query("SELECT * FROM ns_analytics_queue WHERE uploaded = 0 ORDER BY timestamp ASC LIMIT :limit")
+    @NonNull
     List<NsAnalyticsQueueEntity> getPendingRecords(int limit);
 
     @Query("SELECT * FROM ns_analytics_queue WHERE uploaded = 0 AND recordType = :type ORDER BY timestamp ASC LIMIT :limit")
+    @NonNull
     List<NsAnalyticsQueueEntity> getPendingRecordsByType(String type, int limit);
 
     @Query("SELECT COUNT(*) FROM ns_analytics_queue WHERE uploaded = 0")
@@ -88,11 +91,13 @@ public interface NsAnalyticsDao
     String getNextBatchId();
 
     @Query("SELECT * FROM ns_analytics_queue WHERE batchId = :batchId AND uploaded = 0")
+    @NonNull
     List<NsAnalyticsQueueEntity> getRecordsByBatchId(String batchId);
 
     // Statistics
 
     @Query("SELECT recordType, COUNT(*) as count FROM ns_analytics_queue WHERE uploaded = 0 GROUP BY recordType")
+    @NonNull
     List<RecordTypeCount> getPendingRecordStats();
 
     /**
