@@ -81,11 +81,6 @@ public class NetworkSurveyConstants
      */
     public static final String EXTRA_STARTED_AT_BOOT = "com.craxiom.networksurvey.extra.STARTED_AT_BOOT";
 
-    /**
-     * The key for the Intent extra that indicates the {@link com.craxiom.networksurvey.services.NetworkSurveyService}
-     * is being started via an external intent.
-     */
-    public static final String EXTRA_STARTED_VIA_EXTERNAL_INTENT = "com.craxiom.networksurvey.extra.STARTED_VIA_EXTERNAL_INTENT";
     public static final String EXTRA_CELLULAR_FILE_LOGGING = "cellular_file_logging";
     public static final String EXTRA_WIFI_FILE_LOGGING = "wifi_file_logging";
     public static final String EXTRA_BLUETOOTH_FILE_LOGGING = "bluetooth_file_logging";
@@ -193,7 +188,6 @@ public class NetworkSurveyConstants
 
     public static final String PROPERTY_WIFI_NETWORKS_SORT_ORDER = "wifi_networks_sort_order";
     public static final String PROPERTY_BLUETOOTH_DEVICES_SORT_ORDER = "bluetooth_devices_sort_order";
-    public static final String PROPERTY_KEY_ACCEPT_MAP_PRIVACY = "accepted_map_privacy";
     public static final String PROPERTY_KEY_DENIED_BACKGROUND_LOCATION_PERMISSION = "denied_background_location_permission";
 
     public static final String PROPERTY_LAST_SELECTED_TOWER_SOURCE = "last_selected_tower_source";

@@ -22,7 +22,6 @@ import static com.craxiom.mqttlibrary.MqttConstants.PROPERTY_MQTT_CONNECTION_TLS
 import static com.craxiom.mqttlibrary.MqttConstants.PROPERTY_MQTT_PASSWORD;
 import static com.craxiom.mqttlibrary.MqttConstants.PROPERTY_MQTT_USERNAME;
 import static com.craxiom.networksurvey.constants.NetworkSurveyConstants.DEFAULT_LOCATION_PROVIDER;
-import static com.craxiom.networksurvey.constants.NetworkSurveyConstants.PROPERTY_KEY_ACCEPT_MAP_PRIVACY;
 import static java.util.Collections.emptySet;
 
 import android.content.Context;
@@ -116,6 +115,52 @@ public class PreferenceUtils
     private static final Random RANDOM = new Random();
 
     /**
+     * Maximum scan rate in seconds to prevent integer overflow when converting to milliseconds.
+     * Set to 12 hours (43,200 seconds) which is generous for survey intervals.
+     */
+    private static final int MAX_SCAN_RATE_SECONDS = 43200;
+
+    /**
+     * Maximum log rollover size in MB to prevent excessively large files.
+     * Set to 200MB which is generous for log files.
+     */
+    private static final int MAX_ROLLOVER_SIZE_MB = 200;
+
+    /**
+     * Valid MQTT port range (1-65535)
+     */
+    private static final int MIN_MQTT_PORT = 1;
+    private static final int MAX_MQTT_PORT = 65535;
+
+    /**
+     * Applies minimum and maximum scan rate validation.
+     * - Maximum: 12 hours to prevent integer overflow when converting to milliseconds
+     * - Minimum: Bluetooth has a 23-second minimum due to scan duration requirements
+     *
+     * @param scanRateSeconds       The scan rate in seconds to validate
+     * @param scanRatePreferenceKey The preference key to determine scan type
+     * @return The validated scan rate in seconds (clamped to valid range)
+     */
+    private static int applyMinimumScanRate(int scanRateSeconds, String scanRatePreferenceKey)
+    {
+        // Apply maximum to prevent overflow (scanRate * 1000 must fit in int)
+        if (scanRateSeconds > MAX_SCAN_RATE_SECONDS)
+        {
+            Timber.w("Scan rate %d seconds exceeds maximum %d seconds, clamping to max",
+                    scanRateSeconds, MAX_SCAN_RATE_SECONDS);
+            scanRateSeconds = MAX_SCAN_RATE_SECONDS;
+        }
+
+        // Apply minimum for Bluetooth scan rate
+        if (NetworkSurveyConstants.PROPERTY_BLUETOOTH_SCAN_INTERVAL_SECONDS.equals(scanRatePreferenceKey))
+        {
+            return Math.max(scanRateSeconds, NetworkSurveyConstants.MINIMUM_BLUETOOTH_SCAN_INTERVAL_SECONDS);
+        }
+
+        return scanRateSeconds;
+    }
+
+    /**
      * Gets the scan rate preference associated with the provide preference key.
      * <p>
      * First, this method tries to pull the MDM provided scan rate. If it is not set (either because the device is not
@@ -147,15 +192,17 @@ public class PreferenceUtils
         {
             final Bundle mdmProperties = restrictionsManager.getApplicationRestrictions();
 
-            scanRateSeconds = mdmProperties.getInt(scanRatePreferenceKey);
-            if (scanRateSeconds > 0)
+            if (mdmProperties.containsKey(scanRatePreferenceKey))
             {
-                // Apply minimum for Bluetooth scan rate
-                if (NetworkSurveyConstants.PROPERTY_BLUETOOTH_SCAN_INTERVAL_SECONDS.equals(scanRatePreferenceKey))
+                scanRateSeconds = mdmProperties.getInt(scanRatePreferenceKey);
+                if (scanRateSeconds > 0)
                 {
-                    scanRateSeconds = Math.max(scanRateSeconds, NetworkSurveyConstants.MINIMUM_BLUETOOTH_SCAN_INTERVAL_SECONDS);
+                    return applyMinimumScanRate(scanRateSeconds, scanRatePreferenceKey) * 1_000;
+                } else
+                {
+                    Timber.w("MDM set invalid scan rate %d seconds for %s, falling back to user preference",
+                            scanRateSeconds, scanRatePreferenceKey);
                 }
-                return scanRateSeconds * 1_000;
             }
         }
 
@@ -169,25 +216,13 @@ public class PreferenceUtils
             scanRateSeconds = Integer.parseInt(scanInterval);
             scanRateSeconds = scanRateSeconds > 0 ? scanRateSeconds : defaultScanRateSeconds;
 
-            // Apply minimum for Bluetooth scan rate
-            if (NetworkSurveyConstants.PROPERTY_BLUETOOTH_SCAN_INTERVAL_SECONDS.equals(scanRatePreferenceKey))
-            {
-                scanRateSeconds = Math.max(scanRateSeconds, NetworkSurveyConstants.MINIMUM_BLUETOOTH_SCAN_INTERVAL_SECONDS);
-            }
-
-            return scanRateSeconds * 1_000;
+            return applyMinimumScanRate(scanRateSeconds, scanRatePreferenceKey) * 1_000;
         } catch (Exception e)
         {
             Timber.e(e, "Could not convert the scan interval user preference (%s) to an int", scanInterval);
             scanRateSeconds = defaultScanRateSeconds;
 
-            // Apply minimum for Bluetooth scan rate even for default
-            if (NetworkSurveyConstants.PROPERTY_BLUETOOTH_SCAN_INTERVAL_SECONDS.equals(scanRatePreferenceKey))
-            {
-                scanRateSeconds = Math.max(scanRateSeconds, NetworkSurveyConstants.MINIMUM_BLUETOOTH_SCAN_INTERVAL_SECONDS);
-            }
-
-            return scanRateSeconds * 1_000;
+            return applyMinimumScanRate(scanRateSeconds, scanRatePreferenceKey) * 1_000;
         }
     }
 
@@ -277,7 +312,23 @@ public class PreferenceUtils
             if (mdmProperties.containsKey(NetworkSurveyConstants.PROPERTY_LOG_ROLLOVER_SIZE_MB))
             {
                 final int logRolloverSizeMb = mdmProperties.getInt(NetworkSurveyConstants.PROPERTY_LOG_ROLLOVER_SIZE_MB);
-                if (logRolloverSizeMb >= 0) return logRolloverSizeMb;
+                // 0 means unlimited, values > 0 must be validated
+                if (logRolloverSizeMb == 0)
+                {
+                    return 0; // Unlimited
+                } else if (logRolloverSizeMb > 0)
+                {
+                    if (logRolloverSizeMb > MAX_ROLLOVER_SIZE_MB)
+                    {
+                        Timber.w("MDM rollover size %d MB exceeds maximum %d MB, clamping to max",
+                                logRolloverSizeMb, MAX_ROLLOVER_SIZE_MB);
+                        return MAX_ROLLOVER_SIZE_MB;
+                    }
+                    return logRolloverSizeMb;
+                } else
+                {
+                    Timber.w("MDM rollover size %d MB is negative, using default", logRolloverSizeMb);
+                }
             }
         }
 
@@ -288,7 +339,23 @@ public class PreferenceUtils
         try
         {
             final int logRolloverSizeMb = Integer.parseInt(rolloverPreferenceString);
-            if (logRolloverSizeMb >= 0) return logRolloverSizeMb;
+            // 0 means unlimited, values > 0 must be validated
+            if (logRolloverSizeMb == 0)
+            {
+                return 0; // Unlimited
+            } else if (logRolloverSizeMb > 0)
+            {
+                if (logRolloverSizeMb > MAX_ROLLOVER_SIZE_MB)
+                {
+                    Timber.w("User rollover size %d MB exceeds maximum %d MB, clamping to max",
+                            logRolloverSizeMb, MAX_ROLLOVER_SIZE_MB);
+                    return MAX_ROLLOVER_SIZE_MB;
+                }
+                return logRolloverSizeMb;
+            } else
+            {
+                Timber.w("User rollover size %d MB is negative, using default", logRolloverSizeMb);
+            }
         } catch (Exception e)
         {
             Timber.e(e, "Could not convert the log rollover size user preference (%s) to an int", rolloverPreferenceString);
@@ -462,6 +529,12 @@ public class PreferenceUtils
      */
     private static LogTypeState convertIndexToLogTypeState(String index)
     {
+        if (index == null || index.isEmpty())
+        {
+            Timber.w("Log type index is null or empty, defaulting to CSV only");
+            return new LogTypeState(true, false);
+        }
+
         boolean csv = false;
         boolean geoPackage = false;
         switch (index)
@@ -477,9 +550,8 @@ public class PreferenceUtils
             }
             default ->
             {
-                Timber.wtf("Unhandled log type setting=%s", index);
+                Timber.w("Unhandled log type setting=%s, defaulting to CSV only", index);
                 csv = true;
-                geoPackage = true;
             }
         }
 
@@ -742,11 +814,26 @@ public class PreferenceUtils
         SharedPreferences.Editor edit = preferences.edit();
         if (mqttConnectionSettings.host() != null)
         {
-            edit.putString(PROPERTY_MQTT_CONNECTION_HOST, mqttConnectionSettings.host());
+            final String host = mqttConnectionSettings.host().trim();
+            if (!host.isEmpty())
+            {
+                edit.putString(PROPERTY_MQTT_CONNECTION_HOST, host);
+            } else
+            {
+                Timber.w("MQTT host is empty, not saving");
+            }
         }
         if (mqttConnectionSettings.port() != 0)
         {
-            edit.putInt(PROPERTY_MQTT_CONNECTION_PORT, mqttConnectionSettings.port());
+            final int port = mqttConnectionSettings.port();
+            if (port >= MIN_MQTT_PORT && port <= MAX_MQTT_PORT)
+            {
+                edit.putInt(PROPERTY_MQTT_CONNECTION_PORT, port);
+            } else
+            {
+                Timber.w("MQTT port %d is invalid (must be %d-%d), not saving",
+                        port, MIN_MQTT_PORT, MAX_MQTT_PORT);
+            }
         }
         if (mqttConnectionSettings.tlsEnabled() != null)
         {
@@ -754,7 +841,14 @@ public class PreferenceUtils
         }
         if (mqttConnectionSettings.deviceName() != null)
         {
-            edit.putString(PROPERTY_MQTT_CLIENT_ID, mqttConnectionSettings.deviceName());
+            final String deviceName = mqttConnectionSettings.deviceName().trim();
+            if (!deviceName.isEmpty())
+            {
+                edit.putString(PROPERTY_MQTT_CLIENT_ID, deviceName);
+            } else
+            {
+                Timber.w("MQTT device name is empty, not saving");
+            }
         }
         if (mqttConnectionSettings.mqttUsername() != null)
         {
@@ -847,16 +941,6 @@ public class PreferenceUtils
         return word1 + word2 + number;
     }
 
-    public static boolean hasAcceptedMapPrivacy(Context context)
-    {
-        return PreferenceManager.getDefaultSharedPreferences(context).getBoolean(PROPERTY_KEY_ACCEPT_MAP_PRIVACY, false);
-    }
-
-    public static void setAcceptMapPrivacy(Context context, boolean hasAccepted)
-    {
-        PreferenceManager.getDefaultSharedPreferences(context).edit().putBoolean(PROPERTY_KEY_ACCEPT_MAP_PRIVACY, hasAccepted).apply();
-    }
-
     public static boolean hasDeniedBackgroundLocationPermission(Context context)
     {
         return PreferenceManager.getDefaultSharedPreferences(context).getBoolean(NetworkSurveyConstants.PROPERTY_KEY_DENIED_BACKGROUND_LOCATION_PERMISSION, false);
@@ -885,11 +969,6 @@ public class PreferenceUtils
     public static String getSharedApiKey(Context context)
     {
         return BuildConfig.OCID_API_KEY;
-    }
-
-    public static boolean isApiKeyShared(String apiKey)
-    {
-        return BuildConfig.OCID_API_KEY.equalsIgnoreCase(apiKey);
     }
 
     public static String getOpenCelliDApiKey(Context context, boolean anonymousUploadToOcid)
@@ -1075,11 +1154,8 @@ public class PreferenceUtils
             if (mdmProperties.containsKey(NetworkSurveyConstants.PROPERTY_BATTERY_THRESHOLD_PERCENT))
             {
                 final int threshold = mdmProperties.getInt(NetworkSurveyConstants.PROPERTY_BATTERY_THRESHOLD_PERCENT);
-                // Validate the threshold is in valid range
-                if (threshold >= 0 && threshold <= 95)
-                {
-                    return threshold;
-                }
+                // Clamp the threshold to valid range (0-95%)
+                return Math.max(0, Math.min(threshold, 95));
             }
         }
 
@@ -1091,8 +1167,8 @@ public class PreferenceUtils
             // Try to get as int first (new format)
             final int threshold = preferences.getInt(NetworkSurveyConstants.PROPERTY_BATTERY_THRESHOLD_PERCENT,
                     NetworkSurveyConstants.DEFAULT_BATTERY_THRESHOLD_PERCENT);
-            // Validate the threshold is in valid range
-            return (threshold >= 0 && threshold <= 95) ? threshold : NetworkSurveyConstants.DEFAULT_BATTERY_THRESHOLD_PERCENT;
+            // Clamp the threshold to valid range (0-95%)
+            return Math.max(0, Math.min(threshold, 95));
         } catch (ClassCastException e)
         {
             // Fall back to string format (old format) for migration
@@ -1102,12 +1178,14 @@ public class PreferenceUtils
                         String.valueOf(NetworkSurveyConstants.DEFAULT_BATTERY_THRESHOLD_PERCENT));
                 final int threshold = Integer.parseInt(thresholdString);
 
+                // Clamp before migration to ensure we store a valid value
+                final int clampedThreshold = Math.max(0, Math.min(threshold, 95));
+
                 // Migrate to int for future use
                 preferences.edit().remove(NetworkSurveyConstants.PROPERTY_BATTERY_THRESHOLD_PERCENT)
-                        .putInt(NetworkSurveyConstants.PROPERTY_BATTERY_THRESHOLD_PERCENT, threshold).apply();
+                        .putInt(NetworkSurveyConstants.PROPERTY_BATTERY_THRESHOLD_PERCENT, clampedThreshold).apply();
 
-                // Validate the threshold is in valid range
-                return (threshold >= 0 && threshold <= 95) ? threshold : NetworkSurveyConstants.DEFAULT_BATTERY_THRESHOLD_PERCENT;
+                return clampedThreshold;
             } catch (Exception ex)
             {
                 Timber.e(ex, "Could not convert the battery threshold preference to an int");
@@ -1121,18 +1199,6 @@ public class PreferenceUtils
     // ============================================================================
 
     /**
-     * Gets the last successful NS Analytics upload time.
-     *
-     * @param context The context to use when getting the SharedPreferences
-     * @return The last upload timestamp in milliseconds, or 0 if never uploaded
-     */
-    public static long getLastNsAnalyticsUploadTime(Context context)
-    {
-        return PreferenceManager.getDefaultSharedPreferences(context)
-                .getLong(NsAnalyticsConstants.PROPERTY_NS_ANALYTICS_LAST_UPLOAD_TIME, 0);
-    }
-
-    /**
      * Checks if the device is registered with NS Analytics.
      * This is the authoritative check for registration status.
      *
@@ -1142,18 +1208,6 @@ public class PreferenceUtils
     public static boolean isNsAnalyticsRegistered(Context context)
     {
         return NsAnalyticsSecureStorage.INSTANCE.isRegistered(context);
-    }
-
-    /**
-     * Gets the NS Analytics workspace name.
-     *
-     * @param context The context to use when getting the SharedPreferences
-     * @return The workspace name, or empty string if not set
-     */
-    public static String getNsAnalyticsWorkspace(Context context)
-    {
-        return PreferenceManager.getDefaultSharedPreferences(context)
-                .getString(NsAnalyticsConstants.PROPERTY_NS_ANALYTICS_WORKSPACE_NAME, "");
     }
 
     /**

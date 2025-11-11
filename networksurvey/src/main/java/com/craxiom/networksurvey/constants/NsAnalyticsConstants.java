@@ -15,7 +15,6 @@ public class NsAnalyticsConstants
     public static final String PROPERTY_NS_ANALYTICS_URL = "ns_analytics_url";
     public static final String PROPERTY_NS_ANALYTICS_UPLOAD_FREQUENCY = "ns_analytics_upload_frequency";
     public static final String PROPERTY_NS_ANALYTICS_LAST_UPLOAD = "ns_analytics_last_upload";
-    public static final String PROPERTY_NS_ANALYTICS_LAST_UPLOAD_TIME = "ns_analytics_last_upload_time";
     public static final String PROPERTY_NS_ANALYTICS_REAL_TIME = "ns_analytics_real_time"; // FIXME Delete this or use it
     public static final String PROPERTY_NS_ANALYTICS_AUTO_UPLOAD = "ns_analytics_auto_upload";
     public static final String PROPERTY_NS_ANALYTICS_UPLOAD_MODE = "ns_analytics_upload_mode";
