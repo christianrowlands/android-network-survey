@@ -15,7 +15,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.core.net.toUri
-import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
@@ -24,6 +24,7 @@ import com.craxiom.networksurvey.R
 import com.craxiom.networksurvey.fragments.BLUETOOTH_DATA_KEY
 import com.craxiom.networksurvey.fragments.model.MqttConnectionSettings
 import com.craxiom.networksurvey.model.WifiNetwork
+import com.craxiom.networksurvey.ui.cellular.model.ServingCellInfo
 import com.craxiom.networksurvey.ui.main.appdrawer.AppDrawerContent
 import com.craxiom.networksurvey.ui.main.appdrawer.AppDrawerItemInfo
 import com.craxiom.networksurvey.ui.theme.NsTheme
@@ -38,7 +39,6 @@ fun MainCompose(
     appVersion: String
 ) {
     val context = LocalContext.current
-    val lifecycleOwner = LocalLifecycleOwner.current
 
     val viewModel = viewModel<SharedViewModel>()
     // Ensure we use activity context for proper intent launching
@@ -47,141 +47,107 @@ fun MainCompose(
         BatteryOptimizationHelper(activity ?: context)
     }
     var showBatteryDialog by remember { mutableStateOf(false) }
-    LaunchedEffect(viewModel.navigateToUploadSettings) {
-        viewModel.navigateToUploadSettings.observe(lifecycleOwner) { shouldNavigate ->
-            if (shouldNavigate) {
-                mainNavController.navigate(NavOption.UploadSettings.name)
-                viewModel.resetNavigationFlag()
-            }
-        }
-    }
 
-    LaunchedEffect(viewModel.navigateToTowerMapSettings) {
-        viewModel.navigateToTowerMapSettings.observe(lifecycleOwner) { shouldNavigate ->
-            if (shouldNavigate) {
-                mainNavController.navigate(NavOption.TowerMapSettings.name)
-                viewModel.resetNavigationFlag()
-            }
-        }
-    }
+    // Observe navigation events using modern Compose StateFlow pattern
+    val navigationEvent by viewModel.navigationEvent.collectAsStateWithLifecycle()
+    LaunchedEffect(navigationEvent) {
+        navigationEvent?.let { event ->
+            when (event) {
+                is NavigationEvent.UploadSettings -> {
+                    mainNavController.navigate(NavOption.UploadSettings.name)
+                }
 
-    LaunchedEffect(viewModel.navigateToSsidExclusionList) {
-        viewModel.navigateToSsidExclusionList.observe(lifecycleOwner) { shouldNavigate ->
-            if (shouldNavigate) {
-                mainNavController.navigate(NavOption.SsidExclusionList.name)
-                viewModel.resetSsidExclusionListNavigationFlag()
-            }
-        }
-    }
+                is NavigationEvent.TowerMapSettings -> {
+                    mainNavController.navigate(NavOption.TowerMapSettings.name)
+                }
 
-    LaunchedEffect(viewModel.navigateToAcknowledgments) {
-        viewModel.navigateToAcknowledgments.observe(lifecycleOwner) { shouldNavigate ->
-            if (shouldNavigate) {
-                mainNavController.navigate(NavOption.Acknowledgments.name)
-                viewModel.resetAcknowledgmentsNavigationFlag()
-            }
-        }
-    }
+                is NavigationEvent.SsidExclusionList -> {
+                    mainNavController.navigate(NavOption.SsidExclusionList.name)
+                }
 
-    LaunchedEffect(viewModel.navigateToQrCodeScanner) {
-        viewModel.navigateToQrCodeScanner.observe(lifecycleOwner) { shouldNavigate ->
-            if (shouldNavigate) {
-                mainNavController.navigate(NavOption.QrCodeScanner.name)
-                viewModel.resetNavigationFlag()
-            }
-        }
-    }
+                is NavigationEvent.Acknowledgments -> {
+                    mainNavController.navigate(NavOption.Acknowledgments.name)
+                }
 
-    LaunchedEffect(viewModel.navigateToQrCodeShare) {
-        viewModel.navigateToQrCodeShare.observe(lifecycleOwner) { shouldNavigate ->
-            if (shouldNavigate) {
-                mainNavController.navigate(NavOption.QrCodeShare.name)
-                viewModel.resetNavigationFlag()
-            }
-        }
-    }
-
-    LaunchedEffect(viewModel.navigateToTowerMap) {
-        viewModel.navigateToTowerMap.observe(lifecycleOwner) { shouldNavigate ->
-            if (shouldNavigate) {
-                mainNavController.navigate(NavOption.TowerMap.name)
-                viewModel.resetNavigationFlag()
-            }
-        }
-    }
-
-    LaunchedEffect(viewModel.navigateToWifiDetails) {
-        viewModel.navigateToWifiDetails.observe(lifecycleOwner) { shouldNavigate ->
-            if (shouldNavigate) {
-                mainNavController.currentBackStackEntry?.savedStateHandle?.set(
-                    WifiNetwork.KEY,
-                    viewModel.wifiNetwork
-                )
-                mainNavController.navigate(NavOption.WifiDetails.name)
-                viewModel.resetNavigationFlag()
-            }
-        }
-    }
-
-    LaunchedEffect(viewModel.navigateToBluetoothDetails) {
-        viewModel.navigateToBluetoothDetails.observe(lifecycleOwner) { shouldNavigate ->
-            if (shouldNavigate) {
-                mainNavController.currentBackStackEntry?.savedStateHandle?.set(
-                    BLUETOOTH_DATA_KEY,
-                    viewModel.bluetoothData
-                )
-                mainNavController.navigate(NavOption.BluetoothDetails.name)
-                viewModel.resetNavigationFlag()
-            }
-        }
-    }
-
-    LaunchedEffect(viewModel.navigateToMqttConnection) {
-        viewModel.navigateToMqttConnection.observe(lifecycleOwner) { shouldNavigate ->
-            if (shouldNavigate) {
-                if (viewModel.mqttConnectionSettings != null) {
+                is NavigationEvent.QrCodeScanner -> {
                     mainNavController.currentBackStackEntry?.savedStateHandle?.set(
                         MqttConnectionSettings.KEY,
-                        viewModel.mqttConnectionSettings
+                        event.mqttConnectionSettings
                     )
+                    mainNavController.navigate(NavOption.QrCodeScanner.name)
                 }
-                mainNavController.navigate(NavDrawerOption.MqttBrokerConnection.name)
-                viewModel.resetNavigationFlag()
-                viewModel.resetMqttConnectionSettings()
+
+                is NavigationEvent.QrCodeShare -> {
+                    mainNavController.currentBackStackEntry?.savedStateHandle?.set(
+                        MqttConnectionSettings.KEY,
+                        event.mqttConnectionSettings
+                    )
+                    mainNavController.navigate(NavOption.QrCodeShare.name)
+                }
+
+                is NavigationEvent.TowerMap -> {
+                    mainNavController.currentBackStackEntry?.savedStateHandle?.set(
+                        ServingCellInfo.KEY,
+                        event.servingCellInfo
+                    )
+                    mainNavController.navigate(NavOption.TowerMap.name)
+                }
+
+                is NavigationEvent.WifiDetails -> {
+                    mainNavController.currentBackStackEntry?.savedStateHandle?.set(
+                        WifiNetwork.KEY,
+                        event.wifiNetwork
+                    )
+                    mainNavController.navigate(NavOption.WifiDetails.name)
+                }
+
+                is NavigationEvent.BluetoothDetails -> {
+                    mainNavController.currentBackStackEntry?.savedStateHandle?.set(
+                        BLUETOOTH_DATA_KEY,
+                        event.bluetoothData
+                    )
+                    mainNavController.navigate(NavOption.BluetoothDetails.name)
+                }
+
+                is NavigationEvent.MqttConnection -> {
+                    event.mqttConnectionSettings?.let { settings ->
+                        mainNavController.currentBackStackEntry?.savedStateHandle?.set(
+                            MqttConnectionSettings.KEY,
+                            settings
+                        )
+                    }
+                    mainNavController.navigate(NavDrawerOption.MqttBrokerConnection.name)
+                }
+
+                is NavigationEvent.Settings -> {
+                    mainNavController.navigate(NavDrawerOption.Settings.name)
+                }
+
+                is NavigationEvent.NsAnalyticsConnection -> {
+                    // Navigate back from QR scanner to NS Analytics connection screen
+                    mainNavController.navigate(NavDrawerOption.NsAnalyticsConnection.name) {
+                        popUpTo(NavDrawerOption.None.name)
+                    }
+                }
             }
+            // Clear the event after handling to prevent re-processing
+            viewModel.clearNavigationEvent()
         }
     }
 
-    LaunchedEffect(viewModel.navigateToSettings) {
-        viewModel.navigateToSettings.observe(lifecycleOwner) { shouldNavigate ->
-            if (shouldNavigate) {
-                mainNavController.navigate(NavDrawerOption.Settings.name)
-                viewModel.resetNavigationFlag()
-            }
-        }
-    }
-
-    LaunchedEffect(viewModel.navigateToNsAnalyticsConnection) {
-        viewModel.navigateToNsAnalyticsConnection.observe(lifecycleOwner) { shouldNavigate ->
-            if (shouldNavigate) {
-                // Navigate back from QR scanner to NS Analytics connection screen
-                mainNavController.navigate(NavDrawerOption.NsAnalyticsConnection.name) {
-                    popUpTo(NavDrawerOption.None.name)
+    // Observe dialog events using modern Compose StateFlow pattern
+    val dialogEvent by viewModel.dialogEvent.collectAsStateWithLifecycle()
+    LaunchedEffect(dialogEvent) {
+        dialogEvent?.let { event ->
+            when (event) {
+                is DialogEvent.BatteryOptimization -> {
+                    if (batteryOptimizationHelper.shouldPromptForBatteryOptimization()) {
+                        showBatteryDialog = true
+                    }
                 }
-                viewModel.resetNavigationFlag()
             }
-        }
-    }
-
-    // Handle battery optimization dialog trigger from SharedViewModel
-    LaunchedEffect(viewModel.showBatteryOptimizationDialog) {
-        viewModel.showBatteryOptimizationDialog.observe(lifecycleOwner) { shouldShow ->
-            if (shouldShow) {
-                if (batteryOptimizationHelper.shouldPromptForBatteryOptimization()) {
-                    showBatteryDialog = true
-                }
-                viewModel.resetBatteryOptimizationDialogFlag()
-            }
+            // Clear the event after handling
+            viewModel.clearDialogEvent()
         }
     }
 

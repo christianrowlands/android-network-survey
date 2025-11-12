@@ -584,12 +584,6 @@ class TowerMapLibreViewModel : ViewModel() {
                     _isZoomedOutTooFar.value = true
                     _isLoadingInProgress.value = false
                 }
-            } else {
-                if (!shouldQuery) {
-                    Timber.d("Camera movement below hysteresis threshold, skipping tower query")
-                } else if (timeSinceLastQuery < QUERY_DEBOUNCE_MS) {
-                    Timber.d("Tower query debounced (${timeSinceLastQuery}ms < ${QUERY_DEBOUNCE_MS}ms)")
-                }
             }
         }
 

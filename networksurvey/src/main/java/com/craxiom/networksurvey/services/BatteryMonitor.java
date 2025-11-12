@@ -98,8 +98,6 @@ public class BatteryMonitor extends BroadcastReceiver
         {
             updateBatteryLevel(batteryStatus);
         }
-
-        Timber.i("BatteryMonitor started");
     }
 
     /**
@@ -117,7 +115,6 @@ public class BatteryMonitor extends BroadcastReceiver
             {
                 listener.onBatteryLevelChanged(currentBatteryLevel);
             }
-            Timber.d("Battery listener registered, total listeners: %d", listeners.size());
         }
     }
 
@@ -158,8 +155,6 @@ public class BatteryMonitor extends BroadcastReceiver
                 handler.removeCallbacks(pendingNotification);
                 pendingNotification = null;
             }
-
-            Timber.i("BatteryMonitor stopped");
         } catch (Exception e)
         {
             Timber.e(e, "Error stopping BatteryMonitor");

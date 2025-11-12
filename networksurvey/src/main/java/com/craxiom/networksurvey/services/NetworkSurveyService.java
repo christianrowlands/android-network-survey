@@ -395,8 +395,6 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
     @Override
     public void onDestroy()
     {
-        Timber.i("onDestroy");
-
         // Unregister and stop battery monitor
         if (batteryMonitor != null)
         {
@@ -2184,8 +2182,6 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
      */
     private void stopDeviceStatusReport(boolean fullStop)
     {
-        Timber.d("Setting the device status active flag to false");
-
         if (fullStop)
         {
             cellularController.stopPhoneStateListener();

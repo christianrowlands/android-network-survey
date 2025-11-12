@@ -7,4 +7,8 @@ data class ServingCellInfo(
     val servingCell: CellularRecordWrapper?,
     val subscriptionId: Int,
     val timestamp: Long = System.currentTimeMillis()
-) : Serializable
+) : Serializable {
+    companion object {
+        const val KEY = "servingCellInfo"
+    }
+}
