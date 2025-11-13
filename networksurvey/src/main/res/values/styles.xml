@@ -1,8 +1,9 @@
+<?xml version='1.0' encoding='utf-8'?>
 <resources>
 
     <attr name="cardStyle" format="reference" />
 
-    <!-- Base application theme. -->
+    
     <style name="NetworkSurveyTheme" parent="Theme.Material3.Dark.NoActionBar">
         <item name="colorPrimary">@color/md_theme_primary</item>
         <item name="colorOnPrimary">@color/md_theme_onPrimary</item>
@@ -58,16 +59,6 @@
         <item name="cardStyle">@style/CardViewTheme</item>
     </style>
 
-    <style name="NetworkSurveyThemeOld" parent="Theme.Material3.DayNight">
-        <item name="colorPrimary">@color/colorPrimary</item>
-        <item name="colorAccent">@color/colorAccent</item>
-        <item name="android:colorBackground">@color/colorBackground</item>
-        <item name="windowActionBar">false</item>
-        <item name="windowNoTitle">true</item>
-        <item name="android:colorBackgroundFloating">@color/colorCardDark</item>
-        <item name="cardStyle">@style/CardViewTheme</item>
-    </style>
-
     <style name="CardViewTheme" parent="CardView.Dark">
         <item name="cardBackgroundColor">@color/md_theme_cardBackground</item>
         <item name="android:layout_gravity">start</item>
@@ -81,16 +72,7 @@
         <item name="backgroundTint">@color/md_theme_primaryContainer</item>
     </style>
 
-    <style name="BottomNavigationTheme" parent="NetworkSurveyTheme">
-        <item name="colorPrimary">@color/activeTabColor</item>
-        <item name="android:textColorSecondary">@color/inactiveTabColor</item>
-    </style>
-
     <style name="NetworkSurveyTheme.PopupOverlay" parent="ThemeOverlay.MaterialComponents.Dark" />
-
-    <style name="AlertDialogStyle" parent="@style/MaterialAlertDialog.Material3">
-        <item name="android:background">@color/md_theme_inverseOnSurface</item>
-    </style>
 
     <style name="ConnectionSwitchStyle">
         <item name="colorControlActivated">@color/colorCardDark</item>
@@ -176,11 +158,6 @@
         <item name="android:layout_weight">1</item>
     </style>
 
-    <style name="LabelText" parent="TextAppearance.AppCompat">
-        <item name="android:textSize">18sp</item>
-        <item name="android:textColor">#c2c1c1</item>
-    </style>
-
     <style name="SmallStatusText" parent="TextAppearance.AppCompat">
         <item name="android:textSize">16sp</item>
         <item name="android:textColor">#c2c1c1</item>
@@ -213,17 +190,6 @@
         <item name="android:textColor">@color/md_theme_onPrimary</item>
     </style>
 
-    <style name="LabelStyle" parent="android:Widget.TextView">
-        <item name="android:layout_marginEnd">@dimen/label_value_margin</item>
-        <item name="android:textSize">14sp</item>
-    </style>
-
-    <style name="ValueText" parent="TextAppearance.AppCompat">
-        <item name="android:paddingLeft">20dp</item>
-        <item name="android:textSize">18sp</item>
-        <item name="android:textStyle">bold</item>
-    </style>
-
     <style name="NetworkStatusText" parent="TextAppearance.AppCompat">
         <item name="android:textSize">16sp</item>
         <item name="android:textStyle">bold</item>
@@ -245,23 +211,7 @@
         <item name="android:textColor">@color/normalText</item>
     </style>
 
-    <!-- GNSS Status view -->
-    <style name="info_label">
-        <item name="android:layout_height">wrap_content</item>
-        <item name="android:layout_width">wrap_content</item>
-        <item name="android:textSize">@dimen/status_text_size</item>
-        <item name="android:textStyle">bold</item>
-        <item name="android:paddingRight">4dip</item>
-    </style>
-
-    <style name="info_value">
-        <item name="android:layout_height">wrap_content</item>
-        <item name="android:layout_width">wrap_content</item>
-        <item name="android:textSize">@dimen/status_text_size</item>
-        <item name="android:textStyle">normal</item>
-    </style>
-
-    <!-- GNSS Sky view -->
+    
     <style name="sky_legend_label">
         <item name="android:layout_height">wrap_content</item>
         <item name="android:layout_width">wrap_content</item>

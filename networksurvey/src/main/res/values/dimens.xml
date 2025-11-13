@@ -1,8 +1,5 @@
+<?xml version='1.0' encoding='utf-8'?>
 <resources>
-    <!-- Default screen margins, per the Android Design guidelines. -->
-    <dimen name="activity_horizontal_margin">16dp</dimen>
-    <dimen name="activity_vertical_margin">16dp</dimen>
-
     <dimen name="xx_small_margin">2dp</dimen>
     <dimen name="x_small_margin">4dp</dimen>
     <dimen name="small_margin">8dp</dimen>
@@ -13,30 +10,18 @@
 
     <dimen name="divider_margin">8dp</dimen>
 
-    <dimen name="app_bar_height">180dp</dimen>
-    <dimen name="fab_margin">16dp</dimen>
-    <dimen name="text_margin">16dp</dimen>
-    <dimen name="label_value_margin">6dp</dimen>
-    <dimen name="status_margin">5dp</dimen>
     <dimen name="calculator_margin">10dp</dimen>
     <dimen name="fragment_padding_top">4dp</dimen>
 
     <dimen name="medium_text_size">18sp</dimen>
 
     <dimen name="space_between_bars">12dp</dimen>
-    <dimen name="signal_bar_text_size">22sp</dimen>
-
-    <!-- GNSS Status view -->
-    <dimen name="status_label_right_margin">4dp</dimen>
-    <dimen name="column_padding">3dp</dimen>
 
     <!-- Sky view -->
     <dimen name="sky_legend_text_size_large">14sp</dimen>
     <dimen name="sky_legend_text_size_small">10sp</dimen>
 
     <dimen name="sky_margin">5dp</dimen>
-    <dimen name="sky_legend_cn0_indicator">10dp</dimen>
-    <dimen name="sky_legend_cn0_indicator_legend_margin">5dp</dimen>
     <dimen name="sky_legend_cn0_large_line">10dp</dimen>
     <dimen name="sky_legend_cn0_medium_line">7dp</dimen>
     <dimen name="sky_legend_cn0_small_line">4dp</dimen>

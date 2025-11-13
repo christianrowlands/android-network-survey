@@ -1,4 +1,5 @@
-<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+<?xml version='1.0' encoding='utf-8'?>
+<resources xmlns:ns0="urn:oasis:names:tc:xliff:document:1.2">
 
     <string name="permissions_rationale_title">Network Survey Permissions</string>
     <string name="permissions_rationale">The Network Survey app requires a few permissions to work.  Denying these permissions will result in the app not functioning properly.
@@ -27,30 +28,30 @@
     <string name="upload_help_title">Upload Information</string>
     <string name="view_manual">View Manual</string>
     <string name="upload_help">
-        <![CDATA[
-        The upload feature allows you to share collected cellular and Wi-Fi survey data with third-party databases.<br/><br/>
-        <b>How This Feature Works:</b><br/>
-        &#8226; When started, survey records collected by the app are written to an internal database. You can then decide whether to upload the stored records to the selected destinations.<br/>
-        &#8226; When stopped, no survey data is written to the internal database, and no survey data is uploaded to a third-party database.<br/><br/>
+        
+        The upload feature allows you to share collected cellular and Wi-Fi survey data with third-party databases.&lt;br/&gt;&lt;br/&gt;
+        &lt;b&gt;How This Feature Works:&lt;/b&gt;&lt;br/&gt;
+        &amp;#8226; When started, survey records collected by the app are written to an internal database. You can then decide whether to upload the stored records to the selected destinations.&lt;br/&gt;
+        &amp;#8226; When stopped, no survey data is written to the internal database, and no survey data is uploaded to a third-party database.&lt;br/&gt;&lt;br/&gt;
 
-        <b>Where Your Data Goes:</b><br/>
-        Your survey data will be uploaded to one or both of the following services, depending on your selections:<br/>
-        &#8226; <a href="https://www.opencellid.org/"><b>OpenCelliD</b></a> - A global open-source cell tower database.<br/>
-        &#8226; <a href="https://api.beacondb.net/"><b>BeaconDB</b></a> - A crowdsourced geolocation database.<br/><br/>
+        &lt;b&gt;Where Your Data Goes:&lt;/b&gt;&lt;br/&gt;
+        Your survey data will be uploaded to one or both of the following services, depending on your selections:&lt;br/&gt;
+        &amp;#8226; &lt;a href="https://www.opencellid.org/"&gt;&lt;b&gt;OpenCelliD&lt;/b&gt;&lt;/a&gt; - A global open-source cell tower database.&lt;br/&gt;
+        &amp;#8226; &lt;a href="https://api.beacondb.net/"&gt;&lt;b&gt;BeaconDB&lt;/b&gt;&lt;/a&gt; - A crowdsourced geolocation database.&lt;br/&gt;&lt;br/&gt;
 
-        <b>What Data Is Uploaded:</b><br/>
-        &#8226; <b>Device Location</b> (Latitude, Longitude, Altitude, Accuracy, Speed)<br/>
-        &#8226; <b>Cellular Information</b> (MCC, MNC, TAC/LAC, Cell ID, Signal Strength, Timing Advance, PCI, ARFCN, etc.)<br/>
-        &#8226; <b>Wi-Fi Information</b> (SSID, BSSID, Frequency, Channel, Signal Strength, Encryption Type)<br/>
-        &#8226; <b>Timestamp</b> of Collection<br/><br/>
+        &lt;b&gt;What Data Is Uploaded:&lt;/b&gt;&lt;br/&gt;
+        &amp;#8226; &lt;b&gt;Device Location&lt;/b&gt; (Latitude, Longitude, Altitude, Accuracy, Speed)&lt;br/&gt;
+        &amp;#8226; &lt;b&gt;Cellular Information&lt;/b&gt; (MCC, MNC, TAC/LAC, Cell ID, Signal Strength, Timing Advance, PCI, ARFCN, etc.)&lt;br/&gt;
+        &amp;#8226; &lt;b&gt;Wi-Fi Information&lt;/b&gt; (SSID, BSSID, Frequency, Channel, Signal Strength, Encryption Type)&lt;br/&gt;
+        &amp;#8226; &lt;b&gt;Timestamp&lt;/b&gt; of Collection&lt;br/&gt;&lt;br/&gt;
 
-        <b>When new records are written to the database</b><br/>
-        Cellular and Wi-Fi Survey data is written to the database only if it contains all the required information, AND if the location of the device has changed by at least 35 meters since the last record was written. This is to prevent an excessive amount of survey data from being uploaded to the servers for the same location.<br/><br/>
+        &lt;b&gt;When new records are written to the database&lt;/b&gt;&lt;br/&gt;
+        Cellular and Wi-Fi Survey data is written to the database only if it contains all the required information, AND if the location of the device has changed by at least 35 meters since the last record was written. This is to prevent an excessive amount of survey data from being uploaded to the servers for the same location.&lt;br/&gt;&lt;br/&gt;
 
-        Data is anonymized and used to improve cellular and Wi-Fi coverage mapping, as well as enhance the BeaconDB geolocation service.<br/><br/>
+        Data is anonymized and used to improve cellular and Wi-Fi coverage mapping, as well as enhance the BeaconDB geolocation service.&lt;br/&gt;&lt;br/&gt;
 
-        <a href="https://networksurvey.app/manual#data-upload">For more details, visit the Network Survey User Manual.</a>
-        ]]>
+        &lt;a href="https://networksurvey.app/manual#data-upload"&gt;For more details, visit the Network Survey User Manual.&lt;/a&gt;
+        
     </string>
 
     <string name="cdr_help_title">CDR Information</string>
@@ -294,10 +295,7 @@ but work independently, so you have full control over how you handle your data.<
 
     <!-- Airplane Mode Messages -->
     <string name="airplane_mode_active">Airplane Mode Active</string>
-    <string name="airplane_mode_message">Cellular scanning disabled while airplane mode is on</string>
     <string name="airplane_mode_ui_message">Your phone is in airplane mode. Please disable it to view cellular survey data.</string>
-    <string name="stale_data_warning">Ignoring outdated cellular data</string>
-
     <string name="cellular_logging_start_toast">Started Writing the Cellular Log File</string>
     <string name="cellular_logging_stop_toast">Cellular Log File Closed</string>
     <string name="cellular_logging_toggle_failed">Failed to toggle the cellular logging state</string>
@@ -371,12 +369,11 @@ but work independently, so you have full control over how you handle your data.<
     <string name="wifi_bandwidth_value">BW %1$s</string>
 
     <string name="content_description_sort_wifi_networks_button">Sort Wi-Fi Networks Button</string>
-    <string name="content_description_ssid_exclusion_list">SSID Exclusion List</string>
     <string name="content_description_pause_wifi_network_scan_ui_updates">Pause Wi-Fi network scan UI updates</string>
 
     <string name="android_9_throttling_information">Android 9 throttles Wi-Fi scans to 2 per minute. Upgrade Android if possible.</string>
-    <string name="android_10_throttling_information">Android 10+ throttles Wi-Fi scans. To disable throttling: System -> Advanced -> Developer options -> WiFi scan throttling to off.</string>
-    <string name="enable_developer_options">To enable Developer Options: Settings -> About Phone -> Tap Build Number 7 times.</string>
+    <string name="android_10_throttling_information">Android 10+ throttles Wi-Fi scans. To disable throttling: System -&gt; Advanced -&gt; Developer options -&gt; WiFi scan throttling to off.</string>
+    <string name="enable_developer_options">To enable Developer Options: Settings -&gt; About Phone -&gt; Tap Build Number 7 times.</string>
 
     <!-- Bluetooth Device List -->
     <string name="bluetooth_devices_in_scan"># of Devices: %1$d</string>
@@ -525,21 +522,6 @@ but work independently, so you have full control over how you handle your data.<
     <string name="show_zoom_controls_summary_on">Zoom in/out buttons are displayed on the map</string>
     <string name="show_zoom_controls_summary_off">Zoom in/out buttons are hidden (use pinch gestures)</string>
 
-    <string name="map_layers_title">Map Layers</string>
-    <string name="map_tile_source_title">Map Tile Source</string>
-    <string name="map_overlays_title">Map Overlays</string>
-    <string name="beacondb_coverage_title">BeaconDB Coverage</string>
-    <string name="towers_display_mode_title">Display mode</string>
-    <string name="towers_all_in_area">All towers in area</string>
-    <string name="towers_serving_cell_only">Serving cell only</string>
-    <string name="towers_serving_cell_only_desc">Shows only towers you\'re connected to</string>
-
-    <string name="survey_monitor_config_title">Survey Monitor</string>
-    <string name="alert_new_tower_title">Alert on New Tower</string>
-    <string name="alert_new_tower_summary">Get notified when a cell tower not in the database is detected</string>
-    <string name="alert_new_tower_sound_title">Play Sound</string>
-    <string name="alert_new_tower_ringtone_title">Notification Sound</string>
-    <string name="alert_new_tower_vibrate_title">Vibrate</string>
     <string name="new_tower_alerts_title">New Tower Alerts</string>
     <string name="new_tower_alerts_summary_off">Notifications disabled for new cellular towers</string>
     <string name="new_tower_alerts_summary_on">Receive notifications when connected to a tower that hasn\'t been uploaded to the OpenCelliD database yet (requires upload scanning to be active)</string>
@@ -557,22 +539,6 @@ but work independently, so you have full control over how you handle your data.<
     <string name="auto_start_mqtt_summary_off">The MQTT connection will only be started manually</string>
 
     <string name="pref_file_location_output_title">Location</string>
-    <string name="pref_file_location_output_summary">Logs location fix details to a file</string>
-    <string name="auto_share_preference_key">auto_share_file</string>
-
-    <string name="preferences_coordinate_format_dd">Decimal Degrees</string>
-    <string name="preferences_coordinate_format_dms">Degrees, Minutes, Decimal Seconds</string>
-    <string name="preferences_coordinate_format_ddm">Degrees, Decimal Minutes</string>
-
-    <string name="preferences_preferred_distance_units_title">Preferred distance units</string>
-    <string name="preferences_preferred_distance_units_option_meters">Meters</string>
-    <string name="preferences_preferred_distance_units_option_feet">Feet</string>
-
-    <string name="preferences_preferred_speed_units_title">Preferred speed units</string>
-    <string name="preferences_preferred_speed_units_option_meters_per_second">Meters per second</string>
-    <string name="preferences_preferred_speed_units_option_kilometers_per_hour">Kilometers per hour</string>
-    <string name="preferences_preferred_speed_units_option_miles_per_hour">Miles per hour</string>
-
     <string name="privacy_policy">Privacy Policy</string>
     <string name="privacy_policy_preference_summary">Click here to view the privacy policy</string>
 
@@ -709,18 +675,11 @@ but work independently, so you have full control over how you handle your data.<
 
     <string name="gnss_status_unknown">Unknown status callback</string>
 
-    <!-- GNSS Map View -->
-
-    <!-- Accuracy View -->
     <string name="ok">OK</string>
-
-    <!-- GNSS Logging -->
 
     <string name="scan_button_title">Auto Configure With QR Code</string>
     <string name="share_mqtt_qr_button_title">Share via QR Code</string>
     <string name="channel">Channel</string>
-    <string name="ssid">SSID\n</string>
-
     <string name="open_tower_map">Open Tower Map</string>
     <string name="mqtt_connection_settings">MQTT Connection Settings</string>
     <string name="qr_code">QR Code</string>
@@ -729,8 +688,8 @@ but work independently, so you have full control over how you handle your data.<
     <!-- Uploader -->
     <string name="uploader_notification_channel_name">Uploader</string>
     <string name="uploader_notification_title">Uploading</string>
-    <string name="uploader_notification_progress_info">Uploaded <xliff:g id="progress_in_percent">%d</xliff:g>%%.</string>
-    <string name="uploader_starting">Starting upload&#8230;</string>
+    <string name="uploader_notification_progress_info">Uploaded <ns0:g id="progress_in_percent">%d</ns0:g>%%.</string>
+    <string name="uploader_starting">Starting upload…</string>
     <string name="uploader_not_started">Not Started</string>
     <string name="uploader_not_started_description">Did not start the upload</string>
     <string name="uploader_disabled">Upload disabled</string>
@@ -790,8 +749,8 @@ but work independently, so you have full control over how you handle your data.<
     <string name="records_captured_label">Records Captured</string>
     <string name="ready_for_upload_label">Ready for Upload</string>
     <string name="help_dialog_title">Understanding Record Counts</string>
-    <string name="help_dialog_both_counts">• <b>Records Captured:</b> Total number of survey records being saved to files or sent to servers. Includes all data regardless of quality.\n\n• <b>Ready for Upload:</b> Records that meet quality standards for uploading to crowd-sourced databases.\n\nFilters applied:\n  - GPS accuracy must be &lt; 100 meters\n  - Device must move > 35 meters between records\n  - Records must have complete tower/network info\n\nWhy the difference? Upload databases need high-quality data for accurate tower/network mapping.</string>
-    <string name="help_dialog_upload_only">This shows records ready for upload to crowd-sourced databases like OpenCellID and BeaconDB.\n\nOnly high-quality records are counted:\n  - GPS accuracy &lt; 100 meters\n  - Device moved > 35 meters from last position\n  - Complete tower/network information\n\nRecords are filtered to ensure database quality.</string>
+    <string name="help_dialog_both_counts">• <b>Records Captured:</b> Total number of survey records being saved to files or sent to servers. Includes all data regardless of quality.\n\n• <b>Ready for Upload:</b> Records that meet quality standards for uploading to crowd-sourced databases.\n\nFilters applied:\n  - GPS accuracy must be &lt; 100 meters\n  - Device must move &gt; 35 meters between records\n  - Records must have complete tower/network info\n\nWhy the difference? Upload databases need high-quality data for accurate tower/network mapping.</string>
+    <string name="help_dialog_upload_only">This shows records ready for upload to crowd-sourced databases like OpenCellID and BeaconDB.\n\nOnly high-quality records are counted:\n  - GPS accuracy &lt; 100 meters\n  - Device moved &gt; 35 meters from last position\n  - Complete tower/network information\n\nRecords are filtered to ensure database quality.</string>
     <string name="help_dialog_got_it">Got it</string>
 
     <!-- New Tower Alerts Help Dialog -->
@@ -813,8 +772,6 @@ but work independently, so you have full control over how you handle your data.<
     <string name="battery_optimization_dont_show_again">Don\'t show this again</string>
     <string name="battery_optimization_go_to_settings">Go to Settings</string>
     <string name="battery_optimization_later">Later</string>
-    <string name="battery_optimization_status_enabled">Battery optimization is enabled</string>
-    <string name="battery_optimization_status_disabled">Battery optimization is disabled</string>
     <string name="battery_optimization_settings_summary_enabled">Tap to disable battery optimization for better survey reliability</string>
     <string name="battery_optimization_settings_summary_disabled">Battery optimization is disabled - surveys will run reliably</string>
     <string name="battery_optimization_settings_title">Battery Optimization</string>
@@ -828,8 +785,6 @@ but work independently, so you have full control over how you handle your data.<
     <string name="battery_management_disabled_description">Surveys will continue until battery is depleted</string>
     <string name="battery_pause_active_description">Surveys will pause when battery drops to %1$d%% or below</string>
     <string name="battery_threshold_summary">Pause when battery ≤ %1$d%%</string>
-    <string name="battery_status_paused">Paused for Battery Management</string>
-    <string name="battery_status_normal">Battery: %1$d%%</string>
     <string name="battery_status_paused_with_level">Paused (Battery: %1$d%% ≤ %2$d%%)</string>
     <string name="battery_paused_notification_text">Surveys paused - Battery low (%1$d%%)</string>
     <string name="battery_warning_title">Battery Warning</string>
@@ -840,10 +795,7 @@ but work independently, so you have full control over how you handle your data.<
     <!-- SSID Exclusion List -->
     <string name="ssid_exclusion_list_title">SSID Exclusion List</string>
     <string name="ssid_exclusion_list_description">Manage SSIDs to exclude from survey data</string>
-    <string name="ssid_exclusion_list_summary">%1$d SSIDs excluded</string>
     <string name="ssid_exclusion_list_empty">No SSIDs excluded</string>
-    <string name="add_to_exclusion_list">Add to Exclusion List</string>
-    <string name="remove_from_exclusion_list">Remove from Exclusion List</string>
     <string name="ssid_added_to_exclusion">Added "%1$s" to exclusion list</string>
     <string name="ssid_removed_from_exclusion">Removed "%1$s" from exclusion list</string>
     <string name="ssid_already_excluded">"%1$s" is already in the exclusion list</string>
@@ -865,48 +817,7 @@ but work independently, so you have full control over how you handle your data.<
     <string name="ns_analytics_description">Manage NS Analytics connection and data uploads</string>
     <string name="ns_analytics_title">NS Analytics Upload</string>
     <string name="ns_analytics_help">NS Analytics help button</string>
-    <string name="ns_analytics_settings">NS Analytics Settings</string>
-    <string name="ns_analytics_disconnected">Disconnected</string>
-    <string name="ns_analytics_connected">Connected</string>
-    <string name="ns_analytics_connecting">Connecting…</string>
-    <string name="ns_analytics_uploading">Uploading…</string>
-    <string name="ns_analytics_workspace">Workspace:</string>
-    <string name="ns_analytics_queue_size">Queue:</string>
-    <string name="ns_analytics_last_upload">Last upload:</string>
-    <string name="ns_analytics_connect">Connect</string>
-    <string name="ns_analytics_disconnect">Disconnect</string>
-    <string name="ns_analytics_upload_now">Upload Now</string>
-    <string name="ns_analytics_never">Never</string>
-    <string name="ns_analytics_connection_screen_title">NS Analytics Connection</string>
-    <string name="ns_analytics_scan_qr">Scan QR Code</string>
-    <string name="ns_analytics_manual_entry">Manual Entry</string>
-    <string name="ns_analytics_workspace_hint">Workspace</string>
-    <string name="ns_analytics_token_hint">Device Token</string>
-    <string name="ns_analytics_url_hint">Backend URL</string>
-    <string name="ns_analytics_register">Register Device</string>
-    <string name="ns_analytics_registration_success">Successfully registered with NS Analytics</string>
-    <string name="ns_analytics_registration_failed">Failed to register with NS Analytics</string>
-    <string name="ns_analytics_upload_success">Successfully uploaded %1$d records</string>
-    <string name="ns_analytics_upload_failed">Upload failed</string>
-    <string name="ns_analytics_upload_frequency">Upload Frequency</string>
-    <string name="ns_analytics_upload_immediately">Immediately</string>
-    <string name="ns_analytics_upload_5_minutes">Every 5 minutes</string>
-    <string name="ns_analytics_upload_15_minutes">Every 15 minutes</string>
-    <string name="ns_analytics_upload_30_minutes">Every 30 minutes</string>
-    <string name="ns_analytics_upload_hourly">Every hour</string>
-    <string name="ns_analytics_clear_data">Clear NS Analytics Data</string>
-    <string name="ns_analytics_clear_data_confirm">Are you sure you want to clear all NS Analytics data including connection settings and queued records?</string>
-    <string name="ns_analytics_data_cleared">NS Analytics data cleared</string>
-    <string name="ns_analytics_test_connection">Test Connection</string>
-    <string name="ns_analytics_connection_successful">Connection successful</string>
-    <string name="ns_analytics_connection_failed">Connection failed</string>
     <string name="ns_analytics_survey_stopped">Survey Stopped</string>
-    <string name="ns_analytics_survey_running">Survey Running</string>
-    <string name="ns_analytics_start_survey">Start Survey</string>
-    <string name="ns_analytics_stop_survey">Stop Survey</string>
-    <string name="ns_analytics_upload_mode">Upload Mode:</string>
-    <string name="ns_analytics_upload_mode_automatic">Automatic</string>
-    <string name="ns_analytics_upload_mode_manual">Manual</string>
     <string name="ns_analytics_not_registered">Please register device with NS Analytics first</string>
     <string name="ns_analytics_survey_started">NS Analytics survey started</string>
     <string name="ns_analytics_survey_already_running">NS Analytics survey is already running</string>
@@ -916,16 +827,6 @@ but work independently, so you have full control over how you handle your data.<
 
     <!-- NS Analytics Onboarding -->
     <string name="ns_analytics_tagline">Cloud-based visualization and analysis for your network survey data</string>
-
-    <!-- Benefit Cards -->
-    <string name="ns_analytics_benefit_geospatial_title">Geospatial Visualization</string>
-    <string name="ns_analytics_benefit_geospatial_desc">See your data on interactive maps</string>
-    <string name="ns_analytics_benefit_free_title">Free to Start</string>
-    <string name="ns_analytics_benefit_free_desc">No credit card required</string>
-    <string name="ns_analytics_benefit_auto_upload_title">Automatic Upload</string>
-    <string name="ns_analytics_benefit_auto_upload_desc">Set it once, sync continuously</string>
-
-    <!-- Setup Guide Steps -->
     <string name="ns_analytics_setup_guide_title">How to Get Started</string>
     <string name="ns_analytics_step_1_title">Create Account</string>
     <string name="ns_analytics_step_1_desc">Visit NS Analytics to create your free account (recommended on desktop)</string>
@@ -936,32 +837,21 @@ but work independently, so you have full control over how you handle your data.<
     <string name="ns_analytics_step_4_title">Scan &amp; Connect</string>
     <string name="ns_analytics_step_4_desc">Return here and scan the QR code to start uploading</string>
 
-    <!-- Setup Tip Banner -->
     <string name="ns_analytics_setup_tip_title">Setup Tip</string>
     <string name="ns_analytics_setup_tip_message">For the easiest setup, we recommend using a desktop or laptop computer to create your account and generate the QR code. Then return here to scan the code with this device.</string>
 
-    <!-- Call to Action -->
     <string name="ns_analytics_get_started">Get Started</string>
     <string name="ns_analytics_already_have_qr">Already Have a QR Code? Scan Now</string>
     <string name="ns_analytics_learn_more">Learn more about NS Analytics</string>
     <string name="ns_analytics_qr_user_manual">QR Code User Manual</string>
 
-    <!-- What Happens Next -->
     <string name="ns_analytics_what_happens_next_title">What Happens Next</string>
     <string name="ns_analytics_what_happens_next_desc">Once connected, your survey data will automatically upload to your workspace when you have an internet connection. You can view and analyze it on the NS Analytics dashboard.</string>
 
-    <!-- Unregister Device -->
     <string name="unregister_device">Unregister Device</string>
     <string name="unregister_device_title">Unregister Device?</string>
     <string name="unregister_device_message">This device will stop uploading data to the %1$s workspace.\n\nYour queued data will be preserved and can be uploaded if you re-register.\n\nYou can re-register anytime by scanning a new QR code.</string>
     <string name="unregister">Unregister</string>
-    <string name="unregistering_device">Unregistering device…</string>
-    <string name="device_unregistered_successfully">Device unregistered successfully</string>
-    <string name="device_unregister_failed">Failed to unregister device. Please check your connection and try again.</string>
-    <string name="device_unregister_offline">Cannot unregister while offline. Please connect to the internet and try again.</string>
-    <string name="device_unregister_survey_active">Please stop the active survey before unregistering</string>
-
-    <!-- Device Deregistered (Web) -->
     <string name="device_deregistered_title">Device Unregistered</string>
     <string name="device_deregistered_from_web">This device was unregistered from the web dashboard%1$s on %2$s.</string>
     <string name="device_deregistered_from_web_no_details">This device was unregistered from the web dashboard.</string>
