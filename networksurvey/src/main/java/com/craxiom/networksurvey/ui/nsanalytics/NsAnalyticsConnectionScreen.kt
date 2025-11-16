@@ -187,7 +187,7 @@ fun NsAnalyticsConnectionScreen(
     if (showDeregistrationDialog && uiState.deregistrationInfo != null) {
         DeviceDeregisteredDialog(
             deregistrationInfo = uiState.deregistrationInfo!!,
-            workspaceName = uiState.workspaceName ?: "thorkspace",
+            workspaceName = uiState.workspaceName ?: "the workspace",
             onDismiss = {
                 showDeregistrationDialog = false
                 viewModel.clearDeregistrationInfo()
