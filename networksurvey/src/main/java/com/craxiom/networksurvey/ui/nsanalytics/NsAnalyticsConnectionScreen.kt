@@ -331,6 +331,7 @@ private fun NsAnalyticsConnectionContent(
                             wifiEnabled = uiState.wifiEnabled,
                             bluetoothEnabled = uiState.bluetoothEnabled,
                             gnssEnabled = uiState.gnssEnabled,
+                            isSurveyActive = uiState.isSurveyActive,
                             onToggleCellular = onToggleCellular,
                             onToggleWifi = onToggleWifi,
                             onToggleBluetooth = onToggleBluetooth,
@@ -911,6 +912,7 @@ private fun ActiveProtocolsCard(
     wifiEnabled: Boolean,
     bluetoothEnabled: Boolean,
     gnssEnabled: Boolean,
+    isSurveyActive: Boolean,
     onToggleCellular: (Boolean) -> Unit,
     onToggleWifi: (Boolean) -> Unit,
     onToggleBluetooth: (Boolean) -> Unit,
@@ -940,6 +942,7 @@ private fun ActiveProtocolsCard(
                 label = "Cellular",
                 description = "GSM, CDMA, UMTS, LTE, NR",
                 isEnabled = cellularEnabled,
+                enabled = !isSurveyActive,
                 onToggle = onToggleCellular
             )
 
@@ -949,6 +952,7 @@ private fun ActiveProtocolsCard(
                 label = "Wi-Fi",
                 description = "802.11 networks and access points",
                 isEnabled = wifiEnabled,
+                enabled = !isSurveyActive,
                 onToggle = onToggleWifi
             )
 
@@ -958,6 +962,7 @@ private fun ActiveProtocolsCard(
                 label = "Bluetooth",
                 description = "BLE and classic devices",
                 isEnabled = bluetoothEnabled,
+                enabled = !isSurveyActive,
                 onToggle = onToggleBluetooth
             )
 
@@ -967,6 +972,7 @@ private fun ActiveProtocolsCard(
                 label = "GPS/GNSS",
                 description = "Satellite positioning data",
                 isEnabled = gnssEnabled,
+                enabled = !isSurveyActive,
                 onToggle = onToggleGnss
             )
         }
@@ -978,6 +984,7 @@ private fun ProtocolToggleRow(
     label: String,
     description: String,
     isEnabled: Boolean,
+    enabled: Boolean = true,
     onToggle: (Boolean) -> Unit
 ) {
     Row(
@@ -1001,7 +1008,8 @@ private fun ProtocolToggleRow(
         }
         Switch(
             checked = isEnabled,
-            onCheckedChange = onToggle
+            onCheckedChange = onToggle,
+            enabled = enabled
         )
     }
 }
