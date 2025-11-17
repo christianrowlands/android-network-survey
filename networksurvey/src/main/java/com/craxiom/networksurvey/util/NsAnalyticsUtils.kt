@@ -5,6 +5,7 @@ import androidx.work.WorkManager
 import com.craxiom.networksurvey.constants.NsAnalyticsConstants
 import com.craxiom.networksurvey.data.api.ApiErrorResponse
 import com.craxiom.networksurvey.data.api.NsAnalyticsApiFactory
+import com.craxiom.networksurvey.data.api.QuotaErrorResponse
 import com.craxiom.networksurvey.logging.db.uploader.NsAnalyticsUploadWorker
 import com.google.gson.Gson
 import kotlinx.coroutines.Dispatchers
@@ -49,6 +50,65 @@ object NsAnalyticsUtils {
             Timber.e(e, "Failed to parse API error response")
             null
         }
+    }
+
+    /**
+     * Parse error code from already-read error response body string.
+     *
+     * Used when the error body has already been consumed and needs to be
+     * parsed from a string. This prevents double consumption of the response body.
+     *
+     * @param errorBodyString The error body as a string
+     * @return The error code string if present, null otherwise
+     */
+    fun parseErrorCodeFromString(errorBodyString: String): String? {
+        return try {
+            if (errorBodyString.isNotEmpty()) {
+                val errorResponse = gson.fromJson(errorBodyString, ApiErrorResponse::class.java)
+                errorResponse.errorCode
+            } else {
+                null
+            }
+        } catch (e: Exception) {
+            Timber.e(e, "Failed to parse API error response from string")
+            null
+        }
+    }
+
+    /**
+     * Parse quota error details from Retrofit error response body.
+     *
+     * Used to extract detailed quota information when QUOTA_EXCEEDED error
+     * is detected. The error body must be read as a string before calling
+     * this function since ResponseBody can only be consumed once.
+     *
+     * @param errorBodyString The error body as a string
+     * @return QuotaErrorResponse if parsing succeeds, null otherwise
+     */
+    fun parseQuotaError(errorBodyString: String): QuotaErrorResponse? {
+        return try {
+            if (errorBodyString.isNotEmpty()) {
+                gson.fromJson(errorBodyString, QuotaErrorResponse::class.java)
+            } else {
+                null
+            }
+        } catch (e: Exception) {
+            Timber.e(e, "Failed to parse quota error response")
+            null
+        }
+    }
+
+    /**
+     * Format a number with locale-appropriate thousands separators.
+     *
+     * Uses the system's default locale to format numbers according to local
+     * conventions (e.g., comma in US, period in Europe, space in India).
+     *
+     * @param number The number to format
+     * @return Formatted string with thousands separators (e.g., "1,234,567")
+     */
+    fun formatNumberWithThousandsSeparator(number: Int): String {
+        return java.text.NumberFormat.getNumberInstance().format(number)
     }
 
     /**

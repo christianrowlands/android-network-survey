@@ -6,7 +6,6 @@ import retrofit2.Response
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import retrofit2.http.Body
-import retrofit2.http.DELETE
 import retrofit2.http.GET
 import retrofit2.http.Header
 import retrofit2.http.POST
@@ -144,6 +143,19 @@ data class DeviceStatusResponse(
 data class ApiErrorResponse(
     @SerializedName("error") val error: String,
     @SerializedName("error_code") val errorCode: String? = null
+)
+
+/**
+ * Quota error response with detailed quota information
+ */
+data class QuotaErrorResponse(
+    @SerializedName("error") val error: String,
+    @SerializedName("error_code") val errorCode: String,
+    @SerializedName("message") val message: String,
+    @SerializedName("current_usage") val currentUsage: Int,
+    @SerializedName("max_records") val maxRecords: Int,
+    @SerializedName("limit_type") val limitType: String,
+    @SerializedName("web_url") val webUrl: String? = null
 )
 
 /**

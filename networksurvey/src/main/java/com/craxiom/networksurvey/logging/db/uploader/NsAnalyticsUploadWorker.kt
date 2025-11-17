@@ -119,6 +119,11 @@ class NsAnalyticsUploadWorker(context: Context, params: WorkerParameters) :
                 Timber.d("Response isSuccessful: %s", response.isSuccessful)
 
                 val responseBody = response.body()
+
+                // Read error body ONCE at the top (ResponseBody can only be consumed once)
+                // This must be done before any other code tries to access it
+                val errorBodyString = response.errorBody()?.string()
+
                 if (responseBody != null) {
                     Timber.d(
                         "Response body - status: %s, processed: %d, failed: %d, message: %s",
@@ -130,10 +135,9 @@ class NsAnalyticsUploadWorker(context: Context, params: WorkerParameters) :
                 } else {
                     Timber.w("Response body is null despite status code %d", response.code())
 
-                    // Try to get raw response for debugging
-                    val errorBody = response.errorBody()?.string()
-                    if (!errorBody.isNullOrEmpty()) {
-                        Timber.w("Error body content: %s", errorBody)
+                    // Log error body content (already read above to prevent double consumption)
+                    if (!errorBodyString.isNullOrEmpty()) {
+                        Timber.w("Error body content: %s", errorBodyString)
                     }
                 }
 
@@ -162,6 +166,8 @@ class NsAnalyticsUploadWorker(context: Context, params: WorkerParameters) :
                     )
 
                 } else {
+                    // Use errorBodyString that was already read above
+
                     // Enhanced failure logging
                     val failureReason = when {
                         !response.isSuccessful -> "HTTP error: ${response.code()} ${response.message()}"
@@ -175,17 +181,67 @@ class NsAnalyticsUploadWorker(context: Context, params: WorkerParameters) :
                         batchIndex + 1, totalBatches, failureReason
                     )
 
+                    // Check for quota exceeded errors
+                    if (response.code() == 402 && !errorBodyString.isNullOrEmpty()) {
+                        val quotaError = NsAnalyticsUtils.parseQuotaError(errorBodyString)
+                        if (quotaError?.errorCode == NsAnalyticsConstants.ERROR_CODE_QUOTA_EXCEEDED) {
+                            Timber.w("Quota exceeded error detected: ${quotaError.message}")
+                            // Return failure with quota details to inform user
+                            val outputData = Data.Builder()
+                                .putString(
+                                    NsAnalyticsConstants.ERROR_OUTPUT_KEY_TYPE,
+                                    NsAnalyticsConstants.ERROR_CODE_QUOTA_EXCEEDED
+                                )
+                                .putInt(
+                                    NsAnalyticsConstants.EXTRA_QUOTA_CURRENT_USAGE,
+                                    quotaError.currentUsage
+                                )
+                                .putInt(
+                                    NsAnalyticsConstants.EXTRA_QUOTA_MAX_RECORDS,
+                                    quotaError.maxRecords
+                                )
+                                .putString(
+                                    NsAnalyticsConstants.EXTRA_QUOTA_LIMIT_TYPE,
+                                    quotaError.limitType
+                                )
+                                .putString(
+                                    NsAnalyticsConstants.EXTRA_QUOTA_MESSAGE,
+                                    quotaError.message
+                                )
+
+                            // Add web URL if provided
+                            quotaError.webUrl?.let { webUrl ->
+                                outputData.putString(
+                                    NsAnalyticsConstants.EXTRA_QUOTA_WEB_URL,
+                                    webUrl
+                                )
+                            }
+
+                            return@withContext Result.failure(outputData.build())
+                        }
+                    }
+
                     // Check for device deregistration errors
                     if (response.code() == 403 || response.code() == 401) {
-                        val errorCode = NsAnalyticsUtils.parseErrorCode(response)
+                        val errorCode = if (!errorBodyString.isNullOrEmpty()) {
+                            NsAnalyticsUtils.parseErrorCodeFromString(errorBodyString)
+                        } else {
+                            null
+                        }
                         if (errorCode == NsAnalyticsConstants.ERROR_CODE_DEVICE_DEREGISTERED) {
                             Timber.w("Device deregistered error detected, checking device status")
                             // Check device status to update local state
                             checkDeviceStatusAfterError()
                             // Return failure with reason to stop upload attempts
                             val outputData = Data.Builder()
-                                .putString("error_type", "DEVICE_DEREGISTERED")
-                                .putString("error_message", "Device has been unregistered")
+                                .putString(
+                                    NsAnalyticsConstants.ERROR_OUTPUT_KEY_TYPE,
+                                    NsAnalyticsConstants.ERROR_CODE_DEVICE_DEREGISTERED
+                                )
+                                .putString(
+                                    NsAnalyticsConstants.ERROR_OUTPUT_KEY_MESSAGE,
+                                    "Device has been unregistered"
+                                )
                                 .build()
                             return@withContext Result.failure(outputData)
                         }

@@ -36,6 +36,18 @@ import java.util.UUID
 
 /**
  * ViewModel for the NS Analytics connection screen.
+ *
+ * Manages the state and business logic for NS Analytics integration, including:
+ * - Device registration and QR code scanning
+ * - Upload scheduling and progress monitoring
+ * - Record type toggles (cellular, wifi, bluetooth, GNSS)
+ * - Quota exceeded detection and error handling
+ * - Device deregistration and cleanup
+ * - Survey status tracking and real-time statistics
+ *
+ * This ViewModel observes WorkManager for upload progress and errors,
+ * maintains UI state via StateFlow, and coordinates with the NetworkSurveyService
+ * for survey control.
  */
 class NsAnalyticsConnectionViewModel(
     application: Application
@@ -361,6 +373,23 @@ class NsAnalyticsConnectionViewModel(
         _uiState.value = _uiState.value.copy(deregistrationInfo = null)
     }
 
+    /**
+     * Dismiss the quota exceeded dialog and clear quota-related state.
+     *
+     * This resets the dialog visibility flag and clears all quota usage information
+     * from the UI state, including current usage, max records, quota message, and
+     * the web URL for subscription management.
+     */
+    fun dismissQuotaDialog() {
+        _uiState.value = _uiState.value.copy(
+            showQuotaExceededDialog = false,
+            quotaCurrentUsage = 0,
+            quotaMaxRecords = 0,
+            quotaMessage = null,
+            quotaWebUrl = null
+        )
+    }
+
 
     fun toggleAutoUpload(enabled: Boolean) {
         viewModelScope.launch {
@@ -448,22 +477,53 @@ class NsAnalyticsConnectionViewModel(
                                 }
 
                                 WorkInfo.State.FAILED -> {
-                                    // Check if failure was due to deregistration
-                                    val errorType = workInfo.outputData.getString("error_type")
-                                    if (errorType == "DEVICE_DEREGISTERED") {
+                                    // Check if failure was due to quota exceeded
+                                    val errorType = workInfo.outputData.getString(
+                                        NsAnalyticsConstants.ERROR_OUTPUT_KEY_TYPE
+                                    )
+                                    if (errorType == NsAnalyticsConstants.ERROR_CODE_QUOTA_EXCEEDED) {
+                                        // Extract quota details from work output data
+                                        val currentUsage = workInfo.outputData.getInt(
+                                            NsAnalyticsConstants.EXTRA_QUOTA_CURRENT_USAGE, 0
+                                        )
+                                        val maxRecords = workInfo.outputData.getInt(
+                                            NsAnalyticsConstants.EXTRA_QUOTA_MAX_RECORDS, 0
+                                        )
+                                        val quotaMessage = workInfo.outputData.getString(
+                                            NsAnalyticsConstants.EXTRA_QUOTA_MESSAGE
+                                        )
+                                        val quotaWebUrl = workInfo.outputData.getString(
+                                            NsAnalyticsConstants.EXTRA_QUOTA_WEB_URL
+                                        )
+
+                                        // Update UI state to show quota dialog
+                                        _uiState.value = _uiState.value.copy(
+                                            isUploading = false,
+                                            uploadProgress = 0f,
+                                            showQuotaExceededDialog = true,
+                                            quotaCurrentUsage = currentUsage,
+                                            quotaMaxRecords = maxRecords,
+                                            quotaMessage = quotaMessage,
+                                            quotaWebUrl = quotaWebUrl
+                                        )
+                                    } else if (errorType == NsAnalyticsConstants.ERROR_CODE_DEVICE_DEREGISTERED) {
                                         // Device was deregistered - trigger deregistration detection
                                         viewModelScope.launch {
                                             checkDeviceStatus()
                                         }
                                         showMessage("Device has been unregistered. Please scan a QR code to re-register.")
+                                        _uiState.value = _uiState.value.copy(
+                                            isUploading = false,
+                                            uploadProgress = 0f
+                                        )
                                     } else {
                                         showMessage("Upload failed")
+                                        _uiState.value = _uiState.value.copy(
+                                            isUploading = false,
+                                            uploadProgress = 0f
+                                        )
                                     }
 
-                                    _uiState.value = _uiState.value.copy(
-                                        isUploading = false,
-                                        uploadProgress = 0f
-                                    )
                                     removeUploadProgressObserver()
                                 }
 
@@ -921,5 +981,10 @@ data class NsAnalyticsConnectionUiState(
     val wifiRecordCount: Int = 0,
     val bluetoothRecordCount: Int = 0,
     val gnssRecordCount: Int = 0,
-    val deregistrationInfo: DeregistrationInfo? = null
+    val deregistrationInfo: DeregistrationInfo? = null,
+    val showQuotaExceededDialog: Boolean = false,
+    val quotaCurrentUsage: Int = 0,
+    val quotaMaxRecords: Int = 0,
+    val quotaMessage: String? = null,
+    val quotaWebUrl: String? = null
 )

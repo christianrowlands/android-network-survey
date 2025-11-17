@@ -72,6 +72,18 @@ public class NsAnalyticsConstants
     // Error Codes
     public static final String ERROR_CODE_DEVICE_DEREGISTERED = "DEVICE_DEREGISTERED";
     public static final String ERROR_CODE_INVALID_TOKEN = "INVALID_TOKEN";
+    public static final String ERROR_CODE_QUOTA_EXCEEDED = "QUOTA_EXCEEDED";
+
+    // Worker Output Data Keys
+    public static final String ERROR_OUTPUT_KEY_TYPE = "error_type";
+    public static final String ERROR_OUTPUT_KEY_MESSAGE = "error_message";
+
+    // Quota Error Extras
+    public static final String EXTRA_QUOTA_CURRENT_USAGE = "quota_current_usage";
+    public static final String EXTRA_QUOTA_MAX_RECORDS = "quota_max_records";
+    public static final String EXTRA_QUOTA_LIMIT_TYPE = "quota_limit_type";
+    public static final String EXTRA_QUOTA_MESSAGE = "quota_message";
+    public static final String EXTRA_QUOTA_WEB_URL = "quota_web_url";
 
     private NsAnalyticsConstants()
     {

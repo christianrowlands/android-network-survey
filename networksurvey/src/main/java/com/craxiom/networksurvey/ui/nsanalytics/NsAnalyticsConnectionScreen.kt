@@ -7,6 +7,7 @@ import android.content.Context
 import android.content.Intent
 import android.content.ServiceConnection
 import android.content.pm.PackageManager
+import android.net.Uri
 import android.os.IBinder
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -83,6 +84,7 @@ import com.craxiom.networksurvey.R
 import com.craxiom.networksurvey.services.NetworkSurveyService
 import com.craxiom.networksurvey.ui.theme.NsTheme
 import com.craxiom.networksurvey.ui.theme.onPrimaryDark
+import com.craxiom.networksurvey.util.NsAnalyticsUtils
 import timber.log.Timber
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -196,6 +198,26 @@ fun NsAnalyticsConnectionScreen(
                 showDeregistrationDialog = false
                 viewModel.clearDeregistrationInfo()
                 onNavigateToQrScanner()
+            }
+        )
+    }
+
+    if (uiState.showQuotaExceededDialog) {
+        QuotaExceededDialog(
+            currentUsage = uiState.quotaCurrentUsage,
+            maxRecords = uiState.quotaMaxRecords,
+            quotaMessage = uiState.quotaMessage,
+            nsAnalyticsUrl = uiState.quotaWebUrl,
+            onDismiss = {
+                viewModel.dismissQuotaDialog()
+            },
+            onOpenNsAnalytics = {
+                viewModel.dismissQuotaDialog()
+                uiState.quotaWebUrl?.let { url ->
+                    context.startActivity(
+                        Intent(Intent.ACTION_VIEW, Uri.parse(url))
+                    )
+                }
             }
         )
     }
@@ -1102,6 +1124,7 @@ private fun UploadProgressOverlay(
                     color = MaterialTheme.colorScheme.primary,
                     trackColor = Color(0xFF2A2B30),
                     strokeCap = ProgressIndicatorDefaults.LinearStrokeCap,
+                    drawStopIndicator = {}
                 )
             }
         }
@@ -1200,6 +1223,64 @@ private fun DeviceDeregisteredDialog(
         dismissButton = {
             TextButton(onClick = onDismiss) {
                 Text(stringResource(android.R.string.ok))
+            }
+        }
+    )
+}
+
+@Composable
+private fun QuotaExceededDialog(
+    currentUsage: Int,
+    maxRecords: Int,
+    quotaMessage: String?,
+    nsAnalyticsUrl: String?,
+    onDismiss: () -> Unit,
+    onOpenNsAnalytics: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Record Quota Exceeded") },
+        text = {
+            Column {
+                Text(
+                    quotaMessage ?: "Your workspace has reached its record limit."
+                )
+                Spacer(modifier = Modifier.height(12.dp))
+                Text(
+                    "Current usage: ${
+                        NsAnalyticsUtils.formatNumberWithThousandsSeparator(currentUsage)
+                    } / ${
+                        NsAnalyticsUtils.formatNumberWithThousandsSeparator(maxRecords)
+                    } records",
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.Bold
+                )
+                Spacer(modifier = Modifier.height(12.dp))
+                Text(
+                    "To continue uploading records, please:",
+                    style = MaterialTheme.typography.bodyMedium
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    "• Delete existing records in NS Analytics, or",
+                    style = MaterialTheme.typography.bodySmall
+                )
+                Text(
+                    "• Upgrade to a higher subscription tier",
+                    style = MaterialTheme.typography.bodySmall
+                )
+            }
+        },
+        confirmButton = {
+            if (nsAnalyticsUrl != null) {
+                TextButton(onClick = onOpenNsAnalytics) {
+                    Text("Open NS Analytics")
+                }
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Dismiss")
             }
         }
     )
