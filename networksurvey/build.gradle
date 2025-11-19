@@ -7,7 +7,7 @@ plugins {
     alias(libs.plugins.kotlin.parcelize)
     //alias(libs.plugins.google.devtools.ksp)
     id 'com.google.devtools.ksp'
-    id 'com.github.jk1.dependency-license-report' version '2.9'
+    id 'com.github.jk1.dependency-license-report' version '3.0.1'
 }
 
 // Exclude google-services and crashlytics if the json file is missing and for debug builds
@@ -18,9 +18,9 @@ if (file("google-services.json").exists() && !gradle.startParameter.taskNames.an
 }
 
 ext.androidVersion = '28.0.0'
-ext.grpcVersion = '1.76.0'
+ext.grpcVersion = '1.77.0'
 ext.networkSurveyMessagingVersion = '2.0.0'
-ext.navigationVersion = '2.9.5'
+ext.navigationVersion = '2.9.6'
 
 
 import com.github.jk1.license.filter.LicenseBundleNormalizer
@@ -132,7 +132,7 @@ dependencies {
     implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-android:1.10.2'
 
     implementation 'com.craxiom:mqtt-library:0.7.5'
-    implementation "com.google.protobuf:protobuf-java-util:4.33.0"
+    implementation "com.google.protobuf:protobuf-java-util:4.33.1"
     implementation "io.grpc:grpc-okhttp:${grpcVersion}"
     implementation "io.grpc:grpc-android:${grpcVersion}"
     implementation "io.grpc:grpc-stub:${grpcVersion}"
@@ -151,11 +151,11 @@ dependencies {
     implementation 'androidx.recyclerview:recyclerview:1.4.0'
 
     implementation 'com.github.MackHartley:RoundedProgressBar:3.0.0'
-    implementation 'com.patrykandpatrick.vico:core:2.2.1'
-    implementation 'com.patrykandpatrick.vico:compose-m3:2.2.1'
+    implementation 'com.patrykandpatrick.vico:core:2.3.6'
+    implementation 'com.patrykandpatrick.vico:compose-m3:2.3.6'
 
     implementation 'com.github.yuriy-budiyev:code-scanner:2.3.2'
-    implementation 'com.google.zxing:core:3.5.3'
+    implementation 'com.google.zxing:core:3.5.4'
 
     implementation "androidx.room:room-common:$room_version"
     implementation "androidx.room:room-runtime:$room_version"
@@ -167,7 +167,7 @@ dependencies {
     implementation "com.google.dagger:hilt-android:$hilt_version"
     kapt "com.google.dagger:hilt-compiler:$hilt_version"
 
-    implementation 'org.maplibre.gl:android-sdk:12.0.1'
+    implementation 'org.maplibre.gl:android-sdk:12.1.3'
     implementation 'org.maplibre.gl:android-plugin-annotation-v9:3.0.2'
 
     implementation 'com.squareup.retrofit2:retrofit:3.0.0'
@@ -177,7 +177,7 @@ dependencies {
     implementation "androidx.work:work-runtime:2.11.0"
 
     // Compose
-    def composeBom = platform('androidx.compose:compose-bom:2025.10.01')
+    def composeBom = platform('androidx.compose:compose-bom:2025.11.00')
     implementation(composeBom)
     androidTestImplementation(composeBom)
 
@@ -196,7 +196,7 @@ dependencies {
     implementation "com.google.accompanist:accompanist-themeadapter-material:0.36.0"
 
     // Only include firebase in the google play build
-    regularImplementation platform('com.google.firebase:firebase-bom:34.4.0')
+    regularImplementation platform('com.google.firebase:firebase-bom:34.6.0')
     regularImplementation 'com.google.firebase:firebase-analytics'
     regularImplementation 'com.google.firebase:firebase-crashlytics'
 
