@@ -36,7 +36,7 @@ jobs:
           # Update build.gradle with new version code and name
           echo "${{ env.VERSION_CODE }} - ${{ github.event.inputs.version }}"
           sed -i "s/versionCode [0-9]\+/versionCode ${{ env.VERSION_CODE }}/g" networksurvey/build.gradle
-          sed -i "s/versionName \"[^\"]*\"/versionName \"${{ github.event.inputs.version }}\"/g" networksurvey/build.gradle
+          sed -i "s/def appVersion = \"[^\"]*\"/def appVersion = \"${{ github.event.inputs.version }}\"/g" networksurvey/build.gradle
 
       - name: Commit and push changes
         run: |
