@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.45](https://github.com/christianrowlands/android-network-survey/releases/tag/v1.45) - 2025-11-20
+
+**BUG FIXES**
+* Fix several edge case crashes.
+
+**NEW FEATURES**
+* Added a setting to auto start upload scanning when the phone reboots. [#112](https://github.com/christianrowlands/android-network-survey/issues/112)
+
+**IMPROVEMENTS**
+* Put the processing of phone state messages and other record processors on a single thread to ensure the record numbers are always in order.
+* Several code improvements and library updates.
+* Display an error dialog when the user tries to upload records that will exceed the quota limit for their workspace.
+
 ## [1.44.1](https://github.com/christianrowlands/android-network-survey/releases/tag/v1.44.1) - 2025-10-28
 
 **BUG FIXES**
