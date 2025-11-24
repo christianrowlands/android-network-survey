@@ -12,6 +12,11 @@ import android.os.IBinder
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -35,6 +40,8 @@ import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -70,8 +77,11 @@ import androidx.compose.ui.platform.LocalClipboard
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
@@ -258,6 +268,15 @@ fun NsAnalyticsConnectionScreen(
             errorMessage = errorMessage,
             onDismiss = { viewModel.dismissRegistrationError() },
             onRetry = { viewModel.retryRegistration() }
+        )
+    }
+
+    // Already registered dialog - when user scans QR while registered
+    if (uiState.showAlreadyRegisteredDialog && uiState.pendingQrData != null) {
+        AlreadyRegisteredDialog(
+            currentWorkspaceName = uiState.workspaceName ?: "Unknown Workspace",
+            newWorkspaceName = uiState.pendingQrData?.workspaceName,
+            onDismiss = { viewModel.dismissAlreadyRegisteredDialog() }
         )
     }
 }
@@ -1483,7 +1502,12 @@ private fun NsAnalyticsServiceConnectionHandler(
 )
 
 /**
- * Dialog shown to confirm workspace registration before proceeding
+ * Dialog shown to confirm workspace registration before proceeding.
+ *
+ * UX Design:
+ * - Workspace name is prominently displayed as the focal point
+ * - Technical details (API URL, Workspace ID) are in a collapsible section
+ * - Fallback display when workspace_name is not provided in deep link
  */
 @Composable
 private fun RegistrationConfirmationDialog(
@@ -1491,36 +1515,84 @@ private fun RegistrationConfirmationDialog(
     onDismiss: () -> Unit,
     onConfirm: () -> Unit
 ) {
+    var showTechnicalDetails by remember { mutableStateOf(false) }
+
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Join Workspace?") },
+        title = {
+            Text(
+                text = "Join Workspace?",
+                style = MaterialTheme.typography.headlineSmall
+            )
+        },
         text = {
-            Column {
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                // Prompt text
                 Text(
-                    text = "You're about to register this device with:",
-                    style = MaterialTheme.typography.bodyMedium
-                )
-                Spacer(modifier = Modifier.height(12.dp))
-                Text(
-                    text = "Workspace ID:",
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                Text(
-                    text = qrData.workspaceId,
+                    text = "You're about to join:",
                     style = MaterialTheme.typography.bodyMedium,
-                    fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-                Text(
-                    text = "API URL:",
-                    style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
-                Text(
-                    text = qrData.apiUrl,
-                    style = MaterialTheme.typography.bodySmall,
-                    fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace
+
+                // Workspace icon
+                Icon(
+                    painter = painterResource(R.drawable.ic_ns_analytics),
+                    contentDescription = null,
+                    modifier = Modifier.size(48.dp),
+                    tint = MaterialTheme.colorScheme.primary
+                )
+
+                // Workspace Name - Hero Element
+                if (!qrData.workspaceName.isNullOrBlank()) {
+                    Text(
+                        text = qrData.workspaceName,
+                        style = MaterialTheme.typography.headlineMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.primary,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.padding(vertical = 8.dp)
+                    )
+                } else {
+                    // Fallback when workspace_name is missing
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        Text(
+                            text = "Workspace",
+                            style = MaterialTheme.typography.headlineMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onSurface,
+                            textAlign = TextAlign.Center
+                        )
+                        Text(
+                            text = qrData.workspaceId.take(12) +
+                                    if (qrData.workspaceId.length > 12) "..." else "",
+                            style = MaterialTheme.typography.bodyMedium,
+                            fontFamily = FontFamily.Monospace,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Text(
+                            text = "Workspace name not provided in link",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+                            fontStyle = FontStyle.Italic
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                // Collapsible Technical Details Section
+                TechnicalDetailsSection(
+                    isExpanded = showTechnicalDetails,
+                    onToggle = { showTechnicalDetails = !showTechnicalDetails },
+                    workspaceId = qrData.workspaceId,
+                    apiUrl = qrData.apiUrl
                 )
             }
         },
@@ -1540,6 +1612,105 @@ private fun RegistrationConfirmationDialog(
             }
         }
     )
+}
+
+/**
+ * Collapsible section showing technical details (API URL and Workspace ID).
+ * Hidden by default to reduce visual clutter.
+ */
+@Composable
+private fun TechnicalDetailsSection(
+    isExpanded: Boolean,
+    onToggle: () -> Unit,
+    workspaceId: String,
+    apiUrl: String
+) {
+    Column(
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        // Toggle header
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable(onClick = onToggle)
+                .padding(vertical = 8.dp),
+            horizontalArrangement = Arrangement.Center,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(
+                imageVector = if (isExpanded)
+                    Icons.Default.KeyboardArrowUp
+                else
+                    Icons.Default.KeyboardArrowDown,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.size(20.dp)
+            )
+            Spacer(modifier = Modifier.width(4.dp))
+            Text(
+                text = "Technical Details",
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+
+        // Expandable content
+        AnimatedVisibility(
+            visible = isExpanded,
+            enter = expandVertically() + fadeIn(),
+            exit = shrinkVertically() + fadeOut()
+        ) {
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 8.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+                )
+            ) {
+                Column(
+                    modifier = Modifier.padding(12.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    TechnicalDetailItem(
+                        label = "API URL",
+                        value = apiUrl
+                    )
+                    TechnicalDetailItem(
+                        label = "Workspace ID",
+                        value = workspaceId
+                    )
+                }
+            }
+        }
+    }
+}
+
+/**
+ * Single technical detail item with label and monospace value.
+ */
+@Composable
+private fun TechnicalDetailItem(
+    label: String,
+    value: String
+) {
+    Column(
+        verticalArrangement = Arrangement.spacedBy(2.dp)
+    ) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        Text(
+            text = value,
+            style = MaterialTheme.typography.bodySmall,
+            fontFamily = FontFamily.Monospace,
+            color = MaterialTheme.colorScheme.onSurface,
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis
+        )
+    }
 }
 
 /**
@@ -1640,7 +1811,7 @@ private fun RegistrationErrorDialog(
                     text = errorMessage,
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.error,
-                    fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace
+                    fontFamily = FontFamily.Monospace
                 )
             }
         },
@@ -1657,6 +1828,72 @@ private fun RegistrationErrorDialog(
         dismissButton = {
             TextButton(onClick = onDismiss) {
                 Text("Cancel")
+            }
+        }
+    )
+}
+
+/**
+ * Dialog shown when user scans QR code while already registered to a workspace.
+ * Informs the user they need to unregister first before registering with a new workspace.
+ */
+@Composable
+private fun AlreadyRegisteredDialog(
+    currentWorkspaceName: String,
+    newWorkspaceName: String?,
+    onDismiss: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.Center,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Icon(
+                    imageVector = Icons.Filled.Info,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(32.dp)
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(stringResource(R.string.ns_analytics_qr_detected_title))
+            }
+        },
+        text = {
+            Column {
+                Text(
+                    text = stringResource(
+                        R.string.ns_analytics_already_registered_message,
+                        currentWorkspaceName
+                    ),
+                    style = MaterialTheme.typography.bodyMedium
+                )
+
+                if (!newWorkspaceName.isNullOrBlank()) {
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Text(
+                        text = stringResource(
+                            R.string.ns_analytics_new_workspace_detected,
+                            newWorkspaceName
+                        ),
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.Medium
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(12.dp))
+                Text(
+                    text = stringResource(R.string.ns_analytics_unregister_first_hint),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onDismiss) {
+                Text(stringResource(android.R.string.ok))
             }
         }
     )

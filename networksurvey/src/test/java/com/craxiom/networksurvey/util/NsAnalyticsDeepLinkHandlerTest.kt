@@ -4,6 +4,7 @@ import android.net.Uri
 import com.craxiom.networksurvey.constants.NsAnalyticsConstants
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -28,7 +29,8 @@ class NsAnalyticsDeepLinkHandlerTest {
         private fun buildValidUri(
             token: String? = VALID_TOKEN,
             workspaceId: String? = VALID_WORKSPACE_ID,
-            apiUrl: String? = VALID_API_URL
+            apiUrl: String? = VALID_API_URL,
+            workspaceName: String? = null
         ): Uri {
             val builder = Uri.Builder()
                 .scheme("https")
@@ -38,6 +40,7 @@ class NsAnalyticsDeepLinkHandlerTest {
             token?.let { builder.appendQueryParameter("token", it) }
             workspaceId?.let { builder.appendQueryParameter("workspace_id", it) }
             apiUrl?.let { builder.appendQueryParameter("api_url", it) }
+            workspaceName?.let { builder.appendQueryParameter("workspace_name", it) }
 
             return builder.build()
         }
@@ -347,5 +350,74 @@ class NsAnalyticsDeepLinkHandlerTest {
             .build()
 
         assertTrue(NsAnalyticsDeepLinkHandler.isNsAnalyticsDeepLinkUri(uri))
+    }
+
+    // === Workspace Name Tests ===
+
+    @Test
+    fun `parseUri extracts workspace_name when provided`() {
+        val uri = buildValidUri(workspaceName = "My Test Workspace")
+
+        val result = NsAnalyticsDeepLinkHandler.parseUri(uri)
+
+        assertTrue(result is NsAnalyticsDeepLinkHandler.DeepLinkResult.Success)
+        val success = result as NsAnalyticsDeepLinkHandler.DeepLinkResult.Success
+        assertEquals("My Test Workspace", success.qrData.workspaceName)
+    }
+
+    @Test
+    fun `parseUri returns null workspace_name when not provided`() {
+        val uri = buildValidUri()
+
+        val result = NsAnalyticsDeepLinkHandler.parseUri(uri)
+
+        assertTrue(result is NsAnalyticsDeepLinkHandler.DeepLinkResult.Success)
+        val success = result as NsAnalyticsDeepLinkHandler.DeepLinkResult.Success
+        assertNull(success.qrData.workspaceName)
+    }
+
+    @Test
+    fun `parseUri handles URL-encoded workspace_name with special characters`() {
+        // Test with spaces, apostrophes, and ampersands
+        val uri = buildValidUri(workspaceName = "John's Team & Co.")
+
+        val result = NsAnalyticsDeepLinkHandler.parseUri(uri)
+
+        assertTrue(result is NsAnalyticsDeepLinkHandler.DeepLinkResult.Success)
+        val success = result as NsAnalyticsDeepLinkHandler.DeepLinkResult.Success
+        assertEquals("John's Team & Co.", success.qrData.workspaceName)
+    }
+
+    @Test
+    fun `parseUri treats empty workspace_name as null`() {
+        val uri = buildValidUri(workspaceName = "")
+
+        val result = NsAnalyticsDeepLinkHandler.parseUri(uri)
+
+        assertTrue(result is NsAnalyticsDeepLinkHandler.DeepLinkResult.Success)
+        val success = result as NsAnalyticsDeepLinkHandler.DeepLinkResult.Success
+        assertNull(success.qrData.workspaceName)
+    }
+
+    @Test
+    fun `parseUri treats blank workspace_name as null`() {
+        val uri = buildValidUri(workspaceName = "   ")
+
+        val result = NsAnalyticsDeepLinkHandler.parseUri(uri)
+
+        assertTrue(result is NsAnalyticsDeepLinkHandler.DeepLinkResult.Success)
+        val success = result as NsAnalyticsDeepLinkHandler.DeepLinkResult.Success
+        assertNull(success.qrData.workspaceName)
+    }
+
+    @Test
+    fun `parseUri handles unicode characters in workspace_name`() {
+        val uri = buildValidUri(workspaceName = "日本語のワークスペース")
+
+        val result = NsAnalyticsDeepLinkHandler.parseUri(uri)
+
+        assertTrue(result is NsAnalyticsDeepLinkHandler.DeepLinkResult.Success)
+        val success = result as NsAnalyticsDeepLinkHandler.DeepLinkResult.Success
+        assertEquals("日本語のワークスペース", success.qrData.workspaceName)
     }
 }

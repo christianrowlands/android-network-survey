@@ -1,5 +1,10 @@
 # Changelog
 
+## [1.46](https://github.com/christianrowlands/android-network-survey/releases/tag/v1.46) - 2025-11-24
+
+**IMPROVEMENTS**
+* Adds deep link support for scanning a QR code to register the device.
+
 ## [1.45](https://github.com/christianrowlands/android-network-survey/releases/tag/v1.45) - 2025-11-20
 
 **BUG FIXES**

@@ -859,4 +859,10 @@ but work independently, so you have full control over how you handle your data.<
     <string name="device_deregistered_generic">This device has been unregistered from %1$s.</string>
     <string name="scan_qr_to_reregister">Scan a new QR code to re-register and continue uploading.</string>
     <string name="register_again">Register Again</string>
+
+    <!-- NS Analytics Deep Link - Already Registered -->
+    <string name="ns_analytics_qr_detected_title">NS Analytics QR Code</string>
+    <string name="ns_analytics_already_registered_message">You are currently registered to the \"%1$s\" workspace.</string>
+    <string name="ns_analytics_new_workspace_detected">New workspace detected: %1$s</string>
+    <string name="ns_analytics_unregister_first_hint">To register with a different workspace, first unregister from your current workspace using the \"Unregister Device\" button below, then scan the QR code again.</string>
 </resources>

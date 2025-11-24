@@ -69,7 +69,8 @@ data class DeviceRegistrationResponse(
 data class NsAnalyticsQrData(
     @SerializedName("token") val token: String,
     @SerializedName("workspace_id") val workspaceId: String,
-    @SerializedName("api_url") val apiUrl: String
+    @SerializedName("api_url") val apiUrl: String,
+    @SerializedName("workspace_name") val workspaceName: String? = null
 )
 
 /**

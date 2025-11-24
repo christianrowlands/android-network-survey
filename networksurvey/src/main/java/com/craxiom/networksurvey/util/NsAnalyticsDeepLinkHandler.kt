@@ -68,6 +68,11 @@ object NsAnalyticsDeepLinkHandler {
         val workspaceId = uri.getQueryParameter(NsAnalyticsConstants.DEEP_LINK_PARAM_WORKSPACE_ID)
         val apiUrl = uri.getQueryParameter(NsAnalyticsConstants.DEEP_LINK_PARAM_API_URL)
 
+        // Extract optional parameters (URL decoding is handled automatically by Android)
+        val workspaceName =
+            uri.getQueryParameter(NsAnalyticsConstants.DEEP_LINK_PARAM_WORKSPACE_NAME)
+                ?.takeIf { it.isNotBlank() }
+
         // Validate required parameters
         if (token.isNullOrBlank()) {
             Timber.w("Deep link missing required parameter: token")
@@ -120,10 +125,15 @@ object NsAnalyticsDeepLinkHandler {
         val qrData = NsAnalyticsQrData(
             token = token,
             workspaceId = workspaceId,
-            apiUrl = apiUrl
+            apiUrl = apiUrl,
+            workspaceName = workspaceName
         )
 
-        Timber.i("Successfully parsed NS Analytics deep link for workspace: %s", workspaceId)
+        Timber.i(
+            "Successfully parsed NS Analytics deep link for workspace: %s (%s)",
+            workspaceName ?: workspaceId,
+            workspaceId
+        )
         return DeepLinkResult.Success(qrData)
     }
 }

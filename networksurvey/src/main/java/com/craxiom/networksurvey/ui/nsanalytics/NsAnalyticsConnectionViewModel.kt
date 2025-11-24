@@ -708,18 +708,32 @@ class NsAnalyticsConnectionViewModel(
     }
 
     /**
-     * Check for pending QR data and show confirmation dialog if found
+     * Check for pending QR data and show appropriate dialog.
+     * Shows registration confirmation if not registered,
+     * or already registered dialog if user is already in a workspace.
      */
     fun checkAndProcessQrData() {
         viewModelScope.launch {
             try {
                 val qrData = NsAnalyticsSecureStorage.getQrData(context)
-                if (qrData != null && !NsAnalyticsSecureStorage.isRegistered(context)) {
-                    // We have QR data and device is not registered, show confirmation dialog
-                    _uiState.value = _uiState.value.copy(
-                        pendingQrData = qrData,
-                        showRegistrationConfirmDialog = true
-                    )
+                if (qrData != null) {
+                    if (!NsAnalyticsSecureStorage.isRegistered(context)) {
+                        // Not registered - show confirmation dialog to proceed
+                        _uiState.value = _uiState.value.copy(
+                            pendingQrData = qrData,
+                            showRegistrationConfirmDialog = true
+                        )
+                    } else {
+                        // Already registered - show conflict dialog
+                        Timber.i(
+                            "Device already registered, showing conflict dialog for QR workspace: %s",
+                            qrData.workspaceName ?: qrData.workspaceId
+                        )
+                        _uiState.value = _uiState.value.copy(
+                            pendingQrData = qrData,
+                            showAlreadyRegisteredDialog = true
+                        )
+                    }
                 }
             } catch (e: Exception) {
                 Timber.e(e, "Failed to check for QR data")
@@ -790,6 +804,11 @@ class NsAnalyticsConnectionViewModel(
                 if (response.isSuccessful && response.body() != null) {
                     val registrationResponse = response.body()!!
 
+                    // Use server-provided workspace name, fall back to deep link name, then default
+                    val finalWorkspaceName = registrationResponse.workspaceName
+                        ?: qrData.workspaceName
+                        ?: "Unknown Workspace"
+
                     // Store the registration data
                     NsAnalyticsSecureStorage.storeRegistrationData(
                         context = context,
@@ -797,7 +816,7 @@ class NsAnalyticsConnectionViewModel(
                         workspaceId = registrationResponse.workspaceId,
                         apiUrl = qrData.apiUrl,
                         deviceId = registrationResponse.deviceId,
-                        workspaceName = registrationResponse.workspaceName
+                        workspaceName = finalWorkspaceName
                     )
 
                     // Clear the QR data since we've successfully registered
@@ -809,14 +828,14 @@ class NsAnalyticsConnectionViewModel(
                         isRegistered = true,
                         isConnected = true,
                         workspace = registrationResponse.workspaceId,
-                        workspaceName = registrationResponse.workspaceName ?: "Unknown Workspace",
+                        workspaceName = finalWorkspaceName,
                         apiUrl = qrData.apiUrl,
                         pendingQrData = null,
                         showRegistrationSuccessDialog = true
                     )
                     Timber.i(
                         "Device registered successfully for workspace: %s",
-                        registrationResponse.workspaceName
+                        finalWorkspaceName
                     )
 
                 } else {
@@ -867,6 +886,19 @@ class NsAnalyticsConnectionViewModel(
             pendingQrData = null
         )
         // Clear the stored QR data
+        NsAnalyticsSecureStorage.clearQrData(context)
+    }
+
+    /**
+     * User dismissed the already registered dialog - clear pending QR data.
+     */
+    fun dismissAlreadyRegisteredDialog() {
+        Timber.i("User dismissed already registered dialog")
+        _uiState.value = _uiState.value.copy(
+            showAlreadyRegisteredDialog = false,
+            pendingQrData = null
+        )
+        // Clear the stored QR data since user acknowledged
         NsAnalyticsSecureStorage.clearQrData(context)
     }
 
@@ -1065,5 +1097,7 @@ data class NsAnalyticsConnectionUiState(
     val pendingQrData: NsAnalyticsQrData? = null,
     val showRegistrationConfirmDialog: Boolean = false,
     val showRegistrationSuccessDialog: Boolean = false,
-    val registrationError: String? = null
+    val registrationError: String? = null,
+    // Already registered dialog state (shown when user scans QR while registered)
+    val showAlreadyRegisteredDialog: Boolean = false
 )

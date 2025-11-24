@@ -93,6 +93,7 @@ public class NsAnalyticsConstants
     public static final String DEEP_LINK_PARAM_TOKEN = "token";
     public static final String DEEP_LINK_PARAM_WORKSPACE_ID = "workspace_id";
     public static final String DEEP_LINK_PARAM_API_URL = "api_url";
+    public static final String DEEP_LINK_PARAM_WORKSPACE_NAME = "workspace_name";
 
     private NsAnalyticsConstants()
     {
