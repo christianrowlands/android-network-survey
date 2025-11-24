@@ -54,7 +54,14 @@ fun NavGraphBuilder.mainGraph(
             HomeScreen(drawerState, mainNavController = mainNavController)
         }
 
-        composable(NavDrawerOption.NsAnalyticsConnection.name) {
+        composable(
+            NavDrawerOption.NsAnalyticsConnection.name,
+            deepLinks = listOf(
+                navDeepLink {
+                    uriPattern = "https://networksurvey.app/app/register"
+                }
+            )
+        ) {
             val viewModel: NsAnalyticsConnectionViewModel = viewModel()
             NsAnalyticsConnectionScreen(
                 viewModel = viewModel,

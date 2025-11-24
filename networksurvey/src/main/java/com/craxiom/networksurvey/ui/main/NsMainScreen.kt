@@ -30,13 +30,15 @@ import com.craxiom.networksurvey.ui.main.appdrawer.AppDrawerItemInfo
 import com.craxiom.networksurvey.ui.theme.NsTheme
 import com.craxiom.networksurvey.util.BatteryOptimizationHelper
 import com.craxiom.networksurvey.util.MdmUtils
+import timber.log.Timber
 
 
 @Composable
 fun MainCompose(
     mainNavController: NavHostController = rememberNavController(),
     drawerState: DrawerState = rememberDrawerState(initialValue = DrawerValue.Closed),
-    appVersion: String
+    appVersion: String,
+    deepLinkViewModel: DeepLinkViewModel = viewModel()
 ) {
     val context = LocalContext.current
 
@@ -156,6 +158,18 @@ fun MainCompose(
         LaunchedEffect(Unit) {
             if (batteryOptimizationHelper.shouldShowFirstTimePrompt()) {
                 showBatteryDialog = true
+            }
+        }
+
+        val deepLinkDestination by deepLinkViewModel.navigationDestination.collectAsStateWithLifecycle()
+        LaunchedEffect(deepLinkDestination) {
+            deepLinkDestination?.let { destination ->
+                Timber.i("Navigating to %s from deep link", destination)
+                mainNavController.navigate(destination) {
+                    popUpTo(NavDrawerOption.None.name)
+                }
+                // Clear the navigation event to prevent re-navigation
+                deepLinkViewModel.clearNavigation()
             }
         }
 

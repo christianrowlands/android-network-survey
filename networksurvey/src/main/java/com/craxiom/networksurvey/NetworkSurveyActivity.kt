@@ -17,6 +17,7 @@ import android.widget.CheckBox
 import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.compose.setContent
+import androidx.activity.viewModels
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.app.AppCompatDelegate
@@ -29,7 +30,10 @@ import com.craxiom.networksurvey.listeners.IGnssFailureListener
 import com.craxiom.networksurvey.services.GrpcConnectionService
 import com.craxiom.networksurvey.services.NetworkSurveyService
 import com.craxiom.networksurvey.services.NetworkSurveyService.SurveyServiceBinder
+import com.craxiom.networksurvey.ui.main.DeepLinkViewModel
 import com.craxiom.networksurvey.ui.main.MainCompose
+import com.craxiom.networksurvey.util.NsAnalyticsDeepLinkHandler
+import com.craxiom.networksurvey.util.NsAnalyticsSecureStorage
 import com.craxiom.networksurvey.util.NsUtils
 import com.craxiom.networksurvey.util.PreferenceUtils
 import dagger.hilt.android.AndroidEntryPoint
@@ -45,6 +49,7 @@ import timber.log.Timber
 @AndroidEntryPoint
 class NetworkSurveyActivity : AppCompatActivity() {
 
+    private val deepLinkViewModel: DeepLinkViewModel by viewModels()
     private var surveyServiceConnection: SurveyServiceConnection? = null
     private var networkSurveyService: NetworkSurveyService? = null
     private var turnOnCellularLoggingOnNextServiceConnection = false
@@ -58,9 +63,15 @@ class NetworkSurveyActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
+        // Handle NS Analytics deep links
+        handleNsAnalyticsDeepLink()
+
         AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_YES) // Force Dark Mode
         setContent {
-            MainCompose(appVersion = NsUtils.getAppVersionName(this))
+            MainCompose(
+                appVersion = NsUtils.getAppVersionName(this),
+                deepLinkViewModel = deepLinkViewModel
+            )
         }
 
         // Install the defaults specified in the XML preferences file, this is only done the first time the app is opened
@@ -134,6 +145,15 @@ class NetworkSurveyActivity : AppCompatActivity() {
                 Timber.e(t, "Something went wrong when trying to show the GNSS Failure Dialog")
             }
         }
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+
+        // Update the activity's intent so it can be processed
+        setIntent(intent)
+        // Handle the deep link when app is already running
+        handleNsAnalyticsDeepLink()
     }
 
     override fun onResume() {
@@ -616,6 +636,46 @@ class NetworkSurveyActivity : AppCompatActivity() {
                 false -> getString(R.string.cdr_logging_stop_toast)
             }
             Toast.makeText(applicationContext, message, Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    /**
+     * Handle incoming deep links for NS Analytics registration.
+     * If a valid deep link is detected, stores the QR data for processing
+     * by the NS Analytics screen.
+     */
+    private fun handleNsAnalyticsDeepLink() {
+        Timber.d(
+            "handleNsAnalyticsDeepLink: intent=%s, action=%s, data=%s",
+            intent,
+            intent.action,
+            intent.data
+        )
+
+        when (val result = NsAnalyticsDeepLinkHandler.parseIntent(intent)) {
+            is NsAnalyticsDeepLinkHandler.DeepLinkResult.Success -> {
+                Timber.i(
+                    "Received NS Analytics deep link, storing QR data for workspace: %s",
+                    result.qrData.workspaceId
+                )
+                NsAnalyticsSecureStorage.storeQrData(applicationContext, result.qrData)
+                // Trigger navigation via ViewModel
+                deepLinkViewModel.navigateToNsAnalytics()
+                Timber.d("Triggered navigation to NS Analytics via ViewModel")
+            }
+
+            is NsAnalyticsDeepLinkHandler.DeepLinkResult.Error -> {
+                Timber.w("Invalid NS Analytics deep link: %s", result.message)
+                Toast.makeText(
+                    this,
+                    "Invalid registration link: ${result.message}",
+                    Toast.LENGTH_LONG
+                ).show()
+            }
+
+            is NsAnalyticsDeepLinkHandler.DeepLinkResult.NotApplicable -> {
+                Timber.d("Not an NS Analytics deep link, ignoring")
+            }
         }
     }
 

@@ -232,6 +232,34 @@ fun NsAnalyticsConnectionScreen(
             }
         )
     }
+
+    // Registration confirmation dialog
+    uiState.pendingQrData?.let { qrData ->
+        if (uiState.showRegistrationConfirmDialog) {
+            RegistrationConfirmationDialog(
+                qrData = qrData,
+                onDismiss = { viewModel.cancelRegistration() },
+                onConfirm = { viewModel.confirmRegistration() }
+            )
+        }
+    }
+
+    // Registration success dialog
+    if (uiState.showRegistrationSuccessDialog) {
+        RegistrationSuccessDialog(
+            workspaceName = uiState.workspaceName ?: "Unknown Workspace",
+            onDismiss = { viewModel.dismissSuccessDialog() }
+        )
+    }
+
+    // Registration error dialog
+    uiState.registrationError?.let { errorMessage ->
+        RegistrationErrorDialog(
+            errorMessage = errorMessage,
+            onDismiss = { viewModel.dismissRegistrationError() },
+            onRetry = { viewModel.retryRegistration() }
+        )
+    }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -1453,6 +1481,187 @@ private fun NsAnalyticsServiceConnectionHandler(
     widthDp = 360,
     heightDp = 2000
 )
+
+/**
+ * Dialog shown to confirm workspace registration before proceeding
+ */
+@Composable
+private fun RegistrationConfirmationDialog(
+    qrData: com.craxiom.networksurvey.data.api.NsAnalyticsQrData,
+    onDismiss: () -> Unit,
+    onConfirm: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Join Workspace?") },
+        text = {
+            Column {
+                Text(
+                    text = "You're about to register this device with:",
+                    style = MaterialTheme.typography.bodyMedium
+                )
+                Spacer(modifier = Modifier.height(12.dp))
+                Text(
+                    text = "Workspace ID:",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Text(
+                    text = qrData.workspaceId,
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = "API URL:",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Text(
+                    text = qrData.apiUrl,
+                    style = MaterialTheme.typography.bodySmall,
+                    fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(
+                onClick = onConfirm,
+                colors = ButtonDefaults.textButtonColors(
+                    contentColor = Color(0xFF4CAF50)
+                )
+            ) {
+                Text("Join Workspace")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Cancel")
+            }
+        }
+    )
+}
+
+/**
+ * Dialog shown after successful workspace registration
+ */
+@Composable
+private fun RegistrationSuccessDialog(
+    workspaceName: String,
+    onDismiss: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.Center,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Icon(
+                    imageVector = Icons.Default.CheckCircle,
+                    contentDescription = null,
+                    tint = Color(0xFF4CAF50),
+                    modifier = Modifier.size(32.dp)
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text("Registration Successful!")
+            }
+        },
+        text = {
+            Column {
+                Text(
+                    text = "You've successfully joined:",
+                    style = MaterialTheme.typography.bodyMedium
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = workspaceName,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = Color(0xFF4CAF50)
+                )
+                Spacer(modifier = Modifier.height(12.dp))
+                Text(
+                    text = "Start a survey to begin collecting and uploading data.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(
+                onClick = onDismiss,
+                colors = ButtonDefaults.textButtonColors(
+                    contentColor = Color(0xFF4CAF50)
+                )
+            ) {
+                Text("Done")
+            }
+        }
+    )
+}
+
+/**
+ * Dialog shown when registration fails
+ */
+@Composable
+private fun RegistrationErrorDialog(
+    errorMessage: String,
+    onDismiss: () -> Unit,
+    onRetry: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.Center,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Icon(
+                    imageVector = Icons.Filled.Info,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.error,
+                    modifier = Modifier.size(32.dp)
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text("Registration Failed")
+            }
+        },
+        text = {
+            Column {
+                Text(
+                    text = "Unable to register device:",
+                    style = MaterialTheme.typography.bodyMedium
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = errorMessage,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.error,
+                    fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(
+                onClick = onRetry,
+                colors = ButtonDefaults.textButtonColors(
+                    contentColor = Color(0xFF4CAF50)
+                )
+            ) {
+                Text("Retry")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Cancel")
+            }
+        }
+    )
+}
+
 @Composable
 private fun NotConnectedCardPreview() {
     NsTheme {

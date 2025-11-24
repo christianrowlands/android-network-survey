@@ -85,6 +85,15 @@ public class NsAnalyticsConstants
     public static final String EXTRA_QUOTA_MESSAGE = "quota_message";
     public static final String EXTRA_QUOTA_WEB_URL = "quota_web_url";
 
+    // Deep Link Configuration
+    public static final String NS_ANALYTICS_DEEP_LINK_HOST = "networksurvey.app";
+    public static final String NS_ANALYTICS_DEEP_LINK_PATH = "/app/register";
+
+    // Query Parameter Keys for Deep Link
+    public static final String DEEP_LINK_PARAM_TOKEN = "token";
+    public static final String DEEP_LINK_PARAM_WORKSPACE_ID = "workspace_id";
+    public static final String DEEP_LINK_PARAM_API_URL = "api_url";
+
     private NsAnalyticsConstants()
     {
         // Private constructor to prevent instantiation
