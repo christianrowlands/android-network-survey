@@ -21,6 +21,7 @@ public class DashboardViewModel extends ViewModel
     private final MutableLiveData<Boolean> uploadScanningActive = new MutableLiveData<>();
     private final MutableLiveData<Integer> cellularUploadQueueCount = new MutableLiveData<>(-1);
     private final MutableLiveData<Integer> wifiUploadQueueCount = new MutableLiveData<>(-1);
+    private final MutableLiveData<Boolean> communityUploadButtonEnabled = new MutableLiveData<>(false);
 
     private final MutableLiveData<Boolean> cellularLoggingEnabled = new MutableLiveData<>();
     private final MutableLiveData<Boolean> wifiLoggingEnabled = new MutableLiveData<>();
@@ -74,6 +75,19 @@ public class DashboardViewModel extends ViewModel
         if (wifiUploadQueueCount.getValue() != count)
         {
             wifiUploadQueueCount.postValue(count);
+        }
+    }
+
+    public LiveData<Boolean> getCommunityUploadButtonEnabled()
+    {
+        return communityUploadButtonEnabled;
+    }
+
+    public void setCommunityUploadButtonEnabled(boolean isEnabled)
+    {
+        if (!Objects.equals(communityUploadButtonEnabled.getValue(), isEnabled))
+        {
+            communityUploadButtonEnabled.postValue(isEnabled);
         }
     }
 

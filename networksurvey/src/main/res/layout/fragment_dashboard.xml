@@ -475,7 +475,8 @@
                                         android:layout_height="wrap_content"
                                         android:layout_marginHorizontal="@dimen/small_margin"
                                         android:layout_marginBottom="@dimen/small_margin"
-                                        android:lineSpacingExtra="2dp" />
+                                        android:lineSpacingExtra="2dp"
+                                        android:enabled="false"/>
 
                                 </LinearLayout>
 

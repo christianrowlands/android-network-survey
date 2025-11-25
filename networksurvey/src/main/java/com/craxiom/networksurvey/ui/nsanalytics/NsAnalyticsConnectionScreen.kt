@@ -13,12 +13,19 @@ import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.FastOutLinearInEasing
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -41,7 +48,6 @@ import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.KeyboardArrowDown
-import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -49,6 +55,8 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
@@ -73,6 +81,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalClipboard
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
@@ -81,7 +90,6 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
@@ -1490,18 +1498,6 @@ private fun NsAnalyticsServiceConnectionHandler(
 }
 
 /**
- * Preview for the NS Analytics unregistered/not connected screen.
- * Shows the complete onboarding UI with hero section, setup guide, and CTAs.
- */
-@Preview(
-    name = "NS Analytics Not Connected - Dark",
-    showBackground = true,
-    backgroundColor = 0xFF121316,
-    widthDp = 360,
-    heightDp = 2000
-)
-
-/**
  * Dialog shown to confirm workspace registration before proceeding.
  *
  * UX Design:
@@ -1529,24 +1525,14 @@ private fun RegistrationConfirmationDialog(
             Column(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(16.dp)
+                verticalArrangement = Arrangement.spacedBy(4.dp)
             ) {
-                // Prompt text
                 Text(
                     text = "You're about to join:",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
 
-                // Workspace icon
-                Icon(
-                    painter = painterResource(R.drawable.ic_ns_analytics),
-                    contentDescription = null,
-                    modifier = Modifier.size(48.dp),
-                    tint = MaterialTheme.colorScheme.primary
-                )
-
-                // Workspace Name - Hero Element
                 if (!qrData.workspaceName.isNullOrBlank()) {
                     Text(
                         text = qrData.workspaceName,
@@ -1585,9 +1571,6 @@ private fun RegistrationConfirmationDialog(
                     }
                 }
 
-                Spacer(modifier = Modifier.height(8.dp))
-
-                // Collapsible Technical Details Section
                 TechnicalDetailsSection(
                     isExpanded = showTechnicalDetails,
                     onToggle = { showTechnicalDetails = !showTechnicalDetails },
@@ -1603,7 +1586,10 @@ private fun RegistrationConfirmationDialog(
                     contentColor = MaterialTheme.colorScheme.primary
                 )
             ) {
-                Text("Join Workspace")
+                Text(
+                    text = "Join Workspace",
+                    fontWeight = FontWeight.SemiBold
+                )
             }
         },
         dismissButton = {
@@ -1625,40 +1611,84 @@ private fun TechnicalDetailsSection(
     workspaceId: String,
     apiUrl: String
 ) {
+    // Smooth chevron rotation animation
+    val rotation by animateFloatAsState(
+        targetValue = if (isExpanded) 180f else 0f,
+        animationSpec = tween(
+            durationMillis = 300,
+            easing = FastOutSlowInEasing
+        ),
+        label = "chevron_rotation"
+    )
+
+    // Subtle background color change on expansion
+    val toggleBackgroundColor by animateColorAsState(
+        targetValue = if (isExpanded)
+            MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.3f)
+        else
+            Color.Transparent,
+        animationSpec = tween(300),
+        label = "toggle_background"
+    )
+
     Column(
         modifier = Modifier.fillMaxWidth()
     ) {
-        // Toggle header
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clickable(onClick = onToggle)
-                .padding(vertical = 8.dp),
-            horizontalArrangement = Arrangement.Center,
-            verticalAlignment = Alignment.CenterVertically
+        // Toggle header with proper ripple feedback
+        Surface(
+            onClick = onToggle,
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(8.dp),
+            color = toggleBackgroundColor
         ) {
-            Icon(
-                imageVector = if (isExpanded)
-                    Icons.Default.KeyboardArrowUp
-                else
-                    Icons.Default.KeyboardArrowDown,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.size(20.dp)
-            )
-            Spacer(modifier = Modifier.width(4.dp))
-            Text(
-                text = "Technical Details",
-                style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 12.dp, horizontal = 8.dp),
+                horizontalArrangement = Arrangement.Center,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "Technical Details",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Spacer(modifier = Modifier.width(6.dp))
+                Icon(
+                    imageVector = Icons.Default.KeyboardArrowDown,
+                    contentDescription = if (isExpanded) "Collapse technical details" else "Expand technical details",
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier
+                        .size(18.dp)
+                        .graphicsLayer(rotationZ = rotation)
+                )
+            }
         }
 
-        // Expandable content
+        // Expandable content with polished animations
         AnimatedVisibility(
             visible = isExpanded,
-            enter = expandVertically() + fadeIn(),
-            exit = shrinkVertically() + fadeOut()
+            enter = expandVertically(
+                animationSpec = tween(
+                    durationMillis = 200,
+                    easing = FastOutLinearInEasing
+                )
+            ) + fadeIn(
+                animationSpec = tween(
+                    durationMillis = 100,
+                    delayMillis = 100
+                )
+            ),
+            exit = fadeOut(
+                animationSpec = tween(
+                    durationMillis = 150
+                )
+            ) + shrinkVertically(
+                animationSpec = tween(
+                    durationMillis = 250,
+                    easing = FastOutSlowInEasing
+                )
+            )
         ) {
             Card(
                 modifier = Modifier
@@ -1670,11 +1700,15 @@ private fun TechnicalDetailsSection(
             ) {
                 Column(
                     modifier = Modifier.padding(12.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     TechnicalDetailItem(
                         label = "API URL",
                         value = apiUrl
+                    )
+                    HorizontalDivider(
+                        thickness = 0.5.dp,
+                        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f)
                     )
                     TechnicalDetailItem(
                         label = "Workspace ID",
@@ -1687,7 +1721,8 @@ private fun TechnicalDetailsSection(
 }
 
 /**
- * Single technical detail item with label and monospace value.
+ * Single technical detail item with label above and full-width monospace value below.
+ * Uses vertical layout so long URLs can wrap naturally without truncation.
  */
 @Composable
 private fun TechnicalDetailItem(
@@ -1695,21 +1730,22 @@ private fun TechnicalDetailItem(
     value: String
 ) {
     Column(
-        verticalArrangement = Arrangement.spacedBy(2.dp)
+        modifier = Modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(4.dp)
     ) {
         Text(
             text = label,
             style = MaterialTheme.typography.labelSmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
-        Text(
-            text = value,
-            style = MaterialTheme.typography.bodySmall,
-            fontFamily = FontFamily.Monospace,
-            color = MaterialTheme.colorScheme.onSurface,
-            maxLines = 2,
-            overflow = TextOverflow.Ellipsis
-        )
+        SelectionContainer {
+            Text(
+                text = value,
+                style = MaterialTheme.typography.bodySmall,
+                fontFamily = FontFamily.Monospace,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+        }
     }
 }
 
@@ -1899,6 +1935,17 @@ private fun AlreadyRegisteredDialog(
     )
 }
 
+/**
+ * Preview for the NS Analytics unregistered/not connected screen.
+ * Shows the complete onboarding UI with hero section, setup guide, and CTAs.
+ */
+@Preview(
+    name = "NS Analytics Not Connected - Dark",
+    showBackground = true,
+    backgroundColor = 0xFF121316,
+    widthDp = 360,
+    heightDp = 2000
+)
 @Composable
 private fun NotConnectedCardPreview() {
     NsTheme {

@@ -717,6 +717,7 @@ public class DashboardFragment extends AServiceDataFragment implements LocationL
 
         viewModel.getCellularUploadQueueCount().observe(viewLifecycleOwner, this::updateCellularUploadQueueCountUI);
         viewModel.getWifiUploadQueueCount().observe(viewLifecycleOwner, this::updateWifiUploadQueueCountUI);
+        viewModel.getCommunityUploadButtonEnabled().observe(viewLifecycleOwner, this::updateCommunityUploadButtonState);
 
         viewModel.getProviderEnabled().observe(viewLifecycleOwner, this::updateLocationProviderStatus);
         viewModel.getLocation().observe(viewLifecycleOwner, this::updateLocationTextView);
@@ -1555,6 +1556,8 @@ public class DashboardFragment extends AServiceDataFragment implements LocationL
 
             int wifiRecordCountForUpload = surveyRecordDao.getWifiRecordCountForUpload();
             viewModel.setWifiUploadQueueCount(wifiRecordCountForUpload);
+
+            viewModel.setCommunityUploadButtonEnabled(totalCellularRecordsForUpload + wifiRecordCountForUpload > 0);
         });
     }
 
@@ -1594,6 +1597,11 @@ public class DashboardFragment extends AServiceDataFragment implements LocationL
             // Show normal count (even if disabled, if there are records to upload)
             binding.wifiUploadQueueCount.setText(getString(R.string.wifi_upload_queue_count, count));
         }
+    }
+
+    private void updateCommunityUploadButtonState(boolean enabled)
+    {
+        binding.uploadButton.setEnabled(enabled);
     }
 
     private void navigateToMqttFragment()
@@ -1920,7 +1928,7 @@ public class DashboardFragment extends AServiceDataFragment implements LocationL
                 showUploadProgress(activeWorkId); // Update UI for the active task
             } else
             {
-                binding.uploadButton.setEnabled(true);
+                queryUploadQueueCount();
                 binding.uploadProgressGroup.setVisibility(View.GONE);
             }
         });
@@ -1948,7 +1956,7 @@ public class DashboardFragment extends AServiceDataFragment implements LocationL
             return;
         }
 
-        binding.uploadButton.setEnabled(false);
+        viewModel.setCommunityUploadButtonEnabled(false);
 
         Data inputData = new Data.Builder().putBoolean(NetworkSurveyConstants.PROPERTY_UPLOAD_TO_OPENCELLID, uploadToOpenCellId).putBoolean(NetworkSurveyConstants.PROPERTY_ANONYMOUS_OPENCELLID_UPLOAD, anonymouslyToOpencelliD).putBoolean(NetworkSurveyConstants.PROPERTY_UPLOAD_TO_BEACONDB, uploadToBeaconDB).putBoolean(NetworkSurveyConstants.PROPERTY_UPLOAD_RETRY_ENABLED, retry).build();
 
@@ -2027,10 +2035,7 @@ public class DashboardFragment extends AServiceDataFragment implements LocationL
     private void showUploaderFinished(WorkInfo workInfo)
     {
         queryUploadQueueCount();
-
-        binding.uploadButton.setEnabled(true);
         binding.uploadProgressGroup.setVisibility(View.GONE);
-
         binding.uploadResultsGroup.setVisibility(View.VISIBLE);
 
         Context context = getContext();
