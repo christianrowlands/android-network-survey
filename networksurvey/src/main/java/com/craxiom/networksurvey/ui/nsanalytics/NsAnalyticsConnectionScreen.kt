@@ -330,7 +330,7 @@ private fun NsAnalyticsConnectionContent(
                     modifier = Modifier.fillMaxSize(),
                     contentAlignment = Alignment.Center
                 ) {
-                    CircularProgressIndicator(color = Color(0xFF4CAF50))
+                    CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
                 }
             } else {
                 Column(
@@ -781,7 +781,7 @@ private fun WorkspaceStatusCard(
             Icon(
                 imageVector = Icons.Default.CheckCircle,
                 contentDescription = null,
-                tint = Color(0xFF4CAF50),
+                tint = MaterialTheme.colorScheme.primary,
                 modifier = Modifier
                     .size(24.dp)
                     .padding(top = 2.dp)
@@ -795,7 +795,7 @@ private fun WorkspaceStatusCard(
                 Text(
                     text = "Workspace Registered",
                     style = MaterialTheme.typography.bodySmall,
-                    color = Color(0xFF4CAF50),
+                    color = MaterialTheme.colorScheme.primary,
                     fontWeight = FontWeight.Medium
                 )
 
@@ -1600,7 +1600,7 @@ private fun RegistrationConfirmationDialog(
             TextButton(
                 onClick = onConfirm,
                 colors = ButtonDefaults.textButtonColors(
-                    contentColor = Color(0xFF4CAF50)
+                    contentColor = MaterialTheme.colorScheme.primary
                 )
             ) {
                 Text("Join Workspace")
@@ -1732,7 +1732,7 @@ private fun RegistrationSuccessDialog(
                 Icon(
                     imageVector = Icons.Default.CheckCircle,
                     contentDescription = null,
-                    tint = Color(0xFF4CAF50),
+                    tint = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.size(32.dp)
                 )
                 Spacer(modifier = Modifier.width(8.dp))
@@ -1750,7 +1750,7 @@ private fun RegistrationSuccessDialog(
                     text = workspaceName,
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
-                    color = Color(0xFF4CAF50)
+                    color = MaterialTheme.colorScheme.primary
                 )
                 Spacer(modifier = Modifier.height(12.dp))
                 Text(
@@ -1764,7 +1764,7 @@ private fun RegistrationSuccessDialog(
             TextButton(
                 onClick = onDismiss,
                 colors = ButtonDefaults.textButtonColors(
-                    contentColor = Color(0xFF4CAF50)
+                    contentColor = MaterialTheme.colorScheme.primary
                 )
             ) {
                 Text("Done")
@@ -1819,7 +1819,7 @@ private fun RegistrationErrorDialog(
             TextButton(
                 onClick = onRetry,
                 colors = ButtonDefaults.textButtonColors(
-                    contentColor = Color(0xFF4CAF50)
+                    contentColor = MaterialTheme.colorScheme.primary
                 )
             ) {
                 Text("Retry")

@@ -17,6 +17,9 @@ object NsAnalyticsDeepLinkHandler {
     /** Maximum allowed length for API URLs to prevent DoS attacks. */
     private const val MAX_API_URL_LENGTH = 255
 
+    /** Maximum allowed length for workspace names to prevent UI rendering issues. */
+    private const val MAX_WORKSPACE_NAME_LENGTH = 100
+
     /**
      * Result of parsing a deep link.
      */
@@ -72,6 +75,12 @@ object NsAnalyticsDeepLinkHandler {
         val workspaceName =
             uri.getQueryParameter(NsAnalyticsConstants.DEEP_LINK_PARAM_WORKSPACE_NAME)
                 ?.takeIf { it.isNotBlank() }
+
+        // Validate workspace name length if provided
+        if (workspaceName != null && workspaceName.length > MAX_WORKSPACE_NAME_LENGTH) {
+            Timber.w("Deep link workspace_name exceeds max length: %d", workspaceName.length)
+            return DeepLinkResult.Error("Workspace name too long")
+        }
 
         // Validate required parameters
         if (token.isNullOrBlank()) {

@@ -420,4 +420,28 @@ class NsAnalyticsDeepLinkHandlerTest {
         val success = result as NsAnalyticsDeepLinkHandler.DeepLinkResult.Success
         assertEquals("日本語のワークスペース", success.qrData.workspaceName)
     }
+
+    @Test
+    fun `parseUri returns Error for workspace_name exceeding max length`() {
+        val longName = "a".repeat(101)
+        val uri = buildValidUri(workspaceName = longName)
+
+        val result = NsAnalyticsDeepLinkHandler.parseUri(uri)
+
+        assertTrue(result is NsAnalyticsDeepLinkHandler.DeepLinkResult.Error)
+        val error = result as NsAnalyticsDeepLinkHandler.DeepLinkResult.Error
+        assertEquals("Workspace name too long", error.message)
+    }
+
+    @Test
+    fun `parseUri accepts workspace_name at max length boundary`() {
+        val maxLengthName = "a".repeat(100)
+        val uri = buildValidUri(workspaceName = maxLengthName)
+
+        val result = NsAnalyticsDeepLinkHandler.parseUri(uri)
+
+        assertTrue(result is NsAnalyticsDeepLinkHandler.DeepLinkResult.Success)
+        val success = result as NsAnalyticsDeepLinkHandler.DeepLinkResult.Success
+        assertEquals(maxLengthName, success.qrData.workspaceName)
+    }
 }
