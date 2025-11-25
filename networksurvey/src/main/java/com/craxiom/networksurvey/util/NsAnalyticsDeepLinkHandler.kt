@@ -104,16 +104,17 @@ object NsAnalyticsDeepLinkHandler {
             return DeepLinkResult.Error("Invalid API URL: must use HTTPS")
         }
 
-        // Validate URL is parseable
-        val parsedUrl = try {
-            java.net.URL(apiUrl)
+        // Validate URL is parseable (URI is stricter than URL and consistent across platforms)
+        val parsedUri = try {
+            java.net.URI(apiUrl)
         } catch (e: Exception) {
             Timber.w("Deep link has malformed api_url: %s", apiUrl)
             return DeepLinkResult.Error("Invalid API URL format")
         }
 
         // Block internal/private addresses (SSRF prevention)
-        val host = parsedUrl.host.lowercase()
+        val host = parsedUri.host?.lowercase()
+            ?: return DeepLinkResult.Error("Invalid API URL format")
         if (host == "localhost" ||
             host.matches(Regex("^127\\.\\d+\\.\\d+\\.\\d+$")) ||
             host.matches(Regex("^10\\.\\d+\\.\\d+\\.\\d+$")) ||
