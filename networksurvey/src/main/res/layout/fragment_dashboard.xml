@@ -476,7 +476,7 @@
                                         android:layout_marginHorizontal="@dimen/small_margin"
                                         android:layout_marginBottom="@dimen/small_margin"
                                         android:lineSpacingExtra="2dp"
-                                        android:enabled="false"/>
+                                        android:enabled="false" />
 
                                 </LinearLayout>
 

@@ -95,7 +95,6 @@ data class RecordBatch(
  */
 data class UploadResponse(
     @SerializedName("batch_id") val batchId: String,
-    @SerializedName("session_id") val sessionId: String?,
     @SerializedName("status") val status: String,  // "completed", "failed", etc.
     @SerializedName("message") val message: String?,
     @SerializedName("processed") val processed: Int,
