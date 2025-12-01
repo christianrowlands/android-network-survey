@@ -1011,9 +1011,8 @@ public class SurveyRecordProcessor
      * @param lastKnownLocation The location to get age from
      * @param elapsedTimeMillis The elapsed time to compare against
      * @return Location age in milliseconds, guaranteed to be >= 0
-     * @since 1.12.0
      */
-    private int getLocationAgeMs(Location lastKnownLocation, long elapsedTimeMillis)
+    public static int getLocationAgeMs(Location lastKnownLocation, long elapsedTimeMillis)
     {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU)
         {

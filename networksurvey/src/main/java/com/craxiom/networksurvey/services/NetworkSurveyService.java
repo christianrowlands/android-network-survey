@@ -29,6 +29,7 @@ import android.os.HandlerThread;
 import android.os.IBinder;
 import android.os.Looper;
 import android.os.PowerManager;
+import android.os.SystemClock;
 import android.provider.Settings;
 import android.telephony.SubscriptionInfo;
 
@@ -2080,6 +2081,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
                 dataBuilder.setLongitude(lastKnownLocation.getLongitude());
                 dataBuilder.setAltitude((float) lastKnownLocation.getAltitude());
                 dataBuilder.setAccuracy(MathUtils.roundAccuracy(lastKnownLocation.getAccuracy()));
+                dataBuilder.setLocationAge(SurveyRecordProcessor.getLocationAgeMs(lastKnownLocation, SystemClock.elapsedRealtime()));
                 if (lastKnownLocation.hasSpeed())
                 {
                     float speed = FormatUtils.formatSpeed(lastKnownLocation.getSpeed());
