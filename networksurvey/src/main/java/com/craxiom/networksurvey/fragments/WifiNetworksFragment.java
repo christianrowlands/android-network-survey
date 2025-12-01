@@ -1,5 +1,6 @@
 package com.craxiom.networksurvey.fragments;
 
+import android.content.ActivityNotFoundException;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -452,9 +453,16 @@ public class WifiNetworksFragment extends AServiceDataFragment implements IWifiS
 
                 if (Build.VERSION.SDK_INT >= 29)
                 {
-                    final Intent panelIntent = new Intent(Settings.Panel.ACTION_WIFI);
-                    panelIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-                    startActivity(panelIntent);
+                    try
+                    {
+                        final Intent panelIntent = new Intent(Settings.Panel.ACTION_WIFI);
+                        panelIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                        startActivity(panelIntent);
+                    } catch (ActivityNotFoundException e)
+                    {
+                        Timber.w(e, "Could not open the Wi-Fi settings panel");
+                        Toast.makeText(requireContext(), getString(R.string.settings_not_available), Toast.LENGTH_SHORT).show();
+                    }
                 } else
                 {
                     // Open the Wi-Fi setting pages after a couple seconds
@@ -585,7 +593,16 @@ public class WifiNetworksFragment extends AServiceDataFragment implements IWifiS
         }
 
         final Snackbar snackbar = Snackbar.make(requireView(), snackbarMessage, Snackbar.LENGTH_INDEFINITE)
-                .setAction("Open", v -> startActivity(new Intent(devOptionsEnabled ? Settings.ACTION_APPLICATION_DEVELOPMENT_SETTINGS : Settings.ACTION_DEVICE_INFO_SETTINGS)))
+                .setAction("Open", v -> {
+                    try
+                    {
+                        startActivity(new Intent(devOptionsEnabled ? Settings.ACTION_APPLICATION_DEVELOPMENT_SETTINGS : Settings.ACTION_DEVICE_INFO_SETTINGS));
+                    } catch (ActivityNotFoundException e)
+                    {
+                        Timber.w(e, "Could not open the settings screen");
+                        Toast.makeText(requireContext(), getString(R.string.settings_not_available), Toast.LENGTH_SHORT).show();
+                    }
+                })
                 .setBackgroundTint(getResources().getColor(R.color.alert_red, null))
                 .setTextColor(getResources().getColor(R.color.body_text_1_dark, null));
 

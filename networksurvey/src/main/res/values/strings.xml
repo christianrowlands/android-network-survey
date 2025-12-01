@@ -106,6 +106,7 @@ but work independently, so you have full control over how you handle your data.<
     <string name="drawer_menu_description">Menu navigation button</string>
 
     <string name="turn_on_wifi">Please turn on Wi-Fi</string>
+    <string name="settings_not_available">Settings screen not available on this device</string>
     <string name="turn_on_bluetooth">Please turn on Bluetooth</string>
     <string name="grant_bluetooth_scan_permission">The Find Nearby Devices Permission is required for Bluetooth Survey</string>
     <string name="grant_bluetooth_connect_permission">The Bluetooth Connect permission is not required for BT survey, but it does allow for getting the device name</string>

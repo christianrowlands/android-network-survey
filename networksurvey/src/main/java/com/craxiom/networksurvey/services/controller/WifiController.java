@@ -1,6 +1,7 @@
 package com.craxiom.networksurvey.services.controller;
 
 import android.Manifest;
+import android.content.ActivityNotFoundException;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -506,9 +507,16 @@ public class WifiController extends AController
 
                     if (Build.VERSION.SDK_INT >= 29)
                     {
-                        final Intent panelIntent = new Intent(Settings.Panel.ACTION_WIFI);
-                        panelIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-                        surveyService.startActivity(panelIntent);
+                        try
+                        {
+                            final Intent panelIntent = new Intent(Settings.Panel.ACTION_WIFI);
+                            panelIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                            surveyService.startActivity(panelIntent);
+                        } catch (ActivityNotFoundException e)
+                        {
+                            Timber.w(e, "Could not open the Wi-Fi settings panel");
+                            uiThreadHandler.post(() -> Toast.makeText(surveyService.getApplicationContext(), surveyService.getString(R.string.settings_not_available), Toast.LENGTH_SHORT).show());
+                        }
                     } else
                     {
                         // Open the Wi-Fi setting pages after a couple seconds
