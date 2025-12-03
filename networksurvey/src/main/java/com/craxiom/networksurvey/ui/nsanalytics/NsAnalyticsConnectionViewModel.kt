@@ -977,6 +977,20 @@ class NsAnalyticsConnectionViewModel(
     }
 
     /**
+     * Show the Bluetooth permission rationale dialog.
+     */
+    fun showBluetoothPermissionRationale() {
+        _uiState.value = _uiState.value.copy(showBluetoothPermissionDialog = true)
+    }
+
+    /**
+     * Dismiss the Bluetooth permission rationale dialog.
+     */
+    fun dismissBluetoothPermissionDialog() {
+        _uiState.value = _uiState.value.copy(showBluetoothPermissionDialog = false)
+    }
+
+    /**
      * Toggle GNSS protocol collection for NS Analytics.
      */
     fun toggleGnssProtocol(enabled: Boolean) {
@@ -1099,5 +1113,6 @@ data class NsAnalyticsConnectionUiState(
     val showRegistrationSuccessDialog: Boolean = false,
     val registrationError: String? = null,
     // Already registered dialog state (shown when user scans QR while registered)
-    val showAlreadyRegisteredDialog: Boolean = false
+    val showAlreadyRegisteredDialog: Boolean = false,
+    val showBluetoothPermissionDialog: Boolean = false
 )

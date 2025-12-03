@@ -8,6 +8,7 @@ import android.content.Intent
 import android.content.ServiceConnection
 import android.content.pm.PackageManager
 import android.net.Uri
+import android.os.Build
 import android.os.IBinder
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -98,6 +99,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.craxiom.networksurvey.NetworkSurveyActivity
 import com.craxiom.networksurvey.R
 import com.craxiom.networksurvey.services.NetworkSurveyService
 import com.craxiom.networksurvey.ui.theme.NsTheme
@@ -140,6 +142,20 @@ fun NsAnalyticsConnectionScreen(
         }
     }
 
+    // Bluetooth permission launcher for Android 12+
+    val bluetoothPermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestMultiplePermissions()
+    ) { permissions ->
+        val allGranted = permissions.values.all { it }
+        if (!allGranted) {
+            Toast.makeText(
+                context,
+                "Bluetooth permissions are required to collect Bluetooth data",
+                Toast.LENGTH_LONG
+            ).show()
+        }
+    }
+
     LaunchedEffect(uiState.message) {
         uiState.message?.let { message ->
             snackbarHostState.showSnackbar(message)
@@ -170,6 +186,23 @@ fun NsAnalyticsConnectionScreen(
         }
     }
 
+    // Handle Bluetooth toggle with permission check for Android 12+
+    val handleBluetoothToggle: (Boolean) -> Unit = handleBluetoothToggle@{ enabled ->
+        if (enabled && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            val missingPermissions = NetworkSurveyActivity.BLUETOOTH_PERMISSIONS.any { permission ->
+                ContextCompat.checkSelfPermission(
+                    context,
+                    permission
+                ) != PackageManager.PERMISSION_GRANTED
+            }
+            if (missingPermissions) {
+                viewModel.showBluetoothPermissionRationale()
+                return@handleBluetoothToggle
+            }
+        }
+        viewModel.toggleBluetoothProtocol(enabled)
+    }
+
     NsAnalyticsConnectionContent(
         uiState = uiState,
         snackbarHostState = snackbarHostState,
@@ -181,7 +214,7 @@ fun NsAnalyticsConnectionScreen(
         onClearQueueClick = { showClearQueueDialog = true },
         onToggleCellular = { viewModel.toggleCellularProtocol(it) },
         onToggleWifi = { viewModel.toggleWifiProtocol(it) },
-        onToggleBluetooth = { viewModel.toggleBluetoothProtocol(it) },
+        onToggleBluetooth = handleBluetoothToggle,
         onToggleGnss = { viewModel.toggleGnssProtocol(it) },
         onToggleSurvey = { viewModel.toggleSurvey() },
     )
@@ -285,6 +318,17 @@ fun NsAnalyticsConnectionScreen(
             currentWorkspaceName = uiState.workspaceName ?: "Unknown Workspace",
             newWorkspaceName = uiState.pendingQrData?.workspaceName,
             onDismiss = { viewModel.dismissAlreadyRegisteredDialog() }
+        )
+    }
+
+    // Bluetooth permission rationale dialog
+    if (uiState.showBluetoothPermissionDialog) {
+        BluetoothPermissionRationaleDialog(
+            onDismiss = { viewModel.dismissBluetoothPermissionDialog() },
+            onConfirm = {
+                viewModel.dismissBluetoothPermissionDialog()
+                bluetoothPermissionLauncher.launch(NetworkSurveyActivity.BLUETOOTH_PERMISSIONS)
+            }
         )
     }
 }
@@ -1930,6 +1974,32 @@ private fun AlreadyRegisteredDialog(
         confirmButton = {
             TextButton(onClick = onDismiss) {
                 Text(stringResource(android.R.string.ok))
+            }
+        }
+    )
+}
+
+/**
+ * Dialog shown to explain why Bluetooth permissions are needed.
+ * Displayed when user tries to enable Bluetooth on Android 12+ without permissions.
+ */
+@Composable
+private fun BluetoothPermissionRationaleDialog(
+    onDismiss: () -> Unit,
+    onConfirm: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.bluetooth_permissions_rationale_title)) },
+        text = { Text(stringResource(R.string.bluetooth_permissions_rationale)) },
+        confirmButton = {
+            TextButton(onClick = onConfirm) {
+                Text(stringResource(android.R.string.ok))
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text(stringResource(R.string.cancel))
             }
         }
     )
