@@ -80,12 +80,18 @@ class NsAnalyticsConnectionViewModel(
     private var pollingJob: Job? = null
     private var uploadWorkId: UUID? = null
     private var uploadProgressObserver: Observer<WorkInfo?>? = null
+    private var uploadWorkTagObserver: Observer<List<WorkInfo>>? = null
 
     /**
      * Timestamp when last upload completed. Used to prevent [updateSurveyStatus] from
      * immediately overwriting the upload result message after completion.
      */
+    @Volatile
     private var lastUploadCompletionTime = 0L
+
+    /** Initial queue size when upload started, used to calculate records uploaded */
+    @Volatile
+    private var uploadInitialQueueSize = 0
 
     private companion object {
         /** How long to preserve upload result state before allowing status updates to override */
@@ -102,18 +108,22 @@ class NsAnalyticsConnectionViewModel(
     }
 
     /**
-     * Called when the screen becomes visible. Starts polling for survey status.
+     * Called when the screen becomes visible. Starts polling for survey status
+     * and observing upload work.
      */
     fun onStart() {
         startPolling()
+        observeAllUploadWork()
     }
 
     /**
-     * Called when the screen is no longer visible. Stops polling to save resources.
+     * Called when the screen is no longer visible. Stops polling and removes observers
+     * to save resources.
      */
     fun onStop() {
         pollingJob?.cancel()
         pollingJob = null
+        removeUploadWorkTagObserver()
     }
 
     /**
@@ -229,6 +239,7 @@ class NsAnalyticsConnectionViewModel(
         super.onCleared()
         pollingJob?.cancel()
         removeUploadProgressObserver()
+        removeUploadWorkTagObserver()
     }
 
     /**
@@ -247,6 +258,256 @@ class NsAnalyticsConnectionViewModel(
         }
         uploadProgressObserver = null
         uploadWorkId = null
+    }
+
+    /**
+     * Observes all upload work by tag to catch both periodic and manual uploads.
+     * This provides real-time UI updates when any upload work runs.
+     */
+    private fun observeAllUploadWork() {
+        // Don't set up duplicate observer
+        if (uploadWorkTagObserver != null) return
+
+        uploadWorkTagObserver = Observer { workInfos ->
+            handleUploadWorkChanges(workInfos)
+        }
+        workManager.getWorkInfosByTagLiveData(NsAnalyticsConstants.NS_ANALYTICS_UPLOAD_WORKER_TAG)
+            .observeForever(uploadWorkTagObserver!!)
+    }
+
+    /**
+     * Removes the tag-based upload work observer.
+     */
+    private fun removeUploadWorkTagObserver() {
+        uploadWorkTagObserver?.let { observer ->
+            try {
+                workManager.getWorkInfosByTagLiveData(NsAnalyticsConstants.NS_ANALYTICS_UPLOAD_WORKER_TAG)
+                    .removeObserver(observer)
+            } catch (e: Exception) {
+                Timber.w(e, "Error removing upload work tag observer")
+            }
+        }
+        uploadWorkTagObserver = null
+    }
+
+    /**
+     * Handles changes to upload work state from the tag-based observer.
+     * Updates UI for running uploads and handles completion, failure, and cancellation.
+     */
+    private fun handleUploadWorkChanges(workInfos: List<WorkInfo>) {
+        // Find work in various states
+        val runningWork = workInfos.firstOrNull { it.state == WorkInfo.State.RUNNING }
+        val failedWork = workInfos.firstOrNull { it.state == WorkInfo.State.FAILED }
+        val cancelledWork = workInfos.firstOrNull { it.state == WorkInfo.State.CANCELLED }
+
+        when {
+            runningWork != null -> {
+                // Upload is running - update UI if not already showing upload state
+                if (_uiState.value.uploadState != UploadState.UPLOADING) {
+                    uploadInitialQueueSize = _uiState.value.queuedRecords
+                    _uiState.value = _uiState.value.copy(
+                        isUploading = true,
+                        uploadState = UploadState.UPLOADING,
+                        uploadStatusMessage = context.getString(R.string.ns_analytics_upload_status_uploading),
+                        uploadProgress = 0f,
+                        totalRecordsToUpload = uploadInitialQueueSize
+                    )
+                }
+                // Update progress from work info
+                updateUploadProgressFromWorkInfo(runningWork)
+            }
+
+            failedWork != null && _uiState.value.uploadState == UploadState.UPLOADING -> {
+                // Upload failed - handle error
+                handleUploadFailureFromTag(failedWork)
+            }
+
+            cancelledWork != null && _uiState.value.uploadState == UploadState.UPLOADING -> {
+                // Upload was cancelled
+                handleUploadCancelledFromTag()
+            }
+
+            else -> {
+                // No running work - check for completion
+                if (_uiState.value.uploadState == UploadState.UPLOADING) {
+                    // Was uploading, now not - must have completed
+                    handleUploadCompletionFromTag(workInfos)
+                    // Refresh lastUploadTime from storage only on state transition
+                    refreshLastUploadTimeFromStorage()
+                }
+            }
+        }
+    }
+
+    /**
+     * Updates the upload progress UI from WorkInfo progress data.
+     */
+    private fun updateUploadProgressFromWorkInfo(workInfo: WorkInfo) {
+        val workerProgress = workInfo.progress.getInt("progress", -1)
+        val workerMax = workInfo.progress.getInt("progressMax", 100)
+        val workerMessage = workInfo.progress.getString("progressMessage")
+
+        if (workerProgress >= 0 && workerMax > 0) {
+            val progress = workerProgress.toFloat() / workerMax
+            _uiState.value = _uiState.value.copy(
+                uploadProgress = progress,
+                uploadStatusMessage = workerMessage
+                    ?: context.getString(R.string.ns_analytics_upload_status_uploading)
+            )
+        }
+    }
+
+    /**
+     * Handles upload completion detected by the tag-based observer.
+     */
+    private fun handleUploadCompletionFromTag(workInfos: List<WorkInfo>) {
+        // Find most recently finished work
+        val completedWork = workInfos.firstOrNull { it.state == WorkInfo.State.SUCCEEDED }
+
+        lastUploadCompletionTime = System.currentTimeMillis()
+
+        viewModelScope.launch {
+            val remainingRecords = withContext(Dispatchers.IO) {
+                database.nsAnalyticsDao().getPendingRecordCount()
+            }
+            val newState = if (remainingRecords == 0) UploadState.EMPTY else UploadState.IDLE
+
+            // Try to get records uploaded from output data, fall back to calculated difference
+            val outputRecords = completedWork?.outputData?.getInt(
+                NsAnalyticsConstants.EXTRA_RECORDS_UPLOADED, 0
+            ) ?: 0
+            val recordsUploaded = if (outputRecords > 0) {
+                outputRecords
+            } else {
+                // Calculate from queue size difference
+                (uploadInitialQueueSize - remainingRecords).coerceAtLeast(0)
+            }
+
+            _uiState.value = _uiState.value.copy(
+                isUploading = false,
+                uploadState = newState,
+                uploadStatusMessage = context.getString(R.string.ns_analytics_upload_status_complete),
+                uploadProgress = 1f,
+                lastUploadTime = lastUploadCompletionTime,
+                lastUploadResult = if (recordsUploaded > 0) {
+                    context.getString(R.string.ns_analytics_upload_result_records, recordsUploaded)
+                } else null,
+                queuedRecords = remainingRecords
+            )
+        }
+    }
+
+    /**
+     * Handles upload failure detected by the tag-based observer.
+     */
+    private fun handleUploadFailureFromTag(workInfo: WorkInfo) {
+        val errorType = workInfo.outputData.getString(NsAnalyticsConstants.ERROR_OUTPUT_KEY_TYPE)
+
+        when (errorType) {
+            NsAnalyticsConstants.ERROR_CODE_QUOTA_EXCEEDED -> {
+                // Extract quota details from work output data
+                val currentUsage = workInfo.outputData.getInt(
+                    NsAnalyticsConstants.EXTRA_QUOTA_CURRENT_USAGE, 0
+                )
+                val maxRecords = workInfo.outputData.getInt(
+                    NsAnalyticsConstants.EXTRA_QUOTA_MAX_RECORDS, 0
+                )
+                val quotaMessage = workInfo.outputData.getString(
+                    NsAnalyticsConstants.EXTRA_QUOTA_MESSAGE
+                )
+                val quotaWebUrl = workInfo.outputData.getString(
+                    NsAnalyticsConstants.EXTRA_QUOTA_WEB_URL
+                )
+
+                _uiState.value = _uiState.value.copy(
+                    isUploading = false,
+                    uploadState = UploadState.IDLE,
+                    uploadStatusMessage = context.getString(R.string.ns_analytics_upload_status_quota_exceeded),
+                    uploadProgress = 0f,
+                    lastUploadResult = context.getString(R.string.ns_analytics_upload_result_failed_quota),
+                    showQuotaExceededDialog = true,
+                    quotaCurrentUsage = currentUsage,
+                    quotaMaxRecords = maxRecords,
+                    quotaMessage = quotaMessage,
+                    quotaWebUrl = quotaWebUrl
+                )
+            }
+
+            NsAnalyticsConstants.ERROR_CODE_DEVICE_DEREGISTERED -> {
+                // Device was deregistered - trigger deregistration detection
+                viewModelScope.launch {
+                    checkDeviceStatus()
+                }
+                showMessage("Device has been unregistered. Please scan a QR code to re-register.")
+                _uiState.value = _uiState.value.copy(
+                    isUploading = false,
+                    uploadState = UploadState.UNAVAILABLE,
+                    uploadStatusMessage = context.getString(R.string.ns_analytics_upload_status_device_unregistered),
+                    uploadProgress = 0f,
+                    lastUploadResult = context.getString(R.string.ns_analytics_upload_result_failed)
+                )
+            }
+
+            NsAnalyticsUploadWorker.ERROR_CODE_NOT_REGISTERED -> {
+                // Device not registered - non-retriable
+                _uiState.value = _uiState.value.copy(
+                    isUploading = false,
+                    uploadState = UploadState.UNAVAILABLE,
+                    uploadStatusMessage = context.getString(R.string.ns_analytics_upload_status_not_registered),
+                    uploadProgress = 0f,
+                    lastUploadResult = context.getString(R.string.ns_analytics_upload_status_not_registered)
+                )
+            }
+
+            NsAnalyticsUploadWorker.ERROR_CODE_NO_CREDENTIALS -> {
+                // Missing credentials - non-retriable configuration error
+                _uiState.value = _uiState.value.copy(
+                    isUploading = false,
+                    uploadState = UploadState.UNAVAILABLE,
+                    uploadStatusMessage = context.getString(R.string.ns_analytics_upload_status_config_error),
+                    uploadProgress = 0f,
+                    lastUploadResult = context.getString(R.string.ns_analytics_upload_result_failed)
+                )
+            }
+
+            else -> {
+                // Unknown failure
+                _uiState.value = _uiState.value.copy(
+                    isUploading = false,
+                    uploadState = UploadState.IDLE,
+                    uploadStatusMessage = context.getString(R.string.ns_analytics_upload_status_failed),
+                    uploadProgress = 0f,
+                    lastUploadResult = context.getString(R.string.ns_analytics_upload_result_failed)
+                )
+            }
+        }
+    }
+
+    /**
+     * Handles upload cancellation detected by the tag-based observer.
+     */
+    private fun handleUploadCancelledFromTag() {
+        _uiState.value = _uiState.value.copy(
+            isUploading = false,
+            uploadState = UploadState.IDLE,
+            uploadStatusMessage = context.getString(R.string.ns_analytics_upload_status_failed),
+            uploadProgress = 0f
+        )
+    }
+
+    /**
+     * Refreshes the lastUploadTime from secure storage.
+     * This ensures the UI shows the correct timestamp even if we miss a completion notification.
+     */
+    private fun refreshLastUploadTimeFromStorage() {
+        viewModelScope.launch {
+            val storedTime = withContext(Dispatchers.IO) {
+                NsAnalyticsSecureStorage.getLastUploadTime(context)
+            }
+            if (storedTime > _uiState.value.lastUploadTime) {
+                _uiState.value = _uiState.value.copy(lastUploadTime = storedTime)
+            }
+        }
     }
 
     private fun loadConnectionState() {
@@ -502,6 +763,8 @@ class NsAnalyticsConnectionViewModel(
 
             when (result) {
                 is NsAnalyticsUploadWorker.Companion.TriggerResult.Started -> {
+                    // Tag-based observer (observeAllUploadWork) will handle progress/completion
+                    // We just set initial UI state here
                     val initialQueueSize = _uiState.value.queuedRecords
                     _uiState.value = _uiState.value.copy(
                         isUploading = true,
@@ -511,7 +774,6 @@ class NsAnalyticsConnectionViewModel(
                         uploadedRecords = 0,
                         totalRecordsToUpload = initialQueueSize
                     )
-                    observeUploadProgress(initialQueueSize, result.workId)
                 }
 
                 is NsAnalyticsUploadWorker.Companion.TriggerResult.AlreadyRunning -> {
