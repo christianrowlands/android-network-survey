@@ -12,6 +12,7 @@ import androidx.preference.PreferenceManager
 import androidx.work.WorkInfo
 import androidx.work.WorkManager
 import com.craxiom.networksurvey.BuildConfig
+import com.craxiom.networksurvey.R
 import com.craxiom.networksurvey.constants.NsAnalyticsConstants
 import com.craxiom.networksurvey.data.api.DeviceRegistrationRequest
 import com.craxiom.networksurvey.data.api.NsAnalyticsApiFactory
@@ -33,6 +34,24 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import timber.log.Timber
 import java.util.UUID
+
+/**
+ * Represents the current state of the upload system.
+ * Used to provide clear feedback to users about upload availability.
+ */
+enum class UploadState {
+    /** Ready to upload, has records in queue */
+    IDLE,
+
+    /** No records in queue */
+    EMPTY,
+
+    /** Upload currently in progress */
+    UPLOADING,
+
+    /** Cannot upload (no network, MDM blocked, etc.) */
+    UNAVAILABLE
+}
 
 /**
  * ViewModel for the NS Analytics connection screen.
@@ -61,6 +80,17 @@ class NsAnalyticsConnectionViewModel(
     private var pollingJob: Job? = null
     private var uploadWorkId: UUID? = null
     private var uploadProgressObserver: Observer<WorkInfo?>? = null
+
+    /**
+     * Timestamp when last upload completed. Used to prevent [updateSurveyStatus] from
+     * immediately overwriting the upload result message after completion.
+     */
+    private var lastUploadCompletionTime = 0L
+
+    private companion object {
+        /** How long to preserve upload result state before allowing status updates to override */
+        const val UPLOAD_RESULT_PRESERVATION_MS = 5000L
+    }
 
     private val _uiState = MutableStateFlow(NsAnalyticsConnectionUiState(isLoading = true))
     val uiState: StateFlow<NsAnalyticsConnectionUiState> = _uiState.asStateFlow()
@@ -158,6 +188,27 @@ class NsAnalyticsConnectionViewModel(
 
             val totalQueuedRecords = cellularCount + wifiCount + bluetoothCount + gnssCount
 
+            // Update upload state based on queue, but don't override if uploading or recently completed
+            val currentState = _uiState.value
+            val timeSinceLastUpload = System.currentTimeMillis() - lastUploadCompletionTime
+            val recentlyCompletedUpload = timeSinceLastUpload < UPLOAD_RESULT_PRESERVATION_MS
+
+            val newUploadState = when {
+                currentState.uploadState == UploadState.UPLOADING -> UploadState.UPLOADING
+                recentlyCompletedUpload -> currentState.uploadState  // Preserve recent upload result state
+                !currentState.isRegistered -> UploadState.UNAVAILABLE
+                totalQueuedRecords == 0 -> UploadState.EMPTY
+                else -> UploadState.IDLE
+            }
+            val newUploadStatusMessage = when {
+                currentState.uploadState == UploadState.UPLOADING -> currentState.uploadStatusMessage
+                recentlyCompletedUpload -> currentState.uploadStatusMessage  // Preserve recent upload result message
+                newUploadState == UploadState.UNAVAILABLE -> context.getString(R.string.ns_analytics_upload_status_not_registered)
+                newUploadState == UploadState.EMPTY -> context.getString(R.string.ns_analytics_upload_status_no_records)
+                newUploadState == UploadState.IDLE -> context.getString(R.string.ns_analytics_upload_status_ready)
+                else -> currentState.uploadStatusMessage
+            }
+
             _uiState.value = _uiState.value.copy(
                 isSurveyActive = isSurveyActive,
                 surveyStartTime = surveyStartTime,
@@ -165,7 +216,9 @@ class NsAnalyticsConnectionViewModel(
                 wifiRecordCount = wifiCount,
                 bluetoothRecordCount = bluetoothCount,
                 gnssRecordCount = gnssCount,
-                queuedRecords = totalQueuedRecords
+                queuedRecords = totalQueuedRecords,
+                uploadState = newUploadState,
+                uploadStatusMessage = newUploadStatusMessage
             )
         } catch (e: Exception) {
             Timber.e(e, "Failed to update survey status")
@@ -232,6 +285,19 @@ class NsAnalyticsConnectionViewModel(
                     // Get queue size
                     val queueSize = database.nsAnalyticsDao().getPendingRecordCount()
 
+                    // Determine initial upload state based on queue
+                    val initialUploadState = when {
+                        !isRegistered -> UploadState.UNAVAILABLE
+                        queueSize == 0 -> UploadState.EMPTY
+                        else -> UploadState.IDLE
+                    }
+                    val initialUploadStatusMessage = when (initialUploadState) {
+                        UploadState.UNAVAILABLE -> context.getString(R.string.ns_analytics_upload_status_not_registered)
+                        UploadState.EMPTY -> context.getString(R.string.ns_analytics_upload_status_no_records)
+                        UploadState.IDLE -> context.getString(R.string.ns_analytics_upload_status_ready)
+                        UploadState.UPLOADING -> context.getString(R.string.ns_analytics_upload_status_uploading)
+                    }
+
                     // Update UI immediately with cached data
                     _uiState.value = _uiState.value.copy(
                         isLoading = false,
@@ -244,6 +310,8 @@ class NsAnalyticsConnectionViewModel(
                         uploadFrequencyMinutes = uploadFrequency,
                         lastUploadTime = lastUploadTime,
                         queuedRecords = queueSize,
+                        uploadState = initialUploadState,
+                        uploadStatusMessage = initialUploadStatusMessage,
                         cellularEnabled = cellularEnabled,
                         wifiEnabled = wifiEnabled,
                         bluetoothEnabled = bluetoothEnabled,
@@ -423,136 +491,269 @@ class NsAnalyticsConnectionViewModel(
     }
 
     fun uploadNow() {
-        if (_uiState.value.isUploading) return
+        // Don't trigger another upload if one is already in progress
+        if (_uiState.value.uploadState == UploadState.UPLOADING) return
 
         viewModelScope.launch {
-            val initialQueueSize = _uiState.value.queuedRecords
-            _uiState.value = _uiState.value.copy(
-                isUploading = true,
-                uploadProgress = 0f,
-                uploadedRecords = 0,
-                totalRecordsToUpload = initialQueueSize
-            )
-
-            try {
-                // Trigger immediate upload using helper function
+            // Trigger immediate upload and get the result
+            val result = withContext(Dispatchers.IO) {
                 NsAnalyticsUploadWorker.triggerImmediateUpload(context)
-
-                // Get the work ID for monitoring progress
-                val workInfos =
-                    workManager.getWorkInfosByTag(NsAnalyticsConstants.NS_ANALYTICS_UPLOAD_WORKER_TAG)
-                        .get()
-                val uploadWork =
-                    workInfos.firstOrNull { it.state == WorkInfo.State.ENQUEUED || it.state == WorkInfo.State.RUNNING }
-                uploadWorkId = uploadWork?.id
-
-                if (uploadWorkId != null) {
-                    val observer = Observer<WorkInfo?> { workInfo ->
-                        if (workInfo != null) {
-                            when (workInfo.state) {
-                                WorkInfo.State.RUNNING -> {
-                                    // Simulate progress based on queue changes
-                                    val currentQueue = _uiState.value.queuedRecords
-                                    val uploaded = initialQueueSize - currentQueue
-                                    val progress = if (initialQueueSize > 0) {
-                                        uploaded.toFloat() / initialQueueSize
-                                    } else {
-                                        0f
-                                    }
-                                    _uiState.value = _uiState.value.copy(
-                                        uploadProgress = progress,
-                                        uploadedRecords = uploaded
-                                    )
-                                }
-
-                                WorkInfo.State.SUCCEEDED -> {
-                                    _uiState.value = _uiState.value.copy(
-                                        isUploading = false,
-                                        uploadProgress = 1f,
-                                        lastUploadTime = System.currentTimeMillis()
-                                    )
-                                    showMessage("Upload completed successfully")
-                                    loadConnectionState()
-                                    removeUploadProgressObserver()
-                                }
-
-                                WorkInfo.State.FAILED -> {
-                                    // Check if failure was due to quota exceeded
-                                    val errorType = workInfo.outputData.getString(
-                                        NsAnalyticsConstants.ERROR_OUTPUT_KEY_TYPE
-                                    )
-                                    if (errorType == NsAnalyticsConstants.ERROR_CODE_QUOTA_EXCEEDED) {
-                                        // Extract quota details from work output data
-                                        val currentUsage = workInfo.outputData.getInt(
-                                            NsAnalyticsConstants.EXTRA_QUOTA_CURRENT_USAGE, 0
-                                        )
-                                        val maxRecords = workInfo.outputData.getInt(
-                                            NsAnalyticsConstants.EXTRA_QUOTA_MAX_RECORDS, 0
-                                        )
-                                        val quotaMessage = workInfo.outputData.getString(
-                                            NsAnalyticsConstants.EXTRA_QUOTA_MESSAGE
-                                        )
-                                        val quotaWebUrl = workInfo.outputData.getString(
-                                            NsAnalyticsConstants.EXTRA_QUOTA_WEB_URL
-                                        )
-
-                                        // Update UI state to show quota dialog
-                                        _uiState.value = _uiState.value.copy(
-                                            isUploading = false,
-                                            uploadProgress = 0f,
-                                            showQuotaExceededDialog = true,
-                                            quotaCurrentUsage = currentUsage,
-                                            quotaMaxRecords = maxRecords,
-                                            quotaMessage = quotaMessage,
-                                            quotaWebUrl = quotaWebUrl
-                                        )
-                                    } else if (errorType == NsAnalyticsConstants.ERROR_CODE_DEVICE_DEREGISTERED) {
-                                        // Device was deregistered - trigger deregistration detection
-                                        viewModelScope.launch {
-                                            checkDeviceStatus()
-                                        }
-                                        showMessage("Device has been unregistered. Please scan a QR code to re-register.")
-                                        _uiState.value = _uiState.value.copy(
-                                            isUploading = false,
-                                            uploadProgress = 0f
-                                        )
-                                    } else {
-                                        showMessage("Upload failed")
-                                        _uiState.value = _uiState.value.copy(
-                                            isUploading = false,
-                                            uploadProgress = 0f
-                                        )
-                                    }
-
-                                    removeUploadProgressObserver()
-                                }
-
-                                WorkInfo.State.CANCELLED -> {
-                                    _uiState.value = _uiState.value.copy(
-                                        isUploading = false,
-                                        uploadProgress = 0f
-                                    )
-                                    removeUploadProgressObserver()
-                                }
-
-                                else -> {}
-                            }
-                        }
-                    }
-
-                    uploadProgressObserver = observer
-                    workManager.getWorkInfoByIdLiveData(uploadWorkId!!).observeForever(observer)
-                } else {
-                    Timber.w("Could not find upload work to monitor")
-                }
-            } catch (e: Exception) {
-                Timber.e(e, "Failed to trigger upload")
-                showMessage("Failed to start upload")
-                _uiState.value = _uiState.value.copy(
-                    isUploading = false,
-                    uploadProgress = 0f
-                )
             }
+
+            when (result) {
+                is NsAnalyticsUploadWorker.Companion.TriggerResult.Started -> {
+                    val initialQueueSize = _uiState.value.queuedRecords
+                    _uiState.value = _uiState.value.copy(
+                        isUploading = true,
+                        uploadState = UploadState.UPLOADING,
+                        uploadStatusMessage = context.getString(R.string.ns_analytics_upload_status_uploading),
+                        uploadProgress = 0f,
+                        uploadedRecords = 0,
+                        totalRecordsToUpload = initialQueueSize
+                    )
+                    observeUploadProgress(initialQueueSize, result.workId)
+                }
+
+                is NsAnalyticsUploadWorker.Companion.TriggerResult.AlreadyRunning -> {
+                    _uiState.value = _uiState.value.copy(
+                        uploadState = UploadState.UPLOADING,
+                        uploadStatusMessage = context.getString(R.string.ns_analytics_upload_status_already_running)
+                    )
+                }
+
+                is NsAnalyticsUploadWorker.Companion.TriggerResult.NoRecords -> {
+                    _uiState.value = _uiState.value.copy(
+                        uploadState = UploadState.EMPTY,
+                        uploadStatusMessage = context.getString(R.string.ns_analytics_upload_status_no_records)
+                    )
+                }
+
+                is NsAnalyticsUploadWorker.Companion.TriggerResult.NoNetwork -> {
+                    _uiState.value = _uiState.value.copy(
+                        uploadState = UploadState.UNAVAILABLE,
+                        uploadStatusMessage = context.getString(R.string.ns_analytics_upload_status_no_network)
+                    )
+                }
+
+                is NsAnalyticsUploadWorker.Companion.TriggerResult.MdmBlocked -> {
+                    _uiState.value = _uiState.value.copy(
+                        uploadState = UploadState.UNAVAILABLE,
+                        uploadStatusMessage = context.getString(R.string.ns_analytics_upload_status_mdm_blocked)
+                    )
+                }
+            }
+        }
+    }
+
+    /**
+     * Observes the upload work progress and updates UI state accordingly.
+     *
+     * @param initialQueueSize The number of records in the queue when upload started
+     * @param workId The specific work ID to observe (from triggerImmediateUpload)
+     */
+    private fun observeUploadProgress(initialQueueSize: Int, workId: UUID) {
+        try {
+            // Use the provided work ID directly instead of searching by tag.
+            // This prevents observing the wrong work when both periodic and immediate
+            // uploads are scheduled (they share the same tag).
+            uploadWorkId = workId
+
+            val observer = Observer<WorkInfo?> { workInfo ->
+                if (workInfo != null) {
+                    when (workInfo.state) {
+                        WorkInfo.State.ENQUEUED -> {
+                            // Worker returned Result.retry() - waiting for backoff before retry
+                            val retryAttempt = workInfo.runAttemptCount
+                            val message = if (retryAttempt > 1) {
+                                context.getString(
+                                    R.string.ns_analytics_upload_status_retry_attempt,
+                                    retryAttempt
+                                )
+                            } else {
+                                context.getString(R.string.ns_analytics_upload_status_waiting_retry)
+                            }
+                            _uiState.value = _uiState.value.copy(
+                                uploadStatusMessage = message
+                                // Keep isUploading=true, uploadState=UPLOADING - work is still in progress
+                            )
+                        }
+
+                        WorkInfo.State.RUNNING -> {
+                            // Try to get progress from worker first
+                            val workerProgress = workInfo.progress.getInt("progress", -1)
+                            val workerMax = workInfo.progress.getInt("progressMax", 100)
+                            val workerMessage = workInfo.progress.getString("progressMessage")
+
+                            val progress: Float
+                            val uploadedRecords: Int
+
+                            if (workerProgress >= 0 && workerMax > 0) {
+                                // Use worker-reported progress
+                                progress = workerProgress.toFloat() / workerMax
+                                uploadedRecords = (initialQueueSize * progress).toInt()
+                            } else {
+                                // Fallback to queue-based estimation
+                                val currentQueue = _uiState.value.queuedRecords
+                                uploadedRecords = initialQueueSize - currentQueue
+                                progress = if (initialQueueSize > 0) {
+                                    uploadedRecords.toFloat() / initialQueueSize
+                                } else {
+                                    0f
+                                }
+                            }
+
+                            _uiState.value = _uiState.value.copy(
+                                uploadProgress = progress,
+                                uploadedRecords = uploadedRecords,
+                                uploadStatusMessage = workerMessage
+                                    ?: context.getString(R.string.ns_analytics_upload_status_uploading)
+                            )
+                        }
+
+                        WorkInfo.State.SUCCEEDED -> {
+                            val recordsUploaded = workInfo.outputData.getInt(
+                                NsAnalyticsConstants.EXTRA_RECORDS_UPLOADED, initialQueueSize
+                            )
+                            lastUploadCompletionTime = System.currentTimeMillis()
+
+                            // Query actual queue state - new records may have arrived during upload
+                            viewModelScope.launch {
+                                val remainingRecords = withContext(Dispatchers.IO) {
+                                    database.nsAnalyticsDao().getPendingRecordCount()
+                                }
+                                val newState =
+                                    if (remainingRecords == 0) UploadState.EMPTY else UploadState.IDLE
+
+                                _uiState.value = _uiState.value.copy(
+                                    isUploading = false,
+                                    uploadState = newState,
+                                    uploadStatusMessage = context.getString(R.string.ns_analytics_upload_status_complete),
+                                    uploadProgress = 1f,
+                                    lastUploadTime = lastUploadCompletionTime,
+                                    lastUploadResult = context.getString(
+                                        R.string.ns_analytics_upload_result_records,
+                                        recordsUploaded
+                                    ),
+                                    queuedRecords = remainingRecords
+                                )
+                            }
+                            removeUploadProgressObserver()
+                        }
+
+                        WorkInfo.State.FAILED -> {
+                            // Check error type to determine appropriate user feedback
+                            val errorType = workInfo.outputData.getString(
+                                NsAnalyticsConstants.ERROR_OUTPUT_KEY_TYPE
+                            )
+
+                            when (errorType) {
+                                NsAnalyticsConstants.ERROR_CODE_QUOTA_EXCEEDED -> {
+                                    // Extract quota details from work output data
+                                    val currentUsage = workInfo.outputData.getInt(
+                                        NsAnalyticsConstants.EXTRA_QUOTA_CURRENT_USAGE, 0
+                                    )
+                                    val maxRecords = workInfo.outputData.getInt(
+                                        NsAnalyticsConstants.EXTRA_QUOTA_MAX_RECORDS, 0
+                                    )
+                                    val quotaMessage = workInfo.outputData.getString(
+                                        NsAnalyticsConstants.EXTRA_QUOTA_MESSAGE
+                                    )
+                                    val quotaWebUrl = workInfo.outputData.getString(
+                                        NsAnalyticsConstants.EXTRA_QUOTA_WEB_URL
+                                    )
+
+                                    // Update UI state to show quota dialog
+                                    _uiState.value = _uiState.value.copy(
+                                        isUploading = false,
+                                        uploadState = UploadState.IDLE,
+                                        uploadStatusMessage = context.getString(R.string.ns_analytics_upload_status_quota_exceeded),
+                                        uploadProgress = 0f,
+                                        lastUploadResult = context.getString(R.string.ns_analytics_upload_result_failed_quota),
+                                        showQuotaExceededDialog = true,
+                                        quotaCurrentUsage = currentUsage,
+                                        quotaMaxRecords = maxRecords,
+                                        quotaMessage = quotaMessage,
+                                        quotaWebUrl = quotaWebUrl
+                                    )
+                                }
+
+                                NsAnalyticsConstants.ERROR_CODE_DEVICE_DEREGISTERED -> {
+                                    // Device was deregistered - trigger deregistration detection
+                                    viewModelScope.launch {
+                                        checkDeviceStatus()
+                                    }
+                                    showMessage("Device has been unregistered. Please scan a QR code to re-register.")
+                                    _uiState.value = _uiState.value.copy(
+                                        isUploading = false,
+                                        uploadState = UploadState.UNAVAILABLE,
+                                        uploadStatusMessage = context.getString(R.string.ns_analytics_upload_status_device_unregistered),
+                                        uploadProgress = 0f,
+                                        lastUploadResult = context.getString(R.string.ns_analytics_upload_result_failed)
+                                    )
+                                }
+
+                                NsAnalyticsUploadWorker.ERROR_CODE_NOT_REGISTERED -> {
+                                    // Device not registered - non-retriable
+                                    _uiState.value = _uiState.value.copy(
+                                        isUploading = false,
+                                        uploadState = UploadState.UNAVAILABLE,
+                                        uploadStatusMessage = context.getString(R.string.ns_analytics_upload_status_not_registered),
+                                        uploadProgress = 0f,
+                                        lastUploadResult = context.getString(R.string.ns_analytics_upload_status_not_registered)
+                                    )
+                                }
+
+                                NsAnalyticsUploadWorker.ERROR_CODE_NO_CREDENTIALS -> {
+                                    // Missing credentials - non-retriable configuration error
+                                    _uiState.value = _uiState.value.copy(
+                                        isUploading = false,
+                                        uploadState = UploadState.UNAVAILABLE,
+                                        uploadStatusMessage = context.getString(R.string.ns_analytics_upload_status_config_error),
+                                        uploadProgress = 0f,
+                                        lastUploadResult = context.getString(R.string.ns_analytics_upload_result_failed)
+                                    )
+                                }
+
+                                else -> {
+                                    // Unknown failure - Result.failure() means NO automatic retry
+                                    _uiState.value = _uiState.value.copy(
+                                        isUploading = false,
+                                        uploadState = UploadState.IDLE,
+                                        uploadStatusMessage = context.getString(R.string.ns_analytics_upload_status_failed),
+                                        uploadProgress = 0f,
+                                        lastUploadResult = context.getString(R.string.ns_analytics_upload_result_failed)
+                                    )
+                                }
+                            }
+
+                            removeUploadProgressObserver()
+                        }
+
+                        WorkInfo.State.CANCELLED -> {
+                            _uiState.value = _uiState.value.copy(
+                                isUploading = false,
+                                uploadState = UploadState.IDLE,
+                                uploadStatusMessage = context.getString(R.string.ns_analytics_upload_status_failed),
+                                uploadProgress = 0f
+                            )
+                            removeUploadProgressObserver()
+                        }
+
+                        else -> {}
+                    }
+                }
+            }
+
+            uploadProgressObserver = observer
+            workManager.getWorkInfoByIdLiveData(workId).observeForever(observer)
+        } catch (e: Exception) {
+            Timber.e(e, "Failed to observe upload progress")
+            _uiState.value = _uiState.value.copy(
+                isUploading = false,
+                uploadState = UploadState.IDLE,
+                uploadStatusMessage = context.getString(R.string.ns_analytics_upload_status_failed),
+                uploadProgress = 0f
+            )
         }
     }
 
@@ -1087,9 +1288,12 @@ data class NsAnalyticsConnectionUiState(
     val lastUploadTime: Long = 0,
     val queuedRecords: Int = 0,
     val isUploading: Boolean = false,
+    val uploadState: UploadState = UploadState.IDLE,
+    val uploadStatusMessage: String = "",
     val uploadProgress: Float = 0f, // Upload progress 0-1
     val uploadedRecords: Int = 0,
     val totalRecordsToUpload: Int = 0,
+    val lastUploadResult: String? = null, // e.g., "234 records" or "Failed: quota exceeded"
     val message: String? = null,
     val cellularEnabled: Boolean = NsAnalyticsConstants.DEFAULT_CELLULAR_ENABLED,
     val wifiEnabled: Boolean = NsAnalyticsConstants.DEFAULT_WIFI_ENABLED,

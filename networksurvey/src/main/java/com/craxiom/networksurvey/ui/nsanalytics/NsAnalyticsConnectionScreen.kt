@@ -37,6 +37,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.foundation.verticalScroll
@@ -106,7 +107,7 @@ import com.craxiom.networksurvey.ui.theme.NsTheme
 import com.craxiom.networksurvey.ui.theme.onPrimaryDark
 import com.craxiom.networksurvey.util.NsAnalyticsUtils
 import timber.log.Timber
-import java.text.SimpleDateFormat
+import java.text.DateFormat
 import java.util.Date
 import java.util.Locale
 
@@ -414,14 +415,16 @@ private fun NsAnalyticsConnectionContent(
                         )
 
                         UploadSettingsCard(
-                            autoUploadEnabled = uiState.autoUploadEnabled,
-                            onToggleAutoUpload = onToggleAutoUpload,
-                            uploadFrequencyMinutes = uiState.uploadFrequencyMinutes,
-                            lastUploadTime = uiState.lastUploadTime,
-                            isUploading = uiState.isUploading,
+                            uploadState = uiState.uploadState,
+                            uploadStatusMessage = uiState.uploadStatusMessage,
                             uploadProgress = uiState.uploadProgress,
                             uploadedRecords = uiState.uploadedRecords,
                             totalRecordsToUpload = uiState.totalRecordsToUpload,
+                            autoUploadEnabled = uiState.autoUploadEnabled,
+                            uploadFrequencyMinutes = uiState.uploadFrequencyMinutes,
+                            lastUploadTime = uiState.lastUploadTime,
+                            lastUploadResult = uiState.lastUploadResult,
+                            onToggleAutoUpload = onToggleAutoUpload,
                             onUploadNowClick = onUploadNowClick
                         )
 
@@ -446,14 +449,6 @@ private fun NsAnalyticsConnectionContent(
                 }
             }
 
-            // Upload progress overlay
-            if (uiState.isUploading) {
-                UploadProgressOverlay(
-                    progress = uiState.uploadProgress,
-                    uploadedRecords = uiState.uploadedRecords,
-                    totalRecords = uiState.totalRecordsToUpload
-                )
-            }
         }
     }
 }
@@ -903,14 +898,16 @@ private fun WorkspaceStatusCard(
 
 @Composable
 private fun UploadSettingsCard(
-    autoUploadEnabled: Boolean,
-    onToggleAutoUpload: (Boolean) -> Unit,
-    uploadFrequencyMinutes: Int,
-    lastUploadTime: Long,
-    isUploading: Boolean,
+    uploadState: UploadState,
+    uploadStatusMessage: String,
     uploadProgress: Float,
     uploadedRecords: Int,
     totalRecordsToUpload: Int,
+    autoUploadEnabled: Boolean,
+    uploadFrequencyMinutes: Int,
+    lastUploadTime: Long,
+    lastUploadResult: String?,
+    onToggleAutoUpload: (Boolean) -> Unit,
     onUploadNowClick: () -> Unit
 ) {
     Card(
@@ -933,6 +930,70 @@ private fun UploadSettingsCard(
 
             Spacer(modifier = Modifier.height(16.dp))
 
+            // Upload Status Section
+            UploadStatusRow(
+                state = uploadState,
+                statusMessage = uploadStatusMessage
+            )
+
+            // Last upload info with result
+            if (lastUploadTime > 0) {
+                Spacer(modifier = Modifier.height(8.dp))
+                val timeAgo = getTimeAgo(lastUploadTime)
+                val exactTime = formatUploadTimestamp(lastUploadTime)
+
+                // Primary line: relative time + result
+                val resultText = if (lastUploadResult != null) {
+                    "Last: $timeAgo \u2022 $lastUploadResult"
+                } else {
+                    "Last: $timeAgo"
+                }
+                Text(
+                    text = resultText,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = Color.Gray
+                )
+
+                // Secondary line: exact timestamp
+                Text(
+                    text = exactTime,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = Color.Gray.copy(alpha = 0.7f)
+                )
+            }
+
+            // Inline Progress (only when uploading)
+            if (uploadState == UploadState.UPLOADING) {
+                Spacer(modifier = Modifier.height(12.dp))
+
+                val animatedProgress by animateFloatAsState(
+                    targetValue = uploadProgress,
+                    animationSpec = ProgressIndicatorDefaults.ProgressAnimationSpec,
+                    label = "upload_progress"
+                )
+
+                LinearProgressIndicator(
+                    progress = { animatedProgress },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(6.dp),
+                    color = MaterialTheme.colorScheme.primary,
+                    trackColor = Color.Gray.copy(alpha = 0.3f),
+                    drawStopIndicator = {}
+                )
+
+                Spacer(modifier = Modifier.height(4.dp))
+
+                Text(
+                    text = "$uploadedRecords / $totalRecordsToUpload records",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = Color.Gray
+                )
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Auto Upload toggle
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -956,52 +1017,78 @@ private fun UploadSettingsCard(
                 )
             }
 
-            if (lastUploadTime > 0) {
-                Spacer(modifier = Modifier.height(12.dp))
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Text(
-                        text = "Last Upload",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = Color.Gray
-                    )
-                    val dateFormat =
-                        SimpleDateFormat("MMM dd, yyyy 'at' h:mm a", Locale.getDefault())
-                    Text(
-                        text = dateFormat.format(Date(lastUploadTime)),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = Color.Gray
-                    )
-                }
-
-                Text(
-                    text = getTimeAgo(lastUploadTime),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = Color.Gray
-                )
-            }
-
             Spacer(modifier = Modifier.height(16.dp))
+
+            // Upload Now button with state-aware text
+            val buttonEnabled = uploadState == UploadState.IDLE
+            val buttonText = when (uploadState) {
+                UploadState.UPLOADING -> stringResource(R.string.ns_analytics_upload_button_uploading)
+                UploadState.EMPTY -> stringResource(R.string.ns_analytics_upload_button_no_records)
+                UploadState.UNAVAILABLE -> stringResource(R.string.ns_analytics_upload_button_unavailable)
+                UploadState.IDLE -> stringResource(R.string.ns_analytics_upload_button_upload_now)
+            }
 
             Button(
                 onClick = onUploadNowClick,
                 modifier = Modifier.fillMaxWidth(),
-                enabled = !isUploading,
+                enabled = buttonEnabled,
                 colors = ButtonDefaults.buttonColors(
                     containerColor = MaterialTheme.colorScheme.primary,
                     disabledContainerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f)
                 )
             ) {
-                Icon(
-                    imageVector = Icons.AutoMirrored.Filled.Send,
-                    contentDescription = null,
-                    modifier = Modifier.padding(end = 8.dp)
-                )
-                Text("Upload Now")
+                if (uploadState == UploadState.UPLOADING) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(18.dp),
+                        color = Color.White,
+                        strokeWidth = 2.dp,
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                } else {
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.Send,
+                        contentDescription = null,
+                        modifier = Modifier.padding(end = 8.dp)
+                    )
+                }
+                Text(buttonText)
             }
         }
+    }
+}
+
+/**
+ * Displays the current upload status with a colored indicator dot.
+ */
+@Composable
+private fun UploadStatusRow(
+    state: UploadState,
+    statusMessage: String
+) {
+    val statusColor = when (state) {
+        UploadState.IDLE -> Color(0xFF4CAF50)  // Green
+        UploadState.UPLOADING -> Color(0xFFFFC107)  // Yellow/Amber
+        UploadState.EMPTY -> Color.Gray
+        UploadState.UNAVAILABLE -> Color(0xFFF44336)  // Red
+    }
+
+    Row(
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Box(
+            modifier = Modifier
+                .size(8.dp)
+                .background(
+                    color = statusColor,
+                    shape = CircleShape
+                )
+        )
+        Spacer(modifier = Modifier.width(8.dp))
+        Text(
+            text = statusMessage,
+            style = MaterialTheme.typography.bodyMedium,
+            color = Color.White
+        )
     }
 }
 
@@ -1163,81 +1250,6 @@ private fun DangerZoneCard(
     }
 }
 
-@Composable
-private fun UploadProgressOverlay(
-    progress: Float,
-    uploadedRecords: Int,
-    totalRecords: Int
-) {
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Color.Black.copy(alpha = 0.7f)),
-        contentAlignment = Alignment.Center
-    ) {
-        Card(
-            modifier = Modifier
-                .fillMaxWidth(0.8f)
-                .padding(16.dp),
-            colors = CardDefaults.cardColors(
-                containerColor = Color(0xFF1E1F24)
-            )
-        ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(24.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                if (progress > 0f && progress < 1f) {
-                    CircularProgressIndicator(
-                        progress = { progress },
-                        modifier = Modifier.size(64.dp),
-                        color = MaterialTheme.colorScheme.primary,
-                        strokeWidth = 4.dp,
-                        trackColor = ProgressIndicatorDefaults.circularIndeterminateTrackColor,
-                        strokeCap = ProgressIndicatorDefaults.CircularDeterminateStrokeCap,
-                    )
-                } else {
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(64.dp),
-                        color = MaterialTheme.colorScheme.primary,
-                        strokeWidth = 4.dp
-                    )
-                }
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                Text(
-                    text = "Uploading Records",
-                    style = MaterialTheme.typography.titleMedium,
-                    color = Color.White,
-                    fontWeight = FontWeight.Bold
-                )
-
-                Spacer(modifier = Modifier.height(8.dp))
-
-                Text(
-                    text = "$uploadedRecords / $totalRecords",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = Color.Gray
-                )
-
-                Spacer(modifier = Modifier.height(8.dp))
-
-                LinearProgressIndicator(
-                    progress = { progress },
-                    modifier = Modifier.fillMaxWidth(),
-                    color = MaterialTheme.colorScheme.primary,
-                    trackColor = Color(0xFF2A2B30),
-                    strokeCap = ProgressIndicatorDefaults.LinearStrokeCap,
-                    drawStopIndicator = {}
-                )
-            }
-        }
-    }
-}
-
 
 private fun getTimeAgo(timestamp: Long): String {
     if (timestamp == 0L) return ""
@@ -1252,6 +1264,21 @@ private fun getTimeAgo(timestamp: Long): String {
         minutes > 0 -> "$minutes minutes ago"
         else -> "Just now"
     }
+}
+
+/**
+ * Formats a timestamp as a full date/time string using device locale.
+ * Example output: "Dec 10, 2024, 3:45 PM"
+ */
+private fun formatUploadTimestamp(timestamp: Long): String {
+    if (timestamp == 0L) return ""
+    val date = Date(timestamp)
+    val dateFormat = DateFormat.getDateTimeInstance(
+        DateFormat.MEDIUM,  // Dec 10, 2024
+        DateFormat.SHORT,   // 3:45 PM
+        Locale.getDefault()
+    )
+    return dateFormat.format(date)
 }
 
 @Composable

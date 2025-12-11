@@ -1,6 +1,8 @@
 package com.craxiom.networksurvey.logging.db.uploader
 
 import android.content.Context
+import android.net.ConnectivityManager
+import android.net.NetworkCapabilities
 import androidx.work.Constraints
 import androidx.work.CoroutineWorker
 import androidx.work.Data
@@ -43,13 +45,27 @@ class NsAnalyticsUploadWorker(context: Context, params: WorkerParameters) :
             // Check if registered and get credentials
             if (!NsAnalyticsSecureStorage.isRegistered(applicationContext)) {
                 Timber.w("Device not registered with NS Analytics")
-                return@withContext Result.failure()
+                val outputData = Data.Builder()
+                    .putString(
+                        NsAnalyticsConstants.ERROR_OUTPUT_KEY_TYPE,
+                        ERROR_CODE_NOT_REGISTERED
+                    )
+                    .build()
+                return@withContext Result.failure(outputData)
             }
 
             val deviceToken = NsAnalyticsSecureStorage.getDeviceToken(applicationContext)
-                ?: return@withContext Result.failure()
             val apiUrl = NsAnalyticsSecureStorage.getApiUrl(applicationContext)
-                ?: return@withContext Result.failure()
+            if (deviceToken == null || apiUrl == null) {
+                Timber.w("Missing NS Analytics credentials (token or API URL)")
+                val outputData = Data.Builder()
+                    .putString(
+                        NsAnalyticsConstants.ERROR_OUTPUT_KEY_TYPE,
+                        ERROR_CODE_NO_CREDENTIALS
+                    )
+                    .build()
+                return@withContext Result.failure(outputData)
+            }
 
             // Create API client
             val apiClient = NsAnalyticsApiFactory.createClient(apiUrl)
@@ -373,24 +389,55 @@ class NsAnalyticsUploadWorker(context: Context, params: WorkerParameters) :
     }
 
     companion object {
+        /** Unique work name for periodic uploads */
         private const val NS_ANALYTICS_UPLOAD_WORK_NAME = "ns_analytics_upload"
 
+        /** Unique work name for immediate/manual uploads (separate from periodic to avoid conflicts) */
+        private const val NS_ANALYTICS_IMMEDIATE_UPLOAD_WORK_NAME = "ns_analytics_immediate_upload"
+
+        /** Error code indicating device is not registered with NS Analytics */
+        const val ERROR_CODE_NOT_REGISTERED = "not_registered"
+
+        /** Error code indicating missing credentials (no device token or API URL) */
+        const val ERROR_CODE_NO_CREDENTIALS = "no_credentials"
+
         /**
-         * Check if any upload work (periodic or immediate) is currently running or enqueued
+         * Result of attempting to trigger an immediate upload.
+         * Used to provide feedback to the UI about why an upload did or didn't start.
+         */
+        sealed class TriggerResult {
+            /** New upload work was successfully enqueued */
+            data class Started(val workId: UUID) : TriggerResult()
+
+            /** An upload is already running or enqueued */
+            data object AlreadyRunning : TriggerResult()
+
+            /** No records in the queue to upload */
+            data object NoRecords : TriggerResult()
+
+            /** Network is not available */
+            data object NoNetwork : TriggerResult()
+
+            /** Upload blocked by MDM policy */
+            data object MdmBlocked : TriggerResult()
+        }
+
+        /**
+         * Check if any upload work (periodic or immediate) is currently running.
+         * Uses TAG-based query to see all upload work regardless of unique name.
+         * Only blocks if work is actually RUNNING, not just ENQUEUED (scheduled for later).
          */
         private fun isUploadRunning(context: Context): Boolean {
             val workManager = WorkManager.getInstance(context)
 
-            // Check unique work for both periodic and one-time uploads
-            // Note: enqueueUniqueWork and enqueueUniquePeriodicWork maintain separate namespaces,
-            // but both will use the same unique name, so we check the shared name
-            val workInfos =
-                workManager.getWorkInfosForUniqueWork(NS_ANALYTICS_UPLOAD_WORK_NAME).get()
-            val hasRunningWork = workInfos.any {
-                it.state == WorkInfo.State.RUNNING || it.state == WorkInfo.State.ENQUEUED
-            }
+            // Check by TAG to see ALL upload work (both periodic and immediate)
+            // since they use separate unique names but share the same TAG
+            val workInfos = workManager.getWorkInfosByTag(
+                NsAnalyticsConstants.NS_ANALYTICS_UPLOAD_WORKER_TAG
+            ).get()
 
-            return hasRunningWork
+            // Only block if work is ACTUALLY running, not just scheduled for later
+            return workInfos.any { it.state == WorkInfo.State.RUNNING }
         }
 
         /**
@@ -441,21 +488,46 @@ class NsAnalyticsUploadWorker(context: Context, params: WorkerParameters) :
         }
 
         /**
-         * Trigger immediate upload
+         * Trigger immediate upload.
+         * @return [TriggerResult] indicating the outcome of the trigger attempt.
+         *         If successful, returns [TriggerResult.Started] with the work ID for observation.
          */
-        @Suppress("unused")
         @Synchronized
-        fun triggerImmediateUpload(context: Context) {
+        fun triggerImmediateUpload(context: Context): TriggerResult {
             // Check if NS Analytics is allowed via MDM
             if (!MdmUtils.isNsAnalyticsAllowed(context)) {
                 Timber.w("NS Analytics immediate upload prevented by MDM policy")
-                return
+                return TriggerResult.MdmBlocked
             }
 
             // Check if any upload work is already running or enqueued
             if (isUploadRunning(context)) {
-                Timber.d("Upload already running or enqueued, skipping duplicate immediate upload trigger")
-                return
+                Timber.d("Upload already running or enqueued")
+                return TriggerResult.AlreadyRunning
+            }
+
+            // Check for records before enqueuing
+            val database = SurveyDatabase.getInstance(context)
+            val recordCount = database.nsAnalyticsDao().getPendingRecordCount()
+            if (recordCount == 0) {
+                Timber.d("No records to upload")
+                return TriggerResult.NoRecords
+            }
+
+            // Quick check for network availability to provide immediate user feedback.
+            // Note: This only checks if the network *declares* internet capability; actual connectivity
+            // (captive portals, DNS failures, etc.) will be verified when the worker runs.
+            // WorkManager's NetworkType.CONNECTED constraint provides additional verification.
+            val connectivityManager =
+                context.getSystemService(Context.CONNECTIVITY_SERVICE) as? ConnectivityManager
+            val network = connectivityManager?.activeNetwork
+            val capabilities = connectivityManager?.getNetworkCapabilities(network)
+            val hasNetwork =
+                capabilities?.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) == true
+
+            if (!hasNetwork) {
+                Timber.d("No network connection available")
+                return TriggerResult.NoNetwork
             }
 
             val constraints = Constraints.Builder()
@@ -468,11 +540,12 @@ class NsAnalyticsUploadWorker(context: Context, params: WorkerParameters) :
                 .build()
 
             WorkManager.getInstance(context).enqueueUniqueWork(
-                NS_ANALYTICS_UPLOAD_WORK_NAME,
-                ExistingWorkPolicy.KEEP,
+                NS_ANALYTICS_IMMEDIATE_UPLOAD_WORK_NAME,
+                ExistingWorkPolicy.REPLACE,  // Replace any stuck immediate work
                 uploadRequest
             )
             Timber.i("Triggered immediate NS Analytics upload")
+            return TriggerResult.Started(uploadRequest.id)
         }
     }
 }
