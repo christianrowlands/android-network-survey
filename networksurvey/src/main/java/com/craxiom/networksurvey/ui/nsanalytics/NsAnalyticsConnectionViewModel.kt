@@ -83,6 +83,7 @@ class NsAnalyticsConnectionViewModel(
     private var uploadWorkTagObserver: Observer<List<WorkInfo>>? = null
 
     /** ID of the upload work currently being tracked by the tag observer */
+    @Volatile
     private var trackedTagUploadWorkId: UUID? = null
 
     /**
@@ -357,25 +358,37 @@ class NsAnalyticsConnectionViewModel(
                         // SharedPreferences for explicit completion data set by the worker.
 
                         if (_uiState.value.uploadState == UploadState.UPLOADING) {
-                            val lastWorkId = NsAnalyticsSecureStorage.getLastUploadWorkId(context)
+                            try {
+                                val lastWorkId =
+                                    NsAnalyticsSecureStorage.getLastUploadWorkId(context)
 
-                            if (lastWorkId == trackedTagUploadWorkId.toString()) {
-                                // This work ID completed - check if success or failure
-                                val success = NsAnalyticsSecureStorage.getLastUploadSuccess(context)
-                                val recordsCount =
-                                    NsAnalyticsSecureStorage.getLastUploadRecordsCount(context)
+                                if (lastWorkId == trackedTagUploadWorkId.toString()) {
+                                    // This work ID completed - check if success or failure
+                                    val success =
+                                        NsAnalyticsSecureStorage.getLastUploadSuccess(context)
+                                    val recordsCount =
+                                        NsAnalyticsSecureStorage.getLastUploadRecordsCount(context)
 
-                                if (success) {
-                                    handleUploadCompletionFromTag(workInfos, recordsCount)
-                                    refreshLastUploadTimeFromStorage()
-                                } else {
-                                    handleUploadFailureFromTag(trackedWork)
+                                    if (success) {
+                                        handleUploadCompletionFromTag(workInfos, recordsCount)
+                                        refreshLastUploadTimeFromStorage()
+                                    } else {
+                                        handleUploadFailureFromTag(trackedWork)
+                                    }
+
+                                    NsAnalyticsSecureStorage.clearLastUploadCompletion(context)
+                                    trackedTagUploadWorkId = null
                                 }
-
-                                NsAnalyticsSecureStorage.clearLastUploadCompletion(context)
+                                // else: Different work ID or not set - likely retry, keep tracking
+                            } catch (e: Exception) {
+                                Timber.e(
+                                    e,
+                                    "Failed to read upload completion data from SharedPreferences"
+                                )
+                                // Assume failure on read error to avoid getting stuck in UPLOADING state
+                                handleUploadFailureFromTag(trackedWork)
                                 trackedTagUploadWorkId = null
                             }
-                            // else: Different work ID or not set - likely retry, keep tracking
                         } else {
                             // Not uploading - clear tracking
                             trackedTagUploadWorkId = null
@@ -390,16 +403,51 @@ class NsAnalyticsConnectionViewModel(
 
             _uiState.value.uploadState == UploadState.UPLOADING -> {
                 // Fallback: UI thinks we're uploading but we never captured an ID.
-                // This can happen if work completed before we observed RUNNING state.
-                // Check for succeeded work - assume it's our recent upload.
+                // This can happen if:
+                // 1. Work completed before we observed RUNNING state
+                // 2. User navigated away (clearing trackedTagUploadWorkId) and returned
+                // 3. Periodic work completed and was rescheduled to ENQUEUED
                 val succeededWork = workInfos.firstOrNull { it.state == WorkInfo.State.SUCCEEDED }
                 if (succeededWork != null) {
                     handleUploadCompletionFromTag(workInfos)
                     refreshLastUploadTimeFromStorage()
+                } else {
+                    // No SUCCEEDED work visible - check SharedPreferences for completion data.
+                    // This handles periodic work that completed and was rescheduled to ENQUEUED.
+                    try {
+                        val lastWorkId = NsAnalyticsSecureStorage.getLastUploadWorkId(context)
+
+                        if (lastWorkId != null) {
+                            val success = NsAnalyticsSecureStorage.getLastUploadSuccess(context)
+                            val recordsCount =
+                                NsAnalyticsSecureStorage.getLastUploadRecordsCount(context)
+
+                            if (success) {
+                                handleUploadCompletionFromTag(workInfos, recordsCount)
+                                refreshLastUploadTimeFromStorage()
+                            } else {
+                                // Find any work to pass to failure handler for error details
+                                val anyWork = workInfos.firstOrNull()
+                                if (anyWork != null) {
+                                    handleUploadFailureFromTag(anyWork)
+                                } else {
+                                    // No work info available, reset to idle with generic failure
+                                    _uiState.value = _uiState.value.copy(
+                                        isUploading = false,
+                                        uploadState = UploadState.IDLE,
+                                        uploadStatusMessage = context.getString(R.string.ns_analytics_upload_status_failed),
+                                        uploadProgress = 0f,
+                                        lastUploadResult = context.getString(R.string.ns_analytics_upload_result_failed)
+                                    )
+                                }
+                            }
+                            NsAnalyticsSecureStorage.clearLastUploadCompletion(context)
+                        }
+                        // else: No completion data - upload might still be running or queued
+                    } catch (e: Exception) {
+                        Timber.e(e, "Failed to read completion data in fallback")
+                    }
                 }
-                // Don't handle FAILED in fallback - could be stale failure from previous session.
-                // If current upload truly failed, we would have captured ID from RUNNING state
-                // or from uploadNow() setting trackedTagUploadWorkId.
             }
 
             else -> {

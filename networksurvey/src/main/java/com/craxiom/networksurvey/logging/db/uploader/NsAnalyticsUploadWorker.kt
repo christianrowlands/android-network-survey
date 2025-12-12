@@ -45,6 +45,12 @@ class NsAnalyticsUploadWorker(context: Context, params: WorkerParameters) :
             // Check if registered and get credentials
             if (!NsAnalyticsSecureStorage.isRegistered(applicationContext)) {
                 Timber.w("Device not registered with NS Analytics")
+                NsAnalyticsSecureStorage.saveUploadCompletion(
+                    applicationContext,
+                    id.toString(),
+                    false,
+                    0
+                )
                 val outputData = Data.Builder()
                     .putString(
                         NsAnalyticsConstants.ERROR_OUTPUT_KEY_TYPE,
@@ -58,6 +64,12 @@ class NsAnalyticsUploadWorker(context: Context, params: WorkerParameters) :
             val apiUrl = NsAnalyticsSecureStorage.getApiUrl(applicationContext)
             if (deviceToken == null || apiUrl == null) {
                 Timber.w("Missing NS Analytics credentials (token or API URL)")
+                NsAnalyticsSecureStorage.saveUploadCompletion(
+                    applicationContext,
+                    id.toString(),
+                    false,
+                    0
+                )
                 val outputData = Data.Builder()
                     .putString(
                         NsAnalyticsConstants.ERROR_OUTPUT_KEY_TYPE,
@@ -233,6 +245,12 @@ class NsAnalyticsUploadWorker(context: Context, params: WorkerParameters) :
                                 )
                             }
 
+                            NsAnalyticsSecureStorage.saveUploadCompletion(
+                                applicationContext,
+                                id.toString(),
+                                false,
+                                0
+                            )
                             return@withContext Result.failure(outputData.build())
                         }
                     }
@@ -248,6 +266,12 @@ class NsAnalyticsUploadWorker(context: Context, params: WorkerParameters) :
                             Timber.w("Device deregistered error detected, checking device status")
                             // Check device status to update local state
                             checkDeviceStatusAfterError()
+                            NsAnalyticsSecureStorage.saveUploadCompletion(
+                                applicationContext,
+                                id.toString(),
+                                false,
+                                0
+                            )
                             // Return failure with reason to stop upload attempts
                             val outputData = Data.Builder()
                                 .putString(
@@ -446,10 +470,20 @@ class NsAnalyticsUploadWorker(context: Context, params: WorkerParameters) :
         }
 
         /**
-         * Schedule periodic uploads
+         * Schedule periodic uploads.
+         *
+         * @param context The application context
+         * @param intervalMinutes The interval between uploads in minutes
+         * @param replaceExisting If true, replaces any existing periodic work (use when interval
+         *        changes). If false, keeps existing work to avoid triggering immediate upload
+         *        (use for initial setup or screen loads).
          */
         @Suppress("unused")
-        fun schedulePeriodicUpload(context: Context, intervalMinutes: Int) {
+        fun schedulePeriodicUpload(
+            context: Context,
+            intervalMinutes: Int,
+            replaceExisting: Boolean = false
+        ) {
             // Check if NS Analytics is allowed via MDM
             if (!MdmUtils.isNsAnalyticsAllowed(context)) {
                 Timber.w("NS Analytics upload scheduling prevented by MDM policy")
@@ -473,13 +507,21 @@ class NsAnalyticsUploadWorker(context: Context, params: WorkerParameters) :
                 .addTag(NsAnalyticsConstants.NS_ANALYTICS_UPLOAD_WORKER_TAG)
                 .build()
 
+            // Use KEEP to preserve existing scheduled work (avoids triggering immediate upload).
+            // Use REPLACE only when the interval has changed and we need to reschedule.
+            val policy = if (replaceExisting) {
+                ExistingPeriodicWorkPolicy.REPLACE
+            } else {
+                ExistingPeriodicWorkPolicy.KEEP
+            }
+
             WorkManager.getInstance(context).enqueueUniquePeriodicWork(
                 NS_ANALYTICS_UPLOAD_WORK_NAME,
-                ExistingPeriodicWorkPolicy.REPLACE,
+                policy,
                 uploadRequest
             )
 
-            Timber.i("Scheduled NS Analytics uploads every $intervalMinutes minutes")
+            Timber.i("Scheduled NS Analytics uploads every $intervalMinutes minutes (replace=$replaceExisting)")
         }
 
         /**

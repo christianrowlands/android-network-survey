@@ -299,8 +299,12 @@ object NsAnalyticsSecureStorage {
 
     /**
      * Save upload completion data for tracking by the ViewModel.
-     * This is called by the worker before returning Result.success() to provide
-     * explicit completion data that persists even when WorkManager clears progress data.
+     * This is called by the worker before returning Result.success() or Result.failure()
+     * to provide explicit completion data that persists even when WorkManager clears progress data.
+     *
+     * IMPORTANT: Uses synchronous commit() to ensure data is written before WorkManager
+     * transitions the work state. This prevents a race condition where the ViewModel
+     * observes the state transition before the completion data is persisted.
      *
      * @param context The application context
      * @param workId The WorkManager work ID that completed
@@ -314,26 +318,26 @@ object NsAnalyticsSecureStorage {
         recordsCount: Int
     ) {
         val prefs = getPrefs(context)
-        putEncryptedString(
-            prefs,
-            NsAnalyticsConstants.PROPERTY_NS_ANALYTICS_LAST_UPLOAD_WORK_ID,
-            workId
-        )
-        putEncryptedBoolean(
-            prefs,
-            NsAnalyticsConstants.PROPERTY_NS_ANALYTICS_LAST_UPLOAD_SUCCESS,
-            success
-        )
-        putEncryptedInt(
-            prefs,
-            NsAnalyticsConstants.PROPERTY_NS_ANALYTICS_LAST_UPLOAD_RECORDS,
-            recordsCount
-        )
-        putEncryptedLong(
-            prefs,
-            NsAnalyticsConstants.PROPERTY_NS_ANALYTICS_LAST_UPLOAD,
-            System.currentTimeMillis()
-        )
+        // Use commit() for synchronous write to ensure data is persisted before
+        // WorkManager transitions the work state
+        prefs.edit()
+            .putString(
+                NsAnalyticsConstants.PROPERTY_NS_ANALYTICS_LAST_UPLOAD_WORK_ID,
+                cryptoManager.encrypt(workId)
+            )
+            .putString(
+                NsAnalyticsConstants.PROPERTY_NS_ANALYTICS_LAST_UPLOAD_SUCCESS,
+                cryptoManager.encrypt(success.toString())
+            )
+            .putString(
+                NsAnalyticsConstants.PROPERTY_NS_ANALYTICS_LAST_UPLOAD_RECORDS,
+                cryptoManager.encrypt(recordsCount.toString())
+            )
+            .putString(
+                NsAnalyticsConstants.PROPERTY_NS_ANALYTICS_LAST_UPLOAD,
+                cryptoManager.encrypt(System.currentTimeMillis().toString())
+            )
+            .commit()
     }
 
     /**
