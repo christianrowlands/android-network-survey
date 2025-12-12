@@ -298,6 +298,88 @@ object NsAnalyticsSecureStorage {
     }
 
     /**
+     * Save upload completion data for tracking by the ViewModel.
+     * This is called by the worker before returning Result.success() to provide
+     * explicit completion data that persists even when WorkManager clears progress data.
+     *
+     * @param context The application context
+     * @param workId The WorkManager work ID that completed
+     * @param success Whether the upload succeeded
+     * @param recordsCount The number of records uploaded
+     */
+    fun saveUploadCompletion(
+        context: Context,
+        workId: String,
+        success: Boolean,
+        recordsCount: Int
+    ) {
+        val prefs = getPrefs(context)
+        putEncryptedString(
+            prefs,
+            NsAnalyticsConstants.PROPERTY_NS_ANALYTICS_LAST_UPLOAD_WORK_ID,
+            workId
+        )
+        putEncryptedBoolean(
+            prefs,
+            NsAnalyticsConstants.PROPERTY_NS_ANALYTICS_LAST_UPLOAD_SUCCESS,
+            success
+        )
+        putEncryptedInt(
+            prefs,
+            NsAnalyticsConstants.PROPERTY_NS_ANALYTICS_LAST_UPLOAD_RECORDS,
+            recordsCount
+        )
+        putEncryptedLong(
+            prefs,
+            NsAnalyticsConstants.PROPERTY_NS_ANALYTICS_LAST_UPLOAD,
+            System.currentTimeMillis()
+        )
+    }
+
+    /**
+     * Get the work ID of the last completed upload.
+     */
+    fun getLastUploadWorkId(context: Context): String? {
+        return getDecryptedString(
+            getPrefs(context),
+            NsAnalyticsConstants.PROPERTY_NS_ANALYTICS_LAST_UPLOAD_WORK_ID
+        )
+    }
+
+    /**
+     * Get whether the last upload was successful.
+     */
+    fun getLastUploadSuccess(context: Context): Boolean {
+        return getDecryptedBoolean(
+            getPrefs(context),
+            NsAnalyticsConstants.PROPERTY_NS_ANALYTICS_LAST_UPLOAD_SUCCESS,
+            false
+        )
+    }
+
+    /**
+     * Get the number of records uploaded in the last upload.
+     */
+    fun getLastUploadRecordsCount(context: Context): Int {
+        return getDecryptedInt(
+            getPrefs(context),
+            NsAnalyticsConstants.PROPERTY_NS_ANALYTICS_LAST_UPLOAD_RECORDS,
+            0
+        )
+    }
+
+    /**
+     * Clear the upload completion data after it has been processed.
+     */
+    fun clearLastUploadCompletion(context: Context) {
+        getPrefs(context).edit {
+            remove(NsAnalyticsConstants.PROPERTY_NS_ANALYTICS_LAST_UPLOAD_WORK_ID)
+            remove(NsAnalyticsConstants.PROPERTY_NS_ANALYTICS_LAST_UPLOAD_SUCCESS)
+            remove(NsAnalyticsConstants.PROPERTY_NS_ANALYTICS_LAST_UPLOAD_RECORDS)
+        }
+    }
+
+    /**
      * Clear all NS Analytics credentials and settings
      */
     fun clearAllCredentials(context: Context) {

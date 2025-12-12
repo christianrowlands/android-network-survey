@@ -82,6 +82,9 @@ class NsAnalyticsConnectionViewModel(
     private var uploadProgressObserver: Observer<WorkInfo?>? = null
     private var uploadWorkTagObserver: Observer<List<WorkInfo>>? = null
 
+    /** ID of the upload work currently being tracked by the tag observer */
+    private var trackedTagUploadWorkId: UUID? = null
+
     /**
      * Timestamp when last upload completed. Used to prevent [updateSurveyStatus] from
      * immediately overwriting the upload result message after completion.
@@ -124,6 +127,7 @@ class NsAnalyticsConnectionViewModel(
         pollingJob?.cancel()
         pollingJob = null
         removeUploadWorkTagObserver()
+        trackedTagUploadWorkId = null
     }
 
     /**
@@ -204,15 +208,19 @@ class NsAnalyticsConnectionViewModel(
             val recentlyCompletedUpload = timeSinceLastUpload < UPLOAD_RESULT_PRESERVATION_MS
 
             val newUploadState = when {
+                // Preserve recent upload result state (takes priority to prevent race condition)
+                recentlyCompletedUpload -> currentState.uploadState
+                // Preserve UPLOADING state only if NOT recently completed
                 currentState.uploadState == UploadState.UPLOADING -> UploadState.UPLOADING
-                recentlyCompletedUpload -> currentState.uploadState  // Preserve recent upload result state
                 !currentState.isRegistered -> UploadState.UNAVAILABLE
                 totalQueuedRecords == 0 -> UploadState.EMPTY
                 else -> UploadState.IDLE
             }
             val newUploadStatusMessage = when {
+                // Preserve recent upload result message (takes priority)
+                recentlyCompletedUpload -> currentState.uploadStatusMessage
+                // Preserve message during active upload
                 currentState.uploadState == UploadState.UPLOADING -> currentState.uploadStatusMessage
-                recentlyCompletedUpload -> currentState.uploadStatusMessage  // Preserve recent upload result message
                 newUploadState == UploadState.UNAVAILABLE -> context.getString(R.string.ns_analytics_upload_status_not_registered)
                 newUploadState == UploadState.EMPTY -> context.getString(R.string.ns_analytics_upload_status_no_records)
                 newUploadState == UploadState.IDLE -> context.getString(R.string.ns_analytics_upload_status_ready)
@@ -295,13 +303,14 @@ class NsAnalyticsConnectionViewModel(
      * Updates UI for running uploads and handles completion, failure, and cancellation.
      */
     private fun handleUploadWorkChanges(workInfos: List<WorkInfo>) {
-        // Find work in various states
         val runningWork = workInfos.firstOrNull { it.state == WorkInfo.State.RUNNING }
-        val failedWork = workInfos.firstOrNull { it.state == WorkInfo.State.FAILED }
-        val cancelledWork = workInfos.firstOrNull { it.state == WorkInfo.State.CANCELLED }
 
         when {
             runningWork != null -> {
+                // Capture the ID when we first see RUNNING state
+                if (trackedTagUploadWorkId == null) {
+                    trackedTagUploadWorkId = runningWork.id
+                }
                 // Upload is running - update UI if not already showing upload state
                 if (_uiState.value.uploadState != UploadState.UPLOADING) {
                     uploadInitialQueueSize = _uiState.value.queuedRecords
@@ -317,24 +326,84 @@ class NsAnalyticsConnectionViewModel(
                 updateUploadProgressFromWorkInfo(runningWork)
             }
 
-            failedWork != null && _uiState.value.uploadState == UploadState.UPLOADING -> {
-                // Upload failed - handle error
-                handleUploadFailureFromTag(failedWork)
+            trackedTagUploadWorkId != null -> {
+                // Only react to the work we were tracking - prevents stale work from affecting UI
+                val trackedWork = workInfos.firstOrNull { it.id == trackedTagUploadWorkId }
+                when (trackedWork?.state) {
+                    WorkInfo.State.FAILED -> {
+                        handleUploadFailureFromTag(trackedWork)
+                        trackedTagUploadWorkId = null
+                    }
+
+                    WorkInfo.State.CANCELLED -> {
+                        // Only treat as failure if we were actively uploading
+                        // (cancelled periodic work after success also shows CANCELLED for the next scheduled run)
+                        if (_uiState.value.uploadState == UploadState.UPLOADING) {
+                            handleUploadCancelledFromTag()
+                        }
+                        trackedTagUploadWorkId = null
+                    }
+
+                    WorkInfo.State.SUCCEEDED -> {
+                        handleUploadCompletionFromTag(workInfos)
+                        refreshLastUploadTimeFromStorage()
+                        trackedTagUploadWorkId = null
+                    }
+
+                    WorkInfo.State.ENQUEUED -> {
+                        // Periodic work: WorkManager reschedules immediately after SUCCESS,
+                        // so we never see SUCCEEDED state - only ENQUEUED for next run.
+                        // Progress data is also cleared when rescheduled, so we check
+                        // SharedPreferences for explicit completion data set by the worker.
+
+                        if (_uiState.value.uploadState == UploadState.UPLOADING) {
+                            val lastWorkId = NsAnalyticsSecureStorage.getLastUploadWorkId(context)
+
+                            if (lastWorkId == trackedTagUploadWorkId.toString()) {
+                                // This work ID completed - check if success or failure
+                                val success = NsAnalyticsSecureStorage.getLastUploadSuccess(context)
+                                val recordsCount =
+                                    NsAnalyticsSecureStorage.getLastUploadRecordsCount(context)
+
+                                if (success) {
+                                    handleUploadCompletionFromTag(workInfos, recordsCount)
+                                    refreshLastUploadTimeFromStorage()
+                                } else {
+                                    handleUploadFailureFromTag(trackedWork)
+                                }
+
+                                NsAnalyticsSecureStorage.clearLastUploadCompletion(context)
+                                trackedTagUploadWorkId = null
+                            }
+                            // else: Different work ID or not set - likely retry, keep tracking
+                        } else {
+                            // Not uploading - clear tracking
+                            trackedTagUploadWorkId = null
+                        }
+                    }
+
+                    else -> {
+                        // Still processing or work was pruned - no action needed
+                    }
+                }
             }
 
-            cancelledWork != null && _uiState.value.uploadState == UploadState.UPLOADING -> {
-                // Upload was cancelled
-                handleUploadCancelledFromTag()
+            _uiState.value.uploadState == UploadState.UPLOADING -> {
+                // Fallback: UI thinks we're uploading but we never captured an ID.
+                // This can happen if work completed before we observed RUNNING state.
+                // Check for succeeded work - assume it's our recent upload.
+                val succeededWork = workInfos.firstOrNull { it.state == WorkInfo.State.SUCCEEDED }
+                if (succeededWork != null) {
+                    handleUploadCompletionFromTag(workInfos)
+                    refreshLastUploadTimeFromStorage()
+                }
+                // Don't handle FAILED in fallback - could be stale failure from previous session.
+                // If current upload truly failed, we would have captured ID from RUNNING state
+                // or from uploadNow() setting trackedTagUploadWorkId.
             }
 
             else -> {
-                // No running work - check for completion
-                if (_uiState.value.uploadState == UploadState.UPLOADING) {
-                    // Was uploading, now not - must have completed
-                    handleUploadCompletionFromTag(workInfos)
-                    // Refresh lastUploadTime from storage only on state transition
-                    refreshLastUploadTimeFromStorage()
-                }
+                // No action needed - no upload in progress and no tracked work
             }
         }
     }
@@ -359,39 +428,59 @@ class NsAnalyticsConnectionViewModel(
 
     /**
      * Handles upload completion detected by the tag-based observer.
+     *
+     * IMPORTANT: The primary state update is done SYNCHRONOUSLY to prevent a race condition
+     * with the polling job in [updateSurveyStatus]. If we updated state asynchronously,
+     * the polling job could run during the async window and "lock in" the UPLOADING state
+     * via its preservation logic.
      */
-    private fun handleUploadCompletionFromTag(workInfos: List<WorkInfo>) {
+    private fun handleUploadCompletionFromTag(
+        workInfos: List<WorkInfo>,
+        recordsCountOverride: Int? = null
+    ) {
         // Find most recently finished work
         val completedWork = workInfos.firstOrNull { it.state == WorkInfo.State.SUCCEEDED }
 
         lastUploadCompletionTime = System.currentTimeMillis()
 
+        // Get records uploaded - prefer override (from SharedPrefs), then output data, then estimate
+        val recordsUploaded = when {
+            recordsCountOverride != null && recordsCountOverride > 0 -> recordsCountOverride
+            else -> {
+                val outputRecords = completedWork?.outputData?.getInt(
+                    NsAnalyticsConstants.EXTRA_RECORDS_UPLOADED, 0
+                ) ?: 0
+                if (outputRecords > 0) {
+                    outputRecords
+                } else {
+                    // Estimate from initial queue size (may not account for new records during upload)
+                    (uploadInitialQueueSize - _uiState.value.queuedRecords).coerceAtLeast(0)
+                }
+            }
+        }
+
+        // CRITICAL: Update state SYNCHRONOUSLY to prevent race with polling job.
+        // Use IDLE as initial state; we'll refine to EMPTY after checking queue async.
+        _uiState.value = _uiState.value.copy(
+            isUploading = false,
+            uploadState = UploadState.IDLE,
+            uploadStatusMessage = context.getString(R.string.ns_analytics_upload_status_complete),
+            uploadProgress = 1f,
+            lastUploadTime = lastUploadCompletionTime,
+            lastUploadResult = if (recordsUploaded > 0) {
+                context.getString(R.string.ns_analytics_upload_result_records, recordsUploaded)
+            } else null
+        )
+
+        // Async: Update queue count and refine state to EMPTY if queue is empty
         viewModelScope.launch {
             val remainingRecords = withContext(Dispatchers.IO) {
                 database.nsAnalyticsDao().getPendingRecordCount()
             }
             val newState = if (remainingRecords == 0) UploadState.EMPTY else UploadState.IDLE
 
-            // Try to get records uploaded from output data, fall back to calculated difference
-            val outputRecords = completedWork?.outputData?.getInt(
-                NsAnalyticsConstants.EXTRA_RECORDS_UPLOADED, 0
-            ) ?: 0
-            val recordsUploaded = if (outputRecords > 0) {
-                outputRecords
-            } else {
-                // Calculate from queue size difference
-                (uploadInitialQueueSize - remainingRecords).coerceAtLeast(0)
-            }
-
             _uiState.value = _uiState.value.copy(
-                isUploading = false,
                 uploadState = newState,
-                uploadStatusMessage = context.getString(R.string.ns_analytics_upload_status_complete),
-                uploadProgress = 1f,
-                lastUploadTime = lastUploadCompletionTime,
-                lastUploadResult = if (recordsUploaded > 0) {
-                    context.getString(R.string.ns_analytics_upload_result_records, recordsUploaded)
-                } else null,
                 queuedRecords = remainingRecords
             )
         }
@@ -763,8 +852,9 @@ class NsAnalyticsConnectionViewModel(
 
             when (result) {
                 is NsAnalyticsUploadWorker.Companion.TriggerResult.Started -> {
-                    // Tag-based observer (observeAllUploadWork) will handle progress/completion
-                    // We just set initial UI state here
+                    // Track this work ID so the tag observer can properly detect completion
+                    trackedTagUploadWorkId = result.workId
+
                     val initialQueueSize = _uiState.value.queuedRecords
                     _uiState.value = _uiState.value.copy(
                         isUploading = true,

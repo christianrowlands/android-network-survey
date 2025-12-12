@@ -15,9 +15,10 @@ public class NsAnalyticsConstants
     public static final String PROPERTY_NS_ANALYTICS_URL = "ns_analytics_url";
     public static final String PROPERTY_NS_ANALYTICS_UPLOAD_FREQUENCY = "ns_analytics_upload_frequency";
     public static final String PROPERTY_NS_ANALYTICS_LAST_UPLOAD = "ns_analytics_last_upload";
-    public static final String PROPERTY_NS_ANALYTICS_REAL_TIME = "ns_analytics_real_time"; // FIXME Delete this or use it
+    public static final String PROPERTY_NS_ANALYTICS_LAST_UPLOAD_WORK_ID = "ns_analytics_last_upload_work_id";
+    public static final String PROPERTY_NS_ANALYTICS_LAST_UPLOAD_SUCCESS = "ns_analytics_last_upload_success";
+    public static final String PROPERTY_NS_ANALYTICS_LAST_UPLOAD_RECORDS = "ns_analytics_last_upload_records";
     public static final String PROPERTY_NS_ANALYTICS_AUTO_UPLOAD = "ns_analytics_auto_upload";
-    public static final String PROPERTY_NS_ANALYTICS_UPLOAD_MODE = "ns_analytics_upload_mode";
     public static final String PROPERTY_NS_ANALYTICS_CELLULAR_ENABLED = "ns_analytics_cellular_enabled";
     public static final String PROPERTY_NS_ANALYTICS_WIFI_ENABLED = "ns_analytics_wifi_enabled";
     public static final String PROPERTY_NS_ANALYTICS_BLUETOOTH_ENABLED = "ns_analytics_bluetooth_enabled";

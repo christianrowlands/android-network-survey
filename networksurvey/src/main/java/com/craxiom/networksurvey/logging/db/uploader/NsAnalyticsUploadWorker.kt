@@ -294,7 +294,12 @@ class NsAnalyticsUploadWorker(context: Context, params: WorkerParameters) :
                     )
                 }
 
-                NsAnalyticsSecureStorage.updateLastUploadTime(applicationContext)
+                NsAnalyticsSecureStorage.saveUploadCompletion(
+                    applicationContext,
+                    id.toString(),
+                    true,
+                    totalRecordsProcessed
+                )
 
                 // Clean up old uploaded records (keep last 7 days)
                 val sevenDaysAgo = System.currentTimeMillis() - (7 * 24 * 60 * 60 * 1000L)
