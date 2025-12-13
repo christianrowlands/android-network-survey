@@ -96,8 +96,6 @@ uuids:
    name: "Anhui Huami Information Technology Co., Ltd."
  - uuid: 0xFEE0
    name: "Anhui Huami Information Technology Co., Ltd."
- - uuid: 0xFEDF
-   name: Design SHIFT
  - uuid: 0xFEDE
    name: "Coin, Inc."
  - uuid: 0xFEDD
@@ -218,10 +216,6 @@ uuids:
    name: Paxton Access Ltd
  - uuid: 0xFEA3
    name: ITT Industries
- - uuid: 0xFEA2
-   name: "Intrepid Control Systems, Inc."
- - uuid: 0xFEA1
-   name: "Intrepid Control Systems, Inc."
  - uuid: 0xFEA0
    name: Google LLC
  - uuid: 0xFE9F
@@ -430,10 +424,6 @@ uuids:
    name: "TTS Tooltechnic Systems AG & Co. KG"
  - uuid: 0xFE39
    name: "TTS Tooltechnic Systems AG & Co. KG"
- - uuid: 0xFE38
-   name: Spaceek LTD
- - uuid: 0xFE37
-   name: Spaceek LTD
  - uuid: 0xFE36
    name: "HUAWEI Technologies Co., Ltd"
  - uuid: 0xFE35
@@ -682,10 +672,6 @@ uuids:
    name: Emerson
  - uuid: 0xFDBB
    name: Profoto
- - uuid: 0xFDBA
-   name: Comcast Cable Corporation
- - uuid: 0xFDB9
-   name: Comcast Cable Corporation
  - uuid: 0xFDB8
    name: LivaNova USA Inc.
  - uuid: 0xFDB7
@@ -768,8 +754,6 @@ uuids:
    name: "Groove X, Inc."
  - uuid: 0xFD90
    name: "Guangzhou SuperSound Information Technology Co.,Ltd"
- - uuid: 0xFD8F
-   name: Matrix ComSec Pvt. Ltd.
  - uuid: 0xFD8E
    name: Motorola Solutions
  - uuid: 0xFD8D
@@ -1252,8 +1236,6 @@ uuids:
    name: Dell Computer Corporation
  - uuid: 0xFC9D
    name: Lenovo (Singapore) Pte Ltd.
- - uuid: 0xFC9C
-   name: "Binary Power, Inc."
  - uuid: 0xFC9B
    name: Merry Electronics (S) Pte Ltd
  - uuid: 0xFC9A
@@ -1410,3 +1392,19 @@ uuids:
    name: "WaveRF, Corp."
  - uuid: 0xFC4E
    name: Lodestar Technology Inc.
+ - uuid: 0xFC4D
+   name: Lodestar Technology Inc.
+ - uuid: 0xFC4C
+   name: HP Inc.
+ - uuid: 0xFC4B
+   name: WinMagic Inc.
+ - uuid: 0xFC4A
+   name: "Shenzhen Shokz Co.,Ltd."
+ - uuid: 0xFC49
+   name: "Golioth, Inc."
+ - uuid: 0xFC48
+   name: Michelin
+ - uuid: 0xFC47
+   name: "Shanghai Ingeek Technology Co., Ltd."
+ - uuid: 0xFC46
+   name: Xiaomi
