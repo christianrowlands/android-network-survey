@@ -785,7 +785,6 @@ public class BluetoothController extends AController
         if (!bluetoothAdapter.isDiscovering())
         {
             bluetoothAdapter.startDiscovery();
-            Timber.d("Started Bluetooth Classic discovery at %s", System.currentTimeMillis());
         } else
         {
             Timber.d("Classic discovery already in progress");
@@ -808,8 +807,6 @@ public class BluetoothController extends AController
         // Total cycle time is scan interval - time spent scanning
         long scanningTime = BLE_SCAN_DURATION_MS + CLASSIC_SCAN_DURATION_MS;
         long waitTime = Math.max(1000, bluetoothScanRateMs - scanningTime);
-
-        Timber.d("Waiting %d ms until next scan cycle", waitTime);
 
         bluetoothScanFuture = bluetoothScanExecutor.schedule(this::startNextScanCycle,
                 waitTime, TimeUnit.MILLISECONDS);
