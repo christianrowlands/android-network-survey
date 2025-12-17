@@ -5,6 +5,7 @@ import android.os.Parcelable;
 
 import androidx.annotation.NonNull;
 
+import com.craxiom.mqttlibrary.MqttQos;
 import com.craxiom.mqttlibrary.connection.BrokerConnectionInfo;
 import com.craxiom.networksurvey.mqtt.MqttConnectionInfo;
 import com.google.gson.Gson;
@@ -25,6 +26,7 @@ public record MqttConnectionSettings(
         @SerializedName("mqtt_username") String mqttUsername,
         @SerializedName("mqtt_password") String mqttPassword,
         @SerializedName("mqtt_topic_prefix") String mqttTopicPrefix,
+        @SerializedName("mqtt_qos") Integer mqttQos,
         @SerializedName("cellular_stream_enabled") Boolean cellularStreamEnabled,
         @SerializedName("wifi_stream_enabled") Boolean wifiStreamEnabled,
         @SerializedName("bluetooth_stream_enabled") Boolean bluetoothStreamEnabled,
@@ -70,6 +72,7 @@ public record MqttConnectionSettings(
         private String mqttUsername;
         private String mqttPassword;
         private String mqttTopicPrefix;
+        private Integer mqttQos;
         private Boolean cellularStreamEnabled;
         private Boolean wifiStreamEnabled;
         private Boolean bluetoothStreamEnabled;
@@ -118,6 +121,12 @@ public record MqttConnectionSettings(
             return this;
         }
 
+        public Builder mqttQos(Integer mqttQos)
+        {
+            this.mqttQos = mqttQos;
+            return this;
+        }
+
         public Builder cellularStreamEnabled(Boolean cellularStreamEnabled)
         {
             this.cellularStreamEnabled = cellularStreamEnabled;
@@ -151,6 +160,7 @@ public record MqttConnectionSettings(
         public MqttConnectionSettings build()
         {
             return new MqttConnectionSettings(host, port, tlsEnabled, deviceName, mqttUsername, mqttPassword, mqttTopicPrefix,
+                    validateQos(mqttQos),
                     cellularStreamEnabled != null ? cellularStreamEnabled : false,
                     wifiStreamEnabled != null ? wifiStreamEnabled : false,
                     bluetoothStreamEnabled != null ? bluetoothStreamEnabled : false,
@@ -169,6 +179,7 @@ public record MqttConnectionSettings(
                 mqttUsername,
                 mqttPassword,
                 mqttTopicPrefix,
+                mqttQos,
                 cellularStreamEnabled != null ? cellularStreamEnabled : false,
                 wifiStreamEnabled != null ? wifiStreamEnabled : false,
                 bluetoothStreamEnabled != null ? bluetoothStreamEnabled : false,
@@ -184,6 +195,28 @@ public record MqttConnectionSettings(
                 wifiStreamEnabled != null ? wifiStreamEnabled : false,
                 bluetoothStreamEnabled != null ? bluetoothStreamEnabled : false,
                 gnssStreamEnabled != null ? gnssStreamEnabled : false,
-                deviceStatusStreamEnabled != null ? deviceStatusStreamEnabled : false, mqttTopicPrefix, null);
+                deviceStatusStreamEnabled != null ? deviceStatusStreamEnabled : false,
+                mqttTopicPrefix, null, MqttQos.fromValue(getQosOrDefault()));
+    }
+
+    /**
+     * Validates the QoS value and returns a valid value (0, 1, or 2).
+     * If invalid or null, returns the default (1 = at least once).
+     */
+    private static int validateQos(Integer qos)
+    {
+        if (qos == null || qos < 0 || qos > 2)
+        {
+            return 1;
+        }
+        return qos;
+    }
+
+    /**
+     * Returns the QoS value or the default (1 = at least once) if null or invalid.
+     */
+    private int getQosOrDefault()
+    {
+        return validateQos(mqttQos);
     }
 }

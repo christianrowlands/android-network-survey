@@ -184,6 +184,7 @@ you can use the `mqtt_topic_prefix` field to change the topic to something like
   "mqtt_username": "auser",
   "mqtt_password": "apassword",
   "mqtt_topic_prefix": "my/custom/topic/path/",
+  "mqtt_qos": 1,
   "cellular_stream_enabled": true,
   "wifi_stream_enabled": true,
   "bluetooth_stream_enabled": true,

@@ -32,7 +32,6 @@ import androidx.preference.PreferenceManager;
 
 import com.craxiom.mqttlibrary.IConnectionStateListener;
 import com.craxiom.mqttlibrary.connection.ConnectionState;
-import com.craxiom.mqttlibrary.ui.HelpCardListener;
 import com.craxiom.networksurvey.R;
 import com.craxiom.networksurvey.constants.NetworkSurveyConstants;
 import com.craxiom.networksurvey.fragments.model.GrpcConnectionSettings;
@@ -114,9 +113,6 @@ public class GrpcConnectionFragment extends Fragment implements IConnectionState
         bluetoothStreamToggleSwitch = view.findViewById(R.id.streamBluetoothToggleSwitch);
         gnssStreamToggleSwitch = view.findViewById(R.id.streamGnssToggleSwitch);
         deviceStatusStreamToggleSwitch = view.findViewById(R.id.streamDeviceStatusToggleSwitch);
-
-        final CardView helpCardView = view.findViewById(R.id.help_card_view);
-        helpCardView.setOnClickListener(new HelpCardListener(view, R.string.grpc_connection_description));
 
         restoreConnectionParameters();
         grpcHostAddressEdit.setText(host);

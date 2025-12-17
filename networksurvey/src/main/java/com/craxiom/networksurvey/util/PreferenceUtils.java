@@ -20,6 +20,7 @@ import static com.craxiom.mqttlibrary.MqttConstants.PROPERTY_MQTT_CONNECTION_HOS
 import static com.craxiom.mqttlibrary.MqttConstants.PROPERTY_MQTT_CONNECTION_PORT;
 import static com.craxiom.mqttlibrary.MqttConstants.PROPERTY_MQTT_CONNECTION_TLS_ENABLED;
 import static com.craxiom.mqttlibrary.MqttConstants.PROPERTY_MQTT_PASSWORD;
+import static com.craxiom.mqttlibrary.MqttConstants.PROPERTY_MQTT_QOS;
 import static com.craxiom.mqttlibrary.MqttConstants.PROPERTY_MQTT_USERNAME;
 import static com.craxiom.networksurvey.constants.NetworkSurveyConstants.DEFAULT_LOCATION_PROVIDER;
 import static java.util.Collections.emptySet;
@@ -861,6 +862,10 @@ public class PreferenceUtils
         if (mqttConnectionSettings.mqttTopicPrefix() != null)
         {
             edit.putString(MqttConstants.PROPERTY_MQTT_TOPIC_PREFIX, mqttConnectionSettings.mqttTopicPrefix());
+        }
+        if (mqttConnectionSettings.mqttQos() != null)
+        {
+            edit.putInt(PROPERTY_MQTT_QOS, mqttConnectionSettings.mqttQos());
         }
         if (mqttConnectionSettings.cellularStreamEnabled() != null)
         {

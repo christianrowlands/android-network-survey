@@ -1,5 +1,6 @@
 package com.craxiom.networksurvey.mqtt;
 
+import com.craxiom.mqttlibrary.MqttQos;
 import com.craxiom.mqttlibrary.connection.BrokerConnectionInfo;
 
 public class MqttConnectionInfo extends BrokerConnectionInfo
@@ -14,9 +15,9 @@ public class MqttConnectionInfo extends BrokerConnectionInfo
     public MqttConnectionInfo(String mqttBrokerHost, int portNumber, boolean tlsEnabled, String mqttClientId, String mqttUsername,
                               String mqttPassword, boolean isCellularStreamEnabled, boolean isWifiStreamEnabled,
                               boolean isBluetoothStreamEnabled, boolean isGnssStreamEnabled, boolean isDeviceStatusStreamEnabled,
-                              String topicPrefix, String deviceName)
+                              String topicPrefix, String deviceName, MqttQos mqttQos)
     {
-        super(mqttBrokerHost, portNumber, tlsEnabled, mqttClientId, mqttUsername, mqttPassword, topicPrefix);
+        super(mqttBrokerHost, portNumber, tlsEnabled, mqttClientId, mqttUsername, mqttPassword, topicPrefix, mqttQos);
         this.isCellularStreamEnabled = isCellularStreamEnabled;
         this.isWifiStreamEnabled = isWifiStreamEnabled;
         this.isBluetoothStreamEnabled = isBluetoothStreamEnabled;

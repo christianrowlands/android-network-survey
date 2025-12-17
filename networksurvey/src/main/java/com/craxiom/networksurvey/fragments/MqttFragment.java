@@ -251,7 +251,8 @@ public class MqttFragment extends AConnectionFragment<NetworkSurveyService.Surve
                 gnssStreamEnabled,
                 deviceStatusStreamEnabled,
                 topicPrefix,
-                null);
+                null,
+                mqttQos);
     }
 
     @Override
@@ -331,6 +332,7 @@ public class MqttFragment extends AConnectionFragment<NetworkSurveyService.Surve
                 .mqttUsername(usernameEdit.getText().toString())
                 .mqttPassword(passwordEdit.getText().toString())
                 .mqttTopicPrefix(topicPrefix)
+                .mqttQos(mqttQos != null ? mqttQos.getValue() : MqttConstants.DEFAULT_MQTT_QOS.getValue())
                 .cellularStreamEnabled(cellularStreamEnabled)
                 .wifiStreamEnabled(wifiStreamEnabled)
                 .bluetoothStreamEnabled(bluetoothStreamEnabled)

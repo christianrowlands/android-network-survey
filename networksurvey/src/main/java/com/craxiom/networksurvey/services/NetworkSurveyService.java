@@ -42,6 +42,7 @@ import com.craxiom.messaging.DeviceStatusData;
 import com.craxiom.mqttlibrary.IConnectionStateListener;
 import com.craxiom.mqttlibrary.IMqttService;
 import com.craxiom.mqttlibrary.MqttConstants;
+import com.craxiom.mqttlibrary.MqttQos;
 import com.craxiom.mqttlibrary.connection.BrokerConnectionInfo;
 import com.craxiom.mqttlibrary.connection.ConnectionState;
 import com.craxiom.mqttlibrary.connection.DefaultMqttConnection;
@@ -2435,6 +2436,16 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
             final boolean gnssStreamEnabled = mdmProperties.getBoolean(NetworkSurveyConstants.PROPERTY_MQTT_GNSS_STREAM_ENABLED, NetworkSurveyConstants.DEFAULT_MQTT_GNSS_STREAM_SETTING);
             final boolean deviceStatusStreamEnabled = mdmProperties.getBoolean(NetworkSurveyConstants.PROPERTY_MQTT_DEVICE_STATUS_STREAM_ENABLED, NetworkSurveyConstants.DEFAULT_MQTT_DEVICE_STATUS_STREAM_SETTING);
             final String topicPrefix = mdmProperties.getString(MqttConstants.PROPERTY_MQTT_TOPIC_PREFIX, MqttConstants.DEFAULT_MQTT_TOPIC_PREFIX);
+            final int qosValue = mdmProperties.getInt(MqttConstants.PROPERTY_MQTT_QOS, MqttConstants.DEFAULT_MQTT_QOS.getValue());
+            MqttQos mqttQos;
+            try
+            {
+                mqttQos = MqttQos.fromValue(qosValue);
+            } catch (IllegalArgumentException e)
+            {
+                Timber.w(e, "Invalid MQTT QoS value from MDM: %d, using default", qosValue);
+                mqttQos = MqttConstants.DEFAULT_MQTT_QOS;
+            }
 
             String deviceName = mdmProperties.getString(NetworkSurveyConstants.PROPERTY_MDM_MQTT_DEVICE_NAME);
             // Validate and truncate device name to 100 characters if needed
@@ -2450,7 +2461,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
             }
 
             return new MqttConnectionInfo(mqttBrokerHost, portNumber, tlsEnabled, clientId, username, password,
-                    cellularStreamEnabled, wifiStreamEnabled, bluetoothStreamEnabled, gnssStreamEnabled, deviceStatusStreamEnabled, topicPrefix, deviceName);
+                    cellularStreamEnabled, wifiStreamEnabled, bluetoothStreamEnabled, gnssStreamEnabled, deviceStatusStreamEnabled, topicPrefix, deviceName, mqttQos);
         }
 
         return null;
@@ -2485,9 +2496,19 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
         final boolean gnssStreamEnabled = preferences.getBoolean(NetworkSurveyConstants.PROPERTY_MQTT_GNSS_STREAM_ENABLED, NetworkSurveyConstants.DEFAULT_MQTT_GNSS_STREAM_SETTING);
         final boolean deviceStatusStreamEnabled = preferences.getBoolean(NetworkSurveyConstants.PROPERTY_MQTT_DEVICE_STATUS_STREAM_ENABLED, NetworkSurveyConstants.DEFAULT_MQTT_DEVICE_STATUS_STREAM_SETTING);
         final String topicPrefix = preferences.getString(MqttConstants.PROPERTY_MQTT_TOPIC_PREFIX, MqttConstants.DEFAULT_MQTT_TOPIC_PREFIX);
+        final int qosValue = preferences.getInt(MqttConstants.PROPERTY_MQTT_QOS, MqttConstants.DEFAULT_MQTT_QOS.getValue());
+        MqttQos mqttQos;
+        try
+        {
+            mqttQos = MqttQos.fromValue(qosValue);
+        } catch (IllegalArgumentException e)
+        {
+            Timber.w(e, "Invalid MQTT QoS value from preferences: %d, using default", qosValue);
+            mqttQos = MqttConstants.DEFAULT_MQTT_QOS;
+        }
 
         return new MqttConnectionInfo(mqttBrokerHost, portNumber, tlsEnabled, clientId, username, password,
-                cellularStreamEnabled, wifiStreamEnabled, bluetoothStreamEnabled, gnssStreamEnabled, deviceStatusStreamEnabled, topicPrefix, null);
+                cellularStreamEnabled, wifiStreamEnabled, bluetoothStreamEnabled, gnssStreamEnabled, deviceStatusStreamEnabled, topicPrefix, null, mqttQos);
     }
 
     /**
