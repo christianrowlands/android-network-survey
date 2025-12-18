@@ -1,5 +1,25 @@
 # Changelog
 
+## [1.47](https://github.com/christianrowlands/android-network-survey/releases/tag/v1.47) - 2025-11-18
+
+**BUG FIXES**
+* Handle the edge case where the Android OS does not have an activity for displaying the developer settings UI for wifi scan throttling.
+* Fix an edge case resource not found crash by switching the help icon to a vector drawable instead of a png.
+* Fix a bug where an old unsuccessful connection attempt was being retried and causing the current connection to be disconnected.
+
+**NEW FEATURES**
+* Set the locationAge field on the device status message.
+* Allow the MQTT QoS to be set for the MQTT broker connection. [#113](https://github.com/christianrowlands/android-network-survey/issues/113)
+
+**IMPROVEMENTS**
+* Disable the upload button on the dashboard if there are not any records to upload.
+* Improve the registration confirmation dialog UI.
+* Request the bluetooth permission when it has not been granted yet when toggling the bluetooth survey.
+* Improvements to the NS Analytics Upload process such as removing the dialog in favor of inline upload status and improve the upload now button to bypass the queued auto-upload workers and trigger an immediate upload.
+* Update the Bluetooth company identifiers and member uuids.
+* Rework the MQTT connection help information to be in a help dialog accessed via an app bar icon instead of the expandable section in the connection UI.
+* Update AGP and all the libraries to the latest version.
+
 ## [1.46](https://github.com/christianrowlands/android-network-survey/releases/tag/v1.46) - 2025-11-24
 
 **IMPROVEMENTS**
