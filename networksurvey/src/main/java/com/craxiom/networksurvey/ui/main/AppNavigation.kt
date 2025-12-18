@@ -6,6 +6,10 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.DrawerState
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.viewinterop.AndroidViewBinding
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -15,6 +19,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.navigation
 import androidx.navigation.navDeepLink
 import com.craxiom.messaging.BluetoothRecordData
+import com.craxiom.networksurvey.R
 import com.craxiom.networksurvey.databinding.ContainerBluetoothDetailsFragmentBinding
 import com.craxiom.networksurvey.databinding.ContainerGrpcFragmentBinding
 import com.craxiom.networksurvey.databinding.ContainerMqttFragmentBinding
@@ -38,7 +43,9 @@ import com.craxiom.networksurvey.model.WifiNetwork
 import com.craxiom.networksurvey.ui.acknowledgments.AcknowledgmentsScreen
 import com.craxiom.networksurvey.ui.activesurvey.SurveyMonitorScreen
 import com.craxiom.networksurvey.ui.cellular.CalculatorScreen
+import com.craxiom.networksurvey.ui.main.appbar.AppBarAction
 import com.craxiom.networksurvey.ui.main.appbar.TitleBar
+import com.craxiom.networksurvey.ui.mqtt.MqttHelpDialog
 import com.craxiom.networksurvey.ui.nsanalytics.NsAnalyticsConnectionScreen
 import com.craxiom.networksurvey.ui.nsanalytics.NsAnalyticsConnectionViewModel
 import com.craxiom.networksurvey.ui.wifi.model.WifiNetworkInfoList
@@ -225,13 +232,32 @@ fun GrpcFragmentInCompose(mainNavController: NavHostController) {
     }
 }
 
+@Suppress("AssignedValueIsNeverRead")
 @Composable
 fun MqttFragmentInCompose(
     mqttConnectionSettings: MqttConnectionSettings?,
     mainNavController: NavHostController
 ) {
+    var showHelpDialog by remember { mutableStateOf(false) }
+
+    if (showHelpDialog) {
+        MqttHelpDialog(onDismissRequest = { showHelpDialog = false })
+    }
+
     Scaffold(
-        topBar = { TitleBar("MQTT Broker") { mainNavController.navigateUp() } },
+        topBar = {
+            TitleBar(
+                title = "MQTT Broker",
+                onBackClick = { mainNavController.navigateUp() },
+                appBarActions = listOf(
+                    AppBarAction(
+                        icon = R.drawable.ic_help,
+                        description = R.string.mqtt_help_description,
+                        onClick = { showHelpDialog = true }
+                    )
+                )
+            )
+        },
     ) { innerPadding ->
         AndroidViewBinding(
             ContainerMqttFragmentBinding::inflate,

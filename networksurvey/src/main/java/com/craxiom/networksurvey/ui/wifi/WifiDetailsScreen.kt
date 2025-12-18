@@ -71,7 +71,11 @@ internal fun WifiDetailsScreen(
     val colorResource = Color(context.getColor(colorId))
 
     Scaffold(
-        topBar = { TitleBar("Wi-Fi Network Details", { wifiDetailsFragment.navigateBack() }) },
+        topBar = {
+            TitleBar(
+                "Wi-Fi Network Details",
+                onBackClick = { wifiDetailsFragment.navigateBack() })
+        },
     ) { insetPadding ->
         LazyColumn(
             state = rememberLazyListState(),

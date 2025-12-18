@@ -85,7 +85,11 @@ fun AppBarAction(appBarAction: AppBarAction) {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun TitleBar(title: String, onBackClick: () -> Unit) {
+fun TitleBar(
+    title: String,
+    appBarActions: List<AppBarAction>? = null,
+    onBackClick: () -> Unit
+) {
     TopAppBar(
         title = {
             Text(
@@ -94,6 +98,13 @@ fun TitleBar(title: String, onBackClick: () -> Unit) {
             )
         },
         navigationIcon = { BackIcon(onBackClick) },
+        actions = {
+            appBarActions?.let {
+                for (appBarAction in it) {
+                    AppBarAction(appBarAction)
+                }
+            }
+        }
     )
 }
 

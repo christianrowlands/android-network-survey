@@ -87,6 +87,11 @@ MQTT streaming lets you send your data in real-time to a remote server. No local
 Use File Logging for local storage and MQTT Streaming for remote transmission. They both capture the same data,
 but work independently, so you have full control over how you handle your data.</string>
 
+    <!-- MQTT Help Dialog -->
+    <string name="mqtt_help_title">MQTT Connection</string>
+    <string name="mqtt_help_description">Help</string>
+    <string name="mqtt_help_dismiss">Got it</string>
+
     <string name="bluetooth_permissions_rationale_title">Bluetooth Permissions</string>
     <string name="bluetooth_permissions_rationale">The Find Nearby Devices permission is needed to perform a Bluetooth scan for survey. If this permission is denied then Bluetooth survey will not work.</string>
 
