@@ -944,9 +944,9 @@ private fun UploadSettingsCard(
 
                 // Primary line: relative time + result
                 val resultText = if (lastUploadResult != null) {
-                    "Last: $timeAgo \u2022 $lastUploadResult"
+                    "Last Success: $timeAgo \u2022 $lastUploadResult"
                 } else {
-                    "Last: $timeAgo"
+                    "Last Success: $timeAgo"
                 }
                 Text(
                     text = resultText,

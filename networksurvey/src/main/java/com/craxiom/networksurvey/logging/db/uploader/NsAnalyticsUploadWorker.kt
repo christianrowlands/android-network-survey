@@ -49,7 +49,8 @@ class NsAnalyticsUploadWorker(context: Context, params: WorkerParameters) :
                     applicationContext,
                     id.toString(),
                     false,
-                    0
+                    0,
+                    ERROR_CODE_NOT_REGISTERED
                 )
                 val outputData = Data.Builder()
                     .putString(
@@ -68,7 +69,8 @@ class NsAnalyticsUploadWorker(context: Context, params: WorkerParameters) :
                     applicationContext,
                     id.toString(),
                     false,
-                    0
+                    0,
+                    ERROR_CODE_NO_CREDENTIALS
                 )
                 val outputData = Data.Builder()
                     .putString(

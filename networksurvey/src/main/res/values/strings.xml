@@ -887,7 +887,7 @@ but work independently, so you have full control over how you handle your data.<
     <string name="ns_analytics_upload_status_failed_with_reason">Upload failed: %1$s</string>
     <string name="ns_analytics_upload_status_waiting_retry">Waiting to retry…</string>
     <string name="ns_analytics_upload_status_retry_attempt">Retry attempt %1$d…</string>
-    <string name="ns_analytics_upload_status_quota_exceeded">Failed: Quota reached</string>
+    <string name="ns_analytics_upload_status_quota_exceeded">Failed: Quota exceeded</string>
     <string name="ns_analytics_upload_status_device_unregistered">Device unregistered</string>
     <string name="ns_analytics_upload_status_config_error">Configuration error</string>
     <string name="ns_analytics_upload_status_registration_invalid">Registration expired</string>
@@ -895,8 +895,6 @@ but work independently, so you have full control over how you handle your data.<
     <string name="ns_analytics_upload_status_session_expired">Session expired</string>
     <string name="ns_analytics_upload_status_could_not_start">Could not start upload</string>
     <string name="ns_analytics_upload_result_records">%1$d records uploaded</string>
-    <string name="ns_analytics_upload_result_failed">Failed</string>
-    <string name="ns_analytics_upload_result_failed_quota">Failed: quota exceeded</string>
     <string name="ns_analytics_upload_button_upload_now">Upload Now</string>
     <string name="ns_analytics_upload_button_uploading">Uploading…</string>
     <string name="ns_analytics_upload_button_no_records">No Records</string>

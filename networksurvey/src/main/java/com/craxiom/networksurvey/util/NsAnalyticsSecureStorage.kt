@@ -1,5 +1,6 @@
 package com.craxiom.networksurvey.util
 
+import android.annotation.SuppressLint
 import android.content.Context
 import android.content.SharedPreferences
 import androidx.core.content.edit
@@ -312,6 +313,7 @@ object NsAnalyticsSecureStorage {
      * @param recordsCount The number of records uploaded
      * @param errorType The error type/code if upload failed (e.g., QUOTA_EXCEEDED), null for success
      */
+    @SuppressLint("ApplySharedPref")
     fun saveUploadCompletion(
         context: Context,
         workId: String,
@@ -322,7 +324,7 @@ object NsAnalyticsSecureStorage {
         val prefs = getPrefs(context)
         // Use commit() for synchronous write to ensure data is persisted before
         // WorkManager transitions the work state
-        prefs.edit()
+        val editor = prefs.edit()
             .putString(
                 NsAnalyticsConstants.PROPERTY_NS_ANALYTICS_LAST_UPLOAD_WORK_ID,
                 cryptoManager.encrypt(workId)
@@ -336,14 +338,19 @@ object NsAnalyticsSecureStorage {
                 cryptoManager.encrypt(recordsCount.toString())
             )
             .putString(
-                NsAnalyticsConstants.PROPERTY_NS_ANALYTICS_LAST_UPLOAD,
-                cryptoManager.encrypt(System.currentTimeMillis().toString())
-            )
-            .putString(
                 NsAnalyticsConstants.PROPERTY_NS_ANALYTICS_LAST_UPLOAD_ERROR_TYPE,
                 if (errorType != null) cryptoManager.encrypt(errorType) else null
             )
-            .commit()
+
+        // Only update the last upload timestamp on successful uploads
+        if (success) {
+            editor.putString(
+                NsAnalyticsConstants.PROPERTY_NS_ANALYTICS_LAST_UPLOAD,
+                cryptoManager.encrypt(System.currentTimeMillis().toString())
+            )
+        }
+
+        editor.commit()
     }
 
     /**

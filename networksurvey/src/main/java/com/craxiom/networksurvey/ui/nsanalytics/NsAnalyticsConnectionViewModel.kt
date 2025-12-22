@@ -577,7 +577,6 @@ class NsAnalyticsConnectionViewModel(
                     uploadState = UploadState.UNAVAILABLE,
                     uploadStatusMessage = context.getString(R.string.ns_analytics_upload_status_quota_exceeded),
                     uploadProgress = 0f,
-                    lastUploadResult = context.getString(R.string.ns_analytics_upload_result_failed_quota),
                     showQuotaExceededDialog = shouldShowDialog,
                     quotaCurrentUsage = currentUsage,
                     quotaMaxRecords = maxRecords,
@@ -596,8 +595,7 @@ class NsAnalyticsConnectionViewModel(
                     isUploading = false,
                     uploadState = UploadState.UNAVAILABLE,
                     uploadStatusMessage = context.getString(R.string.ns_analytics_upload_status_device_unregistered),
-                    uploadProgress = 0f,
-                    lastUploadResult = context.getString(R.string.ns_analytics_upload_result_failed)
+                    uploadProgress = 0f
                 )
             }
 
@@ -607,8 +605,7 @@ class NsAnalyticsConnectionViewModel(
                     isUploading = false,
                     uploadState = UploadState.UNAVAILABLE,
                     uploadStatusMessage = context.getString(R.string.ns_analytics_upload_status_not_registered),
-                    uploadProgress = 0f,
-                    lastUploadResult = context.getString(R.string.ns_analytics_upload_status_not_registered)
+                    uploadProgress = 0f
                 )
             }
 
@@ -618,8 +615,7 @@ class NsAnalyticsConnectionViewModel(
                     isUploading = false,
                     uploadState = UploadState.UNAVAILABLE,
                     uploadStatusMessage = context.getString(R.string.ns_analytics_upload_status_config_error),
-                    uploadProgress = 0f,
-                    lastUploadResult = context.getString(R.string.ns_analytics_upload_result_failed)
+                    uploadProgress = 0f
                 )
             }
 
@@ -630,8 +626,7 @@ class NsAnalyticsConnectionViewModel(
                     isUploading = false,
                     uploadState = UploadState.UNAVAILABLE,
                     uploadStatusMessage = context.getString(R.string.ns_analytics_upload_status_registration_invalid),
-                    uploadProgress = 0f,
-                    lastUploadResult = context.getString(R.string.ns_analytics_upload_result_failed)
+                    uploadProgress = 0f
                 )
                 // Reload to show unregistered state (cleanup already done in worker)
                 viewModelScope.launch {
@@ -646,8 +641,7 @@ class NsAnalyticsConnectionViewModel(
                     isUploading = false,
                     uploadState = UploadState.UNAVAILABLE,
                     uploadStatusMessage = context.getString(R.string.ns_analytics_upload_status_viewer_cannot_upload),
-                    uploadProgress = 0f,
-                    lastUploadResult = context.getString(R.string.ns_analytics_upload_result_failed)
+                    uploadProgress = 0f
                 )
             }
 
@@ -658,8 +652,7 @@ class NsAnalyticsConnectionViewModel(
                     isUploading = false,
                     uploadState = UploadState.UNAVAILABLE,
                     uploadStatusMessage = context.getString(R.string.ns_analytics_upload_status_session_expired),
-                    uploadProgress = 0f,
-                    lastUploadResult = context.getString(R.string.ns_analytics_upload_result_failed)
+                    uploadProgress = 0f
                 )
                 // Reload to show unregistered state (cleanup already done in worker)
                 viewModelScope.launch {
@@ -685,8 +678,7 @@ class NsAnalyticsConnectionViewModel(
                     isUploading = false,
                     uploadState = UploadState.UNAVAILABLE,  // RED indicator for failure
                     uploadStatusMessage = statusMessage,
-                    uploadProgress = 0f,
-                    lastUploadResult = context.getString(R.string.ns_analytics_upload_result_failed)
+                    uploadProgress = 0f
                 )
             }
         }
@@ -708,7 +700,6 @@ class NsAnalyticsConnectionViewModel(
                     uploadState = UploadState.UNAVAILABLE,
                     uploadStatusMessage = context.getString(R.string.ns_analytics_upload_status_quota_exceeded),
                     uploadProgress = 0f,
-                    lastUploadResult = context.getString(R.string.ns_analytics_upload_result_failed_quota),
                     showQuotaExceededDialog = false  // No dialog for fallback path (auto-upload)
                 )
             }
@@ -718,8 +709,7 @@ class NsAnalyticsConnectionViewModel(
                     isUploading = false,
                     uploadState = UploadState.UNAVAILABLE,
                     uploadStatusMessage = context.getString(R.string.ns_analytics_upload_status_device_unregistered),
-                    uploadProgress = 0f,
-                    lastUploadResult = context.getString(R.string.ns_analytics_upload_result_failed)
+                    uploadProgress = 0f
                 )
             }
 
@@ -728,8 +718,7 @@ class NsAnalyticsConnectionViewModel(
                     isUploading = false,
                     uploadState = UploadState.UNAVAILABLE,
                     uploadStatusMessage = context.getString(R.string.ns_analytics_upload_status_registration_invalid),
-                    uploadProgress = 0f,
-                    lastUploadResult = context.getString(R.string.ns_analytics_upload_result_failed)
+                    uploadProgress = 0f
                 )
             }
 
@@ -738,8 +727,7 @@ class NsAnalyticsConnectionViewModel(
                     isUploading = false,
                     uploadState = UploadState.UNAVAILABLE,
                     uploadStatusMessage = context.getString(R.string.ns_analytics_upload_status_viewer_cannot_upload),
-                    uploadProgress = 0f,
-                    lastUploadResult = context.getString(R.string.ns_analytics_upload_result_failed)
+                    uploadProgress = 0f
                 )
             }
 
@@ -748,8 +736,7 @@ class NsAnalyticsConnectionViewModel(
                     isUploading = false,
                     uploadState = UploadState.UNAVAILABLE,
                     uploadStatusMessage = context.getString(R.string.ns_analytics_upload_status_session_expired),
-                    uploadProgress = 0f,
-                    lastUploadResult = context.getString(R.string.ns_analytics_upload_result_failed)
+                    uploadProgress = 0f
                 )
             }
 
@@ -759,8 +746,7 @@ class NsAnalyticsConnectionViewModel(
                     isUploading = false,
                     uploadState = UploadState.UNAVAILABLE,
                     uploadStatusMessage = context.getString(R.string.ns_analytics_upload_status_failed),
-                    uploadProgress = 0f,
-                    lastUploadResult = context.getString(R.string.ns_analytics_upload_result_failed)
+                    uploadProgress = 0f
                 )
             }
         }
@@ -1217,10 +1203,9 @@ class NsAnalyticsConnectionViewModel(
                                     // Update UI state to show quota dialog
                                     _uiState.value = _uiState.value.copy(
                                         isUploading = false,
-                                        uploadState = UploadState.IDLE,
+                                        uploadState = UploadState.UNAVAILABLE,
                                         uploadStatusMessage = context.getString(R.string.ns_analytics_upload_status_quota_exceeded),
                                         uploadProgress = 0f,
-                                        lastUploadResult = context.getString(R.string.ns_analytics_upload_result_failed_quota),
                                         showQuotaExceededDialog = true,
                                         quotaCurrentUsage = currentUsage,
                                         quotaMaxRecords = maxRecords,
@@ -1239,8 +1224,7 @@ class NsAnalyticsConnectionViewModel(
                                         isUploading = false,
                                         uploadState = UploadState.UNAVAILABLE,
                                         uploadStatusMessage = context.getString(R.string.ns_analytics_upload_status_device_unregistered),
-                                        uploadProgress = 0f,
-                                        lastUploadResult = context.getString(R.string.ns_analytics_upload_result_failed)
+                                        uploadProgress = 0f
                                     )
                                 }
 
@@ -1250,8 +1234,7 @@ class NsAnalyticsConnectionViewModel(
                                         isUploading = false,
                                         uploadState = UploadState.UNAVAILABLE,
                                         uploadStatusMessage = context.getString(R.string.ns_analytics_upload_status_not_registered),
-                                        uploadProgress = 0f,
-                                        lastUploadResult = context.getString(R.string.ns_analytics_upload_status_not_registered)
+                                        uploadProgress = 0f
                                     )
                                 }
 
@@ -1261,8 +1244,7 @@ class NsAnalyticsConnectionViewModel(
                                         isUploading = false,
                                         uploadState = UploadState.UNAVAILABLE,
                                         uploadStatusMessage = context.getString(R.string.ns_analytics_upload_status_config_error),
-                                        uploadProgress = 0f,
-                                        lastUploadResult = context.getString(R.string.ns_analytics_upload_result_failed)
+                                        uploadProgress = 0f
                                     )
                                 }
 
@@ -1270,10 +1252,9 @@ class NsAnalyticsConnectionViewModel(
                                     // Unknown failure - Result.failure() means NO automatic retry
                                     _uiState.value = _uiState.value.copy(
                                         isUploading = false,
-                                        uploadState = UploadState.IDLE,
+                                        uploadState = UploadState.UNAVAILABLE,
                                         uploadStatusMessage = context.getString(R.string.ns_analytics_upload_status_failed),
-                                        uploadProgress = 0f,
-                                        lastUploadResult = context.getString(R.string.ns_analytics_upload_result_failed)
+                                        uploadProgress = 0f
                                     )
                                 }
                             }
@@ -1284,7 +1265,7 @@ class NsAnalyticsConnectionViewModel(
                         WorkInfo.State.CANCELLED -> {
                             _uiState.value = _uiState.value.copy(
                                 isUploading = false,
-                                uploadState = UploadState.IDLE,
+                                uploadState = UploadState.UNAVAILABLE,
                                 uploadStatusMessage = context.getString(R.string.ns_analytics_upload_status_failed),
                                 uploadProgress = 0f
                             )
