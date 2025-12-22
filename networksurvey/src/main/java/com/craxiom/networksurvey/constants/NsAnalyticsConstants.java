@@ -18,6 +18,7 @@ public class NsAnalyticsConstants
     public static final String PROPERTY_NS_ANALYTICS_LAST_UPLOAD_WORK_ID = "ns_analytics_last_upload_work_id";
     public static final String PROPERTY_NS_ANALYTICS_LAST_UPLOAD_SUCCESS = "ns_analytics_last_upload_success";
     public static final String PROPERTY_NS_ANALYTICS_LAST_UPLOAD_RECORDS = "ns_analytics_last_upload_records";
+    public static final String PROPERTY_NS_ANALYTICS_LAST_UPLOAD_ERROR_TYPE = "ns_analytics_last_upload_error_type";
     public static final String PROPERTY_NS_ANALYTICS_AUTO_UPLOAD = "ns_analytics_auto_upload";
     public static final String PROPERTY_NS_ANALYTICS_CELLULAR_ENABLED = "ns_analytics_cellular_enabled";
     public static final String PROPERTY_NS_ANALYTICS_WIFI_ENABLED = "ns_analytics_wifi_enabled";
@@ -74,6 +75,8 @@ public class NsAnalyticsConstants
     public static final String ERROR_CODE_DEVICE_DEREGISTERED = "DEVICE_DEREGISTERED";
     public static final String ERROR_CODE_INVALID_TOKEN = "INVALID_TOKEN";
     public static final String ERROR_CODE_QUOTA_EXCEEDED = "QUOTA_EXCEEDED";
+    public static final String ERROR_CODE_REGISTRATION_INVALID = "REGISTRATION_INVALID";
+    public static final String ERROR_CODE_VIEWER_CANNOT_UPLOAD = "VIEWER_CANNOT_UPLOAD";
 
     // Worker Output Data Keys
     public static final String ERROR_OUTPUT_KEY_TYPE = "error_type";

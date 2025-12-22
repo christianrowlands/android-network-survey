@@ -310,12 +310,14 @@ object NsAnalyticsSecureStorage {
      * @param workId The WorkManager work ID that completed
      * @param success Whether the upload succeeded
      * @param recordsCount The number of records uploaded
+     * @param errorType The error type/code if upload failed (e.g., QUOTA_EXCEEDED), null for success
      */
     fun saveUploadCompletion(
         context: Context,
         workId: String,
         success: Boolean,
-        recordsCount: Int
+        recordsCount: Int,
+        errorType: String? = null
     ) {
         val prefs = getPrefs(context)
         // Use commit() for synchronous write to ensure data is persisted before
@@ -336,6 +338,10 @@ object NsAnalyticsSecureStorage {
             .putString(
                 NsAnalyticsConstants.PROPERTY_NS_ANALYTICS_LAST_UPLOAD,
                 cryptoManager.encrypt(System.currentTimeMillis().toString())
+            )
+            .putString(
+                NsAnalyticsConstants.PROPERTY_NS_ANALYTICS_LAST_UPLOAD_ERROR_TYPE,
+                if (errorType != null) cryptoManager.encrypt(errorType) else null
             )
             .commit()
     }
@@ -373,6 +379,17 @@ object NsAnalyticsSecureStorage {
     }
 
     /**
+     * Get the error type/code from the last failed upload.
+     * Returns null if the last upload succeeded or no error type was recorded.
+     */
+    fun getLastUploadErrorType(context: Context): String? {
+        return getDecryptedString(
+            getPrefs(context),
+            NsAnalyticsConstants.PROPERTY_NS_ANALYTICS_LAST_UPLOAD_ERROR_TYPE
+        )
+    }
+
+    /**
      * Clear the upload completion data after it has been processed.
      */
     fun clearLastUploadCompletion(context: Context) {
@@ -380,6 +397,7 @@ object NsAnalyticsSecureStorage {
             remove(NsAnalyticsConstants.PROPERTY_NS_ANALYTICS_LAST_UPLOAD_WORK_ID)
             remove(NsAnalyticsConstants.PROPERTY_NS_ANALYTICS_LAST_UPLOAD_SUCCESS)
             remove(NsAnalyticsConstants.PROPERTY_NS_ANALYTICS_LAST_UPLOAD_RECORDS)
+            remove(NsAnalyticsConstants.PROPERTY_NS_ANALYTICS_LAST_UPLOAD_ERROR_TYPE)
         }
     }
 

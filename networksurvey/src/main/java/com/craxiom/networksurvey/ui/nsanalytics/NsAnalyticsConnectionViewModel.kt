@@ -97,6 +97,14 @@ class NsAnalyticsConnectionViewModel(
     @Volatile
     private var uploadInitialQueueSize = 0
 
+    /** Track if last upload was a failure - persists failure state until next upload attempt */
+    @Volatile
+    private var lastUploadWasFailure = false
+
+    /** Tracks if the current upload was triggered manually (vs auto/periodic) for dialog display */
+    @Volatile
+    private var wasManualUpload = false
+
     private companion object {
         /** How long to preserve upload result state before allowing status updates to override */
         const val UPLOAD_RESULT_PRESERVATION_MS = 5000L
@@ -209,6 +217,8 @@ class NsAnalyticsConnectionViewModel(
             val recentlyCompletedUpload = timeSinceLastUpload < UPLOAD_RESULT_PRESERVATION_MS
 
             val newUploadState = when {
+                // Preserve failure state until next upload attempt
+                lastUploadWasFailure -> currentState.uploadState
                 // Preserve recent upload result state (takes priority to prevent race condition)
                 recentlyCompletedUpload -> currentState.uploadState
                 // Preserve UPLOADING state only if NOT recently completed
@@ -218,6 +228,8 @@ class NsAnalyticsConnectionViewModel(
                 else -> UploadState.IDLE
             }
             val newUploadStatusMessage = when {
+                // Preserve failure message until next upload attempt
+                lastUploadWasFailure -> currentState.uploadStatusMessage
                 // Preserve recent upload result message (takes priority)
                 recentlyCompletedUpload -> currentState.uploadStatusMessage
                 // Preserve message during active upload
@@ -314,6 +326,8 @@ class NsAnalyticsConnectionViewModel(
                 }
                 // Upload is running - update UI if not already showing upload state
                 if (_uiState.value.uploadState != UploadState.UPLOADING) {
+                    // Clear failure state when new upload starts
+                    lastUploadWasFailure = false
                     uploadInitialQueueSize = _uiState.value.queuedRecords
                     _uiState.value = _uiState.value.copy(
                         isUploading = true,
@@ -373,7 +387,10 @@ class NsAnalyticsConnectionViewModel(
                                         handleUploadCompletionFromTag(workInfos, recordsCount)
                                         refreshLastUploadTimeFromStorage()
                                     } else {
-                                        handleUploadFailureFromTag(trackedWork)
+                                        // Read error type from SharedPreferences and handle accordingly
+                                        val errorType =
+                                            NsAnalyticsSecureStorage.getLastUploadErrorType(context)
+                                        handleUploadFailureByErrorType(errorType)
                                     }
 
                                     NsAnalyticsSecureStorage.clearLastUploadCompletion(context)
@@ -426,20 +443,10 @@ class NsAnalyticsConnectionViewModel(
                                 handleUploadCompletionFromTag(workInfos, recordsCount)
                                 refreshLastUploadTimeFromStorage()
                             } else {
-                                // Find any work to pass to failure handler for error details
-                                val anyWork = workInfos.firstOrNull()
-                                if (anyWork != null) {
-                                    handleUploadFailureFromTag(anyWork)
-                                } else {
-                                    // No work info available, reset to idle with generic failure
-                                    _uiState.value = _uiState.value.copy(
-                                        isUploading = false,
-                                        uploadState = UploadState.IDLE,
-                                        uploadStatusMessage = context.getString(R.string.ns_analytics_upload_status_failed),
-                                        uploadProgress = 0f,
-                                        lastUploadResult = context.getString(R.string.ns_analytics_upload_result_failed)
-                                    )
-                                }
+                                // Read error type from SharedPreferences and handle accordingly
+                                val errorType =
+                                    NsAnalyticsSecureStorage.getLastUploadErrorType(context)
+                                handleUploadFailureByErrorType(errorType)
                             }
                             NsAnalyticsSecureStorage.clearLastUploadCompletion(context)
                         }
@@ -489,6 +496,8 @@ class NsAnalyticsConnectionViewModel(
         // Find most recently finished work
         val completedWork = workInfos.firstOrNull { it.state == WorkInfo.State.SUCCEEDED }
 
+        // Clear failure state on success
+        lastUploadWasFailure = false
         lastUploadCompletionTime = System.currentTimeMillis()
 
         // Get records uploaded - prefer override (from SharedPrefs), then output data, then estimate
@@ -538,6 +547,9 @@ class NsAnalyticsConnectionViewModel(
      * Handles upload failure detected by the tag-based observer.
      */
     private fun handleUploadFailureFromTag(workInfo: WorkInfo) {
+        // Persist failure state until next upload attempt
+        lastUploadWasFailure = true
+
         val errorType = workInfo.outputData.getString(NsAnalyticsConstants.ERROR_OUTPUT_KEY_TYPE)
 
         when (errorType) {
@@ -556,13 +568,17 @@ class NsAnalyticsConnectionViewModel(
                     NsAnalyticsConstants.EXTRA_QUOTA_WEB_URL
                 )
 
+                // Only show dialog for manual uploads, not auto/periodic uploads
+                val shouldShowDialog = wasManualUpload
+                wasManualUpload = false
+
                 _uiState.value = _uiState.value.copy(
                     isUploading = false,
-                    uploadState = UploadState.IDLE,
+                    uploadState = UploadState.UNAVAILABLE,
                     uploadStatusMessage = context.getString(R.string.ns_analytics_upload_status_quota_exceeded),
                     uploadProgress = 0f,
                     lastUploadResult = context.getString(R.string.ns_analytics_upload_result_failed_quota),
-                    showQuotaExceededDialog = true,
+                    showQuotaExceededDialog = shouldShowDialog,
                     quotaCurrentUsage = currentUsage,
                     quotaMaxRecords = maxRecords,
                     quotaMessage = quotaMessage,
@@ -607,11 +623,141 @@ class NsAnalyticsConnectionViewModel(
                 )
             }
 
-            else -> {
-                // Unknown failure
+            NsAnalyticsConstants.ERROR_CODE_REGISTRATION_INVALID -> {
+                // Registration has expired - user needs to re-register
+                showMessage("Your device registration has expired. Please scan a new QR code.")
                 _uiState.value = _uiState.value.copy(
                     isUploading = false,
-                    uploadState = UploadState.IDLE,
+                    uploadState = UploadState.UNAVAILABLE,
+                    uploadStatusMessage = context.getString(R.string.ns_analytics_upload_status_registration_invalid),
+                    uploadProgress = 0f,
+                    lastUploadResult = context.getString(R.string.ns_analytics_upload_result_failed)
+                )
+                // Reload to show unregistered state (cleanup already done in worker)
+                viewModelScope.launch {
+                    loadConnectionState()
+                }
+            }
+
+            NsAnalyticsConstants.ERROR_CODE_VIEWER_CANNOT_UPLOAD -> {
+                // User has viewer role - cannot upload
+                showMessage("Your role does not allow uploading data. Contact the workspace owner.")
+                _uiState.value = _uiState.value.copy(
+                    isUploading = false,
+                    uploadState = UploadState.UNAVAILABLE,
+                    uploadStatusMessage = context.getString(R.string.ns_analytics_upload_status_viewer_cannot_upload),
+                    uploadProgress = 0f,
+                    lastUploadResult = context.getString(R.string.ns_analytics_upload_result_failed)
+                )
+            }
+
+            NsAnalyticsConstants.ERROR_CODE_INVALID_TOKEN -> {
+                // Token is invalid - similar to deregistration
+                showMessage("Your session has expired. Please scan a new QR code to re-register.")
+                _uiState.value = _uiState.value.copy(
+                    isUploading = false,
+                    uploadState = UploadState.UNAVAILABLE,
+                    uploadStatusMessage = context.getString(R.string.ns_analytics_upload_status_session_expired),
+                    uploadProgress = 0f,
+                    lastUploadResult = context.getString(R.string.ns_analytics_upload_result_failed)
+                )
+                // Reload to show unregistered state (cleanup already done in worker)
+                viewModelScope.launch {
+                    loadConnectionState()
+                }
+            }
+
+            else -> {
+                // Unknown failure - try to get error message from work output
+                val errorMessage = workInfo.outputData.getString(
+                    NsAnalyticsConstants.ERROR_OUTPUT_KEY_MESSAGE
+                )
+                val statusMessage = if (!errorMessage.isNullOrBlank()) {
+                    context.getString(
+                        R.string.ns_analytics_upload_status_failed_with_reason,
+                        errorMessage
+                    )
+                } else {
+                    context.getString(R.string.ns_analytics_upload_status_failed)
+                }
+
+                _uiState.value = _uiState.value.copy(
+                    isUploading = false,
+                    uploadState = UploadState.UNAVAILABLE,  // RED indicator for failure
+                    uploadStatusMessage = statusMessage,
+                    uploadProgress = 0f,
+                    lastUploadResult = context.getString(R.string.ns_analytics_upload_result_failed)
+                )
+            }
+        }
+    }
+
+    /**
+     * Handles upload failure based on error type read from SharedPreferences.
+     * Used by fallback paths when WorkManager outputData is not available
+     * (e.g., periodic work that was rescheduled before we could read the failure data).
+     */
+    private fun handleUploadFailureByErrorType(errorType: String?) {
+        lastUploadWasFailure = true
+
+        when (errorType) {
+            NsAnalyticsConstants.ERROR_CODE_QUOTA_EXCEEDED -> {
+                // Quota exceeded - show specific message but no dialog (this is fallback path)
+                _uiState.value = _uiState.value.copy(
+                    isUploading = false,
+                    uploadState = UploadState.UNAVAILABLE,
+                    uploadStatusMessage = context.getString(R.string.ns_analytics_upload_status_quota_exceeded),
+                    uploadProgress = 0f,
+                    lastUploadResult = context.getString(R.string.ns_analytics_upload_result_failed_quota),
+                    showQuotaExceededDialog = false  // No dialog for fallback path (auto-upload)
+                )
+            }
+
+            NsAnalyticsConstants.ERROR_CODE_DEVICE_DEREGISTERED -> {
+                _uiState.value = _uiState.value.copy(
+                    isUploading = false,
+                    uploadState = UploadState.UNAVAILABLE,
+                    uploadStatusMessage = context.getString(R.string.ns_analytics_upload_status_device_unregistered),
+                    uploadProgress = 0f,
+                    lastUploadResult = context.getString(R.string.ns_analytics_upload_result_failed)
+                )
+            }
+
+            NsAnalyticsConstants.ERROR_CODE_REGISTRATION_INVALID -> {
+                _uiState.value = _uiState.value.copy(
+                    isUploading = false,
+                    uploadState = UploadState.UNAVAILABLE,
+                    uploadStatusMessage = context.getString(R.string.ns_analytics_upload_status_registration_invalid),
+                    uploadProgress = 0f,
+                    lastUploadResult = context.getString(R.string.ns_analytics_upload_result_failed)
+                )
+            }
+
+            NsAnalyticsConstants.ERROR_CODE_VIEWER_CANNOT_UPLOAD -> {
+                _uiState.value = _uiState.value.copy(
+                    isUploading = false,
+                    uploadState = UploadState.UNAVAILABLE,
+                    uploadStatusMessage = context.getString(R.string.ns_analytics_upload_status_viewer_cannot_upload),
+                    uploadProgress = 0f,
+                    lastUploadResult = context.getString(R.string.ns_analytics_upload_result_failed)
+                )
+            }
+
+            NsAnalyticsConstants.ERROR_CODE_INVALID_TOKEN -> {
+                _uiState.value = _uiState.value.copy(
+                    isUploading = false,
+                    uploadState = UploadState.UNAVAILABLE,
+                    uploadStatusMessage = context.getString(R.string.ns_analytics_upload_status_session_expired),
+                    uploadProgress = 0f,
+                    lastUploadResult = context.getString(R.string.ns_analytics_upload_result_failed)
+                )
+            }
+
+            else -> {
+                // Generic failure - unknown error type
+                _uiState.value = _uiState.value.copy(
+                    isUploading = false,
+                    uploadState = UploadState.UNAVAILABLE,
                     uploadStatusMessage = context.getString(R.string.ns_analytics_upload_status_failed),
                     uploadProgress = 0f,
                     lastUploadResult = context.getString(R.string.ns_analytics_upload_result_failed)
@@ -624,9 +770,12 @@ class NsAnalyticsConnectionViewModel(
      * Handles upload cancellation detected by the tag-based observer.
      */
     private fun handleUploadCancelledFromTag() {
+        // Persist cancelled/failure state until next upload attempt
+        lastUploadWasFailure = true
+
         _uiState.value = _uiState.value.copy(
             isUploading = false,
-            uploadState = UploadState.IDLE,
+            uploadState = UploadState.UNAVAILABLE,
             uploadStatusMessage = context.getString(R.string.ns_analytics_upload_status_failed),
             uploadProgress = 0f
         )
@@ -891,6 +1040,9 @@ class NsAnalyticsConnectionViewModel(
     fun uploadNow() {
         // Don't trigger another upload if one is already in progress
         if (_uiState.value.uploadState == UploadState.UPLOADING) return
+
+        lastUploadWasFailure = false
+        wasManualUpload = true
 
         viewModelScope.launch {
             // Trigger immediate upload and get the result

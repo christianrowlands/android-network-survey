@@ -249,41 +249,116 @@ class NsAnalyticsUploadWorker(context: Context, params: WorkerParameters) :
                                 applicationContext,
                                 id.toString(),
                                 false,
-                                0
+                                0,
+                                NsAnalyticsConstants.ERROR_CODE_QUOTA_EXCEEDED
                             )
                             return@withContext Result.failure(outputData.build())
                         }
                     }
 
-                    // Check for device deregistration errors
+                    // Check for registration invalid errors (HTTP 410)
+                    if (response.code() == 410 && !errorBodyString.isNullOrEmpty()) {
+                        val errorCode = NsAnalyticsUtils.parseErrorCodeFromString(errorBodyString)
+                        if (errorCode == NsAnalyticsConstants.ERROR_CODE_REGISTRATION_INVALID) {
+                            Timber.w("Registration invalid error detected")
+                            NsAnalyticsUtils.cleanupAfterDeregistration(applicationContext)
+                            NsAnalyticsSecureStorage.saveUploadCompletion(
+                                applicationContext,
+                                id.toString(),
+                                false,
+                                0,
+                                NsAnalyticsConstants.ERROR_CODE_REGISTRATION_INVALID
+                            )
+                            val outputData = Data.Builder()
+                                .putString(
+                                    NsAnalyticsConstants.ERROR_OUTPUT_KEY_TYPE,
+                                    NsAnalyticsConstants.ERROR_CODE_REGISTRATION_INVALID
+                                )
+                                .putString(
+                                    NsAnalyticsConstants.ERROR_OUTPUT_KEY_MESSAGE,
+                                    "Device registration has expired"
+                                )
+                                .build()
+                            return@withContext Result.failure(outputData)
+                        }
+                    }
+
+                    // Check for 403/401 errors (deregistration, viewer role, invalid token)
                     if (response.code() == 403 || response.code() == 401) {
                         val errorCode = if (!errorBodyString.isNullOrEmpty()) {
                             NsAnalyticsUtils.parseErrorCodeFromString(errorBodyString)
                         } else {
                             null
                         }
-                        if (errorCode == NsAnalyticsConstants.ERROR_CODE_DEVICE_DEREGISTERED) {
-                            Timber.w("Device deregistered error detected, checking device status")
-                            // Check device status to update local state
-                            checkDeviceStatusAfterError()
-                            NsAnalyticsSecureStorage.saveUploadCompletion(
-                                applicationContext,
-                                id.toString(),
-                                false,
-                                0
-                            )
-                            // Return failure with reason to stop upload attempts
-                            val outputData = Data.Builder()
-                                .putString(
-                                    NsAnalyticsConstants.ERROR_OUTPUT_KEY_TYPE,
+
+                        when (errorCode) {
+                            NsAnalyticsConstants.ERROR_CODE_DEVICE_DEREGISTERED -> {
+                                Timber.w("Device deregistered error detected, checking device status")
+                                checkDeviceStatusAfterError()
+                                NsAnalyticsSecureStorage.saveUploadCompletion(
+                                    applicationContext,
+                                    id.toString(),
+                                    false,
+                                    0,
                                     NsAnalyticsConstants.ERROR_CODE_DEVICE_DEREGISTERED
                                 )
-                                .putString(
-                                    NsAnalyticsConstants.ERROR_OUTPUT_KEY_MESSAGE,
-                                    "Device has been unregistered"
+                                val outputData = Data.Builder()
+                                    .putString(
+                                        NsAnalyticsConstants.ERROR_OUTPUT_KEY_TYPE,
+                                        NsAnalyticsConstants.ERROR_CODE_DEVICE_DEREGISTERED
+                                    )
+                                    .putString(
+                                        NsAnalyticsConstants.ERROR_OUTPUT_KEY_MESSAGE,
+                                        "Device has been unregistered"
+                                    )
+                                    .build()
+                                return@withContext Result.failure(outputData)
+                            }
+
+                            NsAnalyticsConstants.ERROR_CODE_VIEWER_CANNOT_UPLOAD -> {
+                                Timber.w("Viewer cannot upload error detected")
+                                NsAnalyticsSecureStorage.saveUploadCompletion(
+                                    applicationContext,
+                                    id.toString(),
+                                    false,
+                                    0,
+                                    NsAnalyticsConstants.ERROR_CODE_VIEWER_CANNOT_UPLOAD
                                 )
-                                .build()
-                            return@withContext Result.failure(outputData)
+                                val outputData = Data.Builder()
+                                    .putString(
+                                        NsAnalyticsConstants.ERROR_OUTPUT_KEY_TYPE,
+                                        NsAnalyticsConstants.ERROR_CODE_VIEWER_CANNOT_UPLOAD
+                                    )
+                                    .putString(
+                                        NsAnalyticsConstants.ERROR_OUTPUT_KEY_MESSAGE,
+                                        "Your role does not allow uploading data"
+                                    )
+                                    .build()
+                                return@withContext Result.failure(outputData)
+                            }
+
+                            NsAnalyticsConstants.ERROR_CODE_INVALID_TOKEN -> {
+                                Timber.w("Invalid token error detected")
+                                NsAnalyticsUtils.cleanupAfterDeregistration(applicationContext)
+                                NsAnalyticsSecureStorage.saveUploadCompletion(
+                                    applicationContext,
+                                    id.toString(),
+                                    false,
+                                    0,
+                                    NsAnalyticsConstants.ERROR_CODE_INVALID_TOKEN
+                                )
+                                val outputData = Data.Builder()
+                                    .putString(
+                                        NsAnalyticsConstants.ERROR_OUTPUT_KEY_TYPE,
+                                        NsAnalyticsConstants.ERROR_CODE_INVALID_TOKEN
+                                    )
+                                    .putString(
+                                        NsAnalyticsConstants.ERROR_OUTPUT_KEY_MESSAGE,
+                                        "Session has expired"
+                                    )
+                                    .build()
+                                return@withContext Result.failure(outputData)
+                            }
                         }
                     }
 
