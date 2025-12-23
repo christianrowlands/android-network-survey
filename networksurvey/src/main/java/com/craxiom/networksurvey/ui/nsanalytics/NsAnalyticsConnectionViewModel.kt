@@ -6,6 +6,7 @@ import android.os.Build
 import android.provider.Settings
 import androidx.core.content.edit
 import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.LiveData
 import androidx.lifecycle.Observer
 import androidx.lifecycle.viewModelScope
 import androidx.preference.PreferenceManager
@@ -81,6 +82,9 @@ class NsAnalyticsConnectionViewModel(
     private var uploadWorkId: UUID? = null
     private var uploadProgressObserver: Observer<WorkInfo?>? = null
     private var uploadWorkTagObserver: Observer<List<WorkInfo>>? = null
+
+    /** LiveData instance for tag observer - stored to ensure proper removal */
+    private var uploadWorkTagLiveData: LiveData<List<WorkInfo>>? = null
 
     /** ID of the upload work currently being tracked by the tag observer */
     @Volatile
@@ -292,8 +296,12 @@ class NsAnalyticsConnectionViewModel(
         uploadWorkTagObserver = Observer { workInfos ->
             handleUploadWorkChanges(workInfos)
         }
-        workManager.getWorkInfosByTagLiveData(NsAnalyticsConstants.NS_ANALYTICS_UPLOAD_WORKER_TAG)
-            .observeForever(uploadWorkTagObserver!!)
+        // Store the LiveData reference to ensure we remove from the SAME instance later.
+        // getWorkInfosByTagLiveData() returns a NEW instance each time, so if we don't store it,
+        // removeObserver() will operate on a different instance and the observer will never be removed.
+        uploadWorkTagLiveData =
+            workManager.getWorkInfosByTagLiveData(NsAnalyticsConstants.NS_ANALYTICS_UPLOAD_WORKER_TAG)
+        uploadWorkTagLiveData?.observeForever(uploadWorkTagObserver!!)
     }
 
     /**
@@ -302,13 +310,16 @@ class NsAnalyticsConnectionViewModel(
     private fun removeUploadWorkTagObserver() {
         uploadWorkTagObserver?.let { observer ->
             try {
-                workManager.getWorkInfosByTagLiveData(NsAnalyticsConstants.NS_ANALYTICS_UPLOAD_WORKER_TAG)
-                    .removeObserver(observer)
+                // Remove from the SAME LiveData instance we observed on.
+                // Using the stored reference is critical - calling getWorkInfosByTagLiveData()
+                // again would return a different instance, and the observer would never be removed.
+                uploadWorkTagLiveData?.removeObserver(observer)
             } catch (e: Exception) {
                 Timber.w(e, "Error removing upload work tag observer")
             }
         }
         uploadWorkTagObserver = null
+        uploadWorkTagLiveData = null
     }
 
     /**
@@ -372,39 +383,65 @@ class NsAnalyticsConnectionViewModel(
                         // SharedPreferences for explicit completion data set by the worker.
 
                         if (_uiState.value.uploadState == UploadState.UPLOADING) {
-                            try {
-                                val lastWorkId =
-                                    NsAnalyticsSecureStorage.getLastUploadWorkId(context)
+                            // Capture and clear the tracked ID FIRST to prevent re-processing
+                            // by duplicate LiveData callbacks
+                            val capturedTrackedId = trackedTagUploadWorkId
+                            trackedTagUploadWorkId = null
 
-                                if (lastWorkId == trackedTagUploadWorkId.toString()) {
-                                    // This work ID completed - check if success or failure
-                                    val success =
-                                        NsAnalyticsSecureStorage.getLastUploadSuccess(context)
-                                    val recordsCount =
-                                        NsAnalyticsSecureStorage.getLastUploadRecordsCount(context)
+                            if (capturedTrackedId != null) {
+                                try {
+                                    val lastWorkId =
+                                        NsAnalyticsSecureStorage.getLastUploadWorkId(context)
 
-                                    if (success) {
-                                        handleUploadCompletionFromTag(workInfos, recordsCount)
-                                        refreshLastUploadTimeFromStorage()
-                                    } else {
-                                        // Read error type from SharedPreferences and handle accordingly
-                                        val errorType =
-                                            NsAnalyticsSecureStorage.getLastUploadErrorType(context)
-                                        handleUploadFailureByErrorType(errorType)
+                                    if (lastWorkId == capturedTrackedId.toString()) {
+                                        val success =
+                                            NsAnalyticsSecureStorage.getLastUploadSuccess(context)
+                                        val recordsCount =
+                                            NsAnalyticsSecureStorage.getLastUploadRecordsCount(
+                                                context
+                                            )
+
+                                        if (success) {
+                                            handleUploadCompletionFromTag(workInfos, recordsCount)
+                                            refreshLastUploadTimeFromStorage()
+                                        } else {
+                                            val errorType =
+                                                NsAnalyticsSecureStorage.getLastUploadErrorType(
+                                                    context
+                                                )
+                                            handleUploadFailureByErrorType(errorType)
+                                        }
+
+                                        NsAnalyticsSecureStorage.clearLastUploadCompletion(context)
+                                    } else if (lastWorkId != null) {
+                                        // ACTUAL work ID mismatch - we have completion data for a different work
+                                        // This is unexpected - reset to IDLE only if still uploading
+                                        if (_uiState.value.uploadState == UploadState.UPLOADING) {
+                                            Timber.w(
+                                                "ENQUEUED: Work ID mismatch. captured=%s, found=%s. Resetting to IDLE.",
+                                                capturedTrackedId,
+                                                lastWorkId
+                                            )
+                                            _uiState.value = _uiState.value.copy(
+                                                isUploading = false,
+                                                uploadState = UploadState.IDLE,
+                                                uploadStatusMessage = context.getString(R.string.ns_analytics_upload_status_ready),
+                                                uploadProgress = 0f
+                                            )
+                                        }
                                     }
-
-                                    NsAnalyticsSecureStorage.clearLastUploadCompletion(context)
-                                    trackedTagUploadWorkId = null
+                                    // else: No completion data in SharedPrefs (lastWorkId == null)
+                                    // This means either:
+                                    // 1. First callback already processed completion and cleared SharedPrefs
+                                    // 2. Work is still running/no completion yet
+                                    // Either way, do NOT reset - would overwrite the correct state
+                                } catch (e: Exception) {
+                                    Timber.e(
+                                        e,
+                                        "Failed to read upload completion data from SharedPreferences"
+                                    )
+                                    // Log error - state will be determined by polling
                                 }
-                                // else: Different work ID or not set - likely retry, keep tracking
-                            } catch (e: Exception) {
-                                Timber.e(
-                                    e,
-                                    "Failed to read upload completion data from SharedPreferences"
-                                )
-                                // Assume failure on read error to avoid getting stuck in UPLOADING state
-                                handleUploadFailureFromTag(trackedWork)
-                                trackedTagUploadWorkId = null
                             }
                         } else {
                             // Not uploading - clear tracking
@@ -547,8 +584,8 @@ class NsAnalyticsConnectionViewModel(
      * Handles upload failure detected by the tag-based observer.
      */
     private fun handleUploadFailureFromTag(workInfo: WorkInfo) {
-        // Persist failure state until next upload attempt
         lastUploadWasFailure = true
+        lastUploadCompletionTime = System.currentTimeMillis()
 
         val errorType = workInfo.outputData.getString(NsAnalyticsConstants.ERROR_OUTPUT_KEY_TYPE)
 
@@ -691,6 +728,7 @@ class NsAnalyticsConnectionViewModel(
      */
     private fun handleUploadFailureByErrorType(errorType: String?) {
         lastUploadWasFailure = true
+        lastUploadCompletionTime = System.currentTimeMillis()
 
         when (errorType) {
             NsAnalyticsConstants.ERROR_CODE_QUOTA_EXCEEDED -> {
@@ -756,8 +794,8 @@ class NsAnalyticsConnectionViewModel(
      * Handles upload cancellation detected by the tag-based observer.
      */
     private fun handleUploadCancelledFromTag() {
-        // Persist cancelled/failure state until next upload attempt
         lastUploadWasFailure = true
+        lastUploadCompletionTime = System.currentTimeMillis()
 
         _uiState.value = _uiState.value.copy(
             isUploading = false,
