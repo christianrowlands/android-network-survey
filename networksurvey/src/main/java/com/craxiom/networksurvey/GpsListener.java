@@ -62,6 +62,8 @@ public class GpsListener implements LocationListener
         if (listener != null)
         {
             listeners.add(listener);
+            Timber.d("GpsListener: registered listener %s, total listeners: %d",
+                    listener.getClass().getSimpleName(), listeners.size());
         }
     }
 
@@ -76,18 +78,23 @@ public class GpsListener implements LocationListener
         if (listener != null)
         {
             listeners.remove(listener);
+            Timber.d("GpsListener: unregistered listener %s, remaining listeners: %d",
+                    listener.getClass().getSimpleName(), listeners.size());
         }
     }
 
     @Override
     public void onLocationChanged(@NonNull Location location)
     {
+        Timber.d("GpsListener.onLocationChanged: provider=%s, accuracy=%.1f, listeners=%d",
+                location.getProvider(), location.getAccuracy(), listeners.size());
         updateLocation(location);
     }
 
     @Override
     public void onStatusChanged(String provider, int status, Bundle extras)
     {
+        Timber.d("GpsListener.onStatusChanged: provider=%s, status=%d (deprecated but logging for diagnostics)", provider, status);
         for (LocationListener listener : listeners)
         {
             try

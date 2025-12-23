@@ -28,6 +28,7 @@ import android.os.Looper
 import android.os.SystemClock
 import android.util.Log
 import androidx.core.content.ContextCompat
+import timber.log.Timber
 import com.craxiom.networksurvey.gpstest.util.hasPermission
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -79,18 +80,20 @@ class SharedGnssStatusManager(
             }
 
             override fun onFirstFix(ttffMillis: Int) {
+                Timber.i("GnssStatus.onFirstFix: ttff=${ttffMillis}ms (GNSS mechanism WORKS)")
                 _firstFixState.value = FirstFixState.Acquired(ttffMillis)
                 _fixState.value = FixState.Acquired
             }
 
             override fun onSatelliteStatusChanged(status: GnssStatus) {
+                Timber.d("GnssStatus.onSatelliteStatusChanged: satelliteCount=${status.satelliteCount}")
                 val location = locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER)
+                Timber.d("GnssStatus getLastKnownLocation(GPS): ${if (location != null) "has location, accuracy=${location.accuracy}" else "null"}")
                 if (location != null) {
                     _fixState.value = checkHaveFix(context, location, prefs)
                 } else {
                     _fixState.value = FixState.NotAcquired
                 }
-                //Log.d(TAG, "New gnssStatus: ${status}")
                 // Send the new location to the Flow observers
                 trySend(status)
             }

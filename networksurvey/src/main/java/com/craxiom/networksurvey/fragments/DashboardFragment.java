@@ -190,6 +190,7 @@ public class DashboardFragment extends AServiceDataFragment implements LocationL
     @Override
     protected void onSurveyServiceConnected(NetworkSurveyService service)
     {
+        Timber.d("DashboardFragment: registering as location listener");
         service.registerLocationListener(this);
         service.registerMqttConnectionStateListener(this);
         service.registerLoggingChangeListener(this);
@@ -207,6 +208,8 @@ public class DashboardFragment extends AServiceDataFragment implements LocationL
         // location provider is disabled or that the location permission is missing and we don't
         // want to override that.
         Location latestLocation = service.getPrimaryLocationListener().getLatestLocation();
+        Timber.d("DashboardFragment: getLatestLocation() returned %s",
+                latestLocation != null ? "location with accuracy=" + latestLocation.getAccuracy() : "null");
         if (latestLocation != null) updateLocationTextView(latestLocation);
 
         Context context = getContext();
@@ -285,6 +288,8 @@ public class DashboardFragment extends AServiceDataFragment implements LocationL
     @Override
     public void onLocationChanged(@NonNull Location location)
     {
+        Timber.d("DashboardFragment.onLocationChanged: provider=%s, accuracy=%.1f",
+                location.getProvider(), location.getAccuracy());
         viewModel.setLocation(location);
     }
 

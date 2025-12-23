@@ -46,7 +46,7 @@ class SharedLocationManager(
         val locationManager = context.getSystemService(Context.LOCATION_SERVICE) as LocationManager
         // Use LocationListenerCompat to avoid crashes on API Level 30 and lower (#627)
         val callback = LocationListenerCompat { location ->
-            //Log.d(TAG, "New location: ${location.toNotificationTitle()}")
+            Timber.d("SharedLocationManager received location: provider=${location.provider}, accuracy=${location.accuracy}")
             // Send the new location to the Flow observers
             trySend(location)
         }
@@ -74,7 +74,9 @@ class SharedLocationManager(
                 hasGspProvider = locationManager.getProvider(LocationManager.GPS_PROVIDER) != null
             }
 
+            Timber.d("SharedLocationManager: hasGpsProvider=$hasGspProvider")
             if (hasGspProvider) {
+                Timber.d("SharedLocationManager: calling requestLocationUpdates(GPS_PROVIDER)")
                 locationManager.requestLocationUpdates(
                     LocationManager.GPS_PROVIDER,
                     minTimeMillis(context, prefs),
@@ -82,10 +84,10 @@ class SharedLocationManager(
                     callback,
                     context.mainLooper
                 )
+                Timber.d("SharedLocationManager: requestLocationUpdates completed without exception")
             } else {
-                Timber.e("No GPS provider available")
+                Timber.e("SharedLocationManager: No GPS provider available")
                 close()
-
             }
         } catch (e: Exception) {
             Log.e(TAG, "Exception in location flow: $e")

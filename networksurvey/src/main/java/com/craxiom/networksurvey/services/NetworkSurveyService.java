@@ -1737,7 +1737,13 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
      */
     public void updateLocationListener()
     {
-        if (!isBeingUsed()) return;
+        Timber.i("updateLocationListener() called");
+
+        if (!isBeingUsed())
+        {
+            Timber.i("updateLocationListener() returning early - service not being used");
+            return;
+        }
 
         // Don't register location listeners if paused for battery
         if (isPausedForBattery())
@@ -1808,6 +1814,25 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
                 locationProviderPreference = PreferenceUtils.getLocationProviderPreference(getApplicationContext());
 
                 String locationProviderMapping = getLocationProviderFromPreference(locationProviderPreference);
+
+                // Diagnostic logging for GrapheneOS location issue investigation
+                Timber.i("Location provider preference: %d, mapped to: %s", locationProviderPreference, locationProviderMapping);
+                Timber.i("All available providers: %s", locationManager.getAllProviders());
+                boolean fusedEnabled = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && locationManager.isProviderEnabled(LocationManager.FUSED_PROVIDER);
+                boolean gpsEnabled = locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER);
+                boolean networkEnabled = locationManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER);
+                boolean passiveEnabled = locationManager.isProviderEnabled(LocationManager.PASSIVE_PROVIDER);
+                Timber.i("Provider enabled status - FUSED: %b, GPS: %b, NETWORK: %b, PASSIVE: %b",
+                        fusedEnabled, gpsEnabled, networkEnabled, passiveEnabled);
+
+                // Log permission status
+                boolean fineLocation = ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED;
+                boolean coarseLocation = ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED;
+                boolean backgroundLocation = Build.VERSION.SDK_INT < Build.VERSION_CODES.Q ||
+                        ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_BACKGROUND_LOCATION) == PackageManager.PERMISSION_GRANTED;
+                Timber.i("Permission status - FINE: %b, COARSE: %b, BACKGROUND: %b",
+                        fineLocation, coarseLocation, backgroundLocation);
+
                 if (locationManager.isProviderEnabled(locationProviderMapping))
                 {
                     provider = locationProviderMapping;
@@ -1824,7 +1849,13 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
                 {
                     provider = LocationManager.PASSIVE_PROVIDER;
                 }
+
+                Timber.i("Selected provider for requestLocationUpdates: %s", provider);
                 locationManager.requestLocationUpdates(provider, smallestScanRate, 0f, primaryLocationListener, serviceLooper);
+                Timber.i("requestLocationUpdates() completed without exception - provider: %s, scanRate: %d", provider, smallestScanRate);
+
+                // Diagnostic: Test getLastKnownLocation for ALL providers to understand what's available
+                testGetLastKnownLocationForAllProviders(locationManager);
 
                 updateOtherLocationListeners(locationProviderPreference, locationManager, smallestScanRate);
             } catch (Throwable t)
@@ -1886,6 +1917,55 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
         {
             locationManager.removeUpdates(gnssLocationListener);
             locationManager.removeUpdates(networkLocationListener);
+        }
+    }
+
+    /**
+     * Diagnostic method to test getLastKnownLocation for all providers.
+     * This helps diagnose issues where requestLocationUpdates doesn't deliver callbacks
+     * but getLastKnownLocation might still work.
+     */
+    @SuppressLint("MissingPermission")
+    private void testGetLastKnownLocationForAllProviders(LocationManager locationManager)
+    {
+        String[] providers = {LocationManager.GPS_PROVIDER, LocationManager.NETWORK_PROVIDER, LocationManager.PASSIVE_PROVIDER};
+        for (String testProvider : providers)
+        {
+            try
+            {
+                Location loc = locationManager.getLastKnownLocation(testProvider);
+                if (loc != null)
+                {
+                    long ageMs = System.currentTimeMillis() - loc.getTime();
+                    Timber.i("getLastKnownLocation(%s): accuracy=%.1f, age=%dms", testProvider, loc.getAccuracy(), ageMs);
+                } else
+                {
+                    Timber.i("getLastKnownLocation(%s): null", testProvider);
+                }
+            } catch (Exception e)
+            {
+                Timber.e(e, "getLastKnownLocation(%s) threw exception", testProvider);
+            }
+        }
+
+        // Also test FUSED on Android 12+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S)
+        {
+            try
+            {
+                Location loc = locationManager.getLastKnownLocation(LocationManager.FUSED_PROVIDER);
+                if (loc != null)
+                {
+                    long ageMs = System.currentTimeMillis() - loc.getTime();
+                    Timber.i("getLastKnownLocation(fused): accuracy=%.1f, age=%dms", loc.getAccuracy(), ageMs);
+                } else
+                {
+                    Timber.i("getLastKnownLocation(fused): null");
+                }
+            } catch (Exception e)
+            {
+                Timber.e(e, "getLastKnownLocation(fused) threw exception");
+            }
         }
     }
 
