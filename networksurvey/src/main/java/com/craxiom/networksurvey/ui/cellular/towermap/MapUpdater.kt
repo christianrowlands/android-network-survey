@@ -44,15 +44,15 @@ internal class MapPropertiesNode(
     private val locationCallback: LocationEngineCallback<LocationEngineResult> =
         object : LocationEngineCallback<LocationEngineResult> {
             override fun onSuccess(result: LocationEngineResult) {
-                Timber.d("MapLibre LocationEngine.onSuccess: hasLocation=${result.lastLocation != null} (Map mechanism WORKS)")
                 result.lastLocation?.let { location ->
-                    Timber.d("MapLibre location: provider=${location.provider}, accuracy=${location.accuracy}")
+                    // FIXME I don't think I need this camera update
+                    //cameraPositionState.location = location
                     onMyLocationChanged(location)
                 }
             }
 
             override fun onFailure(exception: Exception) {
-                Timber.e(exception, "MapLibre LocationEngine.onFailure")
+                Timber.e(exception, "Location update for the tower map failed")
             }
         }
 
@@ -80,7 +80,6 @@ internal class MapPropertiesNode(
         )
 
         locationEngine = map.locationComponent.locationEngine
-        Timber.d("MapLibre LocationEngine type: ${locationEngine?.javaClass?.simpleName}")
         if (locationEngine != null) {
             val request = LocationEngineRequest.Builder(LOCATION_REQUEST_INTERVAL)
                 .setPriority(LocationEngineRequest.PRIORITY_HIGH_ACCURACY)
