@@ -113,7 +113,11 @@ public class DashboardFragment extends AServiceDataFragment implements LocationL
     private int nsAnalyticsBluetoothCount = 0;
     private int nsAnalyticsGnssCount = 0;
 
+    public static final long LOCATION_HINT_DELAY_MS = 15_000;
+
     private final Handler handler = new Handler(Looper.getMainLooper());
+    private Runnable locationHintRunnable;
+
     private final Runnable updateUploadCountsRunnable = new Runnable()
     {
         @Override
@@ -357,6 +361,7 @@ public class DashboardFragment extends AServiceDataFragment implements LocationL
         binding.uploadSettingsButton.setOnClickListener(v -> navigateToUploadSettings());
         binding.uploadButton.setOnClickListener(v -> showUploadDialog());
         binding.uploadCancelButton.setOnClickListener(v -> cancelUploads());
+        binding.locationCard.locationHint.setOnClickListener(v -> navigateToSettings());
 
         initializeLoggingSwitch(binding.cellularLoggingToggleSwitch, (newEnabledState, toggleSwitch) -> {
             if (newEnabledState && checkBatteryOptimizationBeforeLogging())
@@ -830,6 +835,7 @@ public class DashboardFragment extends AServiceDataFragment implements LocationL
             } else
             {
                 displayText = getString(R.string.searching_for_location);
+                startLocationHintTimer();
             }
 
             textColor = R.color.connectionStatusConnecting;
@@ -847,6 +853,9 @@ public class DashboardFragment extends AServiceDataFragment implements LocationL
      */
     private void updateLocationTextView(Location latestLocation)
     {
+        cancelLocationHintTimer();
+        hideLocationHint();
+
         final TextView locationTextView = binding.locationCard.location;
         final TextView altitudeTextView = binding.locationCard.altitude;
         final TextView accuracyTextView = binding.locationCard.accuracy;
@@ -867,6 +876,65 @@ public class DashboardFragment extends AServiceDataFragment implements LocationL
             altitudeTextView.setText(getString(R.string.altitude_initial));
 
             accuracyTextView.setText(getString(R.string.accuracy_initial));
+        }
+    }
+
+    /**
+     * Starts a timer to show a hint about changing location provider if GPS takes too long.
+     */
+    private void startLocationHintTimer()
+    {
+        cancelLocationHintTimer();
+        locationHintRunnable = this::showLocationHint;
+        handler.postDelayed(locationHintRunnable, LOCATION_HINT_DELAY_MS);
+    }
+
+    /**
+     * Cancels the location hint timer if it's running.
+     */
+    private void cancelLocationHintTimer()
+    {
+        if (locationHintRunnable != null)
+        {
+            handler.removeCallbacks(locationHintRunnable);
+            locationHintRunnable = null;
+        }
+    }
+
+    /**
+     * Shows the location hint suggesting the user try a different location provider.
+     */
+    private void showLocationHint()
+    {
+        if (binding != null)
+        {
+            binding.locationCard.locationHint.setVisibility(View.VISIBLE);
+        }
+    }
+
+    /**
+     * Hides the location hint.
+     */
+    private void hideLocationHint()
+    {
+        if (binding != null)
+        {
+            binding.locationCard.locationHint.setVisibility(View.GONE);
+        }
+    }
+
+    /**
+     * Navigates to the app's Settings screen.
+     */
+    private void navigateToSettings()
+    {
+        try
+        {
+            SharedViewModel sharedViewModel = new ViewModelProvider(requireActivity()).get(SharedViewModel.class);
+            sharedViewModel.triggerNavigationToSettings();
+        } catch (Exception e)
+        {
+            Timber.e(e, "Could not navigate to Settings");
         }
     }
 

@@ -1,5 +1,6 @@
 package com.craxiom.networksurvey.fragments;
 
+import static com.craxiom.networksurvey.fragments.DashboardFragment.LOCATION_HINT_DELAY_MS;
 import static com.craxiom.networksurvey.ui.ASignalChartViewModelKt.UNKNOWN_RSSI;
 
 import android.Manifest;
@@ -14,6 +15,8 @@ import android.location.LocationListener;
 import android.location.LocationManager;
 import android.location.LocationProvider;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.provider.Settings;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -90,6 +93,8 @@ public class NetworkDetailsFragment extends AServiceDataFragment implements ICel
     private static final int RSCP_UNSET_VALUE_24 = -24;
 
     private final DecimalFormat locationFormat = new DecimalFormat("###.#####");
+    private final Handler handler = new Handler(Looper.getMainLooper());
+    private Runnable locationHintRunnable;
 
     private int subscriptionId;
 
@@ -268,6 +273,7 @@ public class NetworkDetailsFragment extends AServiceDataFragment implements ICel
     {
         binding.overrideNetworkGroup.setOnClickListener(c -> showOverrideNetworkInfoDialog());
         binding.cellularInfoIcon.setOnClickListener(c -> showCellularInfoDialog());
+        binding.locationCard.locationHint.setOnClickListener(v -> navigateToSettings());
     }
 
     /**
@@ -429,6 +435,7 @@ public class NetworkDetailsFragment extends AServiceDataFragment implements ICel
             } else
             {
                 displayText = getString(R.string.searching_for_location);
+                startLocationHintTimer();
             }
 
             textColor = R.color.connectionStatusConnecting;
@@ -446,6 +453,9 @@ public class NetworkDetailsFragment extends AServiceDataFragment implements ICel
      */
     private void updateLocationTextView(Location latestLocation)
     {
+        cancelLocationHintTimer();
+        hideLocationHint();
+
         final TextView locationTextView = binding.locationCard.location;
         final TextView altitudeTextView = binding.locationCard.altitude;
         final TextView accuracyTextView = binding.locationCard.accuracy;
@@ -467,6 +477,64 @@ public class NetworkDetailsFragment extends AServiceDataFragment implements ICel
             altitudeTextView.setText(getString(R.string.altitude_initial));
 
             accuracyTextView.setText(getString(R.string.accuracy_initial));
+        }
+    }
+
+    /**
+     * Starts a timer to show a hint about changing location provider if GPS takes too long.
+     */
+    private void startLocationHintTimer()
+    {
+        cancelLocationHintTimer();
+        locationHintRunnable = this::showLocationHint;
+        handler.postDelayed(locationHintRunnable, LOCATION_HINT_DELAY_MS);
+    }
+
+    /**
+     * Cancels the location hint timer if it's running.
+     */
+    private void cancelLocationHintTimer()
+    {
+        if (locationHintRunnable != null)
+        {
+            handler.removeCallbacks(locationHintRunnable);
+            locationHintRunnable = null;
+        }
+    }
+
+    /**
+     * Shows the location hint suggesting the user try a different location provider.
+     */
+    private void showLocationHint()
+    {
+        if (binding != null)
+        {
+            binding.locationCard.locationHint.setVisibility(View.VISIBLE);
+        }
+    }
+
+    /**
+     * Hides the location hint.
+     */
+    private void hideLocationHint()
+    {
+        if (binding != null)
+        {
+            binding.locationCard.locationHint.setVisibility(View.GONE);
+        }
+    }
+
+    /**
+     * Navigates to the app's Settings screen.
+     */
+    private void navigateToSettings()
+    {
+        try
+        {
+            sharedViewModel.triggerNavigationToSettings();
+        } catch (Exception e)
+        {
+            Timber.e(e, "Could not navigate to Settings");
         }
     }
 

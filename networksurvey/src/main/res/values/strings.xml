@@ -293,6 +293,7 @@ but work independently, so you have full control over how you handle your data.<
     <string name="no_gps_device">No GPS detected in device!</string>
     <string name="turn_on_gps">Please turn on GPS</string>
     <string name="searching_for_location">Searching for GPS …</string>
+    <string name="location_hint_open_settings">GPS taking a while? Try changing the Location Provider to GNSS in Settings.</string>
     <string name="low_gps_confidence">Low GPS Confidence</string>
     <string name="altitude_initial">Alt: </string>
     <string name="altitude_value">Alt: %1$s meters</string>

@@ -81,6 +81,22 @@
             android:text="@string/accuracy_initial"
             android:textIsSelectable="true" />
 
+        <TextView
+            android:id="@+id/location_hint"
+            style="@style/StandardText"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="@dimen/large_margin"
+            android:layout_marginEnd="@dimen/large_margin"
+            android:layout_marginBottom="@dimen/small_margin"
+            android:text="@string/location_hint_open_settings"
+            android:textColor="@color/connectionStatusConnecting"
+            android:textSize="12sp"
+            android:visibility="gone"
+            android:clickable="true"
+            android:focusable="true"
+            android:background="?attr/selectableItemBackground" />
+
     </LinearLayout>
 
 </androidx.cardview.widget.CardView>
