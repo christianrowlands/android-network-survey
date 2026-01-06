@@ -90,7 +90,7 @@
             android:layout_marginEnd="@dimen/large_margin"
             android:layout_marginBottom="@dimen/small_margin"
             android:text="@string/location_hint_open_settings"
-            android:textColor="@color/connectionStatusConnecting"
+            android:textColor="?attr/colorPrimary"
             android:textSize="12sp"
             android:visibility="gone"
             android:clickable="true"

@@ -18,6 +18,7 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
 import android.provider.Settings;
+import android.text.Html;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -190,6 +191,7 @@ public class NetworkDetailsFragment extends AServiceDataFragment implements ICel
     @Override
     public void onDestroyView()
     {
+        cancelLocationHintTimer();
         removeObservers();
 
         super.onDestroyView();
@@ -507,8 +509,11 @@ public class NetworkDetailsFragment extends AServiceDataFragment implements ICel
      */
     private void showLocationHint()
     {
-        if (binding != null)
+        Context context = getContext();
+        if (binding != null && context != null)
         {
+            binding.locationCard.locationHint.setText(
+                    Html.fromHtml(context.getString(R.string.location_hint_open_settings), Html.FROM_HTML_MODE_LEGACY));
             binding.locationCard.locationHint.setVisibility(View.VISIBLE);
         }
     }

@@ -117,6 +117,7 @@ public class DashboardFragment extends AServiceDataFragment implements LocationL
 
     private final Handler handler = new Handler(Looper.getMainLooper());
     private Runnable locationHintRunnable;
+    private SharedViewModel sharedViewModel;
 
     private final Runnable updateUploadCountsRunnable = new Runnable()
     {
@@ -143,6 +144,7 @@ public class DashboardFragment extends AServiceDataFragment implements LocationL
         binding = FragmentDashboardBinding.inflate(inflater);
 
         viewModel = new ViewModelProvider(requireActivity()).get(DashboardViewModel.class);
+        sharedViewModel = new ViewModelProvider(requireActivity()).get(SharedViewModel.class);
 
         initializeLocationTextView();
         initializeUiListeners();
@@ -181,6 +183,7 @@ public class DashboardFragment extends AServiceDataFragment implements LocationL
     @Override
     public void onDestroyView()
     {
+        cancelLocationHintTimer();
         removeObservers();
         super.onDestroyView();
     }
@@ -906,8 +909,11 @@ public class DashboardFragment extends AServiceDataFragment implements LocationL
      */
     private void showLocationHint()
     {
-        if (binding != null)
+        Context context = getContext();
+        if (binding != null && context != null)
         {
+            binding.locationCard.locationHint.setText(
+                    Html.fromHtml(context.getString(R.string.location_hint_open_settings), Html.FROM_HTML_MODE_LEGACY));
             binding.locationCard.locationHint.setVisibility(View.VISIBLE);
         }
     }
@@ -930,7 +936,6 @@ public class DashboardFragment extends AServiceDataFragment implements LocationL
     {
         try
         {
-            SharedViewModel sharedViewModel = new ViewModelProvider(requireActivity()).get(SharedViewModel.class);
             sharedViewModel.triggerNavigationToSettings();
         } catch (Exception e)
         {
@@ -1335,7 +1340,6 @@ public class DashboardFragment extends AServiceDataFragment implements LocationL
      */
     private void navigateToNsAnalyticsConnection()
     {
-        SharedViewModel sharedViewModel = new ViewModelProvider(requireActivity()).get(SharedViewModel.class);
         sharedViewModel.triggerNavigationToNsAnalyticsConnection();
     }
 
@@ -1676,11 +1680,7 @@ public class DashboardFragment extends AServiceDataFragment implements LocationL
     {
         try
         {
-            FragmentActivity activity = getActivity();
-            if (activity == null) return;
-
-            SharedViewModel viewModel = new ViewModelProvider(requireActivity()).get(SharedViewModel.class);
-            viewModel.triggerNavigationToMqttConnection();
+            sharedViewModel.triggerNavigationToMqttConnection();
         } catch (Exception e)
         {
             // It is possible that the user has tried to connect, the snackbar message is displayed,
@@ -1694,11 +1694,7 @@ public class DashboardFragment extends AServiceDataFragment implements LocationL
     {
         try
         {
-            FragmentActivity activity = getActivity();
-            if (activity == null) return;
-
-            SharedViewModel viewModel = new ViewModelProvider(requireActivity()).get(SharedViewModel.class);
-            viewModel.triggerNavigationToUploadSettings();
+            sharedViewModel.triggerNavigationToUploadSettings();
         } catch (Exception e)
         {
             Timber.e(e, "Could not navigate to the Upload Preferences fragment");
@@ -1860,14 +1856,8 @@ public class DashboardFragment extends AServiceDataFragment implements LocationL
         BatteryOptimizationHelper batteryHelper = new BatteryOptimizationHelper(context);
         if (batteryHelper.shouldPromptForBatteryOptimization())
         {
-            // Trigger the battery optimization dialog through SharedViewModel
-            FragmentActivity activity = getActivity();
-            if (activity != null)
-            {
-                SharedViewModel sharedViewModel = new ViewModelProvider(requireActivity()).get(SharedViewModel.class);
-                sharedViewModel.triggerBatteryOptimizationDialog();
-                return true;
-            }
+            sharedViewModel.triggerBatteryOptimizationDialog();
+            return true;
         }
         return false;
     }
