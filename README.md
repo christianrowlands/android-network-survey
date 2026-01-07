@@ -224,7 +224,7 @@ SHA-256: `F5:85:5E:DE:9F:51:DD:EF:D7:2B:1C:D5:A2:29:76:1A:B7:35:2B:30:AD:4F:5F:C
 Package: `com.craxiom.networksurvey`
 SHA-256: `AB:F5:AD:29:11:FE:31:91:6F:4E:25:5C:17:33:A3:F6:BC:2C:AB:2F:28:16:C9:58:7D:E1:1A:41:58:71:AF:07`
 
-Verification info also published at: [link to networksurvey.app]
+Verification info also published at: https://networksurvey.app/manual/permissions/apk-verification/
 
 ## Credits and Acknowledgements
 
