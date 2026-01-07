@@ -210,6 +210,22 @@ When started by the user, survey records are stored locally and can be uploaded 
 
 For more details, visit the **[Network Survey User Manual](https://networksurvey.app/manual#data-upload)**.
 
+## APK Verification
+
+To verify the authenticity of Network Survey, compare the signing certificate
+SHA-256 fingerprint using `apksigner verify --print-certs <apk-file>` or apps
+like AppVerifier.
+
+### Google Play Store
+Package: `com.craxiom.networksurvey`
+SHA-256: `F5:85:5E:DE:9F:51:DD:EF:D7:2B:1C:D5:A2:29:76:1A:B7:35:2B:30:AD:4F:5F:CE:6D:E2:48:73:9F:4B:4C:79`
+
+### GitHub Releases / Direct APK
+Package: `com.craxiom.networksurvey`
+SHA-256: `AB:F5:AD:29:11:FE:31:91:6F:4E:25:5C:17:33:A3:F6:BC:2C:AB:2F:28:16:C9:58:7D:E1:1A:41:58:71:AF:07`
+
+Verification info also published at: [link to networksurvey.app]
+
 ## Credits and Acknowledgements
 
 ### Credits
