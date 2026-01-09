@@ -1,6 +1,5 @@
 package com.craxiom.networksurvey.fragments;
 
-import static com.craxiom.networksurvey.fragments.DashboardFragment.LOCATION_HINT_DELAY_MS;
 import static com.craxiom.networksurvey.ui.ASignalChartViewModelKt.UNKNOWN_RSSI;
 
 import android.Manifest;
@@ -18,7 +17,6 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
 import android.provider.Settings;
-import android.text.Html;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -63,6 +61,7 @@ import com.craxiom.networksurvey.ui.main.SharedViewModel;
 import com.craxiom.networksurvey.util.CalculationUtils;
 import com.craxiom.networksurvey.util.CellularUtils;
 import com.craxiom.networksurvey.util.ColorUtils;
+import com.craxiom.networksurvey.util.LocationHintManager;
 import com.craxiom.networksurvey.util.ParserUtils;
 import com.mackhartley.roundedprogressbar.RoundedProgressBar;
 
@@ -95,7 +94,7 @@ public class NetworkDetailsFragment extends AServiceDataFragment implements ICel
 
     private final DecimalFormat locationFormat = new DecimalFormat("###.#####");
     private final Handler handler = new Handler(Looper.getMainLooper());
-    private Runnable locationHintRunnable;
+    private LocationHintManager locationHintManager;
 
     private int subscriptionId;
 
@@ -124,6 +123,7 @@ public class NetworkDetailsFragment extends AServiceDataFragment implements ICel
         viewModel = new ViewModelProvider(requireActivity()).get(getClass().getName() + subscriptionId, CellularViewModel.class);
         chartViewModel = new ViewModelProvider(requireActivity()).get(getClass().getName() + "cellular_chart" + subscriptionId, CellularChartViewModel.class);
         sharedViewModel = new ViewModelProvider(requireActivity()).get(SharedViewModel.class);
+        locationHintManager = new LocationHintManager(handler);
 
         initializeLocationTextView();
 
@@ -191,7 +191,7 @@ public class NetworkDetailsFragment extends AServiceDataFragment implements ICel
     @Override
     public void onDestroyView()
     {
-        cancelLocationHintTimer();
+        locationHintManager.cancelTimer();
         removeObservers();
 
         super.onDestroyView();
@@ -437,7 +437,7 @@ public class NetworkDetailsFragment extends AServiceDataFragment implements ICel
             } else
             {
                 displayText = getString(R.string.searching_for_location);
-                startLocationHintTimer();
+                locationHintManager.startTimer(() -> locationHintManager.showHint(binding.locationCard.locationHint, getContext()));
             }
 
             textColor = R.color.connectionStatusConnecting;
@@ -455,8 +455,8 @@ public class NetworkDetailsFragment extends AServiceDataFragment implements ICel
      */
     private void updateLocationTextView(Location latestLocation)
     {
-        cancelLocationHintTimer();
-        hideLocationHint();
+        locationHintManager.cancelTimer();
+        locationHintManager.hideHint(binding.locationCard.locationHint);
 
         final TextView locationTextView = binding.locationCard.location;
         final TextView altitudeTextView = binding.locationCard.altitude;
@@ -479,53 +479,6 @@ public class NetworkDetailsFragment extends AServiceDataFragment implements ICel
             altitudeTextView.setText(getString(R.string.altitude_initial));
 
             accuracyTextView.setText(getString(R.string.accuracy_initial));
-        }
-    }
-
-    /**
-     * Starts a timer to show a hint about changing location provider if GPS takes too long.
-     */
-    private void startLocationHintTimer()
-    {
-        cancelLocationHintTimer();
-        locationHintRunnable = this::showLocationHint;
-        handler.postDelayed(locationHintRunnable, LOCATION_HINT_DELAY_MS);
-    }
-
-    /**
-     * Cancels the location hint timer if it's running.
-     */
-    private void cancelLocationHintTimer()
-    {
-        if (locationHintRunnable != null)
-        {
-            handler.removeCallbacks(locationHintRunnable);
-            locationHintRunnable = null;
-        }
-    }
-
-    /**
-     * Shows the location hint suggesting the user try a different location provider.
-     */
-    private void showLocationHint()
-    {
-        Context context = getContext();
-        if (binding != null && context != null)
-        {
-            binding.locationCard.locationHint.setText(
-                    Html.fromHtml(context.getString(R.string.location_hint_open_settings), Html.FROM_HTML_MODE_LEGACY));
-            binding.locationCard.locationHint.setVisibility(View.VISIBLE);
-        }
-    }
-
-    /**
-     * Hides the location hint.
-     */
-    private void hideLocationHint()
-    {
-        if (binding != null)
-        {
-            binding.locationCard.locationHint.setVisibility(View.GONE);
         }
     }
 

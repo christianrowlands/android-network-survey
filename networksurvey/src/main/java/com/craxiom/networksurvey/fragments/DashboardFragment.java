@@ -70,6 +70,7 @@ import com.craxiom.networksurvey.services.NetworkSurveyService;
 import com.craxiom.networksurvey.ui.main.SharedViewModel;
 import com.craxiom.networksurvey.ui.nsanalytics.NsAnalyticsComposeHelper;
 import com.craxiom.networksurvey.util.BatteryOptimizationHelper;
+import com.craxiom.networksurvey.util.LocationHintManager;
 import com.craxiom.networksurvey.util.MdmUtils;
 import com.craxiom.networksurvey.util.NsUtils;
 import com.craxiom.networksurvey.util.PreferenceUtils;
@@ -113,10 +114,8 @@ public class DashboardFragment extends AServiceDataFragment implements LocationL
     private int nsAnalyticsBluetoothCount = 0;
     private int nsAnalyticsGnssCount = 0;
 
-    public static final long LOCATION_HINT_DELAY_MS = 15_000;
-
     private final Handler handler = new Handler(Looper.getMainLooper());
-    private Runnable locationHintRunnable;
+    private LocationHintManager locationHintManager;
     private SharedViewModel sharedViewModel;
 
     private final Runnable updateUploadCountsRunnable = new Runnable()
@@ -145,6 +144,7 @@ public class DashboardFragment extends AServiceDataFragment implements LocationL
 
         viewModel = new ViewModelProvider(requireActivity()).get(DashboardViewModel.class);
         sharedViewModel = new ViewModelProvider(requireActivity()).get(SharedViewModel.class);
+        locationHintManager = new LocationHintManager(handler);
 
         initializeLocationTextView();
         initializeUiListeners();
@@ -183,7 +183,7 @@ public class DashboardFragment extends AServiceDataFragment implements LocationL
     @Override
     public void onDestroyView()
     {
-        cancelLocationHintTimer();
+        locationHintManager.cancelTimer();
         removeObservers();
         super.onDestroyView();
     }
@@ -838,7 +838,7 @@ public class DashboardFragment extends AServiceDataFragment implements LocationL
             } else
             {
                 displayText = getString(R.string.searching_for_location);
-                startLocationHintTimer();
+                locationHintManager.startTimer(() -> locationHintManager.showHint(binding.locationCard.locationHint, getContext()));
             }
 
             textColor = R.color.connectionStatusConnecting;
@@ -856,8 +856,8 @@ public class DashboardFragment extends AServiceDataFragment implements LocationL
      */
     private void updateLocationTextView(Location latestLocation)
     {
-        cancelLocationHintTimer();
-        hideLocationHint();
+        locationHintManager.cancelTimer();
+        locationHintManager.hideHint(binding.locationCard.locationHint);
 
         final TextView locationTextView = binding.locationCard.location;
         final TextView altitudeTextView = binding.locationCard.altitude;
@@ -879,53 +879,6 @@ public class DashboardFragment extends AServiceDataFragment implements LocationL
             altitudeTextView.setText(getString(R.string.altitude_initial));
 
             accuracyTextView.setText(getString(R.string.accuracy_initial));
-        }
-    }
-
-    /**
-     * Starts a timer to show a hint about changing location provider if GPS takes too long.
-     */
-    private void startLocationHintTimer()
-    {
-        cancelLocationHintTimer();
-        locationHintRunnable = this::showLocationHint;
-        handler.postDelayed(locationHintRunnable, LOCATION_HINT_DELAY_MS);
-    }
-
-    /**
-     * Cancels the location hint timer if it's running.
-     */
-    private void cancelLocationHintTimer()
-    {
-        if (locationHintRunnable != null)
-        {
-            handler.removeCallbacks(locationHintRunnable);
-            locationHintRunnable = null;
-        }
-    }
-
-    /**
-     * Shows the location hint suggesting the user try a different location provider.
-     */
-    private void showLocationHint()
-    {
-        Context context = getContext();
-        if (binding != null && context != null)
-        {
-            binding.locationCard.locationHint.setText(
-                    Html.fromHtml(context.getString(R.string.location_hint_open_settings), Html.FROM_HTML_MODE_LEGACY));
-            binding.locationCard.locationHint.setVisibility(View.VISIBLE);
-        }
-    }
-
-    /**
-     * Hides the location hint.
-     */
-    private void hideLocationHint()
-    {
-        if (binding != null)
-        {
-            binding.locationCard.locationHint.setVisibility(View.GONE);
         }
     }
 
