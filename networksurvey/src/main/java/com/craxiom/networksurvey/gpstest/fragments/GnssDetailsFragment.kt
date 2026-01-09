@@ -45,6 +45,13 @@ class GnssDetailsFragment : Fragment() {
         return ComposeView(requireContext()).apply {
             // Dispose the Composition when the view's LifecycleOwner is destroyed
             setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed)
+
+            // Disable focus to prevent ViewPager2 + Compose crash during page transitions.
+            // ViewPager2's focus management triggers Compose's focus search during layout,
+            // causing "performMeasureAndLayout called during measure layout" crash.
+            isFocusable = false
+            isFocusableInTouchMode = false
+
             setContent {
                 NsTheme {
                     GnssStatusScreen(viewModel = viewModel)

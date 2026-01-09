@@ -867,10 +867,15 @@
 
         </androidx.cardview.widget.CardView>
 
+        <!-- Focus disabled to prevent ViewPager2 + Compose crash during page transitions.
+             ViewPager2's focus management triggers Compose's focus search during layout,
+             causing "performMeasureAndLayout called during measure layout" crash. -->
         <androidx.compose.ui.platform.ComposeView
             android:id="@+id/compose_view"
             android:layout_width="match_parent"
-            android:layout_height="match_parent" />
+            android:layout_height="match_parent"
+            android:focusable="false"
+            android:focusableInTouchMode="false" />
 
         <androidx.cardview.widget.CardView
             android:id="@+id/neighbors_card_view"
