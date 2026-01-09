@@ -507,11 +507,13 @@ class NsAnalyticsConnectionViewModel(
         val workerProgress = workInfo.progress.getInt("progress", -1)
         val workerMax = workInfo.progress.getInt("progressMax", 100)
         val workerMessage = workInfo.progress.getString("progressMessage")
+        val recordsUploaded = workInfo.progress.getInt("recordsUploaded", 0)
 
         if (workerProgress >= 0 && workerMax > 0) {
             val progress = workerProgress.toFloat() / workerMax
             _uiState.value = _uiState.value.copy(
                 uploadProgress = progress,
+                uploadedRecords = recordsUploaded,
                 uploadStatusMessage = workerMessage
                     ?: context.getString(R.string.ns_analytics_upload_status_uploading)
             )

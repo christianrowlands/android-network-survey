@@ -380,7 +380,8 @@ class NsAnalyticsUploadWorker(context: Context, params: WorkerParameters) :
                 reportProgress(
                     progressAfter,
                     100,
-                    "Completed batch ${batchIndex + 1} of $totalBatches"
+                    "Completed batch ${batchIndex + 1} of $totalBatches",
+                    totalRecordsUploaded
                 )
             }
 
@@ -429,7 +430,7 @@ class NsAnalyticsUploadWorker(context: Context, params: WorkerParameters) :
     /**
      * Report progress to the system and any observers
      */
-    private fun reportProgress(value: Int, max: Int, message: String) {
+    private fun reportProgress(value: Int, max: Int, message: String, recordsUploaded: Int = 0) {
         if (isStopped) {
             return
         }
@@ -439,6 +440,7 @@ class NsAnalyticsUploadWorker(context: Context, params: WorkerParameters) :
                 .putInt("progress", value)
                 .putInt("progressMax", max)
                 .putString("progressMessage", message)
+                .putInt("recordsUploaded", recordsUploaded)
                 .build()
         )
     }
