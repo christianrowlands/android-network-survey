@@ -48,7 +48,6 @@ import com.craxiom.networksurvey.fragments.model.GsmNeighbor;
 import com.craxiom.networksurvey.fragments.model.LteNeighbor;
 import com.craxiom.networksurvey.fragments.model.NrNeighbor;
 import com.craxiom.networksurvey.fragments.model.UmtsNeighbor;
-import com.craxiom.networksurvey.gpstest.util.MathUtils;
 import com.craxiom.networksurvey.listeners.ICellularSurveyRecordListener;
 import com.craxiom.networksurvey.model.CellularProtocol;
 import com.craxiom.networksurvey.model.CellularRecordWrapper;
@@ -62,6 +61,7 @@ import com.craxiom.networksurvey.util.CalculationUtils;
 import com.craxiom.networksurvey.util.CellularUtils;
 import com.craxiom.networksurvey.util.ColorUtils;
 import com.craxiom.networksurvey.util.LocationHintManager;
+import com.craxiom.networksurvey.util.MeasurementFormatter;
 import com.craxiom.networksurvey.util.ParserUtils;
 import com.mackhartley.roundedprogressbar.RoundedProgressBar;
 
@@ -468,9 +468,11 @@ public class NetworkDetailsFragment extends AServiceDataFragment implements ICel
             locationTextView.setText(latLonString);
             locationTextView.setTextColor(getResources().getColor(R.color.normalText, null));
 
-            altitudeTextView.setText(getString(R.string.altitude_value, Long.toString(Math.round(latestLocation.getAltitude()))));
+            altitudeTextView.setText(getString(R.string.altitude_value,
+                    MeasurementFormatter.formatAltitude(requireContext(), latestLocation.getAltitude())));
 
-            accuracyTextView.setText(getString(R.string.accuracy_value, Integer.toString(MathUtils.roundAccuracy(latestLocation.getAccuracy()))));
+            accuracyTextView.setText(getString(R.string.accuracy_value,
+                    MeasurementFormatter.formatAccuracy(requireContext(), latestLocation.getAccuracy())));
         } else
         {
             locationTextView.setText(R.string.low_gps_confidence);

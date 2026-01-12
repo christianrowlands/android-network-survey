@@ -296,9 +296,9 @@ but work independently, so you have full control over how you handle your data.<
     <string name="location_hint_open_settings">GPS taking a while? Try changing the Location Provider to GNSS in &lt;u>Settings&lt;/u>.</string>
     <string name="low_gps_confidence">Low GPS Confidence</string>
     <string name="altitude_initial">Alt: </string>
-    <string name="altitude_value">Alt: %1$s meters</string>
+    <string name="altitude_value">Alt: %1$s</string>
     <string name="accuracy_initial">Accuracy: </string>
-    <string name="accuracy_value">Accuracy: %1$s meters</string>
+    <string name="accuracy_value">Accuracy: %1$s</string>
 
     <!-- Airplane Mode Messages -->
     <string name="airplane_mode_active">Airplane Mode Active</string>
@@ -800,6 +800,10 @@ but work independently, so you have full control over how you handle your data.<
     <string name="battery_paused_title">Surveys Paused - Low Battery</string>
     <string name="battery_warning_message">Battery approaching pause threshold (%1$d%% remaining)</string>
     <string name="battery_management_paused_description">All survey operations are paused to preserve battery. Operations will resume automatically when battery level rises above %1$d%% after charging.</string>
+
+    <!-- Display Settings -->
+    <string name="display_settings_category">Display Settings</string>
+    <string name="measurement_units_title">Measurement Units</string>
 
     <!-- SSID Exclusion List -->
     <string name="ssid_exclusion_list_title">SSID Exclusion List</string>

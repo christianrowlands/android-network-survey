@@ -23,11 +23,13 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.craxiom.networksurvey.R
 import com.craxiom.networksurvey.data.api.Tower
+import com.craxiom.networksurvey.util.MeasurementFormatter
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -86,6 +88,7 @@ fun TowerInfoDialog(
 
 @Composable
 private fun NetworkIdentitySection(tower: Tower) {
+    val context = LocalContext.current
     Column {
         // Section header with protocol badge on same line
         Row(
@@ -166,7 +169,10 @@ private fun NetworkIdentitySection(tower: Tower) {
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.SpaceBetween
                         ) {
-                            CompactInfoItem("Range", "${tower.range} m")
+                            CompactInfoItem(
+                                "Range",
+                                MeasurementFormatter.formatRange(context, tower.range)
+                            )
                             CompactInfoItem("Samples", tower.samples.toString())
                         }
                     }

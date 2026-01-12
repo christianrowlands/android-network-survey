@@ -1,5 +1,6 @@
 package com.craxiom.networksurvey.ui.cellular.towermap
 
+import android.content.Context
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.ComposeNode
@@ -7,17 +8,19 @@ import androidx.compose.runtime.currentComposer
 import androidx.compose.runtime.remember
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.platform.LocalContext
+import com.craxiom.networksurvey.util.MeasurementFormatter
 import org.maplibre.android.geometry.LatLng
 import org.maplibre.android.plugins.annotation.Symbol
 import org.maplibre.android.plugins.annotation.SymbolManager
 import org.maplibre.android.plugins.annotation.SymbolOptions
-import kotlin.math.roundToInt
 
 /**
  * Node for managing a distance text symbol on the map.
  */
 internal class DistanceSymbolNode(
     private val symbolManager: SymbolManager,
+    private val context: Context,
     startPoint: LatLng,
     endPoint: LatLng,
     distanceMeters: Double,
@@ -32,7 +35,7 @@ internal class DistanceSymbolNode(
     private val symbol: Symbol = symbolManager.create(
         SymbolOptions().apply {
             withLatLng(midpoint)
-            withTextField(formatDistance(distanceMeters))
+            withTextField(MeasurementFormatter.formatDistance(context, distanceMeters))
             withTextFont(arrayOf("Open Sans Bold", "Arial Unicode MS Bold"))
             withTextSize(18f)
             withTextColor(textColor)
@@ -53,7 +56,7 @@ internal class DistanceSymbolNode(
     }
 
     fun updateDistance(distanceMeters: Double) {
-        symbol.textField = formatDistance(distanceMeters)
+        symbol.textField = MeasurementFormatter.formatDistance(context, distanceMeters)
         symbolManager.update(symbol)
     }
 
@@ -63,25 +66,6 @@ internal class DistanceSymbolNode(
 
     override fun onCleared() {
         symbolManager.delete(symbol)
-    }
-
-    companion object {
-        /**
-         * Formats distance for display.
-         */
-        fun formatDistance(meters: Double): String {
-            return when {
-                meters < 1000 -> "${meters.roundToInt()}m"
-                else -> {
-                    val km = meters / 1000.0
-                    if (km < 10) {
-                        String.format("%.1fkm", km)
-                    } else {
-                        "${km.roundToInt()}km"
-                    }
-                }
-            }
-        }
     }
 }
 
@@ -111,6 +95,7 @@ fun DistanceSymbol(
     val mapApplier = currentComposer.applier as? MapApplier ?: return
     val symbolManager = mapApplier.symbolManager
     val map = mapApplier.map
+    val context = LocalContext.current
 
     // Get the primary color from the theme
     val primaryColor = MaterialTheme.colorScheme.primary
@@ -139,6 +124,7 @@ fun DistanceSymbol(
         factory = {
             DistanceSymbolNode(
                 symbolManager = symbolManager,
+                context = context,
                 startPoint = startPoint,
                 endPoint = endPoint,
                 distanceMeters = distanceMeters,

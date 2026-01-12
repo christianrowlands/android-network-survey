@@ -210,4 +210,10 @@ public class NetworkSurveyConstants
     // Battery Management preferences
     public static final String PROPERTY_BATTERY_THRESHOLD_PERCENT = "battery_threshold_percent";
     public static final int DEFAULT_BATTERY_THRESHOLD_PERCENT = 0;
+
+    // Display Settings preferences
+    public static final String PROPERTY_MEASUREMENT_UNITS = "measurement_units";
+    public static final String MEASUREMENT_UNITS_METRIC = "metric";
+    public static final String MEASUREMENT_UNITS_IMPERIAL = "imperial";
+    public static final String DEFAULT_MEASUREMENT_UNITS = MEASUREMENT_UNITS_METRIC;
 }

@@ -210,6 +210,22 @@
     </PreferenceCategory>
 
     <PreferenceCategory
+        app:icon="@drawable/ic_display_settings"
+        app:key="display_settings"
+        app:title="@string/display_settings_category">
+
+        <ListPreference
+            app:defaultValue="metric"
+            app:dialogTitle="@string/measurement_units_title"
+            app:entries="@array/measurement_unit_entries"
+            app:entryValues="@array/measurement_unit_values"
+            app:key="measurement_units"
+            app:summary="%s"
+            app:title="@string/measurement_units_title" />
+
+    </PreferenceCategory>
+
+    <PreferenceCategory
         app:icon="@android:drawable/ic_lock_idle_low_battery"
         app:key="battery_settings"
         app:title="Battery Settings">

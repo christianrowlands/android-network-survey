@@ -1239,4 +1239,33 @@ public class PreferenceUtils
                 .putBoolean(NsAnalyticsConstants.PROPERTY_NS_ANALYTICS_AUTO_UPLOAD, enabled)
                 .apply();
     }
+
+    // ============================================================================
+    // Display Settings Helper Methods
+    // ============================================================================
+
+    /**
+     * Gets the measurement units preference (metric or imperial).
+     *
+     * @param context The context to use when getting the Shared Preferences.
+     * @return The measurement units preference value ("metric" or "imperial").
+     */
+    public static String getMeasurementUnits(Context context)
+    {
+        return PreferenceManager.getDefaultSharedPreferences(context)
+                .getString(NetworkSurveyConstants.PROPERTY_MEASUREMENT_UNITS,
+                        NetworkSurveyConstants.DEFAULT_MEASUREMENT_UNITS);
+    }
+
+    /**
+     * Checks if imperial units should be used for display.
+     *
+     * @param context The context to use when getting the Shared Preferences.
+     * @return True if imperial units should be used, false for metric.
+     */
+    public static boolean useImperialUnits(Context context)
+    {
+        return NetworkSurveyConstants.MEASUREMENT_UNITS_IMPERIAL
+                .equals(getMeasurementUnits(context));
+    }
 }

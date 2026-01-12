@@ -8,7 +8,6 @@ import android.location.Location
 import android.os.Build
 import androidx.annotation.RequiresApi
 import com.craxiom.networksurvey.R
-import com.craxiom.networksurvey.model.DilutionOfPrecision
 import com.craxiom.networksurvey.gpstest.model.SatelliteStatus
 import com.craxiom.networksurvey.gpstest.ui.gnss.model.Orientation
 import com.craxiom.networksurvey.gpstest.ui.gnss.model.SatelliteGroup
@@ -17,6 +16,8 @@ import com.craxiom.networksurvey.gpstest.util.SatelliteUtil.isBearingAccuracySup
 import com.craxiom.networksurvey.gpstest.util.SatelliteUtil.isSpeedAccuracySupported
 import com.craxiom.networksurvey.gpstest.util.SatelliteUtil.isVerticalAccuracySupported
 import com.craxiom.networksurvey.gpstest.util.SatelliteUtil.toGnssStatusConstellationType
+import com.craxiom.networksurvey.model.DilutionOfPrecision
+import com.craxiom.networksurvey.util.MeasurementFormatter
 import com.craxiom.networksurvey.util.NsUtils
 import java.util.concurrent.TimeUnit
 
@@ -61,7 +62,7 @@ object FormatUtils {
 
     fun formatAltitude(context: Context, location: Location): String {
         if (location.hasAltitude()) {
-            return context.getString(R.string.gps_altitude_value_meters, location.altitude)
+            return MeasurementFormatter.formatAltitude(context, location.altitude)
         } else {
             return ""
         }
@@ -69,10 +70,7 @@ object FormatUtils {
 
     fun formatSpeed(context: Context, location: Location): String {
         if (location.hasSpeed()) {
-            return context.getString(
-                R.string.gps_speed_value_kilometers_hour,
-                toKilometersPerHour(location.speed)
-            )
+            return MeasurementFormatter.formatSpeed(context, location.speed)
         } else {
             return ""
         }
@@ -94,16 +92,14 @@ object FormatUtils {
 
     fun formatAccuracy(context: Context, location: Location): String {
         if (location.isVerticalAccuracySupported()) {
-            return context.getString(
-                R.string.gps_hor_and_vert_accuracy_value_meters,
+            return MeasurementFormatter.formatAccuracyPair(
+                context,
                 location.accuracy,
                 location.verticalAccuracyMeters
             )
         } else {
             if (location.hasAccuracy()) {
-                return context.getString(
-                    R.string.gps_accuracy_value_meters, location.accuracy
-                )
+                return MeasurementFormatter.formatAccuracy(context, location.accuracy)
             }
         }
         return ""
@@ -112,10 +108,7 @@ object FormatUtils {
     fun formatAltitudeMsl(context: Context, altitudeMsl: Double): String {
         if (altitudeMsl.isNaN()) return ""
 
-        return context.getString(
-            R.string.gps_altitude_msl_value_meters,
-            altitudeMsl
-        )
+        return MeasurementFormatter.formatAltitude(context, altitudeMsl)
     }
 
     /**
@@ -138,9 +131,9 @@ object FormatUtils {
         location: Location
     ): String {
         if (location.isSpeedAccuracySupported()) {
-            return context.getString(
-                R.string.gps_speed_acc_value_km_hour,
-                toKilometersPerHour(location.speedAccuracyMetersPerSecond)
+            return MeasurementFormatter.formatSpeedAccuracy(
+                context,
+                location.speedAccuracyMetersPerSecond
             )
         }
         return ""

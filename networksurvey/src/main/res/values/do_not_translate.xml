@@ -32,6 +32,12 @@
     <string name="gps_hor_and_vert_accuracy_value_meters">%1$.1f/%2$.1f m</string>
     <string name="gps_speed_value_kilometers_hour">%1$.1f km/h</string>
     <string name="gps_speed_acc_value_km_hour">%1$.1f km/h</string>
+    <!-- Imperial unit format strings -->
+    <string name="gps_altitude_value_feet">%1$.1f ft</string>
+    <string name="gps_accuracy_value_feet">%1$.1f ft</string>
+    <string name="gps_hor_and_vert_accuracy_value_feet">%1$.1f/%2$.1f ft</string>
+    <string name="gps_speed_value_mph">%1$.1f mph</string>
+    <string name="gps_speed_acc_value_mph">%1$.1f mph</string>
     <string name="gps_bearing_value">%1$.1f\u00B0</string>
     <string name="gps_bearing_acc_value">%1$.1f\u00B0</string>
     <string name="gps_num_sats_value">%1$d/%2$d/%3$d</string>

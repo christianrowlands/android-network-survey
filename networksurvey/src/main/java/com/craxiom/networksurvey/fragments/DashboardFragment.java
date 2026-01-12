@@ -58,7 +58,6 @@ import com.craxiom.networksurvey.constants.NsAnalyticsConstants;
 import com.craxiom.networksurvey.databinding.FragmentDashboardBinding;
 import com.craxiom.networksurvey.databinding.MqttStreamItemBinding;
 import com.craxiom.networksurvey.fragments.model.DashboardViewModel;
-import com.craxiom.networksurvey.gpstest.util.MathUtils;
 import com.craxiom.networksurvey.listeners.ILoggingChangeListener;
 import com.craxiom.networksurvey.logging.db.SurveyDatabase;
 import com.craxiom.networksurvey.logging.db.dao.SurveyRecordDao;
@@ -72,6 +71,7 @@ import com.craxiom.networksurvey.ui.nsanalytics.NsAnalyticsComposeHelper;
 import com.craxiom.networksurvey.util.BatteryOptimizationHelper;
 import com.craxiom.networksurvey.util.LocationHintManager;
 import com.craxiom.networksurvey.util.MdmUtils;
+import com.craxiom.networksurvey.util.MeasurementFormatter;
 import com.craxiom.networksurvey.util.NsUtils;
 import com.craxiom.networksurvey.util.PreferenceUtils;
 import com.google.android.material.snackbar.Snackbar;
@@ -868,9 +868,11 @@ public class DashboardFragment extends AServiceDataFragment implements LocationL
             locationTextView.setText(latLonString);
             locationTextView.setTextColor(getResources().getColor(R.color.normalText, null));
 
-            altitudeTextView.setText(getString(R.string.altitude_value, Long.toString(Math.round(latestLocation.getAltitude()))));
+            altitudeTextView.setText(getString(R.string.altitude_value,
+                    MeasurementFormatter.formatAltitude(requireContext(), latestLocation.getAltitude())));
 
-            accuracyTextView.setText(getString(R.string.accuracy_value, Integer.toString(MathUtils.roundAccuracy(latestLocation.getAccuracy()))));
+            accuracyTextView.setText(getString(R.string.accuracy_value,
+                    MeasurementFormatter.formatAccuracy(requireContext(), latestLocation.getAccuracy())));
         } else
         {
             locationTextView.setText(R.string.low_gps_confidence);

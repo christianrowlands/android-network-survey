@@ -121,4 +121,14 @@
         <item>cyan</item>
         <item>white</item>
     </string-array>
+
+    <string-array name="measurement_unit_entries">
+        <item>Metric (m, km, km/h)</item>
+        <item>Imperial (ft, mi, mph)</item>
+    </string-array>
+
+    <string-array name="measurement_unit_values">
+        <item>metric</item>
+        <item>imperial</item>
+    </string-array>
 </resources>
