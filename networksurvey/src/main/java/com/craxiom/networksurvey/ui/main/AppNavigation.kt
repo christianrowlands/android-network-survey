@@ -263,8 +263,8 @@ fun MqttFragmentInCompose(
             ContainerMqttFragmentBinding::inflate,
             modifier = Modifier.padding(innerPadding)
         ) {
-            val fragment = mqttFragmentContainerView.getFragment<MqttFragment>()
-            fragment.setMqttConnectionSettings(mqttConnectionSettings)
+            val fragment: MqttFragment? = mqttFragmentContainerView.getFragment()
+            fragment?.setMqttConnectionSettings(mqttConnectionSettings)
         }
     }
 }
@@ -341,8 +341,8 @@ fun TowerMapInCompose(paddingValues: PaddingValues) {
     AndroidViewBinding(
         ContainerTowerMapFragmentBinding::inflate
     ) {
-        val fragment = towerMapFragmentContainerView.getFragment<TowerMapFragment>()
-        fragment.setPaddingInsets(paddingValues)
+        val fragment: TowerMapFragment? = towerMapFragmentContainerView.getFragment()
+        fragment?.setPaddingInsets(paddingValues)
     }
 }
 
@@ -359,8 +359,8 @@ fun WifiSpectrumInCompose(
             modifier = Modifier.padding(paddingValues = innerPadding)
         ) {
             if (wifiNetworks != null) {
-                val fragment = wifiSpectrumFragmentContainerView.getFragment<WifiSpectrumFragment>()
-                fragment.setWifiNetworks(wifiNetworks)
+                val fragment: WifiSpectrumFragment? = wifiSpectrumFragmentContainerView.getFragment()
+                fragment?.setWifiNetworks(wifiNetworks)
             }
         }
     }
@@ -373,8 +373,8 @@ fun WifiDetailsInCompose(paddingValues: PaddingValues, wifiNetwork: WifiNetwork?
             ContainerWifiDetailsFragmentBinding::inflate,
             modifier = Modifier.padding(paddingValues = paddingValues)
         ) {
-            val fragment = wifiDetailsFragmentContainerView.getFragment<WifiDetailsFragment>()
-            fragment.setWifiNetwork(wifiNetwork)
+            val fragment: WifiDetailsFragment? = wifiDetailsFragmentContainerView.getFragment()
+            fragment?.setWifiNetwork(wifiNetwork)
         }
     }
 }
@@ -389,9 +389,9 @@ fun BluetoothDetailsInCompose(
             ContainerBluetoothDetailsFragmentBinding::inflate,
             modifier = Modifier.padding(paddingValues = paddingValues)
         ) {
-            val fragment =
-                bluetoothDetailsFragmentContainerView.getFragment<BluetoothDetailsFragment>()
-            fragment.setBluetoothData(bluetoothRecordData)
+            val fragment: BluetoothDetailsFragment? =
+                bluetoothDetailsFragmentContainerView.getFragment()
+            fragment?.setBluetoothData(bluetoothRecordData)
         }
     }
 }
