@@ -687,8 +687,7 @@ class TowerMapLibreViewModel : ViewModel() {
 
         if (servingCellRecord == null) {
             _servingCells.update { map ->
-                map.remove(subscriptionId)
-                map
+                HashMap(map).apply { remove(subscriptionId) }
             }
         } else {
             _servingCells.update { oldMap ->
@@ -723,14 +722,8 @@ class TowerMapLibreViewModel : ViewModel() {
      * Triggers any necessary updates to SIM count aware variables.
      */
     fun resetSimCount() {
-        _servingCells.update {
-            it.clear()
-            it
-        }
-        _servingSignals.update {
-            it.clear()
-            it
-        }
+        _servingCells.update { HashMap() }
+        _servingSignals.update { HashMap() }
         previousServingCellTechnology.clear()
         // Clear manual selection when SIM changes
         isManualRadioTypeSelection = false
@@ -750,8 +743,7 @@ class TowerMapLibreViewModel : ViewModel() {
 
         if (servingCellRecord == null) {
             _servingCells.update { map ->
-                map.remove(subscriptionId)
-                map
+                HashMap(map).apply { remove(subscriptionId) }
             }
         } else {
             _servingCells.update { oldMap ->
@@ -813,8 +805,7 @@ class TowerMapLibreViewModel : ViewModel() {
     ) {
         if (servingCellRecord == null) {
             _servingSignals.update { map ->
-                map.remove(subscriptionId)
-                map
+                HashMap(map).apply { remove(subscriptionId) }
             }
         } else {
             _servingSignals.update { oldMap ->
