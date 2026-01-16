@@ -617,7 +617,8 @@ class TowerMapLibreViewModel : ViewModel() {
      * Centers the map on the given location once and returns true if set.
      */
     fun setMapCenterLocation(location: Location): Boolean {
-        if (!hasCenteredLocation && mapLibreMap != null) {
+        val map = mapLibreMap  // Capture local reference to avoid race condition
+        if (!hasCenteredLocation && map != null) {
             hasCenteredLocation = true
 
             val target = LatLng(location.latitude, location.longitude)
@@ -628,7 +629,7 @@ class TowerMapLibreViewModel : ViewModel() {
 
             // Ensure we call animateCamera on the main thread
             Handler(Looper.getMainLooper()).post {
-                mapLibreMap!!.animateCamera(CameraUpdateFactory.newCameraPosition(camPos))
+                map.animateCamera(CameraUpdateFactory.newCameraPosition(camPos))
             }
         }
         return hasCenteredLocation
