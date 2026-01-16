@@ -904,4 +904,8 @@ but work independently, so you have full control over how you handle your data.<
     <string name="ns_analytics_upload_button_uploading">Uploading…</string>
     <string name="ns_analytics_upload_button_no_records">No Records</string>
     <string name="ns_analytics_upload_button_unavailable">Not Available</string>
+
+    <!-- QR Code Error Messages -->
+    <string name="qr_code_data_too_large_title">QR Code Error</string>
+    <string name="qr_code_data_too_large_message">The MQTT connection settings are too large to fit in a QR code. Try shortening the host address, username, password, or topic prefix fields.</string>
 </resources>
