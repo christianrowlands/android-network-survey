@@ -32,6 +32,7 @@ import com.craxiom.networksurvey.util.PreferenceUtils;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -60,6 +61,8 @@ public class BluetoothController extends AController
     private static final long CLASSIC_SCAN_DURATION_MS = 12000; // 12 seconds (Android default)
     private static final long DUPLICATE_WINDOW_MS = 30000; // 30 seconds
     private static final int RSSI_CHANGE_THRESHOLD = 10; // dBm
+    private static final int MAX_RECENT_DEVICES = 2000; // Maximum devices to track
+    private static final long CLEANUP_INTERVAL_MS = 60000; // Cleanup every 60 seconds
 
     private enum ScanPhase
     {
@@ -75,6 +78,7 @@ public class BluetoothController extends AController
     private ScheduledFuture<?> bluetoothScanFuture;
     private volatile ScanPhase currentScanPhase = ScanPhase.IDLE;
     private final Map<String, DeviceInfo> recentDevices = new HashMap<>();
+    private long lastCleanupTime = 0;
 
     private record DeviceInfo(long lastSeenTime, int lastRssi)
     {
@@ -610,6 +614,8 @@ public class BluetoothController extends AController
             {
                 // New device - log it
                 recentDevices.put(address, new DeviceInfo(currentTime, rssi));
+                // Trigger cleanup if needed
+                cleanupRecentDevicesIfNeeded(currentTime);
                 return true;
             }
 
@@ -624,14 +630,48 @@ public class BluetoothController extends AController
                 recentDevices.put(address, new DeviceInfo(currentTime, rssi));
             }
 
-            // Clean up old entries to prevent memory growth
-            if (recentDevices.size() > 100)
-            {
-                recentDevices.entrySet().removeIf(entry ->
-                        currentTime - entry.getValue().lastSeenTime > DUPLICATE_WINDOW_MS * 2);
-            }
+            // Trigger cleanup if needed
+            cleanupRecentDevicesIfNeeded(currentTime);
 
             return shouldLog;
+        }
+    }
+
+    /**
+     * Cleans up old device entries from the recentDevices map to prevent memory growth.
+     * This method should be called with the recentDevices lock held.
+     *
+     * @param currentTime The current system time in milliseconds.
+     */
+    private void cleanupRecentDevicesIfNeeded(long currentTime)
+    {
+        // Only run cleanup if it's been more than CLEANUP_INTERVAL_MS since last cleanup
+        // or if we're over the max size
+        if (currentTime - lastCleanupTime < CLEANUP_INTERVAL_MS &&
+                recentDevices.size() <= MAX_RECENT_DEVICES)
+        {
+            return;
+        }
+
+        lastCleanupTime = currentTime;
+
+        // Remove entries older than DUPLICATE_WINDOW_MS
+        recentDevices.entrySet().removeIf(entry ->
+                currentTime - entry.getValue().lastSeenTime > DUPLICATE_WINDOW_MS);
+
+        // If still over max size, remove oldest entries
+        if (recentDevices.size() > MAX_RECENT_DEVICES)
+        {
+            // Sort by lastSeenTime and remove oldest entries
+            List<Map.Entry<String, DeviceInfo>> entries = new ArrayList<>(recentDevices.entrySet());
+            entries.sort(Comparator.comparingLong(a -> a.getValue().lastSeenTime));
+
+            int toRemove = entries.size() - MAX_RECENT_DEVICES;
+            for (int i = 0; i < toRemove; i++)
+            {
+                recentDevices.remove(entries.get(i).getKey());
+            }
+            Timber.d("Cleaned up %d old Bluetooth device entries, %d remaining", toRemove, recentDevices.size());
         }
     }
 
