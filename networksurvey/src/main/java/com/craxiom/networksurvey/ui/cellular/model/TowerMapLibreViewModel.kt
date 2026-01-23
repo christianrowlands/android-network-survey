@@ -973,31 +973,50 @@ class TowerMapLibreViewModel : ViewModel() {
         Timber.i("Fetched ${fetched.size} towers")
 
         // 4) Merge into existing set, evict oldest if > MAX
-        _towers.update { existing ->
-            // Copy to preserve immutability
-            val merged = LinkedHashSet(existing)
+        // Optimization: Only create a new set if there are actual changes
+        val existing = _towers.value
 
-            fetched.forEach { wrapper ->
-                // If already present, remove it so we can re-add and move to newest
-                @Suppress("ControlFlowWithEmptyBody")
-                if (merged.remove(wrapper)) {
-                    // no-op; removal done
-                }
-                merged.add(wrapper)
-            }
+        // Quick check: if no new towers and existing is within limits, skip update
+        if (fetched.isEmpty() && existing.size <= MAX_TOWERS_ON_MAP) {
+            // No new data and we're within limits - nothing to do
+            Timber.d("No new towers fetched and within limits, skipping update")
+        } else {
+            // Calculate which towers are actually new (not already in the set)
+            val newTowers = fetched.filter { !existing.contains(it) }
+            fetched.filter { existing.contains(it) }
 
-            // Evict the oldest entries if we exceed the limit
-            val overflow = merged.size - MAX_TOWERS_ON_MAP
-            if (overflow > 0) {
-                val iterator = merged.iterator()
-                repeat(overflow.coerceAtLeast(0)) {
-                    if (iterator.hasNext()) {
-                        iterator.next()  // Must call next() before remove()
-                        iterator.remove()
+            // Only update if there are actual changes
+            if (newTowers.isNotEmpty() || (existing.size + newTowers.size) > MAX_TOWERS_ON_MAP) {
+                _towers.update { currentSet ->
+                    // Copy to preserve immutability
+                    val merged = LinkedHashSet(currentSet)
+
+                    fetched.forEach { wrapper ->
+                        // If already present, remove it so we can re-add and move to newest
+                        @Suppress("ControlFlowWithEmptyBody")
+                        if (merged.remove(wrapper)) {
+                            // no-op; removal done
+                        }
+                        merged.add(wrapper)
                     }
+
+                    // Evict the oldest entries if we exceed the limit
+                    val overflow = merged.size - MAX_TOWERS_ON_MAP
+                    if (overflow > 0) {
+                        val iterator = merged.iterator()
+                        repeat(overflow.coerceAtLeast(0)) {
+                            if (iterator.hasNext()) {
+                                iterator.next()  // Must call next() before remove()
+                                iterator.remove()
+                            }
+                        }
+                        Timber.d("Evicted $overflow oldest towers, now have ${merged.size}")
+                    }
+                    merged
                 }
+            } else {
+                Timber.d("All ${fetched.size} fetched towers already in set, skipping update")
             }
-            merged
         }
 
         _noTowersFound.value = _towers.value.isEmpty()
