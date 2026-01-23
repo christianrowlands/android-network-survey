@@ -1200,6 +1200,104 @@ public class PreferenceUtils
     }
 
     // ============================================================================
+    // Streaming Queue Management Helper Methods
+    // ============================================================================
+
+    /**
+     * Maximum streaming queue limit to prevent excessively large values.
+     * Set to 100,000 which is generous for message queuing.
+     */
+    private static final int MAX_STREAMING_QUEUE_LIMIT = 100_000;
+
+    /**
+     * Gets the streaming queue limit preference.
+     * <p>
+     * First, this method tries to pull the MDM provided streaming queue limit value. If it is not set (either because the device
+     * is not under MDM control, or if that specific value is not set by the MDM administrator) then the value is pulled
+     * from the Android Shared Preferences (aka from the user settings). If it is not set there then the default value
+     * of 0 is returned (which disables queue limiting - unbounded queue).
+     * <p>
+     * The only exception to this sequence is that if the user has toggled the MDM override switch in user settings,
+     * then the user preference value will be used instead of the MDM value.
+     *
+     * @param context The context to use when getting the Shared Preferences and Restriction Manager.
+     * @return The streaming queue limit (0 = disabled/unbounded, positive value = max pending messages before pausing).
+     */
+    public static int getStreamingQueueLimit(Context context)
+    {
+        final RestrictionsManager restrictionsManager = (RestrictionsManager) context.getSystemService(Context.RESTRICTIONS_SERVICE);
+
+        final boolean mdmOverride = PreferenceManager.getDefaultSharedPreferences(context).getBoolean(NetworkSurveyConstants.PROPERTY_MDM_OVERRIDE_KEY, false);
+
+        // First try to use the MDM provided value.
+        if (restrictionsManager != null && !mdmOverride)
+        {
+            final Bundle mdmProperties = restrictionsManager.getApplicationRestrictions();
+
+            if (mdmProperties.containsKey(NetworkSurveyConstants.PROPERTY_STREAMING_QUEUE_LIMIT))
+            {
+                final int limit = mdmProperties.getInt(NetworkSurveyConstants.PROPERTY_STREAMING_QUEUE_LIMIT);
+                // Clamp the limit to valid range (0 = disabled, positive = limit)
+                if (limit <= 0)
+                {
+                    return NetworkSurveyConstants.DEFAULT_STREAMING_QUEUE_LIMIT; // Disabled
+                }
+                return Math.min(limit, MAX_STREAMING_QUEUE_LIMIT);
+            }
+        }
+
+        final SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(context);
+
+        // Next, try to use the value from user preferences.
+        try
+        {
+            // Try to get as string first (EditTextPreference stores as string)
+            final String limitString = preferences.getString(NetworkSurveyConstants.PROPERTY_STREAMING_QUEUE_LIMIT,
+                    String.valueOf(NetworkSurveyConstants.DEFAULT_STREAMING_QUEUE_LIMIT));
+            final int limit = Integer.parseInt(limitString);
+
+            // Clamp the limit to valid range
+            if (limit <= 0)
+            {
+                return NetworkSurveyConstants.DEFAULT_STREAMING_QUEUE_LIMIT; // Disabled
+            }
+            return Math.min(limit, MAX_STREAMING_QUEUE_LIMIT);
+        } catch (ClassCastException e)
+        {
+            // Fall back to int format
+            try
+            {
+                final int limit = preferences.getInt(NetworkSurveyConstants.PROPERTY_STREAMING_QUEUE_LIMIT,
+                        NetworkSurveyConstants.DEFAULT_STREAMING_QUEUE_LIMIT);
+                if (limit <= 0)
+                {
+                    return NetworkSurveyConstants.DEFAULT_STREAMING_QUEUE_LIMIT;
+                }
+                return Math.min(limit, MAX_STREAMING_QUEUE_LIMIT);
+            } catch (Exception ex)
+            {
+                Timber.e(ex, "Could not convert the streaming queue limit preference to an int");
+                return NetworkSurveyConstants.DEFAULT_STREAMING_QUEUE_LIMIT;
+            }
+        } catch (NumberFormatException e)
+        {
+            Timber.e(e, "Could not parse the streaming queue limit preference");
+            return NetworkSurveyConstants.DEFAULT_STREAMING_QUEUE_LIMIT;
+        }
+    }
+
+    /**
+     * Checks if streaming queue limiting is enabled.
+     *
+     * @param context The context to use when getting the Shared Preferences and Restriction Manager.
+     * @return True if streaming queue limiting is enabled (limit > 0), false otherwise.
+     */
+    public static boolean isStreamingQueueLimitEnabled(Context context)
+    {
+        return getStreamingQueueLimit(context) > 0;
+    }
+
+    // ============================================================================
     // NS Analytics Helper Methods
     // ============================================================================
 

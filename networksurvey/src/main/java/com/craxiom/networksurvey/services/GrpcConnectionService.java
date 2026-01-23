@@ -60,6 +60,7 @@ import com.craxiom.networksurvey.listeners.IDeviceStatusListener;
 import com.craxiom.networksurvey.listeners.IGnssSurveyRecordListener;
 import com.craxiom.networksurvey.listeners.IWifiSurveyRecordListener;
 import com.craxiom.networksurvey.model.WifiRecordWrapper;
+import com.craxiom.networksurvey.util.PreferenceUtils;
 
 import java.lang.ref.WeakReference;
 import java.net.ConnectException;
@@ -123,6 +124,9 @@ public class GrpcConnectionService extends Service implements IDeviceStatusListe
     private final ConcurrentLinkedQueue<WifiBeaconRecord> wifiBeaconRecordQueue = new ConcurrentLinkedQueue<>();
     private final ConcurrentLinkedQueue<BluetoothRecord> bluetoothRecordQueue = new ConcurrentLinkedQueue<>();
     private final ConcurrentLinkedQueue<GnssRecord> gnssRecordQueue = new ConcurrentLinkedQueue<>();
+
+    // Cached streaming queue limit value
+    private volatile int streamingQueueLimit = 0;
 
     private final List<IConnectionStateListener> grpcConnectionListeners = new CopyOnWriteArrayList<>();
 
@@ -233,6 +237,10 @@ public class GrpcConnectionService extends Service implements IDeviceStatusListe
     @Override
     public int onStartCommand(Intent intent, int flags, int startId)
     {
+        // Load the streaming queue limit preference
+        streamingQueueLimit = PreferenceUtils.getStreamingQueueLimit(getApplicationContext());
+        Timber.d("gRPC streaming queue limit set to %d", streamingQueueLimit);
+
         if (intent != null)
         {
             final String action = intent.getAction();
@@ -303,7 +311,10 @@ public class GrpcConnectionService extends Service implements IDeviceStatusListe
         {
             if (deviceStatusGrpcTask != null && deviceStatusGrpcTask.getStatus() != AsyncTask.Status.FINISHED)
             {
-                deviceStatusQueue.add(deviceStatus);
+                if (canQueueAccept(deviceStatusQueue))
+                {
+                    deviceStatusQueue.add(deviceStatus);
+                }
             }
         }
     }
@@ -313,7 +324,10 @@ public class GrpcConnectionService extends Service implements IDeviceStatusListe
     {
         if (isConnected() && phoneState != null && phoneStateGrpcTask != null && phoneStateGrpcTask.getStatus() != AsyncTask.Status.FINISHED)
         {
-            phoneStateQueue.add(phoneState);
+            if (canQueueAccept(phoneStateQueue))
+            {
+                phoneStateQueue.add(phoneState);
+            }
         }
     }
 
@@ -324,7 +338,10 @@ public class GrpcConnectionService extends Service implements IDeviceStatusListe
         {
             if (gsmRecordGrpcTask != null && gsmRecordGrpcTask.getStatus() != AsyncTask.Status.FINISHED)
             {
-                gsmRecordQueue.add(gsmRecord);
+                if (canQueueAccept(gsmRecordQueue))
+                {
+                    gsmRecordQueue.add(gsmRecord);
+                }
             }
         }
     }
@@ -336,7 +353,10 @@ public class GrpcConnectionService extends Service implements IDeviceStatusListe
         {
             if (cdmaRecordGrpcTask != null && cdmaRecordGrpcTask.getStatus() != AsyncTask.Status.FINISHED)
             {
-                cdmaRecordQueue.add(cdmaRecord);
+                if (canQueueAccept(cdmaRecordQueue))
+                {
+                    cdmaRecordQueue.add(cdmaRecord);
+                }
             }
         }
     }
@@ -348,7 +368,10 @@ public class GrpcConnectionService extends Service implements IDeviceStatusListe
         {
             if (umtsRecordGrpcTask != null && umtsRecordGrpcTask.getStatus() != AsyncTask.Status.FINISHED)
             {
-                umtsRecordQueue.add(umtsRecord);
+                if (canQueueAccept(umtsRecordQueue))
+                {
+                    umtsRecordQueue.add(umtsRecord);
+                }
             }
         }
     }
@@ -360,7 +383,10 @@ public class GrpcConnectionService extends Service implements IDeviceStatusListe
         {
             if (lteRecordGrpcTask != null && lteRecordGrpcTask.getStatus() != AsyncTask.Status.FINISHED)
             {
-                lteRecordQueue.add(lteRecord);
+                if (canQueueAccept(lteRecordQueue))
+                {
+                    lteRecordQueue.add(lteRecord);
+                }
             }
         }
     }
@@ -370,7 +396,10 @@ public class GrpcConnectionService extends Service implements IDeviceStatusListe
     {
         if (isConnected() && nrRecord != null && nrRecordGrpcTask != null && nrRecordGrpcTask.getStatus() != AsyncTask.Status.FINISHED)
         {
-            nrRecordQueue.add(nrRecord);
+            if (canQueueAccept(nrRecordQueue))
+            {
+                nrRecordQueue.add(nrRecord);
+            }
         }
     }
 
@@ -379,8 +408,11 @@ public class GrpcConnectionService extends Service implements IDeviceStatusListe
     {
         if (isConnected() && wifiBeaconRecordGrpcTask != null && wifiBeaconRecordGrpcTask.getStatus() != AsyncTask.Status.FINISHED)
         {
-            wifiBeaconRecordQueue.addAll(
-                    wifiBeaconRecords.stream().map(WifiRecordWrapper::getWifiBeaconRecord).collect(Collectors.toList()));
+            if (canQueueAccept(wifiBeaconRecordQueue))
+            {
+                wifiBeaconRecordQueue.addAll(
+                        wifiBeaconRecords.stream().map(WifiRecordWrapper::getWifiBeaconRecord).collect(Collectors.toList()));
+            }
         }
     }
 
@@ -389,7 +421,10 @@ public class GrpcConnectionService extends Service implements IDeviceStatusListe
     {
         if (isConnected() && bluetoothRecordGrpcTask != null && bluetoothRecordGrpcTask.getStatus() != AsyncTask.Status.FINISHED)
         {
-            bluetoothRecordQueue.add(bluetoothRecord);
+            if (canQueueAccept(bluetoothRecordQueue))
+            {
+                bluetoothRecordQueue.add(bluetoothRecord);
+            }
         }
     }
 
@@ -398,7 +433,10 @@ public class GrpcConnectionService extends Service implements IDeviceStatusListe
     {
         if (isConnected() && bluetoothRecordGrpcTask != null && bluetoothRecordGrpcTask.getStatus() != AsyncTask.Status.FINISHED)
         {
-            bluetoothRecordQueue.addAll(bluetoothRecords);
+            if (canQueueAccept(bluetoothRecordQueue))
+            {
+                bluetoothRecordQueue.addAll(bluetoothRecords);
+            }
         }
     }
 
@@ -407,7 +445,10 @@ public class GrpcConnectionService extends Service implements IDeviceStatusListe
     {
         if (isConnected() && gnssRecord != null && gnssRecordGrpcTask != null && gnssRecordGrpcTask.getStatus() != AsyncTask.Status.FINISHED)
         {
-            gnssRecordQueue.add(gnssRecord);
+            if (canQueueAccept(gnssRecordQueue))
+            {
+                gnssRecordQueue.add(gnssRecord);
+            }
         }
     }
 
@@ -440,6 +481,25 @@ public class GrpcConnectionService extends Service implements IDeviceStatusListe
     boolean isConnected()
     {
         return connectionState.get() == ConnectionState.CONNECTED;
+    }
+
+    /**
+     * Checks if a queue can accept more items based on the streaming queue limit.
+     * If the limit is 0 (disabled), always returns true.
+     *
+     * @param queue The queue to check.
+     * @return True if the queue can accept more items, false if it has reached the limit.
+     */
+    private boolean canQueueAccept(ConcurrentLinkedQueue<?> queue)
+    {
+        if (streamingQueueLimit <= 0) return true; // Limit disabled
+        final int currentSize = queue.size();
+        if (currentSize >= streamingQueueLimit)
+        {
+            Timber.w("gRPC streaming queue full (%d >= %d), dropping message", currentSize, streamingQueueLimit);
+            return false;
+        }
+        return true;
     }
 
     /**

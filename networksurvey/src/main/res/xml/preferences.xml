@@ -244,6 +244,20 @@
     </PreferenceCategory>
 
     <PreferenceCategory
+        app:icon="@drawable/ic_cloud_connection"
+        app:key="streaming_settings"
+        app:title="Streaming Settings">
+
+        <EditTextPreference
+            app:defaultValue="0"
+            app:dialogMessage="@string/streaming_queue_limit_description"
+            app:key="streaming_queue_limit"
+            app:title="@string/streaming_queue_limit_title"
+            app:useSimpleSummaryProvider="true" />
+
+    </PreferenceCategory>
+
+    <PreferenceCategory
         app:icon="@drawable/ic_info"
         app:key="about"
         app:title="About">

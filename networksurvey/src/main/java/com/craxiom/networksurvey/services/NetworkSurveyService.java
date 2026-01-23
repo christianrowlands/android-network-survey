@@ -41,6 +41,7 @@ import com.craxiom.messaging.DeviceStatus;
 import com.craxiom.messaging.DeviceStatusData;
 import com.craxiom.mqttlibrary.IConnectionStateListener;
 import com.craxiom.mqttlibrary.IMqttService;
+import com.craxiom.mqttlibrary.IQueueBackpressureListener;
 import com.craxiom.mqttlibrary.MqttConstants;
 import com.craxiom.mqttlibrary.MqttQos;
 import com.craxiom.mqttlibrary.connection.BrokerConnectionInfo;
@@ -120,7 +121,7 @@ import timber.log.Timber;
  *
  * @since 0.0.9
  */
-public class NetworkSurveyService extends Service implements IConnectionStateListener, SharedPreferences.OnSharedPreferenceChangeListener, IMqttService, IUploadRecordCountListener, BatteryMonitor.IBatteryLevelListener
+public class NetworkSurveyService extends Service implements IConnectionStateListener, SharedPreferences.OnSharedPreferenceChangeListener, IMqttService, IUploadRecordCountListener, BatteryMonitor.IBatteryLevelListener, IQueueBackpressureListener
 {
     public static final String ACTION_START_SURVEY = "com.craxiom.networksurvey.START_SURVEY";
     public static final String ACTION_STOP_SURVEY = "com.craxiom.networksurvey.STOP_SURVEY";
@@ -161,6 +162,9 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
 
     private BatteryMonitor batteryMonitor;
     private BatteryPauseState batteryPauseState;
+
+    // Queue backpressure state - scanning is paused when streaming queue is full
+    private final AtomicBoolean isPausedDueToQueueBackpressure = new AtomicBoolean(false);
 
     private final Set<ILoggingChangeListener> loggingChangeListeners = new CopyOnWriteArraySet<>();
 
@@ -425,6 +429,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
         if (mqttConnection != null)
         {
             unregisterMqttConnectionStateListener(this);
+            mqttConnection.unregisterQueueBackpressureListener(this);
             mqttConnection.disconnect();
         }
 
@@ -495,6 +500,10 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
                 handleBatteryPreferenceChange();
                 break;
 
+            case NetworkSurveyConstants.PROPERTY_STREAMING_QUEUE_LIMIT:
+                handleStreamingQueueLimitChange();
+                break;
+
             default:
                 break;
         }
@@ -509,6 +518,12 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
     {
         mqttConnection = new MqttConnection();
         mqttConnection.registerMqttConnectionStateListener(this);
+        mqttConnection.registerQueueBackpressureListener(this);
+
+        // Set the streaming queue limit from preferences
+        final int queueLimit = PreferenceUtils.getStreamingQueueLimit(getApplicationContext());
+        mqttConnection.setStreamingQueueLimit(queueLimit);
+        Timber.d("Initialized MQTT connection with streaming queue limit: %d", queueLimit);
     }
 
     /**
@@ -2583,6 +2598,39 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
     }
 
     // ========================================
+    // Streaming Queue Management Methods
+    // ========================================
+
+    /**
+     * Handles changes to the streaming queue limit preference.
+     */
+    private void handleStreamingQueueLimitChange()
+    {
+        final int queueLimit = PreferenceUtils.getStreamingQueueLimit(this);
+        Timber.d("Streaming queue limit changed to: %d", queueLimit);
+
+        if (mqttConnection != null)
+        {
+            mqttConnection.setStreamingQueueLimit(queueLimit);
+        }
+
+        // If the limit was disabled (set to 0) and we were paused due to backpressure, resume
+        if (queueLimit == 0 && isPausedDueToQueueBackpressure.getAndSet(false))
+        {
+            Timber.i("Streaming queue limit disabled, resuming scanning");
+
+            // Only resume if not paused due to battery
+            if (!isPausedForBattery())
+            {
+                cellularController.resumeScanning();
+                wifiController.resumeScanning();
+                bluetoothController.resumeScanning();
+                gnssController.resumeScanning();
+            }
+        }
+    }
+
+    // ========================================
     // Battery Management Methods
     // ========================================
 
@@ -2789,5 +2837,66 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
     public BatteryMonitor getBatteryMonitor()
     {
         return batteryMonitor;
+    }
+
+    // ============================================================================
+    // IQueueBackpressureListener Implementation
+    // ============================================================================
+
+    @Override
+    public void onQueueFull(int queueSize, int queueLimit)
+    {
+        Timber.w("Streaming queue full (%d >= %d), pausing scanning", queueSize, queueLimit);
+
+        if (isPausedDueToQueueBackpressure.getAndSet(true))
+        {
+            // Already paused, no need to pause again
+            return;
+        }
+
+        // Pause all controllers
+        cellularController.pauseScanning();
+        wifiController.pauseScanning();
+        bluetoothController.pauseScanning();
+        gnssController.pauseScanning();
+
+        updateServiceNotification();
+    }
+
+    @Override
+    public void onQueueDrained(int queueSize, int queueLimit)
+    {
+        Timber.i("Streaming queue drained (%d < %d/2), resuming scanning", queueSize, queueLimit);
+
+        if (!isPausedDueToQueueBackpressure.getAndSet(false))
+        {
+            // Was not paused due to backpressure, nothing to resume
+            return;
+        }
+
+        // Only resume if we're not also paused due to battery
+        if (isPausedForBattery())
+        {
+            Timber.i("Not resuming scanning because battery is still low");
+            return;
+        }
+
+        // Resume all controllers
+        cellularController.resumeScanning();
+        wifiController.resumeScanning();
+        bluetoothController.resumeScanning();
+        gnssController.resumeScanning();
+
+        updateServiceNotification();
+    }
+
+    /**
+     * Checks if operations are currently paused due to streaming queue backpressure.
+     *
+     * @return true if paused due to queue backpressure, false otherwise
+     */
+    public boolean isPausedForQueueBackpressure()
+    {
+        return isPausedDueToQueueBackpressure.get();
     }
 }

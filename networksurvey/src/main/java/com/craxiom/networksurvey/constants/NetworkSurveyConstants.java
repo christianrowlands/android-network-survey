@@ -211,6 +211,10 @@ public class NetworkSurveyConstants
     public static final String PROPERTY_BATTERY_THRESHOLD_PERCENT = "battery_threshold_percent";
     public static final int DEFAULT_BATTERY_THRESHOLD_PERCENT = 0;
 
+    // Streaming Queue Management preferences
+    public static final String PROPERTY_STREAMING_QUEUE_LIMIT = "streaming_queue_limit";
+    public static final int DEFAULT_STREAMING_QUEUE_LIMIT = 0; // 0 = disabled (unbounded queue)
+
     // Display Settings preferences
     public static final String PROPERTY_MEASUREMENT_UNITS = "measurement_units";
     public static final String MEASUREMENT_UNITS_METRIC = "metric";

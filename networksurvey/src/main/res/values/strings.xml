@@ -785,6 +785,15 @@ but work independently, so you have full control over how you handle your data.<
     <string name="battery_optimization_settings_summary_disabled">Battery optimization is disabled - surveys will run reliably</string>
     <string name="battery_optimization_settings_title">Battery Optimization</string>
 
+    <!-- Streaming Queue Management -->
+    <string name="streaming_queue_limit_title">Streaming Queue Limit</string>
+    <string name="streaming_queue_limit_description">Maximum number of pending messages to queue when streaming to MQTT or gRPC. When the queue is full, scanning will pause until messages are sent. Set to 0 to disable (unbounded queue). Recommended: 20,000 if network is unreliable.</string>
+    <string name="streaming_queue_limit_mdm_description">Maximum pending messages before pausing scanning. Set to 0 to disable (unbounded queue). Valid range: 0-100000. Use this to prevent out-of-memory crashes when network connectivity is poor.</string>
+    <string name="streaming_queue_limit_disabled">Disabled</string>
+    <string name="streaming_queue_limit_disabled_description">Queue is unbounded (may cause memory issues)</string>
+    <string name="streaming_queue_limit_active_description">Scanning will pause when queue reaches %1$d messages</string>
+    <string name="streaming_queue_paused_notification_text">Scanning paused - Streaming queue full</string>
+
     <!-- Battery Management -->
     <string name="battery_management_title">Battery Management</string>
     <string name="battery_pause_title">Pause scanning on low battery</string>
