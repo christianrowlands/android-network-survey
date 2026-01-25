@@ -93,7 +93,7 @@ import timber.log.Timber;
  *
  * @since 1.10.0
  */
-public class DashboardFragment extends AServiceDataFragment implements LocationListener, IConnectionStateListener, ILoggingChangeListener, SharedPreferences.OnSharedPreferenceChangeListener, BatteryMonitor.IBatteryLevelListener
+public class DashboardFragment extends AServiceDataFragment implements LocationListener, IConnectionStateListener, ILoggingChangeListener, SharedPreferences.OnSharedPreferenceChangeListener, BatteryMonitor.IBatteryLevelListener, NetworkSurveyService.IQueueBackpressureStateListener
 {
     public static final int ACCESS_REQUIRED_PERMISSION_REQUEST_ID = 20;
     public static final int ACCESS_OPTIONAL_PERMISSION_REQUEST_ID = 21;
@@ -208,6 +208,9 @@ public class DashboardFragment extends AServiceDataFragment implements LocationL
             batteryMonitor.register(this);
         }
 
+        // Register as queue backpressure listener
+        service.registerQueueBackpressureStateListener(this);
+
         // Refresh the location views because we might have missed something between the
         // initial call and when we registered as a listener, but only if the location is not null
         // because the initializeLocationTextView method might have set the UI to indicate that the
@@ -251,6 +254,7 @@ public class DashboardFragment extends AServiceDataFragment implements LocationL
         viewModel.setUploadScanningActive(uploadScanningActive);
 
         updateBatteryManagementStatus(service);
+        updateQueueBackpressureStatus(service.isPausedForQueueBackpressure());
         updateNsAnalyticsCard();
     }
 
@@ -273,6 +277,9 @@ public class DashboardFragment extends AServiceDataFragment implements LocationL
         {
             batteryMonitor.unregister(this);
         }
+
+        // Unregister as queue backpressure listener
+        service.unregisterQueueBackpressureStateListener(this);
 
         super.onSurveyServiceDisconnecting(service);
     }
@@ -1261,6 +1268,37 @@ public class DashboardFragment extends AServiceDataFragment implements LocationL
     }
 
     /**
+     * Updates the queue backpressure status UI based on the service state.
+     *
+     * @param isPaused True if scanning is paused due to queue backpressure
+     */
+    private void updateQueueBackpressureStatus(boolean isPaused)
+    {
+        if (binding == null) return;
+
+        if (!isPaused)
+        {
+            // Hide queue card if not paused
+            binding.queueStatusCard.queueStatusCardView.setVisibility(View.GONE);
+            return;
+        }
+
+        // Show queue card with orange/amber styling
+        binding.queueStatusCard.queueStatusCardView.setVisibility(View.VISIBLE);
+
+        binding.queueStatusCard.queueCardContent.setBackgroundColor(getResources().getColor(R.color.queue_paused_background, null));
+
+        binding.queueStatusCard.queueStatusMessage.setText(R.string.queue_paused_subtitle);
+        binding.queueStatusCard.queueStatusMessage.setTextColor(getResources().getColor(R.color.queue_paused_text, null));
+
+        binding.queueStatusCard.queueStatusDescription.setText(R.string.queue_paused_description);
+        binding.queueStatusCard.queueStatusDescription.setTextColor(getResources().getColor(R.color.queue_paused_text, null));
+
+        binding.queueStatusCard.queueStatusIcon.setImageTintList(ColorStateList.valueOf(getResources().getColor(R.color.queue_paused_icon, null)));
+        binding.queueStatusCard.queueHeaderIcon.setImageTintList(ColorStateList.valueOf(getResources().getColor(R.color.queue_paused_icon, null)));
+    }
+
+    /**
      * Initializes the NS Analytics card UI components and sets up button listeners.
      * This method should be called once during view creation.
      */
@@ -1538,6 +1576,15 @@ public class DashboardFragment extends AServiceDataFragment implements LocationL
                     updateBatteryManagementStatus(service);
                 }
             });
+        }
+    }
+
+    @Override
+    public void onQueueBackpressureStateChanged(boolean isPaused)
+    {
+        if (getActivity() != null)
+        {
+            getActivity().runOnUiThread(() -> updateQueueBackpressureStatus(isPaused));
         }
     }
 

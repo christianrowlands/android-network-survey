@@ -794,6 +794,12 @@ but work independently, so you have full control over how you handle your data.<
     <string name="streaming_queue_limit_active_description">Scanning will pause when queue reaches %1$d messages</string>
     <string name="streaming_queue_paused_notification_text">Scanning paused - Streaming queue full</string>
 
+    <!-- Queue Backpressure UI -->
+    <string name="queue_paused_title">Surveys Paused</string>
+    <string name="queue_paused_subtitle">Upload Delayed</string>
+    <string name="queue_paused_description">Surveys are paused because data upload is backing up. Surveys will resume automatically when data transmission catches up. If this persists, check your network connection.</string>
+    <string name="queue_paused_notification">Surveys paused - Network interrupted</string>
+
     <!-- Battery Management -->
     <string name="battery_management_title">Battery Management</string>
     <string name="battery_pause_title">Pause scanning on low battery</string>

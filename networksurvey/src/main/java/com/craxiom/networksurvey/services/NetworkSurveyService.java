@@ -165,6 +165,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
 
     // Queue backpressure state - scanning is paused when streaming queue is full
     private final AtomicBoolean isPausedDueToQueueBackpressure = new AtomicBoolean(false);
+    private final Set<IQueueBackpressureStateListener> queueBackpressureListeners = new CopyOnWriteArraySet<>();
 
     private final Set<ILoggingChangeListener> loggingChangeListeners = new CopyOnWriteArraySet<>();
 
@@ -2308,11 +2309,17 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
     private String getNotificationText(boolean logging,
                                        boolean mqttConnectionActive, ConnectionState connectionState)
     {
-        // Check if operations are paused due to battery
+        // Check if operations are paused due to battery (highest priority - requires external action)
         if (batteryMonitor != null && batteryMonitor.isPausedDueToBattery())
         {
             final int batteryLevel = batteryMonitor.getCurrentBatteryLevel();
             return getString(R.string.battery_paused_notification_text, batteryLevel);
+        }
+
+        // Check if operations are paused due to queue backpressure (lower priority - self-resolving)
+        if (isPausedDueToQueueBackpressure.get())
+        {
+            return getString(R.string.queue_paused_notification);
         }
 
         String notificationText = "";
@@ -2861,6 +2868,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
         gnssController.pauseScanning();
 
         updateServiceNotification();
+        notifyQueueBackpressureStateListeners(true);
     }
 
     @Override
@@ -2873,6 +2881,9 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
             // Was not paused due to backpressure, nothing to resume
             return;
         }
+
+        // Notify listeners that backpressure is no longer active
+        notifyQueueBackpressureStateListeners(false);
 
         // Only resume if we're not also paused due to battery
         if (isPausedForBattery())
@@ -2898,5 +2909,65 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
     public boolean isPausedForQueueBackpressure()
     {
         return isPausedDueToQueueBackpressure.get();
+    }
+
+    /**
+     * Registers a listener to be notified when the queue backpressure state changes.
+     *
+     * @param listener The listener to register
+     */
+    public void registerQueueBackpressureStateListener(IQueueBackpressureStateListener listener)
+    {
+        if (listener != null)
+        {
+            queueBackpressureListeners.add(listener);
+            // Immediately notify listener of current state
+            listener.onQueueBackpressureStateChanged(isPausedDueToQueueBackpressure.get());
+        }
+    }
+
+    /**
+     * Unregisters a queue backpressure state listener.
+     *
+     * @param listener The listener to unregister
+     */
+    public void unregisterQueueBackpressureStateListener(IQueueBackpressureStateListener listener)
+    {
+        if (listener != null)
+        {
+            queueBackpressureListeners.remove(listener);
+        }
+    }
+
+    /**
+     * Notifies all listeners that the queue backpressure state has changed.
+     *
+     * @param isPaused True if scanning is paused due to queue backpressure
+     */
+    private void notifyQueueBackpressureStateListeners(boolean isPaused)
+    {
+        for (IQueueBackpressureStateListener listener : queueBackpressureListeners)
+        {
+            try
+            {
+                listener.onQueueBackpressureStateChanged(isPaused);
+            } catch (Exception e)
+            {
+                Timber.e(e, "Error notifying queue backpressure state listener");
+            }
+        }
+    }
+
+    /**
+     * Interface for receiving notifications when the queue backpressure state changes.
+     */
+    public interface IQueueBackpressureStateListener
+    {
+        /**
+         * Called when the queue backpressure state changes.
+         *
+         * @param isPaused True if scanning is paused due to queue backpressure, false otherwise
+         */
+        void onQueueBackpressureStateChanged(boolean isPaused);
     }
 }

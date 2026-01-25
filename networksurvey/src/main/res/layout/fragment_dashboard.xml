@@ -22,6 +22,10 @@
                 android:id="@+id/battery_status_card" />
 
             <include
+                layout="@layout/fragment_dashboard_queue_card"
+                android:id="@+id/queue_status_card" />
+
+            <include
                 layout="@layout/location_card"
                 android:id="@+id/location_card" />
 

@@ -116,4 +116,9 @@
     <color name="battery_paused_text">#C62828</color>
     <color name="battery_icon_warning">#FF6F00</color>
     <color name="battery_icon_paused">#D32F2F</color>
+
+    <!-- Queue Backpressure Colors (Orange/Amber) -->
+    <color name="queue_paused_background">#FFF3E0</color>
+    <color name="queue_paused_text">#E65100</color>
+    <color name="queue_paused_icon">#FF6D00</color>
 </resources>
