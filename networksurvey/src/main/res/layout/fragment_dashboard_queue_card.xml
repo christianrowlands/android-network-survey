@@ -92,6 +92,32 @@
 
                 </LinearLayout>
 
+                <!-- Action Buttons -->
+                <LinearLayout
+                    android:id="@+id/queue_action_buttons"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/medium_margin"
+                    android:gravity="end"
+                    android:orientation="horizontal">
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/queue_adjust_limit_button"
+                        style="@style/Widget.MaterialComponents.Button.TextButton"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/queue_paused_adjust_limit" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/queue_disable_limit_button"
+                        style="@style/Widget.MaterialComponents.Button.TextButton"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="@dimen/small_margin"
+                        android:text="@string/queue_paused_disable_limit" />
+
+                </LinearLayout>
+
             </LinearLayout>
 
         </LinearLayout>

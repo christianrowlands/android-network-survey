@@ -213,7 +213,8 @@ public class NetworkSurveyConstants
 
     // Streaming Queue Management preferences
     public static final String PROPERTY_STREAMING_QUEUE_LIMIT = "streaming_queue_limit";
-    public static final int DEFAULT_STREAMING_QUEUE_LIMIT = 0; // 0 = disabled (unbounded queue)
+    public static final int DEFAULT_STREAMING_QUEUE_LIMIT = 20000;
+    public static final int HIGH_STREAMING_QUEUE_LIMIT_THRESHOLD = 50000;
 
     // Display Settings preferences
     public static final String PROPERTY_MEASUREMENT_UNITS = "measurement_units";

@@ -797,8 +797,21 @@ but work independently, so you have full control over how you handle your data.<
     <!-- Queue Backpressure UI -->
     <string name="queue_paused_title">Surveys Paused</string>
     <string name="queue_paused_subtitle">Upload Delayed</string>
-    <string name="queue_paused_description">Surveys are paused because data upload is backing up. Surveys will resume automatically when data transmission catches up. If this persists, check your network connection.</string>
+    <string name="queue_paused_description">Surveys are paused because MQTT data streaming is backing up. Surveys will resume automatically when data transmission catches up. If this persists, check your network connection.</string>
+    <string name="queue_paused_mdm_description">This setting is managed by your administrator. To change the queue limit, enable MDM Override in Settings.</string>
     <string name="queue_paused_notification">Surveys paused - Network interrupted</string>
+    <string name="queue_paused_adjust_limit">Adjust Limit</string>
+    <string name="queue_paused_disable_limit">Disable Limit</string>
+    <string name="queue_paused_view_settings">View Settings</string>
+
+    <!-- Queue Limit Warning Dialogs -->
+    <string name="disable_queue_limit_title">Disable Queue Limit?</string>
+    <string name="disable_queue_limit_message">Disabling the queue limit allows unlimited messages to queue when the network is slow or unavailable. This may cause the app to crash due to memory exhaustion if connectivity problems persist.\n\nAre you sure you want to disable the limit?</string>
+    <string name="disable_queue_limit_confirm">Disable</string>
+    <string name="high_queue_limit_title">High Queue Limit</string>
+    <string name="high_queue_limit_message">A queue limit above 50,000 may cause memory pressure on some devices. The recommended value is 20,000.\n\nContinue with this setting?</string>
+    <string name="high_queue_limit_use_recommended">Use Recommended</string>
+    <string name="high_queue_limit_keep_value">Keep Value</string>
 
     <!-- Battery Management -->
     <string name="battery_management_title">Battery Management</string>

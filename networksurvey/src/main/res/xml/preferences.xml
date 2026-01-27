@@ -249,7 +249,7 @@
         app:title="Streaming Settings">
 
         <EditTextPreference
-            app:defaultValue="0"
+            app:defaultValue="20000"
             app:dialogMessage="@string/streaming_queue_limit_description"
             app:key="streaming_queue_limit"
             app:title="@string/streaming_queue_limit_title"

@@ -1291,11 +1291,57 @@ public class DashboardFragment extends AServiceDataFragment implements LocationL
         binding.queueStatusCard.queueStatusMessage.setText(R.string.queue_paused_subtitle);
         binding.queueStatusCard.queueStatusMessage.setTextColor(getResources().getColor(R.color.queue_paused_text, null));
 
-        binding.queueStatusCard.queueStatusDescription.setText(R.string.queue_paused_description);
-        binding.queueStatusCard.queueStatusDescription.setTextColor(getResources().getColor(R.color.queue_paused_text, null));
-
         binding.queueStatusCard.queueStatusIcon.setImageTintList(ColorStateList.valueOf(getResources().getColor(R.color.queue_paused_icon, null)));
         binding.queueStatusCard.queueHeaderIcon.setImageTintList(ColorStateList.valueOf(getResources().getColor(R.color.queue_paused_icon, null)));
+
+        // Check MDM status to determine UI behavior
+        Context context = getContext();
+        boolean isUnderMdmControl = context != null && MdmUtils.isUnderMdmControlAndEnabled(context, NetworkSurveyConstants.PROPERTY_STREAMING_QUEUE_LIMIT);
+
+        if (isUnderMdmControl)
+        {
+            // Under MDM control without override - show MDM message and hide disable button
+            binding.queueStatusCard.queueStatusDescription.setText(R.string.queue_paused_mdm_description);
+            binding.queueStatusCard.queueStatusDescription.setTextColor(getResources().getColor(R.color.queue_paused_text, null));
+
+            binding.queueStatusCard.queueAdjustLimitButton.setText(R.string.queue_paused_view_settings);
+            binding.queueStatusCard.queueDisableLimitButton.setVisibility(View.GONE);
+        } else
+        {
+            // Not under MDM control (or MDM override is on) - show normal message with both buttons
+            binding.queueStatusCard.queueStatusDescription.setText(R.string.queue_paused_description);
+            binding.queueStatusCard.queueStatusDescription.setTextColor(getResources().getColor(R.color.queue_paused_text, null));
+
+            binding.queueStatusCard.queueAdjustLimitButton.setText(R.string.queue_paused_adjust_limit);
+            binding.queueStatusCard.queueDisableLimitButton.setVisibility(View.VISIBLE);
+        }
+
+        // Set up button click listeners
+        binding.queueStatusCard.queueAdjustLimitButton.setOnClickListener(v -> navigateToSettings());
+
+        binding.queueStatusCard.queueDisableLimitButton.setOnClickListener(v -> showDisableQueueLimitDialog());
+    }
+
+    /**
+     * Shows a warning dialog when the user wants to disable the queue limit.
+     */
+    private void showDisableQueueLimitDialog()
+    {
+        Context context = getContext();
+        if (context == null) return;
+
+        new AlertDialog.Builder(context)
+                .setTitle(R.string.disable_queue_limit_title)
+                .setMessage(R.string.disable_queue_limit_message)
+                .setPositiveButton(R.string.disable_queue_limit_confirm, (dialog, which) -> {
+                    // Set the queue limit to 0 (disabled)
+                    PreferenceManager.getDefaultSharedPreferences(context)
+                            .edit()
+                            .putString(NetworkSurveyConstants.PROPERTY_STREAMING_QUEUE_LIMIT, "0")
+                            .apply();
+                })
+                .setNegativeButton(R.string.cancel, null)
+                .show();
     }
 
     /**

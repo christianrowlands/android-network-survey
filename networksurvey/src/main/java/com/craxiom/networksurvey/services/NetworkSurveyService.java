@@ -622,6 +622,22 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
         unregisterGnssSurveyRecordListener(mqttConnection);
         unregisterDeviceStatusListener(mqttConnection);
 
+        // Clear queue backpressure state since there's no active connection to be backed up
+        if (isPausedDueToQueueBackpressure.getAndSet(false))
+        {
+            Timber.i("Clearing queue backpressure state due to MQTT disconnect");
+            notifyQueueBackpressureStateListeners(false);
+
+            // Resume scanning if not paused for battery
+            if (!isPausedForBattery())
+            {
+                cellularController.resumeScanning();
+                wifiController.resumeScanning();
+                bluetoothController.resumeScanning();
+                gnssController.resumeScanning();
+            }
+        }
+
         // Track survey session end
         onSurveyStopped();
         updateWakeLock();
@@ -2555,6 +2571,23 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
     public void onConnectionStateChange(ConnectionState connectionState)
     {
         updateServiceNotification();
+
+        if (connectionState == ConnectionState.DISCONNECTED)
+        {
+            if (isPausedDueToQueueBackpressure.getAndSet(false))
+            {
+                Timber.i("Clearing queue backpressure state due to connection state change to DISCONNECTED");
+                notifyQueueBackpressureStateListeners(false);
+
+                if (!isPausedForBattery())
+                {
+                    cellularController.resumeScanning();
+                    wifiController.resumeScanning();
+                    bluetoothController.resumeScanning();
+                    gnssController.resumeScanning();
+                }
+            }
+        }
     }
 
     /**
@@ -2621,18 +2654,43 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
             mqttConnection.setStreamingQueueLimit(queueLimit);
         }
 
-        // If the limit was disabled (set to 0) and we were paused due to backpressure, resume
-        if (queueLimit == 0 && isPausedDueToQueueBackpressure.getAndSet(false))
+        // Check if we should resume scanning due to the limit change
+        if (isPausedDueToQueueBackpressure.get())
         {
-            Timber.i("Streaming queue limit disabled, resuming scanning");
+            boolean shouldResume = false;
 
-            // Only resume if not paused due to battery
-            if (!isPausedForBattery())
+            if (queueLimit == 0)
             {
-                cellularController.resumeScanning();
-                wifiController.resumeScanning();
-                bluetoothController.resumeScanning();
-                gnssController.resumeScanning();
+                // Limit was disabled (set to 0), so resume
+                Timber.i("Streaming queue limit disabled, resuming scanning");
+                shouldResume = true;
+            } else if (mqttConnection != null)
+            {
+                // Check if the new limit is greater than the current queue size
+                int currentQueueSize = mqttConnection.getPendingMessageCount();
+                if (queueLimit > currentQueueSize)
+                {
+                    Timber.i("New streaming queue limit (%d) > current queue size (%d), resuming scanning",
+                            queueLimit, currentQueueSize);
+                    shouldResume = true;
+                }
+            }
+
+            if (shouldResume)
+            {
+                isPausedDueToQueueBackpressure.set(false);
+
+                // Only resume if not paused due to battery
+                if (!isPausedForBattery())
+                {
+                    cellularController.resumeScanning();
+                    wifiController.resumeScanning();
+                    bluetoothController.resumeScanning();
+                    gnssController.resumeScanning();
+
+                    // Notify listeners that queue backpressure is no longer active
+                    notifyQueueBackpressureStateListeners(false);
+                }
             }
         }
     }

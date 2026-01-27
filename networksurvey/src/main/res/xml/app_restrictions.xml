@@ -230,7 +230,7 @@
         android:title="@string/battery_pause_title" />
 
     <restriction
-        android:defaultValue="0"
+        android:defaultValue="20000"
         android:description="@string/streaming_queue_limit_mdm_description"
         android:key="streaming_queue_limit"
         android:restrictionType="integer"

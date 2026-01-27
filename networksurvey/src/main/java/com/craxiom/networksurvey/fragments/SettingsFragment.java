@@ -49,6 +49,11 @@ public class SettingsFragment extends PreferenceFragmentCompat implements Shared
     private static final String PASSWORD_NOT_SET_DISPLAY_TEXT = "not set";
 
     /**
+     * Tracks the previous streaming queue limit value for potential reversion when user cancels a warning dialog.
+     */
+    private String previousStreamingQueueLimit = null;
+
+    /**
      * The list of preferences that can be set in both the MDM app restrictions, and this settings UI.
      */
     public static final String[] MDM_OVERLAP_PROPERTY_KEYS = {NetworkSurveyConstants.PROPERTY_AUTO_START_CELLULAR_LOGGING,
@@ -66,7 +71,8 @@ public class SettingsFragment extends PreferenceFragmentCompat implements Shared
             NetworkSurveyConstants.PROPERTY_MQTT_START_ON_BOOT,
             NetworkSurveyConstants.PROPERTY_LOCATION_PROVIDER,
             NetworkSurveyConstants.PROPERTY_ALLOW_INTENT_CONTROL,
-            NetworkSurveyConstants.PROPERTY_BATTERY_THRESHOLD_PERCENT};
+            NetworkSurveyConstants.PROPERTY_BATTERY_THRESHOLD_PERCENT,
+            NetworkSurveyConstants.PROPERTY_STREAMING_QUEUE_LIMIT};
 
     @Override
     public void onCreatePreferences(Bundle savedInstanceState, String rootKey)
@@ -80,6 +86,12 @@ public class SettingsFragment extends PreferenceFragmentCompat implements Shared
         setPreferenceAsIntegerOnly(findPreference(NetworkSurveyConstants.PROPERTY_BLUETOOTH_SCAN_INTERVAL_SECONDS));
         setPreferenceAsIntegerOnly(findPreference(NetworkSurveyConstants.PROPERTY_GNSS_SCAN_INTERVAL_SECONDS));
         setPreferenceAsIntegerOnly(findPreference(NetworkSurveyConstants.PROPERTY_DEVICE_STATUS_SCAN_INTERVAL_SECONDS));
+        setPreferenceAsIntegerOnly(findPreference(NetworkSurveyConstants.PROPERTY_STREAMING_QUEUE_LIMIT));
+
+        // Initialize tracking for streaming queue limit
+        previousStreamingQueueLimit = getPreferenceManager().getSharedPreferences()
+                .getString(NetworkSurveyConstants.PROPERTY_STREAMING_QUEUE_LIMIT,
+                        String.valueOf(NetworkSurveyConstants.DEFAULT_STREAMING_QUEUE_LIMIT));
 
         setAppVersion();
         setDeviceSerialNumber();
@@ -284,6 +296,10 @@ public class SettingsFragment extends PreferenceFragmentCompat implements Shared
                     }
                 }
                 break;
+
+            case NetworkSurveyConstants.PROPERTY_STREAMING_QUEUE_LIMIT:
+                handleStreamingQueueLimitChange(sharedPreferences);
+                break;
         }
 
         if (defaultValue != -1)
@@ -446,6 +462,7 @@ public class SettingsFragment extends PreferenceFragmentCompat implements Shared
         updateListProviderPreferenceForMdm(preferenceScreen, mdmProperties, NetworkSurveyConstants.PROPERTY_LOCATION_PROVIDER);
         updateBooleanPreferenceForMdm(preferenceScreen, mdmProperties, NetworkSurveyConstants.PROPERTY_ALLOW_INTENT_CONTROL);
         updateIntPreferenceForMdm(preferenceScreen, mdmProperties, NetworkSurveyConstants.PROPERTY_BATTERY_THRESHOLD_PERCENT);
+        updateIntPreferenceForMdm(preferenceScreen, mdmProperties, NetworkSurveyConstants.PROPERTY_STREAMING_QUEUE_LIMIT);
     }
 
     /**
@@ -756,5 +773,113 @@ public class SettingsFragment extends PreferenceFragmentCompat implements Shared
                 ActivityCompat.requestPermissions(activity, CDR_OPTIONAL_PERMISSIONS, ACCESS_OPTIONAL_PERMISSION_REQUEST_ID);
             }
         }
+    }
+
+    /**
+     * Handles changes to the streaming queue limit preference.
+     * Shows warning dialogs when the user sets the limit to 0 (disabled) or above the high threshold.
+     *
+     * @param sharedPreferences The shared preferences instance
+     */
+    private void handleStreamingQueueLimitChange(SharedPreferences sharedPreferences)
+    {
+        Context context = getContext();
+        if (context == null) return;
+
+        try
+        {
+            String newValueStr = sharedPreferences.getString(NetworkSurveyConstants.PROPERTY_STREAMING_QUEUE_LIMIT,
+                    String.valueOf(NetworkSurveyConstants.DEFAULT_STREAMING_QUEUE_LIMIT));
+            int newLimit = Integer.parseInt(newValueStr);
+
+            // Check if limit was set to 0 (disabled)
+            if (newLimit == 0)
+            {
+                showDisableQueueLimitWarning(sharedPreferences, context);
+            }
+            // Check if limit is above the high threshold
+            else if (newLimit > NetworkSurveyConstants.HIGH_STREAMING_QUEUE_LIMIT_THRESHOLD)
+            {
+                showHighQueueLimitWarning(sharedPreferences, context, newLimit);
+            } else
+            {
+                // Valid value within range, update the previous value tracker
+                previousStreamingQueueLimit = newValueStr;
+            }
+        } catch (NumberFormatException e)
+        {
+            Timber.e(e, "Invalid streaming queue limit value. Reverting to default.");
+            final SharedPreferences.Editor edit = sharedPreferences.edit();
+            edit.putString(NetworkSurveyConstants.PROPERTY_STREAMING_QUEUE_LIMIT,
+                    String.valueOf(NetworkSurveyConstants.DEFAULT_STREAMING_QUEUE_LIMIT));
+            edit.apply();
+        }
+    }
+
+    /**
+     * Shows a warning dialog when the user attempts to disable the streaming queue limit.
+     */
+    private void showDisableQueueLimitWarning(SharedPreferences sharedPreferences, Context context)
+    {
+        new AlertDialog.Builder(context)
+                .setTitle(R.string.disable_queue_limit_title)
+                .setMessage(R.string.disable_queue_limit_message)
+                .setPositiveButton(R.string.disable_queue_limit_confirm, (dialog, which) -> {
+                    // User confirmed, update the previous value tracker
+                    previousStreamingQueueLimit = "0";
+                })
+                .setNegativeButton(R.string.cancel, (dialog, which) -> {
+                    // User cancelled, revert to previous value
+                    if (previousStreamingQueueLimit != null)
+                    {
+                        Timber.d("Reverting streaming queue limit to previous value: %s", previousStreamingQueueLimit);
+                        final SharedPreferences.Editor edit = sharedPreferences.edit();
+                        edit.putString(NetworkSurveyConstants.PROPERTY_STREAMING_QUEUE_LIMIT, previousStreamingQueueLimit);
+                        edit.apply();
+
+                        // Update the preference UI
+                        EditTextPreference preference = findPreference(NetworkSurveyConstants.PROPERTY_STREAMING_QUEUE_LIMIT);
+                        if (preference != null)
+                        {
+                            preference.setText(previousStreamingQueueLimit);
+                        }
+                    }
+                })
+                .setCancelable(false)
+                .show();
+    }
+
+    /**
+     * Shows a warning dialog when the user sets a high streaming queue limit.
+     *
+     * @param newLimit The new limit value that was set
+     */
+    private void showHighQueueLimitWarning(SharedPreferences sharedPreferences, Context context, int newLimit)
+    {
+        new AlertDialog.Builder(context)
+                .setTitle(R.string.high_queue_limit_title)
+                .setMessage(R.string.high_queue_limit_message)
+                .setPositiveButton(R.string.high_queue_limit_use_recommended, (dialog, which) -> {
+                    // User wants to use recommended value
+                    final SharedPreferences.Editor edit = sharedPreferences.edit();
+                    edit.putString(NetworkSurveyConstants.PROPERTY_STREAMING_QUEUE_LIMIT,
+                            String.valueOf(NetworkSurveyConstants.DEFAULT_STREAMING_QUEUE_LIMIT));
+                    edit.apply();
+
+                    // Update the preference UI
+                    EditTextPreference preference = findPreference(NetworkSurveyConstants.PROPERTY_STREAMING_QUEUE_LIMIT);
+                    if (preference != null)
+                    {
+                        preference.setText(String.valueOf(NetworkSurveyConstants.DEFAULT_STREAMING_QUEUE_LIMIT));
+                    }
+
+                    previousStreamingQueueLimit = String.valueOf(NetworkSurveyConstants.DEFAULT_STREAMING_QUEUE_LIMIT);
+                })
+                .setNegativeButton(R.string.high_queue_limit_keep_value, (dialog, which) -> {
+                    // User wants to keep the high value
+                    previousStreamingQueueLimit = String.valueOf(newLimit);
+                })
+                .setCancelable(false)
+                .show();
     }
 }
