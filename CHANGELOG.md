@@ -1,6 +1,26 @@
 # Changelog
 
-## [1.47](https://github.com/christianrowlands/android-network-survey/releases/tag/v1.47) - 2025-11-18
+## [1.48](https://github.com/christianrowlands/android-network-survey/releases/tag/v1.48) - 2026-01-28
+
+**BUG FIXES**
+* Fix a bug where the second time the Details UI was opened the upload status UI was not being updated properly after an upload completed.
+* Disable focus on the compose components of the GNSS Sky View and Cellular Details UI to prevent an edge case crash when switching tabs rapidly.
+* Fixed an edge case crash with a fragment initialization race condition where the AndroidViewBinding inflates a layout containing FragmentContainerView and the fragment may not be attached to the FragmentManager yet.
+* Fix a resource not found crash on certain devices that can't load specific png files by replacing the settings and cancel icons with SVG only files.
+* Prevent a crash when centering the map on the user's location by using a local reference to the map just in case the map is no longer available when it completes.
+
+**NEW FEATURES**
+* Adds a user preference for switching between metric and imperial units in the various UIs. This does not change the unit of measurement written to the csv files, or sent over MQTT. [#118](https://github.com/christianrowlands/android-network-survey/issues/118)
+* Implements a max MQTT queue size user preference that pauses the survey once the limit is reached to prevent Out of Memory app crashes when the MQTT queue grows too large. Also applies to gRPC queue and the preference can be set via MDM or in the local settings. When set to 0 the old behavior is applied where the queue can grow until a crash occurs.
+
+**IMPROVEMENTS**
+* Display a proper failure message when the auto-upload is unsuccessful.
+* Added a location provider hint that is displayed if the location is not obtained in 15 seconds. This is to help address a bug where Android says a location provider is available, but it never provides a location. [#115](https://github.com/christianrowlands/android-network-survey/issues/115)
+* Improve the performance of loading towers in the map view.
+* Display an error dialog if the the MQTT settings is are too large to fit in the QR code.
+* Adds a basic monochrome launcher icon to support the icon theme setting for Android (need to add a better one later). [#100](https://github.com/christianrowlands/android-network-survey/issues/100)
+
+## [1.47](https://github.com/christianrowlands/android-network-survey/releases/tag/v1.47) - 2025-12-18
 
 **BUG FIXES**
 * Handle the edge case where the Android OS does not have an activity for displaying the developer settings UI for wifi scan throttling.
