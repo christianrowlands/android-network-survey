@@ -558,6 +558,15 @@ public class GrpcConnectionService extends Service implements IDeviceStatusListe
                     }
 
                     notifyConnectionStateChange(ConnectionState.CONNECTED);
+
+                    // Notify NetworkSurveyService to re-evaluate MQTT backpressure mode since
+                    // gRPC is now an active output (if MQTT is paused due to backpressure, it
+                    // should switch to drop mode and resume scanning)
+                    if (networkSurveyService != null)
+                    {
+                        networkSurveyService.reevaluateMqttBackpressureMode();
+                    }
+
                     final String message = "Connected to the Network Survey Server!";
                     Timber.i(message);
                     uiThreadHandler.post(() -> Toast.makeText(applicationContext, message, Toast.LENGTH_SHORT).show());

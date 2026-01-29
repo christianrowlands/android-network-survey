@@ -93,7 +93,7 @@ import timber.log.Timber;
  *
  * @since 1.10.0
  */
-public class DashboardFragment extends AServiceDataFragment implements LocationListener, IConnectionStateListener, ILoggingChangeListener, SharedPreferences.OnSharedPreferenceChangeListener, BatteryMonitor.IBatteryLevelListener, NetworkSurveyService.IQueueBackpressureStateListener
+public class DashboardFragment extends AServiceDataFragment implements LocationListener, IConnectionStateListener, ILoggingChangeListener, SharedPreferences.OnSharedPreferenceChangeListener, BatteryMonitor.IBatteryLevelListener, NetworkSurveyService.IQueueBackpressureStateListener, NetworkSurveyService.IMqttDropModeStateListener
 {
     public static final int ACCESS_REQUIRED_PERMISSION_REQUEST_ID = 20;
     public static final int ACCESS_OPTIONAL_PERMISSION_REQUEST_ID = 21;
@@ -211,6 +211,9 @@ public class DashboardFragment extends AServiceDataFragment implements LocationL
         // Register as queue backpressure listener
         service.registerQueueBackpressureStateListener(this);
 
+        // Register as MQTT drop mode listener
+        service.registerMqttDropModeStateListener(this);
+
         // Refresh the location views because we might have missed something between the
         // initial call and when we registered as a listener, but only if the location is not null
         // because the initializeLocationTextView method might have set the UI to indicate that the
@@ -254,7 +257,7 @@ public class DashboardFragment extends AServiceDataFragment implements LocationL
         viewModel.setUploadScanningActive(uploadScanningActive);
 
         updateBatteryManagementStatus(service);
-        updateQueueBackpressureStatus(service.isPausedForQueueBackpressure());
+        updateQueueBackpressureStatus(service.isPausedForQueueBackpressure(), service.isMqttDroppingMessages());
         updateNsAnalyticsCard();
     }
 
@@ -280,6 +283,9 @@ public class DashboardFragment extends AServiceDataFragment implements LocationL
 
         // Unregister as queue backpressure listener
         service.unregisterQueueBackpressureStateListener(this);
+
+        // Unregister as MQTT drop mode listener
+        service.unregisterMqttDropModeStateListener(this);
 
         super.onSurveyServiceDisconnecting(service);
     }
@@ -1269,16 +1275,18 @@ public class DashboardFragment extends AServiceDataFragment implements LocationL
 
     /**
      * Updates the queue backpressure status UI based on the service state.
+     * This method handles both pause mode (scanning stopped) and drop mode (MQTT messages dropped).
      *
-     * @param isPaused True if scanning is paused due to queue backpressure
+     * @param isPaused   True if scanning is paused due to queue backpressure
+     * @param isDropping True if MQTT messages are being dropped (file logging continues)
      */
-    private void updateQueueBackpressureStatus(boolean isPaused)
+    private void updateQueueBackpressureStatus(boolean isPaused, boolean isDropping)
     {
         if (binding == null) return;
 
-        if (!isPaused)
+        if (!isPaused && !isDropping)
         {
-            // Hide queue card if not paused
+            // Hide queue card if not in any backpressure mode
             binding.queueStatusCard.queueStatusCardView.setVisibility(View.GONE);
             return;
         }
@@ -1288,9 +1296,6 @@ public class DashboardFragment extends AServiceDataFragment implements LocationL
 
         binding.queueStatusCard.queueCardContent.setBackgroundColor(getResources().getColor(R.color.queue_paused_background, null));
 
-        binding.queueStatusCard.queueStatusMessage.setText(R.string.queue_paused_subtitle);
-        binding.queueStatusCard.queueStatusMessage.setTextColor(getResources().getColor(R.color.queue_paused_text, null));
-
         binding.queueStatusCard.queueStatusIcon.setImageTintList(ColorStateList.valueOf(getResources().getColor(R.color.queue_paused_icon, null)));
         binding.queueStatusCard.queueHeaderIcon.setImageTintList(ColorStateList.valueOf(getResources().getColor(R.color.queue_paused_icon, null)));
 
@@ -1298,22 +1303,44 @@ public class DashboardFragment extends AServiceDataFragment implements LocationL
         Context context = getContext();
         boolean isUnderMdmControl = context != null && MdmUtils.isUnderMdmControlAndEnabled(context, NetworkSurveyConstants.PROPERTY_STREAMING_QUEUE_LIMIT);
 
-        if (isUnderMdmControl)
+        if (isDropping)
         {
-            // Under MDM control without override - show MDM message and hide disable button
-            binding.queueStatusCard.queueStatusDescription.setText(R.string.queue_paused_mdm_description);
-            binding.queueStatusCard.queueStatusDescription.setTextColor(getResources().getColor(R.color.queue_paused_text, null));
+            // MQTT drop mode - file logging continues, only MQTT is affected
+            binding.queueStatusCard.queueCardTitle.setText(R.string.mqtt_drop_mode_title);
+            binding.queueStatusCard.queueStatusMessage.setText(R.string.mqtt_drop_mode_subtitle);
+            binding.queueStatusCard.queueStatusMessage.setTextColor(getResources().getColor(R.color.queue_paused_text, null));
 
-            binding.queueStatusCard.queueAdjustLimitButton.setText(R.string.queue_paused_view_settings);
-            binding.queueStatusCard.queueDisableLimitButton.setVisibility(View.GONE);
+            if (isUnderMdmControl)
+            {
+                binding.queueStatusCard.queueStatusDescription.setText(R.string.mqtt_drop_mode_mdm_description);
+                binding.queueStatusCard.queueAdjustLimitButton.setText(R.string.queue_paused_view_settings);
+                binding.queueStatusCard.queueDisableLimitButton.setVisibility(View.GONE);
+            } else
+            {
+                binding.queueStatusCard.queueStatusDescription.setText(R.string.mqtt_drop_mode_description);
+                binding.queueStatusCard.queueAdjustLimitButton.setText(R.string.queue_paused_adjust_limit);
+                binding.queueStatusCard.queueDisableLimitButton.setVisibility(View.VISIBLE);
+            }
+            binding.queueStatusCard.queueStatusDescription.setTextColor(getResources().getColor(R.color.queue_paused_text, null));
         } else
         {
-            // Not under MDM control (or MDM override is on) - show normal message with both buttons
-            binding.queueStatusCard.queueStatusDescription.setText(R.string.queue_paused_description);
-            binding.queueStatusCard.queueStatusDescription.setTextColor(getResources().getColor(R.color.queue_paused_text, null));
+            // Pause mode - all scanning is paused
+            binding.queueStatusCard.queueCardTitle.setText(R.string.queue_paused_title);
+            binding.queueStatusCard.queueStatusMessage.setText(R.string.queue_paused_subtitle);
+            binding.queueStatusCard.queueStatusMessage.setTextColor(getResources().getColor(R.color.queue_paused_text, null));
 
-            binding.queueStatusCard.queueAdjustLimitButton.setText(R.string.queue_paused_adjust_limit);
-            binding.queueStatusCard.queueDisableLimitButton.setVisibility(View.VISIBLE);
+            if (isUnderMdmControl)
+            {
+                binding.queueStatusCard.queueStatusDescription.setText(R.string.queue_paused_mdm_description);
+                binding.queueStatusCard.queueAdjustLimitButton.setText(R.string.queue_paused_view_settings);
+                binding.queueStatusCard.queueDisableLimitButton.setVisibility(View.GONE);
+            } else
+            {
+                binding.queueStatusCard.queueStatusDescription.setText(R.string.queue_paused_description);
+                binding.queueStatusCard.queueAdjustLimitButton.setText(R.string.queue_paused_adjust_limit);
+                binding.queueStatusCard.queueDisableLimitButton.setVisibility(View.VISIBLE);
+            }
+            binding.queueStatusCard.queueStatusDescription.setTextColor(getResources().getColor(R.color.queue_paused_text, null));
         }
 
         // Set up button click listeners
@@ -1630,7 +1657,18 @@ public class DashboardFragment extends AServiceDataFragment implements LocationL
     {
         if (getActivity() != null)
         {
-            getActivity().runOnUiThread(() -> updateQueueBackpressureStatus(isPaused));
+            boolean isDropping = service != null && service.isMqttDroppingMessages();
+            getActivity().runOnUiThread(() -> updateQueueBackpressureStatus(isPaused, isDropping));
+        }
+    }
+
+    @Override
+    public void onMqttDropModeStateChanged(boolean isDropping)
+    {
+        if (getActivity() != null)
+        {
+            boolean isPaused = service != null && service.isPausedForQueueBackpressure();
+            getActivity().runOnUiThread(() -> updateQueueBackpressureStatus(isPaused, isDropping));
         }
     }
 

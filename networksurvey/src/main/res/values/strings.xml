@@ -804,6 +804,12 @@ but work independently, so you have full control over how you handle your data.<
     <string name="queue_paused_disable_limit">Disable Limit</string>
     <string name="queue_paused_view_settings">View Settings</string>
 
+    <!-- MQTT Drop Mode UI -->
+    <string name="mqtt_drop_mode_title">MQTT Messages Dropping</string>
+    <string name="mqtt_drop_mode_subtitle">File Logging Continues</string>
+    <string name="mqtt_drop_mode_description">MQTT data streaming is backing up, so MQTT messages are being dropped. File logging and other outputs continue normally. MQTT will resume when connectivity improves.</string>
+    <string name="mqtt_drop_mode_mdm_description">This setting is managed by your administrator. To change the queue limit, enable MDM Override in Settings.</string>
+
     <!-- Queue Limit Warning Dialogs -->
     <string name="disable_queue_limit_title">Disable Queue Limit?</string>
     <string name="disable_queue_limit_message">Disabling the queue limit allows unlimited messages to queue when the network is slow or unavailable. This may cause the app to crash due to memory exhaustion if connectivity problems persist.\n\nAre you sure you want to disable the limit?</string>

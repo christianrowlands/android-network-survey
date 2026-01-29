@@ -163,9 +163,14 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
     private BatteryMonitor batteryMonitor;
     private BatteryPauseState batteryPauseState;
 
-    // Queue backpressure state - scanning is paused when streaming queue is full
+    // Queue backpressure states. These two states are mutually exclusive:
+    // - isPausedDueToQueueBackpressure: Scanning is paused when streaming queue is full and no other outputs are active
+    // - mqttConnection.isDropping(): MQTT messages are dropped (not paused) when queue is full but other outputs (file logging, gRPC) are active
+    // Only one can be true at a time. When the MQTT queue fills up, we enter drop mode if other outputs are enabled,
+    // otherwise we pause scanning entirely. MqttConnection is the single source of truth for drop mode state.
     private final AtomicBoolean isPausedDueToQueueBackpressure = new AtomicBoolean(false);
     private final Set<IQueueBackpressureStateListener> queueBackpressureListeners = new CopyOnWriteArraySet<>();
+    private final Set<IMqttDropModeStateListener> mqttDropModeListeners = new CopyOnWriteArraySet<>();
 
     private final Set<ILoggingChangeListener> loggingChangeListeners = new CopyOnWriteArraySet<>();
 
@@ -622,21 +627,8 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
         unregisterGnssSurveyRecordListener(mqttConnection);
         unregisterDeviceStatusListener(mqttConnection);
 
-        // Clear queue backpressure state since there's no active connection to be backed up
-        if (isPausedDueToQueueBackpressure.getAndSet(false))
-        {
-            Timber.i("Clearing queue backpressure state due to MQTT disconnect");
-            notifyQueueBackpressureStateListeners(false);
-
-            // Resume scanning if not paused for battery
-            if (!isPausedForBattery())
-            {
-                cellularController.resumeScanning();
-                wifiController.resumeScanning();
-                bluetoothController.resumeScanning();
-                gnssController.resumeScanning();
-            }
-        }
+        // Clear queue backpressure states since there's no active connection to be backed up
+        clearMqttBackpressureStates();
 
         // Track survey session end
         onSurveyStopped();
@@ -1375,6 +1367,9 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
                 Timber.i("NS Analytics survey started - Cellular: %b, WiFi: %b, Bluetooth: %b, GNSS: %b",
                         cellularEnabled, wifiEnabled, bluetoothEnabled, gnssEnabled);
 
+                // Re-evaluate MQTT backpressure mode since NS Analytics is now active
+                reevaluateMqttBackpressureMode();
+
                 return new UploadScanningResult(true, true,
                         getString(R.string.ns_analytics_survey_started));
             } else if (!enable && isCurrentlyActive)
@@ -1576,6 +1571,40 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
         return isCellularLoggingEnabled() || isWifiLoggingEnabled() || isBluetoothLoggingEnabled() ||
                 isGnssLoggingEnabled() || isCdrLoggingEnabled() || isUploadScanningActive() ||
                 isMqttStreamingActive() || isGrpcConnectionActive() || isNsAnalyticsScanningActive();
+    }
+
+    /**
+     * Checks if any survey record outputs other than MQTT streaming are currently active.
+     * This includes file logging (CSV/GeoPackage), gRPC streaming, NS Analytics, and upload scanning.
+     * <p>
+     * This is used to determine whether to pause scanning (conserve battery when only MQTT is active)
+     * or drop MQTT messages (continue other outputs when MQTT backs up).
+     *
+     * @return true if other outputs are active, false if only MQTT streaming is active
+     */
+    private boolean hasOtherActiveOutputs()
+    {
+        // Check if file logging is enabled for any protocol
+        if (isCellularLoggingEnabled() || isWifiLoggingEnabled() ||
+                isBluetoothLoggingEnabled() || isGnssLoggingEnabled() || isCdrLoggingEnabled())
+        {
+            return true;
+        }
+
+        // Check if gRPC streaming is connected
+        if (isGrpcConnectionActive())
+        {
+            return true;
+        }
+
+        // Check if NS Analytics is active
+        if (isNsAnalyticsScanningActive())
+        {
+            return true;
+        }
+
+        // Check if upload scanning is active
+        return isUploadScanningActive();
     }
 
     /**
@@ -2565,6 +2594,84 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
                 Timber.e(e, "Unable to notify a Logging Changed Listener because of an exception");
             }
         });
+
+        // Re-evaluate backpressure behavior when logging state changes
+        reevaluateMqttBackpressureMode();
+    }
+
+    /**
+     * Re-evaluates the MQTT backpressure mode when other output states change.
+     * If we were paused and user enables file logging, switch to drop mode and resume.
+     * If we were dropping and no other outputs are active anymore, we stay in drop mode
+     * (don't auto-pause - let the queue drain naturally).
+     * <p>
+     * This method should be called when any output state changes, such as when:
+     * <ul>
+     *   <li>File logging is enabled/disabled</li>
+     *   <li>gRPC streaming connects/disconnects</li>
+     *   <li>NS Analytics is enabled/disabled</li>
+     * </ul>
+     */
+    public void reevaluateMqttBackpressureMode()
+    {
+        // Only relevant if MQTT queue is currently backed up
+        if (!mqttConnection.isQueueBackpressureActive())
+        {
+            return;
+        }
+
+        boolean hasOtherOutputs = hasOtherActiveOutputs();
+
+        if (hasOtherOutputs && isPausedDueToQueueBackpressure.get())
+        {
+            // User enabled logging/streaming while MQTT was paused - switch to drop mode
+            Timber.i("Output enabled while MQTT paused - switching to drop mode and resuming scanning");
+
+            isPausedDueToQueueBackpressure.set(false);
+            mqttConnection.setDropMessages(true);
+
+            // Only resume if not paused due to battery
+            if (!isPausedForBattery())
+            {
+                cellularController.resumeScanning();
+                wifiController.resumeScanning();
+                bluetoothController.resumeScanning();
+                gnssController.resumeScanning();
+            }
+
+            updateServiceNotification();
+            notifyQueueBackpressureStateListeners(false);
+            notifyMqttDropModeStateListeners(true);
+        }
+        // Note: We don't auto-pause if other outputs are disabled while dropping.
+        // Let the queue drain naturally and MQTT will resume normally.
+    }
+
+    /**
+     * Clears both MQTT backpressure states (drop mode and pause mode) and resumes scanning if appropriate.
+     * This method should be called when the MQTT connection is disconnected or otherwise no longer active.
+     */
+    private void clearMqttBackpressureStates()
+    {
+        if (mqttConnection.getAndSetDropMessages(false))
+        {
+            Timber.i("Clearing MQTT drop mode state");
+            notifyMqttDropModeStateListeners(false);
+        }
+
+        if (isPausedDueToQueueBackpressure.getAndSet(false))
+        {
+            Timber.i("Clearing queue backpressure state");
+            notifyQueueBackpressureStateListeners(false);
+
+            if (!isPausedForBattery())
+            {
+                cellularController.resumeScanning();
+                wifiController.resumeScanning();
+                bluetoothController.resumeScanning();
+                gnssController.resumeScanning();
+            }
+        }
     }
 
     @Override
@@ -2574,19 +2681,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
 
         if (connectionState == ConnectionState.DISCONNECTED)
         {
-            if (isPausedDueToQueueBackpressure.getAndSet(false))
-            {
-                Timber.i("Clearing queue backpressure state due to connection state change to DISCONNECTED");
-                notifyQueueBackpressureStateListeners(false);
-
-                if (!isPausedForBattery())
-                {
-                    cellularController.resumeScanning();
-                    wifiController.resumeScanning();
-                    bluetoothController.resumeScanning();
-                    gnssController.resumeScanning();
-                }
-            }
+            clearMqttBackpressureStates();
         }
     }
 
@@ -2911,34 +3006,64 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
     @Override
     public void onQueueFull(int queueSize, int queueLimit)
     {
-        Timber.w("Streaming queue full (%d >= %d), pausing scanning", queueSize, queueLimit);
-
-        if (isPausedDueToQueueBackpressure.getAndSet(true))
+        if (hasOtherActiveOutputs())
         {
-            // Already paused, no need to pause again
-            return;
+            // Other outputs are active - don't pause scanning, just drop MQTT messages
+            Timber.w("MQTT queue full (%d >= %d), but other outputs active - switching to drop mode",
+                    queueSize, queueLimit);
+
+            // Don't re-enter drop mode if already dropping
+            if (mqttConnection.getAndSetDropMessages(true))
+            {
+                return;
+            }
+
+            // Notify UI that MQTT is dropping messages
+            notifyMqttDropModeStateListeners(true);
+        } else
+        {
+            // Only MQTT is active - pause scanning to conserve battery
+            Timber.w("MQTT queue full (%d >= %d), pausing scanning to conserve battery",
+                    queueSize, queueLimit);
+
+            if (isPausedDueToQueueBackpressure.getAndSet(true))
+            {
+                // Already paused, no need to pause again
+                return;
+            }
+
+            // Pause all controllers
+            cellularController.pauseScanning();
+            wifiController.pauseScanning();
+            bluetoothController.pauseScanning();
+            gnssController.pauseScanning();
+
+            updateServiceNotification();
+            notifyQueueBackpressureStateListeners(true);
         }
-
-        // Pause all controllers
-        cellularController.pauseScanning();
-        wifiController.pauseScanning();
-        bluetoothController.pauseScanning();
-        gnssController.pauseScanning();
-
-        updateServiceNotification();
-        notifyQueueBackpressureStateListeners(true);
     }
 
     @Override
     public void onQueueDrained(int queueSize, int queueLimit)
     {
-        Timber.i("Streaming queue drained (%d < %d/2), resuming scanning", queueSize, queueLimit);
+        Timber.i("MQTT queue drained (%d < %d/2)", queueSize, queueLimit);
 
+        // If we were in drop mode, exit drop mode
+        if (mqttConnection.getAndSetDropMessages(false))
+        {
+            Timber.i("MQTT queue drained - resuming message queueing");
+            notifyMqttDropModeStateListeners(false);
+            return;
+        }
+
+        // If we were paused, resume scanning
         if (!isPausedDueToQueueBackpressure.getAndSet(false))
         {
             // Was not paused due to backpressure, nothing to resume
             return;
         }
+
+        Timber.i("MQTT queue drained - resuming scanning");
 
         // Notify listeners that backpressure is no longer active
         notifyQueueBackpressureStateListeners(false);
@@ -3027,5 +3152,82 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
          * @param isPaused True if scanning is paused due to queue backpressure, false otherwise
          */
         void onQueueBackpressureStateChanged(boolean isPaused);
+    }
+
+    // ============================================================================
+    // MQTT Drop Mode State Management
+    // ============================================================================
+
+    /**
+     * Checks if MQTT is currently dropping messages due to queue backpressure.
+     * This is different from pause mode - in drop mode, scanning continues but MQTT messages are dropped.
+     *
+     * @return true if MQTT is dropping messages, false otherwise
+     */
+    public boolean isMqttDroppingMessages()
+    {
+        return mqttConnection != null && mqttConnection.isDropping();
+    }
+
+    /**
+     * Registers a listener to be notified when the MQTT drop mode state changes.
+     *
+     * @param listener The listener to register
+     */
+    public void registerMqttDropModeStateListener(IMqttDropModeStateListener listener)
+    {
+        if (listener != null)
+        {
+            mqttDropModeListeners.add(listener);
+            // Immediately notify listener of current state
+            listener.onMqttDropModeStateChanged(mqttConnection != null && mqttConnection.isDropping());
+        }
+    }
+
+    /**
+     * Unregisters an MQTT drop mode state listener.
+     *
+     * @param listener The listener to unregister
+     */
+    public void unregisterMqttDropModeStateListener(IMqttDropModeStateListener listener)
+    {
+        if (listener != null)
+        {
+            mqttDropModeListeners.remove(listener);
+        }
+    }
+
+    /**
+     * Notifies all listeners that the MQTT drop mode state has changed.
+     *
+     * @param isDropping True if MQTT is dropping messages due to queue backpressure
+     */
+    private void notifyMqttDropModeStateListeners(boolean isDropping)
+    {
+        for (IMqttDropModeStateListener listener : mqttDropModeListeners)
+        {
+            try
+            {
+                listener.onMqttDropModeStateChanged(isDropping);
+            } catch (Exception e)
+            {
+                Timber.e(e, "Error notifying MQTT drop mode state listener");
+            }
+        }
+    }
+
+    /**
+     * Interface for receiving notifications when the MQTT drop mode state changes.
+     */
+    public interface IMqttDropModeStateListener
+    {
+        /**
+         * Called when the MQTT drop mode state changes.
+         * Drop mode is active when the MQTT queue is full but other outputs (file logging, gRPC, etc.)
+         * are active, so scanning continues but MQTT messages are dropped.
+         *
+         * @param isDropping True if MQTT is dropping messages, false otherwise
+         */
+        void onMqttDropModeStateChanged(boolean isDropping);
     }
 }

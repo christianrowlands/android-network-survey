@@ -22,6 +22,9 @@ import com.craxiom.networksurvey.listeners.IWifiSurveyRecordListener;
 import com.craxiom.networksurvey.model.WifiRecordWrapper;
 
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
+
+import timber.log.Timber;
 
 /**
  * Class for creating a connection to an MQTT server.
@@ -31,6 +34,13 @@ import java.util.List;
 public class MqttConnection extends DefaultMqttConnection implements ICellularSurveyRecordListener, IWifiSurveyRecordListener,
         IBluetoothSurveyRecordListener, IGnssSurveyRecordListener, IDeviceStatusListener
 {
+    /**
+     * When true, incoming survey records will be dropped instead of being queued for MQTT publishing.
+     * This is used when the MQTT queue is full but other outputs (file logging, gRPC, etc.) are active
+     * and should continue receiving data. This is the single source of truth for drop mode state.
+     */
+    private final AtomicBoolean dropMessages = new AtomicBoolean(false);
+
     private String effectiveDeviceName;
     private static final String MQTT_GSM_MESSAGE_TOPIC = "gsm_message";
     private static final String MQTT_CDMA_MESSAGE_TOPIC = "cdma_message";
@@ -64,9 +74,58 @@ public class MqttConnection extends DefaultMqttConnection implements ICellularSu
         }
     }
 
+    /**
+     * Sets whether MQTT messages should be dropped instead of queued.
+     * This is used when the MQTT queue is full but other data outputs (file logging, gRPC, etc.)
+     * are active and should continue receiving data.
+     *
+     * @param drop true to drop messages, false to resume normal operation
+     */
+    public void setDropMessages(boolean drop)
+    {
+        dropMessages.set(drop);
+        if (drop)
+        {
+            Timber.d("MQTT drop mode enabled - messages will be dropped");
+        } else
+        {
+            Timber.d("MQTT drop mode disabled - messages will be queued normally");
+        }
+    }
+
+    /**
+     * Atomically sets the drop mode state and returns the previous value.
+     * This is used by the service to coordinate state transitions.
+     *
+     * @param drop the new drop mode state
+     * @return the previous drop mode state
+     */
+    public boolean getAndSetDropMessages(boolean drop)
+    {
+        boolean wasDropping = dropMessages.getAndSet(drop);
+        if (drop && !wasDropping)
+        {
+            Timber.d("MQTT drop mode enabled - messages will be dropped");
+        } else if (!drop && wasDropping)
+        {
+            Timber.d("MQTT drop mode disabled - messages will be queued normally");
+        }
+        return wasDropping;
+    }
+
+    /**
+     * @return true if messages are currently being dropped due to queue backpressure
+     */
+    public boolean isDropping()
+    {
+        return dropMessages.get();
+    }
+
     @Override
     public void onGsmSurveyRecord(GsmRecord gsmRecord)
     {
+        if (dropMessages.get()) return;
+
         // Set the device name using the pre-computed effective device name
         if (effectiveDeviceName != null)
         {
@@ -80,6 +139,8 @@ public class MqttConnection extends DefaultMqttConnection implements ICellularSu
     @Override
     public void onCdmaSurveyRecord(CdmaRecord cdmaRecord)
     {
+        if (dropMessages.get()) return;
+
         // Set the device name using the pre-computed effective device name
         if (effectiveDeviceName != null)
         {
@@ -93,6 +154,8 @@ public class MqttConnection extends DefaultMqttConnection implements ICellularSu
     @Override
     public void onUmtsSurveyRecord(UmtsRecord umtsRecord)
     {
+        if (dropMessages.get()) return;
+
         // Set the device name using the pre-computed effective device name
         if (effectiveDeviceName != null)
         {
@@ -106,6 +169,8 @@ public class MqttConnection extends DefaultMqttConnection implements ICellularSu
     @Override
     public void onLteSurveyRecord(LteRecord lteRecord)
     {
+        if (dropMessages.get()) return;
+
         // Set the device name using the pre-computed effective device name
         if (effectiveDeviceName != null)
         {
@@ -119,6 +184,8 @@ public class MqttConnection extends DefaultMqttConnection implements ICellularSu
     @Override
     public void onNrSurveyRecord(NrRecord nrRecord)
     {
+        if (dropMessages.get()) return;
+
         if (effectiveDeviceName != null)
         {
             final NrRecord.Builder recordBuilder = nrRecord.toBuilder();
@@ -131,6 +198,8 @@ public class MqttConnection extends DefaultMqttConnection implements ICellularSu
     @Override
     public void onWifiBeaconSurveyRecords(List<WifiRecordWrapper> wifiBeaconRecords)
     {
+        if (dropMessages.get()) return;
+
         wifiBeaconRecords.forEach(wifiRecord -> {
             WifiBeaconRecord wifiBeaconRecord = wifiRecord.getWifiBeaconRecord();
             if (effectiveDeviceName != null)
@@ -145,6 +214,8 @@ public class MqttConnection extends DefaultMqttConnection implements ICellularSu
     @Override
     public void onBluetoothSurveyRecord(BluetoothRecord bluetoothRecord)
     {
+        if (dropMessages.get()) return;
+
         // Set the device name using the pre-computed effective device name
         if (effectiveDeviceName != null)
         {
@@ -158,6 +229,8 @@ public class MqttConnection extends DefaultMqttConnection implements ICellularSu
     @Override
     public void onBluetoothSurveyRecords(List<BluetoothRecord> bluetoothRecords)
     {
+        if (dropMessages.get()) return;
+
         bluetoothRecords.forEach(bluetoothRecord -> {
             if (effectiveDeviceName != null)
             {
@@ -171,6 +244,8 @@ public class MqttConnection extends DefaultMqttConnection implements ICellularSu
     @Override
     public void onGnssSurveyRecord(GnssRecord gnssRecord)
     {
+        if (dropMessages.get()) return;
+
         if (effectiveDeviceName != null)
         {
             final GnssRecord.Builder gnssRecordBuilder = gnssRecord.toBuilder();
@@ -183,6 +258,8 @@ public class MqttConnection extends DefaultMqttConnection implements ICellularSu
     @Override
     public void onDeviceStatus(DeviceStatus deviceStatus)
     {
+        if (dropMessages.get()) return;
+
         if (effectiveDeviceName != null)
         {
             final DeviceStatus.Builder deviceStatusBuilder = deviceStatus.toBuilder();
@@ -195,6 +272,8 @@ public class MqttConnection extends DefaultMqttConnection implements ICellularSu
     @Override
     public void onPhoneState(PhoneState phoneState)
     {
+        if (dropMessages.get()) return;
+
         if (effectiveDeviceName != null)
         {
             final PhoneState.Builder messageBuilder = phoneState.toBuilder();
