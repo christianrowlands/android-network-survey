@@ -1,6 +1,6 @@
 # Changelog
 
-## [1.48](https://github.com/christianrowlands/android-network-survey/releases/tag/v1.48) - 2026-01-28
+## [1.48](https://github.com/christianrowlands/android-network-survey/releases/tag/v1.48) - 2026-01-29
 
 **BUG FIXES**
 * Fix a bug where the second time the Details UI was opened the upload status UI was not being updated properly after an upload completed.
