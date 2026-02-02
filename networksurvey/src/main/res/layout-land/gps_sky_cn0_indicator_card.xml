@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Landscape variant: Stacks title above meter vertically for narrow column width -->
+<androidx.cardview.widget.CardView xmlns:card_view="http://schemas.android.com/apk/res-auto"
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/sky_cn0_indicator_card"
+    android:layout_width="fill_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginTop="@dimen/sky_margin"
+    android:layout_marginLeft="@dimen/sky_margin"
+    android:layout_marginStart="@dimen/sky_margin"
+    android:layout_marginRight="@dimen/sky_margin"
+    android:layout_marginEnd="@dimen/sky_margin"
+    android:layout_centerHorizontal="true"
+    card_view:cardUseCompatPadding="false"
+    card_view:cardCornerRadius="4dp"
+    android:foreground="?attr/selectableItemBackground">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:gravity="center_horizontal"
+        android:paddingTop="8dp"
+        android:paddingBottom="8dp">
+
+        <include
+            layout="@layout/gps_sky_signal_title"
+            android:id="@+id/gps_sky_signal_title"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="4dp" />
+
+        <include
+            layout="@layout/gps_sky_signal_meter"
+            android:id="@+id/gps_sky_signal_meter"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content" />
+    </LinearLayout>
+</androidx.cardview.widget.CardView>

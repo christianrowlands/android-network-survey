@@ -1,0 +1,13 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <!-- Landscape-specific dimensions for GNSS Sky View -->
+    <!-- CN0 meter width optimized for 40% right column width -->
+    <dimen name="cn0_meter_width">160dp</dimen>
+
+    <!-- Adjusted for new gradient position (4dp margin vs old 20dp) -->
+    <!-- Indicator positions calibrated for landscape layout alignment -->
+    <!-- Both bubble and arrow are aligned to gradient left edge, so offset should be -1dp (bubble 1dp left of arrow) -->
+    <!-- textviewMargin - indicatorMargin = -1dp → textviewMargin = -6dp - 1dp = -7dp -->
+    <dimen name="cn0_indicator_min_left_margin">-6dp</dimen>
+    <dimen name="cn0_textview_min_left_margin">-7dp</dimen>
+</resources>

@@ -4,6 +4,7 @@ import android.graphics.Color
 import android.graphics.drawable.GradientDrawable
 import android.graphics.drawable.LayerDrawable
 import android.os.Bundle
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -340,7 +341,10 @@ class SkyFragment : Fragment() {
         // Based on the avg C/N0 for "in view" and "used" satellites the left margins need to be adjusted accordingly
         val meterWidthPx = (Application.get().resources.getDimension(R.dimen.cn0_meter_width)
             .toInt()
-                - LibUIUtils.dpToPixels(Application.get(), 7.0f)) // Reduce width for padding
+                - LibUIUtils.dpToPixels(
+            Application.get(),
+            2.0f
+        )) // Match actual gradient bar padding (1dp each side)
         val minIndicatorMarginPx = Application.get().resources
             .getDimension(R.dimen.cn0_indicator_min_left_margin).toInt()
         val maxIndicatorMarginPx = meterWidthPx + minIndicatorMarginPx
@@ -534,7 +538,7 @@ class SkyFragment : Fragment() {
         // C/N0 updates every second, so animation of 300ms (https://material.io/guidelines/motion/duration-easing.html#duration-easing-common-durations)
         // wit FastOutSlowInInterpolator recommended by Material Design spec easily finishes in time for next C/N0 update
         mutableAnimation.setDuration(300)
-        mutableAnimation.setInterpolator(FastOutSlowInInterpolator())
+        mutableAnimation.interpolator = FastOutSlowInInterpolator()
         v.startAnimation(mutableAnimation)
     }
 

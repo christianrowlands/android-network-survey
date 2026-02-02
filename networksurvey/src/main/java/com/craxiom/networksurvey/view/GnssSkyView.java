@@ -547,10 +547,26 @@ public class GnssSkyView extends View
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec)
     {
-        // Use the width of the screen as the measured dimension for width and height of view
-        // This allows other views in the same layout to be visible on the screen (#124)
-        int specSize = MeasureSpec.getSize(widthMeasureSpec);
-        setMeasuredDimension(specSize, specSize);
+        int heightMode = MeasureSpec.getMode(heightMeasureSpec);
+        int widthSize = MeasureSpec.getSize(widthMeasureSpec);
+        int heightSize = MeasureSpec.getSize(heightMeasureSpec);
+
+        int dimension;
+
+        // If height is unspecified or zero (like in ScrollView with wrap_content),
+        // use width to maintain the original portrait behavior
+        if (heightMode == MeasureSpec.UNSPECIFIED || heightSize == 0)
+        {
+            dimension = widthSize;
+        }
+        // If both dimensions are properly specified, use the minimum to create
+        // a square that fits in the available space (landscape behavior)
+        else
+        {
+            dimension = Math.min(widthSize, heightSize);
+        }
+
+        setMeasuredDimension(dimension, dimension);
     }
 
     public void onOrientationChanged(double orientation, double tilt)

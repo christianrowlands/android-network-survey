@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Landscape layout: Two-column design with sky view on left (60%) and info cards on right (40%) -->
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="horizontal"
+        android:baselineAligned="false"
+        android:weightSum="100">
+
+        <!-- Left column: Sky view with overlays (60% width) -->
+        <FrameLayout
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="60">
+
+            <com.craxiom.networksurvey.view.GnssSkyView
+                android:id="@+id/sky_view"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:layout_margin="5dp" />
+
+            <ImageView
+                android:id="@+id/sky_lock"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="top|start"
+                android:layout_marginStart="15dp"
+                android:layout_marginTop="15dp"
+                app:srcCompat="@drawable/ic_baseline_lock_24"
+                android:visibility="gone"
+                tools:visibility="visible"
+                android:contentDescription="@string/lock" />
+
+            <!-- Focus disabled to prevent ViewPager2 + Compose crash during page transitions.
+                 ViewPager2's focus management triggers Compose's focus search during layout,
+                 causing "performMeasureAndLayout called during measure layout" crash. -->
+            <androidx.compose.ui.platform.ComposeView
+                android:id="@+id/filter_view"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="top|center_horizontal"
+                android:layout_marginTop="12dp"
+                android:layout_marginBottom="5dp"
+                android:focusable="false"
+                android:focusableInTouchMode="false" />
+
+        </FrameLayout>
+
+        <!-- Right column: CN0 indicator and legend (40% width) -->
+        <ScrollView
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="40"
+            android:fillViewport="true">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:clipChildren="false"
+                android:paddingTop="16dp"
+                android:paddingBottom="16dp">
+
+                <include
+                    layout="@layout/gps_sky_cn0_indicator_card"
+                    android:id="@+id/sky_cn0_indicator_card"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/sky_margin"
+                    android:layout_marginLeft="@dimen/sky_margin"
+                    android:layout_marginStart="@dimen/sky_margin"
+                    android:layout_marginRight="@dimen/sky_margin"
+                    android:layout_marginEnd="@dimen/sky_margin" />
+
+                <!-- Spacer to absorb extra vertical space and push cards apart -->
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="0dp"
+                    android:layout_weight="1" />
+
+                <include
+                    layout="@layout/gps_sky_legend_card"
+                    android:id="@+id/sky_legend_card"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginLeft="@dimen/sky_margin"
+                    android:layout_marginStart="@dimen/sky_margin"
+                    android:layout_marginRight="@dimen/sky_margin"
+                    android:layout_marginEnd="@dimen/sky_margin"
+                    android:layout_marginBottom="@dimen/sky_margin" />
+
+            </LinearLayout>
+
+        </ScrollView>
+
+    </LinearLayout>
+
+</FrameLayout>

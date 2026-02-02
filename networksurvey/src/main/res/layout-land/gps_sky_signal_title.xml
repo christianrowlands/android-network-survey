@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- C/N0 legend title and units - Landscape variant with horizontal layout to save vertical space -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/sky_legend_cn0_title_layout"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:orientation="horizontal"
+    android:gravity="center">
+
+    <TextView
+        android:id="@+id/sky_legend_cn0_avg"
+        style="@style/sky_legend_label"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/avg_cn0_label"
+        android:textAlignment="center" />
+
+    <TextView
+        android:id="@+id/sky_legend_cn0_title"
+        style="@style/sky_legend_label"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="4dp"
+        android:text="@string/gps_cn0_column_label"
+        android:textAlignment="center" />
+
+    <TextView
+        android:id="@+id/sky_legend_cn0_units"
+        style="@style/sky_legend_value"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="4dp"
+        android:text="@string/sky_legend_cn0_units"
+        android:textAlignment="center" />
+</LinearLayout>
