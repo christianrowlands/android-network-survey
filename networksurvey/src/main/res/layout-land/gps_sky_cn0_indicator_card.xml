@@ -11,7 +11,7 @@
     android:layout_marginRight="@dimen/sky_margin"
     android:layout_marginEnd="@dimen/sky_margin"
     android:layout_centerHorizontal="true"
-    card_view:cardUseCompatPadding="false"
+    card_view:cardUseCompatPadding="true"
     card_view:cardCornerRadius="4dp"
     android:foreground="?attr/selectableItemBackground">
 

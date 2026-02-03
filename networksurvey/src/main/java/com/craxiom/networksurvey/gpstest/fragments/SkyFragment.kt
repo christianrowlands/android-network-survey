@@ -338,17 +338,19 @@ class SkyFragment : Fragment() {
         if (binding == null) {
             return
         }
+        // Use Fragment context to ensure correct orientation-specific dimension values
+        val context = requireContext()
         // Based on the avg C/N0 for "in view" and "used" satellites the left margins need to be adjusted accordingly
-        val meterWidthPx = (Application.get().resources.getDimension(R.dimen.cn0_meter_width)
+        val meterWidthPx = (context.resources.getDimension(R.dimen.cn0_meter_width)
             .toInt()
                 - LibUIUtils.dpToPixels(
-            Application.get(),
+            context,
             2.0f
         )) // Match actual gradient bar padding (1dp each side)
-        val minIndicatorMarginPx = Application.get().resources
+        val minIndicatorMarginPx = context.resources
             .getDimension(R.dimen.cn0_indicator_min_left_margin).toInt()
         val maxIndicatorMarginPx = meterWidthPx + minIndicatorMarginPx
-        val minTextViewMarginPx = Application.get().resources
+        val minTextViewMarginPx = context.resources
             .getDimension(R.dimen.cn0_textview_min_left_margin).toInt()
         val maxTextViewMarginPx = meterWidthPx + minTextViewMarginPx
 
@@ -375,7 +377,7 @@ class SkyFragment : Fragment() {
 
         // See if we need to apply the offset margin to try and keep the two TextViews from overlapping by shifting one of the two left
         if (leftInViewTextViewMarginPx != null && leftUsedTextViewMarginPx != null) {
-            val offset = LibUIUtils.dpToPixels(Application.get(), TEXTVIEW_NON_OVERLAP_OFFSET_DP)
+            val offset = LibUIUtils.dpToPixels(context, TEXTVIEW_NON_OVERLAP_OFFSET_DP)
             if (leftInViewTextViewMarginPx <= leftUsedTextViewMarginPx) {
                 leftInViewTextViewMarginPx += offset
             } else {
@@ -384,8 +386,8 @@ class SkyFragment : Fragment() {
         }
 
         // Define paddings used for TextViews
-        val pSides = LibUIUtils.dpToPixels(Application.get(), 7f)
-        val pTopBottom = LibUIUtils.dpToPixels(Application.get(), 4f)
+        val pSides = LibUIUtils.dpToPixels(context, 7f)
+        val pTopBottom = LibUIUtils.dpToPixels(context, 4f)
 
         // Set avg C/N0 of satellites in view of device
         if (MathUtils.isValidFloat(binding!!.skyView.cn0InViewAvg)) {
@@ -395,7 +397,7 @@ class SkyFragment : Fragment() {
             // Set color of TextView
             val color = binding!!.skyView.getSatelliteColor(binding!!.skyView.cn0InViewAvg)
             val background = ContextCompat.getDrawable(
-                Application.get(),
+                context,
                 R.drawable.cn0_round_corner_background_in_view
             ) as LayerDrawable?
 
@@ -460,7 +462,7 @@ class SkyFragment : Fragment() {
             // Set color of TextView
             val color = binding!!.skyView.getSatelliteColor(binding!!.skyView.cn0UsedAvg)
             val background =
-                ContextCompat.getDrawable(Application.get(), usedCn0Background) as LayerDrawable?
+                ContextCompat.getDrawable(context, usedCn0Background) as LayerDrawable?
 
             // Fill
             val backgroundGradient =

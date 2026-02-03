@@ -7,17 +7,17 @@
     android:layout_width="wrap_content"
     android:clipChildren="false">
 
-    <!-- Colored C/N0 legend - reduced margins from 20dp to 4dp for landscape alignment -->
+    <!-- Colored C/N0 legend -->
     <androidx.appcompat.widget.AppCompatImageView
         android:id="@+id/sky_legend_cn0"
         android:layout_width="@dimen/cn0_meter_width"
         android:layout_height="wrap_content"
         android:layout_marginTop="3dp"
         android:layout_marginBottom="5dp"
-        android:layout_marginLeft="4dp"
-        android:layout_marginStart="4dp"
-        android:layout_marginRight="4dp"
-        android:layout_marginEnd="4dp"
+        android:layout_marginLeft="20dp"
+        android:layout_marginStart="20dp"
+        android:layout_marginRight="20dp"
+        android:layout_marginEnd="20dp"
         android:layout_below="@+id/cn0_indicator_in_view"
         android:layout_centerHorizontal="true"
         android:background="@color/cn0_meter_border"
@@ -46,8 +46,6 @@
     <include
         android:id="@+id/cn0_text_in_view"
         layout="@layout/cn0_in_view_value_text"
-        android:layout_alignLeft="@id/sky_legend_cn0"
-        android:layout_alignStart="@id/sky_legend_cn0"
         android:layout_marginTop="1dp"
         android:layout_marginBottom="-7dp"
         android:layout_marginLeft="@dimen/cn0_textview_min_left_margin"
@@ -72,8 +70,6 @@
     <include
         android:id="@+id/cn0_text_used"
         layout="@layout/cn0_used_value_text"
-        android:layout_alignLeft="@id/sky_legend_cn0"
-        android:layout_alignStart="@id/sky_legend_cn0"
         android:layout_marginTop="1dp"
         android:layout_marginBottom="-7dp"
         android:layout_marginLeft="@dimen/cn0_textview_min_left_margin"
@@ -82,16 +78,15 @@
         android:layout_height="wrap_content"
         android:visibility="invisible" />
 
-    <!-- Tick marks - 5dp margin to align with gradient (4dp margin + 1dp padding = 5dp) -->
     <include
         layout="@layout/signal_meter_ticks_and_text"
         android:id="@+id/signal_meter_ticks_and_text"
         android:layout_width="@dimen/cn0_meter_width"
         android:layout_height="wrap_content"
-        android:layout_marginLeft="5dp"
-        android:layout_marginStart="5dp"
-        android:layout_marginRight="5dp"
-        android:layout_marginEnd="5dp"
+        android:layout_marginLeft="20dp"
+        android:layout_marginStart="20dp"
+        android:layout_marginRight="20dp"
+        android:layout_marginEnd="20dp"
         android:layout_below="@id/sky_legend_cn0"
         android:layout_centerHorizontal="true" />
 
