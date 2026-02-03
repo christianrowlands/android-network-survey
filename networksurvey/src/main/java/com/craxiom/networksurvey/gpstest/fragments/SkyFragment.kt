@@ -4,7 +4,6 @@ import android.graphics.Color
 import android.graphics.drawable.GradientDrawable
 import android.graphics.drawable.LayerDrawable
 import android.os.Bundle
-import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -338,15 +337,19 @@ class SkyFragment : Fragment() {
         if (binding == null) {
             return
         }
-        // Use Fragment context to ensure correct orientation-specific dimension values
         val context = requireContext()
+
+        // Use the actual rendered width of the gradient bar instead of the dimension resource.
+        // In landscape mode, the gradient bar may be constrained by its parent container to a
+        // width smaller than the dimension resource specifies.
+        val gradientBarWidth = meter.skyLegendCn0.width
+        if (gradientBarWidth == 0) {
+            // View not yet laid out, skip this update
+            return
+        }
+        val meterWidthPx = gradientBarWidth - meter.skyLegendCn0.paddingLeft - meter.skyLegendCn0.paddingRight
+
         // Based on the avg C/N0 for "in view" and "used" satellites the left margins need to be adjusted accordingly
-        val meterWidthPx = (context.resources.getDimension(R.dimen.cn0_meter_width)
-            .toInt()
-                - LibUIUtils.dpToPixels(
-            context,
-            2.0f
-        )) // Match actual gradient bar padding (1dp each side)
         val minIndicatorMarginPx = context.resources
             .getDimension(R.dimen.cn0_indicator_min_left_margin).toInt()
         val maxIndicatorMarginPx = meterWidthPx + minIndicatorMarginPx
