@@ -35,8 +35,7 @@
                 style="@style/CardTitleStyle"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="@string/card_title_location"
-                android:textIsSelectable="true" />
+                android:text="@string/card_title_location" />
 
         </LinearLayout>
 
@@ -55,8 +54,7 @@
                 android:layout_marginStart="@dimen/large_margin"
                 android:maxLines="1"
                 android:autoSizeTextType="uniform"
-                android:text="@string/searching_for_location"
-                android:textIsSelectable="true" />
+                android:text="@string/searching_for_location" />
 
             <TextView
                 android:id="@+id/altitude"
@@ -66,8 +64,7 @@
                 android:layout_weight="1"
                 android:maxLines="1"
                 android:autoSizeTextType="uniform"
-                android:text="@string/altitude_initial"
-                android:textIsSelectable="true" />
+                android:text="@string/altitude_initial" />
 
         </LinearLayout>
 
@@ -78,8 +75,7 @@
             android:layout_height="wrap_content"
             android:layout_marginStart="@dimen/large_margin"
             android:layout_marginBottom="@dimen/small_margin"
-            android:text="@string/accuracy_initial"
-            android:textIsSelectable="true" />
+            android:text="@string/accuracy_initial" />
 
         <TextView
             android:id="@+id/location_hint"

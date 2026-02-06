@@ -285,7 +285,6 @@
                             android:gravity="center"
                             app:layout_constraintTop_toTopOf="@id/plmn_group"
                             app:layout_constraintBottom_toTopOf="@id/plmn_label"
-                            android:textIsSelectable="true"
                             tools:layout_editor_absoluteX="8dp" />
 
                         <TextView
@@ -315,7 +314,6 @@
                             android:gravity="center"
                             app:layout_constraintTop_toTopOf="@id/tac_group"
                             app:layout_constraintBottom_toTopOf="@id/tac_label"
-                            android:textIsSelectable="true"
                             tools:layout_editor_absoluteX="8dp" />
 
                         <TextView
@@ -345,7 +343,6 @@
                             android:gravity="center"
                             app:layout_constraintTop_toTopOf="@id/cid_group"
                             app:layout_constraintBottom_toTopOf="@id/cid_label"
-                            android:textIsSelectable="true"
                             tools:layout_editor_absoluteX="8dp" />
 
                         <TextView
@@ -397,7 +394,6 @@
                                     android:layout_height="wrap_content"
                                     app:layout_constraintTop_toTopOf="@id/enb_id_group"
                                     app:layout_constraintBottom_toTopOf="@id/enb_id_label"
-                                    android:textIsSelectable="true"
                                     tools:layout_editor_absoluteX="8dp" />
 
                                 <TextView
@@ -425,7 +421,6 @@
                                     android:layout_height="wrap_content"
                                     app:layout_constraintTop_toTopOf="@id/sector_id_group"
                                     app:layout_constraintBottom_toTopOf="@id/sector_id_label"
-                                    android:textIsSelectable="true"
                                     tools:layout_editor_absoluteX="8dp" />
 
                                 <TextView
@@ -461,7 +456,6 @@
                                     android:layout_height="wrap_content"
                                     app:layout_constraintTop_toTopOf="@id/earfcn_group"
                                     app:layout_constraintBottom_toTopOf="@id/earfcn_label"
-                                    android:textIsSelectable="true"
                                     tools:layout_editor_absoluteX="8dp" />
 
                                 <TextView
@@ -489,7 +483,6 @@
                                     android:layout_height="wrap_content"
                                     app:layout_constraintTop_toTopOf="@id/pci_group"
                                     app:layout_constraintBottom_toTopOf="@id/pci_label"
-                                    android:textIsSelectable="true"
                                     tools:layout_editor_absoluteX="8dp" />
 
                                 <TextView
@@ -527,7 +520,6 @@
                                     android:layout_height="wrap_content"
                                     app:layout_constraintTop_toTopOf="@id/band_group"
                                     app:layout_constraintBottom_toTopOf="@id/band_label"
-                                    android:textIsSelectable="true"
                                     tools:layout_editor_absoluteX="8dp" />
 
                                 <TextView
@@ -556,7 +548,6 @@
                                     android:layout_height="wrap_content"
                                     app:layout_constraintTop_toTopOf="@id/frequency_group"
                                     app:layout_constraintBottom_toTopOf="@id/frequency_label"
-                                    android:textIsSelectable="true"
                                     tools:layout_editor_absoluteX="8dp" />
 
                                 <TextView
@@ -594,7 +585,6 @@
                                     android:layout_height="wrap_content"
                                     app:layout_constraintTop_toTopOf="@id/lte_band_group"
                                     app:layout_constraintBottom_toTopOf="@id/lte_band_label"
-                                    android:textIsSelectable="true"
                                     tools:layout_editor_absoluteX="8dp" />
 
                                 <TextView
@@ -622,7 +612,6 @@
                                     android:layout_height="wrap_content"
                                     app:layout_constraintTop_toTopOf="@id/bandwidth_group"
                                     app:layout_constraintBottom_toTopOf="@id/bandwidth_label"
-                                    android:textIsSelectable="true"
                                     tools:layout_editor_absoluteX="8dp" />
 
                                 <TextView
@@ -658,7 +647,6 @@
                                     android:layout_height="wrap_content"
                                     app:layout_constraintTop_toTopOf="@id/cqi_group"
                                     app:layout_constraintBottom_toTopOf="@id/cqi_label"
-                                    android:textIsSelectable="true"
                                     tools:layout_editor_absoluteX="8dp" />
 
                                 <TextView
@@ -686,7 +674,6 @@
                                     android:layout_height="wrap_content"
                                     app:layout_constraintTop_toTopOf="@id/ta_group"
                                     app:layout_constraintBottom_toTopOf="@id/ta_label"
-                                    android:textIsSelectable="true"
                                     tools:layout_editor_absoluteX="8dp" />
 
                                 <TextView

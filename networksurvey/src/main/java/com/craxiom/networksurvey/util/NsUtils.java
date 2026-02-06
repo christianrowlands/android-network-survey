@@ -13,6 +13,9 @@ import android.net.NetworkCapabilities;
 import android.os.Build;
 import android.telephony.TelephonyManager;
 import android.text.TextUtils;
+import android.view.View;
+import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
@@ -96,6 +99,37 @@ public class NsUtils
         {
             ClipData clip = ClipData.newPlainText(Application.get().getString(R.string.pref_file_location_output_title), location);
             clipboard.setPrimaryClip(clip);
+        }
+    }
+
+    /**
+     * Wires up long-press-to-copy on the provided views. When long-pressed, copies the
+     * TextView's text to the clipboard and shows a toast on pre-Android 12 devices.
+     *
+     * @param views the views to attach long-press-to-copy listeners to.
+     */
+    public static void setupCopyOnLongPress(View... views)
+    {
+        for (View view : views)
+        {
+            view.setOnLongClickListener(v -> {
+                if (v instanceof TextView)
+                {
+                    String text = ((TextView) v).getText().toString();
+                    if (!text.isEmpty())
+                    {
+                        copyToClipboard(text);
+                        // Android 12+ shows a system clipboard toast automatically
+                        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S)
+                        {
+                            Toast.makeText(Application.get(),
+                                    Application.get().getString(R.string.value_copied_to_clipboard),
+                                    Toast.LENGTH_SHORT).show();
+                        }
+                    }
+                }
+                return true;
+            });
         }
     }
 

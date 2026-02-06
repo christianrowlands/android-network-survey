@@ -367,6 +367,19 @@ public class DashboardFragment extends AServiceDataFragment implements LocationL
     }
 
     /**
+     * Wires up long-press-to-copy on the location card value TextViews. This replaces the
+     * textIsSelectable behavior and provides a consistent copy UX across all screens.
+     */
+    private void setupCopyOnLongPress()
+    {
+        NsUtils.setupCopyOnLongPress(
+                binding.locationCard.location,
+                binding.locationCard.altitude,
+                binding.locationCard.accuracy
+        );
+    }
+
+    /**
      * Add click listeners to the appropriate places in the UI, such as on the file logging toggle
      * switches.
      */
@@ -378,6 +391,7 @@ public class DashboardFragment extends AServiceDataFragment implements LocationL
         binding.uploadButton.setOnClickListener(v -> showUploadDialog());
         binding.uploadCancelButton.setOnClickListener(v -> cancelUploads());
         binding.locationCard.locationHint.setOnClickListener(v -> navigateToSettings());
+        setupCopyOnLongPress();
 
         initializeLoggingSwitch(binding.cellularLoggingToggleSwitch, (newEnabledState, toggleSwitch) -> {
             if (newEnabledState && checkBatteryOptimizationBeforeLogging())

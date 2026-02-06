@@ -145,6 +145,14 @@ public class MainCellularFragment extends AServiceDataFragment
 
         final CellularCollectionAdapter cellularCollectionAdapter = new CellularCollectionAdapter(this, activeSubscriptionInfoList);
         final ViewPager2 viewPager = view.findViewById(R.id.pager);
+
+        // Prevent ViewPager2 + Compose reentrant layout crash on Android 8 (API 26-27).
+        // ViewPager2's clearFocus() during page transitions can trigger Compose's focus search
+        // during an active layout pass, causing "performMeasureAndLayout called during measure layout".
+        viewPager.setFocusable(false);
+        viewPager.setFocusableInTouchMode(false);
+        viewPager.setDescendantFocusability(ViewGroup.FOCUS_BLOCK_DESCENDANTS);
+
         viewPager.setAdapter(cellularCollectionAdapter);
 
         final TabLayout tabLayout = view.findViewById(R.id.tab_layout);
@@ -256,5 +264,4 @@ public class MainCellularFragment extends AServiceDataFragment
             scrollView.post(() -> scrollView.fullScroll(View.FOCUS_DOWN));
         }
     }
-
 }

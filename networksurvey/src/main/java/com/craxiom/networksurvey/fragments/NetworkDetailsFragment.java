@@ -62,6 +62,7 @@ import com.craxiom.networksurvey.util.CellularUtils;
 import com.craxiom.networksurvey.util.ColorUtils;
 import com.craxiom.networksurvey.util.LocationHintManager;
 import com.craxiom.networksurvey.util.MeasurementFormatter;
+import com.craxiom.networksurvey.util.NsUtils;
 import com.craxiom.networksurvey.util.ParserUtils;
 import com.mackhartley.roundedprogressbar.RoundedProgressBar;
 
@@ -276,6 +277,24 @@ public class NetworkDetailsFragment extends AServiceDataFragment implements ICel
         binding.overrideNetworkGroup.setOnClickListener(c -> showOverrideNetworkInfoDialog());
         binding.cellularInfoIcon.setOnClickListener(c -> showCellularInfoDialog());
         binding.locationCard.locationHint.setOnClickListener(v -> navigateToSettings());
+        setupCopyOnLongPress();
+    }
+
+    /**
+     * Wires up long-press-to-copy on each cellular detail value TextView. This replaces the
+     * textIsSelectable behavior (which was removed to prevent the ViewPager2 + Compose reentrant
+     * layout crash) and provides a cleaner single-value copy UX.
+     */
+    private void setupCopyOnLongPress()
+    {
+        NsUtils.setupCopyOnLongPress(
+                binding.plmn, binding.tac, binding.cid,
+                binding.enbId, binding.sectorId, binding.earfcn,
+                binding.pci, binding.band, binding.frequency,
+                binding.lteBand, binding.bandwidth, binding.cqi, binding.ta,
+                binding.locationCard.location, binding.locationCard.altitude,
+                binding.locationCard.accuracy
+        );
     }
 
     /**

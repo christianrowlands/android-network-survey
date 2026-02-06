@@ -49,6 +49,14 @@ class MainGnssFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         val gnssCollectionAdapter = GnssCollectionAdapter(this)
         val viewPager = view.findViewById<ViewPager2>(R.id.pager)
+
+        // Prevent ViewPager2 + Compose reentrant layout crash on Android 8 (API 26-27).
+        // ViewPager2's clearFocus() during page transitions can trigger Compose's focus search
+        // during an active layout pass, causing "performMeasureAndLayout called during measure layout".
+        viewPager.isFocusable = false
+        viewPager.isFocusableInTouchMode = false
+        viewPager.descendantFocusability = ViewGroup.FOCUS_BLOCK_DESCENDANTS
+
         viewPager.setAdapter(gnssCollectionAdapter)
         val tabLayout = view.findViewById<TabLayout>(R.id.tab_layout)
         TabLayoutMediator(tabLayout, viewPager) { tab: TabLayout.Tab, position: Int ->
