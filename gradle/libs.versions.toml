@@ -1,7 +1,7 @@
 [versions]
 #kotlin = "2.0.21"
-#ksp = "2.0.21-1.0.28"
-kotlin = "2.2.0"
+#ksp = "2.3.5"
+kotlin = "2.3.10"
 
 [plugins]
 org-jetbrains-kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
