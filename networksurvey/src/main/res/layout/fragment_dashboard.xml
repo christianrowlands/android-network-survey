@@ -1065,7 +1065,7 @@
                         <ImageView
                             android:id="@+id/mqtt_streaming_icon"
                             android:layout_width="16dp"
-                            android:layout_height="16dp"
+                            android:layout_height="17dp"
                             android:layout_gravity="center"
                             android:layout_marginStart="@dimen/small_margin"
                             android:layout_marginEnd="@dimen/small_margin"
