@@ -45,6 +45,7 @@ import com.craxiom.networksurvey.R
  * @param wifiCount Number of WiFi records collected
  * @param bluetoothCount Number of Bluetooth records collected
  * @param gnssCount Number of GNSS records collected
+ * @param phoneStateCount Number of phone state records collected
  * @param onToggleSurvey Callback when the start/stop survey button is clicked
  * @param onOpenDetails Callback when the open details button is clicked (optional, only shown in dashboard)
  * @param modifier Optional modifier for the card
@@ -59,11 +60,12 @@ fun NsAnalyticsStatusCard(
     wifiCount: Int = 0,
     bluetoothCount: Int = 0,
     gnssCount: Int = 0,
+    phoneStateCount: Int = 0,
     onToggleSurvey: () -> Unit,
     onOpenDetails: (() -> Unit)? = null,
     showDetailedInfo: Boolean = true
 ) {
-    val totalCount = cellularCount + wifiCount + bluetoothCount + gnssCount
+    val totalCount = cellularCount + wifiCount + bluetoothCount + gnssCount + phoneStateCount
 
     Card(
         modifier = modifier.fillMaxWidth(),
@@ -149,7 +151,8 @@ fun NsAnalyticsStatusCard(
                     cellularCount = cellularCount,
                     wifiCount = wifiCount,
                     bluetoothCount = bluetoothCount,
-                    gnssCount = gnssCount
+                    gnssCount = gnssCount,
+                    phoneStateCount = phoneStateCount
                 )
 
                 Spacer(modifier = Modifier.height(8.dp))
@@ -162,6 +165,7 @@ fun NsAnalyticsStatusCard(
                     NsAnalyticsProtocolCountLabel("Wi-Fi", wifiCount, Color(0xFF06B6D4))
                     NsAnalyticsProtocolCountLabel("BT", bluetoothCount, Color(0xFF3B82F6))
                     NsAnalyticsProtocolCountLabel("GPS", gnssCount, Color(0xFF22C55E))
+                    NsAnalyticsProtocolCountLabel("Phone", phoneStateCount, Color(0xFFEAB308))
                 }
             } else if (!isSurveyActive) {
                 // No records and survey inactive
@@ -249,9 +253,10 @@ fun NsAnalyticsProtocolDistributionBar(
     cellularCount: Int,
     wifiCount: Int,
     bluetoothCount: Int,
-    gnssCount: Int
+    gnssCount: Int,
+    phoneStateCount: Int = 0
 ) {
-    val total = cellularCount + wifiCount + bluetoothCount + gnssCount
+    val total = cellularCount + wifiCount + bluetoothCount + gnssCount + phoneStateCount
     if (total == 0) return
 
     Row(
@@ -290,6 +295,14 @@ fun NsAnalyticsProtocolDistributionBar(
                     .weight(gnssCount.toFloat())
                     .fillMaxHeight()
                     .background(Color(0xFF22C55E))
+            )
+        }
+        if (phoneStateCount > 0) {
+            Box(
+                modifier = Modifier
+                    .weight(phoneStateCount.toFloat())
+                    .fillMaxHeight()
+                    .background(Color(0xFFEAB308))
             )
         }
     }

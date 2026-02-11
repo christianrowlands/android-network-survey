@@ -187,6 +187,7 @@ class NsAnalyticsConnectionViewModel(
             var wifiCount = 0
             var bluetoothCount = 0
             var gnssCount = 0
+            var phoneStateCount = 0
 
             recordStats.forEach { stat ->
                 when (stat.recordType) {
@@ -209,11 +210,16 @@ class NsAnalyticsConnectionViewModel(
                     NsAnalyticsConstants.RECORD_TYPE_GNSS -> {
                         gnssCount = stat.count
                     }
-                    // Ignore other record types like device_status and phone_state
+
+                    NsAnalyticsConstants.RECORD_TYPE_PHONE_STATE -> {
+                        phoneStateCount = stat.count
+                    }
+                    // Ignore other record types like device_status
                 }
             }
 
-            val totalQueuedRecords = cellularCount + wifiCount + bluetoothCount + gnssCount
+            val totalQueuedRecords =
+                cellularCount + wifiCount + bluetoothCount + gnssCount + phoneStateCount
 
             // Update upload state based on queue, but don't override if uploading or recently completed
             val currentState = _uiState.value
@@ -251,6 +257,7 @@ class NsAnalyticsConnectionViewModel(
                 wifiRecordCount = wifiCount,
                 bluetoothRecordCount = bluetoothCount,
                 gnssRecordCount = gnssCount,
+                phoneStateRecordCount = phoneStateCount,
                 queuedRecords = totalQueuedRecords,
                 uploadState = newUploadState,
                 uploadStatusMessage = newUploadStatusMessage
@@ -854,6 +861,10 @@ class NsAnalyticsConnectionViewModel(
                         NsAnalyticsConstants.PROPERTY_NS_ANALYTICS_GNSS_ENABLED,
                         NsAnalyticsConstants.DEFAULT_GNSS_ENABLED
                     )
+                    val phoneStateEnabled = preferences.getBoolean(
+                        NsAnalyticsConstants.PROPERTY_NS_ANALYTICS_PHONE_STATE_ENABLED,
+                        NsAnalyticsConstants.DEFAULT_PHONE_STATE_ENABLED
+                    )
 
                     // Get queue size
                     val queueSize = database.nsAnalyticsDao().getPendingRecordCount()
@@ -888,7 +899,8 @@ class NsAnalyticsConnectionViewModel(
                         cellularEnabled = cellularEnabled,
                         wifiEnabled = wifiEnabled,
                         bluetoothEnabled = bluetoothEnabled,
-                        gnssEnabled = gnssEnabled
+                        gnssEnabled = gnssEnabled,
+                        phoneStateEnabled = phoneStateEnabled
                     )
 
                     // Update survey status after loading connection state
@@ -1785,6 +1797,29 @@ class NsAnalyticsConnectionViewModel(
     }
 
     /**
+     * Toggle Phone State protocol collection for NS Analytics.
+     */
+    fun togglePhoneStateProtocol(enabled: Boolean) {
+        viewModelScope.launch {
+            try {
+                val preferences = PreferenceManager.getDefaultSharedPreferences(context)
+                preferences.edit {
+                    putBoolean(
+                        NsAnalyticsConstants.PROPERTY_NS_ANALYTICS_PHONE_STATE_ENABLED,
+                        enabled
+                    )
+                }
+
+                _uiState.value = _uiState.value.copy(phoneStateEnabled = enabled)
+                Timber.d("NS Analytics Phone State protocol ${if (enabled) "enabled" else "disabled"}")
+            } catch (e: Exception) {
+                Timber.e(e, "Failed to toggle Phone State protocol")
+                showMessage("Failed to update Phone State protocol setting")
+            }
+        }
+    }
+
+    /**
      * Toggle NS Analytics survey scanning on or off.
      * This starts or stops the data collection for NS Analytics.
      */
@@ -1872,12 +1907,14 @@ data class NsAnalyticsConnectionUiState(
     val wifiEnabled: Boolean = NsAnalyticsConstants.DEFAULT_WIFI_ENABLED,
     val bluetoothEnabled: Boolean = NsAnalyticsConstants.DEFAULT_BLUETOOTH_ENABLED,
     val gnssEnabled: Boolean = NsAnalyticsConstants.DEFAULT_GNSS_ENABLED,
+    val phoneStateEnabled: Boolean = NsAnalyticsConstants.DEFAULT_PHONE_STATE_ENABLED,
     val isSurveyActive: Boolean = false,
     val surveyStartTime: Long = 0,
     val cellularRecordCount: Int = 0,
     val wifiRecordCount: Int = 0,
     val bluetoothRecordCount: Int = 0,
     val gnssRecordCount: Int = 0,
+    val phoneStateRecordCount: Int = 0,
     val deregistrationInfo: DeregistrationInfo? = null,
     val showQuotaExceededDialog: Boolean = false,
     val quotaCurrentUsage: Int = 0,

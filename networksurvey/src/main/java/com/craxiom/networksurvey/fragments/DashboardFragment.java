@@ -113,6 +113,7 @@ public class DashboardFragment extends AServiceDataFragment implements LocationL
     private int nsAnalyticsWifiCount = 0;
     private int nsAnalyticsBluetoothCount = 0;
     private int nsAnalyticsGnssCount = 0;
+    private int nsAnalyticsPhoneStateCount = 0;
 
     private final Handler handler = new Handler(Looper.getMainLooper());
     private LocationHintManager locationHintManager;
@@ -338,6 +339,7 @@ public class DashboardFragment extends AServiceDataFragment implements LocationL
         switch (key)
         {
             case NetworkSurveyConstants.PROPERTY_MQTT_CELLULAR_STREAM_ENABLED:
+            case NetworkSurveyConstants.PROPERTY_MQTT_PHONE_STATE_STREAM_ENABLED:
             case NetworkSurveyConstants.PROPERTY_MQTT_WIFI_STREAM_ENABLED:
             case NetworkSurveyConstants.PROPERTY_MQTT_BLUETOOTH_STREAM_ENABLED:
             case NetworkSurveyConstants.PROPERTY_MQTT_GNSS_STREAM_ENABLED:
@@ -402,6 +404,16 @@ public class DashboardFragment extends AServiceDataFragment implements LocationL
             }
             viewModel.setCellularLoggingEnabled(newEnabledState);
             toggleCellularLogging(newEnabledState);
+        });
+
+        initializeLoggingSwitch(binding.phoneStateLoggingToggleSwitch, (newEnabledState, toggleSwitch) -> {
+            if (newEnabledState && checkBatteryOptimizationBeforeLogging())
+            {
+                toggleSwitch.setChecked(false);
+                return;
+            }
+            viewModel.setPhoneStateLoggingEnabled(newEnabledState);
+            togglePhoneStateLogging(newEnabledState);
         });
 
         initializeLoggingSwitch(binding.wifiLoggingToggleSwitch, (newEnabledState, toggleSwitch) -> {
@@ -502,6 +514,7 @@ public class DashboardFragment extends AServiceDataFragment implements LocationL
 
         binding.uploadHelpIcon.setOnClickListener(c -> showUploadHelpDialog());
         binding.cdrHelpIcon.setOnClickListener(c -> showCdrHelpDialog());
+        binding.phoneStateHelpIcon.setOnClickListener(c -> showPhoneStateHelpDialog());
         binding.fileHelpIcon.setOnClickListener(c -> showFileMqttHelpDialog());
         binding.mqttHelpIcon.setOnClickListener(c -> showFileMqttHelpDialog());
     }
@@ -687,6 +700,26 @@ public class DashboardFragment extends AServiceDataFragment implements LocationL
     }
 
     /**
+     * Displays a dialog with some information about what Phone State events are.
+     */
+    private void showPhoneStateHelpDialog()
+    {
+        final Context context = getContext();
+        if (context == null) return;
+
+        LayoutInflater inflater = LayoutInflater.from(context);
+        View dialogView = inflater.inflate(R.layout.dialog_phone_state_help, null);
+
+        AlertDialog.Builder alertBuilder = new AlertDialog.Builder(context);
+        alertBuilder.setView(dialogView);
+        alertBuilder.setCancelable(true);
+        alertBuilder.setTitle(context.getString(R.string.phone_state_help_title));
+        alertBuilder.setPositiveButton(android.R.string.ok, (dialog, which) -> {
+        });
+        alertBuilder.create().show();
+    }
+
+    /**
      * Displays a dialog with some information about the difference between file logging and MQTT.
      */
     private void showFileMqttHelpDialog()
@@ -760,6 +793,7 @@ public class DashboardFragment extends AServiceDataFragment implements LocationL
         viewModel.getUploadScanningActive().observe(viewLifecycleOwner, this::updateUploadRecordSavingUi);
 
         viewModel.getCellularLoggingEnabled().observe(viewLifecycleOwner, this::updateCellularLogging);
+        viewModel.getPhoneStateLoggingEnabled().observe(viewLifecycleOwner, this::updatePhoneStateLogging);
         viewModel.getWifiLoggingEnabled().observe(viewLifecycleOwner, this::updateWifiLogging);
         viewModel.getBluetoothLoggingEnabled().observe(viewLifecycleOwner, this::updateBluetoothLogging);
         viewModel.getGnssLoggingEnabled().observe(viewLifecycleOwner, this::updateGnssLogging);
@@ -767,6 +801,7 @@ public class DashboardFragment extends AServiceDataFragment implements LocationL
 
         viewModel.getMqttConnectionState().observe(viewLifecycleOwner, this::updateMqttUiState);
         viewModel.getCellularMqttStreamEnabled().observe(viewLifecycleOwner, enabled -> updateStreamUi(binding.mqttCellular, enabled));
+        viewModel.getPhoneStateMqttStreamEnabled().observe(viewLifecycleOwner, enabled -> updateStreamUi(binding.mqttPhoneState, enabled));
         viewModel.getWifiMqttStreamEnabled().observe(viewLifecycleOwner, enabled -> updateStreamUi(binding.mqttWifi, enabled));
         viewModel.getBluetoothMqttStreamEnabled().observe(viewLifecycleOwner, enabled -> updateStreamUi(binding.mqttBluetooth, enabled));
         viewModel.getGnssMqttStreamEnabled().observe(viewLifecycleOwner, enabled -> updateStreamUi(binding.mqttGnss, enabled));
@@ -786,6 +821,7 @@ public class DashboardFragment extends AServiceDataFragment implements LocationL
         viewModel.getUploadScanningActive().removeObservers(viewLifecycleOwner);
 
         viewModel.getCellularLoggingEnabled().removeObservers(viewLifecycleOwner);
+        viewModel.getPhoneStateLoggingEnabled().removeObservers(viewLifecycleOwner);
         viewModel.getWifiLoggingEnabled().removeObservers(viewLifecycleOwner);
         viewModel.getBluetoothLoggingEnabled().removeObservers(viewLifecycleOwner);
         viewModel.getGnssLoggingEnabled().removeObservers(viewLifecycleOwner);
@@ -793,6 +829,7 @@ public class DashboardFragment extends AServiceDataFragment implements LocationL
 
         viewModel.getMqttConnectionState().removeObservers(viewLifecycleOwner);
         viewModel.getCellularMqttStreamEnabled().removeObservers(viewLifecycleOwner);
+        viewModel.getPhoneStateMqttStreamEnabled().removeObservers(viewLifecycleOwner);
         viewModel.getWifiMqttStreamEnabled().removeObservers(viewLifecycleOwner);
         viewModel.getBluetoothMqttStreamEnabled().removeObservers(viewLifecycleOwner);
         viewModel.getGnssMqttStreamEnabled().removeObservers(viewLifecycleOwner);
@@ -816,6 +853,7 @@ public class DashboardFragment extends AServiceDataFragment implements LocationL
     private synchronized void updateLoggingState(NetworkSurveyService networkSurveyService)
     {
         viewModel.setCellularLoggingEnabled(networkSurveyService.isCellularLoggingEnabled());
+        viewModel.setPhoneStateLoggingEnabled(networkSurveyService.isPhoneStateLoggingEnabled());
         viewModel.setWifiLoggingEnabled(networkSurveyService.isWifiLoggingEnabled());
         viewModel.setBluetoothLoggingEnabled(networkSurveyService.isBluetoothLoggingEnabled());
         viewModel.setGnssLoggingEnabled(networkSurveyService.isGnssLoggingEnabled());
@@ -984,6 +1022,9 @@ public class DashboardFragment extends AServiceDataFragment implements LocationL
         boolean cellularStreamEnabled = preferences.getBoolean(NetworkSurveyConstants.PROPERTY_MQTT_CELLULAR_STREAM_ENABLED, NetworkSurveyConstants.DEFAULT_MQTT_CELLULAR_STREAM_SETTING);
         viewModel.setCellularMqttStreamEnabled(cellularStreamEnabled);
 
+        boolean phoneStateStreamEnabled = preferences.getBoolean(NetworkSurveyConstants.PROPERTY_MQTT_PHONE_STATE_STREAM_ENABLED, NetworkSurveyConstants.DEFAULT_MQTT_PHONE_STATE_STREAM_SETTING);
+        viewModel.setPhoneStateMqttStreamEnabled(phoneStateStreamEnabled);
+
         boolean wifiStreamEnabled = preferences.getBoolean(NetworkSurveyConstants.PROPERTY_MQTT_WIFI_STREAM_ENABLED, NetworkSurveyConstants.DEFAULT_MQTT_WIFI_STREAM_SETTING);
         viewModel.setWifiMqttStreamEnabled(wifiStreamEnabled);
 
@@ -1019,6 +1060,46 @@ public class DashboardFragment extends AServiceDataFragment implements LocationL
                 {
                     updateCellularLogging(enabled);
                     message = context.getString(enabled ? R.string.cellular_logging_start_toast : R.string.cellular_logging_stop_toast);
+
+                    // Show toast if phone state was auto-started alongside cellular
+                    if (enabled && service != null && service.isPhoneStateAutoStartedByCellular())
+                    {
+                        Toast.makeText(context, R.string.phone_state_auto_started_toast, Toast.LENGTH_SHORT).show();
+                        updatePhoneStateLogging(true);
+                    }
+                    // When cellular stops and phone state was auto-stopped, update the phone state UI
+                    if (!enabled && service != null && !service.isPhoneStateLoggingEnabled())
+                    {
+                        updatePhoneStateLogging(false);
+                    }
+                }
+                Toast.makeText(context, message, Toast.LENGTH_SHORT).show();
+            });
+        });
+    }
+
+    /**
+     * Starts or stops phone state logging based on the specified parameter.
+     *
+     * @param enable True if logging should be enabled, false if it should be turned off.
+     */
+    private void togglePhoneStateLogging(boolean enable)
+    {
+        Context context = getContext();
+        if (context == null) return;
+
+        executorService.execute(() -> {
+            Boolean enabled = service != null ? service.togglePhoneStateLogging(enable) : null;
+
+            new Handler(Looper.getMainLooper()).post(() -> {
+                String message;
+                if (enabled == null)
+                {
+                    message = context.getString(R.string.phone_state_logging_toggle_failed);
+                } else
+                {
+                    updatePhoneStateLogging(enabled);
+                    message = context.getString(enabled ? R.string.phone_state_logging_start_toast : R.string.phone_state_logging_stop_toast);
                 }
                 Toast.makeText(context, message, Toast.LENGTH_SHORT).show();
             });
@@ -1151,6 +1232,29 @@ public class DashboardFragment extends AServiceDataFragment implements LocationL
         if (enabled) colorStateList = ColorStateList.valueOf(Color.GREEN);
 
         binding.cellularIcon.setImageTintList(colorStateList);
+    }
+
+    /**
+     * Updates the phone state logging UI to indicate if logging is enabled or disabled.
+     * When auto-started via cellular, shows a distinct status text.
+     *
+     * @param enabled The new status indicating if logging is enabled.
+     */
+    private void updatePhoneStateLogging(boolean enabled)
+    {
+        if (enabled && service != null && service.isPhoneStateAutoStartedByCellular())
+        {
+            binding.phoneStateLoggingStatus.setText(R.string.phone_state_logging_status_auto);
+        } else
+        {
+            binding.phoneStateLoggingStatus.setText(enabled ? R.string.logging_status_enabled : R.string.status_disabled);
+        }
+        binding.phoneStateLoggingToggleSwitch.setChecked(enabled);
+
+        ColorStateList colorStateList = null;
+        if (enabled) colorStateList = ColorStateList.valueOf(Color.GREEN);
+
+        binding.phoneStateIcon.setImageTintList(colorStateList);
     }
 
     /**
@@ -1467,6 +1571,7 @@ public class DashboardFragment extends AServiceDataFragment implements LocationL
 
                 // Get record counts grouped by type
                 AtomicInteger cellularCount = new AtomicInteger(0);
+                AtomicInteger phoneStateCount = new AtomicInteger(0);
                 AtomicInteger wifiCount = new AtomicInteger(0);
                 AtomicInteger bluetoothCount = new AtomicInteger(0);
                 AtomicInteger gnssCount = new AtomicInteger(0);
@@ -1483,6 +1588,9 @@ public class DashboardFragment extends AServiceDataFragment implements LocationL
                             NsAnalyticsConstants.RECORD_TYPE_NR.equals(recordType))
                     {
                         cellularCount.addAndGet(count);
+                    } else if (NsAnalyticsConstants.RECORD_TYPE_PHONE_STATE.equals(recordType))
+                    {
+                        phoneStateCount.set(count);
                     } else if (NsAnalyticsConstants.RECORD_TYPE_WIFI.equals(recordType))
                     {
                         wifiCount.set(count);
@@ -1500,6 +1608,7 @@ public class DashboardFragment extends AServiceDataFragment implements LocationL
                 {
                     getActivity().runOnUiThread(() -> {
                         nsAnalyticsCellularCount = cellularCount.get();
+                        nsAnalyticsPhoneStateCount = phoneStateCount.get();
                         nsAnalyticsWifiCount = wifiCount.get();
                         nsAnalyticsBluetoothCount = bluetoothCount.get();
                         nsAnalyticsGnssCount = gnssCount.get();
@@ -1615,6 +1724,7 @@ public class DashboardFragment extends AServiceDataFragment implements LocationL
                 nsAnalyticsWifiCount,
                 nsAnalyticsBluetoothCount,
                 nsAnalyticsGnssCount,
+                nsAnalyticsPhoneStateCount,
                 this::toggleNsAnalyticsSurvey,
                 this::navigateToNsAnalyticsConnection
         );

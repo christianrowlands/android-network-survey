@@ -58,6 +58,7 @@ import com.craxiom.networksurvey.listeners.IBluetoothSurveyRecordListener;
 import com.craxiom.networksurvey.listeners.ICellularSurveyRecordListener;
 import com.craxiom.networksurvey.listeners.IDeviceStatusListener;
 import com.craxiom.networksurvey.listeners.IGnssSurveyRecordListener;
+import com.craxiom.networksurvey.listeners.IPhoneStateListener;
 import com.craxiom.networksurvey.listeners.IWifiSurveyRecordListener;
 import com.craxiom.networksurvey.model.WifiRecordWrapper;
 import com.craxiom.networksurvey.util.PreferenceUtils;
@@ -87,8 +88,9 @@ import timber.log.Timber;
  *
  * @since 0.0.9
  */
-public class GrpcConnectionService extends Service implements IDeviceStatusListener, ICellularSurveyRecordListener,
-        IWifiSurveyRecordListener, IBluetoothSurveyRecordListener, IGnssSurveyRecordListener
+public class GrpcConnectionService extends Service implements IDeviceStatusListener, IPhoneStateListener,
+        ICellularSurveyRecordListener, IWifiSurveyRecordListener, IBluetoothSurveyRecordListener,
+        IGnssSurveyRecordListener
 {
     public static final long RECONNECTION_ATTEMPT_BACKOFF_TIME = 10_000L;
     // number of concurrent linked queues.
@@ -617,22 +619,21 @@ public class GrpcConnectionService extends Service implements IDeviceStatusListe
                         networkSurveyService.registerGnssSurveyRecordListener(this);
                     }
 
-                    if (deviceStatusStreamEnabled || phoneStateStreamEnabled)
+                    if (deviceStatusStreamEnabled)
                     {
-                        if (deviceStatusStreamEnabled)
-                        {
-                            deviceStatusGrpcTask = new GrpcTask<>(this, deviceStatusQueue,
-                                    statusUpdateReplyStreamObserver -> DeviceStatusGrpc.newStub(channel).statusUpdate(statusUpdateReplyStreamObserver));
-                            deviceStatusGrpcTask.executeOnExecutor(executorService);
-                        }
-
-                        if (phoneStateStreamEnabled)
-                        {
-                            phoneStateGrpcTask = new GrpcTask<>(this, phoneStateQueue, wirelessSurveyStub::streamPhoneState);
-                            phoneStateGrpcTask.executeOnExecutor(executorService);
-                        }
+                        deviceStatusGrpcTask = new GrpcTask<>(this, deviceStatusQueue,
+                                statusUpdateReplyStreamObserver -> DeviceStatusGrpc.newStub(channel).statusUpdate(statusUpdateReplyStreamObserver));
+                        deviceStatusGrpcTask.executeOnExecutor(executorService);
 
                         networkSurveyService.registerDeviceStatusListener(this);
+                    }
+
+                    if (phoneStateStreamEnabled)
+                    {
+                        phoneStateGrpcTask = new GrpcTask<>(this, phoneStateQueue, wirelessSurveyStub::streamPhoneState);
+                        phoneStateGrpcTask.executeOnExecutor(executorService);
+
+                        networkSurveyService.registerPhoneStateListener(this);
                     }
                 } catch (Throwable t)
                 {
@@ -675,6 +676,7 @@ public class GrpcConnectionService extends Service implements IDeviceStatusListe
         if (networkSurveyService != null)
         {
             networkSurveyService.unregisterDeviceStatusListener(this);
+            networkSurveyService.unregisterPhoneStateListener(this);
             networkSurveyService.unregisterCellularSurveyRecordListener(this);
             networkSurveyService.unregisterWifiSurveyRecordListener(this);
             networkSurveyService.unregisterBluetoothSurveyRecordListener(this);
@@ -894,6 +896,7 @@ public class GrpcConnectionService extends Service implements IDeviceStatusListe
         if (networkSurveyService != null)
         {
             networkSurveyService.unregisterDeviceStatusListener(this);
+            networkSurveyService.unregisterPhoneStateListener(this);
             networkSurveyService.unregisterCellularSurveyRecordListener(this);
             networkSurveyService.unregisterWifiSurveyRecordListener(this);
             networkSurveyService.unregisterBluetoothSurveyRecordListener(this);

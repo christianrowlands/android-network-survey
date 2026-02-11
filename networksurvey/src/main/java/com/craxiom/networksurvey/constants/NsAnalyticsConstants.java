@@ -24,6 +24,7 @@ public class NsAnalyticsConstants
     public static final String PROPERTY_NS_ANALYTICS_WIFI_ENABLED = "ns_analytics_wifi_enabled";
     public static final String PROPERTY_NS_ANALYTICS_BLUETOOTH_ENABLED = "ns_analytics_bluetooth_enabled";
     public static final String PROPERTY_NS_ANALYTICS_GNSS_ENABLED = "ns_analytics_gnss_enabled";
+    public static final String PROPERTY_NS_ANALYTICS_PHONE_STATE_ENABLED = "ns_analytics_phone_state_enabled";
 
     // Upload Frequencies (in minutes)
     public static final int UPLOAD_FREQUENCY_REAL_TIME = 0;
@@ -34,6 +35,7 @@ public class NsAnalyticsConstants
 
     // Default Values
     public static final boolean DEFAULT_CELLULAR_ENABLED = true;
+    public static final boolean DEFAULT_PHONE_STATE_ENABLED = true;
     public static final boolean DEFAULT_WIFI_ENABLED = true;
     public static final boolean DEFAULT_BLUETOOTH_ENABLED = false;
     public static final boolean DEFAULT_GNSS_ENABLED = false;

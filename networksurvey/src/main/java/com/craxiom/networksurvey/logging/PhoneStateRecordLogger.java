@@ -16,7 +16,6 @@ import static com.craxiom.networksurvey.constants.csv.PhoneStateCsvConstants.SLO
 
 import android.os.Looper;
 
-import com.craxiom.messaging.DeviceStatus;
 import com.craxiom.messaging.NetworkRegistrationInfo;
 import com.craxiom.messaging.PhoneState;
 import com.craxiom.messaging.PhoneStateData;
@@ -24,9 +23,9 @@ import com.craxiom.messaging.phonestate.SimState;
 import com.craxiom.networksurvey.constants.NetworkSurveyConstants;
 import com.craxiom.networksurvey.constants.csv.CsvConstants;
 import com.craxiom.networksurvey.constants.csv.PhoneStateCsvConstants;
-import com.craxiom.networksurvey.listeners.IDeviceStatusListener;
-import com.craxiom.networksurvey.services.NetworkSurveyService;
 import com.craxiom.networksurvey.gpstest.util.MathUtils;
+import com.craxiom.networksurvey.listeners.IPhoneStateListener;
+import com.craxiom.networksurvey.services.NetworkSurveyService;
 import com.craxiom.networksurvey.util.NsUtils;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -55,7 +54,7 @@ import timber.log.Timber;
  *
  * @since 1.5.0
  */
-public class PhoneStateRecordLogger extends SurveyRecordLogger implements IDeviceStatusListener
+public class PhoneStateRecordLogger extends SurveyRecordLogger implements IPhoneStateListener
 {
     private final JsonFormat.Printer jsonFormatter;
 
@@ -82,12 +81,6 @@ public class PhoneStateRecordLogger extends SurveyRecordLogger implements IDevic
             //noinspection UnusedAssignment
             tableColumns.add(FeatureColumn.createColumn(columnNumber++, NETWORK_REGISTRATION_COLUMN, GeoPackageDataType.TEXT, false, null));
         });
-    }
-
-    @Override
-    public void onDeviceStatus(DeviceStatus deviceStatus)
-    {
-        // Noop; currently only phone state is logged
     }
 
     @Override

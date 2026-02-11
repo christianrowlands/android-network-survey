@@ -217,6 +217,7 @@ fun NsAnalyticsConnectionScreen(
         onToggleWifi = { viewModel.toggleWifiProtocol(it) },
         onToggleBluetooth = handleBluetoothToggle,
         onToggleGnss = { viewModel.toggleGnssProtocol(it) },
+        onTogglePhoneState = { viewModel.togglePhoneStateProtocol(it) },
         onToggleSurvey = { viewModel.toggleSurvey() },
     )
 
@@ -349,6 +350,7 @@ private fun NsAnalyticsConnectionContent(
     onToggleWifi: (Boolean) -> Unit,
     onToggleBluetooth: (Boolean) -> Unit,
     onToggleGnss: (Boolean) -> Unit,
+    onTogglePhoneState: (Boolean) -> Unit,
     onToggleSurvey: () -> Unit,
 ) {
     Scaffold(
@@ -410,6 +412,7 @@ private fun NsAnalyticsConnectionContent(
                             wifiCount = uiState.wifiRecordCount,
                             bluetoothCount = uiState.bluetoothRecordCount,
                             gnssCount = uiState.gnssRecordCount,
+                            phoneStateCount = uiState.phoneStateRecordCount,
                             onToggleSurvey = onToggleSurvey,
                             showDetailedInfo = true
                         )
@@ -433,11 +436,13 @@ private fun NsAnalyticsConnectionContent(
                             wifiEnabled = uiState.wifiEnabled,
                             bluetoothEnabled = uiState.bluetoothEnabled,
                             gnssEnabled = uiState.gnssEnabled,
+                            phoneStateEnabled = uiState.phoneStateEnabled,
                             isSurveyActive = uiState.isSurveyActive,
                             onToggleCellular = onToggleCellular,
                             onToggleWifi = onToggleWifi,
                             onToggleBluetooth = onToggleBluetooth,
-                            onToggleGnss = onToggleGnss
+                            onToggleGnss = onToggleGnss,
+                            onTogglePhoneState = onTogglePhoneState
                         )
 
                         DangerZoneCard(
@@ -1098,11 +1103,13 @@ private fun ActiveProtocolsCard(
     wifiEnabled: Boolean,
     bluetoothEnabled: Boolean,
     gnssEnabled: Boolean,
+    phoneStateEnabled: Boolean,
     isSurveyActive: Boolean,
     onToggleCellular: (Boolean) -> Unit,
     onToggleWifi: (Boolean) -> Unit,
     onToggleBluetooth: (Boolean) -> Unit,
-    onToggleGnss: (Boolean) -> Unit
+    onToggleGnss: (Boolean) -> Unit,
+    onTogglePhoneState: (Boolean) -> Unit
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -1130,6 +1137,16 @@ private fun ActiveProtocolsCard(
                 isEnabled = cellularEnabled,
                 enabled = !isSurveyActive,
                 onToggle = onToggleCellular
+            )
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            ProtocolToggleRow(
+                label = "Phone State",
+                description = "Serving cell, registration, and SIM changes",
+                isEnabled = phoneStateEnabled,
+                enabled = !isSurveyActive,
+                onToggle = onTogglePhoneState
             )
 
             Spacer(modifier = Modifier.height(12.dp))

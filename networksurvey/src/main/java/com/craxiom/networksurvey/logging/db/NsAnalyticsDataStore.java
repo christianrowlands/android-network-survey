@@ -11,6 +11,7 @@ import com.craxiom.networksurvey.listeners.IBluetoothSurveyRecordListener;
 import com.craxiom.networksurvey.listeners.ICellularSurveyRecordListener;
 import com.craxiom.networksurvey.listeners.IDeviceStatusListener;
 import com.craxiom.networksurvey.listeners.IGnssSurveyRecordListener;
+import com.craxiom.networksurvey.listeners.IPhoneStateListener;
 import com.craxiom.networksurvey.listeners.IWifiSurveyRecordListener;
 import com.craxiom.networksurvey.logging.db.model.NsAnalyticsQueueEntity;
 import com.craxiom.networksurvey.model.CellularRecordWrapper;
@@ -28,7 +29,7 @@ import timber.log.Timber;
  * Data store for NS Analytics that collects and stores complete protobuf survey records.
  * Unlike DbUploadStore which filters records, this stores complete messages for NS Analytics.
  */
-public class NsAnalyticsDataStore implements ICellularSurveyRecordListener, IWifiSurveyRecordListener, IBluetoothSurveyRecordListener, IGnssSurveyRecordListener, IDeviceStatusListener
+public class NsAnalyticsDataStore implements ICellularSurveyRecordListener, IWifiSurveyRecordListener, IBluetoothSurveyRecordListener, IGnssSurveyRecordListener, IDeviceStatusListener, IPhoneStateListener
 {
     private final SurveyDatabase database;
     private final ExecutorService executorService;

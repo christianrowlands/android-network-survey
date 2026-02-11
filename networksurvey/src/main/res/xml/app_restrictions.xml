@@ -99,6 +99,13 @@
 
     <restriction
         android:defaultValue="true"
+        android:description="@string/phone_state_stream_description"
+        android:key="phone_state_stream_enabled"
+        android:restrictionType="bool"
+        android:title="@string/phone_state_stream_title" />
+
+    <restriction
+        android:defaultValue="true"
         android:description="@string/wifi_stream_description"
         android:key="wifi_stream_enabled"
         android:restrictionType="bool"
@@ -160,6 +167,13 @@
         android:title="@string/auto_start_cellular_logging_title" />
 
     <restriction
+        android:defaultValue="false"
+        android:description="@string/auto_start_phone_state_logging_description"
+        android:key="auto_start_phone_state_logging"
+        android:restrictionType="bool"
+        android:title="@string/auto_start_phone_state_logging_title" />
+
+    <restriction
         android:defaultValue="true"
         android:description="@string/auto_start_wifi_logging_description"
         android:key="auto_start_wifi_logging"
@@ -186,6 +200,13 @@
         android:key="auto_start_cdr_logging"
         android:restrictionType="bool"
         android:title="@string/auto_start_cdr_logging_title" />
+
+    <restriction
+        android:defaultValue="true"
+        android:description="@string/auto_include_phone_state_description"
+        android:key="auto_include_phone_state_with_cellular"
+        android:restrictionType="bool"
+        android:title="@string/auto_include_phone_state_title" />
 
     <restriction
         android:defaultValue="true"

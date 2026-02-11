@@ -50,6 +50,22 @@
 
         <SwitchPreferenceCompat
             app:defaultValue="false"
+            app:icon="@drawable/ic_phone_state"
+            app:key="auto_start_phone_state_logging"
+            app:summaryOff="@string/auto_start_phone_state_logging_summary_off"
+            app:summaryOn="@string/auto_start_phone_state_logging_summary_on"
+            app:title="@string/auto_start_phone_state_logging_title" />
+
+        <SwitchPreferenceCompat
+            app:defaultValue="true"
+            app:icon="@drawable/ic_phone_state"
+            app:key="auto_include_phone_state_with_cellular"
+            app:summaryOff="@string/auto_include_phone_state_summary_off"
+            app:summaryOn="@string/auto_include_phone_state_summary_on"
+            app:title="@string/auto_include_phone_state_title" />
+
+        <SwitchPreferenceCompat
+            app:defaultValue="false"
             app:icon="@drawable/ic_cdr"
             app:key="auto_start_cdr_logging"
             app:summaryOff="@string/auto_start_cdr_logging_summary_off"

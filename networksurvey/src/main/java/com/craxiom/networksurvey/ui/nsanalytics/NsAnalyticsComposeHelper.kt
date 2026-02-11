@@ -21,6 +21,7 @@ object NsAnalyticsComposeHelper {
         wifiCount: Int,
         bluetoothCount: Int,
         gnssCount: Int,
+        phoneStateCount: Int,
         onToggleSurvey: Runnable,
         onOpenDetails: Runnable? = null
     ) {
@@ -32,6 +33,7 @@ object NsAnalyticsComposeHelper {
                 wifiCount = wifiCount,
                 bluetoothCount = bluetoothCount,
                 gnssCount = gnssCount,
+                phoneStateCount = phoneStateCount,
                 onToggleSurvey = { onToggleSurvey.run() },
                 onOpenDetails = onOpenDetails?.let { { it.run() } },
                 showDetailedInfo = false // Dashboard view doesn't need detailed info

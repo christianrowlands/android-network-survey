@@ -68,6 +68,7 @@ import com.craxiom.networksurvey.listeners.IDeviceStatusListener;
 import com.craxiom.networksurvey.listeners.IGnssFailureListener;
 import com.craxiom.networksurvey.listeners.IGnssSurveyRecordListener;
 import com.craxiom.networksurvey.listeners.ILoggingChangeListener;
+import com.craxiom.networksurvey.listeners.IPhoneStateListener;
 import com.craxiom.networksurvey.listeners.IUploadRecordCountListener;
 import com.craxiom.networksurvey.listeners.IWifiSurveyRecordListener;
 import com.craxiom.networksurvey.logging.DeviceStatusCsvLogger;
@@ -288,7 +289,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
             final boolean autoStartCellularLogging = PreferenceUtils.getAutoStartPreference(NetworkSurveyConstants.PROPERTY_AUTO_START_CELLULAR_LOGGING, false, applicationContext);
             if (autoStartCellularLogging && !cellularController.isLoggingEnabled())
             {
-                cellularController.toggleLogging(true);
+                toggleCellularLogging(true);
             }
 
             final boolean autoStartWifiLogging = PreferenceUtils.getAutoStartPreference(NetworkSurveyConstants.PROPERTY_AUTO_START_WIFI_LOGGING, false, applicationContext);
@@ -307,6 +308,12 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
             if (autoStartGnssLogging && !gnssController.isLoggingEnabled())
             {
                 gnssController.toggleLogging(true);
+            }
+
+            final boolean autoStartPhoneStateLogging = PreferenceUtils.getAutoStartPreference(NetworkSurveyConstants.PROPERTY_AUTO_START_PHONE_STATE_LOGGING, false, applicationContext);
+            if (autoStartPhoneStateLogging && !isPhoneStateLoggingEnabled())
+            {
+                togglePhoneStateLogging(true);
             }
 
             final boolean autoStartCdrLogging = PreferenceUtils.getAutoStartPreference(NetworkSurveyConstants.PROPERTY_AUTO_START_CDR_LOGGING, false, applicationContext);
@@ -332,17 +339,22 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
             Timber.i("The Network Survey Service was started via an external intent");
 
             final boolean startCellular = intent.getBooleanExtra(NetworkSurveyConstants.EXTRA_CELLULAR_FILE_LOGGING, false);
+            final boolean startPhoneState = intent.getBooleanExtra(NetworkSurveyConstants.EXTRA_PHONE_STATE_FILE_LOGGING, false);
             final boolean startWifi = intent.getBooleanExtra(NetworkSurveyConstants.EXTRA_WIFI_FILE_LOGGING, false);
             final boolean startBluetooth = intent.getBooleanExtra(NetworkSurveyConstants.EXTRA_BLUETOOTH_FILE_LOGGING, false);
             final boolean startGnss = intent.getBooleanExtra(NetworkSurveyConstants.EXTRA_GNSS_FILE_LOGGING, false);
             final boolean startCdr = intent.getBooleanExtra(NetworkSurveyConstants.EXTRA_CDR_FILE_LOGGING, false);
 
-            Timber.i("Starting the Network Survey Service with the file logging flags: cellular=%b, wifi=%b, bluetooth=%b, gnss=%b, cdr=%b",
-                    startCellular, startWifi, startBluetooth, startGnss, startCdr);
+            Timber.i("Starting the Network Survey Service with the file logging flags: cellular=%b, phone_state=%b, wifi=%b, bluetooth=%b, gnss=%b, cdr=%b",
+                    startCellular, startPhoneState, startWifi, startBluetooth, startGnss, startCdr);
 
             if (startCellular && !cellularController.isLoggingEnabled())
             {
-                cellularController.toggleLogging(true);
+                toggleCellularLogging(true);
+            }
+            if (startPhoneState && !isPhoneStateLoggingEnabled())
+            {
+                togglePhoneStateLogging(true);
             }
             if (startWifi && !wifiController.isLoggingEnabled())
             {
@@ -517,8 +529,6 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
 
     /**
      * Creates the {@link DefaultMqttConnection} instance.
-     *
-     * @since 0.1.1
      */
     public void initializeMqttConnection()
     {
@@ -571,7 +581,6 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
      * Connect to an MQTT broker.
      *
      * @param connectionInfo The information needed to connect to the MQTT broker.
-     * @since 0.1.1
      */
     @Override
     public void connectToMqttBroker(BrokerConnectionInfo connectionInfo)
@@ -590,6 +599,10 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
         if (networkSurveyConnection.isCellularStreamEnabled())
         {
             registerCellularSurveyRecordListener(mqttConnection);
+        }
+        if (networkSurveyConnection.isPhoneStateStreamEnabled())
+        {
+            registerPhoneStateListener(mqttConnection);
         }
         if (networkSurveyConnection.isWifiStreamEnabled())
         {
@@ -611,8 +624,6 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
 
     /**
      * Disconnect from the MQTT broker and also remove the MQTT survey record listener.
-     *
-     * @since 0.1.1
      */
     @Override
     public void disconnectFromMqttBroker()
@@ -626,6 +637,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
         unregisterBluetoothSurveyRecordListener(mqttConnection);
         unregisterGnssSurveyRecordListener(mqttConnection);
         unregisterDeviceStatusListener(mqttConnection);
+        unregisterPhoneStateListener(mqttConnection);
 
         // Clear queue backpressure states since there's no active connection to be backed up
         clearMqttBackpressureStates();
@@ -644,7 +656,6 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
      *                        previously configured via MDM, but the config has since been removed from the MDM.  In
      *                        that case, the connection info will be null but we still want to disconnect from the MQTT
      *                        broker.
-     * @since 0.1.1
      */
     @Override
     public void attemptMqttConnectWithMdmConfig(boolean forceDisconnect)
@@ -676,7 +687,6 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
 
     /**
      * @return The current connection state to the MQTT Broker.
-     * @since 0.1.1
      */
     @Override
     public ConnectionState getMqttConnectionState()
@@ -715,11 +725,6 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
         return primaryLocationListener;
     }
 
-    public String getNsDeviceId()
-    {
-        return deviceId;
-    }
-
     /**
      * @return The SsidExclusionManager instance for managing excluded WiFi SSIDs.
      */
@@ -734,8 +739,6 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
 
     /**
      * Registers a new listener for changes to the location information.
-     *
-     * @since 1.6.0
      */
     public void registerLocationListener(LocationListener locationListener)
     {
@@ -1041,18 +1044,62 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
     }
 
     /**
+     * Registers a listener for notifications when new phone state messages are available.
+     * If this is the first phone state listener, the Android PhoneStateListener is started.
+     *
+     * @param phoneStateListener The phone state listener to register.
+     */
+    public void registerPhoneStateListener(IPhoneStateListener phoneStateListener)
+    {
+        boolean wasEmpty = surveyRecordProcessor != null && !surveyRecordProcessor.isPhoneStateBeingUsed();
+
+        if (surveyRecordProcessor != null)
+        {
+            surveyRecordProcessor.registerPhoneStateListener(phoneStateListener);
+        }
+
+        if (wasEmpty)
+        {
+            cellularController.startPhoneStateListener();
+        }
+    }
+
+    /**
+     * Unregisters a phone state message listener.
+     * <p>
+     * If no more phone state listeners remain, the Android PhoneStateListener is stopped.
+     * If the listener being removed is the last listener and nothing else is using this
+     * {@link NetworkSurveyService}, then this service is shutdown.
+     *
+     * @param phoneStateListener The listener to unregister.
+     */
+    public void unregisterPhoneStateListener(IPhoneStateListener phoneStateListener)
+    {
+        if (surveyRecordProcessor != null)
+        {
+            surveyRecordProcessor.unregisterPhoneStateListener(phoneStateListener);
+            if (!surveyRecordProcessor.isPhoneStateBeingUsed())
+            {
+                cellularController.stopPhoneStateListener();
+            }
+        }
+
+        if (!isBeingUsed()) stopSelf();
+    }
+
+    /**
      * Used to check if this service is still needed.
      * <p>
      * This service is still needed if logging is enabled, if the UI is visible, or if a connection is active.  In other
      * words, if there is an active consumer of the survey records.
      *
      * @return True if there is an active consumer of the survey records produced by this service, false otherwise.
-     * @since 0.1.1
      */
     @SuppressWarnings("BooleanMethodIsAlwaysInverted")
     public boolean isBeingUsed()
     {
         return cellularController.isLoggingEnabled()
+                || cellularController.isPhoneStateLoggingEnabled()
                 || wifiController.isLoggingEnabled()
                 || bluetoothController.isLoggingEnabled()
                 || gnssController.isLoggingEnabled()
@@ -1110,10 +1157,36 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
             if (enable && result)
             {
                 onSurveyStarted();
-            } else if (!enable && !result) onSurveyStopped();
+
+                // Auto-include phone state with cellular if the preference is enabled
+                if (shouldAutoIncludePhoneState())
+                {
+                    cellularController.autoStartPhoneStateIfNotRunning();
+                }
+            } else if (!enable && !result)
+            {
+                // Auto-stop phone state if it was auto-started by cellular
+                if (cellularController.isPhoneStateAutoStartedByCellular() && isPhoneStateLoggingEnabled())
+                {
+                    cellularController.togglePhoneStateLogging(false);
+                    cellularController.setPhoneStateAutoStartedByCellular(false);
+                }
+
+                onSurveyStopped();
+            }
             updateWakeLock();
         }
         return result;
+    }
+
+    /**
+     * @return True if the auto-include phone state with cellular preference is enabled.
+     */
+    private boolean shouldAutoIncludePhoneState()
+    {
+        return PreferenceUtils.getAutoStartPreference(
+                NetworkSurveyConstants.PROPERTY_AUTO_INCLUDE_PHONE_STATE_WITH_CELLULAR,
+                true, getApplicationContext());
     }
 
     /**
@@ -1198,6 +1271,47 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
      * @return The new state of logging.  True if it is enabled, or false if it is disabled. Null is returned if the
      * toggling was unsuccessful.
      */
+
+    /**
+     * Toggles the phone state logging setting.
+     * <p>
+     * Clears the auto-started-by-cellular flag on ANY manual toggle (both enable and disable)
+     * so the user "takes ownership" of phone state whenever they interact with it directly.
+     *
+     * @param enable True if logging should be enabled, false if it should be turned off.
+     * @return The new state of logging. True if it is enabled, or false if it is disabled. Null is
+     * returned if the toggling was unsuccessful.
+     */
+    public Boolean togglePhoneStateLogging(boolean enable)
+    {
+        cellularController.setPhoneStateAutoStartedByCellular(false);
+
+        Boolean result = cellularController.togglePhoneStateLogging(enable);
+        if (result != null)
+        {
+            if (enable && result)
+            {
+                onSurveyStarted();
+            } else if (!enable && !result) onSurveyStopped();
+            updateWakeLock();
+        }
+        return result;
+    }
+
+    public boolean isPhoneStateLoggingEnabled()
+    {
+        return cellularController.isPhoneStateLoggingEnabled();
+    }
+
+    /**
+     * @return True if phone state logging was auto-started alongside cellular logging,
+     * false if it was started manually or is not running.
+     */
+    public boolean isPhoneStateAutoStartedByCellular()
+    {
+        return cellularController.isPhoneStateAutoStartedByCellular();
+    }
+
     public Boolean toggleCdrLogging(boolean enable)
     {
         Boolean result = cellularController.toggleCdrLogging(enable);
@@ -1325,6 +1439,8 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
                 // Register for enabled protocols
                 boolean cellularEnabled = preferences.getBoolean(
                         NsAnalyticsConstants.PROPERTY_NS_ANALYTICS_CELLULAR_ENABLED, NsAnalyticsConstants.DEFAULT_CELLULAR_ENABLED);
+                boolean phoneStateEnabled = preferences.getBoolean(
+                        NsAnalyticsConstants.PROPERTY_NS_ANALYTICS_PHONE_STATE_ENABLED, NsAnalyticsConstants.DEFAULT_PHONE_STATE_ENABLED);
                 boolean wifiEnabled = preferences.getBoolean(
                         NsAnalyticsConstants.PROPERTY_NS_ANALYTICS_WIFI_ENABLED, NsAnalyticsConstants.DEFAULT_WIFI_ENABLED);
                 boolean bluetoothEnabled = preferences.getBoolean(
@@ -1332,7 +1448,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
                 boolean gnssEnabled = preferences.getBoolean(
                         NsAnalyticsConstants.PROPERTY_NS_ANALYTICS_GNSS_ENABLED, NsAnalyticsConstants.DEFAULT_GNSS_ENABLED);
 
-                if (!cellularEnabled && !wifiEnabled && !bluetoothEnabled && !gnssEnabled)
+                if (!cellularEnabled && !phoneStateEnabled && !wifiEnabled && !bluetoothEnabled && !gnssEnabled)
                 {
                     Timber.w("No NS Analytics protocols enabled, so no survey scanning will be started");
                     nsAnalyticsDataStore.shutdown();
@@ -1344,6 +1460,10 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
                 if (cellularEnabled)
                 {
                     registerCellularSurveyRecordListener(nsAnalyticsDataStore);
+                }
+                if (phoneStateEnabled)
+                {
+                    registerPhoneStateListener(nsAnalyticsDataStore);
                 }
                 if (wifiEnabled)
                 {
@@ -1358,7 +1478,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
                     registerGnssSurveyRecordListener(nsAnalyticsDataStore);
                 }
 
-                // Always register for device status and phone state TODO Is this what we want?
+                // Always register for device status
                 registerDeviceStatusListener(nsAnalyticsDataStore);
 
                 onSurveyStarted();
@@ -1376,6 +1496,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
             {
                 // Unregister from all listeners
                 unregisterCellularSurveyRecordListener(nsAnalyticsDataStore);
+                unregisterPhoneStateListener(nsAnalyticsDataStore);
                 unregisterWifiSurveyRecordListener(nsAnalyticsDataStore);
                 unregisterBluetoothSurveyRecordListener(nsAnalyticsDataStore);
                 unregisterGnssSurveyRecordListener(nsAnalyticsDataStore);
@@ -1568,9 +1689,10 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
      */
     public boolean isAnySurveyActive()
     {
-        return isCellularLoggingEnabled() || isWifiLoggingEnabled() || isBluetoothLoggingEnabled() ||
-                isGnssLoggingEnabled() || isCdrLoggingEnabled() || isUploadScanningActive() ||
-                isMqttStreamingActive() || isGrpcConnectionActive() || isNsAnalyticsScanningActive();
+        return isCellularLoggingEnabled() || isPhoneStateLoggingEnabled() || isWifiLoggingEnabled() ||
+                isBluetoothLoggingEnabled() || isGnssLoggingEnabled() || isCdrLoggingEnabled() ||
+                isUploadScanningActive() || isMqttStreamingActive() || isGrpcConnectionActive() ||
+                isNsAnalyticsScanningActive();
     }
 
     /**
@@ -1585,7 +1707,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
     private boolean hasOtherActiveOutputs()
     {
         // Check if file logging is enabled for any protocol
-        if (isCellularLoggingEnabled() || isWifiLoggingEnabled() ||
+        if (isCellularLoggingEnabled() || isPhoneStateLoggingEnabled() || isWifiLoggingEnabled() ||
                 isBluetoothLoggingEnabled() || isGnssLoggingEnabled() || isCdrLoggingEnabled())
         {
             return true;
@@ -2054,7 +2176,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
      * <p>
      * This method only starts scanning if the scan is not already active.
      *
-     * @param fullStart If true, also starts the phone state listener and updates wake lock.
+     * @param fullStart If true, also updates wake lock.
      *                  If false, only starts the device status task itself.
      */
     private void startDeviceStatusReport(boolean fullStart)
@@ -2114,11 +2236,6 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
         }
 
         Timber.d("Started device status reporting with interval %d ms", deviceStatusScanRateMs);
-
-        if (fullStart)
-        {
-            cellularController.startPhoneStateListener();
-        }
     }
 
     /**
@@ -2241,16 +2358,11 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
     /**
      * Stop generating device status messages.
      *
-     * @param fullStop If true, also stops the phone state listener and updates wake lock/location listener.
+     * @param fullStop If true, also updates wake lock/location listener.
      *                 If false, only stops the device status task itself.
      */
     private void stopDeviceStatusReport(boolean fullStop)
     {
-        if (fullStop)
-        {
-            cellularController.stopPhoneStateListener();
-        }
-
         deviceStatusActive.set(false);
 
         // Cancel the scheduled device status task
@@ -2313,7 +2425,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
     {
         Application.createNotificationChannel(this);
 
-        final boolean logging = cellularController.isLoggingEnabled() || wifiController.isLoggingEnabled() || bluetoothController.isLoggingEnabled() || gnssController.isLoggingEnabled() || cellularController.isCdrLoggingEnabled();
+        final boolean logging = cellularController.isLoggingEnabled() || cellularController.isPhoneStateLoggingEnabled() || wifiController.isLoggingEnabled() || bluetoothController.isLoggingEnabled() || gnssController.isLoggingEnabled() || cellularController.isCdrLoggingEnabled();
         final com.craxiom.mqttlibrary.connection.ConnectionState connectionState = mqttConnection.getConnectionState();
         final boolean mqttConnectionActive = connectionState == ConnectionState.CONNECTED || connectionState == ConnectionState.CONNECTING;
         final CharSequence notificationTitle = getText(R.string.network_survey_notification_title);
@@ -2498,6 +2610,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
             final String password = mdmProperties.getString(MqttConstants.PROPERTY_MQTT_PASSWORD);
 
             final boolean cellularStreamEnabled = mdmProperties.getBoolean(NetworkSurveyConstants.PROPERTY_MQTT_CELLULAR_STREAM_ENABLED, NetworkSurveyConstants.DEFAULT_MQTT_CELLULAR_STREAM_SETTING);
+            final boolean phoneStateStreamEnabled = mdmProperties.getBoolean(NetworkSurveyConstants.PROPERTY_MQTT_PHONE_STATE_STREAM_ENABLED, NetworkSurveyConstants.DEFAULT_MQTT_PHONE_STATE_STREAM_SETTING);
             final boolean wifiStreamEnabled = mdmProperties.getBoolean(NetworkSurveyConstants.PROPERTY_MQTT_WIFI_STREAM_ENABLED, NetworkSurveyConstants.DEFAULT_MQTT_WIFI_STREAM_SETTING);
             final boolean bluetoothStreamEnabled = mdmProperties.getBoolean(NetworkSurveyConstants.PROPERTY_MQTT_BLUETOOTH_STREAM_ENABLED, NetworkSurveyConstants.DEFAULT_MQTT_BLUETOOTH_STREAM_SETTING);
             final boolean gnssStreamEnabled = mdmProperties.getBoolean(NetworkSurveyConstants.PROPERTY_MQTT_GNSS_STREAM_ENABLED, NetworkSurveyConstants.DEFAULT_MQTT_GNSS_STREAM_SETTING);
@@ -2528,7 +2641,8 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
             }
 
             return new MqttConnectionInfo(mqttBrokerHost, portNumber, tlsEnabled, clientId, username, password,
-                    cellularStreamEnabled, wifiStreamEnabled, bluetoothStreamEnabled, gnssStreamEnabled, deviceStatusStreamEnabled, topicPrefix, deviceName, mqttQos);
+                    cellularStreamEnabled, wifiStreamEnabled, bluetoothStreamEnabled, gnssStreamEnabled,
+                    deviceStatusStreamEnabled, phoneStateStreamEnabled, topicPrefix, deviceName, mqttQos);
         }
 
         return null;
@@ -2558,6 +2672,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
         final String password = preferences.getString(MqttConstants.PROPERTY_MQTT_PASSWORD, "");
 
         final boolean cellularStreamEnabled = preferences.getBoolean(NetworkSurveyConstants.PROPERTY_MQTT_CELLULAR_STREAM_ENABLED, NetworkSurveyConstants.DEFAULT_MQTT_CELLULAR_STREAM_SETTING);
+        final boolean phoneStateStreamEnabled = preferences.getBoolean(NetworkSurveyConstants.PROPERTY_MQTT_PHONE_STATE_STREAM_ENABLED, NetworkSurveyConstants.DEFAULT_MQTT_PHONE_STATE_STREAM_SETTING);
         final boolean wifiStreamEnabled = preferences.getBoolean(NetworkSurveyConstants.PROPERTY_MQTT_WIFI_STREAM_ENABLED, NetworkSurveyConstants.DEFAULT_MQTT_WIFI_STREAM_SETTING);
         final boolean bluetoothStreamEnabled = preferences.getBoolean(NetworkSurveyConstants.PROPERTY_MQTT_BLUETOOTH_STREAM_ENABLED, NetworkSurveyConstants.DEFAULT_MQTT_BLUETOOTH_STREAM_SETTING);
         final boolean gnssStreamEnabled = preferences.getBoolean(NetworkSurveyConstants.PROPERTY_MQTT_GNSS_STREAM_ENABLED, NetworkSurveyConstants.DEFAULT_MQTT_GNSS_STREAM_SETTING);
@@ -2575,7 +2690,8 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
         }
 
         return new MqttConnectionInfo(mqttBrokerHost, portNumber, tlsEnabled, clientId, username, password,
-                cellularStreamEnabled, wifiStreamEnabled, bluetoothStreamEnabled, gnssStreamEnabled, deviceStatusStreamEnabled, topicPrefix, null, mqttQos);
+                cellularStreamEnabled, wifiStreamEnabled, bluetoothStreamEnabled, gnssStreamEnabled,
+                deviceStatusStreamEnabled, phoneStateStreamEnabled, topicPrefix, null, mqttQos);
     }
 
     /**

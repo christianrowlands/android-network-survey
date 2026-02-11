@@ -16,13 +16,12 @@ import static com.craxiom.networksurvey.constants.csv.PhoneStateCsvConstants.SIM
 import static com.craxiom.networksurvey.constants.csv.PhoneStateCsvConstants.SLOT;
 import static com.craxiom.networksurvey.constants.csv.PhoneStateCsvConstants.SPEED;
 
-import com.craxiom.messaging.DeviceStatus;
 import com.craxiom.messaging.NetworkRegistrationInfo;
 import com.craxiom.messaging.PhoneState;
 import com.craxiom.messaging.PhoneStateData;
 import com.craxiom.messaging.phonestate.SimState;
 import com.craxiom.networksurvey.constants.NetworkSurveyConstants;
-import com.craxiom.networksurvey.listeners.IDeviceStatusListener;
+import com.craxiom.networksurvey.listeners.IPhoneStateListener;
 import com.craxiom.networksurvey.services.NetworkSurveyService;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -41,7 +40,7 @@ import timber.log.Timber;
 /**
  * Responsible for taking in the phone state change records and logging them to a CSV file.
  */
-public class PhoneStateCsvLogger extends CsvRecordLogger implements IDeviceStatusListener
+public class PhoneStateCsvLogger extends CsvRecordLogger implements IPhoneStateListener
 {
     private final JsonFormat.Printer jsonFormatter;
 
@@ -66,12 +65,6 @@ public class PhoneStateCsvLogger extends CsvRecordLogger implements IDeviceStatu
     String[] getHeaderComments()
     {
         return new String[]{"CSV Version=0.4.0"};
-    }
-
-    @Override
-    public void onDeviceStatus(DeviceStatus deviceStatus)
-    {
-        // no-op
     }
 
     @Override

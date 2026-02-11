@@ -18,6 +18,7 @@ public class NetworkSurveyConstants
     public static final int DEFAULT_GRPC_PORT = 2621;
 
     public static final boolean DEFAULT_MQTT_CELLULAR_STREAM_SETTING = true;
+    public static final boolean DEFAULT_MQTT_PHONE_STATE_STREAM_SETTING = true;
     public static final boolean DEFAULT_MQTT_WIFI_STREAM_SETTING = true;
     public static final boolean DEFAULT_MQTT_BLUETOOTH_STREAM_SETTING = false;
     public static final boolean DEFAULT_MQTT_GNSS_STREAM_SETTING = false;
@@ -82,6 +83,7 @@ public class NetworkSurveyConstants
     public static final String EXTRA_STARTED_AT_BOOT = "com.craxiom.networksurvey.extra.STARTED_AT_BOOT";
 
     public static final String EXTRA_CELLULAR_FILE_LOGGING = "cellular_file_logging";
+    public static final String EXTRA_PHONE_STATE_FILE_LOGGING = "phone_state_file_logging";
     public static final String EXTRA_WIFI_FILE_LOGGING = "wifi_file_logging";
     public static final String EXTRA_BLUETOOTH_FILE_LOGGING = "bluetooth_file_logging";
     public static final String EXTRA_GNSS_FILE_LOGGING = "gnss_file_logging";
@@ -128,6 +130,8 @@ public class NetworkSurveyConstants
     public static final String PROPERTY_AUTO_START_BLUETOOTH_LOGGING = "auto_start_bluetooth_logging";
     public static final String PROPERTY_AUTO_START_GNSS_LOGGING = "auto_start_gnss_logging";
     public static final String PROPERTY_AUTO_START_CDR_LOGGING = "auto_start_cdr_logging";
+    public static final String PROPERTY_AUTO_START_PHONE_STATE_LOGGING = "auto_start_phone_state_logging";
+    public static final String PROPERTY_AUTO_INCLUDE_PHONE_STATE_WITH_CELLULAR = "auto_include_phone_state_with_cellular";
     public static final String PROPERTY_AUTO_START_COMMUNITY_UPLOAD_SURVEY_AT_BOOT = "auto_start_community_upload_survey_at_boot";
     public static final String PROPERTY_CELLULAR_SCAN_INTERVAL_SECONDS = "cellular_scan_interval_seconds";
     public static final String PROPERTY_WIFI_SCAN_INTERVAL_SECONDS = "wifi_scan_interval_seconds";
@@ -173,6 +177,7 @@ public class NetworkSurveyConstants
     public static final String PROPERTY_MQTT_BLUETOOTH_STREAM_ENABLED = "bluetooth_stream_enabled";
     public static final String PROPERTY_MQTT_GNSS_STREAM_ENABLED = "gnss_stream_enabled";
     public static final String PROPERTY_MQTT_DEVICE_STATUS_STREAM_ENABLED = "device_status_stream_enabled";
+    public static final String PROPERTY_MQTT_PHONE_STATE_STREAM_ENABLED = "phone_state_stream_enabled";
 
     public static final String PROPERTY_GRPC_CELLULAR_STREAM_ENABLED = "grpc_cellular_stream_enabled";
     public static final String PROPERTY_GRPC_PHONE_STATE_STREAM_ENABLED = "grpc_phone_state_stream_enabled";

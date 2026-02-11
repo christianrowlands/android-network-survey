@@ -54,6 +54,8 @@
         
     </string>
 
+    <string name="phone_state_help_title">Phone State Survey</string>
+    <string name="phone_state_help">Phone State captures events that occur when your phone changes how it connects to the cellular network, including:\n\n- Network registration changes (attaching/detaching from a network)\n- SIM state changes\n- Serving cell changes (handovers)\n- Access network technology changes (e.g., switching from LTE to NR)\n- Roaming status changes</string>
     <string name="cdr_help_title">CDR Information</string>
     <string name="cdr_help">What is a CDR? A CDR is a Call Detail Record that has an event for specific
         interaction a phone has with the cellular network. For example, a phone call, sms messages, and certain tower
@@ -201,6 +203,8 @@ but work independently, so you have full control over how you handle your data.<
     <string name="bluetooth_title">Bluetooth</string>
     <string name="gnss_title">GNSS</string>
     <string name="cdr_title">CDR</string>
+    <string name="phone_state_title">Phone State</string>
+    <string name="phone_state_icon_description">Phone State Icon</string>
     <string name="status_label">Status:</string>
     <string name="off">Off</string>
     <string name="wifi_icon_description">Wi-Fi Icon</string>
@@ -218,6 +222,7 @@ but work independently, so you have full control over how you handle your data.<
     <string name="bluetooth_label">Bluetooth:</string>
     <string name="gnss_label">GNSS:</string>
     <string name="device_status_label">Device Status:</string>
+    <string name="phone_state_label">Phone State:</string>
     <string name="what_is_configured_to_stream">What is configured to stream?</string>
 
     <string name="card_title_location">My Location</string>
@@ -318,6 +323,11 @@ but work independently, so you have full control over how you handle your data.<
     <string name="cdr_logging_stop_toast">CDR Log File Closed</string>
     <string name="gnss_logging_toggle_failed">Failed to toggle the GNSS logging state; is GPS turned on?</string>
     <string name="cdr_logging_toggle_failed">Failed to toggle the CDR logging state</string>
+    <string name="phone_state_logging_start_toast">Phone State logging enabled</string>
+    <string name="phone_state_logging_stop_toast">Phone State logging disabled</string>
+    <string name="phone_state_logging_toggle_failed">Failed to toggle Phone State logging</string>
+    <string name="phone_state_logging_status_auto">On (via Cellular)</string>
+    <string name="phone_state_auto_started_toast">Phone State logging also started (configurable in Settings)</string>
 
     <string name="grpc_connection_title">gRPC Connection</string>
     <string name="grpc_connection_description">Here you can connect to a Network Survey server.  Once connected, all future survey results will be streamed to the server.
@@ -435,11 +445,15 @@ but work independently, so you have full control over how you handle your data.<
     <string name="gnss_stream_description">True to stream GNSS data, false otherwise</string>
     <string name="device_status_stream_title">Device Status Stream Enabled</string>
     <string name="device_status_stream_description">True to stream Device Status messages over MQTT, false otherwise</string>
+    <string name="phone_state_stream_title">Phone State Stream Enabled</string>
+    <string name="phone_state_stream_description">Enable or disable streaming of phone state events</string>
     <string name="auto_start_cellular_logging_description">True to start cellular logging automatically, false otherwise</string>
     <string name="auto_start_wifi_logging_description">True to start Wi-Fi logging automatically, false otherwise</string>
     <string name="auto_start_bluetooth_logging_description">True to start Bluetooth logging automatically, false otherwise</string>
     <string name="auto_start_gnss_logging_description">True to start GNSS logging automatically, false otherwise</string>
     <string name="auto_start_cdr_logging_description">True to start CDR logging automatically, false otherwise</string>
+    <string name="auto_start_phone_state_logging_description">Auto start phone state logging on device boot</string>
+    <string name="auto_include_phone_state_description">Automatically start phone state logging when cellular logging starts</string>
     <string name="ignore_wifi_scan_throttling_warning_title">Ignore Wi-Fi Throttling Warning</string>
     <string name="ignore_wifi_scan_throttling_warning_description">True to ignore showing the throttling warning snackbar message on the Wi-Fi UI, false to allow the snackbar message to work as normal. The snackbar message tells the user if Wi-Fi throttling is enabled, and gives them a link to turn off throttling in developer options. If developer options are disabled via MDM, then set this to true so the user is not asked to open developer options.</string>
 
@@ -475,6 +489,13 @@ but work independently, so you have full control over how you handle your data.<
     <string name="auto_start_cdr_logging_title">Auto Start CDR Logging</string>
     <string name="auto_start_cdr_logging_summary_on">CDR logging will be started upon app opening or when the phone is turned on</string>
     <string name="auto_start_cdr_logging_summary_off">CDR logging will only start when manually enabled</string>
+
+    <string name="auto_start_phone_state_logging_title">Auto Start Phone State Logging</string>
+    <string name="auto_start_phone_state_logging_summary_on">Phone State logging will start when the app opens</string>
+    <string name="auto_start_phone_state_logging_summary_off">Phone State logging will not auto start</string>
+    <string name="auto_include_phone_state_title">Auto-include Phone State with Cellular</string>
+    <string name="auto_include_phone_state_summary_on">Phone State logging will automatically start and stop with Cellular logging</string>
+    <string name="auto_include_phone_state_summary_off">Phone State logging must be started independently</string>
 
     <string name="scan_interval_config_title">Scanning Rate</string>
 

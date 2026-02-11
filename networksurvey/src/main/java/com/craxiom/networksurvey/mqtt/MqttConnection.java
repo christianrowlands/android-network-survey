@@ -18,6 +18,7 @@ import com.craxiom.networksurvey.listeners.IBluetoothSurveyRecordListener;
 import com.craxiom.networksurvey.listeners.ICellularSurveyRecordListener;
 import com.craxiom.networksurvey.listeners.IDeviceStatusListener;
 import com.craxiom.networksurvey.listeners.IGnssSurveyRecordListener;
+import com.craxiom.networksurvey.listeners.IPhoneStateListener;
 import com.craxiom.networksurvey.listeners.IWifiSurveyRecordListener;
 import com.craxiom.networksurvey.model.WifiRecordWrapper;
 
@@ -32,7 +33,7 @@ import timber.log.Timber;
  * @since 0.1.1
  */
 public class MqttConnection extends DefaultMqttConnection implements ICellularSurveyRecordListener, IWifiSurveyRecordListener,
-        IBluetoothSurveyRecordListener, IGnssSurveyRecordListener, IDeviceStatusListener
+        IBluetoothSurveyRecordListener, IGnssSurveyRecordListener, IDeviceStatusListener, IPhoneStateListener
 {
     /**
      * When true, incoming survey records will be dropped instead of being queued for MQTT publishing.
@@ -280,6 +281,8 @@ public class MqttConnection extends DefaultMqttConnection implements ICellularSu
             phoneState = messageBuilder.setData(messageBuilder.getDataBuilder().setDeviceName(effectiveDeviceName)).build();
         }
 
+        // There are historical reasons as to why the phone state message rides on the device status topic
+        // Might change this to its own topic in the NS Messaging API version 3 as a breaking change
         publishMessage(MQTT_DEVICE_STATUS_MESSAGE_TOPIC, phoneState);
     }
 }

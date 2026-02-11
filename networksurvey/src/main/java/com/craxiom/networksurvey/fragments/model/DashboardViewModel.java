@@ -24,6 +24,7 @@ public class DashboardViewModel extends ViewModel
     private final MutableLiveData<Boolean> communityUploadButtonEnabled = new MutableLiveData<>(false);
 
     private final MutableLiveData<Boolean> cellularLoggingEnabled = new MutableLiveData<>();
+    private final MutableLiveData<Boolean> phoneStateLoggingEnabled = new MutableLiveData<>();
     private final MutableLiveData<Boolean> wifiLoggingEnabled = new MutableLiveData<>();
     private final MutableLiveData<Boolean> bluetoothLoggingEnabled = new MutableLiveData<>();
     private final MutableLiveData<Boolean> gnssLoggingEnabled = new MutableLiveData<>();
@@ -31,6 +32,7 @@ public class DashboardViewModel extends ViewModel
 
     private final MutableLiveData<ConnectionState> mqttConnectionState = new MutableLiveData<>();
     private final MutableLiveData<Boolean> cellularMqttStreamEnabled = new MutableLiveData<>();
+    private final MutableLiveData<Boolean> phoneStateMqttStreamEnabled = new MutableLiveData<>();
     private final MutableLiveData<Boolean> wifiMqttStreamEnabled = new MutableLiveData<>();
     private final MutableLiveData<Boolean> bluetoothMqttStreamEnabled = new MutableLiveData<>();
     private final MutableLiveData<Boolean> gnssMqttStreamEnabled = new MutableLiveData<>();
@@ -101,6 +103,19 @@ public class DashboardViewModel extends ViewModel
         if (!Objects.equals(cellularLoggingEnabled.getValue(), isEnabled))
         {
             cellularLoggingEnabled.postValue(isEnabled);
+        }
+    }
+
+    public LiveData<Boolean> getPhoneStateLoggingEnabled()
+    {
+        return phoneStateLoggingEnabled;
+    }
+
+    public void setPhoneStateLoggingEnabled(boolean isEnabled)
+    {
+        if (!Objects.equals(phoneStateLoggingEnabled.getValue(), isEnabled))
+        {
+            phoneStateLoggingEnabled.postValue(isEnabled);
         }
     }
 
@@ -231,6 +246,19 @@ public class DashboardViewModel extends ViewModel
         if (!Objects.equals(deviceStatusMqttStreamEnabled.getValue(), isEnabled))
         {
             deviceStatusMqttStreamEnabled.postValue(isEnabled);
+        }
+    }
+
+    public LiveData<Boolean> getPhoneStateMqttStreamEnabled()
+    {
+        return phoneStateMqttStreamEnabled;
+    }
+
+    public void setPhoneStateMqttStreamEnabled(boolean isEnabled)
+    {
+        if (!Objects.equals(phoneStateMqttStreamEnabled.getValue(), isEnabled))
+        {
+            phoneStateMqttStreamEnabled.postValue(isEnabled);
         }
     }
 

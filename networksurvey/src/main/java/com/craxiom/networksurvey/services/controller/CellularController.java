@@ -99,6 +99,9 @@ public class CellularController extends AController
     private final Map<Integer, PhoneStateListener> phoneStateListenerMap = new HashMap<>();
     private BroadcastReceiver simBroadcastReceiver;
 
+    private final AtomicBoolean phoneStateLoggingEnabled = new AtomicBoolean(false);
+    private final AtomicBoolean phoneStateAutoStartedByCellular = new AtomicBoolean(false);
+
     private final AtomicBoolean cdrLoggingEnabled = new AtomicBoolean(false);
     private final AtomicBoolean cdrStarted = new AtomicBoolean(false);
     private final CdrLogger cdrLogger;
@@ -169,6 +172,21 @@ public class CellularController extends AController
     public boolean isScanningActive()
     {
         return cellularScanningActive.get();
+    }
+
+    public boolean isPhoneStateLoggingEnabled()
+    {
+        return phoneStateLoggingEnabled.get();
+    }
+
+    public boolean isPhoneStateAutoStartedByCellular()
+    {
+        return phoneStateAutoStartedByCellular.get();
+    }
+
+    public void setPhoneStateAutoStartedByCellular(boolean autoStarted)
+    {
+        phoneStateAutoStartedByCellular.set(autoStarted);
     }
 
     public boolean isCdrLoggingEnabled()
@@ -248,6 +266,15 @@ public class CellularController extends AController
                 }
             }
         }
+
+        synchronized (phoneStateLoggingEnabled)
+        {
+            if (phoneStateLoggingEnabled.get())
+            {
+                togglePhoneStateLogging(false);
+                togglePhoneStateLogging(true);
+            }
+        }
     }
 
     /**
@@ -290,13 +317,11 @@ public class CellularController extends AController
 
                 if (types.geoPackage)
                 {
-                    successful = cellularSurveyRecordLogger.enableLogging(true) &&
-                            phoneStateRecordLogger.enableLogging(true);
+                    successful = cellularSurveyRecordLogger.enableLogging(true);
                 }
                 if (types.csv)
                 {
-                    successful = phoneStateCsvLogger.enableLogging(true) &&
-                            nrCsvLogger.enableLogging(true) &&
+                    successful = nrCsvLogger.enableLogging(true) &&
                             lteCsvLogger.enableLogging(true) &&
                             umtsCsvLogger.enableLogging(true) &&
                             cdmaCsvLogger.enableLogging(true) &&
@@ -312,8 +337,6 @@ public class CellularController extends AController
                     // at least one of the loggers failed to toggle;
                     // disable all of them and set local config to false
                     cellularSurveyRecordLogger.enableLogging(false);
-                    phoneStateRecordLogger.enableLogging(false);
-                    phoneStateCsvLogger.enableLogging(false);
                     nrCsvLogger.enableLogging(false);
                     lteCsvLogger.enableLogging(false);
                     umtsCsvLogger.enableLogging(false);
@@ -326,8 +349,6 @@ public class CellularController extends AController
                 // If we are disabling logging, then we need to disable both geoPackage and CSV just
                 // in case the user changed the setting after they started logging.
                 cellularSurveyRecordLogger.enableLogging(false);
-                phoneStateRecordLogger.enableLogging(false);
-                phoneStateCsvLogger.enableLogging(false);
                 nrCsvLogger.enableLogging(false);
                 lteCsvLogger.enableLogging(false);
                 umtsCsvLogger.enableLogging(false);
@@ -386,6 +407,95 @@ public class CellularController extends AController
 
             return successful ? newLoggingState : null;
         }
+    }
+
+    /**
+     * Toggles the phone state file logging setting.
+     * <p>
+     * It is possible that an error occurs while trying to enable or disable logging. In that event
+     * null will be returned indicating that logging could not be toggled.
+     *
+     * @param enable True if logging should be enabled, false if it should be turned off.
+     * @return The new state of logging. True if it is enabled, or false if it is disabled. Null is
+     * returned if the toggling was unsuccessful.
+     */
+    public Boolean togglePhoneStateLogging(boolean enable)
+    {
+        synchronized (phoneStateLoggingEnabled)
+        {
+            final boolean originalLoggingState = phoneStateLoggingEnabled.get();
+            if (originalLoggingState == enable) return originalLoggingState;
+
+            if (surveyService == null) return null;
+
+            Timber.i("Toggling phone state logging to %s", enable);
+
+            boolean successful = false;
+            if (enable)
+            {
+                LogTypeState types = PreferenceUtils.getLogTypePreference(surveyService.getApplicationContext());
+
+                if (types.geoPackage)
+                {
+                    successful = phoneStateRecordLogger.enableLogging(true);
+                }
+                if (types.csv)
+                {
+                    successful = phoneStateCsvLogger.enableLogging(true);
+                }
+
+                if (successful)
+                {
+                    phoneStateLoggingEnabled.set(true);
+                    if (types.geoPackage)
+                    {
+                        surveyService.registerPhoneStateListener(phoneStateRecordLogger);
+                    }
+                    if (types.csv)
+                    {
+                        surveyService.registerPhoneStateListener(phoneStateCsvLogger);
+                    }
+                } else
+                {
+                    Timber.e("Unsuccessful in enabling phone state logging");
+                    phoneStateRecordLogger.enableLogging(false);
+                    phoneStateCsvLogger.enableLogging(false);
+                }
+            } else
+            {
+                phoneStateLoggingEnabled.set(false);
+                phoneStateRecordLogger.enableLogging(false);
+                phoneStateCsvLogger.enableLogging(false);
+                surveyService.unregisterPhoneStateListener(phoneStateRecordLogger);
+                surveyService.unregisterPhoneStateListener(phoneStateCsvLogger);
+                successful = true;
+            }
+
+            surveyService.updateServiceNotification();
+            surveyService.notifyLoggingChangedListeners();
+
+            final boolean newLoggingState = phoneStateLoggingEnabled.get();
+
+            return successful ? newLoggingState : null;
+        }
+    }
+
+    /**
+     * Attempts to auto-start phone state logging if it is not already running. This method is
+     * synchronized to prevent race conditions between the check and the toggle when called from
+     * the auto-include logic.
+     *
+     * @return True if phone state logging was started, false if it was already running.
+     */
+    public synchronized boolean autoStartPhoneStateIfNotRunning()
+    {
+        if (!phoneStateLoggingEnabled.get())
+        {
+            togglePhoneStateLogging(true);
+            phoneStateAutoStartedByCellular.set(true);
+            return true;
+        }
+        return false;
     }
 
     /**
@@ -969,6 +1079,7 @@ public class CellularController extends AController
     public void stopAllLogging()
     {
         toggleLogging(false);
+        togglePhoneStateLogging(false);
         toggleCdrLogging(false);
     }
 
@@ -989,11 +1100,9 @@ public class CellularController extends AController
                 if (types.geoPackage)
                 {
                     surveyService.registerCellularSurveyRecordListener(cellularSurveyRecordLogger);
-                    surveyService.registerDeviceStatusListener(phoneStateRecordLogger);
                 }
                 if (types.csv)
                 {
-                    surveyService.registerDeviceStatusListener(phoneStateCsvLogger);
                     surveyService.registerCellularSurveyRecordListener(nrCsvLogger);
                     surveyService.registerCellularSurveyRecordListener(lteCsvLogger);
                     surveyService.registerCellularSurveyRecordListener(umtsCsvLogger);
@@ -1007,13 +1116,11 @@ public class CellularController extends AController
         } else
         {
             surveyService.unregisterCellularSurveyRecordListener(cellularSurveyRecordLogger);
-            surveyService.unregisterDeviceStatusListener(phoneStateCsvLogger);
             surveyService.unregisterCellularSurveyRecordListener(nrCsvLogger);
             surveyService.unregisterCellularSurveyRecordListener(lteCsvLogger);
             surveyService.unregisterCellularSurveyRecordListener(umtsCsvLogger);
             surveyService.unregisterCellularSurveyRecordListener(cdmaCsvLogger);
             surveyService.unregisterCellularSurveyRecordListener(gsmCsvLogger);
-            surveyService.unregisterDeviceStatusListener(phoneStateRecordLogger);
         }
     }
 

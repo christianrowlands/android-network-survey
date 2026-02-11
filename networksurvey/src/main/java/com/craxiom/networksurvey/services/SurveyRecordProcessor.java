@@ -101,6 +101,7 @@ import com.craxiom.networksurvey.listeners.ICdrEventListener;
 import com.craxiom.networksurvey.listeners.ICellularSurveyRecordListener;
 import com.craxiom.networksurvey.listeners.IDeviceStatusListener;
 import com.craxiom.networksurvey.listeners.IGnssSurveyRecordListener;
+import com.craxiom.networksurvey.listeners.IPhoneStateListener;
 import com.craxiom.networksurvey.listeners.IWifiSurveyRecordListener;
 import com.craxiom.networksurvey.model.CdrEvent;
 import com.craxiom.networksurvey.model.CdrEventType;
@@ -183,6 +184,7 @@ public class SurveyRecordProcessor
     private final Set<IGnssSurveyRecordListener> gnssSurveyRecordListeners = new CopyOnWriteArraySet<>();
     private final Set<ICdrEventListener> cdrListeners = new CopyOnWriteArraySet<>();
     private final Set<IDeviceStatusListener> deviceStatusListeners = new CopyOnWriteArraySet<>();
+    private final Set<IPhoneStateListener> phoneStateListeners = new CopyOnWriteArraySet<>();
     private volatile NetworkSurveyActivity networkSurveyActivity;
 
     private final ExecutorService executorService;
@@ -352,6 +354,26 @@ public class SurveyRecordProcessor
     }
 
     /**
+     * Adds a listener that will be notified of new phone state messages.
+     *
+     * @param phoneStateListener The listener to add.
+     */
+    void registerPhoneStateListener(IPhoneStateListener phoneStateListener)
+    {
+        phoneStateListeners.add(phoneStateListener);
+    }
+
+    /**
+     * Removes a listener of Phone State messages.
+     *
+     * @param phoneStateListener The listener to remove.
+     */
+    void unregisterPhoneStateListener(IPhoneStateListener phoneStateListener)
+    {
+        phoneStateListeners.remove(phoneStateListener);
+    }
+
+    /**
      * Whenever the UI is visible, we need to pass information to it so it can be displayed to the user.
      *
      * @param networkSurveyActivity The activity that is now visible to the user.
@@ -389,7 +411,8 @@ public class SurveyRecordProcessor
                 || !bluetoothSurveyRecordListeners.isEmpty()
                 || !gnssSurveyRecordListeners.isEmpty()
                 || !cdrListeners.isEmpty()
-                || !deviceStatusListeners.isEmpty();
+                || !deviceStatusListeners.isEmpty()
+                || !phoneStateListeners.isEmpty();
     }
 
     /**
@@ -445,6 +468,14 @@ public class SurveyRecordProcessor
     boolean isDeviceStatusBeingUsed()
     {
         return !deviceStatusListeners.isEmpty();
+    }
+
+    /**
+     * @return True if there are any registered Phone State message listeners, false otherwise.
+     */
+    boolean isPhoneStateBeingUsed()
+    {
+        return !phoneStateListeners.isEmpty();
     }
 
     /**
@@ -3067,12 +3098,11 @@ public class SurveyRecordProcessor
      * Notify all the listeners that we have a new Phone State available.
      *
      * @param phoneState The new Phone State Message to send to the listeners.
-     * @since 1.1.0
      */
     private void notifyPhoneStateListeners(PhoneState phoneState)
     {
         if (phoneState == null) return;
-        for (IDeviceStatusListener listener : deviceStatusListeners)
+        for (IPhoneStateListener listener : phoneStateListeners)
         {
             try
             {
