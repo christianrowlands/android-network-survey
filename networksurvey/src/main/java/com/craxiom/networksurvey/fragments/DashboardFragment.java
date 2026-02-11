@@ -66,6 +66,7 @@ import com.craxiom.networksurvey.model.SurveyTypes;
 import com.craxiom.networksurvey.model.UploadScanningResult;
 import com.craxiom.networksurvey.services.BatteryMonitor;
 import com.craxiom.networksurvey.services.NetworkSurveyService;
+import com.craxiom.networksurvey.ui.main.PhoneStateHelpDialogFragment;
 import com.craxiom.networksurvey.ui.main.SharedViewModel;
 import com.craxiom.networksurvey.ui.nsanalytics.NsAnalyticsComposeHelper;
 import com.craxiom.networksurvey.util.BatteryOptimizationHelper;
@@ -704,19 +705,8 @@ public class DashboardFragment extends AServiceDataFragment implements LocationL
      */
     private void showPhoneStateHelpDialog()
     {
-        final Context context = getContext();
-        if (context == null) return;
-
-        LayoutInflater inflater = LayoutInflater.from(context);
-        View dialogView = inflater.inflate(R.layout.dialog_phone_state_help, null);
-
-        AlertDialog.Builder alertBuilder = new AlertDialog.Builder(context);
-        alertBuilder.setView(dialogView);
-        alertBuilder.setCancelable(true);
-        alertBuilder.setTitle(context.getString(R.string.phone_state_help_title));
-        alertBuilder.setPositiveButton(android.R.string.ok, (dialog, which) -> {
-        });
-        alertBuilder.create().show();
+        new PhoneStateHelpDialogFragment()
+                .show(getChildFragmentManager(), PhoneStateHelpDialogFragment.TAG);
     }
 
     /**

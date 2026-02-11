@@ -6,18 +6,15 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.SpanStyle
-import androidx.compose.ui.text.buildAnnotatedString
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import com.craxiom.networksurvey.R
+import com.craxiom.networksurvey.ui.common.HelpItem
+import com.craxiom.networksurvey.ui.common.HelpSection
 
 /**
  * A help dialog for the MQTT connection screen explaining all the connection settings
@@ -81,30 +78,3 @@ fun MqttHelpDialog(
     )
 }
 
-@Composable
-private fun HelpSection(
-    title: String,
-    content: @Composable () -> Unit
-) {
-    Text(
-        text = title,
-        style = MaterialTheme.typography.titleSmall,
-        fontWeight = FontWeight.Bold
-    )
-    Spacer(modifier = Modifier.height(4.dp))
-    content()
-}
-
-@Composable
-private fun HelpItem(label: String, description: String) {
-    Text(
-        text = buildAnnotatedString {
-            append("• ")
-            withStyle(style = SpanStyle(fontWeight = FontWeight.Bold)) {
-                append(label)
-            }
-            append(" — $description")
-        },
-        style = MaterialTheme.typography.bodyMedium
-    )
-}

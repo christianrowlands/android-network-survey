@@ -55,7 +55,28 @@
     </string>
 
     <string name="phone_state_help_title">Phone State Survey</string>
-    <string name="phone_state_help">Phone State captures events that occur when your phone changes how it connects to the cellular network, including:\n\n- Network registration changes (attaching/detaching from a network)\n- SIM state changes\n- Serving cell changes (handovers)\n- Access network technology changes (e.g., switching from LTE to NR)\n- Roaming status changes</string>
+    <string name="phone_state_help_dismiss">Got it</string>
+    <string name="phone_state_help_overview">Monitors changes in how your device connects to the cellular network and records each change as a survey event.</string>
+    <string name="phone_state_help_events_title">Events Captured</string>
+    <string name="phone_state_help_event_registration_label">Network Registration</string>
+    <string name="phone_state_help_event_registration_desc">Attaching or detaching from a network</string>
+    <string name="phone_state_help_event_sim_label">SIM State</string>
+    <string name="phone_state_help_event_sim_desc">SIM card inserted, removed, or changed</string>
+    <string name="phone_state_help_event_handover_label">Serving Cell Handovers</string>
+    <string name="phone_state_help_event_handover_desc">Switching between cell towers</string>
+    <string name="phone_state_help_event_access_tech_label">Access Technology</string>
+    <string name="phone_state_help_event_access_tech_desc">Changes such as LTE to NR (5G)</string>
+    <string name="phone_state_help_event_roaming_label">Roaming Status</string>
+    <string name="phone_state_help_event_roaming_desc">Entering or leaving a roaming network</string>
+    <string name="phone_state_help_event_ntn_label">Non-Terrestrial Network</string>
+    <string name="phone_state_help_event_ntn_desc">Satellite connectivity changes (on supported devices)</string>
+    <string name="phone_state_help_how_title">How It Works</string>
+    <string name="phone_state_help_how_event_driven_label">Event-Driven</string>
+    <string name="phone_state_help_how_event_driven_desc">Records only when something changes - no periodic scanning</string>
+    <string name="phone_state_help_how_auto_include_label">Auto-Include with Cellular</string>
+    <string name="phone_state_help_how_auto_include_desc">Starts automatically when Cellular logging is enabled (configurable in Settings)</string>
+    <string name="phone_state_help_how_dual_sim_label">Dual-SIM Support</string>
+    <string name="phone_state_help_how_dual_sim_desc">Monitors all active SIM subscriptions</string>
     <string name="cdr_help_title">CDR Information</string>
     <string name="cdr_help">What is a CDR? A CDR is a Call Detail Record that has an event for specific
         interaction a phone has with the cellular network. For example, a phone call, sms messages, and certain tower
@@ -190,7 +211,7 @@ but work independently, so you have full control over how you handle your data.<
     <string name="uploader_canceled">Upload canceled</string>
     <string name="upload_to_opencellid">Upload to OpenCelliD (Cellular)</string>
     <string name="anonymously">Anonymously</string>
-    <string name="upload_dialog_message">Uploading your survey records will share location data with third-party services. Contributing to these crowdsourced databases helps improve coverage maps and geolocation accuracy. Your participation is entirely voluntary—the choice to share your data is yours and yours alone.</string>
+    <string name="upload_dialog_message">Uploading your survey records will share location data with third-party services. Contributing to these crowdsourced databases helps improve coverage maps and geolocation accuracy. Your participation is entirely voluntary; the choice to share your data is yours and yours alone.</string>
     <string name="access_token_warning">You have to enter a valid access token in preferences</string>
     <string name="upload_to_beacondb">Upload to BeaconDB (Cellular &amp; Wi-Fi)</string>
     <string name="retry_on_failure">Retry on failure</string>
