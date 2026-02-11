@@ -69,7 +69,7 @@ public class MqttConnectionSettingsTest
                 TEST_HOST, TEST_PORT, true, TEST_DEVICE_NAME,
                 TEST_USERNAME, TEST_PASSWORD, TEST_TOPIC_PREFIX,
                 null, // mqttQos is null
-                true, true, true, true, true
+                true, true, true, true, true, true
         );
 
         BrokerConnectionInfo connectionInfo = settings.toMqttConnectionInfo();
@@ -157,7 +157,7 @@ public class MqttConnectionSettingsTest
                 TEST_HOST, TEST_PORT, true, TEST_DEVICE_NAME,
                 TEST_USERNAME, TEST_PASSWORD, TEST_TOPIC_PREFIX,
                 5, // Invalid QoS value
-                true, true, true, true, true
+                true, true, true, true, true, true
         );
 
         BrokerConnectionInfo connectionInfo = settings.toMqttConnectionInfo();
