@@ -27,32 +27,34 @@
 
     <string name="upload_help_title">Upload Information</string>
     <string name="view_manual">View Manual</string>
-    <string name="upload_help">
-        
-        The upload feature allows you to share collected cellular and Wi-Fi survey data with third-party databases.&lt;br/&gt;&lt;br/&gt;
-        &lt;b&gt;How This Feature Works:&lt;/b&gt;&lt;br/&gt;
-        &amp;#8226; When started, survey records collected by the app are written to an internal database. You can then decide whether to upload the stored records to the selected destinations.&lt;br/&gt;
-        &amp;#8226; When stopped, no survey data is written to the internal database, and no survey data is uploaded to a third-party database.&lt;br/&gt;&lt;br/&gt;
-
-        &lt;b&gt;Where Your Data Goes:&lt;/b&gt;&lt;br/&gt;
-        Your survey data will be uploaded to one or both of the following services, depending on your selections:&lt;br/&gt;
-        &amp;#8226; &lt;a href="https://www.opencellid.org/"&gt;&lt;b&gt;OpenCelliD&lt;/b&gt;&lt;/a&gt; - A global open-source cell tower database.&lt;br/&gt;
-        &amp;#8226; &lt;a href="https://api.beacondb.net/"&gt;&lt;b&gt;BeaconDB&lt;/b&gt;&lt;/a&gt; - A crowdsourced geolocation database.&lt;br/&gt;&lt;br/&gt;
-
-        &lt;b&gt;What Data Is Uploaded:&lt;/b&gt;&lt;br/&gt;
-        &amp;#8226; &lt;b&gt;Device Location&lt;/b&gt; (Latitude, Longitude, Altitude, Accuracy, Speed)&lt;br/&gt;
-        &amp;#8226; &lt;b&gt;Cellular Information&lt;/b&gt; (MCC, MNC, TAC/LAC, Cell ID, Signal Strength, Timing Advance, PCI, ARFCN, etc.)&lt;br/&gt;
-        &amp;#8226; &lt;b&gt;Wi-Fi Information&lt;/b&gt; (SSID, BSSID, Frequency, Channel, Signal Strength, Encryption Type)&lt;br/&gt;
-        &amp;#8226; &lt;b&gt;Timestamp&lt;/b&gt; of Collection&lt;br/&gt;&lt;br/&gt;
-
-        &lt;b&gt;When new records are written to the database&lt;/b&gt;&lt;br/&gt;
-        Cellular and Wi-Fi Survey data is written to the database only if it contains all the required information, AND if the location of the device has changed by at least 35 meters since the last record was written. This is to prevent an excessive amount of survey data from being uploaded to the servers for the same location.&lt;br/&gt;&lt;br/&gt;
-
-        Data is anonymized and used to improve cellular and Wi-Fi coverage mapping, as well as enhance the BeaconDB geolocation service.&lt;br/&gt;&lt;br/&gt;
-
-        &lt;a href="https://networksurvey.app/manual#data-upload"&gt;For more details, visit the Network Survey User Manual.&lt;/a&gt;
-        
-    </string>
+    <!-- Upload Help Dialog -->
+    <string name="upload_help_dismiss">Got it</string>
+    <string name="upload_help_overview">Share collected cellular and Wi-Fi survey data with third-party databases to help improve coverage mapping.</string>
+    <string name="upload_help_how_title">How It Works</string>
+    <string name="upload_help_how_started_label">When Started</string>
+    <string name="upload_help_how_started_desc">Survey records are written to an internal database and uploaded to the selected destinations</string>
+    <string name="upload_help_how_stopped_label">When Stopped</string>
+    <string name="upload_help_how_stopped_desc">No data is written or uploaded</string>
+    <string name="upload_help_data_destination_title">Where Your Data Goes</string>
+    <string name="upload_help_data_opencellid_label">OpenCelliD</string>
+    <string name="upload_help_data_opencellid_desc">A global open-source cell tower database</string>
+    <string name="upload_help_data_beacondb_label">BeaconDB</string>
+    <string name="upload_help_data_beacondb_desc">A crowdsourced geolocation database</string>
+    <string name="upload_help_what_title">What Gets Uploaded</string>
+    <string name="upload_help_what_location_label">Device Location</string>
+    <string name="upload_help_what_location_desc">Latitude, longitude, altitude, accuracy, and speed</string>
+    <string name="upload_help_what_cellular_label">Cellular Info</string>
+    <string name="upload_help_what_cellular_desc">MCC, MNC, TAC/LAC, Cell ID, signal strength, PCI, ARFCN, etc.</string>
+    <string name="upload_help_what_wifi_label">Wi-Fi Info</string>
+    <string name="upload_help_what_wifi_desc">SSID, BSSID, frequency, channel, signal strength, encryption type</string>
+    <string name="upload_help_what_timestamp_label">Timestamp</string>
+    <string name="upload_help_what_timestamp_desc">Date and time of collection</string>
+    <string name="upload_help_when_title">When Records Are Written</string>
+    <string name="upload_help_when_distance_label">Distance Threshold</string>
+    <string name="upload_help_when_distance_desc">A new record is only written if the device has moved at least 35 meters since the last record</string>
+    <string name="upload_help_when_filter_label">Required Info</string>
+    <string name="upload_help_when_filter_desc">Records are skipped if they lack essential fields</string>
+    <string name="upload_help_privacy_note">Data is anonymized and used to improve cellular and Wi-Fi coverage mapping.</string>
 
     <string name="phone_state_help_title">Phone State Survey</string>
     <string name="phone_state_help_dismiss">Got it</string>
@@ -78,37 +80,56 @@
     <string name="phone_state_help_how_dual_sim_label">Dual-SIM Support</string>
     <string name="phone_state_help_how_dual_sim_desc">Monitors all active SIM subscriptions</string>
     <string name="cdr_help_title">CDR Information</string>
-    <string name="cdr_help">What is a CDR? A CDR is a Call Detail Record that has an event for specific
-        interaction a phone has with the cellular network. For example, a phone call, sms messages, and certain tower
-        changes. The Network Survey app has a CDR File Logging feature that allows for logging CDR events to a CSV file.
-        There are several possible use cases for recording a CDR; for example, one might be to have a record of
-        what your phone is doing, and what towers it is communicating with.
-        \n\nWorthy of note, the regular version of Network Survey does not log SMS events in the CDR, nor does it
-        support logging the "other" phone number associated with a phone call. Logging SMS events requires the
-        full SMS permission, and Google Play won\'t approve publishing Network Survey to the Play Store
-        if it requests the SMS permission. If you are interested in a CDR logger that supports SMS events
-        and logging the "other" phone number for call events, check out the information in the Network Survey User Manual: https://networksurvey.app/manual#cdr</string>
+    <!-- CDR Help Dialog -->
+    <string name="cdr_help_dismiss">Got it</string>
+    <string name="cdr_help_overview">A Call Detail Record (CDR) logs events for specific interactions your phone has with the cellular network.</string>
+    <string name="cdr_help_events_title">Events Logged</string>
+    <string name="cdr_help_event_calls_label">Phone Calls</string>
+    <string name="cdr_help_event_calls_desc">Incoming and outgoing call activity</string>
+    <string name="cdr_help_event_sms_label">SMS Messages</string>
+    <string name="cdr_help_event_sms_desc">Sent and received text messages (CDR variant only)</string>
+    <string name="cdr_help_event_tower_label">Tower Changes</string>
+    <string name="cdr_help_event_tower_desc">Serving cell handovers and reselections</string>
+    <string name="cdr_help_variants_title">App Variants</string>
+    <string name="cdr_help_variant_regular_label">Regular (Play Store)</string>
+    <string name="cdr_help_variant_regular_desc">Does not log SMS events or the other party\'s phone number, since Google Play restricts the SMS permission</string>
+    <string name="cdr_help_variant_cdr_label">CDR Version</string>
+    <string name="cdr_help_variant_cdr_desc">Full CDR support including SMS events and call phone numbers</string>
 
 
     <string name="file_help_title">File Logging &amp; MQTT Streaming: Simplified</string>
-    <string name="file_help">Need help understanding the File Logging and MQTT sections? Here\'s a quick guide:\n\n
-<b>File Logging Control:</b>\n
-This section is all about saving data locally to your phone. When you toggle one of the options to <b>\'On\'</b>,
-the app will start logging that data type to a file in GeoPackage and/or CSV format (depending on the configured
-setting), which you can find on your device. Remember:\n
-\n
-- Toggle <b>Cellular</b>, <b>Wi-Fi</b>, <b>Bluetooth</b>, <b>GNSS</b>, and/or <b>CDR</b> under File Logging Control to save this data locally.\n
-- Logging is completely optional and does not affect MQTT Streaming.\n
-\n
-<b>MQTT Connection:</b>\n
-MQTT streaming lets you send your data in real-time to a remote server. No local storage is needed for this:\n
-\n
-- First, configure the broker connection settings.\n
-- Ensure the switch is on to activate streaming.\n
-- MQTT Streaming works independently of File Logging. You don\'t need to turn on File Logging to stream data.\n
-\n
-Use File Logging for local storage and MQTT Streaming for remote transmission. They both capture the same data,
-but work independently, so you have full control over how you handle your data.</string>
+    <!-- File/MQTT Help Dialog -->
+    <string name="file_mqtt_help_dismiss">Got it</string>
+    <string name="file_mqtt_help_file_title">File Logging</string>
+    <string name="file_mqtt_help_file_local_label">Local Storage</string>
+    <string name="file_mqtt_help_file_local_desc">Saves survey data directly to your device</string>
+    <string name="file_mqtt_help_file_toggle_label">Survey Types</string>
+    <string name="file_mqtt_help_file_toggle_desc">Toggle Cellular, Wi-Fi, Bluetooth, GNSS, and/or CDR to choose what gets logged</string>
+    <string name="file_mqtt_help_file_format_label">File Format</string>
+    <string name="file_mqtt_help_file_format_desc">GeoPackage and/or CSV, depending on your settings</string>
+    <string name="file_mqtt_help_mqtt_title">MQTT Streaming</string>
+    <string name="file_mqtt_help_mqtt_realtime_label">Real-Time</string>
+    <string name="file_mqtt_help_mqtt_realtime_desc">Sends data to a remote server as it is collected</string>
+    <string name="file_mqtt_help_mqtt_broker_label">Setup</string>
+    <string name="file_mqtt_help_mqtt_broker_desc">Configure the broker connection settings before enabling streaming</string>
+    <string name="file_mqtt_help_key_point_title">Key Point</string>
+    <string name="file_mqtt_help_key_independent_label">Independent</string>
+    <string name="file_mqtt_help_key_independent_desc">File logging and MQTT streaming work independently — you can use either, both, or neither</string>
+
+    <!-- NS Analytics Help Dialog -->
+    <string name="ns_analytics_help_title">NS Analytics</string>
+    <string name="ns_analytics_help_dismiss">Got it</string>
+    <string name="ns_analytics_help_overview">NS Analytics provides cloud-based storage and analysis of your network survey data.</string>
+    <string name="ns_analytics_help_connected_title">When Connected</string>
+    <string name="ns_analytics_help_connected_upload_label">Data Upload</string>
+    <string name="ns_analytics_help_connected_upload_desc">Survey data is uploaded to the cloud automatically</string>
+    <string name="ns_analytics_help_connected_types_label">Survey Types</string>
+    <string name="ns_analytics_help_connected_types_desc">Includes cellular, Wi-Fi, Bluetooth, and GNSS records</string>
+    <string name="ns_analytics_help_connected_control_label">Control</string>
+    <string name="ns_analytics_help_connected_control_desc">Start and stop NS Analytics surveys independently</string>
+    <string name="ns_analytics_help_getting_started_title">Getting Started</string>
+    <string name="ns_analytics_help_getting_started_configure_label">Configure</string>
+    <string name="ns_analytics_help_getting_started_configure_desc">Tap \'Open Details\' to set up your workspace connection and upload settings</string>
 
     <!-- MQTT Help Dialog -->
     <string name="mqtt_help_title">MQTT Connection</string>

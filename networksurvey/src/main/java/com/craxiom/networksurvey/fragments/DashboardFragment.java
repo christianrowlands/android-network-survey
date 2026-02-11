@@ -6,7 +6,6 @@ import static com.craxiom.networksurvey.constants.CdrPermissions.CDR_REQUIRED_PE
 import android.Manifest;
 import android.annotation.SuppressLint;
 import android.content.Context;
-import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.content.res.ColorStateList;
@@ -15,13 +14,10 @@ import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
 import android.location.LocationProvider;
-import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
-import android.text.Html;
-import android.text.method.LinkMovementMethod;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -66,8 +62,12 @@ import com.craxiom.networksurvey.model.SurveyTypes;
 import com.craxiom.networksurvey.model.UploadScanningResult;
 import com.craxiom.networksurvey.services.BatteryMonitor;
 import com.craxiom.networksurvey.services.NetworkSurveyService;
+import com.craxiom.networksurvey.ui.main.CdrHelpDialogFragment;
+import com.craxiom.networksurvey.ui.main.FileMqttHelpDialogFragment;
+import com.craxiom.networksurvey.ui.main.NsAnalyticsHelpDialogFragment;
 import com.craxiom.networksurvey.ui.main.PhoneStateHelpDialogFragment;
 import com.craxiom.networksurvey.ui.main.SharedViewModel;
+import com.craxiom.networksurvey.ui.main.UploadHelpDialogFragment;
 import com.craxiom.networksurvey.ui.nsanalytics.NsAnalyticsComposeHelper;
 import com.craxiom.networksurvey.util.BatteryOptimizationHelper;
 import com.craxiom.networksurvey.util.LocationHintManager;
@@ -658,26 +658,8 @@ public class DashboardFragment extends AServiceDataFragment implements LocationL
      */
     private void showUploadHelpDialog()
     {
-        final Context context = getContext();
-        if (context == null) return;
-
-        LayoutInflater inflater = LayoutInflater.from(context);
-        View dialogView = inflater.inflate(R.layout.dialog_upload_help, null);
-        TextView helpTextView = dialogView.findViewById(R.id.tvUploadHelpText);
-        helpTextView.setText(Html.fromHtml(context.getString(R.string.upload_help), Html.FROM_HTML_MODE_LEGACY));
-        helpTextView.setMovementMethod(LinkMovementMethod.getInstance()); // Enable link clicking
-
-        AlertDialog.Builder alertBuilder = new AlertDialog.Builder(context);
-        alertBuilder.setView(dialogView);
-        alertBuilder.setCancelable(true);
-        alertBuilder.setTitle(context.getString(R.string.upload_help_title));
-        alertBuilder.setPositiveButton(android.R.string.ok, (dialog, which) -> {
-        });
-        alertBuilder.setNeutralButton(R.string.view_manual, (dialog, which) -> {
-            Intent browserIntent = new Intent(Intent.ACTION_VIEW, Uri.parse("https://networksurvey.app/manual#data-upload"));
-            context.startActivity(browserIntent);
-        });
-        alertBuilder.create().show();
+        new UploadHelpDialogFragment()
+                .show(getChildFragmentManager(), UploadHelpDialogFragment.TAG);
     }
 
     /**
@@ -685,19 +667,8 @@ public class DashboardFragment extends AServiceDataFragment implements LocationL
      */
     private void showCdrHelpDialog()
     {
-        final Context context = getContext();
-        if (context == null) return;
-
-        LayoutInflater inflater = LayoutInflater.from(context);
-        View dialogView = inflater.inflate(R.layout.dialog_cdr_help, null);
-
-        AlertDialog.Builder alertBuilder = new AlertDialog.Builder(context);
-        alertBuilder.setView(dialogView);
-        alertBuilder.setCancelable(true);
-        alertBuilder.setTitle(context.getString(R.string.cdr_help_title));
-        alertBuilder.setPositiveButton(android.R.string.ok, (dialog, which) -> {
-        });
-        alertBuilder.create().show();
+        new CdrHelpDialogFragment()
+                .show(getChildFragmentManager(), CdrHelpDialogFragment.TAG);
     }
 
     /**
@@ -714,16 +685,8 @@ public class DashboardFragment extends AServiceDataFragment implements LocationL
      */
     private void showFileMqttHelpDialog()
     {
-        final Context context = getContext();
-        if (context == null) return;
-
-        AlertDialog.Builder alertBuilder = new AlertDialog.Builder(context);
-        alertBuilder.setCancelable(true);
-        alertBuilder.setTitle(context.getString(R.string.file_help_title));
-        alertBuilder.setMessage(getText(R.string.file_help));
-        alertBuilder.setPositiveButton(android.R.string.ok, (dialog, which) -> {
-        });
-        alertBuilder.create().show();
+        new FileMqttHelpDialogFragment()
+                .show(getChildFragmentManager(), FileMqttHelpDialogFragment.TAG);
     }
 
     /**
@@ -731,24 +694,8 @@ public class DashboardFragment extends AServiceDataFragment implements LocationL
      */
     private void showNsAnalyticsHelpDialog()
     {
-        final Context context = getContext();
-        if (context == null) return;
-
-        AlertDialog.Builder alertBuilder = new AlertDialog.Builder(context);
-        alertBuilder.setCancelable(true);
-        alertBuilder.setTitle("NS Analytics");
-        alertBuilder.setMessage("""
-                NS Analytics provides cloud-based storage and analysis of network survey data.
-                
-                When connected to a workspace:
-                • NS Analytics Survey data is uploaded to the cloud
-                • Data includes cellular, Wi-Fi, Bluetooth, and GNSS records
-                • You can start and stop surveys specific to NS Analytics
-                
-                Click 'Open Details' to configure upload settings and manage your workspace connection.""");
-        alertBuilder.setPositiveButton(android.R.string.ok, (dialog, which) -> {
-        });
-        alertBuilder.create().show();
+        new NsAnalyticsHelpDialogFragment()
+                .show(getChildFragmentManager(), NsAnalyticsHelpDialogFragment.TAG);
     }
 
     @SuppressLint("ClickableViewAccessibility")
