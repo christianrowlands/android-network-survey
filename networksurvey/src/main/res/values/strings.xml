@@ -1002,6 +1002,7 @@
     <string name="ns_analytics_upload_button_uploading">Uploading…</string>
     <string name="ns_analytics_upload_button_no_records">No Records</string>
     <string name="ns_analytics_upload_button_unavailable">Not Available</string>
+    <string name="ns_analytics_open_dashboard">Open NS Analytics</string>
 
     <!-- QR Code Error Messages -->
     <string name="qr_code_data_too_large_title">QR Code Error</string>

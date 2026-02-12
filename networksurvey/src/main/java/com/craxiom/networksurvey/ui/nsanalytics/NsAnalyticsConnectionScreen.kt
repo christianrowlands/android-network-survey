@@ -895,6 +895,35 @@ private fun WorkspaceStatusCard(
                     style = MaterialTheme.typography.bodySmall,
                     color = Color.Gray
                 )
+
+                workspaceId?.let { id ->
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.clickable {
+                            val encodedId = Uri.encode(id)
+                            openUrlInBrowser(
+                                context,
+                                "https://analytics.networksurvey.app?w=$encodedId"
+                            )
+                        }
+                    ) {
+                        Text(
+                            text = stringResource(R.string.ns_analytics_open_dashboard),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.primary,
+                            fontWeight = FontWeight.Medium
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Icon(
+                            painter = painterResource(R.drawable.ic_open_details),
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(14.dp)
+                        )
+                    }
+                }
             }
         }
     }
