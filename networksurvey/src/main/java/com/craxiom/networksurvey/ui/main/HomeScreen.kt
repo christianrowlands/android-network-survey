@@ -210,6 +210,13 @@ fun getAppBarActions(
                 onClick = {
                     navController.navigate(NavDrawerOption.SurveyMonitor.name)
                 }
+            ),
+            AppBarAction(
+                icon = R.drawable.ic_ns_analytics,
+                description = R.string.ns_analytics,
+                onClick = {
+                    navController.navigate(NavDrawerOption.NsAnalyticsConnection.name)
+                }
             )
         )
 
