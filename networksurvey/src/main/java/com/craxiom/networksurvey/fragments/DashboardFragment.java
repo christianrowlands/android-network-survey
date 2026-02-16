@@ -68,6 +68,7 @@ import com.craxiom.networksurvey.ui.main.NsAnalyticsHelpDialogFragment;
 import com.craxiom.networksurvey.ui.main.PhoneStateHelpDialogFragment;
 import com.craxiom.networksurvey.ui.main.SharedViewModel;
 import com.craxiom.networksurvey.ui.main.UploadHelpDialogFragment;
+import com.craxiom.networksurvey.ui.dashboard.LoggingControlComposeHelper;
 import com.craxiom.networksurvey.ui.nsanalytics.NsAnalyticsComposeHelper;
 import com.craxiom.networksurvey.util.BatteryOptimizationHelper;
 import com.craxiom.networksurvey.util.LocationHintManager;
@@ -91,8 +92,6 @@ import timber.log.Timber;
 
 /**
  * This fragment displays a dashboard to the user with various status information
- *
- * @since 1.10.0
  */
 public class DashboardFragment extends AServiceDataFragment implements LocationListener, IConnectionStateListener, ILoggingChangeListener, SharedPreferences.OnSharedPreferenceChangeListener, BatteryMonitor.IBatteryLevelListener, NetworkSurveyService.IQueueBackpressureStateListener, NetworkSurveyService.IMqttDropModeStateListener
 {
@@ -106,6 +105,15 @@ public class DashboardFragment extends AServiceDataFragment implements LocationL
     private FragmentDashboardBinding binding;
     private DashboardViewModel viewModel;
     private Set<SurveyTypes> currentActiveSurveys = new LinkedHashSet<>();
+
+    // State for logging card (Compose)
+    private boolean cellularLoggingEnabled = false;
+    private boolean phoneStateLoggingEnabled = false;
+    private boolean phoneStateAutoStarted = false;
+    private boolean wifiLoggingEnabled = false;
+    private boolean bluetoothLoggingEnabled = false;
+    private boolean gnssLoggingEnabled = false;
+    private boolean cdrLoggingEnabled = false;
 
     // State for NS Analytics card
     private boolean nsAnalyticsSurveyActive = false;
@@ -150,6 +158,7 @@ public class DashboardFragment extends AServiceDataFragment implements LocationL
 
         initializeLocationTextView();
         initializeUiListeners();
+        initializeLoggingCard();
         initializeObservers();
         initializeUploadUiState();
         initializeNsAnalyticsCard();
@@ -396,85 +405,6 @@ public class DashboardFragment extends AServiceDataFragment implements LocationL
         binding.locationCard.locationHint.setOnClickListener(v -> navigateToSettings());
         setupCopyOnLongPress();
 
-        initializeLoggingSwitch(binding.cellularLoggingToggleSwitch, (newEnabledState, toggleSwitch) -> {
-            if (newEnabledState && checkBatteryOptimizationBeforeLogging())
-            {
-                // Battery optimization dialog will be shown, don't start logging yet
-                toggleSwitch.setChecked(false);
-                return;
-            }
-            viewModel.setCellularLoggingEnabled(newEnabledState);
-            toggleCellularLogging(newEnabledState);
-        });
-
-        initializeLoggingSwitch(binding.phoneStateLoggingToggleSwitch, (newEnabledState, toggleSwitch) -> {
-            if (newEnabledState && checkBatteryOptimizationBeforeLogging())
-            {
-                toggleSwitch.setChecked(false);
-                return;
-            }
-            viewModel.setPhoneStateLoggingEnabled(newEnabledState);
-            togglePhoneStateLogging(newEnabledState);
-        });
-
-        initializeLoggingSwitch(binding.wifiLoggingToggleSwitch, (newEnabledState, toggleSwitch) -> {
-            if (newEnabledState && checkBatteryOptimizationBeforeLogging())
-            {
-                // Battery optimization dialog will be shown, don't start logging yet
-                toggleSwitch.setChecked(false);
-                return;
-            }
-            viewModel.setWifiLoggingEnabled(newEnabledState);
-            toggleWifiLogging(newEnabledState);
-        });
-
-        initializeLoggingSwitch(binding.bluetoothLoggingToggleSwitch, (newEnabledState, toggleSwitch) -> {
-            if (newEnabledState && (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && missingAnyPermissions(NetworkSurveyActivity.BLUETOOTH_PERMISSIONS)))
-            {
-                toggleSwitch.setChecked(false);
-                showBluetoothPermissionRationaleAndRequestPermissions();
-                return;
-            }
-
-            if (newEnabledState && checkBatteryOptimizationBeforeLogging())
-            {
-                // Battery optimization dialog will be shown, don't start logging yet
-                toggleSwitch.setChecked(false);
-                return;
-            }
-            viewModel.setBluetoothLoggingEnabled(newEnabledState);
-            toggleBluetoothLogging(newEnabledState);
-        });
-
-        initializeLoggingSwitch(binding.gnssLoggingToggleSwitch, (newEnabledState, toggleSwitch) -> {
-            if (newEnabledState && checkBatteryOptimizationBeforeLogging())
-            {
-                // Battery optimization dialog will be shown, don't start logging yet
-                toggleSwitch.setChecked(false);
-                return;
-            }
-            viewModel.setGnssLoggingEnabled(newEnabledState);
-            toggleGnssLogging(newEnabledState);
-        });
-
-        initializeLoggingSwitch(binding.cdrLoggingToggleSwitch, (newEnabledState, toggleSwitch) -> {
-            if (newEnabledState && (missingAnyPermissions(CDR_REQUIRED_PERMISSIONS) || missingAnyPermissions(CDR_OPTIONAL_PERMISSIONS)))
-            {
-                toggleSwitch.setChecked(false);
-                showCdrPermissionRationaleAndRequestPermissions();
-                return;
-            }
-
-            if (newEnabledState && checkBatteryOptimizationBeforeLogging())
-            {
-                // Battery optimization dialog will be shown, don't start logging yet
-                toggleSwitch.setChecked(false);
-                return;
-            }
-            viewModel.setCdrLoggingEnabled(newEnabledState);
-            toggleCdrLogging(newEnabledState);
-        });
-
         final Context context = getContext();
         if (context != null)
         {
@@ -514,8 +444,6 @@ public class DashboardFragment extends AServiceDataFragment implements LocationL
         binding.mqttFragmentButton.setOnClickListener(c -> navigateToMqttFragment());
 
         binding.uploadHelpIcon.setOnClickListener(c -> showUploadHelpDialog());
-        binding.cdrHelpIcon.setOnClickListener(c -> showCdrHelpDialog());
-        binding.phoneStateHelpIcon.setOnClickListener(c -> showPhoneStateHelpDialog());
         binding.fileHelpIcon.setOnClickListener(c -> showFileMqttHelpDialog());
         binding.mqttHelpIcon.setOnClickListener(c -> showFileMqttHelpDialog());
     }
@@ -785,6 +713,106 @@ public class DashboardFragment extends AServiceDataFragment implements LocationL
         {
             binding.dbLoggingCardView.setVisibility(View.GONE);
         }
+    }
+
+    /**
+     * Initializes the Compose-based logging card by setting the ViewCompositionStrategy
+     * and performing the initial render.
+     */
+    private void initializeLoggingCard()
+    {
+        if (binding == null) return;
+
+        ComposeView composeView = binding.loggingComposeView;
+        composeView.setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed.INSTANCE);
+        updateLoggingComposeView();
+    }
+
+    /**
+     * Re-renders the Compose logging card with the current state and toggle callbacks.
+     */
+    private void updateLoggingComposeView()
+    {
+        if (binding == null) return;
+
+        LoggingControlComposeHelper.setupLoggingCard(
+                binding.loggingComposeView,
+                cellularLoggingEnabled,
+                phoneStateLoggingEnabled,
+                phoneStateAutoStarted,
+                wifiLoggingEnabled,
+                bluetoothLoggingEnabled,
+                gnssLoggingEnabled,
+                cdrLoggingEnabled,
+                newState -> {
+                    if (newState && checkBatteryOptimizationBeforeLogging())
+                    {
+                        updateLoggingComposeView();
+                        return;
+                    }
+                    viewModel.setCellularLoggingEnabled(newState);
+                    toggleCellularLogging(newState);
+                },
+                newState -> {
+                    if (newState && checkBatteryOptimizationBeforeLogging())
+                    {
+                        updateLoggingComposeView();
+                        return;
+                    }
+                    viewModel.setPhoneStateLoggingEnabled(newState);
+                    togglePhoneStateLogging(newState);
+                },
+                newState -> {
+                    if (newState && checkBatteryOptimizationBeforeLogging())
+                    {
+                        updateLoggingComposeView();
+                        return;
+                    }
+                    viewModel.setWifiLoggingEnabled(newState);
+                    toggleWifiLogging(newState);
+                },
+                newState -> {
+                    if (newState && (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && missingAnyPermissions(NetworkSurveyActivity.BLUETOOTH_PERMISSIONS)))
+                    {
+                        showBluetoothPermissionRationaleAndRequestPermissions();
+                        updateLoggingComposeView();
+                        return;
+                    }
+                    if (newState && checkBatteryOptimizationBeforeLogging())
+                    {
+                        updateLoggingComposeView();
+                        return;
+                    }
+                    viewModel.setBluetoothLoggingEnabled(newState);
+                    toggleBluetoothLogging(newState);
+                },
+                newState -> {
+                    if (newState && checkBatteryOptimizationBeforeLogging())
+                    {
+                        updateLoggingComposeView();
+                        return;
+                    }
+                    viewModel.setGnssLoggingEnabled(newState);
+                    toggleGnssLogging(newState);
+                },
+                newState -> {
+                    if (newState && (missingAnyPermissions(CDR_REQUIRED_PERMISSIONS) || missingAnyPermissions(CDR_OPTIONAL_PERMISSIONS)))
+                    {
+                        showCdrPermissionRationaleAndRequestPermissions();
+                        updateLoggingComposeView();
+                        return;
+                    }
+                    if (newState && checkBatteryOptimizationBeforeLogging())
+                    {
+                        updateLoggingComposeView();
+                        return;
+                    }
+                    viewModel.setCdrLoggingEnabled(newState);
+                    toggleCdrLogging(newState);
+                },
+                this::showPhoneStateHelpDialog,
+                this::showCdrHelpDialog
+        );
     }
 
     private synchronized void updateLoggingState(NetworkSurveyService networkSurveyService)
@@ -1156,106 +1184,71 @@ public class DashboardFragment extends AServiceDataFragment implements LocationL
     }
 
     /**
-     * Updates the cellular logging UI to indicate if logging is enabled or disabled.
+     * Updates the cellular logging state and re-renders the Compose logging card.
      *
      * @param enabled The new status indicating if logging is enabled.
      */
     private void updateCellularLogging(boolean enabled)
     {
-        binding.cellularLoggingStatus.setText(enabled ? R.string.logging_status_enabled : R.string.status_disabled);
-        binding.cellularLoggingToggleSwitch.setChecked(enabled);
-
-        ColorStateList colorStateList = null;
-        if (enabled) colorStateList = ColorStateList.valueOf(Color.GREEN);
-
-        binding.cellularIcon.setImageTintList(colorStateList);
+        cellularLoggingEnabled = enabled;
+        updateLoggingComposeView();
     }
 
     /**
-     * Updates the phone state logging UI to indicate if logging is enabled or disabled.
-     * When auto-started via cellular, shows a distinct status text.
+     * Updates the phone state logging state and re-renders the Compose logging card.
+     * Tracks whether phone state was auto-started via cellular for the subtitle.
      *
      * @param enabled The new status indicating if logging is enabled.
      */
     private void updatePhoneStateLogging(boolean enabled)
     {
-        if (enabled && service != null && service.isPhoneStateAutoStartedByCellular())
-        {
-            binding.phoneStateLoggingStatus.setText(R.string.phone_state_logging_status_auto);
-        } else
-        {
-            binding.phoneStateLoggingStatus.setText(enabled ? R.string.logging_status_enabled : R.string.status_disabled);
-        }
-        binding.phoneStateLoggingToggleSwitch.setChecked(enabled);
-
-        ColorStateList colorStateList = null;
-        if (enabled) colorStateList = ColorStateList.valueOf(Color.GREEN);
-
-        binding.phoneStateIcon.setImageTintList(colorStateList);
+        phoneStateLoggingEnabled = enabled;
+        phoneStateAutoStarted = enabled && service != null && service.isPhoneStateAutoStartedByCellular();
+        updateLoggingComposeView();
     }
 
     /**
-     * Updates the Wi-Fi logging UI to indicate if logging is enabled or disabled.
+     * Updates the Wi-Fi logging state and re-renders the Compose logging card.
      *
      * @param enabled The new status indicating if logging is enabled.
      */
     private void updateWifiLogging(boolean enabled)
     {
-        binding.wifiLoggingStatus.setText(enabled ? R.string.logging_status_enabled : R.string.status_disabled);
-        binding.wifiLoggingToggleSwitch.setChecked(enabled);
-
-        ColorStateList colorStateList = null;
-        if (enabled) colorStateList = ColorStateList.valueOf(Color.GREEN);
-
-        binding.wifiIcon.setImageTintList(colorStateList);
+        wifiLoggingEnabled = enabled;
+        updateLoggingComposeView();
     }
 
     /**
-     * Updates the bluetooth logging UI to indicate if logging is enabled or disabled.
+     * Updates the bluetooth logging state and re-renders the Compose logging card.
      *
      * @param enabled The new status indicating if logging is enabled.
      */
     private void updateBluetoothLogging(boolean enabled)
     {
-        binding.bluetoothLoggingStatus.setText(enabled ? R.string.logging_status_enabled : R.string.status_disabled);
-        binding.bluetoothLoggingToggleSwitch.setChecked(enabled);
-
-        ColorStateList colorStateList = null;
-        if (enabled) colorStateList = ColorStateList.valueOf(Color.GREEN);
-
-        binding.bluetoothIcon.setImageTintList(colorStateList);
+        bluetoothLoggingEnabled = enabled;
+        updateLoggingComposeView();
     }
 
     /**
-     * Updates the gnss logging UI to indicate if logging is enabled or disabled.
+     * Updates the GNSS logging state and re-renders the Compose logging card.
      *
      * @param enabled The new status indicating if logging is enabled.
      */
     private void updateGnssLogging(boolean enabled)
     {
-        binding.gnssLoggingStatus.setText(enabled ? R.string.logging_status_enabled : R.string.status_disabled);
-        binding.gnssLoggingToggleSwitch.setChecked(enabled);
-
-        ColorStateList colorStateList = null;
-        if (enabled) colorStateList = ColorStateList.valueOf(Color.GREEN);
-
-        binding.gnssIcon.setImageTintList(colorStateList);
+        gnssLoggingEnabled = enabled;
+        updateLoggingComposeView();
     }
 
     /**
-     * Updates the CDR logging UI to indicate if logging is enabled or disabled.
+     * Updates the CDR logging state and re-renders the Compose logging card.
      *
      * @param enabled The new status indicating if logging is enabled.
      */
     private void updateCdrLogging(boolean enabled)
     {
-        binding.cdrLoggingStatus.setText(enabled ? R.string.logging_status_enabled : R.string.status_disabled);
-        binding.cdrLoggingToggleSwitch.setChecked(enabled);
-
-        ColorStateList colorStateList = null;
-        if (enabled) colorStateList = ColorStateList.valueOf(Color.GREEN);
-
-        binding.cdrIcon.setImageTintList(colorStateList);
+        cdrLoggingEnabled = enabled;
+        updateLoggingComposeView();
     }
 
     /**
