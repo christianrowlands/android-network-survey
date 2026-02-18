@@ -1,5 +1,25 @@
 # Changelog
 
+## [1.49](https://github.com/christianrowlands/android-network-survey/releases/tag/v1.49) - 2026-02-18
+
+**BUG FIXES**
+* Fix a race condition crash related to layout measurement by removing the focusable aspect of certain Compose components.
+* Fix the position of the C/N0 indicators on the GNSS Sky View meter bar when in landscape mode.
+* Fix resource not found crashes by replacing additional PNG icons with SVG versions.
+
+**NEW FEATURES**
+* Redesign the File Logging section of the Dashboard UI to be more user friendly, and rewrite it in Jetpack Compose.
+* Rework Phone State surveys to be independent of the cellular and device status surveys. Phone state surveys can now be started and stopped independently for file logging, MQTT streaming, NS Analytics uploads, and gRPC streaming. An auto-start setting ties phone state surveys to the cellular survey.
+* Add a custom landscape view for the GNSS Sky View to better fit the sky view, C/N0 meter, and legend on the screen.
+* Add links to the NS Analytics web app and analytics details screen from the app.
+
+**IMPROVEMENTS**
+* Improve the help dialogs for phone state, CDR, file vs MQTT, upload, and analytics to use a more modern UI approach.
+* Update the phone state icon.
+* Upgrade AGP to version 9.0.0.
+* Upgrade the Java version to 21 in the CI/CD pipeline.
+* Update all libraries and the Kotlin version to the latest.
+
 ## [1.48](https://github.com/christianrowlands/android-network-survey/releases/tag/v1.48) - 2026-01-29
 
 **BUG FIXES**
