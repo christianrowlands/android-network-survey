@@ -39,7 +39,7 @@ jobs:
 
       # Only upload the reports on failure
       - name: Upload Reports
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: Test-Reports
           path: networksurvey/build/reports
@@ -48,9 +48,6 @@ jobs:
   buildRelease:
     needs: test
     runs-on: ubuntu-latest
-
-    outputs:
-      basename: ${{ steps.basenamestep.outputs.basename }}
 
     steps:
       - name: Checkout the code
@@ -85,19 +82,11 @@ jobs:
           -PnsApiKey=$NS_API_KEY
           -PocidApiKey=$OCID_API_KEY
 
-      - name: Get base name
-        id: basenamestep
-        run: |
-          base_name=$(./gradlew :networksurvey:properties -q | grep 'archivesBaseName:' | awk '{print $2}')
-          echo "basename=$base_name" >> $GITHUB_ENV
-          echo "basename=$base_name" >> "$GITHUB_OUTPUT"
-          echo $base_name
-
       - name: Upload CDR APK
         uses: actions/upload-artifact@v6
         with:
           name: Network Survey CDR Release APK
-          path: networksurvey/build/outputs/apk/cdr/release/${{ env.basename }}-cdr-release.apk
+          path: networksurvey/build/outputs/apk/cdr/release/*.apk
 
       - name: Save google-services.json
         env:
@@ -123,7 +112,7 @@ jobs:
         uses: actions/upload-artifact@v6
         with:
           name: Network Survey Regular Release APK
-          path: networksurvey/build/outputs/apk/regular/release/${{ env.basename }}-regular-release.apk
+          path: networksurvey/build/outputs/apk/regular/release/*.apk
 
       - name: Build Regular Release Bundle
         env:
@@ -141,10 +130,10 @@ jobs:
           -PocidApiKey=$OCID_API_KEY
 
       - name: Upload Release Bundle
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: Network Survey Release Bundle
-          path: networksurvey/build/outputs/bundle/regularRelease/${{ env.basename }}-regular-release.aab
+          path: networksurvey/build/outputs/bundle/regularRelease/*.aab
 
   uploadRelease:
     needs: buildRelease
@@ -152,19 +141,19 @@ jobs:
 
     steps:
       - name: Download Regular APK
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v6
         with:
           name: Network Survey Regular Release APK
           path: networksurvey/build/outputs/apk/regular/release/
 
       - name: Download CDR APK
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v6
         with:
           name: Network Survey CDR Release APK
           path: networksurvey/build/outputs/apk/cdr/release/
 
       - name: Download Release Bundle
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v6
         with:
           name: Network Survey Release Bundle
           path: networksurvey/build/outputs/bundle/regularRelease/
@@ -185,6 +174,6 @@ jobs:
         with:
           serviceAccountJsonPlainText: ${{ secrets.PLAYSTORE_ACCOUNT_KEY }}
           packageName: com.craxiom.networksurvey
-          releaseFiles: networksurvey/build/outputs/bundle/regularRelease/${{ needs.buildRelease.outputs.basename }}-regular-release.aab
+          releaseFiles: networksurvey/build/outputs/bundle/regularRelease/*.aab
           track: internal
           status: completed

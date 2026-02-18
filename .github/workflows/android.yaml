@@ -35,14 +35,11 @@ jobs:
           -PnsApiKey=$NS_API_KEY
           -PocidApiKey=$OCID_API_KEY
 
-      - name: Get APK name
-        run: echo "base_name=`./gradlew :networksurvey:properties -q | grep 'archivesBaseName:' | awk '{print $2}'`" >> $GITHUB_ENV
-
       - name: Upload CDR APK
         uses: actions/upload-artifact@v6
         with:
           name: Network Survey CDR Debug APK
-          path: networksurvey/build/outputs/apk/cdr/debug/${{ env.base_name }}-cdr-debug.apk
+          path: networksurvey/build/outputs/apk/cdr/debug/*.apk
 
       - name: Save google-services.json
         env:
@@ -61,7 +58,7 @@ jobs:
         uses: actions/upload-artifact@v6
         with:
           name: Network Survey Regular Debug APK
-          path: networksurvey/build/outputs/apk/regular/debug/${{ env.base_name }}-regular-debug.apk
+          path: networksurvey/build/outputs/apk/regular/debug/*.apk
 
 
   test:
@@ -95,7 +92,7 @@ jobs:
 
       # Only upload the reports on failure
       - name: Upload Reports
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: Test-Reports
           path: networksurvey/build/reports
