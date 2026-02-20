@@ -28,7 +28,6 @@ import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AlertDialog;
-import androidx.appcompat.widget.SwitchCompat;
 import androidx.compose.ui.platform.ComposeView;
 import androidx.compose.ui.platform.ViewCompositionStrategy;
 import androidx.core.app.ActivityCompat;
@@ -62,13 +61,13 @@ import com.craxiom.networksurvey.model.SurveyTypes;
 import com.craxiom.networksurvey.model.UploadScanningResult;
 import com.craxiom.networksurvey.services.BatteryMonitor;
 import com.craxiom.networksurvey.services.NetworkSurveyService;
+import com.craxiom.networksurvey.ui.dashboard.LoggingControlComposeHelper;
 import com.craxiom.networksurvey.ui.main.CdrHelpDialogFragment;
 import com.craxiom.networksurvey.ui.main.FileMqttHelpDialogFragment;
 import com.craxiom.networksurvey.ui.main.NsAnalyticsHelpDialogFragment;
 import com.craxiom.networksurvey.ui.main.PhoneStateHelpDialogFragment;
 import com.craxiom.networksurvey.ui.main.SharedViewModel;
 import com.craxiom.networksurvey.ui.main.UploadHelpDialogFragment;
-import com.craxiom.networksurvey.ui.dashboard.LoggingControlComposeHelper;
 import com.craxiom.networksurvey.ui.nsanalytics.NsAnalyticsComposeHelper;
 import com.craxiom.networksurvey.util.BatteryOptimizationHelper;
 import com.craxiom.networksurvey.util.LocationHintManager;
@@ -76,6 +75,7 @@ import com.craxiom.networksurvey.util.MdmUtils;
 import com.craxiom.networksurvey.util.MeasurementFormatter;
 import com.craxiom.networksurvey.util.NsUtils;
 import com.craxiom.networksurvey.util.PreferenceUtils;
+import com.google.android.material.materialswitch.MaterialSwitch;
 import com.google.android.material.snackbar.Snackbar;
 import com.google.common.base.Strings;
 
@@ -627,14 +627,14 @@ public class DashboardFragment extends AServiceDataFragment implements LocationL
     }
 
     @SuppressLint("ClickableViewAccessibility")
-    private void initializeLoggingSwitch(SwitchCompat loggingSwitch, BiConsumer<Boolean, SwitchCompat> switchAction)
+    private void initializeLoggingSwitch(MaterialSwitch loggingSwitch, BiConsumer<Boolean, MaterialSwitch> switchAction)
     {
         loggingSwitch.setOnClickListener((buttonView) -> {
             if (buttonView.isPressed())
             {
-                SwitchCompat switchCompat = (SwitchCompat) buttonView;
-                boolean newEnabledState = switchCompat.isChecked();
-                switchAction.accept(newEnabledState, switchCompat);
+                MaterialSwitch materialSwitch = (MaterialSwitch) buttonView;
+                boolean newEnabledState = materialSwitch.isChecked();
+                switchAction.accept(newEnabledState, materialSwitch);
             }
         });
         loggingSwitch.setOnTouchListener((buttonView, motionEvent) -> motionEvent.getActionMasked() == 2);

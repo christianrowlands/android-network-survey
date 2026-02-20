@@ -7,7 +7,7 @@ plugins {
     alias(libs.plugins.kotlin.parcelize)
     //alias(libs.plugins.google.devtools.ksp)
     id 'com.google.devtools.ksp'
-    id 'com.github.jk1.dependency-license-report' version '3.0.1'
+    id 'com.github.jk1.dependency-license-report' version '3.1.1'
 }
 
 // Exclude google-services and crashlytics if the json file is missing and for debug builds
@@ -130,12 +130,12 @@ dependencies {
     implementation "androidx.navigation:navigation-ui-ktx:${navigationVersion}"
     implementation "androidx.navigation:navigation-compose:${navigationVersion}"
     implementation "androidx.viewpager2:viewpager2:1.1.0"
-    implementation "androidx.activity:activity-compose:1.12.3"
+    implementation "androidx.activity:activity-compose:1.12.4"
     implementation "androidx.drawerlayout:drawerlayout:1.2.0"
     implementation 'com.google.android.flexbox:flexbox:3.0.0'
     implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-android:1.10.2'
 
-    implementation 'com.craxiom:mqtt-library:1.1.0'
+    implementation 'com.craxiom:mqtt-library:1.2.0'
     implementation "com.google.protobuf:protobuf-java-util:4.33.5"
     implementation "io.grpc:grpc-okhttp:${grpcVersion}"
     implementation "io.grpc:grpc-android:${grpcVersion}"
@@ -165,7 +165,7 @@ dependencies {
     implementation "androidx.room:room-runtime:$room_version"
 
     implementation "com.google.dagger:dagger:$hilt_version"
-    implementation 'androidx.compose.ui:ui-viewbinding:1.10.2'
+    implementation 'androidx.compose.ui:ui-viewbinding:1.10.3'
     ksp "androidx.room:room-compiler:$room_version"
     kapt "com.google.dagger:dagger-compiler:$hilt_version"
     implementation "com.google.dagger:hilt-android:$hilt_version"
@@ -182,7 +182,7 @@ dependencies {
     implementation "androidx.work:work-runtime:2.11.1"
 
     // Compose
-    def composeBom = platform('androidx.compose:compose-bom:2026.01.01')
+    def composeBom = platform('androidx.compose:compose-bom:2026.02.00')
     implementation(composeBom)
     androidTestImplementation(composeBom)
 
@@ -197,7 +197,7 @@ dependencies {
     implementation "androidx.compose.material:material-icons-core"
     implementation "androidx.lifecycle:lifecycle-viewmodel-compose"
     implementation "androidx.lifecycle:lifecycle-runtime-compose"
-    implementation 'androidx.compose.ui:ui-tooling:1.10.2'
+    implementation 'androidx.compose.ui:ui-tooling:1.10.3'
     implementation "com.google.accompanist:accompanist-themeadapter-material:0.36.0"
 
     // Only include firebase in the google play build

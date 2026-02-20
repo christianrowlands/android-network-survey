@@ -19,7 +19,6 @@ import android.widget.Toast;
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.appcompat.app.AlertDialog;
-import androidx.appcompat.widget.SwitchCompat;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import androidx.fragment.app.FragmentActivity;
@@ -36,6 +35,7 @@ import com.craxiom.networksurvey.mqtt.MqttConnectionInfo;
 import com.craxiom.networksurvey.services.NetworkSurveyService;
 import com.craxiom.networksurvey.ui.main.SharedViewModel;
 import com.craxiom.networksurvey.util.MdmUtils;
+import com.google.android.material.materialswitch.MaterialSwitch;
 
 import timber.log.Timber;
 
@@ -47,12 +47,12 @@ public class MqttFragment extends AConnectionFragment<NetworkSurveyService.Surve
 {
     private static final int ACCESS_BLUETOOTH_PERMISSION_REQUEST_ID = 30;
 
-    private SwitchCompat cellularStreamToggleSwitch;
-    private SwitchCompat phoneStateStreamToggleSwitch;
-    private SwitchCompat wifiStreamToggleSwitch;
-    private SwitchCompat bluetoothStreamToggleSwitch;
-    private SwitchCompat gnssStreamToggleSwitch;
-    private SwitchCompat deviceStatusStreamToggleSwitch;
+    private MaterialSwitch cellularStreamToggleSwitch;
+    private MaterialSwitch phoneStateStreamToggleSwitch;
+    private MaterialSwitch wifiStreamToggleSwitch;
+    private MaterialSwitch bluetoothStreamToggleSwitch;
+    private MaterialSwitch gnssStreamToggleSwitch;
+    private MaterialSwitch deviceStatusStreamToggleSwitch;
 
     private Button qrCodeScanButton;
 
@@ -124,10 +124,10 @@ public class MqttFragment extends AConnectionFragment<NetworkSurveyService.Surve
         bluetoothStreamToggleSwitch.setOnClickListener((buttonView) -> {
             if (buttonView.isPressed())
             {
-                SwitchCompat switchCompat = (SwitchCompat) buttonView;
-                if (switchCompat.isChecked() && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && missingBluetoothPermissions())
+                MaterialSwitch materialSwitch = (MaterialSwitch) buttonView;
+                if (materialSwitch.isChecked() && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && missingBluetoothPermissions())
                 {
-                    switchCompat.setChecked(false);
+                    materialSwitch.setChecked(false);
                     showBluetoothPermissionRationaleAndRequestPermissions();
                 }
             }

@@ -3,7 +3,7 @@
 
     <attr name="cardStyle" format="reference" />
 
-    
+
     <style name="NetworkSurveyTheme" parent="Theme.Material3.Dark.NoActionBar">
         <item name="colorPrimary">@color/md_theme_primary</item>
         <item name="colorOnPrimary">@color/md_theme_onPrimary</item>
@@ -75,7 +75,11 @@
     <style name="NetworkSurveyTheme.PopupOverlay" parent="ThemeOverlay.MaterialComponents.Dark" />
 
     <style name="ConnectionSwitchStyle">
-        <item name="colorControlActivated">@color/colorCardDark</item>
+        <item name="materialThemeOverlay">@style/ThemeOverlay.ConnectionSwitch</item>
+    </style>
+
+    <style name="ThemeOverlay.ConnectionSwitch" parent="">
+        <item name="colorPrimary">@color/colorCardDark</item>
     </style>
 
     <style name="CellularTitleText" parent="TextAppearance.AppCompat">
@@ -211,7 +215,7 @@
         <item name="android:textColor">@color/normalText</item>
     </style>
 
-    
+
     <style name="sky_legend_label">
         <item name="android:layout_height">wrap_content</item>
         <item name="android:layout_width">wrap_content</item>

@@ -654,7 +654,7 @@
                                     android:gravity="end"
                                     android:orientation="horizontal">
 
-                                    <androidx.appcompat.widget.SwitchCompat
+                                    <com.google.android.material.materialswitch.MaterialSwitch
                                         android:id="@+id/mqtt_connection_toggle_switch"
                                         android:layout_width="wrap_content"
                                         android:layout_height="wrap_content"

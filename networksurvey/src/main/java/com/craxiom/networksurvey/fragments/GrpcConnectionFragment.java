@@ -22,7 +22,6 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.Nullable;
-import androidx.appcompat.widget.SwitchCompat;
 import androidx.cardview.widget.CardView;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
@@ -36,6 +35,7 @@ import com.craxiom.networksurvey.R;
 import com.craxiom.networksurvey.constants.NetworkSurveyConstants;
 import com.craxiom.networksurvey.fragments.model.GrpcConnectionSettings;
 import com.craxiom.networksurvey.services.GrpcConnectionService;
+import com.google.android.material.materialswitch.MaterialSwitch;
 
 import java.net.URI;
 
@@ -57,7 +57,7 @@ public class GrpcConnectionFragment extends Fragment implements IConnectionState
 
     private CardView connectionStatusCardView;
     private TextView connectionStatusText;
-    private SwitchCompat grpcConnectionToggleSwitch;
+    private MaterialSwitch grpcConnectionToggleSwitch;
     private EditText grpcHostAddressEdit;
     private EditText grpcPortNumberEdit;
     private EditText deviceNameEdit;
@@ -68,12 +68,12 @@ public class GrpcConnectionFragment extends Fragment implements IConnectionState
     private Integer portNumber = NetworkSurveyConstants.DEFAULT_GRPC_PORT;
     private String deviceName = "";
 
-    private SwitchCompat cellularStreamToggleSwitch;
-    private SwitchCompat phoneStateStreamToggleSwitch;
-    private SwitchCompat wifiStreamToggleSwitch;
-    private SwitchCompat bluetoothStreamToggleSwitch;
-    private SwitchCompat gnssStreamToggleSwitch;
-    private SwitchCompat deviceStatusStreamToggleSwitch;
+    private MaterialSwitch cellularStreamToggleSwitch;
+    private MaterialSwitch phoneStateStreamToggleSwitch;
+    private MaterialSwitch wifiStreamToggleSwitch;
+    private MaterialSwitch bluetoothStreamToggleSwitch;
+    private MaterialSwitch gnssStreamToggleSwitch;
+    private MaterialSwitch deviceStatusStreamToggleSwitch;
 
     private boolean cellularStreamEnabled = true;
     private boolean phoneStateStreamEnabled = true;
