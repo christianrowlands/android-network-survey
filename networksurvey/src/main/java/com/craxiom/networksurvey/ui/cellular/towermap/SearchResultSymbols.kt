@@ -62,6 +62,7 @@ internal class SearchResultSymbolsNode(
                     addNumberProperty("createdAt", tower.createdAt)
                     addNumberProperty("updatedAt", tower.updatedAt)
                     addStringProperty("source", tower.source)
+                    tower.comments?.let { addStringProperty("comments", it) }
                     addNumberProperty("lat", tower.lat)
                     addNumberProperty("lon", tower.lon)
                 }

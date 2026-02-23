@@ -90,7 +90,6 @@ import com.craxiom.messaging.UmtsRecord
 import com.craxiom.networksurvey.BuildConfig
 import com.craxiom.networksurvey.R
 import com.craxiom.networksurvey.constants.NetworkSurveyConstants
-import com.craxiom.networksurvey.data.api.Tower
 import com.craxiom.networksurvey.model.CellularProtocol
 import com.craxiom.networksurvey.model.Plmn
 import com.craxiom.networksurvey.ui.activesurvey.model.SurveyTrack
@@ -112,7 +111,9 @@ import com.craxiom.networksurvey.ui.cellular.towermap.LineString
 import com.craxiom.networksurvey.ui.cellular.towermap.MapLibreMap
 import com.craxiom.networksurvey.ui.cellular.towermap.MapUiSettings
 import com.craxiom.networksurvey.ui.cellular.towermap.SearchResultSymbols
-import com.craxiom.networksurvey.ui.cellular.towermap.TowerInfoDialog
+import com.craxiom.networksurvey.ui.cellular.towermap.TowerBottomSheet
+import com.craxiom.networksurvey.ui.cellular.towermap.TowerCountBadge
+import com.craxiom.networksurvey.ui.cellular.towermap.TowerSheetState
 import com.craxiom.networksurvey.ui.cellular.towermap.TowerSymbols
 import com.craxiom.networksurvey.ui.cellular.towermap.rememberCameraPositionState
 import com.craxiom.networksurvey.ui.cellular.towermap.rememberCircleState
@@ -234,8 +235,7 @@ internal fun TowerMapScreen(
     val searchCidInput by viewModel.searchCidInput.collectAsStateWithLifecycle()
 
     var showInfoDialog by remember { mutableStateOf(false) }
-    var showTowerInfoDialog by remember { mutableStateOf(false) }
-    var selectedTower by remember { mutableStateOf<Tower?>(null) }
+    var towerSheetState by remember { mutableStateOf<TowerSheetState>(TowerSheetState.Hidden) }
     var showLayersDialog by remember { mutableStateOf(false) }
     var showSearchDialog by remember { mutableStateOf(false) }
     var showFiltersDialog by remember { mutableStateOf(false) }
@@ -393,9 +393,12 @@ internal fun TowerMapScreen(
                         viewModel.initMapLibre(mapView, map, style)
                     },
                     onMyLocationChanged = viewModel::updateMyLocation,
-                    onTowerClick = { tower ->
-                        selectedTower = tower
-                        showTowerInfoDialog = true
+                    onTowersClick = { towers ->
+                        towerSheetState = if (towers.size == 1) {
+                            TowerSheetState.TowerDetail(towers[0])
+                        } else {
+                            TowerSheetState.TowerList(towers)
+                        }
                     },
                 ) {
                     // Check if towers layer should be shown
@@ -407,7 +410,10 @@ internal fun TowerMapScreen(
                         // 2) Pull the “serving cell” IDs so we can highlight them
                         val servingCellInfo by viewModel.servingCells.collectAsStateWithLifecycle()
                         val servingIds =
-                            if (selectedSimIndex != -1 && servingCellInfo.containsKey(selectedSimIndex)) {
+                            if (selectedSimIndex != -1 && servingCellInfo.containsKey(
+                                    selectedSimIndex
+                                )
+                            ) {
                                 // Show only the selected SIM's serving cell
                                 servingCellInfo[selectedSimIndex]?.let {
                                     setOf(CellularUtils.getTowerId(it))
@@ -423,6 +429,11 @@ internal fun TowerMapScreen(
                         TowerSymbols(
                             towerWrapperList = towerWrapperList,
                             servingIds = servingIds
+                        )
+
+                        // 4) Count badges for multi-tower locations
+                        TowerCountBadge(
+                            towerWrapperList = towerWrapperList
                         )
 
                         // Display search result coverage circle first (behind the icon)
@@ -747,15 +758,10 @@ internal fun TowerMapScreen(
             TowerMapInfoDialog(onDismiss = { showInfoDialog = false })
         }
 
-        if (showTowerInfoDialog && selectedTower != null) {
-            TowerInfoDialog(
-                tower = selectedTower!!,
-                onDismiss = {
-                    showTowerInfoDialog = false
-                    selectedTower = null
-                }
-            )
-        }
+        TowerBottomSheet(
+            state = towerSheetState,
+            onStateChange = { towerSheetState = it }
+        )
 
         if (showLayersDialog) {
             val currentTileSource by viewModel.selectedMapTileSource.collectAsStateWithLifecycle()

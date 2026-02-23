@@ -72,6 +72,7 @@ internal class TowerSymbolsNode(
                 addNumberProperty("createdAt", tower.createdAt)
                 addNumberProperty("updatedAt", tower.updatedAt)
                 addStringProperty("source", tower.source)
+                tower.comments?.let { addStringProperty("comments", it) }
                 addNumberProperty("lat", tower.lat)
                 addNumberProperty("lon", tower.lon)
             }

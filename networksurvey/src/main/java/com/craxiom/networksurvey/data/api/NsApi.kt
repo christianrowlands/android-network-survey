@@ -83,7 +83,8 @@ data class Tower(
     @SerializedName("created_at") val createdAt: Long,
     @SerializedName("updated_at") val updatedAt: Long,
     @SerializedName("radio") val radio: String,
-    @SerializedName("source") val source: String
+    @SerializedName("source") val source: String,
+    @SerializedName("comments") val comments: String? = null
 )
 
 /**

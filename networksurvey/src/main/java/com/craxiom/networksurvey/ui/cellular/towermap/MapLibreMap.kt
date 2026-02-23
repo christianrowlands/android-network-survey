@@ -61,7 +61,7 @@ fun MapLibreMap(
     locationSettings: MapLocationSettings = DefaultMapLocationSettings,
     onMapReady: ((MapView, MapLibreMap, Style) -> Unit)? = null,
     onMyLocationChanged: (Location) -> Unit = {},
-    onTowerClick: ((Tower) -> Unit)? = null,
+    onTowersClick: ((List<Tower>) -> Unit)? = null,
     content: @Composable () -> Unit = {},
 ) {
     if (LocalInspectionMode.current) {
@@ -105,7 +105,7 @@ fun MapLibreMap(
                     symbolManagerSettings = currentSymbolManagerSettings,
                     paddingInsets = paddingInsets,
                     onMyLocationChanged = onMyLocationChanged,
-                    onTowerClick = onTowerClick,
+                    onTowersClick = onTowersClick,
                 )
                 content()
             }

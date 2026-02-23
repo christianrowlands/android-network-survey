@@ -1,25 +1,35 @@
 package com.craxiom.networksurvey.ui.cellular.towermap
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.AlertDialog
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -29,68 +39,236 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.craxiom.networksurvey.R
 import com.craxiom.networksurvey.data.api.Tower
+import com.craxiom.networksurvey.ui.cellular.model.TowerSource
 import com.craxiom.networksurvey.util.MeasurementFormatter
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 import java.util.concurrent.TimeUnit
 
+/**
+ * Represents the state of the tower bottom sheet.
+ */
+sealed class TowerSheetState {
+    data object Hidden : TowerSheetState()
+    data class TowerList(val towers: List<Tower>) : TowerSheetState()
+    data class TowerDetail(
+        val tower: Tower,
+        val returnToList: List<Tower>? = null
+    ) : TowerSheetState()
+}
+
+/**
+ * A bottom sheet that displays tower information. Shows a list view for multi-tower locations
+ * and a detail view for individual towers, with in-sheet navigation between them.
+ */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun TowerInfoDialog(
-    tower: Tower,
-    onDismiss: () -> Unit
+fun TowerBottomSheet(
+    state: TowerSheetState,
+    onStateChange: (TowerSheetState) -> Unit
 ) {
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Icon(
-                    painter = painterResource(id = R.drawable.ic_cell_tower),
-                    contentDescription = null,
-                    modifier = Modifier.size(24.dp),
-                    tint = MaterialTheme.colorScheme.primary
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(
-                    text = "Tower Information",
-                    style = MaterialTheme.typography.headlineSmall,
-                    fontWeight = FontWeight.Bold
+    if (state is TowerSheetState.Hidden) return
+
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+
+    ModalBottomSheet(
+        onDismissRequest = { onStateChange(TowerSheetState.Hidden) },
+        sheetState = sheetState
+    ) {
+        when (state) {
+            is TowerSheetState.TowerList -> {
+                TowerListView(
+                    towers = state.towers,
+                    onTowerSelected = { tower ->
+                        onStateChange(TowerSheetState.TowerDetail(tower, state.towers))
+                    }
                 )
             }
-        },
-        text = {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .verticalScroll(rememberScrollState()),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                // Network Identity Section (consolidated with coverage info)
-                NetworkIdentitySection(tower)
 
-                // Location Section
-                LocationSection(tower)
-
-                // Metadata Section
-                MetadataSection(tower)
+            is TowerSheetState.TowerDetail -> {
+                TowerDetailView(
+                    tower = state.tower,
+                    showBackButton = state.returnToList != null,
+                    onBack = {
+                        state.returnToList?.let {
+                            onStateChange(TowerSheetState.TowerList(it))
+                        }
+                    }
+                )
             }
-        },
-        confirmButton = {
-            TextButton(onClick = onDismiss) {
-                Text("Close")
+
+            is TowerSheetState.Hidden -> { /* handled above */ }
+        }
+    }
+}
+
+/**
+ * Displays a list of towers at a shared location, allowing the user to select one for details.
+ */
+@Composable
+private fun TowerListView(
+    towers: List<Tower>,
+    onTowerSelected: (Tower) -> Unit
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp)
+            .padding(bottom = 24.dp)
+    ) {
+        // Header
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.padding(bottom = 12.dp)
+        ) {
+            Icon(
+                painter = painterResource(id = R.drawable.ic_cell_tower),
+                contentDescription = null,
+                modifier = Modifier.size(24.dp),
+                tint = MaterialTheme.colorScheme.primary
+            )
+            Spacer(modifier = Modifier.width(8.dp))
+            Text(
+                text = "${towers.size} Towers at Location",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold
+            )
+        }
+
+        // Tower list
+        LazyColumn {
+            itemsIndexed(towers) { index, tower ->
+                TowerListRow(tower = tower, onClick = { onTowerSelected(tower) })
+                if (index < towers.size - 1) {
+                    HorizontalDivider(
+                        modifier = Modifier.padding(horizontal = 4.dp),
+                        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
+                    )
+                }
             }
         }
-    )
+    }
+}
+
+/**
+ * A single row in the tower list showing key identifiers and a navigation arrow.
+ */
+@Composable
+private fun TowerListRow(
+    tower: Tower,
+    onClick: () -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .padding(vertical = 12.dp, horizontal = 4.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.weight(1f)
+        ) {
+            ProtocolBadge(tower.radio)
+            Spacer(modifier = Modifier.width(12.dp))
+            Column {
+                Text(
+                    text = "MCC/MNC: ${tower.mcc}/${tower.mnc}",
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.Medium
+                )
+                Text(
+                    text = "Cell ID: ${tower.cid}",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+            Spacer(modifier = Modifier.width(8.dp))
+            SourceBadge(tower.source)
+        }
+
+        Icon(
+            imageVector = Icons.AutoMirrored.Filled.ArrowForward,
+            contentDescription = "View details",
+            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.size(20.dp)
+        )
+    }
+}
+
+/**
+ * Displays detailed information for a single tower within the bottom sheet.
+ */
+@Composable
+private fun TowerDetailView(
+    tower: Tower,
+    showBackButton: Boolean,
+    onBack: () -> Unit
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp)
+            .padding(bottom = 24.dp)
+            .verticalScroll(rememberScrollState()),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        // Header with optional back button
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            if (showBackButton) {
+                IconButton(
+                    onClick = onBack,
+                    modifier = Modifier.size(32.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                        contentDescription = "Back to list",
+                        tint = MaterialTheme.colorScheme.primary
+                    )
+                }
+                Spacer(modifier = Modifier.width(4.dp))
+            }
+            Icon(
+                painter = painterResource(id = R.drawable.ic_cell_tower),
+                contentDescription = null,
+                modifier = Modifier.size(24.dp),
+                tint = MaterialTheme.colorScheme.primary
+            )
+            Spacer(modifier = Modifier.width(8.dp))
+            Text(
+                text = "Tower Information",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold
+            )
+        }
+
+        // Network Identity Section
+        NetworkIdentitySection(tower)
+
+        // Location Section
+        LocationSection(tower)
+
+        // Comments Section (only for towers with comments)
+        if (!tower.comments.isNullOrBlank()) {
+            CommentsSection(tower.comments)
+        }
+
+        // Metadata Section
+        MetadataSection(tower)
+
+        Spacer(modifier = Modifier.height(8.dp))
+    }
 }
 
 @Composable
 private fun NetworkIdentitySection(tower: Tower) {
     val context = LocalContext.current
     Column {
-        // Section header with protocol badge on same line
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -98,12 +276,7 @@ private fun NetworkIdentitySection(tower: Tower) {
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Text(
-                text = "Network Identity",
-                style = MaterialTheme.typography.titleSmall,
-                fontWeight = FontWeight.SemiBold,
-                color = MaterialTheme.colorScheme.primary
-            )
+            SectionHeader("Network Identity")
             ProtocolBadge(tower.radio)
         }
 
@@ -119,7 +292,6 @@ private fun NetworkIdentitySection(tower: Tower) {
                     modifier = Modifier.padding(8.dp),
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    // Network Identifiers - MCC/MNC combined, Area separate
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween
@@ -128,7 +300,6 @@ private fun NetworkIdentitySection(tower: Tower) {
                         CompactInfoItem("Area", tower.area.toString())
                     }
 
-                    // Cell ID
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         verticalAlignment = Alignment.CenterVertically
@@ -145,7 +316,6 @@ private fun NetworkIdentitySection(tower: Tower) {
                         )
                     }
 
-                    // PCS/PCI if available
                     if (tower.unit > 0) {
                         Row(
                             modifier = Modifier.fillMaxWidth(),
@@ -163,8 +333,7 @@ private fun NetworkIdentitySection(tower: Tower) {
                         }
                     }
 
-                    // Coverage info (only for non-BTSearch)
-                    if (tower.source != "BTSearch") {
+                    if (tower.source != TowerSource.BTSearch.apiName) {
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.SpaceBetween
@@ -207,15 +376,37 @@ private fun LocationSection(tower: Tower) {
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
                         text = "${String.format("%.6f", tower.lat)}, ${
-                            String.format(
-                                "%.6f",
-                                tower.lon
-                            )
+                            String.format("%.6f", tower.lon)
                         }",
                         style = MaterialTheme.typography.bodyMedium,
                         fontWeight = FontWeight.Medium
                     )
                 }
+            }
+        }
+    }
+}
+
+/**
+ * Displays the comments/uwagi field for towers that have one.
+ */
+@Composable
+private fun CommentsSection(comments: String) {
+    Column {
+        SectionHeader("Comments")
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surface
+            ),
+            elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+        ) {
+            SelectionContainer {
+                Text(
+                    text = comments,
+                    style = MaterialTheme.typography.bodyMedium,
+                    modifier = Modifier.padding(8.dp)
+                )
             }
         }
     }
@@ -237,7 +428,6 @@ private fun MetadataSection(tower: Tower) {
                     modifier = Modifier.padding(8.dp),
                     verticalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
-                    // Data Source
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween,
@@ -248,25 +438,13 @@ private fun MetadataSection(tower: Tower) {
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
-                        Surface(
-                            color = MaterialTheme.colorScheme.secondaryContainer,
-                            shape = RoundedCornerShape(4.dp)
-                        ) {
-                            Text(
-                                text = tower.source,
-                                style = MaterialTheme.typography.labelSmall,
-                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
-                                color = MaterialTheme.colorScheme.onSecondaryContainer
-                            )
-                        }
+                        SourceBadge(tower.source)
                     }
 
-                    // Timestamps with two-line format
-                    if (tower.source != "BTSearch") {
+                    if (tower.source != TowerSource.BTSearch.apiName) {
                         TimestampRow("First Seen", tower.createdAt)
                         TimestampRow("Updated", tower.updatedAt)
 
-                        // Changeable status
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.SpaceBetween
@@ -287,7 +465,6 @@ private fun MetadataSection(tower: Tower) {
                             )
                         }
                     } else {
-                        // For BTSearch, just show the update date
                         TimestampRow("Updated", tower.updatedAt)
                     }
                 }
@@ -325,7 +502,7 @@ private fun CompactInfoItem(label: String, value: String) {
 }
 
 @Composable
-private fun ProtocolBadge(protocol: String) {
+internal fun ProtocolBadge(protocol: String) {
     val (bgColor, textColor) = when (protocol.uppercase()) {
         "NR" -> MaterialTheme.colorScheme.primaryContainer to MaterialTheme.colorScheme.onPrimaryContainer
         "LTE" -> MaterialTheme.colorScheme.secondaryContainer to MaterialTheme.colorScheme.onSecondaryContainer
@@ -357,6 +534,21 @@ private fun ProtocolBadge(protocol: String) {
                 color = textColor
             )
         }
+    }
+}
+
+@Composable
+private fun SourceBadge(source: String) {
+    Surface(
+        color = MaterialTheme.colorScheme.secondaryContainer,
+        shape = RoundedCornerShape(4.dp)
+    ) {
+        Text(
+            text = source,
+            style = MaterialTheme.typography.labelSmall,
+            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+            color = MaterialTheme.colorScheme.onSecondaryContainer
+        )
     }
 }
 
@@ -393,7 +585,7 @@ private fun TimestampRow(label: String, timestamp: Long) {
 
 private fun getRelativeTimeString(timestamp: Long): String {
     val now = System.currentTimeMillis()
-    val time = timestamp * 1000 // Convert to milliseconds
+    val time = timestamp * 1000
     val diff = now - time
 
     return when {
@@ -402,27 +594,22 @@ private fun getRelativeTimeString(timestamp: Long): String {
             val minutes = TimeUnit.MILLISECONDS.toMinutes(diff)
             if (minutes == 1L) "1 min ago" else "$minutes mins ago"
         }
-
         diff < TimeUnit.DAYS.toMillis(1) -> {
             val hours = TimeUnit.MILLISECONDS.toHours(diff)
             if (hours == 1L) "1 hour ago" else "$hours hours ago"
         }
-
         diff < TimeUnit.DAYS.toMillis(7) -> {
             val days = TimeUnit.MILLISECONDS.toDays(diff)
             if (days == 1L) "Yesterday" else "$days days ago"
         }
-
         diff < TimeUnit.DAYS.toMillis(30) -> {
             val weeks = TimeUnit.MILLISECONDS.toDays(diff) / 7
             if (weeks == 1L) "1 week ago" else "$weeks weeks ago"
         }
-
         diff < TimeUnit.DAYS.toMillis(365) -> {
             val months = TimeUnit.MILLISECONDS.toDays(diff) / 30
             if (months == 1L) "1 month ago" else "$months months ago"
         }
-
         else -> {
             val years = TimeUnit.MILLISECONDS.toDays(diff) / 365
             if (years == 1L) "1 year ago" else "$years years ago"
@@ -431,13 +618,7 @@ private fun getRelativeTimeString(timestamp: Long): String {
 }
 
 private fun formatDateTime(timestamp: Long): String {
-    val date = Date(timestamp * 1000) // Convert to milliseconds
+    val date = Date(timestamp * 1000)
     val sdf = SimpleDateFormat("MMM dd, yyyy HH:mm", Locale.getDefault())
-    return sdf.format(date)
-}
-
-private fun formatDate(timestamp: Long): String {
-    val date = Date(timestamp * 1000) // Convert to milliseconds
-    val sdf = SimpleDateFormat("MMM dd, yyyy", Locale.getDefault())
     return sdf.format(date)
 }

@@ -37,7 +37,7 @@ internal class MapPropertiesNode(
     cameraPositionState: CameraPositionState,
     locationSettings: MapLocationSettings,
     private val onMyLocationChanged: (Location) -> Unit,
-    onTowerClick: ((Tower) -> Unit)? = null,
+    onTowersClick: ((List<Tower>) -> Unit)? = null,
 ) : MapNode {
     private var locationEngine: LocationEngine? = null
     private var isLocationCallbackRegistered = false
@@ -104,7 +104,7 @@ internal class MapPropertiesNode(
         }
 
         // Set up tower click listener
-        onTowerClick?.let { clickHandler ->
+        onTowersClick?.let { clickHandler ->
             map.addOnMapClickListener { point ->
                 // Query for tower features at the click point - check both regular towers and search results
                 val regularFeatures = map.queryRenderedFeatures(
@@ -121,13 +121,11 @@ internal class MapPropertiesNode(
                 val features = searchFeatures.ifEmpty { regularFeatures }
 
                 if (features.isNotEmpty()) {
-                    val feature = features[0]
-                    val properties = feature.properties()
-
-                    // Convert feature properties back to Tower object
-                    if (properties != null) {
+                    // Parse ALL features into a list of towers
+                    val towers = features.mapNotNull { feature ->
+                        val properties = feature.properties() ?: return@mapNotNull null
                         try {
-                            val tower = Tower(
+                            Tower(
                                 lat = properties.get("lat").asDouble,
                                 lon = properties.get("lon").asDouble,
                                 mcc = properties.get("mcc").asInt,
@@ -142,13 +140,20 @@ internal class MapPropertiesNode(
                                 createdAt = properties.get("createdAt").asLong,
                                 updatedAt = properties.get("updatedAt").asLong,
                                 radio = properties.get("radio").asString,
-                                source = properties.get("source").asString
+                                source = properties.get("source").asString,
+                                comments = properties.get("comments")?.let {
+                                    if (it.isJsonNull) null else it.asString
+                                }
                             )
-                            clickHandler(tower)
-                            return@addOnMapClickListener true
                         } catch (e: Exception) {
                             Timber.e(e, "Error parsing tower data from feature")
+                            null
                         }
+                    }
+
+                    if (towers.isNotEmpty()) {
+                        clickHandler(towers)
+                        return@addOnMapClickListener true
                     }
                 }
                 false
@@ -268,7 +273,7 @@ internal inline fun MapUpdater(
     symbolManagerSettings: MapSymbolManagerSettings,
     paddingInsets: PaddingValues,
     noinline onMyLocationChanged: (Location) -> Unit,
-    noinline onTowerClick: ((Tower) -> Unit)? = null,
+    noinline onTowersClick: ((List<Tower>) -> Unit)? = null,
 ) {
     val mapApplier = currentComposer.applier as MapApplier
     val map = mapApplier.map
@@ -288,7 +293,7 @@ internal inline fun MapUpdater(
                 cameraPositionState = cameraPositionState,
                 locationSettings = locationSettings,
                 onMyLocationChanged = onMyLocationChanged,
-                onTowerClick = onTowerClick,
+                onTowersClick = onTowersClick,
             )
         },
         update = {
