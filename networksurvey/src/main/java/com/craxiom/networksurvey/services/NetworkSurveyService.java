@@ -2007,9 +2007,13 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
                 {
                     provider = LocationManager.PASSIVE_PROVIDER;
                 }
-                locationManager.requestLocationUpdates(provider, smallestScanRate, 0f, primaryLocationListener, serviceLooper);
-
+                // Register the extra GPS/NETWORK listeners before the primary FUSED listener.
+                // On de-Googled OSs (e.g. GrapheneOS), FUSED_PROVIDER silently fails if GPS
+                // hardware isn't already active. Warming up GPS first ensures FUSED can
+                // piggyback on the active provider. This is a no-op on standard Android.
                 updateOtherLocationListeners(locationProviderPreference, locationManager, smallestScanRate);
+
+                locationManager.requestLocationUpdates(provider, smallestScanRate, 0f, primaryLocationListener, serviceLooper);
             } catch (Throwable t)
             {
                 // An IllegalArgumentException was occurring on phones that don't have a GPS provider, so some defensive coding here
