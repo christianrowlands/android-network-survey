@@ -134,7 +134,7 @@ class TowerMapLibreViewModel : ViewModel() {
     val selectedSimSubscriptionId = _selectedSimSubscriptionId.asStateFlow()
 
     // Map layer settings
-    private val _selectedMapTileSource = MutableStateFlow(MapTileSource.MAPTILER)
+    private val _selectedMapTileSource = MutableStateFlow(MapTileSource.OPENFREEMAP)
     val selectedMapTileSource = _selectedMapTileSource.asStateFlow()
 
     private val _showBeaconDbCoverage = MutableStateFlow(false)

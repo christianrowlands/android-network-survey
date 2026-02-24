@@ -289,7 +289,7 @@ internal fun TowerMapScreen(
                 DisposableEffect(Unit) {
                     val savedTileSource = preferences.getString(
                         getMapTileSourceKey(mapContext),
-                        MapTileSource.MAPTILER.name
+                        MapTileSource.OPENFREEMAP.name
                     )
                     // Only set the saved tile source if there's no map key error
                     // Otherwise, respect the ViewModel's fallback to OpenStreetMap
@@ -734,7 +734,7 @@ internal fun TowerMapScreen(
                     // Check if key failed AND initial preference was MapTiler but we fell back to OSM
                     val savedTileSource = preferences.getString(
                         NetworkSurveyConstants.PROPERTY_SELECTED_MAP_TILE_SOURCE,
-                        MapTileSource.MAPTILER.name
+                        MapTileSource.OPENFREEMAP.name
                     )
                     val initialPreferenceWasMapTiler =
                         MapTileSource.fromString(savedTileSource!!) == MapTileSource.MAPTILER

@@ -10,7 +10,7 @@ enum class MapTileSource(val displayName: String) {
 
     companion object {
         fun fromString(value: String): MapTileSource {
-            return entries.firstOrNull { it.name == value } ?: MAPTILER
+            return entries.firstOrNull { it.name == value } ?: OPENFREEMAP
         }
     }
 }
