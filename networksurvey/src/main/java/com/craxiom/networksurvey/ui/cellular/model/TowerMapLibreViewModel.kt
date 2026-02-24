@@ -202,7 +202,7 @@ class TowerMapLibreViewModel : ViewModel() {
                 val resp = nsApi.getApiKey()
                 if (resp.isSuccessful && resp.body() != null) {
                     _mapTilerKey.value = resp.body()!!.apiKey
-                    Timber.i("MapTiler API key loaded successfully (${_mapTilerKey.value})")
+                    Timber.i("MapTiler API key loaded successfully")
                 } else {
                     Timber.w("Failed to load MapTiler API key, falling back to OSM")
                     _mapKeyLoadError.value = true
