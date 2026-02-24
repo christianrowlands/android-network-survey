@@ -2028,7 +2028,15 @@ fun CombinedFiltersBottomSheet(
     )
 
     ModalBottomSheet(
-        onDismissRequest = onDismiss,
+        onDismissRequest = {
+            dismissKeyboard()
+            val mcc = mccInput.toIntOrNull() ?: 0
+            val mnc = mncInput.toIntOrNull() ?: 0
+            onSetPlmnFilter(mcc, mnc)
+            onSetRadioType(selectedRadio)
+            onSetTowerSource(selectedSource)
+            onDismiss()
+        },
         sheetState = bottomSheetState
     ) {
         Column(
@@ -2195,23 +2203,6 @@ fun CombinedFiltersBottomSheet(
                 }
             }
 
-            Spacer(modifier = Modifier.height(24.dp))
-
-            // Apply button
-            Button(
-                onClick = {
-                    dismissKeyboard()
-                    val mcc = mccInput.toIntOrNull() ?: 0
-                    val mnc = mncInput.toIntOrNull() ?: 0
-                    onSetPlmnFilter(mcc, mnc)
-                    onSetRadioType(selectedRadio)
-                    onSetTowerSource(selectedSource)
-                    onDismiss()
-                },
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Text("Apply Filters")
-            }
         }
     }
 }
