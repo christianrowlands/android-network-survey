@@ -38,8 +38,8 @@ import org.maplibre.android.maps.MapView
 import org.maplibre.android.maps.Style
 import org.maplibre.android.plugins.annotation.SymbolManager
 import timber.log.Timber
+import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlin.coroutines.resume
-import kotlin.coroutines.suspendCoroutine
 
 /**
  * A Compose container for a MapLibre [MapView].
@@ -60,6 +60,7 @@ fun MapLibreMap(
     symbolManagerSettings: MapSymbolManagerSettings = DefaultMapSymbolManagerSettings,
     locationSettings: MapLocationSettings = DefaultMapLocationSettings,
     onMapReady: ((MapView, MapLibreMap, Style) -> Unit)? = null,
+    onStyleLoadFailed: ((String) -> Unit)? = null,
     onMyLocationChanged: (Location) -> Unit = {},
     onTowersClick: ((List<Tower>) -> Unit)? = null,
     content: @Composable () -> Unit = {},
@@ -87,28 +88,39 @@ fun MapLibreMap(
     val currentMapLocationSettings by rememberUpdatedState(locationSettings)
     val currentSymbolManagerSettings by rememberUpdatedState(symbolManagerSettings)
     val currentOnMapReady by rememberUpdatedState(onMapReady)
+    val currentOnStyleLoadFailed by rememberUpdatedState(onStyleLoadFailed)
     val parentComposition = rememberCompositionContext()
 
     LaunchedEffect(styleUri, images) {
-        disposingComposition {
-            parentComposition.newComposition(
-                context,
-                mapView,
-                styleUri,
-                currentImages,
-                currentOnMapReady
-            ) {
-                MapUpdater(
-                    cameraPositionState = currentCameraState,
-                    uiSettings = currentUiSettings,
-                    locationSettings = currentMapLocationSettings,
-                    symbolManagerSettings = currentSymbolManagerSettings,
-                    paddingInsets = paddingInsets,
-                    onMyLocationChanged = onMyLocationChanged,
-                    onTowersClick = onTowersClick,
-                )
-                content()
+        val failureListener = MapView.OnDidFailLoadingMapListener { errorMessage ->
+            Timber.w("Map style failed to load: %s", errorMessage)
+            currentOnStyleLoadFailed?.invoke(errorMessage)
+        }
+        mapView.addOnDidFailLoadingMapListener(failureListener)
+
+        try {
+            disposingComposition {
+                parentComposition.newComposition(
+                    context,
+                    mapView,
+                    styleUri,
+                    currentImages,
+                    currentOnMapReady
+                ) {
+                    MapUpdater(
+                        cameraPositionState = currentCameraState,
+                        uiSettings = currentUiSettings,
+                        locationSettings = currentMapLocationSettings,
+                        symbolManagerSettings = currentSymbolManagerSettings,
+                        paddingInsets = paddingInsets,
+                        onMyLocationChanged = onMyLocationChanged,
+                        onTowersClick = onTowersClick,
+                    )
+                    content()
+                }
             }
+        } finally {
+            mapView.removeOnDidFailLoadingMapListener(failureListener)
         }
     }
 }
@@ -129,7 +141,7 @@ private suspend fun CompositionContext.newComposition(
     images: Map<String, Int>,
     onMapReady: ((MapView, MapLibreMap, Style) -> Unit)?,
     content: @Composable () -> Unit
-): Composition = suspendCoroutine { cont ->
+): Composition = suspendCancellableCoroutine { cont ->
     // 1) Wait for the MapLibreMap instance
     mapView.getMapAsync { map ->
         // 2) Ask MapLibre to load the style; this callback only fires once it's fully parsed & ready

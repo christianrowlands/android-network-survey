@@ -575,6 +575,8 @@
     <string name="allow_intent_control_summary_on">Other apps can start Network Survey</string>
     <string name="allow_intent_control_summary_off">Other apps will be blocked from starting Network Survey</string>
 
+    <string name="map_tile_source_runtime_fallback_toast">MapTiler unavailable; switched to OpenFreeMap</string>
+
     <string name="tower_map_config_title">Tower Map Config</string>
     <string name="coverage_area_category_title">Serving Cell Coverage</string>
     <string name="display_coverage_area_title">Display Serving Cell Coverage</string>

@@ -137,6 +137,11 @@ class TowerMapLibreViewModel : ViewModel() {
     private val _selectedMapTileSource = MutableStateFlow(MapTileSource.OPENFREEMAP)
     val selectedMapTileSource = _selectedMapTileSource.asStateFlow()
 
+    private var hasAttemptedStyleFallback = false
+
+    private val _runtimeStyleFallback = MutableStateFlow(false)
+    val runtimeStyleFallback = _runtimeStyleFallback.asStateFlow()
+
     private val _showBeaconDbCoverage = MutableStateFlow(false)
     val showBeaconDbCoverage = _showBeaconDbCoverage.asStateFlow()
 
@@ -293,6 +298,31 @@ class TowerMapLibreViewModel : ViewModel() {
 
     fun setSelectedMapTileSource(source: MapTileSource) {
         _selectedMapTileSource.value = source
+        if (source == MapTileSource.MAPTILER) {
+            hasAttemptedStyleFallback = false
+            _runtimeStyleFallback.value = false
+        }
+    }
+
+    /**
+     * Called when the map style fails to load at runtime (e.g. MapTiler quota exceeded / 403).
+     * Falls back to OpenFreeMap once and notifies the UI to show a toast.
+     */
+    fun onMapStyleLoadFailed(errorMessage: String) {
+        if (hasAttemptedStyleFallback) return
+        if (_selectedMapTileSource.value == MapTileSource.MAPTILER) {
+            Timber.w("MapTiler style load failed, falling back to OpenFreeMap: %s", errorMessage)
+            hasAttemptedStyleFallback = true
+            _runtimeStyleFallback.value = true
+            _selectedMapTileSource.value = MapTileSource.OPENFREEMAP
+        }
+    }
+
+    /**
+     * Clears the runtime style fallback flag so the toast is not re-shown on configuration changes.
+     */
+    fun clearRuntimeStyleFallback() {
+        _runtimeStyleFallback.value = false
     }
 
     fun setShowBeaconDbCoverage(show: Boolean) {

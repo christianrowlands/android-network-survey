@@ -392,6 +392,9 @@ internal fun TowerMapScreen(
                     onMapReady = { mapView, map, style ->
                         viewModel.initMapLibre(mapView, map, style)
                     },
+                    onStyleLoadFailed = { errorMessage ->
+                        viewModel.onMapStyleLoadFailed(errorMessage)
+                    },
                     onMyLocationChanged = viewModel::updateMyLocation,
                     onTowersClick = { towers ->
                         towerSheetState = if (towers.size == 1) {
@@ -750,6 +753,20 @@ internal fun TowerMapScreen(
                         ).show()
                     }
                     onDispose { }
+                }
+
+                // Show toast when MapTiler fails at runtime (e.g. quota exceeded)
+                val runtimeFallback by viewModel.runtimeStyleFallback.collectAsStateWithLifecycle()
+
+                LaunchedEffect(runtimeFallback) {
+                    if (runtimeFallback) {
+                        Toast.makeText(
+                            context,
+                            context.getString(R.string.map_tile_source_runtime_fallback_toast),
+                            Toast.LENGTH_LONG
+                        ).show()
+                        viewModel.clearRuntimeStyleFallback()
+                    }
                 }
             }
         }
