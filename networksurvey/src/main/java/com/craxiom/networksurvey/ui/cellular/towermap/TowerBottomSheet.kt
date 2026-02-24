@@ -38,8 +38,10 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.craxiom.networksurvey.R
+import com.craxiom.networksurvey.constants.NetworkSurveyConstants
 import com.craxiom.networksurvey.data.api.Tower
 import com.craxiom.networksurvey.ui.cellular.model.TowerSource
+import com.craxiom.networksurvey.util.CalculationUtils
 import com.craxiom.networksurvey.util.MeasurementFormatter
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -184,9 +186,15 @@ private fun TowerListRow(
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
+                val lteIds = getLteIds(tower)
+                if (lteIds != null) {
+                    Text(
+                        text = "eNB: ${lteIds.first} · Sector: ${lteIds.second}",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
             }
-            Spacer(modifier = Modifier.width(8.dp))
-            SourceBadge(tower.source)
         }
 
         Icon(
@@ -314,6 +322,17 @@ private fun NetworkIdentitySection(tower: Tower) {
                             style = MaterialTheme.typography.bodyLarge,
                             fontWeight = FontWeight.Medium
                         )
+                    }
+
+                    val lteIds = getLteIds(tower)
+                    if (lteIds != null) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            CompactInfoItem("eNB ID", lteIds.first.toString())
+                            CompactInfoItem("Sector ID", lteIds.second.toString())
+                        }
                     }
 
                     if (tower.unit > 0) {
@@ -621,4 +640,18 @@ private fun formatDateTime(timestamp: Long): String {
     val date = Date(timestamp * 1000)
     val sdf = SimpleDateFormat("MMM dd, yyyy HH:mm", Locale.getDefault())
     return sdf.format(date)
+}
+
+/**
+ * Derives the eNB ID and Sector ID from an LTE Cell ID, or returns null
+ * if the tower is not LTE or the Cell ID is not a valid LTE value.
+ */
+private fun getLteIds(tower: Tower): Pair<Int, Int>? {
+    if (!tower.radio.equals(NetworkSurveyConstants.LTE, ignoreCase = true)) return null
+    if (tower.cid !in 1..268_435_455L) return null
+    val cid = tower.cid.toInt()
+    return Pair(
+        CalculationUtils.getEnodebIdFromCellId(cid),
+        CalculationUtils.getSectorIdFromCellId(cid)
+    )
 }
