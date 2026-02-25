@@ -1840,6 +1840,10 @@ public class SurveyRecordProcessor
         // Validate that the required fields are present before proceeding further
         if (!validateBluetoothFields(sourceAddress)) return null;
 
+        final boolean hasBluetoothConnect = Build.VERSION.SDK_INT < Build.VERSION_CODES.S
+                || ActivityCompat.checkSelfPermission(context,
+                Manifest.permission.BLUETOOTH_CONNECT) == PackageManager.PERMISSION_GRANTED;
+
         final BluetoothRecordData.Builder dataBuilder = BluetoothRecordData.newBuilder();
 
         if (gpsListener != null)
@@ -1877,7 +1881,7 @@ public class SurveyRecordProcessor
             dataBuilder.setSignalStrength(FloatValue.newBuilder().setValue(rssi).build());
         }
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.VANILLA_ICE_CREAM)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.VANILLA_ICE_CREAM && hasBluetoothConnect)
         {
             dataBuilder.setAddressType(BluetoothMessageConstants.mapOsAddressTypeToProto(device.getAddressType()));
         }
@@ -1899,7 +1903,7 @@ public class SurveyRecordProcessor
             otaDeviceName = scanRecordDeviceName;
         } else
         {
-            if (ActivityCompat.checkSelfPermission(context, Manifest.permission.BLUETOOTH_CONNECT) == PackageManager.PERMISSION_GRANTED)
+            if (hasBluetoothConnect)
             {
                 otaDeviceName = device.getName();
             } else
@@ -1909,7 +1913,7 @@ public class SurveyRecordProcessor
         }
         if (otaDeviceName != null) dataBuilder.setOtaDeviceName(otaDeviceName);
 
-        if (ActivityCompat.checkSelfPermission(context, Manifest.permission.BLUETOOTH_CONNECT) == PackageManager.PERMISSION_GRANTED)
+        if (hasBluetoothConnect)
         {
             final SupportedTechnologies supportedTech = BluetoothMessageConstants.getSupportedTechnologies(device.getType());
             if (supportedTech != null && supportedTech != SupportedTechnologies.UNKNOWN)
@@ -1918,7 +1922,11 @@ public class SurveyRecordProcessor
             }
         }
 
-        BluetoothClass bluetoothClass = device.getBluetoothClass();
+        BluetoothClass bluetoothClass = null;
+        if (hasBluetoothConnect)
+        {
+            bluetoothClass = device.getBluetoothClass();
+        }
         if (bluetoothClass != null)
         {
             final int deviceClass = bluetoothClass.getDeviceClass();
