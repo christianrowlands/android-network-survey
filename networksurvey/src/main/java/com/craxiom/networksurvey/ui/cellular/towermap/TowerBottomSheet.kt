@@ -535,24 +535,13 @@ internal fun ProtocolBadge(protocol: String) {
         color = bgColor,
         shape = RoundedCornerShape(4.dp)
     ) {
-        Row(
+        Text(
+            text = protocol.uppercase(),
             modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Icon(
-                painter = painterResource(id = R.drawable.ic_network_details),
-                contentDescription = null,
-                modifier = Modifier.size(14.dp),
-                tint = textColor
-            )
-            Spacer(modifier = Modifier.width(3.dp))
-            Text(
-                text = protocol.uppercase(),
-                style = MaterialTheme.typography.labelSmall,
-                fontWeight = FontWeight.Bold,
-                color = textColor
-            )
-        }
+            style = MaterialTheme.typography.labelSmall,
+            fontWeight = FontWeight.Bold,
+            color = textColor
+        )
     }
 }
 
