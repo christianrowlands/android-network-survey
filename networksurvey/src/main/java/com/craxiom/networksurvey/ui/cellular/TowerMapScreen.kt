@@ -360,26 +360,26 @@ internal fun TowerMapScreen(
                     }
                 }
 
-                val iconMap = remember(darkMap.value) {
-                    if (darkMap.value) {
-                        mapOf(
-                            KEY_TOWER_ICON to R.drawable.ic_cell_tower_map_dark,
-                            KEY_SERVING_CELL_ICON to R.drawable.ic_cell_tower_map_serving_dark,
-                            KEY_SEARCH_TOWER_ICON to R.drawable.ic_cell_tower_search_dark
-                        ).toImmutableMap()
-                    } else {
-                        mapOf(
-                            KEY_TOWER_ICON to R.drawable.ic_cell_tower_map_light,
-                            KEY_SERVING_CELL_ICON to R.drawable.ic_cell_tower_map_serving_light,
-                            KEY_SEARCH_TOWER_ICON to R.drawable.ic_cell_tower_search_dark
-                        ).toImmutableMap()
-                    }
+                // SDF tower icons — same for both dark and light maps (color comes from data)
+                val sdfIconMap = remember {
+                    mapOf(
+                        KEY_TOWER_ICON to R.drawable.ic_cell_tower_map_sdf,
+                        KEY_SERVING_CELL_ICON to R.drawable.ic_cell_tower_map_serving_sdf,
+                    ).toImmutableMap()
+                }
+
+                // Non-SDF icons (search result keeps its fixed color)
+                val iconMap = remember {
+                    mapOf(
+                        KEY_SEARCH_TOWER_ICON to R.drawable.ic_cell_tower_search_dark
+                    ).toImmutableMap()
                 }
                 MapLibreMap(
                     styleUri = styleUrl,
                     modifier = Modifier.fillMaxSize(),
                     paddingInsets = paddingInsets,
                     images = iconMap,
+                    sdfImages = sdfIconMap,
                     cameraPositionState = cameraPositionState,
                     uiSettings = MapUiSettings(
                         compassEnabled = true,
@@ -431,7 +431,8 @@ internal fun TowerMapScreen(
                         // 3) One single call to TowerSymbols
                         TowerSymbols(
                             towerWrapperList = towerWrapperList,
-                            servingIds = servingIds
+                            servingIds = servingIds,
+                            isDarkMap = darkMap.value,
                         )
 
                         // 4) Count badges for multi-tower locations

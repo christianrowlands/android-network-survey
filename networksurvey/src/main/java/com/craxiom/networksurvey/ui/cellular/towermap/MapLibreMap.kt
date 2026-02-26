@@ -32,13 +32,13 @@ import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.craxiom.networksurvey.data.api.Tower
 import kotlinx.coroutines.awaitCancellation
+import kotlinx.coroutines.suspendCancellableCoroutine
 import org.maplibre.android.MapLibre
 import org.maplibre.android.maps.MapLibreMap
 import org.maplibre.android.maps.MapView
 import org.maplibre.android.maps.Style
 import org.maplibre.android.plugins.annotation.SymbolManager
 import timber.log.Timber
-import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlin.coroutines.resume
 
 /**
@@ -46,6 +46,7 @@ import kotlin.coroutines.resume
  * @param styleUri URI of the MapLibre style JSON
  * @param modifier Modifier for the MapView
  * @param images Optional map of image IDs to drawable resource IDs
+ * @param sdfImages Optional map of SDF image IDs to drawable resource IDs (tinted dynamically)
  * @param cameraPositionState Controls or observes camera state
  * @param uiSettings UI-specific map settings
  */
@@ -55,6 +56,7 @@ fun MapLibreMap(
     modifier: Modifier = Modifier,
     paddingInsets: PaddingValues,
     images: Map<String, Int> = mapOf(),
+    sdfImages: Map<String, Int> = mapOf(),
     cameraPositionState: CameraPositionState = rememberCameraPositionState(),
     uiSettings: MapUiSettings = DefaultMapUiSettings,
     symbolManagerSettings: MapSymbolManagerSettings = DefaultMapSymbolManagerSettings,
@@ -85,13 +87,14 @@ fun MapLibreMap(
     val currentCameraState by rememberUpdatedState(cameraPositionState)
     val currentUiSettings by rememberUpdatedState(uiSettings)
     val currentImages by rememberUpdatedState(images)
+    val currentSdfImages by rememberUpdatedState(sdfImages)
     val currentMapLocationSettings by rememberUpdatedState(locationSettings)
     val currentSymbolManagerSettings by rememberUpdatedState(symbolManagerSettings)
     val currentOnMapReady by rememberUpdatedState(onMapReady)
     val currentOnStyleLoadFailed by rememberUpdatedState(onStyleLoadFailed)
     val parentComposition = rememberCompositionContext()
 
-    LaunchedEffect(styleUri, images) {
+    LaunchedEffect(styleUri, images, sdfImages) {
         val failureListener = MapView.OnDidFailLoadingMapListener { errorMessage ->
             Timber.w("Map style failed to load: %s", errorMessage)
             currentOnStyleLoadFailed?.invoke(errorMessage)
@@ -105,6 +108,7 @@ fun MapLibreMap(
                     mapView,
                     styleUri,
                     currentImages,
+                    currentSdfImages,
                     currentOnMapReady
                 ) {
                     MapUpdater(
@@ -139,6 +143,7 @@ private suspend fun CompositionContext.newComposition(
     mapView: MapView,
     styleUri: String,
     images: Map<String, Int>,
+    sdfImages: Map<String, Int>,
     onMapReady: ((MapView, MapLibreMap, Style) -> Unit)?,
     content: @Composable () -> Unit
 ): Composition = suspendCancellableCoroutine { cont ->
@@ -150,6 +155,16 @@ private suspend fun CompositionContext.newComposition(
             images.forEach { (id, res) ->
                 AppCompatResources.getDrawable(context, res)
                     ?.let { drawable -> style.addImage(id, drawable) }
+            }
+            // 3b) Register SDF images (dynamically tintable via iconColor)
+            sdfImages.forEach { (id, res) ->
+                AppCompatResources.getDrawable(context, res)?.let { drawable ->
+                    val bitmap = org.maplibre.android.utils.BitmapUtils
+                        .getBitmapFromDrawable(drawable)
+                    if (bitmap != null) {
+                        style.addImage(id, bitmap, true)
+                    }
+                }
             }
             // 4) Let anyone know the map+style is now ready
             onMapReady?.invoke(mapView, map, style)

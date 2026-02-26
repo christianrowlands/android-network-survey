@@ -1,7 +1,9 @@
 package com.craxiom.networksurvey.ui.cellular.towermap
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -13,6 +15,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.foundation.verticalScroll
@@ -43,6 +46,7 @@ import com.craxiom.networksurvey.data.api.Tower
 import com.craxiom.networksurvey.ui.cellular.model.TowerSource
 import com.craxiom.networksurvey.util.CalculationUtils
 import com.craxiom.networksurvey.util.MeasurementFormatter
+import com.craxiom.networksurvey.util.PlmnColorMapper
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -100,7 +104,8 @@ fun TowerBottomSheet(
                 )
             }
 
-            is TowerSheetState.Hidden -> { /* handled above */ }
+            is TowerSheetState.Hidden -> { /* handled above */
+            }
         }
     }
 }
@@ -161,6 +166,8 @@ private fun TowerListRow(
     tower: Tower,
     onClick: () -> Unit
 ) {
+    val providerColor = PlmnColorMapper.getColor(tower.mcc, tower.mnc)
+
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -173,6 +180,14 @@ private fun TowerListRow(
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier.weight(1f)
         ) {
+            // Provider color bar
+            Box(
+                modifier = Modifier
+                    .width(4.dp)
+                    .height(40.dp)
+                    .background(providerColor, RoundedCornerShape(2.dp))
+            )
+            Spacer(modifier = Modifier.width(8.dp))
             ProtocolBadge(tower.radio)
             Spacer(modifier = Modifier.width(12.dp))
             Column {
@@ -276,6 +291,8 @@ private fun TowerDetailView(
 @Composable
 private fun NetworkIdentitySection(tower: Tower) {
     val context = LocalContext.current
+    val providerColor = PlmnColorMapper.getColor(tower.mcc, tower.mnc)
+
     Column {
         Row(
             modifier = Modifier
@@ -304,7 +321,15 @@ private fun NetworkIdentitySection(tower: Tower) {
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
-                        CompactInfoItem("MCC/MNC", "${tower.mcc}/${tower.mnc}")
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Box(
+                                modifier = Modifier
+                                    .size(10.dp)
+                                    .background(providerColor, CircleShape)
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            CompactInfoItem("MCC/MNC", "${tower.mcc}/${tower.mnc}")
+                        }
                         CompactInfoItem("Area", tower.area.toString())
                     }
 
@@ -602,22 +627,27 @@ private fun getRelativeTimeString(timestamp: Long): String {
             val minutes = TimeUnit.MILLISECONDS.toMinutes(diff)
             if (minutes == 1L) "1 min ago" else "$minutes mins ago"
         }
+
         diff < TimeUnit.DAYS.toMillis(1) -> {
             val hours = TimeUnit.MILLISECONDS.toHours(diff)
             if (hours == 1L) "1 hour ago" else "$hours hours ago"
         }
+
         diff < TimeUnit.DAYS.toMillis(7) -> {
             val days = TimeUnit.MILLISECONDS.toDays(diff)
             if (days == 1L) "Yesterday" else "$days days ago"
         }
+
         diff < TimeUnit.DAYS.toMillis(30) -> {
             val weeks = TimeUnit.MILLISECONDS.toDays(diff) / 7
             if (weeks == 1L) "1 week ago" else "$weeks weeks ago"
         }
+
         diff < TimeUnit.DAYS.toMillis(365) -> {
             val months = TimeUnit.MILLISECONDS.toDays(diff) / 30
             if (months == 1L) "1 month ago" else "$months months ago"
         }
+
         else -> {
             val years = TimeUnit.MILLISECONDS.toDays(diff) / 365
             if (years == 1L) "1 year ago" else "$years years ago"
