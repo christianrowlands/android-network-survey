@@ -6,13 +6,12 @@ package com.craxiom.networksurvey.constants.csv;
  * The constants in this class are intended to match the constants defined in the
  * <a href="https://messaging.networksurvey.app/">Network Survey Messaging API</a>.
  */
-public class DeviceStatusCsvConstants extends CsvConstants
+public class DeviceStatusCsvConstants extends SurveyCsvConstants
 {
     private DeviceStatusCsvConstants()
     {
     }
 
-    public static final String DEVICE_TIME = "deviceTime";
     public static final String BATTERY_LEVEL_PERCENT = "batteryLevelPercent";
 
     public static final String GNSS_LATITUDE = "gnssLatitude";

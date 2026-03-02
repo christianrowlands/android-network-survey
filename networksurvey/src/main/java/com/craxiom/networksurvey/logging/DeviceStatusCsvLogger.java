@@ -12,10 +12,12 @@ import static com.craxiom.networksurvey.constants.csv.DeviceStatusCsvConstants.G
 import static com.craxiom.networksurvey.constants.csv.DeviceStatusCsvConstants.GNSS_LONGITUDE;
 import static com.craxiom.networksurvey.constants.csv.DeviceStatusCsvConstants.LATITUDE;
 import static com.craxiom.networksurvey.constants.csv.DeviceStatusCsvConstants.LONGITUDE;
+import static com.craxiom.networksurvey.constants.csv.DeviceStatusCsvConstants.MISSION_ID;
 import static com.craxiom.networksurvey.constants.csv.DeviceStatusCsvConstants.NETWORK_ACCURACY;
 import static com.craxiom.networksurvey.constants.csv.DeviceStatusCsvConstants.NETWORK_ALTITUDE;
 import static com.craxiom.networksurvey.constants.csv.DeviceStatusCsvConstants.NETWORK_LATITUDE;
 import static com.craxiom.networksurvey.constants.csv.DeviceStatusCsvConstants.NETWORK_LONGITUDE;
+import static com.craxiom.networksurvey.constants.csv.DeviceStatusCsvConstants.RECORD_NUMBER;
 import static com.craxiom.networksurvey.constants.csv.DeviceStatusCsvConstants.SPEED;
 
 import com.craxiom.messaging.DeviceStatus;
@@ -45,13 +47,14 @@ public class DeviceStatusCsvLogger extends CsvRecordLogger implements IDeviceSta
         return new String[]{DEVICE_TIME, LATITUDE, LONGITUDE, ALTITUDE, SPEED, ACCURACY,
                 BATTERY_LEVEL_PERCENT, GNSS_LATITUDE, GNSS_LONGITUDE, GNSS_ALTITUDE, GNSS_ACCURACY,
                 NETWORK_LATITUDE, NETWORK_LONGITUDE, NETWORK_ALTITUDE, NETWORK_ACCURACY,
-                DEVICE_SERIAL_NUMBER, LOCATION_AGE};
+                DEVICE_SERIAL_NUMBER, LOCATION_AGE,
+                MISSION_ID, RECORD_NUMBER};
     }
 
     @Override
     String[] getHeaderComments()
     {
-        return new String[]{"CSV Version=0.4.0"};
+        return new String[]{"CSV Version=0.5.0"};
     }
 
     @Override
@@ -70,7 +73,7 @@ public class DeviceStatusCsvLogger extends CsvRecordLogger implements IDeviceSta
      * @return A String array that contains the Device Status record values that can be written out
      * as a CSV row.
      */
-    private String[] convertToObjectArray(DeviceStatus record)
+    String[] convertToObjectArray(DeviceStatus record)
     {
         DeviceStatusData data = record.getData();
 
@@ -102,7 +105,9 @@ public class DeviceStatusCsvLogger extends CsvRecordLogger implements IDeviceSta
                 hasNetworkLocation ? roundToTwoDecimalPlaces(data.getNetworkAltitude()) : "",
                 hasNetworkLocation ? roundToTwoDecimalPlaces(data.getNetworkAccuracy()) : "",
                 data.getDeviceSerialNumber(),
-                data.getLocationAge() == 0 ? "" : String.valueOf(data.getLocationAge())
+                data.getLocationAge() == 0 ? "" : String.valueOf(data.getLocationAge()),
+                data.getMissionId(),
+                String.valueOf(data.getRecordNumber())
         };
     }
 }

@@ -206,6 +206,7 @@ public class SurveyRecordProcessor
     private final AtomicInteger gnssGroupNumber = new AtomicInteger(0); // This will be incremented to 1 the first time it is used.
 
     private final AtomicInteger phoneStateRecordNumber = new AtomicInteger(1);
+    private final AtomicInteger deviceStatusRecordNumber = new AtomicInteger(1);
 
     private long lastGnssLogTimeMs;
     private int gnssScanRateMs;
@@ -3090,6 +3091,13 @@ public class SurveyRecordProcessor
     private void notifyDeviceStatusListeners(DeviceStatus deviceStatus)
     {
         if (deviceStatus == null) return;
+
+        final DeviceStatus.Builder statusBuilder = deviceStatus.toBuilder();
+        statusBuilder.setData(statusBuilder.getDataBuilder()
+                .setMissionId(missionId)
+                .setRecordNumber(deviceStatusRecordNumber.getAndIncrement()));
+        deviceStatus = statusBuilder.build();
+
         for (IDeviceStatusListener listener : deviceStatusListeners)
         {
             try
