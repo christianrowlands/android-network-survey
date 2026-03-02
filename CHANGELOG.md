@@ -1,5 +1,40 @@
 # Changelog
 
+## [1.50](https://github.com/christianrowlands/android-network-survey/releases/tag/v1.50) - 2026-XX-XX
+
+**BUG FIXES**
+
+* Prevent an edge case crash where the user removes the Bluetooth permission while a survey is
+  ongoing.
+* Fix a location provider issue on de-googled OSs (e.g. GrapheneOS) where FUSED causes an error
+  state when ALL is selected as the location
+  provider. [#115](https://github.com/christianrowlands/android-network-survey/issues/115)
+* Fix an edge case crash on certain devices running older Android OS versions by switching from
+  SwitchCompat to MaterialSwitch.
+
+**NEW FEATURES**
+
+* Display multiple towers at the same location on the map with a tower list bottom sheet, replacing
+  the old tower details
+  dialog. [#95](https://github.com/christianrowlands/android-network-survey/issues/95)
+* Display a number badge indicating the tower count at each map location.
+* Add a color picker for selecting which color is used for each PLMN on the tower map for both tower
+  icons and tower list
+  colors. [#95](https://github.com/christianrowlands/android-network-survey/issues/95)
+* Use different colors in the tower list and tower icons on the map for different cellular providers
+  to help visually differentiate them.
+* Display the eNB ID and Sector ID in the tower list and tower details bottom sheet for LTE towers.
+
+**IMPROVEMENTS**
+
+* Switch the default map layer to OpenFreeMap and fall back to OpenFreeMap if MapTiler is
+  unavailable.
+* Remove the apply button from the tower map filter bottom sheet and instead apply changes on
+  dismiss.
+* Increase the map view tower icon halo width for better visibility.
+* Upgrade AGP to version 9.0.1.
+* Update the MQTT library to version 1.2.0.
+
 ## [1.49](https://github.com/christianrowlands/android-network-survey/releases/tag/v1.49) - 2026-02-18
 
 **BUG FIXES**

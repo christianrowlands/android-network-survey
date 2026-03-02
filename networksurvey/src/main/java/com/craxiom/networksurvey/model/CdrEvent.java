@@ -15,6 +15,8 @@ import static com.craxiom.networksurvey.constants.csv.CsvConstants.DEVICE_SERIAL
 import static com.craxiom.networksurvey.constants.csv.CsvConstants.LATITUDE;
 import static com.craxiom.networksurvey.constants.csv.CsvConstants.LOCATION_AGE;
 import static com.craxiom.networksurvey.constants.csv.CsvConstants.LONGITUDE;
+import static com.craxiom.networksurvey.constants.csv.SurveyCsvConstants.MISSION_ID;
+import static com.craxiom.networksurvey.constants.csv.SurveyCsvConstants.RECORD_NUMBER;
 
 import android.location.Location;
 import android.os.Build;
@@ -44,6 +46,8 @@ public class CdrEvent
     private String psCellIdentifier = "";
     private final int slot;
     private final String deviceSerialNumber;
+    private String missionId = "";
+    private int recordNumber;
 
     public CdrEvent(CdrEventType eventType, String callingNumber, String calledNumber,
                     int subscriptionId, String deviceId)
@@ -64,12 +68,23 @@ public class CdrEvent
     {
         return new String[]{START_TIME, LATITUDE, LONGITUDE, ALTITUDE, ACCURACY, EVENT,
                 ORIGINATING_ADDRESS, DESTINATION_ADDRESS, CS_RANT, CS_CELL_IDENTIFIER, PS_RANT,
-                PS_CELL_IDENTIFIER, SLOT, LOCATION_AGE, DEVICE_SERIAL_NUMBER};
+                PS_CELL_IDENTIFIER, SLOT, LOCATION_AGE, DEVICE_SERIAL_NUMBER,
+                MISSION_ID, RECORD_NUMBER};
     }
 
     public void setLocation(Location location)
     {
         this.location = location;
+    }
+
+    public void setMissionId(String missionId)
+    {
+        this.missionId = missionId;
+    }
+
+    public void setRecordNumber(int recordNumber)
+    {
+        this.recordNumber = recordNumber;
     }
 
     public void setCircuitSwitchedInformation(NetworkType rant, String cgi)
@@ -119,7 +134,9 @@ public class CdrEvent
                 psCellIdentifier,
                 slot != CellularController.DEFAULT_SUBSCRIPTION_ID ? String.valueOf(slot) : "",
                 locationAgeMillisString,
-                deviceSerialNumber
+                deviceSerialNumber,
+                missionId,
+                String.valueOf(recordNumber)
         };
     }
 

@@ -8,9 +8,13 @@ import com.craxiom.networksurvey.services.controller.CellularController;
 import org.junit.Assert;
 import org.junit.Test;
 
+/**
+ * Tests for the {@link CdrEvent} model class.
+ */
 public class CdrEventTest
 {
     private static final String DEVICE_ID = "SOMEDEVICEID";
+    private static final String TEST_MISSION_ID = "test-mission-123";
 
     @Test
     public void testEmptyCellIdentityToValidCellIdentityCs()
@@ -135,5 +139,41 @@ public class CdrEventTest
 
         boolean changed = currentCdrEvent.locationAreaChanged(newCdrEvent);
         Assert.assertFalse(changed);
+    }
+
+    @Test
+    public void testHeadersIncludeMissionIdAndRecordNumber()
+    {
+        String[] headers = CdrEvent.getHeaders();
+        Assert.assertEquals("missionId", headers[headers.length - 2]);
+        Assert.assertEquals("recordNumber", headers[headers.length - 1]);
+    }
+
+    @Test
+    public void testCsvRowLengthMatchesHeaders()
+    {
+        CdrEvent cdrEvent = new CdrEvent(CdrEventType.INCOMING_CALL,
+                "1234567890", "1122334455", CellularController.DEFAULT_SUBSCRIPTION_ID, DEVICE_ID);
+        cdrEvent.setCircuitSwitchedInformation(NetworkType.LTE, "310-480-12345-12345678");
+        cdrEvent.setPacketSwitchedInformation(NetworkType.LTE, "310-480-222-3");
+
+        String[] headers = CdrEvent.getHeaders();
+        String[] row = cdrEvent.getCsvRowArray();
+        Assert.assertEquals(headers.length, row.length);
+    }
+
+    @Test
+    public void testMissionIdAndRecordNumberInCsvRow()
+    {
+        CdrEvent cdrEvent = new CdrEvent(CdrEventType.OUTGOING_CALL,
+                "1234567890", "1122334455", CellularController.DEFAULT_SUBSCRIPTION_ID, DEVICE_ID);
+        cdrEvent.setCircuitSwitchedInformation(NetworkType.LTE, "310-480-12345-12345678");
+        cdrEvent.setPacketSwitchedInformation(NetworkType.LTE, "310-480-222-3");
+        cdrEvent.setMissionId(TEST_MISSION_ID);
+        cdrEvent.setRecordNumber(42);
+
+        String[] row = cdrEvent.getCsvRowArray();
+        Assert.assertEquals(TEST_MISSION_ID, row[row.length - 2]);
+        Assert.assertEquals("42", row[row.length - 1]);
     }
 }

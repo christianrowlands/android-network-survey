@@ -207,6 +207,7 @@ public class SurveyRecordProcessor
 
     private final AtomicInteger phoneStateRecordNumber = new AtomicInteger(1);
     private final AtomicInteger deviceStatusRecordNumber = new AtomicInteger(1);
+    private final AtomicInteger cdrRecordNumber = new AtomicInteger(1);
 
     private long lastGnssLogTimeMs;
     private int gnssScanRateMs;
@@ -2954,6 +2955,8 @@ public class SurveyRecordProcessor
     {
         if (cdrEvent == null) return;
 
+        cdrEvent.setMissionId(missionId);
+        cdrEvent.setRecordNumber(cdrRecordNumber.getAndIncrement());
         setLocationAndNotifyListeners(cdrEvent, context);
     }
 
