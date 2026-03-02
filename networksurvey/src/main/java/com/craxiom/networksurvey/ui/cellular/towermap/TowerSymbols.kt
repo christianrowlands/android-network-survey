@@ -165,6 +165,7 @@ fun TowerSymbols(
     towerWrapperList: List<TowerWrapper>,
     servingIds: Set<String>,
     isDarkMap: Boolean = true,
+    colorVersion: Int = 0,
     normalIcon: String = KEY_TOWER_ICON,
     servingIcon: String = KEY_SERVING_CELL_ICON,
 ) {
@@ -193,6 +194,9 @@ fun TowerSymbols(
             }
             set(isDarkMap) { dark ->
                 updateDarkMap(dark, towerWrapperList, servingIds)
+            }
+            set(colorVersion) { _ ->
+                updateData(towerWrapperList, servingIds)
             }
         }
     )

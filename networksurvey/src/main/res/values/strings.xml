@@ -925,6 +925,28 @@
     <string name="connected_label">(Connected)</string>
     <string name="wifi_exclusion_info">Excluded SSIDs will not be saved to files or uploaded to databases</string>
 
+    <!-- Provider Color Overrides -->
+    <string name="provider_colors_category_title">Provider Colors</string>
+    <string name="provider_color_overrides_title">Color Overrides</string>
+    <string name="provider_color_overrides_summary">Assign custom colors to cellular providers</string>
+    <string name="provider_color_overrides_info">Customize provider colors on the map. You can also tap a provider\'s color dot in tower details to set a color directly.</string>
+    <string name="provider_color_add_title">Add Color Override</string>
+    <string name="provider_color_edit_title">Edit Color</string>
+    <string name="provider_color_default_label">Default: %s</string>
+    <string name="provider_color_mcc_hint">MCC</string>
+    <string name="provider_color_mnc_hint">MNC</string>
+    <string name="provider_color_empty_state">No color overrides yet. Tap + to add one, or tap a provider\'s color dot in tower details.</string>
+    <string name="confirm_clear_overrides_title">Clear All Overrides?</string>
+    <string name="confirm_clear_overrides_message">This will reset all provider colors to their defaults.</string>
+    <string name="provider_color_reset_to_default">Reset to Default</string>
+    <string name="provider_color_mcc_error">MCC must be 3 digits (100–999)</string>
+    <string name="provider_color_mnc_error">MNC must be 1–3 digits (0–999)</string>
+    <string name="provider_color_select_color">Select a color:</string>
+    <string name="provider_color_max_reached">Maximum number of overrides reached.</string>
+    <string name="mcc_mnc_format">MCC/MNC: %1$d/%2$d</string>
+    <string name="selected">Selected</string>
+    <string name="navigate_back">Navigate back</string>
+
     <!-- NS Analytics -->
     <string name="ns_analytics">NS Analytics</string>
     <string name="ns_analytics_description">Manage NS Analytics connection and data uploads</string>

@@ -34,6 +34,11 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -42,6 +47,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.craxiom.networksurvey.R
 import com.craxiom.networksurvey.constants.NetworkSurveyConstants
+import com.craxiom.networksurvey.data.PlmnColorOverrideManager
 import com.craxiom.networksurvey.data.api.Tower
 import com.craxiom.networksurvey.ui.cellular.model.TowerSource
 import com.craxiom.networksurvey.util.CalculationUtils
@@ -72,7 +78,8 @@ sealed class TowerSheetState {
 @Composable
 fun TowerBottomSheet(
     state: TowerSheetState,
-    onStateChange: (TowerSheetState) -> Unit
+    onStateChange: (TowerSheetState) -> Unit,
+    onColorOverrideChanged: () -> Unit = {}
 ) {
     if (state is TowerSheetState.Hidden) return
 
@@ -88,7 +95,8 @@ fun TowerBottomSheet(
                     towers = state.towers,
                     onTowerSelected = { tower ->
                         onStateChange(TowerSheetState.TowerDetail(tower, state.towers))
-                    }
+                    },
+                    onColorOverrideChanged = onColorOverrideChanged
                 )
             }
 
@@ -100,7 +108,8 @@ fun TowerBottomSheet(
                         state.returnToList?.let {
                             onStateChange(TowerSheetState.TowerList(it))
                         }
-                    }
+                    },
+                    onColorOverrideChanged = onColorOverrideChanged
                 )
             }
 
@@ -116,7 +125,8 @@ fun TowerBottomSheet(
 @Composable
 private fun TowerListView(
     towers: List<Tower>,
-    onTowerSelected: (Tower) -> Unit
+    onTowerSelected: (Tower) -> Unit,
+    onColorOverrideChanged: () -> Unit = {}
 ) {
     Column(
         modifier = Modifier
@@ -146,7 +156,11 @@ private fun TowerListView(
         // Tower list
         LazyColumn {
             itemsIndexed(towers) { index, tower ->
-                TowerListRow(tower = tower, onClick = { onTowerSelected(tower) })
+                TowerListRow(
+                    tower = tower,
+                    onClick = { onTowerSelected(tower) },
+                    onColorOverrideChanged = onColorOverrideChanged
+                )
                 if (index < towers.size - 1) {
                     HorizontalDivider(
                         modifier = Modifier.padding(horizontal = 4.dp),
@@ -164,9 +178,39 @@ private fun TowerListView(
 @Composable
 private fun TowerListRow(
     tower: Tower,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    onColorOverrideChanged: () -> Unit = {}
 ) {
-    val providerColor = PlmnColorMapper.getColor(tower.mcc, tower.mnc)
+    val context = LocalContext.current
+    var providerColor by remember { mutableStateOf(PlmnColorMapper.getColor(tower.mcc, tower.mnc)) }
+    var showColorPicker by remember { mutableStateOf(false) }
+    var colorVersion by remember { mutableIntStateOf(0) }
+
+    // Re-read color when version changes (after override is applied)
+    providerColor = remember(colorVersion) { PlmnColorMapper.getColor(tower.mcc, tower.mnc) }
+
+    if (showColorPicker) {
+        val overrideManager = remember { PlmnColorOverrideManager(context) }
+        ProviderColorPickerDialog(
+            mcc = tower.mcc,
+            mnc = tower.mnc,
+            currentPaletteIndex = PlmnColorMapper.getColorIndex(tower.mcc, tower.mnc),
+            hasOverride = overrideManager.getOverride(tower.mcc, tower.mnc) != null,
+            onColorSelected = { index ->
+                overrideManager.setOverride(tower.mcc, tower.mnc, index)
+                colorVersion++
+                onColorOverrideChanged()
+                showColorPicker = false
+            },
+            onResetToDefault = {
+                overrideManager.removeOverride(tower.mcc, tower.mnc)
+                colorVersion++
+                onColorOverrideChanged()
+                showColorPicker = false
+            },
+            onDismiss = { showColorPicker = false }
+        )
+    }
 
     Row(
         modifier = Modifier
@@ -180,14 +224,21 @@ private fun TowerListRow(
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier.weight(1f)
         ) {
-            // Provider color bar
+            // Provider color bar (tappable to open color picker)
             Box(
                 modifier = Modifier
-                    .width(4.dp)
-                    .height(40.dp)
-                    .background(providerColor, RoundedCornerShape(2.dp))
-            )
-            Spacer(modifier = Modifier.width(8.dp))
+                    .size(width = 12.dp, height = 40.dp)
+                    .clickable { showColorPicker = true }
+                    .padding(horizontal = 4.dp)
+            ) {
+                Box(
+                    modifier = Modifier
+                        .width(4.dp)
+                        .height(40.dp)
+                        .background(providerColor, RoundedCornerShape(2.dp))
+                )
+            }
+            Spacer(modifier = Modifier.width(4.dp))
             ProtocolBadge(tower.radio)
             Spacer(modifier = Modifier.width(12.dp))
             Column {
@@ -228,7 +279,8 @@ private fun TowerListRow(
 private fun TowerDetailView(
     tower: Tower,
     showBackButton: Boolean,
-    onBack: () -> Unit
+    onBack: () -> Unit,
+    onColorOverrideChanged: () -> Unit = {}
 ) {
     Column(
         modifier = Modifier
@@ -271,7 +323,7 @@ private fun TowerDetailView(
         }
 
         // Network Identity Section
-        NetworkIdentitySection(tower)
+        NetworkIdentitySection(tower, onColorOverrideChanged)
 
         // Location Section
         LocationSection(tower)
@@ -289,9 +341,34 @@ private fun TowerDetailView(
 }
 
 @Composable
-private fun NetworkIdentitySection(tower: Tower) {
+private fun NetworkIdentitySection(tower: Tower, onColorOverrideChanged: () -> Unit = {}) {
     val context = LocalContext.current
-    val providerColor = PlmnColorMapper.getColor(tower.mcc, tower.mnc)
+    var colorVersion by remember { mutableIntStateOf(0) }
+    val providerColor = remember(colorVersion) { PlmnColorMapper.getColor(tower.mcc, tower.mnc) }
+    var showColorPicker by remember { mutableStateOf(false) }
+
+    if (showColorPicker) {
+        val overrideManager = remember { PlmnColorOverrideManager(context) }
+        ProviderColorPickerDialog(
+            mcc = tower.mcc,
+            mnc = tower.mnc,
+            currentPaletteIndex = PlmnColorMapper.getColorIndex(tower.mcc, tower.mnc),
+            hasOverride = overrideManager.getOverride(tower.mcc, tower.mnc) != null,
+            onColorSelected = { index ->
+                overrideManager.setOverride(tower.mcc, tower.mnc, index)
+                colorVersion++
+                onColorOverrideChanged()
+                showColorPicker = false
+            },
+            onResetToDefault = {
+                overrideManager.removeOverride(tower.mcc, tower.mnc)
+                colorVersion++
+                onColorOverrideChanged()
+                showColorPicker = false
+            },
+            onDismiss = { showColorPicker = false }
+        )
+    }
 
     Column {
         Row(
@@ -322,12 +399,20 @@ private fun NetworkIdentitySection(tower: Tower) {
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
+                            // Color dot (tappable to open color picker)
                             Box(
                                 modifier = Modifier
-                                    .size(10.dp)
-                                    .background(providerColor, CircleShape)
-                            )
-                            Spacer(modifier = Modifier.width(6.dp))
+                                    .size(24.dp)
+                                    .clickable { showColorPicker = true }
+                                    .padding(7.dp)
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(10.dp)
+                                        .background(providerColor, CircleShape)
+                                )
+                            }
+                            Spacer(modifier = Modifier.width(2.dp))
                             CompactInfoItem("MCC/MNC", "${tower.mcc}/${tower.mnc}")
                         }
                         CompactInfoItem("Area", tower.area.toString())

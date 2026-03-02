@@ -28,6 +28,7 @@ sealed class NavigationEvent {
     data class BluetoothDetails(val bluetoothData: BluetoothRecordData) : NavigationEvent()
     data object SsidExclusionList : NavigationEvent()
     data object Acknowledgments : NavigationEvent()
+    data object ProviderColorOverrides : NavigationEvent()
     data class MqttConnection(val mqttConnectionSettings: MqttConnectionSettings?) :
         NavigationEvent()
 
@@ -89,6 +90,10 @@ class SharedViewModel @Inject constructor(application: Application) :
 
     fun triggerNavigationToAcknowledgments() {
         _navigationEvent.value = NavigationEvent.Acknowledgments
+    }
+
+    fun triggerNavigationToProviderColorOverrides() {
+        _navigationEvent.value = NavigationEvent.ProviderColorOverrides
     }
 
     fun triggerNavigationToQrCodeScanner(mqttConnectionSettings: MqttConnectionSettings) {

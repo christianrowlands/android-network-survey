@@ -43,11 +43,14 @@ import com.craxiom.networksurvey.model.WifiNetwork
 import com.craxiom.networksurvey.ui.acknowledgments.AcknowledgmentsScreen
 import com.craxiom.networksurvey.ui.activesurvey.SurveyMonitorScreen
 import com.craxiom.networksurvey.ui.cellular.CalculatorScreen
+import com.craxiom.networksurvey.ui.cellular.towermap.ProviderColorOverrideScreen
+import com.craxiom.networksurvey.ui.cellular.towermap.ProviderColorOverrideViewModel
 import com.craxiom.networksurvey.ui.main.appbar.AppBarAction
 import com.craxiom.networksurvey.ui.main.appbar.TitleBar
 import com.craxiom.networksurvey.ui.mqtt.MqttHelpDialog
 import com.craxiom.networksurvey.ui.nsanalytics.NsAnalyticsConnectionScreen
 import com.craxiom.networksurvey.ui.nsanalytics.NsAnalyticsConnectionViewModel
+import com.craxiom.networksurvey.ui.wifi.SsidExclusionListViewModel
 import com.craxiom.networksurvey.ui.wifi.model.WifiNetworkInfoList
 
 fun NavGraphBuilder.mainGraph(
@@ -136,8 +139,17 @@ fun NavGraphBuilder.mainGraph(
 
         composable(NavOption.SsidExclusionList.name) {
             val viewModel =
-                viewModel<com.craxiom.networksurvey.ui.wifi.SsidExclusionListViewModel>()
+                viewModel<SsidExclusionListViewModel>()
             com.craxiom.networksurvey.ui.wifi.SsidExclusionListScreen(
+                viewModel = viewModel,
+                onNavigateUp = { mainNavController.navigateUp() }
+            )
+        }
+
+        composable(NavOption.ProviderColorOverrides.name) {
+            val viewModel =
+                viewModel<ProviderColorOverrideViewModel>()
+            ProviderColorOverrideScreen(
                 viewModel = viewModel,
                 onNavigateUp = { mainNavController.navigateUp() }
             )
@@ -215,6 +227,7 @@ enum class NavOption {
     WifiDetails,
     BluetoothDetails,
     SsidExclusionList,
+    ProviderColorOverrides,
     Acknowledgments,
     NsAnalyticsQrScanner
 }
@@ -359,7 +372,8 @@ fun WifiSpectrumInCompose(
             modifier = Modifier.padding(paddingValues = innerPadding)
         ) {
             if (wifiNetworks != null) {
-                val fragment: WifiSpectrumFragment? = wifiSpectrumFragmentContainerView.getFragment()
+                val fragment: WifiSpectrumFragment? =
+                    wifiSpectrumFragmentContainerView.getFragment()
                 fragment?.setWifiNetworks(wifiNetworks)
             }
         }

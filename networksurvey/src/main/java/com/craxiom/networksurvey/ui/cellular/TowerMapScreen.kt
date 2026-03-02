@@ -429,10 +429,13 @@ internal fun TowerMapScreen(
                             }
 
                         // 3) One single call to TowerSymbols
+                        val colorOverrideVersion by viewModel.colorOverrideVersion.collectAsStateWithLifecycle()
+
                         TowerSymbols(
                             towerWrapperList = towerWrapperList,
                             servingIds = servingIds,
                             isDarkMap = darkMap.value,
+                            colorVersion = colorOverrideVersion,
                         )
 
                         // 4) Count badges for multi-tower locations
@@ -778,7 +781,8 @@ internal fun TowerMapScreen(
 
         TowerBottomSheet(
             state = towerSheetState,
-            onStateChange = { towerSheetState = it }
+            onStateChange = { towerSheetState = it },
+            onColorOverrideChanged = { viewModel.bumpColorOverrideVersion() }
         )
 
         if (showLayersDialog) {

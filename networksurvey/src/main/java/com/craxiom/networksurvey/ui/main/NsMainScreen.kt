@@ -71,6 +71,10 @@ fun MainCompose(
                     mainNavController.navigate(NavOption.Acknowledgments.name)
                 }
 
+                is NavigationEvent.ProviderColorOverrides -> {
+                    mainNavController.navigate(NavOption.ProviderColorOverrides.name)
+                }
+
                 is NavigationEvent.QrCodeScanner -> {
                     mainNavController.currentBackStackEntry?.savedStateHandle?.set(
                         MqttConnectionSettings.KEY,

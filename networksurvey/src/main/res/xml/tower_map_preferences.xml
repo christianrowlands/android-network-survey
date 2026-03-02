@@ -51,4 +51,15 @@
 
     </PreferenceCategory>
 
+    <PreferenceCategory
+        app:key="provider_colors_settings"
+        app:title="@string/provider_colors_category_title">
+
+        <Preference
+            app:key="manage_provider_color_overrides"
+            app:title="@string/provider_color_overrides_title"
+            app:summary="@string/provider_color_overrides_summary" />
+
+    </PreferenceCategory>
+
 </PreferenceScreen>

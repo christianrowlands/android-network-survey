@@ -1,18 +1,19 @@
 package com.craxiom.networksurvey.util
 
 import androidx.compose.ui.graphics.Color
+import com.craxiom.networksurvey.util.PlmnColorMapper.PALETTE
 
 /**
  * Deterministically maps any (MCC, MNC) pair to one of 16 curated Material Design 600-level
  * colors using a hash. The same provider always gets the same color across restarts and
- * installations.
+ * installations. User-assigned overrides take priority over the hash-based default.
  *
  * The palette uses 16 colors chosen for perceptual distinctness and good contrast on both
  * light and dark backgrounds.
  */
 object PlmnColorMapper {
 
-    private const val PALETTE_SIZE = 16
+    const val PALETTE_SIZE = 16
 
     private val PALETTE = arrayOf(
         Color(0xFFE53935), // Red 600
@@ -34,10 +35,50 @@ object PlmnColorMapper {
     )
 
     /**
-     * Returns the palette index for the given MCC/MNC combination.
+     * Human-readable names for each palette color, indexed to match [PALETTE].
+     */
+    val PALETTE_NAMES = arrayOf(
+        "Red", "Pink", "Purple", "Deep Purple",
+        "Indigo", "Blue", "Light Blue", "Cyan",
+        "Teal", "Green", "Light Green", "Blue Grey",
+        "Brown", "Amber", "Orange", "Deep Orange"
+    )
+
+    // Thread safety: this reference is replaced atomically via @Volatile — the map itself
+    // is never mutated in place, so reads on any thread (including MapLibre's render thread)
+    // always see a consistent snapshot.
+    @Volatile
+    private var overrides: Map<String, Int> = emptyMap()
+
+    /**
+     * Replaces the current set of user overrides. Called by [PlmnColorOverrideManager] on
+     * every mutation and at startup.
+     */
+    fun refreshOverrides(newOverrides: Map<String, Int>) {
+        overrides = newOverrides
+    }
+
+    /**
+     * Returns the palette index for the given MCC/MNC combination, respecting user overrides.
      */
     fun getColorIndex(mcc: Int, mnc: Int): Int {
+        overrides["$mcc-$mnc"]?.let { return it }
+        return getDefaultColorIndex(mcc, mnc)
+    }
+
+    /**
+     * Returns the hash-only palette index, ignoring any user override. Useful for showing
+     * "Default: Blue" labels in the UI.
+     */
+    fun getDefaultColorIndex(mcc: Int, mnc: Int): Int {
         return (mcc * 31 + mnc).and(0x7FFFFFFF) % PALETTE_SIZE
+    }
+
+    /**
+     * Returns the Compose [Color] at the given palette index (clamped to 0–15).
+     */
+    fun getColorByIndex(index: Int): Color {
+        return PALETTE[index.coerceIn(0, PALETTE_SIZE - 1)]
     }
 
     /**

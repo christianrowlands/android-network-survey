@@ -26,6 +26,7 @@ import androidx.core.content.ContextCompat
 import androidx.lifecycle.lifecycleScope
 import androidx.preference.PreferenceManager
 import com.craxiom.networksurvey.constants.NetworkSurveyConstants
+import com.craxiom.networksurvey.data.PlmnColorOverrideManager
 import com.craxiom.networksurvey.listeners.IGnssFailureListener
 import com.craxiom.networksurvey.services.GrpcConnectionService
 import com.craxiom.networksurvey.services.NetworkSurveyService
@@ -65,6 +66,9 @@ class NetworkSurveyActivity : AppCompatActivity() {
 
         // Handle NS Analytics deep links
         handleNsAnalyticsDeepLink()
+
+        // Load user color overrides before Compose renders the tower map
+        PlmnColorOverrideManager(this)
 
         AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_YES) // Force Dark Mode
         setContent {

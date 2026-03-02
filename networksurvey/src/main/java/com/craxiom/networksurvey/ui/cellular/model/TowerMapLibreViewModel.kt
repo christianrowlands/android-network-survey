@@ -100,6 +100,10 @@ class TowerMapLibreViewModel : ViewModel() {
     private val _selectedSource = MutableStateFlow(TowerSource.OpenCelliD)
     val selectedSource = _selectedSource.asStateFlow()
 
+    // Color override version (bumped to trigger map icon refresh) --
+    private val _colorOverrideVersion = MutableStateFlow(0)
+    val colorOverrideVersion = _colorOverrideVersion.asStateFlow()
+
     // Last-queried viewport bounds ------------------
     private val _lastQueriedBounds = MutableStateFlow<LatLngBounds?>(null)
     val lastQueriedBounds = _lastQueriedBounds.asStateFlow()
@@ -243,6 +247,13 @@ class TowerMapLibreViewModel : ViewModel() {
             // Even if the radio type is the same, update the manual selection flag
             isManualRadioTypeSelection = true
         }
+    }
+
+    /**
+     * Bumps the color override version counter to trigger a map icon color refresh.
+     */
+    fun bumpColorOverrideVersion() {
+        _colorOverrideVersion.value++
     }
 
     fun setPlmnFilter(plmn: Plmn) {
