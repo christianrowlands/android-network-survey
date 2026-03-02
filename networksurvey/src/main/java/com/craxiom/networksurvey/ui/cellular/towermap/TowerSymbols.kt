@@ -129,7 +129,7 @@ internal class TowerSymbolsNode(
             iconHaloColor(
                 if (isDarkMap) "rgba(255,255,255,0.8)" else "rgba(0,0,0,0.3)"
             ),
-            iconHaloWidth(1.5f),
+            iconHaloWidth(5f),
         )
     }
 
