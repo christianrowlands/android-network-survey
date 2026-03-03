@@ -96,7 +96,7 @@ public class PhoneStateRecordLogger extends SurveyRecordLogger implements IPhone
                     if (geoPackage != null)
                     {
                         final PhoneStateData data = phoneState.getData();
-                        FeatureDao featureDao = geoPackage.getFeatureDao(PHONE_STATE_TABLE_NAME);
+                        FeatureDao featureDao = getCachedFeatureDao(PHONE_STATE_TABLE_NAME);
                         FeatureRow row = featureDao.newRow();
 
                         row.setGeometry(buildGeometry(data));

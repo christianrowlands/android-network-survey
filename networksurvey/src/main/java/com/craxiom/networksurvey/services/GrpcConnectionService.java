@@ -737,6 +737,17 @@ public class GrpcConnectionService extends Service implements IDeviceStatusListe
             gnssRecordGrpcTask = null;
         }
 
+        deviceStatusQueue.clear();
+        phoneStateQueue.clear();
+        gsmRecordQueue.clear();
+        cdmaRecordQueue.clear();
+        umtsRecordQueue.clear();
+        lteRecordQueue.clear();
+        nrRecordQueue.clear();
+        wifiBeaconRecordQueue.clear();
+        bluetoothRecordQueue.clear();
+        gnssRecordQueue.clear();
+
         shutdownChannel(!stopService);
 
         if (stopService) stopService();

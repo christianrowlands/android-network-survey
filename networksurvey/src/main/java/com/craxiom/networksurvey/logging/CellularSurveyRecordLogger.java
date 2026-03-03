@@ -26,9 +26,9 @@ import com.craxiom.networksurvey.constants.csv.GsmCsvConstants;
 import com.craxiom.networksurvey.constants.csv.LteCsvConstants;
 import com.craxiom.networksurvey.constants.csv.NrCsvConstants;
 import com.craxiom.networksurvey.constants.csv.UmtsCsvConstants;
+import com.craxiom.networksurvey.gpstest.util.MathUtils;
 import com.craxiom.networksurvey.listeners.ICellularSurveyRecordListener;
 import com.craxiom.networksurvey.services.NetworkSurveyService;
-import com.craxiom.networksurvey.gpstest.util.MathUtils;
 import com.craxiom.networksurvey.util.NsUtils;
 import com.google.common.base.Strings;
 
@@ -297,7 +297,7 @@ public class CellularSurveyRecordLogger extends SurveyRecordLogger implements IC
                 {
                     if (geoPackage != null)
                     {
-                        FeatureDao featureDao = geoPackage.getFeatureDao(GsmMessageConstants.GSM_RECORDS_TABLE_NAME);
+                        FeatureDao featureDao = getCachedFeatureDao(GsmMessageConstants.GSM_RECORDS_TABLE_NAME);
                         FeatureRow row = featureDao.newRow();
 
                         final GsmRecordData data = gsmRecord.getData();
@@ -393,7 +393,7 @@ public class CellularSurveyRecordLogger extends SurveyRecordLogger implements IC
                 {
                     if (geoPackage != null)
                     {
-                        FeatureDao featureDao = geoPackage.getFeatureDao(CdmaMessageConstants.CDMA_RECORDS_TABLE_NAME);
+                        FeatureDao featureDao = getCachedFeatureDao(CdmaMessageConstants.CDMA_RECORDS_TABLE_NAME);
                         FeatureRow row = featureDao.newRow();
 
                         final CdmaRecordData data = cdmaRecord.getData();
@@ -481,7 +481,7 @@ public class CellularSurveyRecordLogger extends SurveyRecordLogger implements IC
                 {
                     if (geoPackage != null)
                     {
-                        FeatureDao featureDao = geoPackage.getFeatureDao(UmtsMessageConstants.UMTS_RECORDS_TABLE_NAME);
+                        FeatureDao featureDao = getCachedFeatureDao(UmtsMessageConstants.UMTS_RECORDS_TABLE_NAME);
                         FeatureRow row = featureDao.newRow();
 
                         final UmtsRecordData data = umtsRecord.getData();
@@ -577,7 +577,7 @@ public class CellularSurveyRecordLogger extends SurveyRecordLogger implements IC
                 {
                     if (geoPackage != null)
                     {
-                        FeatureDao featureDao = geoPackage.getFeatureDao(LteMessageConstants.LTE_RECORDS_TABLE_NAME);
+                        FeatureDao featureDao = getCachedFeatureDao(LteMessageConstants.LTE_RECORDS_TABLE_NAME);
                         FeatureRow row = featureDao.newRow();
 
                         final LteRecordData data = lteRecord.getData();
@@ -693,7 +693,7 @@ public class CellularSurveyRecordLogger extends SurveyRecordLogger implements IC
                 {
                     if (geoPackage != null)
                     {
-                        FeatureDao featureDao = geoPackage.getFeatureDao(NrMessageConstants.NR_RECORDS_TABLE_NAME);
+                        FeatureDao featureDao = getCachedFeatureDao(NrMessageConstants.NR_RECORDS_TABLE_NAME);
                         FeatureRow row = featureDao.newRow();
 
                         final NrRecordData data = nrRecord.getData();

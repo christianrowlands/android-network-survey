@@ -10,9 +10,9 @@ import com.craxiom.networksurvey.constants.MessageConstants;
 import com.craxiom.networksurvey.constants.NetworkSurveyConstants;
 import com.craxiom.networksurvey.constants.csv.CsvConstants;
 import com.craxiom.networksurvey.constants.csv.GnssCsvConstants;
+import com.craxiom.networksurvey.gpstest.util.MathUtils;
 import com.craxiom.networksurvey.listeners.IGnssSurveyRecordListener;
 import com.craxiom.networksurvey.services.NetworkSurveyService;
-import com.craxiom.networksurvey.gpstest.util.MathUtils;
 import com.craxiom.networksurvey.util.NsUtils;
 
 import java.sql.SQLException;
@@ -99,7 +99,7 @@ public class GnssRecordLogger extends SurveyRecordLogger implements IGnssSurveyR
                     if (geoPackage != null)
                     {
                         final GnssRecordData data = gnssRecord.getData();
-                        FeatureDao featureDao = geoPackage.getFeatureDao(GnssMessageConstants.GNSS_RECORDS_TABLE_NAME);
+                        FeatureDao featureDao = getCachedFeatureDao(GnssMessageConstants.GNSS_RECORDS_TABLE_NAME);
                         FeatureRow row = featureDao.newRow();
 
                         Point fix = new Point(data.getLongitude(), data.getLatitude(), (double) data.getAltitude());

@@ -20,8 +20,10 @@ import com.craxiom.networksurvey.util.PreferenceUtils;
 import java.io.File;
 import java.sql.SQLException;
 import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiConsumer;
 
@@ -35,6 +37,7 @@ import mil.nga.geopackage.db.GeoPackageDataType;
 import mil.nga.geopackage.features.columns.GeometryColumns;
 import mil.nga.geopackage.features.columns.GeometryColumnsDao;
 import mil.nga.geopackage.features.user.FeatureColumn;
+import mil.nga.geopackage.features.user.FeatureDao;
 import mil.nga.geopackage.features.user.FeatureRow;
 import mil.nga.geopackage.features.user.FeatureTable;
 import mil.nga.geopackage.srs.SpatialReferenceSystem;
@@ -66,12 +69,28 @@ public abstract class SurveyRecordLogger
     GeoPackage geoPackage;
     volatile boolean loggingEnabled;
     private String logFileDirectoryPath;
+    private final Map<String, FeatureDao> featureDaoCache = new HashMap<>();
 
     /**
      * A lock to synchronize the writing of single records and the creation of a new GeoPackage file
      * during rollover.
      */
     protected final Object geoPackageLock = new Object();
+
+    /**
+     * Returns a cached {@link FeatureDao} for the given table name, creating and caching it on first
+     * access. This avoids the overhead of re-creating the FeatureDao (which queries SQLite for
+     * geometry column metadata, reads the full table schema, etc.) on every record write.
+     * <p>
+     * This method must only be called while holding the {@link #geoPackageLock}.
+     *
+     * @param tableName The name of the feature table.
+     * @return The cached FeatureDao for the given table.
+     */
+    protected FeatureDao getCachedFeatureDao(String tableName)
+    {
+        return featureDaoCache.computeIfAbsent(tableName, name -> geoPackage.getFeatureDao(name));
+    }
 
     /**
      * Constructs a Logger that writes Survey records to a GeoPackage SQLite database.
@@ -128,6 +147,7 @@ public abstract class SurveyRecordLogger
                     if (loggingEnabled)
                     {
                         loggingEnabled = false;
+                        featureDaoCache.clear();
                         geoPackage.close();
                         geoPackage = null;
                         removeTempFiles();
@@ -498,6 +518,7 @@ public abstract class SurveyRecordLogger
                         {
                             try
                             {
+                                featureDaoCache.clear();
                                 geoPackage.close();
 
                                 boolean fileCreated = prepareGeoPackageForLogging();

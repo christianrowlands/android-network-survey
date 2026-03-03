@@ -11,12 +11,13 @@ import com.craxiom.networksurvey.constants.BluetoothMessageConstants;
 import com.craxiom.networksurvey.constants.NetworkSurveyConstants;
 import com.craxiom.networksurvey.constants.csv.BluetoothCsvConstants;
 import com.craxiom.networksurvey.constants.csv.CsvConstants;
+import com.craxiom.networksurvey.gpstest.util.MathUtils;
 import com.craxiom.networksurvey.listeners.IBluetoothSurveyRecordListener;
 import com.craxiom.networksurvey.services.NetworkSurveyService;
-import com.craxiom.networksurvey.gpstest.util.MathUtils;
 import com.craxiom.networksurvey.util.NsUtils;
 
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.List;
 
 import mil.nga.geopackage.GeoPackage;
@@ -50,13 +51,54 @@ public class BluetoothSurveyRecordLogger extends SurveyRecordLogger implements I
     @Override
     public void onBluetoothSurveyRecord(BluetoothRecord bluetoothRecord)
     {
-        writeBluetoothRecordToLogFile(bluetoothRecord);
+        if (!loggingEnabled) return;
+
+        handler.post(() -> {
+            synchronized (geoPackageLock)
+            {
+                try
+                {
+                    if (geoPackage != null)
+                    {
+                        final FeatureDao featureDao = getCachedFeatureDao(BluetoothMessageConstants.BLUETOOTH_RECORDS_TABLE_NAME);
+                        writeBluetoothRecord(featureDao, bluetoothRecord);
+                        checkIfRolloverNeeded();
+                    }
+                } catch (Exception e)
+                {
+                    Timber.e(e, "Something went wrong when trying to write a Bluetooth survey record");
+                }
+            }
+        });
     }
 
     @Override
     public void onBluetoothSurveyRecords(List<BluetoothRecord> bluetoothRecords)
     {
-        bluetoothRecords.forEach(this::writeBluetoothRecordToLogFile);
+        if (!loggingEnabled || bluetoothRecords.isEmpty()) return;
+
+        final List<BluetoothRecord> records = new ArrayList<>(bluetoothRecords);
+
+        handler.post(() -> {
+            synchronized (geoPackageLock)
+            {
+                try
+                {
+                    if (geoPackage != null)
+                    {
+                        final FeatureDao featureDao = getCachedFeatureDao(BluetoothMessageConstants.BLUETOOTH_RECORDS_TABLE_NAME);
+                        for (BluetoothRecord bluetoothRecord : records)
+                        {
+                            writeBluetoothRecord(featureDao, bluetoothRecord);
+                            checkIfRolloverNeeded();
+                        }
+                    }
+                } catch (Exception e)
+                {
+                    Timber.e(e, "Something went wrong when trying to write Bluetooth survey records");
+                }
+            }
+        });
     }
 
     @Override
@@ -66,7 +108,7 @@ public class BluetoothSurveyRecordLogger extends SurveyRecordLogger implements I
     }
 
     /**
-     * Creates an GeoPackage Table that can be populated with 802.11 Beacon Records.
+     * Creates a GeoPackage Table that can be populated with Bluetooth Records.
      *
      * @param geoPackage The GeoPackage to create the table in.
      * @param srs        The SRS to use for the table coordinates.
@@ -92,118 +134,102 @@ public class BluetoothSurveyRecordLogger extends SurveyRecordLogger implements I
     }
 
     /**
-     * Given a Bluetooth Record, write it to the GeoPackage log file.
+     * Writes a single Bluetooth Record to the GeoPackage log file using the provided FeatureDao.
+     * <p>
+     * This method must only be called while holding the {@link #geoPackageLock}.
      *
-     * @param bluetoothRecord The Bluetooth Record to write to the log file.
+     * @param featureDao      The FeatureDao to use for writing.
+     * @param bluetoothRecord The Bluetooth Record to write.
      */
-    private void writeBluetoothRecordToLogFile(final BluetoothRecord bluetoothRecord)
+    private void writeBluetoothRecord(FeatureDao featureDao, BluetoothRecord bluetoothRecord)
     {
-        if (!loggingEnabled) return;
+        final BluetoothRecordData data = bluetoothRecord.getData();
+        FeatureRow row = featureDao.newRow();
 
-        handler.post(() -> {
-            synchronized (geoPackageLock)
-            {
-                try
-                {
-                    if (geoPackage != null)
-                    {
-                        final BluetoothRecordData data = bluetoothRecord.getData();
-                        FeatureDao featureDao = geoPackage.getFeatureDao(BluetoothMessageConstants.BLUETOOTH_RECORDS_TABLE_NAME);
-                        FeatureRow row = featureDao.newRow();
+        Point fix = new Point(data.getLongitude(), data.getLatitude(), (double) data.getAltitude());
 
-                        Point fix = new Point(data.getLongitude(), data.getLatitude(), (double) data.getAltitude());
+        GeoPackageGeometryData geomData = new GeoPackageGeometryData(WGS84_SRS);
+        geomData.setGeometry(fix);
 
-                        GeoPackageGeometryData geomData = new GeoPackageGeometryData(WGS84_SRS);
-                        geomData.setGeometry(fix);
+        row.setGeometry(geomData);
 
-                        row.setGeometry(geomData);
+        row.setValue(BluetoothCsvConstants.DEVICE_SERIAL_NUMBER, data.getDeviceSerialNumber());
+        row.setValue(BluetoothMessageConstants.TIME_COLUMN, NsUtils.getEpochFromRfc3339(data.getDeviceTime()));
+        row.setValue(BluetoothMessageConstants.MISSION_ID_COLUMN, data.getMissionId());
+        row.setValue(BluetoothMessageConstants.RECORD_NUMBER_COLUMN, data.getRecordNumber());
+        row.setValue(BluetoothCsvConstants.SPEED, data.getSpeed());
+        row.setValue(BluetoothMessageConstants.ACCURACY, MathUtils.roundAccuracy(data.getAccuracy()));
+        row.setValue(CsvConstants.LOCATION_AGE, data.getLocationAge());
 
-                        row.setValue(BluetoothCsvConstants.DEVICE_SERIAL_NUMBER, data.getDeviceSerialNumber());
-                        row.setValue(BluetoothMessageConstants.TIME_COLUMN, NsUtils.getEpochFromRfc3339(data.getDeviceTime()));
-                        row.setValue(BluetoothMessageConstants.MISSION_ID_COLUMN, data.getMissionId());
-                        row.setValue(BluetoothMessageConstants.RECORD_NUMBER_COLUMN, data.getRecordNumber());
-                        row.setValue(BluetoothCsvConstants.SPEED, data.getSpeed());
-                        row.setValue(BluetoothMessageConstants.ACCURACY, MathUtils.roundAccuracy(data.getAccuracy()));
-                        row.setValue(CsvConstants.LOCATION_AGE, data.getLocationAge());
+        final String sourceAddress = data.getSourceAddress();
+        if (!sourceAddress.isEmpty())
+        {
+            row.setValue(BluetoothMessageConstants.SOURCE_ADDRESS_COLUMN, sourceAddress);
+        }
 
-                        final String sourceAddress = data.getSourceAddress();
-                        if (!sourceAddress.isEmpty())
-                        {
-                            row.setValue(BluetoothMessageConstants.SOURCE_ADDRESS_COLUMN, sourceAddress);
-                        }
+        if (data.hasSignalStrength())
+        {
+            row.setValue(BluetoothMessageConstants.SIGNAL_STRENGTH_COLUMN, data.getSignalStrength().getValue());
+        }
 
-                        if (data.hasSignalStrength())
-                        {
-                            row.setValue(BluetoothMessageConstants.SIGNAL_STRENGTH_COLUMN, data.getSignalStrength().getValue());
-                        }
+        if (data.hasTxPower())
+        {
+            row.setValue(BluetoothMessageConstants.TX_POWER_COLUMN, data.getTxPower().getValue());
+        }
 
-                        if (data.hasTxPower())
-                        {
-                            row.setValue(BluetoothMessageConstants.TX_POWER_COLUMN, data.getTxPower().getValue());
-                        }
+        final Technology technology = data.getTechnology();
+        if (technology != Technology.UNKNOWN)
+        {
+            row.setValue(BluetoothMessageConstants.TECHNOLOGY_COLUMN, BluetoothMessageConstants.getTechnologyString(technology));
+        }
 
-                        final Technology technology = data.getTechnology();
-                        if (technology != Technology.UNKNOWN)
-                        {
-                            row.setValue(BluetoothMessageConstants.TECHNOLOGY_COLUMN, BluetoothMessageConstants.getTechnologyString(technology));
-                        }
+        final SupportedTechnologies supportedTech = data.getSupportedTechnologies();
+        if (supportedTech != SupportedTechnologies.UNKNOWN)
+        {
+            row.setValue(BluetoothMessageConstants.SUPPORTED_TECHNOLOGIES_COLUMN, BluetoothMessageConstants.getSupportedTechString(supportedTech));
+        }
 
-                        final SupportedTechnologies supportedTech = data.getSupportedTechnologies();
-                        if (supportedTech != SupportedTechnologies.UNKNOWN)
-                        {
-                            row.setValue(BluetoothMessageConstants.SUPPORTED_TECHNOLOGIES_COLUMN, BluetoothMessageConstants.getSupportedTechString(supportedTech));
-                        }
+        final String otaDeviceName = data.getOtaDeviceName();
+        if (!otaDeviceName.isEmpty())
+        {
+            row.setValue(BluetoothMessageConstants.OTA_DEVICE_NAME_COLUMN, otaDeviceName);
+        }
 
-                        final String otaDeviceName = data.getOtaDeviceName();
-                        if (!otaDeviceName.isEmpty())
-                        {
-                            row.setValue(BluetoothMessageConstants.OTA_DEVICE_NAME_COLUMN, otaDeviceName);
-                        }
+        if (data.hasChannel())
+        {
+            row.setValue(BluetoothCsvConstants.CHANNEL, data.getChannel());
+        }
 
-                        if (data.hasChannel())
-                        {
-                            row.setValue(BluetoothCsvConstants.CHANNEL, data.getChannel());
-                        }
+        final AddressType addressType = data.getAddressType();
+        if (addressType != AddressType.UNRECOGNIZED)
+        {
+            row.setValue(BluetoothCsvConstants.ADDRESS_TYPE, data.getAddressType().name());
+        }
 
-                        final AddressType addressType = data.getAddressType();
-                        if (addressType != AddressType.UNRECOGNIZED)
-                        {
-                            row.setValue(BluetoothCsvConstants.ADDRESS_TYPE, data.getAddressType().name());
-                        }
+        final String deviceClass = data.getDeviceClass();
+        if (!deviceClass.isEmpty())
+        {
+            row.setValue(BluetoothCsvConstants.DEVICE_CLASS, deviceClass);
+        }
 
-                        final String deviceClass = data.getDeviceClass();
-                        if (!deviceClass.isEmpty())
-                        {
-                            row.setValue(BluetoothCsvConstants.DEVICE_CLASS, deviceClass);
-                        }
+        final List<String> serviceUuids = data.getServiceUuidsList();
+        if (!serviceUuids.isEmpty())
+        {
+            row.setValue(BluetoothCsvConstants.SERVICE_UUIDS, String.join(";", data.getServiceUuidsList()));
+        }
 
-                        final List<String> serviceUuids = data.getServiceUuidsList();
-                        if (!serviceUuids.isEmpty())
-                        {
-                            row.setValue(BluetoothCsvConstants.SERVICE_UUIDS, String.join(";", data.getServiceUuidsList()));
-                        }
+        String companyId = data.getCompanyId();
+        if (!companyId.isEmpty())
+        {
+            row.setValue(BluetoothCsvConstants.COMPANY_ID, companyId);
+        }
 
-                        String companyId = data.getCompanyId();
-                        if (!companyId.isEmpty())
-                        {
-                            row.setValue(BluetoothCsvConstants.COMPANY_ID, companyId);
-                        }
+        String mfgData = data.getMfgData();
+        if (!mfgData.isEmpty())
+        {
+            row.setValue(BluetoothCsvConstants.MANUFACTURER_SPECIFIC_DATA, mfgData);
+        }
 
-                        String mfgData = data.getMfgData();
-                        if (!mfgData.isEmpty())
-                        {
-                            row.setValue(BluetoothCsvConstants.MANUFACTURER_SPECIFIC_DATA, mfgData);
-                        }
-
-                        featureDao.insert(row);
-
-                        checkIfRolloverNeeded();
-                    }
-                } catch (Exception e)
-                {
-                    Timber.e(e, "Something went wrong when trying to write a Bluetooth survey record");
-                }
-            }
-        });
+        featureDao.insert(row);
     }
 }
