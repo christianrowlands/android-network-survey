@@ -1,5 +1,263 @@
 company_identifiers:
 
+  - value: 0x108A
+    name: 'Grayhill Inc.'
+
+  - value: 0x1089
+    name: 'DEER MANAGEMENT SYSTEMS, LLC'
+
+  - value: 0x1088
+    name: 'Sesame AI, Inc.'
+
+  - value: 0x1087
+    name: 'Matisse Interactif inc.'
+
+  - value: 0x1086
+    name: 'M3SH TECHNOLOGY INC.'
+
+  - value: 0x1085
+    name: 'FUTURE INTELLIGENCE TECHNOLOGY SINGAPORE PTE. LTD.'
+
+  - value: 0x1084
+    name: '24x8, LLC'
+
+  - value: 0x1083
+    name: 'SYSTEM LOCO LTD'
+
+  - value: 0x1082
+    name: 'AIR PRODUCTS AND CHEMICALS, INC.'
+
+  - value: 0x1081
+    name: 'Australis Scientific Pty Ltd.'
+
+  - value: 0x1080
+    name: 'Knit Sound Company'
+
+  - value: 0x107F
+    name: 'Anton Paar ConsumerTec GmbH'
+
+  - value: 0x107E
+    name: 'Belford investment holdings pty ltd'
+
+  - value: 0x107D
+    name: 'IMPACT-BZ LTD'
+
+  - value: 0x107C
+    name: 'Martin.Care GmbH'
+
+  - value: 0x107B
+    name: 'E.J. Brooks Company'
+
+  - value: 0x107A
+    name: 'CodaHD LLC'
+
+  - value: 0x1079
+    name: 'Digimax Innovative Products LTD.'
+
+  - value: 0x1078
+    name: 'augment AI Inc.'
+
+  - value: 0x1077
+    name: 'Shenzhen Muyu Technology Co., Ltd.'
+
+  - value: 0x1076
+    name: 'ALPHADIF'
+
+  - value: 0x1075
+    name: 'TM-TECHNOLOGIES, JSC'
+
+  - value: 0x1074
+    name: 'CenTrak, Inc.'
+
+  - value: 0x1073
+    name: 'Hong Kong Future lntelligent Technology Co., Limited'
+
+  - value: 0x1072
+    name: 'ALTESSA SOLUTIONS INC.'
+
+  - value: 0x1071
+    name: 'IZYBAT'
+
+  - value: 0x1070
+    name: 'TLV Co.,LTD.'
+
+  - value: 0x106F
+    name: 'Prosaris Solutions Ltd.'
+
+  - value: 0x106E
+    name: 'STRYDE LIMITED'
+
+  - value: 0x106D
+    name: 'Rokstar Holdings Limited'
+
+  - value: 0x106C
+    name: 'Global Electronics'
+
+  - value: 0x106B
+    name: 'GORDON MURRAY GROUP LIMITED'
+
+  - value: 0x106A
+    name: 'OSKEY'
+
+  - value: 0x1069
+    name: 'Remoticom B.V.'
+
+  - value: 0x1068
+    name: 'Hotron Co., Ltd.'
+
+  - value: 0x1067
+    name: 'Shenzhen FHX Precision Hardware & Plastic Co., Ltd.'
+
+  - value: 0x1066
+    name: 'Algiz AS'
+
+  - value: 0x1065
+    name: 'HIGH HIT ENTERPRISE CO., LTD.'
+
+  - value: 0x1064
+    name: 'Shearwater Research Inc.'
+
+  - value: 0x1063
+    name: 'Field Line Automation Ltd'
+
+  - value: 0x1062
+    name: 'Framason Audio S.A'
+
+  - value: 0x1061
+    name: 'VCS Vision Control Solutions GmbH'
+
+  - value: 0x1060
+    name: 'TOMOE VALVE CO.,LTD'
+
+  - value: 0x105F
+    name: 'Chip-pump Microelectronics'
+
+  - value: 0x105E
+    name: 'Zuuka Limited'
+
+  - value: 0x105D
+    name: 'Williams Sound, LLC'
+
+  - value: 0x105C
+    name: 'YANMAR HOLDINGS CO., LTD.'
+
+  - value: 0x105B
+    name: 'Fairbanks Scales Inc.'
+
+  - value: 0x105A
+    name: 'ArjoHuntleigh AB'
+
+  - value: 0x1059
+    name: 'Shenzhen Shuye Technology Co.,Ltd.'
+
+  - value: 0x1058
+    name: 'Gravity (Shenzhen)Space Technology Co., Ltd'
+
+  - value: 0x1057
+    name: 'RSA Security LLC'
+
+  - value: 0x1056
+    name: 'CLM-Solutions'
+
+  - value: 0x1055
+    name: 'NewNet, Inc.'
+
+  - value: 0x1054
+    name: 'Romcor Pty Ltd'
+
+  - value: 0x1053
+    name: 'Sensorworx, Inc.'
+
+  - value: 0x1052
+    name: 'MAXTA TECH INC.'
+
+  - value: 0x1051
+    name: 'UnlimitedIRL LLC'
+
+  - value: 0x1050
+    name: 'Hangzhou Sneuro Medical Co., Ltd.'
+
+  - value: 0x104F
+    name: 'Safety Lighting Research Pty Ltd'
+
+  - value: 0x104E
+    name: 'LSC Control Systems Pty Ltd'
+
+  - value: 0x104D
+    name: 'BUND MEDIA PTY. LTD.'
+
+  - value: 0x104C
+    name: 'LAUMAS Elettronica S.r.l.'
+
+  - value: 0x104B
+    name: 'Yoto Limited'
+
+  - value: 0x104A
+    name: 'Mueller-BBM Rail Technologies GmbH'
+
+  - value: 0x1049
+    name: 'Anhui Ubico Advanced Manufacture Co., Ltd.'
+
+  - value: 0x1048
+    name: 'Ferrari s.p.a.'
+
+  - value: 0x1047
+    name: 'Yamaha Motor eBike Systems GmbH'
+
+  - value: 0x1046
+    name: 'EXELIO S.R.L.'
+
+  - value: 0x1045
+    name: 'VOTRONIC Elektronik-Systeme GmbH'
+
+  - value: 0x1044
+    name: 'Rotarex S.A.'
+
+  - value: 0x1043
+    name: 'Shanghai Holychip Electronic Co., Ltd.'
+
+  - value: 0x1042
+    name: 'Namara Water Technologies, Inc'
+
+  - value: 0x1041
+    name: 'Shenzhen Huasheng Jiaye Technology Co., Ltd'
+
+  - value: 0x1040
+    name: 'Raspberry Pi'
+
+  - value: 0x103F
+    name: 'infyni'
+
+  - value: 0x103E
+    name: 'Nextorage Corporation'
+
+  - value: 0x103D
+    name: 'Blahaj Ltd'
+
+  - value: 0x103A
+    name: 'FOSS Analytical A/S'
+
+  - value: 0x0FDC
+    name: 'Beijing Hongsi Electronic Technology Co.,Ltd.'
+
+  - value: 0x0FDA
+    name: 'NIVELCO PROCESS CONTROL CO.'
+
+  - value: 0x0FD9
+    name: 'REMDEVICE S.R.L.'
+
+  - value: 0x0FD8
+    name: 'SIVA Inotec Limited'
+
+  - value: 0x0FD7
+    name: 'Hondata, Inc.'
+
+  - value: 0x0FD6
+    name: 'LIOTYS'
+
+  - value: 0x0FD5
+    name: 'Telemacy Ltd'
+
   - value: 0x0FD4
     name: 'QRITAGYA LLP'
 
@@ -8158,7 +8416,7 @@ company_identifiers:
     name: 'Gooee Limited'
 
   - value: 0x04D4
-    name: '5th Element Ltd'
+    name: 'TASKA PROSTHETICS LIMITED'
 
   - value: 0x04D3
     name: 'Queercon, Inc'
@@ -9658,7 +9916,7 @@ company_identifiers:
     name: 'Genevac Ltd'
 
   - value: 0x02BB
-    name: 'Koha.,Co.Ltd'
+    name: 'YOKOWO CO., LTD.'
 
   - value: 0x02BA
     name: 'Swissprime Technologies AG'
@@ -11431,7 +11689,7 @@ company_identifiers:
     name: 'Apple, Inc.'
 
   - value: 0x004B
-    name: 'Continental Automotive Systems'
+    name: 'AUMOVIO Systems, Inc.'
 
   - value: 0x004A
     name: 'Accel Semiconductor Ltd.'

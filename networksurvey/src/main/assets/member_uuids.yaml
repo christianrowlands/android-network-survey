@@ -27,7 +27,7 @@
 # 
 # This document is subject to change without notice.
 # 
-# Copyright © 2020–2025 by Bluetooth SIG, Inc. The Bluetooth word mark and logos
+# Copyright © 2020–2026 by Bluetooth SIG, Inc. The Bluetooth word mark and logos
 # are owned by Bluetooth SIG, Inc. Other third-party brands and names are the
 # property of their respective owners.
 
@@ -1408,3 +1408,11 @@ uuids:
    name: "Shanghai Ingeek Technology Co., Ltd."
  - uuid: 0xFC46
    name: Xiaomi
+ - uuid: 0xFC45
+   name: Mitsubishi Electric Corporation
+ - uuid: 0xFC44
+   name: "Block, Inc."
+ - uuid: 0xFC43
+   name: "Atmosic Technologies, Inc."
+ - uuid: 0xFC41
+   name: Yoto Limited
