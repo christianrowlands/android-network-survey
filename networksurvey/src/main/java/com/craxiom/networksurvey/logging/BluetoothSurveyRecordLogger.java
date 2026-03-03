@@ -86,9 +86,9 @@ public class BluetoothSurveyRecordLogger extends SurveyRecordLogger implements I
                 {
                     if (geoPackage != null)
                     {
-                        final FeatureDao featureDao = getCachedFeatureDao(BluetoothMessageConstants.BLUETOOTH_RECORDS_TABLE_NAME);
                         for (BluetoothRecord bluetoothRecord : records)
                         {
+                            final FeatureDao featureDao = getCachedFeatureDao(BluetoothMessageConstants.BLUETOOTH_RECORDS_TABLE_NAME);
                             writeBluetoothRecord(featureDao, bluetoothRecord);
                             checkIfRolloverNeeded();
                         }

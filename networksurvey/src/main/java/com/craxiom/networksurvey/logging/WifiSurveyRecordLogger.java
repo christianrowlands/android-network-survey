@@ -62,9 +62,9 @@ public class WifiSurveyRecordLogger extends SurveyRecordLogger implements IWifiS
                 {
                     if (geoPackage != null)
                     {
-                        final FeatureDao featureDao = getCachedFeatureDao(WifiBeaconMessageConstants.WIFI_BEACON_RECORDS_TABLE_NAME);
                         for (WifiRecordWrapper wifiRecordWrapper : records)
                         {
+                            final FeatureDao featureDao = getCachedFeatureDao(WifiBeaconMessageConstants.WIFI_BEACON_RECORDS_TABLE_NAME);
                             writeWifiBeaconRecord(featureDao, wifiRecordWrapper);
                             checkIfRolloverNeeded();
                         }

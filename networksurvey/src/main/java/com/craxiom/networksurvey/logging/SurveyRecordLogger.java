@@ -170,6 +170,7 @@ public abstract class SurveyRecordLogger
                 Timber.e(e, "Caught an exception when trying prepare GeoPackage file for logging");
                 if (geoPackage != null)
                 {
+                    featureDaoCache.clear();
                     geoPackage.close();
                     geoPackage = null;
                 }
