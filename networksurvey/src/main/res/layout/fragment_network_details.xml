@@ -210,10 +210,6 @@
 
         </androidx.cardview.widget.CardView>
 
-        <include
-            layout="@layout/location_card"
-            android:id="@+id/location_card" />
-
         <androidx.cardview.widget.CardView
             android:id="@+id/cellular_details_card_view"
             style="?attr/cardStyle"

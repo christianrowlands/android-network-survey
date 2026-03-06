@@ -2,20 +2,11 @@ package com.craxiom.networksurvey.fragments;
 
 import static com.craxiom.networksurvey.ui.ASignalChartViewModelKt.UNKNOWN_RSSI;
 
-import android.Manifest;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
-import android.content.pm.PackageManager;
-import android.graphics.Color;
-import android.location.Location;
-import android.location.LocationListener;
-import android.location.LocationManager;
-import android.location.LocationProvider;
 import android.os.Bundle;
-import android.os.Handler;
-import android.os.Looper;
 import android.provider.Settings;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -27,7 +18,6 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AlertDialog;
-import androidx.core.app.ActivityCompat;
 import androidx.lifecycle.LifecycleOwner;
 import androidx.lifecycle.ViewModelProvider;
 
@@ -60,13 +50,10 @@ import com.craxiom.networksurvey.ui.main.SharedViewModel;
 import com.craxiom.networksurvey.util.CalculationUtils;
 import com.craxiom.networksurvey.util.CellularUtils;
 import com.craxiom.networksurvey.util.ColorUtils;
-import com.craxiom.networksurvey.util.LocationHintManager;
-import com.craxiom.networksurvey.util.MeasurementFormatter;
 import com.craxiom.networksurvey.util.NsUtils;
 import com.craxiom.networksurvey.util.ParserUtils;
 import com.mackhartley.roundedprogressbar.RoundedProgressBar;
 
-import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -81,7 +68,7 @@ import timber.log.Timber;
  *
  * @since 1.6.0 (It really came earlier, but was minimal until the 1.6.0 rewrite.
  */
-public class NetworkDetailsFragment extends AServiceDataFragment implements ICellularSurveyRecordListener, LocationListener
+public class NetworkDetailsFragment extends AServiceDataFragment implements ICellularSurveyRecordListener
 {
     public static final String SUBSCRIPTION_ID_KEY = "subscription_id";
 
@@ -92,10 +79,6 @@ public class NetworkDetailsFragment extends AServiceDataFragment implements ICel
     // of right now to prevent invalid values from being reported.
     private static final int RSCP_UNSET_VALUE_120 = -120;
     private static final int RSCP_UNSET_VALUE_24 = -24;
-
-    private final DecimalFormat locationFormat = new DecimalFormat("###.#####");
-    private final Handler handler = new Handler(Looper.getMainLooper());
-    private LocationHintManager locationHintManager;
 
     private int subscriptionId;
 
@@ -124,9 +107,6 @@ public class NetworkDetailsFragment extends AServiceDataFragment implements ICel
         viewModel = new ViewModelProvider(requireActivity()).get(getClass().getName() + subscriptionId, CellularViewModel.class);
         chartViewModel = new ViewModelProvider(requireActivity()).get(getClass().getName() + "cellular_chart" + subscriptionId, CellularChartViewModel.class);
         sharedViewModel = new ViewModelProvider(requireActivity()).get(SharedViewModel.class);
-        locationHintManager = new LocationHintManager(handler);
-
-        initializeLocationTextView();
 
         initializeUiListeners();
 
@@ -166,11 +146,6 @@ public class NetworkDetailsFragment extends AServiceDataFragment implements ICel
     {
         super.onResume();
 
-        // In the edge case event where the user has just granted the location permission but has not restarted the app,
-        // we need to update the UI to show the new location in this onResume method. There might be better approaches
-        // instead of recalling the initialize view method each time the fragment is resumed.
-        initializeLocationTextView();
-
         // Register airplane mode receiver
         airplaneModeReceiver = new AirplaneModeReceiver();
         IntentFilter filter = new IntentFilter(Intent.ACTION_AIRPLANE_MODE_CHANGED);
@@ -192,7 +167,6 @@ public class NetworkDetailsFragment extends AServiceDataFragment implements ICel
     @Override
     public void onDestroyView()
     {
-        locationHintManager.cancelTimer();
         removeObservers();
 
         super.onDestroyView();
@@ -202,14 +176,6 @@ public class NetworkDetailsFragment extends AServiceDataFragment implements ICel
     protected void onSurveyServiceConnected(NetworkSurveyService service)
     {
         service.registerCellularSurveyRecordListener(this);
-        service.registerLocationListener(this);
-        // Refresh the location views because we might have missed something between the
-        // initial call and when we registered as a listener, but only if the location is not null
-        // because the initializeLocationTextView method might have set the UI to indicate that the
-        // location provider is disabled or that the location permission is missing and we don't
-        // want to override that.
-        Location latestLocation = service.getPrimaryLocationListener().getLatestLocation();
-        if (latestLocation != null) updateLocationTextView(latestLocation);
 
         service.runSingleCellularScan();
     }
@@ -217,7 +183,6 @@ public class NetworkDetailsFragment extends AServiceDataFragment implements ICel
     @Override
     protected void onSurveyServiceDisconnecting(NetworkSurveyService service)
     {
-        service.unregisterLocationListener(this);
         service.unregisterCellularSurveyRecordListener(this);
 
         super.onSurveyServiceDisconnecting(service);
@@ -245,30 +210,6 @@ public class NetworkDetailsFragment extends AServiceDataFragment implements ICel
         viewModel.setOverrideNetworkType(overrideNetworkType);
     }
 
-    @Override
-    public void onProviderEnabled(@NonNull String provider)
-    {
-        if (LocationManager.GPS_PROVIDER.equals(provider)) viewModel.setProviderEnabled(true);
-    }
-
-    @Override
-    public void onProviderDisabled(@NonNull String provider)
-    {
-        if (LocationManager.GPS_PROVIDER.equals(provider)) viewModel.setProviderEnabled(false);
-    }
-
-    @Override
-    public void onLocationChanged(@NonNull Location location)
-    {
-        viewModel.setLocation(location);
-    }
-
-    @Override
-    public void onStatusChanged(String provider, int status, Bundle extras)
-    {
-        // No-op
-    }
-
     /**
      * Initialize the UI listeners for the various buttons and other UI elements.
      */
@@ -276,7 +217,6 @@ public class NetworkDetailsFragment extends AServiceDataFragment implements ICel
     {
         binding.overrideNetworkGroup.setOnClickListener(c -> showOverrideNetworkInfoDialog());
         binding.cellularInfoIcon.setOnClickListener(c -> showCellularInfoDialog());
-        binding.locationCard.locationHint.setOnClickListener(v -> navigateToSettings());
         setupCopyOnLongPress();
     }
 
@@ -291,9 +231,7 @@ public class NetworkDetailsFragment extends AServiceDataFragment implements ICel
                 binding.plmn, binding.tac, binding.cid,
                 binding.enbId, binding.sectorId, binding.earfcn,
                 binding.pci, binding.band, binding.frequency,
-                binding.lteBand, binding.bandwidth, binding.cqi, binding.ta,
-                binding.locationCard.location, binding.locationCard.altitude,
-                binding.locationCard.accuracy
+                binding.lteBand, binding.bandwidth, binding.cqi, binding.ta
         );
     }
 
@@ -310,8 +248,6 @@ public class NetworkDetailsFragment extends AServiceDataFragment implements ICel
         viewModel.getVoiceNetworkType().observe(viewLifecycleOwner, networkType -> binding.currentVoiceNetwork.setText(networkType));
         viewModel.getOverrideNetworkType().observe(viewLifecycleOwner, networkType -> binding.currentOverrideNetwork.setText(networkType));
 
-        viewModel.getProviderEnabled().observe(viewLifecycleOwner, this::updateLocationProviderStatus);
-        viewModel.getLocation().observe(viewLifecycleOwner, this::updateLocationTextView);
         viewModel.getAirplaneModeActive().observe(viewLifecycleOwner, this::updateAirplaneModeStatus);
 
         viewModel.getServingCellProtocol().observe(viewLifecycleOwner, this::updateServingCellProtocol);
@@ -352,8 +288,6 @@ public class NetworkDetailsFragment extends AServiceDataFragment implements ICel
         viewModel.getVoiceNetworkType().removeObservers(viewLifecycleOwner);
         viewModel.getOverrideNetworkType().removeObservers(viewLifecycleOwner);
 
-        viewModel.getProviderEnabled().removeObservers(viewLifecycleOwner);
-        viewModel.getLocation().removeObservers(viewLifecycleOwner);
         viewModel.getAirplaneModeActive().removeObservers(viewLifecycleOwner);
 
         viewModel.getServingCellProtocol().removeObservers(viewLifecycleOwner);
@@ -413,124 +347,6 @@ public class NetworkDetailsFragment extends AServiceDataFragment implements ICel
         viewModel.setGsmNeighbors(Collections.emptySortedSet());
     }
 
-    /**
-     * Initialize the location text view based on the phone's state.
-     */
-    private void initializeLocationTextView()
-    {
-        final TextView tvLocation = binding.locationCard.location;
-
-        final String displayText;
-        final int textColor;
-
-        if (!hasLocationPermission())
-        {
-            tvLocation.setText(getString(R.string.missing_location_permission));
-            tvLocation.setTextColor(getResources().getColor(R.color.connectionStatusDisconnected, null));
-            return;
-        }
-
-        final Location location = viewModel.getLocation().getValue();
-        if (location != null)
-        {
-            updateLocationTextView(location);
-            return;
-        }
-
-        final LocationManager locationManager = (LocationManager) requireContext().getSystemService(Context.LOCATION_SERVICE);
-        if (locationManager == null)
-        {
-            Timber.wtf("Could not get the location manager.");
-            displayText = getString(R.string.no_gps_device);
-            textColor = R.color.connectionStatusDisconnected;
-        } else
-        {
-            final LocationProvider locationProvider = locationManager.getProvider(LocationManager.GPS_PROVIDER);
-            if (locationProvider == null)
-            {
-                displayText = getString(R.string.no_gps_device);
-            } else if (!locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER))
-            {
-                // gps exists, but isn't on
-                displayText = getString(R.string.turn_on_gps);
-            } else
-            {
-                displayText = getString(R.string.searching_for_location);
-                locationHintManager.startTimer(() -> locationHintManager.showHint(binding.locationCard.locationHint, getContext()));
-            }
-
-            textColor = R.color.connectionStatusConnecting;
-        }
-
-        tvLocation.setText(displayText);
-        tvLocation.setTextColor(getResources().getColor(textColor, null));
-    }
-
-    /**
-     * Updates the location text view with the latest latitude and longitude, or if the latest location is below the
-     * accuracy threshold then the text view is updated to notify the user of such.
-     *
-     * @param latestLocation The latest location if available, or null if the accuracy is not good enough.
-     */
-    private void updateLocationTextView(Location latestLocation)
-    {
-        locationHintManager.cancelTimer();
-        locationHintManager.hideHint(binding.locationCard.locationHint);
-
-        final TextView locationTextView = binding.locationCard.location;
-        final TextView altitudeTextView = binding.locationCard.altitude;
-        final TextView accuracyTextView = binding.locationCard.accuracy;
-        if (latestLocation != null)
-        {
-            final String latLonString = locationFormat.format(latestLocation.getLatitude()) + ", " +
-                    locationFormat.format(latestLocation.getLongitude());
-            locationTextView.setText(latLonString);
-            locationTextView.setTextColor(getResources().getColor(R.color.normalText, null));
-
-            altitudeTextView.setText(getString(R.string.altitude_value,
-                    MeasurementFormatter.formatAltitude(requireContext(), latestLocation.getAltitude())));
-
-            accuracyTextView.setText(getString(R.string.accuracy_value,
-                    MeasurementFormatter.formatAccuracy(requireContext(), latestLocation.getAccuracy())));
-        } else
-        {
-            locationTextView.setText(R.string.low_gps_confidence);
-            locationTextView.setTextColor(Color.YELLOW);
-
-            altitudeTextView.setText(getString(R.string.altitude_initial));
-
-            accuracyTextView.setText(getString(R.string.accuracy_initial));
-        }
-    }
-
-    /**
-     * Navigates to the app's Settings screen.
-     */
-    private void navigateToSettings()
-    {
-        try
-        {
-            sharedViewModel.triggerNavigationToSettings();
-        } catch (Exception e)
-        {
-            Timber.e(e, "Could not navigate to Settings");
-        }
-    }
-
-    /**
-     * Updates the location UI based on the provided location provider status. If this method is called, it always
-     * results in the clearing of the lat/lon from the UI. Therefore, it should only be called when the location
-     * provider is enabled or disabled.
-     *
-     * @param enabled The new status of the location provider; true for enabled, false for disabled.
-     */
-    private void updateLocationProviderStatus(boolean enabled)
-    {
-        final TextView locationTextView = binding.locationCard.location;
-
-        locationTextView.setTextColor(getResources().getColor(R.color.connectionStatusConnecting, null));
-        locationTextView.setText(enabled ? R.string.searching_for_location : R.string.turn_on_gps);
-    }
 
     /**
      * Updates the serving cell title for the serving cell card to reflect the technology being
@@ -672,20 +488,6 @@ public class NetworkDetailsFragment extends AServiceDataFragment implements ICel
                 chartViewModel.setMaxRssi(-73); // -31 dBm is the highest reportable value for SS RSRP
                 break;
         }
-    }
-
-    /**
-     * @return True if the {@link Manifest.permission#ACCESS_FINE_LOCATION} permission has been granted.  False otherwise.
-     */
-    private boolean hasLocationPermission()
-    {
-        if (ActivityCompat.checkSelfPermission(requireContext(), Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED)
-        {
-            Timber.w("The ACCESS_FINE_LOCATION permission has not been granted");
-            return false;
-        }
-
-        return true;
     }
 
     /**

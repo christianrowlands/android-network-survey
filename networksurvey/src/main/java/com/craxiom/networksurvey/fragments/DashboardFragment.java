@@ -9,7 +9,6 @@ import android.content.Context;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.content.res.ColorStateList;
-import android.graphics.Color;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
@@ -18,10 +17,13 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
+import android.transition.AutoTransition;
+import android.transition.TransitionManager;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.CheckBox;
+import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -71,8 +73,9 @@ import com.craxiom.networksurvey.ui.main.UploadHelpDialogFragment;
 import com.craxiom.networksurvey.ui.nsanalytics.NsAnalyticsComposeHelper;
 import com.craxiom.networksurvey.util.BatteryOptimizationHelper;
 import com.craxiom.networksurvey.util.LocationHintManager;
+import com.craxiom.networksurvey.util.LocationStatusHelper;
+import com.craxiom.networksurvey.util.LocationStatusHelper.LocationState;
 import com.craxiom.networksurvey.util.MdmUtils;
-import com.craxiom.networksurvey.util.MeasurementFormatter;
 import com.craxiom.networksurvey.util.NsUtils;
 import com.craxiom.networksurvey.util.PreferenceUtils;
 import com.google.android.material.materialswitch.MaterialSwitch;
@@ -127,6 +130,7 @@ public class DashboardFragment extends AServiceDataFragment implements LocationL
     private final Handler handler = new Handler(Looper.getMainLooper());
     private LocationHintManager locationHintManager;
     private SharedViewModel sharedViewModel;
+    private boolean locationExpanded = false;
 
     private final Runnable updateUploadCountsRunnable = new Runnable()
     {
@@ -385,9 +389,7 @@ public class DashboardFragment extends AServiceDataFragment implements LocationL
     private void setupCopyOnLongPress()
     {
         NsUtils.setupCopyOnLongPress(
-                binding.locationCard.location,
-                binding.locationCard.altitude,
-                binding.locationCard.accuracy
+                binding.locationCard.locationDetailsText
         );
     }
 
@@ -403,6 +405,7 @@ public class DashboardFragment extends AServiceDataFragment implements LocationL
         binding.uploadButton.setOnClickListener(v -> showUploadDialog());
         binding.uploadCancelButton.setOnClickListener(v -> cancelUploads());
         binding.locationCard.locationHint.setOnClickListener(v -> navigateToSettings());
+        binding.locationCard.locationStatusContainer.setOnClickListener(v -> toggleLocationExpanded());
         setupCopyOnLongPress();
 
         final Context context = getContext();
@@ -830,52 +833,30 @@ public class DashboardFragment extends AServiceDataFragment implements LocationL
      */
     private void initializeLocationTextView()
     {
-        final TextView tvLocation = binding.locationCard.location;
+        final boolean hasPermission = hasLocationPermission();
+        boolean hasGps = false;
+        boolean providerEnabled = false;
 
-        final String displayText;
-        final int textColor;
-
-        if (!hasLocationPermission())
+        if (hasPermission)
         {
-            tvLocation.setText(getString(R.string.missing_location_permission));
-            tvLocation.setTextColor(getResources().getColor(R.color.connectionStatusDisconnected, null));
-            return;
-        }
-
-        final Location location = viewModel.getLocation().getValue();
-        if (location != null)
-        {
-            updateLocationTextView(location);
-            return;
-        }
-
-        final LocationManager locationManager = (LocationManager) requireContext().getSystemService(Context.LOCATION_SERVICE);
-        if (locationManager == null)
-        {
-            Timber.wtf("Could not get the location manager.");
-            displayText = getString(R.string.no_gps_device);
-            textColor = R.color.connectionStatusDisconnected;
-        } else
-        {
-            final LocationProvider locationProvider = locationManager.getProvider(LocationManager.GPS_PROVIDER);
-            if (locationProvider == null)
+            final LocationManager locationManager = (LocationManager) requireContext().getSystemService(Context.LOCATION_SERVICE);
+            if (locationManager != null)
             {
-                displayText = getString(R.string.no_gps_device);
-            } else if (!locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER))
-            {
-                // gps exists, but isn't on
-                displayText = getString(R.string.turn_on_gps);
-            } else
-            {
-                displayText = getString(R.string.searching_for_location);
-                locationHintManager.startTimer(() -> locationHintManager.showHint(binding.locationCard.locationHint, getContext()));
+                final LocationProvider locationProvider = locationManager.getProvider(LocationManager.GPS_PROVIDER);
+                hasGps = locationProvider != null;
+                providerEnabled = hasGps && locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER);
             }
-
-            textColor = R.color.connectionStatusConnecting;
         }
 
-        tvLocation.setText(displayText);
-        tvLocation.setTextColor(getResources().getColor(textColor, null));
+        final Location location = hasPermission ? viewModel.getLocation().getValue() : null;
+        final LocationState state = LocationStatusHelper.determineState(location, hasPermission, providerEnabled, hasGps);
+
+        updateLocationUi(state, location);
+
+        if (state == LocationState.SEARCHING)
+        {
+            locationHintManager.startTimer(() -> locationHintManager.showHint(binding.locationCard.locationHint, getContext()));
+        }
     }
 
     /**
@@ -889,28 +870,72 @@ public class DashboardFragment extends AServiceDataFragment implements LocationL
         locationHintManager.cancelTimer();
         locationHintManager.hideHint(binding.locationCard.locationHint);
 
-        final TextView locationTextView = binding.locationCard.location;
-        final TextView altitudeTextView = binding.locationCard.altitude;
-        final TextView accuracyTextView = binding.locationCard.accuracy;
-        if (latestLocation != null)
+        final LocationState state = LocationStatusHelper.determineState(latestLocation, true, true, true);
+        updateLocationUi(state, latestLocation);
+    }
+
+    /**
+     * Updates the compact location status indicator UI based on the given state and location.
+     */
+    private void updateLocationUi(LocationState state, Location location)
+    {
+        final Context context = requireContext();
+        final ImageView icon = binding.locationCard.myLocationIcon;
+        final TextView statusText = binding.locationCard.locationStatusText;
+        final TextView accuracyText = binding.locationCard.locationAccuracyText;
+        final TextView detailsText = binding.locationCard.locationDetailsText;
+        final View detailsRow = binding.locationCard.locationDetailsRow;
+
+        // Icon color
+        int colorRes = LocationStatusHelper.getIconColorRes(state);
+        icon.setImageTintList(ColorStateList.valueOf(ContextCompat.getColor(context, colorRes)));
+
+        // Status text
+        statusText.setText(LocationStatusHelper.getStatusText(context, state));
+
+        // Accuracy text (only for fix states)
+        if (LocationStatusHelper.shouldShowAccuracy(state))
         {
-            final String latLonString = locationFormat.format(latestLocation.getLatitude()) + ", " + locationFormat.format(latestLocation.getLongitude());
-            locationTextView.setText(latLonString);
-            locationTextView.setTextColor(getResources().getColor(R.color.normalText, null));
-
-            altitudeTextView.setText(getString(R.string.altitude_value,
-                    MeasurementFormatter.formatAltitude(requireContext(), latestLocation.getAltitude())));
-
-            accuracyTextView.setText(getString(R.string.accuracy_value,
-                    MeasurementFormatter.formatAccuracy(requireContext(), latestLocation.getAccuracy())));
+            accuracyText.setText(LocationStatusHelper.getAccuracyText(context, location));
+            accuracyText.setVisibility(View.VISIBLE);
         } else
         {
-            locationTextView.setText(R.string.low_gps_confidence);
-            locationTextView.setTextColor(Color.YELLOW);
+            accuracyText.setVisibility(View.GONE);
+        }
 
-            altitudeTextView.setText(getString(R.string.altitude_initial));
+        // Details row (lat/lon + altitude)
+        if (LocationStatusHelper.shouldShowDetails(state) && location != null)
+        {
+            detailsText.setText(LocationStatusHelper.getDetailsText(context, location, locationFormat));
+            detailsRow.setVisibility(locationExpanded ? View.VISIBLE : View.GONE);
+        } else
+        {
+            detailsRow.setVisibility(View.GONE);
+        }
+    }
 
-            accuracyTextView.setText(getString(R.string.accuracy_initial));
+    /**
+     * Toggles the expanded/collapsed state of the location details row with a smooth animation.
+     */
+    private void toggleLocationExpanded()
+    {
+        locationExpanded = !locationExpanded;
+
+        AutoTransition transition = new AutoTransition();
+        transition.setDuration(200);
+        TransitionManager.beginDelayedTransition((ViewGroup) binding.locationCard.locationStatusContainer, transition);
+
+        View detailsRow = binding.locationCard.locationDetailsRow;
+        TextView detailsText = binding.locationCard.locationDetailsText;
+
+        // Only show details if we have location data to display
+        if (locationExpanded && detailsText.getText().length() > 0)
+        {
+            detailsRow.setVisibility(View.VISIBLE);
+        } else
+        {
+            detailsRow.setVisibility(View.GONE);
+            locationExpanded = false;
         }
     }
 
@@ -1753,10 +1778,13 @@ public class DashboardFragment extends AServiceDataFragment implements LocationL
      */
     private void updateLocationProviderStatus(boolean enabled)
     {
-        final TextView locationTextView = binding.locationCard.location;
+        final LocationState state = enabled ? LocationState.SEARCHING : LocationState.GPS_DISABLED;
+        updateLocationUi(state, null);
 
-        locationTextView.setTextColor(getResources().getColor(R.color.connectionStatusConnecting, null));
-        locationTextView.setText(enabled ? R.string.searching_for_location : R.string.turn_on_gps);
+        if (enabled)
+        {
+            locationHintManager.startTimer(() -> locationHintManager.showHint(binding.locationCard.locationHint, getContext()));
+        }
     }
 
     private void queryUploadQueueCount()

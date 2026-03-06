@@ -64,7 +64,7 @@
     <string name="phone_state_help_event_registration_desc">Attaching or detaching from a network</string>
     <string name="phone_state_help_event_sim_label">SIM State</string>
     <string name="phone_state_help_event_sim_desc">SIM card inserted, removed, or changed</string>
-    <string name="phone_state_help_event_handover_label">Serving Cell Handovers</string>
+    <string name="phone_state_help_event_handover_label">Serving Cell Changes</string>
     <string name="phone_state_help_event_handover_desc">Switching between cell towers</string>
     <string name="phone_state_help_event_access_tech_label">Access Technology</string>
     <string name="phone_state_help_event_access_tech_desc">Changes such as LTE to NR (5G)</string>
@@ -267,7 +267,6 @@
     <string name="phone_state_label">Phone State:</string>
     <string name="what_is_configured_to_stream">What is configured to stream?</string>
 
-    <string name="card_title_location">My Location</string>
     <string name="my_location_icon_description">My Location Icon</string>
     <string name="card_title_cellular_details_initial">Serving Cell Details</string>
     <string name="card_title_cellular_details">%1$s Serving Cell Details</string>
@@ -342,10 +341,17 @@
     <string name="searching_for_location">Searching for GPS …</string>
     <string name="location_hint_open_settings">GPS taking a while? Try changing the Location Provider to GNSS in &lt;u>Settings&lt;/u>.</string>
     <string name="low_gps_confidence">Low GPS Confidence</string>
-    <string name="altitude_initial">Alt: </string>
     <string name="altitude_value">Alt: %1$s</string>
-    <string name="accuracy_initial">Accuracy: </string>
     <string name="accuracy_value">Accuracy: %1$s</string>
+
+    <!-- Location Status Indicator -->
+    <string name="location_status_fixed">Location Acquired</string>
+    <string name="location_status_searching">Searching…</string>
+    <string name="location_status_no_gps">No GPS</string>
+    <string name="location_status_gps_disabled">GPS Disabled</string>
+    <string name="location_status_missing_permission">Missing Permission</string>
+    <string name="location_status_accuracy">Acc: %1$s</string>
+    <string name="location_details_format">%1$s   Alt: %2$s</string>
 
     <!-- Airplane Mode Messages -->
     <string name="airplane_mode_active">Airplane Mode Active</string>

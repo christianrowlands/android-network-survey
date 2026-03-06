@@ -1,98 +1,89 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.cardview.widget.CardView xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:card_view="http://schemas.android.com/apk/res-auto"
-    android:id="@+id/location_card_view"
-    style="?attr/cardStyle"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/location_status_container"
     android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    card_view:contentPadding="0dp">
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:clickable="true"
+    android:focusable="true"
+    android:background="?attr/selectableItemBackground"
+    android:paddingStart="@dimen/small_margin"
+    android:paddingEnd="@dimen/small_margin"
+    android:paddingTop="@dimen/x_small_margin"
+    android:paddingBottom="@dimen/x_small_margin">
 
+    <!-- Collapsed row: icon + status + accuracy -->
     <LinearLayout
-        android:layout_width="fill_parent"
-        android:layout_height="match_parent"
-        android:orientation="vertical">
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical">
 
-        <LinearLayout
-            android:layout_width="fill_parent"
-            android:layout_height="match_parent"
-            android:background="@drawable/card_title"
-            android:padding="3dp"
-            android:layout_marginBottom="3dp"
-            android:orientation="horizontal">
-
-            <ImageView
-                android:id="@+id/my_location_icon"
-                android:layout_width="16dp"
-                android:layout_height="16dp"
-                android:layout_gravity="center"
-                android:layout_marginStart="@dimen/small_margin"
-                android:layout_marginEnd="@dimen/small_margin"
-                android:contentDescription="@string/my_location_icon_description"
-                android:src="@drawable/ic_my_location" />
-
-            <TextView
-                android:id="@+id/location_title"
-                style="@style/CardTitleStyle"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="@string/card_title_location" />
-
-        </LinearLayout>
-
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal">
-
-            <TextView
-                android:id="@+id/location"
-                style="@style/StandardText"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:gravity="start"
-                android:layout_marginStart="@dimen/large_margin"
-                android:maxLines="1"
-                android:autoSizeTextType="uniform"
-                android:text="@string/searching_for_location" />
-
-            <TextView
-                android:id="@+id/altitude"
-                style="@style/StandardText"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:maxLines="1"
-                android:autoSizeTextType="uniform"
-                android:text="@string/altitude_initial" />
-
-        </LinearLayout>
+        <ImageView
+            android:id="@+id/my_location_icon"
+            android:layout_width="20dp"
+            android:layout_height="20dp"
+            android:contentDescription="@string/my_location_icon_description"
+            android:src="@drawable/ic_my_location" />
 
         <TextView
-            android:id="@+id/accuracy"
+            android:id="@+id/location_status_text"
             style="@style/StandardText"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginStart="@dimen/large_margin"
-            android:layout_marginBottom="@dimen/small_margin"
-            android:text="@string/accuracy_initial" />
+            android:layout_marginStart="@dimen/small_margin"
+            android:layout_marginEnd="0dp"
+            android:gravity="start|center_vertical"
+            android:maxLines="1"
+            android:text="@string/location_status_searching" />
 
         <TextView
-            android:id="@+id/location_hint"
+            android:id="@+id/location_accuracy_text"
             style="@style/StandardText"
-            android:layout_width="match_parent"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginStart="@dimen/large_margin"
-            android:layout_marginEnd="@dimen/large_margin"
-            android:layout_marginBottom="@dimen/small_margin"
-            android:text="@string/location_hint_open_settings"
-            android:textColor="?attr/colorPrimary"
-            android:textSize="12sp"
-            android:visibility="gone"
-            android:clickable="true"
-            android:focusable="true"
-            android:background="?attr/selectableItemBackground" />
+            android:layout_marginStart="@dimen/small_margin"
+            android:layout_marginEnd="0dp"
+            android:gravity="start|center_vertical"
+            android:maxLines="1" />
 
     </LinearLayout>
 
-</androidx.cardview.widget.CardView>
+    <!-- Expandable details row: lat/lon + altitude (hidden by default) -->
+    <LinearLayout
+        android:id="@+id/location_details_row"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:visibility="gone"
+        android:paddingTop="@dimen/xx_small_margin">
+
+        <TextView
+            android:id="@+id/location_details_text"
+            style="@style/StandardText"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="28dp"
+            android:maxLines="1"
+            android:autoSizeTextType="uniform" />
+
+    </LinearLayout>
+
+    <!-- Location hint (settings link, same as before) -->
+    <TextView
+        android:id="@+id/location_hint"
+        style="@style/StandardText"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="28dp"
+        android:layout_marginEnd="@dimen/small_margin"
+        android:layout_marginTop="@dimen/xx_small_margin"
+        android:text="@string/location_hint_open_settings"
+        android:textColor="?attr/colorPrimary"
+        android:textSize="12sp"
+        android:visibility="gone"
+        android:clickable="true"
+        android:focusable="true"
+        android:background="?attr/selectableItemBackground" />
+
+</LinearLayout>
