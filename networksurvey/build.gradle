@@ -32,8 +32,24 @@ base {
     archivesName = "$applicationName-$appVersion"
 }
 
+// ABI-specific version codes: abiCode * 10000 + baseVersionCode
+// Ranges: armeabi-v7a 10000-19999, arm64-v8a 20000-29999, x86 30000-39999, x86_64 40000-49999
+// WARNING: baseVersionCode must stay below 10000 to avoid range collisions
+// Universal APK keeps the raw versionCode (lowest priority fallback)
+ext.abiCodes = ["armeabi-v7a": 1, "arm64-v8a": 2, "x86": 3, "x86_64": 4]
+
 android {
     compileSdk = 36
+
+    splits {
+        abi {
+            enable true
+            reset()
+            include "armeabi-v7a", "arm64-v8a", "x86", "x86_64"
+            universalApk true
+        }
+    }
+
     defaultConfig {
         buildConfigField "String", "MESSAGING_API_VERSION", "\"${networkSurveyMessagingVersion}\""
         buildConfigField 'String', "NS_API_KEY", "\"${nsApiKey}\""
@@ -107,6 +123,15 @@ android {
         // Has the extra CDR features and does not contain any tracking
         cdr {
             versionNameSuffix ""
+        }
+    }
+}
+
+android.applicationVariants.configureEach { variant ->
+    variant.outputs.each { output ->
+        def baseAbiVersionCode = project.ext.abiCodes.get(output.getFilter(com.android.build.OutputFile.ABI))
+        if (baseAbiVersionCode != null) {
+            output.versionCodeOverride = baseAbiVersionCode * 10000 + variant.versionCode
         }
     }
 }

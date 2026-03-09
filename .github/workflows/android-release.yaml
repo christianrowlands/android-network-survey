@@ -165,11 +165,24 @@ jobs:
           token: ${{ secrets.GH_TOKEN }}
           tag: ${{ steps.version.outputs.content }}
           commit: ${{ github.sha }}
-          body: "## What's Changed
-          
-          ---
-          
-          The regular-release apk is the same as what can be found on the Google Play Store which contains the tracking library Google Analytics. The cdr-release apk is the same as the regular-release apk, but with full CDR support (See README.md for more details) and it also does NOT contain ANY tracking libraries such as Google Analytics."
+          body: |
+            ## What's Changed
+
+            ---
+
+            ### APK Downloads
+
+            Each variant is built as per-architecture APKs for smaller download sizes. **Most users should download the `arm64-v8a` APK** (almost all modern Android phones). If unsure, use the `universal` APK which works on all devices but is larger.
+
+            | Suffix | Architecture | Devices |
+            |--------|-------------|---------|
+            | `arm64-v8a` | 64-bit ARM | Most modern phones/tablets |
+            | `armeabi-v7a` | 32-bit ARM | Older phones |
+            | `x86_64` | 64-bit x86 | Some tablets, Chromebooks, emulators |
+            | `x86` | 32-bit x86 | Older emulators |
+            | `universal` | All | Works everywhere (larger file size) |
+
+            The **regular-release** APK is the same as what can be found on the Google Play Store which contains the tracking library Google Analytics. The **cdr-release** APK is the same as the regular-release APK, but with full CDR support (See README.md for more details) and it also does NOT contain ANY tracking libraries such as Google Analytics.
           generateReleaseNotes: true
           draft: true
 
