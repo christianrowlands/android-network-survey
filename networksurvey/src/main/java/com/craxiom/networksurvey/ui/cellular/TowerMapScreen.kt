@@ -110,6 +110,7 @@ import com.craxiom.networksurvey.ui.cellular.towermap.KEY_TOWER_ICON
 import com.craxiom.networksurvey.ui.cellular.towermap.LineString
 import com.craxiom.networksurvey.ui.cellular.towermap.MapLibreMap
 import com.craxiom.networksurvey.ui.cellular.towermap.MapUiSettings
+import com.craxiom.networksurvey.ui.cellular.towermap.OperatorCountBadge
 import com.craxiom.networksurvey.ui.cellular.towermap.SearchResultSymbols
 import com.craxiom.networksurvey.ui.cellular.towermap.TowerBottomSheet
 import com.craxiom.networksurvey.ui.cellular.towermap.TowerCountBadge
@@ -440,6 +441,11 @@ internal fun TowerMapScreen(
 
                         // 4) Count badges for multi-tower locations
                         TowerCountBadge(
+                            towerWrapperList = towerWrapperList
+                        )
+
+                        // 5) Operator count badges for multi-operator locations
+                        OperatorCountBadge(
                             towerWrapperList = towerWrapperList
                         )
 
