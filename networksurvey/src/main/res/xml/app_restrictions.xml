@@ -210,6 +210,13 @@
 
     <restriction
         android:defaultValue="true"
+        android:description="@string/include_neighbor_cells_description"
+        android:key="include_neighbor_cells"
+        android:restrictionType="bool"
+        android:title="@string/include_neighbor_cells_title" />
+
+    <restriction
+        android:defaultValue="true"
         android:description="@string/ignore_wifi_scan_throttling_warning_description"
         android:key="ignore_wifi_scan_throttling_warning"
         android:restrictionType="bool"

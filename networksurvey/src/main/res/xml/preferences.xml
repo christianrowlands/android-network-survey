@@ -113,9 +113,9 @@
     </PreferenceCategory>
 
     <PreferenceCategory
-        app:icon="@drawable/ic_interval"
-        app:key="scan_interval_config"
-        app:title="@string/scan_interval_config_title">
+        app:icon="@drawable/ic_survey_monitor"
+        app:key="survey_settings"
+        app:title="@string/Survey_settings_title">
 
         <EditTextPreference
             app:defaultValue="5"
@@ -151,6 +151,14 @@
             app:key="device_status_scan_interval_seconds"
             app:title="@string/device_status_scan_interval_title"
             app:useSimpleSummaryProvider="true" />
+
+        <SwitchPreferenceCompat
+            app:defaultValue="true"
+            app:icon="@drawable/ic_weak_signal"
+            app:key="include_neighbor_cells"
+            app:summaryOff="@string/include_neighbor_cells_summary_off"
+            app:summaryOn="@string/include_neighbor_cells_summary_on"
+            app:title="@string/include_neighbor_cells_title" />
 
     </PreferenceCategory>
 

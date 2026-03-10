@@ -63,6 +63,7 @@ public class SettingsFragment extends PreferenceFragmentCompat implements Shared
             NetworkSurveyConstants.PROPERTY_AUTO_START_CDR_LOGGING,
             NetworkSurveyConstants.PROPERTY_AUTO_START_PHONE_STATE_LOGGING,
             NetworkSurveyConstants.PROPERTY_AUTO_INCLUDE_PHONE_STATE_WITH_CELLULAR,
+            NetworkSurveyConstants.PROPERTY_INCLUDE_NEIGHBOR_CELLS,
             NetworkSurveyConstants.PROPERTY_LOG_ROLLOVER_SIZE_MB,
             NetworkSurveyConstants.PROPERTY_LOG_FILE_TYPE,
             NetworkSurveyConstants.PROPERTY_CELLULAR_SCAN_INTERVAL_SECONDS,
@@ -455,6 +456,7 @@ public class SettingsFragment extends PreferenceFragmentCompat implements Shared
         updateBooleanPreferenceForMdm(preferenceScreen, mdmProperties, NetworkSurveyConstants.PROPERTY_AUTO_START_CDR_LOGGING);
         updateBooleanPreferenceForMdm(preferenceScreen, mdmProperties, NetworkSurveyConstants.PROPERTY_AUTO_START_PHONE_STATE_LOGGING);
         updateBooleanPreferenceForMdm(preferenceScreen, mdmProperties, NetworkSurveyConstants.PROPERTY_AUTO_INCLUDE_PHONE_STATE_WITH_CELLULAR);
+        updateBooleanPreferenceForMdm(preferenceScreen, mdmProperties, NetworkSurveyConstants.PROPERTY_INCLUDE_NEIGHBOR_CELLS);
         updateLogRolloverSizeForMdm(preferenceScreen, mdmProperties);
         updateListProviderPreferenceForMdm(preferenceScreen, mdmProperties, NetworkSurveyConstants.PROPERTY_LOG_FILE_TYPE);
         updateIntPreferenceForMdm(preferenceScreen, mdmProperties, NetworkSurveyConstants.PROPERTY_CELLULAR_SCAN_INTERVAL_SECONDS);

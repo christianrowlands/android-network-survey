@@ -545,7 +545,12 @@
     <string name="auto_include_phone_state_summary_on">Phone State logging will automatically start and stop with Cellular logging</string>
     <string name="auto_include_phone_state_summary_off">Phone State logging must be started independently</string>
 
-    <string name="scan_interval_config_title">Scanning Rate</string>
+    <string name="include_neighbor_cells_title">Include Neighbor Cells</string>
+    <string name="include_neighbor_cells_summary_on">All nearby cells (serving and neighbor) are included in logging and streaming</string>
+    <string name="include_neighbor_cells_summary_off">Only serving (registered) cells are logged and streamed, reducing record volume</string>
+    <string name="include_neighbor_cells_description">When disabled, only the serving (registered) cell is included. Neighbor cells are excluded from all output including logging, streaming, and display. This reduces data volume but removes visibility into surrounding cell environment. Default is enabled (which is recommended)</string>
+
+    <string name="Survey_settings_title">Survey Settings</string>
 
     <string name="cellular_scan_interval_title">Cellular Scan Interval</string>
     <string name="cellular_scan_interval_description">The rate at which Cellular towers will be scanned for in seconds. Smaller values will decrease battery life.</string>

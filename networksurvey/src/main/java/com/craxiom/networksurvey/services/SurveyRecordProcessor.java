@@ -511,9 +511,13 @@ public class SurveyRecordProcessor
                     cellularGroupNumber.getAndIncrement(); // Group all the records found in this scan iteration.
                     final List<CellularRecordWrapper> cellularRecords = new ArrayList<>(allCellInfo.size());
 
+                    final boolean includeNeighborCells = PreferenceManager.getDefaultSharedPreferences(context)
+                            .getBoolean(NetworkSurveyConstants.PROPERTY_INCLUDE_NEIGHBOR_CELLS,
+                                    NetworkSurveyConstants.DEFAULT_INCLUDE_NEIGHBOR_CELLS);
+
                     for (CellInfo cellInfo : allCellInfo)
                     {
-                        final CellularRecordWrapper cellularRecord = processCellInfo(cellInfo, subscriptionId, networkOperatorName, signalStrength);
+                        final CellularRecordWrapper cellularRecord = processCellInfo(cellInfo, subscriptionId, networkOperatorName, signalStrength, includeNeighborCells);
                         if (cellularRecord != null) cellularRecords.add(cellularRecord);
                     }
 
@@ -794,11 +798,12 @@ public class SurveyRecordProcessor
      * Given a {@link CellInfo} record, convert it to the appropriate ProtoBuf defined message.  Then, notify any
      * listeners so it can be written to a log file and/or sent to any servers if those services are enabled.
      *
-     * @param cellInfo       The Cell Info object with the details.
-     * @param subscriptionId The subscription ID (aka SIM ID) associated with the cell info record.
+     * @param cellInfo             The Cell Info object with the details.
+     * @param subscriptionId       The subscription ID (aka SIM ID) associated with the cell info record.
+     * @param includeNeighborCells If false, non-registered (neighbor) cells are skipped and null is returned.
      * @since 0.0.5
      */
-    private CellularRecordWrapper processCellInfo(CellInfo cellInfo, int subscriptionId, String networkOperatorName, SignalStrength signalStrength)
+    private CellularRecordWrapper processCellInfo(CellInfo cellInfo, int subscriptionId, String networkOperatorName, SignalStrength signalStrength, boolean includeNeighborCells)
     {
         // We only want to take the time to process a record if we are going to do something with it.  Currently, that
         // means logging, sending to a server, or updating the UI with the latest LTE information.
@@ -816,6 +821,12 @@ public class SurveyRecordProcessor
                             SystemClock.elapsedRealtime(), cellInfo.getTimestampMillis(), cellInfoAgeMs);
                     return null;
                 }
+            }
+
+            // Skip neighbor cells if the user preference is disabled
+            if (!includeNeighborCells && !cellInfo.isRegistered())
+            {
+                return null;
             }
 
             final String carrierName = getCarrierName(cellInfo, networkOperatorName);

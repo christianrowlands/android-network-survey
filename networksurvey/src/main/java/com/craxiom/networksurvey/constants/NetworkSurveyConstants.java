@@ -105,6 +105,8 @@ public class NetworkSurveyConstants
 
     public static final String DEFAULT_ROLLOVER_SIZE_MB = "10";
 
+    public static final boolean DEFAULT_INCLUDE_NEIGHBOR_CELLS = true;
+
     public static final boolean DEFAULT_UPLOAD_TO_OPENCELLID = true;
     public static final boolean DEFAULT_UPLOAD_TO_BEACONDB = true;
     public static final boolean DEFAULT_UPLOAD_RETRY_ENABLED = true;
@@ -132,6 +134,7 @@ public class NetworkSurveyConstants
     public static final String PROPERTY_AUTO_START_CDR_LOGGING = "auto_start_cdr_logging";
     public static final String PROPERTY_AUTO_START_PHONE_STATE_LOGGING = "auto_start_phone_state_logging";
     public static final String PROPERTY_AUTO_INCLUDE_PHONE_STATE_WITH_CELLULAR = "auto_include_phone_state_with_cellular";
+    public static final String PROPERTY_INCLUDE_NEIGHBOR_CELLS = "include_neighbor_cells";
     public static final String PROPERTY_AUTO_START_COMMUNITY_UPLOAD_SURVEY_AT_BOOT = "auto_start_community_upload_survey_at_boot";
     public static final String PROPERTY_CELLULAR_SCAN_INTERVAL_SECONDS = "cellular_scan_interval_seconds";
     public static final String PROPERTY_WIFI_SCAN_INTERVAL_SECONDS = "wifi_scan_interval_seconds";

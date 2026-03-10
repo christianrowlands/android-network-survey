@@ -347,7 +347,6 @@ public class NetworkDetailsFragment extends AServiceDataFragment implements ICel
         viewModel.setGsmNeighbors(Collections.emptySortedSet());
     }
 
-
     /**
      * Updates the serving cell title for the serving cell card to reflect the technology being
      * displayed in rest of the card.
@@ -1002,6 +1001,7 @@ public class NetworkDetailsFragment extends AServiceDataFragment implements ICel
         if (neighbors.isEmpty())
         {
             binding.nrNeighborsGroup.setVisibility(View.GONE);
+            updateNeighborsCardVisibility();
             return;
         }
 
@@ -1030,6 +1030,8 @@ public class NetworkDetailsFragment extends AServiceDataFragment implements ICel
             neighborsTable.addView(row);
         }
 
+        updateNeighborsCardVisibility();
+
         // Notify parent fragment to scroll if needed
         notifyParentOfNeighborUpdate();
     }
@@ -1047,6 +1049,7 @@ public class NetworkDetailsFragment extends AServiceDataFragment implements ICel
         if (neighbors.isEmpty())
         {
             binding.lteNeighborsGroup.setVisibility(View.GONE);
+            updateNeighborsCardVisibility();
             return;
         }
 
@@ -1077,6 +1080,8 @@ public class NetworkDetailsFragment extends AServiceDataFragment implements ICel
             lteNeighborsTable.addView(row);
         }
 
+        updateNeighborsCardVisibility();
+
         // Notify parent fragment to scroll if needed
         notifyParentOfNeighborUpdate();
     }
@@ -1096,6 +1101,7 @@ public class NetworkDetailsFragment extends AServiceDataFragment implements ICel
         if (neighbors.isEmpty())
         {
             binding.umtsNeighborsGroup.setVisibility(View.GONE);
+            updateNeighborsCardVisibility();
             return;
         }
 
@@ -1120,6 +1126,8 @@ public class NetworkDetailsFragment extends AServiceDataFragment implements ICel
             umtsNeighborsTable.addView(row);
         }
 
+        updateNeighborsCardVisibility();
+
         // Notify parent fragment to scroll if needed
         notifyParentOfNeighborUpdate();
     }
@@ -1139,6 +1147,7 @@ public class NetworkDetailsFragment extends AServiceDataFragment implements ICel
         if (neighbors.isEmpty())
         {
             binding.gsmNeighborsGroup.setVisibility(View.GONE);
+            updateNeighborsCardVisibility();
             return;
         }
 
@@ -1163,8 +1172,22 @@ public class NetworkDetailsFragment extends AServiceDataFragment implements ICel
             gsmNeighborsTable.addView(row);
         }
 
+        updateNeighborsCardVisibility();
+
         // Notify parent fragment to scroll if needed
         notifyParentOfNeighborUpdate();
+    }
+
+    /**
+     * Hides or shows the neighbors card based on whether any neighbor sub-groups are visible.
+     */
+    private void updateNeighborsCardVisibility()
+    {
+        boolean anyVisible = binding.nrNeighborsGroup.getVisibility() == View.VISIBLE
+                || binding.lteNeighborsGroup.getVisibility() == View.VISIBLE
+                || binding.umtsNeighborsGroup.getVisibility() == View.VISIBLE
+                || binding.gsmNeighborsGroup.getVisibility() == View.VISIBLE;
+        binding.neighborsCardView.setVisibility(anyVisible ? View.VISIBLE : View.GONE);
     }
 
     /**
