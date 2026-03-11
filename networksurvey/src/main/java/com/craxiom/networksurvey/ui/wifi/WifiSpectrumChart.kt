@@ -1,13 +1,16 @@
 package com.craxiom.networksurvey.ui.wifi
 
-import android.graphics.Typeface
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.craxiom.networksurvey.R
@@ -15,23 +18,19 @@ import com.craxiom.networksurvey.fragments.WifiNetworkInfo
 import com.craxiom.networksurvey.ui.wifi.model.WIFI_SPECTRUM_MAX
 import com.craxiom.networksurvey.ui.wifi.model.WIFI_SPECTRUM_MIN
 import com.patrykandpatrick.vico.compose.cartesian.CartesianChartHost
+import com.patrykandpatrick.vico.compose.cartesian.axis.HorizontalAxis
+import com.patrykandpatrick.vico.compose.cartesian.axis.VerticalAxis
 import com.patrykandpatrick.vico.compose.cartesian.axis.rememberAxisLabelComponent
-import com.patrykandpatrick.vico.compose.cartesian.axis.rememberBottom
-import com.patrykandpatrick.vico.compose.cartesian.axis.rememberStart
+import com.patrykandpatrick.vico.compose.cartesian.data.CartesianChartModelProducer
+import com.patrykandpatrick.vico.compose.cartesian.data.CartesianLayerRangeProvider
+import com.patrykandpatrick.vico.compose.cartesian.layer.LineCartesianLayer
 import com.patrykandpatrick.vico.compose.cartesian.layer.rememberLineCartesianLayer
 import com.patrykandpatrick.vico.compose.cartesian.rememberCartesianChart
 import com.patrykandpatrick.vico.compose.cartesian.rememberVicoScrollState
+import com.patrykandpatrick.vico.compose.common.Fill
+import com.patrykandpatrick.vico.compose.common.Insets
 import com.patrykandpatrick.vico.compose.common.component.rememberShapeComponent
 import com.patrykandpatrick.vico.compose.common.component.rememberTextComponent
-import com.patrykandpatrick.vico.compose.common.fill
-import com.patrykandpatrick.vico.compose.common.insets
-import com.patrykandpatrick.vico.core.cartesian.axis.HorizontalAxis
-import com.patrykandpatrick.vico.core.cartesian.axis.VerticalAxis
-import com.patrykandpatrick.vico.core.cartesian.data.CartesianChartModelProducer
-import com.patrykandpatrick.vico.core.cartesian.data.CartesianLayerRangeProvider
-import com.patrykandpatrick.vico.core.cartesian.layer.LineCartesianLayer
-import com.patrykandpatrick.vico.core.common.Insets
-import com.patrykandpatrick.vico.core.common.shape.CorneredShape
 import kotlin.math.absoluteValue
 
 /**
@@ -64,10 +63,12 @@ private fun ComposeChart(
             signalStrength = wifiNetwork.signalStrength,
             channel = wifiNetwork.centerChannel,
             labelComponent = rememberTextComponent(
-                color = getColorForSsid(wifiNetwork.ssid),
-                textSize = 10.sp,
+                style = TextStyle(
+                    color = getColorForSsid(wifiNetwork.ssid),
+                    fontSize = 10.sp,
+                    fontFamily = FontFamily.Monospace,
+                ),
                 margins = bottomAxisTitleMargins,
-                typeface = Typeface.MONOSPACE,
             ),
             minX = minX,
             maxX = maxX
@@ -79,16 +80,16 @@ private fun ComposeChart(
             if (wifiList.isEmpty()) {
                 listOf(
                     LineCartesianLayer.Line(
-                        fill = LineCartesianLayer.LineFill.single(fill(color1)),
-                        stroke = LineCartesianLayer.LineStroke.Continuous(thicknessDp = 3f),
+                        fill = LineCartesianLayer.LineFill.single(Fill(color1)),
+                        stroke = LineCartesianLayer.LineStroke.Continuous(thickness = 3.dp),
                         pointConnector = SpectrumPointConnector()
                     )
                 )
             } else {
                 wifiList.map { wifiNetwork ->
                     LineCartesianLayer.Line(
-                        fill = LineCartesianLayer.LineFill.single(fill(getColorForSsid(wifiNetwork.ssid))),
-                        stroke = LineCartesianLayer.LineStroke.Continuous(thicknessDp = 3f),
+                        fill = LineCartesianLayer.LineFill.single(Fill(getColorForSsid(wifiNetwork.ssid))),
+                        stroke = LineCartesianLayer.LineStroke.Continuous(thickness = 3.dp),
                         pointConnector = SpectrumPointConnector()
                     )
                 }
@@ -109,12 +110,16 @@ private fun ComposeChart(
                     horizontalLabelPosition = VerticalAxis.HorizontalLabelPosition.Inside,
                     itemPlacer = VerticalAxis.ItemPlacer.step({ 5.0 }),
                 ),
-            bottomAxis =
+            bottomAxis = run {
+                val channelTitle = stringResource(R.string.channel)
                 HorizontalAxis.rememberBottom(
-                    title = stringResource(R.string.channel),
+                    title = { channelTitle },
                     label = rememberAxisLabelComponent(
-                        textSize = 12.sp,
-                        padding = Insets(1f, 1f)
+                        style = TextStyle(
+                            color = MaterialTheme.colorScheme.onSurface,
+                            fontSize = 12.sp
+                        ),
+                        padding = Insets(1.dp, 1.dp)
                     ),
                     itemPlacer = remember {
                         ChannelAxisItemPlacer(
@@ -125,15 +130,18 @@ private fun ComposeChart(
                     titleComponent =
                         rememberTextComponent(
                             background = rememberShapeComponent(
-                                fill = fill(colorResource(id = R.color.colorAccent)),
-                                shape = CorneredShape.Pill
+                                fill = Fill(colorResource(id = R.color.colorAccent)),
+                                shape = CircleShape
                             ),
-                            color = Color.White,
+                            style = TextStyle(
+                                color = Color.White,
+                                fontFamily = FontFamily.Monospace,
+                            ),
                             padding = axisTitlePadding,
                             margins = bottomAxisTitleMargins,
-                            typeface = Typeface.MONOSPACE,
                         ),
-                ),
+                )
+            },
             decorations = decorationList,
         ),
         modelProducer,
@@ -196,8 +204,8 @@ private val chartColors = listOf(
 private val axisTitleHorizontalPaddingValue = 8.dp
 private val axisTitleVerticalPaddingValue = 2.dp
 private val axisTitlePadding =
-    insets(axisTitleHorizontalPaddingValue, axisTitleVerticalPaddingValue)
+    Insets(axisTitleHorizontalPaddingValue, axisTitleVerticalPaddingValue)
 private val axisTitleMarginValue = 4.dp
 private val bottomAxisTitleMargins =
-    insets(axisTitleHorizontalPaddingValue, axisTitleVerticalPaddingValue)
+    Insets(axisTitleHorizontalPaddingValue, axisTitleVerticalPaddingValue)
 

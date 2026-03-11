@@ -3,7 +3,7 @@ package com.craxiom.networksurvey.ui.wifi.model
 import androidx.lifecycle.viewModelScope
 import com.craxiom.networksurvey.fragments.WifiNetworkInfo
 import com.craxiom.networksurvey.util.WifiUtils
-import com.patrykandpatrick.vico.core.cartesian.data.lineSeries
+import com.patrykandpatrick.vico.compose.cartesian.data.lineSeries
 import kotlinx.coroutines.launch
 
 /**

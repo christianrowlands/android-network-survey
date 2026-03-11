@@ -1,9 +1,9 @@
 package com.craxiom.networksurvey.ui.wifi
 
-import com.patrykandpatrick.vico.core.cartesian.CartesianDrawingContext
-import com.patrykandpatrick.vico.core.cartesian.CartesianMeasuringContext
-import com.patrykandpatrick.vico.core.cartesian.axis.HorizontalAxis
-import com.patrykandpatrick.vico.core.cartesian.layer.CartesianLayerDimensions
+import com.patrykandpatrick.vico.compose.cartesian.CartesianDrawingContext
+import com.patrykandpatrick.vico.compose.cartesian.CartesianMeasuringContext
+import com.patrykandpatrick.vico.compose.cartesian.axis.HorizontalAxis
+import com.patrykandpatrick.vico.compose.cartesian.layer.CartesianLayerDimensions
 
 class ChannelAxisItemPlacer(
     private val labelInterval: Int = 1,
@@ -69,7 +69,7 @@ class ChannelAxisItemPlacer(
         visibleXRange: ClosedFloatingPointRange<Double>,
         fullXRange: ClosedFloatingPointRange<Double>,
         maxLabelWidth: Float,
-    ): List<Double>? {
+    ): List<Double> {
         return customLabelValues.map { it.toDouble() }
     }
 

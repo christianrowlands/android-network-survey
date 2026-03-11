@@ -180,8 +180,7 @@ dependencies {
     implementation 'androidx.recyclerview:recyclerview:1.4.0'
 
     implementation 'com.github.MackHartley:RoundedProgressBar:3.0.0'
-    implementation 'com.patrykandpatrick.vico:core:2.4.3'
-    implementation 'com.patrykandpatrick.vico:compose-m3:2.4.3'
+    implementation 'com.patrykandpatrick.vico:compose-m3:3.0.3'
 
     implementation 'com.github.yuriy-budiyev:code-scanner:2.3.2'
     implementation 'com.google.zxing:core:3.5.4'

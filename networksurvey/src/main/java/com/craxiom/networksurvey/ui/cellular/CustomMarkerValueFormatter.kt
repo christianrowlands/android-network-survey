@@ -1,8 +1,8 @@
 package com.craxiom.networksurvey.ui.cellular
 
-import com.patrykandpatrick.vico.core.cartesian.CartesianDrawingContext
-import com.patrykandpatrick.vico.core.cartesian.marker.CartesianMarker
-import com.patrykandpatrick.vico.core.cartesian.marker.DefaultCartesianMarker
+import com.patrykandpatrick.vico.compose.cartesian.CartesianDrawingContext
+import com.patrykandpatrick.vico.compose.cartesian.marker.CartesianMarker
+import com.patrykandpatrick.vico.compose.cartesian.marker.DefaultCartesianMarker
 
 /**
  * A [DefaultCartesianMarker.ValueFormatter] that displays the provided text.

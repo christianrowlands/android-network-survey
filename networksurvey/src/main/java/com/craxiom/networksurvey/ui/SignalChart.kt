@@ -7,14 +7,13 @@ import androidx.compose.ui.res.colorResource
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.craxiom.networksurvey.R
 import com.patrykandpatrick.vico.compose.cartesian.CartesianChartHost
-import com.patrykandpatrick.vico.compose.cartesian.axis.rememberStart
+import com.patrykandpatrick.vico.compose.cartesian.axis.VerticalAxis
+import com.patrykandpatrick.vico.compose.cartesian.data.CartesianLayerRangeProvider
+import com.patrykandpatrick.vico.compose.cartesian.layer.LineCartesianLayer
 import com.patrykandpatrick.vico.compose.cartesian.layer.rememberLineCartesianLayer
 import com.patrykandpatrick.vico.compose.cartesian.rememberCartesianChart
 import com.patrykandpatrick.vico.compose.cartesian.rememberVicoScrollState
-import com.patrykandpatrick.vico.compose.common.fill
-import com.patrykandpatrick.vico.core.cartesian.axis.VerticalAxis
-import com.patrykandpatrick.vico.core.cartesian.data.CartesianLayerRangeProvider
-import com.patrykandpatrick.vico.core.cartesian.layer.LineCartesianLayer
+import com.patrykandpatrick.vico.compose.common.Fill
 
 /**
  * A chart that shows signal values (e.g. RSSI) over time.
@@ -43,7 +42,7 @@ private fun ComposeChart(viewModel: ASignalChartViewModel) {
                 lineProvider = LineCartesianLayer.LineProvider.series(
                     LineCartesianLayer.Line(
                         fill = LineCartesianLayer.LineFill.single(
-                            fill(colorResource(id = R.color.colorAccent))
+                            Fill(colorResource(id = R.color.colorAccent))
                         )
                     )
                 ),

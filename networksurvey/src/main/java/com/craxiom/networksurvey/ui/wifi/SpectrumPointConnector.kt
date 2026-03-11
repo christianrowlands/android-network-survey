@@ -1,8 +1,8 @@
 package com.craxiom.networksurvey.ui.wifi
 
-import android.graphics.Path
-import com.patrykandpatrick.vico.core.cartesian.CartesianDrawingContext
-import com.patrykandpatrick.vico.core.cartesian.layer.LineCartesianLayer
+import androidx.compose.ui.graphics.Path
+import com.patrykandpatrick.vico.compose.cartesian.CartesianDrawingContext
+import com.patrykandpatrick.vico.compose.cartesian.layer.LineCartesianLayer
 
 /**
  * The point connector for the spectrum chart. This point connector rounds out the curve to make
