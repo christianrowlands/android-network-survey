@@ -598,7 +598,7 @@
     <string name="coverage_circle_color_dialog_title">Select Coverage Circle Color</string>
 
     <string name="coverage_circle_opacity_title">Coverage Circle Fill Opacity</string>
-    <string name="coverage_circle_opacity_summary">Adjust transparency of the coverage circle fill (0% = no fill, 100% = solid fill)</string>
+    <string name="coverage_circle_opacity_summary">Adjust transparency of the coverage circle fill (0%% = no fill, 100%% = solid fill)</string>
 
     <string name="keep_screen_on_title">Keep Tower Map Screen On</string>
     <string name="keep_screen_on_summary_on">Screen will stay on while viewing the Tower Map</string>

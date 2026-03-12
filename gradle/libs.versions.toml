@@ -1,10 +1,8 @@
 [versions]
-#ksp = "2.3.5"
+#ksp = "2.3.5"  # KSP applied via classpath in root build.gradle buildscript block
 kotlin = "2.3.10"
 
 [plugins]
-org-jetbrains-kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
 compose-compiler = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
-kotlin-kapt = { id = "org.jetbrains.kotlin.kapt", version.ref = "kotlin" }
 kotlin-parcelize = { id = "org.jetbrains.kotlin.plugin.parcelize", version.ref = "kotlin" }
-#google-devtools-ksp = { id = "com.google.devtools.ksp", version.ref = 'ksp' }
+#google-devtools-ksp = { id = "com.google.devtools.ksp", version.ref = 'ksp' }  # Applied via classpath instead

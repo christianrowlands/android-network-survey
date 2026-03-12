@@ -29,7 +29,7 @@ import com.craxiom.networksurvey.logging.db.model.WifiBeaconRecordEntity;
 
 @Database(entities = {GsmRecordEntity.class, CdmaRecordEntity.class, UmtsRecordEntity.class,
         LteRecordEntity.class, NrRecordEntity.class, WifiBeaconRecordEntity.class, TowerCacheEntity.class,
-        NsAnalyticsQueueEntity.class, NsAnalyticsConnectionEntity.class}, version = 11)
+        NsAnalyticsQueueEntity.class, NsAnalyticsConnectionEntity.class}, version = 11, exportSchema = false)
 public abstract class SurveyDatabase extends RoomDatabase
 {
     public abstract GsmRecordDao gsmRecordDao();

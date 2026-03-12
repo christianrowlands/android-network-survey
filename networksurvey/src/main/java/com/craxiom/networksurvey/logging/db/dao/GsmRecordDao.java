@@ -1,6 +1,5 @@
 package com.craxiom.networksurvey.logging.db.dao;
 
-import androidx.annotation.NonNull;
 import androidx.room.Dao;
 import androidx.room.Insert;
 import androidx.room.OnConflictStrategy;
@@ -20,6 +19,5 @@ public interface GsmRecordDao
     void insertRecords(List<GsmRecordEntity> records);
 
     @Query("SELECT * FROM gsm_survey_records")
-    @NonNull
     List<GsmRecordEntity> getAllRecords();
 }
