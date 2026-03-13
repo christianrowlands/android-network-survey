@@ -621,6 +621,8 @@
     <string name="auto_upload_wifi_only_summary_off">Auto upload will use any available network connection</string>
     <string name="auto_upload_wifi_only_summary_on">Auto upload will only occur on unmetered (Wi-Fi) connections</string>
 
+    <string name="auto_upload_status_enabled">Auto-upload enabled</string>
+
     <string name="allow_data_upload">External Data Upload</string>
     <string name="allow_data_upload_mdm_description">True to allow users to upload survey records to 3rd Party databases such as OpenCelliD and BeaconDB, false to prevent it</string>
 

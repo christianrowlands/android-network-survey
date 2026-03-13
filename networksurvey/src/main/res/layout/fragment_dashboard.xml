@@ -391,15 +391,33 @@
                             </LinearLayout>
 
                             <!-- Upload Queue Counts -->
-                            <TextView
-                                android:id="@+id/upload_queue_title"
-                                style="@style/SmallTitleText"
-                                android:layout_width="wrap_content"
+                            <com.google.android.flexbox.FlexboxLayout
+                                android:layout_width="match_parent"
                                 android:layout_height="wrap_content"
                                 android:layout_marginHorizontal="@dimen/small_margin"
                                 android:paddingBottom="@dimen/x_small_margin"
                                 android:paddingHorizontal="@dimen/x_small_margin"
-                                android:text="@string/upload_queue_title" />
+                                app:alignItems="center"
+                                app:flexWrap="wrap">
+
+                                <TextView
+                                    android:id="@+id/upload_queue_title"
+                                    style="@style/SmallTitleText"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:text="@string/upload_queue_title" />
+
+                                <TextView
+                                    android:id="@+id/auto_upload_status"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:layout_marginStart="@dimen/small_margin"
+                                    android:textSize="12sp"
+                                    android:textColor="#c2c1c1"
+                                    android:text="@string/auto_upload_status_enabled"
+                                    android:visibility="gone" />
+
+                            </com.google.android.flexbox.FlexboxLayout>
 
                             <com.google.android.flexbox.FlexboxLayout
                                 android:layout_width="match_parent"

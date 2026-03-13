@@ -246,6 +246,7 @@ public class DashboardFragment extends AServiceDataFragment implements LocationL
 
         updateMqttUiState(service.getMqttConnectionState());
         readMqttStreamEnabledProperties();
+        readAutoUploadEnabledProperty();
         updateLoggingState(service);
 
         // Update upload scanning state and determine which surveys are active
@@ -360,6 +361,9 @@ public class DashboardFragment extends AServiceDataFragment implements LocationL
             case NetworkSurveyConstants.PROPERTY_MQTT_GNSS_STREAM_ENABLED:
             case NetworkSurveyConstants.PROPERTY_MQTT_DEVICE_STATUS_STREAM_ENABLED:
                 readMqttStreamEnabledProperties();
+                break;
+            case NetworkSurveyConstants.PROPERTY_AUTO_UPLOAD_ENABLED:
+                readAutoUploadEnabledProperty();
                 break;
             case NetworkSurveyConstants.PROPERTY_UPLOAD_TO_OPENCELLID:
             case NetworkSurveyConstants.PROPERTY_UPLOAD_TO_BEACONDB:
@@ -655,6 +659,7 @@ public class DashboardFragment extends AServiceDataFragment implements LocationL
         viewModel.getCellularUploadQueueCount().observe(viewLifecycleOwner, this::updateCellularUploadQueueCountUI);
         viewModel.getWifiUploadQueueCount().observe(viewLifecycleOwner, this::updateWifiUploadQueueCountUI);
         viewModel.getCommunityUploadButtonEnabled().observe(viewLifecycleOwner, this::updateCommunityUploadButtonState);
+        viewModel.getAutoUploadEnabled().observe(viewLifecycleOwner, this::updateAutoUploadStatusUI);
 
         viewModel.getProviderEnabled().observe(viewLifecycleOwner, this::updateLocationProviderStatus);
         viewModel.getLocation().observe(viewLifecycleOwner, this::updateLocationTextView);
@@ -688,6 +693,7 @@ public class DashboardFragment extends AServiceDataFragment implements LocationL
         viewModel.getLocation().removeObservers(viewLifecycleOwner);
 
         viewModel.getUploadScanningActive().removeObservers(viewLifecycleOwner);
+        viewModel.getAutoUploadEnabled().removeObservers(viewLifecycleOwner);
 
         viewModel.getCellularLoggingEnabled().removeObservers(viewLifecycleOwner);
         viewModel.getPhoneStateLoggingEnabled().removeObservers(viewLifecycleOwner);
@@ -1027,6 +1033,30 @@ public class DashboardFragment extends AServiceDataFragment implements LocationL
 
         boolean deviceStatusStreamEnabled = preferences.getBoolean(NetworkSurveyConstants.PROPERTY_MQTT_DEVICE_STATUS_STREAM_ENABLED, NetworkSurveyConstants.DEFAULT_MQTT_DEVICE_STATUS_STREAM_SETTING);
         viewModel.setDeviceStatusMqttStreamEnabled(deviceStatusStreamEnabled);
+    }
+
+    /**
+     * Reads the auto-upload enabled preference and updates the view model.
+     */
+    private void readAutoUploadEnabledProperty()
+    {
+        final Context context = getContext();
+        if (context == null)
+        {
+            Timber.w("Could not get the context to read the auto-upload preference");
+            return;
+        }
+        final SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(context);
+        boolean autoUploadEnabled = preferences.getBoolean(NetworkSurveyConstants.PROPERTY_AUTO_UPLOAD_ENABLED, false);
+        viewModel.setAutoUploadEnabled(autoUploadEnabled);
+    }
+
+    /**
+     * Updates the auto-upload status indicator visibility on the Dashboard.
+     */
+    private void updateAutoUploadStatusUI(boolean enabled)
+    {
+        binding.autoUploadStatus.setVisibility(enabled ? View.VISIBLE : View.GONE);
     }
 
     /**
