@@ -1118,6 +1118,34 @@ public class PreferenceUtils
     }
 
     /**
+     * Returns true if auto-upload is enabled. Checks MDM external data upload permission
+     * first; if MDM disallows external uploads, auto-upload is always disabled regardless
+     * of the user preference.
+     *
+     * @param context The context to use when getting the Shared Preferences and Restriction Manager.
+     * @return True if auto-upload is enabled, false otherwise.
+     */
+    public static boolean isAutoUploadEnabled(Context context)
+    {
+        if (!MdmUtils.isExternalDataUploadAllowed(context)) return false;
+
+        SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(context);
+        return preferences.getBoolean(NetworkSurveyConstants.PROPERTY_AUTO_UPLOAD_ENABLED, false);
+    }
+
+    /**
+     * Returns true if auto-upload should only occur on unmetered (Wi-Fi) connections.
+     *
+     * @param context The context to use when getting the Shared Preferences.
+     * @return True if auto-upload should be Wi-Fi only, false otherwise.
+     */
+    public static boolean isAutoUploadWifiOnly(Context context)
+    {
+        SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(context);
+        return preferences.getBoolean(NetworkSurveyConstants.PROPERTY_AUTO_UPLOAD_WIFI_ONLY, true);
+    }
+
+    /**
      * Gets the battery management enabled preference.
      * <p>
      * First, this method tries to pull the MDM provided battery management enabled value. If it is not set (either because the device

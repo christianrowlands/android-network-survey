@@ -2,25 +2,23 @@ package com.craxiom.networksurvey.fragments;
 
 import android.app.AlertDialog;
 import android.content.Context;
+import android.content.RestrictionsManager;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.text.TextUtils;
-import android.view.LayoutInflater;
-import android.view.View;
-import android.view.ViewGroup;
 import android.widget.Toast;
 
-import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
 import androidx.fragment.app.FragmentActivity;
 import androidx.preference.EditTextPreference;
 import androidx.preference.Preference;
 import androidx.preference.PreferenceFragmentCompat;
 import androidx.preference.PreferenceManager;
+import androidx.preference.SwitchPreferenceCompat;
 
 import com.craxiom.networksurvey.R;
 import com.craxiom.networksurvey.constants.NetworkSurveyConstants;
 import com.craxiom.networksurvey.logging.db.SurveyDatabase;
+import com.craxiom.networksurvey.util.MdmUtils;
 import com.craxiom.networksurvey.util.PreferenceUtils;
 
 import timber.log.Timber;
@@ -40,6 +38,8 @@ public class UploadSettingsFragment extends PreferenceFragmentCompat implements 
                 return true;
             });
         }
+
+        updateAutoUploadPreferencesForMdm();
     }
 
     @Override
@@ -94,6 +94,59 @@ public class UploadSettingsFragment extends PreferenceFragmentCompat implements 
                 .setPositiveButton(android.R.string.ok, (dialog, which) -> deleteUploadData(context))
                 .setNegativeButton(android.R.string.cancel, null)
                 .show();
+    }
+
+    /**
+     * If the app is under MDM control, update the auto-upload preferences to reflect
+     * MDM provided values and disable the UI controls.
+     */
+    private void updateAutoUploadPreferencesForMdm()
+    {
+        Context context = getContext();
+        if (context == null) return;
+
+        if (!MdmUtils.isUnderMdmControl(context, SettingsFragment.MDM_OVERLAP_PROPERTY_KEYS))
+        {
+            return;
+        }
+
+        SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context);
+        boolean mdmOverride = sharedPreferences.getBoolean(NetworkSurveyConstants.PROPERTY_MDM_OVERRIDE_KEY, false);
+        if (mdmOverride) return;
+
+        RestrictionsManager restrictionsManager = (RestrictionsManager) context.getSystemService(Context.RESTRICTIONS_SERVICE);
+        if (restrictionsManager == null) return;
+
+        Bundle mdmProperties = restrictionsManager.getApplicationRestrictions();
+        if (mdmProperties == null) return;
+
+        updateBooleanPreferenceForMdm(mdmProperties, NetworkSurveyConstants.PROPERTY_AUTO_UPLOAD_ENABLED);
+        updateBooleanPreferenceForMdm(mdmProperties, NetworkSurveyConstants.PROPERTY_AUTO_UPLOAD_WIFI_ONLY);
+    }
+
+    /**
+     * Updates a boolean preference with an MDM value if it exists.
+     */
+    private void updateBooleanPreferenceForMdm(Bundle mdmProperties, String preferenceKey)
+    {
+        try
+        {
+            SwitchPreferenceCompat preference = findPreference(preferenceKey);
+            if (preference != null && mdmProperties.containsKey(preferenceKey))
+            {
+                boolean mdmValue = mdmProperties.getBoolean(preferenceKey);
+                preference.setEnabled(false);
+                preference.setChecked(mdmValue);
+
+                PreferenceManager.getDefaultSharedPreferences(requireContext())
+                        .edit()
+                        .putBoolean(preferenceKey, mdmValue)
+                        .apply();
+            }
+        } catch (Exception e)
+        {
+            Timber.e(e, "Could not update MDM preference for %s", preferenceKey);
+        }
     }
 
     private void deleteUploadData(Context context)

@@ -62,6 +62,12 @@ public class NsUploaderWorker extends Worker
     public static final String BEACONDB_RESULT = "BEACONDB_RESULT";
     public static final String OCID_RESULT_MESSAGE = "OCID_RESULT_MESSAGE";
     public static final String BEACONDB_RESULT_MESSAGE = "BEACONDB_RESULT_MESSAGE";
+
+    public static final String INPUT_SOURCE = "INPUT_SOURCE";
+    public static final String SOURCE_MANUAL = "manual";
+    public static final String SOURCE_AUTO = "auto";
+    public static final String OCID_RESULT_ENUM = "OCID_RESULT_ENUM";
+    public static final String BEACONDB_RESULT_ENUM = "BEACONDB_RESULT_ENUM";
     public static final int NOTIFICATION_ID = 102;
     private static final int LOCATIONS_PER_PART = 100; // Batch size for uploads
     public static final String OCID_APP_ID = "NetworkSurvey " + BuildConfig.VERSION_NAME;
@@ -91,7 +97,8 @@ public class NsUploaderWorker extends Worker
             Notification notification = notificationHelper.createNotification(notificationManager);
             notificationManager.notify(NOTIFICATION_ID, notification);
 
-            Timber.d("Starting upload process...");
+            String source = getInputData().getString(INPUT_SOURCE);
+            Timber.d("Starting upload process (source: %s)...", source != null ? source : SOURCE_MANUAL);
 
             // Read work input parameters
             isOpenCellIdUploadEnabled = getInputData().getBoolean(NetworkSurveyConstants.PROPERTY_UPLOAD_TO_OPENCELLID, false);
@@ -388,6 +395,8 @@ public class NsUploaderWorker extends Worker
                 .putString(BEACONDB_RESULT, applicationContext.getString(UploadResult.getMessage(beaconDbResult)))
                 .putString(OCID_RESULT_MESSAGE, applicationContext.getString(ocidResult.getDescription()))
                 .putString(BEACONDB_RESULT_MESSAGE, applicationContext.getString(beaconDbResult.getDescription()))
+                .putString(OCID_RESULT_ENUM, ocidResult.name())
+                .putString(BEACONDB_RESULT_ENUM, beaconDbResult.name())
                 .build();
     }
 

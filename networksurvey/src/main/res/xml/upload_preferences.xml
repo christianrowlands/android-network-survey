@@ -33,6 +33,21 @@
             app:summaryOff="@string/auto_start_community_upload_survey_summary_off"
             app:summaryOn="@string/auto_start_community_upload_survey_summary_on" />
 
+        <SwitchPreferenceCompat
+            app:defaultValue="false"
+            app:key="auto_upload_enabled"
+            app:title="@string/auto_upload_title"
+            app:summaryOff="@string/auto_upload_summary_off"
+            app:summaryOn="@string/auto_upload_summary_on" />
+
+        <SwitchPreferenceCompat
+            app:defaultValue="true"
+            app:key="auto_upload_wifi_only"
+            app:dependency="auto_upload_enabled"
+            app:title="@string/auto_upload_wifi_only_title"
+            app:summaryOff="@string/auto_upload_wifi_only_summary_off"
+            app:summaryOn="@string/auto_upload_wifi_only_summary_on" />
+
     </PreferenceCategory>
 
     <PreferenceCategory

@@ -173,6 +173,14 @@ public class NetworkSurveyConstants
     public static final String PROPERTY_UPLOAD_RETRY_ENABLED = "upload_retry_enabled";
     public static final String PROPERTY_OCID_API_KEY = "ocid_api_key";
     public static final String UPLOAD_PREFERENCES_GROUP = "upload_preferences_group";
+
+    // Auto Upload preferences
+    public static final String PROPERTY_AUTO_UPLOAD_ENABLED = "auto_upload_enabled";
+    public static final String PROPERTY_AUTO_UPLOAD_WIFI_ONLY = "auto_upload_wifi_only";
+    public static final int AUTO_UPLOAD_RECORD_THRESHOLD = 500;
+    public static final long AUTO_UPLOAD_COOLDOWN_MS = 15 * 60 * 1000L;
+    public static final int AUTO_UPLOAD_MAX_CONSECUTIVE_FAILURES = 3;
+    public static final String COMMUNITY_UPLOAD_UNIQUE_WORK_NAME = "community_upload_work";
     public static final String PROPERTY_NS_ANALYTICS_CONNECTION = "ns_analytics_connection_pref";
     public static final String PROPERTY_DELETE_ALL_DATA_IN_UPLOAD_DATABASE = "delete_all_data_in_upload_database";
 

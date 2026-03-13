@@ -238,6 +238,20 @@
 
     <restriction
         android:defaultValue="false"
+        android:description="@string/auto_upload_summary_off"
+        android:key="auto_upload_enabled"
+        android:restrictionType="bool"
+        android:title="@string/auto_upload_title" />
+
+    <restriction
+        android:defaultValue="true"
+        android:description="@string/auto_upload_wifi_only_summary_on"
+        android:key="auto_upload_wifi_only"
+        android:restrictionType="bool"
+        android:title="@string/auto_upload_wifi_only_title" />
+
+    <restriction
+        android:defaultValue="false"
         android:description="@string/allow_data_upload_mdm_description"
         android:key="allow_external_data_upload"
         android:restrictionType="bool"

@@ -75,7 +75,9 @@ public class SettingsFragment extends PreferenceFragmentCompat implements Shared
             NetworkSurveyConstants.PROPERTY_LOCATION_PROVIDER,
             NetworkSurveyConstants.PROPERTY_ALLOW_INTENT_CONTROL,
             NetworkSurveyConstants.PROPERTY_BATTERY_THRESHOLD_PERCENT,
-            NetworkSurveyConstants.PROPERTY_STREAMING_QUEUE_LIMIT};
+            NetworkSurveyConstants.PROPERTY_STREAMING_QUEUE_LIMIT,
+            NetworkSurveyConstants.PROPERTY_AUTO_UPLOAD_ENABLED,
+            NetworkSurveyConstants.PROPERTY_AUTO_UPLOAD_WIFI_ONLY};
 
     @Override
     public void onCreatePreferences(Bundle savedInstanceState, String rootKey)
@@ -469,6 +471,28 @@ public class SettingsFragment extends PreferenceFragmentCompat implements Shared
         updateBooleanPreferenceForMdm(preferenceScreen, mdmProperties, NetworkSurveyConstants.PROPERTY_ALLOW_INTENT_CONTROL);
         updateIntPreferenceForMdm(preferenceScreen, mdmProperties, NetworkSurveyConstants.PROPERTY_BATTERY_THRESHOLD_PERCENT);
         updateIntPreferenceForMdm(preferenceScreen, mdmProperties, NetworkSurveyConstants.PROPERTY_STREAMING_QUEUE_LIMIT);
+
+        // Auto-upload preferences live in UploadSettingsFragment's XML, so findPreference
+        // returns null here. We still write the MDM values to SharedPreferences so they
+        // take effect even if the user never opens the Upload Settings screen.
+        writeBooleanMdmPreferenceValue(mdmProperties, NetworkSurveyConstants.PROPERTY_AUTO_UPLOAD_ENABLED);
+        writeBooleanMdmPreferenceValue(mdmProperties, NetworkSurveyConstants.PROPERTY_AUTO_UPLOAD_WIFI_ONLY);
+    }
+
+    /**
+     * Writes an MDM boolean value to SharedPreferences without updating any UI preference.
+     * Used for preferences that live in a different fragment's preference XML.
+     */
+    private void writeBooleanMdmPreferenceValue(Bundle mdmProperties, String preferenceKey)
+    {
+        if (mdmProperties.containsKey(preferenceKey))
+        {
+            boolean mdmValue = mdmProperties.getBoolean(preferenceKey);
+            getPreferenceManager().getSharedPreferences()
+                    .edit()
+                    .putBoolean(preferenceKey, mdmValue)
+                    .apply();
+        }
     }
 
     /**

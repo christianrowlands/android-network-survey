@@ -75,6 +75,7 @@ import com.craxiom.networksurvey.logging.DeviceStatusCsvLogger;
 import com.craxiom.networksurvey.logging.db.DbUploadStore;
 import com.craxiom.networksurvey.logging.db.NsAnalyticsDataStore;
 import com.craxiom.networksurvey.logging.db.SurveyDatabase;
+import com.craxiom.networksurvey.logging.db.uploader.AutoUploadManager;
 import com.craxiom.networksurvey.logging.db.uploader.NsAnalyticsUploadWorker;
 import com.craxiom.networksurvey.model.BatteryPauseState;
 import com.craxiom.networksurvey.model.LogTypeState;
@@ -152,6 +153,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
     private ExtraLocationListener gnssLocationListener;
     private ExtraLocationListener networkLocationListener;
     private DbUploadStore dbUploadStore;
+    private AutoUploadManager autoUploadManager;
     private NsAnalyticsDataStore nsAnalyticsDataStore;
 
     private DeviceStatusCsvLogger deviceStatusCsvLogger;
@@ -1349,7 +1351,14 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
                 }
 
                 dbUploadStore = new DbUploadStore(this);
-                dbUploadStore.setUploadRecordCountListener(this);
+                if (PreferenceUtils.isAutoUploadEnabled(this))
+                {
+                    autoUploadManager = new AutoUploadManager(this, batteryMonitor, this);
+                    dbUploadStore.setUploadRecordCountListener(autoUploadManager);
+                } else
+                {
+                    dbUploadStore.setUploadRecordCountListener(this);
+                }
                 dbUploadStore.resetLastLocations();
 
                 Set<SurveyTypes> surveysStarted = new LinkedHashSet<>();
@@ -1388,6 +1397,12 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
             {
                 unregisterCellularSurveyRecordListener(dbUploadStore);
                 unregisterWifiSurveyRecordListener(dbUploadStore);
+
+                if (autoUploadManager != null)
+                {
+                    autoUploadManager.reset();
+                    autoUploadManager = null;
+                }
 
                 dbUploadStore = null;
 

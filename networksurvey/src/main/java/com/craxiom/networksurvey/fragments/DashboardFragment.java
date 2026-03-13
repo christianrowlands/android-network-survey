@@ -40,6 +40,7 @@ import androidx.lifecycle.Observer;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.preference.PreferenceManager;
 import androidx.work.Data;
+import androidx.work.ExistingWorkPolicy;
 import androidx.work.OneTimeWorkRequest;
 import androidx.work.OutOfQuotaPolicy;
 import androidx.work.WorkInfo;
@@ -923,7 +924,7 @@ public class DashboardFragment extends AServiceDataFragment implements LocationL
 
         AutoTransition transition = new AutoTransition();
         transition.setDuration(200);
-        TransitionManager.beginDelayedTransition((ViewGroup) binding.locationCard.locationStatusContainer, transition);
+        TransitionManager.beginDelayedTransition(binding.locationCard.locationStatusContainer, transition);
 
         View detailsRow = binding.locationCard.locationDetailsRow;
         TextView detailsText = binding.locationCard.locationDetailsText;
@@ -2184,12 +2185,16 @@ public class DashboardFragment extends AServiceDataFragment implements LocationL
 
         viewModel.setCommunityUploadButtonEnabled(false);
 
-        Data inputData = new Data.Builder().putBoolean(NetworkSurveyConstants.PROPERTY_UPLOAD_TO_OPENCELLID, uploadToOpenCellId).putBoolean(NetworkSurveyConstants.PROPERTY_ANONYMOUS_OPENCELLID_UPLOAD, anonymouslyToOpencelliD).putBoolean(NetworkSurveyConstants.PROPERTY_UPLOAD_TO_BEACONDB, uploadToBeaconDB).putBoolean(NetworkSurveyConstants.PROPERTY_UPLOAD_RETRY_ENABLED, retry).build();
+        Data inputData = new Data.Builder().putBoolean(NetworkSurveyConstants.PROPERTY_UPLOAD_TO_OPENCELLID, uploadToOpenCellId).putBoolean(NetworkSurveyConstants.PROPERTY_ANONYMOUS_OPENCELLID_UPLOAD, anonymouslyToOpencelliD).putBoolean(NetworkSurveyConstants.PROPERTY_UPLOAD_TO_BEACONDB, uploadToBeaconDB).putBoolean(NetworkSurveyConstants.PROPERTY_UPLOAD_RETRY_ENABLED, retry).putString(NsUploaderWorker.INPUT_SOURCE, NsUploaderWorker.SOURCE_MANUAL).build();
 
         OneTimeWorkRequest uploadWorkRequest = new OneTimeWorkRequest.Builder(NsUploaderWorker.class).addTag(NsUploaderWorker.WORKER_TAG).setInputData(inputData).setExpedited(OutOfQuotaPolicy.RUN_AS_NON_EXPEDITED_WORK_REQUEST).build();
         showUploadProgress(uploadWorkRequest.getId());
 
-        WorkManager.getInstance(context).enqueue(uploadWorkRequest);
+        WorkManager.getInstance(context).enqueueUniqueWork(
+                NetworkSurveyConstants.COMMUNITY_UPLOAD_UNIQUE_WORK_NAME,
+                ExistingWorkPolicy.KEEP,
+                uploadWorkRequest
+        );
     }
 
     /**

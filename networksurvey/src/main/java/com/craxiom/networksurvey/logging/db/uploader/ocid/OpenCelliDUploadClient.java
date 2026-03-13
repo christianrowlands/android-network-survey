@@ -103,13 +103,10 @@ public interface OpenCelliDUploadClient
         {
             return RequestResult.ConfigurationError;
         }
-        // don't report captive portals
-        if (code != 302)
+        if (bodyString.equalsIgnoreCase("Exceeded filesize limit"))
         {
-            if (bodyString.equalsIgnoreCase("Exceeded filesize limit"))
-            {
-                Timber.e("Exceeded filesize limit.");
-            }
+            Timber.e("Exceeded filesize limit.");
+            return RequestResult.LimitExceeded;
         }
         return RequestResult.ConnectionError;
     }
