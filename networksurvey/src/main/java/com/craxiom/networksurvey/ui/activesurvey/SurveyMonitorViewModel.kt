@@ -24,6 +24,7 @@ import com.craxiom.networksurvey.ui.activesurvey.model.NsAnalyticsInfo
 import com.craxiom.networksurvey.ui.activesurvey.model.SurveyTrack
 import com.craxiom.networksurvey.ui.cellular.model.ServingCellInfo
 import com.craxiom.networksurvey.util.CellularUtils
+import com.craxiom.networksurvey.util.NsAnalyticsSecureStorage
 import com.craxiom.networksurvey.util.NsAnalyticsUtils
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
@@ -213,7 +214,7 @@ class SurveyMonitorViewModel(
                     queuedRecords = withContext(Dispatchers.IO) {
                         database.nsAnalyticsDao().getPendingRecordCount()
                     },
-                    uploadedRecords = 0, // FIXME: Get from actual metrics
+                    uploadedRecords = NsAnalyticsSecureStorage.getLastUploadRecordsCount(application),
                     lastUploadTime = null,
                     workspaceId = service.nsAnalyticsWorkspaceId,
                     errorMessage = null

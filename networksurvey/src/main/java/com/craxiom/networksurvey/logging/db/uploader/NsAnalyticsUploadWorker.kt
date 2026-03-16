@@ -113,7 +113,8 @@ class NsAnalyticsUploadWorker(context: Context, params: WorkerParameters) :
                 reportProgress(
                     progress,
                     100,
-                    "Uploading batch ${batchIndex + 1} of $totalBatches..."
+                    "Uploading batch ${batchIndex + 1} of $totalBatches...",
+                    totalRecordsUploaded
                 )
 
                 // Get next batch of pending records
@@ -400,7 +401,7 @@ class NsAnalyticsUploadWorker(context: Context, params: WorkerParameters) :
                     applicationContext,
                     id.toString(),
                     true,
-                    totalRecordsProcessed
+                    totalRecordsUploaded
                 )
 
                 // Clean up old uploaded records (keep last 7 days)
@@ -416,7 +417,7 @@ class NsAnalyticsUploadWorker(context: Context, params: WorkerParameters) :
             // Report final results
             val outputData = Data.Builder()
                 .putBoolean(NsAnalyticsConstants.EXTRA_UPLOAD_SUCCESS, true)
-                .putInt(NsAnalyticsConstants.EXTRA_RECORDS_UPLOADED, totalRecordsProcessed)
+                .putInt(NsAnalyticsConstants.EXTRA_RECORDS_UPLOADED, totalRecordsUploaded)
                 .build()
 
             return@withContext Result.success(outputData)
