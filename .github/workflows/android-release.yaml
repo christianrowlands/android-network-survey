@@ -121,7 +121,7 @@ jobs:
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
           NS_API_KEY: ${{ secrets.NS_API_KEY }}
           OCID_API_KEY: ${{ secrets.OCID_API_KEY }}
-        run: ./gradlew bundleRelease
+        run: ./gradlew bundleRegularRelease
           -Pandroid.injected.signing.store.file=$(pwd)/my.keystore
           -Pandroid.injected.signing.store.password=$KEYSTORE_PASSWORD
           -Pandroid.injected.signing.key.alias=$KEY_ALIAS
