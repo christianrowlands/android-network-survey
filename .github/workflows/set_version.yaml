@@ -23,7 +23,7 @@ jobs:
       - name: Extract existing version code
         run: |
           # Get existing version code from build.gradle
-          version_code=$(grep "versionCode" networksurvey/build.gradle | awk '{print $2}' | tr -d '\n')
+          version_code=$(grep -E "^\s+versionCode\s+[0-9]" networksurvey/build.gradle | awk '{print $2}' | tr -d '\n')
 
           # Increment existing version code by 1
           version_code=$((version_code + 1))
