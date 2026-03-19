@@ -1,5 +1,23 @@
 # Changelog
 
+## [1.51](https://github.com/christianrowlands/android-network-survey/releases/tag/v1.51) - 2026-03-19
+
+**BUG FIXES**
+* Fix the uploaded records count in the upload progress status UI.
+* Fix the JSON creation for the Bluetooth message by updating the protobuf to have UNKNOWN as the default value instead of PUBLIC.
+
+**NEW FEATURES**
+* Add an auto-upload setting for the OpenCelliD and BeaconDB survey along with an option to only auto-upload over wifi (to prevent cellular data use). [#112](https://github.com/christianrowlands/android-network-survey/issues/112)
+* Add a user setting to disable the creation of cellular neighbor cell records, so only serving cell records are included in log files, MQTT/gRPC streaming, NS Analytics upload, and UI display. [#124](https://github.com/christianrowlands/android-network-survey/issues/124)
+* Generate APKs per ABI to reduce the download size for each processor architecture. [#117](https://github.com/christianrowlands/android-network-survey/issues/117)
+* Display a badge with the count of operators/providers on each tower in the tower map view. [#95](https://github.com/christianrowlands/android-network-survey/issues/95)
+
+**IMPROVEMENTS**
+* Rework the Location Card UI to be more compact — replace the card with a status row, with click-through for full location details. Also removed from the Cellular Details UI. [#61](https://github.com/christianrowlands/android-network-survey/issues/61)
+* Migrate kapt to KSP, remove Jetifier, and clean up build warnings.
+* Update to v3 of the Vico charts library.
+* Upgrade AGP to version 9.1.0 and Gradle to version 9.3.1.
+
 ## [1.50](https://github.com/christianrowlands/android-network-survey/releases/tag/v1.50) - 2026-03-04
 
 **BUG FIXES**
