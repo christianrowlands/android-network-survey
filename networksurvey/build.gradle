@@ -54,7 +54,7 @@ android {
         applicationId "com.craxiom.networksurvey"
         minSdkVersion 26
         targetSdkVersion 36
-        versionCode 109
+        versionCode 110
         versionName appVersion
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         testInstrumentationRunnerArguments clearPackageData: 'true'
