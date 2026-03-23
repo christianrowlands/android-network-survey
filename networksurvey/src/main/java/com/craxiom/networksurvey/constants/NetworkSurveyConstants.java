@@ -238,4 +238,9 @@ public class NetworkSurveyConstants
     public static final String MEASUREMENT_UNITS_METRIC = "metric";
     public static final String MEASUREMENT_UNITS_IMPERIAL = "imperial";
     public static final String DEFAULT_MEASUREMENT_UNITS = MEASUREMENT_UNITS_METRIC;
+
+    // Permission request IDs
+    public static final int ACCESS_REQUIRED_PERMISSION_REQUEST_ID = 20;
+    public static final int ACCESS_OPTIONAL_PERMISSION_REQUEST_ID = 21;
+    public static final int ACCESS_BLUETOOTH_PERMISSION_REQUEST_ID = 22;
 }

@@ -34,6 +34,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.craxiom.networksurvey.R
+import com.craxiom.networksurvey.ui.dashboard.DashboardCardDefaults
+
+private val NsAnalyticsStartGreen = Color(0xFF4CAF50)
+private val NsAnalyticsStopRed = Color(0xFFE53935)
 
 /**
  * A reusable NS Analytics status card that can be used in both the main NS Analytics screen
@@ -70,7 +74,7 @@ fun NsAnalyticsStatusCard(
     Card(
         modifier = modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(
-            containerColor = Color(0xFF1E1F24)
+            containerColor = MaterialTheme.colorScheme.surfaceContainerLow
         )
     ) {
         Column(
@@ -91,7 +95,7 @@ fun NsAnalyticsStatusCard(
                         modifier = Modifier
                             .size(10.dp)
                             .background(
-                                if (isSurveyActive) Color(0xFF4285F4) else Color.Gray,
+                                if (isSurveyActive) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline,
                                 shape = RoundedCornerShape(50)
                             )
                     )
@@ -99,7 +103,7 @@ fun NsAnalyticsStatusCard(
                     Text(
                         text = if (isSurveyActive) "Survey in Progress" else "Survey Inactive",
                         style = MaterialTheme.typography.titleMedium,
-                        color = Color.White,
+                        color = DashboardCardDefaults.TextPrimary,
                         fontWeight = FontWeight.Bold
                     )
                 }
@@ -108,7 +112,7 @@ fun NsAnalyticsStatusCard(
                     Text(
                         text = getElapsedTime(surveyStartTime),
                         style = MaterialTheme.typography.bodySmall,
-                        color = Color.Gray
+                        color = MaterialTheme.colorScheme.outline
                     )
                 }
             }
@@ -125,20 +129,20 @@ fun NsAnalyticsStatusCard(
                     Text(
                         text = if (isSurveyActive) "Records Collected" else "Pending Records",
                         style = MaterialTheme.typography.bodyMedium,
-                        color = Color.Gray
+                        color = MaterialTheme.colorScheme.outline
                     )
                     if (!isSurveyActive && totalCount > 0) {
                         Text(
                             text = "Ready to upload",
                             style = MaterialTheme.typography.bodySmall,
-                            color = Color(0xFF4CAF50)
+                            color = MaterialTheme.colorScheme.tertiary
                         )
                     }
                 }
                 Text(
                     text = "$totalCount total",
                     style = MaterialTheme.typography.titleMedium,
-                    color = Color.White,
+                    color = DashboardCardDefaults.TextPrimary,
                     fontWeight = FontWeight.Bold
                 )
             }
@@ -173,7 +177,7 @@ fun NsAnalyticsStatusCard(
                 Text(
                     text = "Start a survey to begin collecting data",
                     style = MaterialTheme.typography.bodySmall,
-                    color = Color.Gray,
+                    color = MaterialTheme.colorScheme.outline,
                     textAlign = TextAlign.Center,
                     modifier = Modifier.fillMaxWidth()
                 )
@@ -192,16 +196,14 @@ fun NsAnalyticsStatusCard(
                         onClick = onToggleSurvey,
                         modifier = Modifier.weight(1f),
                         colors = ButtonDefaults.buttonColors(
-                            containerColor = if (isSurveyActive) Color(0xFFE53935) else Color(
-                                0xFF4CAF50
-                            )
+                            containerColor = if (isSurveyActive) NsAnalyticsStopRed else NsAnalyticsStartGreen
                         )
                     ) {
                         Icon(
                             imageVector = if (isSurveyActive) Icons.Default.Clear else Icons.Default.CheckCircle,
                             contentDescription = null,
                             modifier = Modifier.padding(end = 4.dp),
-                            tint = Color.White
+                            tint = MaterialTheme.colorScheme.onPrimary
                         )
                         Text(
                             text = if (isSurveyActive) "Stop" else "Start"
@@ -228,7 +230,7 @@ fun NsAnalyticsStatusCard(
                     onClick = onToggleSurvey,
                     modifier = Modifier.fillMaxWidth(),
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = if (isSurveyActive) Color(0xFFE53935) else Color(0xFF4CAF50)
+                        containerColor = if (isSurveyActive) NsAnalyticsStopRed else NsAnalyticsStartGreen
                     )
                 ) {
                     Icon(

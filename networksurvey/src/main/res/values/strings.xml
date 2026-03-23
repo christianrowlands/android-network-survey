@@ -777,6 +777,8 @@
     <string name="channel">Channel</string>
     <string name="open_tower_map">Open Tower Map</string>
     <string name="mqtt_connection_settings">MQTT Connection Settings</string>
+    <string name="mqtt_connection_not_ready">The App is not ready to make an MQTT connection, try again later</string>
+    <string name="mqtt_connection_info_not_set">Could not try to connect to the MQTT broker because the connection information is not set</string>
     <string name="qr_code">QR Code</string>
     <string name="open_wifi_spectrum">Open Wi-Fi Spectrum View</string>
 

@@ -35,16 +35,15 @@ import com.craxiom.networksurvey.Application
 import com.craxiom.networksurvey.R
 import com.craxiom.networksurvey.databinding.ContainerBluetoothFragmentBinding
 import com.craxiom.networksurvey.databinding.ContainerCellularFragmentBinding
-import com.craxiom.networksurvey.databinding.ContainerDashboardFragmentBinding
 import com.craxiom.networksurvey.databinding.ContainerGnssFragmentBinding
 import com.craxiom.networksurvey.databinding.ContainerWifiFragmentBinding
 import com.craxiom.networksurvey.fragments.BluetoothFragment
-import com.craxiom.networksurvey.fragments.DashboardFragment
 import com.craxiom.networksurvey.fragments.MainCellularFragment
 import com.craxiom.networksurvey.fragments.MainGnssFragment
 import com.craxiom.networksurvey.fragments.WifiNetworksFragment
 import com.craxiom.networksurvey.gpstest.model.GnssType
 import com.craxiom.networksurvey.gpstest.util.LibUIUtils
+import com.craxiom.networksurvey.ui.dashboard.DashboardScreen
 import com.craxiom.networksurvey.ui.main.appbar.AppBar
 import com.craxiom.networksurvey.ui.main.appbar.AppBarAction
 import com.craxiom.networksurvey.util.PreferenceUtils
@@ -52,7 +51,8 @@ import com.craxiom.networksurvey.util.PreferenceUtils
 @Composable
 fun HomeScreen(
     drawerState: DrawerState,
-    mainNavController: NavHostController
+    mainNavController: NavHostController,
+    sharedViewModel: SharedViewModel
 ) {
     var bottomNavSelectedItem by rememberSaveable { mutableIntStateOf(0) }
     val bottomNavController: NavHostController = rememberNavController()
@@ -99,7 +99,7 @@ fun HomeScreen(
         ) {
             composable(MainScreens.Dashboard.route) {
                 currentScreen = MainScreens.Dashboard
-                DashboardFragmentInCompose()
+                DashboardScreen(sharedViewModel = sharedViewModel)
             }
             composable(MainScreens.Cellular.route) {
                 currentScreen = MainScreens.Cellular
@@ -271,10 +271,10 @@ fun getAppBarActions(
 
                 GnssScreen.GNSS_SKY_VIEW -> listOf(
                     AppBarAction(
-                    icon = R.drawable.ic_filter,
-                    description = R.string.menu_option_filter_content_description,
-                    onClick = { showGnssFilterDialog(true) }
-                ))
+                        icon = R.drawable.ic_filter,
+                        description = R.string.menu_option_filter_content_description,
+                        onClick = { showGnssFilterDialog(true) }
+                    ))
             }
         }
 
@@ -356,13 +356,6 @@ data class BottomNavItem(
                 route = MainScreens.Gnss.route
             ),
         )
-    }
-}
-
-@Composable
-fun DashboardFragmentInCompose() {
-    AndroidViewBinding(ContainerDashboardFragmentBinding::inflate) {
-        dashboardFragmentContainerView.getFragment<DashboardFragment>()
     }
 }
 

@@ -61,7 +61,11 @@ fun NavGraphBuilder.mainGraph(
 ) {
     navigation(startDestination = NavDrawerOption.None.name, route = NavRoutes.MainRoute.name) {
         composable(NavDrawerOption.None.name) {
-            HomeScreen(drawerState, mainNavController = mainNavController)
+            HomeScreen(
+                drawerState,
+                mainNavController = mainNavController,
+                sharedViewModel = sharedViewModel
+            )
         }
 
         composable(
