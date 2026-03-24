@@ -26,6 +26,7 @@ import androidx.preference.PreferenceManager;
 
 import com.craxiom.networksurvey.constants.NetworkSurveyConstants;
 import com.craxiom.networksurvey.lang.LocaleManager;
+import com.craxiom.networksurvey.util.CredentialSecureStorage;
 
 import dagger.hilt.android.HiltAndroidApp;
 import timber.log.Timber;
@@ -71,6 +72,8 @@ public class Application extends android.app.Application
 
         mApp = this;
         mPrefs = PreferenceManager.getDefaultSharedPreferences(this);
+
+        CredentialSecureStorage.INSTANCE.migrateFromPlainTextIfNeeded(this);
     }
 
     @Override

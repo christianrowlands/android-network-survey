@@ -18,6 +18,7 @@ import androidx.preference.SwitchPreferenceCompat;
 import com.craxiom.networksurvey.R;
 import com.craxiom.networksurvey.constants.NetworkSurveyConstants;
 import com.craxiom.networksurvey.logging.db.SurveyDatabase;
+import com.craxiom.networksurvey.util.CredentialSecureStorage;
 import com.craxiom.networksurvey.util.MdmUtils;
 import com.craxiom.networksurvey.util.PreferenceUtils;
 
@@ -76,12 +77,26 @@ public class UploadSettingsFragment extends PreferenceFragmentCompat implements 
             if (apiKeyValue == null) return;
 
             apiKeyValue = apiKeyValue.trim();
-            Timber.d("onSharedPreferenceChanged(): User set API key = \"%s\"", apiKeyValue);
             boolean isApiKeyEmpty = TextUtils.isEmpty(apiKeyValue);
             if (!isApiKeyEmpty && !PreferenceUtils.isApiKeyValid(apiKeyValue))
             {
-                Timber.d("onSharedPreferenceChanged(): User defined invalid API key = \"%s\"", apiKeyValue);
                 Toast.makeText(getActivity(), "OpenCelliD API Key is invalid", Toast.LENGTH_LONG).show();
+            }
+
+            // Move the API key from plain-text SharedPreferences to encrypted secure storage.
+            // Unregister listener before removing to prevent re-entry from the remove callback.
+            if (!isApiKeyEmpty)
+            {
+                Context context = getContext();
+                if (context != null)
+                {
+                    CredentialSecureStorage.INSTANCE.storeOcidApiKey(context, apiKeyValue);
+                    sharedPreferences.unregisterOnSharedPreferenceChangeListener(this);
+                    sharedPreferences.edit()
+                            .remove(NetworkSurveyConstants.PROPERTY_OCID_API_KEY)
+                            .commit();
+                    sharedPreferences.registerOnSharedPreferenceChangeListener(this);
+                }
             }
         }
     }

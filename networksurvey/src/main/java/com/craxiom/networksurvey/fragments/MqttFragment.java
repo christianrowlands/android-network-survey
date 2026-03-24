@@ -24,6 +24,7 @@ import androidx.core.content.ContextCompat;
 import androidx.fragment.app.FragmentActivity;
 import androidx.lifecycle.ViewModelProvider;
 
+import com.craxiom.mqttlibrary.ICredentialStorage;
 import com.craxiom.mqttlibrary.MqttConstants;
 import com.craxiom.mqttlibrary.connection.BrokerConnectionInfo;
 import com.craxiom.mqttlibrary.ui.AConnectionFragment;
@@ -34,6 +35,7 @@ import com.craxiom.networksurvey.fragments.model.MqttConnectionSettings;
 import com.craxiom.networksurvey.mqtt.MqttConnectionInfo;
 import com.craxiom.networksurvey.services.NetworkSurveyService;
 import com.craxiom.networksurvey.ui.main.SharedViewModel;
+import com.craxiom.networksurvey.util.CredentialSecureStorage;
 import com.craxiom.networksurvey.util.MdmUtils;
 import com.google.android.material.materialswitch.MaterialSwitch;
 
@@ -160,6 +162,34 @@ public class MqttFragment extends AConnectionFragment<NetworkSurveyService.Surve
     protected Context getApplicationContext()
     {
         return requireActivity().getApplicationContext();
+    }
+
+    @Override
+    protected ICredentialStorage getCredentialStorage()
+    {
+        return new ICredentialStorage()
+        {
+            @Override
+            public void storeCredentials(String username, String password)
+            {
+                CredentialSecureStorage.INSTANCE.storeMqttCredentials(
+                        getApplicationContext(), username, password);
+            }
+
+            @Override
+            public String getUsername()
+            {
+                String username = CredentialSecureStorage.INSTANCE.getMqttUsername(getApplicationContext());
+                return username != null ? username : "";
+            }
+
+            @Override
+            public String getPassword()
+            {
+                String password = CredentialSecureStorage.INSTANCE.getMqttPassword(getApplicationContext());
+                return password != null ? password : "";
+            }
+        };
     }
 
     @Override

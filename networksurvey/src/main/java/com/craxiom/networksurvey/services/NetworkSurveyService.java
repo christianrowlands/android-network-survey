@@ -87,6 +87,7 @@ import com.craxiom.networksurvey.services.controller.BluetoothController;
 import com.craxiom.networksurvey.services.controller.CellularController;
 import com.craxiom.networksurvey.services.controller.GnssController;
 import com.craxiom.networksurvey.services.controller.WifiController;
+import com.craxiom.networksurvey.util.CredentialSecureStorage;
 import com.craxiom.networksurvey.util.MdmUtils;
 import com.craxiom.networksurvey.util.NsAnalyticsSecureStorage;
 import com.craxiom.networksurvey.util.NsUtils;
@@ -2687,8 +2688,10 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
 
         final int portNumber = preferences.getInt(MqttConstants.PROPERTY_MQTT_CONNECTION_PORT, MqttConstants.DEFAULT_MQTT_PORT);
         final boolean tlsEnabled = preferences.getBoolean(MqttConstants.PROPERTY_MQTT_CONNECTION_TLS_ENABLED, MqttConstants.DEFAULT_MQTT_TLS_SETTING);
-        final String username = preferences.getString(MqttConstants.PROPERTY_MQTT_USERNAME, "");
-        final String password = preferences.getString(MqttConstants.PROPERTY_MQTT_PASSWORD, "");
+        String username = CredentialSecureStorage.INSTANCE.getMqttUsername(getApplicationContext());
+        if (username == null) username = "";
+        String password = CredentialSecureStorage.INSTANCE.getMqttPassword(getApplicationContext());
+        if (password == null) password = "";
 
         final boolean cellularStreamEnabled = preferences.getBoolean(NetworkSurveyConstants.PROPERTY_MQTT_CELLULAR_STREAM_ENABLED, NetworkSurveyConstants.DEFAULT_MQTT_CELLULAR_STREAM_SETTING);
         final boolean phoneStateStreamEnabled = preferences.getBoolean(NetworkSurveyConstants.PROPERTY_MQTT_PHONE_STATE_STREAM_ENABLED, NetworkSurveyConstants.DEFAULT_MQTT_PHONE_STATE_STREAM_SETTING);

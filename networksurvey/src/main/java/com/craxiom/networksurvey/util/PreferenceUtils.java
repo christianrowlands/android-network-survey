@@ -19,9 +19,7 @@ import static com.craxiom.mqttlibrary.MqttConstants.PROPERTY_MQTT_CLIENT_ID;
 import static com.craxiom.mqttlibrary.MqttConstants.PROPERTY_MQTT_CONNECTION_HOST;
 import static com.craxiom.mqttlibrary.MqttConstants.PROPERTY_MQTT_CONNECTION_PORT;
 import static com.craxiom.mqttlibrary.MqttConstants.PROPERTY_MQTT_CONNECTION_TLS_ENABLED;
-import static com.craxiom.mqttlibrary.MqttConstants.PROPERTY_MQTT_PASSWORD;
 import static com.craxiom.mqttlibrary.MqttConstants.PROPERTY_MQTT_QOS;
-import static com.craxiom.mqttlibrary.MqttConstants.PROPERTY_MQTT_USERNAME;
 import static com.craxiom.networksurvey.constants.NetworkSurveyConstants.DEFAULT_LOCATION_PROVIDER;
 import static java.util.Collections.emptySet;
 
@@ -851,13 +849,10 @@ public class PreferenceUtils
                 Timber.w("MQTT device name is empty, not saving");
             }
         }
-        if (mqttConnectionSettings.mqttUsername() != null)
+        if (mqttConnectionSettings.mqttUsername() != null || mqttConnectionSettings.mqttPassword() != null)
         {
-            edit.putString(PROPERTY_MQTT_USERNAME, mqttConnectionSettings.mqttUsername());
-        }
-        if (mqttConnectionSettings.mqttPassword() != null)
-        {
-            edit.putString(PROPERTY_MQTT_PASSWORD, mqttConnectionSettings.mqttPassword());
+            CredentialSecureStorage.INSTANCE.storeMqttCredentials(context,
+                    mqttConnectionSettings.mqttUsername(), mqttConnectionSettings.mqttPassword());
         }
         if (mqttConnectionSettings.mqttTopicPrefix() != null)
         {
@@ -973,6 +968,11 @@ public class PreferenceUtils
 
     public static String getUserOcidApiKey(Context context)
     {
+        String secureKey = CredentialSecureStorage.INSTANCE.getOcidApiKey(context);
+        if (secureKey != null && !secureKey.trim().isEmpty())
+        {
+            return secureKey.trim();
+        }
         return PreferenceManager.getDefaultSharedPreferences(context).getString(NetworkSurveyConstants.PROPERTY_OCID_API_KEY, "").trim();
     }
 
