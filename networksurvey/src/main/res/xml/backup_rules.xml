@@ -11,4 +11,15 @@
             domain="sharedpref"
             path="ns_analytics_secure_prefs.xml" />
     </cloud-backup>
+    <device-transfer>
+        <include
+            domain="sharedpref"
+            path="." />
+        <exclude
+            domain="sharedpref"
+            path="credential_secure_prefs.xml" />
+        <exclude
+            domain="sharedpref"
+            path="ns_analytics_secure_prefs.xml" />
+    </device-transfer>
 </data-extraction-rules>

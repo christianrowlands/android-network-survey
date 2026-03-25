@@ -1,6 +1,5 @@
 package com.craxiom.networksurvey.util
 
-import android.os.Build
 import android.security.keystore.KeyGenParameterSpec
 import android.security.keystore.KeyProperties
 import android.util.Base64
@@ -58,11 +57,6 @@ class NsAnalyticsCryptoManager {
             .setEncryptionPaddings(KeyProperties.ENCRYPTION_PADDING_NONE)
             .setKeySize(KEY_SIZE)
             .setRandomizedEncryptionRequired(true)
-
-        // Use StrongBox if available (API 28+)
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-            builder.setIsStrongBoxBacked(false) // Set to true if hardware support is required
-        }
 
         keyGenerator.init(builder.build())
         return keyGenerator.generateKey()

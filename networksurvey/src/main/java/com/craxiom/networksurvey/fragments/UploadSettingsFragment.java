@@ -8,7 +8,6 @@ import android.os.Bundle;
 import android.text.TextUtils;
 import android.widget.Toast;
 
-import androidx.fragment.app.FragmentActivity;
 import androidx.preference.EditTextPreference;
 import androidx.preference.Preference;
 import androidx.preference.PreferenceFragmentCompat;
@@ -24,7 +23,7 @@ import com.craxiom.networksurvey.util.PreferenceUtils;
 
 import timber.log.Timber;
 
-public class UploadSettingsFragment extends PreferenceFragmentCompat implements SharedPreferences.OnSharedPreferenceChangeListener
+public class UploadSettingsFragment extends PreferenceFragmentCompat
 {
     @Override
     public void onCreatePreferences(Bundle savedInstanceState, String rootKey)
@@ -41,64 +40,48 @@ public class UploadSettingsFragment extends PreferenceFragmentCompat implements 
         }
 
         updateAutoUploadPreferencesForMdm();
+        setupOcidApiKeyPreference();
     }
 
-    @Override
-    public void onResume()
+    /**
+     * Sets up the OCID API key preference to use encrypted storage instead of SharedPreferences.
+     * The preference is made non-persistent so setText() never writes to SharedPreferences.
+     * A change listener handles user edits by storing directly to encrypted storage.
+     */
+    private void setupOcidApiKeyPreference()
     {
-        FragmentActivity activity = getActivity();
-        if (activity == null) return;
-        SharedPreferences defaultSharedPreferences = PreferenceManager.getDefaultSharedPreferences(activity);
-        defaultSharedPreferences.registerOnSharedPreferenceChangeListener(this);
+        Context context = getContext();
+        if (context == null) return;
 
-        super.onResume();
-    }
+        EditTextPreference apiKeyPreference = findPreference(NetworkSurveyConstants.PROPERTY_OCID_API_KEY);
+        if (apiKeyPreference == null) return;
 
-    @Override
-    public void onPause()
-    {
-        super.onPause();
-        FragmentActivity activity = getActivity();
-        if (activity == null) return;
-        SharedPreferences defaultSharedPreferences = PreferenceManager.getDefaultSharedPreferences(activity);
-        defaultSharedPreferences.unregisterOnSharedPreferenceChangeListener(this);
-    }
+        // Prevent the preference from persisting to SharedPreferences. This ensures
+        // setText() only updates the in-memory value for UI display, not plain-text storage.
+        apiKeyPreference.setPersistent(false);
 
-    @Override
-    public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String key)
-    {
-        Timber.d("onSharedPreferenceChanged(): Preference value changed: %s", key);
-        if (NetworkSurveyConstants.PROPERTY_OCID_API_KEY.equals(key))
+        // Populate the preference with the current value from encrypted storage
+        String secureKey = CredentialSecureStorage.INSTANCE.getOcidApiKey(context);
+        if (secureKey != null && !secureKey.trim().isEmpty())
         {
-            EditTextPreference apiKeyPreference = findPreference(NetworkSurveyConstants.PROPERTY_OCID_API_KEY);
-            //noinspection DataFlowIssue
-            String apiKeyValue = apiKeyPreference.getText();
+            apiKeyPreference.setText(secureKey.trim());
+        }
 
-            if (apiKeyValue == null) return;
+        // Clean up any residual plain-text API key from SharedPreferences
+        PreferenceManager.getDefaultSharedPreferences(context)
+                .edit().remove(NetworkSurveyConstants.PROPERTY_OCID_API_KEY).apply();
 
-            apiKeyValue = apiKeyValue.trim();
-            boolean isApiKeyEmpty = TextUtils.isEmpty(apiKeyValue);
-            if (!isApiKeyEmpty && !PreferenceUtils.isApiKeyValid(apiKeyValue))
+        // Handle user edits by storing directly to encrypted storage
+        apiKeyPreference.setOnPreferenceChangeListener((preference, newValue) -> {
+            String value = newValue != null ? ((String) newValue).trim() : "";
+            boolean isEmpty = TextUtils.isEmpty(value);
+            if (!isEmpty && !PreferenceUtils.isApiKeyValid(value))
             {
                 Toast.makeText(getActivity(), "OpenCelliD API Key is invalid", Toast.LENGTH_LONG).show();
             }
-
-            // Move the API key from plain-text SharedPreferences to encrypted secure storage.
-            // Unregister listener before removing to prevent re-entry from the remove callback.
-            if (!isApiKeyEmpty)
-            {
-                Context context = getContext();
-                if (context != null)
-                {
-                    CredentialSecureStorage.INSTANCE.storeOcidApiKey(context, apiKeyValue);
-                    sharedPreferences.unregisterOnSharedPreferenceChangeListener(this);
-                    sharedPreferences.edit()
-                            .remove(NetworkSurveyConstants.PROPERTY_OCID_API_KEY)
-                            .commit();
-                    sharedPreferences.registerOnSharedPreferenceChangeListener(this);
-                }
-            }
-        }
+            CredentialSecureStorage.INSTANCE.storeOcidApiKey(context, isEmpty ? null : value);
+            return true;
+        });
     }
 
     private void showDeleteConfirmationDialog(Context context)

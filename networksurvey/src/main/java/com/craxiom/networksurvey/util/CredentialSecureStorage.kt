@@ -3,7 +3,6 @@ package com.craxiom.networksurvey.util
 import android.annotation.SuppressLint
 import android.content.Context
 import android.content.SharedPreferences
-import androidx.core.content.edit
 import androidx.preference.PreferenceManager
 import com.craxiom.mqttlibrary.MqttConstants
 import com.craxiom.networksurvey.constants.NetworkSurveyConstants
@@ -46,11 +45,16 @@ object CredentialSecureStorage {
     }
 
     /**
-     * Retrieve and decrypt a string value
+     * Retrieve and decrypt a string value. Logs a warning if encrypted data exists but
+     * decryption fails, which may indicate Keystore key invalidation.
      */
     private fun getDecryptedString(prefs: SharedPreferences, key: String): String? {
-        val encrypted = prefs.getString(key, null)
-        return if (encrypted != null) cryptoManager.decrypt(encrypted) else null
+        val encrypted = prefs.getString(key, null) ?: return null
+        val decrypted = cryptoManager.decrypt(encrypted)
+        if (decrypted == null) {
+            Timber.w("Decryption failed for key '%s' - Keystore key may be invalid", key)
+        }
+        return decrypted
     }
 
     /**
@@ -121,13 +125,17 @@ object CredentialSecureStorage {
             // Pre-encrypt all values and verify encryption succeeded before committing.
             // If any encryption fails (e.g. Keystore unavailable), abort the entire migration
             // to preserve the plain-text credentials. Migration will retry on next app launch.
-            val encryptedUsername = if (!mqttUsername.isNullOrEmpty()) cryptoManager.encrypt(mqttUsername) else null
-            val encryptedPassword = if (!mqttPassword.isNullOrEmpty()) cryptoManager.encrypt(mqttPassword) else null
-            val encryptedOcid = if (!ocidApiKey.isNullOrEmpty()) cryptoManager.encrypt(ocidApiKey) else null
+            val encryptedUsername =
+                if (!mqttUsername.isNullOrEmpty()) cryptoManager.encrypt(mqttUsername) else null
+            val encryptedPassword =
+                if (!mqttPassword.isNullOrEmpty()) cryptoManager.encrypt(mqttPassword) else null
+            val encryptedOcid =
+                if (!ocidApiKey.isNullOrEmpty()) cryptoManager.encrypt(ocidApiKey) else null
 
             if ((!mqttUsername.isNullOrEmpty() && encryptedUsername == null) ||
                 (!mqttPassword.isNullOrEmpty() && encryptedPassword == null) ||
-                (!ocidApiKey.isNullOrEmpty() && encryptedOcid == null)) {
+                (!ocidApiKey.isNullOrEmpty() && encryptedOcid == null)
+            ) {
                 Timber.e("Encryption failed during migration, aborting to preserve plain-text credentials")
                 return
             }
