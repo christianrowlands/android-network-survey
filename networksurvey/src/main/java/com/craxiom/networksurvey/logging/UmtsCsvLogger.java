@@ -1,5 +1,6 @@
 package com.craxiom.networksurvey.logging;
 
+import static com.craxiom.networksurvey.constants.csv.CellularCsvConstants.PLMN;
 import static com.craxiom.networksurvey.constants.csv.CellularCsvConstants.SLOT;
 import static com.craxiom.networksurvey.constants.csv.CsvConstants.DEVICE_SERIAL_NUMBER;
 import static com.craxiom.networksurvey.constants.csv.CsvConstants.LOCATION_AGE;
@@ -51,7 +52,7 @@ public class UmtsCsvLogger extends CsvRecordLogger implements ICellularSurveyRec
         return new String[]{DEVICE_TIME, LATITUDE, LONGITUDE, ALTITUDE, SPEED, ACCURACY,
                 MISSION_ID, RECORD_NUMBER, GROUP_NUMBER,
                 MCC, MNC, LAC, CID, UARFCN, PSC, RSCP, ECNO, SIGNAL_STRENGTH, SERVING_CELL, PROVIDER, SLOT,
-                DEVICE_SERIAL_NUMBER, LOCATION_AGE};
+                DEVICE_SERIAL_NUMBER, LOCATION_AGE, PLMN};
     }
 
     @Override
@@ -103,7 +104,8 @@ public class UmtsCsvLogger extends CsvRecordLogger implements ICellularSurveyRec
                 data.getProvider(),
                 data.hasSlot() ? String.valueOf(data.getSlot().getValue()) : "",
                 data.getDeviceSerialNumber(),
-                data.getLocationAge() == 0 ? "" : String.valueOf(data.getLocationAge())
+                data.getLocationAge() == 0 ? "" : String.valueOf(data.getLocationAge()),
+                data.hasPlmn() ? data.getPlmn().getValue() : ""
         };
     }
 }

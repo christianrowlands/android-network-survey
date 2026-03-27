@@ -16,6 +16,7 @@ public final class GsmMessageConstants extends CellularMessageConstants
 
     public static final String MCC_COLUMN = "MCC";
     public static final String MNC_COLUMN = "MNC";
+    public static final String PLMN_COLUMN = "plmn";
     public static final String LAC_COLUMN = "LAC";
     public static final String CID_COLUMN = "CID";
     public static final String ARFCN_COLUMN = "ARFCN";

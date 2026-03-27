@@ -11,5 +11,6 @@ public abstract class CellularCsvConstants extends SurveyCsvConstants
     public static final String GROUP_NUMBER = "groupNumber";
     public static final String SERVING_CELL = "servingCell";
     public static final String PROVIDER = "provider";
+    public static final String PLMN = "plmn";
     public static final String SLOT = "slot";
 }

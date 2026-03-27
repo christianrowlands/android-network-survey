@@ -20,6 +20,7 @@ public class LteMessageConstants extends CellularMessageConstants
 
     public static final String MCC_COLUMN = "MCC";
     public static final String MNC_COLUMN = "MNC";
+    public static final String PLMN_COLUMN = "plmn";
     public static final String TAC_COLUMN = "TAC";
     public static final String CI_COLUMN = "ECI";
     public static final String EARFCN_COLUMN = "DL_EARFCN";

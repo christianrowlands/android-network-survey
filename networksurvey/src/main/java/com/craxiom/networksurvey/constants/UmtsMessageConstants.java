@@ -16,6 +16,7 @@ public final class UmtsMessageConstants extends CellularMessageConstants
 
     public static final String MCC_COLUMN = "MCC";
     public static final String MNC_COLUMN = "MNC";
+    public static final String PLMN_COLUMN = "plmn";
     public static final String LAC_COLUMN = "LAC";
     public static final String CELL_ID_COLUMN = "Cell ID";
     public static final String UARFCN_COLUMN = "UARFCN";

@@ -128,8 +128,9 @@ public class CellularSurveyRecordLogger extends SurveyRecordLogger implements IC
             tableColumns.add(FeatureColumn.createColumn(columnNumber++, GsmMessageConstants.ARFCN_COLUMN, GeoPackageDataType.SMALLINT, false, null));
             tableColumns.add(FeatureColumn.createColumn(columnNumber++, GsmMessageConstants.BSIC_COLUMN, GeoPackageDataType.SMALLINT, false, null));
             tableColumns.add(FeatureColumn.createColumn(columnNumber++, GsmMessageConstants.SIGNAL_STRENGTH_COLUMN, GeoPackageDataType.FLOAT, false, null));
-            //noinspection UnusedAssignment
             tableColumns.add(FeatureColumn.createColumn(columnNumber++, GsmMessageConstants.TA_COLUMN, GeoPackageDataType.SMALLINT, false, null));
+            //noinspection UnusedAssignment
+            tableColumns.add(FeatureColumn.createColumn(columnNumber++, GsmMessageConstants.PLMN_COLUMN, GeoPackageDataType.TEXT, false, null));
         });
     }
 
@@ -173,8 +174,9 @@ public class CellularSurveyRecordLogger extends SurveyRecordLogger implements IC
             tableColumns.add(FeatureColumn.createColumn(columnNumber++, UmtsMessageConstants.UARFCN_COLUMN, GeoPackageDataType.SMALLINT, false, null));
             tableColumns.add(FeatureColumn.createColumn(columnNumber++, UmtsMessageConstants.PSC_COLUMN, GeoPackageDataType.SMALLINT, false, null));
             tableColumns.add(FeatureColumn.createColumn(columnNumber++, UmtsMessageConstants.SIGNAL_STRENGTH_COLUMN, GeoPackageDataType.FLOAT, false, null));
-            //noinspection UnusedAssignment
             tableColumns.add(FeatureColumn.createColumn(columnNumber++, UmtsMessageConstants.RSCP_COLUMN, GeoPackageDataType.FLOAT, false, null));
+            //noinspection UnusedAssignment
+            tableColumns.add(FeatureColumn.createColumn(columnNumber++, UmtsMessageConstants.PLMN_COLUMN, GeoPackageDataType.TEXT, false, null));
         });
     }
 
@@ -200,8 +202,9 @@ public class CellularSurveyRecordLogger extends SurveyRecordLogger implements IC
             tableColumns.add(FeatureColumn.createColumn(columnNumber++, LteMessageConstants.BANDWIDTH_COLUMN, GeoPackageDataType.TEXT, false, null));
             tableColumns.add(FeatureColumn.createColumn(columnNumber++, LteCsvConstants.SIGNAL_STRENGTH, GeoPackageDataType.FLOAT, false, null));
             tableColumns.add(FeatureColumn.createColumn(columnNumber++, LteCsvConstants.CQI, GeoPackageDataType.SMALLINT, false, null));
-            //noinspection UnusedAssignment
             tableColumns.add(FeatureColumn.createColumn(columnNumber++, LteCsvConstants.SNR, GeoPackageDataType.FLOAT, false, null));
+            //noinspection UnusedAssignment
+            tableColumns.add(FeatureColumn.createColumn(columnNumber++, LteMessageConstants.PLMN_COLUMN, GeoPackageDataType.TEXT, false, null));
         });
     }
 
@@ -261,8 +264,9 @@ public class CellularSurveyRecordLogger extends SurveyRecordLogger implements IC
 
         tableColumns.add(FeatureColumn.createColumn(columnNumber++, NrMessageConstants.SERVING_CELL_COLUMN, GeoPackageDataType.BOOLEAN, false, null));
         tableColumns.add(FeatureColumn.createColumn(columnNumber++, NrMessageConstants.PROVIDER_COLUMN, GeoPackageDataType.TEXT, false, null));
-        //noinspection UnusedAssignment
         tableColumns.add(FeatureColumn.createColumn(columnNumber++, CellularCsvConstants.SLOT, GeoPackageDataType.SMALLINT, false, null));
+        //noinspection UnusedAssignment
+        tableColumns.add(FeatureColumn.createColumn(columnNumber++, NrMessageConstants.PLMN_COLUMN, GeoPackageDataType.TEXT, false, null));
 
         FeatureTable table = new FeatureTable(NrMessageConstants.NR_RECORDS_TABLE_NAME, tableColumns);
         geoPackage.createFeatureTable(table);
@@ -335,6 +339,10 @@ public class CellularSurveyRecordLogger extends SurveyRecordLogger implements IC
                         if (data.hasMnc())
                         {
                             setShortValue(row, GsmMessageConstants.MNC_COLUMN, data.getMnc().getValue());
+                        }
+                        if (data.hasPlmn())
+                        {
+                            row.setValue(GsmMessageConstants.PLMN_COLUMN, data.getPlmn().getValue());
                         }
                         if (data.hasLac())
                         {
@@ -520,6 +528,10 @@ public class CellularSurveyRecordLogger extends SurveyRecordLogger implements IC
                         {
                             setShortValue(row, UmtsMessageConstants.MNC_COLUMN, data.getMnc().getValue());
                         }
+                        if (data.hasPlmn())
+                        {
+                            row.setValue(UmtsMessageConstants.PLMN_COLUMN, data.getPlmn().getValue());
+                        }
                         if (data.hasLac())
                         {
                             setIntValue(row, UmtsMessageConstants.LAC_COLUMN, data.getLac().getValue());
@@ -605,6 +617,10 @@ public class CellularSurveyRecordLogger extends SurveyRecordLogger implements IC
                         if (data.hasMnc())
                         {
                             setShortValue(row, LteMessageConstants.MNC_COLUMN, data.getMnc().getValue());
+                        }
+                        if (data.hasPlmn())
+                        {
+                            row.setValue(LteMessageConstants.PLMN_COLUMN, data.getPlmn().getValue());
                         }
                         if (data.hasTac())
                         {
@@ -721,6 +737,10 @@ public class CellularSurveyRecordLogger extends SurveyRecordLogger implements IC
                         if (data.hasMnc())
                         {
                             setShortValue(row, NrMessageConstants.MNC_COLUMN, data.getMnc().getValue());
+                        }
+                        if (data.hasPlmn())
+                        {
+                            row.setValue(NrMessageConstants.PLMN_COLUMN, data.getPlmn().getValue());
                         }
                         if (data.hasTac())
                         {

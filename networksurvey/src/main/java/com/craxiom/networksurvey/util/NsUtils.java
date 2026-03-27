@@ -17,6 +17,7 @@ import android.view.View;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.annotation.Nullable;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 
@@ -295,5 +296,48 @@ public class NsUtils
     public static boolean hasPermission(Context context, String permission)
     {
         return (ContextCompat.checkSelfPermission(context, permission) == PackageManager.PERMISSION_GRANTED);
+    }
+
+    /**
+     * Extracts the MCC portion from a PLMN string in "MCC-MNC" format.
+     *
+     * @param plmn The PLMN string (e.g., "310-01").
+     * @return The MCC string, or an empty string if the input is null or invalid.
+     */
+    public static String extractMccFromPlmn(String plmn)
+    {
+        if (plmn == null) return "";
+        String[] parts = plmn.split("-");
+        return parts[0];
+    }
+
+    /**
+     * Extracts the MNC portion from a PLMN string in "MCC-MNC" format, preserving leading zeros.
+     *
+     * @param plmn The PLMN string (e.g., "310-01").
+     * @return The MNC string with leading zeros preserved, or an empty string if the input is
+     * null or does not contain a hyphen separator.
+     */
+    public static String extractMncFromPlmn(String plmn)
+    {
+        if (plmn == null) return "";
+        String[] parts = plmn.split("-");
+        return parts.length > 1 ? parts[1] : "";
+    }
+
+    /**
+     * Extracts the MNC portion from a PLMN string in "MCC-MNC" format, preserving leading zeros.
+     * Returns null instead of empty string when the MNC is not available.
+     *
+     * @param plmn The PLMN string (e.g., "310-01"), or null.
+     * @return The MNC string with leading zeros preserved, or null if the input is null or
+     * does not contain a hyphen separator.
+     */
+    @Nullable
+    public static String extractMncFromPlmnOrNull(String plmn)
+    {
+        if (plmn == null) return null;
+        String[] parts = plmn.split("-");
+        return parts.length > 1 ? parts[1] : null;
     }
 }

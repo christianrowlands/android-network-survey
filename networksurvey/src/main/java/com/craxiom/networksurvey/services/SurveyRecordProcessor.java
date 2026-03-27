@@ -125,6 +125,7 @@ import com.google.protobuf.FloatValue;
 import com.google.protobuf.GeneratedMessage;
 import com.google.protobuf.Int32Value;
 import com.google.protobuf.Int64Value;
+import com.google.protobuf.StringValue;
 import com.google.protobuf.UInt32Value;
 import com.google.protobuf.UInt64Value;
 
@@ -1162,6 +1163,15 @@ public class SurveyRecordProcessor
         {
             dataBuilder.setMnc(Int32Value.newBuilder().setValue(mnc).build());
         }
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P)
+        {
+            String mccStr = cellIdentity.getMccString();
+            String mncStr = cellIdentity.getMncString();
+            if (mccStr != null && mncStr != null)
+            {
+                dataBuilder.setPlmn(StringValue.of(mccStr + "-" + mncStr));
+            }
+        }
         if (lac != Integer.MAX_VALUE && lac != 0)
         {
             dataBuilder.setLac(Int32Value.newBuilder().setValue(lac).build());
@@ -1359,6 +1369,15 @@ public class SurveyRecordProcessor
         {
             dataBuilder.setMnc(Int32Value.newBuilder().setValue(mnc).build());
         }
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P)
+        {
+            String mccStr = cellIdentity.getMccString();
+            String mncStr = cellIdentity.getMncString();
+            if (mccStr != null && mncStr != null)
+            {
+                dataBuilder.setPlmn(StringValue.of(mccStr + "-" + mncStr));
+            }
+        }
         if (lac != Integer.MAX_VALUE)
         {
             dataBuilder.setLac(Int32Value.newBuilder().setValue(lac).build());
@@ -1482,6 +1501,15 @@ public class SurveyRecordProcessor
         {
             dataBuilder.setMnc(Int32Value.newBuilder().setValue(mnc).build());
         }
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P)
+        {
+            String mccStr = cellIdentity.getMccString();
+            String mncStr = cellIdentity.getMncString();
+            if (mccStr != null && mncStr != null)
+            {
+                dataBuilder.setPlmn(StringValue.of(mccStr + "-" + mncStr));
+            }
+        }
         if (tac != Integer.MAX_VALUE)
         {
             dataBuilder.setTac(Int32Value.newBuilder().setValue(tac).build());
@@ -1590,8 +1618,10 @@ public class SurveyRecordProcessor
         final CellIdentityNr cellIdentity = (CellIdentityNr) cellInfoNr.getCellIdentity();
 
         // default to CellInfoNr.UNAVAILABLE for lambdas below and because it's the return value for the other int fields
-        final int mcc = ParserUtils.parseInt(cellIdentity.getMccString(), CellInfoNr.UNAVAILABLE);
-        final int mnc = ParserUtils.parseInt(cellIdentity.getMncString(), CellInfoNr.UNAVAILABLE);
+        final String mccStr = cellIdentity.getMccString();
+        final String mncStr = cellIdentity.getMncString();
+        final int mcc = ParserUtils.parseInt(mccStr, CellInfoNr.UNAVAILABLE);
+        final int mnc = ParserUtils.parseInt(mncStr, CellInfoNr.UNAVAILABLE);
         final int nrarfcn = cellIdentity.getNrarfcn();
         final int pci = cellIdentity.getPci();
         final int tac = cellIdentity.getTac();
@@ -1668,6 +1698,10 @@ public class SurveyRecordProcessor
         if (mnc != CellInfo.UNAVAILABLE)
         {
             dataBuilder.setMnc(Int32Value.newBuilder().setValue(mnc).build());
+        }
+        if (mccStr != null && mncStr != null)
+        {
+            dataBuilder.setPlmn(StringValue.of(mccStr + "-" + mncStr));
         }
         if (tac != CellInfo.UNAVAILABLE)
         {

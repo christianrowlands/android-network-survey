@@ -1304,7 +1304,8 @@ private fun ServingCellCard(
                         listOf(
                             "LTE", data.mcc?.value ?: 0, data.mnc?.value ?: 0,
                             data.tac?.value ?: 0, data.eci?.value?.toLong() ?: 0L,
-                            data.rsrp?.value?.toInt()?.toString() ?: "---"
+                            data.rsrp?.value?.toInt()?.toString() ?: "---",
+                            if (data.hasPlmn()) data.plmn.value else null
                         )
                     }
 
@@ -1314,7 +1315,8 @@ private fun ServingCellCard(
                         listOf(
                             "5G NR", data.mcc?.value ?: 0, data.mnc?.value ?: 0,
                             data.tac?.value ?: 0, data.nci?.value ?: 0L,
-                            data.ssRsrp?.value?.toInt()?.toString() ?: "---"
+                            data.ssRsrp?.value?.toInt()?.toString() ?: "---",
+                            if (data.hasPlmn()) data.plmn.value else null
                         )
                     }
 
@@ -1324,7 +1326,8 @@ private fun ServingCellCard(
                         listOf(
                             "GSM", data.mcc?.value ?: 0, data.mnc?.value ?: 0,
                             data.lac?.value ?: 0, data.ci?.value?.toLong() ?: 0L,
-                            data.signalStrength?.value?.toInt()?.toString() ?: "---"
+                            data.signalStrength?.value?.toInt()?.toString() ?: "---",
+                            if (data.hasPlmn()) data.plmn.value else null
                         )
                     }
 
@@ -1334,16 +1337,18 @@ private fun ServingCellCard(
                         listOf(
                             "UMTS", data.mcc?.value ?: 0, data.mnc?.value ?: 0,
                             data.lac?.value ?: 0, data.cid?.value?.toLong() ?: 0L,
-                            data.rscp?.value?.toInt()?.toString() ?: "---"
+                            data.rscp?.value?.toInt()?.toString() ?: "---",
+                            if (data.hasPlmn()) data.plmn.value else null
                         )
                     }
 
-                    else -> listOf("Unknown", 0, 0, 0, 0L, "---")
+                    else -> listOf("Unknown", 0, 0, 0, 0L, "---", null)
                 }
 
                 val technology = cellInfo[0] as String
                 val mcc = (cellInfo[1] as Number).toInt()
                 val mnc = (cellInfo[2] as Number).toInt()
+                val plmnString = cellInfo.getOrNull(6) as? String
                 val area = (cellInfo[3] as Number).toInt()
                 val cellId = (cellInfo[4] as Number).toLong()
                 val signalStrength = cellInfo[5] as String
@@ -1489,7 +1494,7 @@ private fun ServingCellCard(
                             modifier = Modifier.padding(bottom = 2.dp)
                         )
                         Text(
-                            text = "$mcc-$mnc",
+                            text = plmnString ?: "$mcc-$mnc",
                             style = MaterialTheme.typography.bodyLarge,
                             fontWeight = FontWeight.Medium,
                             color = MaterialTheme.colorScheme.onSurface

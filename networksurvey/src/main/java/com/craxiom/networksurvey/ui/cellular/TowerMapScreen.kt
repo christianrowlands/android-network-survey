@@ -1075,7 +1075,15 @@ fun ServingCellInfoDisplay(cellInfo: ServingCellInfo?, servingSignalInfo: Servin
             // Cell ID info with vertical layout
             when (record) {
                 is GsmRecord -> {
-                    VerticalMetric("MCC/MNC", "${record.data.mcc.value}/${record.data.mnc.value}")
+                    VerticalMetric(
+                        "MCC-MNC",
+                        formatPlmn(
+                            record.data.hasPlmn(),
+                            record.data.plmn?.value,
+                            record.data.mcc?.value ?: 0,
+                            record.data.mnc?.value ?: 0
+                        )
+                    )
                     VerticalMetric("LAC", record.data.lac.value.toString())
                     VerticalMetric("CID", record.data.ci.value.toString())
                     if (record.data.hasArfcn()) {
@@ -1092,7 +1100,15 @@ fun ServingCellInfoDisplay(cellInfo: ServingCellInfo?, servingSignalInfo: Servin
                 }
 
                 is UmtsRecord -> {
-                    VerticalMetric("MCC/MNC", "${record.data.mcc.value}/${record.data.mnc.value}")
+                    VerticalMetric(
+                        "MCC-MNC",
+                        formatPlmn(
+                            record.data.hasPlmn(),
+                            record.data.plmn?.value,
+                            record.data.mcc?.value ?: 0,
+                            record.data.mnc?.value ?: 0
+                        )
+                    )
                     VerticalMetric("LAC", record.data.lac.value.toString())
                     VerticalMetric("CID", record.data.cid.value.toString())
                     if (record.data.hasUarfcn()) {
@@ -1101,7 +1117,15 @@ fun ServingCellInfoDisplay(cellInfo: ServingCellInfo?, servingSignalInfo: Servin
                 }
 
                 is LteRecord -> {
-                    VerticalMetric("MCC/MNC", "${record.data.mcc.value}/${record.data.mnc.value}")
+                    VerticalMetric(
+                        "MCC-MNC",
+                        formatPlmn(
+                            record.data.hasPlmn(),
+                            record.data.plmn?.value,
+                            record.data.mcc?.value ?: 0,
+                            record.data.mnc?.value ?: 0
+                        )
+                    )
                     VerticalMetric("TAC", record.data.tac.value.toString())
                     VerticalMetric("ECI", record.data.eci.value.toString())
                     if (record.data.hasEarfcn()) {
@@ -1113,7 +1137,15 @@ fun ServingCellInfoDisplay(cellInfo: ServingCellInfo?, servingSignalInfo: Servin
                 }
 
                 is NrRecord -> {
-                    VerticalMetric("MCC/MNC", "${record.data.mcc.value}/${record.data.mnc.value}")
+                    VerticalMetric(
+                        "MCC-MNC",
+                        formatPlmn(
+                            record.data.hasPlmn(),
+                            record.data.plmn?.value,
+                            record.data.mcc?.value ?: 0,
+                            record.data.mnc?.value ?: 0
+                        )
+                    )
                     VerticalMetric("TAC", record.data.tac.value.toString())
                     VerticalMetric("NCI", record.data.nci.value.toString())
                     if (record.data.hasNarfcn()) {
@@ -1135,6 +1167,13 @@ fun ServingCellInfoDisplay(cellInfo: ServingCellInfo?, servingSignalInfo: Servin
             )
         }
     }
+}
+
+/**
+ * Formats a PLMN display string, preferring the PLMN string with leading zeros when available.
+ */
+private fun formatPlmn(hasPlmn: Boolean, plmn: String?, mcc: Int, mnc: Int): String {
+    return if (hasPlmn && plmn != null) plmn else "$mcc-$mnc"
 }
 
 @Composable
@@ -2088,7 +2127,7 @@ fun CombinedFiltersBottomSheet(
             )
 
             Text(
-                text = "Filter towers by specific cellular provider (MCC/MNC)",
+                text = "Filter towers by specific cellular provider (MCC-MNC)",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(bottom = 8.dp)

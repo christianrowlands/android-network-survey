@@ -590,8 +590,9 @@ public class NetworkDetailsFragment extends AServiceDataFragment implements ICel
         }
 
         viewModel.setCarrier(data.getProvider());
-        viewModel.setMcc(data.hasMcc() ? String.valueOf(data.getMcc().getValue()) : "");
-        viewModel.setMnc(data.hasMnc() ? String.valueOf(data.getMnc().getValue()) : "");
+        setMccMncOnViewModel(data.hasPlmn() ? data.getPlmn().getValue() : null,
+                data.hasMcc() ? data.getMcc().getValue() : null,
+                data.hasMnc() ? data.getMnc().getValue() : null);
         viewModel.setAreaCode(data.hasLac() ? String.valueOf(data.getLac().getValue()) : "");
         viewModel.setCellId(data.hasCi() ? (long) data.getCi().getValue() : null);
         viewModel.setChannelNumber(data.hasArfcn() ? String.valueOf(data.getArfcn().getValue()) : "");
@@ -616,8 +617,9 @@ public class NetworkDetailsFragment extends AServiceDataFragment implements ICel
         }
 
         viewModel.setCarrier(data.getProvider());
-        viewModel.setMcc(data.hasMcc() ? String.valueOf(data.getMcc().getValue()) : "");
-        viewModel.setMnc(data.hasMnc() ? String.valueOf(data.getMnc().getValue()) : "");
+        setMccMncOnViewModel(data.hasPlmn() ? data.getPlmn().getValue() : null,
+                data.hasMcc() ? data.getMcc().getValue() : null,
+                data.hasMnc() ? data.getMnc().getValue() : null);
         viewModel.setAreaCode(data.hasLac() ? String.valueOf(data.getLac().getValue()) : "");
         viewModel.setCellId(data.hasCid() ? (long) data.getCid().getValue() : null);
         viewModel.setChannelNumber(data.hasUarfcn() ? String.valueOf(data.getUarfcn().getValue()) : "");
@@ -640,8 +642,9 @@ public class NetworkDetailsFragment extends AServiceDataFragment implements ICel
         if (data.hasRsrp()) chartViewModel.addNewRssi((int) data.getRsrp().getValue());
 
         viewModel.setCarrier(data.getProvider());
-        viewModel.setMcc(data.hasMcc() ? String.valueOf(data.getMcc().getValue()) : "");
-        viewModel.setMnc(data.hasMnc() ? String.valueOf(data.getMnc().getValue()) : "");
+        setMccMncOnViewModel(data.hasPlmn() ? data.getPlmn().getValue() : null,
+                data.hasMcc() ? data.getMcc().getValue() : null,
+                data.hasMnc() ? data.getMnc().getValue() : null);
         viewModel.setAreaCode(data.hasTac() ? String.valueOf(data.getTac().getValue()) : "");
         viewModel.setCellId(data.hasEci() ? (long) data.getEci().getValue() : null);
 
@@ -704,8 +707,9 @@ public class NetworkDetailsFragment extends AServiceDataFragment implements ICel
         if (data.hasSsRsrp()) chartViewModel.addNewRssi((int) data.getSsRsrp().getValue());
 
         viewModel.setCarrier(data.getProvider());
-        viewModel.setMcc(data.hasMcc() ? String.valueOf(data.getMcc().getValue()) : "");
-        viewModel.setMnc(data.hasMnc() ? String.valueOf(data.getMnc().getValue()) : "");
+        setMccMncOnViewModel(data.hasPlmn() ? data.getPlmn().getValue() : null,
+                data.hasMcc() ? data.getMcc().getValue() : null,
+                data.hasMnc() ? data.getMnc().getValue() : null);
         viewModel.setAreaCode(data.hasTac() ? String.valueOf(data.getTac().getValue()) : "");
         viewModel.setCellId(data.hasNci() ? data.getNci().getValue() : null);
 
@@ -1428,5 +1432,22 @@ public class NetworkDetailsFragment extends AServiceDataFragment implements ICel
     {
         return Settings.Global.getInt(context.getContentResolver(),
                 Settings.Global.AIRPLANE_MODE_ON, 0) != 0;
+    }
+
+    /**
+     * Sets the MCC and MNC on the view model, preferring the PLMN string (which preserves
+     * leading zeros) when available.
+     */
+    private void setMccMncOnViewModel(String plmn, Integer mcc, Integer mnc)
+    {
+        if (plmn != null)
+        {
+            viewModel.setMcc(NsUtils.extractMccFromPlmn(plmn));
+            viewModel.setMnc(NsUtils.extractMncFromPlmn(plmn));
+        } else
+        {
+            viewModel.setMcc(mcc != null ? String.valueOf(mcc) : "");
+            viewModel.setMnc(mnc != null ? String.valueOf(mnc) : "");
+        }
     }
 }

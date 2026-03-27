@@ -10,6 +10,7 @@ import com.craxiom.messaging.NrRecord;
 import com.craxiom.messaging.NrRecordData;
 import com.craxiom.messaging.UmtsRecord;
 import com.craxiom.messaging.UmtsRecordData;
+import com.craxiom.networksurvey.util.NsUtils;
 import com.google.protobuf.GeneratedMessage;
 
 import java.util.Objects;
@@ -63,7 +64,8 @@ public class CellularRecordWrapper
             case GSM ->
             {
                 GsmRecordData gsmData = ((GsmRecord) cellularRecord).getData();
-                yield new Plmn(gsmData.getMcc().getValue(), gsmData.getMnc().getValue());
+                String mncStr = NsUtils.extractMncFromPlmnOrNull(gsmData.hasPlmn() ? gsmData.getPlmn().getValue() : null);
+                yield new Plmn(gsmData.getMcc().getValue(), gsmData.getMnc().getValue(), mncStr);
             }
             case CDMA ->
             {
@@ -73,17 +75,20 @@ public class CellularRecordWrapper
             case UMTS ->
             {
                 UmtsRecordData umtsData = ((UmtsRecord) cellularRecord).getData();
-                yield new Plmn(umtsData.getMcc().getValue(), umtsData.getMnc().getValue());
+                String mncStr = NsUtils.extractMncFromPlmnOrNull(umtsData.hasPlmn() ? umtsData.getPlmn().getValue() : null);
+                yield new Plmn(umtsData.getMcc().getValue(), umtsData.getMnc().getValue(), mncStr);
             }
             case LTE ->
             {
                 LteRecordData lteData = ((LteRecord) cellularRecord).getData();
-                yield new Plmn(lteData.getMcc().getValue(), lteData.getMnc().getValue());
+                String mncStr = NsUtils.extractMncFromPlmnOrNull(lteData.hasPlmn() ? lteData.getPlmn().getValue() : null);
+                yield new Plmn(lteData.getMcc().getValue(), lteData.getMnc().getValue(), mncStr);
             }
             case NR ->
             {
                 NrRecordData nrData = ((NrRecord) cellularRecord).getData();
-                yield new Plmn(nrData.getMcc().getValue(), nrData.getMnc().getValue());
+                String mncStr = NsUtils.extractMncFromPlmnOrNull(nrData.hasPlmn() ? nrData.getPlmn().getValue() : null);
+                yield new Plmn(nrData.getMcc().getValue(), nrData.getMnc().getValue(), mncStr);
             }
             default -> new Plmn(0, 0);
         };

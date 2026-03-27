@@ -22,6 +22,7 @@ import com.craxiom.networksurvey.constants.DeviceStatusMessageConstants;
 import com.google.protobuf.BoolValue;
 import com.google.protobuf.Int32Value;
 import com.google.protobuf.Int64Value;
+import com.google.protobuf.StringValue;
 
 import java.util.Map;
 
@@ -150,17 +151,23 @@ public class ParserUtils
         // For whatever reason, casting a cellIdentity object requires Android 8 or higher
         if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.P)
         {
-            if (cellIdentity instanceof CellIdentityGsm)
+            if (cellIdentity instanceof CellIdentityGsm cellIdentityGsm)
             {
-                final CellIdentityGsm cellIdentityGsm = (CellIdentityGsm) cellIdentity;
 
                 com.craxiom.messaging.CellIdentityGsm.Builder builder = com.craxiom.messaging.CellIdentityGsm.newBuilder();
 
-                final int mcc = parseInt(cellIdentityGsm.getMccString(), -1);
+                final String mccStr = cellIdentityGsm.getMccString();
+                final String mncStr = cellIdentityGsm.getMncString();
+                final int mcc = parseInt(mccStr, -1);
                 if (mcc != -1) builder.setMcc(Int32Value.newBuilder().setValue(mcc).build());
 
-                final int mnc = parseInt(cellIdentityGsm.getMncString(), -1);
+                final int mnc = parseInt(mncStr, -1);
                 if (mnc != -1) builder.setMnc(Int32Value.newBuilder().setValue(mnc).build());
+
+                if (mccStr != null && mncStr != null)
+                {
+                    builder.setPlmn(StringValue.of(mccStr + "-" + mncStr));
+                }
 
                 final int lac = cellIdentityGsm.getLac();
                 if (lac != CellInfo.UNAVAILABLE)
@@ -187,9 +194,8 @@ public class ParserUtils
                 }
 
                 regInfoBuilder.setCellIdentityGsm(builder);
-            } else if (cellIdentity instanceof CellIdentityCdma)
+            } else if (cellIdentity instanceof CellIdentityCdma cellIdentityCdma)
             {
-                final CellIdentityCdma cellIdentityCdma = (CellIdentityCdma) cellIdentity;
 
                 com.craxiom.messaging.CellIdentityCdma.Builder builder = com.craxiom.messaging.CellIdentityCdma.newBuilder();
 
@@ -212,17 +218,23 @@ public class ParserUtils
                 }
 
                 regInfoBuilder.setCellIdentityCdma(builder);
-            } else if (cellIdentity instanceof CellIdentityWcdma)
+            } else if (cellIdentity instanceof CellIdentityWcdma cellIdentityWcdma)
             {
-                final CellIdentityWcdma cellIdentityWcdma = (CellIdentityWcdma) cellIdentity;
 
                 com.craxiom.messaging.CellIdentityUmts.Builder builder = com.craxiom.messaging.CellIdentityUmts.newBuilder();
 
-                final int mcc = parseInt(cellIdentityWcdma.getMccString(), -1);
+                final String mccStr = cellIdentityWcdma.getMccString();
+                final String mncStr = cellIdentityWcdma.getMncString();
+                final int mcc = parseInt(mccStr, -1);
                 if (mcc != -1) builder.setMcc(Int32Value.newBuilder().setValue(mcc).build());
 
-                final int mnc = parseInt(cellIdentityWcdma.getMncString(), -1);
+                final int mnc = parseInt(mncStr, -1);
                 if (mnc != -1) builder.setMnc(Int32Value.newBuilder().setValue(mnc).build());
+
+                if (mccStr != null && mncStr != null)
+                {
+                    builder.setPlmn(StringValue.of(mccStr + "-" + mncStr));
+                }
 
                 final int lac = cellIdentityWcdma.getLac();
                 if (lac != CellInfo.UNAVAILABLE)
@@ -249,17 +261,23 @@ public class ParserUtils
                 }
 
                 regInfoBuilder.setCellIdentityUmts(builder);
-            } else if (cellIdentity instanceof CellIdentityLte)
+            } else if (cellIdentity instanceof CellIdentityLte cellIdentityLte)
             {
-                final CellIdentityLte cellIdentityLte = (CellIdentityLte) cellIdentity;
 
                 com.craxiom.messaging.CellIdentityLte.Builder builder = com.craxiom.messaging.CellIdentityLte.newBuilder();
 
-                final int mcc = parseInt(cellIdentityLte.getMccString(), -1);
+                final String mccStr = cellIdentityLte.getMccString();
+                final String mncStr = cellIdentityLte.getMncString();
+                final int mcc = parseInt(mccStr, -1);
                 if (mcc != -1) builder.setMcc(Int32Value.newBuilder().setValue(mcc).build());
 
-                final int mnc = parseInt(cellIdentityLte.getMncString(), -1);
+                final int mnc = parseInt(mncStr, -1);
                 if (mnc != -1) builder.setMnc(Int32Value.newBuilder().setValue(mnc).build());
+
+                if (mccStr != null && mncStr != null)
+                {
+                    builder.setPlmn(StringValue.of(mccStr + "-" + mncStr));
+                }
 
                 final int tac = cellIdentityLte.getTac();
                 if (tac != CellInfo.UNAVAILABLE)
@@ -286,17 +304,23 @@ public class ParserUtils
                 }
 
                 regInfoBuilder.setCellIdentityLte(builder);
-            } else if (android.os.Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q && cellIdentity instanceof CellIdentityNr)
+            } else if (android.os.Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q && cellIdentity instanceof CellIdentityNr cellIdentityNr)
             {
-                final CellIdentityNr cellIdentityNr = (CellIdentityNr) cellIdentity;
 
                 com.craxiom.messaging.CellIdentityNr.Builder builder = com.craxiom.messaging.CellIdentityNr.newBuilder();
 
-                final int mcc = parseInt(cellIdentityNr.getMccString(), -1);
+                final String mccStr = cellIdentityNr.getMccString();
+                final String mncStr = cellIdentityNr.getMncString();
+                final int mcc = parseInt(mccStr, -1);
                 if (mcc != -1) builder.setMcc(Int32Value.newBuilder().setValue(mcc).build());
 
-                final int mnc = parseInt(cellIdentityNr.getMncString(), -1);
+                final int mnc = parseInt(mncStr, -1);
                 if (mnc != -1) builder.setMnc(Int32Value.newBuilder().setValue(mnc).build());
+
+                if (mccStr != null && mncStr != null)
+                {
+                    builder.setPlmn(StringValue.of(mccStr + "-" + mncStr));
+                }
 
                 final int tac = cellIdentityNr.getTac();
                 if (tac != CellInfo.UNAVAILABLE)
@@ -446,14 +470,17 @@ public class ParserUtils
      * @param scanRecord The ScanRecord object from a BLE scan result.
      */
     @SuppressLint("DefaultLocale")
-    public static void bluetoothAdvertisingLogging(ScanRecord scanRecord) {
+    public static void bluetoothAdvertisingLogging(ScanRecord scanRecord)
+    {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU)
         {
             Map<Integer, byte[]> advertisingDataMap = scanRecord.getAdvertisingDataMap();
-            if (!advertisingDataMap.isEmpty()) {
+            if (!advertisingDataMap.isEmpty())
+            {
                 StringBuilder adDataLog = new StringBuilder("BLE Advertising Data:\n");
 
-                for (Map.Entry<Integer, byte[]> entry : advertisingDataMap.entrySet()) {
+                for (Map.Entry<Integer, byte[]> entry : advertisingDataMap.entrySet())
+                {
                     int adType = entry.getKey();
                     byte[] adData = entry.getValue();
 
@@ -462,16 +489,20 @@ public class ParserUtils
                     adDataLog.append(String.format("  AD Type: 0x%02X (%s)\n", adType, adTypeName));
 
                     // Format the data as hex string
-                    if (adData != null && adData.length > 0) {
+                    if (adData != null && adData.length > 0)
+                    {
                         StringBuilder hexString = new StringBuilder();
                         StringBuilder asciiString = new StringBuilder();
 
-                        for (byte b : adData) {
+                        for (byte b : adData)
+                        {
                             hexString.append(String.format("%02X ", b));
                             // Add ASCII representation for printable characters
-                            if (b >= 32 && b <= 126) {
+                            if (b >= 32 && b <= 126)
+                            {
                                 asciiString.append((char) b);
-                            } else {
+                            } else
+                            {
                                 asciiString.append(".");
                             }
                         }
@@ -479,7 +510,8 @@ public class ParserUtils
                         adDataLog.append(String.format("    Data (hex): %s\n", hexString.toString().trim()));
                         adDataLog.append(String.format("    Data (ASCII): %s\n", asciiString));
                         adDataLog.append(String.format("    Data length: %d bytes\n", adData.length));
-                    } else {
+                    } else
+                    {
                         adDataLog.append("    Data: empty or null\n");
                     }
                 }
@@ -495,7 +527,8 @@ public class ParserUtils
      * @param adType The AD Type byte value.
      * @return A string representing the name of the AD Type, or "Unknown" if not recognized.
      */
-    private static String getAdTypeName(int adType) {
+    private static String getAdTypeName(int adType)
+    {
         return switch (adType)
         {
             case 0x01 -> "Flags";

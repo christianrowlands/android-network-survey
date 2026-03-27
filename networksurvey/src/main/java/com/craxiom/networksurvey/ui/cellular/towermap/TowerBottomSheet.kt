@@ -243,7 +243,7 @@ private fun TowerListRow(
             Spacer(modifier = Modifier.width(12.dp))
             Column {
                 Text(
-                    text = "MCC/MNC: ${tower.mcc}/${tower.mnc}",
+                    text = "MCC-MNC: ${tower.mcc}-${tower.mnc}",
                     style = MaterialTheme.typography.bodyMedium,
                     fontWeight = FontWeight.Medium
                 )
@@ -413,7 +413,7 @@ private fun NetworkIdentitySection(tower: Tower, onColorOverrideChanged: () -> U
                                 )
                             }
                             Spacer(modifier = Modifier.width(2.dp))
-                            CompactInfoItem("MCC/MNC", "${tower.mcc}/${tower.mnc}")
+                            CompactInfoItem("MCC-MNC", "${tower.mcc}-${tower.mnc}")
                         }
                         CompactInfoItem("Area", tower.area.toString())
                     }
