@@ -35,8 +35,8 @@ class TowerDetectionManager(
      * @return true if the tower is new (not seen before AND not in backend), false otherwise
      */
     suspend fun checkIfTowerIsNew(
-        mcc: Int,
-        mnc: Int,
+        mcc: String,
+        mnc: String,
         area: Int,
         cid: Long,
         radio: String
@@ -101,8 +101,8 @@ class TowerDetectionManager(
      * This can be used to pre-populate the cache to reduce API calls.
      */
     suspend fun preloadAreaTowers(
-        mcc: Int,
-        mnc: Int,
+        mcc: String,
+        mnc: String,
         area: Int,
         bbox: String,
         radio: String

@@ -29,7 +29,7 @@ import com.craxiom.networksurvey.logging.db.model.WifiBeaconRecordEntity;
 
 @Database(entities = {GsmRecordEntity.class, CdmaRecordEntity.class, UmtsRecordEntity.class,
         LteRecordEntity.class, NrRecordEntity.class, WifiBeaconRecordEntity.class, TowerCacheEntity.class,
-        NsAnalyticsQueueEntity.class, NsAnalyticsConnectionEntity.class}, version = 11, exportSchema = false)
+        NsAnalyticsQueueEntity.class, NsAnalyticsConnectionEntity.class}, version = 12, exportSchema = false)
 public abstract class SurveyDatabase extends RoomDatabase
 {
     public abstract GsmRecordDao gsmRecordDao();
@@ -238,6 +238,39 @@ public abstract class SurveyDatabase extends RoomDatabase
         }
     };
 
+    /**
+     * Migration from version 11 to 12: Change tower_cache mcc/mnc columns from INTEGER to TEXT.
+     * This preserves MNC leading zeros (e.g., "01" instead of "1") for correct API lookups
+     * and tower identification.
+     */
+    private static final Migration MIGRATION_11_12 = new Migration(11, 12)
+    {
+        @Override
+        public void migrate(SupportSQLiteDatabase database)
+        {
+            database.execSQL("CREATE TABLE tower_cache_new ("
+                    + "id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, "
+                    + "mcc TEXT, "
+                    + "mnc TEXT, "
+                    + "area INTEGER NOT NULL, "
+                    + "cid INTEGER NOT NULL, "
+                    + "timestamp INTEGER NOT NULL, "
+                    + "radio TEXT"
+                    + ")");
+
+            database.execSQL("INSERT INTO tower_cache_new (id, mcc, mnc, area, cid, timestamp, radio) "
+                    + "SELECT id, CAST(mcc AS TEXT), CAST(mnc AS TEXT), area, cid, timestamp, radio "
+                    + "FROM tower_cache");
+
+            database.execSQL("DROP TABLE tower_cache");
+
+            database.execSQL("ALTER TABLE tower_cache_new RENAME TO tower_cache");
+
+            database.execSQL("CREATE UNIQUE INDEX index_tower_cache_mcc_mnc_area_cid "
+                    + "ON tower_cache (mcc, mnc, area, cid)");
+        }
+    };
+
     public static SurveyDatabase getInstance(Context context)
     {
         if (INSTANCE == null)
@@ -248,7 +281,7 @@ public abstract class SurveyDatabase extends RoomDatabase
                 {
                     INSTANCE = Room.databaseBuilder(context.getApplicationContext(),
                                     SurveyDatabase.class, "survey_db")
-                            .addMigrations(MIGRATION_7_9, MIGRATION_8_9, MIGRATION_9_10, MIGRATION_10_11)
+                            .addMigrations(MIGRATION_7_9, MIGRATION_8_9, MIGRATION_9_10, MIGRATION_10_11, MIGRATION_11_12)
                             .fallbackToDestructiveMigration()
                             .build();
                 }

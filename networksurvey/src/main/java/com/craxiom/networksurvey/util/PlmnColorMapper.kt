@@ -61,9 +61,9 @@ object PlmnColorMapper {
     /**
      * Returns the palette index for the given MCC/MNC combination, respecting user overrides.
      */
-    fun getColorIndex(mcc: Int, mnc: Int): Int {
+    fun getColorIndex(mcc: String, mnc: String): Int {
         overrides["$mcc-$mnc"]?.let { return it }
-        return getDefaultColorIndex(mcc, mnc)
+        return getDefaultColorIndex(mcc.toIntOrNull() ?: 0, mnc.toIntOrNull() ?: 0)
     }
 
     /**
@@ -84,7 +84,7 @@ object PlmnColorMapper {
     /**
      * Returns the Compose [Color] for the given MCC/MNC combination.
      */
-    fun getColor(mcc: Int, mnc: Int): Color {
+    fun getColor(mcc: String, mnc: String): Color {
         return PALETTE[getColorIndex(mcc, mnc)]
     }
 
@@ -92,7 +92,7 @@ object PlmnColorMapper {
      * Returns the ARGB int color for the given MCC/MNC combination, suitable for
      * Canvas or MapLibre usage.
      */
-    fun getColorArgb(mcc: Int, mnc: Int): Int {
+    fun getColorArgb(mcc: String, mnc: String): Int {
         val c = PALETTE[getColorIndex(mcc, mnc)]
         return android.graphics.Color.argb(
             (c.alpha * 255).toInt(),

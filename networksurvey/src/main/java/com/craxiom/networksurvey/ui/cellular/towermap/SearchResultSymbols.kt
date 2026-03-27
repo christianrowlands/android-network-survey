@@ -50,8 +50,8 @@ internal class SearchResultSymbolsNode(
             listOf(
                 Feature.fromGeometry(Point.fromLngLat(tower.lon, tower.lat)).apply {
                     addStringProperty("radio", tower.radio)
-                    addNumberProperty("mcc", tower.mcc)
-                    addNumberProperty("mnc", tower.mnc)
+                    addStringProperty("mcc", tower.mcc)
+                    addStringProperty("mnc", tower.mnc)
                     addNumberProperty("area", tower.area)
                     addNumberProperty("cid", tower.cid)
                     addNumberProperty("unit", tower.unit)

@@ -340,4 +340,23 @@ public class NsUtils
         String[] parts = plmn.split("-");
         return parts.length > 1 ? parts[1] : null;
     }
+
+    /**
+     * Extracts MCC and MNC as strings from a PLMN field, falling back to integer values.
+     * This preserves MNC leading zeros when the PLMN field is available.
+     *
+     * @param hasPlmn Whether the PLMN field is present in the record.
+     * @param plmn    The PLMN string (e.g., "310-01"), may be null.
+     * @param mccInt  Fallback integer MCC value when PLMN is not available.
+     * @param mncInt  Fallback integer MNC value when PLMN is not available.
+     * @return A two-element array [mcc, mnc] as strings.
+     */
+    public static String[] extractMccMncStrings(boolean hasPlmn, String plmn, int mccInt, int mncInt)
+    {
+        if (hasPlmn && plmn != null)
+        {
+            return new String[]{extractMccFromPlmn(plmn), extractMncFromPlmn(plmn)};
+        }
+        return new String[]{String.valueOf(mccInt), String.valueOf(mncInt)};
+    }
 }

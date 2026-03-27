@@ -12,38 +12,38 @@ import retrofit2.http.Query
 
 // The API definition for the NS Tower Service
 interface Api {
-    @GET("cells/area")
+    @GET("v2/cells/area")
     suspend fun getTowers(
         @Query("bbox") bbox: String,
         @Query("radio") radio: String,
         @Query("source") source: String
     ): Response<TowerResponse>
 
-    @GET("cells/area")
+    @GET("v2/cells/area")
     suspend fun getTowers(
         @Query("bbox") bbox: String,
         @Query("radio") radio: String,
-        @Query("mcc") mcc: Int,
-        @Query("mnc") mnc: Int,
+        @Query("mcc") mcc: String,
+        @Query("mnc") mnc: String,
         @Query("source") source: String
     ): Response<TowerResponse>
 
     @GET("/maptiler/key")
     suspend fun getApiKey(): Response<MapTilerKeyResponse>
 
-    @GET("cells/single")
+    @GET("v2/cells/single")
     suspend fun checkSingleTower(
-        @Query("mcc") mcc: Int,
-        @Query("mnc") mnc: Int,
+        @Query("mcc") mcc: String,
+        @Query("mnc") mnc: String,
         @Query("area") area: Int,
         @Query("cid") cid: Long,
         @Query("radio") radio: String
     ): Response<Tower>
 
-    @GET("cells/search")
+    @GET("v2/cells/search")
     suspend fun searchTowers(
-        @Query("mcc") mcc: Int,
-        @Query("mnc") mnc: Int,
+        @Query("mcc") mcc: String,
+        @Query("mnc") mnc: String,
         @Query("area") area: Int,
         @Query("cid") cid: Long
     ): Response<TowerResponse>
@@ -71,8 +71,8 @@ val retrofit: Retrofit = Retrofit.Builder()
 data class Tower(
     @SerializedName("lat") val lat: Double,
     @SerializedName("lon") val lon: Double,
-    @SerializedName("mcc") val mcc: Int,
-    @SerializedName("mnc") val mnc: Int,
+    @SerializedName("mcc") val mcc: String,
+    @SerializedName("mnc") val mnc: String,
     @SerializedName("area") val area: Int,
     @SerializedName("cid") val cid: Long,
     @SerializedName("unit") val unit: Int, // Unit is the PCI for LTE or PCS for UMTS

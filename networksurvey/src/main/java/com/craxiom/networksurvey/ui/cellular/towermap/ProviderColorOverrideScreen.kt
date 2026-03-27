@@ -288,7 +288,7 @@ private fun OverrideItem(
 private fun AddOverrideDialog(
     isAtMaxCapacity: Boolean,
     onDismiss: () -> Unit,
-    onAdd: (mcc: Int, mnc: Int, paletteIndex: Int) -> Unit
+    onAdd: (mcc: String, mnc: String, paletteIndex: Int) -> Unit
 ) {
     var mccText by remember { mutableStateOf("") }
     var mncText by remember { mutableStateOf("") }
@@ -367,15 +367,15 @@ private fun AddOverrideDialog(
         confirmButton = {
             TextButton(
                 onClick = {
-                    val mcc = mccText.toIntOrNull()
-                    val mnc = mncText.toIntOrNull()
+                    val mccInt = mccText.toIntOrNull()
+                    val mncInt = mncText.toIntOrNull()
                     var hasError = false
 
-                    if (mcc == null || mcc !in 100..999) {
+                    if (mccInt == null || mccInt !in 100..999) {
                         mccError = "100\u2013999"
                         hasError = true
                     }
-                    if (mnc == null || mnc !in 0..999) {
+                    if (mncInt == null || mncInt !in 0..999) {
                         mncError = "0\u2013999"
                         hasError = true
                     }
@@ -383,8 +383,8 @@ private fun AddOverrideDialog(
                         hasError = true
                     }
 
-                    if (!hasError && mcc != null && mnc != null) {
-                        onAdd(mcc, mnc, selectedIndex)
+                    if (!hasError && mccInt != null && mncInt != null) {
+                        onAdd(mccText, mncText, selectedIndex)
                     }
                 },
                 enabled = !isAtMaxCapacity && mccText.isNotBlank() && mncText.isNotBlank() && selectedIndex >= 0

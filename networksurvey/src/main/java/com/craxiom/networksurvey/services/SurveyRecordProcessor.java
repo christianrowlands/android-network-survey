@@ -2782,8 +2782,8 @@ public class SurveyRecordProcessor
         final GeneratedMessage record = cellularRecord.cellularRecord;
 
         String cellKey;
-        int mcc;
-        int mnc;
+        String mcc;
+        String mnc;
         int area;
         long cellId;
         String radio;
@@ -2793,8 +2793,12 @@ public class SurveyRecordProcessor
             case LTE:
                 LteRecord lte = (LteRecord) record;
                 LteRecordData lteData = lte.getData();
-                mcc = lteData.hasMcc() ? lteData.getMcc().getValue() : 0;
-                mnc = lteData.hasMnc() ? lteData.getMnc().getValue() : 0;
+                String[] lteMccMnc = NsUtils.extractMccMncStrings(lteData.hasPlmn(),
+                        lteData.hasPlmn() ? lteData.getPlmn().getValue() : null,
+                        lteData.hasMcc() ? lteData.getMcc().getValue() : 0,
+                        lteData.hasMnc() ? lteData.getMnc().getValue() : 0);
+                mcc = lteMccMnc[0];
+                mnc = lteMccMnc[1];
                 area = lteData.hasTac() ? lteData.getTac().getValue() : 0;
                 cellId = lteData.hasEci() ? lteData.getEci().getValue() : 0L;
                 radio = CellularProtocol.LTE.name();
@@ -2804,8 +2808,12 @@ public class SurveyRecordProcessor
             case NR:
                 NrRecord nr = (NrRecord) record;
                 NrRecordData nrData = nr.getData();
-                mcc = nrData.hasMcc() ? nrData.getMcc().getValue() : 0;
-                mnc = nrData.hasMnc() ? nrData.getMnc().getValue() : 0;
+                String[] nrMccMnc = NsUtils.extractMccMncStrings(nrData.hasPlmn(),
+                        nrData.hasPlmn() ? nrData.getPlmn().getValue() : null,
+                        nrData.hasMcc() ? nrData.getMcc().getValue() : 0,
+                        nrData.hasMnc() ? nrData.getMnc().getValue() : 0);
+                mcc = nrMccMnc[0];
+                mnc = nrMccMnc[1];
                 area = nrData.hasTac() ? nrData.getTac().getValue() : 0;
                 cellId = nrData.hasNci() ? nrData.getNci().getValue() : 0L;
                 radio = CellularProtocol.NR.name();
@@ -2815,8 +2823,12 @@ public class SurveyRecordProcessor
             case GSM:
                 GsmRecord gsm = (GsmRecord) record;
                 GsmRecordData gsmData = gsm.getData();
-                mcc = gsmData.hasMcc() ? gsmData.getMcc().getValue() : 0;
-                mnc = gsmData.hasMnc() ? gsmData.getMnc().getValue() : 0;
+                String[] gsmMccMnc = NsUtils.extractMccMncStrings(gsmData.hasPlmn(),
+                        gsmData.hasPlmn() ? gsmData.getPlmn().getValue() : null,
+                        gsmData.hasMcc() ? gsmData.getMcc().getValue() : 0,
+                        gsmData.hasMnc() ? gsmData.getMnc().getValue() : 0);
+                mcc = gsmMccMnc[0];
+                mnc = gsmMccMnc[1];
                 area = gsmData.hasLac() ? gsmData.getLac().getValue() : 0;
                 cellId = gsmData.hasCi() ? gsmData.getCi().getValue() : 0L;
                 radio = CellularProtocol.GSM.name();
@@ -2826,8 +2838,12 @@ public class SurveyRecordProcessor
             case UMTS:
                 UmtsRecord umts = (UmtsRecord) record;
                 UmtsRecordData umtsData = umts.getData();
-                mcc = umtsData.hasMcc() ? umtsData.getMcc().getValue() : 0;
-                mnc = umtsData.hasMnc() ? umtsData.getMnc().getValue() : 0;
+                String[] umtsMccMnc = NsUtils.extractMccMncStrings(umtsData.hasPlmn(),
+                        umtsData.hasPlmn() ? umtsData.getPlmn().getValue() : null,
+                        umtsData.hasMcc() ? umtsData.getMcc().getValue() : 0,
+                        umtsData.hasMnc() ? umtsData.getMnc().getValue() : 0);
+                mcc = umtsMccMnc[0];
+                mnc = umtsMccMnc[1];
                 area = umtsData.hasLac() ? umtsData.getLac().getValue() : 0;
                 cellId = umtsData.hasCid() ? umtsData.getCid().getValue() : 0L;
                 radio = CellularProtocol.UMTS.name();
@@ -2839,12 +2855,12 @@ public class SurveyRecordProcessor
         }
 
         // Check if this is a different cell than the last one
-        if (!cellKey.equals(lastServingCellKey) && mcc > 0 && cellId > 0)
+        if (!cellKey.equals(lastServingCellKey) && !mcc.isEmpty() && !"0".equals(mcc) && cellId > 0)
         {
             lastServingCellKey = cellKey;
 
-            final int finalMcc = mcc;
-            final int finalMnc = mnc;
+            final String finalMcc = mcc;
+            final String finalMnc = mnc;
             final int finalArea = area;
             final long finalCellId = cellId;
             final String finalRadio = radio;

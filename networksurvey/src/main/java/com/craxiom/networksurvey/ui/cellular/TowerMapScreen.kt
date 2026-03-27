@@ -882,8 +882,8 @@ internal fun TowerMapScreen(
                 currentPlmn = currentPlmnFilter,
                 currentRadio = radio,
                 currentSource = currentSource,
-                onSetPlmnFilter = { mcc, mnc ->
-                    viewModel.setPlmnFilter(Plmn(mcc, mnc))
+                onSetPlmnFilter = { mcc, mnc, mncString ->
+                    viewModel.setPlmnFilter(Plmn(mcc, mnc, mncString))
                 },
                 onSetRadioType = { protocol ->
                     if (viewModel.selectedRadioType.value != protocol) {
@@ -1454,11 +1454,11 @@ fun TowerMapInfoDialog(onDismiss: () -> Unit) {
 @Composable
 fun PlmnFilterDialog(
     currentPlmn: Plmn,
-    onSetPlmnFilter: (Int, Int) -> Unit,
+    onSetPlmnFilter: (Int, Int, String?) -> Unit,
     onDismiss: () -> Unit
 ) {
     var mccInput by remember { mutableStateOf(currentPlmn.mcc.toString()) }
-    var mncInput by remember { mutableStateOf(currentPlmn.mnc.toString()) }
+    var mncInput by remember { mutableStateOf(currentPlmn.mncString ?: currentPlmn.mnc.toString()) }
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -1519,7 +1519,8 @@ fun PlmnFilterDialog(
                 onClick = {
                     val mcc = mccInput.toIntOrNull() ?: 0
                     val mnc = mncInput.toIntOrNull() ?: 0
-                    onSetPlmnFilter(mcc, mnc)
+                    val mncString = if (mncInput.isNotBlank() && mnc != 0) mncInput else null
+                    onSetPlmnFilter(mcc, mnc, mncString)
                     onDismiss()
                 }
             ) {
@@ -1785,7 +1786,7 @@ fun CellSearchBottomSheet(
     onAreaChange: (String) -> Unit,
     onCidChange: (String) -> Unit,
     onClearAll: () -> Unit,
-    onSearch: (mcc: Int, mnc: Int, area: Int, cid: Long) -> Unit,
+    onSearch: (mcc: String, mnc: String, area: Int, cid: Long) -> Unit,
     onDismiss: () -> Unit,
     isSearching: Boolean = false,
     searchError: String? = null,
@@ -1908,12 +1909,10 @@ fun CellSearchBottomSheet(
                         onDone = {
                             dismissKeyboard()
                             // Optionally trigger search if all fields are valid
-                            val mcc = mccValue.toIntOrNull()
-                            val mnc = mncValue.toIntOrNull()
                             val area = areaValue.toIntOrNull()
                             val cid = cidValue.toLongOrNull()
-                            if (mcc != null && mnc != null && area != null && cid != null) {
-                                onSearch(mcc, mnc, area, cid)
+                            if (mccValue.toIntOrNull() != null && mncValue.toIntOrNull() != null && area != null && cid != null) {
+                                onSearch(mccValue, mncValue, area, cid)
                             }
                         }
                     ),
@@ -1963,13 +1962,11 @@ fun CellSearchBottomSheet(
                         // Dismiss keyboard first
                         dismissKeyboard()
 
-                        val mcc = mccValue.toIntOrNull()
-                        val mnc = mncValue.toIntOrNull()
                         val area = areaValue.toIntOrNull()
                         val cid = cidValue.toLongOrNull()
 
-                        if (mcc != null && mnc != null && area != null && cid != null) {
-                            onSearch(mcc, mnc, area, cid)
+                        if (mccValue.toIntOrNull() != null && mncValue.toIntOrNull() != null && area != null && cid != null) {
+                            onSearch(mccValue, mncValue, area, cid)
                         }
                     },
                     modifier = if (hasSearchResult) Modifier.weight(1f) else Modifier.fillMaxWidth(),
@@ -2072,7 +2069,7 @@ fun CombinedFiltersBottomSheet(
     currentPlmn: Plmn,
     currentRadio: String,
     currentSource: TowerSource,
-    onSetPlmnFilter: (Int, Int) -> Unit,
+    onSetPlmnFilter: (Int, Int, String?) -> Unit,
     onSetRadioType: (String) -> Unit,
     onSetTowerSource: (TowerSource) -> Unit,
     onDismiss: () -> Unit
@@ -2082,7 +2079,7 @@ fun CombinedFiltersBottomSheet(
     val focusManager = LocalFocusManager.current
 
     var mccInput by remember { mutableStateOf(currentPlmn.mcc.toString()) }
-    var mncInput by remember { mutableStateOf(currentPlmn.mnc.toString()) }
+    var mncInput by remember { mutableStateOf(currentPlmn.mncString ?: currentPlmn.mnc.toString()) }
     var selectedRadio by remember { mutableStateOf(currentRadio) }
     var selectedSource by remember { mutableStateOf(currentSource) }
 
@@ -2099,7 +2096,8 @@ fun CombinedFiltersBottomSheet(
             dismissKeyboard()
             val mcc = mccInput.toIntOrNull() ?: 0
             val mnc = mncInput.toIntOrNull() ?: 0
-            onSetPlmnFilter(mcc, mnc)
+            val mncString = if (mncInput.isNotBlank() && mnc != 0) mncInput else null
+            onSetPlmnFilter(mcc, mnc, mncString)
             onSetRadioType(selectedRadio)
             onSetTowerSource(selectedSource)
             onDismiss()

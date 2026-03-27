@@ -25,6 +25,7 @@ import com.craxiom.networksurvey.ui.activesurvey.model.SurveyTrack
 import com.craxiom.networksurvey.ui.cellular.model.ServingCellInfo
 import com.craxiom.networksurvey.util.CellularUtils
 import com.craxiom.networksurvey.util.NsAnalyticsSecureStorage
+import com.craxiom.networksurvey.util.NsUtils
 import com.craxiom.networksurvey.util.NsAnalyticsUtils
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
@@ -360,13 +361,16 @@ class SurveyMonitorViewModel(
         val protocol = cellularRecord.cellularProtocol
         val record = cellularRecord.cellularRecord
 
-        // Extract cell identity based on protocol
-        val (mcc, mnc, area, cellId, radio) = when (protocol) {
+        // Extract cell identity based on protocol, using PLMN strings to preserve MNC leading zeros
+        val (mccStr, mncStr, areaVal, cellIdVal, radioVal) = when (protocol) {
             CellularProtocol.LTE -> {
                 val lte = record as LteRecord
                 val data = lte.data
+                val mccMnc = NsUtils.extractMccMncStrings(data.hasPlmn(),
+                    if (data.hasPlmn()) data.plmn.value else null,
+                    data.mcc?.value ?: 0, data.mnc?.value ?: 0)
                 listOf(
-                    data.mcc?.value ?: 0, data.mnc?.value ?: 0,
+                    mccMnc[0], mccMnc[1],
                     data.tac?.value ?: 0, data.eci?.value?.toLong() ?: 0L, "LTE"
                 )
             }
@@ -374,8 +378,11 @@ class SurveyMonitorViewModel(
             CellularProtocol.NR -> {
                 val nr = record as NrRecord
                 val data = nr.data
+                val mccMnc = NsUtils.extractMccMncStrings(data.hasPlmn(),
+                    if (data.hasPlmn()) data.plmn.value else null,
+                    data.mcc?.value ?: 0, data.mnc?.value ?: 0)
                 listOf(
-                    data.mcc?.value ?: 0, data.mnc?.value ?: 0,
+                    mccMnc[0], mccMnc[1],
                     data.tac?.value ?: 0, data.nci?.value ?: 0L, "NR"
                 )
             }
@@ -383,8 +390,11 @@ class SurveyMonitorViewModel(
             CellularProtocol.GSM -> {
                 val gsm = record as GsmRecord
                 val data = gsm.data
+                val mccMnc = NsUtils.extractMccMncStrings(data.hasPlmn(),
+                    if (data.hasPlmn()) data.plmn.value else null,
+                    data.mcc?.value ?: 0, data.mnc?.value ?: 0)
                 listOf(
-                    data.mcc?.value ?: 0, data.mnc?.value ?: 0,
+                    mccMnc[0], mccMnc[1],
                     data.lac?.value ?: 0, data.ci?.value?.toLong() ?: 0L, "GSM"
                 )
             }
@@ -392,8 +402,11 @@ class SurveyMonitorViewModel(
             CellularProtocol.UMTS -> {
                 val umts = record as UmtsRecord
                 val data = umts.data
+                val mccMnc = NsUtils.extractMccMncStrings(data.hasPlmn(),
+                    if (data.hasPlmn()) data.plmn.value else null,
+                    data.mcc?.value ?: 0, data.mnc?.value ?: 0)
                 listOf(
-                    data.mcc?.value ?: 0, data.mnc?.value ?: 0,
+                    mccMnc[0], mccMnc[1],
                     data.lac?.value ?: 0, data.cid?.value?.toLong() ?: 0L, "UMTS"
                 )
             }
@@ -401,14 +414,14 @@ class SurveyMonitorViewModel(
             else -> return
         }
 
-        val mccInt = (mcc as Number).toInt()
-        val mncInt = (mnc as Number).toInt()
-        val areaInt = (area as Number).toInt()
-        val cellIdLong = (cellId as Number).toLong()
-        val radioStr = radio as String
+        val mcc = mccStr as String
+        val mnc = mncStr as String
+        val areaInt = (areaVal as Number).toInt()
+        val cellIdLong = (cellIdVal as Number).toLong()
+        val radioStr = radioVal as String
 
         // Create a unique key for this cell
-        val cellKey = "$mccInt-$mncInt-$areaInt-$cellIdLong"
+        val cellKey = "$mcc-$mnc-$areaInt-$cellIdLong"
 
         // Check if this is a different cell than the last one
         if (_lastServingCellKey.value != cellKey) {
@@ -423,7 +436,7 @@ class SurveyMonitorViewModel(
                 }
 
                 val isNew = manager.checkIfTowerIsNew(
-                    mccInt, mncInt, areaInt, cellIdLong, radioStr
+                    mcc, mnc, areaInt, cellIdLong, radioStr
                 )
 
                 if (isNew) {

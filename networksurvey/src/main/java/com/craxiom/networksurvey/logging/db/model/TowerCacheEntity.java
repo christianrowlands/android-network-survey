@@ -22,12 +22,12 @@ public class TowerCacheEntity
     /**
      * Mobile Country Code
      */
-    public int mcc;
+    public String mcc;
 
     /**
      * Mobile Network Code
      */
-    public int mnc;
+    public String mnc;
 
     /**
      * Location Area Code (GSM/UMTS) or Tracking Area Code (LTE/NR)

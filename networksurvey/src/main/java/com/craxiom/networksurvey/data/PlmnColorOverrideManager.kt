@@ -41,12 +41,14 @@ class PlmnColorOverrideManager(context: Context) {
     /**
      * Returns the override palette index for the given provider, or null if none is set.
      */
-    fun getOverride(mcc: Int, mnc: Int): Int? = cache["$mcc-$mnc"]
+    fun getOverride(mcc: String, mnc: String): Int? {
+        return cache["$mcc-$mnc"]
+    }
 
     /**
      * Sets or updates the color override for a provider. Returns true if the override was saved.
      */
-    fun setOverride(mcc: Int, mnc: Int, paletteIndex: Int): Boolean {
+    fun setOverride(mcc: String, mnc: String, paletteIndex: Int): Boolean {
         if (paletteIndex !in 0 until PlmnColorMapper.PALETTE_SIZE) return false
 
         val key = "$mcc-$mnc"
@@ -67,7 +69,7 @@ class PlmnColorOverrideManager(context: Context) {
     /**
      * Removes the color override for a provider. Returns true if an override was removed.
      */
-    fun removeOverride(mcc: Int, mnc: Int): Boolean {
+    fun removeOverride(mcc: String, mnc: String): Boolean {
         val key = "$mcc-$mnc"
         val current = cache.toMutableMap()
         val removed = current.remove(key) != null

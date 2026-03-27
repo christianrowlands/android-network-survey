@@ -101,22 +101,34 @@ public class CellularRecordWrapper
             case GSM ->
             {
                 GsmRecordData gsmData = ((GsmRecord) wrapper.cellularRecord).getData();
-                yield "" + gsmData.getMcc().getValue() + gsmData.getMnc().getValue() + gsmData.getLac().getValue() + gsmData.getCi().getValue();
+                String[] gsmMccMnc = NsUtils.extractMccMncStrings(gsmData.hasPlmn(),
+                        gsmData.hasPlmn() ? gsmData.getPlmn().getValue() : null,
+                        gsmData.getMcc().getValue(), gsmData.getMnc().getValue());
+                yield gsmMccMnc[0] + gsmMccMnc[1] + gsmData.getLac().getValue() + gsmData.getCi().getValue();
             }
             case UMTS ->
             {
                 UmtsRecordData umtsData = ((UmtsRecord) wrapper.cellularRecord).getData();
-                yield "" + umtsData.getMcc().getValue() + umtsData.getMnc().getValue() + umtsData.getLac().getValue() + umtsData.getCid().getValue();
+                String[] umtsMccMnc = NsUtils.extractMccMncStrings(umtsData.hasPlmn(),
+                        umtsData.hasPlmn() ? umtsData.getPlmn().getValue() : null,
+                        umtsData.getMcc().getValue(), umtsData.getMnc().getValue());
+                yield umtsMccMnc[0] + umtsMccMnc[1] + umtsData.getLac().getValue() + umtsData.getCid().getValue();
             }
             case LTE ->
             {
                 LteRecordData lteData = ((LteRecord) wrapper.cellularRecord).getData();
-                yield "" + lteData.getMcc().getValue() + lteData.getMnc().getValue() + lteData.getTac().getValue() + lteData.getEci().getValue();
+                String[] lteMccMnc = NsUtils.extractMccMncStrings(lteData.hasPlmn(),
+                        lteData.hasPlmn() ? lteData.getPlmn().getValue() : null,
+                        lteData.getMcc().getValue(), lteData.getMnc().getValue());
+                yield lteMccMnc[0] + lteMccMnc[1] + lteData.getTac().getValue() + lteData.getEci().getValue();
             }
             case NR ->
             {
                 NrRecordData nrData = ((NrRecord) wrapper.cellularRecord).getData();
-                yield "" + nrData.getMcc().getValue() + nrData.getMnc().getValue() + nrData.getTac().getValue() + nrData.getNci().getValue();
+                String[] nrMccMnc = NsUtils.extractMccMncStrings(nrData.hasPlmn(),
+                        nrData.hasPlmn() ? nrData.getPlmn().getValue() : null,
+                        nrData.getMcc().getValue(), nrData.getMnc().getValue());
+                yield nrMccMnc[0] + nrMccMnc[1] + nrData.getTac().getValue() + nrData.getNci().getValue();
             }
             default -> "";
         };

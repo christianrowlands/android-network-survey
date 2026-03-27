@@ -20,6 +20,7 @@ import com.craxiom.networksurvey.model.CellularRecordWrapper
 import com.craxiom.networksurvey.model.Plmn
 import com.craxiom.networksurvey.ui.cellular.towermap.TOWER_LAYER_KEY
 import com.craxiom.networksurvey.util.CellularUtils
+import com.craxiom.networksurvey.util.NsUtils
 import com.craxiom.networksurvey.util.PreferenceUtils
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -891,9 +892,17 @@ class TowerMapLibreViewModel : ViewModel() {
                 val response = when (record) {
                     is GsmRecord -> {
                         val data = record.data
-                        nsApi.checkSingleTower(
+                        val mccMnc = NsUtils.extractMccMncStrings(
+                            data.hasPlmn(),
+                            data.plmn?.value,
                             data.mcc.value,
-                            data.mnc.value,
+                            data.mnc.value
+                        )
+                        val mccStr = mccMnc[0]
+                        val mncStr = mccMnc[1]
+                        nsApi.checkSingleTower(
+                            mccStr,
+                            mncStr,
                             data.lac.value,
                             data.ci.value.toLong(),
                             "GSM"
@@ -902,9 +911,17 @@ class TowerMapLibreViewModel : ViewModel() {
 
                     is UmtsRecord -> {
                         val data = record.data
-                        nsApi.checkSingleTower(
+                        val mccMnc = NsUtils.extractMccMncStrings(
+                            data.hasPlmn(),
+                            data.plmn?.value,
                             data.mcc.value,
-                            data.mnc.value,
+                            data.mnc.value
+                        )
+                        val mccStr = mccMnc[0]
+                        val mncStr = mccMnc[1]
+                        nsApi.checkSingleTower(
+                            mccStr,
+                            mncStr,
                             data.lac.value,
                             data.cid.value.toLong(),
                             "UMTS"
@@ -913,9 +930,17 @@ class TowerMapLibreViewModel : ViewModel() {
 
                     is LteRecord -> {
                         val data = record.data
-                        nsApi.checkSingleTower(
+                        val mccMnc = NsUtils.extractMccMncStrings(
+                            data.hasPlmn(),
+                            data.plmn?.value,
                             data.mcc.value,
-                            data.mnc.value,
+                            data.mnc.value
+                        )
+                        val mccStr = mccMnc[0]
+                        val mncStr = mccMnc[1]
+                        nsApi.checkSingleTower(
+                            mccStr,
+                            mncStr,
                             data.tac.value,
                             data.eci.value.toLong(),
                             "LTE"
@@ -924,9 +949,17 @@ class TowerMapLibreViewModel : ViewModel() {
 
                     is NrRecord -> {
                         val data = record.data
-                        nsApi.checkSingleTower(
+                        val mccMnc = NsUtils.extractMccMncStrings(
+                            data.hasPlmn(),
+                            data.plmn?.value,
                             data.mcc.value,
-                            data.mnc.value,
+                            data.mnc.value
+                        )
+                        val mccStr = mccMnc[0]
+                        val mncStr = mccMnc[1]
+                        nsApi.checkSingleTower(
+                            mccStr,
+                            mncStr,
                             data.tac.value,
                             data.nci.value,
                             "NR"
@@ -991,8 +1024,8 @@ class TowerMapLibreViewModel : ViewModel() {
                 nsApi.getTowers(
                     bboxParam,
                     selectedRadioType.value,
-                    p.mcc,
-                    p.mnc,
+                    p.mcc.toString(),
+                    p.mncString ?: p.mnc.toString(),
                     selectedSource.value.apiName
                 )
             } else {
@@ -1257,7 +1290,7 @@ class TowerMapLibreViewModel : ViewModel() {
     /**
      * Searches for a tower with the given parameters and centers the map on the result.
      */
-    fun searchForTower(mcc: Int, mnc: Int, area: Int, cid: Long) {
+    fun searchForTower(mcc: String, mnc: String, area: Int, cid: Long) {
         viewModelScope.launch {
             // Clear any previous search result
             _searchedTower.value = null
@@ -1441,6 +1474,7 @@ class TowerMapLibreViewModel : ViewModel() {
         // Clear any stored layer IDs
         beaconDbLayerIds = emptyList()
     }
+
 }
 
 data class TowerWrapper(val tower: Tower) {

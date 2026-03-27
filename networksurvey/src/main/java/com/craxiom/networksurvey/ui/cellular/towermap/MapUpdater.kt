@@ -128,8 +128,8 @@ internal class MapPropertiesNode(
                             Tower(
                                 lat = properties.get("lat").asDouble,
                                 lon = properties.get("lon").asDouble,
-                                mcc = properties.get("mcc").asInt,
-                                mnc = properties.get("mnc").asInt,
+                                mcc = properties.get("mcc").asString,
+                                mnc = properties.get("mnc").asString,
                                 area = properties.get("area").asInt,
                                 cid = properties.get("cid").asLong,
                                 unit = properties.get("unit").asInt,

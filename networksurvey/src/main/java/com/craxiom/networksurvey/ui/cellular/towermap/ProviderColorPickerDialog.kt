@@ -47,15 +47,16 @@ import com.craxiom.networksurvey.util.PlmnColorMapper
  */
 @Composable
 fun ProviderColorPickerDialog(
-    mcc: Int,
-    mnc: Int,
+    mcc: String,
+    mnc: String,
     currentPaletteIndex: Int,
     hasOverride: Boolean,
     onColorSelected: (Int) -> Unit,
     onResetToDefault: () -> Unit,
     onDismiss: () -> Unit
 ) {
-    val defaultIndex = PlmnColorMapper.getDefaultColorIndex(mcc, mnc)
+    val defaultIndex =
+        PlmnColorMapper.getDefaultColorIndex(mcc.toIntOrNull() ?: 0, mnc.toIntOrNull() ?: 0)
 
     AlertDialog(
         onDismissRequest = onDismiss,

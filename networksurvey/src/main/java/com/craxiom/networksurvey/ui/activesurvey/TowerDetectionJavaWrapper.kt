@@ -21,16 +21,16 @@ class TowerDetectionJavaWrapper(context: Context) {
     /**
      * Check if a tower is new asynchronously and invoke the callback with the result.
      *
-     * @param mcc Mobile Country Code
-     * @param mnc Mobile Network Code
+     * @param mcc Mobile Country Code (string to preserve leading zeros)
+     * @param mnc Mobile Network Code (string to preserve leading zeros)
      * @param area TAC/LAC
      * @param cellId Cell ID
      * @param radio Radio technology (LTE, NR, GSM, UMTS)
      * @param callback Callback to invoke with the result (true if new tower, false if known)
      */
     fun checkIfTowerIsNewAsync(
-        mcc: Int,
-        mnc: Int,
+        mcc: String,
+        mnc: String,
         area: Int,
         cellId: Long,
         radio: String,

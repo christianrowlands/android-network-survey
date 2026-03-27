@@ -71,16 +71,16 @@ object NewTowerNotificationHelper {
      * Show a notification for a newly detected tower.
      *
      * @param context Application context
-     * @param mcc Mobile Country Code
-     * @param mnc Mobile Network Code
+     * @param mcc Mobile Country Code (string to preserve leading zeros)
+     * @param mnc Mobile Network Code (string to preserve leading zeros)
      * @param area TAC/LAC
      * @param cellId Cell ID
      * @param technology Radio technology (LTE, NR, GSM, UMTS)
      */
     fun showNewTowerNotification(
         context: Context,
-        mcc: Int,
-        mnc: Int,
+        mcc: String,
+        mnc: String,
         area: Int,
         cellId: Long,
         technology: String

@@ -36,7 +36,7 @@ public interface TowerCacheDao
      * @return The cached tower entry if found, null otherwise
      */
     @Query("SELECT * FROM tower_cache WHERE mcc = :mcc AND mnc = :mnc AND area = :area AND cid = :cid LIMIT 1")
-    TowerCacheEntity getTower(int mcc, int mnc, int area, long cid);
+    TowerCacheEntity getTower(String mcc, String mnc, int area, long cid);
 
     /**
      * Get all cached towers for a specific area.
@@ -47,7 +47,7 @@ public interface TowerCacheDao
      * @return List of cached towers in the area
      */
     @Query("SELECT * FROM tower_cache WHERE mcc = :mcc AND mnc = :mnc AND area = :area")
-    List<TowerCacheEntity> getTowersInArea(int mcc, int mnc, int area);
+    List<TowerCacheEntity> getTowersInArea(String mcc, String mnc, int area);
 
     /**
      * Delete old cache entries.

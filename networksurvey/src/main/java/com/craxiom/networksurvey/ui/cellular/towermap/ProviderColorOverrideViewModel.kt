@@ -29,15 +29,15 @@ class ProviderColorOverrideViewModel(
         val entries = overrides.mapNotNull { (key, paletteIndex) ->
             val parts = key.split("-")
             if (parts.size < 2) return@mapNotNull null
-            val mcc = parts[0].toIntOrNull() ?: return@mapNotNull null
-            val mnc = parts[1].toIntOrNull() ?: return@mapNotNull null
+            val mccInt = parts[0].toIntOrNull() ?: return@mapNotNull null
+            val mncInt = parts[1].toIntOrNull() ?: return@mapNotNull null
             ProviderColorEntry(
-                mcc = mcc,
-                mnc = mnc,
+                mcc = parts[0],
+                mnc = parts[1],
                 paletteIndex = paletteIndex,
-                defaultPaletteIndex = PlmnColorMapper.getDefaultColorIndex(mcc, mnc)
+                defaultPaletteIndex = PlmnColorMapper.getDefaultColorIndex(mccInt, mncInt)
             )
-        }.sortedWith(compareBy({ it.mcc }, { it.mnc }))
+        }.sortedWith(compareBy({ it.mcc.toIntOrNull() ?: 0 }, { it.mnc.toIntOrNull() ?: 0 }))
 
         _uiState.value = _uiState.value.copy(
             overrides = entries,
@@ -45,12 +45,12 @@ class ProviderColorOverrideViewModel(
         )
     }
 
-    fun setOverride(mcc: Int, mnc: Int, paletteIndex: Int) {
+    fun setOverride(mcc: String, mnc: String, paletteIndex: Int) {
         overrideManager.setOverride(mcc, mnc, paletteIndex)
         loadOverrides()
     }
 
-    fun removeOverride(mcc: Int, mnc: Int) {
+    fun removeOverride(mcc: String, mnc: String) {
         overrideManager.removeOverride(mcc, mnc)
         loadOverrides()
     }
@@ -65,8 +65,8 @@ class ProviderColorOverrideViewModel(
  * A single provider color override entry for display.
  */
 data class ProviderColorEntry(
-    val mcc: Int,
-    val mnc: Int,
+    val mcc: String,
+    val mnc: String,
     val paletteIndex: Int,
     val defaultPaletteIndex: Int
 )

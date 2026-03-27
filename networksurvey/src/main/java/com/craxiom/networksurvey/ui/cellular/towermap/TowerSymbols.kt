@@ -74,8 +74,8 @@ internal class TowerSymbolsNode(
                 addStringProperty(TOWER_ID_PROPERTY, towerWrapper.towerId)
                 addStringProperty(PLMN_PROPERTY, plmn)
                 addStringProperty("radio", tower.radio)
-                addNumberProperty("mcc", tower.mcc)
-                addNumberProperty("mnc", tower.mnc)
+                addStringProperty("mcc", tower.mcc)
+                addStringProperty("mnc", tower.mnc)
                 addNumberProperty("area", tower.area)
                 addNumberProperty("cid", tower.cid)
                 addNumberProperty("unit", tower.unit)
@@ -96,8 +96,8 @@ internal class TowerSymbolsNode(
         // 3) Build the PLMN -> color match expression
         val plmnColorPairs = uniquePlmns.flatMap { plmn ->
             val parts = plmn.split("-")
-            val mcc = parts[0].toIntOrNull() ?: 0
-            val mnc = parts[1].toIntOrNull() ?: 0
+            val mcc = parts[0]
+            val mnc = parts[1]
             listOf(literal(plmn), color(PlmnColorMapper.getColorArgb(mcc, mnc)))
         }
 
