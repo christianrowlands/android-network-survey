@@ -77,6 +77,7 @@ fun DashboardScreen(
     var showBluetoothPermissionDialog by remember { mutableStateOf(false) }
     var showCdrRequiredPermissionDialog by remember { mutableStateOf(false) }
     var showCdrOptionalPermissionDialog by remember { mutableStateOf(false) }
+    var showNoInternetDialog by remember { mutableStateOf(false) }
 
     // Service binding via lifecycle
     ServiceBindingEffect(
@@ -181,7 +182,32 @@ fun DashboardScreen(
                 }
             },
             onStopScanning = { dashboardViewModel.toggleUploadScanning(false) },
-            onUpload = { showUploadDialog = true },
+            onUpload = {
+                if (dashboardViewModel.shouldShowUploadConfigDialog()) {
+                    showUploadDialog = true
+                } else {
+                    // Skip dialog, use saved preferences directly
+                    val started = dashboardViewModel.startUpload(
+                        uploadToOpenCellId = PreferenceUtils.getBoolean(
+                            NetworkSurveyConstants.PROPERTY_UPLOAD_TO_OPENCELLID,
+                            NetworkSurveyConstants.DEFAULT_UPLOAD_TO_OPENCELLID,
+                        ),
+                        anonymously = PreferenceUtils.getBoolean(
+                            NetworkSurveyConstants.PROPERTY_ANONYMOUS_OPENCELLID_UPLOAD,
+                            NetworkSurveyConstants.DEFAULT_UPLOAD_TO_OPENCELLID,
+                        ),
+                        uploadToBeaconDb = PreferenceUtils.getBoolean(
+                            NetworkSurveyConstants.PROPERTY_UPLOAD_TO_BEACONDB,
+                            NetworkSurveyConstants.DEFAULT_UPLOAD_TO_BEACONDB,
+                        ),
+                        retry = PreferenceUtils.getBoolean(
+                            NetworkSurveyConstants.PROPERTY_UPLOAD_RETRY_ENABLED,
+                            NetworkSurveyConstants.DEFAULT_UPLOAD_RETRY_ENABLED,
+                        ),
+                    )
+                    if (!started) showNoInternetDialog = true
+                }
+            },
             onCancelUpload = {
                 WorkManager.getInstance(context)
                     .cancelAllWorkByTag(NsUploaderWorker.WORKER_TAG)
@@ -377,6 +403,24 @@ fun DashboardScreen(
             },
             onDismiss = { showCdrOptionalPermissionDialog = false },
         )
+    }
+    if (showUploadDialog) {
+        UploadConfirmationDialog(
+            onUpload = { uploadToOcid, anonymously, uploadToBeaconDb, retry, dontShowAgain ->
+                if (dontShowAgain) {
+                    dashboardViewModel.setShowUploadDialog(dontShowAgain)
+                }
+                val started = dashboardViewModel.startUpload(
+                    uploadToOcid, anonymously, uploadToBeaconDb, retry,
+                )
+                if (!started) showNoInternetDialog = true
+            },
+            onNavigateToUploadSettings = { sharedViewModel.triggerNavigationToUploadSettings() },
+            onDismiss = { showUploadDialog = false },
+        )
+    }
+    if (showNoInternetDialog) {
+        NoInternetDialog(onDismiss = { showNoInternetDialog = false })
     }
 }
 

@@ -819,6 +819,7 @@
     <string name="uploader_no_internet_title">Internet unavailable</string>
     <string name="uploader_no_internet_message">Cannot upload due to no Internet connection.</string>
     <string name="cancel">Cancel</string>
+    <string name="upload">Upload</string>
     <string name="preferences">Preferences</string>
     <string name="show_upload_dialog_pref_title">Show Upload Config Dialog</string>
     <string name="uploader_enqueued">An error occurred, will retry later</string>

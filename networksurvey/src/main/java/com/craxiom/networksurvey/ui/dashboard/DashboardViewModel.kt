@@ -24,6 +24,11 @@ import com.craxiom.networksurvey.services.NetworkSurveyService
 import com.craxiom.networksurvey.util.LocationStatusHelper
 import com.craxiom.networksurvey.util.MdmUtils
 import com.craxiom.networksurvey.util.PreferenceUtils
+import androidx.work.Data
+import androidx.work.ExistingWorkPolicy
+import androidx.work.OneTimeWorkRequest
+import androidx.work.OutOfQuotaPolicy
+import androidx.work.WorkManager
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -477,6 +482,72 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
                 _events.emit(DashboardEvent.ShowToast(result.message))
             }
         }
+    }
+
+    /**
+     * Start the community upload worker with the given configuration options.
+     * Saves the upload preferences and enqueues the WorkManager task.
+     *
+     * @return true if the upload was enqueued, false if no internet is available
+     */
+    fun startUpload(
+        uploadToOpenCellId: Boolean,
+        anonymously: Boolean,
+        uploadToBeaconDb: Boolean,
+        retry: Boolean,
+    ): Boolean {
+        val editor = preferences.edit()
+        editor.putBoolean(NetworkSurveyConstants.PROPERTY_UPLOAD_TO_OPENCELLID, uploadToOpenCellId)
+        editor.putBoolean(NetworkSurveyConstants.PROPERTY_ANONYMOUS_OPENCELLID_UPLOAD, anonymously)
+        editor.putBoolean(NetworkSurveyConstants.PROPERTY_UPLOAD_TO_BEACONDB, uploadToBeaconDb)
+        editor.putBoolean(NetworkSurveyConstants.PROPERTY_UPLOAD_RETRY_ENABLED, retry)
+        editor.apply()
+
+        if (!com.craxiom.networksurvey.util.NsUtils.isNetworkAvailable(context)) {
+            return false
+        }
+
+        _uploadState.update { it.copy(uploadButtonEnabled = false) }
+
+        val inputData = Data.Builder()
+            .putBoolean(NetworkSurveyConstants.PROPERTY_UPLOAD_TO_OPENCELLID, uploadToOpenCellId)
+            .putBoolean(NetworkSurveyConstants.PROPERTY_ANONYMOUS_OPENCELLID_UPLOAD, anonymously)
+            .putBoolean(NetworkSurveyConstants.PROPERTY_UPLOAD_TO_BEACONDB, uploadToBeaconDb)
+            .putBoolean(NetworkSurveyConstants.PROPERTY_UPLOAD_RETRY_ENABLED, retry)
+            .putString(NsUploaderWorker.INPUT_SOURCE, NsUploaderWorker.SOURCE_MANUAL)
+            .build()
+
+        val uploadWorkRequest = OneTimeWorkRequest.Builder(NsUploaderWorker::class.java)
+            .addTag(NsUploaderWorker.WORKER_TAG)
+            .setInputData(inputData)
+            .setExpedited(OutOfQuotaPolicy.RUN_AS_NON_EXPEDITED_WORK_REQUEST)
+            .build()
+
+        WorkManager.getInstance(context).enqueueUniqueWork(
+            NetworkSurveyConstants.COMMUNITY_UPLOAD_UNIQUE_WORK_NAME,
+            ExistingWorkPolicy.KEEP,
+            uploadWorkRequest,
+        )
+
+        return true
+    }
+
+    /**
+     * Save the "don't show upload dialog" preference.
+     */
+    fun setShowUploadDialog(show: Boolean) {
+        preferences.edit()
+            .putBoolean(NetworkSurveyConstants.PROPERTY_SHOW_CONFIG_UPLOAD_DIALOG, !show)
+            .apply()
+    }
+
+    /**
+     * Check whether the upload configuration dialog should be shown.
+     */
+    fun shouldShowUploadConfigDialog(): Boolean {
+        return preferences.getBoolean(
+            NetworkSurveyConstants.PROPERTY_SHOW_CONFIG_UPLOAD_DIALOG, true
+        )
     }
 
     /**
