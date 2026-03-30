@@ -2,7 +2,9 @@ package com.craxiom.networksurvey.ui.dashboard
 
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -10,6 +12,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
@@ -181,11 +184,13 @@ private fun MqttStreamItem(
             .padding(vertical = 2.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Icon(
-            painter = painterResource(id = R.drawable.circle_not_in_view),
-            contentDescription = null,
-            modifier = Modifier.size(18.dp),
-            tint = if (enabled) StreamActive else StreamInactive,
+        Box(
+            modifier = Modifier
+                .size(10.dp)
+                .background(
+                    color = if (enabled) StreamActive else StreamInactive,
+                    shape = CircleShape,
+                ),
         )
 
         Spacer(modifier = Modifier.width(8.dp))
