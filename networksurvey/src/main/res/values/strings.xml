@@ -114,7 +114,7 @@
     <string name="file_mqtt_help_mqtt_broker_desc">Configure the broker connection settings before enabling streaming</string>
     <string name="file_mqtt_help_key_point_title">Key Point</string>
     <string name="file_mqtt_help_key_independent_label">Independent</string>
-    <string name="file_mqtt_help_key_independent_desc">File logging and MQTT streaming work independently — you can use either, both, or neither</string>
+    <string name="file_mqtt_help_key_independent_desc">File logging and MQTT streaming work independently - you can use either, both, or neither</string>
 
     <!-- NS Analytics Help Dialog -->
     <string name="ns_analytics_help_title">NS Analytics</string>

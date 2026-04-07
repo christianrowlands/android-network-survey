@@ -431,6 +431,10 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
             return
         }
 
+        if (connect) {
+            _mqttState.update { it.copy(connectionState = ConnectionState.CONNECTING) }
+        }
+
         viewModelScope.launch(Dispatchers.IO) {
             if (connect) {
                 val attempting = svc.connectToMqttBrokerUsingSavedConnectionInfo()
