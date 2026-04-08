@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.52](https://github.com/christianrowlands/android-network-survey/releases/tag/v1.52) - 2026-04-08
+
+**BUG FIXES**
+* Fix the MQTT dashboard toggle not showing the connecting status immediately when toggling the connection on.
+
+**NEW FEATURES**
+* Encrypt MQTT credentials and the OpenCelliD API key with the Android Keystore using AES-256-GCM, including a one-time migration of existing plain-text credentials to encrypted storage.
+* Add a PLMN field to preserve MNC leading zeros across the app, including GeoPackage tables, CSV exports, protobuf messages, and the UI display.
+
+**IMPROVEMENTS**
+* Migrate the Dashboard from Fragment to Jetpack Compose with a full MVVM architecture using per-card StateFlows for efficient recomposition.
+* Use string MCC/MNC across the app to preserve leading zeros, including the tower cache database, tower map API, and cell search.
+
 ## [1.51](https://github.com/christianrowlands/android-network-survey/releases/tag/v1.51) - 2026-03-19
 
 **BUG FIXES**
