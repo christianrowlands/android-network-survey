@@ -306,7 +306,5 @@
 
         </androidx.cardview.widget.CardView>
 
-        <include layout="@layout/expandable_help_card" />
-
     </LinearLayout>
 </ScrollView>

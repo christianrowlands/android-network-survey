@@ -136,6 +136,11 @@
     <string name="mqtt_help_description">Help</string>
     <string name="mqtt_help_dismiss">Got it</string>
 
+    <!-- gRPC Help Dialog -->
+    <string name="grpc_help_title">gRPC Connection</string>
+    <string name="grpc_help_description">Help</string>
+    <string name="grpc_help_dismiss">Got it</string>
+
     <string name="bluetooth_permissions_rationale_title">Bluetooth Permissions</string>
     <string name="bluetooth_permissions_rationale">The Find Nearby Devices permission is needed to perform a Bluetooth scan for survey. If this permission is denied then Bluetooth survey will not work.</string>
 
@@ -460,8 +465,6 @@
     <string name="stream_gnss_title">Stream GNSS</string>
     <string name="stream_device_status_title">Stream Device Status</string>
     <string name="mqtt_topic_prefix_title">MQTT Topic Prefix</string>
-
-    <string name="help_title">Help?</string>
 
     <!-- App Restriction Constants -->
     <string name="mqtt_start_on_boot_title">MQTT Start at Boot</string>

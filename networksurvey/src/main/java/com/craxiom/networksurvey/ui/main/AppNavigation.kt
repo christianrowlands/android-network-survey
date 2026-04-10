@@ -47,6 +47,7 @@ import com.craxiom.networksurvey.ui.cellular.towermap.ProviderColorOverrideScree
 import com.craxiom.networksurvey.ui.cellular.towermap.ProviderColorOverrideViewModel
 import com.craxiom.networksurvey.ui.main.appbar.AppBarAction
 import com.craxiom.networksurvey.ui.main.appbar.TitleBar
+import com.craxiom.networksurvey.ui.grpc.GrpcHelpDialog
 import com.craxiom.networksurvey.ui.mqtt.MqttHelpDialog
 import com.craxiom.networksurvey.ui.nsanalytics.NsAnalyticsConnectionScreen
 import com.craxiom.networksurvey.ui.nsanalytics.NsAnalyticsConnectionViewModel
@@ -238,8 +239,26 @@ enum class NavOption {
 
 @Composable
 fun GrpcFragmentInCompose(mainNavController: NavHostController) {
+    var showHelpDialog by remember { mutableStateOf(false) }
+
+    if (showHelpDialog) {
+        GrpcHelpDialog(onDismissRequest = { showHelpDialog = false })
+    }
+
     Scaffold(
-        topBar = { TitleBar("gRPC Connection") { mainNavController.navigateUp() } },
+        topBar = {
+            TitleBar(
+                title = "gRPC Connection",
+                onBackClick = { mainNavController.navigateUp() },
+                appBarActions = listOf(
+                    AppBarAction(
+                        icon = R.drawable.ic_help,
+                        description = R.string.grpc_help_description,
+                        onClick = { showHelpDialog = true }
+                    )
+                )
+            )
+        },
     ) { innerPadding ->
         AndroidViewBinding(
             ContainerGrpcFragmentBinding::inflate,

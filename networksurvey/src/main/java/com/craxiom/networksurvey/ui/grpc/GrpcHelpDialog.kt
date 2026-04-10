@@ -1,4 +1,4 @@
-package com.craxiom.networksurvey.ui.mqtt
+package com.craxiom.networksurvey.ui.grpc
 
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -17,39 +17,33 @@ import com.craxiom.networksurvey.ui.common.HelpItem
 import com.craxiom.networksurvey.ui.common.HelpSection
 
 /**
- * A help dialog for the MQTT connection screen explaining all the connection settings
+ * A help dialog for the gRPC connection screen explaining the connection settings
  * and data stream options.
  */
 @Composable
-fun MqttHelpDialog(
+fun GrpcHelpDialog(
     onDismissRequest: () -> Unit
 ) {
     AlertDialog(
         onDismissRequest = onDismissRequest,
-        title = { Text(text = stringResource(R.string.mqtt_help_title)) },
+        title = { Text(text = stringResource(R.string.grpc_help_title)) },
         text = {
             Column(
                 modifier = Modifier.verticalScroll(rememberScrollState())
             ) {
                 HelpSection(title = "Quick Start") {
-                    Text("1. Enter broker address")
-                    Text("2. Set port (8883 for TLS, 1883 for plain)")
-                    Text("3. Toggle the connect switch")
+                    Text("1. Enter server address and port")
+                    Text("2. Set a device name")
+                    Text("3. Choose which data streams to enable")
+                    Text("4. Toggle the connect switch")
                 }
 
                 Spacer(modifier = Modifier.height(16.dp))
 
                 HelpSection(title = "Connection Settings") {
-                    HelpItem("Server", "IP address or hostname of your MQTT broker")
-                    HelpItem("Port", "8883 (TLS) or 1883 (plain text)")
-                    HelpItem("Client ID", "Unique name to identify this device")
-                    HelpItem("TLS", "Enable for encrypted connections")
-                    HelpItem("Username/Password", "Optional broker authentication")
-                    HelpItem("Topic Prefix", "Custom prefix for all MQTT topics")
-                    HelpItem(
-                        "QoS",
-                        "Message delivery guarantee (0=at most once, 1=at least once, 2=exactly once)"
-                    )
+                    HelpItem("Server Address", "IP address or hostname of the gRPC server")
+                    HelpItem("Port", "Server port number (default: 2621)")
+                    HelpItem("Device Name", "Name to identify this device on the server")
                 }
 
                 Spacer(modifier = Modifier.height(16.dp))
@@ -62,20 +56,12 @@ fun MqttHelpDialog(
                     HelpItem("GNSS", "GPS/GNSS satellite constellation data")
                     HelpItem("Device Status", "Location, battery, and device info")
                 }
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                HelpSection(title = "QR Code") {
-                    HelpItem("Auto Configure", "Scan a QR code to import broker settings")
-                    HelpItem("Share", "Export current settings as a QR code")
-                }
             }
         },
         confirmButton = {
             TextButton(onClick = onDismissRequest) {
-                Text(text = stringResource(R.string.mqtt_help_dismiss))
+                Text(text = stringResource(R.string.grpc_help_dismiss))
             }
         }
     )
 }
-
