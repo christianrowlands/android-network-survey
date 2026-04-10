@@ -39,7 +39,7 @@ fun LoggingToggleRow(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 12.dp),
+                .padding(horizontal = 16.dp, vertical = 4.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Icon(
@@ -85,7 +85,7 @@ fun LoggingToggleRow(
                 text = subtitle,
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.outline,
-                modifier = Modifier.padding(start = 52.dp, end = 16.dp, bottom = 8.dp),
+                modifier = Modifier.padding(start = 52.dp, end = 16.dp, bottom = 4.dp),
             )
         }
     }
