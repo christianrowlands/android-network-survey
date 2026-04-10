@@ -115,9 +115,10 @@ fun LoggingControlContent(
 ) {
     val dividerColor = MaterialTheme.colorScheme.outlineVariant
 
-    Column(modifier = Modifier
-        .fillMaxWidth()
-        .padding(bottom = 4.dp),
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(bottom = 4.dp),
     ) {
         LoggingToggleRow(
             icon = R.drawable.ic_cellular,
