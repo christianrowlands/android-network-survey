@@ -29,9 +29,10 @@ base {
     archivesName = "$applicationName-$appVersion"
 }
 
-// ABI-specific version codes: abiCode * 10000 + baseVersionCode
-// Ranges: armeabi-v7a 10000-19999, arm64-v8a 20000-29999, x86 30000-39999, x86_64 40000-49999
-// WARNING: baseVersionCode must stay below 10000 to avoid range collisions
+// ABI-specific version codes: baseVersionCode * 1000 + abiCode (F-Droid splitabi convention)
+// Each release slot spans 1000 codes (e.g. v-code 111 -> 111001..111004)
+// Dual-ABI devices still prefer arm64 (002) over armv7 (001) via tie-break
+// WARNING: abiCode must stay below 1000 to avoid range collisions
 // Universal APK keeps the raw versionCode (lowest priority fallback)
 ext.abiCodes = ["armeabi-v7a": 1, "arm64-v8a": 2, "x86": 3, "x86_64": 4]
 
@@ -130,7 +131,7 @@ android.applicationVariants.configureEach { variant ->
     variant.outputs.each { output ->
         def baseAbiVersionCode = project.ext.abiCodes.get(output.getFilter(com.android.build.OutputFile.ABI))
         if (baseAbiVersionCode != null) {
-            output.versionCodeOverride = baseAbiVersionCode * 10000 + variant.versionCode
+            output.versionCodeOverride = variant.versionCode * 1000 + baseAbiVersionCode
         }
     }
 }
