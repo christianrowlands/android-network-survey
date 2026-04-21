@@ -58,7 +58,7 @@ public class UmtsCsvLogger extends CsvRecordLogger implements ICellularSurveyRec
     @Override
     String[] getHeaderComments()
     {
-        return new String[]{"CSV Version=0.3.0"};
+        return new String[]{"CSV Version=0.4.0"};
     }
 
     @Override

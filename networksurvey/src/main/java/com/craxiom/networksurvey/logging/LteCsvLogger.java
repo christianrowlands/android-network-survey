@@ -63,7 +63,7 @@ public class LteCsvLogger extends CsvRecordLogger implements ICellularSurveyReco
     @Override
     String[] getHeaderComments()
     {
-        return new String[]{"CSV Version=0.4.0"};
+        return new String[]{"CSV Version=0.5.0"};
     }
 
     @Override
