@@ -44,7 +44,7 @@ object PlmnColorMapper {
         "Brown", "Amber", "Orange", "Deep Orange"
     )
 
-    // Thread safety: this reference is replaced atomically via @Volatile — the map itself
+    // Thread safety: this reference is replaced atomically via @Volatile. The map itself
     // is never mutated in place, so reads on any thread (including MapLibre's render thread)
     // always see a consistent snapshot.
     @Volatile

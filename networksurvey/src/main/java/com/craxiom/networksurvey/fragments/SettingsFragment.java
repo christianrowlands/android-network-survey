@@ -77,7 +77,8 @@ public class SettingsFragment extends PreferenceFragmentCompat implements Shared
             NetworkSurveyConstants.PROPERTY_BATTERY_THRESHOLD_PERCENT,
             NetworkSurveyConstants.PROPERTY_STREAMING_QUEUE_LIMIT,
             NetworkSurveyConstants.PROPERTY_AUTO_UPLOAD_ENABLED,
-            NetworkSurveyConstants.PROPERTY_AUTO_UPLOAD_WIFI_ONLY};
+            NetworkSurveyConstants.PROPERTY_AUTO_UPLOAD_WIFI_ONLY,
+            NetworkSurveyConstants.PROPERTY_OUI_LOOKUP_ENABLED};
 
     @Override
     public void onCreatePreferences(Bundle savedInstanceState, String rootKey)
@@ -469,6 +470,7 @@ public class SettingsFragment extends PreferenceFragmentCompat implements Shared
         updateBooleanPreferenceForMdm(preferenceScreen, mdmProperties, NetworkSurveyConstants.PROPERTY_MQTT_START_ON_BOOT);
         updateListProviderPreferenceForMdm(preferenceScreen, mdmProperties, NetworkSurveyConstants.PROPERTY_LOCATION_PROVIDER);
         updateBooleanPreferenceForMdm(preferenceScreen, mdmProperties, NetworkSurveyConstants.PROPERTY_ALLOW_INTENT_CONTROL);
+        updateBooleanPreferenceForMdm(preferenceScreen, mdmProperties, NetworkSurveyConstants.PROPERTY_OUI_LOOKUP_ENABLED);
         updateIntPreferenceForMdm(preferenceScreen, mdmProperties, NetworkSurveyConstants.PROPERTY_BATTERY_THRESHOLD_PERCENT);
         updateIntPreferenceForMdm(preferenceScreen, mdmProperties, NetworkSurveyConstants.PROPERTY_STREAMING_QUEUE_LIMIT);
 

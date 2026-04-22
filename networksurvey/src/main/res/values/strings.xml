@@ -1057,4 +1057,45 @@
     <!-- QR Code Error Messages -->
     <string name="qr_code_data_too_large_title">QR Code Error</string>
     <string name="qr_code_data_too_large_message">The MQTT connection settings are too large to fit in a QR code. Try shortening the host address, username, password, or topic prefix fields.</string>
+
+    <!-- OUI manufacturer lookup -->
+    <string name="network_lookups_category">Network lookups</string>
+    <string name="settings_oui_title">Manufacturer lookup</string>
+    <string name="settings_oui_summary">Identifies device makers from MAC address prefixes. Sends observed 24-bit OUI prefixes to the backend NS service. No scan data is stored.</string>
+    <string name="settings_oui_mdm_description">When enabled, the app sends observed 24-bit OUI prefixes to the backend NS service to display manufacturer info in Wi-Fi and Bluetooth details screens.</string>
+
+    <string name="manufacturer_label">Manufacturer</string>
+    <string name="manufacturer_sources_header">Sources</string>
+    <string name="manufacturer_brand">Device brand</string>
+    <string name="manufacturer_service">Service vendor</string>
+    <string name="manufacturer_chipset">Chipset</string>
+    <string name="manufacturer_loading">Looking up…</string>
+    <string name="manufacturer_view_sources_agree">View sources (%1$d agree)</string>
+    <string name="manufacturer_view_sources">View sources</string>
+
+    <plurals name="manufacturer_view_sources_differ_plural">
+        <item quantity="one">View %1$d sources (%2$d differs)</item>
+        <item quantity="other">View %1$d sources (%2$d differ)</item>
+    </plurals>
+    <string name="manufacturer_all_unknown">Couldn\'t be identified</string>
+    <string name="manufacturer_randomized_bt">Randomized address - no vendor</string>
+    <string name="manufacturer_randomized_wifi">Randomized MAC - no vendor</string>
+    <string name="manufacturer_unknown">Vendor not identified</string>
+    <string name="manufacturer_private">Vendor withheld</string>
+    <string name="manufacturer_shared_block">Shared vendor block</string>
+    <string name="manufacturer_shared_block_tooltip">This MAC prefix is shared across several small vendors; the specific one can\'t be identified.</string>
+    <string name="manufacturer_offline">Vendor - offline</string>
+    <string name="manufacturer_not_advertised">Not advertised</string>
+    <string name="manufacturer_none">None</string>
+    <string name="manufacturer_disabled_user">Manufacturer lookup is off - enable in Settings</string>
+    <string name="manufacturer_disabled_mdm">Manufacturer lookup is disabled by your administrator.</string>
+    <string name="manufacturer_lookup_disabled_short">Lookup disabled</string>
+
+    <string name="manufacturer_sheet_title">About manufacturer sources</string>
+    <string name="manufacturer_sheet_summary">We identify manufacturers from three signals. They usually agree.</string>
+    <string name="manufacturer_sheet_brand">From the Bluetooth advertisement\'s Company Identifier. Usually who sells the device, like Apple or Samsung.</string>
+    <string name="manufacturer_sheet_service">From service UUIDs the device advertises. Often a feature provider like Google Nearby.</string>
+    <string name="manufacturer_sheet_chipset">From the first 24 bits of the MAC address. Identifies the radio-chip maker. May differ from the brand.</string>
+    <string name="manufacturer_info_content_description">About manufacturer sources</string>
+    <string name="manufacturer_disagreement_hint">Different sources can disagree. Tap the info icon to learn why.</string>
 </resources>

@@ -237,6 +237,13 @@
         android:title="@string/allow_intent_control_title" />
 
     <restriction
+        android:defaultValue="true"
+        android:description="@string/settings_oui_mdm_description"
+        android:key="oui_lookup_enabled"
+        android:restrictionType="bool"
+        android:title="@string/settings_oui_title" />
+
+    <restriction
         android:defaultValue="false"
         android:description="@string/auto_upload_summary_off"
         android:key="auto_upload_enabled"

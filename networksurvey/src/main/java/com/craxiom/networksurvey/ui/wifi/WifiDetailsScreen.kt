@@ -49,6 +49,7 @@ import com.craxiom.networksurvey.model.WifiNetwork
 import com.craxiom.networksurvey.ui.SignalChart
 import com.craxiom.networksurvey.ui.UNKNOWN_RSSI
 import com.craxiom.networksurvey.ui.main.appbar.TitleBar
+import com.craxiom.networksurvey.ui.manufacturer.WifiManufacturerSubCaption
 import com.craxiom.networksurvey.ui.wifi.model.WifiDetailsViewModel
 import com.craxiom.networksurvey.util.ColorUtils
 import com.craxiom.networksurvey.util.WifiUtils
@@ -161,6 +162,10 @@ private fun LazyListScope.chartItems(
                             Text(
                                 text = "BSSID: ${viewModel.wifiNetwork.bssid}",
                                 style = MaterialTheme.typography.titleMedium
+                            )
+                            WifiManufacturerSubCaption(
+                                bssid = viewModel.wifiNetwork.bssid,
+                                onOpenSettings = { wifiDetailsFragment.navigateToSettings() }
                             )
                         }
                     }

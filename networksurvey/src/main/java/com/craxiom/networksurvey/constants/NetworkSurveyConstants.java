@@ -147,6 +147,11 @@ public class NetworkSurveyConstants
     public static final String PROPERTY_ALLOW_INTENT_CONTROL = "allow_intent_control";
     public static final String PROPERTY_IGNORE_WIFI_SCAN_THROTTLING_WARNING = "ignore_wifi_scan_throttling_warning";
 
+    // OUI lookup: server-backed manufacturer resolution for WiFi/BT details screens.
+    // UI-only; never written to CSV, protobuf, MQTT, or gRPC outputs.
+    public static final String PROPERTY_OUI_LOOKUP_ENABLED = "oui_lookup_enabled";
+    public static final boolean DEFAULT_OUI_LOOKUP_ENABLED = true;
+
     // A read only value in the preferences that shows the App Version
     public static final String PROPERTY_APP_VERSION = "app_version";
     // A read only value in the preferences that shows the Device ID, which is called the Device Serial Number in NS Messaging API

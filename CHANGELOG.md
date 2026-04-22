@@ -26,7 +26,7 @@
 * Display a badge with the count of operators/providers on each tower in the tower map view. [#95](https://github.com/christianrowlands/android-network-survey/issues/95)
 
 **IMPROVEMENTS**
-* Rework the Location Card UI to be more compact — replace the card with a status row, with click-through for full location details. Also removed from the Cellular Details UI. [#61](https://github.com/christianrowlands/android-network-survey/issues/61)
+* Rework the Location Card UI to be more compact. Teplace the card with a status row, with click-through for full location details. Also removed from the Cellular Details UI. [#61](https://github.com/christianrowlands/android-network-survey/issues/61)
 * Migrate kapt to KSP, remove Jetifier, and clean up build warnings.
 * Update to v3 of the Vico charts library.
 * Upgrade AGP to version 9.1.0 and Gradle to version 9.3.1.

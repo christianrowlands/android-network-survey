@@ -40,11 +40,10 @@ import com.craxiom.messaging.bluetooth.AddressType
 import com.craxiom.messaging.bluetooth.SupportedTechnologies
 import com.craxiom.networksurvey.R
 import com.craxiom.networksurvey.constants.BluetoothMessageConstants
-import com.craxiom.networksurvey.data.BluetoothCompanyNameProvider
-import com.craxiom.networksurvey.data.BluetoothCompanyResolver
 import com.craxiom.networksurvey.ui.SignalChart
 import com.craxiom.networksurvey.ui.UNKNOWN_RSSI
 import com.craxiom.networksurvey.ui.main.appbar.TitleBar
+import com.craxiom.networksurvey.ui.manufacturer.BluetoothManufacturerCard
 import com.craxiom.networksurvey.ui.preview.NsPreview
 import com.craxiom.networksurvey.ui.preview.PreviewDayNight
 import com.craxiom.networksurvey.util.ColorUtils
@@ -65,13 +64,6 @@ internal fun BluetoothDetailsScreen(
     val scanRate by viewModel.scanRate.collectAsStateWithLifecycle()
     val colorId = ColorUtils.getColorForSignalStrength(rssi)
     val colorResource = Color(context.getColor(colorId))
-    val companyNameResolver = remember { BluetoothCompanyNameProvider.getInstance(context) }
-    val companyName = remember(viewModel.bluetoothData) {
-        companyNameResolver.resolveCompanyName(
-            viewModel.bluetoothData.serviceUuidsList,
-            viewModel.bluetoothData.companyId
-        )
-    }
 
     Scaffold(
         topBar = {
@@ -86,7 +78,7 @@ internal fun BluetoothDetailsScreen(
             verticalArrangement = Arrangement.spacedBy(padding),
             modifier = Modifier.padding(insetPadding)
         ) {
-            chartItems(viewModel, colorResource, rssi, scanRate, companyName, onNavigateToSettings)
+            chartItems(viewModel, colorResource, rssi, scanRate, onNavigateToSettings)
         }
     }
 }
@@ -96,7 +88,6 @@ private fun LazyListScope.chartItems(
     signalStrengthColor: Color,
     rssi: Float,
     scanRate: Int,
-    companyName: String,
     onNavigateToSettings: () -> Unit
 ) {
     item {
@@ -157,10 +148,9 @@ private fun LazyListScope.chartItems(
                         LabeledRow("Device Class:", it)
                     }
 
-                    val formattedAddressType = formatAddressType(viewModel.bluetoothData.addressType)
+                    val formattedAddressType =
+                        formatAddressType(viewModel.bluetoothData.addressType)
                     LabeledRow("Address Type:", formattedAddressType)
-
-                    LabeledRow("Company Name:", companyName)
 
                     val uuids = viewModel.bluetoothData.serviceUuidsList
                     if (uuids.isNotEmpty()) {
@@ -173,6 +163,14 @@ private fun LazyListScope.chartItems(
                 }
             }
         }
+    }
+
+    item {
+        BluetoothManufacturerCard(
+            mac = viewModel.bluetoothData.sourceAddress,
+            serviceUuids = viewModel.bluetoothData.serviceUuidsList,
+            companyId = viewModel.bluetoothData.companyId
+        )
     }
 
     item {

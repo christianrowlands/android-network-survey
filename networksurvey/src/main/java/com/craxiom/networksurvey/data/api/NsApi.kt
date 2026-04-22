@@ -2,11 +2,14 @@ package com.craxiom.networksurvey.data.api
 
 import com.craxiom.networksurvey.BuildConfig
 import com.google.gson.annotations.SerializedName
+import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.OkHttpClient
 import retrofit2.Response
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
+import retrofit2.http.Body
 import retrofit2.http.GET
+import retrofit2.http.POST
 import retrofit2.http.Query
 
 
@@ -47,20 +50,44 @@ interface Api {
         @Query("area") area: Int,
         @Query("cid") cid: Long
     ): Response<TowerResponse>
+
+    @GET("v2/oui")
+    suspend fun getOui(
+        @Query("mac") mac: String
+    ): Response<OuiLookupResponse>
+
+    @POST("v2/oui/batch")
+    suspend fun getOuiBatch(
+        @Body request: OuiBatchRequest
+    ): Response<OuiBatchResponse>
+
+    @GET("v2/oui/dataset")
+    suspend fun getOuiDataset(): Response<OuiDatasetResponse>
 }
 
-val okHttpClient = OkHttpClient.Builder()
+private const val NS_TOWER_BASE_URL = "https://network-survey-gateway-2z7o328z.uc.gateway.dev/"
+private val NS_TOWER_HOST = NS_TOWER_BASE_URL.toHttpUrl().host
+
+val okHttpClient: OkHttpClient = OkHttpClient.Builder()
+    // Attach the API key only for requests to the NS tower gateway. OkHttp follows redirects
+    // by default and does NOT strip arbitrary headers on cross-host redirects, sending
+    // `x-api-key` to a redirect destination would leak the key. Gating the header on host
+    // match is the defensive posture.
     .addInterceptor { chain ->
-        val originalRequest = chain.request()
-        val newRequest = originalRequest.newBuilder()
-            .header("x-api-key", BuildConfig.NS_API_KEY)
-            .build()
+        val request = chain.request()
+        val newRequest = if (request.url.host.equals(NS_TOWER_HOST, ignoreCase = true)) {
+            request.newBuilder()
+                .header("x-api-key", BuildConfig.NS_API_KEY)
+                .build()
+        } else {
+            request
+        }
         chain.proceed(newRequest)
     }
     .build()
 
 val retrofit: Retrofit = Retrofit.Builder()
-    .baseUrl("https://network-survey-gateway-2z7o328z.uc.gateway.dev/")
+    .baseUrl(NS_TOWER_BASE_URL)
     .client(okHttpClient)
     .addConverterFactory(GsonConverterFactory.create())
     .build()
@@ -100,4 +127,64 @@ data class TowerResponse(
  */
 data class MapTilerKeyResponse(
     @SerializedName("apiKey") val apiKey: String
+)
+
+/**
+ * Single OUI lookup result item from the tower service.
+ *
+ * Returned both as the body of [Api.getOui] (inside [OuiLookupResponse.result]) and as each
+ * element of [OuiBatchResponse.results]. The server always responds 200. Classification flows
+ * through the [isUnknown] / [reason] fields.
+ *
+ * String and boxed-Int fields are declared nullable because Gson bypasses Kotlin's non-null
+ * checks at deserialization; a server that unexpectedly omits a field or sends `null` would
+ * otherwise produce a hidden NPE on first field access. Callers must tolerate null strings.
+ */
+data class OuiLookupResult(
+    @SerializedName("mac") val mac: String? = null,
+    @SerializedName("vendor") val vendor: String? = null,
+    @SerializedName("matched_prefix_len") val matchedPrefixLen: Int = 0,
+    @SerializedName("is_locally_administered") val isLocallyAdministered: Boolean = false,
+    @SerializedName("is_multicast") val isMulticast: Boolean = false,
+    @SerializedName("is_unknown") val isUnknown: Boolean = false,
+    @SerializedName("reason") val reason: String? = null
+)
+
+/**
+ * Response body for the single-MAC OUI endpoint (`GET /v2/oui`).
+ */
+data class OuiLookupResponse(
+    @SerializedName("dataset_version") val datasetVersion: String? = null,
+    @SerializedName("result") val result: OuiLookupResult? = null
+)
+
+/**
+ * Request body for the batch OUI endpoint (`POST /v2/oui/batch`).
+ * Server caps the list at 1000 entries and the full request at 256 KB.
+ */
+data class OuiBatchRequest(
+    @SerializedName("macs") val macs: List<String>
+)
+
+/**
+ * Response body for the batch OUI endpoint (`POST /v2/oui/batch`).
+ * Results preserve the input order.
+ */
+data class OuiBatchResponse(
+    @SerializedName("dataset_version") val datasetVersion: String? = null,
+    @SerializedName("count") val count: Int = 0,
+    @SerializedName("results") val results: List<OuiLookupResult> = emptyList()
+)
+
+/**
+ * Response body for the dataset status endpoint (`GET /v2/oui/dataset`).
+ * The [loaded] flag is the signal, when false, the server failed to load the IEEE registries.
+ */
+data class OuiDatasetResponse(
+    @SerializedName("dataset_version") val datasetVersion: String? = null,
+    @SerializedName("count") val count: Int = 0,
+    @SerializedName("ma_l_count") val maLCount: Int = 0,
+    @SerializedName("ma_m_count") val maMCount: Int = 0,
+    @SerializedName("ma_s_count") val maSCount: Int = 0,
+    @SerializedName("loaded") val loaded: Boolean = false
 )

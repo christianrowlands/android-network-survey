@@ -222,6 +222,20 @@
     </PreferenceCategory>
 
     <PreferenceCategory
+        app:icon="@drawable/ic_cloud_connection"
+        app:key="network_lookups"
+        app:title="@string/network_lookups_category">
+
+        <SwitchPreferenceCompat
+            app:defaultValue="true"
+            app:icon="@drawable/ic_search_24"
+            app:key="oui_lookup_enabled"
+            app:summary="@string/settings_oui_summary"
+            app:title="@string/settings_oui_title" />
+
+    </PreferenceCategory>
+
+    <PreferenceCategory
         app:icon="@drawable/ic_wifi"
         app:key="wifi_settings"
         app:title="Wi-Fi Settings">

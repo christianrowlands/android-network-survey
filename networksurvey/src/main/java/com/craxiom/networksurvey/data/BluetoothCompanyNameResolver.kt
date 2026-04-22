@@ -3,8 +3,8 @@ package com.craxiom.networksurvey.data
 import timber.log.Timber
 
 class BluetoothCompanyNameResolver(
-    private val companyResolver: BluetoothCompanyResolver,
-    private val uuidResolver: BluetoothUuidResolver
+    val companyResolver: BluetoothCompanyResolver,
+    val uuidResolver: BluetoothUuidResolver
 ) {
 
     /**

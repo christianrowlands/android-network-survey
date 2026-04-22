@@ -361,7 +361,7 @@ internal fun TowerMapScreen(
                     }
                 }
 
-                // SDF tower icons — same for both dark and light maps (color comes from data)
+                // SDF tower icons, same for both dark and light maps (color comes from data)
                 val sdfIconMap = remember {
                     mapOf(
                         KEY_TOWER_ICON to R.drawable.ic_cell_tower_map_sdf,
