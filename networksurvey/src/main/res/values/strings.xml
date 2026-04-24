@@ -433,13 +433,61 @@
 
     <string name="dbm_value">%1$s dBm</string>
     <string name="bssid_value">BSSID: %1$s</string>
+    <string name="bssid_value_with_vendor">BSSID: %1$s • %2$s</string>
     <string name="wifi_frequency_value">%1$d MHz</string>
     <string name="wifi_channel_value">CH %1$d</string>
     <string name="wifi_channel_and_center_value">CH %1$d(%2$d)</string>
-    <string name="wifi_bandwidth_value">BW %1$s</string>
 
     <string name="content_description_sort_wifi_networks_button">Sort Wi-Fi Networks Button</string>
     <string name="content_description_pause_wifi_network_scan_ui_updates">Pause Wi-Fi network scan UI updates</string>
+
+    <!-- Wi-Fi redesign: list screen -->
+    <string name="wifi_mode_flat_bssid">Flat · BSSID</string>
+    <string name="wifi_mode_group_by_ssid">Group by SSID</string>
+    <string name="wifi_list_scan_header">Scan #%1$d · APs: %2$d</string>
+    <string name="wifi_list_scan_number">Scan #%1$d</string>
+    <string name="wifi_list_ap_count">APs: %1$d</string>
+    <string name="wifi_sort_signal">Signal ↕</string>
+    <string name="wifi_ap_count_one">%1$d AP</string>
+    <string name="wifi_ap_count_other">%1$d APs</string>
+    <string name="wifi_hidden_ssid_placeholder">&lt;Hidden SSID&gt;</string>
+    <string name="wifi_hidden_network_a11y">Hidden network</string>
+    <string name="wifi_sort_pill_label">%1$s ↕</string>
+    <string name="wifi_sort_pill_content_description">Sort by: %1$s. Tap to change.</string>
+    <string name="wifi_unknown_vendor">Unknown vendor</string>
+    <string name="wifi_randomized_mac">Randomized MAC</string>
+    <string name="wifi_tag_passpoint">Passpoint</string>
+    <string name="wifi_band_24_ghz">2.4 GHz</string>
+    <string name="wifi_band_5_ghz">5 GHz</string>
+    <string name="wifi_band_6_ghz">6 GHz</string>
+    <string name="wifi_band_with_channel">%1$s · ch %2$d</string>
+    <string name="wifi_bandwidth_with_standard">%1$s · %2$s</string>
+    <string name="wifi_group_expand">Expand group</string>
+    <string name="wifi_group_collapse">Collapse group</string>
+    <string name="wifi_signal_strong">strong</string>
+    <string name="wifi_signal_good">good</string>
+    <string name="wifi_signal_fair">fair</string>
+    <string name="wifi_signal_weak">weak</string>
+    <string name="wifi_signal_strength_description">Signal strength: %1$d dBm, %2$s</string>
+    <string name="wifi_no_signal_description">No signal</string>
+
+    <!-- Wi-Fi redesign: details screen -->
+    <string name="wifi_details_title">Network Details</string>
+    <string name="wifi_details_radio">Radio</string>
+    <string name="wifi_details_signal_last_2_min">Signal · last 2 minutes</string>
+    <string name="wifi_details_capabilities">Capabilities</string>
+    <string name="wifi_details_channel">Channel</string>
+    <string name="wifi_details_frequency">Frequency</string>
+    <string name="wifi_details_bandwidth">Bandwidth</string>
+    <string name="wifi_details_standard">Standard</string>
+    <string name="wifi_details_included_in_survey">Included in survey data</string>
+    <string name="wifi_details_excluded_from_survey">Excluded from survey data</string>
+    <string name="wifi_details_scan_rate">Scan rate: %1$d seconds</string>
+    <string name="wifi_details_exclude">Exclude</string>
+    <string name="wifi_details_include">Include</string>
+    <string name="wifi_details_channel_value_with_center">%1$d (%2$d)</string>
+    <string name="wifi_details_channel_value">%1$d</string>
+    <string name="wifi_details_frequency_value">%1$d MHz</string>
 
     <string name="android_9_throttling_information">Android 9 throttles Wi-Fi scans to 2 per minute. Upgrade Android if possible.</string>
     <string name="android_10_throttling_information">Android 10+ throttles Wi-Fi scans. To disable throttling: System -&gt; Advanced -&gt; Developer options -&gt; WiFi scan throttling to off.</string>
@@ -1068,15 +1116,8 @@
     <string name="manufacturer_sources_header">Sources</string>
     <string name="manufacturer_brand">Device brand</string>
     <string name="manufacturer_service">Service vendor</string>
-    <string name="manufacturer_chipset">Chipset</string>
+    <string name="manufacturer_chipset">Chipset (OUI)</string>
     <string name="manufacturer_loading">Looking up…</string>
-    <string name="manufacturer_view_sources_agree">View sources (%1$d agree)</string>
-    <string name="manufacturer_view_sources">View sources</string>
-
-    <plurals name="manufacturer_view_sources_differ_plural">
-        <item quantity="one">View %1$d sources (%2$d differs)</item>
-        <item quantity="other">View %1$d sources (%2$d differ)</item>
-    </plurals>
     <string name="manufacturer_all_unknown">Couldn\'t be identified</string>
     <string name="manufacturer_randomized_bt">Randomized address - no vendor</string>
     <string name="manufacturer_randomized_wifi">Randomized MAC - no vendor</string>
@@ -1095,7 +1136,7 @@
     <string name="manufacturer_sheet_summary">We identify manufacturers from three signals. They usually agree.</string>
     <string name="manufacturer_sheet_brand">From the Bluetooth advertisement\'s Company Identifier. Usually who sells the device, like Apple or Samsung.</string>
     <string name="manufacturer_sheet_service">From service UUIDs the device advertises. Often a feature provider like Google Nearby.</string>
-    <string name="manufacturer_sheet_chipset">From the first 24 bits of the MAC address. Identifies the radio-chip maker. May differ from the brand.</string>
+    <string name="manufacturer_sheet_chipset">From the OUI (first 24 bits of the MAC address). Identifies the radio-chip maker. May differ from the brand.</string>
     <string name="manufacturer_info_content_description">About manufacturer sources</string>
-    <string name="manufacturer_disagreement_hint">Different sources can disagree. Tap the info icon to learn why.</string>
+    <string name="manufacturer_disagreement_hint">Sources disagree on this device. Tap the info icon to learn why.</string>
 </resources>

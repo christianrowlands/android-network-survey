@@ -209,6 +209,7 @@ public class NetworkSurveyConstants
     public static final String PROPERTY_NETWORK_SURVEY_DEVICE_NAME = "device_name";
 
     public static final String PROPERTY_WIFI_NETWORKS_SORT_ORDER = "wifi_networks_sort_order";
+    public static final String PROPERTY_WIFI_GROUP_BY_SSID = "wifi_group_by_ssid";
     public static final String PROPERTY_BLUETOOTH_DEVICES_SORT_ORDER = "bluetooth_devices_sort_order";
     public static final String PROPERTY_KEY_DENIED_BACKGROUND_LOCATION_PERMISSION = "denied_background_location_permission";
 

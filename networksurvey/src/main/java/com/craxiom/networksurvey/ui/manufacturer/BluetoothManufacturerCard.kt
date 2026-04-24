@@ -1,9 +1,6 @@
 package com.craxiom.networksurvey.ui.manufacturer
 
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -11,8 +8,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
-import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -28,7 +23,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -42,9 +36,9 @@ import com.craxiom.networksurvey.data.oui.OuiStatus
 import androidx.compose.ui.res.stringResource
 
 /**
- * Authoritative manufacturer identity card for a Bluetooth device. Collapsed by default to a
- * single line (brand, or "Couldn't be identified"), with a "View sources" affordance that
- * expands the three underlying sources (Device brand, Service vendor, Chipset).
+ * Authoritative manufacturer identity card for a Bluetooth device. Always renders the three
+ * underlying sources inline (Device brand, Service vendor, Chipset (OUI)) beneath a summary
+ * primary line, plus an info icon that opens the explanatory bottom sheet.
  *
  * Disagreement between sources is highlighted on each differing row using the tertiary
  * container background, not error red, and only after every source has reached a terminal
@@ -76,7 +70,6 @@ fun BluetoothManufacturerCard(
         }.getOrElse { initial.copy(ouiStatus = OuiStatus.TRANSIENT_FAILURE) }
     }
 
-    var expanded by rememberSaveable(mac) { mutableStateOf(false) }
     var showSheet by remember { mutableStateOf(false) }
 
     Card(
@@ -121,24 +114,7 @@ fun BluetoothManufacturerCard(
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            // "View sources" affordance. Shown whenever at least one source exists OR the OUI call
-            // has settled (even if unknown). Hidden while all three are still in initial LOADING
-            // state so the card doesn't advertise an empty drawer.
-            val affordanceVisible = sources.ouiStatus != OuiStatus.LOADING ||
-                    !sources.companyIdVendor.isNullOrBlank() ||
-                    !sources.uuidVendor.isNullOrBlank()
-
-            if (affordanceVisible) {
-                ViewSourcesRow(
-                    sources = sources,
-                    expanded = expanded,
-                    onClick = { expanded = !expanded }
-                )
-            }
-
-            AnimatedVisibility(visible = expanded) {
-                SourcesSection(sources)
-            }
+            SourcesSection(sources)
 
             // Disagreement caption; only when all sources are terminal and at least two resolved disagree.
             val terminal = sources.ouiStatus != OuiStatus.LOADING
@@ -176,60 +152,6 @@ fun BluetoothManufacturerCard(
 }
 
 @Composable
-private fun ViewSourcesRow(
-    sources: ManufacturerSources,
-    expanded: Boolean,
-    onClick: () -> Unit
-) {
-    val context = LocalContext.current
-    val resolvedCount = sources.resolvedCount()
-    val terminal = sources.ouiStatus != OuiStatus.LOADING
-    val hasDisagreement = terminal && resolvedCount >= 2 && !sources.allAgree()
-
-    val label = when {
-        // Still waiting on OUI, don't announce agreement counts yet, they'll churn as sources settle.
-        !terminal -> stringResource(R.string.manufacturer_view_sources)
-        sources.allUnknown() -> stringResource(R.string.manufacturer_view_sources)
-        hasDisagreement -> {
-            val differing = countDiffering(sources)
-            context.resources.getQuantityString(
-                R.plurals.manufacturer_view_sources_differ_plural,
-                differing,
-                resolvedCount,
-                differing
-            )
-        }
-
-        resolvedCount >= 2 ->
-            stringResource(R.string.manufacturer_view_sources_agree, resolvedCount)
-
-        else -> stringResource(R.string.manufacturer_view_sources)
-    }
-
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(onClick = onClick)
-            .padding(vertical = 4.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.Start
-    ) {
-        Icon(
-            imageVector = if (expanded) Icons.Filled.KeyboardArrowDown
-            else Icons.AutoMirrored.Filled.KeyboardArrowRight,
-            contentDescription = null,
-            tint = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-        Spacer(modifier = Modifier.height(0.dp))
-        Text(
-            text = label,
-            style = MaterialTheme.typography.labelLarge,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-    }
-}
-
-@Composable
 private fun SourcesSection(sources: ManufacturerSources) {
     val context = LocalContext.current
     val terminal = sources.ouiStatus != OuiStatus.LOADING
@@ -262,16 +184,6 @@ private fun SourcesSection(sources: ManufacturerSources) {
 private fun vendorDiffers(candidate: String?, primary: String?): Boolean {
     if (candidate.isNullOrBlank() || primary.isNullOrBlank()) return false
     return !candidate.equals(primary, ignoreCase = true)
-}
-
-/** Counts resolved sources whose vendor disagrees with `primary()`. */
-private fun countDiffering(sources: ManufacturerSources): Int {
-    val primary = sources.primary() ?: return 0
-    var n = 0
-    if (vendorDiffers(sources.companyIdVendor, primary)) n++
-    if (vendorDiffers(sources.uuidVendor, primary)) n++
-    if (vendorDiffers(sources.ouiVendor, primary)) n++
-    return n
 }
 
 @Composable
@@ -318,7 +230,6 @@ private fun SourceRow(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun ManufacturerSourcesSheet(onDismiss: () -> Unit) {
-    val context = LocalContext.current
     val sheetState = rememberModalBottomSheetState()
 
     ModalBottomSheet(

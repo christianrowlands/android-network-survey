@@ -33,7 +33,7 @@
     <!-- Help -->
 
     <!-- CAUTION!!! The values in this array need to stay in sync with the code from
-    com.craxiom.networksurvey.fragments.model.WifiViewModel.WifiRecordSortedListCallback -->
+    com.craxiom.networksurvey.ui.wifi.model.WifiListViewModel.apComparator -->
     <string-array name="wifi_network_sort_options">
         <item>Signal Strength</item>
         <item>SSID</item>

@@ -2,8 +2,10 @@ package com.craxiom.networksurvey.model
 
 import android.os.Parcel
 import android.os.Parcelable
+import com.craxiom.messaging.WifiBeaconRecordData
 import com.craxiom.messaging.wifi.Standard
 import com.craxiom.messaging.wifi.WifiBandwidth
+import com.craxiom.networksurvey.constants.WifiBeaconMessageConstants
 import java.io.Serializable
 
 data class WifiNetwork(
@@ -59,6 +61,27 @@ data class WifiNetwork(
 
         override fun newArray(size: Int): Array<WifiNetwork?> {
             return arrayOfNulls(size)
+        }
+
+        /**
+         * Builds a [WifiNetwork] from a [WifiRecordWrapper]. Single source of truth for
+         * the conversion so list and details screens stay in sync.
+         */
+        @JvmStatic
+        fun from(wrapper: WifiRecordWrapper): WifiNetwork {
+            val data: WifiBeaconRecordData = wrapper.wifiBeaconRecord.data
+            return WifiNetwork(
+                bssid = data.bssid,
+                signalStrength = if (data.hasSignalStrength()) data.signalStrength.value else null,
+                ssid = data.ssid,
+                frequency = if (data.hasFrequencyMhz()) data.frequencyMhz.value else null,
+                channel = if (data.hasChannel()) data.channel.value else null,
+                bandwidth = data.bandwidth,
+                encryptionType = WifiBeaconMessageConstants.getEncryptionTypeString(data.encryptionType),
+                passpoint = if (data.hasPasspoint()) data.passpoint.value else null,
+                capabilities = wrapper.capabilitiesString ?: "",
+                standard = data.standard,
+            )
         }
     }
 }
