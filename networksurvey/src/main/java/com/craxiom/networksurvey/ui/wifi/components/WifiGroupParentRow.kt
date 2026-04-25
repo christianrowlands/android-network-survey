@@ -71,7 +71,7 @@ fun WifiGroupParentRow(
             TitleRow(group)
             MetaRow(group)
         }
-        SignalCell(group)
+        CappedSignalCellDensity { SignalCell(group) }
         Chevron(expanded = group.expanded)
     }
 }
@@ -128,6 +128,8 @@ private fun MetaRow(group: WifiDisplayItem.GroupParent) {
                 text = group.encryptionLabel,
                 style = TextStyle(fontSize = 12.sp),
                 color = WifiTokens.InkMuted,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
             )
         }
     }
@@ -145,7 +147,7 @@ private fun GroupCountPill(count: Int) {
         color = WifiTokens.InkMuted,
         modifier = Modifier
             .clip(RoundedCornerShape(999.dp))
-            .background(WifiTokens.Surface2)
+            .background(MaterialTheme.colorScheme.surfaceContainerHighest)
             .padding(horizontal = 8.dp, vertical = 2.dp),
     )
 }

@@ -1,5 +1,6 @@
 package com.craxiom.networksurvey.ui.wifi
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.lazy.LazyColumn
@@ -37,7 +38,11 @@ fun WifiListScreen(
     val state by viewModel.uiState.collectAsState()
     var sortSheetOpen by remember { mutableStateOf(false) }
 
-    Column(modifier = Modifier.fillMaxSize()) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.surfaceContainerLow),
+    ) {
         ScanStatusStrip(
             scanNumber = state.scanNumber,
             apCount = state.apCount,

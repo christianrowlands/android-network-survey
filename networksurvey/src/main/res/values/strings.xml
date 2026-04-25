@@ -461,15 +461,18 @@
     <string name="wifi_band_5_ghz">5 GHz</string>
     <string name="wifi_band_6_ghz">6 GHz</string>
     <string name="wifi_band_with_channel">%1$s · ch %2$d</string>
-    <string name="wifi_bandwidth_with_standard">%1$s · %2$s</string>
     <string name="wifi_group_expand">Expand group</string>
     <string name="wifi_group_collapse">Collapse group</string>
     <string name="wifi_signal_strong">strong</string>
     <string name="wifi_signal_good">good</string>
     <string name="wifi_signal_fair">fair</string>
     <string name="wifi_signal_weak">weak</string>
+    <string name="wifi_signal_very_weak">very weak</string>
     <string name="wifi_signal_strength_description">Signal strength: %1$d dBm, %2$s</string>
     <string name="wifi_no_signal_description">No signal</string>
+    <string name="bssid_copied">BSSID copied</string>
+    <string name="bssid_copy_content_description">Copy BSSID</string>
+    <string name="bssid_clip_label">BSSID</string>
 
     <!-- Wi-Fi redesign: details screen -->
     <string name="wifi_details_title">Network Details</string>

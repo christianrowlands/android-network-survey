@@ -115,4 +115,5 @@ private val WifiSignalCategory.descriptionResId: Int
         WifiSignalCategory.GOOD -> R.string.wifi_signal_good
         WifiSignalCategory.FAIR -> R.string.wifi_signal_fair
         WifiSignalCategory.WEAK -> R.string.wifi_signal_weak
+        WifiSignalCategory.VERY_WEAK -> R.string.wifi_signal_very_weak
     }

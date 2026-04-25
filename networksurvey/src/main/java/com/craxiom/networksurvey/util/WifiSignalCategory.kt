@@ -4,22 +4,17 @@ import androidx.compose.ui.graphics.Color
 import com.craxiom.networksurvey.ui.theme.WifiTokens
 
 /**
- * Signal strength bucket for the Wi-Fi list and details redesign.
+ * Signal strength bucket for the Wi-Fi list and details UI.
  *
- * Thresholds come from the handoff spec (dBm):
- *  - STRONG: >= -55
- *  - GOOD:   -56..-67
- *  - FAIR:   -68..-75
- *  - WEAK:   <= -76
- *
- * The cellular 5-bucket ramp in [ColorUtils] is intentionally not shared; that one
- * has different cut points and lives on different screens.
+ * Thresholds and colors intentionally mirror [ColorUtils.getColorForSignalStrength] so WiFi
+ * rows match the cellular and Bluetooth screens app-wide.
  */
 enum class WifiSignalCategory {
     STRONG,
     GOOD,
     FAIR,
-    WEAK;
+    WEAK,
+    VERY_WEAK;
 
     val color: Color
         get() = when (this) {
@@ -27,14 +22,16 @@ enum class WifiSignalCategory {
             GOOD -> WifiTokens.SignalGood
             FAIR -> WifiTokens.SignalFair
             WEAK -> WifiTokens.SignalWeak
+            VERY_WEAK -> WifiTokens.SignalVeryWeak
         }
 }
 
 fun Int.toWifiSignalCategory(): WifiSignalCategory = when {
-    this >= -55 -> WifiSignalCategory.STRONG
-    this >= -67 -> WifiSignalCategory.GOOD
-    this >= -75 -> WifiSignalCategory.FAIR
-    else -> WifiSignalCategory.WEAK
+    this > -60 -> WifiSignalCategory.STRONG
+    this > -70 -> WifiSignalCategory.GOOD
+    this > -80 -> WifiSignalCategory.FAIR
+    this > -90 -> WifiSignalCategory.WEAK
+    else -> WifiSignalCategory.VERY_WEAK
 }
 
 fun Float.toWifiSignalCategory(): WifiSignalCategory = this.toInt().toWifiSignalCategory()

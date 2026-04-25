@@ -10,6 +10,8 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -39,46 +41,45 @@ fun WifiSurveyDataCard(
     onToggle: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    Row(
-        modifier = modifier
-            .clip(RoundedCornerShape(14.dp))
-            .background(MaterialTheme.colorScheme.surfaceContainer)
-            .border(
-                BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
-                RoundedCornerShape(14.dp),
-            )
-            .padding(14.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
+    Card(
+        modifier = modifier,
+        shape = MaterialTheme.shapes.large,
+        colors = CardDefaults.elevatedCardColors(),
     ) {
-        Column(
-            modifier = Modifier.weight(1f),
-            verticalArrangement = Arrangement.spacedBy(2.dp),
+        Row(
+            modifier = Modifier.padding(14.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            Text(
-                text = if (isExcluded) {
-                    stringResource(R.string.wifi_details_excluded_from_survey)
-                } else {
-                    stringResource(R.string.wifi_details_included_in_survey)
-                },
-                style = TextStyle(fontSize = 14.sp),
-                color = MaterialTheme.colorScheme.onSurface,
-            )
-            Text(
-                text = stringResource(R.string.wifi_details_scan_rate, scanRateSeconds),
-                style = TextStyle(fontSize = 12.sp),
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        }
-        if (!hiddenSsid) {
-            TogglePill(
-                label = if (isExcluded) {
-                    stringResource(R.string.wifi_details_include)
-                } else {
-                    stringResource(R.string.wifi_details_exclude)
-                },
-                onClick = onToggle,
-            )
+            Column(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(2.dp),
+            ) {
+                Text(
+                    text = if (isExcluded) {
+                        stringResource(R.string.wifi_details_excluded_from_survey)
+                    } else {
+                        stringResource(R.string.wifi_details_included_in_survey)
+                    },
+                    style = TextStyle(fontSize = 14.sp),
+                    color = MaterialTheme.colorScheme.onSurface,
+                )
+                Text(
+                    text = stringResource(R.string.wifi_details_scan_rate, scanRateSeconds),
+                    style = TextStyle(fontSize = 12.sp),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+            if (!hiddenSsid) {
+                TogglePill(
+                    label = if (isExcluded) {
+                        stringResource(R.string.wifi_details_include)
+                    } else {
+                        stringResource(R.string.wifi_details_exclude)
+                    },
+                    onClick = onToggle,
+                )
+            }
         }
     }
 }

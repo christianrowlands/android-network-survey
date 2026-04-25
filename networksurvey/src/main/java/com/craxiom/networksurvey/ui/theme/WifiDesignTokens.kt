@@ -10,8 +10,8 @@ import androidx.compose.ui.graphics.Color
  */
 object WifiTokens {
 
-    val SsidAccent = Color(0xFF7FCFE8)
-    val SsidSoft = Color(0x267FCFE8)
+    val SsidAccent = Color(0xFF03A9F4)
+    val SsidSoft = Color(0x2603A9F4)
 
     val PasspointBlue = Color(0xFF8FA0F0)
 
@@ -21,19 +21,18 @@ object WifiTokens {
     // screens so the rest of the app's MaterialTheme neutrals stay authoritative.
     val Ink = Color(0xFFE7EBF2)
     val InkDim = Color(0xFFB4BAC4)
-    val InkMuted = Color(0xFF7D8591)
-    val InkFaint = Color(0xFF5A6170)
-
-    val Surface2 = Color(0xFF1A1F28)
+    val InkMuted = Color(0xFFA8AFB8)
+    val InkFaint = Color(0xFF888E98)
 
     val Band24 = Color(0xFFD7B96E)
     val Band5 = Color(0xFF6FCFD7)
     val Band6 = Color(0xFFC99CE0)
 
-    val SignalStrong = Color(0xFF7FD98A)
-    val SignalGood = Color(0xFFAED97F)
-    val SignalFair = Color(0xFFE3C46A)
-    val SignalWeak = Color(0xFFE88A6C)
+    val SignalStrong = Color(0xFF388E3C)
+    val SignalGood = Color(0xFFFBC02D)
+    val SignalFair = Color(0xFFF57C00)
+    val SignalWeak = Color(0xFFD32F2F)
+    val SignalVeryWeak = Color(0xFFD50000)
 
     val SecurityMint = Color(0xFF77D8B0)
     val SecurityEnterprise = Color(0xFF6FCFE0)

@@ -1,6 +1,5 @@
 package com.craxiom.networksurvey.ui.wifi.components
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -9,7 +8,6 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.material3.LocalContentColor
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -22,15 +20,14 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.craxiom.networksurvey.R
 import com.craxiom.networksurvey.ui.manufacturer.rememberWifiManufacturerLabelText
 import com.craxiom.networksurvey.ui.theme.WifiTokens
 import com.craxiom.networksurvey.ui.wifi.model.WifiAccessPointDisplay
 import com.craxiom.networksurvey.util.toWifiSignalCategory
-import androidx.compose.ui.res.stringResource
 
 /**
- * Indented child row under an expanded group. Line 1: band chip + bandwidth · standard.
+ * Indented child row under an expanded group. Line 1: band chip + bandwidth · standard
+ * (each as its own Text with a dot separator for clear spacing).
  * Line 2: BSSID (monospace) + vendor. Right column: dBm + meter. Taps navigate to details.
  */
 @Composable
@@ -41,7 +38,6 @@ fun WifiGroupChildRow(
 ) {
     Row(
         modifier = modifier
-            .background(MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.5f))
             .clickable(onClick = onClick)
             .heightIn(min = 48.dp)
             .padding(start = 28.dp, end = 14.dp, top = 10.dp, bottom = 10.dp),
@@ -54,41 +50,46 @@ fun WifiGroupChildRow(
             BandAndBandwidthRow(ap)
             BssidVendorRow(ap)
         }
-        SignalCell(ap)
+        CappedSignalCellDensity { SignalCell(ap) }
     }
 }
 
 @Composable
 private fun BandAndBandwidthRow(ap: WifiAccessPointDisplay) {
     Row(
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        horizontalArrangement = Arrangement.spacedBy(10.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         ap.band?.let { band ->
             BandChip(band = band, channel = ap.channel)
         }
-        val subParts = buildList {
-            if (ap.bandwidthLabel.isNotBlank()) add(ap.bandwidthLabel)
-            if (ap.standardLabel.isNotBlank()) add(ap.standardLabel)
+        val hasBandwidth = ap.bandwidthLabel.isNotBlank()
+        val hasStandard = ap.standardLabel.isNotBlank()
+        if (hasBandwidth) {
+            SubLabel(ap.bandwidthLabel)
         }
-        if (subParts.isNotEmpty()) {
+        if (hasBandwidth && hasStandard) {
             Text(
-                text = if (subParts.size >= 2) {
-                    stringResource(
-                        R.string.wifi_bandwidth_with_standard,
-                        subParts[0],
-                        subParts[1],
-                    )
-                } else {
-                    subParts[0]
-                },
+                text = "·",
                 style = TextStyle(fontSize = 12.sp),
-                color = WifiTokens.InkMuted,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
+                color = WifiTokens.InkFaint,
             )
         }
+        if (hasStandard) {
+            SubLabel(ap.standardLabel)
+        }
     }
+}
+
+@Composable
+private fun SubLabel(text: String) {
+    Text(
+        text = text,
+        style = TextStyle(fontSize = 12.sp, fontWeight = FontWeight.Medium),
+        color = WifiTokens.InkDim,
+        maxLines = 1,
+        overflow = TextOverflow.Ellipsis,
+    )
 }
 
 @Composable
@@ -103,6 +104,8 @@ private fun BssidVendorRow(ap: WifiAccessPointDisplay) {
             text = ap.bssid,
             style = TextStyle(fontSize = 11.5.sp, fontFamily = FontFamily.Monospace),
             color = WifiTokens.InkMuted,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
         )
         vendorLabel.text?.let { text ->
             Text(

@@ -69,7 +69,7 @@ fun WifiRowA(
                 TopSsidRow(ap)
                 BssidVendorRow(ap)
             }
-            SignalColumn(ap)
+            CappedSignalCellDensity { SignalColumn(ap) }
         }
         Spacer(Modifier.height(2.dp))
         ChipsRow(ap)
@@ -128,6 +128,8 @@ private fun BssidVendorRow(ap: WifiAccessPointDisplay) {
                 fontFamily = FontFamily.Monospace,
             ),
             color = WifiTokens.InkMuted,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
         )
         vendorLabel.text?.let { text ->
             Text(
