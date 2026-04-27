@@ -38,6 +38,7 @@ import com.craxiom.networksurvey.ui.main.NavDrawerOption
 import com.craxiom.networksurvey.ui.theme.NsTheme
 import kotlinx.coroutines.launch
 import timber.log.Timber
+import androidx.core.graphics.createBitmap
 
 @Composable
 fun <T : Enum<T>> AppDrawerContent(
@@ -123,7 +124,7 @@ fun AppIcon() {
 
             val width = drawable.intrinsicWidth.coerceAtLeast(1)
             val height = drawable.intrinsicHeight.coerceAtLeast(1)
-            val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
+            val bitmap = createBitmap(width, height)
             val canvas = Canvas(bitmap)
             drawable.setBounds(0, 0, canvas.width, canvas.height)
             drawable.draw(canvas)
