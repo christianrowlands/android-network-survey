@@ -473,6 +473,8 @@
     <string name="bssid_copied">BSSID copied</string>
     <string name="bssid_copy_content_description">Copy BSSID</string>
     <string name="bssid_clip_label">BSSID</string>
+    <string name="ssid_copied">SSID copied</string>
+    <string name="ssid_clip_label">SSID</string>
 
     <!-- Wi-Fi redesign: details screen -->
     <string name="wifi_details_title">Network Details</string>

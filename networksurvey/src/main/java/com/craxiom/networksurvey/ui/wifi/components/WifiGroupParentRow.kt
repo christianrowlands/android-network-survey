@@ -2,8 +2,9 @@ package com.craxiom.networksurvey.ui.wifi.components
 
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
@@ -25,7 +26,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
@@ -33,8 +37,6 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.semantics
 import com.craxiom.networksurvey.R
 import com.craxiom.networksurvey.ui.theme.WifiTokens
 import com.craxiom.networksurvey.ui.wifi.model.WifiDisplayItem
@@ -44,6 +46,7 @@ import com.craxiom.networksurvey.util.toWifiSignalCategory
  * Grouped-by-SSID parent row. Taps toggle expand/collapse only; individual APs navigate from
  * the child rows. Passpoint badge shows if ANY AP in the group is Passpoint.
  */
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun WifiGroupParentRow(
     group: WifiDisplayItem.GroupParent,
@@ -55,10 +58,18 @@ fun WifiGroupParentRow(
     } else {
         androidx.compose.ui.graphics.Color.Transparent
     }
+    val context = LocalContext.current
+    val ssidClipLabel = stringResource(R.string.ssid_clip_label)
+    val ssidCopiedToast = stringResource(R.string.ssid_copied)
+    val onSsidLongPress: (() -> Unit)? = if (group.isHidden) {
+        null
+    } else {
+        { copyTextToClipboard(context, ssidClipLabel, group.displaySsid, ssidCopiedToast) }
+    }
     Row(
         modifier = modifier
             .background(bg)
-            .clickable(onClick = onToggle)
+            .combinedClickable(onClick = onToggle)
             .heightIn(min = 48.dp)
             .padding(horizontal = 14.dp, vertical = 12.dp),
         horizontalArrangement = Arrangement.spacedBy(10.dp),
@@ -68,7 +79,7 @@ fun WifiGroupParentRow(
             modifier = Modifier.weight(1f),
             verticalArrangement = Arrangement.spacedBy(4.dp),
         ) {
-            TitleRow(group)
+            TitleRow(group, onClick = onToggle, onSsidLongPress = onSsidLongPress)
             MetaRow(group)
         }
         CappedSignalCellDensity { SignalCell(group) }
@@ -76,9 +87,13 @@ fun WifiGroupParentRow(
     }
 }
 
-@OptIn(ExperimentalLayoutApi::class)
+@OptIn(ExperimentalLayoutApi::class, ExperimentalFoundationApi::class)
 @Composable
-private fun TitleRow(group: WifiDisplayItem.GroupParent) {
+private fun TitleRow(
+    group: WifiDisplayItem.GroupParent,
+    onClick: () -> Unit,
+    onSsidLongPress: (() -> Unit)?,
+) {
     FlowRow(
         horizontalArrangement = Arrangement.spacedBy(8.dp),
         verticalArrangement = Arrangement.spacedBy(4.dp),
@@ -101,6 +116,10 @@ private fun TitleRow(group: WifiDisplayItem.GroupParent) {
                 color = WifiTokens.SsidAccent,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.combinedClickable(
+                    onClick = onClick,
+                    onLongClick = onSsidLongPress,
+                ),
             )
         }
         if (group.anyPasspoint) {
@@ -162,7 +181,11 @@ private fun SignalCell(group: WifiDisplayItem.GroupParent) {
         val color = group.bestRssi?.toWifiSignalCategory()?.color ?: LocalContentColor.current
         Text(
             text = if (group.bestRssi != null) "${group.bestRssi} dBm" else "--",
-            style = TextStyle(fontSize = 14.sp, fontWeight = FontWeight.SemiBold, textAlign = TextAlign.End),
+            style = TextStyle(
+                fontSize = 14.sp,
+                fontWeight = FontWeight.SemiBold,
+                textAlign = TextAlign.End
+            ),
             color = color,
         )
         SignalMeter(rssi = group.bestRssi, width = 60.dp)

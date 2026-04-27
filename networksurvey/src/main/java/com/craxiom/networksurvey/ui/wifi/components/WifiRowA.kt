@@ -1,26 +1,27 @@
 package com.craxiom.networksurvey.ui.wifi.components
 
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.widthIn
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.height
 import androidx.compose.material3.LocalContentColor
-import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.semantics
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontStyle
@@ -43,17 +44,32 @@ import com.craxiom.networksurvey.util.toWifiSignalCategory
  *  2. BSSID (monospace) · vendor/status text. Meter bar on the right.
  *  3. Band chip + Security tag + Standard tag, spanning full width (wraps at large text sizes).
  */
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun WifiRowA(
     ap: WifiAccessPointDisplay,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val context = LocalContext.current
+    val ssidClipLabel = stringResource(R.string.ssid_clip_label)
+    val ssidCopiedToast = stringResource(R.string.ssid_copied)
+    val bssidClipLabel = stringResource(R.string.bssid_clip_label)
+    val bssidCopiedToast = stringResource(R.string.bssid_copied)
+    val onSsidLongPress: (() -> Unit)? = if (ap.ssidIsHidden) {
+        null
+    } else {
+        { copyTextToClipboard(context, ssidClipLabel, ap.ssid, ssidCopiedToast) }
+    }
+    val onBssidLongPress = {
+        copyTextToClipboard(context, bssidClipLabel, ap.bssid, bssidCopiedToast)
+    }
+
     // Line 3 (chips) lives in an outer Column row so it can span the full row width and wrap
     // at large system text sizes. Lines 1 + 2 stay in a constrained Row with the signal column.
     Column(
         modifier = modifier
-            .clickable(onClick = onClick)
+            .combinedClickable(onClick = onClick)
             .heightIn(min = 48.dp)
             .padding(horizontal = 14.dp, vertical = 12.dp),
         verticalArrangement = Arrangement.spacedBy(3.dp),
@@ -66,8 +82,8 @@ fun WifiRowA(
                 modifier = Modifier.weight(1f),
                 verticalArrangement = Arrangement.spacedBy(3.dp),
             ) {
-                TopSsidRow(ap)
-                BssidVendorRow(ap)
+                TopSsidRow(ap, onClick = onClick, onSsidLongPress = onSsidLongPress)
+                BssidVendorRow(ap, onClick = onClick, onBssidLongPress = onBssidLongPress)
             }
             CappedSignalCellDensity { SignalColumn(ap) }
         }
@@ -76,8 +92,13 @@ fun WifiRowA(
     }
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
-private fun TopSsidRow(ap: WifiAccessPointDisplay) {
+private fun TopSsidRow(
+    ap: WifiAccessPointDisplay,
+    onClick: () -> Unit,
+    onSsidLongPress: (() -> Unit)?,
+) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -102,7 +123,12 @@ private fun TopSsidRow(ap: WifiAccessPointDisplay) {
                 color = WifiTokens.SsidAccent,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.weight(1f, fill = false),
+                modifier = Modifier
+                    .weight(1f, fill = false)
+                    .combinedClickable(
+                        onClick = onClick,
+                        onLongClick = onSsidLongPress,
+                    ),
             )
         }
         if (ap.passpoint) {
@@ -114,8 +140,13 @@ private fun TopSsidRow(ap: WifiAccessPointDisplay) {
     }
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
-private fun BssidVendorRow(ap: WifiAccessPointDisplay) {
+private fun BssidVendorRow(
+    ap: WifiAccessPointDisplay,
+    onClick: () -> Unit,
+    onBssidLongPress: () -> Unit,
+) {
     val vendorLabel = rememberWifiManufacturerLabelText(ap.bssid)
     Row(
         verticalAlignment = Alignment.CenterVertically,
@@ -130,6 +161,10 @@ private fun BssidVendorRow(ap: WifiAccessPointDisplay) {
             color = WifiTokens.InkMuted,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.combinedClickable(
+                onClick = onClick,
+                onLongClick = onBssidLongPress,
+            ),
         )
         vendorLabel.text?.let { text ->
             Text(
@@ -188,7 +223,11 @@ private fun SignalColumn(ap: WifiAccessPointDisplay) {
         val color = ap.rssi?.toWifiSignalCategory()?.color ?: LocalContentColor.current
         Text(
             text = if (ap.rssi != null) "${ap.rssi} dBm" else "--",
-            style = TextStyle(fontSize = 14.sp, fontWeight = FontWeight.SemiBold, textAlign = TextAlign.End),
+            style = TextStyle(
+                fontSize = 14.sp,
+                fontWeight = FontWeight.SemiBold,
+                textAlign = TextAlign.End
+            ),
             color = color,
         )
         SignalMeter(rssi = ap.rssi)
