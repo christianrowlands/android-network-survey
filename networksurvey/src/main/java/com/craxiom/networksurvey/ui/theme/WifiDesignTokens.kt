@@ -15,14 +15,14 @@ object WifiTokens {
 
     val PasspointBlue = Color(0xFF8FA0F0)
 
-    val HiddenSsid = Color(0xFFEF8C6C)
+    val HiddenSsid = Color(0xFF90A4AE)
 
     // Neutral text + surface tokens, hex from the handoff spec section 2. Scoped to Wi-Fi
     // screens so the rest of the app's MaterialTheme neutrals stay authoritative.
     val Ink = Color(0xFFE7EBF2)
-    val InkDim = Color(0xFFB4BAC4)
-    val InkMuted = Color(0xFFA8AFB8)
-    val InkFaint = Color(0xFF888E98)
+    val InkDim = Color(0xFFDDE1E8)
+    val InkMuted = Color(0xFFD6DAE2)
+    val InkFaint = Color(0xFFB0B6BF)
 
     val Band24 = Color(0xFFD7B96E)
     val Band5 = Color(0xFF6FCFD7)

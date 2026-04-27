@@ -157,6 +157,7 @@ private fun ChipsRow(ap: WifiAccessPointDisplay) {
     FlowRow(
         horizontalArrangement = Arrangement.spacedBy(10.dp),
         verticalArrangement = Arrangement.spacedBy(6.dp),
+        itemVerticalAlignment = Alignment.CenterVertically,
         modifier = Modifier.fillMaxWidth(),
     ) {
         ap.band?.let { band ->

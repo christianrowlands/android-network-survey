@@ -85,8 +85,8 @@ private fun BandAndBandwidthRow(ap: WifiAccessPointDisplay) {
 private fun SubLabel(text: String) {
     Text(
         text = text,
-        style = TextStyle(fontSize = 12.sp, fontWeight = FontWeight.Medium),
-        color = WifiTokens.InkDim,
+        style = TextStyle(fontSize = 12.sp, fontWeight = FontWeight.Normal),
+        color = WifiTokens.InkFaint,
         maxLines = 1,
         overflow = TextOverflow.Ellipsis,
     )

@@ -13,7 +13,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.unit.dp
 import com.craxiom.networksurvey.R
@@ -38,10 +42,22 @@ fun BandChip(
             WifiBand.GHZ_6 -> R.string.wifi_band_6_ghz
         }
     )
-    val text = if (channel != null) {
-        stringResource(R.string.wifi_band_with_channel, bandLabel, channel)
+    val text: AnnotatedString = if (channel != null) {
+        val full = stringResource(R.string.wifi_band_with_channel, bandLabel, channel)
+        val token = "ch $channel"
+        val start = full.lastIndexOf(token)
+        buildAnnotatedString {
+            append(full)
+            if (start >= 0) {
+                addStyle(
+                    SpanStyle(fontWeight = FontWeight.SemiBold),
+                    start,
+                    start + token.length,
+                )
+            }
+        }
     } else {
-        bandLabel
+        AnnotatedString(bandLabel)
     }
 
     Row(

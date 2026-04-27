@@ -103,6 +103,7 @@ fun WifiDetailsHeroCard(
             FlowRow(
                 horizontalArrangement = Arrangement.spacedBy(6.dp),
                 verticalArrangement = Arrangement.spacedBy(6.dp),
+                itemVerticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier.fillMaxWidth(),
             ) {
                 if (band != null) {
@@ -129,6 +130,7 @@ fun WifiDetailsHeroCard(
     }
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun BssidVendorRow(bssid: String) {
     val label = rememberWifiManufacturerLabelText(bssid)
@@ -136,33 +138,37 @@ private fun BssidVendorRow(bssid: String) {
     val copiedToastText = stringResource(R.string.bssid_copied)
     val copyContentDescription = stringResource(R.string.bssid_copy_content_description)
     val clipLabel = stringResource(R.string.bssid_clip_label)
-    Row(
+    FlowRow(
         horizontalArrangement = Arrangement.spacedBy(4.dp),
-        verticalAlignment = Alignment.CenterVertically,
+        verticalArrangement = Arrangement.spacedBy(2.dp),
+        itemVerticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier.fillMaxWidth(),
     ) {
-        Text(
-            text = bssid,
-            style = TextStyle(fontSize = 13.sp, fontFamily = FontFamily.Monospace),
-            color = WifiTokens.InkDim,
-        )
-        IconButton(
-            onClick = {
-                val clipboard =
-                    context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-                clipboard.setPrimaryClip(ClipData.newPlainText(clipLabel, bssid))
-                Toast.makeText(context, copiedToastText, Toast.LENGTH_SHORT).show()
-            },
-        ) {
-            Icon(
-                painter = painterResource(id = R.drawable.ic_content_copy),
-                contentDescription = copyContentDescription,
-                tint = WifiTokens.InkDim,
-                modifier = Modifier.size(16.dp),
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(
+                text = bssid,
+                style = TextStyle(fontSize = 13.sp, fontFamily = FontFamily.Monospace),
+                color = WifiTokens.InkDim,
             )
+            IconButton(
+                onClick = {
+                    val clipboard =
+                        context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+                    clipboard.setPrimaryClip(ClipData.newPlainText(clipLabel, bssid))
+                    Toast.makeText(context, copiedToastText, Toast.LENGTH_SHORT).show()
+                },
+            ) {
+                Icon(
+                    painter = painterResource(id = R.drawable.ic_content_copy),
+                    contentDescription = copyContentDescription,
+                    tint = WifiTokens.InkDim,
+                    modifier = Modifier.size(16.dp),
+                )
+            }
         }
         label.text?.let { text ->
             Text(
-                text = "· $text",
+                text = text,
                 style = TextStyle(
                     fontSize = 13.sp,
                     fontStyle = if (label.italic) FontStyle.Italic else FontStyle.Normal,
