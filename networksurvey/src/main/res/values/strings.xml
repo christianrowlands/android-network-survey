@@ -217,7 +217,7 @@
     <string name="stop_scanning">Stop Survey</string>
     <string name="scanning_inactive">Survey Inactive</string>
     <string name="scanning_active">Survey Active</string>
-    <string name="upload_scanning_description_text">Start survey to collect cellular and/or Wi-Fi survey data for upload to 3rd party DBs. This operates independently of file logging and MQTT streaming, allowing you to start and stop data collection specifically for upload. Click the question mark icon for more details.</string>
+    <string name="upload_scanning_description_text">Collect cellular and Wi-Fi data for upload to public databases. Tap ? for details.</string>
     <string name="upload_queue_title">Records Ready for Upload</string>
     <string name="cellular_upload_queue_count_initial">Cellular:</string>
     <string name="cellular_upload_queue_count">Cellular:  %1$d</string>

@@ -50,8 +50,8 @@
                         android:layout_width="match_parent"
                         android:layout_height="match_parent"
                         android:background="@drawable/card_title"
-                        android:padding="3dp"
-                        android:layout_marginBottom="3dp"
+                        android:padding="1dp"
+                        android:layout_marginBottom="1dp"
                         android:orientation="horizontal">
 
                         <ImageView
@@ -528,8 +528,8 @@
                         android:layout_width="fill_parent"
                         android:layout_height="match_parent"
                         android:background="@drawable/card_title"
-                        android:padding="3dp"
-                        android:layout_marginBottom="3dp"
+                        android:padding="1dp"
+                        android:layout_marginBottom="1dp"
                         android:orientation="horizontal">
 
                         <ImageView
@@ -588,8 +588,8 @@
                         android:layout_width="fill_parent"
                         android:layout_height="match_parent"
                         android:background="@drawable/card_title"
-                        android:padding="3dp"
-                        android:layout_marginBottom="3dp"
+                        android:padding="1dp"
+                        android:layout_marginBottom="1dp"
                         android:orientation="horizontal">
 
                         <ImageView

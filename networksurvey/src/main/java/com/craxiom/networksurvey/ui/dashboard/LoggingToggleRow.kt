@@ -39,7 +39,7 @@ fun LoggingToggleRow(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 4.dp),
+                .padding(horizontal = 16.dp, vertical = 2.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Icon(
@@ -85,7 +85,7 @@ fun LoggingToggleRow(
                 text = subtitle,
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.outline,
-                modifier = Modifier.padding(start = 52.dp, end = 16.dp, bottom = 4.dp),
+                modifier = Modifier.padding(start = 52.dp, end = 16.dp, bottom = 2.dp),
             )
         }
     }
@@ -116,9 +116,7 @@ fun LoggingControlContent(
     val dividerColor = MaterialTheme.colorScheme.outlineVariant
 
     Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(bottom = 4.dp),
+        modifier = Modifier.fillMaxWidth(),
     ) {
         LoggingToggleRow(
             icon = R.drawable.ic_cellular,

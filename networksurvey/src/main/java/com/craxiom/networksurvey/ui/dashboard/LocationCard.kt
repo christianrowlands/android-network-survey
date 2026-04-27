@@ -32,6 +32,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.fromHtml
 import androidx.compose.ui.unit.dp
 import com.craxiom.networksurvey.R
 import com.craxiom.networksurvey.util.LocationStatusHelper.LocationState
@@ -163,7 +165,9 @@ fun LocationCard(
             enter = expandVertically() + androidx.compose.animation.fadeIn(),
         ) {
             Text(
-                text = stringResource(R.string.location_hint_open_settings),
+                text = AnnotatedString.fromHtml(
+                    stringResource(R.string.location_hint_open_settings)
+                ),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.primary,
                 modifier = Modifier

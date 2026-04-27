@@ -25,6 +25,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -36,6 +37,7 @@ import com.craxiom.networksurvey.ui.main.DrawerParams
 import com.craxiom.networksurvey.ui.main.NavDrawerOption
 import com.craxiom.networksurvey.ui.theme.NsTheme
 import kotlinx.coroutines.launch
+import timber.log.Timber
 
 @Composable
 fun <T : Enum<T>> AppDrawerContent(
@@ -110,25 +112,36 @@ fun <T : Enum<T>> AppDrawerContent(
 
 @Composable
 fun AppIcon() {
-    ResourcesCompat.getDrawable(
-        LocalContext.current.resources,
-        R.mipmap.ic_launcher, LocalContext.current.theme
-    )?.let { drawable ->
-        val bitmap = Bitmap.createBitmap(
-            drawable.intrinsicWidth, drawable.intrinsicHeight,
-            Bitmap.Config.ARGB_8888
-        )
-        val canvas = Canvas(bitmap)
-        drawable.setBounds(0, 0, canvas.width, canvas.height)
-        drawable.draw(canvas)
+    val context = LocalContext.current
+    val iconBitmap: ImageBitmap? = remember(context) {
+        try {
+            val drawable = ResourcesCompat.getDrawable(
+                context.resources,
+                R.mipmap.ic_launcher,
+                context.theme
+            ) ?: return@remember null
+
+            val width = drawable.intrinsicWidth.coerceAtLeast(1)
+            val height = drawable.intrinsicHeight.coerceAtLeast(1)
+            val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
+            val canvas = Canvas(bitmap)
+            drawable.setBounds(0, 0, canvas.width, canvas.height)
+            drawable.draw(canvas)
+            bitmap.asImageBitmap()
+        } catch (t: Throwable) {
+            Timber.w(t, "Failed to load launcher icon for drawer")
+            null
+        }
+    }
+
+    iconBitmap?.let { bitmap ->
         Column(
-            modifier = Modifier
-                .padding(8.dp),
+            modifier = Modifier.padding(8.dp),
             horizontalAlignment = Alignment.Start
         ) {
             Image(
-                bitmap = bitmap.asImageBitmap(),
-                "Network Survey App Icon",
+                bitmap = bitmap,
+                contentDescription = "Network Survey App Icon",
                 modifier = Modifier.requiredSize(54.dp)
             )
         }
