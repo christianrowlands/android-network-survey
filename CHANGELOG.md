@@ -1,5 +1,20 @@
 # Changelog
 
+## [1.53](https://github.com/christianrowlands/android-network-survey/releases/tag/v1.53) - 2026-04-27
+
+**BUG FIXES**
+* Fix a resource not found crash on certain devices by replacing additional PNG icons (bug, calculator) with vector drawables.
+
+**NEW FEATURES**
+* Redesign the Wi-Fi list and Wi-Fi Network Details UIs in Jetpack Compose. The list now defaults to grouping rows by SSID.
+* Resolve manufacturer names for Wi-Fi BSSIDs and Bluetooth MAC addresses via an OUI lookup service. Adds a Bluetooth manufacturer card that reconciles Company ID, UUID vendor, and OUI sources, with a new "Network lookups" settings toggle (MDM-overridable) and an offline cache.
+* Add long-press copy on the SSID and BSSID in the Wi-Fi list and Network Details UIs.
+
+**IMPROVEMENTS**
+* Replace the expandable help card on the gRPC Connection screen with an app bar help icon, matching the MQTT screen pattern.
+* Tighten dashboard spacing and shorten the OpenCelliD/BeaconDB upload description.
+* Switch the per-ABI versionCodeOverride to the F-Droid splitabi convention. [#127](https://github.com/christianrowlands/android-network-survey/issues/127)
+
 ## [1.52](https://github.com/christianrowlands/android-network-survey/releases/tag/v1.52) - 2026-04-08
 
 **BUG FIXES**

@@ -1,6 +1,17 @@
 <?xml version="1.0" encoding="utf-8"?>
 <layout xmlns:android="http://schemas.android.com/apk/res/android">
 
+    <!--
+        The CoordinatorLayout wrapper is load-bearing for the Snackbar in
+        WifiNetworksFragment.showScanThrottlingSnackbar(). The fragment is hosted via
+        Compose AndroidViewBinding (see HomeScreen.kt#WifiFragmentInCompose), which
+        severs the parent chain from android.R.id.content. Without this CoordinatorLayout
+        here, Snackbar.findSuitableParent walks up to the surrounding FragmentContainerView
+        and FragmentContainerView.addView throws IllegalStateException, crashing the app
+        on every Wi-Fi tab open (Android 11+ with scan throttling enabled).
+        Do not flatten this root unless you also migrate the throttling warning to a
+        Compose SnackbarHost.
+    -->
     <androidx.coordinatorlayout.widget.CoordinatorLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent">

@@ -444,6 +444,11 @@ public class WifiNetworksFragment extends AServiceDataFragment implements IWifiS
             }
         }
 
+        // requireView()'s root must be a CoordinatorLayout (or any view inside one). This fragment
+        // is hosted via Compose AndroidViewBinding (HomeScreen.kt#WifiFragmentInCompose), so the
+        // parent chain doesn't reach android.R.id.content; without a CoordinatorLayout ancestor,
+        // Snackbar.findSuitableParent falls back to the surrounding FragmentContainerView and
+        // FragmentContainerView.addView throws. See fragment_wifi_networks_list.xml.
         final Snackbar snackbar = Snackbar.make(requireView(), snackbarMessage, Snackbar.LENGTH_INDEFINITE)
                 .setAction("Open", v -> {
                     try
