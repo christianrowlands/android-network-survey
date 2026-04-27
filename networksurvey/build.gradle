@@ -44,7 +44,13 @@ android {
             enable = true
             reset()
             include "armeabi-v7a", "arm64-v8a", "x86", "x86_64"
-            universalApk = true
+            // Universal APK is only useful for F-Droid distribution. Skip it for
+            // debug builds so Android Studio always deploys the matching per-ABI
+            // APK (which carries the splitabi versionCode), avoiding install
+            // downgrade conflicts when the device already has a per-ABI debug APK.
+            universalApk = !gradle.startParameter.taskNames.any {
+                it.toLowerCase().contains("debug")
+            }
         }
     }
 

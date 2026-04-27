@@ -485,12 +485,24 @@
     <string name="wifi_details_standard">Standard</string>
     <string name="wifi_details_included_in_survey">Included in survey data</string>
     <string name="wifi_details_excluded_from_survey">Excluded from survey data</string>
-    <string name="wifi_details_scan_rate">Scan rate: %1$d seconds</string>
+    <string name="wifi_details_scan_rate_compact">Scan: %1$ds</string>
     <string name="wifi_details_exclude">Exclude</string>
     <string name="wifi_details_include">Include</string>
     <string name="wifi_details_channel_value_with_center">%1$d (%2$d)</string>
     <string name="wifi_details_channel_value">%1$d</string>
     <string name="wifi_details_frequency_value">%1$d MHz</string>
+    <string name="wifi_details_survey_data">Survey Data</string>
+    <string name="wifi_settings_content_description">Wi-Fi settings</string>
+    <string name="wifi_scan_rate_info_content_description">About Wi-Fi scan rate</string>
+    <string name="wifi_scan_rate_info_title">Wi-Fi scan rate</string>
+    <string name="wifi_scan_rate_info_body">The rate at which Wi-Fi networks will be scanned for in seconds. Smaller values will decrease battery life but larger values will cause the Signal Strength Graph to be out of date. If you want values closer to real time then set the scan rate to 5 seconds or less.</string>
+    <string name="wifi_radio_info_content_description">About Radio details</string>
+    <string name="wifi_radio_info_title">Radio details</string>
+    <string name="wifi_radio_help_channel">The 802.11 channel this network broadcasts on. When the bandwidth is wider than 20 MHz the network spans several channels; the value in parentheses (e.g. 40 (38)) is the center channel.</string>
+    <string name="wifi_radio_help_frequency">The exact RF frequency in MHz of the primary channel.</string>
+    <string name="wifi_radio_help_bandwidth">Channel width. Wider channels carry more data but overlap more neighbors. 320 MHz only exists in Wi-Fi 7; 160 MHz is common on Wi-Fi 6/6E/7; 20 MHz is the conservative default.</string>
+    <string name="wifi_radio_help_standard">The 802.11 protocol generation. Friendly names: n = Wi-Fi 4, ac = Wi-Fi 5, ax = Wi-Fi 6 (Wi-Fi 6E in 6 GHz), be = Wi-Fi 7 (Wi-Fi 7E in 6 GHz).</string>
+    <string name="dialog_button_got_it">Got it</string>
 
     <string name="android_9_throttling_information">Android 9 throttles Wi-Fi scans to 2 per minute. Upgrade Android if possible.</string>
     <string name="android_10_throttling_information">Android 10+ throttles Wi-Fi scans. To disable throttling: System -&gt; Advanced -&gt; Developer options -&gt; WiFi scan throttling to off.</string>

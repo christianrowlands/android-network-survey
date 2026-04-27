@@ -40,7 +40,11 @@ fun DisableQueueLimitDialog(
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(text = stringResource(R.string.disable_queue_limit_title)) },
-        text = { Text(text = stringResource(R.string.disable_queue_limit_message)) },
+        text = {
+            Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
+                Text(text = stringResource(R.string.disable_queue_limit_message))
+            }
+        },
         confirmButton = {
             TextButton(onClick = {
                 onConfirm()
@@ -68,7 +72,11 @@ fun BluetoothPermissionRationaleDialog(
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(text = stringResource(R.string.bluetooth_permissions_rationale_title)) },
-        text = { Text(text = stringResource(R.string.bluetooth_permissions_rationale)) },
+        text = {
+            Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
+                Text(text = stringResource(R.string.bluetooth_permissions_rationale))
+            }
+        },
         confirmButton = {
             TextButton(onClick = {
                 onRequestPermissions()
@@ -91,7 +99,11 @@ fun CdrRequiredPermissionDialog(
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(text = stringResource(R.string.cdr_required_permissions_rationale_title)) },
-        text = { Text(text = stringResource(R.string.cdr_required_permissions_rationale)) },
+        text = {
+            Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
+                Text(text = stringResource(R.string.cdr_required_permissions_rationale))
+            }
+        },
         confirmButton = {
             TextButton(onClick = {
                 onRequestPermissions()
@@ -115,7 +127,11 @@ fun CdrOptionalPermissionDialog(
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(text = stringResource(R.string.cdr_optional_permissions_rationale_title)) },
-        text = { Text(text = stringResource(R.string.cdr_optional_permissions_rationale)) },
+        text = {
+            Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
+                Text(text = stringResource(R.string.cdr_optional_permissions_rationale))
+            }
+        },
         confirmButton = {
             TextButton(onClick = {
                 onRequestPermissions()
@@ -317,7 +333,11 @@ fun NoInternetDialog(
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(text = stringResource(R.string.uploader_no_internet_title)) },
-        text = { Text(text = stringResource(R.string.uploader_no_internet_message)) },
+        text = {
+            Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
+                Text(text = stringResource(R.string.uploader_no_internet_message))
+            }
+        },
         confirmButton = {
             TextButton(onClick = onDismiss) {
                 Text(text = stringResource(R.string.ok))

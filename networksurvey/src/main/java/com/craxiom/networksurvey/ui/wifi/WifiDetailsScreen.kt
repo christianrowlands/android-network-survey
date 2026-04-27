@@ -121,6 +121,7 @@ private fun SurveyDataCardContainer(
         isExcluded = isExcluded,
         hiddenSsid = hiddenSsid,
         scanRateSeconds = scanRateSeconds,
+        onNavigateToSettings = { wifiDetailsFragment.navigateToSettings() },
         onToggle = {
             scope.launch {
                 val exclusionManager = service?.getSsidExclusionManager() ?: return@launch

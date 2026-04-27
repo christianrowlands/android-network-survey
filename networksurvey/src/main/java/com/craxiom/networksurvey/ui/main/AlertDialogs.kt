@@ -9,7 +9,9 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.RadioButton
@@ -46,7 +48,7 @@ fun GnssFilterDialog(
         onDismissRequest = onDismissRequest,
         title = { Text(text = context.getString(R.string.filter_dialog_title)) },
         text = {
-            Column {
+            Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
                 initialItems.forEachIndexed { index, item ->
                     Row(
                         modifier = Modifier
@@ -111,7 +113,7 @@ fun GnssSortByDialog(
         onDismissRequest = onDismissRequest,
         title = { Text(text = stringResource(id = R.string.menu_option_sort_by)) },
         text = {
-            Column {
+            Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
                 sortOptions.forEachIndexed { index, option ->
                     Row(
                         modifier = Modifier

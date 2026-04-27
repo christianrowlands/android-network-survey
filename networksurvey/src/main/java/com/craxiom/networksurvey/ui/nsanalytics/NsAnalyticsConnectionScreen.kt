@@ -1337,7 +1337,9 @@ private fun DisconnectConfirmationDialog(
         onDismissRequest = onDismiss,
         title = { Text(stringResource(R.string.unregister_device_title)) },
         text = {
-            Text(stringResource(R.string.unregister_device_message, workspaceName))
+            Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
+                Text(stringResource(R.string.unregister_device_message, workspaceName))
+            }
         },
         confirmButton = {
             TextButton(
@@ -1368,7 +1370,7 @@ private fun DeviceDeregisteredDialog(
         onDismissRequest = onDismiss,
         title = { Text(stringResource(R.string.device_deregistered_title)) },
         text = {
-            Column {
+            Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
                 // Handle different levels of detail in deregistration info
                 when {
                     deregistrationInfo.source == "web" &&
@@ -1421,7 +1423,7 @@ private fun QuotaExceededDialog(
         onDismissRequest = onDismiss,
         title = { Text("Record Quota Exceeded") },
         text = {
-            Column {
+            Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
                 Text(
                     quotaMessage ?: "Your workspace has reached its record limit."
                 )
@@ -1476,7 +1478,9 @@ private fun ClearQueueConfirmationDialog(
         onDismissRequest = onDismiss,
         title = { Text("Clear Upload Queue?") },
         text = {
-            Text("This will permanently delete $queueSize queued records that haven't been uploaded yet. This action cannot be undone.")
+            Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
+                Text("This will permanently delete $queueSize queued records that haven't been uploaded yet. This action cannot be undone.")
+            }
         },
         confirmButton = {
             TextButton(

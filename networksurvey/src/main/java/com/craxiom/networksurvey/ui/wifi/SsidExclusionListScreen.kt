@@ -10,6 +10,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBack
@@ -229,7 +231,7 @@ private fun AddSsidDialog(
         onDismissRequest = onDismiss,
         title = { Text(stringResource(R.string.add_ssid_manually)) },
         text = {
-            Column {
+            Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
                 if (isAtMaxCapacity) {
                     Text(
                         text = stringResource(R.string.exclusion_list_full_message),
@@ -272,7 +274,11 @@ private fun ClearAllConfirmationDialog(
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(stringResource(R.string.confirm_clear_exclusion_list_title)) },
-        text = { Text(stringResource(R.string.confirm_clear_exclusion_list_message)) },
+        text = {
+            Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
+                Text(stringResource(R.string.confirm_clear_exclusion_list_message))
+            }
+        },
         confirmButton = {
             TextButton(
                 onClick = onConfirm,

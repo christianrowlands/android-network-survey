@@ -111,6 +111,27 @@ public class WifiUtils
     }
 
     /**
+     * Maps an 802.11 standard (and its operating frequency where relevant) to the consumer-facing
+     * Wi-Fi generation label, e.g. "Wi-Fi 6", "Wi-Fi 6E", "Wi-Fi 7". The "E" suffix indicates the
+     * 6 GHz band variant (Wi-Fi 6E for 802.11ax in 6 GHz, Wi-Fi 7E for 802.11be in 6 GHz).
+     *
+     * @return The Wi-Fi generation label, or null if the standard does not have a marketing name.
+     */
+    public static String formatWifiGenerationLabel(Standard standard, Integer frequencyMhz)
+    {
+        if (standard == null) return null;
+        boolean inSixGhz = frequencyMhz != null && frequencyMhz >= START_OF_6_GHZ_RANGE;
+        return switch (standard)
+        {
+            case IEEE80211N -> "Wi-Fi 4";
+            case IEEE80211AC -> "Wi-Fi 5";
+            case IEEE80211AX -> inSixGhz ? "Wi-Fi 6E" : "Wi-Fi 6";
+            case IEEE80211BE -> inSixGhz ? "Wi-Fi 7E" : "Wi-Fi 7";
+            default -> null;
+        };
+    }
+
+    /**
      * Gets the center channel frequency provided the channel number, bandwidth, and frequency.
      * <p>
      * This conversion is needed because Wi-Fi has some interesting channel usage as the bandwidth

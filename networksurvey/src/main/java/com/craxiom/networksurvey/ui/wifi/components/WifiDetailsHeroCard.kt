@@ -8,10 +8,13 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
@@ -29,6 +32,7 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
@@ -76,6 +80,8 @@ fun WifiDetailsHeroCard(
                         style = TextStyle(fontSize = 22.sp, fontWeight = FontWeight.SemiBold),
                         color = WifiTokens.HiddenSsid,
                         fontStyle = FontStyle.Italic,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
                         modifier = Modifier
                             .weight(1f)
                             .semantics { contentDescription = hiddenDescription },
@@ -85,20 +91,30 @@ fun WifiDetailsHeroCard(
                         text = network.ssid,
                         style = TextStyle(fontSize = 22.sp, fontWeight = FontWeight.SemiBold),
                         color = WifiTokens.SsidAccent,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
                         modifier = Modifier.weight(1f),
                     )
                 }
-                Text(
-                    text = if (currentRssi != null) "$currentRssi dBm" else "-- dBm",
-                    style = TextStyle(
-                        fontSize = 22.sp,
-                        fontWeight = FontWeight.Bold,
-                        textAlign = TextAlign.End,
-                    ),
-                    color = signalColor,
-                )
+                Column(
+                    horizontalAlignment = Alignment.End,
+                    verticalArrangement = Arrangement.spacedBy(6.dp),
+                    modifier = Modifier
+                        .width(IntrinsicSize.Max)
+                        .widthIn(min = 110.dp),
+                ) {
+                    Text(
+                        text = if (currentRssi != null) "$currentRssi dBm" else "-- dBm",
+                        style = TextStyle(
+                            fontSize = 22.sp,
+                            fontWeight = FontWeight.Bold,
+                            textAlign = TextAlign.End,
+                        ),
+                        color = signalColor,
+                    )
+                    SignalMeterWide(rssi = currentRssi)
+                }
             }
-            SignalMeterWide(rssi = currentRssi)
             BssidVendorRow(bssid = network.bssid)
             FlowRow(
                 horizontalArrangement = Arrangement.spacedBy(6.dp),
@@ -157,6 +173,7 @@ private fun BssidVendorRow(bssid: String) {
                     clipboard.setPrimaryClip(ClipData.newPlainText(clipLabel, bssid))
                     Toast.makeText(context, copiedToastText, Toast.LENGTH_SHORT).show()
                 },
+                modifier = Modifier.size(28.dp),
             ) {
                 Icon(
                     painter = painterResource(id = R.drawable.ic_content_copy),

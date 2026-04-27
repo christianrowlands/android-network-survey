@@ -11,7 +11,9 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.selection.SelectionContainer
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Settings
@@ -241,12 +243,14 @@ fun ScanRateInfoButton() {
             onDismissRequest = { showDialog = false },
             title = { Text("Bluetooth Scan Rate Info") },
             text = {
-                Text(
-                    "The rate at which Bluetooth devices will be scanned for in " +
-                            "seconds. Smaller values will decrease battery life but larger values will " +
-                            "cause the Signal Strength Graph to be out of date. 23 seconds is the smallest" +
-                            "Bluetooth scan rate supported because that is how long one full scan takes."
-                )
+                Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
+                    Text(
+                        "The rate at which Bluetooth devices will be scanned for in " +
+                                "seconds. Smaller values will decrease battery life but larger values will " +
+                                "cause the Signal Strength Graph to be out of date. 23 seconds is the smallest " +
+                                "Bluetooth scan rate supported because that is how long one full scan takes."
+                    )
+                }
             },
             confirmButton = {
                 Button(

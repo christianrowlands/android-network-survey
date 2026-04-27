@@ -32,6 +32,7 @@ import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -463,7 +464,7 @@ fun ErrorTime(timeText: String, timeMs: Long) {
                 Text(stringResource(R.string.gps_error_time_title))
             },
             text = {
-                Column {
+                Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
                     LinkifyText(
                         text = Application.get().getString(
                             R.string.gps_error_time_message, format.format(timeMs),

@@ -24,9 +24,9 @@ object WifiTokens {
     val InkMuted = Color(0xFFD6DAE2)
     val InkFaint = Color(0xFFB0B6BF)
 
-    val Band24 = Color(0xFFD7B96E)
-    val Band5 = Color(0xFF6FCFD7)
-    val Band6 = Color(0xFFC99CE0)
+    val Band24 = Color(0xFFF2C94C)
+    val Band5 = Color(0xFF56CCF2)
+    val Band6 = Color(0xFFBB6BD9)
 
     val SignalStrong = Color(0xFF388E3C)
     val SignalGood = Color(0xFFFBC02D)
