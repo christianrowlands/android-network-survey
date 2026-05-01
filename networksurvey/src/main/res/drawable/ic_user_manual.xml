@@ -3,8 +3,6 @@
     android:height="24dp"
     android:viewportWidth="24"
     android:viewportHeight="24"
-    android:tint="#FFFFFF"
-    android:alpha="0.8"
     android:autoMirrored="true">
     <group
         android:scaleX="1.0909091"
