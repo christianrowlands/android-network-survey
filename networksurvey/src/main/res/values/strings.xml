@@ -1156,4 +1156,41 @@
     <string name="manufacturer_sheet_chipset">From the OUI (first 24 bits of the MAC address). Identifies the radio-chip maker. May differ from the brand.</string>
     <string name="manufacturer_info_content_description">About manufacturer sources</string>
     <string name="manufacturer_disagreement_hint">Sources disagree on this device. Tap the info icon to learn why.</string>
+
+    <!-- OUI Lookup screen -->
+    <string name="oui_lookup_drawer_title">OUI Lookup</string>
+    <string name="oui_lookup_drawer_description">Look up the manufacturer for a MAC address</string>
+    <string name="oui_lookup_search_placeholder">Enter MAC address</string>
+    <string name="oui_lookup_clear_content_description">Clear MAC address</string>
+    <string name="oui_lookup_search_content_description">Search</string>
+    <string name="oui_lookup_empty_title">Look up a MAC address</string>
+    <string name="oui_lookup_empty_body">Enter the first 6 hex characters or a full address to identify the manufacturer.</string>
+    <plurals name="oui_lookup_partial_remaining">
+        <item quantity="one">%d more hex character needed</item>
+        <item quantity="other">%d more hex characters needed</item>
+    </plurals>
+    <string name="oui_lookup_section_vendor">Vendor</string>
+    <string name="oui_lookup_section_mac_address">MAC address</string>
+    <string name="oui_lookup_legend_oui">OUI prefix</string>
+    <string name="oui_lookup_legend_nic">NIC suffix</string>
+    <string name="oui_lookup_copy_vendor">Copy vendor</string>
+    <string name="oui_lookup_copy_clip_label">Vendor</string>
+    <string name="oui_lookup_copy_toast">Vendor copied</string>
+    <string name="oui_lookup_not_found_title">No vendor match</string>
+    <string name="oui_lookup_not_found_body">This OUI prefix is not in the OUI database.</string>
+    <string name="oui_lookup_randomized_title">Randomized address</string>
+    <string name="oui_lookup_randomized_body">The locally administered bit is set, indicating a randomized (private) MAC. Devices rotate these for privacy.</string>
+    <string name="oui_lookup_randomized_pill">Randomized</string>
+    <string name="oui_lookup_loading_label">Looking up…</string>
+    <string name="oui_lookup_offline_title">Lookup unavailable</string>
+    <string name="oui_lookup_offline_body">OUI lookup is unavailable right now. Reconnect and try again.</string>
+    <string name="oui_lookup_disabled_user_title">Lookup disabled</string>
+    <string name="oui_lookup_disabled_user_body">OUI lookup is turned off.</string>
+    <string name="oui_lookup_disabled_user_action">Enable in Settings</string>
+    <string name="oui_lookup_disabled_admin_title">Lookup disabled</string>
+    <string name="oui_lookup_disabled_admin_body">OUI lookup has been disabled by your device administrator.</string>
+    <string name="oui_lookup_private_title">Private vendor</string>
+    <string name="oui_lookup_private_body">The vendor is registered with IEEE but has requested privacy.</string>
+    <string name="oui_lookup_shared_block_title">Shared vendor block</string>
+    <string name="oui_lookup_shared_block_body">This prefix is shared by multiple smaller vendor blocks. The specific vendor cannot be identified from the OUI alone.</string>
 </resources>

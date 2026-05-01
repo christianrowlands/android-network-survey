@@ -39,6 +39,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.craxiom.networksurvey.R
 import com.craxiom.networksurvey.ui.theme.WifiTokens
+import com.craxiom.networksurvey.ui.util.copyTextToClipboard
 import com.craxiom.networksurvey.ui.wifi.model.WifiDisplayItem
 import com.craxiom.networksurvey.util.toWifiSignalCategory
 

@@ -33,6 +33,7 @@ import androidx.compose.ui.unit.sp
 import com.craxiom.networksurvey.R
 import com.craxiom.networksurvey.ui.manufacturer.rememberWifiManufacturerLabelText
 import com.craxiom.networksurvey.ui.theme.WifiTokens
+import com.craxiom.networksurvey.ui.util.copyTextToClipboard
 import com.craxiom.networksurvey.ui.wifi.model.WifiAccessPointDisplay
 import com.craxiom.networksurvey.util.toWifiSignalCategory
 

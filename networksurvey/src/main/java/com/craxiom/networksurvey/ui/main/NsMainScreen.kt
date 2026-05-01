@@ -239,6 +239,12 @@ fun MainCompose(
                                 }
                             }
 
+                            NavDrawerOption.OuiLookup -> {
+                                mainNavController.navigate(onUserPickedOption.name) {
+                                    popUpTo(NavDrawerOption.None.name)
+                                }
+                            }
+
                             NavDrawerOption.Settings -> {
                                 mainNavController.navigate(onUserPickedOption.name) {
                                     popUpTo(NavDrawerOption.None.name)
@@ -325,6 +331,12 @@ object DrawerParams {
                 R.string.cellular_calculators,
                 R.drawable.ic_calculator,
                 R.string.device_status_stream_description
+            ),
+            AppDrawerItemInfo(
+                NavDrawerOption.OuiLookup,
+                R.string.oui_lookup_drawer_title,
+                R.drawable.ic_oui_lookup,
+                R.string.oui_lookup_drawer_description
             ),
             AppDrawerItemInfo(
                 NavDrawerOption.SurveyMonitor,

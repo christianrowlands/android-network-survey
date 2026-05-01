@@ -11,6 +11,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.viewinterop.AndroidViewBinding
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavGraphBuilder
@@ -45,12 +46,13 @@ import com.craxiom.networksurvey.ui.activesurvey.SurveyMonitorScreen
 import com.craxiom.networksurvey.ui.cellular.CalculatorScreen
 import com.craxiom.networksurvey.ui.cellular.towermap.ProviderColorOverrideScreen
 import com.craxiom.networksurvey.ui.cellular.towermap.ProviderColorOverrideViewModel
+import com.craxiom.networksurvey.ui.grpc.GrpcHelpDialog
 import com.craxiom.networksurvey.ui.main.appbar.AppBarAction
 import com.craxiom.networksurvey.ui.main.appbar.TitleBar
-import com.craxiom.networksurvey.ui.grpc.GrpcHelpDialog
 import com.craxiom.networksurvey.ui.mqtt.MqttHelpDialog
 import com.craxiom.networksurvey.ui.nsanalytics.NsAnalyticsConnectionScreen
 import com.craxiom.networksurvey.ui.nsanalytics.NsAnalyticsConnectionViewModel
+import com.craxiom.networksurvey.ui.oui.OuiLookupScreen
 import com.craxiom.networksurvey.ui.wifi.SsidExclusionListViewModel
 import com.craxiom.networksurvey.ui.wifi.model.WifiNetworkInfoList
 
@@ -126,6 +128,24 @@ fun NavGraphBuilder.mainGraph(
                     mainNavController.navigate(NavOption.TowerMapSettings.name)
                 }
             )
+        }
+
+        composable(NavDrawerOption.OuiLookup.name) {
+            Scaffold(
+                topBar = {
+                    TitleBar(stringResource(R.string.oui_lookup_drawer_title)) {
+                        mainNavController.navigateUp()
+                    }
+                },
+            ) { innerPadding ->
+                Box(modifier = Modifier.padding(paddingValues = innerPadding)) {
+                    OuiLookupScreen(
+                        onOpenSettings = {
+                            mainNavController.navigate(NavDrawerOption.Settings.name)
+                        }
+                    )
+                }
+            }
         }
 
         composable(NavDrawerOption.Settings.name) {
@@ -212,6 +232,7 @@ enum class NavDrawerOption {
     ServerConnection,
     MqttBrokerConnection,
     CellularCalculators,
+    OuiLookup,
     SurveyMonitor,
     Settings,
 

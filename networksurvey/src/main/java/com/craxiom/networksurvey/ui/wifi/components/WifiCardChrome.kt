@@ -1,9 +1,5 @@
 package com.craxiom.networksurvey.ui.wifi.components
 
-import android.content.ClipData
-import android.content.ClipboardManager
-import android.content.Context
-import android.widget.Toast
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
@@ -73,17 +69,3 @@ internal fun CardHeader(
     }
 }
 
-/**
- * Copies [text] to the system clipboard with [clipLabel] and shows a short toast with
- * [toastMessage]. Used by long-press copy actions on SSID/BSSID text in the Wi-Fi screens.
- */
-internal fun copyTextToClipboard(
-    context: Context,
-    clipLabel: String,
-    text: String,
-    toastMessage: String,
-) {
-    val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-    clipboard.setPrimaryClip(ClipData.newPlainText(clipLabel, text))
-    Toast.makeText(context, toastMessage, Toast.LENGTH_SHORT).show()
-}

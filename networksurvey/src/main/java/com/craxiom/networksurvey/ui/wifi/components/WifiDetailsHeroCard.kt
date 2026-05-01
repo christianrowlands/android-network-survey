@@ -44,6 +44,7 @@ import com.craxiom.networksurvey.R
 import com.craxiom.networksurvey.model.WifiNetwork
 import com.craxiom.networksurvey.ui.manufacturer.rememberWifiManufacturerLabelText
 import com.craxiom.networksurvey.ui.theme.WifiTokens
+import com.craxiom.networksurvey.ui.util.copyTextToClipboard
 import com.craxiom.networksurvey.util.frequencyMhzToWifiBand
 import com.craxiom.networksurvey.util.toWifiSignalCategory
 
