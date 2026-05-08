@@ -35,6 +35,7 @@ import com.craxiom.networksurvey.R;
 import com.craxiom.networksurvey.constants.NetworkSurveyConstants;
 import com.craxiom.networksurvey.fragments.model.GrpcConnectionSettings;
 import com.craxiom.networksurvey.services.GrpcConnectionService;
+import com.craxiom.networksurvey.util.LocalNetworkPermissionUtil;
 import com.google.android.material.materialswitch.MaterialSwitch;
 
 import java.net.URI;
@@ -197,6 +198,10 @@ public class GrpcConnectionFragment extends Fragment implements IConnectionState
 
         if (grpcConnectionToggleSwitch.isChecked())
         {
+            // Required at API 37+ for LAN-hosted gRPC servers. Falls through silently when
+            // already granted (typical when Bluetooth permissions are granted) or on older OSes.
+            // We do not block the connect on denial: public-internet hosts continue to work.
+            LocalNetworkPermissionUtil.ensureLocalNetworkPermission(getActivity());
             connectToGrpcServer();
         } else
         {

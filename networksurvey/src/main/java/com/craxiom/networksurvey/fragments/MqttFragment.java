@@ -36,6 +36,7 @@ import com.craxiom.networksurvey.mqtt.MqttConnectionInfo;
 import com.craxiom.networksurvey.services.NetworkSurveyService;
 import com.craxiom.networksurvey.ui.main.SharedViewModel;
 import com.craxiom.networksurvey.util.CredentialSecureStorage;
+import com.craxiom.networksurvey.util.LocalNetworkPermissionUtil;
 import com.craxiom.networksurvey.util.MdmUtils;
 import com.google.android.material.materialswitch.MaterialSwitch;
 
@@ -274,6 +275,12 @@ public class MqttFragment extends AConnectionFragment<NetworkSurveyService.Surve
     @Override
     protected BrokerConnectionInfo getBrokerConnectionInfo()
     {
+        // Required at API 37+ for LAN-hosted brokers. Auto-granted when Bluetooth scan/connect is
+        // already granted (same NEARBY_DEVICES permission group), so most existing users see no
+        // dialog. We do not block the connect on denial: public-internet brokers continue to work
+        // without it.
+        LocalNetworkPermissionUtil.ensureLocalNetworkPermission(getActivity());
+
         return new MqttConnectionInfo(host,
                 portNumber,
                 tlsEnabled,

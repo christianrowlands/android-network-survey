@@ -12,6 +12,7 @@
     <uses-permission android:name="android.permission.READ_PHONE_NUMBERS" /> <!-- For "my" phone number in CDRs -->
     <uses-permission android:name="android.permission.INTERNET" /> <!-- To connect to a remote gRPC server -->
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" /> <!-- To monitor changes to the network state -->
+    <uses-permission android:name="android.permission.ACCESS_LOCAL_NETWORK" /> <!-- Required at API 37+ for gRPC/MQTT brokers hosted on the local network -->
     <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" /> <!-- Access a Wi-Fi Scan -->
     <uses-permission android:name="android.permission.CHANGE_WIFI_STATE" /> <!-- Trigger a Wi-Fi Scan -->
     <uses-permission android:name="android.permission.BLUETOOTH" />
