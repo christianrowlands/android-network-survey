@@ -1,28 +1,30 @@
 // Top-level build file where you can add configuration options common to all sub-projects/modules.
 
+// Conditionally pull the Firebase-related Gradle plugins onto the buildscript
+// classpath only when google-services.json is present. F-Droid / IzzyOnDroid
+// build the CDR flavor from the public source without that file, and we don't
+// want any Firebase artifacts resolved on those builds. The actual
+// `apply plugin:` calls in networksurvey/build.gradle are also conditional.
 buildscript {
-    ext.hilt_version = '2.59.2'
-    ext.room_version = '2.8.4'
-    ext.useCrashlytics = file("networksurvey/google-services.json").exists()
     repositories {
         google()
         mavenCentral()
     }
     dependencies {
-        classpath 'com.android.tools.build:gradle:9.2.1'
-        if (useCrashlytics) {
-            classpath 'com.google.gms:google-services:4.4.2'
-            classpath 'com.google.firebase:firebase-crashlytics-gradle:3.0.2'
+        if (file("networksurvey/google-services.json").exists()) {
+            classpath libs.google.services.gradle.plugin
+            classpath libs.firebase.crashlytics.gradle.plugin
         }
-        classpath "com.google.dagger:hilt-android-gradle-plugin:$hilt_version"
-        classpath "com.google.devtools.ksp:com.google.devtools.ksp.gradle.plugin:2.3.5"
     }
 }
 
 plugins {
-    //alias(libs.plugins.compose.compiler) apply false  // Applied via classpath in buildscript block
+    alias(libs.plugins.android.application) apply false
+    alias(libs.plugins.hilt) apply false
+    alias(libs.plugins.ksp) apply false
+    alias(libs.plugins.compose.compiler) apply false
     alias(libs.plugins.kotlin.parcelize) apply false
-    //alias(libs.plugins.google.devtools.ksp) apply false  // Applied via classpath in buildscript block
+    alias(libs.plugins.dependency.license.report) apply false
 }
 
 allprojects {

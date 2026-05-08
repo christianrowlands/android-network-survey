@@ -1,8 +1,222 @@
+# Gradle Version Catalog for the Network Survey Android app.
+#
+# Layout:
+#   [versions]  - shared version strings, referenced via version.ref
+#   [libraries] - dependency coordinates (group:artifact + version)
+#   [bundles]   - groups of libraries declared together
+#   [plugins]   - Gradle plugins applied via the plugins { } block
+#
+# Naming: kebab-case keys here become dotted accessors in Groovy/Kotlin
+# (e.g. `androidx-appcompat` -> `libs.androidx.appcompat`,
+#       `bundles.grpc`       -> `libs.bundles.grpc`).
+#
+# When adding a new dependency, prefer adding it here over inline coordinates
+# so versions stay centralized and IDE autocomplete works in build files.
+
 [versions]
-#ksp = "2.3.5"  # KSP applied via classpath in root build.gradle buildscript block
+# Build tooling / plugins
+agp = "9.2.1"
 kotlin = "2.3.10"
+ksp = "2.3.5"
+googleServices = "4.4.2"
+firebaseCrashlyticsGradle = "3.0.2"
+licenseReport = "3.1.1"
+
+# Library version groups (shared across multiple library entries)
+hilt = "2.59.2"
+room = "2.8.4"
+grpc = "1.81.0"
+navigation = "2.9.8"
+networkSurveyMessaging = "2.3.0"
+composeBom = "2026.05.00"
+firebaseBom = "34.13.0"
+
+# Single-library versions
+androidxAppcompat = "1.7.1"
+timber = "5.0.1"
+material = "1.13.0"
+localbroadcastmanager = "1.1.0"
+cardview = "1.0.0"
+preferenceKtx = "1.2.1"
+viewpager2 = "1.1.0"
+activityCompose = "1.13.0"
+drawerlayout = "1.2.0"
+flexbox = "3.0.0"
+coroutines = "1.10.2"
+mqtt = "1.3.0"
+protobufJavaUtil = "4.34.1"
+geopackage = "6.7.5"
+commonsCsv = "1.14.1"
+constraintlayout = "2.2.1"
+recyclerview = "1.4.0"
+roundedProgressBar = "3.0.0"
+vico = "3.1.0"
+codeScanner = "2.3.2"
+zxing = "3.5.4"
+composeUiViewbinding = "1.11.1"
+maplibre = "13.1.0"
+maplibreAnnotation = "3.0.2"
+retrofit = "3.0.0"
+snakeyaml = "2.6"
+workRuntime = "2.11.2"
+accompanist = "0.36.0"
+annotation = "1.10.0"
+junit = "4.13.2"
+mockito = "5.23.0"
+mockitoKotlin = "6.3.0"
+robolectric = "4.16.1"
+testExtJunit = "1.3.0"
+testRunner = "1.7.0"
+testRules = "1.7.0"
+barista = "4.3.0"
+truth = "1.4.5"
+
+[libraries]
+# AndroidX core
+androidx-appcompat = { module = "androidx.appcompat:appcompat", version.ref = "androidxAppcompat" }
+androidx-localbroadcastmanager = { module = "androidx.localbroadcastmanager:localbroadcastmanager", version.ref = "localbroadcastmanager" }
+androidx-cardview = { module = "androidx.cardview:cardview", version.ref = "cardview" }
+androidx-preference-ktx = { module = "androidx.preference:preference-ktx", version.ref = "preferenceKtx" }
+androidx-viewpager2 = { module = "androidx.viewpager2:viewpager2", version.ref = "viewpager2" }
+androidx-activity-compose = { module = "androidx.activity:activity-compose", version.ref = "activityCompose" }
+androidx-drawerlayout = { module = "androidx.drawerlayout:drawerlayout", version.ref = "drawerlayout" }
+androidx-constraintlayout = { module = "androidx.constraintlayout:constraintlayout", version.ref = "constraintlayout" }
+androidx-recyclerview = { module = "androidx.recyclerview:recyclerview", version.ref = "recyclerview" }
+androidx-annotation = { module = "androidx.annotation:annotation", version.ref = "annotation" }
+androidx-work-runtime = { module = "androidx.work:work-runtime", version.ref = "workRuntime" }
+
+# Navigation
+androidx-navigation-runtime-ktx = { module = "androidx.navigation:navigation-runtime-ktx", version.ref = "navigation" }
+androidx-navigation-fragment-ktx = { module = "androidx.navigation:navigation-fragment-ktx", version.ref = "navigation" }
+androidx-navigation-ui-ktx = { module = "androidx.navigation:navigation-ui-ktx", version.ref = "navigation" }
+androidx-navigation-compose = { module = "androidx.navigation:navigation-compose", version.ref = "navigation" }
+
+# Room
+androidx-room-common = { module = "androidx.room:room-common", version.ref = "room" }
+androidx-room-runtime = { module = "androidx.room:room-runtime", version.ref = "room" }
+androidx-room-ktx = { module = "androidx.room:room-ktx", version.ref = "room" }
+androidx-room-compiler = { module = "androidx.room:room-compiler", version.ref = "room" }
+
+# Hilt / Dagger
+dagger = { module = "com.google.dagger:dagger", version.ref = "hilt" }
+dagger-compiler = { module = "com.google.dagger:dagger-compiler", version.ref = "hilt" }
+hilt-android = { module = "com.google.dagger:hilt-android", version.ref = "hilt" }
+hilt-compiler = { module = "com.google.dagger:hilt-compiler", version.ref = "hilt" }
+
+# Compose
+compose-bom = { module = "androidx.compose:compose-bom", version.ref = "composeBom" }
+compose-runtime = { module = "androidx.compose.runtime:runtime" }
+compose-runtime-livedata = { module = "androidx.compose.runtime:runtime-livedata" }
+compose-ui = { module = "androidx.compose.ui:ui" }
+compose-ui-tooling = { module = "androidx.compose.ui:ui-tooling" }
+compose-ui-tooling-preview = { module = "androidx.compose.ui:ui-tooling-preview" }
+compose-ui-viewbinding = { module = "androidx.compose.ui:ui-viewbinding", version.ref = "composeUiViewbinding" }
+compose-foundation = { module = "androidx.compose.foundation:foundation" }
+compose-foundation-layout = { module = "androidx.compose.foundation:foundation-layout" }
+compose-material3 = { module = "androidx.compose.material3:material3" }
+compose-material-icons-core = { module = "androidx.compose.material:material-icons-core" }
+androidx-lifecycle-viewmodel-compose = { module = "androidx.lifecycle:lifecycle-viewmodel-compose" }
+androidx-lifecycle-runtime-compose = { module = "androidx.lifecycle:lifecycle-runtime-compose" }
+accompanist-themeadapter-material = { module = "com.google.accompanist:accompanist-themeadapter-material", version.ref = "accompanist" }
+
+# gRPC
+grpc-okhttp = { module = "io.grpc:grpc-okhttp", version.ref = "grpc" }
+grpc-android = { module = "io.grpc:grpc-android", version.ref = "grpc" }
+grpc-stub = { module = "io.grpc:grpc-stub", version.ref = "grpc" }
+grpc-protobuf = { module = "io.grpc:grpc-protobuf", version.ref = "grpc" }
+
+# Networking / serialization
+retrofit = { module = "com.squareup.retrofit2:retrofit", version.ref = "retrofit" }
+retrofit-converter-gson = { module = "com.squareup.retrofit2:converter-gson", version.ref = "retrofit" }
+protobuf-java-util = { module = "com.google.protobuf:protobuf-java-util", version.ref = "protobufJavaUtil" }
+snakeyaml = { module = "org.yaml:snakeyaml", version.ref = "snakeyaml" }
+
+# Craxiom / survey messaging
+mqtt-library = { module = "com.craxiom:mqtt-library", version.ref = "mqtt" }
+network-survey-messaging = { module = "com.craxiom:network-survey-messaging", version.ref = "networkSurveyMessaging" }
+
+# Maps
+maplibre-android-sdk = { module = "org.maplibre.gl:android-sdk", version.ref = "maplibre" }
+maplibre-android-plugin-annotation-v9 = { module = "org.maplibre.gl:android-plugin-annotation-v9", version.ref = "maplibreAnnotation" }
+
+# Misc
+material = { module = "com.google.android.material:material", version.ref = "material" }
+flexbox = { module = "com.google.android.flexbox:flexbox", version.ref = "flexbox" }
+timber = { module = "com.jakewharton.timber:timber", version.ref = "timber" }
+kotlinx-coroutines-android = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-android", version.ref = "coroutines" }
+geopackage-android = { module = "mil.nga.geopackage:geopackage-android", version.ref = "geopackage" }
+commons-csv = { module = "org.apache.commons:commons-csv", version.ref = "commonsCsv" }
+rounded-progress-bar = { module = "com.github.MackHartley:RoundedProgressBar", version.ref = "roundedProgressBar" }
+vico-compose-m3 = { module = "com.patrykandpatrick.vico:compose-m3", version.ref = "vico" }
+code-scanner = { module = "com.github.yuriy-budiyev:code-scanner", version.ref = "codeScanner" }
+zxing-core = { module = "com.google.zxing:core", version.ref = "zxing" }
+
+# Firebase (regular flavor only)
+firebase-bom = { module = "com.google.firebase:firebase-bom", version.ref = "firebaseBom" }
+firebase-analytics = { module = "com.google.firebase:firebase-analytics" }
+firebase-crashlytics = { module = "com.google.firebase:firebase-crashlytics" }
+
+# Firebase-related Gradle plugins, exposed as [libraries] (not [plugins]) so the
+# root build.gradle can add them to the buildscript classpath only when
+# google-services.json is present. This keeps F-Droid / IzzyOnDroid builds
+# (which build the CDR flavor without google-services.json) free of any
+# Firebase artifacts on the build classpath.
+google-services-gradle-plugin = { module = "com.google.gms:google-services", version.ref = "googleServices" }
+firebase-crashlytics-gradle-plugin = { module = "com.google.firebase:firebase-crashlytics-gradle", version.ref = "firebaseCrashlyticsGradle" }
+
+# Test dependencies
+junit = { module = "junit:junit", version.ref = "junit" }
+mockito-core = { module = "org.mockito:mockito-core", version.ref = "mockito" }
+mockito-kotlin = { module = "org.mockito.kotlin:mockito-kotlin", version.ref = "mockitoKotlin" }
+robolectric = { module = "org.robolectric:robolectric", version.ref = "robolectric" }
+kotlinx-coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test", version.ref = "coroutines" }
+
+# Android instrumented test dependencies
+androidx-test-ext-junit = { module = "androidx.test.ext:junit", version.ref = "testExtJunit" }
+androidx-test-runner = { module = "androidx.test:runner", version.ref = "testRunner" }
+androidx-test-rules = { module = "androidx.test:rules", version.ref = "testRules" }
+barista = { module = "com.adevinta.android:barista", version.ref = "barista" }
+truth = { module = "com.google.truth:truth", version.ref = "truth" }
+
+[bundles]
+# androidx.navigation family (KTX + Compose). All share the `navigation` version.
+androidx-navigation = [
+    "androidx-navigation-runtime-ktx",
+    "androidx-navigation-fragment-ktx",
+    "androidx-navigation-ui-ktx",
+    "androidx-navigation-compose",
+]
+
+# gRPC family (excluding grpc-protobuf, which has a custom transitive exclusion).
+grpc = [
+    "grpc-okhttp",
+    "grpc-android",
+    "grpc-stub",
+]
+
+# Compose libraries whose versions are managed by the Compose BOM. The BOM
+# itself must still be added separately as a `platform(...)` dependency.
+compose = [
+    "compose-runtime",
+    "compose-runtime-livedata",
+    "compose-ui",
+    "compose-ui-tooling",
+    "compose-ui-tooling-preview",
+    "compose-foundation",
+    "compose-foundation-layout",
+    "compose-material3",
+    "compose-material-icons-core",
+    "androidx-lifecycle-viewmodel-compose",
+    "androidx-lifecycle-runtime-compose",
+]
 
 [plugins]
+android-application = { id = "com.android.application", version.ref = "agp" }
+hilt = { id = "com.google.dagger.hilt.android", version.ref = "hilt" }
+ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
+dependency-license-report = { id = "com.github.jk1.dependency-license-report", version.ref = "licenseReport" }
 compose-compiler = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
 kotlin-parcelize = { id = "org.jetbrains.kotlin.plugin.parcelize", version.ref = "kotlin" }
-#google-devtools-ksp = { id = "com.google.devtools.ksp", version.ref = 'ksp' }  # Applied via classpath instead
+# google-services and firebase-crashlytics plugins are intentionally NOT listed
+# here. See the [libraries] section above for why they're added conditionally
+# via buildscript classpath instead.
