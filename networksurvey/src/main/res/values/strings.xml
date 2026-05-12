@@ -1187,6 +1187,52 @@
     <string name="plmn_lookup_search_field_a11y">PLMN search</string>
     <string name="plmn_lookup_mcc_field_a11y">Mobile country code</string>
     <string name="plmn_lookup_mnc_field_a11y">Mobile network code</string>
+    <string name="plmn_row_open_details">Open PLMN details</string>
+    <string name="plmn_help_description">PLMN field information</string>
+
+    <!-- PLMN Details screen -->
+    <string name="plmn_details_title">PLMN Details</string>
+    <string name="plmn_details_no_value">-</string>
+    <string name="plmn_details_section_identifiers">Identifiers</string>
+    <string name="plmn_details_section_provider">Provider</string>
+    <string name="plmn_details_section_location">Location</string>
+    <string name="plmn_details_copied_toast">Copied to clipboard</string>
+
+    <string name="plmn_field_plmn">PLMN</string>
+    <string name="plmn_field_mcc">MCC</string>
+    <string name="plmn_field_mnc">MNC</string>
+    <string name="plmn_field_tadig">TADIG</string>
+    <string name="plmn_field_brand">Brand</string>
+    <string name="plmn_field_operator">Operator</string>
+    <string name="plmn_field_brand_operator">Brand / Operator</string>
+    <string name="plmn_field_country">Country</string>
+    <string name="plmn_field_region">Region</string>
+
+    <string name="plmn_subtitle_plmn">Combined MCC+MNC identifier</string>
+    <string name="plmn_subtitle_mcc">Mobile Country Code</string>
+    <string name="plmn_subtitle_mnc">Mobile Network Code</string>
+    <string name="plmn_subtitle_tadig">GSMA operator identifier used for roaming settlement</string>
+    <string name="plmn_subtitle_brand">Consumer-facing name shown on handsets</string>
+    <string name="plmn_subtitle_operator">Licensed corporate entity that owns the network</string>
+    <string name="plmn_subtitle_brand_operator">Consumer brand and licensed operator (identical for this network)</string>
+
+    <!-- PLMN Info bottom sheet -->
+    <string name="plmn_info_sheet_title">About PLMN fields</string>
+    <string name="plmn_info_section_plmn">PLMN</string>
+    <string name="plmn_info_plmn_label">PLMN</string>
+    <string name="plmn_info_plmn_desc">Public Land Mobile Network. The MCC + MNC pair that uniquely identifies a mobile network globally.</string>
+    <string name="plmn_info_section_codes">MCC and MNC</string>
+    <string name="plmn_info_mcc_label">MCC</string>
+    <string name="plmn_info_mcc_desc">Mobile Country Code. A 3-digit code identifying the country (e.g. 310 for the US, 262 for Germany).</string>
+    <string name="plmn_info_mnc_label">MNC</string>
+    <string name="plmn_info_mnc_desc">Mobile Network Code. A 2-3 digit code identifying the operator within a country.</string>
+    <string name="plmn_info_section_brand_operator">Brand vs Operator</string>
+    <string name="plmn_info_brand_label">Brand</string>
+    <string name="plmn_info_brand_desc">The consumer-visible name shown on handsets (e.g. Verizon, T-Mobile, Telekom).</string>
+    <string name="plmn_info_operator_label">Operator</string>
+    <string name="plmn_info_operator_desc">The licensed corporate entity that owns the spectrum and operates the network (e.g. Verizon Wireless).</string>
+    <string name="plmn_info_section_tadig">TADIG</string>
+    <string name="plmn_info_tadig_desc">Transferred Account Data Interchange Group. A 5-character GSMA identifier (3-char country + 2-char operator, e.g. USAVZ for Verizon Wireless). Used in roaming settlement files; useful as a stable operator key when MCC/MNC pairs change or are shared.</string>
 
     <!-- OUI Lookup screen -->
     <string name="oui_lookup_drawer_title">OUI Lookup</string>

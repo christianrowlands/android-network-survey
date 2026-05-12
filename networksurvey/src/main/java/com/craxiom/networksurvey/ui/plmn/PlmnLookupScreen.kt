@@ -36,6 +36,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.craxiom.networksurvey.R
+import com.craxiom.networksurvey.data.api.PlmnRecord
 import com.craxiom.networksurvey.data.plmn.PlmnResult
 import com.craxiom.networksurvey.ui.plmn.components.PlmnGroupRow
 import com.craxiom.networksurvey.ui.plmn.components.PlmnModeTabs
@@ -60,6 +61,7 @@ import com.craxiom.networksurvey.ui.theme.WifiTokens
 fun PlmnLookupScreen(
     modifier: Modifier = Modifier,
     viewModel: PlmnLookupViewModel = viewModel(),
+    onRecordClick: (PlmnRecord) -> Unit = {},
 ) {
     val mode by viewModel.mode.collectAsState()
     val query by viewModel.query.collectAsState()
@@ -94,15 +96,10 @@ fun PlmnLookupScreen(
     }
 
     // Auto-expand the single group in Resolve mode when there's exactly one match.
-    val (groups, datasetVersion, truncated) = remember(results, sortKey) {
+    val (groups, truncated) = remember(results, sortKey) {
         when (val r = results) {
-            is PlmnResult.Loaded -> Triple(
-                sortGroups(groupByPlmn(r.records), sortKey),
-                r.datasetVersion,
-                r.truncated
-            )
-
-            else -> Triple(emptyList(), null, false)
+            is PlmnResult.Loaded -> sortGroups(groupByPlmn(r.records), sortKey) to r.truncated
+            else -> emptyList<PlmnGroup>() to false
         }
     }
     LaunchedEffect(groups) {
@@ -146,7 +143,6 @@ fun PlmnLookupScreen(
 
         PlmnResultStrip(
             count = groups.sumOf { it.records.size },
-            datasetVersion = datasetVersion,
             isLoading = results is PlmnResult.Loading,
             sortKey = sortKey,
             onSortClick = {
@@ -161,6 +157,7 @@ fun PlmnLookupScreen(
             expandedPlmns = expandedPlmns,
             truncated = truncated,
             onToggle = viewModel::toggleExpanded,
+            onRecordClick = onRecordClick,
             modifier = Modifier.fillMaxSize()
         )
     }
@@ -189,6 +186,7 @@ private fun ResultBody(
     expandedPlmns: Set<String>,
     truncated: Boolean,
     onToggle: (String) -> Unit,
+    onRecordClick: (PlmnRecord) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     when {
@@ -215,6 +213,7 @@ private fun ResultBody(
             expandedPlmns = expandedPlmns,
             truncated = truncated,
             onToggle = onToggle,
+            onRecordClick = onRecordClick,
             modifier = modifier,
         )
     }
@@ -226,17 +225,19 @@ private fun ResultList(
     expandedPlmns: Set<String>,
     truncated: Boolean,
     onToggle: (String) -> Unit,
+    onRecordClick: (PlmnRecord) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     LazyColumn(modifier = modifier) {
         items(groups, key = { it.plmn }) { group ->
             if (group.records.size == 1) {
-                PlmnRow(record = group.records.first())
+                PlmnRow(record = group.records.first(), onRecordClick = onRecordClick)
             } else {
                 PlmnGroupRow(
                     group = group,
                     expanded = group.plmn in expandedPlmns,
                     onToggle = { onToggle(group.plmn) },
+                    onRecordClick = onRecordClick,
                 )
             }
             HorizontalDivider(
@@ -309,9 +310,11 @@ private fun PlmnSortSheetContent(
     current: PlmnSortKey,
     onPick: (PlmnSortKey) -> Unit,
 ) {
-    Column(modifier = Modifier
-        .fillMaxWidth()
-        .padding(bottom = 24.dp)) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(bottom = 24.dp)
+    ) {
         Text(
             text = stringResource(R.string.plmn_sort_sheet_title),
             style = TextStyle(fontSize = 16.sp, fontWeight = FontWeight.SemiBold),

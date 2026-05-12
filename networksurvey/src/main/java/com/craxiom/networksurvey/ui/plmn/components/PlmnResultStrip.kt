@@ -18,7 +18,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
@@ -31,7 +30,6 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -46,14 +44,13 @@ private const val PULSE_MIN_ALPHA = 0.35f
  * Top-of-list status strip for the PLMN lookup screen, modelled on
  * `com.craxiom.networksurvey.ui.wifi.components.ScanStatusStrip`.
  *
- * Layout: "Results: N" + dataset version (left) / pulsing live dot + label (middle) /
- * sort pill (right). The pulse only renders when [isLoading] or there is active input;
- * callers gate the strip's visibility based on whether any input is present.
+ * Layout: "Results: N" (left) / pulsing live dot + label (middle) / sort pill (right).
+ * The pulse only renders when [isLoading] or there is active input; callers gate the
+ * strip's visibility based on whether any input is present.
  */
 @Composable
 fun PlmnResultStrip(
     count: Int,
-    datasetVersion: String?,
     isLoading: Boolean,
     sortKey: PlmnSortKey,
     onSortClick: () -> Unit,
@@ -68,7 +65,7 @@ fun PlmnResultStrip(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            ResultMeta(count = count, datasetVersion = datasetVersion)
+            ResultMeta(count = count)
             LiveIndicator(isLoading = isLoading, modifier = Modifier.weight(1f))
             SortPill(sortKey = sortKey, onClick = onSortClick)
         }
@@ -80,33 +77,21 @@ fun PlmnResultStrip(
 }
 
 @Composable
-private fun ResultMeta(count: Int, datasetVersion: String?) {
-    Column(
-        modifier = Modifier.widthIn(min = 78.dp),
-        verticalArrangement = Arrangement.spacedBy(2.dp)
+private fun ResultMeta(count: Int) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(4.dp)
     ) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(4.dp)
-        ) {
-            Text(
-                text = stringResource(R.string.plmn_lookup_results_meta_label),
-                style = TextStyle(fontSize = 12.sp),
-                color = WifiTokens.InkMuted,
-            )
-            Text(
-                text = count.toString(),
-                style = TextStyle(fontSize = 12.sp, fontWeight = FontWeight.SemiBold),
-                color = MaterialTheme.colorScheme.onSurface,
-            )
-        }
-        if (!datasetVersion.isNullOrBlank()) {
-            Text(
-                text = "v$datasetVersion",
-                style = TextStyle(fontSize = 11.sp, fontFamily = FontFamily.Monospace),
-                color = WifiTokens.InkFaint,
-            )
-        }
+        Text(
+            text = stringResource(R.string.plmn_lookup_results_meta_label),
+            style = TextStyle(fontSize = 12.sp),
+            color = WifiTokens.InkMuted,
+        )
+        Text(
+            text = count.toString(),
+            style = TextStyle(fontSize = 12.sp, fontWeight = FontWeight.SemiBold),
+            color = MaterialTheme.colorScheme.onSurface,
+        )
     }
 }
 

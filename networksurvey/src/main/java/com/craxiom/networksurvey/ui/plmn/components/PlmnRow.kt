@@ -5,13 +5,13 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
-import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -26,7 +26,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
-import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
@@ -53,30 +52,31 @@ private const val CHEVRON_ANIM_MS = 180
  *  1. Display name (brand or operator) in the SSID accent + MCC-MNC on the right.
  *  2. Flag emoji, country, ISO, optional TADIG. PLMN identifier on the right.
  *
- * Long-press copies the PLMN identifier; tap is a no-op for v1.
+ * Tap navigates to the PLMN details screen via [onRecordClick]; long-press copies the PLMN.
+ * A trailing chevron icon indicates the row is navigable.
  */
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun PlmnRow(
     record: PlmnRecord,
+    onRecordClick: (PlmnRecord) -> Unit,
     modifier: Modifier = Modifier,
     indent: Boolean = false,
 ) {
     val context = LocalContext.current
     val clipLabel = stringResource(R.string.plmn_lookup_clip_label)
     val toastMessage = stringResource(R.string.plmn_lookup_copied_toast)
+    val openLabel = stringResource(R.string.plmn_row_open_details)
 
-    // No tap action for v1; only long-press copies the PLMN. Use `pointerInput` rather than
-    // `combinedClickable(onClick = noop)` so TalkBack does not announce a phantom tap action.
     Column(
         modifier = modifier
             .fillMaxWidth()
-            .pointerInput(record.plmn) {
-                detectTapGestures(
-                    onLongPress = {
-                        copyTextToClipboard(context, clipLabel, record.plmn, toastMessage)
-                    }
-                )
-            }
+            .combinedClickable(
+                onClick = { onRecordClick(record) },
+                onLongClick = {
+                    copyTextToClipboard(context, clipLabel, record.plmn, toastMessage)
+                },
+            )
             .padding(
                 start = if (indent) 32.dp else 14.dp,
                 end = 14.dp,
@@ -86,10 +86,17 @@ fun PlmnRow(
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             LeftBlock(record = record, modifier = Modifier.weight(1f))
             RightBlock(mcc = record.mcc, mnc = record.mnc, plmn = record.plmn)
+            Icon(
+                imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                contentDescription = openLabel,
+                tint = WifiTokens.InkMuted,
+                modifier = Modifier.size(20.dp),
+            )
         }
     }
 }
@@ -107,7 +114,13 @@ private fun TopNameRow(record: PlmnRecord) {
     val brand = record.brand?.takeIf { it.isNotBlank() }
     val operator = record.operator?.takeIf { it.isNotBlank() }
     val primary = record.displayName()
-    val secondary = if (brand != null && operator != null && brand != operator) operator else null
+    val secondary = if (brand != null && operator != null &&
+        !brand.trim().equals(operator.trim(), ignoreCase = true)
+    ) {
+        operator
+    } else {
+        null
+    }
 
     Row(
         verticalAlignment = Alignment.CenterVertically,
@@ -219,6 +232,7 @@ fun PlmnGroupRow(
     group: PlmnGroup,
     expanded: Boolean,
     onToggle: () -> Unit,
+    onRecordClick: (PlmnRecord) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current
@@ -276,7 +290,7 @@ fun PlmnGroupRow(
                     color = MaterialTheme.colorScheme.outlineVariant,
                     thickness = 1.dp,
                 )
-                PlmnRow(record = child, indent = true)
+                PlmnRow(record = child, onRecordClick = onRecordClick, indent = true)
             }
         }
     }

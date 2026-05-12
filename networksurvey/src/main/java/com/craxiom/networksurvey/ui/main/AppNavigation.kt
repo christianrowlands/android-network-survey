@@ -21,6 +21,7 @@ import androidx.navigation.compose.navigation
 import androidx.navigation.navDeepLink
 import com.craxiom.messaging.BluetoothRecordData
 import com.craxiom.networksurvey.R
+import com.craxiom.networksurvey.data.api.PlmnRecord
 import com.craxiom.networksurvey.databinding.ContainerBluetoothDetailsFragmentBinding
 import com.craxiom.networksurvey.databinding.ContainerGrpcFragmentBinding
 import com.craxiom.networksurvey.databinding.ContainerMqttFragmentBinding
@@ -53,6 +54,9 @@ import com.craxiom.networksurvey.ui.mqtt.MqttHelpDialog
 import com.craxiom.networksurvey.ui.nsanalytics.NsAnalyticsConnectionScreen
 import com.craxiom.networksurvey.ui.nsanalytics.NsAnalyticsConnectionViewModel
 import com.craxiom.networksurvey.ui.oui.OuiLookupScreen
+import com.craxiom.networksurvey.ui.plmn.PlmnDetailsScreen
+import com.craxiom.networksurvey.ui.plmn.PlmnLookupScreen
+import com.craxiom.networksurvey.ui.plmn.components.PlmnInfoSheet
 import com.craxiom.networksurvey.ui.wifi.SsidExclusionListViewModel
 import com.craxiom.networksurvey.ui.wifi.model.WifiNetworkInfoList
 
@@ -149,17 +153,14 @@ fun NavGraphBuilder.mainGraph(
         }
 
         composable(NavDrawerOption.PlmnLookup.name) {
-            Scaffold(
-                topBar = {
-                    TitleBar(stringResource(R.string.plmn_lookup_drawer_title)) {
-                        mainNavController.navigateUp()
-                    }
-                },
-            ) { innerPadding ->
-                Box(modifier = Modifier.padding(paddingValues = innerPadding)) {
-                    com.craxiom.networksurvey.ui.plmn.PlmnLookupScreen()
-                }
-            }
+            PlmnLookupInCompose(mainNavController)
+        }
+
+        composable(NavOption.PlmnDetails.name) {
+            val record = mainNavController.previousBackStackEntry
+                ?.savedStateHandle
+                ?.get<PlmnRecord>(PlmnRecord.KEY)
+            PlmnDetailsInCompose(record, mainNavController)
         }
 
         composable(NavDrawerOption.Settings.name) {
@@ -267,6 +268,7 @@ enum class NavOption {
     WifiSpectrum,
     WifiDetails,
     BluetoothDetails,
+    PlmnDetails,
     SsidExclusionList,
     ProviderColorOverrides,
     Acknowledgments,
@@ -466,6 +468,73 @@ fun BluetoothDetailsInCompose(
                 bluetoothDetailsFragmentContainerView.getFragment()
             fragment?.setBluetoothData(bluetoothRecordData)
         }
+    }
+}
+
+@Composable
+fun PlmnLookupInCompose(mainNavController: NavHostController) {
+    var showInfoSheet by remember { mutableStateOf(false) }
+
+    Scaffold(
+        topBar = {
+            TitleBar(
+                title = stringResource(R.string.plmn_lookup_drawer_title),
+                onBackClick = { mainNavController.navigateUp() },
+                appBarActions = listOf(
+                    AppBarAction(
+                        icon = R.drawable.ic_help,
+                        description = R.string.plmn_help_description,
+                        onClick = { showInfoSheet = true }
+                    )
+                )
+            )
+        },
+    ) { innerPadding ->
+        Box(modifier = Modifier.padding(paddingValues = innerPadding)) {
+            PlmnLookupScreen(
+                onRecordClick = { record ->
+                    mainNavController.currentBackStackEntry
+                        ?.savedStateHandle
+                        ?.set(PlmnRecord.KEY, record)
+                    mainNavController.navigate(NavOption.PlmnDetails.name)
+                }
+            )
+        }
+    }
+
+    if (showInfoSheet) {
+        PlmnInfoSheet(onDismiss = { showInfoSheet = false })
+    }
+}
+
+@Composable
+fun PlmnDetailsInCompose(record: PlmnRecord?, mainNavController: NavHostController) {
+    var showInfoSheet by remember { mutableStateOf(false) }
+
+    Scaffold(
+        topBar = {
+            TitleBar(
+                title = stringResource(R.string.plmn_details_title),
+                onBackClick = { mainNavController.navigateUp() },
+                appBarActions = listOf(
+                    AppBarAction(
+                        icon = R.drawable.ic_help,
+                        description = R.string.plmn_help_description,
+                        onClick = { showInfoSheet = true }
+                    )
+                )
+            )
+        },
+    ) { innerPadding ->
+        Box(modifier = Modifier.padding(paddingValues = innerPadding)) {
+            if (record != null) {
+                PlmnDetailsScreen(record = record)
+            }
+        }
+    }
+
+    if (showInfoSheet) {
+        PlmnInfoSheet(onDismiss = { showInfoSheet = false })
     }
 }
 

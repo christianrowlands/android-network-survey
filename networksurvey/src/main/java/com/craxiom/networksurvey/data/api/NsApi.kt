@@ -227,7 +227,12 @@ data class PlmnRecord(
     @SerializedName("operator") val operator: String? = null,
     @SerializedName("brand") val brand: String? = null,
     @SerializedName("tadig") val tadig: String? = null
-)
+) : java.io.Serializable {
+    companion object {
+        private const val serialVersionUID: Long = 1L
+        const val KEY = "plmn_record"
+    }
+}
 
 /**
  * The per-PLMN classification returned by `GET /v2/plmn`. A "no match" comes back as HTTP 200
