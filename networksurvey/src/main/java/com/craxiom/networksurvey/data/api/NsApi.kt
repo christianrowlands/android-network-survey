@@ -1,5 +1,6 @@
 package com.craxiom.networksurvey.data.api
 
+import androidx.compose.runtime.Immutable
 import com.craxiom.networksurvey.BuildConfig
 import com.google.gson.annotations.SerializedName
 import okhttp3.HttpUrl.Companion.toHttpUrl
@@ -63,6 +64,24 @@ interface Api {
 
     @GET("v2/oui/dataset")
     suspend fun getOuiDataset(): Response<OuiDatasetResponse>
+
+    @GET("v2/plmn")
+    suspend fun getPlmn(
+        @Query("mcc") mcc: String,
+        @Query("mnc") mnc: String
+    ): Response<PlmnSingleResponse>
+
+    @GET("v2/plmn/search")
+    suspend fun searchPlmn(
+        @Query("q") q: String? = null,
+        @Query("mcc") mcc: String? = null,
+        @Query("mnc") mnc: String? = null,
+        @Query("country") country: String? = null,
+        @Query("iso") iso: String? = null,
+        @Query("operator") operator: String? = null,
+        @Query("region") region: String? = null,
+        @Query("limit") limit: Int? = null
+    ): Response<PlmnSearchResponse>
 }
 
 private const val NS_TOWER_BASE_URL = "https://network-survey-gateway-2z7o328z.uc.gateway.dev/"
@@ -187,4 +206,56 @@ data class OuiDatasetResponse(
     @SerializedName("ma_m_count") val maMCount: Int = 0,
     @SerializedName("ma_s_count") val maSCount: Int = 0,
     @SerializedName("loaded") val loaded: Boolean = false
+)
+
+/**
+ * One operator entry from the embedded MCC-MNC dataset, returned by the PLMN endpoints.
+ * Mirrors `model.PlmnRecord` in the tower-service backend. Multiple records can share an
+ * MCC+MNC pair (shared networks, MNO/MVNO splits, brand variants); see [PlmnLookupResult].
+ *
+ * String fields are nullable because Gson bypasses Kotlin's non-null checks at deserialization,
+ * and a server that unexpectedly omits a `omitempty` field would otherwise produce a hidden NPE.
+ */
+@Immutable
+data class PlmnRecord(
+    @SerializedName("mcc") val mcc: String,
+    @SerializedName("mnc") val mnc: String,
+    @SerializedName("plmn") val plmn: String,
+    @SerializedName("region") val region: String? = null,
+    @SerializedName("country") val country: String? = null,
+    @SerializedName("iso") val iso: String? = null,
+    @SerializedName("operator") val operator: String? = null,
+    @SerializedName("brand") val brand: String? = null,
+    @SerializedName("tadig") val tadig: String? = null
+)
+
+/**
+ * The per-PLMN classification returned by `GET /v2/plmn`. A "no match" comes back as HTTP 200
+ * with [isUnknown] = true and an empty [records] list (NOT a 404).
+ */
+data class PlmnLookupResult(
+    @SerializedName("mcc") val mcc: String? = null,
+    @SerializedName("mnc") val mnc: String? = null,
+    @SerializedName("records") val records: List<PlmnRecord> = emptyList(),
+    @SerializedName("is_unknown") val isUnknown: Boolean = false,
+    @SerializedName("reason") val reason: String? = null
+)
+
+/**
+ * Response body for the single-PLMN resolve endpoint (`GET /v2/plmn`).
+ */
+data class PlmnSingleResponse(
+    @SerializedName("dataset_version") val datasetVersion: String? = null,
+    @SerializedName("result") val result: PlmnLookupResult = PlmnLookupResult()
+)
+
+/**
+ * Response body for the search endpoint (`GET /v2/plmn/search`). [truncated] is true when the
+ * dataset had more matches than were returned (server-side cap).
+ */
+data class PlmnSearchResponse(
+    @SerializedName("dataset_version") val datasetVersion: String? = null,
+    @SerializedName("count") val count: Int = 0,
+    @SerializedName("truncated") val truncated: Boolean = false,
+    @SerializedName("results") val results: List<PlmnRecord> = emptyList()
 )

@@ -1157,6 +1157,37 @@
     <string name="manufacturer_info_content_description">About manufacturer sources</string>
     <string name="manufacturer_disagreement_hint">Sources disagree on this device. Tap the info icon to learn why.</string>
 
+    <!-- PLMN Lookup screen -->
+    <string name="plmn_lookup_drawer_title">PLMN Lookup</string>
+    <string name="plmn_lookup_drawer_description">Look up operators and countries by MCC-MNC or name</string>
+    <string name="plmn_mode_search">Search</string>
+    <string name="plmn_mode_resolve">Resolve MCC-MNC</string>
+    <string name="plmn_lookup_search_placeholder">Country, operator, ISO, MCC…</string>
+    <string name="plmn_clear_search_a11y">Clear search</string>
+    <string name="plmn_lookup_mcc_label">MCC</string>
+    <string name="plmn_lookup_mnc_label">MNC</string>
+    <string name="plmn_lookup_results_meta_label">Results:</string>
+    <string name="plmn_lookup_live_label">Live search</string>
+    <string name="plmn_lookup_empty_line1">No PLMNs match.</string>
+    <string name="plmn_lookup_empty_line2">try a country name, operator brand, or MCC</string>
+    <string name="plmn_lookup_n_operators">%1$d operators</string>
+    <string name="plmn_lookup_plmn_label">PLMN %1$s</string>
+    <string name="plmn_lookup_clip_label">PLMN</string>
+    <string name="plmn_lookup_copied_toast">Copied PLMN</string>
+    <string name="plmn_lookup_truncated_hint">Showing first results. Refine to narrow.</string>
+    <string name="plmn_lookup_offline">Couldn\'t reach the lookup service. Check your connection.</string>
+    <string name="plmn_lookup_transient_failure">Lookup service is unavailable right now. Try again shortly.</string>
+    <string name="plmn_sort_mcc_mnc">MCC-MNC</string>
+    <string name="plmn_sort_country">Country</string>
+    <string name="plmn_sort_provider">Provider</string>
+    <string name="plmn_sort_label">Sort: %1$s</string>
+    <string name="plmn_sort_sheet_title">Sort by</string>
+    <string name="plmn_group_expand">Expand operators</string>
+    <string name="plmn_group_collapse">Collapse operators</string>
+    <string name="plmn_lookup_search_field_a11y">PLMN search</string>
+    <string name="plmn_lookup_mcc_field_a11y">Mobile country code</string>
+    <string name="plmn_lookup_mnc_field_a11y">Mobile network code</string>
+
     <!-- OUI Lookup screen -->
     <string name="oui_lookup_drawer_title">OUI Lookup</string>
     <string name="oui_lookup_drawer_description">Look up the manufacturer for a MAC address</string>

@@ -148,6 +148,20 @@ fun NavGraphBuilder.mainGraph(
             }
         }
 
+        composable(NavDrawerOption.PlmnLookup.name) {
+            Scaffold(
+                topBar = {
+                    TitleBar(stringResource(R.string.plmn_lookup_drawer_title)) {
+                        mainNavController.navigateUp()
+                    }
+                },
+            ) { innerPadding ->
+                Box(modifier = Modifier.padding(paddingValues = innerPadding)) {
+                    com.craxiom.networksurvey.ui.plmn.PlmnLookupScreen()
+                }
+            }
+        }
+
         composable(NavDrawerOption.Settings.name) {
             SettingsFragmentInCompose(mainNavController)
         }
@@ -233,6 +247,7 @@ enum class NavDrawerOption {
     MqttBrokerConnection,
     CellularCalculators,
     OuiLookup,
+    PlmnLookup,
     SurveyMonitor,
     Settings,
 

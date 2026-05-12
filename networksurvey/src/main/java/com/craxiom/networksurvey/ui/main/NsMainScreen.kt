@@ -245,6 +245,12 @@ fun MainCompose(
                                 }
                             }
 
+                            NavDrawerOption.PlmnLookup -> {
+                                mainNavController.navigate(onUserPickedOption.name) {
+                                    popUpTo(NavDrawerOption.None.name)
+                                }
+                            }
+
                             NavDrawerOption.Settings -> {
                                 mainNavController.navigate(onUserPickedOption.name) {
                                     popUpTo(NavDrawerOption.None.name)
@@ -337,6 +343,12 @@ object DrawerParams {
                 R.string.oui_lookup_drawer_title,
                 R.drawable.ic_oui_lookup,
                 R.string.oui_lookup_drawer_description
+            ),
+            AppDrawerItemInfo(
+                NavDrawerOption.PlmnLookup,
+                R.string.plmn_lookup_drawer_title,
+                R.drawable.ic_plmn_lookup,
+                R.string.plmn_lookup_drawer_description
             ),
             AppDrawerItemInfo(
                 NavDrawerOption.SurveyMonitor,

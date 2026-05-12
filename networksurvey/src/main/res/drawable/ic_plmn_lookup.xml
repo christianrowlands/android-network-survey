@@ -1,0 +1,35 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <!-- SIM card outline with notched top-right corner -->
+    <path
+        android:pathData="M7,3L15,3L19,7L19,19A2,2 0,0 1,17 21L7,21A2,2 0,0 1,5 19L5,5A2,2 0,0 1,7 3z"
+        android:fillColor="#00000000"
+        android:strokeColor="#FFFFFFFF"
+        android:strokeWidth="2"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round" />
+    <!-- Chip contact pad rectangle -->
+    <path
+        android:pathData="M8,10L16,10L16,17L8,17L8,10z"
+        android:fillColor="#00000000"
+        android:strokeColor="#FFFFFFFF"
+        android:strokeWidth="2"
+        android:strokeLineJoin="round" />
+    <!-- Horizontal divider line across the chip pad -->
+    <path
+        android:pathData="M8,13.5L16,13.5"
+        android:fillColor="#00000000"
+        android:strokeColor="#FFFFFFFF"
+        android:strokeWidth="2"
+        android:strokeLineCap="round" />
+    <!-- Vertical divider line down the chip pad -->
+    <path
+        android:pathData="M12,10L12,17"
+        android:fillColor="#00000000"
+        android:strokeColor="#FFFFFFFF"
+        android:strokeWidth="2"
+        android:strokeLineCap="round" />
+</vector>
