@@ -30,6 +30,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -110,6 +111,7 @@ fun PlmnSearchField(
     modifier: Modifier = Modifier,
 ) {
     val fieldDescription = stringResource(R.string.plmn_lookup_search_field_a11y)
+    val keyboardController = LocalSoftwareKeyboardController.current
     Row(
         modifier = modifier
             .fillMaxWidth()
@@ -146,6 +148,7 @@ fun PlmnSearchField(
             ),
             singleLine = true,
             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+            keyboardActions = KeyboardActions(onSearch = { keyboardController?.hide() }),
             cursorBrush = androidx.compose.ui.graphics.SolidColor(WifiTokens.SsidAccent),
             decorationBox = { inner ->
                 Box(contentAlignment = Alignment.CenterStart) {
