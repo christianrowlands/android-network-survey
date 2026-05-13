@@ -1,7 +1,7 @@
 package com.craxiom.networksurvey.ui.main.appdrawer
 
-import android.graphics.Bitmap
 import android.graphics.Canvas
+import androidx.annotation.StringRes
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -29,22 +29,24 @@ import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.core.content.res.ResourcesCompat
+import androidx.core.graphics.createBitmap
 import com.craxiom.networksurvey.R
 import com.craxiom.networksurvey.ui.main.DrawerParams
 import com.craxiom.networksurvey.ui.main.NavDrawerOption
 import com.craxiom.networksurvey.ui.theme.NsTheme
 import kotlinx.coroutines.launch
 import timber.log.Timber
-import androidx.core.graphics.createBitmap
 
 @Composable
 fun <T : Enum<T>> AppDrawerContent(
     appVersion: String,
     drawerState: DrawerState,
-    menuItems: List<AppDrawerItemInfo<T>>,
+    menuItems: List<DrawerEntry<T>>,
     externalLinks: List<AppDrawerItemInfo<T>>,
     defaultPick: T,
     onClick: (T) -> Unit
@@ -72,19 +74,21 @@ fun <T : Enum<T>> AppDrawerContent(
                     modifier = Modifier.padding(horizontal = 0.dp),
                     horizontalAlignment = Alignment.Start
                 ) {
-                    items(menuItems) { item ->
-                        AppDrawerItem(item = item) { navOption ->
-                            currentPick = navOption
-                            coroutineScope.launch {
-                                drawerState.close()
+                    items(menuItems) { entry ->
+                        when (entry) {
+                            is DrawerEntry.Header -> SectionHeader(titleResId = entry.titleResId)
+                            is DrawerEntry.Item -> AppDrawerItem(item = entry.info) { navOption ->
+                                currentPick = navOption
+                                coroutineScope.launch {
+                                    drawerState.close()
+                                }
+                                onClick(navOption)
                             }
-                            onClick(navOption)
                         }
                     }
 
                     item {
-                        // Divider between menu and external links
-                        HorizontalDivider(thickness = 1.dp, modifier = Modifier.width(220.dp))
+                        SectionHeader(titleResId = R.string.nav_section_help_resources)
                     }
 
                     items(externalLinks) { item ->
@@ -108,6 +112,27 @@ fun <T : Enum<T>> AppDrawerContent(
                 )
             }
         }
+    }
+}
+
+@Composable
+private fun SectionHeader(@StringRes titleResId: Int) {
+    Column(modifier = Modifier.padding(top = 16.dp, bottom = 8.dp)) {
+        Text(
+            text = stringResource(id = titleResId),
+            style = MaterialTheme.typography.titleSmall,
+            color = MaterialTheme.colorScheme.primary,
+            modifier = Modifier
+                .padding(start = 16.dp)
+                .semantics { heading() }
+        )
+        HorizontalDivider(
+            thickness = 1.dp,
+            color = MaterialTheme.colorScheme.outlineVariant,
+            modifier = Modifier
+                .padding(top = 4.dp)
+                .width(200.dp)
+        )
     }
 }
 

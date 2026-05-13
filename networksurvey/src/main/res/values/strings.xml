@@ -408,6 +408,10 @@
     <string name="report_issue">Report an Issue</string>
     <string name="github" translatable="false">GitHub</string>
 
+    <string name="nav_section_streaming">Streaming &amp; Cloud</string>
+    <string name="nav_section_tools">Reference Tools</string>
+    <string name="nav_section_help_resources">Help &amp; Resources</string>
+
     <string name="network_survey_service_description">The Network Survey Service runs when the app needs to do work in the background such as write to the log file or stream data out over active connection</string>
     <string name="connection_service_description">The Connection Service handles managing the connection to a remote server to stream Network Survey data</string>
 

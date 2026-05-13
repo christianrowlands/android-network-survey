@@ -87,6 +87,18 @@ class MainStateProvider : PreviewParameterProvider<AppDrawerItemInfo<NavDrawerOp
                 R.string.device_status_stream_description
             ),
             AppDrawerItemInfo(
+                NavDrawerOption.PlmnLookup,
+                R.string.plmn_lookup_drawer_title,
+                R.drawable.ic_plmn_lookup,
+                R.string.plmn_lookup_drawer_description
+            ),
+            AppDrawerItemInfo(
+                NavDrawerOption.OuiLookup,
+                R.string.oui_lookup_drawer_title,
+                R.drawable.ic_oui_lookup,
+                R.string.oui_lookup_drawer_description
+            ),
+            AppDrawerItemInfo(
                 NavDrawerOption.SurveyMonitor,
                 R.string.survey_monitor,
                 R.drawable.ic_survey_monitor,

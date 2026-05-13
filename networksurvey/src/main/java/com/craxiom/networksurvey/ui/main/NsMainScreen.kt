@@ -27,6 +27,7 @@ import com.craxiom.networksurvey.model.WifiNetwork
 import com.craxiom.networksurvey.ui.cellular.model.ServingCellInfo
 import com.craxiom.networksurvey.ui.main.appdrawer.AppDrawerContent
 import com.craxiom.networksurvey.ui.main.appdrawer.AppDrawerItemInfo
+import com.craxiom.networksurvey.ui.main.appdrawer.DrawerEntry
 import com.craxiom.networksurvey.ui.theme.NsTheme
 import com.craxiom.networksurvey.util.BatteryOptimizationHelper
 import com.craxiom.networksurvey.util.MdmUtils
@@ -312,64 +313,88 @@ enum class NavRoutes {
 }
 
 object DrawerParams {
-    fun drawerButtons(context: android.content.Context): List<AppDrawerItemInfo<NavDrawerOption>> {
-        val buttons = arrayListOf(
-            AppDrawerItemInfo(
-                NavDrawerOption.NsAnalyticsConnection,
-                R.string.ns_analytics,
-                R.drawable.ic_ns_analytics,
-                R.string.ns_analytics_description
-            ),
-            AppDrawerItemInfo(
-                NavDrawerOption.ServerConnection,
-                R.string.grpc_connection_title,
-                R.drawable.connection_icon,
-                R.string.grpc_connection_description
-            ),
-            AppDrawerItemInfo(
-                NavDrawerOption.MqttBrokerConnection,
-                R.string.mqtt_connection_title_full,
-                R.drawable.ic_cloud_connection,
-                R.string.device_status_stream_description
-            ),
-            AppDrawerItemInfo(
-                NavDrawerOption.CellularCalculators,
-                R.string.cellular_calculators,
-                R.drawable.ic_calculator,
-                R.string.device_status_stream_description
-            ),
-            AppDrawerItemInfo(
-                NavDrawerOption.OuiLookup,
-                R.string.oui_lookup_drawer_title,
-                R.drawable.ic_oui_lookup,
-                R.string.oui_lookup_drawer_description
-            ),
-            AppDrawerItemInfo(
-                NavDrawerOption.PlmnLookup,
-                R.string.plmn_lookup_drawer_title,
-                R.drawable.ic_plmn_lookup,
-                R.string.plmn_lookup_drawer_description
-            ),
-            AppDrawerItemInfo(
-                NavDrawerOption.SurveyMonitor,
-                R.string.survey_monitor,
-                R.drawable.ic_survey_monitor,
-                R.string.survey_monitor_description
-            ),
-            AppDrawerItemInfo(
-                NavDrawerOption.Settings,
-                R.string.settings,
-                R.drawable.ic_settings,
-                R.string.device_status_stream_description
-            )
-        )
+    private val surveyMonitorItem = AppDrawerItemInfo(
+        NavDrawerOption.SurveyMonitor,
+        R.string.survey_monitor,
+        R.drawable.ic_survey_monitor,
+        R.string.survey_monitor_description
+    )
 
-        // Filter out NS Analytics if not allowed via MDM
-        return if (MdmUtils.isNsAnalyticsAllowed(context)) {
-            buttons
-        } else {
-            buttons.filter { it.drawerOption != NavDrawerOption.NsAnalyticsConnection }
+    private val nsAnalyticsItem = AppDrawerItemInfo(
+        NavDrawerOption.NsAnalyticsConnection,
+        R.string.ns_analytics,
+        R.drawable.ic_ns_analytics,
+        R.string.ns_analytics_description
+    )
+
+    private val mqttItem = AppDrawerItemInfo(
+        NavDrawerOption.MqttBrokerConnection,
+        R.string.mqtt_connection_title_full,
+        R.drawable.ic_cloud_connection,
+        R.string.device_status_stream_description
+    )
+
+    private val grpcItem = AppDrawerItemInfo(
+        NavDrawerOption.ServerConnection,
+        R.string.grpc_connection_title,
+        R.drawable.connection_icon,
+        R.string.grpc_connection_description
+    )
+
+    private val cellularCalculatorsItem = AppDrawerItemInfo(
+        NavDrawerOption.CellularCalculators,
+        R.string.cellular_calculators,
+        R.drawable.ic_calculator,
+        R.string.device_status_stream_description
+    )
+
+    private val plmnLookupItem = AppDrawerItemInfo(
+        NavDrawerOption.PlmnLookup,
+        R.string.plmn_lookup_drawer_title,
+        R.drawable.ic_plmn_lookup,
+        R.string.plmn_lookup_drawer_description
+    )
+
+    private val ouiLookupItem = AppDrawerItemInfo(
+        NavDrawerOption.OuiLookup,
+        R.string.oui_lookup_drawer_title,
+        R.drawable.ic_oui_lookup,
+        R.string.oui_lookup_drawer_description
+    )
+
+    private val settingsItem = AppDrawerItemInfo(
+        NavDrawerOption.Settings,
+        R.string.settings,
+        R.drawable.ic_settings,
+        R.string.device_status_stream_description
+    )
+
+    fun drawerButtons(context: android.content.Context): List<DrawerEntry<NavDrawerOption>> {
+        val nsAnalyticsAllowed = MdmUtils.isNsAnalyticsAllowed(context)
+
+        val entries = mutableListOf<DrawerEntry<NavDrawerOption>>()
+
+        // Top: Survey Monitor (unheadered, frequent muscle-memory destination)
+        entries += DrawerEntry.Item(surveyMonitorItem)
+
+        // Streaming & Cloud section
+        entries += DrawerEntry.Header(R.string.nav_section_streaming)
+        if (nsAnalyticsAllowed) {
+            entries += DrawerEntry.Item(nsAnalyticsItem)
         }
+        entries += DrawerEntry.Item(mqttItem)
+        entries += DrawerEntry.Item(grpcItem)
+
+        // Reference Tools section
+        entries += DrawerEntry.Header(R.string.nav_section_tools)
+        entries += DrawerEntry.Item(cellularCalculatorsItem)
+        entries += DrawerEntry.Item(plmnLookupItem)
+        entries += DrawerEntry.Item(ouiLookupItem)
+
+        // Bottom: Settings (unheadered, before external links divider)
+        entries += DrawerEntry.Item(settingsItem)
+
+        return entries
     }
 
     val externalDrawerLinks = arrayListOf(
