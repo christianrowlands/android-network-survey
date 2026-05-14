@@ -16,11 +16,11 @@
 [versions]
 # Build tooling / plugins
 agp = "9.2.1"
-kotlin = "2.3.10"
+kotlin = "2.3.21"
 ksp = "2.3.5"
-googleServices = "4.4.2"
-firebaseCrashlyticsGradle = "3.0.2"
-licenseReport = "3.1.1"
+googleServices = "4.4.4"
+firebaseCrashlyticsGradle = "3.0.7"
+licenseReport = "3.1.2"
 
 # Library version groups (shared across multiple library entries)
 hilt = "2.59.2"
@@ -34,7 +34,7 @@ firebaseBom = "34.13.0"
 # Single-library versions
 androidxAppcompat = "1.7.1"
 timber = "5.0.1"
-material = "1.13.0"
+material = "1.14.0"
 localbroadcastmanager = "1.1.0"
 cardview = "1.0.0"
 preferenceKtx = "1.2.1"
