@@ -57,7 +57,7 @@ public abstract class CsvRecordLogger
     private final RolloverWorker rolloverWorker = new RolloverWorker();
 
     CSVPrinter printer;
-    volatile boolean loggingEnabled;
+    private volatile boolean loggingEnabled;
     private String logFileDirectoryPath;
 
     private String loggingFileName;
@@ -126,7 +126,15 @@ public abstract class CsvRecordLogger
 
                 updateRolloverWorker();
 
-                if (lazyFileCreation) return true;
+                if (lazyFileCreation)
+                {
+                    // Force a fresh filename to be generated on the next record write so that
+                    // toggling logging off and back on produces a new file. Also mark logging as
+                    // enabled so that the disable path actually closes the file and resets state.
+                    loggingFileName = null;
+                    loggingEnabled = true;
+                    return true;
+                }
 
                 loggingFileName = null;
                 boolean fileCreated = prepareCsvForLogging();
