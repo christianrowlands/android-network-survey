@@ -1,5 +1,20 @@
 # Changelog
 
+## [1.54](https://github.com/christianrowlands/android-network-survey/releases/tag/v1.54) - 2026-05-15
+
+**BUG FIXES**
+* Fix CSV survey log files appending to the same file across logging toggle cycles instead of rotating.
+* Fix a nav drawer resource-not-found crash by converting the remaining drawer PNG icons to vector drawables.
+* Fix the tower map empty state when filtered to the serving cell only, showing "No serving cell tower found" and correctly flagging the empty result when there is no serving cell to look up.
+
+**NEW FEATURES**
+* Add a PLMN Lookup screen for searching MCC/MNC operators by identifier, MCC, MNC, country, brand, or operator, with sortable results, a details screen, and an info bottom sheet explaining PLMN, MCC/MNC, brand vs operator, and TADIG.
+* Add an OUI Lookup screen for searching MAC address manufacturers.
+
+**IMPROVEMENTS**
+* Reorganize the navigation drawer into labeled "Streaming & Cloud", "Reference Tools", and "Help & Resources" sections.
+* Bump targetSdkVersion and compileSdk to 37 (Android 17) and request ACCESS_LOCAL_NETWORK for the gRPC and MQTT connection workflows.
+
 ## [1.53](https://github.com/christianrowlands/android-network-survey/releases/tag/v1.53) - 2026-04-27
 
 **BUG FIXES**

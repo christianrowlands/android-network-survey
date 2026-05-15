@@ -72,6 +72,7 @@ import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
@@ -227,6 +228,7 @@ internal fun TowerMapScreen(
     val servingCellSignals by viewModel.servingSignals.collectAsStateWithLifecycle()
     val servingCellLines by viewModel.servingCellLines.collectAsStateWithLifecycle()
     val showTowersLayer by viewModel.showTowersLayer.collectAsStateWithLifecycle()
+    val showOnlyServingCell by viewModel.showOnlyServingCell.collectAsStateWithLifecycle()
     val searchedTower by viewModel.searchedTower.collectAsStateWithLifecycle()
     val isSearchInProgress by viewModel.isSearchInProgress.collectAsStateWithLifecycle()
     val searchError by viewModel.searchError.collectAsStateWithLifecycle()
@@ -794,7 +796,6 @@ internal fun TowerMapScreen(
         if (showLayersDialog) {
             val currentTileSource by viewModel.selectedMapTileSource.collectAsStateWithLifecycle()
             val showBeaconDbCoverage by viewModel.showBeaconDbCoverage.collectAsStateWithLifecycle()
-            val showOnlyServingCell by viewModel.showOnlyServingCell.collectAsStateWithLifecycle()
             val mapKeyLoadError by viewModel.mapKeyLoadError.collectAsState()
             val mapTilerKey by viewModel.mapTilerKey.collectAsState()
 
@@ -939,7 +940,11 @@ internal fun TowerMapScreen(
                     .padding(bottom = 8.dp)
             ) {
                 Text(
-                    text = "No towers found in the area", fontWeight = FontWeight.Bold,
+                    text = stringResource(
+                        if (showOnlyServingCell) R.string.tower_map_no_serving_cell_tower
+                        else R.string.tower_map_no_towers_in_area
+                    ),
+                    fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.primary, softWrap = true,
                     textAlign = TextAlign.Center
                 )

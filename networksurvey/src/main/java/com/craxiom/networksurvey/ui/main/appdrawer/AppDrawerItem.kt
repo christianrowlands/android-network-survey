@@ -99,12 +99,6 @@ class MainStateProvider : PreviewParameterProvider<AppDrawerItemInfo<NavDrawerOp
                 R.string.oui_lookup_drawer_description
             ),
             AppDrawerItemInfo(
-                NavDrawerOption.SurveyMonitor,
-                R.string.survey_monitor,
-                R.drawable.ic_survey_monitor,
-                R.string.survey_monitor_description
-            ),
-            AppDrawerItemInfo(
                 NavDrawerOption.Settings,
                 R.string.settings,
                 R.drawable.ic_settings,

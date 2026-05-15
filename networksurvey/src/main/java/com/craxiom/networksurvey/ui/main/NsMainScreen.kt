@@ -313,13 +313,6 @@ enum class NavRoutes {
 }
 
 object DrawerParams {
-    private val surveyMonitorItem = AppDrawerItemInfo(
-        NavDrawerOption.SurveyMonitor,
-        R.string.survey_monitor,
-        R.drawable.ic_survey_monitor,
-        R.string.survey_monitor_description
-    )
-
     private val nsAnalyticsItem = AppDrawerItemInfo(
         NavDrawerOption.NsAnalyticsConnection,
         R.string.ns_analytics,
@@ -373,9 +366,6 @@ object DrawerParams {
         val nsAnalyticsAllowed = MdmUtils.isNsAnalyticsAllowed(context)
 
         val entries = mutableListOf<DrawerEntry<NavDrawerOption>>()
-
-        // Top: Survey Monitor (unheadered, frequent muscle-memory destination)
-        entries += DrawerEntry.Item(surveyMonitorItem)
 
         // Streaming & Cloud section
         entries += DrawerEntry.Header(R.string.nav_section_streaming)

@@ -876,7 +876,7 @@ class TowerMapLibreViewModel : ViewModel() {
         if (servingCells.isEmpty()) {
             Timber.d("No serving cells to query")
             _towers.value = LinkedHashSet()
-            _noTowersFound.value = false
+            _noTowersFound.value = true
             _isLoadingInProgress.value = false
             return
         }
@@ -887,102 +887,107 @@ class TowerMapLibreViewModel : ViewModel() {
             val wrapper = servingCellInfo.servingCell ?: return@forEach
             val record = wrapper.cellularRecord
 
+            // Extract parameters based on protocol type
+            data class SingleTowerRequest(
+                val radio: String,
+                val mcc: String,
+                val mnc: String,
+                val area: Int,
+                val cid: Long
+            )
+
+            val request: SingleTowerRequest? = when (record) {
+                is GsmRecord -> {
+                    val data = record.data
+                    val mccMnc = NsUtils.extractMccMncStrings(
+                        data.hasPlmn(),
+                        data.plmn?.value,
+                        data.mcc.value,
+                        data.mnc.value
+                    )
+                    SingleTowerRequest(
+                        "GSM",
+                        mccMnc[0],
+                        mccMnc[1],
+                        data.lac.value,
+                        data.ci.value.toLong()
+                    )
+                }
+
+                is UmtsRecord -> {
+                    val data = record.data
+                    val mccMnc = NsUtils.extractMccMncStrings(
+                        data.hasPlmn(),
+                        data.plmn?.value,
+                        data.mcc.value,
+                        data.mnc.value
+                    )
+                    SingleTowerRequest(
+                        "UMTS",
+                        mccMnc[0],
+                        mccMnc[1],
+                        data.lac.value,
+                        data.cid.value.toLong()
+                    )
+                }
+
+                is LteRecord -> {
+                    val data = record.data
+                    val mccMnc = NsUtils.extractMccMncStrings(
+                        data.hasPlmn(),
+                        data.plmn?.value,
+                        data.mcc.value,
+                        data.mnc.value
+                    )
+                    SingleTowerRequest(
+                        "LTE",
+                        mccMnc[0],
+                        mccMnc[1],
+                        data.tac.value,
+                        data.eci.value.toLong()
+                    )
+                }
+
+                is NrRecord -> {
+                    val data = record.data
+                    val mccMnc = NsUtils.extractMccMncStrings(
+                        data.hasPlmn(),
+                        data.plmn?.value,
+                        data.mcc.value,
+                        data.mnc.value
+                    )
+                    SingleTowerRequest(
+                        "NR",
+                        mccMnc[0],
+                        mccMnc[1],
+                        data.tac.value,
+                        data.nci.value
+                    )
+                }
+
+                else -> null
+            }
+
+            if (request == null) return@forEach
+
             try {
-                // Extract parameters based on protocol type
-                val response = when (record) {
-                    is GsmRecord -> {
-                        val data = record.data
-                        val mccMnc = NsUtils.extractMccMncStrings(
-                            data.hasPlmn(),
-                            data.plmn?.value,
-                            data.mcc.value,
-                            data.mnc.value
-                        )
-                        val mccStr = mccMnc[0]
-                        val mncStr = mccMnc[1]
-                        nsApi.checkSingleTower(
-                            mccStr,
-                            mncStr,
-                            data.lac.value,
-                            data.ci.value.toLong(),
-                            "GSM"
-                        )
-                    }
+                val response = nsApi.checkSingleTower(
+                    request.mcc,
+                    request.mnc,
+                    request.area,
+                    request.cid,
+                    request.radio
+                )
 
-                    is UmtsRecord -> {
-                        val data = record.data
-                        val mccMnc = NsUtils.extractMccMncStrings(
-                            data.hasPlmn(),
-                            data.plmn?.value,
-                            data.mcc.value,
-                            data.mnc.value
-                        )
-                        val mccStr = mccMnc[0]
-                        val mncStr = mccMnc[1]
-                        nsApi.checkSingleTower(
-                            mccStr,
-                            mncStr,
-                            data.lac.value,
-                            data.cid.value.toLong(),
-                            "UMTS"
-                        )
-                    }
-
-                    is LteRecord -> {
-                        val data = record.data
-                        val mccMnc = NsUtils.extractMccMncStrings(
-                            data.hasPlmn(),
-                            data.plmn?.value,
-                            data.mcc.value,
-                            data.mnc.value
-                        )
-                        val mccStr = mccMnc[0]
-                        val mncStr = mccMnc[1]
-                        nsApi.checkSingleTower(
-                            mccStr,
-                            mncStr,
-                            data.tac.value,
-                            data.eci.value.toLong(),
-                            "LTE"
-                        )
-                    }
-
-                    is NrRecord -> {
-                        val data = record.data
-                        val mccMnc = NsUtils.extractMccMncStrings(
-                            data.hasPlmn(),
-                            data.plmn?.value,
-                            data.mcc.value,
-                            data.mnc.value
-                        )
-                        val mccStr = mccMnc[0]
-                        val mncStr = mccMnc[1]
-                        nsApi.checkSingleTower(
-                            mccStr,
-                            mncStr,
-                            data.tac.value,
-                            data.nci.value,
-                            "NR"
-                        )
-                    }
-
-                    else -> null
+                val body = response.body()
+                if (response.isSuccessful && body != null) {
+                    fetchedTowers.add(body)
+                } else if (!response.isSuccessful) {
+                    Timber.d(
+                        "Single tower lookup failed (code=${response.code()}) for radio=${request.radio} mcc=${request.mcc} mnc=${request.mnc} area=${request.area} cid=${request.cid}"
+                    )
                 }
-
-                if (response != null && response.isSuccessful) {
-                    response.body()?.let { tower ->
-                        fetchedTowers.add(tower)
-                        Timber.d(
-                            "Successfully fetched serving cell tower: ${
-                                CellularUtils.getTowerId(
-                                    tower
-                                )
-                            }"
-                        )
-                    }
-                } else if (response?.code() == 404) {
-                    Timber.d("Serving cell tower not found in database")
-                }
+                // Successful response with null body = HTTP 204; cell not in database. Silent.
             } catch (e: Exception) {
                 Timber.w(e, "Failed to fetch serving cell tower")
             }

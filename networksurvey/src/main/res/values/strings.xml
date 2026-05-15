@@ -661,6 +661,8 @@
     <string name="map_tile_source_runtime_fallback_toast">MapTiler unavailable; switched to OpenFreeMap</string>
 
     <string name="tower_map_config_title">Tower Map Config</string>
+    <string name="tower_map_no_towers_in_area">No towers found in the area</string>
+    <string name="tower_map_no_serving_cell_tower">No serving cell tower found</string>
     <string name="coverage_area_category_title">Serving Cell Coverage</string>
     <string name="display_coverage_area_title">Display Serving Cell Coverage</string>
     <string name="display_coverage_area_summary_on">Serving cell coverage will be displayed on the map</string>
