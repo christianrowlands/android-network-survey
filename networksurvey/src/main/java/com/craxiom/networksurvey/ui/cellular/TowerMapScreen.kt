@@ -37,6 +37,9 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExposedDropdownMenuAnchorType
+import androidx.compose.material3.ExposedDropdownMenuBox
+import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.FloatingActionButtonDefaults
 import androidx.compose.material3.Icon
@@ -176,6 +179,19 @@ private fun getDefaultKeepScreenOn(context: MapContext): Boolean {
         MapContext.SURVEY_MONITOR -> true
     }
 }
+
+/**
+ * Preset options for the "Last Updated" age filter in [CombinedFiltersBottomSheet]. Each entry
+ * is (months, label); 0 means "show all" (no filter). 60 months represents 5 years; older
+ * thresholds are unlikely to be useful since the filter exists to hide stale tower data.
+ */
+private val TOWER_AGE_OPTIONS = listOf(
+    0 to "Show all",
+    6 to "Within 6 months",
+    12 to "Within 1 year",
+    24 to "Within 2 years",
+    60 to "Within 5 years"
+)
 
 /**
  * Creates the map view for displaying the tower locations. The tower locations are pulled from the
@@ -323,6 +339,13 @@ internal fun TowerMapScreen(
                     )
                     viewModel.setShowOnlyServingCell(showOnlyServingCell)
 
+                    // Load last-updated age filter preference (0 = show all)
+                    val savedMaxAgeMonths = preferences.getInt(
+                        NetworkSurveyConstants.PROPERTY_MAP_MAX_TOWER_AGE_MONTHS,
+                        0
+                    )
+                    viewModel.setMaxTowerAgeMonths(savedMaxAgeMonths)
+
                     onDispose { }
                 }
 
@@ -409,7 +432,7 @@ internal fun TowerMapScreen(
                 ) {
                     // Check if towers layer should be shown
                     if (showTowersLayer) {
-                        // 1) Pull your tower wrappers from the VM…
+                        // 1) Pull your tower wrappers from the VM
                         val towers by viewModel.towers.collectAsStateWithLifecycle()
                         val towerWrapperList = towers.toList()
 
@@ -879,10 +902,12 @@ internal fun TowerMapScreen(
 
         if (showFiltersDialog) {
             val context = LocalContext.current
+            val currentMaxTowerAgeMonths by viewModel.maxTowerAgeMonths.collectAsStateWithLifecycle()
             CombinedFiltersBottomSheet(
                 currentPlmn = currentPlmnFilter,
                 currentRadio = radio,
                 currentSource = currentSource,
+                currentMaxAgeMonths = currentMaxTowerAgeMonths,
                 onSetPlmnFilter = { mcc, mnc, mncString ->
                     viewModel.setPlmnFilter(Plmn(mcc, mnc, mncString))
                 },
@@ -896,6 +921,12 @@ internal fun TowerMapScreen(
                     if (source != currentSource) {
                         viewModel.setTowerSource(source)
                         PreferenceUtils.setLastSelectedTowerSource(context, source)
+                    }
+                },
+                onSetMaxAgeMonths = { months ->
+                    viewModel.setMaxTowerAgeMonths(months)
+                    preferences.edit {
+                        putInt(NetworkSurveyConstants.PROPERTY_MAP_MAX_TOWER_AGE_MONTHS, months)
                     }
                 },
                 onDismiss = { showFiltersDialog = false }
@@ -961,6 +992,58 @@ internal fun TowerMapScreen(
                 CircularProgressIndicator()
             }
         }
+
+        val towersTruncated by viewModel.towersTruncated.collectAsStateWithLifecycle()
+        val maxTowerAgeMonths by viewModel.maxTowerAgeMonths.collectAsStateWithLifecycle()
+        val ageFilterInertOnBtSearch =
+            currentSource == TowerSource.BTSearch && maxTowerAgeMonths > 0
+        val showTruncationBanner = showTowersLayer && towersTruncated && !isLoadingInProgress
+        val showBtSearchAgeBanner =
+            showTowersLayer && ageFilterInertOnBtSearch && !isLoadingInProgress
+
+        if (showTruncationBanner || showBtSearchAgeBanner) {
+            Box(
+                contentAlignment = Alignment.BottomCenter,
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(bottom = 24.dp, start = 16.dp, end = 16.dp)
+            ) {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    if (showBtSearchAgeBanner) {
+                        MapInfoChip(text = "Age filter does not apply to BTSearch data.")
+                    }
+                    if (showTruncationBanner) {
+                        MapInfoChip(
+                            text = "Showing first 5,000 towers - zoom in or narrow your filters to see all."
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+/**
+ * Small info-styled chip used to surface map context (truncation, filter-inert state, etc.).
+ */
+@Composable
+private fun MapInfoChip(text: String) {
+    Surface(
+        color = MaterialTheme.colorScheme.surfaceVariant,
+        contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+        shape = MaterialTheme.shapes.medium,
+        tonalElevation = 2.dp,
+        shadowElevation = 4.dp
+    ) {
+        Text(
+            text = text,
+            style = MaterialTheme.typography.bodySmall,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)
+        )
     }
 }
 
@@ -2074,9 +2157,11 @@ fun CombinedFiltersBottomSheet(
     currentPlmn: Plmn,
     currentRadio: String,
     currentSource: TowerSource,
+    currentMaxAgeMonths: Int,
     onSetPlmnFilter: (Int, Int, String?) -> Unit,
     onSetRadioType: (String) -> Unit,
     onSetTowerSource: (TowerSource) -> Unit,
+    onSetMaxAgeMonths: (Int) -> Unit,
     onDismiss: () -> Unit
 ) {
     val bottomSheetState = rememberModalBottomSheetState()
@@ -2087,6 +2172,7 @@ fun CombinedFiltersBottomSheet(
     var mncInput by remember { mutableStateOf(currentPlmn.mncString ?: currentPlmn.mnc.toString()) }
     var selectedRadio by remember { mutableStateOf(currentRadio) }
     var selectedSource by remember { mutableStateOf(currentSource) }
+    var selectedMaxAgeMonths by remember { mutableStateOf(currentMaxAgeMonths) }
 
     val radioOptions = listOf(
         CellularProtocol.GSM.name,
@@ -2105,6 +2191,7 @@ fun CombinedFiltersBottomSheet(
             onSetPlmnFilter(mcc, mnc, mncString)
             onSetRadioType(selectedRadio)
             onSetTowerSource(selectedSource)
+            onSetMaxAgeMonths(selectedMaxAgeMonths)
             onDismiss()
         },
         sheetState = bottomSheetState
@@ -2271,6 +2358,68 @@ fun CombinedFiltersBottomSheet(
                         )
                     }
                 }
+            }
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            // Last Updated age filter
+            Text(
+                text = "Last Updated",
+                style = MaterialTheme.typography.titleMedium,
+                modifier = Modifier.padding(bottom = 8.dp)
+            )
+
+            Text(
+                text = "Hide towers that have not been updated recently. Older data may be stale.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(bottom = 8.dp)
+            )
+
+            var ageMenuExpanded by remember { mutableStateOf(false) }
+            val currentLabel =
+                TOWER_AGE_OPTIONS.firstOrNull { it.first == selectedMaxAgeMonths }?.second
+                    ?: TOWER_AGE_OPTIONS.first().second
+
+            ExposedDropdownMenuBox(
+                expanded = ageMenuExpanded,
+                onExpandedChange = { ageMenuExpanded = !ageMenuExpanded }
+            ) {
+                OutlinedTextField(
+                    value = currentLabel,
+                    onValueChange = {},
+                    readOnly = true,
+                    label = { Text("Last update age") },
+                    trailingIcon = {
+                        ExposedDropdownMenuDefaults.TrailingIcon(expanded = ageMenuExpanded)
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable)
+                )
+                ExposedDropdownMenu(
+                    expanded = ageMenuExpanded,
+                    onDismissRequest = { ageMenuExpanded = false }
+                ) {
+                    TOWER_AGE_OPTIONS.forEach { (months, label) ->
+                        DropdownMenuItem(
+                            text = { Text(label) },
+                            onClick = {
+                                selectedMaxAgeMonths = months
+                                ageMenuExpanded = false
+                            }
+                        )
+                    }
+                }
+            }
+
+            if (selectedSource == TowerSource.BTSearch && selectedMaxAgeMonths > 0) {
+                Text(
+                    text = "Age filter does not apply to BTSearch data.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(top = 4.dp)
+                )
             }
 
         }

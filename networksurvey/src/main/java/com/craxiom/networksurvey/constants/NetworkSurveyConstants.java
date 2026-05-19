@@ -218,6 +218,13 @@ public class NetworkSurveyConstants
     public static final String PROPERTY_SHOW_BEACONDB_COVERAGE = "show_beacondb_coverage";
     public static final String PROPERTY_SHOW_TOWERS_LAYER = "show_towers_layer";
     public static final String PROPERTY_MAP_SHOW_ONLY_SERVING_CELL = "map_show_only_serving_cell";
+    /**
+     * Maximum tower age (in months) used to hide stale towers on both the Tower Map and the
+     * Survey Monitor map. 0 means "show all" (no filter). Intentionally a single shared key
+     * across both map contexts: freshness is a property of the tower data itself, not the
+     * screen the user is viewing.
+     */
+    public static final String PROPERTY_MAP_MAX_TOWER_AGE_MONTHS = "map_max_tower_age_months";
     public static final String PROPERTY_NEW_TOWER_ALERTS_ENABLED = "new_tower_alerts_enabled";
 
     // Survey Monitor specific map preferences

@@ -20,7 +20,8 @@ interface Api {
     suspend fun getTowers(
         @Query("bbox") bbox: String,
         @Query("radio") radio: String,
-        @Query("source") source: String
+        @Query("source") source: String,
+        @Query("updated_after") updatedAfter: Long? = null
     ): Response<TowerResponse>
 
     @GET("v2/cells/area")
@@ -29,7 +30,8 @@ interface Api {
         @Query("radio") radio: String,
         @Query("mcc") mcc: String,
         @Query("mnc") mnc: String,
-        @Query("source") source: String
+        @Query("source") source: String,
+        @Query("updated_after") updatedAfter: Long? = null
     ): Response<TowerResponse>
 
     @GET("/maptiler/key")
@@ -138,7 +140,8 @@ data class Tower(
  */
 data class TowerResponse(
     val count: Int,
-    val cells: List<Tower>
+    val cells: List<Tower>,
+    @SerializedName("truncated") val truncated: Boolean = false
 )
 
 /**

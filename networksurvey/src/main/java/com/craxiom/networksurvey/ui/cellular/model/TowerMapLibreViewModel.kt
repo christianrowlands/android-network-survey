@@ -156,6 +156,12 @@ class TowerMapLibreViewModel : ViewModel() {
     private val _showOnlyServingCell = MutableStateFlow(false)
     val showOnlyServingCell = _showOnlyServingCell.asStateFlow()
 
+    private val _maxTowerAgeMonths = MutableStateFlow(0)
+    val maxTowerAgeMonths = _maxTowerAgeMonths.asStateFlow()
+
+    private val _towersTruncated = MutableStateFlow(false)
+    val towersTruncated = _towersTruncated.asStateFlow()
+
     // BeaconDB layer management
     private var beaconDbLayerIds: List<String> = emptyList()
 
@@ -373,6 +379,25 @@ class TowerMapLibreViewModel : ViewModel() {
             _towers.value = LinkedHashSet()
             _noTowersFound.value = false
             // Trigger a new query with the updated mode
+            if (_showTowersLayer.value) {
+                viewModelScope.launch {
+                    runTowerQuery()
+                }
+            }
+        }
+    }
+
+    /**
+     * Sets the maximum tower age (in months) used to hide stale towers on the map. A value of
+     * 0 disables the filter and shows all towers regardless of last-updated timestamp. The
+     * filter is applied server-side, so changing the value clears the existing tower set and
+     * triggers a fresh query (mirroring [setTowerSource] / [setPlmnFilter]).
+     */
+    fun setMaxTowerAgeMonths(months: Int) {
+        if (_maxTowerAgeMonths.value != months) {
+            _maxTowerAgeMonths.value = months
+            _towers.value = LinkedHashSet()
+            _noTowersFound.value = false
             if (_showTowersLayer.value) {
                 viewModelScope.launch {
                     runTowerQuery()
@@ -860,6 +885,9 @@ class TowerMapLibreViewModel : ViewModel() {
     }
 
     internal suspend fun runTowerQuery() = towerQueryMutex.withLock {
+        // Truncation only applies to bulk area queries. Reset here so the flag does not
+        // persist across mode switches.
+        _towersTruncated.value = false
         // Branch based on display mode
         if (_showOnlyServingCell.value) {
             queryServingCellsOnly()
@@ -1011,6 +1039,7 @@ class TowerMapLibreViewModel : ViewModel() {
         val map = mapLibreMap ?: return
 
         _isLoadingInProgress.value = true
+        _towersTruncated.value = false
         Timber.d("Starting area tower query")
 
         // 1) Build bbox string for request
@@ -1022,6 +1051,16 @@ class TowerMapLibreViewModel : ViewModel() {
             b.longitudeEast
         ).joinToString(",")
 
+        // Translate the user-selected max age into a Unix-seconds cutoff for the server.
+        // 30 days/month is a coarse approximation; this is a "hide stale data" filter, not a
+        // calendar-accurate threshold. Pass null when the filter is off so Retrofit omits the
+        // query parameter entirely.
+        val updatedAfter: Long? = _maxTowerAgeMonths.value
+            .takeIf { it > 0 }
+            ?.let { months ->
+                (System.currentTimeMillis() / 1000L) - (months * 30L * 86400L)
+            }
+
         // 2) Fetch from API
         val response: Response<TowerResponse> = try {
             if (plmnFilter.value.isSet()) {
@@ -1031,10 +1070,16 @@ class TowerMapLibreViewModel : ViewModel() {
                     selectedRadioType.value,
                     p.mcc.toString(),
                     p.mncString ?: p.mnc.toString(),
-                    selectedSource.value.apiName
+                    selectedSource.value.apiName,
+                    updatedAfter
                 )
             } else {
-                nsApi.getTowers(bboxParam, selectedRadioType.value, selectedSource.value.apiName)
+                nsApi.getTowers(
+                    bboxParam,
+                    selectedRadioType.value,
+                    selectedSource.value.apiName,
+                    updatedAfter
+                )
             }
         } catch (e: Exception) {
             Timber.e(e, "Error fetching towers from the NS API")
@@ -1043,13 +1088,15 @@ class TowerMapLibreViewModel : ViewModel() {
         }
 
         // 3) Extract body or empty
+        val body = response.body()
         val fetched =
-            if (response.code() == 204 || !response.isSuccessful || response.body() == null) {
+            if (response.code() == 204 || !response.isSuccessful || body == null) {
                 emptyList<TowerWrapper>()
             } else {
-                response.body()!!.cells.map { TowerWrapper(it) }
+                body.cells.map { TowerWrapper(it) }
             }
-        Timber.i("Fetched ${fetched.size} towers")
+        _towersTruncated.value = body?.truncated == true
+        Timber.i("Fetched ${fetched.size} towers (truncated=${_towersTruncated.value})")
 
         // 4) Merge into existing set, evict oldest if > MAX
         // Optimization: Only create a new set if there are actual changes
