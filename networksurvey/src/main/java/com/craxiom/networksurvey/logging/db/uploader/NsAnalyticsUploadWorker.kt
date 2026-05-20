@@ -20,9 +20,11 @@ import com.craxiom.networksurvey.data.api.RecordBatch
 import com.craxiom.networksurvey.data.api.UploadBatchRequest
 import com.craxiom.networksurvey.logging.db.SurveyDatabase
 import com.craxiom.networksurvey.logging.db.model.NsAnalyticsQueueEntity
+import com.craxiom.networksurvey.ui.nsanalytics.NsAnalyticsNotificationHelper
 import com.craxiom.networksurvey.util.MdmUtils
 import com.craxiom.networksurvey.util.NsAnalyticsSecureStorage
 import com.craxiom.networksurvey.util.NsAnalyticsUtils
+import com.craxiom.networksurvey.util.PreferenceUtils
 import com.google.gson.JsonParser
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -41,6 +43,13 @@ class NsAnalyticsUploadWorker(context: Context, params: WorkerParameters) :
     override suspend fun doWork(): Result = withContext(Dispatchers.IO) {
         try {
             Timber.d("Starting NS Analytics upload")
+
+            // Defense in depth: the schedule/trigger paths already gate on MDM, but a delayed
+            // quota re-check could fire after MDM later disables NS Analytics.
+            if (!MdmUtils.isNsAnalyticsAllowed(applicationContext)) {
+                Timber.w("NS Analytics upload skipped: disabled by MDM policy")
+                return@withContext Result.failure()
+            }
 
             // Check if registered and get credentials
             if (!NsAnalyticsSecureStorage.isRegistered(applicationContext)) {
@@ -89,6 +98,9 @@ class NsAnalyticsUploadWorker(context: Context, params: WorkerParameters) :
 
             if (totalPendingCount == 0) {
                 Timber.d("No pending records to upload")
+                // An empty queue cannot be over quota locally; if we were paused, resume so the
+                // device isn't stranded with no records to act on.
+                resumeFromQuotaPauseIfNeeded()
                 return@withContext Result.success()
             }
 
@@ -247,6 +259,29 @@ class NsAnalyticsUploadWorker(context: Context, params: WorkerParameters) :
                                     webUrl
                                 )
                             }
+
+                            // Pause automatic uploads. A quota-exceeded state almost never
+                            // resolves on its own, so retrying on the ~15 min schedule is pure
+                            // wasted server load. Persist the pause, stop the recurring schedule,
+                            // and tell the user (notification + in-app banner) so they can resume.
+                            val retryAfterSeconds =
+                                parseRetryAfterSeconds(response.headers()["Retry-After"])
+                            NsAnalyticsSecureStorage.saveQuotaPause(
+                                applicationContext,
+                                quotaError.currentUsage,
+                                quotaError.maxRecords,
+                                quotaError.message,
+                                quotaError.webUrl,
+                                System.currentTimeMillis() + retryAfterSeconds * 1000L
+                            )
+                            cancelPeriodicUpload(applicationContext)
+                            // Honor the server Retry-After by scheduling a single delayed
+                            // re-check (safety net for users who upgrade but never reopen the app).
+                            schedulePausedRetryCheck(applicationContext, retryAfterSeconds)
+                            NsAnalyticsNotificationHelper.showUploadsPausedNotification(
+                                applicationContext,
+                                quotaError.message
+                            )
 
                             NsAnalyticsSecureStorage.saveUploadCompletion(
                                 applicationContext,
@@ -414,6 +449,10 @@ class NsAnalyticsUploadWorker(context: Context, params: WorkerParameters) :
                 totalRecordsUploaded, totalRecordsProcessed
             )
 
+            // The upload completed without a 402, so the quota now has room. If we were paused,
+            // clear the pause and resume automatic uploads.
+            resumeFromQuotaPauseIfNeeded()
+
             // Report final results
             val outputData = Data.Builder()
                 .putBoolean(NsAnalyticsConstants.EXTRA_UPLOAD_SUCCESS, true)
@@ -497,12 +536,41 @@ class NsAnalyticsUploadWorker(context: Context, params: WorkerParameters) :
         }
     }
 
+    /**
+     * If automatic uploads were paused due to a quota-exceeded response, clear that pause and
+     * resume normal operation.
+     *
+     * Called whenever an upload run completes without a 402, which signals either that the quota
+     * now has room (records were accepted) or that the local queue is empty (in which case staying
+     * paused would needlessly strand the device). If quota is still exceeded, the next real upload
+     * simply re-pauses.
+     */
+    private fun resumeFromQuotaPauseIfNeeded() {
+        if (!NsAnalyticsSecureStorage.isUploadPausedForQuota(applicationContext)) return
+
+        Timber.i("Upload completed while quota-paused; resuming automatic uploads")
+        NsAnalyticsSecureStorage.clearQuotaPause(applicationContext)
+        cancelPausedRetryCheck(applicationContext)
+        NsAnalyticsNotificationHelper.clearUploadsPausedNotification(applicationContext)
+
+        // Re-arm the periodic schedule if auto-upload is still enabled. schedulePeriodicUpload
+        // re-checks MDM and the (now-cleared) pause flag itself, so the clear-then-schedule order
+        // above matters.
+        if (PreferenceUtils.isNsAnalyticsAutoUpload(applicationContext)) {
+            val frequency = NsAnalyticsSecureStorage.getUploadFrequency(applicationContext)
+            schedulePeriodicUpload(applicationContext, frequency)
+        }
+    }
+
     companion object {
         /** Unique work name for periodic uploads */
         private const val NS_ANALYTICS_UPLOAD_WORK_NAME = "ns_analytics_upload"
 
         /** Unique work name for immediate/manual uploads (separate from periodic to avoid conflicts) */
         private const val NS_ANALYTICS_IMMEDIATE_UPLOAD_WORK_NAME = "ns_analytics_immediate_upload"
+
+        /** Unique work name for the single delayed re-check after a quota pause */
+        private const val NS_ANALYTICS_QUOTA_RECHECK_WORK_NAME = "ns_analytics_quota_recheck"
 
         /** Error code indicating device is not registered with NS Analytics */
         const val ERROR_CODE_NOT_REGISTERED = "not_registered"
@@ -570,6 +638,14 @@ class NsAnalyticsUploadWorker(context: Context, params: WorkerParameters) :
                 return
             }
 
+            // Don't re-arm the recurring schedule while uploads are paused due to an exceeded
+            // quota; otherwise opening the screen or starting a survey would restart the doomed
+            // every-15-min loop. The pause is cleared on a successful upload (manual or re-check).
+            if (NsAnalyticsSecureStorage.isUploadPausedForQuota(context)) {
+                Timber.i("NS Analytics periodic upload scheduling skipped: paused due to quota")
+                return
+            }
+
             if (intervalMinutes <= 0) {
                 // Real-time mode - don't schedule periodic work
                 return
@@ -612,6 +688,64 @@ class NsAnalyticsUploadWorker(context: Context, params: WorkerParameters) :
             WorkManager.getInstance(context)
                 .cancelUniqueWork(NS_ANALYTICS_UPLOAD_WORK_NAME)
             Timber.i("Cancelled NS Analytics periodic uploads")
+        }
+
+        /**
+         * Schedule a single delayed upload attempt after a quota pause, honoring the server's
+         * Retry-After hint. When it runs the normal upload logic applies: on success the worker
+         * resumes automatic uploads; on another 402 it re-pauses and reschedules the next re-check.
+         *
+         * Uses a distinct unique work name so it does not collide with the (cancelled) periodic
+         * work or any manual upload. It is tagged with the shared upload tag so the ViewModel's
+         * observer still tracks it; a delayed/ENQUEUED request is not RUNNING, so it does not block
+         * a manual "Upload Now".
+         *
+         * @param delaySeconds Delay before the re-check, from the server Retry-After hint.
+         */
+        fun schedulePausedRetryCheck(context: Context, delaySeconds: Long) {
+            if (!MdmUtils.isNsAnalyticsAllowed(context)) {
+                Timber.w("NS Analytics quota re-check scheduling prevented by MDM policy")
+                return
+            }
+
+            val constraints = Constraints.Builder()
+                .setRequiredNetworkType(NetworkType.CONNECTED)
+                .build()
+
+            val request = OneTimeWorkRequestBuilder<NsAnalyticsUploadWorker>()
+                .setInitialDelay(delaySeconds, java.util.concurrent.TimeUnit.SECONDS)
+                .setConstraints(constraints)
+                .addTag(NsAnalyticsConstants.NS_ANALYTICS_UPLOAD_WORKER_TAG)
+                .build()
+
+            WorkManager.getInstance(context).enqueueUniqueWork(
+                NS_ANALYTICS_QUOTA_RECHECK_WORK_NAME,
+                ExistingWorkPolicy.REPLACE,
+                request
+            )
+            Timber.i("Scheduled NS Analytics quota re-check in %d seconds", delaySeconds)
+        }
+
+        /**
+         * Cancel any pending quota re-check.
+         */
+        fun cancelPausedRetryCheck(context: Context) {
+            WorkManager.getInstance(context)
+                .cancelUniqueWork(NS_ANALYTICS_QUOTA_RECHECK_WORK_NAME)
+        }
+
+        /**
+         * Parse the Retry-After header into a clamped seconds value. The server sends an integer
+         * number of seconds (86400); the HTTP-date form is not handled. Falls back to the 24h
+         * default when the header is missing or non-numeric, and clamps absurd or non-positive
+         * values to the [1, 7 days] range.
+         *
+         * Visible for testing.
+         */
+        internal fun parseRetryAfterSeconds(headerValue: String?): Long {
+            val parsed = headerValue?.trim()?.toLongOrNull()
+                ?: NsAnalyticsConstants.DEFAULT_QUOTA_RETRY_AFTER_SECONDS
+            return parsed.coerceIn(1L, NsAnalyticsConstants.MAX_QUOTA_RETRY_AFTER_SECONDS)
         }
 
         /**

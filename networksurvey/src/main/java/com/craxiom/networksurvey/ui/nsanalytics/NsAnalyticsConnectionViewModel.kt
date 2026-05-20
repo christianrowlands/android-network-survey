@@ -562,6 +562,14 @@ class NsAnalyticsConnectionViewModel(
             }
         }
 
+        // If uploads were paused due to quota, this successful upload means the quota now has
+        // room; the worker has already cleared the persisted pause and resumed the schedule, so
+        // clear the in-app paused state too and let the user know.
+        val wasPausedForQuota = _uiState.value.uploadPausedForQuota
+        if (wasPausedForQuota) {
+            showMessage(context.getString(R.string.ns_analytics_upload_resumed))
+        }
+
         // CRITICAL: Update state SYNCHRONOUSLY to prevent race with polling job.
         // Use IDLE as initial state; we'll refine to EMPTY after checking queue async.
         _uiState.value = _uiState.value.copy(
@@ -570,6 +578,8 @@ class NsAnalyticsConnectionViewModel(
             uploadStatusMessage = context.getString(R.string.ns_analytics_upload_status_complete),
             uploadProgress = 1f,
             lastUploadTime = lastUploadCompletionTime,
+            uploadPausedForQuota = false,
+            showQuotaExceededDialog = false,
             lastUploadResult = if (recordsUploaded > 0) {
                 context.getString(R.string.ns_analytics_upload_result_records, recordsUploaded)
             } else null
@@ -587,6 +597,35 @@ class NsAnalyticsConnectionViewModel(
                 queuedRecords = remainingRecords
             )
         }
+    }
+
+    /**
+     * Apply the quota-paused UI state shared by the quota-failure code paths (tag observer,
+     * manual observer, and the SharedPreferences fallback). Automatic uploads have been paused by
+     * the worker; the red status plus the in-app banner explain why, and the manual upload action
+     * stays available so the user can resume.
+     *
+     * @param showDialog Whether to also surface the modal quota dialog (manual uploads only).
+     */
+    private fun applyQuotaPausedState(
+        currentUsage: Int,
+        maxRecords: Int,
+        quotaMessage: String?,
+        quotaWebUrl: String?,
+        showDialog: Boolean
+    ) {
+        _uiState.value = _uiState.value.copy(
+            isUploading = false,
+            uploadState = UploadState.UNAVAILABLE,
+            uploadStatusMessage = context.getString(R.string.ns_analytics_upload_status_quota_exceeded),
+            uploadProgress = 0f,
+            uploadPausedForQuota = true,
+            showQuotaExceededDialog = showDialog,
+            quotaCurrentUsage = currentUsage,
+            quotaMaxRecords = maxRecords,
+            quotaMessage = quotaMessage,
+            quotaWebUrl = quotaWebUrl
+        )
     }
 
     /**
@@ -618,16 +657,12 @@ class NsAnalyticsConnectionViewModel(
                 val shouldShowDialog = wasManualUpload
                 wasManualUpload = false
 
-                _uiState.value = _uiState.value.copy(
-                    isUploading = false,
-                    uploadState = UploadState.UNAVAILABLE,
-                    uploadStatusMessage = context.getString(R.string.ns_analytics_upload_status_quota_exceeded),
-                    uploadProgress = 0f,
-                    showQuotaExceededDialog = shouldShowDialog,
-                    quotaCurrentUsage = currentUsage,
-                    quotaMaxRecords = maxRecords,
-                    quotaMessage = quotaMessage,
-                    quotaWebUrl = quotaWebUrl
+                applyQuotaPausedState(
+                    currentUsage,
+                    maxRecords,
+                    quotaMessage,
+                    quotaWebUrl,
+                    shouldShowDialog
                 )
             }
 
@@ -741,13 +776,16 @@ class NsAnalyticsConnectionViewModel(
 
         when (errorType) {
             NsAnalyticsConstants.ERROR_CODE_QUOTA_EXCEEDED -> {
-                // Quota exceeded - show specific message but no dialog (this is fallback path)
-                _uiState.value = _uiState.value.copy(
-                    isUploading = false,
-                    uploadState = UploadState.UNAVAILABLE,
-                    uploadStatusMessage = context.getString(R.string.ns_analytics_upload_status_quota_exceeded),
-                    uploadProgress = 0f,
-                    showQuotaExceededDialog = false  // No dialog for fallback path (auto-upload)
+                // Quota exceeded - show the paused banner but no dialog (this is the fallback,
+                // auto-upload path). Read the persisted pause details so the banner has the
+                // usage numbers and manage-subscription link.
+                val pauseInfo = NsAnalyticsSecureStorage.getQuotaPauseInfo(context)
+                applyQuotaPausedState(
+                    pauseInfo?.currentUsage ?: 0,
+                    pauseInfo?.maxRecords ?: 0,
+                    pauseInfo?.message,
+                    pauseInfo?.webUrl,
+                    showDialog = false
                 )
             }
 
@@ -805,6 +843,21 @@ class NsAnalyticsConnectionViewModel(
     private fun handleUploadCancelledFromTag() {
         lastUploadWasFailure = true
         lastUploadCompletionTime = System.currentTimeMillis()
+
+        // A periodic 402 cancels the periodic work from inside the worker, so the work may surface
+        // as CANCELLED rather than FAILED. The worker persists the quota pause synchronously first,
+        // so detect it here and show the paused banner instead of a generic failure message.
+        val pauseInfo = NsAnalyticsSecureStorage.getQuotaPauseInfo(context)
+        if (pauseInfo != null) {
+            applyQuotaPausedState(
+                pauseInfo.currentUsage,
+                pauseInfo.maxRecords,
+                pauseInfo.message,
+                pauseInfo.webUrl,
+                showDialog = false
+            )
+            return
+        }
 
         _uiState.value = _uiState.value.copy(
             isUploading = false,
@@ -869,17 +922,22 @@ class NsAnalyticsConnectionViewModel(
                     // Get queue size
                     val queueSize = database.nsAnalyticsDao().getPendingRecordCount()
 
-                    // Determine initial upload state based on queue
+                    // Surface the persisted quota pause (set by the worker, possibly while the app
+                    // was closed) so the screen shows the paused banner immediately on open.
+                    val pauseInfo = NsAnalyticsSecureStorage.getQuotaPauseInfo(context)
+
+                    // Determine initial upload state based on registration, quota pause, and queue
                     val initialUploadState = when {
                         !isRegistered -> UploadState.UNAVAILABLE
+                        pauseInfo != null -> UploadState.UNAVAILABLE
                         queueSize == 0 -> UploadState.EMPTY
                         else -> UploadState.IDLE
                     }
-                    val initialUploadStatusMessage = when (initialUploadState) {
-                        UploadState.UNAVAILABLE -> context.getString(R.string.ns_analytics_upload_status_not_registered)
-                        UploadState.EMPTY -> context.getString(R.string.ns_analytics_upload_status_no_records)
-                        UploadState.IDLE -> context.getString(R.string.ns_analytics_upload_status_ready)
-                        UploadState.UPLOADING -> context.getString(R.string.ns_analytics_upload_status_uploading)
+                    val initialUploadStatusMessage = when {
+                        !isRegistered -> context.getString(R.string.ns_analytics_upload_status_not_registered)
+                        pauseInfo != null -> context.getString(R.string.ns_analytics_upload_status_quota_exceeded)
+                        queueSize == 0 -> context.getString(R.string.ns_analytics_upload_status_no_records)
+                        else -> context.getString(R.string.ns_analytics_upload_status_ready)
                     }
 
                     // Update UI immediately with cached data
@@ -896,6 +954,11 @@ class NsAnalyticsConnectionViewModel(
                         queuedRecords = queueSize,
                         uploadState = initialUploadState,
                         uploadStatusMessage = initialUploadStatusMessage,
+                        uploadPausedForQuota = pauseInfo != null,
+                        quotaCurrentUsage = pauseInfo?.currentUsage ?: 0,
+                        quotaMaxRecords = pauseInfo?.maxRecords ?: 0,
+                        quotaMessage = pauseInfo?.message,
+                        quotaWebUrl = pauseInfo?.webUrl,
                         cellularEnabled = cellularEnabled,
                         wifiEnabled = wifiEnabled,
                         bluetoothEnabled = bluetoothEnabled,
@@ -917,8 +980,10 @@ class NsAnalyticsConnectionViewModel(
                         }
                     }
 
-                    // Schedule periodic uploads if auto-upload is enabled and there's pending data
-                    if (autoUploadEnabled && queueSize > 0) {
+                    // Schedule periodic uploads if auto-upload is enabled and there's pending data.
+                    // Skip while quota-paused so opening the screen doesn't restart the doomed loop
+                    // (schedulePeriodicUpload also guards on this, but skip explicitly for clarity).
+                    if (autoUploadEnabled && queueSize > 0 && pauseInfo == null) {
                         NsAnalyticsUploadWorker.schedulePeriodicUpload(context, uploadFrequency)
                         Timber.d(
                             "Scheduled initial periodic uploads on app start (queue size: %d)",
@@ -1027,19 +1092,16 @@ class NsAnalyticsConnectionViewModel(
     }
 
     /**
-     * Dismiss the quota exceeded dialog and clear quota-related state.
+     * Dismiss the quota exceeded dialog.
      *
-     * This resets the dialog visibility flag and clears all quota usage information
-     * from the UI state, including current usage, max records, quota message, and
-     * the web URL for subscription management.
+     * Only hides the modal dialog; the quota details are preserved so the in-app paused banner
+     * (which stays visible while [NsAnalyticsConnectionUiState.uploadPausedForQuota] is true) keeps
+     * showing the usage numbers and the manage-subscription link. The quota state is cleared when
+     * uploads actually resume.
      */
     fun dismissQuotaDialog() {
         _uiState.value = _uiState.value.copy(
-            showQuotaExceededDialog = false,
-            quotaCurrentUsage = 0,
-            quotaMaxRecords = 0,
-            quotaMessage = null,
-            quotaWebUrl = null
+            showQuotaExceededDialog = false
         )
     }
 
@@ -1066,6 +1128,28 @@ class NsAnalyticsConnectionViewModel(
                 } else {
                     NsAnalyticsUploadWorker.cancelPeriodicUpload(context)
                     workManager.cancelAllWorkByTag(NsAnalyticsConstants.NS_ANALYTICS_PERIODIC_WORKER_TAG)
+                    // The quota re-check uses a separate work name/tag and would otherwise survive
+                    // the periodic cancel; stop it too when the user disables auto upload.
+                    NsAnalyticsUploadWorker.cancelPausedRetryCheck(context)
+                    // Disabling auto upload is an explicit user action, so clear any quota pause
+                    // too. Otherwise the persisted pause flag would silently block scheduling if
+                    // the user later re-enables auto upload. (Manual "Upload Now" still works and
+                    // re-pauses if the workspace is still over quota.)
+                    if (NsAnalyticsSecureStorage.isUploadPausedForQuota(context)) {
+                        NsAnalyticsSecureStorage.clearQuotaPause(context)
+                        NsAnalyticsNotificationHelper.clearUploadsPausedNotification(context)
+                        // Reset the status row too, otherwise the red "quota exceeded" status
+                        // lingers after the paused banner is removed.
+                        val hasRecords = _uiState.value.queuedRecords > 0
+                        _uiState.value = _uiState.value.copy(
+                            uploadPausedForQuota = false,
+                            uploadState = if (hasRecords) UploadState.IDLE else UploadState.EMPTY,
+                            uploadStatusMessage = context.getString(
+                                if (hasRecords) R.string.ns_analytics_upload_status_ready
+                                else R.string.ns_analytics_upload_status_no_records
+                            )
+                        )
+                    }
                     showMessage("Auto upload disabled")
                 }
             } catch (e: Exception) {
@@ -1252,17 +1336,13 @@ class NsAnalyticsConnectionViewModel(
                                         NsAnalyticsConstants.EXTRA_QUOTA_WEB_URL
                                     )
 
-                                    // Update UI state to show quota dialog
-                                    _uiState.value = _uiState.value.copy(
-                                        isUploading = false,
-                                        uploadState = UploadState.UNAVAILABLE,
-                                        uploadStatusMessage = context.getString(R.string.ns_analytics_upload_status_quota_exceeded),
-                                        uploadProgress = 0f,
-                                        showQuotaExceededDialog = true,
-                                        quotaCurrentUsage = currentUsage,
-                                        quotaMaxRecords = maxRecords,
-                                        quotaMessage = quotaMessage,
-                                        quotaWebUrl = quotaWebUrl
+                                    // Show the paused banner plus the modal dialog (manual upload)
+                                    applyQuotaPausedState(
+                                        currentUsage,
+                                        maxRecords,
+                                        quotaMessage,
+                                        quotaWebUrl,
+                                        showDialog = true
                                     )
                                 }
 
@@ -1349,7 +1429,18 @@ class NsAnalyticsConnectionViewModel(
                     val queueSize = database.nsAnalyticsDao().getPendingRecordCount()
                     database.nsAnalyticsDao().clearQueue()
 
-                    _uiState.value = _uiState.value.copy(queuedRecords = 0)
+                    // An empty queue cannot be over quota locally. Clear any quota pause so the
+                    // device isn't stranded paused with no records left to act on.
+                    if (NsAnalyticsSecureStorage.isUploadPausedForQuota(context)) {
+                        NsAnalyticsSecureStorage.clearQuotaPause(context)
+                        NsAnalyticsUploadWorker.cancelPausedRetryCheck(context)
+                        NsAnalyticsNotificationHelper.clearUploadsPausedNotification(context)
+                    }
+
+                    _uiState.value = _uiState.value.copy(
+                        queuedRecords = 0,
+                        uploadPausedForQuota = false
+                    )
                     showMessage("Cleared $queueSize queued records")
                 }
             } catch (e: Exception) {
@@ -1921,6 +2012,9 @@ data class NsAnalyticsConnectionUiState(
     val quotaMaxRecords: Int = 0,
     val quotaMessage: String? = null,
     val quotaWebUrl: String? = null,
+    // True when automatic uploads are paused because the workspace record quota was exceeded.
+    // Drives the in-app paused banner and keeps the manual "Upload now to resume" action enabled.
+    val uploadPausedForQuota: Boolean = false,
     // Registration confirmation dialog states
     val pendingQrData: NsAnalyticsQrData? = null,
     val showRegistrationConfirmDialog: Boolean = false,

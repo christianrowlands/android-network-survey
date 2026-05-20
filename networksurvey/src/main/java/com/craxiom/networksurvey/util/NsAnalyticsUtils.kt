@@ -7,6 +7,7 @@ import com.craxiom.networksurvey.data.api.ApiErrorResponse
 import com.craxiom.networksurvey.data.api.NsAnalyticsApiFactory
 import com.craxiom.networksurvey.data.api.QuotaErrorResponse
 import com.craxiom.networksurvey.logging.db.uploader.NsAnalyticsUploadWorker
+import com.craxiom.networksurvey.ui.nsanalytics.NsAnalyticsNotificationHelper
 import com.google.gson.Gson
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -138,6 +139,10 @@ object NsAnalyticsUtils {
             cancelAllWorkByTag(NsAnalyticsConstants.NS_ANALYTICS_PERIODIC_WORKER_TAG)
             cancelAllWorkByTag(NsAnalyticsConstants.NS_ANALYTICS_UPLOAD_WORKER_TAG)
         }
+
+        // Dismiss the "uploads paused" notification if it was showing (the pause state itself was
+        // already cleared by clearAllCredentials above).
+        NsAnalyticsNotificationHelper.clearUploadsPausedNotification(context)
 
         Timber.i("Completed deregistration cleanup: cleared credentials and cancelled uploads")
     }

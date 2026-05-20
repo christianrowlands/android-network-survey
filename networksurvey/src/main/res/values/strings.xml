@@ -1123,7 +1123,17 @@
     <string name="ns_analytics_upload_button_uploading">Uploading…</string>
     <string name="ns_analytics_upload_button_no_records">No Records</string>
     <string name="ns_analytics_upload_button_unavailable">Not Available</string>
+    <string name="ns_analytics_upload_button_resume">Upload now to resume</string>
+    <string name="ns_analytics_upload_resumed">Uploads resumed</string>
     <string name="ns_analytics_open_dashboard">Open NS Analytics</string>
+
+    <!-- Quota paused banner and notification -->
+    <string name="ns_analytics_upload_paused_banner_title">Uploads paused: quota reached</string>
+    <string name="ns_analytics_upload_paused_banner_body">Automatic uploads are paused because your workspace reached its record limit. Free up space or upgrade, then tap Upload now to resume.</string>
+    <string name="ns_analytics_quota_usage">Current usage: %1$s / %2$s records</string>
+    <string name="ns_analytics_manage_subscription">Manage subscription</string>
+    <string name="ns_analytics_paused_notification_title">NS Analytics uploads paused</string>
+    <string name="ns_analytics_paused_notification_text">Workspace record quota reached. Tap to review and resume.</string>
 
     <!-- QR Code Error Messages -->
     <string name="qr_code_data_too_large_title">QR Code Error</string>

@@ -26,6 +26,7 @@ import androidx.core.content.ContextCompat
 import androidx.lifecycle.lifecycleScope
 import androidx.preference.PreferenceManager
 import com.craxiom.networksurvey.constants.NetworkSurveyConstants
+import com.craxiom.networksurvey.constants.NsAnalyticsConstants
 import com.craxiom.networksurvey.data.PlmnColorOverrideManager
 import com.craxiom.networksurvey.listeners.IGnssFailureListener
 import com.craxiom.networksurvey.services.GrpcConnectionService
@@ -66,6 +67,8 @@ class NetworkSurveyActivity : AppCompatActivity() {
 
         // Handle NS Analytics deep links
         handleNsAnalyticsDeepLink()
+        // Handle a tap on the "uploads paused" notification
+        handleNsAnalyticsNavigationExtra()
 
         // Load user color overrides before Compose renders the tower map
         PlmnColorOverrideManager(this)
@@ -158,6 +161,8 @@ class NetworkSurveyActivity : AppCompatActivity() {
         setIntent(intent)
         // Handle the deep link when app is already running
         handleNsAnalyticsDeepLink()
+        // Handle a tap on the "uploads paused" notification when app is already running
+        handleNsAnalyticsNavigationExtra()
     }
 
     override fun onResume() {
@@ -680,6 +685,23 @@ class NetworkSurveyActivity : AppCompatActivity() {
             is NsAnalyticsDeepLinkHandler.DeepLinkResult.NotApplicable -> {
                 Timber.d("Not an NS Analytics deep link, ignoring")
             }
+        }
+    }
+
+    /**
+     * Handle a tap on the "uploads paused" notification, which routes the user to the NS Analytics
+     * screen via the navigation extra set by [com.craxiom.networksurvey.ui.nsanalytics.NsAnalyticsNotificationHelper].
+     */
+    private fun handleNsAnalyticsNavigationExtra() {
+        if (intent?.getBooleanExtra(
+                NsAnalyticsConstants.EXTRA_NAVIGATE_TO_NS_ANALYTICS,
+                false
+            ) == true
+        ) {
+            Timber.d("Navigating to NS Analytics from notification tap")
+            deepLinkViewModel.navigateToNsAnalytics()
+            // Clear the extra so a configuration change or re-create doesn't navigate again.
+            intent.removeExtra(NsAnalyticsConstants.EXTRA_NAVIGATE_TO_NS_ANALYTICS)
         }
     }
 

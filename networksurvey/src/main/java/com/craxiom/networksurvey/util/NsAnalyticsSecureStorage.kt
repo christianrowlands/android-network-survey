@@ -199,6 +199,9 @@ object NsAnalyticsSecureStorage {
         }
         putEncryptedBoolean(prefs, NsAnalyticsConstants.PROPERTY_NS_ANALYTICS_REGISTERED, true)
         putEncryptedLong(prefs, "ns_analytics_registered_at", System.currentTimeMillis())
+
+        // A fresh registration starts with a clean slate; any prior quota pause no longer applies.
+        clearQuotaPause(context)
     }
 
     /**
@@ -409,6 +412,123 @@ object NsAnalyticsSecureStorage {
     }
 
     /**
+     * Details describing why automatic uploads are paused after a 402 quota-exceeded response.
+     */
+    data class QuotaPauseInfo(
+        val currentUsage: Int,
+        val maxRecords: Int,
+        val message: String?,
+        val webUrl: String?,
+        val retryAfterEpochMillis: Long
+    )
+
+    /**
+     * Persist the "uploads paused due to quota" state along with the quota details needed to
+     * inform the user.
+     *
+     * Uses synchronous commit() so the worker can immediately read the flag back when deciding
+     * whether to reschedule periodic uploads (clear-then-reschedule must be consistent in a
+     * single worker pass).
+     */
+    @SuppressLint("ApplySharedPref")
+    fun saveQuotaPause(
+        context: Context,
+        currentUsage: Int,
+        maxRecords: Int,
+        message: String?,
+        webUrl: String?,
+        retryAfterEpochMillis: Long
+    ) {
+        getPrefs(context).edit()
+            .putString(
+                NsAnalyticsConstants.PROPERTY_NS_ANALYTICS_UPLOAD_PAUSED_QUOTA,
+                cryptoManager.encrypt(true.toString())
+            )
+            .putString(
+                NsAnalyticsConstants.PROPERTY_NS_ANALYTICS_QUOTA_PAUSE_USAGE,
+                cryptoManager.encrypt(currentUsage.toString())
+            )
+            .putString(
+                NsAnalyticsConstants.PROPERTY_NS_ANALYTICS_QUOTA_PAUSE_MAX,
+                cryptoManager.encrypt(maxRecords.toString())
+            )
+            .putString(
+                NsAnalyticsConstants.PROPERTY_NS_ANALYTICS_QUOTA_PAUSE_MESSAGE,
+                if (message != null) cryptoManager.encrypt(message) else null
+            )
+            .putString(
+                NsAnalyticsConstants.PROPERTY_NS_ANALYTICS_QUOTA_PAUSE_WEB_URL,
+                if (webUrl != null) cryptoManager.encrypt(webUrl) else null
+            )
+            .putString(
+                NsAnalyticsConstants.PROPERTY_NS_ANALYTICS_QUOTA_PAUSE_RETRY_AFTER,
+                cryptoManager.encrypt(retryAfterEpochMillis.toString())
+            )
+            .commit()
+    }
+
+    /**
+     * Whether automatic uploads are currently paused because the workspace record quota was exceeded.
+     */
+    fun isUploadPausedForQuota(context: Context): Boolean {
+        return getDecryptedBoolean(
+            getPrefs(context),
+            NsAnalyticsConstants.PROPERTY_NS_ANALYTICS_UPLOAD_PAUSED_QUOTA,
+            false
+        )
+    }
+
+    /**
+     * Retrieve the persisted quota-pause details, or null if uploads are not paused for quota.
+     */
+    fun getQuotaPauseInfo(context: Context): QuotaPauseInfo? {
+        val prefs = getPrefs(context)
+        if (!getDecryptedBoolean(
+                prefs,
+                NsAnalyticsConstants.PROPERTY_NS_ANALYTICS_UPLOAD_PAUSED_QUOTA,
+                false
+            )
+        ) {
+            return null
+        }
+        return QuotaPauseInfo(
+            currentUsage = getDecryptedInt(
+                prefs, NsAnalyticsConstants.PROPERTY_NS_ANALYTICS_QUOTA_PAUSE_USAGE, 0
+            ),
+            maxRecords = getDecryptedInt(
+                prefs, NsAnalyticsConstants.PROPERTY_NS_ANALYTICS_QUOTA_PAUSE_MAX, 0
+            ),
+            message = getDecryptedString(
+                prefs, NsAnalyticsConstants.PROPERTY_NS_ANALYTICS_QUOTA_PAUSE_MESSAGE
+            ),
+            webUrl = getDecryptedString(
+                prefs, NsAnalyticsConstants.PROPERTY_NS_ANALYTICS_QUOTA_PAUSE_WEB_URL
+            ),
+            retryAfterEpochMillis = getDecryptedLong(
+                prefs, NsAnalyticsConstants.PROPERTY_NS_ANALYTICS_QUOTA_PAUSE_RETRY_AFTER, 0
+            )
+        )
+    }
+
+    /**
+     * Clear the "uploads paused due to quota" state.
+     *
+     * Uses synchronous commit() so a subsequent reschedule check in the same worker pass sees
+     * the cleared flag.
+     */
+    @SuppressLint("ApplySharedPref")
+    fun clearQuotaPause(context: Context) {
+        getPrefs(context).edit()
+            .remove(NsAnalyticsConstants.PROPERTY_NS_ANALYTICS_UPLOAD_PAUSED_QUOTA)
+            .remove(NsAnalyticsConstants.PROPERTY_NS_ANALYTICS_QUOTA_PAUSE_USAGE)
+            .remove(NsAnalyticsConstants.PROPERTY_NS_ANALYTICS_QUOTA_PAUSE_MAX)
+            .remove(NsAnalyticsConstants.PROPERTY_NS_ANALYTICS_QUOTA_PAUSE_MESSAGE)
+            .remove(NsAnalyticsConstants.PROPERTY_NS_ANALYTICS_QUOTA_PAUSE_WEB_URL)
+            .remove(NsAnalyticsConstants.PROPERTY_NS_ANALYTICS_QUOTA_PAUSE_RETRY_AFTER)
+            .commit()
+    }
+
+    /**
      * Clear all NS Analytics credentials and settings
      */
     fun clearAllCredentials(context: Context) {
@@ -422,6 +542,9 @@ object NsAnalyticsSecureStorage {
             remove("ns_analytics_registered_at") // FIXME we don't ever use the registered at time, delete it or use it
             remove("ns_analytics_qr_data") // FIXME do we store the full QR data and then the part? We only need to store it once
         }
+
+        // A device with no credentials cannot be quota-paused; clear any stale pause state.
+        clearQuotaPause(context)
 
         Timber.i("Cleared all NS Analytics credentials")
     }

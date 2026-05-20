@@ -20,6 +20,14 @@ public class NsAnalyticsConstants
     public static final String PROPERTY_NS_ANALYTICS_LAST_UPLOAD_RECORDS = "ns_analytics_last_upload_records";
     public static final String PROPERTY_NS_ANALYTICS_LAST_UPLOAD_ERROR_TYPE = "ns_analytics_last_upload_error_type";
     public static final String PROPERTY_NS_ANALYTICS_AUTO_UPLOAD = "ns_analytics_auto_upload";
+
+    // Quota Pause State (persisted when automatic uploads are paused due to a 402 quota-exceeded response)
+    public static final String PROPERTY_NS_ANALYTICS_UPLOAD_PAUSED_QUOTA = "ns_analytics_upload_paused_quota";
+    public static final String PROPERTY_NS_ANALYTICS_QUOTA_PAUSE_USAGE = "ns_analytics_quota_pause_usage";
+    public static final String PROPERTY_NS_ANALYTICS_QUOTA_PAUSE_MAX = "ns_analytics_quota_pause_max";
+    public static final String PROPERTY_NS_ANALYTICS_QUOTA_PAUSE_MESSAGE = "ns_analytics_quota_pause_message";
+    public static final String PROPERTY_NS_ANALYTICS_QUOTA_PAUSE_WEB_URL = "ns_analytics_quota_pause_web_url";
+    public static final String PROPERTY_NS_ANALYTICS_QUOTA_PAUSE_RETRY_AFTER = "ns_analytics_quota_pause_retry_after";
     public static final String PROPERTY_NS_ANALYTICS_CELLULAR_ENABLED = "ns_analytics_cellular_enabled";
     public static final String PROPERTY_NS_ANALYTICS_WIFI_ENABLED = "ns_analytics_wifi_enabled";
     public static final String PROPERTY_NS_ANALYTICS_BLUETOOTH_ENABLED = "ns_analytics_bluetooth_enabled";
@@ -44,6 +52,10 @@ public class NsAnalyticsConstants
     public static final int MAX_BATCH_SIZE = 1000; // Maximum records per upload batch
     public static final int MAX_RETRY_COUNT = 3;
     public static final long CLEANUP_AGE_DAYS = 7; // Clean up uploaded records after 7 days
+
+    // Quota pause re-check timing (used when uploads are paused due to a 402 quota-exceeded response)
+    public static final long DEFAULT_QUOTA_RETRY_AFTER_SECONDS = 86400L; // 24 hours, matches the server Retry-After hint
+    public static final long MAX_QUOTA_RETRY_AFTER_SECONDS = 7 * 24 * 60 * 60L; // Clamp absurd server values to 7 days
 
     // Record Types
     public static final String RECORD_TYPE_GSM = "gsm";
@@ -72,6 +84,9 @@ public class NsAnalyticsConstants
     // Intent Extras
     public static final String EXTRA_UPLOAD_SUCCESS = "upload_success";
     public static final String EXTRA_RECORDS_UPLOADED = "records_uploaded";
+
+    // Extra used by the "uploads paused" notification to route the user to the NS Analytics screen
+    public static final String EXTRA_NAVIGATE_TO_NS_ANALYTICS = "navigate_to_ns_analytics";
 
     // Error Codes
     public static final String ERROR_CODE_DEVICE_DEREGISTERED = "DEVICE_DEREGISTERED";

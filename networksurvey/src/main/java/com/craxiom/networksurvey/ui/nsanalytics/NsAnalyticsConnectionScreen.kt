@@ -427,6 +427,11 @@ private fun NsAnalyticsConnectionContent(
                             uploadFrequencyMinutes = uiState.uploadFrequencyMinutes,
                             lastUploadTime = uiState.lastUploadTime,
                             lastUploadResult = uiState.lastUploadResult,
+                            uploadPausedForQuota = uiState.uploadPausedForQuota,
+                            quotaCurrentUsage = uiState.quotaCurrentUsage,
+                            quotaMaxRecords = uiState.quotaMaxRecords,
+                            quotaMessage = uiState.quotaMessage,
+                            quotaWebUrl = uiState.quotaWebUrl,
                             onToggleAutoUpload = onToggleAutoUpload,
                             onUploadNowClick = onUploadNowClick
                         )
@@ -941,6 +946,11 @@ private fun UploadSettingsCard(
     uploadFrequencyMinutes: Int,
     lastUploadTime: Long,
     lastUploadResult: String?,
+    uploadPausedForQuota: Boolean,
+    quotaCurrentUsage: Int,
+    quotaMaxRecords: Int,
+    quotaMessage: String?,
+    quotaWebUrl: String?,
     onToggleAutoUpload: (Boolean) -> Unit,
     onUploadNowClick: () -> Unit
 ) {
@@ -969,6 +979,17 @@ private fun UploadSettingsCard(
                 state = uploadState,
                 statusMessage = uploadStatusMessage
             )
+
+            // Quota paused banner: explains why automatic uploads stopped and how to resume.
+            if (uploadPausedForQuota) {
+                Spacer(modifier = Modifier.height(12.dp))
+                QuotaPausedBanner(
+                    currentUsage = quotaCurrentUsage,
+                    maxRecords = quotaMaxRecords,
+                    quotaMessage = quotaMessage,
+                    quotaWebUrl = quotaWebUrl
+                )
+            }
 
             // Last upload info with result
             if (lastUploadTime > 0) {
@@ -1053,13 +1074,16 @@ private fun UploadSettingsCard(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Upload Now button with state-aware text
-            val buttonEnabled = uploadState == UploadState.IDLE
-            val buttonText = when (uploadState) {
-                UploadState.UPLOADING -> stringResource(R.string.ns_analytics_upload_button_uploading)
-                UploadState.EMPTY -> stringResource(R.string.ns_analytics_upload_button_no_records)
-                UploadState.UNAVAILABLE -> stringResource(R.string.ns_analytics_upload_button_unavailable)
-                UploadState.IDLE -> stringResource(R.string.ns_analytics_upload_button_upload_now)
+            // Upload Now button with state-aware text. While quota-paused, keep it enabled so the
+            // manual upload can resume automatic uploads (it bypasses the pause server-side).
+            val buttonEnabled = uploadState == UploadState.IDLE ||
+                    (uploadPausedForQuota && uploadState != UploadState.UPLOADING)
+            val buttonText = when {
+                uploadState == UploadState.UPLOADING -> stringResource(R.string.ns_analytics_upload_button_uploading)
+                uploadPausedForQuota -> stringResource(R.string.ns_analytics_upload_button_resume)
+                uploadState == UploadState.EMPTY -> stringResource(R.string.ns_analytics_upload_button_no_records)
+                uploadState == UploadState.UNAVAILABLE -> stringResource(R.string.ns_analytics_upload_button_unavailable)
+                else -> stringResource(R.string.ns_analytics_upload_button_upload_now)
             }
 
             Button(
@@ -1123,6 +1147,72 @@ private fun UploadStatusRow(
             style = MaterialTheme.typography.bodyMedium,
             color = Color.White
         )
+    }
+}
+
+/**
+ * Banner shown when automatic uploads are paused because the workspace record quota was exceeded.
+ * Explains why uploads stopped, shows current usage, and offers a link to manage the subscription.
+ * The "Upload now to resume" action lives in the parent card's button.
+ */
+@Composable
+private fun QuotaPausedBanner(
+    currentUsage: Int,
+    maxRecords: Int,
+    quotaMessage: String?,
+    quotaWebUrl: String?
+) {
+    val context = LocalContext.current
+    Surface(
+        color = Color(0xFF3A2E12),
+        shape = RoundedCornerShape(8.dp),
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Column(modifier = Modifier.padding(12.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(
+                    imageVector = Icons.Filled.Info,
+                    contentDescription = null,
+                    tint = Color(0xFFFFC107),
+                    modifier = Modifier.size(20.dp)
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = stringResource(R.string.ns_analytics_upload_paused_banner_title),
+                    style = MaterialTheme.typography.titleSmall,
+                    color = Color.White,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+
+            Spacer(modifier = Modifier.height(6.dp))
+
+            Text(
+                text = quotaMessage?.takeIf { it.isNotBlank() }
+                    ?: stringResource(R.string.ns_analytics_upload_paused_banner_body),
+                style = MaterialTheme.typography.bodySmall,
+                color = Color.White.copy(alpha = 0.9f)
+            )
+
+            if (maxRecords > 0) {
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = stringResource(
+                        R.string.ns_analytics_quota_usage,
+                        NsAnalyticsUtils.formatNumberWithThousandsSeparator(currentUsage),
+                        NsAnalyticsUtils.formatNumberWithThousandsSeparator(maxRecords)
+                    ),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = Color.Gray
+                )
+            }
+
+            if (!quotaWebUrl.isNullOrBlank()) {
+                TextButton(onClick = { openUrlInBrowser(context, quotaWebUrl) }) {
+                    Text(stringResource(R.string.ns_analytics_manage_subscription))
+                }
+            }
+        }
     }
 }
 
