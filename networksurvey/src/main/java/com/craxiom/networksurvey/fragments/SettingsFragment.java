@@ -2,8 +2,8 @@ package com.craxiom.networksurvey.fragments;
 
 import static com.craxiom.networksurvey.constants.CdrPermissions.CDR_OPTIONAL_PERMISSIONS;
 import static com.craxiom.networksurvey.constants.CdrPermissions.CDR_REQUIRED_PERMISSIONS;
-import static com.craxiom.networksurvey.fragments.DashboardFragment.ACCESS_OPTIONAL_PERMISSION_REQUEST_ID;
-import static com.craxiom.networksurvey.fragments.DashboardFragment.ACCESS_REQUIRED_PERMISSION_REQUEST_ID;
+import static com.craxiom.networksurvey.constants.NetworkSurveyConstants.ACCESS_OPTIONAL_PERMISSION_REQUEST_ID;
+import static com.craxiom.networksurvey.constants.NetworkSurveyConstants.ACCESS_REQUIRED_PERMISSION_REQUEST_ID;
 
 import android.content.Context;
 import android.content.Intent;

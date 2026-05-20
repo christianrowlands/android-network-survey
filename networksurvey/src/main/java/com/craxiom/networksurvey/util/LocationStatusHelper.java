@@ -9,7 +9,7 @@ import java.text.DecimalFormat;
 
 /**
  * Shared utility for computing location status state and formatting location display values.
- * Used by both DashboardFragment and NetworkDetailsFragment to eliminate duplicated logic.
+ * Used by the Compose dashboard and NetworkDetailsFragment to eliminate duplicated logic.
  *
  * @since 1.50
  */

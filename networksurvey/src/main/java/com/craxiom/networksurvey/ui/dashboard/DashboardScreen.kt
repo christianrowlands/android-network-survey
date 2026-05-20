@@ -45,9 +45,9 @@ import com.craxiom.networksurvey.util.PreferenceUtils
 import timber.log.Timber
 
 /**
- * The main Dashboard screen composable. Replaces DashboardFragment with a fully
- * Compose-native implementation. Manages service binding, composes all cards
- * in a scrollable column, and handles dialog state.
+ * The main Dashboard screen composable. A fully Compose-native implementation that
+ * manages service binding, composes all cards in a scrollable column, and handles
+ * dialog state.
  */
 @Composable
 fun DashboardScreen(
