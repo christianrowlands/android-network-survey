@@ -48,12 +48,25 @@ jobs:
   buildRelease:
     needs: test
     runs-on: ubuntu-latest
+    outputs:
+      messagingVersion: ${{ steps.messaging_version.outputs.version }}
 
     steps:
       - name: Checkout the code
         uses: actions/checkout@v6
         with:
           ref: develop
+
+      - name: Extract NS Messaging API version
+        id: messaging_version
+        run: |
+          VERSION=$(grep -E '^networkSurveyMessaging[[:space:]]*=' gradle/libs.versions.toml | sed -E 's/.*"([^"]+)".*/\1/' || true)
+          if [ -z "$VERSION" ]; then
+            echo "ERROR: could not parse networkSurveyMessaging version from gradle/libs.versions.toml" >&2
+            exit 1
+          fi
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "NS Messaging API version: $VERSION"
 
       - name: Set up JDK 21
         uses: actions/setup-java@v5
@@ -167,6 +180,12 @@ jobs:
           commit: ${{ github.sha }}
           body: |
             ## What's Changed
+
+            ---
+
+            ### NS Messaging API
+
+            This release runs on NS Messaging API version ${{ needs.buildRelease.outputs.messagingVersion }}.
 
             ---
 
