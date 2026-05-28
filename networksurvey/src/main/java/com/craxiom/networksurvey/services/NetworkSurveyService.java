@@ -68,6 +68,7 @@ import com.craxiom.networksurvey.listeners.IDeviceStatusListener;
 import com.craxiom.networksurvey.listeners.IGnssFailureListener;
 import com.craxiom.networksurvey.listeners.IGnssSurveyRecordListener;
 import com.craxiom.networksurvey.listeners.ILoggingChangeListener;
+import com.craxiom.networksurvey.listeners.IMissionIdListener;
 import com.craxiom.networksurvey.listeners.IPhoneStateListener;
 import com.craxiom.networksurvey.listeners.IUploadRecordCountListener;
 import com.craxiom.networksurvey.listeners.IWifiSurveyRecordListener;
@@ -96,6 +97,7 @@ import com.google.gson.Gson;
 import com.google.protobuf.BoolValue;
 import com.google.protobuf.Int32Value;
 
+import java.time.LocalDateTime;
 import java.time.ZonedDateTime;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -185,6 +187,17 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
     private final AtomicInteger surveySessionRecordCount = new AtomicInteger(0);
     private final AtomicInteger surveySessionUploadRecordCount = new AtomicInteger(0);
 
+    // Mission ID tracking. The Mission ID identifies one survey session and rolls when the first
+    // mission relevant survey of a session starts (OpenCelliD/BeaconDB uploads do not count).
+    // missionId is the rolled value shown to the user; it is null until the first real mission and
+    // is retained as the most recent value after a session ends. bootstrapMissionId is only a
+    // non-null fallback used to stamp records before any real mission has started (for example
+    // when only OpenCelliD/BeaconDB scanning is running, where the value is discarded anyway).
+    private volatile String bootstrapMissionId;
+    private volatile String missionId = null;
+    private boolean missionSessionActive = false;
+    private final Set<IMissionIdListener> missionIdListeners = new CopyOnWriteArraySet<>();
+
     public NetworkSurveyService()
     {
         surveyServiceBinder = new SurveyServiceBinder(this);
@@ -221,6 +234,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
         serviceHandler = new Handler(serviceLooper);
 
         deviceId = createDeviceId();
+        bootstrapMissionId = generateMissionId();
         deviceStatusCsvLogger = new DeviceStatusCsvLogger(this);
 
         primaryLocationListener = new GpsListener();
@@ -1705,10 +1719,23 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
      */
     public boolean isAnySurveyActive()
     {
+        return isAnyMissionRelevantSurveyActive() || isUploadScanningActive();
+    }
+
+    /**
+     * Check if any survey that is relevant to the Mission ID is currently active.
+     * <p>
+     * This is the same set as {@link #isAnySurveyActive()} except it excludes OpenCelliD/BeaconDB
+     * upload scanning ({@link #isUploadScanningActive()}). Those community upload databases ignore
+     * the Mission ID, so starting or stopping them must not roll it.
+     *
+     * @return true if any mission relevant survey is active
+     */
+    private boolean isAnyMissionRelevantSurveyActive()
+    {
         return isCellularLoggingEnabled() || isPhoneStateLoggingEnabled() || isWifiLoggingEnabled() ||
                 isBluetoothLoggingEnabled() || isGnssLoggingEnabled() || isCdrLoggingEnabled() ||
-                isUploadScanningActive() || isMqttStreamingActive() || isGrpcConnectionActive() ||
-                isNsAnalyticsScanningActive();
+                isMqttStreamingActive() || isGrpcConnectionActive() || isNsAnalyticsScanningActive();
     }
 
     /**
@@ -1810,29 +1837,170 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
     /**
      * Called when any survey starts. Initializes session tracking if this is the first survey.
      */
-    private synchronized void onSurveyStarted()
+    private void onSurveyStarted()
     {
-        if (surveySessionStartTime == null)
+        final String missionIdSnapshot;
+        final boolean missionSessionActiveSnapshot;
+        final boolean rolled;
+        synchronized (this)
         {
-            Timber.i("Starting new survey session");
-            surveySessionStartTime = System.currentTimeMillis();
-            surveySessionRecordCount.set(0);
-            surveySessionUploadRecordCount.set(0);
+            if (surveySessionStartTime == null)
+            {
+                Timber.i("Starting new survey session");
+                surveySessionStartTime = System.currentTimeMillis();
+                surveySessionRecordCount.set(0);
+                surveySessionUploadRecordCount.set(0);
+            }
+
+            // Roll the Mission ID only on the transition to the first mission relevant survey of a
+            // session. Adding another survey to an already running session keeps the same value,
+            // and OpenCelliD/BeaconDB only sessions never roll (they are excluded from the gate).
+            if (!missionSessionActive && isAnyMissionRelevantSurveyActive())
+            {
+                missionSessionActive = true;
+                missionId = generateMissionId();
+                Timber.i("Rolled to a new Mission ID: %s", missionId);
+                rolled = true;
+            } else
+            {
+                rolled = false;
+            }
+            missionIdSnapshot = missionId;
+            missionSessionActiveSnapshot = missionSessionActive;
         }
+
+        // Notify outside the lock so listener callbacks never run while holding the service monitor.
+        if (rolled) notifyMissionIdListeners(missionIdSnapshot, missionSessionActiveSnapshot);
     }
 
     /**
      * Called when any survey stops. Clears session tracking if all surveys have stopped.
      */
-    private synchronized void onSurveyStopped()
+    private void onSurveyStopped()
     {
-        if (!isAnySurveyActive())
+        final String missionIdSnapshot;
+        final boolean missionSessionActiveSnapshot;
+        final boolean ended;
+        synchronized (this)
         {
-            Timber.i("All surveys stopped, ending survey session. Total records: %d, Upload records: %d",
-                    surveySessionRecordCount.get(), surveySessionUploadRecordCount.get());
-            surveySessionStartTime = null;
-            surveySessionRecordCount.set(0);
-            surveySessionUploadRecordCount.set(0);
+            if (!isAnySurveyActive())
+            {
+                Timber.i("All surveys stopped, ending survey session. Total records: %d, Upload records: %d",
+                        surveySessionRecordCount.get(), surveySessionUploadRecordCount.get());
+                surveySessionStartTime = null;
+                surveySessionRecordCount.set(0);
+                surveySessionUploadRecordCount.set(0);
+            }
+
+            // End the mission session when the last mission relevant survey stops. The missionId is
+            // intentionally retained as the most recent value so the UI can still show and copy it
+            // and any trailing records stay non-null. The next survey start rolls a fresh one.
+            if (missionSessionActive && !isAnyMissionRelevantSurveyActive())
+            {
+                missionSessionActive = false;
+                Timber.i("Mission session ended. Most recent Mission ID: %s", missionId);
+                ended = true;
+            } else
+            {
+                ended = false;
+            }
+            missionIdSnapshot = missionId;
+            missionSessionActiveSnapshot = missionSessionActive;
+        }
+
+        // Notify outside the lock so listener callbacks never run while holding the service monitor.
+        if (ended) notifyMissionIdListeners(missionIdSnapshot, missionSessionActiveSnapshot);
+    }
+
+    /**
+     * Called by the {@link GrpcConnectionService} when the gRPC streaming connection becomes
+     * connected or disconnected. gRPC streaming is a mission relevant survey, but unlike MQTT the
+     * connection is driven from a separate service, so it must signal the survey session here.
+     * This mirrors how connectToMqttBroker / disconnectFromMqttBroker call onSurveyStarted /
+     * onSurveyStopped. The gRPC service only reports DISCONNECTED for a real disconnect (not a
+     * transient reconnect), so a network blip will not roll a new Mission ID.
+     *
+     * @param connected true if the gRPC connection just became CONNECTED, false if it disconnected.
+     */
+    public void onGrpcConnectionStateChanged(boolean connected)
+    {
+        if (connected)
+        {
+            onSurveyStarted();
+        } else
+        {
+            onSurveyStopped();
+        }
+        updateWakeLock();
+    }
+
+    /**
+     * Generates a new Mission ID of the form "NS &lt;deviceId&gt; &lt;yyyyMMdd-HHmmss&gt;" using the
+     * current time. Reuses {@link SurveyRecordProcessor#DATE_TIME_FORMATTER} so the trailing
+     * timestamp format stays consistent with the rest of the app.
+     *
+     * @return A new Mission ID.
+     */
+    private String generateMissionId()
+    {
+        return NetworkSurveyConstants.MISSION_ID_PREFIX + deviceId + " "
+                + SurveyRecordProcessor.DATE_TIME_FORMATTER.format(LocalDateTime.now());
+    }
+
+    /**
+     * @return The Mission ID to stamp on survey records. This is always non-null: it returns the
+     * current rolled Mission ID, or the bootstrap value if no mission relevant survey has started
+     * yet (for example when only OpenCelliD/BeaconDB scanning is running, where the value is
+     * discarded before reaching any consumer that uses it).
+     */
+    public String getMissionIdForRecords()
+    {
+        final String currentMissionId = missionId;
+        return currentMissionId != null ? currentMissionId : bootstrapMissionId;
+    }
+
+    /**
+     * @return The current rolled Mission ID for display, or null if no mission relevant survey has
+     * started during this app session. After a survey stops, this retains the most recent value.
+     */
+    public String getRolledMissionId()
+    {
+        return missionId;
+    }
+
+    /**
+     * @return true while at least one mission relevant survey is running.
+     */
+    public synchronized boolean isMissionSessionActive()
+    {
+        return missionSessionActive;
+    }
+
+    /**
+     * Registers a listener that is notified when the Mission ID rolls or the mission session ends.
+     *
+     * @param listener The listener to register.
+     */
+    public void registerMissionIdListener(IMissionIdListener listener)
+    {
+        missionIdListeners.add(listener);
+    }
+
+    /**
+     * Unregisters a previously registered Mission ID listener.
+     *
+     * @param listener The listener to unregister.
+     */
+    public void unregisterMissionIdListener(IMissionIdListener listener)
+    {
+        missionIdListeners.remove(listener);
+    }
+
+    private void notifyMissionIdListeners(String currentMissionId, boolean sessionActive)
+    {
+        for (IMissionIdListener listener : missionIdListeners)
+        {
+            listener.onMissionIdChanged(currentMissionId, sessionActive);
         }
     }
 

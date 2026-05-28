@@ -129,7 +129,6 @@ import com.google.protobuf.StringValue;
 import com.google.protobuf.UInt32Value;
 import com.google.protobuf.UInt64Value;
 
-import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
@@ -159,7 +158,6 @@ import timber.log.Timber;
 public class SurveyRecordProcessor
 {
     public static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyyMMdd-HHmmss").withZone(ZoneId.systemDefault());
-    private static final String MISSION_ID_PREFIX = "NS ";
     private static final int UNSET_TX_POWER_LEVEL = 127;
 
     /**
@@ -190,7 +188,6 @@ public class SurveyRecordProcessor
 
     private final ExecutorService executorService;
     private final String deviceId;
-    private final String missionId;
     private final Context context;
     private NetworkSurveyService networkSurveyService;
     private final SsidExclusionManager ssidExclusionManager;
@@ -231,8 +228,6 @@ public class SurveyRecordProcessor
         this.executorService = executorService;
         this.context = context;
 
-        missionId = MISSION_ID_PREFIX + deviceId + " " + DATE_TIME_FORMATTER.format(LocalDateTime.now());
-
         gnssScanRateMs = PreferenceUtils.getScanRatePreferenceMs(NetworkSurveyConstants.PROPERTY_GNSS_SCAN_INTERVAL_SECONDS,
                 NetworkSurveyConstants.DEFAULT_GNSS_SCAN_INTERVAL_SECONDS, context);
 
@@ -248,6 +243,19 @@ public class SurveyRecordProcessor
     void setNetworkSurveyService(NetworkSurveyService service)
     {
         networkSurveyService = service;
+    }
+
+    /**
+     * Gets the current Mission ID to stamp on a survey record. The value is owned by the
+     * {@link NetworkSurveyService} so that it can roll per survey session. Returns an empty string
+     * only in the unexpected case where the service reference has not been set yet (records are not
+     * generated before that happens).
+     *
+     * @return The current Mission ID, never null.
+     */
+    private String getMissionId()
+    {
+        return networkSurveyService != null ? networkSurveyService.getMissionIdForRecords() : "";
     }
 
     /**
@@ -756,7 +764,7 @@ public class SurveyRecordProcessor
         dataBuilder.setDeviceSerialNumber(deviceId);
         dataBuilder.setDeviceTime(NsUtils.getRfc3339String(deviceTime));
 
-        dataBuilder.setMissionId(missionId);
+        dataBuilder.setMissionId(getMissionId());
         dataBuilder.setRecordNumber(phoneStateRecordNumber.getAndIncrement());
 
         SimState simState = SimState.forNumber(telephonyManager.getSimState());
@@ -1146,7 +1154,7 @@ public class SurveyRecordProcessor
 
         dataBuilder.setDeviceSerialNumber(deviceId);
         dataBuilder.setDeviceTime(NsUtils.getRfc3339String(deviceTime));
-        dataBuilder.setMissionId(missionId);
+        dataBuilder.setMissionId(getMissionId());
         dataBuilder.setRecordNumber(cellularRecordNumber.getAndIncrement());
         dataBuilder.setGroupNumber(cellularGroupNumber.get());
         dataBuilder.setServingCell(BoolValue.newBuilder().setValue(cellInfoGsm.isRegistered()).build());
@@ -1261,7 +1269,7 @@ public class SurveyRecordProcessor
 
         dataBuilder.setDeviceSerialNumber(deviceId);
         dataBuilder.setDeviceTime(NsUtils.getRfc3339String(deviceTime));
-        dataBuilder.setMissionId(missionId);
+        dataBuilder.setMissionId(getMissionId());
         dataBuilder.setRecordNumber(cellularRecordNumber.getAndIncrement());
         dataBuilder.setGroupNumber(cellularGroupNumber.get());
         dataBuilder.setServingCell(BoolValue.newBuilder().setValue(cellInfoCdma.isRegistered()).build());
@@ -1355,7 +1363,7 @@ public class SurveyRecordProcessor
 
         dataBuilder.setDeviceSerialNumber(deviceId);
         dataBuilder.setDeviceTime(NsUtils.getRfc3339String(deviceTime));
-        dataBuilder.setMissionId(missionId);
+        dataBuilder.setMissionId(getMissionId());
         dataBuilder.setRecordNumber(cellularRecordNumber.getAndIncrement());
         dataBuilder.setGroupNumber(cellularGroupNumber.get());
         dataBuilder.setServingCell(BoolValue.newBuilder().setValue(cellInfoWcdma.isRegistered()).build());
@@ -1487,7 +1495,7 @@ public class SurveyRecordProcessor
 
         dataBuilder.setDeviceSerialNumber(deviceId);
         dataBuilder.setDeviceTime(NsUtils.getRfc3339String(deviceTime));
-        dataBuilder.setMissionId(missionId);
+        dataBuilder.setMissionId(getMissionId());
         dataBuilder.setRecordNumber(cellularRecordNumber.getAndIncrement());
         dataBuilder.setGroupNumber(cellularGroupNumber.get());
         dataBuilder.setServingCell(BoolValue.newBuilder().setValue(cellInfoLte.isRegistered()).build());
@@ -1684,7 +1692,7 @@ public class SurveyRecordProcessor
 
         dataBuilder.setDeviceSerialNumber(deviceId);
         dataBuilder.setDeviceTime(NsUtils.getRfc3339String(deviceTime));
-        dataBuilder.setMissionId(missionId);
+        dataBuilder.setMissionId(getMissionId());
         dataBuilder.setRecordNumber(cellularRecordNumber.getAndIncrement());
         dataBuilder.setGroupNumber(cellularGroupNumber.get());
         dataBuilder.setServingCell(BoolValue.newBuilder().setValue(cellInfoNr.isRegistered()).build());
@@ -1805,7 +1813,7 @@ public class SurveyRecordProcessor
 
         dataBuilder.setDeviceSerialNumber(deviceId);
         dataBuilder.setDeviceTime(NsUtils.getRfc3339String(deviceTime));
-        dataBuilder.setMissionId(missionId);
+        dataBuilder.setMissionId(getMissionId());
         dataBuilder.setRecordNumber(wifiRecordNumber.getAndIncrement());
 
         dataBuilder.setBssid(bssid);
@@ -1918,7 +1926,7 @@ public class SurveyRecordProcessor
 
         dataBuilder.setDeviceSerialNumber(deviceId);
         dataBuilder.setDeviceTime(NsUtils.getRfc3339String(deviceTime));
-        dataBuilder.setMissionId(missionId);
+        dataBuilder.setMissionId(getMissionId());
         dataBuilder.setRecordNumber(bluetoothRecordNumber.getAndIncrement());
 
         dataBuilder.setSourceAddress(sourceAddress);
@@ -2135,7 +2143,7 @@ public class SurveyRecordProcessor
 
         dataBuilder.setDeviceSerialNumber(deviceId);
         dataBuilder.setDeviceTime(NsUtils.getRfc3339String(deviceTime));
-        dataBuilder.setMissionId(missionId);
+        dataBuilder.setMissionId(getMissionId());
         dataBuilder.setRecordNumber(gnssRecordNumber.getAndIncrement());
         dataBuilder.setGroupNumber(gnssGroupNumber.get());
         dataBuilder.setDeviceModel(Build.MODEL);
@@ -2222,7 +2230,7 @@ public class SurveyRecordProcessor
 
         dataBuilder.setDeviceSerialNumber(deviceId);
         dataBuilder.setDeviceTime(NsUtils.getRfc3339String(deviceTime));
-        dataBuilder.setMissionId(missionId);
+        dataBuilder.setMissionId(getMissionId());
         dataBuilder.setRecordNumber(gnssRecordNumber.getAndIncrement());
         dataBuilder.setGroupNumber(gnssGroupNumber.get());
         dataBuilder.setDeviceModel(Build.MODEL);
@@ -3016,7 +3024,7 @@ public class SurveyRecordProcessor
     {
         if (cdrEvent == null) return;
 
-        cdrEvent.setMissionId(missionId);
+        cdrEvent.setMissionId(getMissionId());
         cdrEvent.setRecordNumber(cdrRecordNumber.getAndIncrement());
         setLocationAndNotifyListeners(cdrEvent, context);
     }
@@ -3158,7 +3166,7 @@ public class SurveyRecordProcessor
 
         final DeviceStatus.Builder statusBuilder = deviceStatus.toBuilder();
         statusBuilder.setData(statusBuilder.getDataBuilder()
-                .setMissionId(missionId)
+                .setMissionId(getMissionId())
                 .setRecordNumber(deviceStatusRecordNumber.getAndIncrement()));
         deviceStatus = statusBuilder.build();
 

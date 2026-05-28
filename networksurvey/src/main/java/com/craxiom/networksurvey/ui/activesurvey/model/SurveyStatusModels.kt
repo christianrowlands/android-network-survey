@@ -105,7 +105,8 @@ data class ActiveSurveyState(
     val isFileLoggingActive: Boolean = false,
     val isMqttActive: Boolean = false,
     val isGrpcActive: Boolean = false,
-    val isNsAnalyticsActive: Boolean = false
+    val isNsAnalyticsActive: Boolean = false,
+    val missionId: String = ""
 ) {
     /**
      * Get list of active survey types for display

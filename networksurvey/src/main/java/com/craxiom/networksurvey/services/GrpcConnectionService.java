@@ -930,6 +930,22 @@ public class GrpcConnectionService extends Service implements IDeviceStatusListe
 
         connectionState.set(newConnectionState);
 
+        // gRPC streaming is a mission relevant survey. Signal the survey session so the Mission ID
+        // rolls when the connection starts and the session ends when it really disconnects. The
+        // connectionState is already updated above, so isGrpcConnectionActive() reflects the new
+        // state when NetworkSurveyService evaluates its mission gate. Only CONNECTED and a real
+        // DISCONNECTED are forwarded; transient reconnects do not report DISCONNECTED here.
+        if (networkSurveyService != null)
+        {
+            if (newConnectionState == ConnectionState.CONNECTED)
+            {
+                networkSurveyService.onGrpcConnectionStateChanged(true);
+            } else if (newConnectionState == ConnectionState.DISCONNECTED)
+            {
+                networkSurveyService.onGrpcConnectionStateChanged(false);
+            }
+        }
+
         updateConnectionNotification();
 
         for (IConnectionStateListener listener : grpcConnectionListeners)

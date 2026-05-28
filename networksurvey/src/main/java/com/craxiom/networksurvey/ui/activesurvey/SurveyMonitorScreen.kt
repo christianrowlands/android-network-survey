@@ -1,6 +1,10 @@
 package com.craxiom.networksurvey.ui.activesurvey
 
+import android.content.ClipData
+import android.content.ClipboardManager
+import android.content.Context
 import android.content.SharedPreferences
+import android.widget.Toast
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.RepeatMode
@@ -65,6 +69,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.core.content.edit
@@ -631,6 +636,61 @@ private fun SurveyStatusIndicator(
 }
 
 
+/**
+ * A full width row that shows the current Mission ID with a copy button. The Mission ID identifies
+ * the survey session and is what the user uses to find this survey's data in NS Analytics.
+ */
+@Composable
+private fun MissionIdRow(
+    missionId: String,
+    modifier: Modifier = Modifier
+) {
+    val context = LocalContext.current
+
+    val copyMissionId = {
+        val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+        val label = context.getString(R.string.mission_id_card_title)
+        clipboard.setPrimaryClip(ClipData.newPlainText(label, missionId))
+        Toast.makeText(context, R.string.mission_id_copied, Toast.LENGTH_SHORT).show()
+    }
+
+    ElevatedCard(
+        modifier = modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 12.dp)
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    text = stringResource(R.string.mission_id_card_title),
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.weight(1f)
+                )
+                IconButton(
+                    onClick = { copyMissionId() },
+                    modifier = Modifier.size(32.dp)
+                ) {
+                    Icon(
+                        painter = painterResource(id = R.drawable.ic_content_copy),
+                        contentDescription = stringResource(R.string.mission_id_copy_content_description),
+                        modifier = Modifier.size(18.dp),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+            Text(
+                text = missionId,
+                style = MaterialTheme.typography.bodyMedium,
+                fontFamily = FontFamily.Monospace
+            )
+        }
+    }
+}
+
 @Composable
 private fun SurveyStatistics(
     surveyState: ActiveSurveyState,
@@ -708,6 +768,11 @@ private fun SurveyStatistics(
                     tint = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
+        }
+
+        // Mission ID row (shown only while a mission relevant survey is active)
+        if (surveyState.missionId.isNotEmpty()) {
+            MissionIdRow(missionId = surveyState.missionId)
         }
 
         // Statistics Cards Grid

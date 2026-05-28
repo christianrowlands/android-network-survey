@@ -46,6 +46,14 @@ public class NetworkSurveyConstants
     public static final String PHONESTATE_FILE_NAME_PREFIX = "craxiom-phonestate-";
     public static final String DEVICESTATUS_FILE_NAME_PREFIX = "craxiom-devicestatus-";
 
+    /**
+     * Prefix used when generating a Mission ID. A Mission ID has the form
+     * "NS &lt;deviceId&gt; &lt;yyyyMMdd-HHmmss&gt;" where the trailing timestamp is the survey
+     * session start time. This prefix is shared by the service that generates the Mission ID and
+     * the processor that stamps it on records.
+     */
+    public static final String MISSION_ID_PREFIX = "NS ";
+
     public static final String GPRS = "GPRS";
     public static final String EDGE = "EDGE";
     public static final String UMTS = "UMTS";

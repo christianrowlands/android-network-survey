@@ -112,6 +112,20 @@ data class NsAnalyticsUiState(
 )
 
 /**
+ * UI state for the Mission ID card.
+ *
+ * @param visible True once a real survey has started during this app session. Stays true after a
+ *                survey stops so the user can still copy the most recent Mission ID.
+ * @param active True while a relevant survey is currently running.
+ * @param missionId The current or most recent Mission ID.
+ */
+data class MissionIdUiState(
+    val visible: Boolean = false,
+    val active: Boolean = false,
+    val missionId: String = "",
+)
+
+/**
  * One-shot events emitted by the DashboardViewModel.
  */
 sealed class DashboardEvent {

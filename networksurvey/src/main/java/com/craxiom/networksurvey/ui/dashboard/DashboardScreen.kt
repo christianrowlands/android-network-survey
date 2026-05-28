@@ -36,6 +36,7 @@ import com.craxiom.networksurvey.logging.db.uploader.NsUploaderWorker
 import com.craxiom.networksurvey.services.NetworkSurveyService
 import com.craxiom.networksurvey.ui.main.CdrHelpDialog
 import com.craxiom.networksurvey.ui.main.FileMqttHelpDialog
+import com.craxiom.networksurvey.ui.main.MissionIdHelpDialog
 import com.craxiom.networksurvey.ui.main.NsAnalyticsHelpDialog
 import com.craxiom.networksurvey.ui.main.PhoneStateHelpDialog
 import com.craxiom.networksurvey.ui.main.SharedViewModel
@@ -65,6 +66,7 @@ fun DashboardScreen(
     val mqttState by dashboardViewModel.mqttState.collectAsStateWithLifecycle()
     val uploadState by dashboardViewModel.uploadState.collectAsStateWithLifecycle()
     val nsAnalyticsState by dashboardViewModel.nsAnalyticsState.collectAsStateWithLifecycle()
+    val missionIdState by dashboardViewModel.missionIdState.collectAsStateWithLifecycle()
 
     // Dialog visibility states
     var showUploadHelpDialog by remember { mutableStateOf(false) }
@@ -72,6 +74,7 @@ fun DashboardScreen(
     var showPhoneStateHelpDialog by remember { mutableStateOf(false) }
     var showCdrHelpDialog by remember { mutableStateOf(false) }
     var showNsAnalyticsHelpDialog by remember { mutableStateOf(false) }
+    var showMissionIdHelpDialog by remember { mutableStateOf(false) }
     var showDisableQueueLimitDialog by remember { mutableStateOf(false) }
     var showUploadDialog by remember { mutableStateOf(false) }
     var showBluetoothPermissionDialog by remember { mutableStateOf(false) }
@@ -168,6 +171,12 @@ fun DashboardScreen(
             onToggleSurvey = { dashboardViewModel.toggleNsAnalyticsSurvey() },
             onOpenDetails = { sharedViewModel.triggerNavigationToNsAnalyticsConnection() },
             onHelpClick = { showNsAnalyticsHelpDialog = true },
+        )
+
+        // Mission ID card (animated visibility handled internally)
+        MissionIdCard(
+            state = missionIdState,
+            onHelpClick = { showMissionIdHelpDialog = true },
         )
 
         // Upload scanning card
@@ -349,6 +358,9 @@ fun DashboardScreen(
     }
     if (showNsAnalyticsHelpDialog) {
         NsAnalyticsHelpDialog(onDismissRequest = { showNsAnalyticsHelpDialog = false })
+    }
+    if (showMissionIdHelpDialog) {
+        MissionIdHelpDialog(onDismissRequest = { showMissionIdHelpDialog = false })
     }
     if (showDisableQueueLimitDialog) {
         DisableQueueLimitDialog(

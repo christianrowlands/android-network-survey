@@ -15,6 +15,7 @@ import com.craxiom.mqttlibrary.IConnectionStateListener
 import com.craxiom.mqttlibrary.connection.ConnectionState
 import com.craxiom.networksurvey.listeners.ICellularSurveyRecordListener
 import com.craxiom.networksurvey.listeners.ILoggingChangeListener
+import com.craxiom.networksurvey.listeners.IMissionIdListener
 import com.craxiom.networksurvey.logging.db.SurveyDatabase
 import com.craxiom.networksurvey.model.CellularProtocol
 import com.craxiom.networksurvey.model.CellularRecordWrapper
@@ -25,8 +26,8 @@ import com.craxiom.networksurvey.ui.activesurvey.model.SurveyTrack
 import com.craxiom.networksurvey.ui.cellular.model.ServingCellInfo
 import com.craxiom.networksurvey.util.CellularUtils
 import com.craxiom.networksurvey.util.NsAnalyticsSecureStorage
-import com.craxiom.networksurvey.util.NsUtils
 import com.craxiom.networksurvey.util.NsAnalyticsUtils
+import com.craxiom.networksurvey.util.NsUtils
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -44,7 +45,7 @@ import timber.log.Timber
 class SurveyMonitorViewModel(
     private val application: Application
 ) : AndroidViewModel(application), IConnectionStateListener,
-    ILoggingChangeListener, LocationListener, ICellularSurveyRecordListener {
+    ILoggingChangeListener, LocationListener, ICellularSurveyRecordListener, IMissionIdListener {
 
     private var towerDetectionManager: TowerDetectionManager? = null
 
@@ -98,6 +99,7 @@ class SurveyMonitorViewModel(
         networkSurveyService?.unregisterMqttConnectionStateListener(this)
         networkSurveyService?.unregisterLoggingChangeListener(this)
         networkSurveyService?.unregisterCellularSurveyRecordListener(this)
+        networkSurveyService?.unregisterMissionIdListener(this)
         networkSurveyService?.primaryLocationListener?.unregisterListener(this)
 
         networkSurveyService = service
@@ -107,6 +109,7 @@ class SurveyMonitorViewModel(
             it.registerMqttConnectionStateListener(this)
             it.registerLoggingChangeListener(this)
             it.registerCellularSurveyRecordListener(this)
+            it.registerMissionIdListener(this)
             it.primaryLocationListener?.registerListener(this)
 
             // Get initial states
@@ -186,6 +189,16 @@ class SurveyMonitorViewModel(
     }
 
     /**
+     * IMissionIdListener implementation. Update immediately so the Mission ID row reflects a roll
+     * the instant it happens, independent of the periodic refresh.
+     */
+    override fun onMissionIdChanged(missionId: String?, missionSessionActive: Boolean) {
+        _surveyState.update { state ->
+            state.copy(missionId = if (missionSessionActive) (missionId ?: "") else "")
+        }
+    }
+
+    /**
      * Updates all survey states based on current service state
      */
     private fun updateSurveyStates() {
@@ -244,7 +257,9 @@ class SurveyMonitorViewModel(
                     isFileLoggingActive = fileLoggingActive,
                     isMqttActive = mqttActive,
                     isGrpcActive = grpcActive,
-                    isNsAnalyticsActive = nsAnalyticsActive
+                    isNsAnalyticsActive = nsAnalyticsActive,
+                    missionId = if (service.isMissionSessionActive) (service.rolledMissionId
+                        ?: "") else ""
                 )
             }
         }
@@ -366,9 +381,11 @@ class SurveyMonitorViewModel(
             CellularProtocol.LTE -> {
                 val lte = record as LteRecord
                 val data = lte.data
-                val mccMnc = NsUtils.extractMccMncStrings(data.hasPlmn(),
+                val mccMnc = NsUtils.extractMccMncStrings(
+                    data.hasPlmn(),
                     if (data.hasPlmn()) data.plmn.value else null,
-                    data.mcc?.value ?: 0, data.mnc?.value ?: 0)
+                    data.mcc?.value ?: 0, data.mnc?.value ?: 0
+                )
                 listOf(
                     mccMnc[0], mccMnc[1],
                     data.tac?.value ?: 0, data.eci?.value?.toLong() ?: 0L, "LTE"
@@ -378,9 +395,11 @@ class SurveyMonitorViewModel(
             CellularProtocol.NR -> {
                 val nr = record as NrRecord
                 val data = nr.data
-                val mccMnc = NsUtils.extractMccMncStrings(data.hasPlmn(),
+                val mccMnc = NsUtils.extractMccMncStrings(
+                    data.hasPlmn(),
                     if (data.hasPlmn()) data.plmn.value else null,
-                    data.mcc?.value ?: 0, data.mnc?.value ?: 0)
+                    data.mcc?.value ?: 0, data.mnc?.value ?: 0
+                )
                 listOf(
                     mccMnc[0], mccMnc[1],
                     data.tac?.value ?: 0, data.nci?.value ?: 0L, "NR"
@@ -390,9 +409,11 @@ class SurveyMonitorViewModel(
             CellularProtocol.GSM -> {
                 val gsm = record as GsmRecord
                 val data = gsm.data
-                val mccMnc = NsUtils.extractMccMncStrings(data.hasPlmn(),
+                val mccMnc = NsUtils.extractMccMncStrings(
+                    data.hasPlmn(),
                     if (data.hasPlmn()) data.plmn.value else null,
-                    data.mcc?.value ?: 0, data.mnc?.value ?: 0)
+                    data.mcc?.value ?: 0, data.mnc?.value ?: 0
+                )
                 listOf(
                     mccMnc[0], mccMnc[1],
                     data.lac?.value ?: 0, data.ci?.value?.toLong() ?: 0L, "GSM"
@@ -402,9 +423,11 @@ class SurveyMonitorViewModel(
             CellularProtocol.UMTS -> {
                 val umts = record as UmtsRecord
                 val data = umts.data
-                val mccMnc = NsUtils.extractMccMncStrings(data.hasPlmn(),
+                val mccMnc = NsUtils.extractMccMncStrings(
+                    data.hasPlmn(),
                     if (data.hasPlmn()) data.plmn.value else null,
-                    data.mcc?.value ?: 0, data.mnc?.value ?: 0)
+                    data.mcc?.value ?: 0, data.mnc?.value ?: 0
+                )
                 listOf(
                     mccMnc[0], mccMnc[1],
                     data.lac?.value ?: 0, data.cid?.value?.toLong() ?: 0L, "UMTS"
@@ -499,6 +522,7 @@ class SurveyMonitorViewModel(
         networkSurveyService?.unregisterMqttConnectionStateListener(this)
         networkSurveyService?.unregisterLoggingChangeListener(this)
         networkSurveyService?.unregisterCellularSurveyRecordListener(this)
+        networkSurveyService?.unregisterMissionIdListener(this)
         networkSurveyService?.primaryLocationListener?.unregisterListener(this)
     }
 

@@ -10,12 +10,18 @@ import androidx.core.content.ContextCompat
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.preference.PreferenceManager
+import androidx.work.Data
+import androidx.work.ExistingWorkPolicy
+import androidx.work.OneTimeWorkRequest
+import androidx.work.OutOfQuotaPolicy
+import androidx.work.WorkManager
 import com.craxiom.mqttlibrary.IConnectionStateListener
 import com.craxiom.mqttlibrary.MqttConstants
 import com.craxiom.mqttlibrary.connection.ConnectionState
 import com.craxiom.networksurvey.constants.NetworkSurveyConstants
 import com.craxiom.networksurvey.constants.NsAnalyticsConstants
 import com.craxiom.networksurvey.listeners.ILoggingChangeListener
+import com.craxiom.networksurvey.listeners.IMissionIdListener
 import com.craxiom.networksurvey.logging.db.SurveyDatabase
 import com.craxiom.networksurvey.logging.db.uploader.NsUploaderWorker
 import com.craxiom.networksurvey.model.SurveyTypes
@@ -24,11 +30,6 @@ import com.craxiom.networksurvey.services.NetworkSurveyService
 import com.craxiom.networksurvey.util.LocationStatusHelper
 import com.craxiom.networksurvey.util.MdmUtils
 import com.craxiom.networksurvey.util.PreferenceUtils
-import androidx.work.Data
-import androidx.work.ExistingWorkPolicy
-import androidx.work.OneTimeWorkRequest
-import androidx.work.OutOfQuotaPolicy
-import androidx.work.WorkManager
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -52,6 +53,7 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
     LocationListener,
     IConnectionStateListener,
     ILoggingChangeListener,
+    IMissionIdListener,
     SharedPreferences.OnSharedPreferenceChangeListener,
     BatteryMonitor.IBatteryLevelListener,
     NetworkSurveyService.IQueueBackpressureStateListener,
@@ -82,6 +84,9 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
     private val _nsAnalyticsState = MutableStateFlow(NsAnalyticsUiState())
     val nsAnalyticsState: StateFlow<NsAnalyticsUiState> = _nsAnalyticsState.asStateFlow()
 
+    private val _missionIdState = MutableStateFlow(MissionIdUiState())
+    val missionIdState: StateFlow<MissionIdUiState> = _missionIdState.asStateFlow()
+
     private val _events = MutableSharedFlow<DashboardEvent>(extraBufferCapacity = 10)
     val events: SharedFlow<DashboardEvent> = _events.asSharedFlow()
 
@@ -103,6 +108,7 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
         networkSurveyService.batteryMonitor?.register(this)
         networkSurveyService.registerQueueBackpressureStateListener(this)
         networkSurveyService.registerMqttDropModeStateListener(this)
+        networkSurveyService.registerMissionIdListener(this)
         preferences.registerOnSharedPreferenceChangeListener(this)
 
         // Sync initial state from service
@@ -136,6 +142,17 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
         )
         updateNsAnalyticsState()
 
+        // Mission ID: show the card once a real survey has started and keep it after the survey
+        // stops so the user can still copy it to look up their data.
+        val rolledMissionId = networkSurveyService.rolledMissionId
+        _missionIdState.update {
+            MissionIdUiState(
+                visible = rolledMissionId != null,
+                active = networkSurveyService.isMissionSessionActive,
+                missionId = rolledMissionId ?: "",
+            )
+        }
+
         // Check MDM for MQTT toggle
         _mqttState.update {
             it.copy(
@@ -163,6 +180,7 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
         networkSurveyService.batteryMonitor?.unregister(this)
         networkSurveyService.unregisterQueueBackpressureStateListener(this)
         networkSurveyService.unregisterMqttDropModeStateListener(this)
+        networkSurveyService.unregisterMissionIdListener(this)
         service = null
     }
 
@@ -211,6 +229,18 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
         service?.let { svc ->
             syncLoggingState(svc)
             updateBatteryStatus(svc)
+        }
+    }
+
+    // ========== Mission ID Listener ==========
+
+    override fun onMissionIdChanged(missionId: String?, missionSessionActive: Boolean) {
+        _missionIdState.update {
+            MissionIdUiState(
+                visible = missionId != null,
+                active = missionSessionActive,
+                missionId = missionId ?: "",
+            )
         }
     }
 

@@ -131,6 +131,25 @@
     <string name="ns_analytics_help_getting_started_configure_label">Configure</string>
     <string name="ns_analytics_help_getting_started_configure_desc">Tap \'Open Details\' to set up your workspace connection and upload settings</string>
 
+    <!-- Mission ID -->
+    <string name="mission_id_card_title">Mission ID</string>
+    <string name="mission_id_caption_active">The ID for this survey</string>
+    <string name="mission_id_caption_recent">Most recent survey</string>
+    <string name="mission_id_copied">Mission ID copied</string>
+    <string name="mission_id_copy_content_description">Copy Mission ID</string>
+    <string name="mission_id_new_badge">NEW</string>
+
+    <!-- Mission ID Help Dialog -->
+    <string name="mission_id_help_title">About Mission IDs</string>
+    <string name="mission_id_help_dismiss">Got it</string>
+    <string name="mission_id_help_what">A Mission ID is the unique ID for one survey session. Think of it as your survey\'s ID. Each time you start a fresh survey, the app creates a new Mission ID and stamps it on every record in that session.</string>
+    <string name="mission_id_help_when_title">When it changes</string>
+    <string name="mission_id_help_when">A new Mission ID is created when you go from no surveys running to starting your first survey. Adding another survey type to a survey that is already running keeps the same Mission ID. Stopping everything and starting again creates a new one. OpenCelliD and BeaconDB uploads do not create a new Mission ID.</string>
+    <string name="mission_id_help_why_title">Why it matters</string>
+    <string name="mission_id_help_why">Records from one survey all share the same Mission ID. In NS Analytics, and in your exported CSV and GeoPackage files, it is how this survey\'s data is grouped and filtered.</string>
+    <string name="mission_id_help_how_title">How to use it</string>
+    <string name="mission_id_help_how">Copy the Mission ID shown here and use it in NS Analytics to find and filter this survey\'s data.</string>
+
     <!-- MQTT Help Dialog -->
     <string name="mqtt_help_title">MQTT Connection</string>
     <string name="mqtt_help_description">Help</string>
