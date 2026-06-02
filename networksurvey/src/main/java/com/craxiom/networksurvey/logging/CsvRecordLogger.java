@@ -113,8 +113,17 @@ public abstract class CsvRecordLogger
                     {
                         loggingEnabled = false;
                         loggingFileName = null;
-                        printer.close(true);
+                        // The printer can be null here for lazy loggers that were enabled but
+                        // never wrote a record (so the file was never created). Capture it into
+                        // a local so we don't re-read the field (which writeCsvRecord can mutate
+                        // under a different lock) between the null check and the close, mirroring
+                        // the catch-block pattern below.
+                        final CSVPrinter printerToClose = printer;
                         printer = null;
+                        if (printerToClose != null)
+                        {
+                            printerToClose.close(true);
+                        }
                         rolloverWorker.reset();
                         return true;
                     }
