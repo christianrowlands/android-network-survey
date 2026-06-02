@@ -179,54 +179,6 @@ fun DashboardScreen(
             onHelpClick = { showMissionIdHelpDialog = true },
         )
 
-        // Upload scanning card
-        UploadScanningCard(
-            state = uploadState,
-            onStartScanning = {
-                val batteryHelper = BatteryOptimizationHelper(context)
-                if (batteryHelper.shouldPromptForBatteryOptimization()) {
-                    sharedViewModel.triggerBatteryOptimizationDialog()
-                } else {
-                    dashboardViewModel.toggleUploadScanning(true)
-                }
-            },
-            onStopScanning = { dashboardViewModel.toggleUploadScanning(false) },
-            onUpload = {
-                if (dashboardViewModel.shouldShowUploadConfigDialog()) {
-                    showUploadDialog = true
-                } else {
-                    // Skip dialog, use saved preferences directly
-                    val started = dashboardViewModel.startUpload(
-                        uploadToOpenCellId = PreferenceUtils.getBoolean(
-                            NetworkSurveyConstants.PROPERTY_UPLOAD_TO_OPENCELLID,
-                            NetworkSurveyConstants.DEFAULT_UPLOAD_TO_OPENCELLID,
-                        ),
-                        anonymously = PreferenceUtils.getBoolean(
-                            NetworkSurveyConstants.PROPERTY_ANONYMOUS_OPENCELLID_UPLOAD,
-                            NetworkSurveyConstants.DEFAULT_UPLOAD_TO_OPENCELLID,
-                        ),
-                        uploadToBeaconDb = PreferenceUtils.getBoolean(
-                            NetworkSurveyConstants.PROPERTY_UPLOAD_TO_BEACONDB,
-                            NetworkSurveyConstants.DEFAULT_UPLOAD_TO_BEACONDB,
-                        ),
-                        retry = PreferenceUtils.getBoolean(
-                            NetworkSurveyConstants.PROPERTY_UPLOAD_RETRY_ENABLED,
-                            NetworkSurveyConstants.DEFAULT_UPLOAD_RETRY_ENABLED,
-                        ),
-                    )
-                    if (!started) showNoInternetDialog = true
-                }
-            },
-            onCancelUpload = {
-                WorkManager.getInstance(context)
-                    .cancelAllWorkByTag(NsUploaderWorker.WORKER_TAG)
-            },
-            onNavigateToUploadSettings = { sharedViewModel.triggerNavigationToUploadSettings() },
-            onHelpClick = { showUploadHelpDialog = true },
-            shouldStartCellular = PreferenceUtils.shouldStartCellularForUpload(context),
-            shouldStartWifi = PreferenceUtils.shouldStartWifiForUpload(context),
-        )
-
         // Logging controls card
         LoggingControlsCard(
             state = loggingState,
@@ -338,6 +290,55 @@ fun DashboardScreen(
             onToggleMqtt = { connect -> dashboardViewModel.toggleMqttConnection(connect) },
             onNavigateToMqttSettings = { sharedViewModel.triggerNavigationToMqttConnection() },
             onHelpClick = { showFileMqttHelpDialog = true },
+        )
+
+        // Upload scanning card (placed last so its Start button is not confused
+        // with the NS Analytics card's Start button)
+        UploadScanningCard(
+            state = uploadState,
+            onStartScanning = {
+                val batteryHelper = BatteryOptimizationHelper(context)
+                if (batteryHelper.shouldPromptForBatteryOptimization()) {
+                    sharedViewModel.triggerBatteryOptimizationDialog()
+                } else {
+                    dashboardViewModel.toggleUploadScanning(true)
+                }
+            },
+            onStopScanning = { dashboardViewModel.toggleUploadScanning(false) },
+            onUpload = {
+                if (dashboardViewModel.shouldShowUploadConfigDialog()) {
+                    showUploadDialog = true
+                } else {
+                    // Skip dialog, use saved preferences directly
+                    val started = dashboardViewModel.startUpload(
+                        uploadToOpenCellId = PreferenceUtils.getBoolean(
+                            NetworkSurveyConstants.PROPERTY_UPLOAD_TO_OPENCELLID,
+                            NetworkSurveyConstants.DEFAULT_UPLOAD_TO_OPENCELLID,
+                        ),
+                        anonymously = PreferenceUtils.getBoolean(
+                            NetworkSurveyConstants.PROPERTY_ANONYMOUS_OPENCELLID_UPLOAD,
+                            NetworkSurveyConstants.DEFAULT_UPLOAD_TO_OPENCELLID,
+                        ),
+                        uploadToBeaconDb = PreferenceUtils.getBoolean(
+                            NetworkSurveyConstants.PROPERTY_UPLOAD_TO_BEACONDB,
+                            NetworkSurveyConstants.DEFAULT_UPLOAD_TO_BEACONDB,
+                        ),
+                        retry = PreferenceUtils.getBoolean(
+                            NetworkSurveyConstants.PROPERTY_UPLOAD_RETRY_ENABLED,
+                            NetworkSurveyConstants.DEFAULT_UPLOAD_RETRY_ENABLED,
+                        ),
+                    )
+                    if (!started) showNoInternetDialog = true
+                }
+            },
+            onCancelUpload = {
+                WorkManager.getInstance(context)
+                    .cancelAllWorkByTag(NsUploaderWorker.WORKER_TAG)
+            },
+            onNavigateToUploadSettings = { sharedViewModel.triggerNavigationToUploadSettings() },
+            onHelpClick = { showUploadHelpDialog = true },
+            shouldStartCellular = PreferenceUtils.shouldStartCellularForUpload(context),
+            shouldStartWifi = PreferenceUtils.shouldStartWifiForUpload(context),
         )
 
         Spacer(modifier = Modifier.height(16.dp))
