@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.55](https://github.com/christianrowlands/android-network-survey/releases/tag/v1.55) - 2026-06-03
+
+**BUG FIXES**
+* Fix ann error when a survey's CSV logging is toggled off before any record is written.
+
+**NEW FEATURES**
+* Roll the Mission ID per survey session instead of once per app lifetime, and surface it to users with a copyable Dashboard card (with help dialog) and a copyable Mission ID row on the Survey Monitor Status tab.
+* Add a "Last Updated" filter to the tower map to hide towers older than 6mo / 1yr / 2yr / 5yr, applied server-side and persisted across launches. [#131](https://github.com/christianrowlands/android-network-survey/issues/131)
+* Pause NS Analytics uploads when a workspace quota is exceeded, with an "uploads paused" notification and an in-app banner showing quota usage and a manage-subscription link.
+
+**IMPROVEMENTS**
+* Move the OpenCelliD/BeaconDB Upload card to the bottom of the Dashboard to avoid confusion between the NS Analytics and Upload Start buttons.
+
 ## [1.54](https://github.com/christianrowlands/android-network-survey/releases/tag/v1.54) - 2026-05-15
 
 **BUG FIXES**
