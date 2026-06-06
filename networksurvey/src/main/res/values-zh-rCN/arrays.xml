@@ -1,0 +1,130 @@
+<?xml version="1.0" encoding="utf-8"?><!--
+/* //device/apps/common/assets/res/any/strings.xml
+**
+** Copyright 2012, Sean J. Barbeau
+**
+** Licensed under the Apache License, Version 2.0 (the "License");
+** you may not use this file except in compliance with the License.
+** You may obtain a copy of the License at
+**
+**     http://www.apache.org/licenses/LICENSE-2.0
+**
+** Unless required by applicable law or agreed to in writing, software
+** distributed under the License is distributed on an "AS IS" BASIS,
+** WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+** See the License for the specific language governing permissions and
+** limitations under the License.
+*/
+-->
+<resources>
+    <!-- 状态 -->
+    <string-array name="sort_sats">
+        <item>星座</item>
+        <item>载波频率</item>
+        <item>信号强度</item>
+        <item>用于定位</item>
+        <item>星座，载波频率</item>
+        <item>星座，信号强度</item>
+        <item>星座，用于定位</item>
+    </string-array>
+
+	<!-- 帮助 -->
+
+    <!-- 警告！！！此数组中的值必须与 com.craxiom.networksurvey.ui.wifi.model.WifiListViewModel.apComparator 中的代码保持同步 -->
+    <string-array name="wifi_network_sort_options">
+        <item>信号强度</item>
+        <item>SSID</item>
+        <item>BSSID</item>
+        <item>信道</item>
+        <item>频率</item>
+        <item>安全类型</item>
+    </string-array>
+
+    <!-- 警告！！！此数组中的值必须与 com.craxiom.networksurvey.fragments.model.BluetoothViewModel.RecordSortedListCallback 中的代码保持同步 -->
+    <string-array name="bluetooth_sort_options">
+        <item>信号强度</item>
+        <item>源地址</item>
+        <item>OTA 设备名称</item>
+        <item>技术支持</item>
+    </string-array>
+
+    <string-array name="log_rollover_size_labels">
+        <item>从不</item>
+        <item>1</item>
+        <item>5</item>
+        <item>10</item>
+        <item>50</item>
+        <item>100</item>
+        <item>250</item>
+        <item>1000</item>
+    </string-array>
+
+    <string-array name="log_rollover_size_values">
+        <item>0</item>
+        <item>1</item>
+        <item>5</item>
+        <item>10</item>
+        <item>50</item>
+        <item>100</item>
+        <item>250</item>
+        <item>1000</item>
+    </string-array>
+
+    <string-array name="log_file_option_labels">
+        <item>CSV</item>
+        <item>GeoPackage</item>
+        <item>CSV 和 GeoPackage</item>
+    </string-array>
+
+    <string-array name="log_file_option_index">
+        <item>0</item>
+        <item>1</item>
+        <item>2</item>
+    </string-array>
+
+    <string-array name="location_provider_option_labels">
+        <item>FUSED</item>
+        <item>GNSS</item>
+        <item>NETWORK</item>
+        <item>ALL</item>
+    </string-array>
+
+    <string-array name="location_provider_option_index">
+        <item>0</item>
+        <item>1</item>
+        <item>2</item>
+        <item>3</item>
+    </string-array>
+
+    <string-array name="coverage_circle_color_labels">
+        <item>默认 (Blue)</item>
+        <item>Red</item>
+        <item>Green</item>
+        <item>Orange</item>
+        <item>Purple</item>
+        <item>Yellow</item>
+        <item>Cyan</item>
+        <item>White</item>
+    </string-array>
+
+    <string-array name="coverage_circle_color_values">
+        <item>默认</item>
+        <item>red</item>
+        <item>green</item>
+        <item>orange</item>
+        <item>purple</item>
+        <item>yellow</item>
+        <item>cyan</item>
+        <item>white</item>
+    </string-array>
+
+    <string-array name="measurement_unit_entries">
+        <item>公制 (m, km, km/h)</item>
+        <item>英制 (ft, mi, mph)</item>
+    </string-array>
+
+    <string-array name="measurement_unit_values">
+        <item>公制</item>
+        <item>英制</item>
+    </string-array>
+</resources>
