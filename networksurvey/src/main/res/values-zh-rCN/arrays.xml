@@ -59,27 +59,10 @@
         <item>1000</item>
     </string-array>
 
-    <string-array name="log_rollover_size_values">
-        <item>0</item>
-        <item>1</item>
-        <item>5</item>
-        <item>10</item>
-        <item>50</item>
-        <item>100</item>
-        <item>250</item>
-        <item>1000</item>
-    </string-array>
-
     <string-array name="log_file_option_labels">
         <item>CSV</item>
         <item>GeoPackage</item>
         <item>CSV 和 GeoPackage</item>
-    </string-array>
-
-    <string-array name="log_file_option_index">
-        <item>0</item>
-        <item>1</item>
-        <item>2</item>
     </string-array>
 
     <string-array name="location_provider_option_labels">
@@ -87,13 +70,6 @@
         <item>GNSS</item>
         <item>NETWORK</item>
         <item>ALL</item>
-    </string-array>
-
-    <string-array name="location_provider_option_index">
-        <item>0</item>
-        <item>1</item>
-        <item>2</item>
-        <item>3</item>
     </string-array>
 
     <string-array name="coverage_circle_color_labels">
@@ -107,24 +83,8 @@
         <item>White</item>
     </string-array>
 
-    <string-array name="coverage_circle_color_values">
-        <item>默认</item>
-        <item>red</item>
-        <item>green</item>
-        <item>orange</item>
-        <item>purple</item>
-        <item>yellow</item>
-        <item>cyan</item>
-        <item>white</item>
-    </string-array>
-
     <string-array name="measurement_unit_entries">
         <item>公制 (m, km, km/h)</item>
         <item>英制 (ft, mi, mph)</item>
-    </string-array>
-
-    <string-array name="measurement_unit_values">
-        <item>公制</item>
-        <item>英制</item>
     </string-array>
 </resources>

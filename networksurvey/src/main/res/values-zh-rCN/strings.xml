@@ -558,7 +558,7 @@
 	<string name="mqtt_start_on_boot_title">MQTT 开机启动</string>
 	<string name="mqtt_start_on_boot_description">如果为 true，手机开机时将尝试连接 MDM 配置的 MQTT 代理</string>
 	<string name="mqtt_connection_host_title">MQTT 连接主机</string>
-	<string name="mqtt_connection_host_description">MQTT 	代理主机名（例如 mqtt.example.com）</string>
+	<string name="mqtt_connection_host_description">MQTT 代理主机名（例如 mqtt.example.com）</string>
 	<string name="mqtt_connection_port_title">MQTT 连接端口</string>
 	<string name="mqtt_connection_port_description">连接 MQTT 代理时使用的端口号（例如 8883）</string>
 	<string name="mqtt_tls_enabled_title">启用 MQTT TLS</string>
