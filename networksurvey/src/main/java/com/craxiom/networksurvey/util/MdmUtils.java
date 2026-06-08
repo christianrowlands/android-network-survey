@@ -69,7 +69,7 @@ public class MdmUtils
     }
 
     /**
-     * @return True, if the the MDM configuration allows external data uploads or if this device
+     * @return True, if the MDM configuration allows external data uploads or if this device
      * is not under MDM control, false otherwise.
      */
     public static boolean isExternalDataUploadAllowed(Context context)
@@ -93,13 +93,21 @@ public class MdmUtils
      */
     public static boolean isNsAnalyticsAllowed(Context context)
     {
-        if (isUnderMdmControl(context, SettingsFragment.MDM_OVERLAP_PROPERTY_KEYS))
+        final RestrictionsManager restrictionsManager = (RestrictionsManager) context.getSystemService(Context.RESTRICTIONS_SERVICE);
+        if (restrictionsManager != null)
         {
-            final RestrictionsManager restrictionsManager = (RestrictionsManager) context.getSystemService(Context.RESTRICTIONS_SERVICE);
-            if (restrictionsManager != null)
+            final Bundle mdmProperties = restrictionsManager.getApplicationRestrictions();
+            // Default to allowed: an MDM admin must explicitly set allow_ns_analytics=false to block
+            // uploads. Reading the property directly (rather than gating on MDM_OVERLAP_PROPERTY_KEYS)
+            // ensures an explicit block is honored even when no other managed config keys are present,
+            // and behaves identically for unmanaged devices (no restrictions returns the default).
+            // This deliberately differs from isExternalDataUploadAllowed above, which only reads its
+            // property when the device is under MDM control and otherwise defaults to allowed. NS
+            // Analytics is separately gated by an explicit user registration/opt-in, so a managed
+            // device that never sets allow_ns_analytics should not be blocked just for being managed.
+            if (mdmProperties != null)
             {
-                final Bundle mdmProperties = restrictionsManager.getApplicationRestrictions();
-                return mdmProperties.getBoolean(NetworkSurveyConstants.MDM_PROPERTY_ALLOW_NS_ANALYTICS, false);
+                return mdmProperties.getBoolean(NetworkSurveyConstants.MDM_PROPERTY_ALLOW_NS_ANALYTICS, true);
             }
         }
 

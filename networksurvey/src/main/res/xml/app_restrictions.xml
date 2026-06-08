@@ -265,7 +265,7 @@
         android:title="@string/allow_data_upload" />
 
     <restriction
-        android:defaultValue="false"
+        android:defaultValue="true"
         android:description="@string/allow_ns_analytics_mdm_description"
         android:key="allow_ns_analytics"
         android:restrictionType="bool"

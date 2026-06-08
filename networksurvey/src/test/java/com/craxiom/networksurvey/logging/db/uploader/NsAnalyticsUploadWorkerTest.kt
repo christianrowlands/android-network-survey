@@ -1,16 +1,98 @@
 package com.craxiom.networksurvey.logging.db.uploader
 
+import android.content.Context
+import android.content.RestrictionsManager
+import android.os.Bundle
+import androidx.work.Configuration
+import androidx.work.ListenableWorker
+import androidx.work.WorkInfo
+import androidx.work.WorkManager
+import androidx.work.testing.SynchronousExecutor
+import androidx.work.testing.TestListenableWorkerBuilder
+import androidx.work.testing.WorkManagerTestInitHelper
+import com.craxiom.networksurvey.constants.NetworkSurveyConstants
 import com.craxiom.networksurvey.constants.NsAnalyticsConstants
+import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
+import org.junit.Before
 import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
+import org.robolectric.RuntimeEnvironment
+import org.robolectric.Shadows.shadowOf
+import org.robolectric.annotation.Config
 
 /**
- * Unit tests for the pure helpers in [NsAnalyticsUploadWorker].
+ * Unit tests for [NsAnalyticsUploadWorker].
  *
- * Focus is on [NsAnalyticsUploadWorker.parseRetryAfterSeconds], which is the safety net that turns
- * the server's Retry-After header into a sane delay for the quota re-check.
+ * Two areas are covered:
+ *  - [NsAnalyticsUploadWorker.parseRetryAfterSeconds], the pure helper that turns the server's
+ *    Retry-After header into a sane delay for the quota re-check.
+ *  - The MDM-block branch of [NsAnalyticsUploadWorker.doWork], which must return success (do not
+ *    retry) and tear down BOTH the periodic schedule and any pending quota re-check when an admin
+ *    disables NS Analytics after work has already been enqueued.
  */
+@RunWith(RobolectricTestRunner::class)
+@Config(sdk = [34])
 class NsAnalyticsUploadWorkerTest {
+
+    private val context: Context = RuntimeEnvironment.getApplication()
+
+    @Before
+    fun setUp() {
+        // Synchronous executor so enqueue/cancel operations complete before assertions run.
+        val config = Configuration.Builder()
+            .setExecutor(SynchronousExecutor())
+            .build()
+        WorkManagerTestInitHelper.initializeTestWorkManager(context, config)
+    }
+
+    private fun setNsAnalyticsAllowed(allowed: Boolean) {
+        val restrictionsManager =
+            context.getSystemService(Context.RESTRICTIONS_SERVICE) as RestrictionsManager
+        val restrictions = Bundle().apply {
+            putBoolean(NetworkSurveyConstants.MDM_PROPERTY_ALLOW_NS_ANALYTICS, allowed)
+        }
+        shadowOf(restrictionsManager).setApplicationRestrictions(restrictions)
+    }
+
+    private fun uploadWorkInfos(): List<WorkInfo> =
+        WorkManager.getInstance(context)
+            .getWorkInfosByTag(NsAnalyticsConstants.NS_ANALYTICS_UPLOAD_WORKER_TAG)
+            .get()
+
+    @Test
+    fun doWork_whenMdmBlocks_returnsSuccessAndCancelsScheduledWork() {
+        // Arrange: NS Analytics allowed, schedule both the periodic upload and a quota re-check.
+        // schedulePeriodicUpload and schedulePausedRetryCheck both self-gate on MDM, so they must
+        // be scheduled while still allowed.
+        setNsAnalyticsAllowed(true)
+        NsAnalyticsUploadWorker.schedulePeriodicUpload(context, 15)
+        NsAnalyticsUploadWorker.schedulePausedRetryCheck(context, 300)
+
+        val scheduled = uploadWorkInfos()
+        assertTrue(
+            "Expected periodic + quota re-check work to be scheduled before the run",
+            scheduled.size >= 2 && scheduled.none { it.state == WorkInfo.State.CANCELLED }
+        )
+
+        // Act: an admin disables NS Analytics, then the already-enqueued worker runs.
+        setNsAnalyticsAllowed(false)
+        val worker = TestListenableWorkerBuilder<NsAnalyticsUploadWorker>(context).build()
+        val result = runBlocking { worker.doWork() }
+
+        // Assert: the run does nothing and is not retried, and every upload-tagged work (periodic
+        // schedule AND the pending quota re-check) has been cancelled.
+        assertEquals(ListenableWorker.Result.success(), result)
+        val after = uploadWorkInfos()
+        assertFalse("Expected upload work to exist after the run", after.isEmpty())
+        assertTrue(
+            "Expected all NS Analytics upload work to be cancelled by the MDM block",
+            after.all { it.state == WorkInfo.State.CANCELLED }
+        )
+    }
 
     @Test
     fun parseRetryAfterSeconds_validSecondsValue_isUsedAsIs() {

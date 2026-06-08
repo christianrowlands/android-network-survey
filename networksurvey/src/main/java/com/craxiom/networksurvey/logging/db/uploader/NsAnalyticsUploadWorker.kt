@@ -44,11 +44,17 @@ class NsAnalyticsUploadWorker(context: Context, params: WorkerParameters) :
         try {
             Timber.d("Starting NS Analytics upload")
 
-            // Defense in depth: the schedule/trigger paths already gate on MDM, but a delayed
-            // quota re-check could fire after MDM later disables NS Analytics.
+            // Honor an explicit MDM block even for already-scheduled work. The trigger/scheduler
+            // checks this too, but an admin may disable NS Analytics after work is enqueued. This
+            // worker backs three unique work names (periodic, immediate, quota re-check), so tear
+            // down both the periodic schedule and any pending quota re-check regardless of which
+            // one triggered this run.
             if (!MdmUtils.isNsAnalyticsAllowed(applicationContext)) {
-                Timber.w("NS Analytics upload skipped: disabled by MDM policy")
-                return@withContext Result.failure()
+                Timber.w("NS Analytics upload blocked by MDM policy; cancelling scheduled uploads")
+                cancelPeriodicUpload(applicationContext)
+                cancelPausedRetryCheck(applicationContext)
+                // success = don't retry; there is nothing to do while blocked
+                return@withContext Result.success()
             }
 
             // Check if registered and get credentials

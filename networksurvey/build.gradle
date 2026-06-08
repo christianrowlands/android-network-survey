@@ -218,6 +218,7 @@ dependencies {
     testImplementation(libs.mockito.kotlin)
     testImplementation(libs.robolectric)
     testImplementation(libs.kotlinx.coroutines.test)
+    testImplementation(libs.androidx.work.testing)
     implementation(libs.androidx.annotation)
 
     // Uncomment if you want to hunt for memory leaks

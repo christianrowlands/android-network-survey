@@ -119,7 +119,7 @@
     <!-- NS Analytics Help Dialog -->
     <string name="ns_analytics_help_title">NS Analytics</string>
     <string name="ns_analytics_help_dismiss">Got it</string>
-    <string name="ns_analytics_help_overview">NS Analytics provides cloud-based storage and analysis of your network survey data.</string>
+    <string name="ns_analytics_help_overview">NS Analytics provides cloud-based storage and analysis of your Network Survey data.</string>
     <string name="ns_analytics_help_connected_title">When Connected</string>
     <string name="ns_analytics_help_connected_upload_label">Data Upload</string>
     <string name="ns_analytics_help_connected_upload_desc">Survey data is uploaded to the cloud automatically</string>
@@ -1077,7 +1077,7 @@
     <string name="ns_analytics_survey_no_protocols_enabled">Must enable at least one protocol for the NS Analytics Survey</string>
 
     <!-- NS Analytics Onboarding -->
-    <string name="ns_analytics_tagline">Cloud-based visualization and analysis for your network survey data</string>
+    <string name="ns_analytics_tagline">Cloud-based visualization and analysis for your Network Survey data</string>
     <string name="ns_analytics_setup_guide_title">How to Get Started</string>
     <string name="ns_analytics_step_1_title">Create Account</string>
     <string name="ns_analytics_step_1_desc">Visit NS Analytics to create your free account (recommended on desktop)</string>
@@ -1120,7 +1120,7 @@
     <!-- NS Analytics Upload Status -->
     <string name="ns_analytics_upload_status_no_records">No records to upload</string>
     <string name="ns_analytics_upload_status_no_network">No network connection</string>
-    <string name="ns_analytics_upload_status_mdm_blocked">Upload blocked by policy</string>
+    <string name="ns_analytics_upload_status_mdm_blocked">NS Analytics uploads are disabled by your device\'s management policy. Contact your administrator to enable them.</string>
     <string name="ns_analytics_upload_status_already_running">Upload already in progress</string>
     <string name="ns_analytics_upload_status_uploading">Uploading…</string>
     <string name="ns_analytics_upload_status_ready">Ready to upload</string>

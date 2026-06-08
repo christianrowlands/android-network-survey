@@ -84,6 +84,7 @@ androidx-constraintlayout = { module = "androidx.constraintlayout:constraintlayo
 androidx-recyclerview = { module = "androidx.recyclerview:recyclerview", version.ref = "recyclerview" }
 androidx-annotation = { module = "androidx.annotation:annotation", version.ref = "annotation" }
 androidx-work-runtime = { module = "androidx.work:work-runtime", version.ref = "workRuntime" }
+androidx-work-testing = { module = "androidx.work:work-testing", version.ref = "workRuntime" }
 
 # Navigation
 androidx-navigation-runtime-ktx = { module = "androidx.navigation:navigation-runtime-ktx", version.ref = "navigation" }
