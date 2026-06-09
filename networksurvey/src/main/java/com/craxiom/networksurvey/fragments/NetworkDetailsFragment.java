@@ -471,7 +471,7 @@ public class NetworkDetailsFragment extends AServiceDataFragment implements ICel
                 binding.lteBandRow.setVisibility(View.GONE);
                 binding.pciLabel.setText(R.string.pci_label);
                 binding.bandwidthGroup.setVisibility(View.GONE);
-                binding.taGroup.setVisibility(View.GONE);
+                binding.taGroup.setVisibility(View.VISIBLE);
                 binding.cqiGroup.setVisibility(View.GONE);
                 binding.signalOneLabel.setText(R.string.ss_rsrp_label);
                 binding.signalTwoLabel.setText(R.string.ss_rsrq_label);
