@@ -174,7 +174,6 @@
     <string name="open_settings">打开设置</string>
     <string name="deny_permission">拒绝权限</string>
 
-    <string name="version_suffix" translatable="false" />
 
     <string name="drawer_menu_description">菜单导航按钮</string>
 
@@ -191,44 +190,18 @@
     <string name="voice_network_label">语音网络</string>
 
     <!-- GSM 标签 -->
-    <string name="arfcn_label">ARFCN</string>
-    <string name="bsic_label">BSIC</string>
-    <string name="rssi_label">RSSI</string>
-    <string name="lac_label">LAC</string>
 
     <!-- UMTS 标签 -->
-    <string name="uarfcn_label">UARFCN</string>
-    <string name="psc_label">PSC</string>
-    <string name="rscp_label">RSCP</string>
-    <string name="rnc_label">RNC ID</string>
     <string name="short_cid_label">Short CID</string>
 
     <!-- LTE 及通用标签 -->
-    <string name="mcc_mnc_label">MCC-MNC</string>
-    <string name="mcc_mnc_value">%1$s-%2$s</string>
-    <string name="tac_label">TAC</string>
-    <string name="cid_label">CID</string>
-    <string name="enb_id_label">eNB ID</string>
     <string name="sector_id_label">Sector ID</string>
     <string name="earfcn_band_label">EARFCN/Band</string>
-    <string name="earfcn_label">EARFCN</string>
-    <string name="pci_label">PCI</string>
     <string name="bandwidth_label">Bandwidth</string>
-    <string name="ta_label">TA</string>
-    <string name="cqi_label">CQI</string>
-    <string name="rsrp_label">RSRP</string>
-    <string name="rsrq_label">RSRQ</string>
-    <string name="snr_label">SNR</string>
-    <string name="dbm_value_label">%1$s dBm</string>
-    <string name="db_value_label">%1$s dB</string>
 
     <!-- NR 标签 -->
-    <string name="narfcn_label">NARFCN</string>
     <string name="frequency_label">Frequency</string>
     <string name="band_label">Band</string>
-    <string name="ss_rsrp_label">SS-RSRP</string>
-    <string name="ss_rsrq_label">SS-RSRQ</string>
-    <string name="ss_sinr_label">SS-SINR</string>
 
     <!-- 仪表盘常量 -->
     <string name="card_title_upload">OpenCelliD &amp; BeaconDB 上传</string>
@@ -244,15 +217,9 @@
     <string name="wifi_upload_queue_count_initial">Wi-Fi:</string>
     <string name="wifi_upload_queue_count">Wi-Fi:  %1$d</string>
     <string name="wifi_upload_queue_count_disabled">Wi-Fi:  已禁用</string>
-    <string name="upload_button_text">上传\n记录</string>
     <string name="upload_survey_records">上传探测记录</string>
     <string name="upload_progress">上传进度</string>
-    <string name="upload_percentage_initial" translatable="false">0%</string>
-    <string name="upload_percentage" translatable="false">%1$d%%</string>
     <string name="upload_result">上传结果</string>
-    <string name="opencellid_upload" translatable="false">OpenCelliD:</string>
-    <string name="beacondb_upload" translatable="false">BeaconDB:</string>
-    <string name="upload_pending">等待上传…</string>
     <string name="uploader_canceled">上传已取消</string>
     <string name="upload_to_opencellid">上传到 OpenCelliD （蜂窝网络）</string>
     <string name="anonymously">匿名</string>
@@ -270,33 +237,18 @@
     <string name="gnss_title">GNSS</string>
     <string name="cdr_title">CDR</string>
     <string name="phone_state_title">手机状态</string>
-    <string name="phone_state_icon_description">手机状态图标</string>
-    <string name="status_label">状态：</string>
-    <string name="off">关闭</string>
-    <string name="wifi_icon_description">Wi-Fi 图标</string>
-    <string name="bluetooth_icon_description">蓝牙图标</string>
-    <string name="gnss_icon_description">GNSS 图标</string>
-    <string name="cdr_icon_description">CDR 图标</string>
-    <string name="logging_status_enabled">开启</string>
     <string name="status_disabled">关闭</string>
     <string name="mqtt_off">MQTT 连接已关闭</string>
     <string name="mqtt_connecting">正在尝试连接</string>
     <string name="mqtt_connected">已连接到 MQTT 代理</string>
     <string name="status_on">开启</string>
-    <string name="cellular_label">蜂窝网络：</string>
-    <string name="wifi_label">Wi-Fi:</string>
-    <string name="bluetooth_label">蓝牙：</string>
-    <string name="gnss_label">GNSS:</string>
     <string name="device_status_label">设备状态：</string>
-    <string name="phone_state_label">手机状态：</string>
     <string name="what_is_configured_to_stream">已配置为流式传输的内容？</string>
 
     <string name="my_location_icon_description">我的位置图标</string>
     <string name="card_title_cellular_details_initial">服务小区详情</string>
     <string name="card_title_cellular_details">%1$s 服务小区详情</string>
     <string name="cellular_icon_description">蜂窝网络图标</string>
-    <string name="upload_help_description">上传帮助图标</string>
-    <string name="file_help_description">文件帮助图标</string>
     <string name="card_title_neighbors">邻区</string>
     <string name="card_title_neighbors_gsm">GSM 邻区</string>
     <string name="card_title_neighbors_umts">UMTS 邻区</string>
@@ -359,14 +311,9 @@
 	<string name="override_network_info_title">什么是覆盖网络？</string>
 	<string name="override_network_explanation">覆盖网络类型仅用于市场品牌或可视化目的。它不能被视为设备实际驻留的网络类型。\n\n换句话说，服务提供商希望用户认为他们所在的网络比实际更好，例如在状态栏显示 5G，而实际上却是 4G 网络。</string>
 
-	<string name="missing_location_permission">缺少位置权限</string>
 	<string name="no_gps_device">设备未检测到 GPS！</string>
 	<string name="turn_on_gps">请打开 GPS</string>
-	<string name="searching_for_location">正在搜索 GPS …</string>
 	<string name="location_hint_open_settings">GPS 耗时过长？请尝试在&lt;u>设置&lt;/u>中将位置提供程序更改为 GNSS。</string>
-	<string name="low_gps_confidence">GPS 置信度较低</string>
-	<string name="altitude_value">海拔：%1$s</string>
-	<string name="accuracy_value">精度：%1$s</string>
 
 	<!-- 位置状态指示器 -->
 	<string name="location_status_fixed">已获取位置</string>
@@ -420,12 +367,10 @@
 
 	<string name="cellular_calculators">蜂窝网络计算器</string>
 	<string name="survey_monitor">探测监视器</string>
-	<string name="survey_monitor_description">监控活动探测并查看实时统计数据</string>
 	<string name="settings">设置</string>
 	<string name="manual">用户手册</string>
 	<string name="messaging_docs">消息文档</string>
 	<string name="report_issue">报告问题</string>
-	<string name="github" translatable="false">GitHub</string>
 
 	<string name="nav_section_streaming">流媒体与云</string>
 	<string name="nav_section_tools">参考工具</string>
@@ -445,32 +390,22 @@
 	<string name="connection_notification_connecting_text">正在尝试连接</string>
 
 	<!-- Wi-Fi 和蓝牙列表通用 -->
-	<string name="scan_number">扫描 #%1$d</string>
 	<string name="scan_status_scanning">正在扫描…</string>
 	<string name="scan_status_paused">界面已暂停</string>
 	<string name="scan_status_permission">缺少权限</string>
 
 	<!-- Wi-Fi 网络列表 -->
-	<string name="wifi_aps_in_scan">本次扫描的 AP 数量：%1$d</string>
 	<string name="wifi_scan_status_disabled">Wi-Fi 已禁用</string>
 
 	<string name="dbm_value">%1$s dBm</string>
-	<string name="bssid_value">BSSID：%1$s</string>
-	<string name="bssid_value_with_vendor">BSSID：%1$s • %2$s</string>
-	<string name="wifi_frequency_value">%1$d MHz</string>
-	<string name="wifi_channel_value">信道 %1$d</string>
-	<string name="wifi_channel_and_center_value">信道 %1$d（%2$d）</string>
 
-	<string name="content_description_sort_wifi_networks_button">排序 Wi-Fi 网络按钮</string>
 	<string name="content_description_pause_wifi_network_scan_ui_updates">暂停 Wi-Fi 网络扫描界面更新</string>
 
 	<!-- Wi-Fi 重新设计：列表界面 -->
 	<string name="wifi_mode_flat_bssid">扁平 · BSSID</string>
 	<string name="wifi_mode_group_by_ssid">按 SSID 分组</string>
-	<string name="wifi_list_scan_header">扫描 #%1$d · AP 数量：%2$d</string>
 	<string name="wifi_list_scan_number">扫描 #%1$d</string>
 	<string name="wifi_list_ap_count">AP 数量：%1$d</string>
-	<string name="wifi_sort_signal">信号 ↕</string>
 	<string name="wifi_ap_count_one">%1$d 个 AP</string>
 	<string name="wifi_ap_count_other">%1$d 个 AP</string>
 	<string name="wifi_hidden_ssid_placeholder">&lt;隐藏 SSID&gt;</string>
@@ -495,9 +430,7 @@
 	<string name="wifi_no_signal_description">无信号</string>
 	<string name="bssid_copied">BSSID 已复制</string>
 	<string name="bssid_copy_content_description">复制 BSSID</string>
-	<string name="bssid_clip_label">BSSID</string>
 	<string name="ssid_copied">SSID 已复制</string>
-	<string name="ssid_clip_label">SSID</string>
 
 	<!-- Wi-Fi 重新设计：详情界面 -->
 	<string name="wifi_details_title">网络详情</string>
@@ -513,9 +446,6 @@
 	<string name="wifi_details_scan_rate_compact">扫描间隔：%1$d 秒</string>
 	<string name="wifi_details_exclude">排除</string>
 	<string name="wifi_details_include">包含</string>
-	<string name="wifi_details_channel_value_with_center">%1$d（%2$d）</string>
-	<string name="wifi_details_channel_value">%1$d</string>
-	<string name="wifi_details_frequency_value">%1$d MHz</string>
 	<string name="wifi_details_survey_data">探测数据</string>
 	<string name="wifi_settings_content_description">Wi-Fi 设置</string>
 	<string name="wifi_scan_rate_info_content_description">关于 Wi-Fi 扫描间隔</string>
@@ -792,9 +722,6 @@
 <string name="avg_cn0_label">平均</string>
 <string name="menu_option_sort_by">排序方式</string>
 <string name="menu_option_filter_content_description">筛选信号</string>
-<string name="gnss_flag_image_label">GNSS</string>
-<string name="sbas_flag_image_label">SBAS</string>
-<string name="cf_column_label">CF</string>
 <string name="gps_elevation_column_label">仰角</string>
 <string name="gps_azimuth_column_label">方位角</string>
 <string name="flags_aeu_column_label">标志</string>
@@ -971,10 +898,6 @@
 <string name="streaming_queue_limit_title">流队列限制</string>
 <string name="streaming_queue_limit_description">当向 MQTT 或 gRPC 流式传输时，待发送消息的最大排队数量。当队列满时，扫描将暂停直到消息发送完成。设置为 0 以禁用（无限制队列）。建议：如果网络不可靠，设置为 20,000。</string>
 <string name="streaming_queue_limit_mdm_description">在暂停扫描前最大的待处理消息数。设置为 0 以禁用（无限制队列）。有效范围：0-100000。用于在网络连接较差时防止内存不足崩溃。</string>
-<string name="streaming_queue_limit_disabled">已禁用</string>
-<string name="streaming_queue_limit_disabled_description">队列无限制（可能导致内存问题）</string>
-<string name="streaming_queue_limit_active_description">当队列达到 %1$d 条消息时，扫描将暂停</string>
-<string name="streaming_queue_paused_notification_text">扫描已暂停 - 流队列已满</string>
 
 <!-- 队列反压界面 -->
 <string name="queue_paused_title">探测已暂停</string>
@@ -1002,7 +925,6 @@
 <string name="high_queue_limit_keep_value">保留当前值</string>
 
 <!-- 电池管理 -->
-<string name="battery_management_title">电池管理</string>
 <string name="battery_pause_title">低电量时暂停扫描</string>
 <string name="battery_pause_description">滑动设置电池电量阈值，当电量达到该阈值时所有探测操作将暂停。设置为 0 可禁用暂停。充电后，当电池电量回升至该阈值以上时，操作将自动恢复。</string>
 <string name="battery_pause_mdm_description">设置所有探测操作将暂停的电池电量阈值。设置为 0 可禁用暂停。充电后，当电池电量回升至该阈值以上时，操作将自动恢复。有效值范围：0 – 95</string>
@@ -1037,8 +959,6 @@
 <string name="clear_all">全部清除</string>
 <string name="confirm_clear_exclusion_list_title">清除排除列表</string>
 <string name="confirm_clear_exclusion_list_message">您确定要从排除列表中移除所有 SSID 吗？</string>
-<string name="excluded_label">（已排除）</string>
-<string name="connected_label">（已连接）</string>
 <string name="wifi_exclusion_info">被排除的 SSID 将不会保存到文件或上传到数据库</string>
 
 <!-- 提供商颜色覆盖 -->
@@ -1047,7 +967,6 @@
 <string name="provider_color_overrides_summary">为蜂窝网络提供商分配自定义颜色</string>
 <string name="provider_color_overrides_info">在地图上自定义提供商颜色。您也可以点击基站详情中的提供商颜色点来直接设置颜色。</string>
 <string name="provider_color_add_title">添加颜色覆盖</string>
-<string name="provider_color_edit_title">编辑颜色</string>
 <string name="provider_color_default_label">默认：%s</string>
 <string name="provider_color_mcc_hint">MCC</string>
 <string name="provider_color_mnc_hint">MNC</string>
@@ -1055,8 +974,6 @@
 <string name="confirm_clear_overrides_title">清除所有覆盖？</string>
 <string name="confirm_clear_overrides_message">这将重置所有提供商颜色为默认值。</string>
 <string name="provider_color_reset_to_default">重置为默认</string>
-<string name="provider_color_mcc_error">MCC 必须为 3 位数字（100–999）</string>
-<string name="provider_color_mnc_error">MNC 必须为 1–3 位数字（0–999）</string>
 <string name="provider_color_select_color">选择颜色：</string>
 <string name="provider_color_max_reached">已达到覆盖数量上限。</string>
 <string name="mcc_mnc_format">MCC-MNC：%1$s-%2$s</string>
@@ -1066,8 +983,6 @@
 <!-- NS Analytics -->
 <string name="ns_analytics">NS Analytics</string>
 <string name="ns_analytics_description">管理 NS Analytics 连接和数据上传</string>
-<string name="ns_analytics_title">NS Analytics 上传</string>
-<string name="ns_analytics_help">NS Analytics 帮助按钮</string>
 <string name="ns_analytics_survey_stopped">探测已停止</string>
 <string name="ns_analytics_not_registered">请先在 NS Analytics 中注册设备</string>
 <string name="ns_analytics_survey_started">NS Analytics 探测已开始</string>
@@ -1136,7 +1051,6 @@
 <string name="ns_analytics_upload_status_registration_invalid">注册已过期</string>
 <string name="ns_analytics_upload_status_viewer_cannot_upload">不允许上传</string>
 <string name="ns_analytics_upload_status_session_expired">会话已过期</string>
-<string name="ns_analytics_upload_status_could_not_start">无法开始上传</string>
 <string name="ns_analytics_upload_result_records">已上传 %1$d 条记录</string>
 <string name="ns_analytics_upload_button_upload_now">立即上传</string>
 <string name="ns_analytics_upload_button_uploading">正在上传…</string>
@@ -1165,7 +1079,6 @@
 <string name="settings_oui_mdm_description">启用后，应用将观察到的 24 位 OUI 前缀发送到后端 NS 服务，以便在 Wi-Fi 和蓝牙详情界面显示制造商信息。</string>
 
 <string name="manufacturer_label">制造商</string>
-<string name="manufacturer_sources_header">来源</string>
 <string name="manufacturer_brand">设备品牌</string>
 <string name="manufacturer_service">服务供应商</string>
 <string name="manufacturer_chipset">芯片组（OUI）</string>
@@ -1176,7 +1089,6 @@
 <string name="manufacturer_unknown">未识别出厂商</string>
 <string name="manufacturer_private">厂商已隐藏</string>
 <string name="manufacturer_shared_block">共享厂商块</string>
-<string name="manufacturer_shared_block_tooltip">此 MAC 前缀由多个小型厂商共享，无法识别具体是哪一家。</string>
 <string name="manufacturer_offline">厂商 - 离线</string>
 <string name="manufacturer_not_advertised">未通告</string>
 <string name="manufacturer_none">无</string>
@@ -1199,15 +1111,12 @@
 <string name="plmn_mode_resolve">解析 MCC-MNC</string>
 <string name="plmn_lookup_search_placeholder">国家/地区、运营商、ISO、MCC…</string>
 <string name="plmn_clear_search_a11y">清除搜索</string>
-<string name="plmn_lookup_mcc_label">MCC</string>
-<string name="plmn_lookup_mnc_label">MNC</string>
 <string name="plmn_lookup_results_meta_label">结果：</string>
 <string name="plmn_lookup_live_label">实时搜索</string>
 <string name="plmn_lookup_empty_line1">没有匹配的 PLMN。</string>
 <string name="plmn_lookup_empty_line2">请尝试输入国家/地区名称、运营商品牌或 MCC</string>
 <string name="plmn_lookup_n_operators">%1$d 个运营商</string>
 <string name="plmn_lookup_plmn_label">PLMN %1$s</string>
-<string name="plmn_lookup_clip_label">PLMN</string>
 <string name="plmn_lookup_copied_toast">已复制 PLMN</string>
 <string name="plmn_lookup_truncated_hint">仅显示前几条结果。请细化条件以缩小范围。</string>
 <string name="plmn_lookup_offline">无法连接到查询服务。请检查您的网络连接。</string>
@@ -1254,12 +1163,9 @@
 <!-- PLMN 信息底部抽屉 -->
 <string name="plmn_info_sheet_title">关于 PLMN 字段</string>
 <string name="plmn_info_section_plmn">PLMN</string>
-<string name="plmn_info_plmn_label">PLMN</string>
 <string name="plmn_info_plmn_desc">公共陆地移动网络。MCC + MNC 组合，用于全球唯一标识移动网络。</string>
 <string name="plmn_info_section_codes">MCC 和 MNC</string>
-<string name="plmn_info_mcc_label">MCC</string>
 <string name="plmn_info_mcc_desc">移动国家码。3 位数字，标识国家/地区（例如 310 代表美国，262 代表德国）。</string>
-<string name="plmn_info_mnc_label">MNC</string>
 <string name="plmn_info_mnc_desc">移动网络码。2-3 位数字，标识国家/地区内的运营商。</string>
 <string name="plmn_info_section_brand_operator">品牌与运营商的区别</string>
 <string name="plmn_info_brand_label">品牌</string>

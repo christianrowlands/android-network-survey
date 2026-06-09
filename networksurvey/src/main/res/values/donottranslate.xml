@@ -1,21 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?><!--
-/* 
-**
-** Copyright 2013, Sean J. Barbeau
-**
-** Licensed under the Apache License, Version 2.0 (the "License");
-** you may not use this file except in compliance with the License.
-** You may obtain a copy of the License at
-**
-**     https://www.apache.org/licenses/LICENSE-2.0
-**
-** Unless required by applicable law or agreed to in writing, software
-** distributed under the License is distributed on an "AS IS" BASIS,
-** WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-** See the License for the specific language governing permissions and
-** limitations under the License.
-*/
--->
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <!-- Strings in this file should NOT be translated -->
     <string name="app_name">Network Survey</string>
@@ -54,34 +37,15 @@
     <string name="sky_legend_cn0_high">45</string>
     <string name="sky_legend_cn0_units">(dB-Hz)</string>
 
-    <!-- Values and units display - Accuracy View -->
-
-    <!-- RADAR intent used by apps like BenchMap to set the ground truth location in GPSTest -->
-
-    <!-- Geo URI for parsing location data from QR Codes -->
-
     <!-- Preference keys -->
     <string name="pref_key_default_sat_sort">preference_default_sat_sort</string>
     <string name="pref_key_default_sat_filter">preference_default_sat_filter</string>
-
     <string name="pref_key_gps_min_time">gps_min_time</string>
     <string name="pref_key_gps_min_distance">gps_min_distance</string>
-
     <string name="pref_key_true_north">true_north</string>
-
     <string name="pref_key_language">preference_language</string>
     <string name="pref_key_force_full_gnss_measurements">preference_force_full_gnss_measurements</string>
-
     <string name="pref_key_ignore_raw_gnss_failure">ignore_raw_gnss_failure</string>
-
-    <!-- Default preference values -->
-
-    <!-- The constants in map_type_entries and below match those in GoogleMap object:
-    https://developers.google.com/maps/documentation/android/reference/com/google/android/gms/maps/GoogleMap -->
-
-    <!-- Send location URLs -->
-
-    <!-- Commands sent to the LocationManager -->
 
     <!-- Device capabilities -->
     <string name="capability_key_raw_measurements">capability_key_raw_measurements</string>
@@ -92,11 +56,7 @@
     <string name="capability_key_num_antenna">capability_key_num_antenna</string>
     <string name="capability_key_antenna_cf">capability_key_antenna_cf</string>
 
-    <!-- Unit preferences-->
-
-    <!-- Supported languages, must stay in-order with language_values -->
-
-    <!-- Supported languages, must stay in-order with language_entries -->
+    <!-- Supported language codes, must stay in-order with language_entries -->
     <string-array name="language_values">
         <item>en</item>
         <item>zh</item>
@@ -113,8 +73,58 @@
         <item>fr</item>
     </string-array>
 
-
     <!-- Coordinate formats -->
-
     <string name="preferences_coordinate_format_dd_key">dd</string>
+
+    <!-- Cellular parameter acronyms -->
+    <string name="arfcn_label">ARFCN</string>
+    <string name="bsic_label">BSIC</string>
+    <string name="rssi_label">RSSI</string>
+    <string name="lac_label">LAC</string>
+    <string name="uarfcn_label">UARFCN</string>
+    <string name="psc_label">PSC</string>
+    <string name="rscp_label">RSCP</string>
+    <string name="rnc_label">RNC ID</string>
+    <string name="mcc_mnc_label">MCC-MNC</string>
+    <string name="tac_label">TAC</string>
+    <string name="cid_label">CID</string>
+    <string name="enb_id_label">eNB ID</string>
+    <string name="earfcn_label">EARFCN</string>
+    <string name="pci_label">PCI</string>
+    <string name="ta_label">TA</string>
+    <string name="cqi_label">CQI</string>
+    <string name="rsrp_label">RSRP</string>
+    <string name="rsrq_label">RSRQ</string>
+    <string name="snr_label">SNR</string>
+    <string name="narfcn_label">NARFCN</string>
+    <string name="ss_rsrp_label">SS-RSRP</string>
+    <string name="ss_rsrq_label">SS-RSRQ</string>
+    <string name="ss_sinr_label">SS-SINR</string>
+
+    <!-- Signal unit / format strings -->
+    <string name="mcc_mnc_value">%1$s-%2$s</string>
+    <string name="dbm_value_label">%1$s dBm</string>
+    <string name="db_value_label">%1$s dB</string>
+
+    <!-- Wi-Fi / Bluetooth acronyms -->
+    <string name="bssid_clip_label">BSSID</string>
+    <string name="ssid_clip_label">SSID</string>
+
+    <!-- PLMN identifiers -->
+    <string name="plmn_lookup_clip_label">PLMN</string>
+    <string name="plmn_info_plmn_label">PLMN</string>
+    <string name="plmn_lookup_mcc_label">MCC</string>
+    <string name="plmn_lookup_mnc_label">MNC</string>
+    <string name="plmn_info_mcc_label">MCC</string>
+    <string name="plmn_info_mnc_label">MNC</string>
+
+    <!-- GNSS / SBAS / CF flag acronyms -->
+    <string name="gnss_flag_image_label">GNSS</string>
+    <string name="sbas_flag_image_label">SBAS</string>
+    <string name="cf_column_label">CF</string>
+
+    <!-- Upload service / brand names -->
+    <string name="opencellid_upload">OpenCelliD:</string>
+    <string name="beacondb_upload">BeaconDB:</string>
+    <string name="github">GitHub</string>
 </resources>
