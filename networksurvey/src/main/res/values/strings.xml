@@ -408,6 +408,7 @@
     <string name="wifi_mode_group_by_ssid">Group by SSID</string>
     <string name="wifi_list_scan_number">Scan #%1$d</string>
     <string name="wifi_list_ap_count">APs: %1$d</string>
+    <string name="wifi_list_ap_count_filtered">APs: %1$d of %2$d</string>
     <string name="wifi_ap_count_one">%1$d AP</string>
     <string name="wifi_ap_count_other">%1$d APs</string>
     <string name="wifi_hidden_ssid_placeholder">&lt;Hidden SSID&gt;</string>
@@ -433,6 +434,19 @@
     <string name="bssid_copied">BSSID copied</string>
     <string name="bssid_copy_content_description">Copy BSSID</string>
     <string name="ssid_copied">SSID copied</string>
+    <string name="wifi_tag_excluded">Excluded</string>
+    <string name="wifi_group_excluded_count">%1$d excluded</string>
+
+    <!-- Wi-Fi redesign: display filter -->
+    <string name="wifi_filter_title">Filter Networks</string>
+    <string name="wifi_filter_content_description">Filter the Wi-Fi network list</string>
+    <string name="wifi_filter_content_description_active">Filter the Wi-Fi network list. Filter active.</string>
+    <string name="wifi_filter_search_hint">Search SSID or BSSID</string>
+    <string name="wifi_filter_clear">Clear filter</string>
+    <string name="wifi_filter_clear_search">Clear search text</string>
+    <string name="wifi_filter_empty_state">No networks match the current filter</string>
+    <string name="wifi_filter_showing_count">Showing %1$d of %2$d APs</string>
+    <string name="wifi_filter_manage_exclusions">Manage SSID Exclusion List</string>
 
     <!-- Wi-Fi redesign: details screen -->
     <string name="wifi_details_title">Network Details</string>
@@ -947,7 +961,7 @@
 
     <!-- SSID Exclusion List -->
     <string name="ssid_exclusion_list_title">SSID Exclusion List</string>
-    <string name="ssid_exclusion_list_description">Manage SSIDs to exclude from survey data</string>
+    <string name="ssid_exclusion_list_description">Choose SSIDs to leave out of saved and uploaded survey data. Excluded networks still appear in the Wi-Fi list</string>
     <string name="ssid_exclusion_list_empty">No SSIDs excluded</string>
     <string name="ssid_added_to_exclusion">Added "%1$s" to exclusion list</string>
     <string name="ssid_removed_from_exclusion">Removed "%1$s" from exclusion list</string>
@@ -961,7 +975,7 @@
     <string name="clear_all">Clear All</string>
     <string name="confirm_clear_exclusion_list_title">Clear Exclusion List</string>
     <string name="confirm_clear_exclusion_list_message">Are you sure you want to remove all SSIDs from the exclusion list?</string>
-    <string name="wifi_exclusion_info">Excluded SSIDs will not be saved to files or uploaded to databases</string>
+    <string name="wifi_exclusion_info">Excluded SSIDs are not written to log files, uploaded, or streamed. They still appear in the Wi-Fi list with an Excluded tag</string>
 
     <!-- Provider Color Overrides -->
     <string name="provider_colors_category_title">Provider Colors</string>

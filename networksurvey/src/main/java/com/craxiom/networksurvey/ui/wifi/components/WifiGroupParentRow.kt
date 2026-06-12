@@ -130,6 +130,9 @@ private fun TitleRow(
             )
         }
         GroupCountPill(count = group.apCount)
+        if (group.allExcluded) {
+            ExcludedTag()
+        }
     }
 }
 
@@ -148,6 +151,17 @@ private fun MetaRow(group: WifiDisplayItem.GroupParent) {
                 text = group.encryptionLabel,
                 style = TextStyle(fontSize = 12.sp),
                 color = WifiTokens.InkMuted,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+        }
+        // A mixed group (possible if exclusion ever becomes per-BSSID) gets a muted count
+        // instead of the full tag; fully excluded groups show the tag in the title row.
+        if (group.excludedCount > 0 && !group.allExcluded) {
+            Text(
+                text = stringResource(R.string.wifi_group_excluded_count, group.excludedCount),
+                style = TextStyle(fontSize = 12.sp),
+                color = WifiTokens.SignalFair,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )

@@ -85,10 +85,14 @@ sealed class WifiDisplayItem {
         val encryptionLabel: String,
         val anyPasspoint: Boolean,
         val expanded: Boolean,
+        val excludedCount: Int = 0,
     ) : WifiDisplayItem() {
         override val key: String get() = "group:$groupKey"
 
         val apCount: Int get() = aps.size
+
+        /** True when every AP in this group is excluded from survey data output. */
+        val allExcluded: Boolean get() = excludedCount > 0 && excludedCount == aps.size
     }
 
     @Immutable

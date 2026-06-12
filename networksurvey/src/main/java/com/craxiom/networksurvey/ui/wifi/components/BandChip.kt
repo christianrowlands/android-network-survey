@@ -18,8 +18,8 @@ import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.sp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.craxiom.networksurvey.R
 import com.craxiom.networksurvey.ui.theme.WifiTokens
 import com.craxiom.networksurvey.util.WifiBand
@@ -74,9 +74,10 @@ fun BandChip(
     }
 }
 
-// 11-dp outer halo (30% alpha) + 7-dp inner dot, centered.
+// 11-dp outer halo (30% alpha) + 7-dp inner dot, centered. Internal so the filter sheet's
+// band pills can reuse the exact same dot treatment.
 @Composable
-private fun BandDot(color: Color, modifier: Modifier = Modifier) {
+internal fun BandDot(color: Color, modifier: Modifier = Modifier) {
     Box(
         modifier = modifier
             .size(11.dp)

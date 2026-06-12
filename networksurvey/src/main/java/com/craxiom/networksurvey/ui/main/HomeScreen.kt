@@ -1,5 +1,8 @@
 package com.craxiom.networksurvey.ui.main
 
+import android.content.Context
+import android.content.ContextWrapper
+import androidx.activity.ComponentActivity
 import androidx.annotation.DrawableRes
 import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.padding
@@ -31,6 +34,8 @@ import androidx.compose.ui.unit.Density
 import androidx.compose.ui.viewinterop.AndroidViewBinding
 import androidx.lifecycle.Observer
 import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavHostController
@@ -52,6 +57,9 @@ import com.craxiom.networksurvey.gpstest.util.LibUIUtils
 import com.craxiom.networksurvey.ui.dashboard.DashboardScreen
 import com.craxiom.networksurvey.ui.main.appbar.AppBar
 import com.craxiom.networksurvey.ui.main.appbar.AppBarAction
+import com.craxiom.networksurvey.ui.wifi.components.WifiFilterSheet
+import com.craxiom.networksurvey.ui.wifi.model.WifiListUiState
+import com.craxiom.networksurvey.ui.wifi.model.WifiListViewModel
 import com.craxiom.networksurvey.util.PreferenceUtils
 
 @Composable
@@ -66,6 +74,21 @@ fun HomeScreen(
     var currentGnssScreen by remember { mutableStateOf(GnssScreen.GNSS_DETAILS) }
     var showGnssFilterDialog by remember { mutableStateOf(false) }
     var showGnssSortDialog by remember { mutableStateOf(false) }
+    var showWifiFilterSheet by remember { mutableStateOf(false) }
+
+    // Shares the activity-scoped Wi-Fi list view model with WifiNetworksFragment so the app bar
+    // funnel action and filter sheet operate on the same display filter as the list itself.
+    val activity = LocalContext.current.findComponentActivity()
+    val wifiListViewModel: WifiListViewModel? =
+        if (activity != null) viewModel(viewModelStoreOwner = activity) else null
+    // Only collect Wi-Fi list state while the Wi-Fi tab is showing so scan-rate updates don't
+    // recompose the app bar on the other tabs.
+    val wifiListUiState: WifiListUiState? =
+        if (currentScreen == MainScreens.Wifi && wifiListViewModel != null) {
+            wifiListViewModel.uiState.collectAsStateWithLifecycle().value
+        } else {
+            null
+        }
 
     bottomNavController.addOnDestinationChangedListener { _, destination, _ ->
         BottomNavItem().bottomNavigationItems().forEachIndexed { index, item ->
@@ -87,7 +110,9 @@ fun HomeScreen(
                     currentGnssScreen,
                     mainNavController,
                     showGnssFilterDialog = { showGnssFilterDialog = it },
-                    showGnssSortDialog = { showGnssSortDialog = true })
+                    showGnssSortDialog = { showGnssSortDialog = true },
+                    wifiFilterActive = wifiListUiState?.filter?.isActive == true,
+                    showWifiFilterSheet = { showWifiFilterSheet = true })
             )
         },
         bottomBar = {
@@ -141,6 +166,34 @@ fun HomeScreen(
             onSave = { showGnssFilterDialog = false }
         )
     }
+
+    // The funnel action only exists on the Wi-Fi tab, so the collected state is always
+    // available while the sheet can be open.
+    if (showWifiFilterSheet && wifiListViewModel != null && wifiListUiState != null) {
+        WifiFilterSheet(
+            filter = wifiListUiState.filter,
+            visibleApCount = wifiListUiState.visibleApCount,
+            totalApCount = wifiListUiState.apCount,
+            onQueryChanged = wifiListViewModel::setFilterQuery,
+            onBandToggled = wifiListViewModel::toggleFilterBand,
+            onClear = wifiListViewModel::clearFilter,
+            onManageExclusionList = {
+                showWifiFilterSheet = false
+                mainNavController.navigate(NavOption.SsidExclusionList.name)
+            },
+            onDismiss = { showWifiFilterSheet = false },
+        )
+    }
+}
+
+/**
+ * Walks the context wrapper chain to find the hosting [ComponentActivity]. Needed to scope
+ * view models to the activity from inside the composition.
+ */
+private tailrec fun Context.findComponentActivity(): ComponentActivity? = when (this) {
+    is ComponentActivity -> this
+    is ContextWrapper -> baseContext.findComponentActivity()
+    else -> null
 }
 
 /**
@@ -218,7 +271,7 @@ fun BottomNavigationBar(
 }
 
 /**
- * Returns teh title resource ID that corresponds to the current screen
+ * Returns the title resource ID that corresponds to the current screen
  */
 fun getAppBarTitle(currentScreen: MainScreens): Int {
     return when (currentScreen) {
@@ -236,7 +289,9 @@ fun getAppBarActions(
     currentGnssScreen: GnssScreen,
     navController: NavController,
     showGnssFilterDialog: (Boolean) -> Unit,
-    showGnssSortDialog: (Boolean) -> Unit
+    showGnssSortDialog: (Boolean) -> Unit,
+    wifiFilterActive: Boolean = false,
+    showWifiFilterSheet: (Boolean) -> Unit = {}
 ): List<AppBarAction> {
     return when (currentScreen) {
         MainScreens.Dashboard -> listOf(
@@ -283,10 +338,17 @@ fun getAppBarActions(
             ),
             AppBarAction(
                 icon = R.drawable.ic_filter,
-                description = R.string.ssid_exclusion_list_title,
+                // Announce the active-filter state to screen readers; the badge dot alone
+                // is purely visual.
+                description = if (wifiFilterActive) {
+                    R.string.wifi_filter_content_description_active
+                } else {
+                    R.string.wifi_filter_content_description
+                },
                 onClick = {
-                    navController.navigate(NavOption.SsidExclusionList.name)
-                }
+                    showWifiFilterSheet(true)
+                },
+                active = wifiFilterActive
             )
         )
 

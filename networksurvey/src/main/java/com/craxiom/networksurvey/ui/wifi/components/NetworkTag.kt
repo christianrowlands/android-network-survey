@@ -18,13 +18,15 @@ import androidx.compose.ui.unit.sp
 import com.craxiom.networksurvey.ui.theme.WifiTokens
 
 /**
- * Small pill used for Security ("WPA2"), Standard ("802.11ax"), and Passpoint labels on
- * Wi-Fi list rows and the Details hero.
+ * Small pill used for Security ("WPA2"), Standard ("802.11ax"), Passpoint, and Excluded labels
+ * on Wi-Fi list rows and the Details hero.
  *
- * Three visual variants:
+ * Four visual variants:
  *  - [NetworkTagVariant.Standard] - neutral (surface background, onSurface text) for 802.11xx
  *  - [NetworkTagVariant.Security] - semantic-tinted text/border, surface background
  *  - [NetworkTagVariant.Passpoint] - accent-tinted border + text, transparent background
+ *  - [NetworkTagVariant.Excluded] - warning-tinted text/border, surface background, marking
+ *    SSIDs excluded from survey data output (files, uploads, streaming)
  */
 @Composable
 fun NetworkTag(
@@ -38,23 +40,26 @@ fun NetworkTag(
             SecurityType.ENTERPRISE -> WifiTokens.SecurityEnterprise
             SecurityType.STANDARD -> WifiTokens.SecurityMint
         }
+
         NetworkTagVariant.Passpoint -> WifiTokens.PasspointBlue
+        NetworkTagVariant.Excluded -> WifiTokens.SignalFair
         NetworkTagVariant.Standard -> Color.Unspecified
     }
 
     val bg = when (variant) {
-        NetworkTagVariant.Standard, is NetworkTagVariant.Security ->
+        NetworkTagVariant.Standard, is NetworkTagVariant.Security, NetworkTagVariant.Excluded ->
             MaterialTheme.colorScheme.surfaceContainerHighest
+
         NetworkTagVariant.Passpoint -> Color.Transparent
     }
     val borderColor = when (variant) {
         NetworkTagVariant.Standard -> MaterialTheme.colorScheme.outlineVariant
-        is NetworkTagVariant.Security -> semanticColor.copy(alpha = 0.3f)
+        is NetworkTagVariant.Security, NetworkTagVariant.Excluded -> semanticColor.copy(alpha = 0.3f)
         NetworkTagVariant.Passpoint -> WifiTokens.PasspointBlue.copy(alpha = 0.35f)
     }
     val textColor = when (variant) {
         NetworkTagVariant.Standard -> MaterialTheme.colorScheme.onSurface
-        is NetworkTagVariant.Security -> semanticColor
+        is NetworkTagVariant.Security, NetworkTagVariant.Excluded -> semanticColor
         NetworkTagVariant.Passpoint -> WifiTokens.PasspointBlue
     }
 
@@ -83,6 +88,8 @@ sealed class NetworkTagVariant {
     data class Security(val type: SecurityType) : NetworkTagVariant()
 
     object Passpoint : NetworkTagVariant()
+
+    object Excluded : NetworkTagVariant()
 }
 
 enum class SecurityType {

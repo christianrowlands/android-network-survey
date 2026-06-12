@@ -27,17 +27,17 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.ui.res.stringArrayResource
-import androidx.compose.ui.semantics.Role
-import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.role
-import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringArrayResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -47,12 +47,15 @@ import com.craxiom.networksurvey.ui.theme.WifiTokens
 
 /**
  * Top chrome for the Wi-Fi list: "Scan #N · APs: M", scan status with pulsing dot, and the
- * sort + pause controls.
+ * sort + pause controls. When the display filter is active the AP count switches to
+ * "APs: M of N" so it is always visible that some networks are hidden.
  */
 @Composable
 fun ScanStatusStrip(
     scanNumber: Int,
     apCount: Int,
+    visibleApCount: Int,
+    filterActive: Boolean,
     scanStatusId: Int,
     isPaused: Boolean,
     sortIndex: Int,
@@ -77,7 +80,11 @@ fun ScanStatusStrip(
                 color = WifiTokens.InkMuted,
             )
             Text(
-                text = stringResource(R.string.wifi_list_ap_count, apCount),
+                text = if (filterActive) {
+                    stringResource(R.string.wifi_list_ap_count_filtered, visibleApCount, apCount)
+                } else {
+                    stringResource(R.string.wifi_list_ap_count, apCount)
+                },
                 style = TextStyle(fontSize = 13.sp),
                 color = WifiTokens.InkMuted,
             )

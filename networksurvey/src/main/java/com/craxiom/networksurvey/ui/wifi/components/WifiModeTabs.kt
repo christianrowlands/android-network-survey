@@ -26,8 +26,8 @@ import com.craxiom.networksurvey.ui.theme.WifiTokens
 import com.craxiom.networksurvey.ui.wifi.model.WifiListMode
 
 /**
- * Mode toggle tabs: Flat · BSSID vs Group by SSID. Band filter tabs are planned for a follow-up
- * PR per the design plan and are not included here.
+ * Mode toggle tabs: Flat · BSSID vs Group by SSID. Band filtering lives in the display filter
+ * sheet ([WifiFilterSheet]) opened from the app bar funnel icon.
  */
 @Composable
 fun WifiModeTabs(
@@ -63,7 +63,8 @@ private fun ModeTab(label: String, selected: Boolean, onClick: () -> Unit) {
     } else {
         MaterialTheme.colorScheme.outlineVariant
     }
-    val textColor = if (selected) WifiTokens.SsidAccent else MaterialTheme.colorScheme.onSurfaceVariant
+    val textColor =
+        if (selected) WifiTokens.SsidAccent else MaterialTheme.colorScheme.onSurfaceVariant
 
     Row(
         modifier = Modifier

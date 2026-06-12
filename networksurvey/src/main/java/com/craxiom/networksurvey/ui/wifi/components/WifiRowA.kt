@@ -211,7 +211,24 @@ private fun ChipsRow(ap: WifiAccessPointDisplay) {
                 variant = NetworkTagVariant.Standard,
             )
         }
+        if (ap.isExcluded) {
+            ExcludedTag()
+        }
     }
+}
+
+/**
+ * Marks an SSID that is on the exclusion list, i.e. left out of survey data output. Shared by
+ * the flat row and the group child row.
+ */
+@Composable
+internal fun ExcludedTag(modifier: Modifier = Modifier) {
+    val excludedDescription = stringResource(R.string.wifi_details_excluded_from_survey)
+    NetworkTag(
+        text = stringResource(R.string.wifi_tag_excluded),
+        variant = NetworkTagVariant.Excluded,
+        modifier = modifier.semantics { contentDescription = excludedDescription },
+    )
 }
 
 @Composable

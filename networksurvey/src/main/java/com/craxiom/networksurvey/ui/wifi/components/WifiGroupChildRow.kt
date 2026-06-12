@@ -90,6 +90,9 @@ private fun BandAndBandwidthRow(ap: WifiAccessPointDisplay) {
         if (hasStandard) {
             SubLabel(ap.standardLabel)
         }
+        if (ap.isExcluded) {
+            ExcludedTag()
+        }
     }
 }
 

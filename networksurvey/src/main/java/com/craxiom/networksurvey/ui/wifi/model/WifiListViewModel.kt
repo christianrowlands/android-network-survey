@@ -2,12 +2,14 @@ package com.craxiom.networksurvey.ui.wifi.model
 
 import android.app.Application
 import android.content.SharedPreferences
+import androidx.core.content.edit
 import androidx.lifecycle.AndroidViewModel
 import androidx.preference.PreferenceManager
 import com.craxiom.networksurvey.R
 import com.craxiom.networksurvey.constants.NetworkSurveyConstants
 import com.craxiom.networksurvey.constants.WifiBeaconMessageConstants
 import com.craxiom.networksurvey.model.WifiRecordWrapper
+import com.craxiom.networksurvey.util.WifiBand
 import com.craxiom.networksurvey.util.WifiUtils
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -16,7 +18,6 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import timber.log.Timber
 import javax.inject.Inject
-import androidx.core.content.edit
 
 /**
  * View model for the redesigned Wi-Fi list. Owns the raw scan wrapper list, the user's
@@ -45,8 +46,12 @@ class WifiListViewModel @Inject constructor(
     // unchanged APs so LazyColumn can skip row recomposition.
     private val displayCache = mutableMapOf<String, WifiAccessPointDisplay>()
 
-    // Latest derived displays (ordered by current sort). The interleave step reads this.
+    // Latest derived displays (ordered by current sort). The display filter reads this.
     private var latestSortedDisplays: List<WifiAccessPointDisplay> = emptyList()
+
+    // Sorted displays that pass the current display filter. The grouping and interleave steps
+    // read this so an active filter automatically drops empty groups and shrinks aggregates.
+    private var latestFilteredDisplays: List<WifiAccessPointDisplay> = emptyList()
 
     // Latest derived group parents (ordered by current sort). Flipped `expanded` state is
     // applied by [toggleGroupExpanded] without a full rebuild.
@@ -76,7 +81,9 @@ class WifiListViewModel @Inject constructor(
         rebuildDisplays(wrappers, current.sortIndex)
         _uiState.value = current.copy(
             scanNumber = current.scanNumber + 1,
-            apCount = wrappers.size,
+            // Deduped total so "x of y" counts always match the rendered list.
+            apCount = latestSortedDisplays.size,
+            visibleApCount = latestFilteredDisplays.size,
             items = interleave(current.mode),
         )
     }
@@ -117,8 +124,64 @@ class WifiListViewModel @Inject constructor(
         }
         // Sort change reorders existing cached displays; no per-wrapper mapping needed.
         latestSortedDisplays = latestSortedDisplays.sortedWith(apComparator(index))
+        applyFilter()
         rebuildGroups(sortIndex = index)
-        _uiState.update { it.copy(sortIndex = index, items = interleave(it.mode)) }
+        _uiState.update {
+            it.copy(
+                sortIndex = index,
+                visibleApCount = latestFilteredDisplays.size,
+                items = interleave(it.mode),
+            )
+        }
+    }
+
+    /** Updates the display filter's search query and re-derives the visible list. */
+    fun setFilterQuery(query: String) {
+        updateFilter { it.copy(searchQuery = query) }
+    }
+
+    /** Toggles a band in the display filter's band set and re-derives the visible list. */
+    fun toggleFilterBand(band: WifiBand) {
+        updateFilter { filter ->
+            val bands = if (band in filter.selectedBands) {
+                filter.selectedBands - band
+            } else {
+                filter.selectedBands + band
+            }
+            filter.copy(selectedBands = bands)
+        }
+    }
+
+    /** Clears all display filter constraints, restoring the full list. */
+    fun clearFilter() {
+        updateFilter { WifiDisplayFilter() }
+    }
+
+    /**
+     * Applies a transform to the current display filter and re-derives the filtered displays,
+     * groups, and items. Works purely off cached displays, so it functions while scan updates
+     * are paused or Wi-Fi is disabled.
+     */
+    private fun updateFilter(transform: (WifiDisplayFilter) -> WifiDisplayFilter) {
+        val current = _uiState.value
+        val newFilter = transform(current.filter)
+        if (newFilter == current.filter) return
+        applyFilter(newFilter)
+        rebuildGroups()
+        _uiState.value = current.copy(
+            filter = newFilter,
+            visibleApCount = latestFilteredDisplays.size,
+            items = interleave(current.mode),
+        )
+    }
+
+    /** Re-derives [latestFilteredDisplays] from [latestSortedDisplays] and the given filter. */
+    private fun applyFilter(filter: WifiDisplayFilter = _uiState.value.filter) {
+        latestFilteredDisplays = if (!filter.isActive) {
+            latestSortedDisplays
+        } else {
+            latestSortedDisplays.filter(filter::matches)
+        }
     }
 
     fun toggleGroupExpanded(groupKey: String) {
@@ -196,55 +259,27 @@ class WifiListViewModel @Inject constructor(
         displayCache.keys.retainAll(wrappersByBssid.keys)
 
         latestSortedDisplays = displays.sortedWith(apComparator(sortIndex))
+        applyFilter()
         rebuildGroups(sortIndex)
     }
 
     /**
-     * Rebuilds [latestGroups] from the already-sorted [latestSortedDisplays]. Group-child order
-     * respects `sortIndex` except for SSID (1) and Security (5), where per-group child order
-     * falls back to strongest-signal, sorting all members of a group by SSID/security is a
-     * no-op anyway.
+     * Rebuilds [latestGroups] from the already-sorted [latestFilteredDisplays]. Grouping runs
+     * after the display filter so empty groups drop out and group aggregates only reflect
+     * visible children.
      */
     private fun rebuildGroups(sortIndex: Int = _uiState.value.sortIndex) {
-        if (latestSortedDisplays.isEmpty()) {
-            latestGroups = emptyList()
-            return
-        }
-        val childSortIndex = if (sortIndex == 1 || sortIndex == 5) 0 else sortIndex
-        val childComparator = apComparator(childSortIndex)
-
-        latestGroups = latestSortedDisplays.groupBy { groupKeyFor(it) }.map { (groupKey, aps) ->
-            val firstAp = aps.first()
-            val allHidden = firstAp.ssidIsHidden
-            val displaySsid = if (allHidden) firstAp.bssid else firstAp.ssid
-            val sortedAps = aps.sortedWith(childComparator)
-            val bestRssi = sortedAps.mapNotNull { it.rssi }.maxOrNull()
-            val uniqueBands = sortedAps.mapNotNull { it.band }.distinct().sorted()
-            val distinctSecurity = sortedAps.map { it.encryptionLabel }.filter { it.isNotBlank() }.distinct()
-            val encryptionLabel = distinctSecurity.joinToString(" / ")
-            val anyPasspoint = sortedAps.any { it.passpoint }
-            WifiDisplayItem.GroupParent(
-                groupKey = groupKey,
-                displaySsid = displaySsid,
-                isHidden = allHidden,
-                aps = sortedAps,
-                bestRssi = bestRssi,
-                bands = uniqueBands,
-                encryptionLabel = encryptionLabel,
-                anyPasspoint = anyPasspoint,
-                expanded = expandedGroupKeys.contains(groupKey),
-            )
-        }.sortedWith(groupComparator(sortIndex))
+        latestGroups = buildGroupParents(latestFilteredDisplays, sortIndex, expandedGroupKeys)
     }
 
     /**
-     * Interleaves cached sorted displays / groups into the final [WifiDisplayItem] list. Pure
+     * Interleaves cached filtered displays / groups into the final [WifiDisplayItem] list. Pure
      * function of cached state, no per-wrapper mapping, no re-sort.
      */
     private fun interleave(mode: WifiListMode): List<WifiDisplayItem> {
-        if (latestSortedDisplays.isEmpty()) return emptyList()
+        if (latestFilteredDisplays.isEmpty()) return emptyList()
         return if (mode == WifiListMode.FLAT) {
-            latestSortedDisplays.map { WifiDisplayItem.Flat(it) }
+            latestFilteredDisplays.map { WifiDisplayItem.Flat(it) }
         } else {
             val result = mutableListOf<WifiDisplayItem>()
             for (group in latestGroups) {
@@ -259,39 +294,5 @@ class WifiListViewModel @Inject constructor(
         }
     }
 
-    private fun groupKeyFor(ap: WifiAccessPointDisplay): String {
-        return if (ap.ssidIsHidden) "hidden:${ap.bssid}" else "ssid:${ap.ssid}"
-    }
-
-    /**
-     * Per-AP comparator mirroring the legacy WifiViewModel comparator behavior.
-     * See [R.array.wifi_network_sort_options] - index mapping must stay in sync.
-     */
-    private fun apComparator(sortIndex: Int): Comparator<WifiAccessPointDisplay> {
-        return when (sortIndex) {
-            1 -> compareBy { it.ssid }
-            2 -> compareBy { it.bssid }
-            3 -> compareBy { it.channel ?: Int.MAX_VALUE }
-            4 -> compareBy { it.frequencyMhz ?: Int.MAX_VALUE }
-            5 -> compareBy { it.encryptionLabel }
-            else -> compareByDescending { it.rssi ?: Int.MIN_VALUE }
-        }
-    }
-
-    /**
-     * Group ordering for each sort index. BSSID / Channel / Frequency have no natural group-level
-     * key, so they fall back to strongest-signal ordering of groups (children still sort by the
-     * chosen key via [apComparator]).
-     */
-    private fun groupComparator(sortIndex: Int): Comparator<WifiDisplayItem.GroupParent> {
-        return when (sortIndex) {
-            1 -> compareBy { it.displaySsid }
-            5 -> compareBy(
-                { it.aps.firstOrNull()?.encryptionLabel ?: "" },
-                { it.displaySsid },
-            )
-            else -> compareByDescending { it.bestRssi ?: Int.MIN_VALUE }
-        }
-    }
 }
 
