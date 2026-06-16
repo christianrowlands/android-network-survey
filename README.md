@@ -3,6 +3,7 @@
 ![Build Status](https://github.com/christianrowlands/android-network-survey/actions/workflows/android.yaml/badge.svg)
 [![License](https://img.shields.io/badge/license-Apache%202-green.svg?style=flat)](https://github.com/christianrowlands/android-network-survey/blob/develop/LICENSE)
 ![Latest Release](https://img.shields.io/github/release/christianrowlands/android-network-survey.svg?logo=github)
+[![Translation status](https://hosted.weblate.org/widget/network-survey-android-app/svg-badge.svg)](https://hosted.weblate.org/engage/network-survey-android-app/)
 
 [<img src="https://play.google.com/intl/en_us/badges/static/images/badges/en_badge_web_generic.png"
 alt="Download at https://play.google.com/store/apps/details?id=com.craxiom.networksurvey]"
@@ -234,6 +235,16 @@ SHA-256:
 `AB:F5:AD:29:11:FE:31:91:6F:4E:25:5C:17:33:A3:F6:BC:2C:AB:2F:28:16:C9:58:7D:E1:1A:41:58:71:AF:07`
 
 Verification info also published at: https://networksurvey.app/manual/permissions/apk-verification/
+
+## Translations
+
+Network Survey is localized with the help of the community using
+[Weblate](https://weblate.org/), a libre web-based continuous localization platform. If you
+would like to help translate the app into your language, you can contribute directly from
+your browser with no coding required at the
+[Network Survey project on Weblate](https://hosted.weblate.org/engage/network-survey-android-app/).
+
+A big thank you to everyone who has helped translate Network Survey.
 
 ## Credits and Acknowledgements
 
