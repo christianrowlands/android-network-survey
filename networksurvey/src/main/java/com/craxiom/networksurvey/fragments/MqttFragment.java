@@ -18,7 +18,6 @@ import android.widget.Toast;
 
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
-import androidx.appcompat.app.AlertDialog;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import androidx.fragment.app.FragmentActivity;
@@ -408,19 +407,9 @@ public class MqttFragment extends AConnectionFragment<NetworkSurveyService.Surve
         final FragmentActivity activity = getActivity();
         if (activity == null) return;
 
-        final Context context = getContext();
-        if (context == null) return;
-
         if (missingBluetoothPermissions())
         {
-            AlertDialog.Builder alertBuilder = new AlertDialog.Builder(context);
-            alertBuilder.setCancelable(true);
-            alertBuilder.setTitle(getString(R.string.bluetooth_permissions_rationale_title));
-            alertBuilder.setMessage(getText(R.string.bluetooth_permissions_rationale));
-            alertBuilder.setPositiveButton(android.R.string.ok, (dialog, which) -> requestBluetoothPermissions());
-
-            AlertDialog permissionsExplanationDialog = alertBuilder.create();
-            permissionsExplanationDialog.show();
+            FragmentDialogs.showBluetoothPermissionRationale(getParentFragmentManager(), this::requestBluetoothPermissions);
         }
     }
 

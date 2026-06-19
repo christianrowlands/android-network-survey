@@ -1,9 +1,5 @@
 package com.craxiom.networksurvey.ui.main
 
-import android.os.Bundle
-import android.view.LayoutInflater
-import android.view.View
-import android.view.ViewGroup
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
@@ -14,44 +10,13 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.ComposeView
-import androidx.compose.ui.platform.ViewCompositionStrategy
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import androidx.fragment.app.DialogFragment
 import com.craxiom.networksurvey.R
 import com.craxiom.networksurvey.ui.common.HelpItem
 import com.craxiom.networksurvey.ui.common.HelpSection
 import com.craxiom.networksurvey.ui.preview.NsPreview
 import com.craxiom.networksurvey.ui.preview.PreviewDayNight
-import com.craxiom.networksurvey.ui.theme.NsTheme
-
-/**
- * DialogFragment bridge that hosts the [PhoneStateHelpDialog] composable. Use this to show
- * the Phone State help dialog from Java Fragment code.
- */
-class PhoneStateHelpDialogFragment : DialogFragment() {
-
-    override fun onCreateView(
-        inflater: LayoutInflater,
-        container: ViewGroup?,
-        savedInstanceState: Bundle?
-    ): View {
-        dialog?.window?.setBackgroundDrawableResource(android.R.color.transparent)
-        return ComposeView(requireContext()).apply {
-            setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed)
-            setContent {
-                NsTheme {
-                    PhoneStateHelpDialog(onDismissRequest = { dismissAllowingStateLoss() })
-                }
-            }
-        }
-    }
-
-    companion object {
-        const val TAG = "PhoneStateHelpDialog"
-    }
-}
 
 /**
  * Material 3 help dialog explaining the Phone State survey feature, the events it captures,

@@ -178,8 +178,17 @@ fun MainCompose(
             }
         }
 
-        // Show battery dialog when triggered
-        if (showBatteryDialog) {
+        // Render the activity-driven startup permission/GPS/GNSS dialogs using the shared
+        // Compose dialog components.
+        val startupActions = activity as? StartupDialogActions
+        if (startupActions != null) {
+            StartupDialogs(actions = startupActions, viewModel = viewModel)
+        }
+
+        // Show battery dialog when triggered, but never on top of a startup permission dialog so the
+        // user resolves permissions first.
+        val startupDialog by viewModel.startupDialog.collectAsStateWithLifecycle()
+        if (showBatteryDialog && startupDialog == null) {
             BatteryOptimizationDialog(
                 onDismiss = { showBatteryDialog = false },
                 onGoToSettings = {

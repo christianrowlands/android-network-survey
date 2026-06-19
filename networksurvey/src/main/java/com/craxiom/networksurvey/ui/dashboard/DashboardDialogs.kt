@@ -1,25 +1,16 @@
 package com.craxiom.networksurvey.ui.dashboard
 
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Checkbox
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -27,6 +18,9 @@ import androidx.compose.ui.unit.dp
 import androidx.preference.PreferenceManager
 import com.craxiom.networksurvey.R
 import com.craxiom.networksurvey.constants.NetworkSurveyConstants
+import com.craxiom.networksurvey.ui.common.dialogs.LabeledCheckbox
+import com.craxiom.networksurvey.ui.common.dialogs.NsConfirmationDialog
+import com.craxiom.networksurvey.ui.common.dialogs.NsMessageDialog
 import com.craxiom.networksurvey.util.PreferenceUtils
 
 /**
@@ -37,27 +31,12 @@ fun DisableQueueLimitDialog(
     onConfirm: () -> Unit,
     onDismiss: () -> Unit,
 ) {
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(text = stringResource(R.string.disable_queue_limit_title)) },
-        text = {
-            Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
-                Text(text = stringResource(R.string.disable_queue_limit_message))
-            }
-        },
-        confirmButton = {
-            TextButton(onClick = {
-                onConfirm()
-                onDismiss()
-            }) {
-                Text(text = stringResource(R.string.disable_queue_limit_confirm))
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text(text = stringResource(R.string.cancel))
-            }
-        },
+    NsConfirmationDialog(
+        title = stringResource(R.string.disable_queue_limit_title),
+        message = stringResource(R.string.disable_queue_limit_message),
+        confirmText = stringResource(R.string.disable_queue_limit_confirm),
+        onConfirm = onConfirm,
+        onDismiss = onDismiss,
     )
 }
 
@@ -69,22 +48,13 @@ fun BluetoothPermissionRationaleDialog(
     onRequestPermissions: () -> Unit,
     onDismiss: () -> Unit,
 ) {
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(text = stringResource(R.string.bluetooth_permissions_rationale_title)) },
-        text = {
-            Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
-                Text(text = stringResource(R.string.bluetooth_permissions_rationale))
-            }
-        },
-        confirmButton = {
-            TextButton(onClick = {
-                onRequestPermissions()
-                onDismiss()
-            }) {
-                Text(text = stringResource(android.R.string.ok))
-            }
-        },
+    NsConfirmationDialog(
+        title = stringResource(R.string.bluetooth_permissions_rationale_title),
+        message = stringResource(R.string.bluetooth_permissions_rationale),
+        confirmText = stringResource(android.R.string.ok),
+        onConfirm = onRequestPermissions,
+        onDismiss = onDismiss,
+        dismissText = null,
     )
 }
 
@@ -96,22 +66,13 @@ fun CdrRequiredPermissionDialog(
     onRequestPermissions: () -> Unit,
     onDismiss: () -> Unit,
 ) {
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(text = stringResource(R.string.cdr_required_permissions_rationale_title)) },
-        text = {
-            Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
-                Text(text = stringResource(R.string.cdr_required_permissions_rationale))
-            }
-        },
-        confirmButton = {
-            TextButton(onClick = {
-                onRequestPermissions()
-                onDismiss()
-            }) {
-                Text(text = stringResource(R.string.request))
-            }
-        },
+    NsConfirmationDialog(
+        title = stringResource(R.string.cdr_required_permissions_rationale_title),
+        message = stringResource(R.string.cdr_required_permissions_rationale),
+        confirmText = stringResource(R.string.request),
+        onConfirm = onRequestPermissions,
+        onDismiss = onDismiss,
+        dismissText = null,
     )
 }
 
@@ -124,30 +85,14 @@ fun CdrOptionalPermissionDialog(
     onIgnore: () -> Unit,
     onDismiss: () -> Unit,
 ) {
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(text = stringResource(R.string.cdr_optional_permissions_rationale_title)) },
-        text = {
-            Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
-                Text(text = stringResource(R.string.cdr_optional_permissions_rationale))
-            }
-        },
-        confirmButton = {
-            TextButton(onClick = {
-                onRequestPermissions()
-                onDismiss()
-            }) {
-                Text(text = stringResource(R.string.request))
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = {
-                onIgnore()
-                onDismiss()
-            }) {
-                Text(text = stringResource(R.string.ignore))
-            }
-        },
+    NsConfirmationDialog(
+        title = stringResource(R.string.cdr_optional_permissions_rationale_title),
+        message = stringResource(R.string.cdr_optional_permissions_rationale),
+        confirmText = stringResource(R.string.request),
+        onConfirm = onRequestPermissions,
+        onDismiss = onDismiss,
+        dismissText = stringResource(R.string.ignore),
+        onCancel = onIgnore,
     )
 }
 
@@ -202,125 +147,72 @@ fun UploadConfirmationDialog(
     val showApiKeyWarning = uploadToOcid && !anonymously &&
             !PreferenceUtils.isApiKeyValid(PreferenceUtils.getUserOcidApiKey(context))
 
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(text = stringResource(R.string.upload_survey_records)) },
-        text = {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .verticalScroll(rememberScrollState()),
-            ) {
+    NsConfirmationDialog(
+        title = stringResource(R.string.upload_survey_records),
+        confirmText = stringResource(R.string.upload),
+        onConfirm = {
+            onUpload(uploadToOcid, anonymously, uploadToBeaconDb, retry, dontShowAgain)
+        },
+        onDismiss = onDismiss,
+        neutralText = stringResource(R.string.preferences),
+        onNeutral = onNavigateToUploadSettings,
+        body = {
+            Text(
+                text = stringResource(R.string.upload_dialog_message),
+                style = MaterialTheme.typography.bodySmall,
+            )
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            // OpenCelliD checkbox
+            LabeledCheckbox(
+                checked = uploadToOcid,
+                onCheckedChange = { uploadToOcid = it },
+                label = stringResource(R.string.upload_to_opencellid),
+            )
+
+            // Anonymous checkbox (indented, enabled only when OCID is checked)
+            LabeledCheckbox(
+                checked = anonymously,
+                onCheckedChange = { anonymously = it },
+                label = stringResource(R.string.anonymously),
+                enabled = uploadToOcid,
+                modifier = Modifier.padding(start = 24.dp),
+            )
+
+            if (showApiKeyWarning) {
                 Text(
-                    text = stringResource(R.string.upload_dialog_message),
+                    text = stringResource(R.string.access_token_warning),
                     style = MaterialTheme.typography.bodySmall,
-                )
-
-                Spacer(modifier = Modifier.height(8.dp))
-
-                // OpenCelliD checkbox
-                LabeledCheckbox(
-                    checked = uploadToOcid,
-                    onCheckedChange = { uploadToOcid = it },
-                    label = stringResource(R.string.upload_to_opencellid),
-                )
-
-                // Anonymous checkbox (indented, enabled only when OCID is checked)
-                LabeledCheckbox(
-                    checked = anonymously,
-                    onCheckedChange = { anonymously = it },
-                    label = stringResource(R.string.anonymously),
-                    enabled = uploadToOcid,
+                    color = MaterialTheme.colorScheme.error,
                     modifier = Modifier.padding(start = 24.dp),
                 )
-
-                if (showApiKeyWarning) {
-                    Text(
-                        text = stringResource(R.string.access_token_warning),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.error,
-                        modifier = Modifier.padding(start = 24.dp),
-                    )
-                }
-
-                // BeaconDB checkbox
-                LabeledCheckbox(
-                    checked = uploadToBeaconDb,
-                    onCheckedChange = { uploadToBeaconDb = it },
-                    label = stringResource(R.string.upload_to_beacondb),
-                )
-
-                HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
-
-                // Retry checkbox
-                LabeledCheckbox(
-                    checked = retry,
-                    onCheckedChange = { retry = it },
-                    label = stringResource(R.string.retry_on_failure),
-                )
-
-                // Don't show again checkbox
-                LabeledCheckbox(
-                    checked = dontShowAgain,
-                    onCheckedChange = { dontShowAgain = it },
-                    label = stringResource(R.string.dont_show_again),
-                )
             }
-        },
-        confirmButton = {
-            TextButton(onClick = {
-                onUpload(uploadToOcid, anonymously, uploadToBeaconDb, retry, dontShowAgain)
-                onDismiss()
-            }) {
-                Text(text = stringResource(R.string.upload))
-            }
-        },
-        dismissButton = {
-            Row {
-                TextButton(onClick = {
-                    onNavigateToUploadSettings()
-                    onDismiss()
-                }) {
-                    Text(text = stringResource(R.string.preferences))
-                }
-                TextButton(onClick = onDismiss) {
-                    Text(text = stringResource(R.string.cancel))
-                }
-            }
+
+            // BeaconDB checkbox
+            LabeledCheckbox(
+                checked = uploadToBeaconDb,
+                onCheckedChange = { uploadToBeaconDb = it },
+                label = stringResource(R.string.upload_to_beacondb),
+            )
+
+            HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+
+            // Retry checkbox
+            LabeledCheckbox(
+                checked = retry,
+                onCheckedChange = { retry = it },
+                label = stringResource(R.string.retry_on_failure),
+            )
+
+            // Don't show again checkbox
+            LabeledCheckbox(
+                checked = dontShowAgain,
+                onCheckedChange = { dontShowAgain = it },
+                label = stringResource(R.string.dont_show_again),
+            )
         },
     )
-}
-
-/**
- * A checkbox with a clickable text label.
- */
-@Composable
-private fun LabeledCheckbox(
-    checked: Boolean,
-    onCheckedChange: (Boolean) -> Unit,
-    label: String,
-    enabled: Boolean = true,
-    modifier: Modifier = Modifier,
-) {
-    Row(
-        modifier = modifier,
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Checkbox(
-            checked = checked,
-            onCheckedChange = onCheckedChange,
-            enabled = enabled,
-        )
-        Text(
-            text = label,
-            style = MaterialTheme.typography.bodyMedium,
-            color = if (enabled) {
-                MaterialTheme.colorScheme.onSurface
-            } else {
-                MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
-            },
-        )
-    }
 }
 
 /**
@@ -330,18 +222,10 @@ private fun LabeledCheckbox(
 fun NoInternetDialog(
     onDismiss: () -> Unit,
 ) {
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(text = stringResource(R.string.uploader_no_internet_title)) },
-        text = {
-            Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
-                Text(text = stringResource(R.string.uploader_no_internet_message))
-            }
-        },
-        confirmButton = {
-            TextButton(onClick = onDismiss) {
-                Text(text = stringResource(R.string.ok))
-            }
-        },
+    NsMessageDialog(
+        title = stringResource(R.string.uploader_no_internet_title),
+        message = stringResource(R.string.uploader_no_internet_message),
+        onDismiss = onDismiss,
+        confirmText = stringResource(R.string.ok),
     )
 }

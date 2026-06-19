@@ -17,7 +17,6 @@ import android.provider.Settings;
 import android.text.InputType;
 import android.widget.Toast;
 
-import androidx.appcompat.app.AlertDialog;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import androidx.fragment.app.FragmentActivity;
@@ -714,19 +713,9 @@ public class SettingsFragment extends PreferenceFragmentCompat implements Shared
         final FragmentActivity activity = getActivity();
         if (activity == null) return;
 
-        final Context context = getContext();
-        if (context == null) return;
-
         if (missingAnyPermissions(CDR_REQUIRED_PERMISSIONS))
         {
-            AlertDialog.Builder alertBuilder = new AlertDialog.Builder(context);
-            alertBuilder.setCancelable(true);
-            alertBuilder.setTitle(getString(R.string.cdr_required_permissions_rationale_title));
-            alertBuilder.setMessage(getText(R.string.cdr_required_permissions_rationale));
-            alertBuilder.setPositiveButton(R.string.request, (dialog, which) -> requestRequiredCdrPermissions());
-
-            AlertDialog permissionsExplanationDialog = alertBuilder.create();
-            permissionsExplanationDialog.show();
+            SettingsDialogs.showCdrRequiredPermissionRationale(getParentFragmentManager(), this::requestRequiredCdrPermissions);
 
             // Revert the cdr autostart preference if the permissions have not been granted
             final SwitchPreferenceCompat preference = getPreferenceScreen().findPreference(NetworkSurveyConstants.PROPERTY_AUTO_START_CDR_LOGGING);
@@ -741,17 +730,7 @@ public class SettingsFragment extends PreferenceFragmentCompat implements Shared
 
         if (missingAnyPermissions(CDR_OPTIONAL_PERMISSIONS))
         {
-            AlertDialog.Builder alertBuilder = new AlertDialog.Builder(context);
-            alertBuilder.setCancelable(true);
-            alertBuilder.setTitle(getString(R.string.cdr_optional_permissions_rationale_title));
-            alertBuilder.setMessage(getText(R.string.cdr_optional_permissions_rationale));
-            alertBuilder.setPositiveButton(R.string.request, (dialog, which) -> requestOptionalCdrPermissions());
-            alertBuilder.setNegativeButton(R.string.ignore, (dialog, which) -> {
-
-            });
-
-            AlertDialog permissionsExplanationDialog = alertBuilder.create();
-            permissionsExplanationDialog.show();
+            SettingsDialogs.showCdrOptionalPermissionRationale(getParentFragmentManager(), this::requestOptionalCdrPermissions);
         }
     }
 
@@ -853,14 +832,9 @@ public class SettingsFragment extends PreferenceFragmentCompat implements Shared
      */
     private void showDisableQueueLimitWarning(SharedPreferences sharedPreferences, Context context)
     {
-        new AlertDialog.Builder(context)
-                .setTitle(R.string.disable_queue_limit_title)
-                .setMessage(R.string.disable_queue_limit_message)
-                .setPositiveButton(R.string.disable_queue_limit_confirm, (dialog, which) -> {
-                    // User confirmed, update the previous value tracker
-                    previousStreamingQueueLimit = "0";
-                })
-                .setNegativeButton(R.string.cancel, (dialog, which) -> {
+        SettingsDialogs.showDisableQueueLimitWarning(getParentFragmentManager(),
+                () -> previousStreamingQueueLimit = "0",
+                () -> {
                     // User cancelled, revert to previous value
                     if (previousStreamingQueueLimit != null)
                     {
@@ -876,9 +850,7 @@ public class SettingsFragment extends PreferenceFragmentCompat implements Shared
                             preference.setText(previousStreamingQueueLimit);
                         }
                     }
-                })
-                .setCancelable(false)
-                .show();
+                });
     }
 
     /**
@@ -888,10 +860,8 @@ public class SettingsFragment extends PreferenceFragmentCompat implements Shared
      */
     private void showHighQueueLimitWarning(SharedPreferences sharedPreferences, Context context, int newLimit)
     {
-        new AlertDialog.Builder(context)
-                .setTitle(R.string.high_queue_limit_title)
-                .setMessage(R.string.high_queue_limit_message)
-                .setPositiveButton(R.string.high_queue_limit_use_recommended, (dialog, which) -> {
+        SettingsDialogs.showHighQueueLimitWarning(getParentFragmentManager(),
+                () -> {
                     // User wants to use recommended value
                     final SharedPreferences.Editor edit = sharedPreferences.edit();
                     edit.putString(NetworkSurveyConstants.PROPERTY_STREAMING_QUEUE_LIMIT,
@@ -906,12 +876,7 @@ public class SettingsFragment extends PreferenceFragmentCompat implements Shared
                     }
 
                     previousStreamingQueueLimit = String.valueOf(NetworkSurveyConstants.DEFAULT_STREAMING_QUEUE_LIMIT);
-                })
-                .setNegativeButton(R.string.high_queue_limit_keep_value, (dialog, which) -> {
-                    // User wants to keep the high value
-                    previousStreamingQueueLimit = String.valueOf(newLimit);
-                })
-                .setCancelable(false)
-                .show();
+                },
+                () -> previousStreamingQueueLimit = String.valueOf(newLimit));
     }
 }

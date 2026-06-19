@@ -20,7 +20,6 @@ import android.view.ViewGroup;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
-import androidx.appcompat.app.AlertDialog;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import androidx.fragment.app.FragmentActivity;
@@ -369,19 +368,9 @@ public class BluetoothFragment extends AServiceDataFragment implements IBluetoot
         final FragmentActivity activity = getActivity();
         if (activity == null) return;
 
-        final Context context = getContext();
-        if (context == null) return;
-
         if (missingAnyPermissions(NetworkSurveyActivity.BLUETOOTH_PERMISSIONS))
         {
-            AlertDialog.Builder alertBuilder = new AlertDialog.Builder(context);
-            alertBuilder.setCancelable(true);
-            alertBuilder.setTitle(getString(R.string.bluetooth_permissions_rationale_title));
-            alertBuilder.setMessage(getText(R.string.bluetooth_permissions_rationale));
-            alertBuilder.setPositiveButton(android.R.string.ok, (dialog, which) -> requestBluetoothPermissions());
-
-            AlertDialog permissionsExplanationDialog = alertBuilder.create();
-            permissionsExplanationDialog.show();
+            FragmentDialogs.showBluetoothPermissionRationale(getParentFragmentManager(), this::requestBluetoothPermissions);
         }
     }
 
@@ -464,19 +453,10 @@ public class BluetoothFragment extends AServiceDataFragment implements IBluetoot
             return;
         }
 
-        final AlertDialog.Builder builder = new AlertDialog.Builder(activity);
-        builder.setTitle(R.string.menu_option_sort_by);
-
         final SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(applicationContext);
 
-        builder.setSingleChoiceItems(R.array.bluetooth_sort_options, viewModel.getSortByIndex(),
-                (dialog, index) -> {
-                    onSortByChanged(preferences, index);
-                    dialog.dismiss();
-                });
-        final AlertDialog dialog = builder.create();
-        dialog.setOwnerActivity(activity);
-        dialog.show();
+        FragmentDialogs.showBluetoothSortDialog(getParentFragmentManager(), viewModel.getSortByIndex(),
+                index -> onSortByChanged(preferences, index));
     }
 
     /**

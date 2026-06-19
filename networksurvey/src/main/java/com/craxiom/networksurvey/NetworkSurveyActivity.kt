@@ -2,7 +2,6 @@ package com.craxiom.networksurvey
 
 import android.Manifest
 import android.content.ComponentName
-import android.content.DialogInterface
 import android.content.Intent
 import android.content.ServiceConnection
 import android.content.pm.PackageManager
@@ -11,14 +10,9 @@ import android.os.Build
 import android.os.Bundle
 import android.os.IBinder
 import android.provider.Settings
-import android.text.method.LinkMovementMethod
-import android.view.LayoutInflater
-import android.widget.CheckBox
-import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
-import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.app.ActivityCompat
@@ -34,6 +28,9 @@ import com.craxiom.networksurvey.services.NetworkSurveyService
 import com.craxiom.networksurvey.services.NetworkSurveyService.SurveyServiceBinder
 import com.craxiom.networksurvey.ui.main.DeepLinkViewModel
 import com.craxiom.networksurvey.ui.main.MainCompose
+import com.craxiom.networksurvey.ui.main.SharedViewModel
+import com.craxiom.networksurvey.ui.main.StartupDialog
+import com.craxiom.networksurvey.ui.main.StartupDialogActions
 import com.craxiom.networksurvey.util.NsAnalyticsDeepLinkHandler
 import com.craxiom.networksurvey.util.NsAnalyticsSecureStorage
 import com.craxiom.networksurvey.util.NsUtils
@@ -49,9 +46,10 @@ import timber.log.Timber
  * details, display them to a user, and also (optionally) write them to a file.
  */
 @AndroidEntryPoint
-class NetworkSurveyActivity : AppCompatActivity() {
+class NetworkSurveyActivity : AppCompatActivity(), StartupDialogActions {
 
     private val deepLinkViewModel: DeepLinkViewModel by viewModels()
+    private val sharedViewModel: SharedViewModel by viewModels()
     private var surveyServiceConnection: SurveyServiceConnection? = null
     private var networkSurveyService: NetworkSurveyService? = null
     private var turnOnCellularLoggingOnNextServiceConnection = false
@@ -118,34 +116,8 @@ class NetworkSurveyActivity : AppCompatActivity() {
         gnssFailureListener = IGnssFailureListener {
             try {
                 runOnUiThread {
-                    val fragmentView =
-                        LayoutInflater.from(this).inflate(R.layout.gnss_failure, null)
-
-                    val gnssFailureDialog = AlertDialog.Builder(this)
-                        .setView(fragmentView)
-                        .setPositiveButton(R.string.ok) { _: DialogInterface?, _: Int ->
-                            val rememberDecisionCheckBox =
-                                fragmentView.findViewById<CheckBox>(R.id.failureRememberDecisionCheckBox)
-                            val checked = rememberDecisionCheckBox.isChecked
-                            if (checked) {
-                                PreferenceUtils.saveBoolean(
-                                    Application.get()
-                                        .getString(R.string.pref_key_ignore_raw_gnss_failure), true
-                                )
-                                // No need for GNSS failure updates anymore
-                                if (networkSurveyService != null) {
-                                    networkSurveyService!!.clearGnssFailureListener()
-                                }
-                            }
-                        }
-                        .create()
-
-                    if (!this@NetworkSurveyActivity.isFinishing && !this@NetworkSurveyActivity.isDestroyed) {
-                        gnssFailureDialog.show()
-                        val viewById =
-                            gnssFailureDialog.findViewById<TextView>(R.id.failureDescriptionTextView)
-                        if (viewById != null) viewById.movementMethod =
-                            LinkMovementMethod.getInstance()
+                    if (!isFinishing && !isDestroyed) {
+                        sharedViewModel.showGnssFailureDialog()
                     }
                 }
             } catch (t: Throwable) {
@@ -268,32 +240,12 @@ class NetworkSurveyActivity : AppCompatActivity() {
             }
         }
 
-        if (shouldShowPermissionsRationale) {
-            Timber.d("Showing the permissions rationale dialog")
-
-            val alertBuilder = AlertDialog.Builder(this)
-            alertBuilder.setCancelable(true)
-            alertBuilder.setTitle(getString(R.string.permissions_rationale_title))
-            alertBuilder.setMessage(getText(R.string.permissions_rationale))
-            alertBuilder.setPositiveButton(
-                android.R.string.ok
-            ) { _: DialogInterface?, _: Int -> requestPermissions() }
-
-            val permissionsExplanationDialog = alertBuilder.create()
-            permissionsExplanationDialog.show()
-        } else if (!hasRequestedPermissions && !hasLocationPermission()) {
-            Timber.d("Showing the location permissions rationale dialog")
-
-            val alertBuilder = AlertDialog.Builder(this)
-            alertBuilder.setCancelable(true)
-            alertBuilder.setTitle(getString(R.string.location_permission_rationale_title))
-            alertBuilder.setMessage(getText(R.string.location_permission_rationale))
-            alertBuilder.setPositiveButton(
-                android.R.string.ok
-            ) { _: DialogInterface?, _: Int -> requestPermissions() }
-
-            val permissionsExplanationDialog = alertBuilder.create()
-            permissionsExplanationDialog.show()
+        // Consolidate the previously separate "general" and "location" rationale dialogs into a
+        // single rationale screen shown before the OS prompt. The activity still owns the request
+        // logic; the dialog is rendered by the shared Compose components.
+        if (shouldShowPermissionsRationale || (!hasRequestedPermissions && !hasLocationPermission())) {
+            Timber.d("Showing the consolidated permissions rationale dialog")
+            sharedViewModel.showStartupDialog(StartupDialog.PermissionRationale)
         } else if (!hasRequestedPermissions) {
             requestPermissions()
         }
@@ -320,24 +272,7 @@ class NetworkSurveyActivity : AppCompatActivity() {
             )
         ) {
             Timber.d("Showing the background location permission rationale dialog")
-
-            val alertBuilder = AlertDialog.Builder(this)
-            alertBuilder.setCancelable(true)
-            alertBuilder.setTitle(getString(R.string.background_location_permission_rationale_title))
-            alertBuilder.setMessage(getText(R.string.background_location_permission_rationale))
-            alertBuilder.setPositiveButton(
-                R.string.open_settings
-            ) { _: DialogInterface?, _: Int -> requestBackgroundLocationPermission() }
-            alertBuilder.setNegativeButton(
-                R.string.deny_permission
-            ) { _: DialogInterface?, which: Int ->
-                if (which == DialogInterface.BUTTON_NEGATIVE) {
-                    PreferenceUtils.denyBackgroundLocationPermission(this)
-                }
-            }
-
-            val permissionsExplanationDialog = alertBuilder.create()
-            permissionsExplanationDialog.show()
+            sharedViewModel.showStartupDialog(StartupDialog.BackgroundLocationRationale)
         }
     }
 
@@ -427,18 +362,36 @@ class NetworkSurveyActivity : AppCompatActivity() {
      * Ask the user if they want to enable GPS.  If they do, then open the Location settings.
      */
     private fun promptEnableGps() {
-        AlertDialog.Builder(this)
-            .setMessage(getString(R.string.enable_gps_message))
-            .setPositiveButton(
-                getString(R.string.enable_gps_positive_button)
-            ) { _: DialogInterface?, _: Int ->
-                val intent = Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS)
-                startActivity(intent)
-            }
-            .setNegativeButton(
-                getString(R.string.enable_gps_negative_button)
-            ) { _: DialogInterface?, _: Int -> }
-            .show()
+        // Don't overwrite a pending permission rationale dialog (single dialog slot). The GPS prompt
+        // will be shown again on a later onResume once the permission dialog has been resolved.
+        if (sharedViewModel.startupDialog.value != null) return
+        sharedViewModel.showStartupDialog(StartupDialog.EnableGps)
+    }
+
+    override fun onPermissionRationaleAcknowledged() {
+        requestPermissions()
+    }
+
+    override fun onEnableGpsConfirmed() {
+        startActivity(Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS))
+    }
+
+    override fun onBackgroundLocationConfirmed() {
+        requestBackgroundLocationPermission()
+    }
+
+    override fun onBackgroundLocationDenied() {
+        PreferenceUtils.denyBackgroundLocationPermission(this)
+    }
+
+    override fun onGnssFailureAcknowledged(rememberDecision: Boolean) {
+        if (rememberDecision) {
+            PreferenceUtils.saveBoolean(
+                Application.get().getString(R.string.pref_key_ignore_raw_gnss_failure), true
+            )
+            // No need for GNSS failure updates anymore
+            networkSurveyService?.clearGnssFailureListener()
+        }
     }
 
     /**

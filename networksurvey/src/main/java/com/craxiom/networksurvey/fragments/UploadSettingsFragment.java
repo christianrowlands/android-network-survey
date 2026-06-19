@@ -1,6 +1,5 @@
 package com.craxiom.networksurvey.fragments;
 
-import android.app.AlertDialog;
 import android.content.Context;
 import android.content.RestrictionsManager;
 import android.content.SharedPreferences;
@@ -86,12 +85,8 @@ public class UploadSettingsFragment extends PreferenceFragmentCompat
 
     private void showDeleteConfirmationDialog(Context context)
     {
-        new AlertDialog.Builder(context)
-                .setTitle(R.string.delete_upload_data_confirm_title)
-                .setMessage(R.string.delete_upload_data_confirm_message)
-                .setPositiveButton(android.R.string.ok, (dialog, which) -> deleteUploadData(context))
-                .setNegativeButton(android.R.string.cancel, null)
-                .show();
+        FragmentDialogs.showDeleteUploadDataConfirmation(getParentFragmentManager(),
+                () -> deleteUploadData(context));
     }
 
     /**

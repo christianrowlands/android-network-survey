@@ -9,7 +9,6 @@ import android.view.ViewGroup;
 import android.widget.ImageView;
 
 import androidx.annotation.Nullable;
-import androidx.appcompat.app.AlertDialog;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentActivity;
 import androidx.lifecycle.ViewModelProvider;
@@ -90,21 +89,10 @@ public class QrCodeShareFragment extends Fragment
     private void showQrCodeErrorDialog(SharedViewModel viewModel, MqttConnectionSettings mqttConnectionSettings)
     {
         FragmentActivity activity = getActivity();
-        Context context = getContext();
-        if (activity == null || context == null) return;
+        if (activity == null) return;
 
-        AlertDialog.Builder alertBuilder = new AlertDialog.Builder(context);
-        alertBuilder.setCancelable(false);
-        alertBuilder.setTitle(getString(R.string.qr_code_data_too_large_title));
-        alertBuilder.setMessage(getString(R.string.qr_code_data_too_large_message));
-        alertBuilder.setPositiveButton(android.R.string.ok, (dialog, which) -> {
-            // Navigate back to MQTT connection screen, preserving the settings
-            viewModel.triggerNavigationToMqttConnection(mqttConnectionSettings);
-        });
-
-        AlertDialog errorDialog = alertBuilder.create();
-        errorDialog.setOwnerActivity(activity);
-        errorDialog.show();
+        FragmentDialogs.showQrCodeTooLargeError(getParentFragmentManager(),
+                () -> viewModel.triggerNavigationToMqttConnection(mqttConnectionSettings));
     }
 
     /**

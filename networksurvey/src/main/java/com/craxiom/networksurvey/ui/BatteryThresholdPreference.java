@@ -3,16 +3,12 @@ package com.craxiom.networksurvey.ui;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.util.AttributeSet;
-import android.view.LayoutInflater;
-import android.view.View;
-import android.widget.TextView;
 
-import androidx.appcompat.app.AlertDialog;
+import androidx.fragment.app.FragmentManager;
 import androidx.preference.Preference;
 import androidx.preference.PreferenceManager;
 
 import com.craxiom.networksurvey.R;
-import com.google.android.material.slider.Slider;
 
 import timber.log.Timber;
 
@@ -46,65 +42,23 @@ public class BatteryThresholdPreference extends Preference
     @Override
     protected void onClick()
     {
-        // Load current value
         currentValue = getPersistedInt(0);
-        
-        // Create dialog
-        AlertDialog.Builder builder = new AlertDialog.Builder(getContext());
-        builder.setTitle(getTitle());
-        
-        // Inflate custom layout
-        LayoutInflater inflater = LayoutInflater.from(getContext());
-        View dialogView = inflater.inflate(R.layout.dialog_battery_slider, null);
-        builder.setView(dialogView);
-        
-        // Get views
-        TextView percentageText = dialogView.findViewById(R.id.battery_percentage_text);
-        TextView statusText = dialogView.findViewById(R.id.battery_status_text);
-        Slider slider = dialogView.findViewById(R.id.battery_threshold_slider);
-        
-        // Set initial values
-        slider.setValue(currentValue);
-        updateTexts(percentageText, statusText, currentValue);
-        
-        // Set up slider listener
-        slider.addOnChangeListener((slider1, value, fromUser) -> {
-            int intValue = Math.round(value);
-            updateTexts(percentageText, statusText, intValue);
-        });
-        
-        // Set dialog buttons
-        builder.setPositiveButton(android.R.string.ok, (dialog, which) -> {
-            int newValue = Math.round(slider.getValue());
-            if (newValue != currentValue)
-            {
-                persistInt(newValue);
-                currentValue = newValue;
-                notifyChanged();
-            }
-        });
-        
-        builder.setNegativeButton(android.R.string.cancel, null);
-        
-        // Show dialog
-        builder.create().show();
+
+        final FragmentManager fragmentManager = PreferenceDialogs.fragmentManagerFrom(getContext());
+        if (fragmentManager == null) return;
+
+        final CharSequence title = getTitle();
+        PreferenceDialogs.showBatteryThresholdDialog(fragmentManager,
+                title == null ? "" : title.toString(), currentValue, newValue -> {
+                    if (newValue != currentValue)
+                    {
+                        persistInt(newValue);
+                        currentValue = newValue;
+                        notifyChanged();
+                    }
+                });
     }
-    
-    private void updateTexts(TextView percentageText, TextView statusText, int value)
-    {
-        if (value == 0)
-        {
-            percentageText.setText(getContext().getString(R.string.battery_management_disabled));
-            percentageText.setTextSize(48);
-            statusText.setText(R.string.battery_management_disabled_description);
-        } else
-        {
-            percentageText.setText(value + "%");
-            percentageText.setTextSize(48);
-            statusText.setText(getContext().getString(R.string.battery_pause_active_description, value));
-        }
-    }
-    
+
     @Override
     protected void onSetInitialValue(Object defaultValue)
     {

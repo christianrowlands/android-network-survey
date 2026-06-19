@@ -19,13 +19,9 @@ import android.annotation.SuppressLint
 import android.location.GnssStatus
 import android.location.Location
 import android.os.Build
-import android.os.Bundle
-import androidx.fragment.app.FragmentActivity
-import com.craxiom.networksurvey.Application
 import com.craxiom.networksurvey.gpstest.model.GnssType
 import com.craxiom.networksurvey.gpstest.model.SatelliteStatus
 import com.craxiom.networksurvey.gpstest.model.SbasType
-import com.craxiom.networksurvey.gpstest.ui.gnss.GnssFilterDialog
 import com.craxiom.networksurvey.gpstest.ui.gnss.model.Satellite
 import com.craxiom.networksurvey.gpstest.ui.gnss.model.SatelliteGroup
 import com.craxiom.networksurvey.gpstest.ui.gnss.model.SatelliteMetadata
@@ -33,7 +29,6 @@ import com.craxiom.networksurvey.gpstest.util.CarrierFreqUtils.CF_UNKNOWN
 import com.craxiom.networksurvey.gpstest.util.CarrierFreqUtils.CF_UNSUPPORTED
 import com.craxiom.networksurvey.gpstest.util.CarrierFreqUtils.getCarrierFrequencyLabel
 import com.craxiom.networksurvey.gpstest.util.CarrierFreqUtils.isPrimaryCarrier
-import com.craxiom.networksurvey.util.PreferenceUtils
 
 object SatelliteUtil {
 
@@ -318,30 +313,5 @@ object SatelliteUtil {
             return SbasType.SOUTHPAN
         }
         return SbasType.UNKNOWN
-    }
-
-    fun showSatsFilterDialog(activity: FragmentActivity) {
-        val gnssTypes = GnssType.values()
-        val len = gnssTypes.size
-        val filter = PreferenceUtils.gnssFilter(Application.get(), Application.getPrefs())
-        val items = arrayOfNulls<String>(len)
-        val checks = BooleanArray(len)
-
-        // For each GnssType, if it is in the enabled list, mark it as checked.
-        for (i in 0 until len) {
-            val gnssType = gnssTypes[i]
-            items[i] = LibUIUtils.getGnssDisplayName(Application.get(), gnssType)
-            if (filter.contains(gnssType)) {
-                checks[i] = true
-            }
-        }
-
-        // Arguments
-        val args = Bundle()
-        args.putStringArray(GnssFilterDialog.ITEMS, items)
-        args.putBooleanArray(GnssFilterDialog.CHECKS, checks)
-        val frag = GnssFilterDialog()
-        frag.arguments = args
-        frag.show(activity.supportFragmentManager, ".GnssFilterDialog")
     }
 }

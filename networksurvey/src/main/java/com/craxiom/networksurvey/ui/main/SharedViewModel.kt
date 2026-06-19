@@ -43,6 +43,17 @@ sealed class DialogEvent {
     data object BatteryOptimization : DialogEvent()
 }
 
+/**
+ * The startup permission/location dialogs that the [NetworkSurveyActivity][com.craxiom.networksurvey.NetworkSurveyActivity]
+ * drives. Only one is shown at a time; the activity owns the permission decision logic and sets the
+ * current dialog here so it can be rendered by the shared Compose dialog components.
+ */
+sealed class StartupDialog {
+    data object PermissionRationale : StartupDialog()
+    data object BackgroundLocationRationale : StartupDialog()
+    data object EnableGps : StartupDialog()
+}
+
 @HiltViewModel
 class SharedViewModel @Inject constructor(application: Application) :
     AndroidViewModel(application) {
@@ -54,6 +65,14 @@ class SharedViewModel @Inject constructor(application: Application) :
     // Dialog events using StateFlow
     private val _dialogEvent = MutableStateFlow<DialogEvent?>(null)
     val dialogEvent: StateFlow<DialogEvent?> = _dialogEvent.asStateFlow()
+
+    // The currently visible startup permission/location dialog (driven by the activity)
+    private val _startupDialog = MutableStateFlow<StartupDialog?>(null)
+    val startupDialog: StateFlow<StartupDialog?> = _startupDialog.asStateFlow()
+
+    // Whether the GNSS raw-measurement failure dialog is visible
+    private val _gnssFailureDialogVisible = MutableStateFlow(false)
+    val gnssFailureDialogVisible: StateFlow<Boolean> = _gnssFailureDialogVisible.asStateFlow()
 
     // Shared data that persists across screens
     // Note: @Volatile ensures thread-safe reads, though these should primarily be accessed from the main thread
@@ -179,5 +198,34 @@ class SharedViewModel @Inject constructor(application: Application) :
      */
     fun clearDialogEvent() {
         _dialogEvent.value = null
+    }
+
+    /**
+     * Show the given startup permission/location dialog. Setting a new value replaces any currently
+     * shown startup dialog; in practice the activity only requests one at a time.
+     */
+    fun showStartupDialog(dialog: StartupDialog) {
+        _startupDialog.value = dialog
+    }
+
+    /**
+     * Clear the current startup dialog after it has been handled.
+     */
+    fun clearStartupDialog() {
+        _startupDialog.value = null
+    }
+
+    /**
+     * Show the GNSS raw-measurement failure dialog.
+     */
+    fun showGnssFailureDialog() {
+        _gnssFailureDialogVisible.value = true
+    }
+
+    /**
+     * Clear the GNSS raw-measurement failure dialog after it has been handled.
+     */
+    fun clearGnssFailureDialog() {
+        _gnssFailureDialogVisible.value = false
     }
 }

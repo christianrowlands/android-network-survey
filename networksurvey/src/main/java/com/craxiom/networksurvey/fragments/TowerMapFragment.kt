@@ -10,7 +10,6 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import androidx.appcompat.app.AlertDialog
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.ui.platform.ComposeView
 import androidx.compose.ui.platform.ViewCompositionStrategy
@@ -150,11 +149,7 @@ class TowerMapFragment : AServiceDataFragment(), ICellularSurveyRecordListener {
         val isLocationEnabled = LocationManagerCompat.isLocationEnabled(locationManager)
 
         if (!isLocationEnabled) {
-            AlertDialog.Builder(requireContext())
-                .setTitle("Location Services Disabled")
-                .setMessage("Location services are disabled. Enable them to show your location on the map.")
-                .setPositiveButton("Close") { dialog, _ -> dialog.dismiss() }
-                .show()
+            showLocationServicesDisabled(parentFragmentManager)
         }
     }
 

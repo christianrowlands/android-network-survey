@@ -10,22 +10,17 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -42,6 +37,9 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.craxiom.networksurvey.R
+import com.craxiom.networksurvey.ui.common.dialogs.NsConfirmationDialog
+import com.craxiom.networksurvey.ui.common.dialogs.NsInputDialog
+import com.craxiom.networksurvey.ui.common.dialogs.NsMessageDialog
 
 /**
  * Screen for managing the SSID exclusion list.
@@ -68,10 +66,7 @@ fun SsidExclusionListScreen(
     if (showAddDialog) {
         AddSsidDialog(
             onDismiss = { showAddDialog = false },
-            onAdd = { ssid ->
-                viewModel.addSsid(ssid)
-                showAddDialog = false
-            },
+            onAdd = { ssid -> viewModel.addSsid(ssid) },
             isAtMaxCapacity = uiState.isAtMaxCapacity
         )
     }
@@ -79,10 +74,7 @@ fun SsidExclusionListScreen(
     if (showClearAllDialog) {
         ClearAllConfirmationDialog(
             onDismiss = { showClearAllDialog = false },
-            onConfirm = {
-                viewModel.clearAll()
-                showClearAllDialog = false
-            }
+            onConfirm = { viewModel.clearAll() }
         )
     }
 }
@@ -225,45 +217,21 @@ private fun AddSsidDialog(
     onAdd: (String) -> Unit,
     isAtMaxCapacity: Boolean
 ) {
-    var ssidText by remember { mutableStateOf("") }
-
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(stringResource(R.string.add_ssid_manually)) },
-        text = {
-            Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
-                if (isAtMaxCapacity) {
-                    Text(
-                        text = stringResource(R.string.exclusion_list_full_message),
-                        color = MaterialTheme.colorScheme.error,
-                        style = MaterialTheme.typography.bodyMedium,
-                        modifier = Modifier.padding(bottom = 16.dp)
-                    )
-                } else {
-                    OutlinedTextField(
-                        value = ssidText,
-                        onValueChange = { ssidText = it },
-                        label = { Text(stringResource(R.string.enter_ssid)) },
-                        singleLine = true,
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                }
-            }
-        },
-        confirmButton = {
-            TextButton(
-                onClick = { onAdd(ssidText) },
-                enabled = ssidText.isNotBlank() && !isAtMaxCapacity
-            ) {
-                Text(stringResource(R.string.add))
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text(stringResource(R.string.cancel))
-            }
-        }
-    )
+    if (isAtMaxCapacity) {
+        NsMessageDialog(
+            title = stringResource(R.string.add_ssid_manually),
+            message = stringResource(R.string.exclusion_list_full_message),
+            onDismiss = onDismiss,
+        )
+    } else {
+        NsInputDialog(
+            title = stringResource(R.string.add_ssid_manually),
+            onConfirm = onAdd,
+            onDismiss = onDismiss,
+            label = stringResource(R.string.enter_ssid),
+            confirmText = stringResource(R.string.add),
+        )
+    }
 }
 
 @Composable
@@ -271,28 +239,12 @@ private fun ClearAllConfirmationDialog(
     onDismiss: () -> Unit,
     onConfirm: () -> Unit
 ) {
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(stringResource(R.string.confirm_clear_exclusion_list_title)) },
-        text = {
-            Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
-                Text(stringResource(R.string.confirm_clear_exclusion_list_message))
-            }
-        },
-        confirmButton = {
-            TextButton(
-                onClick = onConfirm,
-                colors = ButtonDefaults.textButtonColors(
-                    contentColor = MaterialTheme.colorScheme.error
-                )
-            ) {
-                Text(stringResource(R.string.clear_all))
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text(stringResource(R.string.cancel))
-            }
-        }
+    NsConfirmationDialog(
+        title = stringResource(R.string.confirm_clear_exclusion_list_title),
+        message = stringResource(R.string.confirm_clear_exclusion_list_message),
+        confirmText = stringResource(R.string.clear_all),
+        onConfirm = onConfirm,
+        onDismiss = onDismiss,
+        destructive = true,
     )
 }

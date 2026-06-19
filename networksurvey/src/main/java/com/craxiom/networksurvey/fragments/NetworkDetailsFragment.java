@@ -17,7 +17,6 @@ import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import androidx.appcompat.app.AlertDialog;
 import androidx.lifecycle.LifecycleOwner;
 import androidx.lifecycle.ViewModelProvider;
 
@@ -1279,16 +1278,7 @@ public class NetworkDetailsFragment extends AServiceDataFragment implements ICel
      */
     private void showOverrideNetworkInfoDialog()
     {
-        final Context context = getContext();
-        if (context == null) return;
-
-        AlertDialog.Builder alertBuilder = new AlertDialog.Builder(context);
-        alertBuilder.setCancelable(true);
-        alertBuilder.setTitle(getString(R.string.override_network_info_title));
-        alertBuilder.setMessage(getString(R.string.override_network_explanation));
-        alertBuilder.setPositiveButton(android.R.string.ok, (dialog, which) -> {
-        });
-        alertBuilder.create().show();
+        FragmentDialogs.showOverrideNetworkInfo(getParentFragmentManager());
     }
 
     /**
@@ -1385,13 +1375,7 @@ public class NetworkDetailsFragment extends AServiceDataFragment implements ICel
             }
         }
 
-        AlertDialog.Builder alertBuilder = new AlertDialog.Builder(context);
-        alertBuilder.setCancelable(true);
-        alertBuilder.setTitle(cellularInfoTitle);
-        alertBuilder.setMessage(cellularInfoBody);
-        alertBuilder.setPositiveButton(android.R.string.ok, (dialog, which) -> {
-        });
-        alertBuilder.create().show();
+        FragmentDialogs.showCellularInfo(getParentFragmentManager(), cellularInfoTitle, cellularInfoBody);
     }
 
     /**

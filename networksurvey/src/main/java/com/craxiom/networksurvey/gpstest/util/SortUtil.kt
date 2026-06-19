@@ -15,15 +15,7 @@
  */
 package com.craxiom.networksurvey.gpstest.util
 
-import android.content.Context
-import android.content.DialogInterface
-import android.content.SharedPreferences
-import androidx.appcompat.app.AlertDialog
-import androidx.fragment.app.FragmentActivity
-import com.craxiom.networksurvey.Application
-import com.craxiom.networksurvey.R
 import com.craxiom.networksurvey.gpstest.model.SatelliteStatus
-import com.craxiom.networksurvey.util.PreferenceUtils
 
 /**
  * Utilities for sorting lists.  Java Comparator.comparing() is only available on API 24 and higher,
@@ -147,39 +139,6 @@ class SortUtil {
                     SatelliteStatus::svid
                 )
             ).toMutableList()
-        }
-
-        fun showSortByDialog(activity: FragmentActivity) {
-            // TODO - convert all dialogs to MaterialAlertDialog (https://material.io/components/dialogs/android#using-dialogs)
-            val builder = AlertDialog.Builder(
-                activity
-            )
-            builder.setTitle(R.string.menu_option_sort_by)
-            val prefs = Application.getPrefs()
-            val currentSatOrder = PreferenceUtils.getSatSortOrderFromPreferences(activity, prefs)
-            builder.setSingleChoiceItems(
-                R.array.sort_sats, currentSatOrder
-            ) { dialog: DialogInterface, index: Int ->
-                setSortByClause(activity, index, prefs)
-                dialog.dismiss()
-            }
-            val dialog = builder.create()
-            dialog.setOwnerActivity(activity)
-            dialog.show()
-        }
-
-        /**
-         * Saves the "sort by" order to preferences
-         *
-         * @param index the index of R.array.sort_sats that should be set
-         */
-        private fun setSortByClause(context: Context, index: Int, prefs: SharedPreferences) {
-            val sortOptions = context.resources.getStringArray(R.array.sort_sats)
-            PreferenceUtils.saveString(
-                prefs,
-                context.resources.getString(R.string.pref_key_default_sat_sort),
-                sortOptions[index]
-            )
         }
     }
 }

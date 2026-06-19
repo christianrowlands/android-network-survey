@@ -9,15 +9,10 @@ import android.text.SpannableString;
 import android.text.SpannableStringBuilder;
 import android.text.style.DynamicDrawableSpan;
 import android.util.AttributeSet;
-import android.view.LayoutInflater;
-import android.view.View;
-import android.view.ViewGroup;
-import android.widget.ArrayAdapter;
-import android.widget.TextView;
 
 import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
 import androidx.core.content.ContextCompat;
+import androidx.fragment.app.FragmentManager;
 import androidx.preference.ListPreference;
 
 import com.craxiom.networksurvey.R;
@@ -118,96 +113,34 @@ public class ColorListPreference extends ListPreference
     @Override
     protected void onClick()
     {
-        // Create and show a custom dialog with colored entries
-        createColorDialog();
-    }
+        final CharSequence[] entries = getEntries();
+        final CharSequence[] entryValues = getEntryValues();
+        if (entries == null || entryValues == null) return;
 
-    private void createColorDialog()
-    {
-        CharSequence[] entries = getEntries();
-        CharSequence[] entryValues = getEntryValues();
+        final FragmentManager fragmentManager = PreferenceDialogs.fragmentManagerFrom(getContext());
+        if (fragmentManager == null) return;
 
-        if (entries == null || entryValues == null)
-        {
-            return;
-        }
-
-        // Find the currently selected item
-        String currentValue = getValue();
+        final String currentValue = getValue();
         int checkedItem = -1;
-        for (int i = 0; i < entryValues.length; i++)
+        final String[] names = new String[entries.length];
+        final int[] colors = new int[entries.length];
+        for (int i = 0; i < entries.length; i++)
         {
-            if (entryValues[i].toString().equals(currentValue))
-            {
-                checkedItem = i;
-                break;
-            }
+            names[i] = entries[i].toString();
+            final Integer colorResId = COLOR_MAP.get(entryValues[i].toString());
+            colors[i] = colorResId != null ? ContextCompat.getColor(getContext(), colorResId) : 0;
+            if (entryValues[i].toString().equals(currentValue)) checkedItem = i;
         }
 
-        ColorAdapter adapter = new ColorAdapter(getContext(), entries, entryValues, checkedItem);
-
-        androidx.appcompat.app.AlertDialog.Builder builder = new androidx.appcompat.app.AlertDialog.Builder(getContext());
-        builder.setTitle(getDialogTitle());
-        builder.setSingleChoiceItems(adapter, checkedItem, (dialog, which) -> {
-            String value = entryValues[which].toString();
-            if (callChangeListener(value))
-            {
-                setValue(value);
-            }
-            dialog.dismiss();
-        });
-        builder.setNegativeButton(android.R.string.cancel, null);
-        builder.show();
-    }
-
-    private class ColorAdapter extends ArrayAdapter<CharSequence>
-    {
-        private final CharSequence[] entryValues;
-        private int checkedPosition;
-
-        public ColorAdapter(Context context, CharSequence[] entries, CharSequence[] entryValues, int checkedPosition)
-        {
-            super(context, 0, entries);
-            this.entryValues = entryValues;
-            this.checkedPosition = checkedPosition;
-        }
-
-        @NonNull
-        @Override
-        public View getView(int position, @Nullable View convertView, @NonNull ViewGroup parent)
-        {
-            if (convertView == null)
-            {
-                convertView = LayoutInflater.from(getContext()).inflate(R.layout.color_preference_item, parent, false);
-            }
-
-            android.widget.RadioButton radioButton = convertView.findViewById(R.id.radio_button);
-            View colorIndicator = convertView.findViewById(R.id.color_indicator);
-            TextView colorName = convertView.findViewById(R.id.color_name);
-
-            // Set the color name
-            colorName.setText(getItem(position));
-
-            // Set the radio button state
-            radioButton.setChecked(position == checkedPosition);
-
-            // Set the color indicator
-            String colorValue = entryValues[position].toString();
-            Integer colorResId = COLOR_MAP.get(colorValue);
-            if (colorResId != null)
-            {
-                int color = ContextCompat.getColor(getContext(), colorResId);
-                colorIndicator.setBackgroundColor(color);
-            }
-
-            return convertView;
-        }
-
-        public void setCheckedPosition(int position)
-        {
-            checkedPosition = position;
-            notifyDataSetChanged();
-        }
+        final CharSequence dialogTitle = getDialogTitle();
+        PreferenceDialogs.showColorChoiceDialog(fragmentManager,
+                dialogTitle == null ? "" : dialogTitle.toString(), names, colors, checkedItem, which -> {
+                    final String value = entryValues[which].toString();
+                    if (callChangeListener(value))
+                    {
+                        setValue(value);
+                    }
+                });
     }
 
     /**
