@@ -160,6 +160,17 @@ public class NetworkSurveyConstants
     public static final String PROPERTY_OUI_LOOKUP_ENABLED = "oui_lookup_enabled";
     public static final boolean DEFAULT_OUI_LOOKUP_ENABLED = true;
 
+    // Watchlist: alert the user when a saved Wi-Fi network (by SSID and/or BSSID) is seen, and keep
+    // a browsable history of past sightings. UI/notification feature only; never written to CSV,
+    // protobuf, MQTT, or gRPC survey outputs.
+    public static final String PROPERTY_WATCHLIST_ENABLED = "watchlist_enabled";
+    public static final boolean DEFAULT_WATCHLIST_ENABLED = false;
+    public static final String PROPERTY_WATCHLIST_ABSENCE_WINDOW_SECONDS = "watchlist_absence_window_seconds";
+    public static final String PROPERTY_WATCHLIST_DEFAULT_COOLDOWN_SECONDS = "watchlist_default_cooldown_seconds";
+    public static final String PROPERTY_WATCHLIST_HISTORY_RETENTION_DAYS = "watchlist_history_retention_days";
+    // Intent extra used to deep-link from a watchlist notification to the history screen.
+    public static final String EXTRA_NAVIGATE_TO_WATCHLIST_HISTORY = "navigate_to_watchlist_history";
+
     // A read only value in the preferences that shows the App Version
     public static final String PROPERTY_APP_VERSION = "app_version";
     // A read only value in the preferences that shows the Device ID, which is called the Device Serial Number in NS Messaging API

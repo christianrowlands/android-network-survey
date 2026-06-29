@@ -57,6 +57,10 @@ import com.craxiom.networksurvey.ui.oui.OuiLookupScreen
 import com.craxiom.networksurvey.ui.plmn.PlmnDetailsScreen
 import com.craxiom.networksurvey.ui.plmn.PlmnLookupScreen
 import com.craxiom.networksurvey.ui.plmn.components.PlmnInfoSheet
+import com.craxiom.networksurvey.ui.watchlist.WatchlistHistoryScreen
+import com.craxiom.networksurvey.ui.watchlist.WatchlistHistoryViewModel
+import com.craxiom.networksurvey.ui.watchlist.WatchlistScreen
+import com.craxiom.networksurvey.ui.watchlist.WatchlistViewModel
 import com.craxiom.networksurvey.ui.wifi.SsidExclusionListViewModel
 import com.craxiom.networksurvey.ui.wifi.model.WifiNetworkInfoList
 
@@ -186,6 +190,23 @@ fun NavGraphBuilder.mainGraph(
             )
         }
 
+        composable(NavDrawerOption.Watchlist.name) {
+            val watchlistViewModel = viewModel<WatchlistViewModel>()
+            WatchlistScreen(
+                viewModel = watchlistViewModel,
+                onNavigateUp = { mainNavController.navigateUp() },
+                onNavigateToHistory = { mainNavController.navigate(NavOption.WatchlistHistory.name) }
+            )
+        }
+
+        composable(NavOption.WatchlistHistory.name) {
+            val watchlistHistoryViewModel = viewModel<WatchlistHistoryViewModel>()
+            WatchlistHistoryScreen(
+                viewModel = watchlistHistoryViewModel,
+                onNavigateUp = { mainNavController.navigateUp() }
+            )
+        }
+
         composable(NavOption.ProviderColorOverrides.name) {
             val viewModel =
                 viewModel<ProviderColorOverrideViewModel>()
@@ -250,6 +271,7 @@ enum class NavDrawerOption {
     OuiLookup,
     PlmnLookup,
     SurveyMonitor,
+    Watchlist,
     Settings,
 
     // External Links
@@ -272,7 +294,8 @@ enum class NavOption {
     SsidExclusionList,
     ProviderColorOverrides,
     Acknowledgments,
-    NsAnalyticsQrScanner
+    NsAnalyticsQrScanner,
+    WatchlistHistory
 }
 
 @Composable

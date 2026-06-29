@@ -129,6 +129,8 @@ class WifiDetailsFragment : AServiceDataFragment(), IWifiSurveyRecordListener {
         super.onSurveyServiceDisconnecting(service)
     }
 
+    override fun wantsExcludedRecords(): Boolean = true
+
     override fun onWifiBeaconSurveyRecords(wifiBeaconRecords: MutableList<WifiRecordWrapper>?) {
         val matchedWifiRecordWrapper =
             wifiBeaconRecords?.find { it.wifiBeaconRecord.data.bssid.equals(wifiNetwork?.bssid) }

@@ -15,6 +15,7 @@ import android.provider.Settings;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
@@ -34,7 +35,6 @@ import com.craxiom.networksurvey.ui.wifi.model.WifiListViewModel;
 import com.craxiom.networksurvey.ui.wifi.model.WifiNetworkInfoList;
 import com.craxiom.networksurvey.util.PreferenceUtils;
 import com.google.android.material.snackbar.Snackbar;
-import android.widget.TextView;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -153,6 +153,13 @@ public class WifiNetworksFragment extends AServiceDataFragment implements IWifiS
     {
         service.unregisterWifiSurveyRecordListener(this);
         super.onSurveyServiceDisconnecting(service);
+    }
+
+    @Override
+    public boolean wantsExcludedRecords()
+    {
+        // The Wi-Fi network list shows excluded SSIDs (greyed out), so it needs all records.
+        return true;
     }
 
     @Override

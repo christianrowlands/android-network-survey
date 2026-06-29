@@ -16,6 +16,8 @@ import com.craxiom.networksurvey.logging.db.dao.NsAnalyticsDao;
 import com.craxiom.networksurvey.logging.db.dao.SurveyRecordDao;
 import com.craxiom.networksurvey.logging.db.dao.TowerCacheDao;
 import com.craxiom.networksurvey.logging.db.dao.UmtsRecordDao;
+import com.craxiom.networksurvey.logging.db.dao.WatchlistDao;
+import com.craxiom.networksurvey.logging.db.dao.WatchlistHitDao;
 import com.craxiom.networksurvey.logging.db.dao.WifiRecordDao;
 import com.craxiom.networksurvey.logging.db.model.CdmaRecordEntity;
 import com.craxiom.networksurvey.logging.db.model.GsmRecordEntity;
@@ -25,11 +27,14 @@ import com.craxiom.networksurvey.logging.db.model.NsAnalyticsConnectionEntity;
 import com.craxiom.networksurvey.logging.db.model.NsAnalyticsQueueEntity;
 import com.craxiom.networksurvey.logging.db.model.TowerCacheEntity;
 import com.craxiom.networksurvey.logging.db.model.UmtsRecordEntity;
+import com.craxiom.networksurvey.logging.db.model.WatchlistEntryEntity;
+import com.craxiom.networksurvey.logging.db.model.WatchlistHitEntity;
 import com.craxiom.networksurvey.logging.db.model.WifiBeaconRecordEntity;
 
 @Database(entities = {GsmRecordEntity.class, CdmaRecordEntity.class, UmtsRecordEntity.class,
         LteRecordEntity.class, NrRecordEntity.class, WifiBeaconRecordEntity.class, TowerCacheEntity.class,
-        NsAnalyticsQueueEntity.class, NsAnalyticsConnectionEntity.class}, version = 12, exportSchema = false)
+        NsAnalyticsQueueEntity.class, NsAnalyticsConnectionEntity.class, WatchlistEntryEntity.class,
+        WatchlistHitEntity.class}, version = 13, exportSchema = false)
 public abstract class SurveyDatabase extends RoomDatabase
 {
     public abstract GsmRecordDao gsmRecordDao();
@@ -49,6 +54,10 @@ public abstract class SurveyDatabase extends RoomDatabase
     public abstract TowerCacheDao towerCacheDao();
 
     public abstract NsAnalyticsDao nsAnalyticsDao();
+
+    public abstract WatchlistDao watchlistDao();
+
+    public abstract WatchlistHitDao watchlistHitDao();
 
     private static volatile SurveyDatabase INSTANCE;
 
@@ -271,6 +280,51 @@ public abstract class SurveyDatabase extends RoomDatabase
         }
     };
 
+    /**
+     * Migration from version 12 to 13: Add the Watchlist tables.
+     * <p>
+     * Adds {@code watchlist_entry} (the networks the user has chosen to watch for) and
+     * {@code watchlist_hit} (the history of "Seen" detections). The DDL must match the schema Room
+     * generates from {@link WatchlistEntryEntity} and {@link WatchlistHitEntity}, including the
+     * cascading foreign key and the auto-named composite index, or Room's schema validation fails on
+     * upgrade. No new columns are added to existing tables, so existing survey data is untouched.
+     */
+    private static final Migration MIGRATION_12_13 = new Migration(12, 13)
+    {
+        @Override
+        public void migrate(SupportSQLiteDatabase database)
+        {
+            database.execSQL("CREATE TABLE watchlist_entry ("
+                    + "id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, "
+                    + "label TEXT, "
+                    + "ssid TEXT, "
+                    + "bssid TEXT, "
+                    + "matchType TEXT, "
+                    + "enabled INTEGER NOT NULL, "
+                    + "createdAt INTEGER NOT NULL, "
+                    + "cooldownSeconds INTEGER NOT NULL"
+                    + ")");
+
+            database.execSQL("CREATE TABLE watchlist_hit ("
+                    + "id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, "
+                    + "entryId INTEGER NOT NULL, "
+                    + "label TEXT, "
+                    + "matchedField TEXT, "
+                    + "ssid TEXT, "
+                    + "bssid TEXT, "
+                    + "rssi INTEGER NOT NULL, "
+                    + "latitude REAL, "
+                    + "longitude REAL, "
+                    + "timestamp INTEGER NOT NULL, "
+                    + "FOREIGN KEY(entryId) REFERENCES watchlist_entry(id) "
+                    + "ON UPDATE NO ACTION ON DELETE CASCADE"
+                    + ")");
+
+            database.execSQL("CREATE INDEX index_watchlist_hit_entryId_timestamp "
+                    + "ON watchlist_hit (entryId, timestamp)");
+        }
+    };
+
     public static SurveyDatabase getInstance(Context context)
     {
         if (INSTANCE == null)
@@ -281,7 +335,7 @@ public abstract class SurveyDatabase extends RoomDatabase
                 {
                     INSTANCE = Room.databaseBuilder(context.getApplicationContext(),
                                     SurveyDatabase.class, "survey_db")
-                            .addMigrations(MIGRATION_7_9, MIGRATION_8_9, MIGRATION_9_10, MIGRATION_10_11, MIGRATION_11_12)
+                            .addMigrations(MIGRATION_7_9, MIGRATION_8_9, MIGRATION_9_10, MIGRATION_10_11, MIGRATION_11_12, MIGRATION_12_13)
                             .fallbackToDestructiveMigration()
                             .build();
                 }

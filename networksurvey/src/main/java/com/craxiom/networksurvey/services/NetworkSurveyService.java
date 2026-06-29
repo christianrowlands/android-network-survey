@@ -88,6 +88,7 @@ import com.craxiom.networksurvey.services.controller.BluetoothController;
 import com.craxiom.networksurvey.services.controller.CellularController;
 import com.craxiom.networksurvey.services.controller.GnssController;
 import com.craxiom.networksurvey.services.controller.WifiController;
+import com.craxiom.networksurvey.services.watchlist.WatchlistDetectionManager;
 import com.craxiom.networksurvey.util.CredentialSecureStorage;
 import com.craxiom.networksurvey.util.MdmUtils;
 import com.craxiom.networksurvey.util.NsAnalyticsSecureStorage;
@@ -148,6 +149,8 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
 
     private CellularController cellularController;
     private WifiController wifiController;
+    private WatchlistDetectionManager watchlistDetectionManager;
+    private boolean watchlistRegistered = false;
     private BluetoothController bluetoothController;
     private GnssController gnssController;
     private String deviceId;
@@ -262,6 +265,9 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
         wifiController.initializeWifiScanningResources();
         bluetoothController.initializeBtScanningResources();
         gnssController.initializeGnssScanningResources();
+
+        // Register the Watchlist detector if the feature is enabled (created lazily).
+        updateWatchlistRegistration();
 
         // Initialize battery management
         batteryMonitor = new BatteryMonitor(this);
@@ -470,6 +476,13 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
 
         PreferenceManager.getDefaultSharedPreferences(getApplicationContext()).unregisterOnSharedPreferenceChangeListener(this);
 
+        if (watchlistDetectionManager != null)
+        {
+            watchlistDetectionManager.stop();
+            watchlistDetectionManager = null;
+            watchlistRegistered = false;
+        }
+
         cellularController.stopCellularRecordScanning();
         wifiController.stopWifiRecordScanning();
         bluetoothController.stopBluetoothRecordScanning();
@@ -529,6 +542,12 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
                 break;
             case NetworkSurveyConstants.PROPERTY_LOCATION_PROVIDER:
                 updateLocationListener();
+                break;
+            case NetworkSurveyConstants.PROPERTY_WATCHLIST_ENABLED:
+                updateWatchlistRegistration();
+                break;
+            case NetworkSurveyConstants.PROPERTY_WATCHLIST_ABSENCE_WINDOW_SECONDS:
+                if (watchlistDetectionManager != null) watchlistDetectionManager.refreshConfig();
                 break;
 
             case NetworkSurveyConstants.PROPERTY_BATTERY_THRESHOLD_PERCENT:
@@ -872,6 +891,62 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
         // Check to see if this service is still needed.  It is still needed if we are either logging, the UI is
         // visible, or a server connection is active.
         if (!isBeingUsed()) stopSelf();
+    }
+
+    /**
+     * Registers or unregisters the Watchlist detector based on the watchlist-enabled preference.
+     * <p>
+     * The detector is registered as a PASSIVE Wi-Fi listener, so it observes scan results only while
+     * a survey is already scanning Wi-Fi and never starts scanning or keeps the service alive on its
+     * own. This is the "detection requires a survey running" model. The manager is recreated on each
+     * enable so its coroutine scope is fresh after a previous disable.
+     */
+    public void updateWatchlistRegistration()
+    {
+        if (surveyRecordProcessor == null) return;
+
+        final boolean enabled = PreferenceManager.getDefaultSharedPreferences(getApplicationContext())
+                .getBoolean(NetworkSurveyConstants.PROPERTY_WATCHLIST_ENABLED, NetworkSurveyConstants.DEFAULT_WATCHLIST_ENABLED);
+
+        if (enabled && !watchlistRegistered)
+        {
+            if (watchlistDetectionManager == null)
+            {
+                watchlistDetectionManager = new WatchlistDetectionManager(getApplicationContext());
+            }
+            surveyRecordProcessor.registerPassiveWifiSurveyRecordListener(watchlistDetectionManager);
+            watchlistDetectionManager.start();
+            watchlistRegistered = true;
+            Timber.i("Watchlist detection enabled");
+        } else if (!enabled && watchlistRegistered)
+        {
+            surveyRecordProcessor.unregisterPassiveWifiSurveyRecordListener(watchlistDetectionManager);
+            if (watchlistDetectionManager != null)
+            {
+                watchlistDetectionManager.stop();
+                watchlistDetectionManager = null;
+            }
+            watchlistRegistered = false;
+            Timber.i("Watchlist detection disabled");
+        }
+    }
+
+    /**
+     * @return true if the Watchlist feature is enabled in preferences.
+     */
+    public boolean isWatchlistEnabled()
+    {
+        return PreferenceManager.getDefaultSharedPreferences(getApplicationContext())
+                .getBoolean(NetworkSurveyConstants.PROPERTY_WATCHLIST_ENABLED, NetworkSurveyConstants.DEFAULT_WATCHLIST_ENABLED);
+    }
+
+    /**
+     * @return true if the Watchlist is enabled AND Wi-Fi scanning is currently active, meaning
+     * alerts can actually fire. When false, the management screen shows an "alerts paused" status.
+     */
+    public boolean isWatchlistAlertsActive()
+    {
+        return isWatchlistEnabled() && wifiController != null && wifiController.isScanningActive();
     }
 
     /**

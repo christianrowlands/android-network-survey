@@ -1229,4 +1229,63 @@
     <string name="oui_lookup_private_body">The vendor is registered with IEEE but has requested privacy.</string>
     <string name="oui_lookup_shared_block_title">Shared vendor block</string>
     <string name="oui_lookup_shared_block_body">This prefix is shared by multiple smaller vendor blocks. The specific vendor cannot be identified from the OUI alone.</string>
+
+    <!-- Watchlist feature -->
+    <string name="watchlist_title">Watchlist</string>
+    <string name="watchlist_history_title">Watchlist History</string>
+
+    <!-- Watchlist notifications -->
+    <string name="watchlist_alert_channel_name">Watchlist Alerts</string>
+    <string name="watchlist_alert_channel_description">Notifications when a watched network is seen</string>
+    <string name="watchlist_alert_title">Watched network nearby</string>
+    <string name="watchlist_alert_content">%1$s is nearby (%2$d dBm)</string>
+
+    <!-- Watchlist management screen -->
+    <string name="watchlist_info">Add Wi-Fi networks to watch for. When one is seen during a survey, you\'ll get a notification and it will show up in your history.</string>
+    <string name="watchlist_empty">No watched networks yet. Add a network and we\'ll let you know when it\'s nearby.</string>
+    <string name="watchlist_add">Add to Watchlist</string>
+    <string name="watchlist_add_network">Add network</string>
+    <string name="watchlist_history_action">History</string>
+    <string name="watchlist_status_active">Alerts on</string>
+    <string name="watchlist_status_active_subtitle">You\'ll be alerted while a survey is running.</string>
+    <string name="watchlist_status_disabled">Alerts are turned off</string>
+    <string name="watchlist_status_notifications_blocked">Notifications are blocked. Enable them in system settings.</string>
+    <string name="watchlist_status_mdm">Managed by your device administrator</string>
+    <string name="watchlist_enable_for">Enable alerts for %1$s</string>
+    <string name="watchlist_seen_relative">Seen %1$s</string>
+    <string name="watchlist_never_seen">Not seen yet</string>
+    <string name="watchlist_remove">Remove</string>
+    <string name="watchlist_delete_title">Remove from watchlist?</string>
+    <string name="watchlist_delete_message">Stop watching \"%1$s\"?</string>
+    <string name="watchlist_navigate_back">Navigate back</string>
+    <string name="watchlist_no_map_app">No map app is installed</string>
+
+    <!-- Watchlist add dialog -->
+    <string name="watchlist_add_dialog_title">Add to Watchlist</string>
+    <string name="watchlist_field_label">Name</string>
+    <string name="watchlist_field_ssid">Network name (SSID)</string>
+    <string name="watchlist_field_bssid">MAC address (BSSID)</string>
+    <string name="watchlist_advanced_bssid">Advanced: specific access point</string>
+    <string name="watchlist_bssid_helper">Watch a specific access point by its MAC address.</string>
+    <string name="watchlist_validation_need_one">Enter a network name (SSID) or a MAC address (BSSID).</string>
+    <string name="watchlist_validation_bssid_format">Enter a valid MAC address (for example 12:34:56:78:9A:BC).</string>
+    <string name="watchlist_validation_duplicate">You\'re already watching this network.</string>
+    <string name="watchlist_added">Added \"%1$s\" to your watchlist</string>
+
+    <!-- Watchlist history screen -->
+    <string name="watchlist_history_empty">Nothing seen yet. Alerts will show up here.</string>
+    <string name="watchlist_history_clear">Clear history</string>
+    <string name="watchlist_history_clear_title">Clear history?</string>
+    <string name="watchlist_history_clear_message">This removes all watchlist history. Your watched networks are kept.</string>
+    <string name="watchlist_matched_ssid">Matched by network name</string>
+    <string name="watchlist_matched_bssid">Matched by MAC</string>
+    <string name="watchlist_view_on_map">View on map</string>
+    <string name="watchlist_signal_dbm">%1$d dBm</string>
+
+    <!-- Watchlist settings -->
+    <string name="watchlist_settings_title">Watchlist</string>
+    <string name="watchlist_settings_enable_title">Enable Watchlist</string>
+    <string name="watchlist_settings_enable_summary_on">Watching for your saved networks</string>
+    <string name="watchlist_settings_enable_summary_off">Watchlist alerts are off</string>
+    <string name="watchlist_mdm_description">Enable or disable the Watchlist feature, which alerts the user when a saved Wi-Fi network is seen during a survey.</string>
 </resources>

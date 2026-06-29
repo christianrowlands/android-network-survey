@@ -26,6 +26,14 @@ class DeepLinkViewModel : ViewModel() {
     }
 
     /**
+     * Trigger navigation to the Watchlist history screen.
+     * Called by the Activity when a watchlist notification is tapped.
+     */
+    fun navigateToWatchlistHistory() {
+        _navigationDestination.value = NavOption.WatchlistHistory.name
+    }
+
+    /**
      * Clear the navigation event after it has been handled.
      * This prevents re-navigation on configuration changes.
      */

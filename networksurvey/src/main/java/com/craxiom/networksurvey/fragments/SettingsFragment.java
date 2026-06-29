@@ -63,6 +63,7 @@ public class SettingsFragment extends PreferenceFragmentCompat implements Shared
             NetworkSurveyConstants.PROPERTY_AUTO_START_PHONE_STATE_LOGGING,
             NetworkSurveyConstants.PROPERTY_AUTO_INCLUDE_PHONE_STATE_WITH_CELLULAR,
             NetworkSurveyConstants.PROPERTY_INCLUDE_NEIGHBOR_CELLS,
+            NetworkSurveyConstants.PROPERTY_WATCHLIST_ENABLED,
             NetworkSurveyConstants.PROPERTY_LOG_ROLLOVER_SIZE_MB,
             NetworkSurveyConstants.PROPERTY_LOG_FILE_TYPE,
             NetworkSurveyConstants.PROPERTY_CELLULAR_SCAN_INTERVAL_SECONDS,
@@ -469,6 +470,7 @@ public class SettingsFragment extends PreferenceFragmentCompat implements Shared
         updateBooleanPreferenceForMdm(preferenceScreen, mdmProperties, NetworkSurveyConstants.PROPERTY_MQTT_START_ON_BOOT);
         updateListProviderPreferenceForMdm(preferenceScreen, mdmProperties, NetworkSurveyConstants.PROPERTY_LOCATION_PROVIDER);
         updateBooleanPreferenceForMdm(preferenceScreen, mdmProperties, NetworkSurveyConstants.PROPERTY_ALLOW_INTENT_CONTROL);
+        updateBooleanPreferenceForMdm(preferenceScreen, mdmProperties, NetworkSurveyConstants.PROPERTY_WATCHLIST_ENABLED);
         updateBooleanPreferenceForMdm(preferenceScreen, mdmProperties, NetworkSurveyConstants.PROPERTY_OUI_LOOKUP_ENABLED);
         updateIntPreferenceForMdm(preferenceScreen, mdmProperties, NetworkSurveyConstants.PROPERTY_BATTERY_THRESHOLD_PERCENT);
         updateIntPreferenceForMdm(preferenceScreen, mdmProperties, NetworkSurveyConstants.PROPERTY_STREAMING_QUEUE_LIMIT);

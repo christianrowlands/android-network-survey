@@ -135,6 +135,8 @@ class WifiSpectrumFragment : AServiceDataFragment(), IWifiSurveyRecordListener {
         super.onSurveyServiceDisconnecting(service)
     }
 
+    override fun wantsExcludedRecords(): Boolean = true
+
     override fun onWifiBeaconSurveyRecords(wifiBeaconRecords: MutableList<WifiRecordWrapper>?) {
         val wifiNetworkInfoList: List<WifiNetworkInfo> = wifiBeaconRecords
             ?.filter {

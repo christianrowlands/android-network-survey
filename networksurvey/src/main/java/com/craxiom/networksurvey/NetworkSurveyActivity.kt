@@ -67,6 +67,8 @@ class NetworkSurveyActivity : AppCompatActivity(), StartupDialogActions {
         handleNsAnalyticsDeepLink()
         // Handle a tap on the "uploads paused" notification
         handleNsAnalyticsNavigationExtra()
+        // Handle a tap on a watchlist "Seen" notification
+        handleWatchlistNavigationExtra()
 
         // Load user color overrides before Compose renders the tower map
         PlmnColorOverrideManager(this)
@@ -135,6 +137,8 @@ class NetworkSurveyActivity : AppCompatActivity(), StartupDialogActions {
         handleNsAnalyticsDeepLink()
         // Handle a tap on the "uploads paused" notification when app is already running
         handleNsAnalyticsNavigationExtra()
+        // Handle a tap on a watchlist "Seen" notification when app is already running
+        handleWatchlistNavigationExtra()
     }
 
     override fun onResume() {
@@ -655,6 +659,24 @@ class NetworkSurveyActivity : AppCompatActivity(), StartupDialogActions {
             deepLinkViewModel.navigateToNsAnalytics()
             // Clear the extra so a configuration change or re-create doesn't navigate again.
             intent.removeExtra(NsAnalyticsConstants.EXTRA_NAVIGATE_TO_NS_ANALYTICS)
+        }
+    }
+
+    /**
+     * Handle a tap on a watchlist "Seen" notification, which routes the user to the Watchlist
+     * history screen via the navigation extra set by
+     * [com.craxiom.networksurvey.services.watchlist.WatchlistNotificationHelper].
+     */
+    private fun handleWatchlistNavigationExtra() {
+        if (intent?.getBooleanExtra(
+                NetworkSurveyConstants.EXTRA_NAVIGATE_TO_WATCHLIST_HISTORY,
+                false
+            ) == true
+        ) {
+            Timber.d("Navigating to Watchlist history from notification tap")
+            deepLinkViewModel.navigateToWatchlistHistory()
+            // Clear the extra so a configuration change or re-create doesn't navigate again.
+            intent.removeExtra(NetworkSurveyConstants.EXTRA_NAVIGATE_TO_WATCHLIST_HISTORY)
         }
     }
 

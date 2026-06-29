@@ -261,6 +261,12 @@ fun MainCompose(
                                 }
                             }
 
+                            NavDrawerOption.Watchlist -> {
+                                mainNavController.navigate(onUserPickedOption.name) {
+                                    popUpTo(NavDrawerOption.None.name)
+                                }
+                            }
+
                             NavDrawerOption.Settings -> {
                                 mainNavController.navigate(onUserPickedOption.name) {
                                     popUpTo(NavDrawerOption.None.name)
@@ -364,6 +370,13 @@ object DrawerParams {
         R.string.oui_lookup_drawer_description
     )
 
+    private val watchlistItem = AppDrawerItemInfo(
+        NavDrawerOption.Watchlist,
+        R.string.watchlist_title,
+        R.drawable.ic_watchlist,
+        R.string.watchlist_info
+    )
+
     private val settingsItem = AppDrawerItemInfo(
         NavDrawerOption.Settings,
         R.string.settings,
@@ -389,6 +402,7 @@ object DrawerParams {
         entries += DrawerEntry.Item(cellularCalculatorsItem)
         entries += DrawerEntry.Item(plmnLookupItem)
         entries += DrawerEntry.Item(ouiLookupItem)
+        entries += DrawerEntry.Item(watchlistItem)
 
         // Bottom: Settings (unheadered, before external links divider)
         entries += DrawerEntry.Item(settingsItem)

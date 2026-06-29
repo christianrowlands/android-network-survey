@@ -179,6 +179,12 @@ public class SurveyRecordProcessor
     private final GpsListener gpsListener;
     private final Set<ICellularSurveyRecordListener> cellularSurveyRecordListeners = new CopyOnWriteArraySet<>();
     private final Set<IWifiSurveyRecordListener> wifiSurveyRecordListeners = new CopyOnWriteArraySet<>();
+    /**
+     * Passive Wi-Fi listeners (currently just the Watchlist detector) observe scan results when a
+     * survey is already scanning, but unlike normal listeners they do NOT cause Wi-Fi scanning to
+     * start and do NOT keep the service alive. They always receive unfiltered records.
+     */
+    private final Set<IWifiSurveyRecordListener> passiveWifiSurveyRecordListeners = new CopyOnWriteArraySet<>();
     private final Set<IBluetoothSurveyRecordListener> bluetoothSurveyRecordListeners = new CopyOnWriteArraySet<>();
     private final Set<IGnssSurveyRecordListener> gnssSurveyRecordListeners = new CopyOnWriteArraySet<>();
     private final Set<ICdrEventListener> cdrListeners = new CopyOnWriteArraySet<>();
@@ -286,6 +292,21 @@ public class SurveyRecordProcessor
     void unregisterWifiSurveyRecordListener(IWifiSurveyRecordListener surveyRecordListener)
     {
         wifiSurveyRecordListeners.remove(surveyRecordListener);
+    }
+
+    /**
+     * Registers a passive Wi-Fi listener that observes scan results without triggering scanning or
+     * keeping the service alive. Used by the Watchlist detector so it only runs while a survey is
+     * already scanning Wi-Fi.
+     */
+    void registerPassiveWifiSurveyRecordListener(IWifiSurveyRecordListener surveyRecordListener)
+    {
+        passiveWifiSurveyRecordListeners.add(surveyRecordListener);
+    }
+
+    void unregisterPassiveWifiSurveyRecordListener(IWifiSurveyRecordListener surveyRecordListener)
+    {
+        passiveWifiSurveyRecordListeners.remove(surveyRecordListener);
     }
 
     void registerBluetoothSurveyRecordListener(IBluetoothSurveyRecordListener surveyRecordListener)
@@ -2915,26 +2936,35 @@ public class SurveyRecordProcessor
             }
         }
 
-        // Send ALL records (including excluded) to UI listeners for display
-        // but only non-excluded records to logging/streaming listeners
+        // Send ALL records (including excluded) to listeners that want them (UI display and the
+        // Watchlist detector); send only non-excluded records to logging/streaming listeners.
         for (IWifiSurveyRecordListener listener : wifiSurveyRecordListeners)
         {
             try
             {
-                // Check if this is a UI listener (WifiViewModel) or a logging listener
-                String listenerClass = listener.getClass().getSimpleName();
-                if (listenerClass.contains("ViewModel") || listenerClass.contains("Fragment"))
+                if (listener.wantsExcludedRecords())
                 {
-                    // UI listeners get all records so they can show excluded SSIDs
                     listener.onWifiBeaconSurveyRecords(wifiBeaconRecords);
                 } else
                 {
-                    // Logging and streaming listeners only get non-excluded records
                     listener.onWifiBeaconSurveyRecords(nonExcludedRecords);
                 }
             } catch (Exception e)
             {
                 Timber.e(e, "Unable to notify a Wi-Fi Survey Record Listener because of an exception");
+            }
+        }
+
+        // Passive listeners (the Watchlist detector) always get all records, including excluded
+        // SSIDs, so the user can be alerted on a network even when it is excluded from logging.
+        for (IWifiSurveyRecordListener listener : passiveWifiSurveyRecordListeners)
+        {
+            try
+            {
+                listener.onWifiBeaconSurveyRecords(wifiBeaconRecords);
+            } catch (Exception e)
+            {
+                Timber.e(e, "Unable to notify a passive Wi-Fi Survey Record Listener because of an exception");
             }
         }
     }

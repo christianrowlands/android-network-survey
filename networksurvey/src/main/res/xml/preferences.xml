@@ -101,6 +101,21 @@
     </PreferenceCategory>
 
     <PreferenceCategory
+        app:icon="@drawable/ic_watchlist"
+        app:key="watchlist_config"
+        app:title="@string/watchlist_settings_title">
+
+        <SwitchPreferenceCompat
+            app:defaultValue="false"
+            app:icon="@drawable/ic_watchlist"
+            app:key="watchlist_enabled"
+            app:summaryOff="@string/watchlist_settings_enable_summary_off"
+            app:summaryOn="@string/watchlist_settings_enable_summary_on"
+            app:title="@string/watchlist_settings_enable_title" />
+
+    </PreferenceCategory>
+
+    <PreferenceCategory
         app:icon="@drawable/ic_cloud_connection"
         app:key="ns_analytics_config"
         app:title="NS Analytics">

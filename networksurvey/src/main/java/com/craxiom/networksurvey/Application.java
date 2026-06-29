@@ -26,6 +26,7 @@ import androidx.preference.PreferenceManager;
 
 import com.craxiom.networksurvey.constants.NetworkSurveyConstants;
 import com.craxiom.networksurvey.lang.LocaleManager;
+import com.craxiom.networksurvey.services.watchlist.WatchlistNotificationHelper;
 import com.craxiom.networksurvey.util.CredentialSecureStorage;
 
 import dagger.hilt.android.HiltAndroidApp;
@@ -111,6 +112,10 @@ public class Application extends android.app.Application
             final NotificationChannel channel = new NotificationChannel(NetworkSurveyConstants.NOTIFICATION_CHANNEL_ID,
                     context.getText(R.string.notification_channel_name), NotificationManager.IMPORTANCE_LOW);
             notificationManager.createNotificationChannel(channel);
+
+            // Register the Watchlist alerts channel up front so it appears in system notification
+            // settings before the first alert fires.
+            WatchlistNotificationHelper.INSTANCE.createNotificationChannel(context);
         } else
         {
             Timber.wtf("The Notification Manager could not be retrieved to add the Network Survey notification channel");
