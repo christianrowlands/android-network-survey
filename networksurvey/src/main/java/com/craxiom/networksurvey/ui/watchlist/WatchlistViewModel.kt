@@ -12,12 +12,12 @@ import com.craxiom.networksurvey.logging.db.SurveyDatabase
 import com.craxiom.networksurvey.logging.db.model.WatchlistEntryEntity
 import com.craxiom.networksurvey.model.WatchlistImportSet
 import com.craxiom.networksurvey.services.watchlist.WatchlistDetectionManager
-import com.craxiom.networksurvey.util.MdmUtils
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import androidx.core.content.edit
 
 /**
  * ViewModel for the Watchlist management screen. Exposes the user's watched networks (with each
@@ -60,28 +60,16 @@ class WatchlistViewModel(application: Application) : AndroidViewModel(applicatio
             it.copy(
                 watchlistEnabled = readEnabled(),
                 notificationsEnabled = NotificationManagerCompat.from(getApplication())
-                    .areNotificationsEnabled(),
-                mdmControlled = MdmUtils.isUnderMdmControlAndEnabled(
-                    getApplication(),
-                    NetworkSurveyConstants.PROPERTY_WATCHLIST_ENABLED
-                )
+                    .areNotificationsEnabled()
             )
         }
     }
 
     fun setWatchlistEnabled(enabled: Boolean) {
-        // Respect MDM: when a device administrator controls this setting, the user cannot change it.
-        if (MdmUtils.isUnderMdmControlAndEnabled(
-                getApplication(),
-                NetworkSurveyConstants.PROPERTY_WATCHLIST_ENABLED
-            )
-        ) {
-            return
-        }
         PreferenceManager.getDefaultSharedPreferences(getApplication())
-            .edit()
-            .putBoolean(NetworkSurveyConstants.PROPERTY_WATCHLIST_ENABLED, enabled)
-            .apply()
+            .edit {
+                putBoolean(NetworkSurveyConstants.PROPERTY_WATCHLIST_ENABLED, enabled)
+            }
         _uiState.update { it.copy(watchlistEnabled = enabled) }
     }
 
@@ -157,6 +145,10 @@ class WatchlistViewModel(application: Application) : AndroidViewModel(applicatio
             if (newEntries.isNotEmpty()) {
                 watchlistDao.insertAll(newEntries)
             }
+            // Importing a list is an explicit opt-in, so turn the feature on (after the insert, so the
+            // detection manager's enabled-entry snapshot already includes the new rows). This may
+            // re-enable a feature the user previously turned off; that is intended for a deep-link import.
+            setWatchlistEnabled(true)
             _uiState.update { it.copy(pendingImport = null) }
             showImportResultToast(plan.addedCount, plan.duplicateCount)
         }
@@ -180,8 +172,7 @@ class WatchlistViewModel(application: Application) : AndroidViewModel(applicatio
 
     /**
      * Delete every watched network. This is the deliberate, link-independent way to "start fresh"
-     * before importing. Unlike the feature on/off toggle, the entry list is not under MDM control
-     * (per-row delete is not either), so this mirrors [deleteEntry] and is always available.
+     * before importing. Mirrors [deleteEntry] (a bulk version of the same per-row delete).
      */
     fun clearAll() {
         viewModelScope.launch { watchlistDao.deleteAll() }
@@ -240,7 +231,6 @@ data class WatchlistUiState(
     val items: List<WatchlistRowItem> = emptyList(),
     val watchlistEnabled: Boolean = false,
     val notificationsEnabled: Boolean = true,
-    val mdmControlled: Boolean = false,
     val pendingImport: PendingWatchlistImport? = null
 )
 

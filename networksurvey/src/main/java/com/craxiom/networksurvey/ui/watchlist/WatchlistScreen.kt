@@ -127,7 +127,6 @@ fun WatchlistScreen(
             WatchlistStatusHeader(
                 enabled = uiState.watchlistEnabled,
                 notificationsEnabled = uiState.notificationsEnabled,
-                mdmControlled = uiState.mdmControlled,
                 onToggle = { viewModel.setWatchlistEnabled(it) }
             )
 

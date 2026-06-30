@@ -1250,7 +1250,6 @@
     <string name="watchlist_status_active_subtitle">You\'ll be alerted while a survey is running.</string>
     <string name="watchlist_status_disabled">Alerts are turned off</string>
     <string name="watchlist_status_notifications_blocked">Notifications are blocked. Enable them in system settings.</string>
-    <string name="watchlist_status_mdm">Managed by your device administrator</string>
     <string name="watchlist_enable_for">Enable alerts for %1$s</string>
     <string name="watchlist_seen_relative">Seen %1$s</string>
     <string name="watchlist_never_seen">Not seen yet</string>
@@ -1316,5 +1315,4 @@
     <string name="watchlist_settings_enable_title">Enable Watchlist</string>
     <string name="watchlist_settings_enable_summary_on">Watching for your saved networks</string>
     <string name="watchlist_settings_enable_summary_off">Watchlist alerts are off</string>
-    <string name="watchlist_mdm_description">Enable or disable the Watchlist feature, which alerts the user when a saved Wi-Fi network is seen during a survey.</string>
 </resources>

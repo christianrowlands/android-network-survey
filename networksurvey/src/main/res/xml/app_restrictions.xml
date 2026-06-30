@@ -285,11 +285,4 @@
         android:restrictionType="integer"
         android:title="@string/streaming_queue_limit_title" />
 
-    <restriction
-        android:defaultValue="false"
-        android:description="@string/watchlist_mdm_description"
-        android:key="watchlist_enabled"
-        android:restrictionType="bool"
-        android:title="@string/watchlist_settings_enable_title" />
-
 </restrictions>

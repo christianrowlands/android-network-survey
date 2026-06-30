@@ -32,7 +32,6 @@ import com.craxiom.networksurvey.R
 internal fun WatchlistStatusHeader(
     enabled: Boolean,
     notificationsEnabled: Boolean,
-    mdmControlled: Boolean,
     onToggle: (Boolean) -> Unit
 ) {
     val (title, container) = when {
@@ -41,9 +40,7 @@ internal fun WatchlistStatusHeader(
         else -> stringResource(R.string.watchlist_status_active) to MaterialTheme.colorScheme.primaryContainer
     }
     // When enabled, the feature only fires during a survey, so the subtitle keeps that honest.
-    // Under MDM control, the subtitle explains the toggle cannot be changed.
     val subtitle = when {
-        mdmControlled -> stringResource(R.string.watchlist_status_mdm)
         enabled && notificationsEnabled -> stringResource(R.string.watchlist_status_active_subtitle)
         else -> null
     }
@@ -72,7 +69,7 @@ internal fun WatchlistStatusHeader(
                     )
                 }
             }
-            Switch(checked = enabled, onCheckedChange = onToggle, enabled = !mdmControlled)
+            Switch(checked = enabled, onCheckedChange = onToggle)
         }
     }
 }
