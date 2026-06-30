@@ -1272,6 +1272,35 @@
     <string name="watchlist_validation_duplicate">You\'re already watching this network.</string>
     <string name="watchlist_added">Added \"%1$s\" to your watchlist</string>
 
+    <!-- Watchlist import (deep link) -->
+    <string name="watchlist_import_title">Add \"%1$s\"?</string>
+    <string name="watchlist_import_title_generic">Add networks to your Watchlist?</string>
+    <string name="watchlist_import_summary">From a link. %1$d new, %2$d already saved.</string>
+    <string name="watchlist_import_summary_no_dupes">From a link. %1$d new.</string>
+    <string name="watchlist_import_helper">Added networks can be removed anytime on the Watchlist screen.</string>
+    <string name="watchlist_import_confirm">Add %1$d</string>
+    <string name="watchlist_import_already_saved_tag">Already saved</string>
+    <string name="watchlist_import_all_saved_title">Already saved</string>
+    <string name="watchlist_import_done">Done</string>
+    <plurals name="watchlist_import_result">
+        <item quantity="one">Added %1$d network (%2$d already saved)</item>
+        <item quantity="other">Added %1$d networks (%2$d already saved)</item>
+    </plurals>
+    <plurals name="watchlist_import_result_no_skips">
+        <item quantity="one">Added %1$d network</item>
+        <item quantity="other">Added %1$d networks</item>
+    </plurals>
+    <plurals name="watchlist_import_all_saved_message">
+        <item quantity="one">This network is already in your watchlist.</item>
+        <item quantity="other">All %1$d networks in this link are already in your watchlist.</item>
+    </plurals>
+
+    <!-- Watchlist clear all -->
+    <string name="watchlist_more_options">More options</string>
+    <string name="watchlist_clear_all">Clear all</string>
+    <string name="watchlist_clear_all_title">Clear watchlist?</string>
+    <string name="watchlist_clear_all_message">This removes all watched networks and their history. This can\'t be undone.</string>
+
     <!-- Watchlist history screen -->
     <string name="watchlist_history_empty">Nothing seen yet. Alerts will show up here.</string>
     <string name="watchlist_history_clear">Clear history</string>

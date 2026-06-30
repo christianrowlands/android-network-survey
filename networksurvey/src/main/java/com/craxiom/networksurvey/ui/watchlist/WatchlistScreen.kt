@@ -1,11 +1,9 @@
 package com.craxiom.networksurvey.ui.watchlist
 
-import android.text.format.DateUtils
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -15,15 +13,16 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
@@ -35,8 +34,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
@@ -48,7 +45,8 @@ import com.craxiom.networksurvey.ui.common.dialogs.NsConfirmationDialog
 /**
  * The Watchlist management screen: a header status, an info card, and a list of watched networks
  * with a per-row enable switch and delete action. Adding is done through a custom dialog; the app
- * bar links to the history log.
+ * bar links to the history log and offers a "Clear all" action. When opened from an import deep link,
+ * a confirmation prompt previews the networks to add.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -59,11 +57,15 @@ fun WatchlistScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
-    // Re-read the notifications/MDM status when returning to the screen so a permission change made
-    // in system settings is reflected.
-    LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { viewModel.refreshStatus() }
+    // Re-read the notifications/MDM status when returning to the screen so a permission change made in
+    // system settings is reflected. (A pending import deep link is consumed in the ViewModel's init.)
+    LifecycleEventEffect(Lifecycle.Event.ON_RESUME) {
+        viewModel.refreshStatus()
+    }
 
     var showAddDialog by remember { mutableStateOf(false) }
+    var showOverflowMenu by remember { mutableStateOf(false) }
+    var showClearAllConfirm by remember { mutableStateOf(false) }
     var pendingDelete by remember { mutableStateOf<WatchlistEntryEntity?>(null) }
 
     Scaffold(
@@ -90,6 +92,28 @@ fun WatchlistScreen(
                             Icons.Default.Add,
                             contentDescription = stringResource(R.string.watchlist_add)
                         )
+                    }
+                    if (uiState.items.isNotEmpty()) {
+                        Box {
+                            IconButton(onClick = { showOverflowMenu = true }) {
+                                Icon(
+                                    Icons.Default.MoreVert,
+                                    contentDescription = stringResource(R.string.watchlist_more_options)
+                                )
+                            }
+                            DropdownMenu(
+                                expanded = showOverflowMenu,
+                                onDismissRequest = { showOverflowMenu = false }
+                            ) {
+                                DropdownMenuItem(
+                                    text = { Text(stringResource(R.string.watchlist_clear_all)) },
+                                    onClick = {
+                                        showOverflowMenu = false
+                                        showClearAllConfirm = true
+                                    }
+                                )
+                            }
+                        }
                     }
                 }
             )
@@ -180,119 +204,23 @@ fun WatchlistScreen(
             destructive = true
         )
     }
-}
 
-@Composable
-private fun WatchlistStatusHeader(
-    enabled: Boolean,
-    notificationsEnabled: Boolean,
-    mdmControlled: Boolean,
-    onToggle: (Boolean) -> Unit
-) {
-    val (title, container) = when {
-        !enabled -> stringResource(R.string.watchlist_status_disabled) to MaterialTheme.colorScheme.surfaceVariant
-        !notificationsEnabled -> stringResource(R.string.watchlist_status_notifications_blocked) to MaterialTheme.colorScheme.errorContainer
-        else -> stringResource(R.string.watchlist_status_active) to MaterialTheme.colorScheme.primaryContainer
-    }
-    // When enabled, the feature only fires during a survey, so the subtitle keeps that honest.
-    // Under MDM control, the subtitle explains the toggle cannot be changed.
-    val subtitle = when {
-        mdmControlled -> stringResource(R.string.watchlist_status_mdm)
-        enabled && notificationsEnabled -> stringResource(R.string.watchlist_status_active_subtitle)
-        else -> null
-    }
-
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(16.dp),
-        colors = CardDefaults.cardColors(containerColor = container)
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = title,
-                    style = MaterialTheme.typography.titleSmall
-                )
-                subtitle?.let {
-                    Text(
-                        text = it,
-                        style = MaterialTheme.typography.bodySmall
-                    )
-                }
-            }
-            Switch(checked = enabled, onCheckedChange = onToggle, enabled = !mdmControlled)
-        }
-    }
-}
-
-@Composable
-private fun WatchlistRow(
-    item: WatchlistRowItem,
-    onToggleEnabled: (Boolean) -> Unit,
-    onDelete: () -> Unit
-) {
-    val entry = item.entry
-    val identifier = listOfNotNull(
-        entry.ssid?.takeIf { it.isNotBlank() },
-        entry.bssid?.takeIf { it.isNotBlank() }
-    ).joinToString("  -  ")
-
-    val seenText = item.lastSeen?.let {
-        stringResource(
-            R.string.watchlist_seen_relative,
-            DateUtils.getRelativeTimeSpanString(
-                it,
-                System.currentTimeMillis(),
-                DateUtils.MINUTE_IN_MILLIS
-            ).toString()
+    if (showClearAllConfirm) {
+        NsConfirmationDialog(
+            title = stringResource(R.string.watchlist_clear_all_title),
+            message = stringResource(R.string.watchlist_clear_all_message),
+            confirmText = stringResource(R.string.watchlist_clear_all),
+            onConfirm = { viewModel.clearAll() },
+            onDismiss = { showClearAllConfirm = false },
+            destructive = true
         )
-    } ?: stringResource(R.string.watchlist_never_seen)
+    }
 
-    val enableForDescription = stringResource(R.string.watchlist_enable_for, entry.label ?: "")
-
-    Card(modifier = Modifier.fillMaxWidth()) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(start = 16.dp, top = 8.dp, bottom = 8.dp, end = 4.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = entry.label ?: identifier,
-                    style = MaterialTheme.typography.titleMedium
-                )
-                if (identifier.isNotBlank()) {
-                    Text(
-                        text = identifier,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-                Text(
-                    text = seenText,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-            Switch(
-                checked = entry.enabled,
-                onCheckedChange = onToggleEnabled,
-                modifier = Modifier.semantics { contentDescription = enableForDescription }
-            )
-            IconButton(onClick = onDelete) {
-                Icon(
-                    Icons.Default.Delete,
-                    contentDescription = stringResource(R.string.watchlist_remove),
-                    tint = MaterialTheme.colorScheme.error
-                )
-            }
-        }
+    uiState.pendingImport?.let { pending ->
+        WatchlistImportDialog(
+            pending = pending,
+            onConfirm = { viewModel.confirmPendingImport() },
+            onDismiss = { viewModel.dismissPendingImport() }
+        )
     }
 }

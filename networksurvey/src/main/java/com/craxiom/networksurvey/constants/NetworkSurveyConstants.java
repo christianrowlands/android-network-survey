@@ -170,6 +170,12 @@ public class NetworkSurveyConstants
     public static final String PROPERTY_WATCHLIST_HISTORY_RETENTION_DAYS = "watchlist_history_retention_days";
     // Intent extra used to deep-link from a watchlist notification to the history screen.
     public static final String EXTRA_NAVIGATE_TO_WATCHLIST_HISTORY = "navigate_to_watchlist_history";
+    // App Link used to populate the watchlist from a shared URL. The host is the same already-verified
+    // networksurvey.app domain used by the NS Analytics registration link (NsAnalyticsConstants), so no
+    // additional Digital Asset Links verification is needed. The single "d" query parameter carries a
+    // base64url-encoded JSON payload of the networks to add.
+    public static final String WATCHLIST_DEEP_LINK_PATH = "/app/watchlist";
+    public static final String WATCHLIST_DEEP_LINK_PARAM_DATA = "d";
 
     // A read only value in the preferences that shows the App Version
     public static final String PROPERTY_APP_VERSION = "app_version";

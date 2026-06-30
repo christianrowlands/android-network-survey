@@ -34,6 +34,15 @@ class DeepLinkViewModel : ViewModel() {
     }
 
     /**
+     * Trigger navigation to the Watchlist management screen.
+     * Called by the Activity when a valid watchlist import deep link is received, after the parsed
+     * networks have been stashed for the screen to confirm.
+     */
+    fun navigateToWatchlist() {
+        _navigationDestination.value = NavDrawerOption.Watchlist.name
+    }
+
+    /**
      * Clear the navigation event after it has been handled.
      * This prevents re-navigation on configuration changes.
      */

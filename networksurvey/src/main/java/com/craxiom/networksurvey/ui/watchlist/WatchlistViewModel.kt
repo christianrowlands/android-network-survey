@@ -10,6 +10,7 @@ import com.craxiom.networksurvey.R
 import com.craxiom.networksurvey.constants.NetworkSurveyConstants
 import com.craxiom.networksurvey.logging.db.SurveyDatabase
 import com.craxiom.networksurvey.logging.db.model.WatchlistEntryEntity
+import com.craxiom.networksurvey.model.WatchlistImportSet
 import com.craxiom.networksurvey.services.watchlist.WatchlistDetectionManager
 import com.craxiom.networksurvey.util.MdmUtils
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -44,6 +45,10 @@ class WatchlistViewModel(application: Application) : AndroidViewModel(applicatio
             }
         }
         refreshStatus()
+        // Consume a pending import deep link here rather than from the screen's ON_RESUME: because the
+        // watchlist navigation recreates this ViewModel, only the freshly created instance reads the
+        // holder, which avoids a soon-to-be-destroyed instance swallowing the import on a re-tap.
+        consumePendingImport()
     }
 
     /**
@@ -89,17 +94,19 @@ class WatchlistViewModel(application: Application) : AndroidViewModel(applicatio
      * @param bssid the BSSID to watch, or null/blank to watch by SSID only
      */
     fun addEntry(label: String, ssid: String?, bssid: String?) {
-        val normalizedSsid = ssid?.trim()?.takeIf { it.isNotEmpty() }
-        val normalizedBssid = bssid?.trim()?.lowercase()?.takeIf { it.isNotEmpty() }
+        val normalizedSsid = WatchlistImportPlanner.normalizeSsid(ssid)
+        val normalizedBssid = WatchlistImportPlanner.normalizeBssid(bssid)
         if (normalizedSsid == null && normalizedBssid == null) return
 
-        val resolvedLabel = label.trim().ifEmpty { normalizedSsid ?: normalizedBssid ?: "" }
+        val resolvedLabel =
+            WatchlistImportPlanner.resolveLabel(label, normalizedSsid, normalizedBssid)
+        val key = WatchlistImportPlanner.dedupKey(normalizedSsid, normalizedBssid)
 
         val duplicate = _uiState.value.items.any { row ->
-            val existingSsid = row.entry.ssid?.trim()?.takeIf { it.isNotEmpty() }
-            val existingBssid = row.entry.bssid?.trim()?.takeIf { it.isNotEmpty() }
-            existingSsid.equals(normalizedSsid, ignoreCase = true) &&
-                    existingBssid.equals(normalizedBssid, ignoreCase = true)
+            WatchlistImportPlanner.dedupKey(
+                WatchlistImportPlanner.normalizeSsid(row.entry.ssid),
+                WatchlistImportPlanner.normalizeBssid(row.entry.bssid)
+            ) == key
         }
         if (duplicate) {
             showToast(getApplication<Application>().getString(R.string.watchlist_validation_duplicate))
@@ -107,16 +114,7 @@ class WatchlistViewModel(application: Application) : AndroidViewModel(applicatio
         }
 
         viewModelScope.launch {
-            val entry = WatchlistEntryEntity().apply {
-                this.label = resolvedLabel
-                this.ssid = normalizedSsid
-                this.bssid = normalizedBssid
-                this.matchType = WatchlistEntryEntity.MATCH_TYPE_EXACT
-                this.enabled = true
-                this.createdAt = System.currentTimeMillis()
-                this.cooldownSeconds = readDefaultCooldownSeconds()
-            }
-            watchlistDao.insert(entry)
+            watchlistDao.insert(buildEntry(resolvedLabel, normalizedSsid, normalizedBssid))
             showToast(
                 getApplication<Application>().getString(
                     R.string.watchlist_added,
@@ -124,6 +122,49 @@ class WatchlistViewModel(application: Application) : AndroidViewModel(applicatio
                 )
             )
         }
+    }
+
+    /**
+     * Pick up a watchlist import stashed by the Activity from a deep link, if any. Reads the current
+     * entries from the database (not the Flow snapshot, which may be empty on a cold-start deep link)
+     * to compute the new-vs-duplicate preview. Does nothing when there is no pending import, so a later
+     * call (for example on a subsequent ON_RESUME) never clears an import dialog already on screen.
+     */
+    fun consumePendingImport() {
+        val set = WatchlistImportHolder.consume() ?: return
+        viewModelScope.launch {
+            val plan = WatchlistImportPlanner.plan(watchlistDao.getAll(), set)
+            _uiState.update {
+                it.copy(
+                    pendingImport = PendingWatchlistImport(
+                        name = set.name,
+                        previewRows = plan.previewRows,
+                        addedCount = plan.addedCount,
+                        duplicateCount = plan.duplicateCount,
+                        set = set
+                    )
+                )
+            }
+        }
+    }
+
+    /** Insert the new networks from the pending import, re-deduping against the live database. */
+    fun confirmPendingImport() {
+        val pending = _uiState.value.pendingImport ?: return
+        viewModelScope.launch {
+            val plan = WatchlistImportPlanner.plan(watchlistDao.getAll(), pending.set)
+            val newEntries = plan.toAdd.map { buildEntry(it.label, it.ssid, it.bssid) }
+            if (newEntries.isNotEmpty()) {
+                watchlistDao.insertAll(newEntries)
+            }
+            _uiState.update { it.copy(pendingImport = null) }
+            showImportResultToast(plan.addedCount, plan.duplicateCount)
+        }
+    }
+
+    /** Dismiss the import prompt without adding anything. */
+    fun dismissPendingImport() {
+        _uiState.update { it.copy(pendingImport = null) }
     }
 
     fun setEntryEnabled(entry: WatchlistEntryEntity, enabled: Boolean) {
@@ -135,6 +176,34 @@ class WatchlistViewModel(application: Application) : AndroidViewModel(applicatio
 
     fun deleteEntry(entry: WatchlistEntryEntity) {
         viewModelScope.launch { watchlistDao.delete(entry) }
+    }
+
+    /**
+     * Delete every watched network. This is the deliberate, link-independent way to "start fresh"
+     * before importing. Unlike the feature on/off toggle, the entry list is not under MDM control
+     * (per-row delete is not either), so this mirrors [deleteEntry] and is always available.
+     */
+    fun clearAll() {
+        viewModelScope.launch { watchlistDao.deleteAll() }
+    }
+
+    private fun buildEntry(label: String, ssid: String?, bssid: String?): WatchlistEntryEntity =
+        WatchlistEntryFactory.create(
+            label = label,
+            ssid = ssid,
+            bssid = bssid,
+            cooldownSeconds = readDefaultCooldownSeconds(),
+            createdAt = System.currentTimeMillis()
+        )
+
+    private fun showImportResultToast(added: Int, skipped: Int) {
+        val res = getApplication<Application>().resources
+        val message = if (skipped > 0) {
+            res.getQuantityString(R.plurals.watchlist_import_result, added, added, skipped)
+        } else {
+            res.getQuantityString(R.plurals.watchlist_import_result_no_skips, added, added)
+        }
+        showToast(message)
     }
 
     private fun readEnabled(): Boolean =
@@ -171,5 +240,25 @@ data class WatchlistUiState(
     val items: List<WatchlistRowItem> = emptyList(),
     val watchlistEnabled: Boolean = false,
     val notificationsEnabled: Boolean = true,
-    val mdmControlled: Boolean = false
+    val mdmControlled: Boolean = false,
+    val pendingImport: PendingWatchlistImport? = null
 )
+
+/**
+ * A watchlist import awaiting the user's confirmation, with everything the import prompt needs: the
+ * optional (sanitized) set name, the per-row preview, the new/duplicate counts, and the original set
+ * retained so the insert can re-dedupe against the live database at confirm time.
+ */
+data class PendingWatchlistImport(
+    val name: String?,
+    val previewRows: List<WatchlistImportPreviewRow>,
+    val addedCount: Int,
+    val duplicateCount: Int,
+    val set: WatchlistImportSet
+) {
+    /** True when every network in the link is already saved, so there is nothing to add. */
+    val allDuplicates: Boolean get() = addedCount == 0
+
+    /** The total number of networks the link carried. */
+    val totalCount: Int get() = previewRows.size
+}

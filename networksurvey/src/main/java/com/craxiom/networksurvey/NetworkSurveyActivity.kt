@@ -31,10 +31,12 @@ import com.craxiom.networksurvey.ui.main.MainCompose
 import com.craxiom.networksurvey.ui.main.SharedViewModel
 import com.craxiom.networksurvey.ui.main.StartupDialog
 import com.craxiom.networksurvey.ui.main.StartupDialogActions
+import com.craxiom.networksurvey.ui.watchlist.WatchlistImportHolder
 import com.craxiom.networksurvey.util.NsAnalyticsDeepLinkHandler
 import com.craxiom.networksurvey.util.NsAnalyticsSecureStorage
 import com.craxiom.networksurvey.util.NsUtils
 import com.craxiom.networksurvey.util.PreferenceUtils
+import com.craxiom.networksurvey.util.WatchlistDeepLinkHandler
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -65,6 +67,8 @@ class NetworkSurveyActivity : AppCompatActivity(), StartupDialogActions {
 
         // Handle NS Analytics deep links
         handleNsAnalyticsDeepLink()
+        // Handle a watchlist import deep link
+        handleWatchlistDeepLink()
         // Handle a tap on the "uploads paused" notification
         handleNsAnalyticsNavigationExtra()
         // Handle a tap on a watchlist "Seen" notification
@@ -135,6 +139,8 @@ class NetworkSurveyActivity : AppCompatActivity(), StartupDialogActions {
         setIntent(intent)
         // Handle the deep link when app is already running
         handleNsAnalyticsDeepLink()
+        // Handle a watchlist import deep link when app is already running
+        handleWatchlistDeepLink()
         // Handle a tap on the "uploads paused" notification when app is already running
         handleNsAnalyticsNavigationExtra()
         // Handle a tap on a watchlist "Seen" notification when app is already running
@@ -641,6 +647,34 @@ class NetworkSurveyActivity : AppCompatActivity(), StartupDialogActions {
 
             is NsAnalyticsDeepLinkHandler.DeepLinkResult.NotApplicable -> {
                 Timber.d("Not an NS Analytics deep link, ignoring")
+            }
+        }
+    }
+
+    /**
+     * Handle an incoming watchlist import deep link. On a valid link, stashes the parsed networks for
+     * the Watchlist screen to confirm and navigates there; on an invalid link, shows a toast. Runs on
+     * every VIEW intent alongside [handleNsAnalyticsDeepLink]; the two have disjoint path prefixes, so
+     * each returns NotApplicable for the other's links and they never interfere.
+     */
+    private fun handleWatchlistDeepLink() {
+        when (val result = WatchlistDeepLinkHandler.parseIntent(intent)) {
+            is WatchlistDeepLinkHandler.Result.Success -> {
+                Timber.i(
+                    "Received watchlist import deep link with %d networks",
+                    result.importSet.entries.size
+                )
+                WatchlistImportHolder.set(result.importSet)
+                deepLinkViewModel.navigateToWatchlist()
+            }
+
+            is WatchlistDeepLinkHandler.Result.Error -> {
+                Timber.w("Invalid watchlist import link: %s", result.message)
+                Toast.makeText(this, result.message, Toast.LENGTH_LONG).show()
+            }
+
+            is WatchlistDeepLinkHandler.Result.NotApplicable -> {
+                Timber.d("Not a watchlist import deep link, ignoring")
             }
         }
     }
