@@ -50,6 +50,12 @@ interface WatchlistDao {
     fun observeAll(): Flow<List<WatchlistEntryEntity>>
 
     /**
+     * Observe a single entry by id (null once it is deleted). Backs the sighting-details screen.
+     */
+    @Query("SELECT * FROM watchlist_entry WHERE id = :id")
+    fun observeById(id: Long): Flow<WatchlistEntryEntity?>
+
+    /**
      * Observe only the enabled entries so the detection manager can keep its in-memory snapshot
      * current as the user adds, removes, enables, or disables entries.
      */

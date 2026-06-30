@@ -57,6 +57,9 @@ import com.craxiom.networksurvey.ui.oui.OuiLookupScreen
 import com.craxiom.networksurvey.ui.plmn.PlmnDetailsScreen
 import com.craxiom.networksurvey.ui.plmn.PlmnLookupScreen
 import com.craxiom.networksurvey.ui.plmn.components.PlmnInfoSheet
+import com.craxiom.networksurvey.ui.watchlist.WATCHLIST_ENTRY_ID_KEY
+import com.craxiom.networksurvey.ui.watchlist.WatchlistHistoryDetailScreen
+import com.craxiom.networksurvey.ui.watchlist.WatchlistHistoryDetailViewModel
 import com.craxiom.networksurvey.ui.watchlist.WatchlistHistoryScreen
 import com.craxiom.networksurvey.ui.watchlist.WatchlistHistoryViewModel
 import com.craxiom.networksurvey.ui.watchlist.WatchlistScreen
@@ -203,6 +206,24 @@ fun NavGraphBuilder.mainGraph(
             val watchlistHistoryViewModel = viewModel<WatchlistHistoryViewModel>()
             WatchlistHistoryScreen(
                 viewModel = watchlistHistoryViewModel,
+                onNavigateUp = { mainNavController.navigateUp() },
+                onOpenDetail = { entryId ->
+                    mainNavController.currentBackStackEntry?.savedStateHandle?.set(
+                        WATCHLIST_ENTRY_ID_KEY,
+                        entryId
+                    )
+                    mainNavController.navigate(NavOption.WatchlistHistoryDetail.name)
+                }
+            )
+        }
+
+        composable(NavOption.WatchlistHistoryDetail.name) {
+            val entryId = mainNavController.previousBackStackEntry?.savedStateHandle
+                ?.get<Long>(WATCHLIST_ENTRY_ID_KEY) ?: -1L
+            val detailViewModel = viewModel<WatchlistHistoryDetailViewModel>()
+            WatchlistHistoryDetailScreen(
+                viewModel = detailViewModel,
+                entryId = entryId,
                 onNavigateUp = { mainNavController.navigateUp() }
             )
         }
@@ -295,7 +316,8 @@ enum class NavOption {
     ProviderColorOverrides,
     Acknowledgments,
     NsAnalyticsQrScanner,
-    WatchlistHistory
+    WatchlistHistory,
+    WatchlistHistoryDetail
 }
 
 @Composable

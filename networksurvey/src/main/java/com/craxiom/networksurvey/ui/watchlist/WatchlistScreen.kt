@@ -11,7 +11,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.Card
@@ -33,8 +32,11 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -83,7 +85,7 @@ fun WatchlistScreen(
                 actions = {
                     IconButton(onClick = onNavigateToHistory) {
                         Icon(
-                            Icons.AutoMirrored.Filled.List,
+                            painter = painterResource(id = R.drawable.ic_history),
                             contentDescription = stringResource(R.string.watchlist_history_action)
                         )
                     }
@@ -169,6 +171,20 @@ fun WatchlistScreen(
                     contentPadding = PaddingValues(16.dp),
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
+                    item(key = "watched-header") {
+                        Text(
+                            text = stringResource(
+                                R.string.watchlist_watched_count,
+                                uiState.items.size
+                            ),
+                            style = MaterialTheme.typography.labelMedium.copy(
+                                fontFamily = FontFamily.Monospace,
+                                letterSpacing = 0.5.sp
+                            ),
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(start = 4.dp, bottom = 4.dp)
+                        )
+                    }
                     items(items = uiState.items, key = { it.entry.id }) { item ->
                         WatchlistRow(
                             item = item,
@@ -187,7 +203,7 @@ fun WatchlistScreen(
     }
 
     if (showAddDialog) {
-        WatchlistAddDialog(
+        WatchlistAddSheet(
             onAdd = { label, ssid, bssid -> viewModel.addEntry(label, ssid, bssid) },
             onDismiss = { showAddDialog = false }
         )

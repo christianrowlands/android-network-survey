@@ -1232,7 +1232,6 @@
 
     <!-- Watchlist feature -->
     <string name="watchlist_title">Watchlist</string>
-    <string name="watchlist_history_title">Watchlist History</string>
 
     <!-- Watchlist notifications -->
     <string name="watchlist_alert_channel_name">Watchlist Alerts</string>
@@ -1251,20 +1250,15 @@
     <string name="watchlist_status_disabled">Alerts are turned off</string>
     <string name="watchlist_status_notifications_blocked">Notifications are blocked. Enable them in system settings.</string>
     <string name="watchlist_enable_for">Enable alerts for %1$s</string>
-    <string name="watchlist_seen_relative">Seen %1$s</string>
-    <string name="watchlist_never_seen">Not seen yet</string>
     <string name="watchlist_remove">Remove</string>
     <string name="watchlist_delete_title">Remove from watchlist?</string>
     <string name="watchlist_delete_message">Stop watching \"%1$s\"?</string>
     <string name="watchlist_navigate_back">Navigate back</string>
-    <string name="watchlist_no_map_app">No map app is installed</string>
 
     <!-- Watchlist add dialog -->
     <string name="watchlist_add_dialog_title">Add to Watchlist</string>
-    <string name="watchlist_field_label">Name</string>
     <string name="watchlist_field_ssid">Network name (SSID)</string>
     <string name="watchlist_field_bssid">MAC address (BSSID)</string>
-    <string name="watchlist_advanced_bssid">Advanced: specific access point</string>
     <string name="watchlist_bssid_helper">Watch a specific access point by its MAC address.</string>
     <string name="watchlist_validation_need_one">Enter a network name (SSID) or a MAC address (BSSID).</string>
     <string name="watchlist_validation_bssid_format">Enter a valid MAC address (for example 12:34:56:78:9A:BC).</string>
@@ -1305,10 +1299,52 @@
     <string name="watchlist_history_clear">Clear history</string>
     <string name="watchlist_history_clear_title">Clear history?</string>
     <string name="watchlist_history_clear_message">This removes all watchlist history. Your watched networks are kept.</string>
-    <string name="watchlist_matched_ssid">Matched by network name</string>
-    <string name="watchlist_matched_bssid">Matched by MAC</string>
-    <string name="watchlist_view_on_map">View on map</string>
     <string name="watchlist_signal_dbm">%1$d dBm</string>
+    <string name="watchlist_signal_unknown">- dBm</string>
+
+    <!-- Watchlist redesign: rows -->
+    <string name="watchlist_watched_count">Watched · %1$d</string>
+    <string name="watchlist_row_ssid_quoted">SSID \"%1$s\"</string>
+    <string name="watchlist_row_seen_times">seen %1$d×</string>
+    <string name="watchlist_row_not_seen">not seen yet</string>
+    <string name="watchlist_alerts_subtitle">Notify me during a survey</string>
+
+    <!-- Watchlist redesign: add sheet -->
+    <string name="watchlist_match_by">Match by</string>
+    <string name="watchlist_match_by_name">Network name</string>
+    <string name="watchlist_match_by_ap">Specific AP</string>
+    <string name="watchlist_field_display_name">Display name</string>
+    <string name="watchlist_add_confirm">Add to watchlist</string>
+
+    <!-- Watchlist redesign: history list + map -->
+    <string name="watchlist_history_search_hint">Search networks</string>
+    <string name="watchlist_history_no_matches">No networks match your search.</string>
+    <string name="watchlist_history_view_list">List</string>
+    <string name="watchlist_history_view_map">Map</string>
+    <string name="watchlist_history_sort_action">Change sort order</string>
+    <string name="watchlist_history_sort_recent">Most recent</string>
+    <string name="watchlist_history_sort_strongest">Strongest</string>
+    <string name="watchlist_history_sort_most_seen">Most seen</string>
+    <string name="watchlist_history_count_summary">%1$d sightings · %2$d networks</string>
+    <string name="watchlist_history_group_sightings">%1$d sightings</string>
+    <string name="watchlist_matched_by_name_short">matched by name</string>
+    <string name="watchlist_matched_by_ap_short">matched by AP</string>
+    <string name="watchlist_history_best_dbm">best dBm</string>
+    <string name="watchlist_history_group_subtitle">%1$s · %2$s · %3$s</string>
+    <string name="watchlist_history_map_no_locations">No sightings have a recorded location yet.</string>
+    <string name="watchlist_history_map_offline">Map needs a connection to load.</string>
+    <string name="watchlist_history_open_detail">Open sighting details</string>
+    <string name="watchlist_map_view_list">List view</string>
+    <string name="watchlist_map_view_map">Map view</string>
+
+    <!-- Watchlist redesign: sighting details -->
+    <string name="watchlist_detail_subtitle">%1$s · %2$d sightings</string>
+    <string name="watchlist_detail_strongest_hint">Tap a pin or sighting to sync</string>
+    <string name="watchlist_detail_location_line">%1$s · via %2$s</string>
+    <string name="watchlist_detail_latlng">%1$s, %2$s</string>
+    <string name="watchlist_detail_clear_title">Clear this network\'s history?</string>
+    <string name="watchlist_detail_clear_message">This removes the sightings for \"%1$s\". The watched network is kept.</string>
+    <string name="watchlist_detail_no_sightings">No sightings recorded.</string>
 
     <!-- Watchlist settings -->
     <string name="watchlist_settings_title">Watchlist</string>

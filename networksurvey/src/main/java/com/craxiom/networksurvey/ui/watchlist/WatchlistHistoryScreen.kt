@@ -1,10 +1,5 @@
 package com.craxiom.networksurvey.ui.watchlist
 
-import android.content.ActivityNotFoundException
-import android.content.Intent
-import android.net.Uri
-import android.text.format.DateUtils
-import android.widget.Toast
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -15,15 +10,20 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.LocationOn
+import androidx.compose.material.icons.filled.Place
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
@@ -34,24 +34,26 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.core.net.toUri
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.craxiom.networksurvey.R
-import com.craxiom.networksurvey.logging.db.model.WatchlistHitEntity
+import com.craxiom.networksurvey.ui.common.NsSegmentedToggle
+import com.craxiom.networksurvey.ui.common.SegmentedOption
 import com.craxiom.networksurvey.ui.common.dialogs.NsConfirmationDialog
 
 /**
- * The Watchlist history screen: a chronological log of past "Seen" detections, with a link to view
- * a sighting on a map and an action to clear the log.
+ * The Watchlist history screen: sightings grouped by watched network, with full-text search, a sort
+ * control, and a List/Map view toggle. Tapping a network opens its sighting details. The map view
+ * plots every located sighting colored per network with a legend.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun WatchlistHistoryScreen(
     viewModel: WatchlistHistoryViewModel,
-    onNavigateUp: () -> Unit
+    onNavigateUp: () -> Unit,
+    onOpenDetail: (Long) -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     var showClearDialog by remember { mutableStateOf(false) }
@@ -59,7 +61,7 @@ fun WatchlistHistoryScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(stringResource(R.string.watchlist_history_title)) },
+                title = { Text(stringResource(R.string.watchlist_history_action)) },
                 navigationIcon = {
                     IconButton(onClick = onNavigateUp) {
                         Icon(
@@ -69,7 +71,27 @@ fun WatchlistHistoryScreen(
                     }
                 },
                 actions = {
-                    if (uiState.hits.isNotEmpty()) {
+                    NsSegmentedToggle(
+                        options = listOf(
+                            SegmentedOption(
+                                stringResource(R.string.watchlist_history_view_list),
+                                Icons.AutoMirrored.Filled.List,
+                                stringResource(R.string.watchlist_map_view_list)
+                            ),
+                            SegmentedOption(
+                                stringResource(R.string.watchlist_history_view_map),
+                                Icons.Default.Place,
+                                stringResource(R.string.watchlist_map_view_map)
+                            ),
+                        ),
+                        selectedIndex = if (uiState.mode == HistoryViewMode.MAP) 1 else 0,
+                        onSelected = {
+                            viewModel.setMode(if (it == 1) HistoryViewMode.MAP else HistoryViewMode.LIST)
+                        },
+                        fillWidth = false,
+                        modifier = Modifier.padding(end = 4.dp)
+                    )
+                    if (uiState.totalSightings > 0) {
                         IconButton(onClick = { showClearDialog = true }) {
                             Icon(
                                 Icons.Default.Delete,
@@ -86,25 +108,9 @@ fun WatchlistHistoryScreen(
                 .fillMaxSize()
                 .padding(paddingValues)
         ) {
-            if (uiState.hits.isEmpty()) {
-                Text(
-                    text = stringResource(R.string.watchlist_history_empty),
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier
-                        .align(Alignment.Center)
-                        .padding(24.dp)
-                )
-            } else {
-                LazyColumn(
-                    modifier = Modifier.fillMaxSize(),
-                    contentPadding = PaddingValues(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    items(items = uiState.hits, key = { it.id }) { hit ->
-                        WatchlistHitRow(hit)
-                    }
-                }
+            when (uiState.mode) {
+                HistoryViewMode.LIST -> HistoryListContent(uiState, viewModel, onOpenDetail)
+                HistoryViewMode.MAP -> HistoryMapContent(uiState, onOpenDetail)
             }
         }
     }
@@ -122,75 +128,112 @@ fun WatchlistHistoryScreen(
 }
 
 @Composable
-private fun WatchlistHitRow(hit: WatchlistHitEntity) {
-    val context = LocalContext.current
-
-    val matchedText = when (hit.matchedField) {
-        WatchlistHitEntity.MATCHED_FIELD_BSSID -> stringResource(R.string.watchlist_matched_bssid)
-        else -> stringResource(R.string.watchlist_matched_ssid)
-    }
-    val whenText = DateUtils.getRelativeTimeSpanString(
-        hit.timestamp,
-        System.currentTimeMillis(),
-        DateUtils.MINUTE_IN_MILLIS
-    ).toString()
-
-    Card(modifier = Modifier.fillMaxWidth()) {
-        Row(
+private fun HistoryListContent(
+    uiState: WatchlistHistoryUiState,
+    viewModel: WatchlistHistoryViewModel,
+    onOpenDetail: (Long) -> Unit
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(horizontal = 14.dp),
+        verticalArrangement = Arrangement.spacedBy(11.dp)
+    ) {
+        OutlinedTextField(
+            value = uiState.query,
+            onValueChange = viewModel::setQuery,
+            placeholder = { Text(stringResource(R.string.watchlist_history_search_hint)) },
+            leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
+            singleLine = true,
+            shape = RoundedCornerShape(999.dp),
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(start = 16.dp, top = 12.dp, bottom = 12.dp, end = 4.dp),
+                .padding(top = 8.dp)
+        )
+        Row(
+            modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = hit.label ?: hit.ssid ?: hit.bssid ?: "",
-                    style = MaterialTheme.typography.titleMedium
-                )
-                Text(
-                    text = "$matchedText  -  ${
-                        stringResource(
-                            R.string.watchlist_seen_relative,
-                            whenText
-                        )
-                    }",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                Text(
-                    text = stringResource(R.string.watchlist_signal_dbm, hit.rssi),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
+            HistorySortChip(sort = uiState.sort, onSortSelected = viewModel::setSort)
+            Text(
+                text = stringResource(
+                    R.string.watchlist_history_count_summary,
+                    uiState.totalSightings,
+                    uiState.networkCount
+                ),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.End,
+                modifier = Modifier
+                    .weight(1f)
+                    .padding(start = 8.dp)
+            )
+        }
+        if (uiState.groups.isEmpty()) {
+            val message = if (uiState.query.isNotBlank()) {
+                stringResource(R.string.watchlist_history_no_matches)
+            } else {
+                stringResource(R.string.watchlist_history_empty)
             }
-            val latitude = hit.latitude
-            val longitude = hit.longitude
-            if (latitude != null && longitude != null) {
-                IconButton(onClick = {
-                    val label = hit.label ?: hit.ssid ?: hit.bssid ?: ""
-                    val uri =
-                        "geo:$latitude,$longitude?q=$latitude,$longitude(${Uri.encode(label)})".toUri()
-                    val mapIntent = Intent(Intent.ACTION_VIEW, uri)
-                    // Launch directly and catch the failure: package-visibility filtering on modern
-                    // Android makes resolveActivity() return null for implicit intents, so guarding
-                    // with it would make this button silently do nothing.
-                    try {
-                        context.startActivity(mapIntent)
-                    } catch (e: ActivityNotFoundException) {
-                        Toast.makeText(
-                            context,
-                            context.getString(R.string.watchlist_no_map_app),
-                            Toast.LENGTH_SHORT
-                        ).show()
-                    }
-                }) {
-                    Icon(
-                        Icons.Default.LocationOn,
-                        contentDescription = stringResource(R.string.watchlist_view_on_map),
-                        tint = MaterialTheme.colorScheme.primary
-                    )
+            EmptyMessage(message)
+        } else {
+            LazyColumn(
+                modifier = Modifier.fillMaxSize(),
+                contentPadding = PaddingValues(bottom = 16.dp),
+                verticalArrangement = Arrangement.spacedBy(11.dp)
+            ) {
+                items(items = uiState.groups, key = { it.entry.id }) { group ->
+                    WatchlistHistoryGroupRow(
+                        group = group,
+                        onClick = { onOpenDetail(group.entry.id) })
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun HistoryMapContent(
+    uiState: WatchlistHistoryUiState,
+    onOpenDetail: (Long) -> Unit
+) {
+    if (uiState.mapPoints.isEmpty()) {
+        EmptyMessage(stringResource(R.string.watchlist_history_map_no_locations))
+        return
+    }
+    Box(modifier = Modifier.fillMaxSize()) {
+        WatchlistMap(
+            points = uiState.mapPoints,
+            selectedId = null,
+            onPointClick = { id -> id.toLongOrNull()?.let(onOpenDetail) },
+            modifier = Modifier.fillMaxSize()
+        )
+        Card(
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .fillMaxWidth()
+                .padding(14.dp),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh)
+        ) {
+            Column(
+                modifier = Modifier.padding(horizontal = 14.dp, vertical = 11.dp),
+                verticalArrangement = Arrangement.spacedBy(9.dp)
+            ) {
+                uiState.legend.forEach { WatchlistMapLegendRow(it) }
+            }
+        }
+    }
+}
+
+@Composable
+private fun EmptyMessage(message: String) {
+    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+        Text(
+            text = message,
+            style = MaterialTheme.typography.bodyLarge,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.padding(24.dp)
+        )
     }
 }

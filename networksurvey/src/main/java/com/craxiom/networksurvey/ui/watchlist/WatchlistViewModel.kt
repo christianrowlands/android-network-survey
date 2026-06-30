@@ -3,6 +3,7 @@ package com.craxiom.networksurvey.ui.watchlist
 import android.app.Application
 import android.widget.Toast
 import androidx.core.app.NotificationManagerCompat
+import androidx.core.content.edit
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.preference.PreferenceManager
@@ -17,7 +18,6 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import androidx.core.content.edit
 
 /**
  * ViewModel for the Watchlist management screen. Exposes the user's watched networks (with each
@@ -36,10 +36,23 @@ class WatchlistViewModel(application: Application) : AndroidViewModel(applicatio
         viewModelScope.launch {
             combine(
                 watchlistDao.observeAll(),
+                watchlistHitDao.observeGroupSummaries(),
                 watchlistHitDao.observeLastSeen()
-            ) { entries, lastSeenList ->
-                val lastSeenByEntry = lastSeenList.associate { it.entryId to it.lastSeen }
-                entries.map { WatchlistRowItem(it, lastSeenByEntry[it.id]) }
+            ) { entries, summaries, lastSeenList ->
+                // Count and last-seen time come from one flow so the row never flashes a count without
+                // a matching time; the latest sighting's RSSI (needing the MAX(timestamp) bare-column
+                // trick) comes from a second flow and may lag a single emission (a muted dBm at worst).
+                val summaryByEntry = summaries.associateBy { it.entryId }
+                val lastRssiByEntry = lastSeenList.associateBy { it.entryId }
+                entries.map { entry ->
+                    val summary = summaryByEntry[entry.id]
+                    WatchlistRowItem(
+                        entry = entry,
+                        lastSeen = summary?.lastSeen,
+                        lastRssi = lastRssiByEntry[entry.id]?.lastRssi,
+                        sightingsCount = summary?.sightings ?: 0
+                    )
+                }
             }.collect { items ->
                 _uiState.update { it.copy(items = items) }
             }
@@ -217,11 +230,15 @@ class WatchlistViewModel(application: Application) : AndroidViewModel(applicatio
 }
 
 /**
- * A single row on the management screen: a watched network plus its most recent "Seen" time.
+ * A single row on the management screen: a watched network plus its most recent "Seen" time, the
+ * signal of that latest sighting, and how many times it has been seen. [lastRssi] is null and
+ * [sightingsCount] is 0 when the network has never been seen.
  */
 data class WatchlistRowItem(
     val entry: WatchlistEntryEntity,
-    val lastSeen: Long?
+    val lastSeen: Long?,
+    val lastRssi: Int?,
+    val sightingsCount: Int
 )
 
 /**
