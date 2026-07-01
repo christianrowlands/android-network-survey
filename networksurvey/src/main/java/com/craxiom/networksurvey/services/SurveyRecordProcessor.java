@@ -254,8 +254,9 @@ public class SurveyRecordProcessor
     /**
      * Gets the current Mission ID to stamp on a survey record. The value is owned by the
      * {@link NetworkSurveyService} so that it can roll per survey session. Returns an empty string
-     * only in the unexpected case where the service reference has not been set yet (records are not
-     * generated before that happens).
+     * when no mission relevant survey has started yet (only OpenCelliD/BeaconDB upload scans are
+     * stamped in that window, and they discard the Mission ID), or in the unexpected case where the
+     * service reference has not been set yet.
      *
      * @return The current Mission ID, never null.
      */

@@ -193,10 +193,9 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
     // Mission ID tracking. The Mission ID identifies one survey session and rolls when the first
     // mission relevant survey of a session starts (OpenCelliD/BeaconDB uploads do not count).
     // missionId is the rolled value shown to the user; it is null until the first real mission and
-    // is retained as the most recent value after a session ends. bootstrapMissionId is only a
-    // non-null fallback used to stamp records before any real mission has started (for example
-    // when only OpenCelliD/BeaconDB scanning is running, where the value is discarded anyway).
-    private volatile String bootstrapMissionId;
+    // is retained as the most recent value after a session ends. Before the first roll,
+    // getMissionIdForRecords() returns an empty string; the only records stamped in that window are
+    // OpenCelliD/BeaconDB upload scans, which discard the Mission ID.
     private volatile String missionId = null;
     private boolean missionSessionActive = false;
     private final Set<IMissionIdListener> missionIdListeners = new CopyOnWriteArraySet<>();
@@ -237,7 +236,6 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
         serviceHandler = new Handler(serviceLooper);
 
         deviceId = createDeviceId();
-        bootstrapMissionId = generateMissionId();
         deviceStatusCsvLogger = new DeviceStatusCsvLogger(this);
 
         primaryLocationListener = new GpsListener();
@@ -318,19 +316,19 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
             final boolean autoStartWifiLogging = PreferenceUtils.getAutoStartPreference(NetworkSurveyConstants.PROPERTY_AUTO_START_WIFI_LOGGING, false, applicationContext);
             if (autoStartWifiLogging && !wifiController.isLoggingEnabled())
             {
-                wifiController.toggleLogging(true);
+                toggleWifiLogging(true);
             }
 
             final boolean autoStartBluetoothLogging = PreferenceUtils.getAutoStartPreference(NetworkSurveyConstants.PROPERTY_AUTO_START_BLUETOOTH_LOGGING, false, applicationContext);
             if (autoStartBluetoothLogging && !bluetoothController.isLoggingEnabled())
             {
-                bluetoothController.toggleLogging(true);
+                toggleBluetoothLogging(true);
             }
 
             final boolean autoStartGnssLogging = PreferenceUtils.getAutoStartPreference(NetworkSurveyConstants.PROPERTY_AUTO_START_GNSS_LOGGING, false, applicationContext);
             if (autoStartGnssLogging && !gnssController.isLoggingEnabled())
             {
-                gnssController.toggleLogging(true);
+                toggleGnssLogging(true);
             }
 
             final boolean autoStartPhoneStateLogging = PreferenceUtils.getAutoStartPreference(NetworkSurveyConstants.PROPERTY_AUTO_START_PHONE_STATE_LOGGING, false, applicationContext);
@@ -381,15 +379,15 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
             }
             if (startWifi && !wifiController.isLoggingEnabled())
             {
-                wifiController.toggleLogging(true);
+                toggleWifiLogging(true);
             }
             if (startBluetooth && !bluetoothController.isLoggingEnabled())
             {
-                bluetoothController.toggleLogging(true);
+                toggleBluetoothLogging(true);
             }
             if (startGnss && !gnssController.isLoggingEnabled())
             {
-                gnssController.toggleLogging(true);
+                toggleGnssLogging(true);
             }
             if (startCdr && !isCdrLoggingEnabled()) toggleCdrLogging(true);
 
@@ -625,7 +623,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
         MqttConnectionInfo networkSurveyConnection = (MqttConnectionInfo) connectionInfo;
 
         // Track survey session when MQTT streaming starts
-        onSurveyStarted();
+        onSurveyStarted(true);
         updateWakeLock();
 
         // Saving the MQTT protocol streaming flags here allows the Dashboard UI to get notified
@@ -1248,7 +1246,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
         {
             if (enable && result)
             {
-                onSurveyStarted();
+                onSurveyStarted(true);
 
                 // Auto-include phone state with cellular if the preference is enabled
                 if (shouldAutoIncludePhoneState())
@@ -1298,7 +1296,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
         {
             if (enable && result)
             {
-                onSurveyStarted();
+                onSurveyStarted(true);
             } else if (!enable && !result) onSurveyStopped();
             updateWakeLock();
         }
@@ -1322,7 +1320,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
         {
             if (enable && result)
             {
-                onSurveyStarted();
+                onSurveyStarted(true);
             } else if (!enable && !result) onSurveyStopped();
             updateWakeLock();
         }
@@ -1346,7 +1344,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
         {
             if (enable && result)
             {
-                onSurveyStarted();
+                onSurveyStarted(true);
             } else if (!enable && !result) onSurveyStopped();
             updateWakeLock();
         }
@@ -1377,17 +1375,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
     public Boolean togglePhoneStateLogging(boolean enable)
     {
         cellularController.setPhoneStateAutoStartedByCellular(false);
-
-        Boolean result = cellularController.togglePhoneStateLogging(enable);
-        if (result != null)
-        {
-            if (enable && result)
-            {
-                onSurveyStarted();
-            } else if (!enable && !result) onSurveyStopped();
-            updateWakeLock();
-        }
-        return result;
+        return toggleImmediateFireSurvey(enable, cellularController::togglePhoneStateLogging);
     }
 
     public boolean isPhoneStateLoggingEnabled()
@@ -1406,15 +1394,57 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
 
     public Boolean toggleCdrLogging(boolean enable)
     {
-        Boolean result = cellularController.toggleCdrLogging(enable);
+        return toggleImmediateFireSurvey(enable, cellularController::toggleCdrLogging);
+    }
+
+    /**
+     * A controller logging toggle that returns the new logging state (true enabled, false disabled)
+     * or null when the toggle was unsuccessful.
+     */
+    @FunctionalInterface
+    private interface LoggingToggle
+    {
+        Boolean toggle(boolean enable);
+    }
+
+    /**
+     * Toggles a survey whose controller registers a listener that can emit a record immediately on
+     * registration (phone state and CDR both register for {@code LISTEN_SERVICE_STATE}, which
+     * delivers the current state right away). The Mission ID must be rolled before that registration
+     * so the immediate record cannot capture a pre-roll value, but the controller toggle is what
+     * performs the registration, so the roll is done optimistically first and undone if the toggle
+     * reports the start failed.
+     *
+     * @param enable           True to start the survey, false to stop it.
+     * @param controllerToggle The controller toggle to invoke.
+     * @return The controller's result: the new logging state, or null if the toggle was unsuccessful.
+     */
+    private Boolean toggleImmediateFireSurvey(boolean enable, LoggingToggle controllerToggle)
+    {
+        final String missionIdBeforeStart;
+        final boolean missionSessionActiveBeforeStart;
+        synchronized (this)
+        {
+            missionIdBeforeStart = missionId;
+            missionSessionActiveBeforeStart = missionSessionActive;
+        }
+
+        if (enable) onSurveyStarted(true);
+
+        final Boolean result = controllerToggle.toggle(enable);
         if (result != null)
         {
-            if (enable && result)
-            {
-                onSurveyStarted();
-            } else if (!enable && !result) onSurveyStopped();
+            if (!enable && !result) onSurveyStopped();
             updateWakeLock();
         }
+
+        // The controller returns null when the start failed. Undo the optimistic roll so a failed
+        // start never leaves behind a rolled Mission ID that no record will ever carry.
+        if (enable && result == null)
+        {
+            undoOptimisticStart(missionIdBeforeStart, missionSessionActiveBeforeStart);
+        }
+
         return result;
     }
 
@@ -1465,8 +1495,9 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
                     surveysStarted.add(SurveyTypes.WIFI);
                 }
 
-                // Track survey session
-                onSurveyStarted();
+                // Track survey session. OpenCelliD/BeaconDB uploads discard the Mission ID, so this
+                // is not a mission relevant survey and must not roll a new Mission ID.
+                onSurveyStarted(false);
                 updateWakeLock();
 
                 // Generate appropriate success message based on what was started
@@ -1562,6 +1593,12 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
                             getString(R.string.ns_analytics_survey_no_protocols_enabled));
                 }
 
+                // Roll the Mission ID before registering any listener. The phone state listener (and
+                // device status) can emit a record as soon as it is registered, so the roll must be
+                // committed first or that record would capture a pre-roll Mission ID. This is placed
+                // after the no-protocols bail-out above so an abandoned start never rolls.
+                onSurveyStarted(true);
+
                 if (cellularEnabled)
                 {
                     registerCellularSurveyRecordListener(nsAnalyticsDataStore);
@@ -1586,7 +1623,6 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
                 // Always register for device status
                 registerDeviceStatusListener(nsAnalyticsDataStore);
 
-                onSurveyStarted();
                 updateWakeLock();
 
                 Timber.i("NS Analytics survey started - Cellular: %b, WiFi: %b, Bluetooth: %b, GNSS: %b",
@@ -1911,8 +1947,18 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
 
     /**
      * Called when any survey starts. Initializes session tracking if this is the first survey.
+     * <p>
+     * Callers pass whether the survey they are starting counts toward the Mission ID. This must be
+     * driven by caller intent rather than reading back the survey enabled flags, because those flags
+     * are set by the same controller call that registers the immediate-fire phone state / CDR service
+     * state listener. Rolling here first (before that registration) is what guarantees the immediate
+     * record cannot capture a pre-roll Mission ID.
+     *
+     * @param missionRelevant true if the starting survey counts toward the Mission ID (every survey
+     *                        except OpenCelliD/BeaconDB upload scanning). When true and no mission
+     *                        session is active yet, a fresh Mission ID is rolled.
      */
-    private void onSurveyStarted()
+    private void onSurveyStarted(boolean missionRelevant)
     {
         final String missionIdSnapshot;
         final boolean missionSessionActiveSnapshot;
@@ -1929,8 +1975,8 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
 
             // Roll the Mission ID only on the transition to the first mission relevant survey of a
             // session. Adding another survey to an already running session keeps the same value,
-            // and OpenCelliD/BeaconDB only sessions never roll (they are excluded from the gate).
-            if (!missionSessionActive && isAnyMissionRelevantSurveyActive())
+            // and OpenCelliD/BeaconDB only sessions never roll (they pass missionRelevant = false).
+            if (missionRelevant && !missionSessionActive)
             {
                 missionSessionActive = true;
                 missionId = generateMissionId();
@@ -1988,6 +2034,52 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
     }
 
     /**
+     * Undoes the optimistic session start and Mission ID roll performed by
+     * {@link #toggleImmediateFireSurvey(boolean, LoggingToggle)} when the controller reports the
+     * start failed. Unlike {@link #onSurveyStopped()} (which retains the Mission ID as the most
+     * recent value for a real session end), this restores the Mission ID to its pre-start value so a
+     * failed start does not leave behind a rolled Mission ID that no record will ever carry. Session
+     * tracking is cleared only when nothing else is running.
+     *
+     * @param missionIdBeforeStart            The Mission ID value captured before the optimistic roll.
+     * @param missionSessionActiveBeforeStart Whether a mission session was already active before the
+     *                                        optimistic roll (if so, this attempt did not roll).
+     */
+    private void undoOptimisticStart(String missionIdBeforeStart, boolean missionSessionActiveBeforeStart)
+    {
+        final String missionIdSnapshot;
+        final boolean missionSessionActiveSnapshot;
+        final boolean rolledBack;
+        synchronized (this)
+        {
+            // onSurveyStarted(true) only rolls when no mission session was active yet, so only undo
+            // the Mission ID when this attempt is the one that rolled it.
+            if (!missionSessionActiveBeforeStart && missionSessionActive)
+            {
+                missionSessionActive = false;
+                missionId = missionIdBeforeStart;
+                rolledBack = true;
+            } else
+            {
+                rolledBack = false;
+            }
+
+            // Clear session tracking if this attempt started it and nothing else is running.
+            if (!isAnySurveyActive())
+            {
+                surveySessionStartTime = null;
+                surveySessionRecordCount.set(0);
+                surveySessionUploadRecordCount.set(0);
+            }
+            missionIdSnapshot = missionId;
+            missionSessionActiveSnapshot = missionSessionActive;
+        }
+
+        // Notify outside the lock so the UI settles back to the pre-start Mission ID.
+        if (rolledBack) notifyMissionIdListeners(missionIdSnapshot, missionSessionActiveSnapshot);
+    }
+
+    /**
      * Called by the {@link GrpcConnectionService} when the gRPC streaming connection becomes
      * connected or disconnected. gRPC streaming is a mission relevant survey, but unlike MQTT the
      * connection is driven from a separate service, so it must signal the survey session here.
@@ -2001,7 +2093,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
     {
         if (connected)
         {
-            onSurveyStarted();
+            onSurveyStarted(true);
         } else
         {
             onSurveyStopped();
@@ -2023,15 +2115,16 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
     }
 
     /**
-     * @return The Mission ID to stamp on survey records. This is always non-null: it returns the
-     * current rolled Mission ID, or the bootstrap value if no mission relevant survey has started
-     * yet (for example when only OpenCelliD/BeaconDB scanning is running, where the value is
-     * discarded before reaching any consumer that uses it).
+     * @return The Mission ID to stamp on survey records: the current rolled Mission ID, or an empty
+     * string if no mission relevant survey has started yet. The empty string case is only reachable
+     * when nothing but OpenCelliD/BeaconDB scanning is running, where the value is discarded before
+     * reaching any consumer that uses it. Every mission relevant survey rolls the Mission ID before
+     * registering any record listener, so retained records always carry the rolled value.
      */
     public String getMissionIdForRecords()
     {
         final String currentMissionId = missionId;
-        return currentMissionId != null ? currentMissionId : bootstrapMissionId;
+        return currentMissionId != null ? currentMissionId : "";
     }
 
     /**
