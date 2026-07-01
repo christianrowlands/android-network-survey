@@ -23,7 +23,12 @@ data class MapUiSettings(
     val zoomGesturesEnabled: Boolean = true,
     val logoGravity: Int = 0,
     val attributionGravity: Int = 0,
-    val attributionTintColor: Color = Color.Unspecified
+    val attributionTintColor: Color = Color.Unspecified,
+    /**
+     * Whether the MapLibre attribution ("i") control is shown. Off by default (most maps hide it and
+     * position it elsewhere); the Watchlist maps opt in and place it via [UiSettings] margins.
+     */
+    val attributionEnabled: Boolean = false,
 )
 
 /**

@@ -34,6 +34,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -201,18 +203,24 @@ private fun HistoryMapContent(
         EmptyMessage(stringResource(R.string.watchlist_history_map_no_locations))
         return
     }
+    val density = LocalDensity.current
+    // Space the legend occupies from the bottom, so the map frames pins and the attribution above it.
+    var legendInset by remember { mutableStateOf(0.dp) }
     Box(modifier = Modifier.fillMaxSize()) {
         WatchlistMap(
             points = uiState.mapPoints,
             selectedId = null,
             onPointClick = { id -> id.toLongOrNull()?.let(onOpenDetail) },
-            modifier = Modifier.fillMaxSize()
+            modifier = Modifier.fillMaxSize(),
+            bottomInset = legendInset,
+            attributionEnabled = true
         )
         Card(
             modifier = Modifier
                 .align(Alignment.BottomCenter)
                 .fillMaxWidth()
-                .padding(14.dp),
+                .padding(14.dp)
+                .onSizeChanged { legendInset = with(density) { it.height.toDp() } + 14.dp },
             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh)
         ) {
             Column(

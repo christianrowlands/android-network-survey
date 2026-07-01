@@ -1338,8 +1338,17 @@
     <string name="watchlist_map_view_map">Map view</string>
 
     <!-- Watchlist redesign: sighting details -->
-    <string name="watchlist_detail_subtitle">%1$s · %2$d sightings</string>
-    <string name="watchlist_detail_strongest_hint">Tap a pin or sighting to sync</string>
+    <plurals name="watchlist_detail_subtitle">
+        <item quantity="one">%1$s · %2$d sighting</item>
+        <item quantity="other">%1$s · %2$d sightings</item>
+    </plurals>
+    <string name="watchlist_detail_sort_strongest">Strongest first</string>
+    <string name="watchlist_detail_sort_newest">Newest first</string>
+    <string name="watchlist_detail_sort_action">Change sort order</string>
+    <plurals name="watchlist_sightings_count">
+        <item quantity="one">%d sighting</item>
+        <item quantity="other">%d sightings</item>
+    </plurals>
     <string name="watchlist_detail_location_line">%1$s · via %2$s</string>
     <string name="watchlist_detail_latlng">%1$s, %2$s</string>
     <string name="watchlist_detail_clear_title">Clear this network\'s history?</string>

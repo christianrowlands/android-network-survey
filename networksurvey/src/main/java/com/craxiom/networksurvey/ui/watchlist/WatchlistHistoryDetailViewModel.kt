@@ -14,6 +14,9 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
+/** How a single network's sightings are ordered on the sighting-details screen. */
+enum class DetailSort { STRONGEST, NEWEST }
+
 /**
  * ViewModel for a single watched network's sighting-details screen. Loads the entry and its sightings
  * (newest first), tracks which sighting is selected so the map and list can stay in sync, and backs
@@ -30,6 +33,7 @@ class WatchlistHistoryDetailViewModel(application: Application) : AndroidViewMod
 
     private val entryId = MutableStateFlow<Long?>(null)
     private val selectedHitId = MutableStateFlow<Long?>(null)
+    private val sort = MutableStateFlow(DetailSort.STRONGEST)
 
     val uiState = entryId.flatMapLatest { id ->
         if (id == null) {
@@ -38,8 +42,14 @@ class WatchlistHistoryDetailViewModel(application: Application) : AndroidViewMod
             combine(
                 entryDao.observeById(id),
                 hitDao.observeForEntry(id),
-                selectedHitId
-            ) { entry, hits, selected ->
+                selectedHitId,
+                sort
+            ) { entry, hits, selected, sortOrder ->
+                // The DAO already returns hits newest-first, so NEWEST keeps that order.
+                val sortedHits = when (sortOrder) {
+                    DetailSort.STRONGEST -> hits.sortedByDescending { it.rssi }
+                    DetailSort.NEWEST -> hits
+                }
                 val located = hits.filter { it.latitude != null && it.longitude != null }
                 val matchedByName = entry?.let { !it.ssid.isNullOrBlank() }
                     ?: (hits.firstOrNull()?.matchedField != WatchlistHitEntity.MATCHED_FIELD_BSSID)
@@ -47,7 +57,7 @@ class WatchlistHistoryDetailViewModel(application: Application) : AndroidViewMod
                     title = entry?.label ?: entry?.ssid ?: entry?.bssid
                     ?: hits.firstOrNull()?.label ?: "",
                     matchedByName = matchedByName,
-                    sightings = hits,
+                    sightings = sortedHits,
                     mapPoints = located.map { hit ->
                         WatchlistMapPoint(
                             id = hit.id.toString(),
@@ -57,6 +67,7 @@ class WatchlistHistoryDetailViewModel(application: Application) : AndroidViewMod
                         )
                     },
                     selectedHitId = selected,
+                    sort = sortOrder,
                     loaded = true
                 )
             }
@@ -75,6 +86,10 @@ class WatchlistHistoryDetailViewModel(application: Application) : AndroidViewMod
         selectedHitId.value = hitId
     }
 
+    fun setSort(value: DetailSort) {
+        sort.value = value
+    }
+
     fun clearHistory() {
         val id = entryId.value ?: return
         viewModelScope.launch { hitDao.deleteForEntry(id) }
@@ -91,6 +106,7 @@ data class WatchlistDetailUiState(
     val sightings: List<WatchlistHitEntity> = emptyList(),
     val mapPoints: List<WatchlistMapPoint> = emptyList(),
     val selectedHitId: Long? = null,
+    val sort: DetailSort = DetailSort.STRONGEST,
     val loaded: Boolean = false,
 ) {
     val sightingCount: Int get() = sightings.size

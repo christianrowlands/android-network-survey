@@ -302,7 +302,7 @@ internal inline fun MapUpdater(
             }
 
             map.uiSettings.isLogoEnabled = false
-            map.uiSettings.isAttributionEnabled = false
+            set(uiSettings.attributionEnabled) { map.uiSettings.isAttributionEnabled = it }
             map.uiSettings.compassGravity = Gravity.END or Gravity.TOP
             map.uiSettings.setCompassMargins(0, totalTopPaddingPxPx, 24, 0)
             set(uiSettings.compassEnabled) { map.uiSettings.isCompassEnabled = it }
