@@ -886,6 +886,10 @@ public class PreferenceUtils
         {
             edit.putBoolean(NetworkSurveyConstants.PROPERTY_MQTT_PHONE_STATE_STREAM_ENABLED, mqttConnectionSettings.phoneStateStreamEnabled());
         }
+        if (mqttConnectionSettings.watchlistStreamEnabled() != null)
+        {
+            edit.putBoolean(NetworkSurveyConstants.PROPERTY_MQTT_WATCHLIST_STREAM_ENABLED, mqttConnectionSettings.watchlistStreamEnabled());
+        }
 
         edit.apply();
     }
@@ -905,6 +909,7 @@ public class PreferenceUtils
         editor.putBoolean(NetworkSurveyConstants.PROPERTY_MQTT_GNSS_STREAM_ENABLED, info.isGnssStreamEnabled());
         editor.putBoolean(NetworkSurveyConstants.PROPERTY_MQTT_DEVICE_STATUS_STREAM_ENABLED, info.isDeviceStatusStreamEnabled());
         editor.putBoolean(NetworkSurveyConstants.PROPERTY_MQTT_PHONE_STATE_STREAM_ENABLED, info.isPhoneStateStreamEnabled());
+        editor.putBoolean(NetworkSurveyConstants.PROPERTY_MQTT_WATCHLIST_STREAM_ENABLED, info.isWatchlistStreamEnabled());
 
         editor.apply();
     }

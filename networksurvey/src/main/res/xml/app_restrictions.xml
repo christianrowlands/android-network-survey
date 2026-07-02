@@ -133,6 +133,13 @@
         android:title="@string/device_status_stream_title" />
 
     <restriction
+        android:defaultValue="true"
+        android:description="@string/watchlist_stream_description"
+        android:key="watchlist_stream_enabled"
+        android:restrictionType="bool"
+        android:title="@string/watchlist_stream_title" />
+
+    <restriction
         android:description="@string/mqtt_topic_prefix_description"
         android:key="mqtt_topic_prefix"
         android:restrictionType="string"

@@ -55,6 +55,7 @@ public class MqttFragment extends AConnectionFragment<NetworkSurveyService.Surve
     private MaterialSwitch bluetoothStreamToggleSwitch;
     private MaterialSwitch gnssStreamToggleSwitch;
     private MaterialSwitch deviceStatusStreamToggleSwitch;
+    private MaterialSwitch watchlistStreamToggleSwitch;
 
     private Button qrCodeScanButton;
 
@@ -64,6 +65,7 @@ public class MqttFragment extends AConnectionFragment<NetworkSurveyService.Surve
     private boolean bluetoothStreamEnabled = true;
     private boolean gnssStreamEnabled = true;
     private boolean deviceStatusStreamEnabled = true;
+    private boolean watchlistStreamEnabled = true;
 
     private final ActivityResultLauncher<String> cameraPermissionRequestLauncher =
             registerForActivityResult(new ActivityResultContracts.RequestPermission(), isGranted -> {
@@ -121,6 +123,7 @@ public class MqttFragment extends AConnectionFragment<NetworkSurveyService.Surve
         bluetoothStreamToggleSwitch = inflatedStub.findViewById(R.id.streamBluetoothToggleSwitch);
         gnssStreamToggleSwitch = inflatedStub.findViewById(R.id.streamGnssToggleSwitch);
         deviceStatusStreamToggleSwitch = inflatedStub.findViewById(R.id.streamDeviceStatusToggleSwitch);
+        watchlistStreamToggleSwitch = inflatedStub.findViewById(R.id.streamWatchlistToggleSwitch);
         qrCodeScanButton = inflatedStub.findViewById(R.id.code_scan_button);
 
         bluetoothStreamToggleSwitch.setOnClickListener((buttonView) -> {
@@ -207,6 +210,7 @@ public class MqttFragment extends AConnectionFragment<NetworkSurveyService.Surve
         bluetoothStreamEnabled = mdmProperties.getBoolean(NetworkSurveyConstants.PROPERTY_MQTT_BLUETOOTH_STREAM_ENABLED, NetworkSurveyConstants.DEFAULT_MQTT_BLUETOOTH_STREAM_SETTING);
         gnssStreamEnabled = mdmProperties.getBoolean(NetworkSurveyConstants.PROPERTY_MQTT_GNSS_STREAM_ENABLED, NetworkSurveyConstants.DEFAULT_MQTT_GNSS_STREAM_SETTING);
         deviceStatusStreamEnabled = mdmProperties.getBoolean(NetworkSurveyConstants.PROPERTY_MQTT_DEVICE_STATUS_STREAM_ENABLED, NetworkSurveyConstants.DEFAULT_MQTT_DEVICE_STATUS_STREAM_SETTING);
+        watchlistStreamEnabled = mdmProperties.getBoolean(NetworkSurveyConstants.PROPERTY_MQTT_WATCHLIST_STREAM_ENABLED, NetworkSurveyConstants.DEFAULT_MQTT_WATCHLIST_STREAM_SETTING);
     }
 
     /**
@@ -223,6 +227,7 @@ public class MqttFragment extends AConnectionFragment<NetworkSurveyService.Surve
         bluetoothStreamToggleSwitch.setChecked(bluetoothStreamEnabled);
         gnssStreamToggleSwitch.setChecked(gnssStreamEnabled);
         deviceStatusStreamToggleSwitch.setChecked(deviceStatusStreamEnabled);
+        watchlistStreamToggleSwitch.setChecked(watchlistStreamEnabled);
     }
 
     @Override
@@ -234,6 +239,7 @@ public class MqttFragment extends AConnectionFragment<NetworkSurveyService.Surve
         bluetoothStreamEnabled = bluetoothStreamToggleSwitch.isChecked();
         gnssStreamEnabled = gnssStreamToggleSwitch.isChecked();
         deviceStatusStreamEnabled = deviceStatusStreamToggleSwitch.isChecked();
+        watchlistStreamEnabled = watchlistStreamToggleSwitch.isChecked();
     }
 
     @Override
@@ -245,6 +251,7 @@ public class MqttFragment extends AConnectionFragment<NetworkSurveyService.Surve
         editor.putBoolean(NetworkSurveyConstants.PROPERTY_MQTT_BLUETOOTH_STREAM_ENABLED, bluetoothStreamEnabled);
         editor.putBoolean(NetworkSurveyConstants.PROPERTY_MQTT_GNSS_STREAM_ENABLED, gnssStreamEnabled);
         editor.putBoolean(NetworkSurveyConstants.PROPERTY_MQTT_DEVICE_STATUS_STREAM_ENABLED, deviceStatusStreamEnabled);
+        editor.putBoolean(NetworkSurveyConstants.PROPERTY_MQTT_WATCHLIST_STREAM_ENABLED, watchlistStreamEnabled);
     }
 
     @Override
@@ -256,6 +263,7 @@ public class MqttFragment extends AConnectionFragment<NetworkSurveyService.Surve
         bluetoothStreamEnabled = sharedPreferences.getBoolean(NetworkSurveyConstants.PROPERTY_MQTT_BLUETOOTH_STREAM_ENABLED, NetworkSurveyConstants.DEFAULT_MQTT_BLUETOOTH_STREAM_SETTING);
         gnssStreamEnabled = sharedPreferences.getBoolean(NetworkSurveyConstants.PROPERTY_MQTT_GNSS_STREAM_ENABLED, NetworkSurveyConstants.DEFAULT_MQTT_GNSS_STREAM_SETTING);
         deviceStatusStreamEnabled = sharedPreferences.getBoolean(NetworkSurveyConstants.PROPERTY_MQTT_DEVICE_STATUS_STREAM_ENABLED, NetworkSurveyConstants.DEFAULT_MQTT_DEVICE_STATUS_STREAM_SETTING);
+        watchlistStreamEnabled = sharedPreferences.getBoolean(NetworkSurveyConstants.PROPERTY_MQTT_WATCHLIST_STREAM_ENABLED, NetworkSurveyConstants.DEFAULT_MQTT_WATCHLIST_STREAM_SETTING);
     }
 
     @Override
@@ -269,6 +277,7 @@ public class MqttFragment extends AConnectionFragment<NetworkSurveyService.Surve
         bluetoothStreamToggleSwitch.setEnabled(editable);
         gnssStreamToggleSwitch.setEnabled(editable);
         deviceStatusStreamToggleSwitch.setEnabled(editable);
+        watchlistStreamToggleSwitch.setEnabled(editable);
     }
 
     @Override
@@ -292,6 +301,7 @@ public class MqttFragment extends AConnectionFragment<NetworkSurveyService.Surve
                 gnssStreamEnabled,
                 deviceStatusStreamEnabled,
                 phoneStateStreamEnabled,
+                watchlistStreamEnabled,
                 topicPrefix,
                 null,
                 mqttQos);
@@ -379,6 +389,7 @@ public class MqttFragment extends AConnectionFragment<NetworkSurveyService.Surve
                 .gnssStreamEnabled(gnssStreamEnabled)
                 .deviceStatusStreamEnabled(deviceStatusStreamEnabled)
                 .phoneStateStreamEnabled(phoneStateStreamEnabled)
+                .watchlistStreamEnabled(watchlistStreamEnabled)
                 .build();
     }
 

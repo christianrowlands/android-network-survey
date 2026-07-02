@@ -2,12 +2,18 @@ package com.craxiom.networksurvey.services.watchlist
 
 import android.content.Context
 import androidx.preference.PreferenceManager
+import com.craxiom.messaging.WatchlistMatch
+import com.craxiom.messaging.WatchlistMatchData
+import com.craxiom.networksurvey.BuildConfig
 import com.craxiom.networksurvey.constants.NetworkSurveyConstants
+import com.craxiom.networksurvey.constants.WatchlistMessageConstants
+import com.craxiom.networksurvey.listeners.IWatchlistListener
 import com.craxiom.networksurvey.listeners.IWifiSurveyRecordListener
 import com.craxiom.networksurvey.logging.db.SurveyDatabase
 import com.craxiom.networksurvey.logging.db.model.WatchlistEntryEntity
 import com.craxiom.networksurvey.logging.db.model.WatchlistHitEntity
 import com.craxiom.networksurvey.model.WifiRecordWrapper
+import com.google.protobuf.FloatValue
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -15,6 +21,8 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import timber.log.Timber
+import java.util.concurrent.atomic.AtomicInteger
+import java.util.function.Supplier
 
 /**
  * Detects when a watched network (a {@link WatchlistEntryEntity}) comes into range and alerts the
@@ -28,11 +36,27 @@ import timber.log.Timber
  * absence window (a single dropped scan is not enough to mark a network absent, because real access
  * points flicker out of individual scan results). A per-entry cooldown is kept as a hard backstop.
  */
-class WatchlistDetectionManager(private val context: Context) : IWifiSurveyRecordListener {
+class WatchlistDetectionManager(
+    private val context: Context,
+    private val deviceId: String,
+    // Nullable because the supplier is implemented in Java, which cannot enforce non-null returns.
+    private val missionIdProvider: Supplier<String?>
+) : IWifiSurveyRecordListener {
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private val watchlistDao by lazy { SurveyDatabase.getInstance(context).watchlistDao() }
     private val watchlistHitDao by lazy { SurveyDatabase.getInstance(context).watchlistHitDao() }
+
+    /**
+     * Publishes match records (for example, over MQTT), or null when watchlist streaming is not active.
+     * Volatile because it is set from the service thread and read from the detection coroutine. The
+     * detection manager and MQTT connection have independent lifecycles, so the service (re)attaches
+     * this whenever a manager is created or the MQTT connection comes up or down.
+     */
+    @Volatile
+    var matchListener: IWatchlistListener? = null
+
+    private val matchRecordNumber = AtomicInteger(0)
 
     @Volatile
     private var enabledSnapshot: List<WatchlistEntryEntity> = emptyList()
@@ -148,14 +172,19 @@ class WatchlistDetectionManager(private val context: Context) : IWifiSurveyRecor
                 } else {
                     WatchlistHitEntity.MATCHED_FIELD_BSSID
                 }
-                val rssi = if (data.hasSignalStrength()) data.signalStrength.value.toInt() else 0
+                val signalStrength =
+                    if (data.hasSignalStrength()) data.signalStrength.value else null
                 val hasLocation = data.latitude != 0.0 || data.longitude != 0.0
                 return MatchInfo(
                     ssid = recordSsid,
                     bssid = recordBssid,
-                    rssi = rssi,
+                    signalStrength = signalStrength,
                     latitude = if (hasLocation) data.latitude else null,
                     longitude = if (hasLocation) data.longitude else null,
+                    altitude = data.altitude,
+                    accuracy = data.accuracy,
+                    locationAge = data.locationAge,
+                    speed = data.speed,
                     matchedField = matchedField
                 )
             }
@@ -182,6 +211,9 @@ class WatchlistDetectionManager(private val context: Context) : IWifiSurveyRecor
             } catch (e: Exception) {
                 Timber.e(e, "Failed to record watchlist hit")
             }
+
+            publishMatch(entry, match, label, now)
+
             WatchlistNotificationHelper.showWatchlistNotification(
                 context,
                 entry.id,
@@ -189,6 +221,62 @@ class WatchlistDetectionManager(private val context: Context) : IWifiSurveyRecor
                 match.rssi
             )
         }
+    }
+
+    /**
+     * Build and hand a match record to the [matchListener] (for example, the MQTT connection) when
+     * watchlist streaming is active. A publish failure is logged and swallowed so it can never
+     * interfere with recording the hit or showing the notification.
+     */
+    private fun publishMatch(
+        entry: WatchlistEntryEntity,
+        match: MatchInfo,
+        label: String,
+        now: Long
+    ) {
+        val listener = matchListener ?: return
+        try {
+            listener.onWatchlistMatch(buildMatch(entry, match, label, now))
+        } catch (e: Exception) {
+            Timber.e(e, "Failed to publish watchlist match")
+        }
+    }
+
+    /**
+     * Assemble a [WatchlistMatch] from the matched entry and the observed network. The device
+     * name is intentionally left unset here; the MQTT connection injects the effective device name at
+     * publish time, exactly as it does for every other record type.
+     */
+    private fun buildMatch(
+        entry: WatchlistEntryEntity,
+        match: MatchInfo,
+        label: String,
+        now: Long
+    ): WatchlistMatch {
+        val dataBuilder = WatchlistMatchData.newBuilder()
+            .setDeviceSerialNumber(deviceId)
+            .setDeviceTime(WatchlistProtoMapper.rfc3339(now))
+            .setMissionId(missionIdProvider.get() ?: "")
+            .setRecordNumber(matchRecordNumber.incrementAndGet())
+            .setAltitude(match.altitude)
+            .setAccuracy(match.accuracy)
+            .setLocationAge(match.locationAge)
+            .setSpeed(match.speed)
+            .setEntryUuid(entry.uuid ?: "")
+            .setLabel(label)
+            .setMatchType(WatchlistProtoMapper.toMatchType(entry.matchType))
+            .setMatchedField(WatchlistProtoMapper.toMatchField(match.matchedField))
+            .setSsid(match.ssid)
+            .setBssid(match.bssid)
+        match.latitude?.let { dataBuilder.latitude = it }
+        match.longitude?.let { dataBuilder.longitude = it }
+        match.signalStrength?.let { dataBuilder.signalStrength = FloatValue.of(it) }
+
+        return WatchlistMatch.newBuilder()
+            .setVersion(BuildConfig.MESSAGING_API_VERSION)
+            .setMessageType(WatchlistMessageConstants.WATCHLIST_MATCH_MESSAGE_TYPE)
+            .setData(dataBuilder)
+            .build()
     }
 
     private suspend fun pruneHistory() {
@@ -210,11 +298,18 @@ class WatchlistDetectionManager(private val context: Context) : IWifiSurveyRecor
     private class MatchInfo(
         val ssid: String,
         val bssid: String,
-        val rssi: Int,
+        val signalStrength: Float?,
         val latitude: Double?,
         val longitude: Double?,
+        val altitude: Float,
+        val accuracy: Int,
+        val locationAge: Int,
+        val speed: Float,
         val matchedField: String
-    )
+    ) {
+        /** The signal strength truncated to a whole dBm for the history row, or 0 when unavailable. */
+        val rssi: Int get() = signalStrength?.toInt() ?: 0
+    }
 
     companion object {
         const val DEFAULT_ABSENCE_WINDOW_SECONDS = 60

@@ -34,7 +34,7 @@ import com.craxiom.networksurvey.logging.db.model.WifiBeaconRecordEntity;
 @Database(entities = {GsmRecordEntity.class, CdmaRecordEntity.class, UmtsRecordEntity.class,
         LteRecordEntity.class, NrRecordEntity.class, WifiBeaconRecordEntity.class, TowerCacheEntity.class,
         NsAnalyticsQueueEntity.class, NsAnalyticsConnectionEntity.class, WatchlistEntryEntity.class,
-        WatchlistHitEntity.class}, version = 13, exportSchema = false)
+        WatchlistHitEntity.class}, version = 14, exportSchema = false)
 public abstract class SurveyDatabase extends RoomDatabase
 {
     public abstract GsmRecordDao gsmRecordDao();
@@ -325,6 +325,29 @@ public abstract class SurveyDatabase extends RoomDatabase
         }
     };
 
+    /**
+     * Adds the {@code uuid} and {@code updatedAt} columns to {@code watchlist_entry} so that watchlist
+     * changes can be published over MQTT with a stable, correlatable identity. Existing rows are
+     * backfilled with a random opaque {@code uuid} and an {@code updatedAt} equal to the row's
+     * {@code createdAt}.
+     * <p>
+     * The {@code NOT NULL DEFAULT 0} DDL must match the {@code @ColumnInfo(defaultValue = "0")} default
+     * on {@link WatchlistEntryEntity#updatedAt}, or Room's schema validation fails on upgrade.
+     */
+    private static final Migration MIGRATION_13_14 = new Migration(13, 14)
+    {
+        @Override
+        public void migrate(SupportSQLiteDatabase database)
+        {
+            database.execSQL("ALTER TABLE watchlist_entry ADD COLUMN uuid TEXT");
+            database.execSQL("ALTER TABLE watchlist_entry ADD COLUMN updatedAt INTEGER NOT NULL DEFAULT 0");
+
+            // Backfill existing rows. randomblob() is evaluated per-row, so each entry gets a distinct id.
+            database.execSQL("UPDATE watchlist_entry SET uuid = lower(hex(randomblob(16))) WHERE uuid IS NULL");
+            database.execSQL("UPDATE watchlist_entry SET updatedAt = createdAt WHERE updatedAt = 0");
+        }
+    };
+
     public static SurveyDatabase getInstance(Context context)
     {
         if (INSTANCE == null)
@@ -335,7 +358,7 @@ public abstract class SurveyDatabase extends RoomDatabase
                 {
                     INSTANCE = Room.databaseBuilder(context.getApplicationContext(),
                                     SurveyDatabase.class, "survey_db")
-                            .addMigrations(MIGRATION_7_9, MIGRATION_8_9, MIGRATION_9_10, MIGRATION_10_11, MIGRATION_11_12, MIGRATION_12_13)
+                            .addMigrations(MIGRATION_7_9, MIGRATION_8_9, MIGRATION_9_10, MIGRATION_10_11, MIGRATION_11_12, MIGRATION_12_13, MIGRATION_13_14)
                             .fallbackToDestructiveMigration()
                             .build();
                 }

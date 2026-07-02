@@ -1,11 +1,13 @@
 package com.craxiom.networksurvey;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 
 import com.craxiom.mqttlibrary.MqttQos;
 import com.craxiom.mqttlibrary.connection.BrokerConnectionInfo;
 import com.craxiom.networksurvey.fragments.model.MqttConnectionSettings;
+import com.craxiom.networksurvey.mqtt.MqttConnectionInfo;
 
 import org.junit.Test;
 
@@ -69,7 +71,7 @@ public class MqttConnectionSettingsTest
                 TEST_HOST, TEST_PORT, true, TEST_DEVICE_NAME,
                 TEST_USERNAME, TEST_PASSWORD, TEST_TOPIC_PREFIX,
                 null, // mqttQos is null
-                true, true, true, true, true, true
+                true, true, true, true, true, true, true
         );
 
         BrokerConnectionInfo connectionInfo = settings.toMqttConnectionInfo();
@@ -150,6 +152,55 @@ public class MqttConnectionSettingsTest
     }
 
     @Test
+    public void testToMqttConnectionInfo_streamFlagsPropagate()
+    {
+        // One-hot through each of the seven stream flags to catch a transposed argument in the
+        // record-to-MqttConnectionInfo mapping. Record order: cellular, wifi, bluetooth, gnss,
+        // deviceStatus, phoneState, watchlist.
+        for (int flagIndex = 0; flagIndex < 7; flagIndex++)
+        {
+            final Boolean[] flags = {false, false, false, false, false, false, false};
+            flags[flagIndex] = true;
+
+            MqttConnectionSettings settings = new MqttConnectionSettings(
+                    TEST_HOST, TEST_PORT, true, TEST_DEVICE_NAME,
+                    TEST_USERNAME, TEST_PASSWORD, TEST_TOPIC_PREFIX, 1,
+                    flags[0], flags[1], flags[2], flags[3], flags[4], flags[5], flags[6]);
+
+            MqttConnectionInfo info = (MqttConnectionInfo) settings.toMqttConnectionInfo();
+
+            assertEquals("cellular flag mismatch for one-hot index " + flagIndex, flags[0], info.isCellularStreamEnabled());
+            assertEquals("wifi flag mismatch for one-hot index " + flagIndex, flags[1], info.isWifiStreamEnabled());
+            assertEquals("bluetooth flag mismatch for one-hot index " + flagIndex, flags[2], info.isBluetoothStreamEnabled());
+            assertEquals("gnss flag mismatch for one-hot index " + flagIndex, flags[3], info.isGnssStreamEnabled());
+            assertEquals("device status flag mismatch for one-hot index " + flagIndex, flags[4], info.isDeviceStatusStreamEnabled());
+            assertEquals("phone state flag mismatch for one-hot index " + flagIndex, flags[5], info.isPhoneStateStreamEnabled());
+            assertEquals("watchlist flag mismatch for one-hot index " + flagIndex, flags[6], info.isWatchlistStreamEnabled());
+        }
+    }
+
+    @Test
+    public void testToMqttConnectionInfo_absentStreamFlagsDefaultToFalse()
+    {
+        // A QR code or MDM config that omits the stream flag fields deserializes them as null; the
+        // conversion must treat every absent flag as disabled.
+        MqttConnectionSettings settings = new MqttConnectionSettings(
+                TEST_HOST, TEST_PORT, true, TEST_DEVICE_NAME,
+                TEST_USERNAME, TEST_PASSWORD, TEST_TOPIC_PREFIX, 1,
+                null, null, null, null, null, null, null);
+
+        MqttConnectionInfo info = (MqttConnectionInfo) settings.toMqttConnectionInfo();
+
+        assertFalse(info.isCellularStreamEnabled());
+        assertFalse(info.isWifiStreamEnabled());
+        assertFalse(info.isBluetoothStreamEnabled());
+        assertFalse(info.isGnssStreamEnabled());
+        assertFalse(info.isDeviceStatusStreamEnabled());
+        assertFalse(info.isPhoneStateStreamEnabled());
+        assertFalse("An absent watchlist flag in a scanned config must mean disabled", info.isWatchlistStreamEnabled());
+    }
+
+    @Test
     public void testToMqttConnectionInfo_withInvalidQos()
     {
         // Create settings with invalid QoS using record constructor directly (simulates bad JSON deserialization)
@@ -157,7 +208,7 @@ public class MqttConnectionSettingsTest
                 TEST_HOST, TEST_PORT, true, TEST_DEVICE_NAME,
                 TEST_USERNAME, TEST_PASSWORD, TEST_TOPIC_PREFIX,
                 5, // Invalid QoS value
-                true, true, true, true, true, true
+                true, true, true, true, true, true, true
         );
 
         BrokerConnectionInfo connectionInfo = settings.toMqttConnectionInfo();

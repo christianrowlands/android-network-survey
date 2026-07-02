@@ -175,6 +175,9 @@ class WatchlistViewModel(application: Application) : AndroidViewModel(applicatio
     fun setEntryEnabled(entry: WatchlistEntryEntity, enabled: Boolean) {
         viewModelScope.launch {
             entry.enabled = enabled
+            // Bump updatedAt so the published entry carries a fresh modification timestamp. Ordering
+            // across updates is handled by the envelope's messageSequence.
+            entry.updatedAt = System.currentTimeMillis()
             watchlistDao.update(entry)
         }
     }

@@ -23,6 +23,7 @@ public class NetworkSurveyConstants
     public static final boolean DEFAULT_MQTT_BLUETOOTH_STREAM_SETTING = false;
     public static final boolean DEFAULT_MQTT_GNSS_STREAM_SETTING = false;
     public static final boolean DEFAULT_MQTT_DEVICE_STATUS_STREAM_SETTING = true;
+    public static final boolean DEFAULT_MQTT_WATCHLIST_STREAM_SETTING = true;
 
     public static final String NOTIFICATION_CHANNEL_ID = "network_survey_notification";
     public static final int GRPC_CONNECTION_NOTIFICATION_ID = 3;
@@ -220,6 +221,7 @@ public class NetworkSurveyConstants
     public static final String PROPERTY_MQTT_GNSS_STREAM_ENABLED = "gnss_stream_enabled";
     public static final String PROPERTY_MQTT_DEVICE_STATUS_STREAM_ENABLED = "device_status_stream_enabled";
     public static final String PROPERTY_MQTT_PHONE_STATE_STREAM_ENABLED = "phone_state_stream_enabled";
+    public static final String PROPERTY_MQTT_WATCHLIST_STREAM_ENABLED = "watchlist_stream_enabled";
 
     public static final String PROPERTY_GRPC_CELLULAR_STREAM_ENABLED = "grpc_cellular_stream_enabled";
     public static final String PROPERTY_GRPC_PHONE_STATE_STREAM_ENABLED = "grpc_phone_state_stream_enabled";

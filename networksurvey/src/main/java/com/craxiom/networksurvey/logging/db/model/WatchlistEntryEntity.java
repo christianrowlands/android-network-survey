@@ -1,5 +1,6 @@
 package com.craxiom.networksurvey.logging.db.model;
 
+import androidx.room.ColumnInfo;
 import androidx.room.Entity;
 import androidx.room.PrimaryKey;
 
@@ -23,6 +24,13 @@ public class WatchlistEntryEntity
 
     @PrimaryKey(autoGenerate = true)
     public long id;
+
+    /**
+     * A device-minted identifier that is stable across edits to this entry (unlike {@link #id}, which
+     * is local to this device). Carried in the MQTT watchlist messages so a fleet backend can correlate
+     * add/modify/delete events for the same logical entry. Treated as an opaque string.
+     */
+    public String uuid;
 
     /**
      * The user-facing name for this entry (defaults to the SSID when added). Always non-null.
@@ -60,4 +68,16 @@ public class WatchlistEntryEntity
      * of the presence-transition dedupe in the detection manager.
      */
     public int cooldownSeconds;
+
+    /**
+     * The time this entry was last modified (milliseconds since epoch). Set equal to {@link #createdAt}
+     * when the entry is created and bumped on every edit. Published as a human-readable timestamp on the
+     * MQTT watchlist messages; the authoritative ordering across watchlist updates is the device-global
+     * {@code messageSequence} on the envelope, not this field.
+     * <p>
+     * The database default must match the {@code MIGRATION_13_14} DDL default or Room's schema
+     * validation fails on upgrade.
+     */
+    @ColumnInfo(defaultValue = "0")
+    public long updatedAt;
 }

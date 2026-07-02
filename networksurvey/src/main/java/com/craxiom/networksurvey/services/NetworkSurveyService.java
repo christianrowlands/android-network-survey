@@ -88,6 +88,7 @@ import com.craxiom.networksurvey.services.controller.BluetoothController;
 import com.craxiom.networksurvey.services.controller.CellularController;
 import com.craxiom.networksurvey.services.controller.GnssController;
 import com.craxiom.networksurvey.services.controller.WifiController;
+import com.craxiom.networksurvey.services.watchlist.WatchlistChangePublisher;
 import com.craxiom.networksurvey.services.watchlist.WatchlistDetectionManager;
 import com.craxiom.networksurvey.util.CredentialSecureStorage;
 import com.craxiom.networksurvey.util.MdmUtils;
@@ -151,6 +152,12 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
     private WifiController wifiController;
     private WatchlistDetectionManager watchlistDetectionManager;
     private boolean watchlistRegistered = false;
+    // Volatile because it is written on the thread that starts the MQTT connection and read from the
+    // MQTT client's connection-state callback thread in onConnectionStateChange.
+    private volatile WatchlistChangePublisher watchlistChangePublisher;
+    // Volatile for the same reason as the publisher field: written from the connect paths and read
+    // when the watchlist detection manager is (re)created.
+    private volatile boolean mqttWatchlistStreamEnabled = false;
     private BluetoothController bluetoothController;
     private GnssController gnssController;
     private String deviceId;
@@ -481,6 +488,12 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
             watchlistRegistered = false;
         }
 
+        if (watchlistChangePublisher != null)
+        {
+            watchlistChangePublisher.stop();
+            watchlistChangePublisher = null;
+        }
+
         cellularController.stopCellularRecordScanning();
         wifiController.stopWifiRecordScanning();
         bluetoothController.stopBluetoothRecordScanning();
@@ -619,8 +632,22 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
     @Override
     public void connectToMqttBroker(BrokerConnectionInfo connectionInfo)
     {
-        mqttConnection.connect(getApplicationContext(), connectionInfo);
         MqttConnectionInfo networkSurveyConnection = (MqttConnectionInfo) connectionInfo;
+
+        // Start or stop watchlist streaming BEFORE connecting so the CONNECTED callback, which publishes
+        // the initial watchlist snapshot, can never fire while the publisher is still null (the publisher's
+        // first flow emission publishes a snapshot that is simply dropped while disconnected). The stop
+        // call covers a reconnect with new connection info (for example an MDM reconfiguration) that turns
+        // the watchlist stream off, since that path never goes through disconnectFromMqttBroker().
+        if (networkSurveyConnection.isWatchlistStreamEnabled())
+        {
+            startWatchlistStreaming();
+        } else
+        {
+            stopWatchlistStreaming();
+        }
+
+        mqttConnection.connect(getApplicationContext(), connectionInfo);
 
         // Track survey session when MQTT streaming starts
         onSurveyStarted(true);
@@ -657,6 +684,52 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
     }
 
     /**
+     * Begin streaming Wi-Fi Watchlist match events and watchlist snapshots over MQTT.
+     * <p>
+     * Match events are published by attaching the MQTT connection as the detection manager's match
+     * listener (when a manager exists; if watchlist detection is enabled later the listener is attached
+     * at that point). Watchlist state is published by a {@link WatchlistChangePublisher} that publishes
+     * a full snapshot on every change. The initial snapshot is published from
+     * {@link #onConnectionStateChange(ConnectionState)} once the connection is established, so it also
+     * fires on a silent auto-reconnect.
+     */
+    private void startWatchlistStreaming()
+    {
+        mqttWatchlistStreamEnabled = true;
+
+        if (watchlistDetectionManager != null)
+        {
+            watchlistDetectionManager.setMatchListener(mqttConnection);
+        }
+
+        if (watchlistChangePublisher == null)
+        {
+            watchlistChangePublisher = new WatchlistChangePublisher(getApplicationContext(), deviceId,
+                    this::getMissionIdForRecords, mqttConnection);
+            watchlistChangePublisher.start();
+        }
+    }
+
+    /**
+     * Stop streaming Wi-Fi Watchlist events over MQTT.
+     */
+    private void stopWatchlistStreaming()
+    {
+        mqttWatchlistStreamEnabled = false;
+
+        if (watchlistDetectionManager != null)
+        {
+            watchlistDetectionManager.setMatchListener(null);
+        }
+
+        if (watchlistChangePublisher != null)
+        {
+            watchlistChangePublisher.stop();
+            watchlistChangePublisher = null;
+        }
+    }
+
+    /**
      * Disconnect from the MQTT broker and also remove the MQTT survey record listener.
      */
     @Override
@@ -672,6 +745,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
         unregisterGnssSurveyRecordListener(mqttConnection);
         unregisterDeviceStatusListener(mqttConnection);
         unregisterPhoneStateListener(mqttConnection);
+        stopWatchlistStreaming();
 
         // Clear queue backpressure states since there's no active connection to be backed up
         clearMqttBackpressureStates();
@@ -910,10 +984,17 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
         {
             if (watchlistDetectionManager == null)
             {
-                watchlistDetectionManager = new WatchlistDetectionManager(getApplicationContext());
+                watchlistDetectionManager = new WatchlistDetectionManager(getApplicationContext(), deviceId,
+                        this::getMissionIdForRecords);
             }
             surveyRecordProcessor.registerPassiveWifiSurveyRecordListener(watchlistDetectionManager);
             watchlistDetectionManager.start();
+            // Attach the match listener to the freshly created manager if watchlist streaming is already
+            // active, since the detection and MQTT lifecycles are independent.
+            if (mqttWatchlistStreamEnabled)
+            {
+                watchlistDetectionManager.setMatchListener(mqttConnection);
+            }
             watchlistRegistered = true;
             Timber.i("Watchlist detection enabled");
         } else if (!enabled && watchlistRegistered)
@@ -2971,6 +3052,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
             final boolean bluetoothStreamEnabled = mdmProperties.getBoolean(NetworkSurveyConstants.PROPERTY_MQTT_BLUETOOTH_STREAM_ENABLED, NetworkSurveyConstants.DEFAULT_MQTT_BLUETOOTH_STREAM_SETTING);
             final boolean gnssStreamEnabled = mdmProperties.getBoolean(NetworkSurveyConstants.PROPERTY_MQTT_GNSS_STREAM_ENABLED, NetworkSurveyConstants.DEFAULT_MQTT_GNSS_STREAM_SETTING);
             final boolean deviceStatusStreamEnabled = mdmProperties.getBoolean(NetworkSurveyConstants.PROPERTY_MQTT_DEVICE_STATUS_STREAM_ENABLED, NetworkSurveyConstants.DEFAULT_MQTT_DEVICE_STATUS_STREAM_SETTING);
+            final boolean watchlistStreamEnabled = mdmProperties.getBoolean(NetworkSurveyConstants.PROPERTY_MQTT_WATCHLIST_STREAM_ENABLED, NetworkSurveyConstants.DEFAULT_MQTT_WATCHLIST_STREAM_SETTING);
             final String topicPrefix = mdmProperties.getString(MqttConstants.PROPERTY_MQTT_TOPIC_PREFIX, MqttConstants.DEFAULT_MQTT_TOPIC_PREFIX);
             final int qosValue = mdmProperties.getInt(MqttConstants.PROPERTY_MQTT_QOS, MqttConstants.DEFAULT_MQTT_QOS.getValue());
             MqttQos mqttQos;
@@ -2998,7 +3080,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
 
             return new MqttConnectionInfo(mqttBrokerHost, portNumber, tlsEnabled, clientId, username, password,
                     cellularStreamEnabled, wifiStreamEnabled, bluetoothStreamEnabled, gnssStreamEnabled,
-                    deviceStatusStreamEnabled, phoneStateStreamEnabled, topicPrefix, deviceName, mqttQos);
+                    deviceStatusStreamEnabled, phoneStateStreamEnabled, watchlistStreamEnabled, topicPrefix, deviceName, mqttQos);
         }
 
         return null;
@@ -3035,6 +3117,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
         final boolean bluetoothStreamEnabled = preferences.getBoolean(NetworkSurveyConstants.PROPERTY_MQTT_BLUETOOTH_STREAM_ENABLED, NetworkSurveyConstants.DEFAULT_MQTT_BLUETOOTH_STREAM_SETTING);
         final boolean gnssStreamEnabled = preferences.getBoolean(NetworkSurveyConstants.PROPERTY_MQTT_GNSS_STREAM_ENABLED, NetworkSurveyConstants.DEFAULT_MQTT_GNSS_STREAM_SETTING);
         final boolean deviceStatusStreamEnabled = preferences.getBoolean(NetworkSurveyConstants.PROPERTY_MQTT_DEVICE_STATUS_STREAM_ENABLED, NetworkSurveyConstants.DEFAULT_MQTT_DEVICE_STATUS_STREAM_SETTING);
+        final boolean watchlistStreamEnabled = preferences.getBoolean(NetworkSurveyConstants.PROPERTY_MQTT_WATCHLIST_STREAM_ENABLED, NetworkSurveyConstants.DEFAULT_MQTT_WATCHLIST_STREAM_SETTING);
         final String topicPrefix = preferences.getString(MqttConstants.PROPERTY_MQTT_TOPIC_PREFIX, MqttConstants.DEFAULT_MQTT_TOPIC_PREFIX);
         final int qosValue = preferences.getInt(MqttConstants.PROPERTY_MQTT_QOS, MqttConstants.DEFAULT_MQTT_QOS.getValue());
         MqttQos mqttQos;
@@ -3049,7 +3132,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
 
         return new MqttConnectionInfo(mqttBrokerHost, portNumber, tlsEnabled, clientId, username, password,
                 cellularStreamEnabled, wifiStreamEnabled, bluetoothStreamEnabled, gnssStreamEnabled,
-                deviceStatusStreamEnabled, phoneStateStreamEnabled, topicPrefix, null, mqttQos);
+                deviceStatusStreamEnabled, phoneStateStreamEnabled, watchlistStreamEnabled, topicPrefix, null, mqttQos);
     }
 
     /**
@@ -3156,6 +3239,11 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
         if (connectionState == ConnectionState.DISCONNECTED)
         {
             clearMqttBackpressureStates();
+        } else if (connectionState == ConnectionState.CONNECTED && watchlistChangePublisher != null)
+        {
+            // Publish the full authoritative watchlist snapshot on every (re)connect, including the MQTT
+            // client's silent auto-reconnects, so a backend that missed offline deltas is reconciled.
+            watchlistChangePublisher.publishSnapshot();
         }
     }
 

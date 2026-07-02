@@ -499,6 +499,7 @@
     <string name="stream_bluetooth_title">Stream Bluetooth</string>
     <string name="stream_gnss_title">Stream GNSS</string>
     <string name="stream_device_status_title">Stream Device Status</string>
+    <string name="stream_watchlist_title">Stream Watchlist</string>
     <string name="mqtt_topic_prefix_title">MQTT Topic Prefix</string>
 
     <!-- App Restriction Constants -->
@@ -531,6 +532,8 @@
     <string name="gnss_stream_description">True to stream GNSS data, false otherwise</string>
     <string name="device_status_stream_title">Device Status Stream Enabled</string>
     <string name="device_status_stream_description">True to stream Device Status messages over MQTT, false otherwise</string>
+    <string name="watchlist_stream_title">Watchlist Stream Enabled</string>
+    <string name="watchlist_stream_description">True to stream Wi-Fi Watchlist match events and the device\'s watchlist contents (watched SSIDs/BSSIDs and labels) over MQTT, false otherwise</string>
     <string name="phone_state_stream_title">Phone State Stream Enabled</string>
     <string name="phone_state_stream_description">Enable or disable streaming of phone state events</string>
     <string name="auto_start_cellular_logging_description">True to start cellular logging automatically, false otherwise</string>

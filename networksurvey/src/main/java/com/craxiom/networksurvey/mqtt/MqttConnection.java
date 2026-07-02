@@ -11,6 +11,8 @@ import com.craxiom.messaging.LteRecord;
 import com.craxiom.messaging.NrRecord;
 import com.craxiom.messaging.PhoneState;
 import com.craxiom.messaging.UmtsRecord;
+import com.craxiom.messaging.WatchlistEntryUpdate;
+import com.craxiom.messaging.WatchlistMatch;
 import com.craxiom.messaging.WifiBeaconRecord;
 import com.craxiom.mqttlibrary.connection.BrokerConnectionInfo;
 import com.craxiom.mqttlibrary.connection.DefaultMqttConnection;
@@ -19,6 +21,7 @@ import com.craxiom.networksurvey.listeners.ICellularSurveyRecordListener;
 import com.craxiom.networksurvey.listeners.IDeviceStatusListener;
 import com.craxiom.networksurvey.listeners.IGnssSurveyRecordListener;
 import com.craxiom.networksurvey.listeners.IPhoneStateListener;
+import com.craxiom.networksurvey.listeners.IWatchlistListener;
 import com.craxiom.networksurvey.listeners.IWifiSurveyRecordListener;
 import com.craxiom.networksurvey.model.WifiRecordWrapper;
 
@@ -33,7 +36,7 @@ import timber.log.Timber;
  * @since 0.1.1
  */
 public class MqttConnection extends DefaultMqttConnection implements ICellularSurveyRecordListener, IWifiSurveyRecordListener,
-        IBluetoothSurveyRecordListener, IGnssSurveyRecordListener, IDeviceStatusListener, IPhoneStateListener
+        IBluetoothSurveyRecordListener, IGnssSurveyRecordListener, IDeviceStatusListener, IPhoneStateListener, IWatchlistListener
 {
     /**
      * When true, incoming survey records will be dropped instead of being queued for MQTT publishing.
@@ -52,6 +55,8 @@ public class MqttConnection extends DefaultMqttConnection implements ICellularSu
     private static final String MQTT_BLUETOOTH_MESSAGE_TOPIC = "bluetooth_message";
     private static final String MQTT_GNSS_MESSAGE_TOPIC = "gnss_message";
     private static final String MQTT_DEVICE_STATUS_MESSAGE_TOPIC = "device_status_message";
+    private static final String MQTT_WATCHLIST_MATCH_MESSAGE_TOPIC = "watchlist_match_message";
+    private static final String MQTT_WATCHLIST_ENTRY_MESSAGE_TOPIC = "watchlist_entry_message";
 
     @Override
     public void connect(Context context, BrokerConnectionInfo brokerConnectionInfo)
@@ -284,5 +289,35 @@ public class MqttConnection extends DefaultMqttConnection implements ICellularSu
         // There are historical reasons as to why the phone state message rides on the device status topic
         // Might change this to its own topic in the NS Messaging API version 3 as a breaking change
         publishMessage(MQTT_DEVICE_STATUS_MESSAGE_TOPIC, phoneState);
+    }
+
+    @Override
+    public void onWatchlistMatch(WatchlistMatch watchlistMatch)
+    {
+        if (dropMessages.get()) return;
+
+        if (effectiveDeviceName != null)
+        {
+            final WatchlistMatch.Builder recordBuilder = watchlistMatch.toBuilder();
+            watchlistMatch = recordBuilder.setData(recordBuilder.getDataBuilder().setDeviceName(effectiveDeviceName)).build();
+        }
+
+        publishMessage(MQTT_WATCHLIST_MATCH_MESSAGE_TOPIC, watchlistMatch);
+    }
+
+    @Override
+    public void onWatchlistEntryUpdate(WatchlistEntryUpdate watchlistEntryUpdate)
+    {
+        // Intentionally NOT gated by the app-level dropMessages flag: watchlist entry updates are tiny,
+        // infrequent config events, not the cause of queue backpressure. The MQTT library can still drop
+        // a message when its streaming queue limit is exceeded; a backend is healed by the snapshot
+        // published on the next watchlist change or (re)connect.
+        if (effectiveDeviceName != null)
+        {
+            final WatchlistEntryUpdate.Builder recordBuilder = watchlistEntryUpdate.toBuilder();
+            watchlistEntryUpdate = recordBuilder.setData(recordBuilder.getDataBuilder().setDeviceName(effectiveDeviceName)).build();
+        }
+
+        publishMessage(MQTT_WATCHLIST_ENTRY_MESSAGE_TOPIC, watchlistEntryUpdate);
     }
 }

@@ -32,7 +32,8 @@ public record MqttConnectionSettings(
         @SerializedName("bluetooth_stream_enabled") Boolean bluetoothStreamEnabled,
         @SerializedName("gnss_stream_enabled") Boolean gnssStreamEnabled,
         @SerializedName("device_status_stream_enabled") Boolean deviceStatusStreamEnabled,
-        @SerializedName("phone_state_stream_enabled") Boolean phoneStateStreamEnabled
+        @SerializedName("phone_state_stream_enabled") Boolean phoneStateStreamEnabled,
+        @SerializedName("watchlist_stream_enabled") Boolean watchlistStreamEnabled
 ) implements Serializable, Parcelable
 {
     public static final String KEY = "mqttConnectionSettings";
@@ -80,6 +81,7 @@ public record MqttConnectionSettings(
         private Boolean gnssStreamEnabled;
         private Boolean deviceStatusStreamEnabled;
         private Boolean phoneStateStreamEnabled;
+        private Boolean watchlistStreamEnabled;
 
         public Builder host(String host)
         {
@@ -165,6 +167,12 @@ public record MqttConnectionSettings(
             return this;
         }
 
+        public Builder watchlistStreamEnabled(Boolean watchlistStreamEnabled)
+        {
+            this.watchlistStreamEnabled = watchlistStreamEnabled;
+            return this;
+        }
+
         public MqttConnectionSettings build()
         {
             return new MqttConnectionSettings(host, port, tlsEnabled, deviceName, mqttUsername, mqttPassword, mqttTopicPrefix,
@@ -174,7 +182,8 @@ public record MqttConnectionSettings(
                     bluetoothStreamEnabled != null ? bluetoothStreamEnabled : false,
                     gnssStreamEnabled != null ? gnssStreamEnabled : false,
                     deviceStatusStreamEnabled != null ? deviceStatusStreamEnabled : false,
-                    phoneStateStreamEnabled != null ? phoneStateStreamEnabled : false);
+                    phoneStateStreamEnabled != null ? phoneStateStreamEnabled : false,
+                    watchlistStreamEnabled != null ? watchlistStreamEnabled : false);
         }
     }
 
@@ -194,7 +203,8 @@ public record MqttConnectionSettings(
                 bluetoothStreamEnabled != null ? bluetoothStreamEnabled : false,
                 gnssStreamEnabled != null ? gnssStreamEnabled : false,
                 deviceStatusStreamEnabled != null ? deviceStatusStreamEnabled : false,
-                phoneStateStreamEnabled != null ? phoneStateStreamEnabled : false
+                phoneStateStreamEnabled != null ? phoneStateStreamEnabled : false,
+                watchlistStreamEnabled != null ? watchlistStreamEnabled : false
         );
     }
 
@@ -207,6 +217,7 @@ public record MqttConnectionSettings(
                 gnssStreamEnabled != null ? gnssStreamEnabled : false,
                 deviceStatusStreamEnabled != null ? deviceStatusStreamEnabled : false,
                 phoneStateStreamEnabled != null ? phoneStateStreamEnabled : false,
+                watchlistStreamEnabled != null ? watchlistStreamEnabled : false,
                 mqttTopicPrefix, null, MqttQos.fromValue(getQosOrDefault()));
     }
 

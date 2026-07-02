@@ -184,3 +184,4 @@ app/release/output.json
 networksurvey/**/release/**
 
 CLAUDE.md
+.kotlin/
