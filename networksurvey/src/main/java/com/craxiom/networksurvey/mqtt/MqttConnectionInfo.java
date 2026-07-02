@@ -14,13 +14,12 @@ public class MqttConnectionInfo extends BrokerConnectionInfo
     private final boolean isBluetoothStreamEnabled;
     private final boolean isGnssStreamEnabled;
     private final boolean isDeviceStatusStreamEnabled;
-    private final boolean isWatchlistStreamEnabled;
     private final String deviceName;
 
     public MqttConnectionInfo(String mqttBrokerHost, int portNumber, boolean tlsEnabled, String mqttClientId, String mqttUsername,
                               String mqttPassword, boolean isCellularStreamEnabled, boolean isWifiStreamEnabled,
                               boolean isBluetoothStreamEnabled, boolean isGnssStreamEnabled, boolean isDeviceStatusStreamEnabled,
-                              boolean isPhoneStateStreamEnabled, boolean isWatchlistStreamEnabled,
+                              boolean isPhoneStateStreamEnabled,
                               String topicPrefix, String deviceName, MqttQos mqttQos)
     {
         super(mqttBrokerHost, portNumber, tlsEnabled, mqttClientId, mqttUsername, mqttPassword, topicPrefix, mqttQos);
@@ -30,7 +29,6 @@ public class MqttConnectionInfo extends BrokerConnectionInfo
         this.isBluetoothStreamEnabled = isBluetoothStreamEnabled;
         this.isGnssStreamEnabled = isGnssStreamEnabled;
         this.isDeviceStatusStreamEnabled = isDeviceStatusStreamEnabled;
-        this.isWatchlistStreamEnabled = isWatchlistStreamEnabled;
         this.deviceName = deviceName;
     }
 
@@ -62,11 +60,6 @@ public class MqttConnectionInfo extends BrokerConnectionInfo
     public boolean isDeviceStatusStreamEnabled()
     {
         return isDeviceStatusStreamEnabled;
-    }
-
-    public boolean isWatchlistStreamEnabled()
-    {
-        return isWatchlistStreamEnabled;
     }
 
     public String getDeviceName()

@@ -111,6 +111,8 @@
     <string name="file_mqtt_help_mqtt_realtime_desc">Sends data to a remote server as it is collected</string>
     <string name="file_mqtt_help_mqtt_broker_label">Setup</string>
     <string name="file_mqtt_help_mqtt_broker_desc">Configure the broker connection settings before enabling streaming</string>
+    <string name="file_mqtt_help_mqtt_watchlist_label">Wi-Fi Watchlist</string>
+    <string name="file_mqtt_help_mqtt_watchlist_desc">Watchlist match events and your watched networks also stream while connected. Control this with the Stream over MQTT switch in the Watchlist settings</string>
     <string name="file_mqtt_help_key_point_title">Key Point</string>
     <string name="file_mqtt_help_key_independent_label">Independent</string>
     <string name="file_mqtt_help_key_independent_desc">File logging and MQTT streaming work independently - you can use either, both, or neither</string>
@@ -499,7 +501,6 @@
     <string name="stream_bluetooth_title">Stream Bluetooth</string>
     <string name="stream_gnss_title">Stream GNSS</string>
     <string name="stream_device_status_title">Stream Device Status</string>
-    <string name="stream_watchlist_title">Stream Watchlist</string>
     <string name="mqtt_topic_prefix_title">MQTT Topic Prefix</string>
 
     <!-- App Restriction Constants -->
@@ -533,7 +534,9 @@
     <string name="device_status_stream_title">Device Status Stream Enabled</string>
     <string name="device_status_stream_description">True to stream Device Status messages over MQTT, false otherwise</string>
     <string name="watchlist_stream_title">Watchlist Stream Enabled</string>
-    <string name="watchlist_stream_description">True to stream Wi-Fi Watchlist match events and the device\'s watchlist contents (watched SSIDs/BSSIDs and labels) over MQTT, false otherwise</string>
+    <string name="watchlist_stream_description">True to stream Wi-Fi Watchlist match events and the device\'s watchlist contents (watched SSIDs/BSSIDs and labels) over MQTT while connected, false otherwise. This maps to the Stream over MQTT switch in the Watchlist settings, not to a per-connection stream flag.</string>
+    <string name="watchlist_stream_setting_title">Stream over MQTT</string>
+    <string name="watchlist_stream_setting_summary">When an MQTT server connection is active, watchlist match events and your watched networks (including labels) are sent to the server</string>
     <string name="phone_state_stream_title">Phone State Stream Enabled</string>
     <string name="phone_state_stream_description">Enable or disable streaming of phone state events</string>
     <string name="auto_start_cellular_logging_description">True to start cellular logging automatically, false otherwise</string>
@@ -1361,6 +1364,6 @@
     <!-- Watchlist settings -->
     <string name="watchlist_settings_title">Watchlist</string>
     <string name="watchlist_settings_enable_title">Enable Watchlist</string>
-    <string name="watchlist_settings_enable_summary_on">Watching for your saved networks</string>
+    <string name="watchlist_settings_enable_summary_on">Watching for your saved networks to trigger alerts</string>
     <string name="watchlist_settings_enable_summary_off">Watchlist alerts are off</string>
 </resources>

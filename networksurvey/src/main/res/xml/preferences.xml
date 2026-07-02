@@ -113,6 +113,13 @@
             app:summaryOn="@string/watchlist_settings_enable_summary_on"
             app:title="@string/watchlist_settings_enable_title" />
 
+        <SwitchPreferenceCompat
+            app:defaultValue="true"
+            app:icon="@drawable/ic_cloud_connection"
+            app:key="watchlist_stream_enabled"
+            app:summary="@string/watchlist_stream_setting_summary"
+            app:title="@string/watchlist_stream_setting_title" />
+
     </PreferenceCategory>
 
     <PreferenceCategory

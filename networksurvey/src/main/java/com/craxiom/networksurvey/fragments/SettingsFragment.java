@@ -77,7 +77,8 @@ public class SettingsFragment extends PreferenceFragmentCompat implements Shared
             NetworkSurveyConstants.PROPERTY_STREAMING_QUEUE_LIMIT,
             NetworkSurveyConstants.PROPERTY_AUTO_UPLOAD_ENABLED,
             NetworkSurveyConstants.PROPERTY_AUTO_UPLOAD_WIFI_ONLY,
-            NetworkSurveyConstants.PROPERTY_OUI_LOOKUP_ENABLED};
+            NetworkSurveyConstants.PROPERTY_OUI_LOOKUP_ENABLED,
+            NetworkSurveyConstants.PROPERTY_MQTT_WATCHLIST_STREAM_ENABLED};
 
     @Override
     public void onCreatePreferences(Bundle savedInstanceState, String rootKey)
@@ -459,6 +460,7 @@ public class SettingsFragment extends PreferenceFragmentCompat implements Shared
         updateBooleanPreferenceForMdm(preferenceScreen, mdmProperties, NetworkSurveyConstants.PROPERTY_AUTO_START_PHONE_STATE_LOGGING);
         updateBooleanPreferenceForMdm(preferenceScreen, mdmProperties, NetworkSurveyConstants.PROPERTY_AUTO_INCLUDE_PHONE_STATE_WITH_CELLULAR);
         updateBooleanPreferenceForMdm(preferenceScreen, mdmProperties, NetworkSurveyConstants.PROPERTY_INCLUDE_NEIGHBOR_CELLS);
+        updateBooleanPreferenceForMdm(preferenceScreen, mdmProperties, NetworkSurveyConstants.PROPERTY_MQTT_WATCHLIST_STREAM_ENABLED);
         updateLogRolloverSizeForMdm(preferenceScreen, mdmProperties);
         updateListProviderPreferenceForMdm(preferenceScreen, mdmProperties, NetworkSurveyConstants.PROPERTY_LOG_FILE_TYPE);
         updateIntPreferenceForMdm(preferenceScreen, mdmProperties, NetworkSurveyConstants.PROPERTY_CELLULAR_SCAN_INTERVAL_SECONDS);

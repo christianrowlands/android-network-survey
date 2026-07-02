@@ -59,6 +59,10 @@ fun FileMqttHelpDialog(
                         stringResource(R.string.file_mqtt_help_mqtt_broker_label),
                         stringResource(R.string.file_mqtt_help_mqtt_broker_desc)
                     )
+                    HelpItem(
+                        stringResource(R.string.file_mqtt_help_mqtt_watchlist_label),
+                        stringResource(R.string.file_mqtt_help_mqtt_watchlist_desc)
+                    )
                 }
 
                 Spacer(modifier = Modifier.height(16.dp))

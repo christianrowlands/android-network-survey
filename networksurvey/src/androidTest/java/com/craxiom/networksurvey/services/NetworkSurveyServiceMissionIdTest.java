@@ -186,8 +186,8 @@ public class NetworkSurveyServiceMissionIdTest
                 TEST_CLIENT_ID,
                 null, // mqttUsername
                 null, // mqttPassword
-                // The seven stream flags must all stay false (cellular, wifi, bluetooth, gnss,
-                // deviceStatus, phoneState, watchlist) so connectToMqttBroker skips registering the
+                // The six stream flags must all stay false (cellular, wifi, bluetooth, gnss,
+                // deviceStatus, phoneState) so connectToMqttBroker skips registering the
                 // scan listeners. The Mission ID roll does not depend on them.
                 false, // isCellularStreamEnabled
                 false, // isWifiStreamEnabled
@@ -195,7 +195,6 @@ public class NetworkSurveyServiceMissionIdTest
                 false, // isGnssStreamEnabled
                 false, // isDeviceStatusStreamEnabled
                 false, // isPhoneStateStreamEnabled
-                false, // isWatchlistStreamEnabled
                 TEST_TOPIC_PREFIX,
                 TEST_DEVICE_NAME,
                 MqttQos.AT_MOST_ONCE);
