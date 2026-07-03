@@ -1,5 +1,22 @@
 # Changelog
 
+## [1.56](https://github.com/christianrowlands/android-network-survey/releases/tag/v1.56) - 2026-07-03
+
+**BUG FIXES**
+* Fix duplicate Mission IDs within a single survey session, where phone state records could be assigned an earlier Mission ID than the other records in the same session.
+
+**NEW FEATURES**
+* Add a Wi-Fi Watchlist. Save networks by SSID and/or BSSID, get alerted when a watched network is seen during a survey, and browse a history of past sightings with a per-sighting details screen showing the sighting locations on a map. 
+* Import a watchlist from a shared link, with a confirmation preview that merges the imported networks into your existing list without deleting or overwriting anything.
+* Stream the Wi-Fi Watchlist over MQTT. Publish a match event whenever a watched network is seen, plus the full watchlist as a snapshot on connect and on every change. A Watchlist stream toggle (on by default) lives in the Watchlist settings and can be controlled by MDM.
+* Add a display filter to the Wi-Fi network list, with SSID/BSSID search and band selection opened from the app bar, and an "Excluded" tag on rows and groups for networks that are on the SSID Exclusion List.
+* Display the timing advance (TA) for 5G NR.
+* Add a Chinese (Simplified) translation. [#75](https://github.com/christianrowlands/android-network-survey/issues/75) (Thanks [zhengyang3552](https://github.com/zhengyang3552))
+
+**IMPROVEMENTS**
+* Default NS Analytics uploads to allowed unless explicitly blocked by MDM, with a clearer upload-status message when uploads are disabled by policy.
+* Migrate all dialogs to a shared Jetpack Compose dialog system for a consistent look and feel, and consolidate the three sequential startup permission rationale dialogs into a single screen.
+
 ## [1.55](https://github.com/christianrowlands/android-network-survey/releases/tag/v1.55) - 2026-06-03
 
 **BUG FIXES**
