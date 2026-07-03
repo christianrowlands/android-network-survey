@@ -2,7 +2,6 @@ package com.craxiom.networksurvey.ui.watchlist
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.AnchoredDraggableState
-import androidx.compose.foundation.gestures.DraggableAnchors
 import androidx.compose.foundation.gestures.animateTo
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
@@ -28,7 +27,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
@@ -92,35 +90,14 @@ fun WatchlistHistoryDetailScreen(
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.surface)
     ) {
-        val density = LocalDensity.current
         val statusBarHeight = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
         val navBarHeight = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
 
-        // Visible height at each detent; Full is also the sheet's total height.
-        val peekVisible = SHEET_PEEK_CONTENT + navBarHeight
-        val halfVisible = maxHeight * 0.33f
-        val fullVisible = maxHeight * 0.64f
-
-        val fullPx = with(density) { fullVisible.toPx() }
-        val anchors = remember(peekVisible, halfVisible, fullVisible, density) {
-            with(density) {
-                DraggableAnchors {
-                    SheetDetent.Full at 0f
-                    SheetDetent.Half at (fullPx - halfVisible.toPx())
-                    SheetDetent.Peek at (fullPx - peekVisible.toPx())
-                }
-            }
-        }
-        // Set anchors during composition (not a post-composition effect) so the sheet's first frame is
-        // already positioned at Peek instead of flashing fully-open before snapping. updateAnchors is
-        // idempotent and only re-keys when the measured anchors change (rotation / window resize).
-        remember(anchors) { sheetState.updateAnchors(anchors); anchors }
-
-        val mapBottomInset = when (sheetState.targetValue) {
-            SheetDetent.Peek -> peekVisible
-            SheetDetent.Half -> halfVisible
-            SheetDetent.Full -> fullVisible
-        }
+        val metrics = rememberMapSheetMetrics(
+            state = sheetState,
+            availableHeight = maxHeight,
+            peekVisibleHeight = SHEET_PEEK_CONTENT + navBarHeight,
+        )
 
         if (uiState.mapPoints.isEmpty()) {
             Text(
@@ -138,7 +115,7 @@ fun WatchlistHistoryDetailScreen(
                 onPointClick = { id -> viewModel.selectHit(id.toLongOrNull()) },
                 modifier = Modifier.fillMaxSize(),
                 topInset = statusBarHeight + 56.dp,
-                bottomInset = mapBottomInset,
+                bottomInset = metrics.mapBottomInset,
                 attributionEnabled = true
             )
         }
@@ -196,7 +173,7 @@ fun WatchlistHistoryDetailScreen(
 
         WatchlistDetailSheet(
             state = sheetState,
-            sheetHeight = fullVisible,
+            sheetHeight = metrics.sheetHeight,
             sightings = uiState.sightings,
             selectedId = uiState.selectedHitId,
             sort = uiState.sort,

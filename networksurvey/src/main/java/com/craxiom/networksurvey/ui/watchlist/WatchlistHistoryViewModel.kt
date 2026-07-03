@@ -42,6 +42,7 @@ class WatchlistHistoryViewModel(application: Application) : AndroidViewModel(app
     private val query = MutableStateFlow("")
     private val sort = MutableStateFlow(HistorySort.RECENT)
     private val mode = MutableStateFlow(HistoryViewMode.LIST)
+    private val selectedEntryId = MutableStateFlow<Long?>(null)
 
     private data class HistoryData(
         val groups: List<WatchlistHistoryGroup>,
@@ -87,6 +88,7 @@ class WatchlistHistoryViewModel(application: Application) : AndroidViewModel(app
             .mapNotNull { (entryId, locatedHits) ->
                 val entry = entryById[entryId] ?: return@mapNotNull null
                 WatchlistMapLegendEntry(
+                    entryId = entryId,
                     name = entry.label ?: entry.ssid ?: entry.bssid ?: "",
                     count = locatedHits.size,
                     colorHex = colorByEntry[entryId] ?: WATCHLIST_NETWORK_COLORS.first(),
@@ -97,28 +99,31 @@ class WatchlistHistoryViewModel(application: Application) : AndroidViewModel(app
         HistoryData(groups, mapPoints, legend, summaries.sumOf { it.sightings })
     }
 
-    val uiState = combine(historyData, query, sort, mode) { data, q, s, m ->
-        val filtered = if (q.isBlank()) data.groups else data.groups.filter { it.matches(q) }
-        val sorted = when (s) {
-            HistorySort.RECENT -> filtered.sortedByDescending { it.lastSeen }
-            HistorySort.STRONGEST -> filtered.sortedByDescending { it.bestRssi }
-            HistorySort.MOST_SEEN -> filtered.sortedByDescending { it.sightings }
-        }
-        WatchlistHistoryUiState(
-            groups = sorted,
-            mapPoints = data.mapPoints,
-            legend = data.legend,
-            totalSightings = data.totalSightings,
-            networkCount = data.groups.size,
-            query = q,
-            sort = s,
-            mode = m,
+    val uiState =
+        combine(historyData, query, sort, mode, selectedEntryId) { data, q, s, m, selected ->
+            val filtered = if (q.isBlank()) data.groups else data.groups.filter { it.matches(q) }
+            val sorted = when (s) {
+                HistorySort.RECENT -> filtered.sortedByDescending { it.lastSeen }
+                HistorySort.STRONGEST -> filtered.sortedByDescending { it.bestRssi }
+                HistorySort.MOST_SEEN -> filtered.sortedByDescending { it.sightings }
+            }
+            WatchlistHistoryUiState(
+                groups = sorted,
+                mapPoints = data.mapPoints,
+                legend = data.legend,
+                totalSightings = data.totalSightings,
+                networkCount = data.groups.size,
+                query = q,
+                sort = s,
+                mode = m,
+                // Drop a selection that no longer has a network row (history cleared / entry deleted).
+                selectedEntryId = selected?.takeIf { id -> data.legend.any { it.entryId == id } },
+            )
+        }.stateIn(
+            viewModelScope,
+            SharingStarted.WhileSubscribed(5000),
+            WatchlistHistoryUiState()
         )
-    }.stateIn(
-        viewModelScope,
-        SharingStarted.WhileSubscribed(5000),
-        WatchlistHistoryUiState()
-    )
 
     fun setQuery(value: String) {
         query.value = value
@@ -132,7 +137,13 @@ class WatchlistHistoryViewModel(application: Application) : AndroidViewModel(app
         mode.value = value
     }
 
+    /** Selects (or clears, with null) the network highlighted on the history map and its sheet row. */
+    fun selectEntry(entryId: Long?) {
+        selectedEntryId.value = entryId
+    }
+
     fun clearHistory() {
+        selectedEntryId.value = null
         viewModelScope.launch { hitDao.clearAll() }
     }
 }
@@ -159,8 +170,9 @@ data class WatchlistHistoryGroup(
     }
 }
 
-/** A legend row on the history map: a network's name, located-sighting count, and color. */
+/** A network row on the history map sheet: the watched entry's id, name, located-sighting count, and color. */
 data class WatchlistMapLegendEntry(
+    val entryId: Long,
     val name: String,
     val count: Int,
     val colorHex: String,
@@ -178,4 +190,5 @@ data class WatchlistHistoryUiState(
     val query: String = "",
     val sort: HistorySort = HistorySort.RECENT,
     val mode: HistoryViewMode = HistoryViewMode.LIST,
+    val selectedEntryId: Long? = null,
 )

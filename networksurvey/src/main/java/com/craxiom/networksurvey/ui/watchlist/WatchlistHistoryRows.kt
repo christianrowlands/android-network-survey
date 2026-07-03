@@ -6,10 +6,16 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -35,6 +41,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.craxiom.networksurvey.R
 import com.craxiom.networksurvey.ui.theme.WifiTokens
@@ -42,7 +49,7 @@ import com.craxiom.networksurvey.util.toWifiSignalCategory
 
 /**
  * Row composables for the Watchlist history screen: a per-network group card, the sort chip, and the
- * map legend. Extracted to keep [WatchlistHistoryScreen] focused.
+ * map sheet's network row. Extracted to keep [WatchlistHistoryScreen] focused.
  */
 
 /**
@@ -175,32 +182,95 @@ internal fun HistorySortChip(
     }
 }
 
-/** A single legend row on the history map: a color dot, the network name, and its sighting count. */
+/**
+ * A network row in the history map sheet: a color dot matching the network's map pins, the name, and
+ * its located-sighting count. The selected row gets a soft accent background plus a leading accent bar
+ * (mirroring its highlighted pins) and reveals a "View sightings" action in place of the count.
+ */
 @Composable
-internal fun WatchlistMapLegendRow(entry: WatchlistMapLegendEntry) {
+internal fun WatchlistNetworkRow(
+    entry: WatchlistMapLegendEntry,
+    selected: Boolean,
+    onClick: () -> Unit,
+    onOpenDetail: () -> Unit
+) {
     Row(
-        modifier = Modifier.fillMaxWidth(),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(9.dp)
+        modifier = Modifier
+            .fillMaxWidth()
+            .selectable(selected = selected, role = Role.Button, onClick = onClick)
+            .background(if (selected) WifiTokens.SsidSoft else Color.Transparent)
+            // Interactive row: keep at least the minimum touch-target height in both states so
+            // selecting does not change the row height.
+            .heightIn(min = 48.dp)
+            .height(IntrinsicSize.Min)
     ) {
+        // Leading accent bar mirrors the selected map pins; transparent (but present) when unselected so
+        // the row content stays aligned regardless of selection.
         Box(
             modifier = Modifier
-                .size(11.dp)
-                .clip(CircleShape)
-                .background(runCatching { Color(android.graphics.Color.parseColor(entry.colorHex)) }
-                    .getOrDefault(WifiTokens.SsidAccent))
+                .width(3.dp)
+                .fillMaxHeight()
+                .background(if (selected) WifiTokens.SsidAccent else Color.Transparent)
         )
-        Text(
-            text = entry.name,
-            style = MaterialTheme.typography.bodyMedium,
-            fontWeight = FontWeight.SemiBold,
-            color = MaterialTheme.colorScheme.onSurface,
-            modifier = Modifier.weight(1f)
-        )
-        Text(
-            text = stringResource(R.string.watchlist_history_group_sightings, entry.count),
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
+        Row(
+            modifier = Modifier
+                .weight(1f)
+                .fillMaxHeight()
+                .padding(horizontal = 16.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(11.dp)
+                    .clip(CircleShape)
+                    .background(runCatching { Color(android.graphics.Color.parseColor(entry.colorHex)) }
+                        .getOrDefault(WifiTokens.SsidAccent))
+            )
+            Text(
+                text = entry.name,
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.onSurface,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.weight(1f)
+            )
+            if (selected) {
+                Row(
+                    // Full-height capsule so the drill-in action meets the minimum touch target; a
+                    // near-miss would otherwise deselect the row and collapse this very action.
+                    modifier = Modifier
+                        .heightIn(min = 48.dp)
+                        .clip(RoundedCornerShape(999.dp))
+                        .clickable(
+                            onClickLabel = stringResource(R.string.watchlist_history_open_detail),
+                            role = Role.Button,
+                            onClick = onOpenDetail
+                        )
+                        .padding(start = 10.dp, end = 4.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = stringResource(R.string.watchlist_history_view_sightings),
+                        style = MaterialTheme.typography.labelLarge,
+                        fontWeight = FontWeight.SemiBold,
+                        color = WifiTokens.SsidAccent
+                    )
+                    Icon(
+                        Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                        contentDescription = null,
+                        tint = WifiTokens.SsidAccent,
+                        modifier = Modifier.size(18.dp)
+                    )
+                }
+            } else {
+                Text(
+                    text = stringResource(R.string.watchlist_history_group_sightings, entry.count),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
     }
 }

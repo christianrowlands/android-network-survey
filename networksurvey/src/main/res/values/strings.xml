@@ -1339,6 +1339,8 @@
     <string name="watchlist_history_group_subtitle">%1$s · %2$s · %3$s</string>
     <string name="watchlist_history_map_no_locations">No sightings have a recorded location yet.</string>
     <string name="watchlist_history_map_offline">Map needs a connection to load.</string>
+    <string name="watchlist_history_map_summary">%1$d networks · %2$d located sightings</string>
+    <string name="watchlist_history_view_sightings">View sightings</string>
     <string name="watchlist_history_open_detail">Open sighting details</string>
     <string name="watchlist_map_view_list">List view</string>
     <string name="watchlist_map_view_map">Map view</string>

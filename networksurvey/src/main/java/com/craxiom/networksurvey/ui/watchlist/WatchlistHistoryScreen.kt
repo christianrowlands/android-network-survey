@@ -1,15 +1,24 @@
 package com.craxiom.networksurvey.ui.watchlist
 
+import androidx.compose.foundation.gestures.AnchoredDraggableState
+import androidx.compose.foundation.gestures.animateTo
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
+import androidx.compose.foundation.layout.calculateEndPadding
+import androidx.compose.foundation.layout.calculateStartPadding
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -17,8 +26,6 @@ import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Place
 import androidx.compose.material.icons.filled.Search
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -28,14 +35,14 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.layout.onSizeChanged
-import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -45,10 +52,15 @@ import com.craxiom.networksurvey.ui.common.NsSegmentedToggle
 import com.craxiom.networksurvey.ui.common.SegmentedOption
 import com.craxiom.networksurvey.ui.common.dialogs.NsConfirmationDialog
 
+/** Visible height of the map sheet's Peek detent (drag handle + summary line), before nav-bar inset. */
+private val MAP_SHEET_PEEK_CONTENT = 96.dp
+
 /**
  * The Watchlist history screen: sightings grouped by watched network, with full-text search, a sort
  * control, and a List/Map view toggle. Tapping a network opens its sighting details. The map view
- * plots every located sighting colored per network with a legend.
+ * plots every located sighting colored per network, with a draggable network-key sheet: tapping a pin
+ * highlights its network's row, tapping a row highlights the network's pins, and the selected row's
+ * "View sightings" action opens that network's details.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -105,14 +117,27 @@ fun WatchlistHistoryScreen(
             )
         }
     ) { paddingValues ->
+        val layoutDirection = LocalLayoutDirection.current
+        // The map tab skips the Scaffold's bottom inset so its sheet sits flush against the screen
+        // bottom and owns the nav-bar inset itself; the list keeps the standard padding.
+        val bottomPadding = if (uiState.mode == HistoryViewMode.MAP) {
+            0.dp
+        } else {
+            paddingValues.calculateBottomPadding()
+        }
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(paddingValues)
+                .padding(
+                    start = paddingValues.calculateStartPadding(layoutDirection),
+                    top = paddingValues.calculateTopPadding(),
+                    end = paddingValues.calculateEndPadding(layoutDirection),
+                    bottom = bottomPadding
+                )
         ) {
             when (uiState.mode) {
                 HistoryViewMode.LIST -> HistoryListContent(uiState, viewModel, onOpenDetail)
-                HistoryViewMode.MAP -> HistoryMapContent(uiState, onOpenDetail)
+                HistoryViewMode.MAP -> HistoryMapContent(uiState, viewModel, onOpenDetail)
             }
         }
     }
@@ -197,39 +222,57 @@ private fun HistoryListContent(
 @Composable
 private fun HistoryMapContent(
     uiState: WatchlistHistoryUiState,
+    viewModel: WatchlistHistoryViewModel,
     onOpenDetail: (Long) -> Unit
 ) {
     if (uiState.mapPoints.isEmpty()) {
         EmptyMessage(stringResource(R.string.watchlist_history_map_no_locations))
         return
     }
-    val density = LocalDensity.current
-    // Space the legend occupies from the bottom, so the map frames pins and the attribution above it.
-    var legendInset by remember { mutableStateOf(0.dp) }
-    Box(modifier = Modifier.fillMaxSize()) {
+    val listState = rememberLazyListState()
+    val sheetState = remember { AnchoredDraggableState(initialValue = SheetDetent.Peek) }
+
+    // When a pin (or row) selects a network, open the sheet enough to reveal the list, then scroll to
+    // its row. Rows are ordered exactly like uiState.legend, so the index maps one-to-one.
+    LaunchedEffect(uiState.selectedEntryId) {
+        val id = uiState.selectedEntryId ?: return@LaunchedEffect
+        if (sheetState.currentValue == SheetDetent.Peek) {
+            sheetState.animateTo(SheetDetent.Half)
+        }
+        val index = uiState.legend.indexOfFirst { it.entryId == id }
+        if (index >= 0) listState.animateScrollToItem(index)
+    }
+
+    BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
+        val navBarHeight = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
+        val metrics = rememberMapSheetMetrics(
+            state = sheetState,
+            availableHeight = maxHeight,
+            peekVisibleHeight = MAP_SHEET_PEEK_CONTENT + navBarHeight,
+        )
+
         WatchlistMap(
             points = uiState.mapPoints,
-            selectedId = null,
-            onPointClick = { id -> id.toLongOrNull()?.let(onOpenDetail) },
+            selectedId = uiState.selectedEntryId?.toString(),
+            onPointClick = { id -> viewModel.selectEntry(id.toLongOrNull()) },
             modifier = Modifier.fillMaxSize(),
-            bottomInset = legendInset,
+            bottomInset = metrics.mapBottomInset,
             attributionEnabled = true
         )
-        Card(
-            modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .fillMaxWidth()
-                .padding(14.dp)
-                .onSizeChanged { legendInset = with(density) { it.height.toDp() } + 14.dp },
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh)
-        ) {
-            Column(
-                modifier = Modifier.padding(horizontal = 14.dp, vertical = 11.dp),
-                verticalArrangement = Arrangement.spacedBy(9.dp)
-            ) {
-                uiState.legend.forEach { WatchlistMapLegendRow(it) }
-            }
-        }
+
+        WatchlistHistoryMapSheet(
+            state = sheetState,
+            sheetHeight = metrics.sheetHeight,
+            legend = uiState.legend,
+            selectedEntryId = uiState.selectedEntryId,
+            listState = listState,
+            // Tapping the selected row again clears the focus (the map has no empty-tap deselect).
+            onSelect = { id ->
+                viewModel.selectEntry(if (uiState.selectedEntryId == id) null else id)
+            },
+            onOpenDetail = onOpenDetail,
+            modifier = Modifier.align(Alignment.BottomCenter)
+        )
     }
 }
 
