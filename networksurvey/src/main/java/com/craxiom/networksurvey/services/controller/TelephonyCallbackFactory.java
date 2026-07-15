@@ -1,6 +1,7 @@
 package com.craxiom.networksurvey.services.controller;
 
 import android.os.Build;
+import android.telephony.ServiceState;
 import android.telephony.TelephonyCallback;
 import android.telephony.TelephonyManager;
 
@@ -67,6 +68,50 @@ public class TelephonyCallbackFactory
     private static int getOverrideNetworkTypeInternal(OverrideNetworkTypeListener listener)
     {
         return listener.getOverrideNetworkType();
+    }
+
+    /**
+     * Gets the display network type from a listener object if it's an OverrideNetworkTypeListener.
+     *
+     * @param listener The listener object
+     * @return The display network type, or -1 if not available
+     */
+    public static int getDisplayNetworkType(@Nullable Object listener)
+    {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && listener instanceof OverrideNetworkTypeListener)
+        {
+            return getDisplayNetworkTypeInternal((OverrideNetworkTypeListener) listener);
+        }
+        return -1;
+    }
+
+    @RequiresApi(api = Build.VERSION_CODES.S)
+    private static int getDisplayNetworkTypeInternal(OverrideNetworkTypeListener listener)
+    {
+        return listener.getDisplayNetworkType();
+    }
+
+    /**
+     * Gets the cached {@link ServiceState} from a listener object if it's an
+     * OverrideNetworkTypeListener.
+     *
+     * @param listener The listener object
+     * @return The cached service state, or null if not available
+     */
+    @Nullable
+    public static ServiceState getServiceState(@Nullable Object listener)
+    {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && listener instanceof OverrideNetworkTypeListener)
+        {
+            return getServiceStateInternal((OverrideNetworkTypeListener) listener);
+        }
+        return null;
+    }
+
+    @RequiresApi(api = Build.VERSION_CODES.S)
+    private static ServiceState getServiceStateInternal(OverrideNetworkTypeListener listener)
+    {
+        return listener.getServiceState();
     }
 
     /**

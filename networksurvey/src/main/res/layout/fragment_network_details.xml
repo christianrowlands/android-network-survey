@@ -23,23 +23,28 @@
             android:layout_width="match_parent"
             android:layout_height="match_parent">
 
-            <LinearLayout
+            <!-- FrameLayout so the info button floats in the top-right corner as an overlay
+                 instead of taking its own row (which left dead space above the carrier). The
+                 content and airplane-mode views are mutually exclusive (the toggle only ever shows
+                 one), so stacking them in a frame is safe. -->
+            <FrameLayout
                 android:layout_width="fill_parent"
-                android:layout_height="match_parent"
-                android:orientation="vertical"
-                android:baselineAligned="false">
+                android:layout_height="wrap_content">
 
+                <!-- Everything that describes the current network state lives in this single
+                     container so airplane mode can toggle one view. -->
                 <LinearLayout
-                    android:layout_width="fill_parent"
-                    android:layout_height="match_parent"
+                    android:id="@+id/network_technology_content"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
                     android:orientation="vertical"
-                    android:paddingBottom="6dp"
+                    android:paddingBottom="8dp"
                     android:baselineAligned="false">
 
                     <androidx.constraintlayout.widget.ConstraintLayout
                         android:id="@+id/carrier_group"
                         android:layout_width="match_parent"
-                        android:layout_height="match_parent">
+                        android:layout_height="wrap_content">
 
                         <TextView
                             android:id="@+id/current_carrier"
@@ -53,129 +58,57 @@
                             android:layout_height="wrap_content"
                             android:gravity="center"
                             app:layout_constraintTop_toTopOf="@id/carrier_group"
-                            app:layout_constraintBottom_toTopOf="@id/current_carrier_label"
+                            app:layout_constraintBottom_toBottomOf="@id/carrier_group"
                             android:text="" />
-
-                        <TextView
-                            android:id="@+id/current_carrier_label"
-                            style="@style/SmallLabelText"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:gravity="center"
-                            android:text="@string/carrier_label"
-                            app:layout_constraintBottom_toBottomOf="@id/carrier_group" />
 
                     </androidx.constraintlayout.widget.ConstraintLayout>
 
-                </LinearLayout>
+                    <!-- Hero technology line, e.g. "NR · Standalone" or "LTE + NR · NSA" -->
+                    <TextView
+                        android:id="@+id/network_technology_hero"
+                        style="@style/NetworkHeroText"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="6dp"
+                        android:layout_marginStart="@dimen/small_margin"
+                        android:layout_marginEnd="@dimen/small_margin" />
 
-                <LinearLayout
-                    android:layout_width="fill_parent"
-                    android:layout_height="match_parent"
-                    android:orientation="horizontal"
-                    android:baselineAligned="false">
+                    <!-- Voice / Data / Branding pills; wrap on narrow screens. Hidden until the
+                         first scan delivers values so an empty pill never flashes. -->
+                    <com.google.android.flexbox.FlexboxLayout
+                        android:id="@+id/network_technology_pills"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="6dp"
+                        android:visibility="gone"
+                        app:alignItems="center"
+                        app:flexWrap="wrap"
+                        app:justifyContent="center">
 
-                    <LinearLayout
-                        android:layout_width="0dp"
-                        android:layout_height="match_parent"
-                        android:layout_weight="1"
-                        android:orientation="vertical">
+                        <TextView
+                            android:id="@+id/voice_pill"
+                            style="@style/PillText"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_margin="3dp" />
 
-                        <androidx.constraintlayout.widget.ConstraintLayout
-                            android:id="@+id/voice_network_group"
-                            android:layout_width="match_parent"
-                            android:layout_height="match_parent">
+                        <TextView
+                            android:id="@+id/data_pill"
+                            style="@style/PillText"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_margin="3dp"
+                            android:visibility="gone" />
 
-                            <TextView
-                                android:id="@+id/current_voice_network"
-                                style="@style/CellularTitleText"
-                                android:layout_width="match_parent"
-                                android:layout_height="wrap_content"
-                                android:gravity="center"
-                                app:layout_constraintTop_toTopOf="@id/voice_network_group"
-                                app:layout_constraintBottom_toTopOf="@id/current_voice_network_label"
-                                android:text="" />
+                        <TextView
+                            android:id="@+id/branding_pill"
+                            style="@style/PillText"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_margin="3dp"
+                            android:visibility="gone" />
 
-                            <TextView
-                                android:id="@+id/current_voice_network_label"
-                                style="@style/SmallLabelText"
-                                android:layout_width="match_parent"
-                                android:layout_height="wrap_content"
-                                android:gravity="center"
-                                android:text="@string/voice_network_label"
-                                app:layout_constraintBottom_toBottomOf="@id/voice_network_group" />
-
-                        </androidx.constraintlayout.widget.ConstraintLayout>
-
-                    </LinearLayout>
-
-                    <LinearLayout
-                        android:layout_width="0dp"
-                        android:layout_height="match_parent"
-                        android:layout_weight="1"
-                        android:orientation="vertical">
-
-                        <androidx.constraintlayout.widget.ConstraintLayout
-                            android:id="@+id/data_network_group"
-                            android:layout_width="match_parent"
-                            android:layout_height="match_parent">
-
-                            <TextView
-                                android:id="@+id/current_data_network"
-                                style="@style/CellularTitleText"
-                                android:layout_width="match_parent"
-                                android:layout_height="wrap_content"
-                                android:gravity="center"
-                                app:layout_constraintTop_toTopOf="@id/data_network_group"
-                                app:layout_constraintBottom_toTopOf="@id/current_data_network_label"
-                                android:text="" />
-
-                            <TextView
-                                android:id="@+id/current_data_network_label"
-                                style="@style/SmallLabelText"
-                                android:layout_width="match_parent"
-                                android:layout_height="wrap_content"
-                                android:gravity="center"
-                                android:text="@string/data_network_label"
-                                app:layout_constraintBottom_toBottomOf="@id/data_network_group" />
-
-                        </androidx.constraintlayout.widget.ConstraintLayout>
-
-                    </LinearLayout>
-
-                    <LinearLayout
-                        android:layout_width="0dp"
-                        android:layout_height="match_parent"
-                        android:layout_weight="1"
-                        android:orientation="vertical">
-
-                        <androidx.constraintlayout.widget.ConstraintLayout
-                            android:id="@+id/override_network_group"
-                            android:layout_width="match_parent"
-                            android:layout_height="match_parent">
-
-                            <TextView
-                                android:id="@+id/current_override_network"
-                                style="@style/CellularOverrideTitleText"
-                                android:layout_width="match_parent"
-                                android:layout_height="wrap_content"
-                                android:gravity="center"
-                                app:layout_constraintTop_toTopOf="@id/override_network_group"
-                                app:layout_constraintBottom_toTopOf="@id/current_override_network_label"
-                                android:text="" />
-
-                            <TextView
-                                android:id="@+id/current_override_network_label"
-                                style="@style/SmallLabelText"
-                                android:layout_width="match_parent"
-                                android:layout_height="wrap_content"
-                                android:gravity="center"
-                                android:text="@string/override_network_label"
-                                app:layout_constraintBottom_toBottomOf="@id/override_network_group" />
-
-                        </androidx.constraintlayout.widget.ConstraintLayout>
-
-                    </LinearLayout>
+                    </com.google.android.flexbox.FlexboxLayout>
 
                 </LinearLayout>
 
@@ -206,7 +139,18 @@
 
                 </LinearLayout>
 
-            </LinearLayout>
+                <!-- Floating info button, top-right of the card. Opens the pill explanation dialog. -->
+                <ImageView
+                    android:id="@+id/network_technology_info_icon"
+                    android:layout_width="24dp"
+                    android:layout_height="24dp"
+                    android:layout_gravity="top|end"
+                    android:layout_marginTop="@dimen/small_margin"
+                    android:layout_marginEnd="@dimen/small_margin"
+                    android:contentDescription="@string/network_technology_icon_description"
+                    android:src="@drawable/ic_info" />
+
+            </FrameLayout>
 
         </androidx.cardview.widget.CardView>
 
@@ -843,6 +787,36 @@
                             android:text="@string/snr_label" />
 
                     </LinearLayout>
+
+                </LinearLayout>
+
+                <!-- Carrier aggregation - shown only when more than one component carrier is active -->
+                <LinearLayout
+                    android:id="@+id/carrier_aggregation_group"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:gravity="center_horizontal"
+                    android:paddingTop="4dp"
+                    android:paddingBottom="6dp"
+                    android:visibility="gone"
+                    android:baselineAligned="false">
+
+                    <TextView
+                        android:id="@+id/carrier_aggregation_summary"
+                        style="@style/SmallLabelText"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content" />
+
+                    <!-- One bandwidth chip per component carrier, in ServiceState order -->
+                    <com.google.android.flexbox.FlexboxLayout
+                        android:id="@+id/carrier_aggregation_chips"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="2dp"
+                        app:alignItems="center"
+                        app:flexWrap="wrap"
+                        app:justifyContent="center" />
 
                 </LinearLayout>
 

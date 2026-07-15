@@ -185,9 +185,6 @@
     <string name="grant_camera_permission">扫描二维码需要相机权限</string>
 
     <string name="carrier_label">运营商</string>
-    <string name="data_network_label">数据网络</string>
-    <string name="override_network_label">数据网络</string>
-    <string name="voice_network_label">语音网络</string>
 
     <!-- GSM 标签 -->
 
@@ -307,9 +304,6 @@
         <b>SS_RSRP</b>（辅同步参考信号接收功率）：移动设备接收到的参考信号功率，单位为 dBm。有效范围 -31 至 -156。\n\n
         <b>SS_RSRQ</b>（辅同步参考信号接收质量）：衡量接收到的参考信号的质量。有效范围 20 至 -43，其中 20 为最佳。\n
     </string>
-
-	<string name="override_network_info_title">什么是覆盖网络？</string>
-	<string name="override_network_explanation">覆盖网络类型仅用于市场品牌或可视化目的。它不能被视为设备实际驻留的网络类型。\n\n换句话说，服务提供商希望用户认为他们所在的网络比实际更好，例如在状态栏显示 5G，而实际上却是 4G 网络。</string>
 
 	<string name="no_gps_device">设备未检测到 GPS！</string>
 	<string name="turn_on_gps">请打开 GPS</string>

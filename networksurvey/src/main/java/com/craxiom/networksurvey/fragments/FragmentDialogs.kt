@@ -25,7 +25,6 @@ import java.util.function.IntConsumer
 
 private const val TAG_BLUETOOTH_PERMISSION = "BluetoothPermissionRationale"
 private const val TAG_BLUETOOTH_SORT = "BluetoothSort"
-private const val TAG_OVERRIDE_NETWORK_INFO = "OverrideNetworkInfo"
 private const val TAG_CELLULAR_INFO = "CellularInfo"
 private const val TAG_QR_TOO_LARGE = "QrCodeTooLarge"
 private const val TAG_DELETE_UPLOAD_DATA = "DeleteUploadData"
@@ -79,20 +78,6 @@ fun showBluetoothSortDialog(
             immediateApply = true,
             onConfirm = { index -> onSelected.accept(index) },
             onDismiss = dismiss,
-        )
-    }
-}
-
-/**
- * Shows the informational dialog explaining the override network type field.
- */
-fun showOverrideNetworkInfo(fragmentManager: FragmentManager) {
-    ComposeDialogFragment.show(fragmentManager, TAG_OVERRIDE_NETWORK_INFO) { dismiss ->
-        NsMessageDialog(
-            title = stringResource(R.string.override_network_info_title),
-            message = stringResource(R.string.override_network_explanation),
-            onDismiss = dismiss,
-            icon = Icons.Outlined.Info,
         )
     }
 }

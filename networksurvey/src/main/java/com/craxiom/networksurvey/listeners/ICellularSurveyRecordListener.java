@@ -6,7 +6,7 @@ import com.craxiom.messaging.LteRecord;
 import com.craxiom.messaging.NrRecord;
 import com.craxiom.messaging.UmtsRecord;
 import com.craxiom.networksurvey.model.CellularRecordWrapper;
-import com.craxiom.networksurvey.util.CalculationUtils;
+import com.craxiom.networksurvey.model.NetworkTechnologyInfo;
 
 import java.util.List;
 
@@ -84,18 +84,13 @@ public interface ICellularSurveyRecordListener
     }
 
     /**
-     * Notification of the current Data and Voice network types. This method is called even when the values have not
-     * changed.
-     * <p>
-     * See {@link CalculationUtils#getNetworkType(int)} for the possible string values.
+     * Notification of the current cellular network technology (voice bearer, data RAT, override,
+     * NR mode, and carrier aggregation). This method is called even when the values have not changed.
      *
-     * @param dataNetworkType     The data network type (e.g. "LTE"), which might be different than the voice network type.
-     * @param voiceNetworkType    The voice network type (e.g. "LTE").
-     * @param subscriptionId      The subscription ID (aka SIM ID) that the records are associated with.
-     * @param overrideNetworkType The network type override, if any. This is the marketing name for the network type.
-     * @since 1.6.0
+     * @param technologyInfo The current network technology snapshot with pre-resolved display values.
+     * @param subscriptionId The subscription ID (aka SIM ID) that the info is associated with.
      */
-    default void onNetworkType(String dataNetworkType, String voiceNetworkType, int subscriptionId, String overrideNetworkType)
+    default void onNetworkType(NetworkTechnologyInfo technologyInfo, int subscriptionId)
     {
     }
 }

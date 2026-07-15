@@ -8,6 +8,9 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.os.Bundle;
 import android.provider.Settings;
+import android.text.SpannableStringBuilder;
+import android.text.Spanned;
+import android.text.style.ForegroundColorSpan;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -17,6 +20,8 @@ import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.annotation.StringRes;
+import androidx.core.content.ContextCompat;
 import androidx.lifecycle.LifecycleOwner;
 import androidx.lifecycle.ViewModelProvider;
 
@@ -32,6 +37,7 @@ import com.craxiom.networksurvey.R;
 import com.craxiom.networksurvey.constants.LteMessageConstants;
 import com.craxiom.networksurvey.constants.NetworkSurveyConstants;
 import com.craxiom.networksurvey.databinding.FragmentNetworkDetailsBinding;
+import com.craxiom.networksurvey.fragments.model.CarrierAggregationViewState;
 import com.craxiom.networksurvey.fragments.model.CellularViewModel;
 import com.craxiom.networksurvey.fragments.model.GsmNeighbor;
 import com.craxiom.networksurvey.fragments.model.LteNeighbor;
@@ -40,6 +46,7 @@ import com.craxiom.networksurvey.fragments.model.UmtsNeighbor;
 import com.craxiom.networksurvey.listeners.ICellularSurveyRecordListener;
 import com.craxiom.networksurvey.model.CellularProtocol;
 import com.craxiom.networksurvey.model.CellularRecordWrapper;
+import com.craxiom.networksurvey.model.NetworkTechnologyInfo;
 import com.craxiom.networksurvey.model.NrRecordWrapper;
 import com.craxiom.networksurvey.services.NetworkSurveyService;
 import com.craxiom.networksurvey.ui.cellular.CellularChartViewModel;
@@ -47,10 +54,12 @@ import com.craxiom.networksurvey.ui.cellular.ComposeFunctions;
 import com.craxiom.networksurvey.ui.cellular.model.ServingCellInfo;
 import com.craxiom.networksurvey.ui.main.SharedViewModel;
 import com.craxiom.networksurvey.util.CalculationUtils;
+import com.craxiom.networksurvey.util.CellularBandwidthUtils;
 import com.craxiom.networksurvey.util.CellularUtils;
 import com.craxiom.networksurvey.util.ColorUtils;
 import com.craxiom.networksurvey.util.NsUtils;
 import com.craxiom.networksurvey.util.ParserUtils;
+import com.craxiom.networksurvey.util.TelephonyStateUtils;
 import com.mackhartley.roundedprogressbar.RoundedProgressBar;
 
 import java.util.ArrayList;
@@ -78,6 +87,10 @@ public class NetworkDetailsFragment extends AServiceDataFragment implements ICel
     // of right now to prevent invalid values from being reported.
     private static final int RSCP_UNSET_VALUE_120 = -120;
     private static final int RSCP_UNSET_VALUE_24 = -24;
+
+    // Separator between a technology and its qualifier ("NR · Standalone") and between a pill's
+    // label and value ("Voice · VoNR").
+    private static final String TECH_SEPARATOR = " · ";
 
     private int subscriptionId;
 
@@ -198,15 +211,94 @@ public class NetworkDetailsFragment extends AServiceDataFragment implements ICel
     }
 
     @Override
-    public void onNetworkType(String dataNetworkType, String voiceNetworkType, int subscriptionId, String overrideNetworkType)
+    public void onNetworkType(NetworkTechnologyInfo technologyInfo, int subscriptionId)
     {
         // The records are for a different SIM, so ignore them because another
         // NetworkDetailsFragment instance will handle them.
         if (this.subscriptionId != subscriptionId) return;
 
-        viewModel.setDataNetworkType(dataNetworkType);
-        viewModel.setVoiceNetworkType(voiceNetworkType);
-        viewModel.setOverrideNetworkType(overrideNetworkType);
+        final TelephonyStateUtils.HeroResult hero = TelephonyStateUtils.deriveHero(
+                technologyInfo.nrMode(), technologyInfo.baseDataRat(), technologyInfo.registrationRows());
+        final String heroText = heroDisplay(hero);
+
+        viewModel.setHeroText(heroText);
+        viewModel.setHeroColorId(heroColorId(hero.state()));
+
+        // The pill row supports a live technology hero. On the degraded No Service and Unknown
+        // states the pills would all read "None"/"Unknown"/"N/A", which is noise the hero already
+        // conveys, so hide the whole row (a null voice value hides it). On every live state show all
+        // three pills with explicit values so nothing appears or disappears during normal use.
+        if (hero.state() == TelephonyStateUtils.HeroState.NO_SERVICE
+                || hero.state() == TelephonyStateUtils.HeroState.UNKNOWN)
+        {
+            viewModel.setVoicePillValue(null);
+            viewModel.setDataPillValue(null);
+            viewModel.setBrandingPillValue(null);
+        } else
+        {
+            viewModel.setVoicePillValue(technologyInfo.voiceDisplay());
+            viewModel.setDataPillValue(technologyInfo.dataDisplay());
+            // Branding shows the carrier's marketing override label, or a uniform "None" when there
+            // is no branding override (or it is not yet known). Gating on the raw override int keeps
+            // the value consistent across API levels and scan paths; overrideDisplay itself is "N/A"
+            // or "Unknown" on some paths, which would not match the info dialog copy.
+            viewModel.setBrandingPillValue(
+                    TelephonyStateUtils.isBrandingOverride(technologyInfo.overrideNetworkType())
+                            ? technologyInfo.overrideDisplay()
+                            : getString(R.string.branding_none));
+        }
+
+        viewModel.setCarrierAggregation(carrierAggregationViewState(technologyInfo.cellBandwidthsKhz()));
+    }
+
+    /**
+     * @return The hero technology line for the top card (e.g. "NR · Standalone").
+     */
+    private String heroDisplay(TelephonyStateUtils.HeroResult hero)
+    {
+        return switch (hero.state())
+        {
+            case NR_STANDALONE -> NetworkSurveyConstants.NR + TECH_SEPARATOR
+                    + getString(R.string.nr_mode_standalone);
+            case NR_NON_STANDALONE -> NetworkSurveyConstants.LTE + " + " + NetworkSurveyConstants.NR
+                    + TECH_SEPARATOR + NetworkSurveyConstants.NSA;
+            case DATA_RAT -> CalculationUtils.getNetworkType(hero.rat());
+            case NO_SERVICE -> getString(R.string.hero_no_service);
+            case UNKNOWN -> getString(R.string.unknown);
+        };
+    }
+
+    /**
+     * @return The hero text color resource: accent for a live technology, orange for no service,
+     * and faded for unknown, so a bad state never renders in the "all good" accent color.
+     */
+    private int heroColorId(TelephonyStateUtils.HeroState state)
+    {
+        return switch (state)
+        {
+            case NO_SERVICE -> R.color.rssi_orange;
+            case UNKNOWN -> R.color.fadedText;
+            default -> R.color.colorAccent;
+        };
+    }
+
+    /**
+     * @return The carrier aggregation view state (per-carrier chip labels plus the summary line),
+     * or null when fewer than two valid component carriers are reported (so the section is hidden).
+     */
+    private CarrierAggregationViewState carrierAggregationViewState(int[] cellBandwidthsKhz)
+    {
+        final int[] validKhz = CellularBandwidthUtils.validBandwidthsKhz(cellBandwidthsKhz);
+        if (validKhz.length <= 1) return null;
+
+        final List<String> chipLabels = new ArrayList<>(validKhz.length);
+        for (int khz : validKhz)
+        {
+            chipLabels.add(getString(R.string.ca_chip_mhz, CellularBandwidthUtils.formatBandwidthMhz(khz)));
+        }
+        final String summary = getString(R.string.carrier_aggregation_summary, validKhz.length,
+                CellularBandwidthUtils.formatBandwidthMhz(CellularBandwidthUtils.aggregateBandwidthKhz(validKhz)));
+        return new CarrierAggregationViewState(chipLabels, summary);
     }
 
     /**
@@ -214,8 +306,8 @@ public class NetworkDetailsFragment extends AServiceDataFragment implements ICel
      */
     private void initializeUiListeners()
     {
-        binding.overrideNetworkGroup.setOnClickListener(c -> showOverrideNetworkInfoDialog());
         binding.cellularInfoIcon.setOnClickListener(c -> showCellularInfoDialog());
+        binding.networkTechnologyInfoIcon.setOnClickListener(c -> showNetworkTechnologyInfoDialog());
         setupCopyOnLongPress();
     }
 
@@ -227,6 +319,7 @@ public class NetworkDetailsFragment extends AServiceDataFragment implements ICel
     private void setupCopyOnLongPress()
     {
         NsUtils.setupCopyOnLongPress(
+                binding.networkTechnologyHero,
                 binding.plmn, binding.tac, binding.cid,
                 binding.enbId, binding.sectorId, binding.earfcn,
                 binding.pci, binding.band, binding.frequency,
@@ -242,10 +335,15 @@ public class NetworkDetailsFragment extends AServiceDataFragment implements ICel
     {
         final LifecycleOwner viewLifecycleOwner = getViewLifecycleOwner();
 
-        viewModel.getDataNetworkType().observe(viewLifecycleOwner, networkType -> binding.currentDataNetwork.setText(networkType));
-        viewModel.getCarrier().observe(viewLifecycleOwner, carrier -> binding.currentCarrier.setText(carrier));
-        viewModel.getVoiceNetworkType().observe(viewLifecycleOwner, networkType -> binding.currentVoiceNetwork.setText(networkType));
-        viewModel.getOverrideNetworkType().observe(viewLifecycleOwner, networkType -> binding.currentOverrideNetwork.setText(networkType));
+        viewModel.getCarrier().observe(viewLifecycleOwner, this::updateCarrier);
+        viewModel.getHeroText().observe(viewLifecycleOwner, hero -> binding.networkTechnologyHero.setText(hero));
+        viewModel.getHeroColorId().observe(viewLifecycleOwner, this::updateHeroColor);
+        viewModel.getVoicePillValue().observe(viewLifecycleOwner, this::updateVoicePill);
+        viewModel.getDataPillValue().observe(viewLifecycleOwner,
+                value -> updatePill(binding.dataPill, R.string.pill_label_data, value));
+        viewModel.getBrandingPillValue().observe(viewLifecycleOwner,
+                value -> updatePill(binding.brandingPill, R.string.pill_label_branding, value));
+        viewModel.getCarrierAggregation().observe(viewLifecycleOwner, this::updateCarrierAggregation);
 
         viewModel.getAirplaneModeActive().observe(viewLifecycleOwner, this::updateAirplaneModeStatus);
 
@@ -282,10 +380,13 @@ public class NetworkDetailsFragment extends AServiceDataFragment implements ICel
     {
         final LifecycleOwner viewLifecycleOwner = getViewLifecycleOwner();
 
-        viewModel.getDataNetworkType().removeObservers(viewLifecycleOwner);
         viewModel.getCarrier().removeObservers(viewLifecycleOwner);
-        viewModel.getVoiceNetworkType().removeObservers(viewLifecycleOwner);
-        viewModel.getOverrideNetworkType().removeObservers(viewLifecycleOwner);
+        viewModel.getHeroText().removeObservers(viewLifecycleOwner);
+        viewModel.getHeroColorId().removeObservers(viewLifecycleOwner);
+        viewModel.getVoicePillValue().removeObservers(viewLifecycleOwner);
+        viewModel.getDataPillValue().removeObservers(viewLifecycleOwner);
+        viewModel.getBrandingPillValue().removeObservers(viewLifecycleOwner);
+        viewModel.getCarrierAggregation().removeObservers(viewLifecycleOwner);
 
         viewModel.getAirplaneModeActive().removeObservers(viewLifecycleOwner);
 
@@ -344,6 +445,11 @@ public class NetworkDetailsFragment extends AServiceDataFragment implements ICel
         viewModel.setLteNeighbors(Collections.emptySortedSet());
         viewModel.setUmtsNeighbors(Collections.emptySortedSet());
         viewModel.setGsmNeighbors(Collections.emptySortedSet());
+
+        // Carrier aggregation is a property of the serving cell, so clear it when the serving cell
+        // goes away. The top-card fields (hero and pills) are intentionally left alone here:
+        // onNetworkType refreshes them on every scan before this runs.
+        viewModel.setCarrierAggregation(null);
     }
 
     /**
@@ -1274,15 +1380,133 @@ public class NetworkDetailsFragment extends AServiceDataFragment implements ICel
     }
 
     /**
-     * Displays a dialog with a description about the Override Network.
+     * Sets the carrier line, falling back to a labeled "Unknown Carrier" when the provider name is
+     * unavailable so the value is never shown as an unlabeled blank.
+     *
+     * @param carrier The provider/operator name, or null/blank when it could not be determined.
      */
-    private void showOverrideNetworkInfoDialog()
+    private void updateCarrier(String carrier)
     {
-        FragmentDialogs.showOverrideNetworkInfo(getParentFragmentManager());
+        // String.isBlank() is API 34+, but minSdk is 26, so trim().isEmpty() is used instead. It
+        // also catches whitespace-only operator names, not just the empty string getProvider()
+        // returns when the name is unavailable.
+        binding.currentCarrier.setText(carrier == null || carrier.trim().isEmpty()
+                ? getString(R.string.carrier_unknown) : carrier);
     }
 
     /**
-     * Updates the UI to reflect airplane mode status.
+     * Applies the hero text color for the current hero state.
+     *
+     * @param colorId The color resource to apply, or null to leave the color unchanged.
+     */
+    private void updateHeroColor(Integer colorId)
+    {
+        final Context context = getContext();
+        if (binding == null || colorId == null || context == null) return;
+        binding.networkTechnologyHero.setTextColor(ContextCompat.getColor(context, colorId));
+    }
+
+    /**
+     * Updates the Voice pill, which doubles as the pill row visibility control: a null value means
+     * the hero is a degraded No Service or Unknown state, so the whole row is hidden under it.
+     *
+     * @param value The voice bearer display value, or null to hide the pill row.
+     */
+    private void updateVoicePill(String value)
+    {
+        if (binding == null) return;
+        if (value == null)
+        {
+            binding.networkTechnologyPills.setVisibility(View.GONE);
+        } else
+        {
+            updatePill(binding.voicePill, R.string.pill_label_voice, value);
+            binding.networkTechnologyPills.setVisibility(View.VISIBLE);
+        }
+    }
+
+    /**
+     * Binds a pill TextView with a two-tone "Label · Value" text, or hides it when there is no
+     * value to show.
+     */
+    private void updatePill(TextView pill, @StringRes int labelRes, String value)
+    {
+        if (binding == null) return;
+        if (value == null)
+        {
+            pill.setVisibility(View.GONE);
+        } else
+        {
+            pill.setText(buildPillText(labelRes, value));
+            pill.setVisibility(View.VISIBLE);
+        }
+    }
+
+    /**
+     * Builds the two-tone pill text: the label in the faded label color, the separator and value in
+     * the pill's normal text color, matching the app's faded-label/bright-value convention.
+     */
+    private CharSequence buildPillText(@StringRes int labelRes, String value)
+    {
+        final String label = getString(labelRes);
+        final SpannableStringBuilder builder = new SpannableStringBuilder(label);
+        builder.append(TECH_SEPARATOR).append(value);
+
+        final Context context = getContext();
+        if (context != null)
+        {
+            builder.setSpan(new ForegroundColorSpan(ContextCompat.getColor(context, R.color.fadedText)),
+                    0, label.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+        }
+        return builder;
+    }
+
+    /**
+     * Updates the carrier aggregation section in the serving cell card: one bandwidth chip per
+     * component carrier plus a summary line. Hidden when fewer than two valid carriers are active.
+     *
+     * @param state The view state, or null to hide the section.
+     */
+    private void updateCarrierAggregation(CarrierAggregationViewState state)
+    {
+        if (binding == null) return;
+        if (state == null)
+        {
+            binding.carrierAggregationGroup.setVisibility(View.GONE);
+        } else
+        {
+            binding.carrierAggregationSummary.setText(state.summary());
+
+            binding.carrierAggregationChips.removeAllViews();
+            final LayoutInflater inflater = getLayoutInflater();
+            for (String chipLabel : state.chipLabels())
+            {
+                final TextView chip = (TextView) inflater.inflate(R.layout.carrier_aggregation_chip,
+                        binding.carrierAggregationChips, false);
+                chip.setText(chipLabel);
+                binding.carrierAggregationChips.addView(chip);
+            }
+
+            binding.carrierAggregationGroup.setVisibility(View.VISIBLE);
+        }
+    }
+
+    /**
+     * Shows the Network Technology info dialog: an explanation of the hero line and the
+     * Voice / Data / Branding pills.
+     */
+    private void showNetworkTechnologyInfoDialog()
+    {
+        if (getContext() == null) return;
+        FragmentDialogs.showCellularInfo(getParentFragmentManager(),
+                getString(R.string.network_technology_title),
+                getString(R.string.network_technology_explanation));
+    }
+
+    /**
+     * Updates the UI to reflect airplane mode status. The carrier, hero, and pills all live in the
+     * network_technology_content container, so airplane mode toggles a single view; the next scan
+     * refreshes the values when airplane mode ends.
      *
      * @param isAirplaneModeActive True if airplane mode is active, false otherwise.
      */
@@ -1292,34 +1516,13 @@ public class NetworkDetailsFragment extends AServiceDataFragment implements ICel
 
         if (isAirplaneModeActive)
         {
-            // Hide normal technology card content
-            binding.carrierGroup.setVisibility(View.GONE);
-
-            // Hide the horizontal LinearLayout that contains both network columns
-            // This is the parent of the parent of voiceNetworkGroup
-            View voiceNetworkParent = binding.voiceNetworkGroup.getParent() instanceof View ?
-                    (View) binding.voiceNetworkGroup.getParent() : binding.voiceNetworkGroup;
-            View networkColumnsParent = voiceNetworkParent.getParent() instanceof View ?
-                    (View) voiceNetworkParent.getParent() : voiceNetworkParent;
-            networkColumnsParent.setVisibility(View.GONE);
-
-            // Show airplane mode message with icon
+            binding.networkTechnologyContent.setVisibility(View.GONE);
             binding.airplaneModeMessage.setVisibility(View.VISIBLE);
 
             clearCellularUi();
         } else
         {
-            // Show normal technology card content
-            binding.carrierGroup.setVisibility(View.VISIBLE);
-
-            // Show the horizontal LinearLayout that contains both network columns
-            View voiceNetworkParent = binding.voiceNetworkGroup.getParent() instanceof View ?
-                    (View) binding.voiceNetworkGroup.getParent() : binding.voiceNetworkGroup;
-            View networkColumnsParent = voiceNetworkParent.getParent() instanceof View ?
-                    (View) voiceNetworkParent.getParent() : voiceNetworkParent;
-            networkColumnsParent.setVisibility(View.VISIBLE);
-
-            // Hide airplane mode message
+            binding.networkTechnologyContent.setVisibility(View.VISIBLE);
             binding.airplaneModeMessage.setVisibility(View.GONE);
 
             // Restore visibility based on current protocol

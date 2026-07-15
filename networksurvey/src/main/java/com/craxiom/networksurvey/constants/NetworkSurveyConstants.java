@@ -75,6 +75,12 @@ public class NetworkSurveyConstants
     public static final String IWLAN = "IWLAN";
     public static final String LTE_CA = "LTE-CA";
     public static final String NR = "NR";
+    public static final String UNKNOWN = "Unknown";
+
+    // Inferred voice bearer labels and the 5G Non-Standalone acronym (not translated).
+    public static final String VOLTE = "VoLTE";
+    public static final String VONR = "VoNR";
+    public static final String NSA = "NSA";
 
     /**
      * AKA {@link CellInfo#UNAVAILABLE}, but I am not using that because it was added in API level 29.

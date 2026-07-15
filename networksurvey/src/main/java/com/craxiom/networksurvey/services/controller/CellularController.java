@@ -27,6 +27,7 @@ import androidx.annotation.Nullable;
 import androidx.core.app.ActivityCompat;
 import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 
+import com.craxiom.networksurvey.R;
 import com.craxiom.networksurvey.SimChangeReceiver;
 import com.craxiom.networksurvey.constants.NetworkSurveyConstants;
 import com.craxiom.networksurvey.listeners.CdrSmsObserver;
@@ -40,11 +41,14 @@ import com.craxiom.networksurvey.logging.PhoneStateCsvLogger;
 import com.craxiom.networksurvey.logging.PhoneStateRecordLogger;
 import com.craxiom.networksurvey.logging.UmtsCsvLogger;
 import com.craxiom.networksurvey.model.LogTypeState;
+import com.craxiom.networksurvey.model.NetworkTechnologyInfo;
 import com.craxiom.networksurvey.services.NetworkSurveyService;
 import com.craxiom.networksurvey.services.SurveyRecordProcessor;
 import com.craxiom.networksurvey.util.CalculationUtils;
 import com.craxiom.networksurvey.util.NsUtils;
 import com.craxiom.networksurvey.util.PreferenceUtils;
+import com.craxiom.networksurvey.util.TelephonyDiagnostics;
+import com.craxiom.networksurvey.util.TelephonyStateUtils;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -729,35 +733,16 @@ public class CellularController extends AController
                                 return;
                             }
 
-                            String dataNetworkType = "Unknown";
-                            String voiceNetworkType = "Unknown";
                             TelephonyManager telephonyManager = wrapper.getTelephonyManager();
-                            synchronized (cellularLoggingEnabled)
-                            {
-                                if (surveyService == null) return;
-                                if (ActivityCompat.checkSelfPermission(surveyService, Manifest.permission.READ_PHONE_STATE) == PackageManager.PERMISSION_GRANTED)
-                                {
-                                    dataNetworkType = CalculationUtils.getNetworkType(telephonyManager.getDataNetworkType());
-                                    voiceNetworkType = CalculationUtils.getNetworkType(telephonyManager.getVoiceNetworkType());
-                                }
-                            }
+                            if (surveyService == null) return;
 
                             String networkOperatorName = telephonyManager.getNetworkOperatorName();
                             SignalStrength signalStrength = telephonyManager.getSignalStrength();
 
-                            String overrideNetworkType = "N/A";
-                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S)
-                            {
-                                Object displayInfoListener = displayInfoCallbackMap.get(subscriptionId);
-                                if (displayInfoListener != null)
-                                {
-                                    int networkType = TelephonyCallbackFactory.getOverrideNetworkType(displayInfoListener);
-                                    overrideNetworkType = CalculationUtils.getOverrideNetworkType(networkType);
-                                }
-                            }
-                            surveyRecordProcessor.onCellInfoUpdate(cellInfo, dataNetworkType, voiceNetworkType,
-                                    subscriptionId, networkOperatorName, signalStrength,
-                                    overrideNetworkType);
+                            NetworkTechnologyInfo technologyInfo = buildNetworkTechnologyInfo(telephonyManager, subscriptionId, "N/A");
+
+                            surveyRecordProcessor.onCellInfoUpdate(cellInfo, technologyInfo,
+                                    subscriptionId, networkOperatorName, signalStrength);
                         }
 
                         @Override
@@ -780,6 +765,105 @@ public class CellularController extends AController
                 }
             }
         }
+    }
+
+    /**
+     * Builds the {@link NetworkTechnologyInfo} snapshot shown on the cellular details top card.
+     * <p>
+     * On API 31+ this uses the cached {@link ServiceState} and display info (populated by the
+     * {@link OverrideNetworkTypeListener} on the same executor, so no per-scan blocking binder call)
+     * to infer the voice bearer, NR mode, and carrier aggregation, and it prefers the display
+     * network type for the Data field (which stays on the cellular RAT during Wi-Fi calling, where
+     * {@code getDataNetworkType()} reports IWLAN). On API 26-30, or before the display-info callback
+     * has first fired, it falls back to the legacy {@code getVoiceNetworkType()}/
+     * {@code getDataNetworkType()} strings and leaves the enriched fields empty.
+     *
+     * @param telephonyManager The subscription-specific telephony manager to read from.
+     * @param subscriptionId   The subscription (SIM) the snapshot belongs to.
+     * @param fallbackOverride The override display string to use when the display-info callback has
+     *                         no value (preserves the differing per-scan-path literals).
+     * @return The technology snapshot with pre-resolved display strings.
+     */
+    private NetworkTechnologyInfo buildNetworkTechnologyInfo(TelephonyManager telephonyManager,
+                                                             int subscriptionId, String fallbackOverride)
+    {
+        String dataDisplay = NetworkSurveyConstants.UNKNOWN;
+        String voiceDisplay = NetworkSurveyConstants.UNKNOWN;
+        String overrideDisplay = fallbackOverride;
+        TelephonyStateUtils.NrMode nrMode = TelephonyStateUtils.NrMode.NONE;
+        int[] cellBandwidthsKhz = null;
+        List<TelephonyStateUtils.RegistrationRow> registrationRows = null;
+
+        int dataNetworkTypeInt = TelephonyManager.NETWORK_TYPE_UNKNOWN;
+        boolean hasPhoneStatePermission = surveyService != null
+                && ActivityCompat.checkSelfPermission(surveyService, Manifest.permission.READ_PHONE_STATE) == PackageManager.PERMISSION_GRANTED;
+        if (hasPhoneStatePermission)
+        {
+            synchronized (cellularLoggingEnabled)
+            {
+                dataNetworkTypeInt = telephonyManager.getDataNetworkType();
+                dataDisplay = CalculationUtils.getNetworkType(dataNetworkTypeInt);
+                voiceDisplay = CalculationUtils.getNetworkType(telephonyManager.getVoiceNetworkType());
+            }
+        }
+
+        int rawOverride = -1;
+        int rawDisplay = -1;
+        int baseRat = dataNetworkTypeInt;
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S)
+        {
+            Object displayInfoListener = displayInfoCallbackMap.get(subscriptionId);
+            if (displayInfoListener != null)
+            {
+                rawOverride = TelephonyCallbackFactory.getOverrideNetworkType(displayInfoListener);
+                rawDisplay = TelephonyCallbackFactory.getDisplayNetworkType(displayInfoListener);
+                overrideDisplay = CalculationUtils.getOverrideNetworkType(rawOverride);
+
+                // Prefer the display network type: it is the cellular RAT the status bar badges and
+                // stays NR during Wi-Fi calling, where getDataNetworkType() reports IWLAN. Both -1
+                // (never reported) and 0 (NETWORK_TYPE_UNKNOWN) mean "not known yet".
+                if (rawDisplay > 0)
+                {
+                    dataDisplay = CalculationUtils.getNetworkType(rawDisplay);
+                    baseRat = rawDisplay;
+                }
+                nrMode = TelephonyStateUtils.deriveNrMode(baseRat, rawOverride);
+
+                ServiceState serviceState = TelephonyCallbackFactory.getServiceState(displayInfoListener);
+                if (serviceState != null)
+                {
+                    registrationRows = TelephonyStateUtils.extractRows(serviceState);
+                    voiceDisplay = voiceBearerDisplay(TelephonyStateUtils.deriveVoiceBearer(registrationRows), voiceDisplay);
+                    cellBandwidthsKhz = serviceState.getCellBandwidths();
+                }
+            }
+        }
+
+        // Debug-only diagnostic snapshot, correlated with the values above.
+        TelephonyDiagnostics.logNetworkTypeSnapshot(surveyService, telephonyManager, subscriptionId, rawOverride, rawDisplay);
+
+        return new NetworkTechnologyInfo(subscriptionId, voiceDisplay, dataDisplay, overrideDisplay,
+                rawOverride, baseRat, nrMode, cellBandwidthsKhz, registrationRows);
+    }
+
+    /**
+     * Resolves an inferred {@link TelephonyStateUtils.VoiceBearerResult} to a display string.
+     *
+     * @param result   The derived voice bearer.
+     * @param fallback The value to use if the context is unavailable.
+     * @return The display string (e.g. "Wi-Fi Calling", "VoNR", "GSM", "None").
+     */
+    private String voiceBearerDisplay(TelephonyStateUtils.VoiceBearerResult result, String fallback)
+    {
+        if (surveyService == null) return fallback;
+        return switch (result.type())
+        {
+            case WIFI_CALLING -> surveyService.getString(R.string.voice_bearer_wifi_calling);
+            case VOLTE -> NetworkSurveyConstants.VOLTE;
+            case VONR -> NetworkSurveyConstants.VONR;
+            case CIRCUIT_SWITCHED -> CalculationUtils.getNetworkType(result.circuitSwitchedRat());
+            case NONE -> surveyService.getString(R.string.voice_bearer_none);
+        };
     }
 
     /**
@@ -881,21 +965,14 @@ public class CellularController extends AController
                                         signalStrength = subscriptionTelephonyManager.getSignalStrength();
                                     }
 
-                                    String dataNetworkType = "Unknown";
-                                    String voiceNetworkType = "Unknown";
-                                    if (ActivityCompat.checkSelfPermission(surveyService, Manifest.permission.READ_PHONE_STATE) == PackageManager.PERMISSION_GRANTED)
-                                    {
-                                        dataNetworkType = CalculationUtils.getNetworkType(subscriptionTelephonyManager.getDataNetworkType());
-                                        voiceNetworkType = CalculationUtils.getNetworkType(subscriptionTelephonyManager.getVoiceNetworkType());
-                                    }
+                                    NetworkTechnologyInfo technologyInfo = buildNetworkTechnologyInfo(
+                                            subscriptionTelephonyManager, wrapper.getSubscriptionId(), "None");
 
                                     surveyRecordProcessor.onCellInfoUpdate(subscriptionTelephonyManager.getAllCellInfo(),
-                                            dataNetworkType,
-                                            voiceNetworkType,
+                                            technologyInfo,
                                             wrapper.getSubscriptionId(),
                                             subscriptionTelephonyManager.getNetworkOperatorName(),
-                                            signalStrength,
-                                            "None");
+                                            signalStrength);
                                 }
                             } catch (Throwable t)
                             {
@@ -1010,21 +1087,14 @@ public class CellularController extends AController
                                                 signalStrength = subscriptionTelephonyManager.getSignalStrength();
                                             }
 
-                                            String dataNetworkType = "Unknown";
-                                            String voiceNetworkType = "Unknown";
-                                            if (ActivityCompat.checkSelfPermission(surveyService, Manifest.permission.READ_PHONE_STATE) == PackageManager.PERMISSION_GRANTED)
-                                            {
-                                                dataNetworkType = CalculationUtils.getNetworkType(subscriptionTelephonyManager.getDataNetworkType());
-                                                voiceNetworkType = CalculationUtils.getNetworkType(subscriptionTelephonyManager.getVoiceNetworkType());
-                                            }
+                                            NetworkTechnologyInfo technologyInfo = buildNetworkTechnologyInfo(
+                                                    subscriptionTelephonyManager, wrapper.getSubscriptionId(), "N/A");
 
                                             surveyRecordProcessor.onCellInfoUpdate(subscriptionTelephonyManager.getAllCellInfo(),
-                                                    dataNetworkType,
-                                                    voiceNetworkType,
+                                                    technologyInfo,
                                                     wrapper.getSubscriptionId(),
                                                     subscriptionTelephonyManager.getNetworkOperatorName(),
-                                                    signalStrength,
-                                                    "N/A");
+                                                    signalStrength);
                                         }
                                     } catch (Throwable t)
                                     {

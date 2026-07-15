@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- A single per-component-carrier bandwidth chip, inflated into the carrier aggregation
+     FlexboxLayout on the cellular details screen. Inflated from a layout (rather than built in
+     code) so the layout margins are honored by the Flexbox parent. -->
+<TextView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/carrier_aggregation_chip"
+    style="@style/PillText"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:layout_margin="3dp" />

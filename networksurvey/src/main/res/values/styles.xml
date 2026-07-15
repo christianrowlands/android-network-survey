@@ -90,13 +90,32 @@
         <item name="android:textColor">@color/colorAccent</item>
     </style>
 
-    <style name="CellularOverrideTitleText" parent="CellularTitleText">
-        <item name="android:maxLines">1</item>
-        <item name="android:autoSizeMaxTextSize">22sp</item>
-        <item name="android:autoSizeMinTextSize">8sp</item>
+    <!-- The hero technology line on the cellular details top card (e.g. "NR · Standalone").
+         With uniform autosize the max size is the authoritative text size. The min is low enough
+         that the widest hero ("LTE + NR · NSA") stays on one line on narrow screens / large font
+         scales instead of clipping. -->
+    <style name="NetworkHeroText" parent="TextAppearance.AppCompat">
+        <item name="android:autoSizeMaxTextSize">26sp</item>
+        <item name="android:autoSizeMinTextSize">12sp</item>
         <item name="android:autoSizeTextType">uniform</item>
         <item name="android:autoSizeStepGranularity">2sp</item>
-        <item name="android:textColor">@color/rssi_orange</item>
+        <item name="android:maxLines">1</item>
+        <item name="android:gravity">center</item>
+        <item name="android:textColor">@color/colorAccent</item>
+    </style>
+
+    <!-- Small pill/chip text over pill_background, mirroring the Compose NetworkTag component.
+         No autosize on purpose: pills wrap in their Flexbox parent at large font scales. -->
+    <style name="PillText" parent="TextAppearance.AppCompat">
+        <item name="android:textSize">11sp</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:textColor">@color/normalText</item>
+        <item name="android:background">@drawable/pill_background</item>
+        <item name="android:paddingStart">7dp</item>
+        <item name="android:paddingEnd">7dp</item>
+        <item name="android:paddingTop">2dp</item>
+        <item name="android:paddingBottom">2dp</item>
+        <item name="android:maxLines">1</item>
     </style>
 
     <style name="TitleText" parent="TextAppearance.AppCompat">

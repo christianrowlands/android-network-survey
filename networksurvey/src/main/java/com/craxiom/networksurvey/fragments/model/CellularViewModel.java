@@ -19,10 +19,17 @@ import java.util.SortedSet;
  */
 public class CellularViewModel extends ViewModel
 {
-    private final MutableLiveData<String> dataNetworkType = new MutableLiveData<>();
     private final MutableLiveData<String> carrier = new MutableLiveData<>();
-    private final MutableLiveData<String> voiceNetworkType = new MutableLiveData<>();
-    private final MutableLiveData<String> overrideNetworkType = new MutableLiveData<>();
+    // Top card hero line ("NR · Standalone") and its color resource.
+    private final MutableLiveData<String> heroText = new MutableLiveData<>();
+    private final MutableLiveData<Integer> heroColorId = new MutableLiveData<>();
+    // Pill values (the label part is added by the fragment); null means "hide". A null voice pill
+    // value hides the whole pill row (used when the device has no service).
+    private final MutableLiveData<String> voicePillValue = new MutableLiveData<>();
+    private final MutableLiveData<String> dataPillValue = new MutableLiveData<>();
+    private final MutableLiveData<String> brandingPillValue = new MutableLiveData<>();
+    // Carrier aggregation chips + summary; null means "hide the section".
+    private final MutableLiveData<CarrierAggregationViewState> carrierAggregation = new MutableLiveData<>();
 
     private final MutableLiveData<Location> location = new MutableLiveData<>();
     private final MutableLiveData<Boolean> providerEnabled = new MutableLiveData<>(true);
@@ -53,19 +60,6 @@ public class CellularViewModel extends ViewModel
     private final MutableLiveData<SortedSet<UmtsNeighbor>> umtsNeighbors = new MutableLiveData<>();
     private final MutableLiveData<SortedSet<GsmNeighbor>> gsmNeighbors = new MutableLiveData<>();
 
-    public LiveData<String> getDataNetworkType()
-    {
-        return dataNetworkType;
-    }
-
-    public void setDataNetworkType(String newDataNetworkType)
-    {
-        if (!Objects.equals(dataNetworkType.getValue(), newDataNetworkType))
-        {
-            dataNetworkType.postValue(newDataNetworkType);
-        }
-    }
-
     public LiveData<String> getCarrier()
     {
         return carrier;
@@ -79,29 +73,81 @@ public class CellularViewModel extends ViewModel
         }
     }
 
-    public LiveData<String> getVoiceNetworkType()
+    public LiveData<String> getHeroText()
     {
-        return voiceNetworkType;
+        return heroText;
     }
 
-    public void setVoiceNetworkType(String newVoiceNetworkType)
+    public void setHeroText(String newHeroText)
     {
-        if (!Objects.equals(voiceNetworkType.getValue(), newVoiceNetworkType))
+        if (!Objects.equals(heroText.getValue(), newHeroText))
         {
-            voiceNetworkType.postValue(newVoiceNetworkType);
+            heroText.postValue(newHeroText);
         }
     }
 
-    public LiveData<String> getOverrideNetworkType()
+    public LiveData<Integer> getHeroColorId()
     {
-        return overrideNetworkType;
+        return heroColorId;
     }
 
-    public void setOverrideNetworkType(String newOverrideNetworkType)
+    public void setHeroColorId(Integer newHeroColorId)
     {
-        if (!Objects.equals(overrideNetworkType.getValue(), newOverrideNetworkType))
+        if (!Objects.equals(heroColorId.getValue(), newHeroColorId))
         {
-            overrideNetworkType.postValue(newOverrideNetworkType);
+            heroColorId.postValue(newHeroColorId);
+        }
+    }
+
+    public LiveData<String> getVoicePillValue()
+    {
+        return voicePillValue;
+    }
+
+    public void setVoicePillValue(String newVoicePillValue)
+    {
+        if (!Objects.equals(voicePillValue.getValue(), newVoicePillValue))
+        {
+            voicePillValue.postValue(newVoicePillValue);
+        }
+    }
+
+    public LiveData<String> getDataPillValue()
+    {
+        return dataPillValue;
+    }
+
+    public void setDataPillValue(String newDataPillValue)
+    {
+        if (!Objects.equals(dataPillValue.getValue(), newDataPillValue))
+        {
+            dataPillValue.postValue(newDataPillValue);
+        }
+    }
+
+    public LiveData<String> getBrandingPillValue()
+    {
+        return brandingPillValue;
+    }
+
+    public void setBrandingPillValue(String newBrandingPillValue)
+    {
+        if (!Objects.equals(brandingPillValue.getValue(), newBrandingPillValue))
+        {
+            brandingPillValue.postValue(newBrandingPillValue);
+        }
+    }
+
+    public LiveData<CarrierAggregationViewState> getCarrierAggregation()
+    {
+        return carrierAggregation;
+    }
+
+    public void setCarrierAggregation(CarrierAggregationViewState newCarrierAggregation)
+    {
+        if (!Objects.equals(carrierAggregation.getValue(), newCarrierAggregation))
+        {
+            carrierAggregation.postValue(newCarrierAggregation);
         }
     }
 

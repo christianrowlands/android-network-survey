@@ -108,6 +108,7 @@ import com.craxiom.networksurvey.model.CdrEventType;
 import com.craxiom.networksurvey.model.CellularProtocol;
 import com.craxiom.networksurvey.model.CellularRecordWrapper;
 import com.craxiom.networksurvey.model.ConstellationFreqKey;
+import com.craxiom.networksurvey.model.NetworkTechnologyInfo;
 import com.craxiom.networksurvey.model.NrRecordWrapper;
 import com.craxiom.networksurvey.model.WifiRecordWrapper;
 import com.craxiom.networksurvey.services.controller.CellularController;
@@ -516,26 +517,24 @@ public class SurveyRecordProcessor
      * survey records and any listeners are notified of the new records.
      *
      * @param allCellInfo         The List of {@link CellInfo} records to convert to survey records.
-     * @param dataNetworkType     The data network type (e.g. "LTE"), which might be different than the voice network type.
-     * @param voiceNetworkType    The voice network type (e.g. "LTE").
+     * @param technologyInfo      The current network technology snapshot (voice bearer, data RAT, override,
+     *                            NR mode, carrier aggregation) with pre-resolved display values.
      * @param subscriptionId      The subscription ID (aka SIM ID) associated with the cell info records.
      *                            This allows for multi-sim support in NS.
      * @param networkOperatorName The name of the network operator since it is sometimes not available in the CellInfo.
      * @param signalStrength      The signal strength object that contains the SNR value since it is sometimes not
      *                            available in the CellInfo object.
-     * @param overrideNetworkType The network type that the provider has specified to override the actual network type
-     *                            with. This is use for marketing purposes to show 5G when the network is really 4G.
      */
-    public void onCellInfoUpdate(List<CellInfo> allCellInfo, String dataNetworkType, String voiceNetworkType,
-                                 int subscriptionId, String networkOperatorName, SignalStrength signalStrength,
-                                 String overrideNetworkType) throws SecurityException
+    public void onCellInfoUpdate(List<CellInfo> allCellInfo, NetworkTechnologyInfo technologyInfo,
+                                 int subscriptionId, String networkOperatorName, SignalStrength signalStrength)
+            throws SecurityException
     {
         // synchronized to make sure that we are only processing one list of Cell Info objects at a time.
         synchronized (cellInfoProcessingLock)
         {
             try
             {
-                notifyNetworkTypeListeners(dataNetworkType, voiceNetworkType, subscriptionId, overrideNetworkType);
+                notifyNetworkTypeListeners(technologyInfo, subscriptionId);
 
                 if (allCellInfo != null && !allCellInfo.isEmpty())
                 {
@@ -2749,20 +2748,18 @@ public class SurveyRecordProcessor
     }
 
     /**
-     * Notify {@link #cellularSurveyRecordListeners} of a the current data and voice network types.
+     * Notify {@link #cellularSurveyRecordListeners} of the current cellular network technology.
      *
-     * @param dataNetworkType  The data network type (e.g. "LTE"), which might be different than the voice network type.
-     * @param voiceNetworkType The voice network type (e.g. "LTE").
-     * @param subscriptionId   The subscription ID (aka SIM ID) that the records are associated with.
+     * @param technologyInfo The current network technology snapshot with pre-resolved display values.
+     * @param subscriptionId The subscription ID (aka SIM ID) that the info is associated with.
      * @since 1.6.0
      */
-    private void notifyNetworkTypeListeners(String dataNetworkType, String voiceNetworkType,
-                                            int subscriptionId, String overrideNetworkType)
+    private void notifyNetworkTypeListeners(NetworkTechnologyInfo technologyInfo, int subscriptionId)
     {
         cellularSurveyRecordListeners.forEach(l -> {
             try
             {
-                l.onNetworkType(dataNetworkType, voiceNetworkType, subscriptionId, overrideNetworkType);
+                l.onNetworkType(technologyInfo, subscriptionId);
             } catch (Exception e)
             {
                 Timber.e(e, "Unable to notify a Cellular Survey Record Listener because of an exception");

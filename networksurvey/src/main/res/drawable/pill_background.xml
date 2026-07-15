@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Neutral pill/chip background matching the Compose NetworkTag component (NetworkTag.kt):
+     surfaceContainerHighest fill with a subtle outlineVariant border. -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android">
+    <solid android:color="@color/md_theme_surfaceContainerHighest" />
+    <stroke
+        android:width="1dp"
+        android:color="@color/md_theme_outlineVariant" />
+    <corners android:radius="5dp" />
+</shape>

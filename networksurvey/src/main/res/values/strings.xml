@@ -187,9 +187,19 @@
     <string name="grant_camera_permission">The Camera Permission is required for scanning QR codes</string>
 
     <string name="carrier_label">Carrier</string>
-    <string name="data_network_label">Data Network</string>
-    <string name="override_network_label">Override Network</string>
-    <string name="voice_network_label">Voice Network</string>
+    <string name="carrier_unknown">Unknown Carrier</string>
+    <string name="voice_bearer_wifi_calling">Wi-Fi Calling</string>
+    <string name="voice_bearer_none">None</string>
+    <string name="nr_mode_standalone">Standalone</string>
+    <string name="hero_no_service">No Service</string>
+    <string name="pill_label_voice">Voice</string>
+    <string name="pill_label_data">Data</string>
+    <string name="pill_label_branding">Branding</string>
+    <string name="branding_none">None</string>
+    <string name="network_technology_title">Network Technology</string>
+    <string name="network_technology_icon_description">Network technology information</string>
+    <string name="carrier_aggregation_summary">Carrier Aggregation · %1$d carriers · %2$s MHz</string>
+    <string name="network_technology_explanation">These fields describe the technologies your phone is using right now.\n\nThe large line is the network you are on: the radio access technology (RAT), plus whether 5G is Standalone (NR on its own) or Non-Standalone (NSA, NR added onto an LTE anchor).\n\nThe Voice pill is the technology carrying calls; Wi-Fi Calling is detected directly, while VoLTE and VoNR are inferred because Android does not expose them to apps.\n\nThe Data pill is the radio access technology (RAT) carrying data. It often matches the large line above.\n\nThe Branding pill is the label your carrier uses for the status-bar icon (for example showing 5G on a 4G network). It is marketing branding, not the actual RAT, and reads None when your carrier applies none.</string>
 
     <!-- GSM labels -->
 
@@ -310,9 +320,6 @@
         <b>SS_RSRP</b> (Secondary Synchronization Reference Signal Received Power): Power of the reference signal in dBm as received by the mobile device. Valid range -31 to -156.\n\n
         <b>SS_RSRQ</b> (Secondary Synchronization Reference Signal Received Quality): Measures the quality of the received reference signal. Valid range 20 to -43 with 20 being the best.\n
     </string>
-
-    <string name="override_network_info_title">What is an Override Network?</string>
-    <string name="override_network_explanation">The override network type is for market branding or visualization purposes only. It cannot be treated as the actual network type the device is camped on.\n\nIn other words, service providers want the user to think they are on a better network than they actually are such as showing 5G in the top bar when it is really a 4G network.</string>
 
     <string name="no_gps_device">No GPS detected in device!</string>
     <string name="turn_on_gps">Please turn on GPS</string>

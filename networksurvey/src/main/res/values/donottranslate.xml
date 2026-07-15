@@ -105,6 +105,7 @@
     <string name="mcc_mnc_value">%1$s-%2$s</string>
     <string name="dbm_value_label">%1$s dBm</string>
     <string name="db_value_label">%1$s dB</string>
+    <string name="ca_chip_mhz">%1$s MHz</string>
 
     <!-- Wi-Fi / Bluetooth acronyms -->
     <string name="bssid_clip_label">BSSID</string>
