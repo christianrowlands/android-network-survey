@@ -98,6 +98,11 @@ data class UploadResponse(
     @SerializedName("status") val status: String,  // "completed", "failed", etc.
     @SerializedName("message") val message: String?,
     @SerializedName("processed") val processed: Int,
+    // Records the server permanently rejected (unparseable/unsupported) and will
+    // never accept; they are acknowledged as uploaded and must not be retried.
+    // Older servers omit this field; Gson zero-fills it.
+    @SerializedName("skipped") val skipped: Int = 0,
+    // Transient failures the server expects us to retry (e.g. a database error).
     @SerializedName("failed") val failed: Int,
     @SerializedName("total_records") val totalRecords: Int,
     @SerializedName("workspace_name") val workspaceName: String?

@@ -99,8 +99,25 @@ class NsAnalyticsUploadWorker(context: Context, params: WorkerParameters) :
             // Create API client
             val apiClient = NsAnalyticsApiFactory.createClient(apiUrl)
 
-            // Get total count of pending records
-            val totalPendingCount = database.nsAnalyticsDao().getPendingRecordCount()
+            // Purge records the server has definitively rejected too many times so
+            // they can never wedge the oldest-first upload window (poison-pill guard).
+            // retryCount only advances on definitive server rejections (see
+            // isDefinitiveRejection), never on outages, so this cannot drop records
+            // that merely failed to reach the server. Rows are eligible for upload at
+            // retryCount 0..MAX_RETRY_COUNT, so a record gets MAX_RETRY_COUNT + 1
+            // definitive rejections before it is purged here.
+            val purged = database.nsAnalyticsDao()
+                .deleteFailedRecords(NsAnalyticsConstants.MAX_RETRY_COUNT)
+            if (purged > 0) {
+                Timber.w(
+                    "Dropped %d queued records that exceeded %d upload retries",
+                    purged, NsAnalyticsConstants.MAX_RETRY_COUNT
+                )
+            }
+
+            // Get total count of records eligible for upload (at or under the retry cap)
+            val totalPendingCount = database.nsAnalyticsDao()
+                .getUploadableRecordCount(NsAnalyticsConstants.MAX_RETRY_COUNT)
 
             if (totalPendingCount == 0) {
                 Timber.d("No pending records to upload")
@@ -135,9 +152,9 @@ class NsAnalyticsUploadWorker(context: Context, params: WorkerParameters) :
                     totalRecordsUploaded
                 )
 
-                // Get next batch of pending records
+                // Get next batch of records eligible for upload
                 val pendingRecords = database.nsAnalyticsDao()
-                    .getPendingRecords(batchSize)
+                    .getUploadableRecords(batchSize, NsAnalyticsConstants.MAX_RETRY_COUNT)
 
                 if (pendingRecords.isEmpty()) {
                     // No more records to process
@@ -208,6 +225,13 @@ class NsAnalyticsUploadWorker(context: Context, params: WorkerParameters) :
 
                     totalRecordsUploaded += pendingRecords.size
                     totalRecordsProcessed += responseBody.processed
+
+                    if (responseBody.skipped > 0) {
+                        Timber.w(
+                            "Server permanently skipped %d of %d records in this batch (unparseable/unsupported); they will not be retried",
+                            responseBody.skipped, pendingRecords.size
+                        )
+                    }
 
                     Timber.i(
                         "Batch %d/%d: Successfully uploaded %d records (processed: %d)",
@@ -406,12 +430,23 @@ class NsAnalyticsUploadWorker(context: Context, params: WorkerParameters) :
                         }
                     }
 
-                    // Increment retry count for failed batch
-                    val recordIds = pendingRecords.map { it.id }
-                    database.nsAnalyticsDao().incrementRetryCount(
-                        recordIds,
-                        System.currentTimeMillis()
-                    )
+                    // Only count this attempt against the retry cap when the server
+                    // definitively rejected the batch. Transient conditions (5xx,
+                    // outages, throttling) must not advance retryCount, or a long
+                    // backend outage combined with the cap purge would delete data
+                    // that never had a real chance to upload.
+                    if (isDefinitiveRejection(response.code())) {
+                        val recordIds = pendingRecords.map { it.id }
+                        database.nsAnalyticsDao().incrementRetryCount(
+                            recordIds,
+                            System.currentTimeMillis()
+                        )
+                    } else {
+                        Timber.d(
+                            "Transient failure (HTTP %d); not counting against the retry cap",
+                            response.code()
+                        )
+                    }
 
                     // If upload fails, we should retry the entire worker
                     return@withContext Result.retry()
@@ -753,6 +788,26 @@ class NsAnalyticsUploadWorker(context: Context, params: WorkerParameters) :
                 ?: NsAnalyticsConstants.DEFAULT_QUOTA_RETRY_AFTER_SECONDS
             return parsed.coerceIn(1L, NsAnalyticsConstants.MAX_QUOTA_RETRY_AFTER_SECONDS)
         }
+
+        /**
+         * True when the server gave a definitive verdict on the batch, meaning the
+         * attempt should count against the retry cap. 207 means the server parsed
+         * the batch and rejected part of it; a non-transient 4xx means the request
+         * itself was rejected. Excluded as transient:
+         * - 401/403: authorization state that user or server action can restore
+         *   (e.g. 403 WORKSPACE_INACTIVE during a deletion grace period); the
+         *   actionable 401/403 error codes have their own early-return handling
+         *   and never reach this check
+         * - 402: quota, resolved by user action, normally its own early-return path
+         * - 408/425/429: timeout/too-early/throttling
+         * - all 5xx and network errors
+         * so an outage or recoverable rejection can never advance retryCount
+         * toward the purge threshold.
+         *
+         * Visible for testing.
+         */
+        internal fun isDefinitiveRejection(httpCode: Int): Boolean =
+            httpCode == 207 || (httpCode in 400..499 && httpCode !in setOf(401, 402, 403, 408, 425, 429))
 
         /**
          * Trigger immediate upload.

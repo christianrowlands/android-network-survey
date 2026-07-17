@@ -28,6 +28,18 @@ public interface NsAnalyticsDao
     @Query("SELECT * FROM ns_analytics_queue WHERE uploaded = 0 ORDER BY timestamp ASC LIMIT :limit")
     List<NsAnalyticsQueueEntity> getPendingRecords(int limit);
 
+    /**
+     * Pending records eligible for upload: rows at or under the retry cap. The
+     * predicate (retryCount <= max) must stay the mirror image of
+     * {@link #deleteFailedRecords(int)}'s (retryCount > max), otherwise rows at
+     * exactly the cap would be invisible to upload but never purged.
+     */
+    @Query("SELECT * FROM ns_analytics_queue WHERE uploaded = 0 AND retryCount <= :maxRetries ORDER BY timestamp ASC LIMIT :limit")
+    List<NsAnalyticsQueueEntity> getUploadableRecords(int limit, int maxRetries);
+
+    @Query("SELECT COUNT(*) FROM ns_analytics_queue WHERE uploaded = 0 AND retryCount <= :maxRetries")
+    int getUploadableRecordCount(int maxRetries);
+
     @Query("SELECT * FROM ns_analytics_queue WHERE uploaded = 0 AND recordType = :type ORDER BY timestamp ASC LIMIT :limit")
     List<NsAnalyticsQueueEntity> getPendingRecordsByType(String type, int limit);
 
@@ -46,8 +58,12 @@ public interface NsAnalyticsDao
     @Query("DELETE FROM ns_analytics_queue WHERE uploaded = 1 AND timestamp < :before")
     void cleanupOldUploadedRecords(long before);
 
+    /**
+     * Purges records that were definitively rejected by the server more than
+     * maxRetries times. Returns the number of rows deleted.
+     */
     @Query("DELETE FROM ns_analytics_queue WHERE retryCount > :maxRetries")
-    void deleteFailedRecords(int maxRetries);
+    int deleteFailedRecords(int maxRetries);
 
     @Query("DELETE FROM ns_analytics_queue")
     void clearQueue();

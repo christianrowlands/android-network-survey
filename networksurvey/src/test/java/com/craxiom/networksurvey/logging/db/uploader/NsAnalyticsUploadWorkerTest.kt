@@ -139,4 +139,44 @@ class NsAnalyticsUploadWorkerTest {
         // The exact max is preserved.
         assertEquals(max, NsAnalyticsUploadWorker.parseRetryAfterSeconds(max.toString()))
     }
+
+    // isDefinitiveRejection gates whether a failed upload attempt counts against the
+    // retry cap. Only definitive server verdicts may advance retryCount: if transient
+    // conditions counted, a backend outage plus the cap purge would delete records
+    // that never had a real chance to upload.
+
+    @Test
+    fun isDefinitiveRejection_207PartialFailure_isDefinitive() {
+        assertTrue(NsAnalyticsUploadWorker.isDefinitiveRejection(207))
+    }
+
+    @Test
+    fun isDefinitiveRejection_definitive4xx_isDefinitive() {
+        assertTrue(NsAnalyticsUploadWorker.isDefinitiveRejection(400))
+        assertTrue(NsAnalyticsUploadWorker.isDefinitiveRejection(404))
+        assertTrue(NsAnalyticsUploadWorker.isDefinitiveRejection(413))
+        assertTrue(NsAnalyticsUploadWorker.isDefinitiveRejection(422))
+    }
+
+    @Test
+    fun isDefinitiveRejection_recoverable4xx_isTransient() {
+        // 401/403: authorization state that can be restored (e.g. 403 WORKSPACE_INACTIVE
+        // during a deletion grace period must never burn retries toward the purge).
+        assertFalse(NsAnalyticsUploadWorker.isDefinitiveRejection(401))
+        assertFalse(NsAnalyticsUploadWorker.isDefinitiveRejection(403))
+        // 402 quota, 408 timeout, 425 too-early, 429 throttling.
+        assertFalse(NsAnalyticsUploadWorker.isDefinitiveRejection(402))
+        assertFalse(NsAnalyticsUploadWorker.isDefinitiveRejection(408))
+        assertFalse(NsAnalyticsUploadWorker.isDefinitiveRejection(425))
+        assertFalse(NsAnalyticsUploadWorker.isDefinitiveRejection(429))
+    }
+
+    @Test
+    fun isDefinitiveRejection_5xxAndSuccessCodes_areNotDefinitive() {
+        assertFalse(NsAnalyticsUploadWorker.isDefinitiveRejection(200))
+        assertFalse(NsAnalyticsUploadWorker.isDefinitiveRejection(500))
+        assertFalse(NsAnalyticsUploadWorker.isDefinitiveRejection(502))
+        assertFalse(NsAnalyticsUploadWorker.isDefinitiveRejection(503))
+        assertFalse(NsAnalyticsUploadWorker.isDefinitiveRejection(504))
+    }
 }
