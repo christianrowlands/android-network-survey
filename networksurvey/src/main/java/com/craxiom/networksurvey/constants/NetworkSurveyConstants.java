@@ -278,6 +278,11 @@ public class NetworkSurveyConstants
     public static final String PROPERTY_STREAMING_QUEUE_LIMIT = "streaming_queue_limit";
     public static final int DEFAULT_STREAMING_QUEUE_LIMIT = 20000;
     public static final int HIGH_STREAMING_QUEUE_LIMIT_THRESHOLD = 50000;
+    /**
+     * Sentinel value that disables the streaming queue limit, resulting in an unbounded queue
+     * (no backpressure, scanning never pauses due to queue fullness).
+     */
+    public static final int STREAMING_QUEUE_LIMIT_DISABLED = 0;
 
     // Display Settings preferences
     public static final String PROPERTY_MEASUREMENT_UNITS = "measurement_units";

@@ -806,7 +806,7 @@ public class SettingsFragment extends PreferenceFragmentCompat implements Shared
             int newLimit = Integer.parseInt(newValueStr);
 
             // Check if limit was set to 0 (disabled)
-            if (newLimit == 0)
+            if (newLimit == NetworkSurveyConstants.STREAMING_QUEUE_LIMIT_DISABLED)
             {
                 showDisableQueueLimitWarning(sharedPreferences, context);
             }

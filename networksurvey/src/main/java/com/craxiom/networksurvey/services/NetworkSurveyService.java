@@ -3351,7 +3351,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
         {
             boolean shouldResume = false;
 
-            if (queueLimit == 0)
+            if (queueLimit == NetworkSurveyConstants.STREAMING_QUEUE_LIMIT_DISABLED)
             {
                 // Limit was disabled (set to 0), so resume
                 Timber.i("Streaming queue limit disabled, resuming scanning");

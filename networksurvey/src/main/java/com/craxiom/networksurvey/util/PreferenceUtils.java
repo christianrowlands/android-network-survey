@@ -29,6 +29,7 @@ import android.content.SharedPreferences;
 import android.content.res.Resources;
 import android.os.Bundle;
 
+import androidx.annotation.VisibleForTesting;
 import androidx.preference.PreferenceManager;
 
 import com.craxiom.mqttlibrary.MqttConstants;
@@ -1247,14 +1248,19 @@ public class PreferenceUtils
      * <p>
      * First, this method tries to pull the MDM provided streaming queue limit value. If it is not set (either because the device
      * is not under MDM control, or if that specific value is not set by the MDM administrator) then the value is pulled
-     * from the Android Shared Preferences (aka from the user settings). If it is not set there then the default value
-     * of 0 is returned (which disables queue limiting - unbounded queue).
+     * from the Android Shared Preferences (aka from the user settings). If it is not set there either then the default value
+     * of {@link NetworkSurveyConstants#DEFAULT_STREAMING_QUEUE_LIMIT} (a bounded queue) is returned.
+     * <p>
+     * An explicit value of 0 is honored as "disabled" and produces an unbounded queue (see
+     * {@link NetworkSurveyConstants#STREAMING_QUEUE_LIMIT_DISABLED}). A negative or otherwise invalid value is treated as
+     * out of range and falls back to the default so that garbage input does not silently create an unbounded queue.
      * <p>
      * The only exception to this sequence is that if the user has toggled the MDM override switch in user settings,
      * then the user preference value will be used instead of the MDM value.
      *
      * @param context The context to use when getting the Shared Preferences and Restriction Manager.
-     * @return The streaming queue limit (0 = disabled/unbounded, positive value = max pending messages before pausing).
+     * @return The streaming queue limit (0 = disabled/unbounded, positive value = max pending messages before backpressure
+     * is applied - pausing scanning for MQTT, dropping records for gRPC).
      */
     public static int getStreamingQueueLimit(Context context)
     {
@@ -1270,12 +1276,7 @@ public class PreferenceUtils
             if (mdmProperties.containsKey(NetworkSurveyConstants.PROPERTY_STREAMING_QUEUE_LIMIT))
             {
                 final int limit = mdmProperties.getInt(NetworkSurveyConstants.PROPERTY_STREAMING_QUEUE_LIMIT);
-                // Clamp the limit to valid range (0 = disabled, positive = limit)
-                if (limit <= 0)
-                {
-                    return NetworkSurveyConstants.DEFAULT_STREAMING_QUEUE_LIMIT; // Disabled
-                }
-                return Math.min(limit, MAX_STREAMING_QUEUE_LIMIT);
+                return clampStreamingQueueLimit(limit);
             }
         }
 
@@ -1289,12 +1290,7 @@ public class PreferenceUtils
                     String.valueOf(NetworkSurveyConstants.DEFAULT_STREAMING_QUEUE_LIMIT));
             final int limit = Integer.parseInt(limitString);
 
-            // Clamp the limit to valid range
-            if (limit <= 0)
-            {
-                return NetworkSurveyConstants.DEFAULT_STREAMING_QUEUE_LIMIT; // Disabled
-            }
-            return Math.min(limit, MAX_STREAMING_QUEUE_LIMIT);
+            return clampStreamingQueueLimit(limit);
         } catch (ClassCastException e)
         {
             // Fall back to int format
@@ -1302,11 +1298,7 @@ public class PreferenceUtils
             {
                 final int limit = preferences.getInt(NetworkSurveyConstants.PROPERTY_STREAMING_QUEUE_LIMIT,
                         NetworkSurveyConstants.DEFAULT_STREAMING_QUEUE_LIMIT);
-                if (limit <= 0)
-                {
-                    return NetworkSurveyConstants.DEFAULT_STREAMING_QUEUE_LIMIT;
-                }
-                return Math.min(limit, MAX_STREAMING_QUEUE_LIMIT);
+                return clampStreamingQueueLimit(limit);
             } catch (Exception ex)
             {
                 Timber.e(ex, "Could not convert the streaming queue limit preference to an int");
@@ -1317,6 +1309,31 @@ public class PreferenceUtils
             Timber.e(e, "Could not parse the streaming queue limit preference");
             return NetworkSurveyConstants.DEFAULT_STREAMING_QUEUE_LIMIT;
         }
+    }
+
+    /**
+     * Normalizes a raw streaming queue limit value (from MDM restrictions or user preferences) to its effective value.
+     * <p>
+     * An explicit 0 disables the limit and produces an unbounded queue
+     * ({@link NetworkSurveyConstants#STREAMING_QUEUE_LIMIT_DISABLED}). A negative value is out of the valid range and is
+     * treated as invalid, falling back to {@link NetworkSurveyConstants#DEFAULT_STREAMING_QUEUE_LIMIT} so that garbage
+     * input does not silently create an unbounded queue. Positive values are capped at {@link #MAX_STREAMING_QUEUE_LIMIT}.
+     *
+     * @param limit The raw limit value to normalize.
+     * @return The effective streaming queue limit (0 = disabled/unbounded).
+     */
+    @VisibleForTesting
+    static int clampStreamingQueueLimit(int limit)
+    {
+        if (limit == NetworkSurveyConstants.STREAMING_QUEUE_LIMIT_DISABLED)
+        {
+            return NetworkSurveyConstants.STREAMING_QUEUE_LIMIT_DISABLED; // Explicitly disabled - unbounded queue
+        }
+        if (limit < 0)
+        {
+            return NetworkSurveyConstants.DEFAULT_STREAMING_QUEUE_LIMIT; // Invalid value - fall back to the safe default
+        }
+        return Math.min(limit, MAX_STREAMING_QUEUE_LIMIT);
     }
 
     /**
