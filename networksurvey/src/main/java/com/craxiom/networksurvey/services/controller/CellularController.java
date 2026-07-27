@@ -772,11 +772,19 @@ public class CellularController extends AController
      * <p>
      * On API 31+ this uses the cached {@link ServiceState} and display info (populated by the
      * {@link OverrideNetworkTypeListener} on the same executor, so no per-scan blocking binder call)
-     * to infer the voice bearer, NR mode, and carrier aggregation, and it prefers the display
-     * network type for the Data field (which stays on the cellular RAT during Wi-Fi calling, where
+     * to infer the voice bearer and NR mode, and it prefers the display network type for the Data
+     * field (which stays on the cellular RAT during Wi-Fi calling, where
      * {@code getDataNetworkType()} reports IWLAN). On API 26-30, or before the display-info callback
      * has first fired, it falls back to the legacy {@code getVoiceNetworkType()}/
      * {@code getDataNetworkType()} strings and leaves the enriched fields empty.
+     * <p>
+     * The carrier aggregation bandwidths are the one deliberate exception to the no-per-scan-binder
+     * rule: they come from a fresh {@link TelephonyManager#getServiceState()} call on every scan
+     * (API 28+). The cached ServiceState only refreshes on registration events, and modems do not
+     * push indications for pure SCell add/remove, so a cached value can lag the true carrier
+     * aggregation state by an unbounded interval. A fresh read bounds the staleness by the scan
+     * interval and also covers API 28-30, where the display-info callback is unavailable. The
+     * bandwidths are logged on LTE/NR survey records, so they must reflect scan time.
      *
      * @param telephonyManager The subscription-specific telephony manager to read from.
      * @param subscriptionId   The subscription (SIM) the snapshot belongs to.
@@ -834,8 +842,31 @@ public class CellularController extends AController
                 {
                     registrationRows = TelephonyStateUtils.extractRows(serviceState);
                     voiceDisplay = voiceBearerDisplay(TelephonyStateUtils.deriveVoiceBearer(registrationRows), voiceDisplay);
-                    cellBandwidthsKhz = serviceState.getCellBandwidths();
                 }
+            }
+        }
+
+        if (hasPhoneStatePermission && Build.VERSION.SDK_INT >= Build.VERSION_CODES.P)
+        {
+            try
+            {
+                // Read fresh rather than from the cached callback ServiceState (see the javadoc):
+                // carrier aggregation flaps with traffic without firing onServiceStateChanged, so
+                // only a scan-time read reflects the aggregation state the records are logged with.
+                // On Android 11+ the result is location-sanitized without fine location, but the
+                // bandwidth list is not location data and survives sanitization.
+                ServiceState freshServiceState;
+                synchronized (cellularLoggingEnabled)
+                {
+                    freshServiceState = telephonyManager.getServiceState();
+                }
+                if (freshServiceState != null)
+                {
+                    cellBandwidthsKhz = freshServiceState.getCellBandwidths();
+                }
+            } catch (Exception e)
+            {
+                Timber.w(e, "Could not read the ServiceState for the cell bandwidths");
             }
         }
 

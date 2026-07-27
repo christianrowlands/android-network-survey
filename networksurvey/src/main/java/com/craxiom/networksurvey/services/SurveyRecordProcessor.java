@@ -55,6 +55,7 @@ import com.craxiom.messaging.BluetoothRecord;
 import com.craxiom.messaging.BluetoothRecordData;
 import com.craxiom.messaging.CdmaRecord;
 import com.craxiom.messaging.CdmaRecordData;
+import com.craxiom.messaging.ConnectionStatus;
 import com.craxiom.messaging.DeviceStatus;
 import com.craxiom.messaging.GnssRecord;
 import com.craxiom.messaging.GnssRecordData;
@@ -114,6 +115,7 @@ import com.craxiom.networksurvey.model.WifiRecordWrapper;
 import com.craxiom.networksurvey.services.controller.CellularController;
 import com.craxiom.networksurvey.ui.activesurvey.NewTowerNotificationHelper;
 import com.craxiom.networksurvey.ui.activesurvey.TowerDetectionJavaWrapper;
+import com.craxiom.networksurvey.util.CellularBandwidthUtils;
 import com.craxiom.networksurvey.util.CellularUtils;
 import com.craxiom.networksurvey.util.LocationUtils;
 import com.craxiom.networksurvey.util.NsUtils;
@@ -146,6 +148,7 @@ import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
+import java.util.function.IntConsumer;
 import java.util.stream.Collectors;
 
 import timber.log.Timber;
@@ -545,9 +548,15 @@ public class SurveyRecordProcessor
                             .getBoolean(NetworkSurveyConstants.PROPERTY_INCLUDE_NEIGHBOR_CELLS,
                                     NetworkSurveyConstants.DEFAULT_INCLUDE_NEIGHBOR_CELLS);
 
+                    // The per-carrier bandwidths describe the device's data connection for this
+                    // scan, not any single cell, so they are computed once per scan and stamped
+                    // only on the records for cells the device is actively using.
+                    final int[] scanBandwidthsKhz = CellularBandwidthUtils.validBandwidthsKhz(
+                            technologyInfo == null ? null : technologyInfo.cellBandwidthsKhz());
+
                     for (CellInfo cellInfo : allCellInfo)
                     {
-                        final CellularRecordWrapper cellularRecord = processCellInfo(cellInfo, subscriptionId, networkOperatorName, signalStrength, includeNeighborCells);
+                        final CellularRecordWrapper cellularRecord = processCellInfo(cellInfo, subscriptionId, networkOperatorName, signalStrength, includeNeighborCells, scanBandwidthsKhz);
                         if (cellularRecord != null) cellularRecords.add(cellularRecord);
                     }
 
@@ -831,9 +840,11 @@ public class SurveyRecordProcessor
      * @param cellInfo             The Cell Info object with the details.
      * @param subscriptionId       The subscription ID (aka SIM ID) associated with the cell info record.
      * @param includeNeighborCells If false, non-registered (neighbor) cells are skipped and null is returned.
+     * @param scanBandwidthsKhz    The validated per-carrier bandwidths for this scan's data connection,
+     *                             stamped on LTE/NR records for actively used cells; may be empty.
      * @since 0.0.5
      */
-    private CellularRecordWrapper processCellInfo(CellInfo cellInfo, int subscriptionId, String networkOperatorName, SignalStrength signalStrength, boolean includeNeighborCells)
+    private CellularRecordWrapper processCellInfo(CellInfo cellInfo, int subscriptionId, String networkOperatorName, SignalStrength signalStrength, boolean includeNeighborCells, int[] scanBandwidthsKhz)
     {
         // We only want to take the time to process a record if we are going to do something with it.  Currently, that
         // means logging, sending to a server, or updating the UI with the latest LTE information.
@@ -853,8 +864,12 @@ public class SurveyRecordProcessor
                 }
             }
 
-            // Skip neighbor cells if the user preference is disabled
-            if (!includeNeighborCells && !cellInfo.isRegistered())
+            // Skip neighbor cells if the user preference is disabled. A secondary serving cell
+            // (e.g. the NR data leg of a 5G NSA connection) is exempt because the phone is
+            // actively connected to it; it is not registered only because registration happens on
+            // the anchor cell. The exemption is technology-agnostic on purpose: any cell the
+            // device reports as SECONDARY_SERVING is one the phone is actively using.
+            if (!includeNeighborCells && !cellInfo.isRegistered() && !isSecondaryServingCell(cellInfo))
             {
                 return null;
             }
@@ -865,7 +880,7 @@ public class SurveyRecordProcessor
 
             if (cellInfo instanceof CellInfoLte)
             {
-                final LteRecord lteSurveyRecord = generateLteSurveyRecord((CellInfoLte) cellInfo, subscriptionId, carrierName, signalStrength, deviceTime, elapsedTimeMillis);
+                final LteRecord lteSurveyRecord = generateLteSurveyRecord((CellInfoLte) cellInfo, subscriptionId, carrierName, signalStrength, deviceTime, elapsedTimeMillis, scanBandwidthsKhz);
                 if (lteSurveyRecord != null)
                 {
                     notifyLteRecordListeners(lteSurveyRecord);
@@ -897,7 +912,7 @@ public class SurveyRecordProcessor
                 }
             } else if (android.os.Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q && cellInfo instanceof CellInfoNr)
             {
-                final NrRecordWrapper nrRecordWrapper = generateNrSurveyRecord((CellInfoNr) cellInfo, subscriptionId, carrierName, deviceTime, elapsedTimeMillis);
+                final NrRecordWrapper nrRecordWrapper = generateNrSurveyRecord((CellInfoNr) cellInfo, subscriptionId, carrierName, signalStrength, deviceTime, elapsedTimeMillis, scanBandwidthsKhz);
                 if (nrRecordWrapper != null)
                 {
                     notifyNrRecordListeners((NrRecord) nrRecordWrapper.cellularRecord);
@@ -1455,7 +1470,7 @@ public class SurveyRecordProcessor
      * @param cellInfoLte The object that contains the LTE Cell info.  This can be a serving cell, or a neighbor cell.
      * @return The survey record.
      */
-    private LteRecord generateLteSurveyRecord(CellInfoLte cellInfoLte, int subscriptionId, String carrierName, SignalStrength signalStrength, ZonedDateTime deviceTime, long elapsedTimeMillis)
+    private LteRecord generateLteSurveyRecord(CellInfoLte cellInfoLte, int subscriptionId, String carrierName, SignalStrength signalStrength, ZonedDateTime deviceTime, long elapsedTimeMillis, int[] scanBandwidthsKhz)
     {
         final CellIdentityLte cellIdentity = cellInfoLte.getCellIdentity();
         final int mcc = cellIdentity.getMcc();
@@ -1520,6 +1535,8 @@ public class SurveyRecordProcessor
         dataBuilder.setRecordNumber(cellularRecordNumber.getAndIncrement());
         dataBuilder.setGroupNumber(cellularGroupNumber.get());
         dataBuilder.setServingCell(BoolValue.newBuilder().setValue(cellInfoLte.isRegistered()).build());
+        dataBuilder.setConnectionStatus(toConnectionStatus(cellInfoLte));
+        setCellBandwidthsIfActive(scanBandwidthsKhz, cellInfoLte, dataBuilder::addCellBandwidthsKhz);
         if (provider != null) dataBuilder.setProvider(provider.toString());
 
         if (mcc != Integer.MAX_VALUE)
@@ -1641,7 +1658,7 @@ public class SurveyRecordProcessor
      */
     @SuppressLint("Range")
     @RequiresApi(api = Build.VERSION_CODES.Q)
-    private NrRecordWrapper generateNrSurveyRecord(CellInfoNr cellInfoNr, int subscriptionId, String carrierName, ZonedDateTime deviceTime, long elapsedTimeMillis)
+    private NrRecordWrapper generateNrSurveyRecord(CellInfoNr cellInfoNr, int subscriptionId, String carrierName, SignalStrength signalStrength, ZonedDateTime deviceTime, long elapsedTimeMillis, int[] scanBandwidthsKhz)
     {
         // safe to cast as per: https://developer.android.com/reference/android/telephony/CellInfoNr#getCellIdentity()
         final CellIdentityNr cellIdentity = (CellIdentityNr) cellInfoNr.getCellIdentity();
@@ -1674,9 +1691,30 @@ public class SurveyRecordProcessor
         final int csiRsrp = cellSignalStrength.getCsiRsrp();
         final int csiRsrq = cellSignalStrength.getCsiRsrq();
         final int csiSinr = cellSignalStrength.getCsiSinr();
-        final int ssRsrp = cellSignalStrength.getSsRsrp();
-        final int ssRsrq = cellSignalStrength.getSsRsrq();
-        final int ssSinr = cellSignalStrength.getSsSinr();
+        int ssRsrp = cellSignalStrength.getSsRsrp();
+        int ssRsrq = cellSignalStrength.getSsRsrq();
+        int ssSinr = cellSignalStrength.getSsSinr();
+
+        // Some devices report UNAVAILABLE for the SS values on the CellInfoNr object, especially
+        // for the 5G NSA secondary serving cell. The SignalStrength object describes the cells the
+        // phone is actively connected to, so fall back to it for those cells only. The fallback is
+        // all-or-nothing: it engages only when the CellInfoNr contributed no SS values at all, and
+        // then all three come from the one fallback measurement. Patching individual gaps would
+        // blend two measurement objects taken at different instants into a single record, and a
+        // downstream consumer could never detect the mix. Note this differs from the LTE SNR
+        // handling above, which wholesale-replaces a value the code explicitly distrusts.
+        if (signalStrength != null && (cellInfoNr.isRegistered() || isSecondaryServingCell(cellInfoNr))
+                && ssRsrp == CellInfo.UNAVAILABLE && ssRsrq == CellInfo.UNAVAILABLE && ssSinr == CellInfo.UNAVAILABLE)
+        {
+            final List<CellSignalStrengthNr> nrSignalStrengths = signalStrength.getCellSignalStrengths(CellSignalStrengthNr.class);
+            if (!nrSignalStrengths.isEmpty())
+            {
+                final CellSignalStrengthNr fallback = nrSignalStrengths.get(0);
+                ssRsrp = fallback.getSsRsrp();
+                ssRsrq = fallback.getSsRsrq();
+                ssSinr = fallback.getSsSinr();
+            }
+        }
 
         int timingAdvanceMicros = CellInfo.UNAVAILABLE;
         if (android.os.Build.VERSION.SDK_INT >= 34)
@@ -1717,6 +1755,8 @@ public class SurveyRecordProcessor
         dataBuilder.setRecordNumber(cellularRecordNumber.getAndIncrement());
         dataBuilder.setGroupNumber(cellularGroupNumber.get());
         dataBuilder.setServingCell(BoolValue.newBuilder().setValue(cellInfoNr.isRegistered()).build());
+        dataBuilder.setConnectionStatus(toConnectionStatus(cellInfoNr));
+        setCellBandwidthsIfActive(scanBandwidthsKhz, cellInfoNr, dataBuilder::addCellBandwidthsKhz);
         if (provider != null) dataBuilder.setProvider(provider.toString());
 
         // vals from CellIdentity
@@ -1790,6 +1830,69 @@ public class SurveyRecordProcessor
         recordBuilder.setData(dataBuilder);
 
         return new NrRecordWrapper(recordBuilder.build(), bands);
+    }
+
+    /**
+     * Maps the Android cell connection status to the messaging API's {@link ConnectionStatus}
+     * enum. Android's NONE (a measured but unconnected cell) maps to NEIGHBOR.
+     */
+    private static ConnectionStatus toConnectionStatus(CellInfo cellInfo)
+    {
+        return switch (getConnectionStatus(cellInfo))
+        {
+            case CellInfo.CONNECTION_PRIMARY_SERVING -> ConnectionStatus.PRIMARY_SERVING;
+            case CellInfo.CONNECTION_SECONDARY_SERVING -> ConnectionStatus.SECONDARY_SERVING;
+            case CellInfo.CONNECTION_NONE -> ConnectionStatus.NEIGHBOR;
+            default -> ConnectionStatus.UNKNOWN;
+        };
+    }
+
+    /**
+     * Stamps the scan's validated per-carrier bandwidths onto a record builder, but only for cells
+     * the device is actively using (registered, or reported as a secondary serving cell). The
+     * bandwidths describe the device's data connection rather than any single cell, so stamping
+     * them on neighbor records would be misleading. Keying the registered case on
+     * {@link CellInfo#isRegistered()} instead of a PRIMARY_SERVING connection status matters:
+     * some devices never report a connection status, and the anchor cell must still carry the
+     * bandwidths on those devices.
+     *
+     * @param scanBandwidthsKhz The validated bandwidths for this scan; may be empty.
+     * @param cellInfo          The cell the record represents.
+     * @param bandwidthConsumer The record builder's repeated-field adder (one call per carrier).
+     */
+    private static void setCellBandwidthsIfActive(int[] scanBandwidthsKhz, CellInfo cellInfo, IntConsumer bandwidthConsumer)
+    {
+        if (scanBandwidthsKhz == null || scanBandwidthsKhz.length == 0) return;
+        if (!cellInfo.isRegistered() && !isSecondaryServingCell(cellInfo)) return;
+
+        for (int bandwidthKhz : scanBandwidthsKhz)
+        {
+            bandwidthConsumer.accept(bandwidthKhz);
+        }
+    }
+
+    /**
+     * @return True when the cell reported {@link CellInfo#CONNECTION_SECONDARY_SERVING}, meaning
+     * the phone is actively connected to it as a secondary cell (e.g. the NR data leg of a 5G NSA
+     * connection). Always false below API 28 where the connection status is not available.
+     */
+    private static boolean isSecondaryServingCell(CellInfo cellInfo)
+    {
+        return getConnectionStatus(cellInfo) == CellInfo.CONNECTION_SECONDARY_SERVING;
+    }
+
+    /**
+     * @return The {@link CellInfo} {@code CONNECTION_*} status for the cell, or
+     * {@link CellInfo#CONNECTION_UNKNOWN} below API 28 where the API is not available.
+     */
+    private static int getConnectionStatus(CellInfo cellInfo)
+    {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P)
+        {
+            return cellInfo.getCellConnectionStatus();
+        }
+
+        return CellInfo.CONNECTION_UNKNOWN;
     }
 
     /**

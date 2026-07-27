@@ -2,6 +2,7 @@ package com.craxiom.networksurvey.util;
 
 import com.craxiom.messaging.CdmaRecord;
 import com.craxiom.messaging.CdmaRecordData;
+import com.craxiom.messaging.ConnectionStatus;
 import com.craxiom.messaging.GsmRecord;
 import com.craxiom.messaging.GsmRecordData;
 import com.craxiom.messaging.LteRecord;
@@ -13,11 +14,14 @@ import com.craxiom.messaging.UmtsRecordData;
 import com.craxiom.networksurvey.data.api.Tower;
 import com.craxiom.networksurvey.model.CellularProtocol;
 import com.craxiom.networksurvey.model.CellularRecordWrapper;
+import com.craxiom.networksurvey.model.NrRecordWrapper;
 import com.craxiom.networksurvey.ui.cellular.model.ServingCellInfo;
 import com.craxiom.networksurvey.ui.cellular.model.ServingSignalInfo;
 import com.google.protobuf.BoolValue;
 import com.google.protobuf.Descriptors;
 import com.google.protobuf.GeneratedMessage;
+
+import java.util.List;
 
 /**
  * Helper methods for working with cellular networks.
@@ -326,6 +330,68 @@ public class CellularUtils
         }
 
         return -1;
+    }
+
+    /**
+     * Formats an array of 5G NR band numbers for display using the standard 3GPP "n" prefix and
+     * the friendly band name when one is known (e.g. "n77 (TD 3700)"). Multiple bands are joined
+     * with a comma.
+     *
+     * @param bands The NR band numbers reported for the cell.
+     * @return The formatted band string, or an empty string when no bands were reported.
+     */
+    public static String formatNrBands(int[] bands)
+    {
+        if (bands == null || bands.length == 0) return "";
+
+        final StringBuilder bandString = new StringBuilder();
+        for (int i = 0; i < bands.length; i++)
+        {
+            final int bandNumber = bands[i];
+            final String bandName = getNrBandName(bandNumber);
+
+            bandString.append('n').append(bandNumber);
+            if (bandName != null)
+            {
+                bandString.append(" (").append(bandName).append(")");
+            }
+
+            if (i < bands.length - 1)
+            {
+                bandString.append(", ");
+            }
+        }
+
+        return bandString.toString();
+    }
+
+    /**
+     * Selects the NR record to display on the NR Secondary Cell details card from the non-serving
+     * NR records of a single scan: the first record whose device-reported connection status is
+     * {@link ConnectionStatus#SECONDARY_SERVING}. On 5G NSA (EN-DC) that is the NR cell actively
+     * carrying the 5G data (the phone is registered on the LTE anchor, so that cell reports
+     * {@code isRegistered() == false}); on 5G SA with NR carrier aggregation it is an NR SCell.
+     * <p>
+     * The selection is deliberately limited to a device-reported status. An earlier version
+     * guessed the NSA data leg by strongest SS-RSRP when no cell reported a status, but a guessed
+     * cell rendered identically to a device-reported one and removed a genuine neighbor from the
+     * neighbors table, so on devices that report no connection status the card simply does not
+     * show. Do not reintroduce an inference here without a provenance flag in the view state.
+     *
+     * @param nrRecords The non-serving NR records from one scan.
+     * @return The selected wrapper, or null when the list is empty or nothing qualifies.
+     */
+    public static NrRecordWrapper selectSecondaryServingNrCell(List<NrRecordWrapper> nrRecords)
+    {
+        if (nrRecords == null || nrRecords.isEmpty()) return null;
+
+        for (NrRecordWrapper wrapper : nrRecords)
+        {
+            final NrRecordData data = ((NrRecord) wrapper.cellularRecord).getData();
+            if (data.getConnectionStatus() == ConnectionStatus.SECONDARY_SERVING) return wrapper;
+        }
+
+        return null;
     }
 
     /**

@@ -27,7 +27,7 @@ hilt = "2.59.2"
 room = "2.8.4"
 grpc = "1.81.0"
 navigation = "2.9.8"
-networkSurveyMessaging = "2.4.0"
+networkSurveyMessaging = "2.5.0"
 composeBom = "2026.05.00"
 firebaseBom = "34.13.0"
 

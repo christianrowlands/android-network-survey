@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.57](https://github.com/christianrowlands/android-network-survey/releases/tag/v1.57) - Unreleased
+
+**BUG FIXES**
+* Show the 5G NSA secondary cell (the NR cell carrying your 5G data) in its own "NR Secondary Cell Details" card instead of the NR Neighbors table, where it was indistinguishable from a real neighbor. [#136](https://github.com/christianrowlands/android-network-survey/issues/136)
+
+**NEW FEATURES**
+* Log and stream a new `connectionStatus` field on LTE and NR records (NS Messaging API 2.5.0), identifying the device's connection to each cell (`PRIMARY_SERVING`, `SECONDARY_SERVING`, `NEIGHBOR`). This lets downstream consumers tell the 5G NSA data leg apart from neighbor cells. In the CSV logs an unreported status is written as an empty cell (unlike the older `lteBandwidth` column, which writes the literal `UNKNOWN`; that column keeps its historical behavior).
+* Log and stream a new `cellBandwidthsKhz` field on LTE and NR records: the per-carrier bandwidths of the device's data connection at scan time, populated on actively used cells only. Two or more entries means carrier aggregation was active. In the CSV and GeoPackage logs the value is semicolon-joined kHz values (e.g. `20000;10000`). The LTE CSV version is now 0.6.0 and the NR CSV version is 0.5.0.
+
 ## [1.56](https://github.com/christianrowlands/android-network-survey/releases/tag/v1.56) - 2026-07-03
 
 **BUG FIXES**

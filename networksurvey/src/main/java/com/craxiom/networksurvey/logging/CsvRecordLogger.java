@@ -6,6 +6,7 @@ import android.os.Handler;
 import android.os.Looper;
 import android.widget.Toast;
 
+import com.craxiom.messaging.ConnectionStatus;
 import com.craxiom.networksurvey.constants.NetworkSurveyConstants;
 import com.craxiom.networksurvey.services.NetworkSurveyService;
 import com.craxiom.networksurvey.services.SurveyRecordProcessor;
@@ -28,6 +29,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
 
 import timber.log.Timber;
 
@@ -466,5 +468,39 @@ public abstract class CsvRecordLogger
     String roundToTwoDecimalPlaces(double value)
     {
         return twoDecimalFormat.format(value);
+    }
+
+    /**
+     * Formats the cellular connection status enum for a CSV cell. An UNKNOWN status is written as
+     * an empty string because an absent value means the device did not report a status (matching
+     * the JSON serialization, which omits the default UNKNOWN value).
+     *
+     * @param connectionStatus The connection status from the record.
+     * @return The enum name, or an empty string for UNKNOWN/UNRECOGNIZED.
+     */
+    String formatConnectionStatus(ConnectionStatus connectionStatus)
+    {
+        if (connectionStatus == ConnectionStatus.UNKNOWN || connectionStatus == ConnectionStatus.UNRECOGNIZED)
+        {
+            return "";
+        }
+
+        return connectionStatus.name();
+    }
+
+    /**
+     * Formats the per-carrier cell bandwidth list for a CSV cell as semicolon-joined kHz values
+     * (e.g. "20000;10000"), matching the convention used for other repeated fields such as the
+     * Bluetooth service UUIDs. An empty list is written as an empty string because an absent value
+     * means the device did not report bandwidths.
+     *
+     * @param cellBandwidthsKhz The per-carrier bandwidths in kHz from the record.
+     * @return The joined values, or an empty string if there are none.
+     */
+    String formatCellBandwidths(List<Integer> cellBandwidthsKhz)
+    {
+        if (cellBandwidthsKhz == null || cellBandwidthsKhz.isEmpty()) return "";
+
+        return cellBandwidthsKhz.stream().map(String::valueOf).collect(Collectors.joining(";"));
     }
 }

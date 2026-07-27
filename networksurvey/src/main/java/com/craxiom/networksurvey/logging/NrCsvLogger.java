@@ -1,5 +1,7 @@
 package com.craxiom.networksurvey.logging;
 
+import static com.craxiom.networksurvey.constants.csv.CellularCsvConstants.CELL_BANDWIDTHS_KHZ;
+import static com.craxiom.networksurvey.constants.csv.CellularCsvConstants.CONNECTION_STATUS;
 import static com.craxiom.networksurvey.constants.csv.CellularCsvConstants.PLMN;
 import static com.craxiom.networksurvey.constants.csv.CellularCsvConstants.SLOT;
 import static com.craxiom.networksurvey.constants.csv.CsvConstants.DEVICE_SERIAL_NUMBER;
@@ -56,13 +58,13 @@ public class NrCsvLogger extends CsvRecordLogger implements ICellularSurveyRecor
         return new String[]{DEVICE_TIME, LATITUDE, LONGITUDE, ALTITUDE, SPEED, ACCURACY,
                 MISSION_ID, RECORD_NUMBER, GROUP_NUMBER,
                 MCC, MNC, TAC, NCI, NARFCN, PCI, SS_RSRP, SS_RSRQ, SS_SINR, CSI_RSRP, CSI_RSRQ, CSI_SINR, TA, SERVING_CELL, PROVIDER, SLOT,
-                DEVICE_SERIAL_NUMBER, LOCATION_AGE, PLMN};
+                DEVICE_SERIAL_NUMBER, LOCATION_AGE, PLMN, CONNECTION_STATUS, CELL_BANDWIDTHS_KHZ};
     }
 
     @Override
     String[] getHeaderComments()
     {
-        return new String[]{"CSV Version=0.4.0"};
+        return new String[]{"CSV Version=0.5.0"};
     }
 
     @Override
@@ -113,7 +115,9 @@ public class NrCsvLogger extends CsvRecordLogger implements ICellularSurveyRecor
                 data.hasSlot() ? String.valueOf(data.getSlot().getValue()) : "",
                 data.getDeviceSerialNumber(),
                 data.getLocationAge() == 0 ? "" : String.valueOf(data.getLocationAge()),
-                data.hasPlmn() ? data.getPlmn().getValue() : ""
+                data.hasPlmn() ? data.getPlmn().getValue() : "",
+                formatConnectionStatus(data.getConnectionStatus()),
+                formatCellBandwidths(data.getCellBandwidthsKhzList())
         };
     }
 }

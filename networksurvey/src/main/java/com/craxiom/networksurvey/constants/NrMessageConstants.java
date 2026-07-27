@@ -26,6 +26,8 @@ public final class NrMessageConstants
     public static final String SERVING_CELL_COLUMN = "servingCell";
     public static final String PROVIDER_COLUMN = "provider";
     public static final String ACCURACY = "accuracy";
+    public static final String CONNECTION_STATUS_COLUMN = "connectionStatus";
+    public static final String CELL_BANDWIDTHS_KHZ_COLUMN = "cellBandwidthsKhz";
 
     // unique to new radio
     public static final String MCC_COLUMN = "mcc";

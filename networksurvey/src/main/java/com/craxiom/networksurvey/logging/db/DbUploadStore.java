@@ -89,6 +89,11 @@ public class DbUploadStore implements ICellularSurveyRecordListener, IWifiSurvey
             final List<LteRecordEntity> lteRecords = new ArrayList<>();
             final List<NrRecordEntity> nrRecords = new ArrayList<>();
 
+            // Every record in a batch carries the same location, so the location of the first
+            // qualifying record stands in for the whole batch in the movement check below.
+            double batchLatitude = 0d;
+            double batchLongitude = 0d;
+
             for (CellularRecordWrapper cellularRecordWrapper : cellularGroup)
             {
                 switch (cellularRecordWrapper.cellularProtocol)
@@ -97,16 +102,18 @@ public class DbUploadStore implements ICellularSurveyRecordListener, IWifiSurvey
                         break;
                     case GSM:
                         GsmRecordData gsmRecordData = ((GsmRecord) cellularRecordWrapper.cellularRecord).getData();
-                        if (shouldWriteGsmRecord(gsmRecordData, subscriptionId))
+                        if (shouldWriteGsmRecord(gsmRecordData))
                         {
                             GsmRecordEntity gsmEntity = mapGsmRecordToEntity(gsmRecordData);
                             gsmRecords.add(gsmEntity);
+                            batchLatitude = gsmRecordData.getLatitude();
+                            batchLongitude = gsmRecordData.getLongitude();
                         }
                         break;
                     case CDMA:
                         // Skip save CDMA records since we don't upload them
                         /*CdmaRecordData cdmaRecordData = ((CdmaRecord) cellularRecordWrapper.cellularRecord).getData();
-                        if (shouldWriteCdmaRecord(cdmaRecordData, subscriptionId))
+                        if (shouldWriteCdmaRecord(cdmaRecordData))
                         {
                             CdmaRecordEntity cdmaEntity = mapCdmaRecordToEntity(cdmaRecordData);
                             cdmaRecords.add(cdmaEntity);
@@ -114,29 +121,54 @@ public class DbUploadStore implements ICellularSurveyRecordListener, IWifiSurvey
                         break;
                     case UMTS:
                         UmtsRecordData umtsRecordData = ((UmtsRecord) cellularRecordWrapper.cellularRecord).getData();
-                        if (shouldWriteUmtsRecord(umtsRecordData, subscriptionId))
+                        if (shouldWriteUmtsRecord(umtsRecordData))
                         {
                             UmtsRecordEntity umtsEntity = mapUmtsRecordToEntity(umtsRecordData);
                             umtsRecords.add(umtsEntity);
+                            batchLatitude = umtsRecordData.getLatitude();
+                            batchLongitude = umtsRecordData.getLongitude();
                         }
                         break;
                     case LTE:
                         LteRecordData lteRecordData = ((LteRecord) cellularRecordWrapper.cellularRecord).getData();
-                        if (shouldWriteLteRecord(lteRecordData, subscriptionId))
+                        if (shouldWriteLteRecord(lteRecordData))
                         {
                             LteRecordEntity lteEntity = mapLteRecordToEntity(lteRecordData);
                             lteRecords.add(lteEntity);
+                            batchLatitude = lteRecordData.getLatitude();
+                            batchLongitude = lteRecordData.getLongitude();
                         }
                         break;
                     case NR:
                         NrRecordData nrRecordData = ((NrRecord) cellularRecordWrapper.cellularRecord).getData();
-                        if (shouldWriteNrRecord(nrRecordData, subscriptionId))
+                        if (shouldWriteNrRecord(nrRecordData))
                         {
                             NrRecordEntity nrEntity = mapNrRecordToEntity(nrRecordData);
                             nrRecords.add(nrEntity);
+                            batchLatitude = nrRecordData.getLatitude();
+                            batchLongitude = nrRecordData.getLongitude();
                         }
                         break;
                 }
+            }
+
+            // The movement check runs once per batch, mirroring the Wi-Fi path below. It used to
+            // run inside each shouldWrite* check with an immediate write-back to
+            // lastKnownCellularLocations, which meant the first qualifying record in a batch
+            // claimed the location and every sibling record from the same scan (which shares that
+            // location) was silently discarded. Which record won was vendor list order, so an NR
+            // secondary cell could displace the LTE serving cell from uploads entirely.
+            boolean hasCandidates = !gsmRecords.isEmpty() || !umtsRecords.isEmpty()
+                    || !lteRecords.isEmpty() || !nrRecords.isEmpty();
+            if (hasCandidates)
+            {
+                kotlin.Pair<Double, Double> lastLocation = lastKnownCellularLocations.get(subscriptionId);
+                if (!hasMovedEnough(batchLatitude, batchLongitude, lastLocation))
+                {
+                    // Same effective location as the last stored batch, so skip all the records.
+                    return;
+                }
+                lastKnownCellularLocations.put(subscriptionId, new kotlin.Pair<>(batchLatitude, batchLongitude));
             }
 
             if (!gsmRecords.isEmpty())
@@ -230,7 +262,7 @@ public class DbUploadStore implements ICellularSurveyRecordListener, IWifiSurvey
         lastWifiLongitude = Double.NaN;
     }
 
-    private boolean shouldWriteGsmRecord(GsmRecordData data, int subscriptionId)
+    private boolean shouldWriteGsmRecord(GsmRecordData data)
     {
         if (isAccuracyBad(data.getAccuracy())) return false;
 
@@ -242,27 +274,15 @@ public class DbUploadStore implements ICellularSurveyRecordListener, IWifiSurvey
         // First, check for a valid location
         if (!hasLocation) return false;
 
-        // Next, check if the record is complete. Neighbor records won't be complete.
-        boolean isCompleteRecord = data.hasMcc() &&
+        // Finally, check if the record is complete. Neighbor records won't be complete.
+        return data.hasMcc() &&
                 data.hasMnc() &&
                 data.hasLac() &&
                 data.hasCi() &&
                 data.hasSignalStrength();
-        if (!isCompleteRecord) return false;
-
-        // Finally, check if the device has moved far enough
-        kotlin.Pair<Double, Double> lastLocation = lastKnownCellularLocations.get(subscriptionId);
-        if (hasMovedEnough(latitude, longitude, lastLocation))
-        {
-            lastKnownCellularLocations.put(subscriptionId, new kotlin.Pair<>(latitude, longitude));
-            return true;
-        } else
-        {
-            return false;
-        }
     }
 
-    private boolean shouldWriteCdmaRecord(CdmaRecordData data, int subscriptionId)
+    private boolean shouldWriteCdmaRecord(CdmaRecordData data)
     {
         return false; // Ignore CDMA for now
         /*double latitude = data.getLatitude();
@@ -277,7 +297,7 @@ public class DbUploadStore implements ICellularSurveyRecordListener, IWifiSurvey
                 data.hasSignalStrength();*/
     }
 
-    private boolean shouldWriteUmtsRecord(UmtsRecordData data, int subscriptionId)
+    private boolean shouldWriteUmtsRecord(UmtsRecordData data)
     {
         if (isAccuracyBad(data.getAccuracy())) return false;
 
@@ -289,26 +309,15 @@ public class DbUploadStore implements ICellularSurveyRecordListener, IWifiSurvey
         // First, check for a valid location
         if (!hasLocation) return false;
 
-        boolean isCompleteRecord = data.hasMcc() &&
+        // Finally, check if the record is complete. Neighbor records won't be complete.
+        return data.hasMcc() &&
                 data.hasMnc() &&
                 data.hasLac() &&
                 data.hasCid() &&
                 data.hasRscp();
-        if (!isCompleteRecord) return false;
-
-        // Finally, check if the device has moved far enough
-        kotlin.Pair<Double, Double> lastLocation = lastKnownCellularLocations.get(subscriptionId);
-        if (hasMovedEnough(latitude, longitude, lastLocation))
-        {
-            lastKnownCellularLocations.put(subscriptionId, new kotlin.Pair<>(latitude, longitude));
-            return true;
-        } else
-        {
-            return false;
-        }
     }
 
-    private boolean shouldWriteLteRecord(LteRecordData data, int subscriptionId)
+    private boolean shouldWriteLteRecord(LteRecordData data)
     {
         if (isAccuracyBad(data.getAccuracy())) return false;
 
@@ -320,26 +329,15 @@ public class DbUploadStore implements ICellularSurveyRecordListener, IWifiSurvey
         // First, check for a valid location
         if (!hasLocation) return false;
 
-        boolean isCompleteRecord = data.hasMcc() &&
+        // Finally, check if the record is complete. Neighbor records won't be complete.
+        return data.hasMcc() &&
                 data.hasMnc() &&
                 data.hasTac() &&
                 data.hasEci() &&
                 data.hasRsrp();
-        if (!isCompleteRecord) return false;
-
-        // Finally, check if the device has moved far enough
-        kotlin.Pair<Double, Double> lastLocation = lastKnownCellularLocations.get(subscriptionId);
-        if (hasMovedEnough(latitude, longitude, lastLocation))
-        {
-            lastKnownCellularLocations.put(subscriptionId, new kotlin.Pair<>(latitude, longitude));
-            return true;
-        } else
-        {
-            return false;
-        }
     }
 
-    private boolean shouldWriteNrRecord(NrRecordData data, int subscriptionId)
+    private boolean shouldWriteNrRecord(NrRecordData data)
     {
         if (isAccuracyBad(data.getAccuracy())) return false;
 
@@ -351,23 +349,12 @@ public class DbUploadStore implements ICellularSurveyRecordListener, IWifiSurvey
         // First, check for a valid location
         if (!hasLocation) return false;
 
-        boolean isCompleteRecord = data.hasMcc() &&
+        // Finally, check if the record is complete. Neighbor records won't be complete.
+        return data.hasMcc() &&
                 data.hasMnc() &&
                 data.hasTac() &&
                 data.hasNci() &&
                 data.hasSsRsrp();
-        if (!isCompleteRecord) return false;
-
-        // Finally, check if the device has moved far enough
-        kotlin.Pair<Double, Double> lastLocation = lastKnownCellularLocations.get(subscriptionId);
-        if (hasMovedEnough(latitude, longitude, lastLocation))
-        {
-            lastKnownCellularLocations.put(subscriptionId, new kotlin.Pair<>(latitude, longitude));
-            return true;
-        } else
-        {
-            return false;
-        }
     }
 
     /**

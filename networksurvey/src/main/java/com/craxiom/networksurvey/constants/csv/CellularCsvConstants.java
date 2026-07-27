@@ -13,4 +13,6 @@ public abstract class CellularCsvConstants extends SurveyCsvConstants
     public static final String PROVIDER = "provider";
     public static final String PLMN = "plmn";
     public static final String SLOT = "slot";
+    public static final String CONNECTION_STATUS = "connectionStatus";
+    public static final String CELL_BANDWIDTHS_KHZ = "cellBandwidthsKhz";
 }

@@ -261,6 +261,9 @@
     <string name="my_location_icon_description">My Location Icon</string>
     <string name="card_title_cellular_details_initial">Serving Cell Details</string>
     <string name="card_title_cellular_details">%1$s Serving Cell Details</string>
+    <string name="card_title_nr_details">5G NR Secondary Cell</string>
+    <string name="nr_secondary_cell_subtitle">The 5G carrier your phone is using alongside its primary cell</string>
+    <string name="nr_secondary_info_description">NR Secondary Cell Terms Info</string>
     <string name="cellular_icon_description">Cellular Tower Icon</string>
     <string name="card_title_neighbors">Neighbors</string>
     <string name="card_title_neighbors_gsm">GSM Neighbors</string>
@@ -315,10 +318,28 @@
         <b>TAC</b> (Tracking Area Code): Identifier for a group of cell towers that is used for paging.\n\n
         <b>CID</b> (Cell Identity): Identifier for a specific cell tower. Together the MCC, MNC, and CID uniquely identifies a specific NR cell panel from all others in the world.\n\n
         <b>NARFCN</b> (New radio Absolute Radio Frequency Channel Number): Number representing NR carrier frequency.\n\n
+        <b>Band</b>: The 3GPP NR operating band (e.g. n77). Bands below n257 are Sub-6 (FR1), and n257 and above are mmWave (FR2).\n\n
+        <b>Frequency</b>: The NR carrier center frequency in MHz, calculated from the NARFCN.\n\n
         <b>PCI</b> (Physical Cell ID): A physical layer cell identifier that helps a mobile device differentiate two cells during cell selection/reselection that are using the same frequency. Valid range 0-1007. The numbers in parenthesis represent the Primary Sync Sequence (PSS) and Secondary Sync Sequence (SSS).\n\n
         <b>TA</b> (Timing Advance): The timing offset a mobile device uses to keep its transmissions in sync with the tower. Represents RF distance from the tower, which can be loosely translated to physical distance. Larger numbers indicate the device is further away from the tower.\n\n
         <b>SS_RSRP</b> (Secondary Synchronization Reference Signal Received Power): Power of the reference signal in dBm as received by the mobile device. Valid range -31 to -156.\n\n
-        <b>SS_RSRQ</b> (Secondary Synchronization Reference Signal Received Quality): Measures the quality of the received reference signal. Valid range 20 to -43 with 20 being the best.\n
+        <b>SS_RSRQ</b> (Secondary Synchronization Reference Signal Received Quality): Measures the quality of the received reference signal. Valid range 20 to -43 with 20 being the best.\n\n
+        <b>SS_SINR</b> (Secondary Synchronization Signal-to-Interference-plus-Noise Ratio): Measures signal quality relative to interference and noise in dB. Valid range -23 to 40 with 40 being the best.\n
+    </string>
+
+    <string name="nr_secondary_cell_explanation">
+        <b>What is this card?</b> A secondary cell is a 5G NR cell your phone is actively using in
+        addition to its primary cell. On 5G Non-Standalone (NSA) networks your phone registers on
+        an LTE cell (the anchor) and the 5G data flows through this NR cell, so it shows here
+        rather than in the Neighbors table. On 5G Standalone networks with carrier aggregation,
+        this is an additional NR carrier boosting your speed.\n\n
+        <b>Band</b>: The 3GPP NR operating band (e.g. n77). Bands below n257 are Sub-6 (FR1), and n257 and above are mmWave (FR2).\n\n
+        <b>Frequency</b>: The NR carrier center frequency in MHz, calculated from the NARFCN.\n\n
+        <b>PCI</b> (Physical Cell ID): A physical layer cell identifier that helps a mobile device differentiate two cells during cell selection/reselection that are using the same frequency. Valid range 0-1007. The numbers in parenthesis represent the Primary Sync Sequence (PSS) and Secondary Sync Sequence (SSS).\n\n
+        <b>NARFCN</b> (New radio Absolute Radio Frequency Channel Number): Number representing NR carrier frequency.\n\n
+        <b>SS_RSRP</b> (Secondary Synchronization Reference Signal Received Power): Power of the reference signal in dBm as received by the mobile device. Valid range -31 to -156.\n\n
+        <b>SS_RSRQ</b> (Secondary Synchronization Reference Signal Received Quality): Measures the quality of the received reference signal. Valid range 20 to -43 with 20 being the best.\n\n
+        <b>SS_SINR</b> (Secondary Synchronization Signal-to-Interference-plus-Noise Ratio): Measures signal quality relative to interference and noise in dB. Valid range -23 to 40 with 40 being the best.\n
     </string>
 
     <string name="no_gps_device">No GPS detected in device!</string>

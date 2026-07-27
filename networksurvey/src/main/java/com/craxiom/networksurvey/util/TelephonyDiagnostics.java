@@ -5,6 +5,7 @@ import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.pm.PackageManager;
 import android.os.Build;
+import android.telephony.CellInfo;
 import android.telephony.NetworkRegistrationInfo;
 import android.telephony.ServiceState;
 import android.telephony.TelephonyManager;
@@ -112,6 +113,11 @@ public final class TelephonyDiagnostics
             return;
         }
 
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P)
+        {
+            logCellConnectionStatuses(context, telephonyManager);
+        }
+
         final ServiceState serviceState = telephonyManager.getServiceState();
         if (serviceState == null)
         {
@@ -131,6 +137,57 @@ public final class TelephonyDiagnostics
         }
 
         Timber.v("%s raw ServiceState: %s", LOG_PREFIX, serviceState);
+    }
+
+    /**
+     * Logs each cached cell's connection status alongside its registration state. This is the
+     * device evidence for how well this vendor populates
+     * {@link CellInfo#getCellConnectionStatus()}: the 5G NSA data leg should report
+     * SECONDARY_SERVING while unregistered, and OEMs that report UNKNOWN for every cell are the
+     * reason the absence of a status must never be treated as meaningful.
+     */
+    @RequiresApi(api = Build.VERSION_CODES.P)
+    // ACCESS_FINE_LOCATION is checked before the getAllCellInfo call
+    @SuppressLint("MissingPermission")
+    private static void logCellConnectionStatuses(Context context, TelephonyManager telephonyManager)
+    {
+        final boolean hasFineLocationPermission = ActivityCompat.checkSelfPermission(context,
+                Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED;
+        if (!hasFineLocationPermission)
+        {
+            Timber.i("%s ACCESS_FINE_LOCATION is denied, so the cell connection statuses cannot be read", LOG_PREFIX);
+            return;
+        }
+
+        final List<CellInfo> allCellInfo = telephonyManager.getAllCellInfo();
+        if (allCellInfo == null || allCellInfo.isEmpty())
+        {
+            Timber.i("%s No cached CellInfo is available for connection statuses", LOG_PREFIX);
+            return;
+        }
+
+        for (CellInfo cellInfo : allCellInfo)
+        {
+            final int connectionStatus = cellInfo.getCellConnectionStatus();
+            Timber.i("%s cell type=%s registered=%b connectionStatus=%d (%s)", LOG_PREFIX,
+                    cellInfo.getClass().getSimpleName(), cellInfo.isRegistered(),
+                    connectionStatus, getConnectionStatusName(connectionStatus));
+        }
+    }
+
+    /**
+     * @return A human readable name for a {@link CellInfo} {@code CONNECTION_*} constant.
+     */
+    private static String getConnectionStatusName(int connectionStatus)
+    {
+        return switch (connectionStatus)
+        {
+            case CellInfo.CONNECTION_NONE -> "NONE";
+            case CellInfo.CONNECTION_PRIMARY_SERVING -> "PRIMARY_SERVING";
+            case CellInfo.CONNECTION_SECONDARY_SERVING -> "SECONDARY_SERVING";
+            case CellInfo.CONNECTION_UNKNOWN -> "UNKNOWN";
+            default -> "UNRECOGNIZED";
+        };
     }
 
     /**

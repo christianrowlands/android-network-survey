@@ -3,7 +3,17 @@ package com.craxiom.networksurvey.util;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 
+import com.craxiom.messaging.ConnectionStatus;
+import com.craxiom.messaging.NrRecord;
+import com.craxiom.messaging.NrRecordData;
+import com.craxiom.networksurvey.model.NrRecordWrapper;
+import com.google.protobuf.FloatValue;
+import com.google.protobuf.Int32Value;
+
 import org.junit.Test;
+
+import java.util.Arrays;
+import java.util.Collections;
 
 public class CellularUtilsTest
 {
@@ -275,5 +285,107 @@ public class CellularUtilsTest
         assertNull(CellularUtils.getLteBandName(99));
         assertNull(CellularUtils.getLteBandName(-1));
         assertNull(CellularUtils.getLteBandName(1000));
+    }
+
+    @Test
+    public void formatNrBands_singleKnownBand()
+    {
+        assertEquals("n77 (TD 3700)", CellularUtils.formatNrBands(new int[]{77}));
+    }
+
+    @Test
+    public void formatNrBands_multipleBands()
+    {
+        assertEquals("n77 (TD 3700), n78 (TD 3500)", CellularUtils.formatNrBands(new int[]{77, 78}));
+    }
+
+    @Test
+    public void formatNrBands_unknownBand()
+    {
+        assertEquals("n999", CellularUtils.formatNrBands(new int[]{999}));
+    }
+
+    @Test
+    public void formatNrBands_emptyAndNull()
+    {
+        assertEquals("", CellularUtils.formatNrBands(new int[0]));
+        assertEquals("", CellularUtils.formatNrBands(null));
+    }
+
+    @Test
+    public void selectSecondaryServingNrCell_prefersSecondaryServing()
+    {
+        NrRecordWrapper secondaryServing = buildNrWrapper(101, -110f, ConnectionStatus.SECONDARY_SERVING);
+        NrRecordWrapper strongerNeighbor = buildNrWrapper(102, -80f, ConnectionStatus.NEIGHBOR);
+
+        // The explicitly reported secondary serving cell wins over a stronger cell.
+        assertEquals(secondaryServing,
+                CellularUtils.selectSecondaryServingNrCell(Arrays.asList(strongerNeighbor, secondaryServing)));
+    }
+
+    @Test
+    public void selectSecondaryServingNrCell_firstSecondaryServingWinsWhenMultiple()
+    {
+        // NR carrier aggregation under SA can produce more than one SECONDARY_SERVING record in a
+        // single scan. The first in list order is displayed; this pins that behavior.
+        NrRecordWrapper firstSecondary = buildNrWrapper(201, -95f, ConnectionStatus.SECONDARY_SERVING);
+        NrRecordWrapper secondSecondary = buildNrWrapper(202, -85f, ConnectionStatus.SECONDARY_SERVING);
+
+        assertEquals(firstSecondary,
+                CellularUtils.selectSecondaryServingNrCell(Arrays.asList(firstSecondary, secondSecondary)));
+    }
+
+    @Test
+    public void selectSecondaryServingNrCell_noSelectionWithoutSecondaryServing()
+    {
+        // No heuristic: cells with an unknown or neighbor status must never be promoted, and a
+        // PRIMARY_SERVING record in the non-serving list (a contradictory device report) does not
+        // qualify either.
+        NrRecordWrapper unknown = buildNrWrapper(301, -85f, ConnectionStatus.UNKNOWN);
+        NrRecordWrapper neighbor = buildNrWrapper(302, -80f, ConnectionStatus.NEIGHBOR);
+        NrRecordWrapper primary = buildNrWrapper(303, -75f, ConnectionStatus.PRIMARY_SERVING);
+
+        assertNull(CellularUtils.selectSecondaryServingNrCell(Arrays.asList(unknown, neighbor, primary)));
+    }
+
+    @Test
+    public void selectSecondaryServingNrCell_unrecognizedStatusNotSelected()
+    {
+        // A future enum value deserializes as UNRECOGNIZED; it must not be treated as secondary.
+        NrRecordData.Builder dataBuilder = NrRecordData.newBuilder();
+        dataBuilder.setConnectionStatusValue(999);
+        NrRecord record = NrRecord.newBuilder().setData(dataBuilder).build();
+        NrRecordWrapper unrecognized = new NrRecordWrapper(record, new int[]{77});
+
+        assertNull(CellularUtils.selectSecondaryServingNrCell(Collections.singletonList(unrecognized)));
+    }
+
+    @Test
+    public void selectSecondaryServingNrCell_emptyAndNullList()
+    {
+        assertNull(CellularUtils.selectSecondaryServingNrCell(Collections.emptyList()));
+        assertNull(CellularUtils.selectSecondaryServingNrCell(null));
+    }
+
+    /**
+     * Builds a minimal NR record wrapper for the selection tests. Each wrapper gets a distinct PCI
+     * so the assertions stay meaningful even if a value-based equals is ever added to the wrapper.
+     *
+     * @param pci              The PCI to set, distinguishing this record from the others in a test.
+     * @param ssRsrp           The SS-RSRP value to set, or null to leave it unset.
+     * @param connectionStatus The connection status to set on the record.
+     */
+    private NrRecordWrapper buildNrWrapper(int pci, Float ssRsrp, ConnectionStatus connectionStatus)
+    {
+        NrRecordData.Builder dataBuilder = NrRecordData.newBuilder();
+        dataBuilder.setPci(Int32Value.newBuilder().setValue(pci).build());
+        dataBuilder.setConnectionStatus(connectionStatus);
+        if (ssRsrp != null)
+        {
+            dataBuilder.setSsRsrp(FloatValue.newBuilder().setValue(ssRsrp).build());
+        }
+
+        NrRecord record = NrRecord.newBuilder().setData(dataBuilder).build();
+        return new NrRecordWrapper(record, new int[]{77});
     }
 }

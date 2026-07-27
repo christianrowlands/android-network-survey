@@ -19,42 +19,78 @@ import java.util.SortedSet;
  */
 public class CellularViewModel extends ViewModel
 {
-    private final MutableLiveData<String> carrier = new MutableLiveData<>();
+    /**
+     * A {@link MutableLiveData} whose {@link #postIfChanged} suppresses posts only when the value
+     * matches the last POSTED value, not the last delivered one. The distinct check itself is
+     * load-bearing (re-delivering an unchanged signal value re-triggers the signal bar
+     * animations), but checking against {@link #getValue()} has a race: postValue only guarantees
+     * delivery of the LAST posted value, so when two updates land within one main-thread drain
+     * window, a setter comparing against the stale delivered value can conclude "no change" and
+     * swallow a post (e.g. a clear-to-null right after a batch, leaving stale data on screen).
+     * Tracking the last posted value closes that window. Synchronized because setters are called
+     * from both the survey executor and the main thread (airplane mode receiver, onResume clear).
+     */
+    private static final class DistinctLiveData<T> extends MutableLiveData<T>
+    {
+        private T lastPosted;
+
+        DistinctLiveData()
+        {
+        }
+
+        DistinctLiveData(T initialValue)
+        {
+            super(initialValue);
+            lastPosted = initialValue;
+        }
+
+        synchronized void postIfChanged(T value)
+        {
+            if (Objects.equals(lastPosted, value)) return;
+            lastPosted = value;
+            postValue(value);
+        }
+    }
+
+    private final DistinctLiveData<String> carrier = new DistinctLiveData<>();
     // Top card hero line ("NR · Standalone") and its color resource.
-    private final MutableLiveData<String> heroText = new MutableLiveData<>();
-    private final MutableLiveData<Integer> heroColorId = new MutableLiveData<>();
+    private final DistinctLiveData<String> heroText = new DistinctLiveData<>();
+    private final DistinctLiveData<Integer> heroColorId = new DistinctLiveData<>();
     // Pill values (the label part is added by the fragment); null means "hide". A null voice pill
     // value hides the whole pill row (used when the device has no service).
-    private final MutableLiveData<String> voicePillValue = new MutableLiveData<>();
-    private final MutableLiveData<String> dataPillValue = new MutableLiveData<>();
-    private final MutableLiveData<String> brandingPillValue = new MutableLiveData<>();
+    private final DistinctLiveData<String> voicePillValue = new DistinctLiveData<>();
+    private final DistinctLiveData<String> dataPillValue = new DistinctLiveData<>();
+    private final DistinctLiveData<String> brandingPillValue = new DistinctLiveData<>();
     // Carrier aggregation chips + summary; null means "hide the section".
-    private final MutableLiveData<CarrierAggregationViewState> carrierAggregation = new MutableLiveData<>();
+    private final DistinctLiveData<CarrierAggregationViewState> carrierAggregation = new DistinctLiveData<>();
+    // The 5G NR secondary cell details card (the NSA data leg, or an NR CA SCell under SA); null
+    // means "hide the card".
+    private final DistinctLiveData<NrSecondaryCellViewState> nrSecondaryCell = new DistinctLiveData<>();
 
-    private final MutableLiveData<Location> location = new MutableLiveData<>();
-    private final MutableLiveData<Boolean> providerEnabled = new MutableLiveData<>(true);
-    private final MutableLiveData<Boolean> airplaneModeActive = new MutableLiveData<>(false);
+    private final DistinctLiveData<Location> location = new DistinctLiveData<>();
+    private final DistinctLiveData<Boolean> providerEnabled = new DistinctLiveData<>(true);
+    private final DistinctLiveData<Boolean> airplaneModeActive = new DistinctLiveData<>(false);
 
     // Common Cellular fields
-    private final MutableLiveData<CellularProtocol> servingCellProtocol = new MutableLiveData<>(CellularProtocol.NONE);
-    private final MutableLiveData<String> mcc = new MutableLiveData<>();
-    private final MutableLiveData<String> mnc = new MutableLiveData<>();
-    private final MutableLiveData<String> areaCode = new MutableLiveData<>();
-    private final MutableLiveData<Long> cellId = new MutableLiveData<>(); // NR requires a long
+    private final DistinctLiveData<CellularProtocol> servingCellProtocol = new DistinctLiveData<>(CellularProtocol.NONE);
+    private final DistinctLiveData<String> mcc = new DistinctLiveData<>();
+    private final DistinctLiveData<String> mnc = new DistinctLiveData<>();
+    private final DistinctLiveData<String> areaCode = new DistinctLiveData<>();
+    private final DistinctLiveData<Long> cellId = new DistinctLiveData<>(); // NR requires a long
 
-    private final MutableLiveData<String> channelNumber = new MutableLiveData<>(); // AKA ARFCN, EARFCN, etc
-    private final MutableLiveData<String> frequency = new MutableLiveData<>(); // For NR frequency in MHz
-    private final MutableLiveData<String> band = new MutableLiveData<>(); // For NR band with name
-    private final MutableLiveData<String> lteBand = new MutableLiveData<>(); // For LTE band with name
+    private final DistinctLiveData<String> channelNumber = new DistinctLiveData<>(); // AKA ARFCN, EARFCN, etc
+    private final DistinctLiveData<String> frequency = new DistinctLiveData<>(); // For NR frequency in MHz
+    private final DistinctLiveData<String> band = new DistinctLiveData<>(); // For NR band with name
+    private final DistinctLiveData<String> lteBand = new DistinctLiveData<>(); // For LTE band with name
 
     // LTE specific fields
-    private final MutableLiveData<String> pci = new MutableLiveData<>();
-    private final MutableLiveData<String> bandwidth = new MutableLiveData<>();
-    private final MutableLiveData<String> ta = new MutableLiveData<>();
-    private final MutableLiveData<String> cqi = new MutableLiveData<>();
-    private final MutableLiveData<Integer> signalOne = new MutableLiveData<>(); // Also used for RSSI and SS_RSRP
-    private final MutableLiveData<Integer> signalTwo = new MutableLiveData<>(); // Also used for RSCP and SS_RSRQ
-    private final MutableLiveData<Integer> signalThree = new MutableLiveData<>(); // Used for LTE SNR
+    private final DistinctLiveData<String> pci = new DistinctLiveData<>();
+    private final DistinctLiveData<String> bandwidth = new DistinctLiveData<>();
+    private final DistinctLiveData<String> ta = new DistinctLiveData<>();
+    private final DistinctLiveData<String> cqi = new DistinctLiveData<>();
+    private final DistinctLiveData<Integer> signalOne = new DistinctLiveData<>(); // Also used for RSSI and SS_RSRP
+    private final DistinctLiveData<Integer> signalTwo = new DistinctLiveData<>(); // Also used for RSCP and SS_RSRQ
+    private final DistinctLiveData<Integer> signalThree = new DistinctLiveData<>(); // Used for LTE SNR
     private final MutableLiveData<SortedSet<NrNeighbor>> nrNeighbors = new MutableLiveData<>();
     private final MutableLiveData<SortedSet<LteNeighbor>> lteNeighbors = new MutableLiveData<>();
     private final MutableLiveData<SortedSet<UmtsNeighbor>> umtsNeighbors = new MutableLiveData<>();
@@ -67,10 +103,7 @@ public class CellularViewModel extends ViewModel
 
     public void setCarrier(String newCarrier)
     {
-        if (!Objects.equals(carrier.getValue(), newCarrier))
-        {
-            carrier.postValue(newCarrier);
-        }
+        carrier.postIfChanged(newCarrier);
     }
 
     public LiveData<String> getHeroText()
@@ -80,10 +113,7 @@ public class CellularViewModel extends ViewModel
 
     public void setHeroText(String newHeroText)
     {
-        if (!Objects.equals(heroText.getValue(), newHeroText))
-        {
-            heroText.postValue(newHeroText);
-        }
+        heroText.postIfChanged(newHeroText);
     }
 
     public LiveData<Integer> getHeroColorId()
@@ -93,10 +123,7 @@ public class CellularViewModel extends ViewModel
 
     public void setHeroColorId(Integer newHeroColorId)
     {
-        if (!Objects.equals(heroColorId.getValue(), newHeroColorId))
-        {
-            heroColorId.postValue(newHeroColorId);
-        }
+        heroColorId.postIfChanged(newHeroColorId);
     }
 
     public LiveData<String> getVoicePillValue()
@@ -106,10 +133,7 @@ public class CellularViewModel extends ViewModel
 
     public void setVoicePillValue(String newVoicePillValue)
     {
-        if (!Objects.equals(voicePillValue.getValue(), newVoicePillValue))
-        {
-            voicePillValue.postValue(newVoicePillValue);
-        }
+        voicePillValue.postIfChanged(newVoicePillValue);
     }
 
     public LiveData<String> getDataPillValue()
@@ -119,10 +143,7 @@ public class CellularViewModel extends ViewModel
 
     public void setDataPillValue(String newDataPillValue)
     {
-        if (!Objects.equals(dataPillValue.getValue(), newDataPillValue))
-        {
-            dataPillValue.postValue(newDataPillValue);
-        }
+        dataPillValue.postIfChanged(newDataPillValue);
     }
 
     public LiveData<String> getBrandingPillValue()
@@ -132,10 +153,7 @@ public class CellularViewModel extends ViewModel
 
     public void setBrandingPillValue(String newBrandingPillValue)
     {
-        if (!Objects.equals(brandingPillValue.getValue(), newBrandingPillValue))
-        {
-            brandingPillValue.postValue(newBrandingPillValue);
-        }
+        brandingPillValue.postIfChanged(newBrandingPillValue);
     }
 
     public LiveData<CarrierAggregationViewState> getCarrierAggregation()
@@ -145,10 +163,17 @@ public class CellularViewModel extends ViewModel
 
     public void setCarrierAggregation(CarrierAggregationViewState newCarrierAggregation)
     {
-        if (!Objects.equals(carrierAggregation.getValue(), newCarrierAggregation))
-        {
-            carrierAggregation.postValue(newCarrierAggregation);
-        }
+        carrierAggregation.postIfChanged(newCarrierAggregation);
+    }
+
+    public LiveData<NrSecondaryCellViewState> getNrSecondaryCell()
+    {
+        return nrSecondaryCell;
+    }
+
+    public void setNrSecondaryCell(NrSecondaryCellViewState newNrSecondaryCell)
+    {
+        nrSecondaryCell.postIfChanged(newNrSecondaryCell);
     }
 
     public LiveData<Location> getLocation()
@@ -158,10 +183,7 @@ public class CellularViewModel extends ViewModel
 
     public void setLocation(Location newLocation)
     {
-        if (!Objects.equals(location.getValue(), newLocation))
-        {
-            location.postValue(newLocation);
-        }
+        location.postIfChanged(newLocation);
     }
 
     public LiveData<Boolean> getProviderEnabled()
@@ -171,10 +193,7 @@ public class CellularViewModel extends ViewModel
 
     public void setProviderEnabled(boolean isProviderEnabled)
     {
-        if (!Objects.equals(providerEnabled.getValue(), isProviderEnabled))
-        {
-            providerEnabled.postValue(isProviderEnabled);
-        }
+        providerEnabled.postIfChanged(isProviderEnabled);
     }
 
     public LiveData<Boolean> getAirplaneModeActive()
@@ -184,10 +203,7 @@ public class CellularViewModel extends ViewModel
 
     public void setAirplaneModeActive(boolean isAirplaneModeActive)
     {
-        if (!Objects.equals(airplaneModeActive.getValue(), isAirplaneModeActive))
-        {
-            airplaneModeActive.postValue(isAirplaneModeActive);
-        }
+        airplaneModeActive.postIfChanged(isAirplaneModeActive);
     }
 
     public LiveData<CellularProtocol> getServingCellProtocol()
@@ -197,10 +213,7 @@ public class CellularViewModel extends ViewModel
 
     public void setServingCellProtocol(CellularProtocol newProtocol)
     {
-        if (servingCellProtocol.getValue() != newProtocol)
-        {
-            servingCellProtocol.postValue(newProtocol);
-        }
+        servingCellProtocol.postIfChanged(newProtocol);
     }
 
     public LiveData<String> getMcc()
@@ -210,10 +223,7 @@ public class CellularViewModel extends ViewModel
 
     public void setMcc(String newMcc)
     {
-        if (!Objects.equals(mcc.getValue(), newMcc))
-        {
-            mcc.postValue(newMcc);
-        }
+        mcc.postIfChanged(newMcc);
     }
 
     public LiveData<String> getMnc()
@@ -223,10 +233,7 @@ public class CellularViewModel extends ViewModel
 
     public void setMnc(String newMnc)
     {
-        if (!Objects.equals(mnc.getValue(), newMnc))
-        {
-            mnc.postValue(newMnc);
-        }
+        mnc.postIfChanged(newMnc);
     }
 
     public LiveData<String> getAreaCode()
@@ -236,10 +243,7 @@ public class CellularViewModel extends ViewModel
 
     public void setAreaCode(String newAreaCode)
     {
-        if (!Objects.equals(areaCode.getValue(), newAreaCode))
-        {
-            areaCode.postValue(newAreaCode);
-        }
+        areaCode.postIfChanged(newAreaCode);
     }
 
     public LiveData<Long> getCellId()
@@ -249,10 +253,7 @@ public class CellularViewModel extends ViewModel
 
     public void setCellId(Long newCellId)
     {
-        if (!Objects.equals(cellId.getValue(), newCellId))
-        {
-            cellId.postValue(newCellId);
-        }
+        cellId.postIfChanged(newCellId);
     }
 
     public LiveData<String> getChannelNumber()
@@ -262,10 +263,7 @@ public class CellularViewModel extends ViewModel
 
     public void setChannelNumber(String newChannelNumber)
     {
-        if (!Objects.equals(channelNumber.getValue(), newChannelNumber))
-        {
-            channelNumber.postValue(newChannelNumber);
-        }
+        channelNumber.postIfChanged(newChannelNumber);
     }
 
     public LiveData<String> getFrequency()
@@ -275,10 +273,7 @@ public class CellularViewModel extends ViewModel
 
     public void setFrequency(String newFrequency)
     {
-        if (!Objects.equals(frequency.getValue(), newFrequency))
-        {
-            frequency.postValue(newFrequency);
-        }
+        frequency.postIfChanged(newFrequency);
     }
 
     public LiveData<String> getBand()
@@ -288,10 +283,7 @@ public class CellularViewModel extends ViewModel
 
     public void setBand(String newBand)
     {
-        if (!Objects.equals(band.getValue(), newBand))
-        {
-            band.postValue(newBand);
-        }
+        band.postIfChanged(newBand);
     }
 
     public LiveData<String> getLteBand()
@@ -301,10 +293,7 @@ public class CellularViewModel extends ViewModel
 
     public void setLteBand(String newLteBand)
     {
-        if (!Objects.equals(lteBand.getValue(), newLteBand))
-        {
-            lteBand.postValue(newLteBand);
-        }
+        lteBand.postIfChanged(newLteBand);
     }
 
     public LiveData<String> getPci()
@@ -314,10 +303,7 @@ public class CellularViewModel extends ViewModel
 
     public void setPci(String newPci)
     {
-        if (!Objects.equals(pci.getValue(), newPci))
-        {
-            pci.postValue(newPci);
-        }
+        pci.postIfChanged(newPci);
     }
 
     public LiveData<String> getBandwidth()
@@ -327,10 +313,7 @@ public class CellularViewModel extends ViewModel
 
     public void setBandwidth(String newBandwidth)
     {
-        if (!Objects.equals(bandwidth.getValue(), newBandwidth))
-        {
-            bandwidth.postValue(newBandwidth);
-        }
+        bandwidth.postIfChanged(newBandwidth);
     }
 
     public LiveData<String> getTa()
@@ -340,10 +323,7 @@ public class CellularViewModel extends ViewModel
 
     public void setTa(String newTa)
     {
-        if (!Objects.equals(ta.getValue(), newTa))
-        {
-            ta.postValue(newTa);
-        }
+        ta.postIfChanged(newTa);
     }
 
     public LiveData<String> getCqi()
@@ -353,10 +333,7 @@ public class CellularViewModel extends ViewModel
 
     public void setCqi(String newTa)
     {
-        if (!Objects.equals(cqi.getValue(), newTa))
-        {
-            cqi.postValue(newTa);
-        }
+        cqi.postIfChanged(newTa);
     }
 
     public LiveData<Integer> getSignalOne()
@@ -366,10 +343,7 @@ public class CellularViewModel extends ViewModel
 
     public void setSignalOne(Integer newSignal)
     {
-        if (!Objects.equals(signalOne.getValue(), newSignal))
-        {
-            signalOne.postValue(newSignal);
-        }
+        signalOne.postIfChanged(newSignal);
     }
 
     public LiveData<Integer> getSignalTwo()
@@ -379,10 +353,7 @@ public class CellularViewModel extends ViewModel
 
     public void setSignalTwo(Integer newSignal)
     {
-        if (!Objects.equals(signalTwo.getValue(), newSignal))
-        {
-            signalTwo.postValue(newSignal);
-        }
+        signalTwo.postIfChanged(newSignal);
     }
 
     public LiveData<Integer> getSignalThree()
@@ -392,10 +363,7 @@ public class CellularViewModel extends ViewModel
 
     public void setSignalThree(Integer newSignal)
     {
-        if (!Objects.equals(signalThree.getValue(), newSignal))
-        {
-            signalThree.postValue(newSignal);
-        }
+        signalThree.postIfChanged(newSignal);
     }
 
     public LiveData<SortedSet<NrNeighbor>> getNrNeighbors()
