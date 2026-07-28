@@ -186,7 +186,6 @@
     <string name="grant_bluetooth_connect_permission">The Bluetooth Connect permission is not required for BT survey, but it does allow for getting the device name</string>
     <string name="grant_camera_permission">The Camera Permission is required for scanning QR codes</string>
 
-    <string name="carrier_label">Carrier</string>
     <string name="carrier_unknown">Unknown Carrier</string>
     <string name="voice_bearer_wifi_calling">Wi-Fi Calling</string>
     <string name="voice_bearer_none">None</string>

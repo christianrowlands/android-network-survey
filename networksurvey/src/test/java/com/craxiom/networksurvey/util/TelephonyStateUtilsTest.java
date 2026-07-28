@@ -23,6 +23,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
+import java.util.Set;
 
 /**
  * Host-side unit tests for the pure cellular technology derivations. These reference only
@@ -390,5 +391,52 @@ public class TelephonyStateUtilsTest
         // Fractional values format with the default locale's decimal separator.
         assertEquals(String.format(Locale.getDefault(), "%.1f", 1.4),
                 CellularBandwidthUtils.formatBandwidthMhz(1_400));
+    }
+
+    // shouldShowPillRow decides whether the details card's pill row is worth showing when the
+    // hero is degraded. The noise values mirror what the fragment passes: the legacy "Unknown"
+    // network type string and the localized "None" voice bearer string.
+
+    private static final Set<String> NOISE_VALUES = Set.of("Unknown", "None");
+
+    @Test
+    public void shouldShowPillRow_wifiCallingOnOldApi_showsRealLegacyValues()
+    {
+        // API 26-30 during Wi-Fi calling: no registration rows exist, so the hero degrades to
+        // UNKNOWN, but the legacy data network type is a real value (IWLAN) worth showing.
+        assertTrue(TelephonyStateUtils.shouldShowPillRow(HeroState.UNKNOWN, "Unknown", "IWLAN", NOISE_VALUES));
+    }
+
+    @Test
+    public void shouldShowPillRow_meaningfulVoiceAlone_showsRow()
+    {
+        assertTrue(TelephonyStateUtils.shouldShowPillRow(HeroState.UNKNOWN, "Wi-Fi Calling", "Unknown", NOISE_VALUES));
+    }
+
+    @Test
+    public void shouldShowPillRow_noServiceWithOnlyNoise_hidesRow()
+    {
+        assertFalse(TelephonyStateUtils.shouldShowPillRow(HeroState.NO_SERVICE, "None", "Unknown", NOISE_VALUES));
+    }
+
+    @Test
+    public void shouldShowPillRow_unknownHeroWithOnlyNoise_hidesRow()
+    {
+        assertFalse(TelephonyStateUtils.shouldShowPillRow(HeroState.UNKNOWN, "Unknown", "Unknown", NOISE_VALUES));
+    }
+
+    @Test
+    public void shouldShowPillRow_liveHeroState_alwaysShows()
+    {
+        // A live technology always shows the row with explicit values, even if a display string
+        // has not resolved yet, so nothing appears or disappears during normal use.
+        assertTrue(TelephonyStateUtils.shouldShowPillRow(HeroState.DATA_RAT, "Unknown", "Unknown", NOISE_VALUES));
+        assertTrue(TelephonyStateUtils.shouldShowPillRow(HeroState.NR_STANDALONE, "Unknown", "Unknown", NOISE_VALUES));
+    }
+
+    @Test
+    public void shouldShowPillRow_nullOrEmptyDisplays_countAsNoise()
+    {
+        assertFalse(TelephonyStateUtils.shouldShowPillRow(HeroState.UNKNOWN, null, "", NOISE_VALUES));
     }
 }

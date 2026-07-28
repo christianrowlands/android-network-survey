@@ -89,7 +89,7 @@ public class DbUploadStore implements ICellularSurveyRecordListener, IWifiSurvey
             final List<LteRecordEntity> lteRecords = new ArrayList<>();
             final List<NrRecordEntity> nrRecords = new ArrayList<>();
 
-            // Every record in a batch carries the same location, so the location of the first
+            // Every record in a batch carries the same location, so the location of the last
             // qualifying record stands in for the whole batch in the movement check below.
             double batchLatitude = 0d;
             double batchLongitude = 0d;

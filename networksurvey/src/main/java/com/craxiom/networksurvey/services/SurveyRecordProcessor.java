@@ -554,9 +554,14 @@ public class SurveyRecordProcessor
                     final int[] scanBandwidthsKhz = CellularBandwidthUtils.validBandwidthsKhz(
                             technologyInfo == null ? null : technologyInfo.cellBandwidthsKhz());
 
+                    // Computed once per scan: the NR signal-strength fallback may only engage
+                    // when the scan contains exactly one connected NR cell (see the fallback in
+                    // generateNrSurveyRecord for why).
+                    final int fallbackEligibleNrCells = countFallbackEligibleNrCells(allCellInfo);
+
                     for (CellInfo cellInfo : allCellInfo)
                     {
-                        final CellularRecordWrapper cellularRecord = processCellInfo(cellInfo, subscriptionId, networkOperatorName, signalStrength, includeNeighborCells, scanBandwidthsKhz);
+                        final CellularRecordWrapper cellularRecord = processCellInfo(cellInfo, subscriptionId, networkOperatorName, signalStrength, includeNeighborCells, scanBandwidthsKhz, fallbackEligibleNrCells);
                         if (cellularRecord != null) cellularRecords.add(cellularRecord);
                     }
 
@@ -837,14 +842,16 @@ public class SurveyRecordProcessor
      * Given a {@link CellInfo} record, convert it to the appropriate ProtoBuf defined message.  Then, notify any
      * listeners so it can be written to a log file and/or sent to any servers if those services are enabled.
      *
-     * @param cellInfo             The Cell Info object with the details.
-     * @param subscriptionId       The subscription ID (aka SIM ID) associated with the cell info record.
-     * @param includeNeighborCells If false, non-registered (neighbor) cells are skipped and null is returned.
-     * @param scanBandwidthsKhz    The validated per-carrier bandwidths for this scan's data connection,
-     *                             stamped on LTE/NR records for actively used cells; may be empty.
+     * @param cellInfo                The Cell Info object with the details.
+     * @param subscriptionId          The subscription ID (aka SIM ID) associated with the cell info record.
+     * @param includeNeighborCells    If false, non-registered (neighbor) cells are skipped and null is returned.
+     * @param scanBandwidthsKhz       The validated per-carrier bandwidths for this scan's data connection,
+     *                                stamped on LTE/NR records for actively used cells; may be empty.
+     * @param fallbackEligibleNrCells The number of connected NR cells in this scan, which gates
+     *                                the NR signal-strength fallback.
      * @since 0.0.5
      */
-    private CellularRecordWrapper processCellInfo(CellInfo cellInfo, int subscriptionId, String networkOperatorName, SignalStrength signalStrength, boolean includeNeighborCells, int[] scanBandwidthsKhz)
+    private CellularRecordWrapper processCellInfo(CellInfo cellInfo, int subscriptionId, String networkOperatorName, SignalStrength signalStrength, boolean includeNeighborCells, int[] scanBandwidthsKhz, int fallbackEligibleNrCells)
     {
         // We only want to take the time to process a record if we are going to do something with it.  Currently, that
         // means logging, sending to a server, or updating the UI with the latest LTE information.
@@ -912,7 +919,7 @@ public class SurveyRecordProcessor
                 }
             } else if (android.os.Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q && cellInfo instanceof CellInfoNr)
             {
-                final NrRecordWrapper nrRecordWrapper = generateNrSurveyRecord((CellInfoNr) cellInfo, subscriptionId, carrierName, signalStrength, deviceTime, elapsedTimeMillis, scanBandwidthsKhz);
+                final NrRecordWrapper nrRecordWrapper = generateNrSurveyRecord((CellInfoNr) cellInfo, subscriptionId, carrierName, signalStrength, deviceTime, elapsedTimeMillis, scanBandwidthsKhz, fallbackEligibleNrCells);
                 if (nrRecordWrapper != null)
                 {
                     notifyNrRecordListeners((NrRecord) nrRecordWrapper.cellularRecord);
@@ -1652,13 +1659,15 @@ public class SurveyRecordProcessor
     /**
      * Given a {@link CellInfoNr} object, pull out the values and generate a {@link NrRecord}.
      *
-     * @param cellInfoNr The object that contains the NR(5G) Cell info.  This can be a serving cell, or a neighbor cell.
+     * @param cellInfoNr              The object that contains the NR(5G) Cell info.  This can be a serving cell, or a neighbor cell.
+     * @param fallbackEligibleNrCells The number of connected NR cells in this scan; the
+     *                                signal-strength fallback only engages when it is exactly 1.
      * @return The survey record.
      * @since 1.5.0
      */
     @SuppressLint("Range")
     @RequiresApi(api = Build.VERSION_CODES.Q)
-    private NrRecordWrapper generateNrSurveyRecord(CellInfoNr cellInfoNr, int subscriptionId, String carrierName, SignalStrength signalStrength, ZonedDateTime deviceTime, long elapsedTimeMillis, int[] scanBandwidthsKhz)
+    private NrRecordWrapper generateNrSurveyRecord(CellInfoNr cellInfoNr, int subscriptionId, String carrierName, SignalStrength signalStrength, ZonedDateTime deviceTime, long elapsedTimeMillis, int[] scanBandwidthsKhz, int fallbackEligibleNrCells)
     {
         // safe to cast as per: https://developer.android.com/reference/android/telephony/CellInfoNr#getCellIdentity()
         final CellIdentityNr cellIdentity = (CellIdentityNr) cellInfoNr.getCellIdentity();
@@ -1703,7 +1712,12 @@ public class SurveyRecordProcessor
         // blend two measurement objects taken at different instants into a single record, and a
         // downstream consumer could never detect the mix. Note this differs from the LTE SNR
         // handling above, which wholesale-replaces a value the code explicitly distrusts.
-        if (signalStrength != null && (cellInfoNr.isRegistered() || isSecondaryServingCell(cellInfoNr))
+        // The fallback also requires this scan to contain exactly one connected NR cell:
+        // CellSignalStrengthNr carries no PCI to match on, so with two or more connected NR cells
+        // (e.g. NR CA under SA) the borrowed measurement cannot be attributed to a specific cell,
+        // and every qualifying record would silently receive the same values.
+        if (signalStrength != null && fallbackEligibleNrCells == 1
+                && (cellInfoNr.isRegistered() || isSecondaryServingCell(cellInfoNr))
                 && ssRsrp == CellInfo.UNAVAILABLE && ssRsrq == CellInfo.UNAVAILABLE && ssSinr == CellInfo.UNAVAILABLE)
         {
             final List<CellSignalStrengthNr> nrSignalStrengths = signalStrength.getCellSignalStrengths(CellSignalStrengthNr.class);
@@ -1869,6 +1883,32 @@ public class SurveyRecordProcessor
         {
             bandwidthConsumer.accept(bandwidthKhz);
         }
+    }
+
+    /**
+     * Counts the connected NR cells (registered or secondary serving) in a scan. The NR
+     * signal-strength fallback in {@code generateNrSurveyRecord} may only engage when this is
+     * exactly 1, because the borrowed {@link SignalStrength} measurement carries no cell identity
+     * and can only be attributed to a record when there is a single candidate.
+     * <p>
+     * Visible for testing.
+     *
+     * @param allCellInfo The scan's cell list; may be null.
+     * @return The number of NR cells the phone is actively connected to.
+     */
+    static int countFallbackEligibleNrCells(List<CellInfo> allCellInfo)
+    {
+        if (allCellInfo == null || Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) return 0;
+
+        int count = 0;
+        for (CellInfo cellInfo : allCellInfo)
+        {
+            if (cellInfo instanceof CellInfoNr && (cellInfo.isRegistered() || isSecondaryServingCell(cellInfo)))
+            {
+                count++;
+            }
+        }
+        return count;
     }
 
     /**

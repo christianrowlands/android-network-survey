@@ -67,6 +67,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
+import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
 import java.util.stream.Collectors;
@@ -227,11 +228,14 @@ public class NetworkDetailsFragment extends AServiceDataFragment implements ICel
         viewModel.setHeroColorId(heroColorId(hero.state()));
 
         // The pill row supports a live technology hero. On the degraded No Service and Unknown
-        // states the pills would all read "None"/"Unknown"/"N/A", which is noise the hero already
-        // conveys, so hide the whole row (a null voice value hides it). On every live state show all
-        // three pills with explicit values so nothing appears or disappears during normal use.
-        if (hero.state() == TelephonyStateUtils.HeroState.NO_SERVICE
-                || hero.state() == TelephonyStateUtils.HeroState.UNKNOWN)
+        // states the pills usually carry nothing but "None"/"Unknown" noise the hero already
+        // conveys, so the row hides (a null voice value hides it) unless a pill still has a real
+        // value to show (e.g. on API 26-30 during Wi-Fi calling the hero is Unknown while the
+        // legacy data network type is IWLAN). On every live state show all three pills with
+        // explicit values so nothing appears or disappears during normal use.
+        if (!TelephonyStateUtils.shouldShowPillRow(hero.state(), technologyInfo.voiceDisplay(),
+                technologyInfo.dataDisplay(),
+                Set.of(NetworkSurveyConstants.UNKNOWN, getString(R.string.voice_bearer_none))))
         {
             viewModel.setVoicePillValue(null);
             viewModel.setDataPillValue(null);
