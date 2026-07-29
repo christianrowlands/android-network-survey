@@ -313,6 +313,107 @@ public class CellularUtilsTest
     }
 
     @Test
+    public void downlinkNarfcnToBand_uniqueBands()
+    {
+        assertEquals(71, CellularUtils.downlinkNarfcnToBand(126270)); // 631.35 MHz, T-Mobile 600 MHz
+        assertEquals(41, CellularUtils.downlinkNarfcnToBand(501390)); // 2506.95 MHz, below n38's range
+        assertEquals(77, CellularUtils.downlinkNarfcnToBand(660000)); // 3900 MHz, above n78's upper edge
+        assertEquals(79, CellularUtils.downlinkNarfcnToBand(700000)); // 4500 MHz
+        assertEquals(260, CellularUtils.downlinkNarfcnToBand(2245000)); // 39 GHz mmWave, below n259's range
+    }
+
+    /**
+     * The bands recovered by leaving undeployed shadowing bands out of the table. Each of these
+     * would resolve to -1 if its shadowing band (listed in the comment) were added back.
+     */
+    @Test
+    public void downlinkNarfcnToBand_bandsRecoveredByOmittingUndeployedShadows()
+    {
+        assertEquals(5, CellularUtils.downlinkNarfcnToBand(176000)); // n26 omitted
+        assertEquals(18, CellularUtils.downlinkNarfcnToBand(172500)); // n26 omitted
+        assertEquals(13, CellularUtils.downlinkNarfcnToBand(150000)); // n67 omitted
+        assertEquals(12, CellularUtils.downlinkNarfcnToBand(146000)); // n67 omitted
+        assertEquals(66, CellularUtils.downlinkNarfcnToBand(437000)); // n65 omitted, above n1's edge
+        assertEquals(50, CellularUtils.downlinkNarfcnToBand(290000)); // n75, n92, n94 omitted
+        assertEquals(51, CellularUtils.downlinkNarfcnToBand(285500)); // n76, n91, n93 omitted
+        assertEquals(46, CellularUtils.downlinkNarfcnToBand(792000)); // n47 omitted
+    }
+
+    @Test
+    public void downlinkNarfcnToBand_ambiguousReturnsUnknown()
+    {
+        assertEquals(-1, CellularUtils.downlinkNarfcnToBand(520000)); // n38 and n41
+        assertEquals(-1, CellularUtils.downlinkNarfcnToBand(390000)); // n2 and n25
+        assertEquals(-1, CellularUtils.downlinkNarfcnToBand(425000)); // n1 and n66
+        assertEquals(-1, CellularUtils.downlinkNarfcnToBand(640000)); // n48, n77, and n78
+        assertEquals(-1, CellularUtils.downlinkNarfcnToBand(2075000)); // n257 and n261
+    }
+
+    /**
+     * Bands that no NARFCN can ever resolve to, because every value in their range is also inside
+     * a deployed band that the table cannot drop. This is a deliberate consequence of refusing to
+     * guess, not an oversight, and it is asserted here so that any future table edit which changes
+     * the set has to acknowledge it. Notably n78 sits entirely inside n77.
+     */
+    @Test
+    public void downlinkNarfcnToBand_permanentlyShadowedBands()
+    {
+        assertEquals(-1, CellularUtils.downlinkNarfcnToBand(430000)); // n1, inside n66
+        assertEquals(-1, CellularUtils.downlinkNarfcnToBand(392000)); // n2, inside n25
+        assertEquals(-1, CellularUtils.downlinkNarfcnToBand(152000)); // n14, inside n28
+        assertEquals(-1, CellularUtils.downlinkNarfcnToBand(471000)); // n30, inside n40
+        assertEquals(-1, CellularUtils.downlinkNarfcnToBand(519000)); // n38, inside n41
+        assertEquals(-1, CellularUtils.downlinkNarfcnToBand(645000)); // n48, inside n77 and n78
+        assertEquals(-1, CellularUtils.downlinkNarfcnToBand(630000)); // n78, inside n77
+        assertEquals(-1, CellularUtils.downlinkNarfcnToBand(381000)); // n101, inside n39
+        assertEquals(-1, CellularUtils.downlinkNarfcnToBand(2080000)); // n261, inside n257
+    }
+
+    @Test
+    public void downlinkNarfcnToBand_boundaries()
+    {
+        assertEquals(71, CellularUtils.downlinkNarfcnToBand(123400)); // n71 lower bound
+        assertEquals(71, CellularUtils.downlinkNarfcnToBand(130400)); // n71 upper bound
+        assertEquals(41, CellularUtils.downlinkNarfcnToBand(499200)); // n41 lower bound
+        assertEquals(41, CellularUtils.downlinkNarfcnToBand(513999)); // last NARFCN below n38's range
+        assertEquals(-1, CellularUtils.downlinkNarfcnToBand(514000)); // n38 starts, ambiguous with n41
+        // n41's table entry ends at 537999, so 538000 belongs to n7 alone. It is the ONLY NARFCN
+        // in n7's 524000-538000 range that resolves; n41 shadows the other 14,000.
+        assertEquals(7, CellularUtils.downlinkNarfcnToBand(538000));
+        assertEquals(-1, CellularUtils.downlinkNarfcnToBand(537999)); // one below, still ambiguous
+    }
+
+    @Test
+    public void downlinkNarfcnToBand_invalidAndUnmatched()
+    {
+        assertEquals(-1, CellularUtils.downlinkNarfcnToBand(-1));
+        assertEquals(-1, CellularUtils.downlinkNarfcnToBand(0)); // valid raster point, no band
+        assertEquals(-1, CellularUtils.downlinkNarfcnToBand(3279166)); // beyond the global raster
+        assertEquals(-1, CellularUtils.downlinkNarfcnToBand(Integer.MAX_VALUE)); // CellInfo.UNAVAILABLE
+    }
+
+    @Test
+    public void formatNrBands_fallsBackToNarfcnWhenBandsEmpty()
+    {
+        assertEquals("n71 (600)", CellularUtils.formatNrBands(new int[0], 126270));
+        assertEquals("n71 (600)", CellularUtils.formatNrBands(null, 126270));
+    }
+
+    @Test
+    public void formatNrBands_reportedBandsWinOverNarfcn()
+    {
+        assertEquals("n78 (TD 3500)", CellularUtils.formatNrBands(new int[]{78}, 126270));
+    }
+
+    @Test
+    public void formatNrBands_ambiguousOrInvalidNarfcnLeavesBandBlank()
+    {
+        assertEquals("", CellularUtils.formatNrBands(new int[0], 640000)); // n48/n77/n78
+        assertEquals("", CellularUtils.formatNrBands(new int[0], Integer.MAX_VALUE));
+        assertEquals("", CellularUtils.formatNrBands(null, -1));
+    }
+
+    @Test
     public void selectSecondaryServingNrCell_prefersSecondaryServing()
     {
         NrRecordWrapper secondaryServing = buildNrWrapper(101, -110f, ConnectionStatus.SECONDARY_SERVING);

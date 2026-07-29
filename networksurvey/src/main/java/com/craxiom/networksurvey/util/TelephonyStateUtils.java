@@ -66,6 +66,15 @@ public final class TelephonyStateUtils
     }
 
     /**
+     * What the 5G NR Secondary Cell details card should show for a scan: the live cell (ACTIVE),
+     * a dimmed last-seen cell while the NR leg is idle on NSA (IDLE), or nothing (HIDDEN).
+     */
+    public enum NrCardState
+    {
+        ACTIVE, IDLE, HIDDEN
+    }
+
+    /**
      * A single network registration row, keyed by (domain, transport). Domain/transport/rat use the
      * Android integer constants (compile-time inlined, so this record is framework-object-free).
      */
@@ -232,6 +241,33 @@ public final class TelephonyStateUtils
             return NrMode.NON_STANDALONE;
         }
         return NrMode.NONE;
+    }
+
+    /**
+     * Decides what the 5G NR Secondary Cell card should show for the current scan. The card is
+     * ACTIVE when the device reported a SECONDARY_SERVING NR cell in the scan. On NSA the NR leg
+     * only attaches while data is actively transferring and detaches within seconds of going
+     * idle, so when the cell is absent but the phone is still in NSA mode the card holds the
+     * last-seen cell in a dimmed IDLE state instead of vanishing, until the last sighting is
+     * older than maxLastSeenAgeMs. In every other case the card is HIDDEN, matching the behavior
+     * before the idle state existed.
+     *
+     * @param hasSecondaryCell Whether the current scan contains a SECONDARY_SERVING NR cell.
+     * @param nrMode           The NR mode in effect for the same scan.
+     * @param lastSeenAgeMs    Milliseconds since the last ACTIVE sighting, or -1 when there is none.
+     * @param maxLastSeenAgeMs The maximum last-seen age for which the IDLE state is shown.
+     * @return The card state, never null.
+     */
+    @NonNull
+    public static NrCardState resolveNrCardState(boolean hasSecondaryCell, NrMode nrMode,
+                                                 long lastSeenAgeMs, long maxLastSeenAgeMs)
+    {
+        if (hasSecondaryCell) return NrCardState.ACTIVE;
+        if (nrMode == NrMode.NON_STANDALONE && lastSeenAgeMs >= 0 && lastSeenAgeMs <= maxLastSeenAgeMs)
+        {
+            return NrCardState.IDLE;
+        }
+        return NrCardState.HIDDEN;
     }
 
     /**

@@ -866,6 +866,16 @@
                         android:layout_weight="1"
                         android:text="@string/card_title_nr_details" />
 
+                    <TextView
+                        android:id="@+id/nr_idle_badge"
+                        style="@style/PillText"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_gravity="center"
+                        android:layout_marginStart="@dimen/x_small_margin"
+                        android:text="@string/nr_idle_badge"
+                        android:visibility="gone" />
+
                     <ImageView
                         android:id="@+id/nr_details_info_icon"
                         android:layout_width="24dp"
@@ -887,7 +897,17 @@
                     android:layout_marginEnd="@dimen/small_margin"
                     android:text="@string/nr_secondary_cell_subtitle" />
 
+                <TextView
+                    android:id="@+id/nr_last_seen"
+                    style="@style/SmallLabelText"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="@dimen/small_margin"
+                    android:layout_marginEnd="@dimen/small_margin"
+                    android:visibility="gone" />
+
                 <LinearLayout
+                    android:id="@+id/nr_card_body"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="horizontal"

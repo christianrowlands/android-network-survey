@@ -83,7 +83,8 @@ public class CellularUtils
             {50, 58240, 59089},
             {51, 59090, 59139},
             {52, 59140, 60139},
-            {64, -1, -1}, // Reserved band
+            {53, 60140, 60254},
+            {54, 60255, 60304},
             {65, 65536, 66435},
             {66, 66436, 67335},
             {67, 67336, 67535},
@@ -101,6 +102,88 @@ public class CellularUtils
             {88, 70596, 70645},
             {103, 70646, 70655},
             {106, 70656, 70705},
+            {108, 70706, 70755},
+    };
+
+    /**
+     * From 3GPP TS 38.104 Table 5.4.2.3-1, the applicable downlink NR-ARFCN range per NR
+     * operating band. Values cross-checked against srsRAN's band_helper.cpp and the NS Analytics
+     * web app's cellular-band-utils.ts DOWNLINK_NR_BANDS table (keep these in sync).
+     * <p>
+     * Unlike the LTE table above, these ranges overlap heavily, which is why
+     * {@link #downlinkNarfcnToBand(int)} refuses to answer for a NARFCN in more than one band.
+     * <p>
+     * Bands are deliberately omitted when including them would shadow a band that operators
+     * actually deploy while adding no resolvable range of their own. Every omission below either
+     * cannot appear as a downlink NARFCN at all, or has no known commercial deployment:
+     * <ul>
+     *   <li>SUL bands (n80-n84, n86, n89, n95, n97-n99): uplink only, a downlink NARFCN can never be one</li>
+     *   <li>n85: FDD rather than SUL, but undeployed, and including it would swallow n12 entirely</li>
+     *   <li>NTN bands (n254-n256): satellite service, not reported for terrestrial cells</li>
+     *   <li>n90: spectrum-identical duplicate of n41 (it exists for UE capability signaling)</li>
+     *   <li>n105: no known commercial deployments, and it would permanently shadow n71</li>
+     *   <li>n26: no confirmed NR deployments; including it shadows both n5 and n18</li>
+     *   <li>n65: no known commercial deployments (operators use n1 at 2100 MHz); it has the
+     *       identical range to n66, so including it makes n66 unresolvable everywhere</li>
+     *   <li>n67: SDL, undeployed (700 SDL lots largely went unsold); it shadows n13</li>
+     *   <li>n47: V2X sidelink, so no gNB transmits a downlink there; it shadows part of n46</li>
+     *   <li>n75, n76, n91-n94: SDL and undeployed; they shadow n50 and n51</li>
+     * </ul>
+     * <p>
+     * Some overlaps cannot be removed this way because both bands are real and deployed. n78 sits
+     * entirely inside n77, n48 inside both, n1 inside n66, n38 inside n41, and n261 inside n257,
+     * so a NARFCN in those shared ranges stays unresolved by design rather than being guessed at.
+     * Preferring the narrower band would be wrong: US C-band at 3700-3800 MHz is n77 but falls in
+     * n78's range, so a narrower-wins rule would confidently mislabel it.
+     */
+    private static final int[][] DOWNLINK_NR_BANDS = {
+            // Band, Lower bound of NARFCN, Upper bound of NARFCN
+            {1, 422000, 434000},
+            {2, 386000, 398000},
+            {3, 361000, 376000},
+            {5, 173800, 178800},
+            {7, 524000, 538000},
+            {8, 185000, 192000},
+            {12, 145800, 149200},
+            {13, 149200, 151200},
+            {14, 151600, 153600},
+            {18, 172000, 175000},
+            {20, 158200, 164200},
+            {24, 305000, 311800},
+            {25, 386000, 399000},
+            {28, 151600, 160600},
+            {29, 143400, 145600}, // SDL
+            {30, 470000, 472000},
+            {34, 402000, 405000},
+            {38, 514000, 524000},
+            {39, 376000, 384000},
+            {40, 460000, 480000},
+            {41, 499200, 537999},
+            {46, 743334, 795000},
+            {48, 636667, 646666},
+            {50, 286400, 303400},
+            {51, 285400, 286400},
+            {53, 496700, 499000},
+            {66, 422000, 440000},
+            {70, 399000, 404000},
+            {71, 123400, 130400},
+            {74, 295000, 303600},
+            {77, 620000, 680000},
+            {78, 620000, 653333},
+            {79, 693334, 733333},
+            {96, 795000, 875000},
+            {100, 183880, 185000},
+            {101, 380000, 382000},
+            {102, 796334, 828333},
+            {104, 828334, 875000},
+            // FR2 (mmWave)
+            {257, 2054166, 2104165},
+            {258, 2016667, 2070832},
+            {259, 2270833, 2337499},
+            {260, 2229166, 2279165},
+            {261, 2070833, 2084999},
+            {262, 2399166, 2415832},
+            {263, 2564083, 2794249},
     };
 
     /**
@@ -333,6 +416,53 @@ public class CellularUtils
     }
 
     /**
+     * Returns the 5G NR band for a given downlink NARFCN, but only when the NARFCN falls in
+     * exactly one operating band. Unlike LTE EARFCNs, NR ARFCN ranges overlap heavily (e.g. n1
+     * lies inside n65/n66, n38 and n7 lie inside n41's range, and n48/n78 lie inside n77), so a
+     * NARFCN contained in more than one band returns -1 rather than guessing. This keeps the
+     * derived value trustworthy at the cost of leaving ambiguous ranges unresolved.
+     *
+     * @param narfcn The downlink NARFCN to look up.
+     * @return The NR band number, or -1 when the NARFCN is invalid, matches no band, or matches
+     * more than one band.
+     */
+    public static int downlinkNarfcnToBand(int narfcn)
+    {
+        int matchedBand = -1;
+        for (int[] band : DOWNLINK_NR_BANDS)
+        {
+            if (narfcn >= band[1] && narfcn <= band[2])
+            {
+                if (matchedBand != -1) return -1;
+                matchedBand = band[0];
+            }
+        }
+
+        return matchedBand;
+    }
+
+    /**
+     * Same as {@link #formatNrBands(int[])}, except that when the device did not report any
+     * bands the band is derived from the downlink NARFCN via {@link #downlinkNarfcnToBand(int)}.
+     * Device-reported bands always take precedence, and an ambiguous or invalid NARFCN still
+     * yields an empty string. The derivation is display-only; logged and streamed records never
+     * carry a band.
+     *
+     * @param bands  The NR band numbers reported for the cell, or null/empty when none were.
+     * @param narfcn The cell's downlink NARFCN to fall back to.
+     * @return The formatted band string, or an empty string when nothing could be determined.
+     */
+    public static String formatNrBands(int[] bands, int narfcn)
+    {
+        if (bands != null && bands.length > 0) return formatNrBands(bands);
+
+        final int derivedBand = downlinkNarfcnToBand(narfcn);
+        if (derivedBand == -1) return "";
+
+        return formatNrBands(new int[]{derivedBand});
+    }
+
+    /**
      * Formats an array of 5G NR band numbers for display using the standard 3GPP "n" prefix and
      * the friendly band name when one is known (e.g. "n77 (TD 3700)"). Multiple bands are joined
      * with a comma.
@@ -455,12 +585,18 @@ public class CellularUtils
      */
     public static String getTowerId(ServingCellInfo servingCellInfo)
     {
-        if (servingCellInfo == null)
-        {
-            return "";
-        }
+        return servingCellInfo == null ? "" : getTowerId(servingCellInfo.getServingCell());
+    }
 
-        CellularRecordWrapper cellularRecord = servingCellInfo.getServingCell();
+    /**
+     * Get the ID used to identify a tower on the map. This is NOT the CGI because I wanted to
+     * include the TAC for LTE and NR, but the CGI doesn't include the TAC.
+     *
+     * @param cellularRecord The cellular record to get the ID from.
+     * @return The ID, or an empty string if the record is null or its protocol has no tower ID.
+     */
+    public static String getTowerId(CellularRecordWrapper cellularRecord)
+    {
         if (cellularRecord == null)
         {
             return "";

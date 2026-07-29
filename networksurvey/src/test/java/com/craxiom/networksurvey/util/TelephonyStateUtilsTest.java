@@ -439,4 +439,50 @@ public class TelephonyStateUtilsTest
     {
         assertFalse(TelephonyStateUtils.shouldShowPillRow(HeroState.UNKNOWN, null, "", NOISE_VALUES));
     }
+
+    // resolveNrCardState decides whether the NR Secondary Cell card shows the live cell, holds
+    // the last-seen cell in a dimmed idle state (NSA only), or hides.
+
+    private static final long MAX_AGE_MS = 600_000;
+
+    @Test
+    public void resolveNrCardState_secondaryCellPresent_isActiveRegardlessOfMode()
+    {
+        assertEquals(TelephonyStateUtils.NrCardState.ACTIVE,
+                TelephonyStateUtils.resolveNrCardState(true, NrMode.NON_STANDALONE, -1, MAX_AGE_MS));
+        // SA with NR carrier aggregation also produces a SECONDARY_SERVING cell.
+        assertEquals(TelephonyStateUtils.NrCardState.ACTIVE,
+                TelephonyStateUtils.resolveNrCardState(true, NrMode.STANDALONE, 5_000, MAX_AGE_MS));
+        assertEquals(TelephonyStateUtils.NrCardState.ACTIVE,
+                TelephonyStateUtils.resolveNrCardState(true, NrMode.NONE, -1, MAX_AGE_MS));
+    }
+
+    @Test
+    public void resolveNrCardState_nsaWithRecentSighting_isIdle()
+    {
+        assertEquals(TelephonyStateUtils.NrCardState.IDLE,
+                TelephonyStateUtils.resolveNrCardState(false, NrMode.NON_STANDALONE, 0, MAX_AGE_MS));
+        assertEquals(TelephonyStateUtils.NrCardState.IDLE,
+                TelephonyStateUtils.resolveNrCardState(false, NrMode.NON_STANDALONE, MAX_AGE_MS, MAX_AGE_MS));
+    }
+
+    @Test
+    public void resolveNrCardState_nsaWithStaleOrNoSighting_isHidden()
+    {
+        assertEquals(TelephonyStateUtils.NrCardState.HIDDEN,
+                TelephonyStateUtils.resolveNrCardState(false, NrMode.NON_STANDALONE, MAX_AGE_MS + 1, MAX_AGE_MS));
+        assertEquals(TelephonyStateUtils.NrCardState.HIDDEN,
+                TelephonyStateUtils.resolveNrCardState(false, NrMode.NON_STANDALONE, -1, MAX_AGE_MS));
+    }
+
+    @Test
+    public void resolveNrCardState_notNsa_isHiddenEvenWithRecentSighting()
+    {
+        // The idle hold is NSA-specific: under SA the serving card covers NR, and off NR
+        // entirely a held cell would be misleading.
+        assertEquals(TelephonyStateUtils.NrCardState.HIDDEN,
+                TelephonyStateUtils.resolveNrCardState(false, NrMode.STANDALONE, 5_000, MAX_AGE_MS));
+        assertEquals(TelephonyStateUtils.NrCardState.HIDDEN,
+                TelephonyStateUtils.resolveNrCardState(false, NrMode.NONE, 5_000, MAX_AGE_MS));
+    }
 }

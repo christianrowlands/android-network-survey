@@ -263,6 +263,8 @@
     <string name="card_title_nr_details">5G NR Secondary Cell</string>
     <string name="nr_secondary_cell_subtitle">The 5G carrier your phone is using alongside its primary cell</string>
     <string name="nr_secondary_info_description">NR Secondary Cell Terms Info</string>
+    <string name="nr_idle_badge">Idle</string>
+    <string name="nr_last_seen_format">Last seen %1$s ago</string>
     <string name="cellular_icon_description">Cellular Tower Icon</string>
     <string name="card_title_neighbors">Neighbors</string>
     <string name="card_title_neighbors_gsm">GSM Neighbors</string>
@@ -332,6 +334,9 @@
         an LTE cell (the anchor) and the 5G data flows through this NR cell, so it shows here
         rather than in the Neighbors table. On 5G Standalone networks with carrier aggregation,
         this is an additional NR carrier boosting your speed.\n\n
+        On NSA the NR cell only attaches while data is actively transferring and disconnects a few
+        seconds after the transfer stops. When that happens the card dims to its last-seen values
+        with an Idle badge, and returns to live values the next time data flows.\n\n
         <b>Band</b>: The 3GPP NR operating band (e.g. n77). Bands below n257 are Sub-6 (FR1), and n257 and above are mmWave (FR2).\n\n
         <b>Frequency</b>: The NR carrier center frequency in MHz, calculated from the NARFCN.\n\n
         <b>PCI</b> (Physical Cell ID): A physical layer cell identifier that helps a mobile device differentiate two cells during cell selection/reselection that are using the same frequency. Valid range 0-1007. The numbers in parenthesis represent the Primary Sync Sequence (PSS) and Secondary Sync Sequence (SSS).\n\n

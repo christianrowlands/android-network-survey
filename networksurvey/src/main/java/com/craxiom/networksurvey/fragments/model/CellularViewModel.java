@@ -66,6 +66,13 @@ public class CellularViewModel extends ViewModel
     // The 5G NR secondary cell details card (the NSA data leg, or an NR CA SCell under SA); null
     // means "hide the card".
     private final DistinctLiveData<NrSecondaryCellViewState> nrSecondaryCell = new DistinctLiveData<>();
+    // The idle card's "Last seen ..." line, kept separate from the card's view state so that the
+    // ticking age does not invalidate the whole card once per scan; an empty string hides it.
+    private final DistinctLiveData<String> nrLastSeenText = new DistinctLiveData<>("");
+    // The most recent live (non-idle) NR secondary cell sighting, retained here rather than in the
+    // fragment so the card's idle state survives rotation. Written on the survey executor and
+    // cleared from the main thread, hence the synchronized accessors.
+    private NrSecondaryCellSighting lastNrSecondaryCellSighting = NrSecondaryCellSighting.NONE;
 
     private final DistinctLiveData<Location> location = new DistinctLiveData<>();
     private final DistinctLiveData<Boolean> providerEnabled = new DistinctLiveData<>(true);
@@ -174,6 +181,44 @@ public class CellularViewModel extends ViewModel
     public void setNrSecondaryCell(NrSecondaryCellViewState newNrSecondaryCell)
     {
         nrSecondaryCell.postIfChanged(newNrSecondaryCell);
+    }
+
+    public LiveData<String> getNrLastSeenText()
+    {
+        return nrLastSeenText;
+    }
+
+    /**
+     * @param newNrLastSeenText The idle card's "Last seen ..." line, or an empty string when the
+     *                          card is not idle.
+     */
+    public void setNrLastSeenText(String newNrLastSeenText)
+    {
+        nrLastSeenText.postIfChanged(newNrLastSeenText);
+    }
+
+    /**
+     * Records the most recent live NR secondary cell sighting for the card's idle state.
+     *
+     * @param sighting The sighting to retain, never null.
+     */
+    public synchronized void setLastNrSecondaryCellSighting(NrSecondaryCellSighting sighting)
+    {
+        lastNrSecondaryCellSighting = sighting;
+    }
+
+    /**
+     * @return The last live NR secondary cell sighting as one consistent snapshot, or
+     * {@link NrSecondaryCellSighting#NONE} when none has been seen. Never null.
+     */
+    public synchronized NrSecondaryCellSighting getLastNrSecondaryCellSighting()
+    {
+        return lastNrSecondaryCellSighting;
+    }
+
+    public synchronized void clearLastNrSecondaryCell()
+    {
+        lastNrSecondaryCellSighting = NrSecondaryCellSighting.NONE;
     }
 
     public LiveData<Location> getLocation()
