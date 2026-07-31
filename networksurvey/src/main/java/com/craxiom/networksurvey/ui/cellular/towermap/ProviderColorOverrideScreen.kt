@@ -1,62 +1,48 @@
 package com.craxiom.networksurvey.ui.cellular.towermap
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.RowScope
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.verticalScroll
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Clear
-import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
+import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.craxiom.networksurvey.R
-import com.craxiom.networksurvey.util.PlmnColorMapper
+import com.craxiom.networksurvey.ui.common.NsInfoCard
+import com.craxiom.networksurvey.ui.common.NsSectionLabel
+import com.craxiom.networksurvey.ui.common.dialogs.NsConfirmationDialog
 
 /**
- * Screen for managing provider color overrides. Shows a list of all overrides with
- * add, edit, and delete capabilities.
+ * Screen for managing provider color overrides: a capacity hero card, an info card, and the list
+ * of overrides. Adding is done through a bottom sheet, tapping a row opens the color picker to
+ * edit, and removal (single or clear all) is confirmed before it is applied.
  */
 @Composable
 fun ProviderColorOverrideScreen(
@@ -65,37 +51,52 @@ fun ProviderColorOverrideScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
-    var showAddDialog by remember { mutableStateOf(false) }
-    var showClearAllDialog by remember { mutableStateOf(false) }
+    // Re-read the overrides when returning to this screen so changes made from the tower details
+    // color picker while this screen was on the back stack are reflected.
+    LifecycleEventEffect(Lifecycle.Event.ON_RESUME) {
+        viewModel.refresh()
+    }
+
+    var showAddSheet by remember { mutableStateOf(false) }
+    var showClearAllConfirm by remember { mutableStateOf(false) }
+    var pendingDelete by remember { mutableStateOf<ProviderColorEntry?>(null) }
     var editEntry by remember { mutableStateOf<ProviderColorEntry?>(null) }
 
     ProviderColorOverrideContent(
-        overrides = uiState.overrides,
+        uiState = uiState,
         onNavigateUp = onNavigateUp,
-        onAddClick = { showAddDialog = true },
-        onClearAllClick = { showClearAllDialog = true },
-        onRemoveClick = { entry -> viewModel.removeOverride(entry.mcc, entry.mnc) },
+        onAddClick = { showAddSheet = true },
+        onClearAllClick = { showClearAllConfirm = true },
+        onRemoveClick = { entry -> pendingDelete = entry },
         onEditClick = { entry -> editEntry = entry }
     )
 
-    if (showAddDialog) {
-        AddOverrideDialog(
-            isAtMaxCapacity = uiState.isAtMaxCapacity,
-            onDismiss = { showAddDialog = false },
-            onAdd = { mcc, mnc, paletteIndex ->
-                viewModel.setOverride(mcc, mnc, paletteIndex)
-                showAddDialog = false
-            }
+    if (showAddSheet) {
+        ProviderColorAddSheet(
+            onAdd = { mcc, mnc, paletteIndex -> viewModel.setOverride(mcc, mnc, paletteIndex) },
+            onDismiss = { showAddSheet = false }
         )
     }
 
-    if (showClearAllDialog) {
-        ClearAllOverridesDialog(
-            onDismiss = { showClearAllDialog = false },
-            onConfirm = {
-                viewModel.clearAll()
-                showClearAllDialog = false
-            }
+    pendingDelete?.let { entry ->
+        NsConfirmationDialog(
+            title = stringResource(R.string.provider_color_remove_title),
+            message = stringResource(R.string.provider_color_remove_message, entry.mcc, entry.mnc),
+            confirmText = stringResource(R.string.remove),
+            onConfirm = { viewModel.removeOverride(entry.mcc, entry.mnc) },
+            onDismiss = { pendingDelete = null },
+            destructive = true
+        )
+    }
+
+    if (showClearAllConfirm) {
+        NsConfirmationDialog(
+            title = stringResource(R.string.confirm_clear_overrides_title),
+            message = stringResource(R.string.confirm_clear_overrides_message),
+            confirmText = stringResource(R.string.clear_all),
+            onConfirm = { viewModel.clearAll() },
+            onDismiss = { showClearAllConfirm = false },
+            destructive = true
         )
     }
 
@@ -121,13 +122,15 @@ fun ProviderColorOverrideScreen(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun ProviderColorOverrideContent(
-    overrides: List<ProviderColorEntry>,
+    uiState: ProviderColorOverrideUiState,
     onNavigateUp: () -> Unit,
     onAddClick: () -> Unit,
     onClearAllClick: () -> Unit,
     onRemoveClick: (ProviderColorEntry) -> Unit,
     onEditClick: (ProviderColorEntry) -> Unit
 ) {
+    var showOverflowMenu by remember { mutableStateOf(false) }
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -141,19 +144,34 @@ private fun ProviderColorOverrideContent(
                     }
                 },
                 actions = {
-                    if (overrides.isNotEmpty()) {
-                        IconButton(onClick = onClearAllClick) {
-                            Icon(
-                                imageVector = Icons.Default.Clear,
-                                contentDescription = stringResource(R.string.clear_all)
-                            )
-                        }
-                    }
-                    IconButton(onClick = onAddClick) {
+                    // At capacity the add action is disabled; the error-tinted hero card explains why.
+                    IconButton(onClick = onAddClick, enabled = !uiState.isAtMaxCapacity) {
                         Icon(
                             imageVector = Icons.Default.Add,
                             contentDescription = stringResource(R.string.provider_color_add_title)
                         )
+                    }
+                    if (uiState.overrides.isNotEmpty()) {
+                        Box {
+                            IconButton(onClick = { showOverflowMenu = true }) {
+                                Icon(
+                                    imageVector = Icons.Default.MoreVert,
+                                    contentDescription = stringResource(R.string.more_options)
+                                )
+                            }
+                            DropdownMenu(
+                                expanded = showOverflowMenu,
+                                onDismissRequest = { showOverflowMenu = false }
+                            ) {
+                                DropdownMenuItem(
+                                    text = { Text(stringResource(R.string.clear_all)) },
+                                    onClick = {
+                                        showOverflowMenu = false
+                                        onClearAllClick()
+                                    }
+                                )
+                            }
+                        }
                     }
                 }
             )
@@ -164,38 +182,24 @@ private fun ProviderColorOverrideContent(
                 .fillMaxSize()
                 .padding(paddingValues)
         ) {
-            // Info card
-            Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp),
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.secondaryContainer
-                )
-            ) {
-                Text(
-                    text = stringResource(R.string.provider_color_overrides_info),
-                    modifier = Modifier.padding(16.dp),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSecondaryContainer
-                )
-            }
+            ProviderColorHero(count = uiState.overrides.size, max = uiState.maxCapacity)
 
-            if (overrides.isEmpty()) {
-                // Empty state
+            NsInfoCard(text = stringResource(R.string.provider_color_overrides_info))
+
+            if (uiState.overrides.isEmpty()) {
                 Box(
                     modifier = Modifier.fillMaxSize(),
                     contentAlignment = Alignment.Center
                 ) {
                     Column(
                         horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                        modifier = Modifier.padding(24.dp)
                     ) {
                         Text(
                             text = stringResource(R.string.provider_color_empty_state),
                             style = MaterialTheme.typography.bodyLarge,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.padding(horizontal = 32.dp)
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                         TextButton(onClick = onAddClick) {
                             Text(stringResource(R.string.provider_color_add_title))
@@ -208,273 +212,25 @@ private fun ProviderColorOverrideContent(
                     contentPadding = PaddingValues(16.dp),
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    items(overrides, key = { "${it.mcc}-${it.mnc}" }) { entry ->
-                        OverrideItem(
+                    // Int key so the header can never collide with the String item keys below.
+                    item(key = 0) {
+                        NsSectionLabel(
+                            text = stringResource(
+                                R.string.provider_color_section_count,
+                                uiState.overrides.size
+                            ),
+                            modifier = Modifier.padding(start = 4.dp, bottom = 4.dp)
+                        )
+                    }
+                    items(uiState.overrides, key = { "${it.mcc}-${it.mnc}" }) { entry ->
+                        ProviderColorOverrideRow(
                             entry = entry,
-                            onEditClick = { onEditClick(entry) },
-                            onRemoveClick = { onRemoveClick(entry) }
+                            onClick = { onEditClick(entry) },
+                            onDelete = { onRemoveClick(entry) }
                         )
                     }
                 }
             }
         }
     }
-}
-
-@Composable
-private fun OverrideItem(
-    entry: ProviderColorEntry,
-    onEditClick: () -> Unit,
-    onRemoveClick: () -> Unit
-) {
-    val overrideColor = PlmnColorMapper.getColorByIndex(entry.paletteIndex)
-    val overrideName = PlmnColorMapper.PALETTE_NAMES[entry.paletteIndex]
-    val defaultName = PlmnColorMapper.PALETTE_NAMES[entry.defaultPaletteIndex]
-
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(onClick = onEditClick)
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 12.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.weight(1f)
-            ) {
-                Box(
-                    modifier = Modifier
-                        .size(16.dp)
-                        .background(overrideColor, CircleShape)
-                )
-                Spacer(modifier = Modifier.width(12.dp))
-                Column {
-                    Text(
-                        text = stringResource(R.string.mcc_mnc_format, entry.mcc, entry.mnc),
-                        style = MaterialTheme.typography.bodyLarge,
-                        fontWeight = FontWeight.Medium
-                    )
-                    Text(
-                        text = "$overrideName (${
-                            stringResource(
-                                R.string.provider_color_default_label,
-                                defaultName
-                            )
-                        })",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-            }
-            IconButton(onClick = onRemoveClick) {
-                Icon(
-                    imageVector = Icons.Default.Delete,
-                    contentDescription = stringResource(R.string.remove),
-                    tint = MaterialTheme.colorScheme.error
-                )
-            }
-        }
-    }
-}
-
-/**
- * Dialog for adding a new provider color override with MCC/MNC input fields
- * and a color grid.
- */
-@Composable
-private fun AddOverrideDialog(
-    isAtMaxCapacity: Boolean,
-    onDismiss: () -> Unit,
-    onAdd: (mcc: String, mnc: String, paletteIndex: Int) -> Unit
-) {
-    var mccText by remember { mutableStateOf("") }
-    var mncText by remember { mutableStateOf("") }
-    var selectedIndex by remember { mutableIntStateOf(-1) }
-    var mccError by remember { mutableStateOf<String?>(null) }
-    var mncError by remember { mutableStateOf<String?>(null) }
-
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(stringResource(R.string.provider_color_add_title)) },
-        text = {
-            if (isAtMaxCapacity) {
-                Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
-                    Text(
-                        text = stringResource(R.string.provider_color_max_reached),
-                        color = MaterialTheme.colorScheme.error,
-                        style = MaterialTheme.typography.bodyMedium
-                    )
-                }
-            } else {
-                Column(
-                    modifier = Modifier.verticalScroll(rememberScrollState()),
-                    verticalArrangement = Arrangement.spacedBy(8.dp),
-                ) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        OutlinedTextField(
-                            value = mccText,
-                            onValueChange = {
-                                mccText = it.filter { c -> c.isDigit() }.take(3)
-                                mccError = null
-                            },
-                            label = { Text(stringResource(R.string.provider_color_mcc_hint)) },
-                            singleLine = true,
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                            isError = mccError != null,
-                            supportingText = mccError?.let { { Text(it) } },
-                            modifier = Modifier.weight(1f)
-                        )
-                        OutlinedTextField(
-                            value = mncText,
-                            onValueChange = {
-                                mncText = it.filter { c -> c.isDigit() }.take(3)
-                                mncError = null
-                            },
-                            label = { Text(stringResource(R.string.provider_color_mnc_hint)) },
-                            singleLine = true,
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                            isError = mncError != null,
-                            supportingText = mncError?.let { { Text(it) } },
-                            modifier = Modifier.weight(1f)
-                        )
-                    }
-
-                    // Color grid
-                    Text(
-                        text = stringResource(R.string.provider_color_select_color),
-                        style = MaterialTheme.typography.bodyMedium,
-                        modifier = Modifier.padding(top = 4.dp)
-                    )
-                    for (row in 0 until 4) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceEvenly
-                        ) {
-                            for (col in 0 until 4) {
-                                val index = row * 4 + col
-                                AddDialogColorCell(
-                                    index = index,
-                                    isSelected = index == selectedIndex,
-                                    onClick = { selectedIndex = index }
-                                )
-                            }
-                        }
-                    }
-                }
-            }
-        },
-        confirmButton = {
-            TextButton(
-                onClick = {
-                    val mccInt = mccText.toIntOrNull()
-                    val mncInt = mncText.toIntOrNull()
-                    var hasError = false
-
-                    if (mccInt == null || mccInt !in 100..999) {
-                        mccError = "100\u2013999"
-                        hasError = true
-                    }
-                    if (mncInt == null || mncInt !in 0..999) {
-                        mncError = "0\u2013999"
-                        hasError = true
-                    }
-                    if (selectedIndex < 0) {
-                        hasError = true
-                    }
-
-                    if (!hasError && mccInt != null && mncInt != null) {
-                        onAdd(mccText, mncText, selectedIndex)
-                    }
-                },
-                enabled = !isAtMaxCapacity && mccText.isNotBlank() && mncText.isNotBlank() && selectedIndex >= 0
-            ) {
-                Text(stringResource(R.string.add))
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text(stringResource(R.string.cancel))
-            }
-        }
-    )
-}
-
-@Composable
-private fun RowScope.AddDialogColorCell(
-    index: Int,
-    isSelected: Boolean,
-    onClick: () -> Unit
-) {
-    val color = PlmnColorMapper.getColorByIndex(index)
-    val name = PlmnColorMapper.PALETTE_NAMES[index]
-
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = Modifier
-            .weight(1f)
-            .clickable(onClick = onClick)
-            .padding(4.dp)
-    ) {
-        Box(
-            modifier = Modifier
-                .size(32.dp)
-                .then(
-                    if (isSelected) {
-                        Modifier.background(
-                            MaterialTheme.colorScheme.onSurface.copy(alpha = 0.2f),
-                            CircleShape
-                        )
-                    } else {
-                        Modifier
-                    }
-                )
-                .padding(4.dp)
-                .background(color, CircleShape)
-        )
-        Text(
-            text = name,
-            style = MaterialTheme.typography.labelSmall,
-            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
-            maxLines = 1
-        )
-    }
-}
-
-@Composable
-private fun ClearAllOverridesDialog(
-    onDismiss: () -> Unit,
-    onConfirm: () -> Unit
-) {
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(stringResource(R.string.confirm_clear_overrides_title)) },
-        text = {
-            Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
-                Text(stringResource(R.string.confirm_clear_overrides_message))
-            }
-        },
-        confirmButton = {
-            TextButton(
-                onClick = onConfirm,
-                colors = ButtonDefaults.textButtonColors(
-                    contentColor = MaterialTheme.colorScheme.error
-                )
-            ) {
-                Text(stringResource(R.string.clear_all))
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text(stringResource(R.string.cancel))
-            }
-        }
-    )
 }

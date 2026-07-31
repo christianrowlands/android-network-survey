@@ -1012,10 +1012,19 @@
     <string name="enter_ssid">Enter SSID</string>
     <string name="add">Add</string>
     <string name="remove">Remove</string>
+    <string name="remove_format">Remove %1$s</string>
     <string name="clear_all">Clear All</string>
     <string name="confirm_clear_exclusion_list_title">Clear Exclusion List</string>
     <string name="confirm_clear_exclusion_list_message">Are you sure you want to remove all SSIDs from the exclusion list?</string>
     <string name="wifi_exclusion_info">Excluded SSIDs are not written to log files, uploaded, or streamed. They still appear in the Wi-Fi list with an Excluded tag</string>
+    <string name="ssid_exclusion_status_title">Excluded SSIDs</string>
+    <string name="ssid_exclusion_status_full_title">Exclusion list is full</string>
+    <string name="ssid_exclusion_section_count">Excluded · %1$d</string>
+    <string name="ssid_exclusion_add_sheet_title">Add to Exclusion List</string>
+    <string name="ssid_exclusion_add_confirm">Exclude SSID</string>
+    <string name="ssid_exclusion_remove_title">Remove Excluded SSID?</string>
+    <string name="ssid_exclusion_remove_message">Remove \"%1$s\" from the exclusion list? It will be included in survey data again.</string>
+    <string name="ssid_exclusion_match_note">Matching is exact and case sensitive.</string>
 
     <!-- Provider Color Overrides -->
     <string name="provider_colors_category_title">Provider Colors</string>
@@ -1032,9 +1041,20 @@
     <string name="provider_color_reset_to_default">Reset to Default</string>
     <string name="provider_color_select_color">Select a color:</string>
     <string name="provider_color_max_reached">Maximum number of overrides reached.</string>
+    <string name="provider_color_status_title">Custom provider colors</string>
+    <string name="provider_color_status_full_title">Override limit reached</string>
+    <string name="provider_color_section_count">Overrides · %1$d</string>
+    <string name="provider_color_add_confirm">Add Override</string>
+    <string name="provider_color_remove_title">Remove Color Override?</string>
+    <string name="provider_color_remove_message">Remove the override for %1$s-%2$s and restore the default color?</string>
+    <string name="provider_color_sheet_color_label">Color</string>
+    <string name="provider_color_mcc_range">100–999</string>
+    <string name="provider_color_mnc_range">0–999</string>
     <string name="mcc_mnc_format">MCC-MNC: %1$s-%2$s</string>
     <string name="selected">Selected</string>
     <string name="navigate_back">Navigate back</string>
+    <string name="more_options">More options</string>
+    <string name="count_of_max_format">%1$d of %2$d used</string>
 
     <!-- NS Analytics -->
     <string name="ns_analytics">NS Analytics</string>

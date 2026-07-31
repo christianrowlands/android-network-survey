@@ -4,19 +4,16 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.Clear
-import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
+import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -32,17 +29,20 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.craxiom.networksurvey.R
+import com.craxiom.networksurvey.ui.common.NsInfoCard
+import com.craxiom.networksurvey.ui.common.NsSectionLabel
 import com.craxiom.networksurvey.ui.common.dialogs.NsConfirmationDialog
-import com.craxiom.networksurvey.ui.common.dialogs.NsInputDialog
-import com.craxiom.networksurvey.ui.common.dialogs.NsMessageDialog
 
 /**
- * Screen for managing the SSID exclusion list.
+ * Screen for managing the SSID exclusion list: a capacity hero card, an info card, and the list of
+ * excluded SSIDs. Adding is done through a bottom sheet, and removal (single or clear all) is
+ * confirmed before it is applied.
  */
 @Composable
 fun SsidExclusionListScreen(
@@ -50,31 +50,51 @@ fun SsidExclusionListScreen(
     onNavigateUp: () -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    LocalContext.current
 
-    var showAddDialog by remember { mutableStateOf(false) }
-    var showClearAllDialog by remember { mutableStateOf(false) }
+    // Re-read the list when returning to this screen so exclusions toggled from the Wi-Fi Details
+    // screen while this screen was on the back stack are reflected.
+    LifecycleEventEffect(Lifecycle.Event.ON_RESUME) {
+        viewModel.refresh()
+    }
+
+    var showAddSheet by remember { mutableStateOf(false) }
+    var showClearAllConfirm by remember { mutableStateOf(false) }
+    var pendingDelete by remember { mutableStateOf<String?>(null) }
 
     SsidExclusionListContent(
-        excludedSsids = uiState.excludedSsids,
+        uiState = uiState,
         onNavigateUp = onNavigateUp,
-        onAddClick = { showAddDialog = true },
-        onClearAllClick = { showClearAllDialog = true },
-        onRemoveClick = { ssid -> viewModel.removeSsid(ssid) }
+        onAddClick = { showAddSheet = true },
+        onClearAllClick = { showClearAllConfirm = true },
+        onRemoveClick = { ssid -> pendingDelete = ssid }
     )
 
-    if (showAddDialog) {
-        AddSsidDialog(
-            onDismiss = { showAddDialog = false },
+    if (showAddSheet) {
+        SsidExclusionAddSheet(
             onAdd = { ssid -> viewModel.addSsid(ssid) },
-            isAtMaxCapacity = uiState.isAtMaxCapacity
+            onDismiss = { showAddSheet = false }
         )
     }
 
-    if (showClearAllDialog) {
-        ClearAllConfirmationDialog(
-            onDismiss = { showClearAllDialog = false },
-            onConfirm = { viewModel.clearAll() }
+    pendingDelete?.let { ssid ->
+        NsConfirmationDialog(
+            title = stringResource(R.string.ssid_exclusion_remove_title),
+            message = stringResource(R.string.ssid_exclusion_remove_message, ssid),
+            confirmText = stringResource(R.string.remove),
+            onConfirm = { viewModel.removeSsid(ssid) },
+            onDismiss = { pendingDelete = null },
+            destructive = true
+        )
+    }
+
+    if (showClearAllConfirm) {
+        NsConfirmationDialog(
+            title = stringResource(R.string.confirm_clear_exclusion_list_title),
+            message = stringResource(R.string.confirm_clear_exclusion_list_message),
+            confirmText = stringResource(R.string.clear_all),
+            onConfirm = { viewModel.clearAll() },
+            onDismiss = { showClearAllConfirm = false },
+            destructive = true
         )
     }
 }
@@ -82,12 +102,14 @@ fun SsidExclusionListScreen(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun SsidExclusionListContent(
-    excludedSsids: List<String>,
+    uiState: SsidExclusionListUiState,
     onNavigateUp: () -> Unit,
     onAddClick: () -> Unit,
     onClearAllClick: () -> Unit,
     onRemoveClick: (String) -> Unit
 ) {
+    var showOverflowMenu by remember { mutableStateOf(false) }
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -95,25 +117,40 @@ private fun SsidExclusionListContent(
                 navigationIcon = {
                     IconButton(onClick = onNavigateUp) {
                         Icon(
-                            imageVector = Icons.Default.ArrowBack,
-                            contentDescription = "Navigate back"
+                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = stringResource(R.string.navigate_back)
                         )
                     }
                 },
                 actions = {
-                    if (excludedSsids.isNotEmpty()) {
-                        IconButton(onClick = onClearAllClick) {
-                            Icon(
-                                imageVector = Icons.Default.Clear,
-                                contentDescription = stringResource(R.string.clear_all)
-                            )
-                        }
-                    }
-                    IconButton(onClick = onAddClick) {
+                    // At capacity the add action is disabled; the error-tinted hero card explains why.
+                    IconButton(onClick = onAddClick, enabled = !uiState.isAtMaxCapacity) {
                         Icon(
                             imageVector = Icons.Default.Add,
                             contentDescription = stringResource(R.string.add_ssid_manually)
                         )
+                    }
+                    if (uiState.excludedSsids.isNotEmpty()) {
+                        Box {
+                            IconButton(onClick = { showOverflowMenu = true }) {
+                                Icon(
+                                    imageVector = Icons.Default.MoreVert,
+                                    contentDescription = stringResource(R.string.more_options)
+                                )
+                            }
+                            DropdownMenu(
+                                expanded = showOverflowMenu,
+                                onDismissRequest = { showOverflowMenu = false }
+                            ) {
+                                DropdownMenuItem(
+                                    text = { Text(stringResource(R.string.clear_all)) },
+                                    onClick = {
+                                        showOverflowMenu = false
+                                        onClearAllClick()
+                                    }
+                                )
+                            }
+                        }
                     }
                 }
             )
@@ -124,32 +161,16 @@ private fun SsidExclusionListContent(
                 .fillMaxSize()
                 .padding(paddingValues)
         ) {
-            // Info card
-            Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp),
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.secondaryContainer
-                )
-            ) {
-                Text(
-                    text = stringResource(R.string.wifi_exclusion_info),
-                    modifier = Modifier.padding(16.dp),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSecondaryContainer
-                )
-            }
+            SsidExclusionHero(count = uiState.excludedSsids.size, max = uiState.maxCapacity)
 
-            if (excludedSsids.isEmpty()) {
-                // Empty state
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
-                ) {
+            NsInfoCard(text = stringResource(R.string.wifi_exclusion_info))
+
+            if (uiState.excludedSsids.isEmpty()) {
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     Column(
                         horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                        modifier = Modifier.padding(24.dp)
                     ) {
                         Text(
                             text = stringResource(R.string.ssid_exclusion_list_empty),
@@ -162,89 +183,30 @@ private fun SsidExclusionListContent(
                     }
                 }
             } else {
-                // List of excluded SSIDs
                 LazyColumn(
                     modifier = Modifier.fillMaxSize(),
                     contentPadding = PaddingValues(16.dp),
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    items(excludedSsids) { ssid ->
-                        ExcludedSsidItem(
+                    // The header key is an Int on purpose: the item keys below are arbitrary
+                    // user-controlled SSID strings, and an Int can never collide with them.
+                    item(key = 0) {
+                        NsSectionLabel(
+                            text = stringResource(
+                                R.string.ssid_exclusion_section_count,
+                                uiState.excludedSsids.size
+                            ),
+                            modifier = Modifier.padding(start = 4.dp, bottom = 4.dp)
+                        )
+                    }
+                    items(items = uiState.excludedSsids, key = { it }) { ssid ->
+                        SsidExclusionRow(
                             ssid = ssid,
-                            onRemoveClick = { onRemoveClick(ssid) }
+                            onDelete = { onRemoveClick(ssid) }
                         )
                     }
                 }
             }
         }
     }
-}
-
-@Composable
-private fun ExcludedSsidItem(
-    ssid: String,
-    onRemoveClick: () -> Unit
-) {
-    Card(
-        modifier = Modifier.fillMaxWidth()
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(
-                text = ssid,
-                style = MaterialTheme.typography.bodyLarge,
-                modifier = Modifier.weight(1f)
-            )
-            IconButton(onClick = onRemoveClick) {
-                Icon(
-                    imageVector = Icons.Default.Delete,
-                    contentDescription = stringResource(R.string.remove),
-                    tint = MaterialTheme.colorScheme.error
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun AddSsidDialog(
-    onDismiss: () -> Unit,
-    onAdd: (String) -> Unit,
-    isAtMaxCapacity: Boolean
-) {
-    if (isAtMaxCapacity) {
-        NsMessageDialog(
-            title = stringResource(R.string.add_ssid_manually),
-            message = stringResource(R.string.exclusion_list_full_message),
-            onDismiss = onDismiss,
-        )
-    } else {
-        NsInputDialog(
-            title = stringResource(R.string.add_ssid_manually),
-            onConfirm = onAdd,
-            onDismiss = onDismiss,
-            label = stringResource(R.string.enter_ssid),
-            confirmText = stringResource(R.string.add),
-        )
-    }
-}
-
-@Composable
-private fun ClearAllConfirmationDialog(
-    onDismiss: () -> Unit,
-    onConfirm: () -> Unit
-) {
-    NsConfirmationDialog(
-        title = stringResource(R.string.confirm_clear_exclusion_list_title),
-        message = stringResource(R.string.confirm_clear_exclusion_list_message),
-        confirmText = stringResource(R.string.clear_all),
-        onConfirm = onConfirm,
-        onDismiss = onDismiss,
-        destructive = true,
-    )
 }

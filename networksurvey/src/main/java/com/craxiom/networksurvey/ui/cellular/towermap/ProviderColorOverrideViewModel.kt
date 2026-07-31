@@ -15,8 +15,6 @@ class ProviderColorOverrideViewModel(
     application: Application
 ) : AndroidViewModel(application) {
 
-    private val overrideManager = PlmnColorOverrideManager(application)
-
     private val _uiState = MutableStateFlow(ProviderColorOverrideUiState())
     val uiState: StateFlow<ProviderColorOverrideUiState> = _uiState.asStateFlow()
 
@@ -24,7 +22,24 @@ class ProviderColorOverrideViewModel(
         loadOverrides()
     }
 
+    /**
+     * Re-reads the overrides from the backing preferences. Called on resume so changes made
+     * elsewhere (for example from the tower details color picker) are reflected when returning
+     * to this screen via the back stack.
+     */
+    fun refresh() = loadOverrides()
+
+    /**
+     * Creates a fresh manager so every operation reads the latest persisted overrides. The manager
+     * caches the preferences in memory at construction time, and other parts of the app (for
+     * example the tower details color picker) write through their own instances, so a long-lived
+     * instance here would serve stale data and its whole-map persistence could overwrite external
+     * changes.
+     */
+    private fun newOverrideManager() = PlmnColorOverrideManager(getApplication())
+
     private fun loadOverrides() {
+        val overrideManager = newOverrideManager()
         val overrides = overrideManager.getOverrides()
         val entries = overrides.mapNotNull { (key, paletteIndex) ->
             val parts = key.split("-")
@@ -46,17 +61,17 @@ class ProviderColorOverrideViewModel(
     }
 
     fun setOverride(mcc: String, mnc: String, paletteIndex: Int) {
-        overrideManager.setOverride(mcc, mnc, paletteIndex)
+        newOverrideManager().setOverride(mcc, mnc, paletteIndex)
         loadOverrides()
     }
 
     fun removeOverride(mcc: String, mnc: String) {
-        overrideManager.removeOverride(mcc, mnc)
+        newOverrideManager().removeOverride(mcc, mnc)
         loadOverrides()
     }
 
     fun clearAll() {
-        overrideManager.clearAll()
+        newOverrideManager().clearAll()
         loadOverrides()
     }
 }
@@ -76,5 +91,6 @@ data class ProviderColorEntry(
  */
 data class ProviderColorOverrideUiState(
     val overrides: List<ProviderColorEntry> = emptyList(),
-    val isAtMaxCapacity: Boolean = false
+    val isAtMaxCapacity: Boolean = false,
+    val maxCapacity: Int = PlmnColorOverrideManager.MAX_OVERRIDES
 )
