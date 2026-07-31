@@ -23,7 +23,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -31,7 +30,6 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.craxiom.networksurvey.R
-import com.craxiom.networksurvey.ui.manufacturer.rememberWifiManufacturerLabelText
 import com.craxiom.networksurvey.ui.theme.WifiTokens
 import com.craxiom.networksurvey.ui.util.copyTextToClipboard
 import com.craxiom.networksurvey.ui.wifi.model.WifiAccessPointDisplay
@@ -136,52 +134,6 @@ private fun TopSsidRow(
             NetworkTag(
                 text = stringResource(R.string.wifi_tag_passpoint),
                 variant = NetworkTagVariant.Passpoint,
-            )
-        }
-    }
-}
-
-@OptIn(ExperimentalFoundationApi::class)
-@Composable
-private fun BssidVendorRow(
-    ap: WifiAccessPointDisplay,
-    onClick: () -> Unit,
-    onBssidLongPress: () -> Unit,
-) {
-    val vendorLabel = rememberWifiManufacturerLabelText(ap.bssid)
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-    ) {
-        Text(
-            text = ap.bssid,
-            style = TextStyle(
-                fontSize = 11.5.sp,
-                fontFamily = FontFamily.Monospace,
-            ),
-            color = WifiTokens.InkMuted,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-            modifier = Modifier.combinedClickable(
-                onClick = onClick,
-                onLongClick = onBssidLongPress,
-            ),
-        )
-        vendorLabel.text?.let { text ->
-            Text(
-                text = "·",
-                style = TextStyle(fontSize = 11.5.sp),
-                color = WifiTokens.InkFaint,
-            )
-            Text(
-                text = text,
-                style = TextStyle(
-                    fontSize = 11.5.sp,
-                    fontStyle = if (vendorLabel.italic) FontStyle.Italic else FontStyle.Normal,
-                ),
-                color = if (vendorLabel.italic) WifiTokens.InkFaint else WifiTokens.InkDim,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
             )
         }
     }
