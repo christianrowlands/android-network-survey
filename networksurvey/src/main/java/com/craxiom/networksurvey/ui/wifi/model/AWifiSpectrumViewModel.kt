@@ -6,7 +6,7 @@ import androidx.lifecycle.viewModelScope
 import com.craxiom.messaging.wifi.WifiBandwidth
 import com.craxiom.networksurvey.fragments.WifiNetworkInfo
 import com.patrykandpatrick.vico.compose.cartesian.data.CartesianChartModelProducer
-import com.patrykandpatrick.vico.compose.cartesian.data.lineSeries
+import com.patrykandpatrick.vico.compose.cartesian.data.lineModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
@@ -205,7 +205,7 @@ abstract class AWifiSpectrumChartViewModel : ViewModel() {
 
         viewModelScope.launch {
             modelProducer.runTransaction {
-                lineSeries {
+                lineModel {
                     val seriesData = createSeriesData(filteredWifiNetworkInfoList)
                     seriesData.forEach { (xValues, yValues) ->
                         series(xValues, yValues)

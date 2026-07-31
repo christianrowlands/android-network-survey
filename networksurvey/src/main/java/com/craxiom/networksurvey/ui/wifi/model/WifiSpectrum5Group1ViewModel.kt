@@ -3,7 +3,7 @@ package com.craxiom.networksurvey.ui.wifi.model
 import androidx.lifecycle.viewModelScope
 import com.craxiom.networksurvey.fragments.WifiNetworkInfo
 import com.craxiom.networksurvey.util.WifiUtils
-import com.patrykandpatrick.vico.compose.cartesian.data.lineSeries
+import com.patrykandpatrick.vico.compose.cartesian.data.lineModel
 import kotlinx.coroutines.launch
 
 /**
@@ -29,7 +29,7 @@ class WifiSpectrum5Group1ViewModel : AWifiSpectrumChartViewModel() {
     override fun clearChart() {
         viewModelScope.launch {
             modelProducer.runTransaction {
-                lineSeries {
+                lineModel {
                     series(
                         CHANNELS_5_GHZ_GROUP_1_CHART_VIEW,
                         List(CHANNELS_5_GHZ_GROUP_1_CHART_VIEW.size) { WIFI_CHART_MIN }

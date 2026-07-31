@@ -82,7 +82,7 @@ private fun ComposeChart(
                     LineCartesianLayer.Line(
                         fill = LineCartesianLayer.LineFill.single(Fill(color1)),
                         stroke = LineCartesianLayer.LineStroke.Continuous(thickness = 3.dp),
-                        pointConnector = SpectrumPointConnector()
+                        interpolator = SpectrumInterpolator()
                     )
                 )
             } else {
@@ -90,7 +90,7 @@ private fun ComposeChart(
                     LineCartesianLayer.Line(
                         fill = LineCartesianLayer.LineFill.single(Fill(getColorForSsid(wifiNetwork.ssid))),
                         stroke = LineCartesianLayer.LineStroke.Continuous(thickness = 3.dp),
-                        pointConnector = SpectrumPointConnector()
+                        interpolator = SpectrumInterpolator()
                     )
                 }
             }

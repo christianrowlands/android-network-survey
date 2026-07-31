@@ -6,7 +6,7 @@ import androidx.lifecycle.viewModelScope
 import com.craxiom.networksurvey.ui.wifi.model.MAX_WIFI_RSSI
 import com.craxiom.networksurvey.ui.wifi.model.MIN_WIFI_RSSI
 import com.patrykandpatrick.vico.compose.cartesian.data.CartesianChartModelProducer
-import com.patrykandpatrick.vico.compose.cartesian.data.lineSeries
+import com.patrykandpatrick.vico.compose.cartesian.data.lineModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.delay
@@ -218,7 +218,7 @@ abstract class ASignalChartViewModel : ViewModel() {
         if (xValues.isNotEmpty() && rssiValues.isNotEmpty()) {
             viewModelScope.launch {
                 modelProducer.runTransaction {
-                    lineSeries {
+                    lineModel {
                         series(xValues, rssiValues)
                     }
                 }

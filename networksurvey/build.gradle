@@ -192,7 +192,7 @@ dependencies {
     ksp(libs.hilt.compiler)
 
     implementation(libs.maplibre.android.sdk)
-    implementation(libs.maplibre.android.plugin.annotation.v9)
+    implementation(libs.maplibre.android.plugin.annotation)
 
     implementation(libs.retrofit)
     implementation(libs.retrofit.converter.gson)
