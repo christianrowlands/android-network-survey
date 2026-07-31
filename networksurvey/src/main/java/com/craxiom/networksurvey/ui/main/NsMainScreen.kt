@@ -68,6 +68,10 @@ fun MainCompose(
                     mainNavController.navigate(NavOption.SsidExclusionList.name)
                 }
 
+                is NavigationEvent.Watchlist -> {
+                    mainNavController.navigate(NavDrawerOption.Watchlist.name)
+                }
+
                 is NavigationEvent.Acknowledgments -> {
                     mainNavController.navigate(NavOption.Acknowledgments.name)
                 }

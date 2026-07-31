@@ -498,6 +498,11 @@
     <string name="wifi_details_exclude">Exclude</string>
     <string name="wifi_details_include">Include</string>
     <string name="wifi_details_survey_data">Survey Data</string>
+    <string name="wifi_details_on_watchlist">On watchlist</string>
+    <string name="wifi_details_not_on_watchlist">Not on watchlist</string>
+    <string name="wifi_details_watch">Watch</string>
+    <string name="wifi_details_view_watchlist">View</string>
+    <string name="wifi_details_watchlist_info">Watched networks alert you when they are seen during a Wi-Fi survey</string>
     <string name="wifi_settings_content_description">Wi-Fi settings</string>
     <string name="wifi_scan_rate_info_content_description">About Wi-Fi scan rate</string>
     <string name="wifi_scan_rate_info_title">Wi-Fi scan rate</string>
@@ -1322,6 +1327,7 @@
     <string name="watchlist_validation_bssid_format">Enter a valid MAC address (for example 12:34:56:78:9A:BC).</string>
     <string name="watchlist_validation_duplicate">You\'re already watching this network.</string>
     <string name="watchlist_added">Added \"%1$s\" to your watchlist</string>
+    <string name="watchlist_added_alerts_enabled">Added \"%1$s\" to your watchlist and turned on watchlist alerts</string>
 
     <!-- Watchlist import (deep link) -->
     <string name="watchlist_import_title">Add \"%1$s\"?</string>

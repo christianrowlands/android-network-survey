@@ -27,6 +27,7 @@ sealed class NavigationEvent {
     data class WifiDetails(val wifiNetwork: WifiNetwork) : NavigationEvent()
     data class BluetoothDetails(val bluetoothData: BluetoothRecordData) : NavigationEvent()
     data object SsidExclusionList : NavigationEvent()
+    data object Watchlist : NavigationEvent()
     data object Acknowledgments : NavigationEvent()
     data object ProviderColorOverrides : NavigationEvent()
     data class MqttConnection(val mqttConnectionSettings: MqttConnectionSettings?) :
@@ -105,6 +106,10 @@ class SharedViewModel @Inject constructor(application: Application) :
 
     fun triggerNavigationToSsidExclusionList() {
         _navigationEvent.value = NavigationEvent.SsidExclusionList
+    }
+
+    fun triggerNavigationToWatchlist() {
+        _navigationEvent.value = NavigationEvent.Watchlist
     }
 
     fun triggerNavigationToAcknowledgments() {
