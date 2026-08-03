@@ -18,7 +18,7 @@ import com.github.jk1.license.filter.LicenseBundleNormalizer
 import com.github.jk1.license.render.SimpleHtmlReportRenderer
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
-def appVersion = "1.56"
+def appVersion = "1.57"
 base {
     archivesName = "$applicationName-$appVersion"
 }
@@ -55,7 +55,7 @@ android {
         applicationId "com.craxiom.networksurvey"
         minSdkVersion 26
         targetSdkVersion 37
-        versionCode 115
+        versionCode 116
         versionName appVersion
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         testInstrumentationRunnerArguments clearPackageData: 'true'
