@@ -1,0 +1,5 @@
+* Redesigned the cellular Network Technology card: 5G Standalone vs Non-Standalone, Voice/Data/Branding pills, and carrier aggregation bandwidths.
+* The 5G NSA secondary cell now gets its own card instead of being mixed into the NR neighbors.
+* Add networks to the Wi-Fi Watchlist from the Wi-Fi Network Details screen.
+* Log the cell connection status and carrier aggregation bandwidths on LTE and 5G NR records.
+* Bug fixes for VoLTE display, large font sizes, and uploads.
