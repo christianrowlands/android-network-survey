@@ -296,5 +296,9 @@
     <string name="wifi_band_with_channel">%1$s · ch %2$d</string>
     <string name="wifi_group_expand">Rozbaliť skupinu</string>
     <string name="wifi_group_collapse">Zatvoriť skupinu</string>
-    <string name="wifi_signal_strong">sila</string>
+    <string name="wifi_signal_strong">silný</string>
+    <string name="wifi_signal_good">dobrý</string>
+    <string name="wifi_signal_fair">slušný</string>
+    <string name="wifi_signal_weak">slabý</string>
+    <string name="wifi_signal_very_weak">veľmi slabý</string>
 </resources>
