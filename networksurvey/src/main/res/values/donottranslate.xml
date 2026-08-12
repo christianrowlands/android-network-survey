@@ -123,6 +123,7 @@
     <string name="gnss_flag_image_label">GNSS</string>
     <string name="sbas_flag_image_label">SBAS</string>
     <string name="cf_column_label">CF</string>
+    <string name="gps_agc_column_label">AGC</string>
 
     <!-- Upload service / brand names -->
     <string name="opencellid_upload">OpenCelliD:</string>

@@ -26,6 +26,7 @@
         <item>星座，载波频率</item>
         <item>星座，信号强度</item>
         <item>星座，用于定位</item>
+        <item>AGC</item>
     </string-array>
 
 	<!-- 帮助 -->
