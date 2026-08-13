@@ -151,6 +151,12 @@
     <string name="mission_id_help_how_title">How to use it</string>
     <string name="mission_id_help_how">Copy the Mission ID shown here and use it in NS Analytics to find and filter this survey\'s data.</string>
 
+    <!-- Copy to clipboard -->
+    <string name="location_clip_label">Location</string>
+    <string name="location_copied">Location copied</string>
+    <string name="workspace_id_clip_label">Workspace ID</string>
+    <string name="workspace_id_copied">Workspace ID copied</string>
+
     <!-- MQTT Help Dialog -->
     <string name="mqtt_help_title">MQTT Connection</string>
     <string name="mqtt_help_description">Help</string>

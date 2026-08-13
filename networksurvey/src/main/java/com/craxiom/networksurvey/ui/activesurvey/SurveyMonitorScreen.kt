@@ -1,10 +1,6 @@
 package com.craxiom.networksurvey.ui.activesurvey
 
-import android.content.ClipData
-import android.content.ClipboardManager
-import android.content.Context
 import android.content.SharedPreferences
-import android.widget.Toast
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.RepeatMode
@@ -83,6 +79,7 @@ import com.craxiom.networksurvey.ui.cellular.MapContext
 import com.craxiom.networksurvey.ui.cellular.TowerMapScreen
 import com.craxiom.networksurvey.ui.cellular.model.ServingCellInfo
 import com.craxiom.networksurvey.ui.cellular.towermap.CameraMode
+import com.craxiom.networksurvey.ui.util.copyMissionIdToClipboard
 
 /**
  * Main screen for monitoring active surveys with status and map views
@@ -647,12 +644,7 @@ private fun MissionIdRow(
 ) {
     val context = LocalContext.current
 
-    val copyMissionId = {
-        val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-        val label = context.getString(R.string.mission_id_card_title)
-        clipboard.setPrimaryClip(ClipData.newPlainText(label, missionId))
-        Toast.makeText(context, R.string.mission_id_copied, Toast.LENGTH_SHORT).show()
-    }
+    val copyMissionId = { copyMissionIdToClipboard(context, missionId) }
 
     ElevatedCard(
         modifier = modifier.fillMaxWidth(),

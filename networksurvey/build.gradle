@@ -206,7 +206,6 @@ dependencies {
     androidTestImplementation(composeBom)
 
     implementation(libs.bundles.compose)
-    implementation(libs.accompanist.themeadapter.material)
 
     // Only include firebase in the google play build
     regularImplementation(platform(libs.firebase.bom))

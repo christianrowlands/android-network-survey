@@ -27,14 +27,14 @@ licenseReport = "3.1.4"
 # Library version groups (shared across multiple library entries)
 hilt = "2.60.1"
 room = "2.8.4"
-grpc = "1.83.0"
+grpc = "1.83.1"
 navigation = "2.9.8"
 networkSurveyMessaging = "2.5.0"
-composeBom = "2026.06.01"
+composeBom = "2026.08.00"
 firebaseBom = "34.17.0"
 
 # Single-library versions
-androidxAppcompat = "1.7.1"
+androidxAppcompat = "1.8.0"
 timber = "5.0.1"
 material = "1.14.0"
 localbroadcastmanager = "1.1.0"
@@ -55,15 +55,11 @@ roundedProgressBar = "3.0.0"
 vico = "3.2.3"
 codeScanner = "2.3.2"
 zxing = "3.5.4"
-# Must match the androidx.compose.ui:ui version that composeBom maps to
-# (see the BOM-to-artifact mapping page); update this whenever the BOM is bumped.
-composeUiViewbinding = "1.11.4"
-maplibre = "13.4.1"
+maplibre = "13.5.0"
 maplibreAnnotation = "4.0.0"
 retrofit = "3.0.0"
 snakeyaml = "2.6"
 workRuntime = "2.11.2"
-accompanist = "0.36.0"
 annotation = "1.10.0"
 junit = "4.13.2"
 mockito = "5.23.0"
@@ -115,14 +111,13 @@ compose-runtime-livedata = { module = "androidx.compose.runtime:runtime-livedata
 compose-ui = { module = "androidx.compose.ui:ui" }
 compose-ui-tooling = { module = "androidx.compose.ui:ui-tooling" }
 compose-ui-tooling-preview = { module = "androidx.compose.ui:ui-tooling-preview" }
-compose-ui-viewbinding = { module = "androidx.compose.ui:ui-viewbinding", version.ref = "composeUiViewbinding" }
+compose-ui-viewbinding = { module = "androidx.compose.ui:ui-viewbinding" }
 compose-foundation = { module = "androidx.compose.foundation:foundation" }
 compose-foundation-layout = { module = "androidx.compose.foundation:foundation-layout" }
 compose-material3 = { module = "androidx.compose.material3:material3" }
 compose-material-icons-core = { module = "androidx.compose.material:material-icons-core" }
 androidx-lifecycle-viewmodel-compose = { module = "androidx.lifecycle:lifecycle-viewmodel-compose" }
 androidx-lifecycle-runtime-compose = { module = "androidx.lifecycle:lifecycle-runtime-compose" }
-accompanist-themeadapter-material = { module = "com.google.accompanist:accompanist-themeadapter-material", version.ref = "accompanist" }
 
 # gRPC
 grpc-okhttp = { module = "io.grpc:grpc-okhttp", version.ref = "grpc" }
