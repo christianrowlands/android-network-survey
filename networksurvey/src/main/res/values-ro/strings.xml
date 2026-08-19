@@ -1,3 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="permissions_rationale_title">Permisiuni pentru Network Survey</string>
+    <string name="permissions_rationale">Aplicația Network Survey are nevoie de câteva permisiuni pentru a funcționa. Aplicația nu va merge dacă aceste permisiuni sunt refuzate.\n\n1. <b>Găsește Dispozitivele apropiate (Find Nearby Devices)</b>: Această aplicație nu se conectează la dispozitivele apropiate ci face o scanare Bluetooth pentru analiză.\n\n2. <b>Fă și gestionează Apeluri Vocale (Make and Manage Phone Calls)</b>: Această aplicație nu face sau gestionează apeluri, ci are nevoie de această permisiune pentru a avea acces la tipul de conexiune celulară (ex. LTE vs. UMTS)\n\n3. <b>Acces la locația dispozitivului (Location)</b>: Permisiunea la locație este necesară pentru a accesa detalii despre Wi-Fi, detalii Celulare, Date GNSS (GPS), și să scrie jurnale geo-relevante.\n\n4. <b>Accesează Poze, Media, și Fișiere pe dispozitivul tău</b>: Această permisiune este necesară ca jurnalurile să fie scrise.\n\n5. <b>Notificări </b>: Această permisiune lasă Network Survey să afișeze o notificare ca să știți când aplicația rulează în fundal.</string>
+    <string name="ignore">Continuă fără permisiuni</string>
+    <string name="upload_help_title">Încarcă informațiile</string>
+    <string name="view_manual">Vezi manualul</string>
+    <string name="upload_help_dismiss">Ok</string>
 </resources>
