@@ -1038,18 +1038,60 @@ class TowerMapLibreViewModel : ViewModel() {
     private suspend fun queryAllTowersInArea() {
         val map = mapLibreMap ?: return
 
-        _isLoadingInProgress.value = true
-        _towersTruncated.value = false
-        Timber.d("Starting area tower query")
-
-        // 1) Build bbox string for request
+        // 1) Build bbox string for request.
+        //
+        // This gate lives here rather than in the callers because runTowerQuery() has ten call
+        // sites and only the camera driven ones check the map state first. The settings handlers
+        // (radio type, PLMN filter, source, serving cell toggle, max tower age) fire the moment
+        // the user changes a filter, which can land before the map surface has been laid out or
+        // while the camera is showing a world scale view. Both produce a bbox the tower service
+        // rejects with a 400.
         val b = map.projection.visibleRegion.latLngBounds
-        val bboxParam = listOf(
+        val bboxParam = buildBboxParam(
             b.latitudeSouth,
             b.longitudeWest,
             b.latitudeNorth,
             b.longitudeEast
-        ).joinToString(",")
+        )
+        if (bboxParam == null) {
+            // Neither case is "zoomed out too far", so leave that flag alone, but the two want
+            // different treatment in the UI.
+            val mapHasNoBoundsYet = b.latitudeSouth == 0.0 && b.longitudeWest == 0.0 &&
+                    b.latitudeNorth == 0.0 && b.longitudeEast == 0.0
+            if (mapHasNoBoundsYet) {
+                // The map surface has not been laid out. Stay quiet rather than flashing an
+                // empty state during startup; the camera idle event that follows layout drives
+                // the real query.
+                Timber.d("Skipping area tower query, the map has no bounds yet")
+            } else {
+                // The map has real bounds that cannot be turned into a query. In practice this
+                // is a view crossing the antimeridian, where MapLibre reports a longitude past
+                // 180. Report it as an empty area so the user is not left with a blank map and
+                // no explanation, which is what the rejected request used to produce.
+                Timber.w("Skipping area tower query, bounds are not queryable: $b")
+                _noTowersFound.value = true
+            }
+            _isLoadingInProgress.value = false
+            // Callers such as the settings handlers clear the tower set before calling, so the
+            // serving cell lines and coverage circles are stale once we skip. Recompute them
+            // against the current set rather than leaving overlays pointing at towers that are
+            // no longer on the map.
+            updateServingCellLocations()
+            return
+        }
+
+        if (map.cameraPosition.zoom < MIN_ZOOM_LEVEL || calculateArea(b) > MAX_AREA_SQ_METERS) {
+            Timber.d("Skipping area tower query, the map is zoomed out too far")
+            _isZoomedOutTooFar.value = true
+            _isLoadingInProgress.value = false
+            updateServingCellLocations()
+            return
+        }
+        _isZoomedOutTooFar.value = false
+
+        _isLoadingInProgress.value = true
+        _towersTruncated.value = false
+        Timber.d("Starting area tower query")
 
         // Translate the user-selected max age into a Unix-seconds cutoff for the server.
         // 30 days/month is a coarse approximation; this is a "hide stale data" filter, not a
