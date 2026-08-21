@@ -172,6 +172,14 @@ class NsAnalyticsUploadWorkerTest {
     }
 
     @Test
+    fun isDefinitiveRejection_bare410_isTransient() {
+        // A 410 with a parseable REGISTRATION_INVALID body has its own early-return handling and
+        // never reaches this check. A bare 410 (proxy, stripped body) is about the registration,
+        // not the records, so it must not burn record retries toward the purge.
+        assertFalse(NsAnalyticsUploadWorker.isDefinitiveRejection(410))
+    }
+
+    @Test
     fun isDefinitiveRejection_5xxAndSuccessCodes_areNotDefinitive() {
         assertFalse(NsAnalyticsUploadWorker.isDefinitiveRejection(200))
         assertFalse(NsAnalyticsUploadWorker.isDefinitiveRejection(500))

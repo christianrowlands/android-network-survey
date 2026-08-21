@@ -1,22 +1,32 @@
 package com.craxiom.networksurvey.ui.wifi
 
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Path
 import com.patrykandpatrick.vico.compose.cartesian.CartesianDrawingContext
 import com.patrykandpatrick.vico.compose.cartesian.layer.LineCartesianLayer
 
 /**
- * The point connector for the spectrum chart. This point connector rounds out the curve to make
+ * The line interpolator for the spectrum chart. This interpolator rounds out the curve to make
  * each wifi channel look more like one large curve.
  */
-class SpectrumPointConnector : LineCartesianLayer.PointConnector {
-    override fun connect(
+class SpectrumInterpolator : LineCartesianLayer.Interpolator {
+    override fun interpolate(
         context: CartesianDrawingContext,
         path: Path,
-        x1: Float,
-        y1: Float,
-        x2: Float,
-        y2: Float,
+        points: List<Offset>,
+        visibleIndexRange: IntRange,
     ) {
+        if (visibleIndexRange.isEmpty()) return
+        val first = points[visibleIndexRange.first]
+        path.moveTo(first.x, first.y)
+        for (index in visibleIndexRange.first + 1..visibleIndexRange.last) {
+            val previous = points[index - 1]
+            val current = points[index]
+            connect(path, previous.x, previous.y, current.x, current.y)
+        }
+    }
+
+    private fun connect(path: Path, x1: Float, y1: Float, x2: Float, y2: Float) {
         // for all the WIFI_CHART_MIN points, just draw a straight line
         if (y1 == y2) {
             path.lineTo(x2, y2)

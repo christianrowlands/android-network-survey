@@ -29,6 +29,8 @@ public class LteMessageConstants extends CellularMessageConstants
     public static final String RSRQ_COLUMN = "RSRQ";
     public static final String TA_COLUMN = "TA";
     public static final String BANDWIDTH_COLUMN = "DL_Bandwidth";
+    public static final String CONNECTION_STATUS_COLUMN = "connectionStatus";
+    public static final String CELL_BANDWIDTHS_KHZ_COLUMN = "cellBandwidthsKhz";
 
     /**
      * Given a Protocol Buffer defined LTE Bandwidth, return a user friendly string representation.

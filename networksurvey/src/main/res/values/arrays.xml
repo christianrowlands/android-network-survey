@@ -26,6 +26,7 @@
         <item>Constellation, Carrier Frequency</item>
         <item>Constellation, Signal Strength</item>
         <item>Constellation, Used in Fix</item>
+        <item>AGC</item>
     </string-array>
 
     <!-- Let the user choose between map views -->

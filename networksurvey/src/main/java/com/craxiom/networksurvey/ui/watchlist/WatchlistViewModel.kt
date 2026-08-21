@@ -12,7 +12,6 @@ import com.craxiom.networksurvey.constants.NetworkSurveyConstants
 import com.craxiom.networksurvey.logging.db.SurveyDatabase
 import com.craxiom.networksurvey.logging.db.model.WatchlistEntryEntity
 import com.craxiom.networksurvey.model.WatchlistImportSet
-import com.craxiom.networksurvey.services.watchlist.WatchlistDetectionManager
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
@@ -95,33 +94,19 @@ class WatchlistViewModel(application: Application) : AndroidViewModel(applicatio
      * @param bssid the BSSID to watch, or null/blank to watch by SSID only
      */
     fun addEntry(label: String, ssid: String?, bssid: String?) {
-        val normalizedSsid = WatchlistImportPlanner.normalizeSsid(ssid)
-        val normalizedBssid = WatchlistImportPlanner.normalizeBssid(bssid)
-        if (normalizedSsid == null && normalizedBssid == null) return
-
-        val resolvedLabel =
-            WatchlistImportPlanner.resolveLabel(label, normalizedSsid, normalizedBssid)
-        val key = WatchlistImportPlanner.dedupKey(normalizedSsid, normalizedBssid)
-
-        val duplicate = _uiState.value.items.any { row ->
-            WatchlistImportPlanner.dedupKey(
-                WatchlistImportPlanner.normalizeSsid(row.entry.ssid),
-                WatchlistImportPlanner.normalizeBssid(row.entry.bssid)
-            ) == key
-        }
-        if (duplicate) {
-            showToast(getApplication<Application>().getString(R.string.watchlist_validation_duplicate))
-            return
-        }
-
         viewModelScope.launch {
-            watchlistDao.insert(buildEntry(resolvedLabel, normalizedSsid, normalizedBssid))
-            showToast(
-                getApplication<Application>().getString(
-                    R.string.watchlist_added,
-                    resolvedLabel
+            when (val result =
+                WatchlistAddHelper.addEntry(getApplication(), label, ssid, bssid)) {
+                is WatchlistAddHelper.AddResult.Added -> showToast(
+                    getApplication<Application>().getString(R.string.watchlist_added, result.label)
                 )
-            )
+
+                WatchlistAddHelper.AddResult.Duplicate -> showToast(
+                    getApplication<Application>().getString(R.string.watchlist_validation_duplicate)
+                )
+
+                WatchlistAddHelper.AddResult.Invalid -> Unit
+            }
         }
     }
 
@@ -154,7 +139,9 @@ class WatchlistViewModel(application: Application) : AndroidViewModel(applicatio
         val pending = _uiState.value.pendingImport ?: return
         viewModelScope.launch {
             val plan = WatchlistImportPlanner.plan(watchlistDao.getAll(), pending.set)
-            val newEntries = plan.toAdd.map { buildEntry(it.label, it.ssid, it.bssid) }
+            val newEntries = plan.toAdd.map {
+                WatchlistAddHelper.buildEntry(getApplication(), it.label, it.ssid, it.bssid)
+            }
             if (newEntries.isNotEmpty()) {
                 watchlistDao.insertAll(newEntries)
             }
@@ -194,15 +181,6 @@ class WatchlistViewModel(application: Application) : AndroidViewModel(applicatio
         viewModelScope.launch { watchlistDao.deleteAll() }
     }
 
-    private fun buildEntry(label: String, ssid: String?, bssid: String?): WatchlistEntryEntity =
-        WatchlistEntryFactory.create(
-            label = label,
-            ssid = ssid,
-            bssid = bssid,
-            cooldownSeconds = readDefaultCooldownSeconds(),
-            createdAt = System.currentTimeMillis()
-        )
-
     private fun showImportResultToast(added: Int, skipped: Int) {
         val res = getApplication<Application>().resources
         val message = if (skipped > 0) {
@@ -218,13 +196,6 @@ class WatchlistViewModel(application: Application) : AndroidViewModel(applicatio
             .getBoolean(
                 NetworkSurveyConstants.PROPERTY_WATCHLIST_ENABLED,
                 NetworkSurveyConstants.DEFAULT_WATCHLIST_ENABLED
-            )
-
-    private fun readDefaultCooldownSeconds(): Int =
-        PreferenceManager.getDefaultSharedPreferences(getApplication())
-            .getInt(
-                NetworkSurveyConstants.PROPERTY_WATCHLIST_DEFAULT_COOLDOWN_SECONDS,
-                WatchlistDetectionManager.DEFAULT_COOLDOWN_SECONDS
             )
 
     private fun showToast(message: String) {

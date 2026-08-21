@@ -12,6 +12,7 @@ import androidx.annotation.RequiresApi;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
 /**
  * Derives human-meaningful cellular technology facts from an Android {@link ServiceState} that the
@@ -62,6 +63,15 @@ public final class TelephonyStateUtils
     public enum HeroState
     {
         NR_STANDALONE, NR_NON_STANDALONE, DATA_RAT, NO_SERVICE, UNKNOWN
+    }
+
+    /**
+     * What the 5G NR Secondary Cell details card should show for a scan: the live cell (ACTIVE),
+     * a dimmed last-seen cell while the NR leg is idle on NSA (IDLE), or nothing (HIDDEN).
+     */
+    public enum NrCardState
+    {
+        ACTIVE, IDLE, HIDDEN
     }
 
     /**
@@ -234,6 +244,33 @@ public final class TelephonyStateUtils
     }
 
     /**
+     * Decides what the 5G NR Secondary Cell card should show for the current scan. The card is
+     * ACTIVE when the device reported a SECONDARY_SERVING NR cell in the scan. On NSA the NR leg
+     * only attaches while data is actively transferring and detaches within seconds of going
+     * idle, so when the cell is absent but the phone is still in NSA mode the card holds the
+     * last-seen cell in a dimmed IDLE state instead of vanishing, until the last sighting is
+     * older than maxLastSeenAgeMs. In every other case the card is HIDDEN, matching the behavior
+     * before the idle state existed.
+     *
+     * @param hasSecondaryCell Whether the current scan contains a SECONDARY_SERVING NR cell.
+     * @param nrMode           The NR mode in effect for the same scan.
+     * @param lastSeenAgeMs    Milliseconds since the last ACTIVE sighting, or -1 when there is none.
+     * @param maxLastSeenAgeMs The maximum last-seen age for which the IDLE state is shown.
+     * @return The card state, never null.
+     */
+    @NonNull
+    public static NrCardState resolveNrCardState(boolean hasSecondaryCell, NrMode nrMode,
+                                                 long lastSeenAgeMs, long maxLastSeenAgeMs)
+    {
+        if (hasSecondaryCell) return NrCardState.ACTIVE;
+        if (nrMode == NrMode.NON_STANDALONE && lastSeenAgeMs >= 0 && lastSeenAgeMs <= maxLastSeenAgeMs)
+        {
+            return NrCardState.IDLE;
+        }
+        return NrCardState.HIDDEN;
+    }
+
+    /**
      * Derives what the top card's hero line should show.
      * <ol>
      *     <li>An NR mode means 5G Standalone or Non-Standalone.</li>
@@ -319,6 +356,36 @@ public final class TelephonyStateUtils
                  TelephonyDisplayInfo.OVERRIDE_NETWORK_TYPE_NR_ADVANCED -> true;
             default -> false;
         };
+    }
+
+    /**
+     * Decides whether the details card's pill row is worth showing. On a live hero state the row
+     * always shows with explicit values so nothing appears or disappears during normal use. On the
+     * degraded {@link HeroState#NO_SERVICE} and {@link HeroState#UNKNOWN} states the row only
+     * shows when at least one of the voice or data displays carries a real value: a degraded hero
+     * does not imply the pills are empty (e.g. on API 26-30 during Wi-Fi calling the hero is
+     * UNKNOWN while the legacy data network type is a perfectly displayable IWLAN).
+     *
+     * @param heroState    The derived hero state.
+     * @param voiceDisplay The voice pill display value; may be null.
+     * @param dataDisplay  The data pill display value; may be null.
+     * @param noiseValues  The display values that carry no information (e.g. "Unknown", "None").
+     * @return True when the pill row should be visible.
+     */
+    public static boolean shouldShowPillRow(HeroState heroState, String voiceDisplay,
+                                            String dataDisplay, Set<String> noiseValues)
+    {
+        if (heroState != HeroState.NO_SERVICE && heroState != HeroState.UNKNOWN) return true;
+        return isDisplayable(voiceDisplay, noiseValues) || isDisplayable(dataDisplay, noiseValues);
+    }
+
+    /**
+     * @return True when the pill display value carries real information: non-null, non-empty, and
+     * not one of the noise values.
+     */
+    private static boolean isDisplayable(String display, Set<String> noiseValues)
+    {
+        return display != null && !display.isEmpty() && !noiseValues.contains(display);
     }
 
     private static boolean isNrOverride(int overrideNetworkType)

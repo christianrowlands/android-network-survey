@@ -181,4 +181,14 @@ class WifiDetailsFragment : AServiceDataFragment(), IWifiSurveyRecordListener {
         val viewModel = ViewModelProvider(nsActivity)[SharedViewModel::class.java]
         viewModel.triggerNavigationToSsidExclusionList()
     }
+
+    /**
+     * Navigates to the Watchlist UI (used when this network is already on the watchlist)
+     */
+    fun navigateToWatchlist() {
+        val nsActivity = activity ?: return
+
+        val viewModel = ViewModelProvider(nsActivity)[SharedViewModel::class.java]
+        viewModel.triggerNavigationToWatchlist()
+    }
 }

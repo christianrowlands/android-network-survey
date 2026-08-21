@@ -172,17 +172,6 @@ class AcknowledgmentsRepository {
                     category = LibraryCategory.UI_LIBRARIES
                 )
             )
-            add(
-                LibraryAcknowledgment(
-                    name = "Accompanist",
-                    author = "Google",
-                    description = "Utilities for Jetpack Compose",
-                    sourceUrl = "https://github.com/google/accompanist",
-                    licenseName = "Apache License 2.0",
-                    licenseUrl = "https://www.apache.org/licenses/LICENSE-2.0",
-                    category = LibraryCategory.UI_LIBRARIES
-                )
-            )
 
             // Utility Libraries
             add(

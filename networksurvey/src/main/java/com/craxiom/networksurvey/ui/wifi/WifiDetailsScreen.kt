@@ -23,14 +23,19 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.craxiom.networksurvey.R
 import com.craxiom.networksurvey.fragments.WifiDetailsFragment
+import com.craxiom.networksurvey.logging.db.SurveyDatabase
+import com.craxiom.networksurvey.services.watchlist.WatchlistMatcher
 import com.craxiom.networksurvey.ui.UNKNOWN_RSSI
 import com.craxiom.networksurvey.ui.main.appbar.TitleBar
+import com.craxiom.networksurvey.ui.watchlist.WatchlistAddHelper
+import com.craxiom.networksurvey.ui.watchlist.WatchlistAddSheet
 import com.craxiom.networksurvey.ui.wifi.components.WifiCapabilitiesCard
 import com.craxiom.networksurvey.ui.wifi.components.WifiDetailsHeroCard
 import com.craxiom.networksurvey.ui.wifi.components.WifiRadioCard
 import com.craxiom.networksurvey.ui.wifi.components.WifiSignalCard
 import com.craxiom.networksurvey.ui.wifi.components.WifiSurveyDataCard
 import com.craxiom.networksurvey.ui.wifi.model.WifiDetailsViewModel
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 
 private val cardGap = 14.dp
@@ -109,19 +114,38 @@ private fun SurveyDataCardContainer(
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val service by wifiDetailsFragment.serviceFlow.collectAsStateWithLifecycle()
-    val hiddenSsid = viewModel.wifiNetwork.ssid.isEmpty()
+    val wifiNetwork = viewModel.wifiNetwork
+    val hiddenSsid = wifiNetwork.ssid.isEmpty()
     var isExcluded by remember { mutableStateOf(false) }
+    var showWatchlistSheet by remember { mutableStateOf(false) }
+
+    // Membership check, not an alerting check: disabled entries still count, so match against ALL
+    // entries. The flow is remembered so the DAO lookup and mapping are not rebuilt each recomposition.
+    val watchedFlow = remember(wifiNetwork) {
+        SurveyDatabase.getInstance(context).watchlistDao().observeAll().map { entries ->
+            entries.any { WatchlistMatcher.matches(it, wifiNetwork.ssid, wifiNetwork.bssid) }
+        }
+    }
+    val isWatched by watchedFlow.collectAsStateWithLifecycle(initialValue = false)
 
     LaunchedEffect(service) {
         val exclusionManager = service?.getSsidExclusionManager()
-        isExcluded = exclusionManager?.isExcluded(viewModel.wifiNetwork.ssid) ?: false
+        isExcluded = exclusionManager?.isExcluded(wifiNetwork.ssid) ?: false
     }
 
     WifiSurveyDataCard(
         isExcluded = isExcluded,
+        isWatched = isWatched,
         hiddenSsid = hiddenSsid,
         scanRateSeconds = scanRateSeconds,
         onNavigateToSettings = { wifiDetailsFragment.navigateToSettings() },
+        onWatchlistClick = {
+            if (isWatched) {
+                wifiDetailsFragment.navigateToWatchlist()
+            } else {
+                showWatchlistSheet = true
+            }
+        },
         onToggle = {
             scope.launch {
                 val exclusionManager = service?.getSsidExclusionManager() ?: return@launch
@@ -159,4 +183,40 @@ private fun SurveyDataCardContainer(
             }
         },
     )
+
+    if (showWatchlistSheet) {
+        WatchlistAddSheet(
+            onAdd = { label, ssid, bssid ->
+                scope.launch {
+                    when (val result = WatchlistAddHelper.addEntry(context, label, ssid, bssid)) {
+                        is WatchlistAddHelper.AddResult.Added -> {
+                            // Adding from here is an explicit opt-in, so make sure alerts can
+                            // actually fire (mirrors the deep-link import's force-enable).
+                            val justEnabled = WatchlistAddHelper.enableWatchlistIfDisabled(context)
+                            val message = if (justEnabled) {
+                                context.getString(
+                                    R.string.watchlist_added_alerts_enabled,
+                                    result.label,
+                                )
+                            } else {
+                                context.getString(R.string.watchlist_added, result.label)
+                            }
+                            Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+                        }
+
+                        WatchlistAddHelper.AddResult.Duplicate -> Toast.makeText(
+                            context,
+                            context.getString(R.string.watchlist_validation_duplicate),
+                            Toast.LENGTH_SHORT,
+                        ).show()
+
+                        WatchlistAddHelper.AddResult.Invalid -> Unit
+                    }
+                }
+            },
+            onDismiss = { showWatchlistSheet = false },
+            initialSsid = wifiNetwork.ssid,
+            initialBssid = wifiNetwork.bssid,
+        )
+    }
 }

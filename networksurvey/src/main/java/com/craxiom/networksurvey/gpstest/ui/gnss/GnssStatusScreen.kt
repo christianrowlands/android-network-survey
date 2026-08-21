@@ -186,13 +186,13 @@ fun StatusCard(
     satStatuses: List<SatelliteStatus>,
     isGnss: Boolean,
 ) {
-    val modifier = Modifier
+    var modifier = Modifier
         .fillMaxWidth()
         .padding(5.dp)
 
     if (showList(isGnss, satStatuses)) {
         // Only scroll if we're showing satellites - we don't want "Not available" text to extend offscreen
-        modifier.horizontalScroll(rememberScrollState())
+        modifier = modifier.horizontalScroll(rememberScrollState())
     }
 
     Card(
@@ -237,6 +237,7 @@ fun StatusRow(satelliteStatus: SatelliteStatus) {
         Flag(satelliteStatus, large)
         CarrierFrequency(satelliteStatus, small)
         Cn0(satelliteStatus, medium)
+        Agc(satelliteStatus, medium)
         AEU(satelliteStatus, medium)
         Elevation(satelliteStatus, medium)
         Azimuth(satelliteStatus, medium)
@@ -386,6 +387,15 @@ fun Cn0(satelliteStatus: SatelliteStatus, modifier: Modifier) {
 }
 
 @Composable
+fun Agc(satelliteStatus: SatelliteStatus, modifier: Modifier) {
+    if (satelliteStatus.hasAgc) {
+        StatusValue(String.format("%.1f", satelliteStatus.agcDb), modifier)
+    } else {
+        StatusValue("", modifier)
+    }
+}
+
+@Composable
 fun AEU(satelliteStatus: SatelliteStatus, modifier: Modifier) {
     val flags = CharArray(3)
     flags[0] = if (satelliteStatus.hasAlmanac) 'A' else ' '
@@ -452,6 +462,7 @@ fun StatusRowHeader(isGnss: Boolean) {
         }
         StatusLabel(R.string.cf_column_label, small)
         StatusLabel(R.string.gps_cn0_column_label, medium)
+        StatusLabel(R.string.gps_agc_column_label, medium)
         StatusLabel(R.string.flags_aeu_column_label, medium)
         StatusLabel(R.string.gps_elevation_column_label, medium)
         StatusLabel(R.string.gps_azimuth_column_label, medium)

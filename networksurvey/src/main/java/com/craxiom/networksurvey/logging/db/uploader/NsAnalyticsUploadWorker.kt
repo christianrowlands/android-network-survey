@@ -800,6 +800,9 @@ class NsAnalyticsUploadWorker(context: Context, params: WorkerParameters) :
          *   and never reach this check
          * - 402: quota, resolved by user action, normally its own early-return path
          * - 408/425/429: timeout/too-early/throttling
+         * - 410: registration invalid; the parseable-body case has its own early-return
+         *   handling, and a bare 410 (proxy, stripped body) is about the registration
+         *   rather than the records, so it must not burn record retries
          * - all 5xx and network errors
          * so an outage or recoverable rejection can never advance retryCount
          * toward the purge threshold.
@@ -807,7 +810,7 @@ class NsAnalyticsUploadWorker(context: Context, params: WorkerParameters) :
          * Visible for testing.
          */
         internal fun isDefinitiveRejection(httpCode: Int): Boolean =
-            httpCode == 207 || (httpCode in 400..499 && httpCode !in setOf(401, 402, 403, 408, 425, 429))
+            httpCode == 207 || (httpCode in 400..499 && httpCode !in setOf(401, 402, 403, 408, 410, 425, 429))
 
         /**
          * Trigger immediate upload.

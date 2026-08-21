@@ -184,8 +184,6 @@
     <string name="grant_bluetooth_connect_permission">蓝牙探测不需要蓝牙连接权限，但该权限可以获取设备名称。</string>
     <string name="grant_camera_permission">扫描二维码需要相机权限</string>
 
-    <string name="carrier_label">运营商</string>
-
     <!-- GSM 标签 -->
 
     <!-- UMTS 标签 -->

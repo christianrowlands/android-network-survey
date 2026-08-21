@@ -4,6 +4,7 @@ import android.os.Looper;
 
 import com.craxiom.messaging.CdmaRecord;
 import com.craxiom.messaging.CdmaRecordData;
+import com.craxiom.messaging.ConnectionStatus;
 import com.craxiom.messaging.GsmRecord;
 import com.craxiom.messaging.GsmRecordData;
 import com.craxiom.messaging.LteRecord;
@@ -35,6 +36,7 @@ import com.google.common.base.Strings;
 import java.sql.SQLException;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import mil.nga.geopackage.GeoPackage;
 import mil.nga.geopackage.contents.Contents;
@@ -203,8 +205,10 @@ public class CellularSurveyRecordLogger extends SurveyRecordLogger implements IC
             tableColumns.add(FeatureColumn.createColumn(columnNumber++, LteCsvConstants.SIGNAL_STRENGTH, GeoPackageDataType.FLOAT, false, null));
             tableColumns.add(FeatureColumn.createColumn(columnNumber++, LteCsvConstants.CQI, GeoPackageDataType.SMALLINT, false, null));
             tableColumns.add(FeatureColumn.createColumn(columnNumber++, LteCsvConstants.SNR, GeoPackageDataType.FLOAT, false, null));
-            //noinspection UnusedAssignment
             tableColumns.add(FeatureColumn.createColumn(columnNumber++, LteMessageConstants.PLMN_COLUMN, GeoPackageDataType.TEXT, false, null));
+            tableColumns.add(FeatureColumn.createColumn(columnNumber++, LteMessageConstants.CONNECTION_STATUS_COLUMN, GeoPackageDataType.TEXT, false, null));
+            //noinspection UnusedAssignment
+            tableColumns.add(FeatureColumn.createColumn(columnNumber++, LteMessageConstants.CELL_BANDWIDTHS_KHZ_COLUMN, GeoPackageDataType.TEXT, false, null));
         });
     }
 
@@ -265,8 +269,10 @@ public class CellularSurveyRecordLogger extends SurveyRecordLogger implements IC
         tableColumns.add(FeatureColumn.createColumn(columnNumber++, NrMessageConstants.SERVING_CELL_COLUMN, GeoPackageDataType.BOOLEAN, false, null));
         tableColumns.add(FeatureColumn.createColumn(columnNumber++, NrMessageConstants.PROVIDER_COLUMN, GeoPackageDataType.TEXT, false, null));
         tableColumns.add(FeatureColumn.createColumn(columnNumber++, CellularCsvConstants.SLOT, GeoPackageDataType.SMALLINT, false, null));
-        //noinspection UnusedAssignment
         tableColumns.add(FeatureColumn.createColumn(columnNumber++, NrMessageConstants.PLMN_COLUMN, GeoPackageDataType.TEXT, false, null));
+        tableColumns.add(FeatureColumn.createColumn(columnNumber++, NrMessageConstants.CONNECTION_STATUS_COLUMN, GeoPackageDataType.TEXT, false, null));
+        //noinspection UnusedAssignment
+        tableColumns.add(FeatureColumn.createColumn(columnNumber++, NrMessageConstants.CELL_BANDWIDTHS_KHZ_COLUMN, GeoPackageDataType.TEXT, false, null));
 
         FeatureTable table = new FeatureTable(NrMessageConstants.NR_RECORDS_TABLE_NAME, tableColumns);
         geoPackage.createFeatureTable(table);
@@ -679,6 +685,8 @@ public class CellularSurveyRecordLogger extends SurveyRecordLogger implements IC
                         }
 
                         setLteBandwidth(row, data.getLteBandwidth());
+                        setConnectionStatus(row, LteMessageConstants.CONNECTION_STATUS_COLUMN, data.getConnectionStatus());
+                        setCellBandwidths(row, LteMessageConstants.CELL_BANDWIDTHS_KHZ_COLUMN, data.getCellBandwidthsKhzList());
 
                         featureDao.insert(row);
 
@@ -799,6 +807,9 @@ public class CellularSurveyRecordLogger extends SurveyRecordLogger implements IC
                             setShortValue(row, CellularCsvConstants.SLOT, data.getSlot().getValue());
                         }
 
+                        setConnectionStatus(row, NrMessageConstants.CONNECTION_STATUS_COLUMN, data.getConnectionStatus());
+                        setCellBandwidths(row, NrMessageConstants.CELL_BANDWIDTHS_KHZ_COLUMN, data.getCellBandwidthsKhzList());
+
                         featureDao.insert(row);
 
                         checkIfRolloverNeeded();
@@ -809,5 +820,40 @@ public class CellularSurveyRecordLogger extends SurveyRecordLogger implements IC
                 }
             }
         });
+    }
+
+    /**
+     * Sets the connection status column on the row. An UNKNOWN status is left unset because an
+     * absent value means the device did not report a status (matching the JSON serialization,
+     * which omits the default UNKNOWN value).
+     *
+     * @param row              The GeoPackage row to update.
+     * @param columnName       The connection status column name for the record's table.
+     * @param connectionStatus The connection status from the record.
+     */
+    private void setConnectionStatus(FeatureRow row, String columnName, ConnectionStatus connectionStatus)
+    {
+        if (connectionStatus == ConnectionStatus.UNKNOWN || connectionStatus == ConnectionStatus.UNRECOGNIZED)
+        {
+            return;
+        }
+
+        row.setValue(columnName, connectionStatus.name());
+    }
+
+    /**
+     * Sets the per-carrier cell bandwidths column on the row as semicolon-joined kHz values
+     * (e.g. "20000;10000"). An empty list leaves the column unset because an absent value means
+     * the device did not report bandwidths.
+     *
+     * @param row               The GeoPackage row to update.
+     * @param columnName        The cell bandwidths column name for the record's table.
+     * @param cellBandwidthsKhz The per-carrier bandwidths in kHz from the record.
+     */
+    private void setCellBandwidths(FeatureRow row, String columnName, List<Integer> cellBandwidthsKhz)
+    {
+        if (cellBandwidthsKhz == null || cellBandwidthsKhz.isEmpty()) return;
+
+        row.setValue(columnName, cellBandwidthsKhz.stream().map(String::valueOf).collect(Collectors.joining(";")));
     }
 }

@@ -156,17 +156,7 @@ class WatchlistDetectionManager(
             val recordSsid = data.ssid ?: ""
             val recordBssid = data.bssid ?: ""
 
-            val ssidMatches = ssid != null && recordSsid.isNotEmpty() &&
-                    recordSsid.trim().equals(ssid, ignoreCase = true)
-            val bssidMatches = bssid != null && recordBssid.equals(bssid, ignoreCase = true)
-
-            val matched = when {
-                ssid != null && bssid != null -> ssidMatches && bssidMatches
-                ssid != null -> ssidMatches
-                else -> bssidMatches
-            }
-
-            if (matched) {
+            if (WatchlistMatcher.matches(entry, recordSsid, recordBssid)) {
                 val matchedField = if (ssid != null) {
                     WatchlistHitEntity.MATCHED_FIELD_SSID
                 } else {

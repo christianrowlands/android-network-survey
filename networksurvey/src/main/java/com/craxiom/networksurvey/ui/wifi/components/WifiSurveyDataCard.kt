@@ -28,17 +28,21 @@ import com.craxiom.networksurvey.ui.wifi.OpenWifiSettingsButton
 import com.craxiom.networksurvey.ui.wifi.ScanRateInfoButton
 
 /**
- * Survey-data card. Shows the recording/exclusion status, scan rate, and the include/exclude
- * toggle for this network's SSID. The card header hosts a settings gear (deep-links to the
- * Wi-Fi scan-rate preference) and an info button (explains the scan rate). An always-visible
- * caption below the toggle teaches what excluding a network actually does.
+ * Survey-data card. Shows the recording/exclusion status and include/exclude toggle for this
+ * network's SSID, plus the watchlist status and Watch/View action for this network. The card
+ * header hosts a settings gear (deep-links to the Wi-Fi scan-rate preference) and an info button
+ * (explains the scan rate). Each action row is followed by an always-visible caption that teaches
+ * what the action actually does. The exclude pill is hidden for hidden-SSID networks (exclusion is
+ * SSID-based), but the watchlist row stays because a specific AP can be watched by BSSID.
  */
 @Composable
 fun WifiSurveyDataCard(
     isExcluded: Boolean,
+    isWatched: Boolean,
     hiddenSsid: Boolean,
     scanRateSeconds: Int,
     onToggle: () -> Unit,
+    onWatchlistClick: () -> Unit,
     onNavigateToSettings: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -65,37 +69,72 @@ fun WifiSurveyDataCard(
             ScanRateInfoButton()
             OpenWifiSettingsButton(onNavigate = onNavigateToSettings)
         }
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-        ) {
-            Text(
-                text = if (isExcluded) {
-                    stringResource(R.string.wifi_details_excluded_from_survey)
-                } else {
-                    stringResource(R.string.wifi_details_included_in_survey)
-                },
-                style = TextStyle(fontSize = 14.sp),
-                color = MaterialTheme.colorScheme.onSurface,
-                modifier = Modifier.weight(1f),
-            )
-            if (!hiddenSsid) {
-                TogglePill(
-                    label = if (isExcluded) {
-                        stringResource(R.string.wifi_details_include)
-                    } else {
-                        stringResource(R.string.wifi_details_exclude)
-                    },
-                    onClick = onToggle,
-                )
-            }
-        }
-        Text(
-            text = stringResource(R.string.wifi_exclusion_info),
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        StatusPillRow(
+            statusText = if (isExcluded) {
+                stringResource(R.string.wifi_details_excluded_from_survey)
+            } else {
+                stringResource(R.string.wifi_details_included_in_survey)
+            },
+            pillLabel = if (hiddenSsid) {
+                null
+            } else if (isExcluded) {
+                stringResource(R.string.wifi_details_include)
+            } else {
+                stringResource(R.string.wifi_details_exclude)
+            },
+            onPillClick = onToggle,
         )
+        CaptionText(stringResource(R.string.wifi_exclusion_info))
+        StatusPillRow(
+            statusText = if (isWatched) {
+                stringResource(R.string.wifi_details_on_watchlist)
+            } else {
+                stringResource(R.string.wifi_details_not_on_watchlist)
+            },
+            pillLabel = if (isWatched) {
+                stringResource(R.string.wifi_details_view_watchlist)
+            } else {
+                stringResource(R.string.wifi_details_watch)
+            },
+            onPillClick = onWatchlistClick,
+        )
+        CaptionText(stringResource(R.string.wifi_details_watchlist_info))
     }
+}
+
+/**
+ * A status line with an optional trailing action pill. Passing a null [pillLabel] renders the
+ * status text alone (used when the action does not apply, like excluding a hidden SSID).
+ */
+@Composable
+private fun StatusPillRow(
+    statusText: String,
+    pillLabel: String?,
+    onPillClick: () -> Unit,
+) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        Text(
+            text = statusText,
+            style = TextStyle(fontSize = 14.sp),
+            color = MaterialTheme.colorScheme.onSurface,
+            modifier = Modifier.weight(1f),
+        )
+        if (pillLabel != null) {
+            TogglePill(label = pillLabel, onClick = onPillClick)
+        }
+    }
+}
+
+@Composable
+private fun CaptionText(text: String) {
+    Text(
+        text = text,
+        style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+    )
 }
 
 @Composable

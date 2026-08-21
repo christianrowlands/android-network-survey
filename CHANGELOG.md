@@ -1,5 +1,26 @@
 # Changelog
 
+## [1.57](https://github.com/christianrowlands/android-network-survey/releases/tag/v1.57) - 2026-08-03
+
+**BUG FIXES**
+* Show the 5G NSA secondary cell (the NR cell carrying your 5G data) in its own "NR Secondary Cell Details" card instead of the NR Neighbors table, where it was indistinguishable from a real neighbor. [#136](https://github.com/christianrowlands/android-network-survey/issues/136)
+* Fix the Streaming Queue Limit setting ignoring an explicit `0`. A value of `0` now means disabled (unbounded queue) as the setting description states, instead of being silently clamped up to the default.
+* Fix Bluetooth and Wi-Fi list rows collapsing or truncating text at large font and display sizes. Long company and device names now ellipsize, and the Wi-Fi vendor label wraps below the BSSID.
+* Fix the Provider Colors screen showing stale color overrides after colors were edited from the tower map.
+* Fix NS Analytics uploads stalling behind a batch that the server permanently rejects. Records past the retry cap are purged, and a retry only counts against the cap on a definitive server rejection, so outages, recoverable authorization states, and rate limiting can never cause records to be dropped.
+
+**NEW FEATURES**
+* Log and stream a new `connectionStatus` field on LTE and NR records (NS Messaging API 2.5.0), identifying the device's connection to each cell (`PRIMARY_SERVING`, `SECONDARY_SERVING`, `NEIGHBOR`). This lets downstream consumers tell the 5G NSA data leg apart from neighbor cells. In the CSV logs an unreported status is written as an empty cell (unlike the older `lteBandwidth` column, which writes the literal `UNKNOWN`; that column keeps its historical behavior).
+* Log and stream a new `cellBandwidthsKhz` field on LTE and NR records: the per-carrier bandwidths of the device's data connection at scan time, populated on actively used cells only. Two or more entries means carrier aggregation was active. In the CSV and GeoPackage logs the value is semicolon-joined kHz values (e.g. `20000;10000`). The LTE CSV version is now 0.6.0 and the NR CSV version is 0.5.0.
+* Redesign the cellular Network Technology card. It now leads with the technology actually in use (for example "NR · Standalone" or "LTE + NR · NSA", distinguishing 5G Standalone from Non-Standalone), with always-visible Voice, Data, and Branding pills, and shows carrier aggregation as per-carrier bandwidth chips with an aggregate summary.
+* Add networks to the Wi-Fi Watchlist directly from the Wi-Fi Network Details screen. The eye icon opens the Add to Watchlist sheet pre-filled with the network's SSID and BSSID, or jumps to the Watchlist screen if the network is already watched.
+* Fill in the 5G NR band from the NARFCN when the device does not report one, and keep the NR Secondary Cell card visible with an Idle badge and a "last seen" time when the NR leg detaches. The idle card hides after two minutes or when the serving cell changes.
+
+**IMPROVEMENTS**
+* Redesign the SSID Exclusion List and Provider Colors screens to match the Watchlist UI, with bottom sheets in place of the add dialogs and a confirmation before removing an entry.
+* Update the Bluetooth company identifiers and member UUIDs to the latest Bluetooth SIG data.
+* Update Kotlin to 2.4.10, and update Compose, Hilt, gRPC, Firebase, MapLibre, and Vico to the latest versions.
+
 ## [1.56](https://github.com/christianrowlands/android-network-survey/releases/tag/v1.56) - 2026-07-03
 
 **BUG FIXES**

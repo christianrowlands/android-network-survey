@@ -824,6 +824,387 @@
 
         </androidx.cardview.widget.CardView>
 
+        <!-- The 5G NR secondary cell details. Only shown while a cell reports SECONDARY_SERVING:
+             on 5G NSA that is the NR cell carrying the data alongside the LTE anchor (EN-DC), and
+             on 5G SA with NR carrier aggregation it is an NR SCell. -->
+        <androidx.cardview.widget.CardView
+            android:id="@+id/nr_details_card_view"
+            style="?attr/cardStyle"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:visibility="gone"
+            card_view:contentPadding="0dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:orientation="vertical">
+
+                <LinearLayout
+                    android:layout_width="fill_parent"
+                    android:layout_height="match_parent"
+                    android:background="@drawable/card_title"
+                    android:padding="3dp"
+                    android:layout_marginBottom="3dp"
+                    android:orientation="horizontal">
+
+                    <ImageView
+                        android:id="@+id/nr_details_tower_icon"
+                        android:layout_width="16dp"
+                        android:layout_height="16dp"
+                        android:layout_gravity="center"
+                        android:layout_marginStart="@dimen/small_margin"
+                        android:layout_marginEnd="@dimen/small_margin"
+                        android:contentDescription="@string/cellular_icon_description"
+                        android:src="@drawable/ic_cellular" />
+
+                    <TextView
+                        android:id="@+id/nr_details_title"
+                        style="@style/CardTitleStyle"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="@string/card_title_nr_details" />
+
+                    <TextView
+                        android:id="@+id/nr_idle_badge"
+                        style="@style/PillText"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_gravity="center"
+                        android:layout_marginStart="@dimen/x_small_margin"
+                        android:text="@string/nr_idle_badge"
+                        android:visibility="gone" />
+
+                    <ImageView
+                        android:id="@+id/nr_details_info_icon"
+                        android:layout_width="24dp"
+                        android:layout_height="24dp"
+                        android:layout_gravity="center"
+                        android:layout_marginStart="@dimen/x_small_margin"
+                        android:layout_marginEnd="@dimen/x_small_margin"
+                        android:contentDescription="@string/nr_secondary_info_description"
+                        android:src="@drawable/ic_info" />
+
+                </LinearLayout>
+
+                <TextView
+                    android:id="@+id/nr_details_subtitle"
+                    style="@style/SmallLabelText"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="@dimen/small_margin"
+                    android:layout_marginEnd="@dimen/small_margin"
+                    android:text="@string/nr_secondary_cell_subtitle" />
+
+                <TextView
+                    android:id="@+id/nr_last_seen"
+                    style="@style/SmallLabelText"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="@dimen/small_margin"
+                    android:layout_marginEnd="@dimen/small_margin"
+                    android:visibility="gone" />
+
+                <LinearLayout
+                    android:id="@+id/nr_card_body"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:baselineAligned="false">
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="match_parent"
+                        android:layout_weight=".7"
+                        android:layout_marginTop="@dimen/small_margin"
+                        android:layout_marginStart="@dimen/small_margin"
+                        android:layout_marginBottom="@dimen/small_margin"
+                        android:orientation="vertical">
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="horizontal"
+                            android:baselineAligned="false">
+
+                            <androidx.constraintlayout.widget.ConstraintLayout
+                                android:id="@+id/nr_band_group"
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="@dimen/small_margin"
+                                android:layout_marginBottom="@dimen/small_margin"
+                                android:layout_weight="1">
+
+                                <TextView
+                                    android:id="@+id/nr_band"
+                                    style="@style/StandardText"
+                                    android:layout_width="match_parent"
+                                    android:layout_height="wrap_content"
+                                    app:layout_constraintTop_toTopOf="@id/nr_band_group"
+                                    app:layout_constraintBottom_toTopOf="@id/nr_band_label" />
+
+                                <TextView
+                                    android:id="@+id/nr_band_label"
+                                    style="@style/SmallLabelText"
+                                    android:layout_width="match_parent"
+                                    android:layout_height="wrap_content"
+                                    android:text="@string/band_label"
+                                    app:layout_constraintBottom_toBottomOf="@id/nr_band_group" />
+
+                            </androidx.constraintlayout.widget.ConstraintLayout>
+
+                            <androidx.constraintlayout.widget.ConstraintLayout
+                                android:id="@+id/nr_frequency_group"
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="@dimen/small_margin"
+                                android:layout_marginBottom="@dimen/small_margin"
+                                android:layout_weight="1">
+
+                                <TextView
+                                    android:id="@+id/nr_frequency"
+                                    style="@style/StandardText"
+                                    android:layout_width="match_parent"
+                                    android:layout_height="wrap_content"
+                                    app:layout_constraintTop_toTopOf="@id/nr_frequency_group"
+                                    app:layout_constraintBottom_toTopOf="@id/nr_frequency_label" />
+
+                                <TextView
+                                    android:id="@+id/nr_frequency_label"
+                                    style="@style/SmallLabelText"
+                                    android:layout_width="match_parent"
+                                    android:layout_height="wrap_content"
+                                    android:text="@string/frequency_label"
+                                    app:layout_constraintBottom_toBottomOf="@id/nr_frequency_group" />
+
+                            </androidx.constraintlayout.widget.ConstraintLayout>
+
+                        </LinearLayout>
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="horizontal"
+                            android:baselineAligned="false">
+
+                            <androidx.constraintlayout.widget.ConstraintLayout
+                                android:id="@+id/nr_pci_group"
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="@dimen/small_margin"
+                                android:layout_marginBottom="@dimen/small_margin"
+                                android:layout_weight="1">
+
+                                <TextView
+                                    android:id="@+id/nr_pci"
+                                    style="@style/StandardText"
+                                    android:layout_width="match_parent"
+                                    android:layout_height="wrap_content"
+                                    app:layout_constraintTop_toTopOf="@id/nr_pci_group"
+                                    app:layout_constraintBottom_toTopOf="@id/nr_pci_label" />
+
+                                <TextView
+                                    android:id="@+id/nr_pci_label"
+                                    style="@style/SmallLabelText"
+                                    android:layout_width="match_parent"
+                                    android:layout_height="wrap_content"
+                                    android:text="@string/pci_label"
+                                    app:layout_constraintBottom_toBottomOf="@id/nr_pci_group" />
+
+                            </androidx.constraintlayout.widget.ConstraintLayout>
+
+                            <androidx.constraintlayout.widget.ConstraintLayout
+                                android:id="@+id/nr_narfcn_group"
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="@dimen/small_margin"
+                                android:layout_marginBottom="@dimen/small_margin"
+                                android:layout_weight="1">
+
+                                <TextView
+                                    android:id="@+id/nr_narfcn"
+                                    style="@style/StandardText"
+                                    android:layout_width="match_parent"
+                                    android:layout_height="wrap_content"
+                                    app:layout_constraintTop_toTopOf="@id/nr_narfcn_group"
+                                    app:layout_constraintBottom_toTopOf="@id/nr_narfcn_label" />
+
+                                <TextView
+                                    android:id="@+id/nr_narfcn_label"
+                                    style="@style/SmallLabelText"
+                                    android:layout_width="match_parent"
+                                    android:layout_height="wrap_content"
+                                    android:text="@string/narfcn_label"
+                                    app:layout_constraintBottom_toBottomOf="@id/nr_narfcn_group" />
+
+                            </androidx.constraintlayout.widget.ConstraintLayout>
+
+                        </LinearLayout>
+
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_weight=".30"
+                        android:layout_height="match_parent"
+                        android:layout_marginStart="@dimen/small_margin"
+                        android:layout_marginEnd="@dimen/medium_margin"
+                        android:layout_marginTop="@dimen/medium_margin"
+                        android:layout_marginBottom="@dimen/medium_margin"
+                        android:orientation="vertical">
+
+                        <androidx.constraintlayout.widget.ConstraintLayout
+                            android:id="@+id/nr_ss_rsrp_group"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_gravity="end">
+
+                            <com.mackhartley.roundedprogressbar.RoundedProgressBar
+                                android:id="@+id/progress_bar_nr_ss_rsrp"
+                                android:layout_width="match_parent"
+                                android:layout_height="32dp"
+                                app:layout_constraintBottom_toBottomOf="parent"
+                                app:layout_constraintLeft_toLeftOf="parent"
+                                app:layout_constraintRight_toRightOf="parent"
+                                app:layout_constraintTop_toTopOf="parent"
+                                app:rpbBackgroundColor="@color/signalBarBackground"
+                                app:rpbBackgroundTextColor="@color/colorAccent"
+                                app:rpbShowProgressText="false"
+                                app:rpbCornerRadius="4dp"
+                                app:rpbProgressColor="@color/colorAccent"
+                                app:rpbProgressTextColor="@color/normalText"
+                                app:rpbTextPadding="5dp"
+                                app:rpbAnimationLength="600" />
+
+                            <TextView
+                                android:id="@+id/nr_ss_rsrp_value"
+                                style="@style/StandardText"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text=""
+                                android:textColor="@color/normalText"
+                                app:layout_constraintStart_toStartOf="@id/progress_bar_nr_ss_rsrp"
+                                app:layout_constraintEnd_toEndOf="@id/progress_bar_nr_ss_rsrp"
+                                app:layout_constraintTop_toTopOf="@id/progress_bar_nr_ss_rsrp"
+                                app:layout_constraintBottom_toBottomOf="@id/progress_bar_nr_ss_rsrp"
+                                android:gravity="center" />
+
+                        </androidx.constraintlayout.widget.ConstraintLayout>
+
+                        <TextView
+                            android:id="@+id/nr_ss_rsrp_label"
+                            style="@style/SmallLabelText"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="2dp"
+                            android:gravity="center"
+                            android:text="@string/ss_rsrp_label" />
+
+                        <androidx.constraintlayout.widget.ConstraintLayout
+                            android:id="@+id/nr_ss_rsrq_group"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_gravity="end">
+
+                            <com.mackhartley.roundedprogressbar.RoundedProgressBar
+                                android:id="@+id/progress_bar_nr_ss_rsrq"
+                                android:layout_width="match_parent"
+                                android:layout_height="32dp"
+                                app:layout_constraintBottom_toBottomOf="parent"
+                                app:layout_constraintLeft_toLeftOf="parent"
+                                app:layout_constraintRight_toRightOf="parent"
+                                app:layout_constraintTop_toTopOf="parent"
+                                android:layout_marginTop="@dimen/space_between_bars"
+                                app:rpbBackgroundColor="@color/signalBarBackground"
+                                app:rpbBackgroundTextColor="@color/colorAccent"
+                                app:rpbShowProgressText="false"
+                                app:rpbCornerRadius="4dp"
+                                app:rpbProgressColor="@color/colorAccent"
+                                app:rpbProgressTextColor="@color/normalText"
+                                app:rpbTextPadding="5dp"
+                                app:rpbAnimationLength="600" />
+
+                            <TextView
+                                android:id="@+id/nr_ss_rsrq_value"
+                                style="@style/StandardText"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text=""
+                                android:textColor="@color/normalText"
+                                app:layout_constraintStart_toStartOf="@id/progress_bar_nr_ss_rsrq"
+                                app:layout_constraintEnd_toEndOf="@id/progress_bar_nr_ss_rsrq"
+                                app:layout_constraintTop_toTopOf="@id/progress_bar_nr_ss_rsrq"
+                                app:layout_constraintBottom_toBottomOf="@id/progress_bar_nr_ss_rsrq"
+                                android:gravity="center" />
+
+                        </androidx.constraintlayout.widget.ConstraintLayout>
+
+                        <TextView
+                            android:id="@+id/nr_ss_rsrq_label"
+                            style="@style/SmallLabelText"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="2dp"
+                            android:gravity="center"
+                            android:text="@string/ss_rsrq_label" />
+
+                        <androidx.constraintlayout.widget.ConstraintLayout
+                            android:id="@+id/nr_ss_sinr_group"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_gravity="end">
+
+                            <com.mackhartley.roundedprogressbar.RoundedProgressBar
+                                android:id="@+id/progress_bar_nr_ss_sinr"
+                                android:layout_width="match_parent"
+                                android:layout_height="32dp"
+                                app:layout_constraintBottom_toBottomOf="parent"
+                                app:layout_constraintLeft_toLeftOf="parent"
+                                app:layout_constraintRight_toRightOf="parent"
+                                app:layout_constraintTop_toTopOf="parent"
+                                android:layout_marginTop="@dimen/space_between_bars"
+                                app:rpbBackgroundColor="@color/signalBarBackground"
+                                app:rpbBackgroundTextColor="@color/colorAccent"
+                                app:rpbShowProgressText="false"
+                                app:rpbCornerRadius="4dp"
+                                app:rpbProgressColor="@color/colorAccent"
+                                app:rpbProgressTextColor="@color/normalText"
+                                app:rpbTextPadding="5dp"
+                                app:rpbAnimationLength="600" />
+
+                            <TextView
+                                android:id="@+id/nr_ss_sinr_value"
+                                style="@style/StandardText"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text=""
+                                android:textColor="@color/normalText"
+                                app:layout_constraintStart_toStartOf="@id/progress_bar_nr_ss_sinr"
+                                app:layout_constraintEnd_toEndOf="@id/progress_bar_nr_ss_sinr"
+                                app:layout_constraintTop_toTopOf="@id/progress_bar_nr_ss_sinr"
+                                app:layout_constraintBottom_toBottomOf="@id/progress_bar_nr_ss_sinr"
+                                android:gravity="center" />
+
+                        </androidx.constraintlayout.widget.ConstraintLayout>
+
+                        <TextView
+                            android:id="@+id/nr_ss_sinr_label"
+                            style="@style/SmallLabelText"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="2dp"
+                            android:gravity="center"
+                            android:text="@string/ss_sinr_label" />
+
+                    </LinearLayout>
+
+                </LinearLayout>
+
+            </LinearLayout>
+
+        </androidx.cardview.widget.CardView>
+
         <!-- Focus disabled to prevent ViewPager2 + Compose crash during page transitions.
              ViewPager2's focus management triggers Compose's focus search during layout,
              causing "performMeasureAndLayout called during measure layout" crash. -->

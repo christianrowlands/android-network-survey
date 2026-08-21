@@ -7,6 +7,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.os.Bundle;
+import android.os.SystemClock;
 import android.provider.Settings;
 import android.text.SpannableStringBuilder;
 import android.text.Spanned;
@@ -42,6 +43,8 @@ import com.craxiom.networksurvey.fragments.model.CellularViewModel;
 import com.craxiom.networksurvey.fragments.model.GsmNeighbor;
 import com.craxiom.networksurvey.fragments.model.LteNeighbor;
 import com.craxiom.networksurvey.fragments.model.NrNeighbor;
+import com.craxiom.networksurvey.fragments.model.NrSecondaryCellSighting;
+import com.craxiom.networksurvey.fragments.model.NrSecondaryCellViewState;
 import com.craxiom.networksurvey.fragments.model.UmtsNeighbor;
 import com.craxiom.networksurvey.listeners.ICellularSurveyRecordListener;
 import com.craxiom.networksurvey.model.CellularProtocol;
@@ -65,6 +68,8 @@ import com.mackhartley.roundedprogressbar.RoundedProgressBar;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Locale;
+import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
 import java.util.stream.Collectors;
@@ -92,7 +97,32 @@ public class NetworkDetailsFragment extends AServiceDataFragment implements ICel
     // label and value ("Voice · VoNR").
     private static final String TECH_SEPARATOR = " · ";
 
+    /**
+     * How long the NR Secondary Cell card keeps showing the last-seen cell in its idle state
+     * after the NR leg detaches. Past this age the sighting is too stale to be useful and the
+     * card hides as it did before the idle state existed.
+     * <p>
+     * The point of the idle state is to stop the card flickering in and out while the user reads
+     * the screen, since on NSA the NR leg drops a few seconds after each data transfer ends. Two
+     * minutes covers that comfortably. It is deliberately short because a held cell is a claim
+     * about the recent past, and the longer it is held the less likely it still describes where
+     * the user is. A change of serving cell drops the sighting regardless of its age.
+     */
+    private static final long NR_IDLE_MAX_AGE_MS = 2 * 60 * 1000L;
+
+    /**
+     * Alpha applied to the NR Secondary Cell card body while idle. Dimmed enough to read as "not
+     * live" next to the Idle badge, but kept high enough that the values stay legible in both
+     * themes.
+     */
+    private static final float NR_IDLE_BODY_ALPHA = 0.65f;
+
     private int subscriptionId;
+
+    // The NR mode from the most recent onNetworkType callback. Written on the survey executor
+    // (onNetworkType always runs just before the same scan's onCellularBatch) and volatile so
+    // main-thread readers see the latest value.
+    private volatile TelephonyStateUtils.NrMode currentNrMode = TelephonyStateUtils.NrMode.NONE;
 
     private FragmentNetworkDetailsBinding binding;
     private CellularViewModel viewModel;
@@ -217,6 +247,8 @@ public class NetworkDetailsFragment extends AServiceDataFragment implements ICel
         // NetworkDetailsFragment instance will handle them.
         if (this.subscriptionId != subscriptionId) return;
 
+        currentNrMode = technologyInfo.nrMode();
+
         final TelephonyStateUtils.HeroResult hero = TelephonyStateUtils.deriveHero(
                 technologyInfo.nrMode(), technologyInfo.baseDataRat(), technologyInfo.registrationRows());
         final String heroText = heroDisplay(hero);
@@ -225,11 +257,14 @@ public class NetworkDetailsFragment extends AServiceDataFragment implements ICel
         viewModel.setHeroColorId(heroColorId(hero.state()));
 
         // The pill row supports a live technology hero. On the degraded No Service and Unknown
-        // states the pills would all read "None"/"Unknown"/"N/A", which is noise the hero already
-        // conveys, so hide the whole row (a null voice value hides it). On every live state show all
-        // three pills with explicit values so nothing appears or disappears during normal use.
-        if (hero.state() == TelephonyStateUtils.HeroState.NO_SERVICE
-                || hero.state() == TelephonyStateUtils.HeroState.UNKNOWN)
+        // states the pills usually carry nothing but "None"/"Unknown" noise the hero already
+        // conveys, so the row hides (a null voice value hides it) unless a pill still has a real
+        // value to show (e.g. on API 26-30 during Wi-Fi calling the hero is Unknown while the
+        // legacy data network type is IWLAN). On every live state show all three pills with
+        // explicit values so nothing appears or disappears during normal use.
+        if (!TelephonyStateUtils.shouldShowPillRow(hero.state(), technologyInfo.voiceDisplay(),
+                technologyInfo.dataDisplay(),
+                Set.of(NetworkSurveyConstants.UNKNOWN, getString(R.string.voice_bearer_none))))
         {
             viewModel.setVoicePillValue(null);
             viewModel.setDataPillValue(null);
@@ -294,7 +329,7 @@ public class NetworkDetailsFragment extends AServiceDataFragment implements ICel
         final List<String> chipLabels = new ArrayList<>(validKhz.length);
         for (int khz : validKhz)
         {
-            chipLabels.add(getString(R.string.ca_chip_mhz, CellularBandwidthUtils.formatBandwidthMhz(khz)));
+            chipLabels.add(getString(R.string.mhz_value_label, CellularBandwidthUtils.formatBandwidthMhz(khz)));
         }
         final String summary = getString(R.string.carrier_aggregation_summary, validKhz.length,
                 CellularBandwidthUtils.formatBandwidthMhz(CellularBandwidthUtils.aggregateBandwidthKhz(validKhz)));
@@ -308,6 +343,7 @@ public class NetworkDetailsFragment extends AServiceDataFragment implements ICel
     {
         binding.cellularInfoIcon.setOnClickListener(c -> showCellularInfoDialog());
         binding.networkTechnologyInfoIcon.setOnClickListener(c -> showNetworkTechnologyInfoDialog());
+        binding.nrDetailsInfoIcon.setOnClickListener(c -> showNrDetailsInfoDialog());
         setupCopyOnLongPress();
     }
 
@@ -323,7 +359,8 @@ public class NetworkDetailsFragment extends AServiceDataFragment implements ICel
                 binding.plmn, binding.tac, binding.cid,
                 binding.enbId, binding.sectorId, binding.earfcn,
                 binding.pci, binding.band, binding.frequency,
-                binding.lteBand, binding.bandwidth, binding.cqi, binding.ta
+                binding.lteBand, binding.bandwidth, binding.cqi, binding.ta,
+                binding.nrBand, binding.nrFrequency, binding.nrPci, binding.nrNarfcn
         );
     }
 
@@ -344,6 +381,8 @@ public class NetworkDetailsFragment extends AServiceDataFragment implements ICel
         viewModel.getBrandingPillValue().observe(viewLifecycleOwner,
                 value -> updatePill(binding.brandingPill, R.string.pill_label_branding, value));
         viewModel.getCarrierAggregation().observe(viewLifecycleOwner, this::updateCarrierAggregation);
+        viewModel.getNrSecondaryCell().observe(viewLifecycleOwner, this::updateNrDetailsCard);
+        viewModel.getNrLastSeenText().observe(viewLifecycleOwner, binding.nrLastSeen::setText);
 
         viewModel.getAirplaneModeActive().observe(viewLifecycleOwner, this::updateAirplaneModeStatus);
 
@@ -387,6 +426,8 @@ public class NetworkDetailsFragment extends AServiceDataFragment implements ICel
         viewModel.getDataPillValue().removeObservers(viewLifecycleOwner);
         viewModel.getBrandingPillValue().removeObservers(viewLifecycleOwner);
         viewModel.getCarrierAggregation().removeObservers(viewLifecycleOwner);
+        viewModel.getNrSecondaryCell().removeObservers(viewLifecycleOwner);
+        viewModel.getNrLastSeenText().removeObservers(viewLifecycleOwner);
 
         viewModel.getAirplaneModeActive().removeObservers(viewLifecycleOwner);
 
@@ -450,6 +491,10 @@ public class NetworkDetailsFragment extends AServiceDataFragment implements ICel
         // goes away. The top-card fields (hero and pills) are intentionally left alone here:
         // onNetworkType refreshes them on every scan before this runs.
         viewModel.setCarrierAggregation(null);
+
+        viewModel.setNrSecondaryCell(null);
+        viewModel.setNrLastSeenText("");
+        viewModel.clearLastNrSecondaryCell();
     }
 
     /**
@@ -606,18 +651,20 @@ public class NetworkDetailsFragment extends AServiceDataFragment implements ICel
         final List<GsmRecordData> gsmNeighbors = new ArrayList<>();
         final List<UmtsRecordData> umtsNeighbors = new ArrayList<>();
         final List<LteRecordData> lteNeighbors = new ArrayList<>();
-        final List<NrRecordData> nrNeighbors = new ArrayList<>();
+        final List<NrRecordWrapper> nrNonServing = new ArrayList<>();
+        CellularRecordWrapper servingCellRecord = null;
         for (CellularRecordWrapper cellularRecord : cellularGroup)
         {
             if (CellularUtils.isServingCell(cellularRecord.cellularRecord))
             {
+                servingCellRecord = cellularRecord;
                 sharedViewModel.updateLatestServingCellInfo(new ServingCellInfo(cellularRecord, subscriptionId, System.currentTimeMillis()));
             }
 
             switch (cellularRecord.cellularProtocol)
             {
                 case NONE:
-                    return;
+                    continue;
 
                 case GSM:
                     final GsmRecordData gsmData = ((GsmRecord) cellularRecord.cellularRecord).getData();
@@ -667,16 +714,28 @@ public class NetworkDetailsFragment extends AServiceDataFragment implements ICel
                         processNrServingCell(nrData, ((NrRecordWrapper) cellularRecord).bands);
                     } else
                     {
-                        nrNeighbors.add(nrData);
+                        nrNonServing.add((NrRecordWrapper) cellularRecord);
                     }
                     break;
             }
         }
 
+        // A cell the device reports as SECONDARY_SERVING is one the phone is actively using: on
+        // 5G NSA it is the NR cell carrying the 5G data (the phone is registered on the LTE
+        // anchor, so it shows up as a non-serving record), and on 5G SA with NR carrier
+        // aggregation it is an NR SCell. Promote it to the NR details card and keep it out of the
+        // neighbors table. Devices that report no connection status simply do not show the card.
+        final NrRecordWrapper secondaryNrCell = CellularUtils.selectSecondaryServingNrCell(nrNonServing);
+        if (secondaryNrCell != null) nrNonServing.remove(secondaryNrCell);
+        viewModel.setNrSecondaryCell(resolveNrSecondaryCellViewState(secondaryNrCell,
+                CellularUtils.getTowerId(servingCellRecord)));
+
         processGsmNeighbors(gsmNeighbors);
         processUmtsNeighbors(umtsNeighbors);
         processLteNeighbors(lteNeighbors);
-        processNrNeighbors(nrNeighbors);
+        processNrNeighbors(nrNonServing.stream()
+                .map(wrapper -> ((NrRecord) wrapper.cellularRecord).getData())
+                .collect(Collectors.toList()));
     }
 
     /**
@@ -780,16 +839,7 @@ public class NetworkDetailsFragment extends AServiceDataFragment implements ICel
             viewModel.setLteBand("");
         }
 
-        if (data.hasPci())
-        {
-            final int pci = data.getPci().getValue();
-            int primarySyncSequence = CalculationUtils.getPrimarySyncSequence(pci);
-            int secondarySyncSequence = CalculationUtils.getSecondarySyncSequence(pci);
-            viewModel.setPci(pci + " (" + primarySyncSequence + "/" + secondarySyncSequence + ")");
-        } else
-        {
-            viewModel.setPci("");
-        }
+        viewModel.setPci(data.hasPci() ? formatPci(data.getPci().getValue()) : "");
         viewModel.setBandwidth(LteMessageConstants.getLteBandwidth(data.getLteBandwidth()));
         viewModel.setTa(data.hasTa() ? String.valueOf(data.getTa().getValue()) : "");
         viewModel.setCqi(data.hasCqi() ? String.valueOf(data.getCqi().getValue()) : "");
@@ -821,66 +871,167 @@ public class NetworkDetailsFragment extends AServiceDataFragment implements ICel
         // Set NARFCN without band information
         viewModel.setChannelNumber(data.hasNarfcn() ? String.valueOf(data.getNarfcn().getValue()) : "");
 
-        // Set band field with band number and name
-        if (bands.length > 0)
-        {
-            StringBuilder bandString = new StringBuilder();
-            for (int i = 0; i < bands.length; i++)
-            {
-                int bandNumber = bands[i];
-                String bandName = CellularUtils.getNrBandName(bandNumber);
+        viewModel.setBand(CellularUtils.formatNrBands(bands,
+                data.hasNarfcn() ? data.getNarfcn().getValue() : -1));
 
-                if (bandName != null)
-                {
-                    bandString.append(bandNumber).append(" (").append(bandName).append(")");
-                } else
-                {
-                    bandString.append(bandNumber);
-                }
+        viewModel.setPci(data.hasPci() ? formatPci(data.getPci().getValue()) : "");
 
-                if (i < bands.length - 1)
-                {
-                    bandString.append(", ");
-                }
-            }
-            viewModel.setBand(bandString.toString());
-        } else
-        {
-            viewModel.setBand("");
-        }
-
-        if (data.hasPci())
-        {
-            final int pci = data.getPci().getValue();
-            int primarySyncSequence = CalculationUtils.getPrimarySyncSequence(pci);
-            int secondarySyncSequence = CalculationUtils.getSecondarySyncSequence(pci);
-            viewModel.setPci(pci + " (" + primarySyncSequence + "/" + secondarySyncSequence + ")");
-        } else
-        {
-            viewModel.setPci("");
-        }
-
-        if (data.hasNarfcn())
-        {
-            int narfcn = data.getNarfcn().getValue();
-            double frequencyMhz = CellularUtils.narfcnToFrequencyMhz(narfcn);
-            if (frequencyMhz > 0)
-            {
-                viewModel.setFrequency(String.format(java.util.Locale.US, "%.3f MHz", frequencyMhz));
-            } else
-            {
-                viewModel.setFrequency("");
-            }
-        } else
-        {
-            viewModel.setFrequency("");
-        }
+        viewModel.setFrequency(data.hasNarfcn() ? formatNrFrequency(data.getNarfcn().getValue()) : "");
 
         viewModel.setTa(data.hasTa() ? String.valueOf(data.getTa().getValue()) : "");
 
         viewModel.setSignalOne(data.hasSsRsrp() ? (int) data.getSsRsrp().getValue() : null);
         viewModel.setSignalTwo(data.hasSsRsrq() ? (int) data.getSsRsrq().getValue() : null);
         viewModel.setSignalThree(data.hasSsSinr() ? (int) data.getSsSinr().getValue() : null);
+    }
+
+    /**
+     * @return The PCI display value including the Primary and Secondary Sync Sequence breakdown,
+     * e.g. "146 (2/48)".
+     */
+    private String formatPci(int pci)
+    {
+        final int primarySyncSequence = CalculationUtils.getPrimarySyncSequence(pci);
+        final int secondarySyncSequence = CalculationUtils.getSecondarySyncSequence(pci);
+        return pci + " (" + primarySyncSequence + "/" + secondarySyncSequence + ")";
+    }
+
+    /**
+     * @return The NR frequency display value in MHz for the provided NARFCN (e.g. "3709.920 MHz"),
+     * or an empty string when the NARFCN is not in a valid range.
+     */
+    private String formatNrFrequency(int narfcn)
+    {
+        final double frequencyMhz = CellularUtils.narfcnToFrequencyMhz(narfcn);
+        if (frequencyMhz <= 0) return "";
+
+        return getString(R.string.mhz_value_label, String.format(Locale.US, "%.3f", frequencyMhz));
+    }
+
+    /**
+     * Builds the NR Secondary Cell card's view state for this scan: the live cell when the scan
+     * contains one, the dimmed last-seen idle state while the phone remains on NSA with the NR
+     * leg detached (on NSA the leg only attaches during active data), or null to hide the card.
+     * <p>
+     * Also publishes the idle card's "Last seen ..." line, which is kept out of the returned view
+     * state so that its per-scan ticking does not rebuild the rest of the card.
+     *
+     * @param secondaryNrCell The SECONDARY_SERVING NR cell from this scan, or null when absent.
+     * @param servingCellId   The serving cell the phone is attached to for this scan. A sighting
+     *                        recorded under a different serving cell describes a place the user
+     *                        has since left, so it is never held as idle.
+     */
+    private NrSecondaryCellViewState resolveNrSecondaryCellViewState(NrRecordWrapper secondaryNrCell,
+                                                                     String servingCellId)
+    {
+        final long nowMs = SystemClock.elapsedRealtime();
+        final NrSecondaryCellSighting sighting = viewModel.getLastNrSecondaryCellSighting();
+        final boolean sightingUsable = sighting.isUsableFor(servingCellId);
+        final long lastSeenAgeMs = sightingUsable ? nowMs - sighting.realtimeMs() : -1;
+
+        final TelephonyStateUtils.NrCardState cardState = TelephonyStateUtils.resolveNrCardState(
+                secondaryNrCell != null, currentNrMode, lastSeenAgeMs, NR_IDLE_MAX_AGE_MS);
+
+        switch (cardState)
+        {
+            case ACTIVE:
+                final NrSecondaryCellViewState state = buildNrSecondaryCellViewState(secondaryNrCell);
+                viewModel.setLastNrSecondaryCellSighting(
+                        new NrSecondaryCellSighting(state, nowMs, servingCellId));
+                viewModel.setNrLastSeenText("");
+                return state;
+
+            case IDLE:
+                viewModel.setNrLastSeenText(
+                        getString(R.string.nr_last_seen_format, formatAge(lastSeenAgeMs)));
+                return sighting.state().asIdle();
+
+            default:
+                viewModel.setNrLastSeenText("");
+                return null;
+        }
+    }
+
+    /**
+     * @return A short age display for the idle card's last-seen line, e.g. "42s" or "3m".
+     */
+    private String formatAge(long ageMs)
+    {
+        final long seconds = ageMs / 1000;
+        if (seconds < 60) return seconds + "s";
+        return (seconds / 60) + "m";
+    }
+
+    /**
+     * Builds the view state for the NR Secondary Cell details card from the NR record the device
+     * reported as SECONDARY_SERVING (the 5G NSA data leg, or an NR CA SCell under SA).
+     */
+    private NrSecondaryCellViewState buildNrSecondaryCellViewState(NrRecordWrapper wrapper)
+    {
+        final NrRecordData data = ((NrRecord) wrapper.cellularRecord).getData();
+
+        return new NrSecondaryCellViewState(
+                CellularUtils.formatNrBands(wrapper.bands,
+                        data.hasNarfcn() ? data.getNarfcn().getValue() : -1),
+                data.hasNarfcn() ? formatNrFrequency(data.getNarfcn().getValue()) : "",
+                data.hasPci() ? formatPci(data.getPci().getValue()) : "",
+                data.hasNarfcn() ? String.valueOf(data.getNarfcn().getValue()) : "",
+                data.hasSsRsrp() ? (int) data.getSsRsrp().getValue() : null,
+                data.hasSsRsrq() ? (int) data.getSsRsrq().getValue() : null,
+                data.hasSsSinr() ? (int) data.getSsSinr().getValue() : null,
+                false);
+    }
+
+    /**
+     * Shows or hides the NR Secondary Cell details card. The card is only visible while the
+     * device reports an NR cell as SECONDARY_SERVING (a null view state hides it).
+     */
+    private void updateNrDetailsCard(NrSecondaryCellViewState state)
+    {
+        if (state == null)
+        {
+            binding.nrDetailsCardView.setVisibility(View.GONE);
+            return;
+        }
+
+        binding.nrBand.setText(state.band());
+        binding.nrFrequency.setText(state.frequency());
+        binding.nrPci.setText(state.pci());
+        binding.nrNarfcn.setText(state.narfcn());
+
+        // In the idle state the values are the last-seen cell, not a live report, so they must
+        // not render identically to live data: dim the body and flag it with the badge + age. The
+        // badge and the age line sit outside nrCardBody so they stay at full opacity.
+        binding.nrIdleBadge.setVisibility(state.idle() ? View.VISIBLE : View.GONE);
+        binding.nrLastSeen.setVisibility(state.idle() ? View.VISIBLE : View.GONE);
+        binding.nrCardBody.setAlpha(state.idle() ? NR_IDLE_BODY_ALPHA : 1f);
+
+        final CellularProtocol protocol = CellularProtocol.NR;
+
+        // The label hides with its value group so a missing measurement cannot leave an orphaned
+        // caption floating over blank space (matching the serving cell card's behavior).
+        final Integer ssRsrp = state.ssRsrp();
+        final int ssRsrpVisibility = ssRsrp == null ? View.INVISIBLE : View.VISIBLE;
+        binding.nrSsRsrpGroup.setVisibility(ssRsrpVisibility);
+        binding.nrSsRsrpLabel.setVisibility(ssRsrpVisibility);
+        binding.nrSsRsrpValue.setText(ssRsrp != null ? getString(R.string.dbm_value_label, String.valueOf(ssRsrp)) : "");
+        setSignalStrengthBar(binding.progressBarNrSsRsrp, ssRsrp, protocol.getMinSignalOne(), protocol.getMaxNormalizedSignalOne());
+
+        final Integer ssRsrq = state.ssRsrq();
+        final int ssRsrqVisibility = ssRsrq == null ? View.INVISIBLE : View.VISIBLE;
+        binding.nrSsRsrqGroup.setVisibility(ssRsrqVisibility);
+        binding.nrSsRsrqLabel.setVisibility(ssRsrqVisibility);
+        binding.nrSsRsrqValue.setText(ssRsrq != null ? getString(R.string.db_value_label, String.valueOf(ssRsrq)) : "");
+        setSignalStrengthBar(binding.progressBarNrSsRsrq, ssRsrq, protocol.getMinSignalTwo(), protocol.getMaxNormalizedSignalTwo());
+
+        final Integer ssSinr = state.ssSinr();
+        final int ssSinrVisibility = ssSinr == null ? View.INVISIBLE : View.VISIBLE;
+        binding.nrSsSinrGroup.setVisibility(ssSinrVisibility);
+        binding.nrSsSinrLabel.setVisibility(ssSinrVisibility);
+        binding.nrSsSinrValue.setText(ssSinr != null ? getString(R.string.db_value_label, String.valueOf(ssSinr)) : "");
+        setSignalStrengthBar(binding.progressBarNrSsSinr, ssSinr, protocol.getMinSignalThree(), protocol.getMaxNormalizedSignalThree());
+
+        binding.nrDetailsCardView.setVisibility(View.VISIBLE);
     }
 
     /**
@@ -1579,6 +1730,19 @@ public class NetworkDetailsFragment extends AServiceDataFragment implements ICel
         }
 
         FragmentDialogs.showCellularInfo(getParentFragmentManager(), cellularInfoTitle, cellularInfoBody);
+    }
+
+    /**
+     * Displays a dialog explaining what a 5G NR secondary cell is, plus the terms shown on the
+     * card. Deliberately not the generic NR terms dialog: that one documents fields (MCC/MNC, TAC,
+     * CID, TA) this card does not display.
+     */
+    private void showNrDetailsInfoDialog()
+    {
+        if (getContext() == null) return;
+        FragmentDialogs.showCellularInfo(getParentFragmentManager(),
+                getString(R.string.nr_secondary_info_description),
+                getText(R.string.nr_secondary_cell_explanation));
     }
 
     /**

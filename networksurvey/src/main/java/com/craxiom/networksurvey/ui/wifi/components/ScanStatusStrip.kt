@@ -40,10 +40,15 @@ import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.craxiom.networksurvey.R
 import com.craxiom.networksurvey.ui.theme.WifiTokens
+
+// Width caps so the fixed chrome cannot squeeze the scan status text out at large font scales.
+private val STATUS_COUNT_MAX_WIDTH = 140.dp
+private val SORT_PILL_LABEL_MAX_WIDTH = 150.dp
 
 /**
  * Top chrome for the Wi-Fi list: "Scan #N · APs: M", scan status with pulsing dot, and the
@@ -78,6 +83,9 @@ fun ScanStatusStrip(
                 text = stringResource(R.string.wifi_list_scan_number, scanNumber),
                 style = TextStyle(fontSize = 13.sp),
                 color = WifiTokens.InkMuted,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.widthIn(max = STATUS_COUNT_MAX_WIDTH),
             )
             Text(
                 text = if (filterActive) {
@@ -87,6 +95,9 @@ fun ScanStatusStrip(
                 },
                 style = TextStyle(fontSize = 13.sp),
                 color = WifiTokens.InkMuted,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.widthIn(max = STATUS_COUNT_MAX_WIDTH),
             )
         }
         Row(
@@ -102,6 +113,7 @@ fun ScanStatusStrip(
                 style = TextStyle(fontSize = 13.sp),
                 color = MaterialTheme.colorScheme.onSurface,
                 maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
             )
         }
         SortPill(sortIndex = sortIndex, onClick = onSortClick)
@@ -158,6 +170,9 @@ private fun SortPill(sortIndex: Int, onClick: () -> Unit) {
             text = text,
             style = TextStyle(fontSize = 12.sp, fontWeight = FontWeight.SemiBold),
             color = MaterialTheme.colorScheme.onSurface,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.widthIn(max = SORT_PILL_LABEL_MAX_WIDTH),
         )
     }
 }

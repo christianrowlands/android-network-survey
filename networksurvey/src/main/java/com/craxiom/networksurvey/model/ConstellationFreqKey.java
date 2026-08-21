@@ -41,7 +41,12 @@ public class ConstellationFreqKey
             carrierFrequencyNormalized = CarrierFreqUtils.getCarrierFrequencyLabel(GnssType.GLONASS, -1, MathUtils.toMhz(carrierFrequencyHz));
         } else
         {
-            carrierFrequencyNormalized = String.valueOf(carrierFrequencyHz / 1_000);
+            // Round to the nearest kHz instead of truncating. The measurement side frequency
+            // passes through a float, which only has enough precision for roughly 128 Hz
+            // granularity at GNSS frequencies, while the GnssAutomaticGainControl frequency is an
+            // exact long. Truncation puts some bands (e.g. BeiDou B1I at 1561.098 MHz) in
+            // different kHz buckets for the two sides, which breaks the map lookup.
+            carrierFrequencyNormalized = String.valueOf(Math.round(carrierFrequencyHz / 1_000.0));
         }
         hash = Objects.hash(constellationType, carrierFrequencyNormalized);
     }
@@ -52,7 +57,7 @@ public class ConstellationFreqKey
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         ConstellationFreqKey that = (ConstellationFreqKey) o;
-        return carrierFrequencyNormalized == that.carrierFrequencyNormalized && constellationType == that.constellationType;
+        return carrierFrequencyNormalized.equals(that.carrierFrequencyNormalized) && constellationType == that.constellationType;
     }
 
     @Override

@@ -1,9 +1,6 @@
 package com.craxiom.networksurvey.ui.dashboard
 
-import android.content.ClipData
-import android.content.ClipboardManager
 import android.content.Context
-import android.widget.Toast
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.expandVertically
@@ -36,6 +33,7 @@ import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.fromHtml
 import androidx.compose.ui.unit.dp
 import com.craxiom.networksurvey.R
+import com.craxiom.networksurvey.ui.util.copyTextToClipboard
 import com.craxiom.networksurvey.util.LocationStatusHelper.LocationState
 import com.craxiom.networksurvey.util.MeasurementFormatter
 import kotlinx.coroutines.delay
@@ -98,15 +96,12 @@ fun LocationCard(
                 },
                 onLongClick = {
                     if (state.hasLocation) {
-                        val detailsText = getDetailsText(context, state)
-                        val clipboard =
-                            context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-                        clipboard.setPrimaryClip(
-                            ClipData.newPlainText("Location", detailsText)
+                        copyTextToClipboard(
+                            context,
+                            context.getString(R.string.location_clip_label),
+                            getDetailsText(context, state),
+                            context.getString(R.string.location_copied),
                         )
-                        Toast
-                            .makeText(context, "Location copied", Toast.LENGTH_SHORT)
-                            .show()
                     }
                 },
             )

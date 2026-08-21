@@ -1,9 +1,5 @@
 package com.craxiom.networksurvey.ui.dashboard
 
-import android.content.ClipData
-import android.content.ClipboardManager
-import android.content.Context
-import android.widget.Toast
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
@@ -41,6 +37,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
 import com.craxiom.networksurvey.R
+import com.craxiom.networksurvey.ui.util.copyMissionIdToClipboard
 import kotlinx.coroutines.delay
 
 /**
@@ -73,12 +70,7 @@ fun MissionIdCard(
         }
     }
 
-    val copyMissionId = {
-        val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-        val label = context.getString(R.string.mission_id_card_title)
-        clipboard.setPrimaryClip(ClipData.newPlainText(label, state.missionId))
-        Toast.makeText(context, R.string.mission_id_copied, Toast.LENGTH_SHORT).show()
-    }
+    val copyMissionId = { copyMissionIdToClipboard(context, state.missionId) }
 
     AnimatedVisibility(
         visible = state.visible,

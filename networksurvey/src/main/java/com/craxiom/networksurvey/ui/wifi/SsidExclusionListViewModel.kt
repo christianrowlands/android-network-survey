@@ -27,6 +27,13 @@ class SsidExclusionListViewModel(
         loadExcludedSsids()
     }
 
+    /**
+     * Re-reads the exclusion list from the backing preferences. Called on resume so exclusions
+     * changed elsewhere (for example from the Wi-Fi Details screen) are reflected when returning
+     * to this screen via the back stack.
+     */
+    fun refresh() = loadExcludedSsids()
+
     private fun loadExcludedSsids() {
         viewModelScope.launch {
             val excludedSsids = ssidExclusionManager.getExcludedSsidsList()
@@ -99,5 +106,6 @@ class SsidExclusionListViewModel(
  */
 data class SsidExclusionListUiState(
     val excludedSsids: List<String> = emptyList(),
-    val isAtMaxCapacity: Boolean = false
+    val isAtMaxCapacity: Boolean = false,
+    val maxCapacity: Int = SsidExclusionManager.MAX_EXCLUSION_LIST_SIZE
 )

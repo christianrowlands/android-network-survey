@@ -151,6 +151,12 @@
     <string name="mission_id_help_how_title">How to use it</string>
     <string name="mission_id_help_how">Copy the Mission ID shown here and use it in NS Analytics to find and filter this survey\'s data.</string>
 
+    <!-- Copy to clipboard -->
+    <string name="location_clip_label">Location</string>
+    <string name="location_copied">Location copied</string>
+    <string name="workspace_id_clip_label">Workspace ID</string>
+    <string name="workspace_id_copied">Workspace ID copied</string>
+
     <!-- MQTT Help Dialog -->
     <string name="mqtt_help_title">MQTT Connection</string>
     <string name="mqtt_help_description">Help</string>
@@ -186,7 +192,6 @@
     <string name="grant_bluetooth_connect_permission">The Bluetooth Connect permission is not required for BT survey, but it does allow for getting the device name</string>
     <string name="grant_camera_permission">The Camera Permission is required for scanning QR codes</string>
 
-    <string name="carrier_label">Carrier</string>
     <string name="carrier_unknown">Unknown Carrier</string>
     <string name="voice_bearer_wifi_calling">Wi-Fi Calling</string>
     <string name="voice_bearer_none">None</string>
@@ -261,6 +266,11 @@
     <string name="my_location_icon_description">My Location Icon</string>
     <string name="card_title_cellular_details_initial">Serving Cell Details</string>
     <string name="card_title_cellular_details">%1$s Serving Cell Details</string>
+    <string name="card_title_nr_details">5G NR Secondary Cell</string>
+    <string name="nr_secondary_cell_subtitle">The 5G carrier your phone is using alongside its primary cell</string>
+    <string name="nr_secondary_info_description">NR Secondary Cell Terms Info</string>
+    <string name="nr_idle_badge">Idle</string>
+    <string name="nr_last_seen_format">Last seen %1$s ago</string>
     <string name="cellular_icon_description">Cellular Tower Icon</string>
     <string name="card_title_neighbors">Neighbors</string>
     <string name="card_title_neighbors_gsm">GSM Neighbors</string>
@@ -315,10 +325,31 @@
         <b>TAC</b> (Tracking Area Code): Identifier for a group of cell towers that is used for paging.\n\n
         <b>CID</b> (Cell Identity): Identifier for a specific cell tower. Together the MCC, MNC, and CID uniquely identifies a specific NR cell panel from all others in the world.\n\n
         <b>NARFCN</b> (New radio Absolute Radio Frequency Channel Number): Number representing NR carrier frequency.\n\n
+        <b>Band</b>: The 3GPP NR operating band (e.g. n77). Bands below n257 are Sub-6 (FR1), and n257 and above are mmWave (FR2).\n\n
+        <b>Frequency</b>: The NR carrier center frequency in MHz, calculated from the NARFCN.\n\n
         <b>PCI</b> (Physical Cell ID): A physical layer cell identifier that helps a mobile device differentiate two cells during cell selection/reselection that are using the same frequency. Valid range 0-1007. The numbers in parenthesis represent the Primary Sync Sequence (PSS) and Secondary Sync Sequence (SSS).\n\n
         <b>TA</b> (Timing Advance): The timing offset a mobile device uses to keep its transmissions in sync with the tower. Represents RF distance from the tower, which can be loosely translated to physical distance. Larger numbers indicate the device is further away from the tower.\n\n
         <b>SS_RSRP</b> (Secondary Synchronization Reference Signal Received Power): Power of the reference signal in dBm as received by the mobile device. Valid range -31 to -156.\n\n
-        <b>SS_RSRQ</b> (Secondary Synchronization Reference Signal Received Quality): Measures the quality of the received reference signal. Valid range 20 to -43 with 20 being the best.\n
+        <b>SS_RSRQ</b> (Secondary Synchronization Reference Signal Received Quality): Measures the quality of the received reference signal. Valid range 20 to -43 with 20 being the best.\n\n
+        <b>SS_SINR</b> (Secondary Synchronization Signal-to-Interference-plus-Noise Ratio): Measures signal quality relative to interference and noise in dB. Valid range -23 to 40 with 40 being the best.\n
+    </string>
+
+    <string name="nr_secondary_cell_explanation">
+        <b>What is this card?</b> A secondary cell is a 5G NR cell your phone is actively using in
+        addition to its primary cell. On 5G Non-Standalone (NSA) networks your phone registers on
+        an LTE cell (the anchor) and the 5G data flows through this NR cell, so it shows here
+        rather than in the Neighbors table. On 5G Standalone networks with carrier aggregation,
+        this is an additional NR carrier boosting your speed.\n\n
+        On NSA the NR cell only attaches while data is actively transferring and disconnects a few
+        seconds after the transfer stops. When that happens the card dims to its last-seen values
+        with an Idle badge, and returns to live values the next time data flows.\n\n
+        <b>Band</b>: The 3GPP NR operating band (e.g. n77). Bands below n257 are Sub-6 (FR1), and n257 and above are mmWave (FR2).\n\n
+        <b>Frequency</b>: The NR carrier center frequency in MHz, calculated from the NARFCN.\n\n
+        <b>PCI</b> (Physical Cell ID): A physical layer cell identifier that helps a mobile device differentiate two cells during cell selection/reselection that are using the same frequency. Valid range 0-1007. The numbers in parenthesis represent the Primary Sync Sequence (PSS) and Secondary Sync Sequence (SSS).\n\n
+        <b>NARFCN</b> (New radio Absolute Radio Frequency Channel Number): Number representing NR carrier frequency.\n\n
+        <b>SS_RSRP</b> (Secondary Synchronization Reference Signal Received Power): Power of the reference signal in dBm as received by the mobile device. Valid range -31 to -156.\n\n
+        <b>SS_RSRQ</b> (Secondary Synchronization Reference Signal Received Quality): Measures the quality of the received reference signal. Valid range 20 to -43 with 20 being the best.\n\n
+        <b>SS_SINR</b> (Secondary Synchronization Signal-to-Interference-plus-Noise Ratio): Measures signal quality relative to interference and noise in dB. Valid range -23 to 40 with 40 being the best.\n
     </string>
 
     <string name="no_gps_device">No GPS detected in device!</string>
@@ -473,6 +504,11 @@
     <string name="wifi_details_exclude">Exclude</string>
     <string name="wifi_details_include">Include</string>
     <string name="wifi_details_survey_data">Survey Data</string>
+    <string name="wifi_details_on_watchlist">On watchlist</string>
+    <string name="wifi_details_not_on_watchlist">Not on watchlist</string>
+    <string name="wifi_details_watch">Watch</string>
+    <string name="wifi_details_view_watchlist">View</string>
+    <string name="wifi_details_watchlist_info">Watched networks alert you when they are seen during a Wi-Fi survey</string>
     <string name="wifi_settings_content_description">Wi-Fi settings</string>
     <string name="wifi_scan_rate_info_content_description">About Wi-Fi scan rate</string>
     <string name="wifi_scan_rate_info_title">Wi-Fi scan rate</string>
@@ -987,10 +1023,19 @@
     <string name="enter_ssid">Enter SSID</string>
     <string name="add">Add</string>
     <string name="remove">Remove</string>
+    <string name="remove_format">Remove %1$s</string>
     <string name="clear_all">Clear All</string>
     <string name="confirm_clear_exclusion_list_title">Clear Exclusion List</string>
     <string name="confirm_clear_exclusion_list_message">Are you sure you want to remove all SSIDs from the exclusion list?</string>
     <string name="wifi_exclusion_info">Excluded SSIDs are not written to log files, uploaded, or streamed. They still appear in the Wi-Fi list with an Excluded tag</string>
+    <string name="ssid_exclusion_status_title">Excluded SSIDs</string>
+    <string name="ssid_exclusion_status_full_title">Exclusion list is full</string>
+    <string name="ssid_exclusion_section_count">Excluded · %1$d</string>
+    <string name="ssid_exclusion_add_sheet_title">Add to Exclusion List</string>
+    <string name="ssid_exclusion_add_confirm">Exclude SSID</string>
+    <string name="ssid_exclusion_remove_title">Remove Excluded SSID?</string>
+    <string name="ssid_exclusion_remove_message">Remove \"%1$s\" from the exclusion list? It will be included in survey data again.</string>
+    <string name="ssid_exclusion_match_note">Matching is exact and case sensitive.</string>
 
     <!-- Provider Color Overrides -->
     <string name="provider_colors_category_title">Provider Colors</string>
@@ -1007,9 +1052,20 @@
     <string name="provider_color_reset_to_default">Reset to Default</string>
     <string name="provider_color_select_color">Select a color:</string>
     <string name="provider_color_max_reached">Maximum number of overrides reached.</string>
+    <string name="provider_color_status_title">Custom provider colors</string>
+    <string name="provider_color_status_full_title">Override limit reached</string>
+    <string name="provider_color_section_count">Overrides · %1$d</string>
+    <string name="provider_color_add_confirm">Add Override</string>
+    <string name="provider_color_remove_title">Remove Color Override?</string>
+    <string name="provider_color_remove_message">Remove the override for %1$s-%2$s and restore the default color?</string>
+    <string name="provider_color_sheet_color_label">Color</string>
+    <string name="provider_color_mcc_range">100–999</string>
+    <string name="provider_color_mnc_range">0–999</string>
     <string name="mcc_mnc_format">MCC-MNC: %1$s-%2$s</string>
     <string name="selected">Selected</string>
     <string name="navigate_back">Navigate back</string>
+    <string name="more_options">More options</string>
+    <string name="count_of_max_format">%1$d of %2$d used</string>
 
     <!-- NS Analytics -->
     <string name="ns_analytics">NS Analytics</string>
@@ -1277,6 +1333,7 @@
     <string name="watchlist_validation_bssid_format">Enter a valid MAC address (for example 12:34:56:78:9A:BC).</string>
     <string name="watchlist_validation_duplicate">You\'re already watching this network.</string>
     <string name="watchlist_added">Added \"%1$s\" to your watchlist</string>
+    <string name="watchlist_added_alerts_enabled">Added \"%1$s\" to your watchlist and turned on watchlist alerts</string>
 
     <!-- Watchlist import (deep link) -->
     <string name="watchlist_import_title">Add \"%1$s\"?</string>

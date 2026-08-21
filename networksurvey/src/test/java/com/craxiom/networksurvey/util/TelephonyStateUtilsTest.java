@@ -23,6 +23,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
+import java.util.Set;
 
 /**
  * Host-side unit tests for the pure cellular technology derivations. These reference only
@@ -390,5 +391,98 @@ public class TelephonyStateUtilsTest
         // Fractional values format with the default locale's decimal separator.
         assertEquals(String.format(Locale.getDefault(), "%.1f", 1.4),
                 CellularBandwidthUtils.formatBandwidthMhz(1_400));
+    }
+
+    // shouldShowPillRow decides whether the details card's pill row is worth showing when the
+    // hero is degraded. The noise values mirror what the fragment passes: the legacy "Unknown"
+    // network type string and the localized "None" voice bearer string.
+
+    private static final Set<String> NOISE_VALUES = Set.of("Unknown", "None");
+
+    @Test
+    public void shouldShowPillRow_wifiCallingOnOldApi_showsRealLegacyValues()
+    {
+        // API 26-30 during Wi-Fi calling: no registration rows exist, so the hero degrades to
+        // UNKNOWN, but the legacy data network type is a real value (IWLAN) worth showing.
+        assertTrue(TelephonyStateUtils.shouldShowPillRow(HeroState.UNKNOWN, "Unknown", "IWLAN", NOISE_VALUES));
+    }
+
+    @Test
+    public void shouldShowPillRow_meaningfulVoiceAlone_showsRow()
+    {
+        assertTrue(TelephonyStateUtils.shouldShowPillRow(HeroState.UNKNOWN, "Wi-Fi Calling", "Unknown", NOISE_VALUES));
+    }
+
+    @Test
+    public void shouldShowPillRow_noServiceWithOnlyNoise_hidesRow()
+    {
+        assertFalse(TelephonyStateUtils.shouldShowPillRow(HeroState.NO_SERVICE, "None", "Unknown", NOISE_VALUES));
+    }
+
+    @Test
+    public void shouldShowPillRow_unknownHeroWithOnlyNoise_hidesRow()
+    {
+        assertFalse(TelephonyStateUtils.shouldShowPillRow(HeroState.UNKNOWN, "Unknown", "Unknown", NOISE_VALUES));
+    }
+
+    @Test
+    public void shouldShowPillRow_liveHeroState_alwaysShows()
+    {
+        // A live technology always shows the row with explicit values, even if a display string
+        // has not resolved yet, so nothing appears or disappears during normal use.
+        assertTrue(TelephonyStateUtils.shouldShowPillRow(HeroState.DATA_RAT, "Unknown", "Unknown", NOISE_VALUES));
+        assertTrue(TelephonyStateUtils.shouldShowPillRow(HeroState.NR_STANDALONE, "Unknown", "Unknown", NOISE_VALUES));
+    }
+
+    @Test
+    public void shouldShowPillRow_nullOrEmptyDisplays_countAsNoise()
+    {
+        assertFalse(TelephonyStateUtils.shouldShowPillRow(HeroState.UNKNOWN, null, "", NOISE_VALUES));
+    }
+
+    // resolveNrCardState decides whether the NR Secondary Cell card shows the live cell, holds
+    // the last-seen cell in a dimmed idle state (NSA only), or hides.
+
+    private static final long MAX_AGE_MS = 600_000;
+
+    @Test
+    public void resolveNrCardState_secondaryCellPresent_isActiveRegardlessOfMode()
+    {
+        assertEquals(TelephonyStateUtils.NrCardState.ACTIVE,
+                TelephonyStateUtils.resolveNrCardState(true, NrMode.NON_STANDALONE, -1, MAX_AGE_MS));
+        // SA with NR carrier aggregation also produces a SECONDARY_SERVING cell.
+        assertEquals(TelephonyStateUtils.NrCardState.ACTIVE,
+                TelephonyStateUtils.resolveNrCardState(true, NrMode.STANDALONE, 5_000, MAX_AGE_MS));
+        assertEquals(TelephonyStateUtils.NrCardState.ACTIVE,
+                TelephonyStateUtils.resolveNrCardState(true, NrMode.NONE, -1, MAX_AGE_MS));
+    }
+
+    @Test
+    public void resolveNrCardState_nsaWithRecentSighting_isIdle()
+    {
+        assertEquals(TelephonyStateUtils.NrCardState.IDLE,
+                TelephonyStateUtils.resolveNrCardState(false, NrMode.NON_STANDALONE, 0, MAX_AGE_MS));
+        assertEquals(TelephonyStateUtils.NrCardState.IDLE,
+                TelephonyStateUtils.resolveNrCardState(false, NrMode.NON_STANDALONE, MAX_AGE_MS, MAX_AGE_MS));
+    }
+
+    @Test
+    public void resolveNrCardState_nsaWithStaleOrNoSighting_isHidden()
+    {
+        assertEquals(TelephonyStateUtils.NrCardState.HIDDEN,
+                TelephonyStateUtils.resolveNrCardState(false, NrMode.NON_STANDALONE, MAX_AGE_MS + 1, MAX_AGE_MS));
+        assertEquals(TelephonyStateUtils.NrCardState.HIDDEN,
+                TelephonyStateUtils.resolveNrCardState(false, NrMode.NON_STANDALONE, -1, MAX_AGE_MS));
+    }
+
+    @Test
+    public void resolveNrCardState_notNsa_isHiddenEvenWithRecentSighting()
+    {
+        // The idle hold is NSA-specific: under SA the serving card covers NR, and off NR
+        // entirely a held cell would be misleading.
+        assertEquals(TelephonyStateUtils.NrCardState.HIDDEN,
+                TelephonyStateUtils.resolveNrCardState(false, NrMode.STANDALONE, 5_000, MAX_AGE_MS));
+        assertEquals(TelephonyStateUtils.NrCardState.HIDDEN,
+                TelephonyStateUtils.resolveNrCardState(false, NrMode.NONE, 5_000, MAX_AGE_MS));
     }
 }

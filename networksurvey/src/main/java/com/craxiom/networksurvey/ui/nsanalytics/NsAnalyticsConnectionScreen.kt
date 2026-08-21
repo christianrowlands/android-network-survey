@@ -1,7 +1,6 @@
 package com.craxiom.networksurvey.ui.nsanalytics
 
 import android.Manifest
-import android.content.ClipData
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
@@ -84,7 +83,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.platform.LocalClipboard
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -105,6 +103,7 @@ import com.craxiom.networksurvey.R
 import com.craxiom.networksurvey.services.NetworkSurveyService
 import com.craxiom.networksurvey.ui.theme.NsTheme
 import com.craxiom.networksurvey.ui.theme.onPrimaryDark
+import com.craxiom.networksurvey.ui.util.copyTextToClipboard
 import com.craxiom.networksurvey.util.NsAnalyticsUtils
 import timber.log.Timber
 import java.text.DateFormat
@@ -821,7 +820,6 @@ private fun WorkspaceStatusCard(
     workspaceId: String?
 ) {
     val context = LocalContext.current
-    val clipboard = LocalClipboard.current
 
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -868,14 +866,12 @@ private fun WorkspaceStatusCard(
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
                         modifier = Modifier.clickable {
-                            clipboard.nativeClipboard.setPrimaryClip(
-                                ClipData.newPlainText(
-                                    "Workspace ID",
-                                    id
-                                )
+                            copyTextToClipboard(
+                                context,
+                                context.getString(R.string.workspace_id_clip_label),
+                                id,
+                                context.getString(R.string.workspace_id_copied),
                             )
-                            Toast.makeText(context, "Workspace ID copied", Toast.LENGTH_SHORT)
-                                .show()
                         }
                     ) {
                         Text(

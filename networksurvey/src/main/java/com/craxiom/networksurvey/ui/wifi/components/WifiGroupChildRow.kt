@@ -4,6 +4,8 @@ import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
@@ -16,15 +18,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.font.FontFamily
-import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.craxiom.networksurvey.R
-import com.craxiom.networksurvey.ui.manufacturer.rememberWifiManufacturerLabelText
 import com.craxiom.networksurvey.ui.theme.WifiTokens
 import com.craxiom.networksurvey.ui.util.copyTextToClipboard
 import com.craxiom.networksurvey.ui.wifi.model.WifiAccessPointDisplay
@@ -60,17 +59,24 @@ fun WifiGroupChildRow(
             verticalArrangement = Arrangement.spacedBy(3.dp),
         ) {
             BandAndBandwidthRow(ap)
-            BssidVendorRow(ap, onClick = onClick, onBssidLongPress = onBssidLongPress)
+            BssidVendorRow(
+                ap,
+                onClick = onClick,
+                onBssidLongPress = onBssidLongPress,
+                modifier = Modifier.padding(top = 3.dp),
+            )
         }
         CappedSignalCellDensity { SignalCell(ap) }
     }
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun BandAndBandwidthRow(ap: WifiAccessPointDisplay) {
-    Row(
+    FlowRow(
         horizontalArrangement = Arrangement.spacedBy(10.dp),
-        verticalAlignment = Alignment.CenterVertically,
+        verticalArrangement = Arrangement.spacedBy(4.dp),
+        itemVerticalAlignment = Alignment.CenterVertically,
     ) {
         ap.band?.let { band ->
             BandChip(band = band, channel = ap.channel)
@@ -80,15 +86,23 @@ private fun BandAndBandwidthRow(ap: WifiAccessPointDisplay) {
         if (hasBandwidth) {
             SubLabel(ap.bandwidthLabel)
         }
-        if (hasBandwidth && hasStandard) {
-            Text(
-                text = "·",
-                style = TextStyle(fontSize = 12.sp),
-                color = WifiTokens.InkFaint,
-            )
-        }
         if (hasStandard) {
-            SubLabel(ap.standardLabel)
+            if (hasBandwidth) {
+                // The dot is grouped with the standard label so a wrap cannot strand it.
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(10.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text(
+                        text = "·",
+                        style = TextStyle(fontSize = 12.sp),
+                        color = WifiTokens.InkFaint,
+                    )
+                    SubLabel(ap.standardLabel)
+                }
+            } else {
+                SubLabel(ap.standardLabel)
+            }
         }
         if (ap.isExcluded) {
             ExcludedTag()
@@ -105,50 +119,6 @@ private fun SubLabel(text: String) {
         maxLines = 1,
         overflow = TextOverflow.Ellipsis,
     )
-}
-
-@OptIn(ExperimentalFoundationApi::class)
-@Composable
-private fun BssidVendorRow(
-    ap: WifiAccessPointDisplay,
-    onClick: () -> Unit,
-    onBssidLongPress: () -> Unit,
-) {
-    val vendorLabel = rememberWifiManufacturerLabelText(ap.bssid)
-    Row(
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        modifier = Modifier.padding(top = 3.dp),
-    ) {
-        Text(
-            text = ap.bssid,
-            style = TextStyle(fontSize = 11.5.sp, fontFamily = FontFamily.Monospace),
-            color = WifiTokens.InkMuted,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-            modifier = Modifier.combinedClickable(
-                onClick = onClick,
-                onLongClick = onBssidLongPress,
-            ),
-        )
-        vendorLabel.text?.let { text ->
-            Text(
-                text = "·",
-                style = TextStyle(fontSize = 11.5.sp),
-                color = WifiTokens.InkFaint,
-            )
-            Text(
-                text = text,
-                style = TextStyle(
-                    fontSize = 11.5.sp,
-                    fontStyle = if (vendorLabel.italic) FontStyle.Italic else FontStyle.Normal,
-                ),
-                color = if (vendorLabel.italic) WifiTokens.InkFaint else WifiTokens.InkDim,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
-        }
-    }
 }
 
 @Composable
