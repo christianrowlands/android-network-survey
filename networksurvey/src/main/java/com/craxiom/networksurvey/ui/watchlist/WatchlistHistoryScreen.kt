@@ -43,6 +43,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -185,8 +186,16 @@ private fun HistoryListContent(
             Text(
                 text = stringResource(
                     R.string.watchlist_history_count_summary,
-                    uiState.totalSightings,
-                    uiState.networkCount
+                    pluralStringResource(
+                        R.plurals.watchlist_sightings_count,
+                        uiState.totalSightings,
+                        uiState.totalSightings
+                    ),
+                    pluralStringResource(
+                        R.plurals.watchlist_networks_count,
+                        uiState.networkCount,
+                        uiState.networkCount
+                    )
                 ),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,

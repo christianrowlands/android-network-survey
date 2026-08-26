@@ -23,6 +23,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
@@ -47,7 +48,7 @@ internal fun ProviderColorHero(count: Int, max: Int) {
         title = stringResource(
             if (isFull) R.string.provider_color_status_full_title else R.string.provider_color_status_title
         ),
-        subtitle = stringResource(R.string.count_of_max_format, count, max),
+        subtitle = pluralStringResource(R.plurals.count_of_max_format, count, count, max),
         icon = painterResource(R.drawable.ic_palette),
         isError = isFull
     )

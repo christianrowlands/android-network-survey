@@ -1,5 +1,15 @@
 # Changelog
 
+## [1.58](https://github.com/christianrowlands/android-network-survey/releases/tag/v1.58) - Unreleased
+
+**NEW FEATURES**
+* Add a Slovak translation, contributed through Weblate. (Thanks Pa Di)
+* Add a Romanian translation, contributed through Weblate. (Thanks Laur Ioniță)
+* Add the AGC (Automatic Gain Control) column to the GNSS Status UI.
+
+**BUG FIXES**
+* Fix the tower map issuing queries when the map bounds are not usable, which could return no towers on the first load.
+
 ## [1.57](https://github.com/christianrowlands/android-network-survey/releases/tag/v1.57) - 2026-08-03
 
 **BUG FIXES**

@@ -28,6 +28,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
@@ -171,11 +172,20 @@ fun WatchlistHistoryMapSheet(
         sheetHeight = sheetHeight,
         modifier = modifier,
         header = {
+            val locatedSightings = legend.sumOf { it.count }
             Text(
                 text = stringResource(
                     R.string.watchlist_history_map_summary,
-                    legend.size,
-                    legend.sumOf { it.count }
+                    pluralStringResource(
+                        R.plurals.watchlist_networks_count,
+                        legend.size,
+                        legend.size
+                    ),
+                    pluralStringResource(
+                        R.plurals.watchlist_located_sightings_count,
+                        locatedSightings,
+                        locatedSightings
+                    )
                 ),
                 style = MaterialTheme.typography.titleMedium,
                 color = MaterialTheme.colorScheme.onSurface,

@@ -27,6 +27,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -159,7 +160,11 @@ private fun MetaRow(group: WifiDisplayItem.GroupParent) {
         // instead of the full tag; fully excluded groups show the tag in the title row.
         if (group.excludedCount > 0 && !group.allExcluded) {
             Text(
-                text = stringResource(R.string.wifi_group_excluded_count, group.excludedCount),
+                text = pluralStringResource(
+                    R.plurals.wifi_group_excluded_count,
+                    group.excludedCount,
+                    group.excludedCount
+                ),
                 style = TextStyle(fontSize = 12.sp),
                 color = WifiTokens.SignalFair,
                 maxLines = 1,
@@ -171,10 +176,7 @@ private fun MetaRow(group: WifiDisplayItem.GroupParent) {
 
 @Composable
 private fun GroupCountPill(count: Int) {
-    val text = stringResource(
-        if (count == 1) R.string.wifi_ap_count_one else R.string.wifi_ap_count_other,
-        count,
-    )
+    val text = pluralStringResource(R.plurals.wifi_ap_count, count, count)
     Text(
         text = text,
         style = TextStyle(fontSize = 11.sp),

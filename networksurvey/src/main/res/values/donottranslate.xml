@@ -10,7 +10,6 @@
     <string name="gps_lat_ddm_value">%1$s\t\u2007%2$02d\u00B0 %3$06.3f</string>
     <string name="gps_lon_ddm_value">%1$s\t%2$03d\u00B0 %3$06.3f</string>
     <string name="gps_altitude_value_meters">%1$.1f m</string>
-    <string name="gps_altitude_msl_value_meters">%1$.1f m</string>
     <string name="gps_accuracy_value_meters">%1$.1f m</string>
     <string name="gps_hor_and_vert_accuracy_value_meters">%1$.1f/%2$.1f m</string>
     <string name="gps_speed_value_kilometers_hour">%1$.1f km/h</string>

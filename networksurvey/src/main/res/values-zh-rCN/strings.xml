@@ -143,8 +143,6 @@
     <string name="grpc_help_dismiss">知道了</string>
     <string name="bluetooth_permissions_rationale_title">蓝牙权限</string>
     <string name="bluetooth_permissions_rationale">执行蓝牙扫描以进行探测需要“查找附近设备”权限。如果拒绝此权限，蓝牙探测将无法工作。</string>
-    <string name="location_permission_rationale_title">位置权限</string>
-    <string name="location_permission_rationale">需要位置权限才能访问 Wi-Fi 详细信息、蜂窝网络详细信息、GNSS 详细信息，并写入与地理位置相关的日志文件。\n\n如果拒绝位置权限，此应用几乎所有功能都将无法使用。</string>
     <string name="background_location_permission_rationale_title">后台位置权限</string>
     <string name="background_location_permission_rationale">网络探测需要收集位置数据，以便在设备启动时自动开始蜂窝网络、Wi-Fi、蓝牙和 GNSS 探测，即使应用已关闭或未在使用中也是如此。
         \n\n如果没有后台位置权限，此应用将无法在设备启动时开始蜂窝网络、Wi-Fi 或 GNSS 探测。如果您不希望手机启动时自动开始探测，则无需启用此权限。\n\n请通过点击下一页上的 <b>始终允许</b>，在 Android 设置中为这款应用启用后台位置权限。</string>
@@ -341,8 +339,9 @@
     <string name="wifi_mode_group_by_ssid">按 SSID 分组</string>
     <string name="wifi_list_scan_number">扫描 #%1$d</string>
     <string name="wifi_list_ap_count">AP 数量：%1$d</string>
-    <string name="wifi_ap_count_one">%1$d 个 AP</string>
-    <string name="wifi_ap_count_other">%1$d 个 AP</string>
+    <plurals name="wifi_ap_count">
+        <item quantity="other">%1$d 个 AP</item>
+    </plurals>
     <string name="wifi_hidden_ssid_placeholder">&lt;隐藏 SSID&gt;</string>
     <string name="wifi_hidden_network_a11y">隐藏网络</string>
     <string name="wifi_sort_pill_label">%1$s ↕</string>
@@ -494,7 +493,9 @@
     <string name="wifi_scan_interval_description">扫描 Wi-Fi 网络的速率（单位：秒）。较小的数值会降低电池续航。</string>
     <string name="bluetooth_scan_interval_title">蓝牙扫描间隔</string>
     <string name="bluetooth_scan_interval_description">扫描蓝牙设备的速率（单位：秒）。由于 BLE（10 秒）和经典蓝牙（12 秒）扫描时长，最小值为 23 秒。较小的数值会降低电池续航。</string>
-    <string name="bluetooth_scan_interval_below_minimum">蓝牙扫描间隔必须至少为 %d 秒。数值已调整为最小值。</string>
+    <plurals name="bluetooth_scan_interval_below_minimum">
+        <item quantity="other">蓝牙扫描间隔必须至少为 %d 秒。数值已调整为最小值。</item>
+    </plurals>
     <string name="gnss_scan_interval_title">GNSS 扫描间隔</string>
     <string name="gnss_scan_interval_description">扫描 GNSS 卫星的速率（单位：秒）。较小的数值会降低电池续航。</string>
     <string name="device_status_scan_interval_title">设备状态消息间隔</string>
@@ -564,7 +565,6 @@
     <string name="enable_gps_positive_button">启用 GPS/GNSS</string>
     <string name="enable_gps_negative_button">否</string>
     <!-- GNSS 故障提醒 -->
-<string name="app_icon_description">应用图标</string>
     <string name="not_supported_title">GNSS 功能可能无法正常使用</string>
     <string name="not_supported_description">Network Survey 未从手机接收到原始 GNSS 测量值，而生成 GNSS GeoPackage/CSV 文件或通过 MQTT 流式传输 GNSS 记录需要这些测量值。有关详细信息和支持原始 GNSS 的设备列表，请参阅 Android 的 <a href="https://developer.android.com/guide/topics/sensors/gnss">原始 GNSS 测量值</a>指南。</string>
     <string name="remember_my_decision">不再询问我</string>
@@ -586,10 +586,14 @@
     <string name="hvdop_label">水平/垂直精度因子：</string>
     <string name="gnss_not_available">全球导航卫星系统（GNSS）卫星不可用</string>
     <string name="sbas_not_available">星基增强系统（SBAS）卫星不可用</string>
-    <string name="filter_signal_text">显示 %1$d / %2$d 颗信号</string>
+    <plurals name="filter_signal_text">
+        <item quantity="other">显示 %1$d / %2$d 颗信号</item>
+    </plurals>
     <string name="filter_showall">（显示全部）</string>
     <string name="gps_error_time_title">您的 GNSS 时间错误</string>
-    <string name="gps_error_time_message">设备的 GNSS 时间：\n\n%1$s\n\n…与您的系统时钟相差超过 %2$d 天。这可能是由 GPS 周数翻转问题引起的 - 详情请咨询设备制造商。更多信息请访问 https://bit.ly/gps-week-rollover。</string>
+    <plurals name="gps_error_time_message">
+        <item quantity="other">设备的 GNSS 时间：\n\n%1$s\n\n…与您的系统时钟相差超过 %2$d 天。这可能是由 GPS 周数翻转问题引起的 - 详情请咨询设备制造商。更多信息请访问 https://bit.ly/gps-week-rollover。</item>
+    </plurals>
     <string name="notification_title">%1$d/%2$d 颗卫星 | %3$d/%4$d 颗信号</string>
     <string name="gps_content_description">GPS</string>
     <string name="glonass_content_description">GLONASS</string>
@@ -816,10 +820,8 @@
     <string name="ssid_removed_from_exclusion">已从排除列表中移除“%1$s”</string>
     <string name="ssid_already_excluded">“%1$s”已在排除列表中</string>
     <string name="exclusion_list_full">排除列表已满（最多 30 个 SSID）</string>
-    <string name="exclusion_list_full_message">排除列表已达到 30 个 SSID 的上限。请在添加新 SSID 之前移除一些 SSID。</string>
     <string name="add_ssid_manually">手动添加 SSID</string>
     <string name="enter_ssid">输入 SSID</string>
-    <string name="add">添加</string>
     <string name="remove">移除</string>
     <string name="clear_all">全部清除</string>
     <string name="confirm_clear_exclusion_list_title">清除排除列表</string>
@@ -838,8 +840,6 @@
     <string name="confirm_clear_overrides_title">清除所有覆盖？</string>
     <string name="confirm_clear_overrides_message">这将重置所有提供商颜色为默认值。</string>
     <string name="provider_color_reset_to_default">重置为默认</string>
-    <string name="provider_color_select_color">选择颜色：</string>
-    <string name="provider_color_max_reached">已达到覆盖数量上限。</string>
     <string name="mcc_mnc_format">MCC-MNC：%1$s-%2$s</string>
     <string name="selected">已选中</string>
     <string name="navigate_back">返回</string>
@@ -907,7 +907,9 @@
     <string name="ns_analytics_upload_status_registration_invalid">注册已过期</string>
     <string name="ns_analytics_upload_status_viewer_cannot_upload">不允许上传</string>
     <string name="ns_analytics_upload_status_session_expired">会话已过期</string>
-    <string name="ns_analytics_upload_result_records">已上传 %1$d 条记录</string>
+    <plurals name="ns_analytics_upload_result_records">
+        <item quantity="other">已上传 %1$d 条记录</item>
+    </plurals>
     <string name="ns_analytics_upload_button_upload_now">立即上传</string>
     <string name="ns_analytics_upload_button_uploading">正在上传…</string>
     <string name="ns_analytics_upload_button_no_records">无记录</string>
@@ -965,7 +967,9 @@
     <string name="plmn_lookup_live_label">实时搜索</string>
     <string name="plmn_lookup_empty_line1">没有匹配的 PLMN。</string>
     <string name="plmn_lookup_empty_line2">请尝试输入国家/地区名称、运营商品牌或 MCC</string>
-    <string name="plmn_lookup_n_operators">%1$d 个运营商</string>
+    <plurals name="plmn_lookup_n_operators">
+        <item quantity="other">%1$d 个运营商</item>
+    </plurals>
     <string name="plmn_lookup_plmn_label">PLMN %1$s</string>
     <string name="plmn_lookup_copied_toast">已复制 PLMN</string>
     <string name="plmn_lookup_truncated_hint">仅显示前几条结果。请细化条件以缩小范围。</string>
@@ -1029,7 +1033,6 @@
     <string name="oui_lookup_empty_title">查询 MAC 地址</string>
     <string name="oui_lookup_empty_body">输入前 6 个十六进制字符或完整地址以识别制造商。</string>
     <plurals name="oui_lookup_partial_remaining">
-        <item quantity="one">还需要 %d 个十六进制字符</item>
         <item quantity="other">还需要 %d 个十六进制字符</item>
     </plurals>
     <string name="oui_lookup_section_vendor">厂商</string>

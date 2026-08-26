@@ -581,7 +581,11 @@ class NsAnalyticsConnectionViewModel(
             uploadPausedForQuota = false,
             showQuotaExceededDialog = false,
             lastUploadResult = if (recordsUploaded > 0) {
-                context.getString(R.string.ns_analytics_upload_result_records, recordsUploaded)
+                context.resources.getQuantityString(
+                    R.plurals.ns_analytics_upload_result_records,
+                    recordsUploaded,
+                    recordsUploaded
+                )
             } else null
         )
 
@@ -1304,8 +1308,9 @@ class NsAnalyticsConnectionViewModel(
                                     uploadStatusMessage = context.getString(R.string.ns_analytics_upload_status_complete),
                                     uploadProgress = 1f,
                                     lastUploadTime = lastUploadCompletionTime,
-                                    lastUploadResult = context.getString(
-                                        R.string.ns_analytics_upload_result_records,
+                                    lastUploadResult = context.resources.getQuantityString(
+                                        R.plurals.ns_analytics_upload_result_records,
+                                        recordsUploaded,
                                         recordsUploaded
                                     ),
                                     queuedRecords = remainingRecords

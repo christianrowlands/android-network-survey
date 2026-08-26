@@ -47,6 +47,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
@@ -139,8 +140,9 @@ fun Filter(totalNumSignals: Int, satelliteMetadata: SatelliteMetadata, onClick: 
             .padding(1.dp)
     ) {
         Text(
-            text = stringResource(
-                id = R.string.filter_signal_text,
+            text = pluralStringResource(
+                id = R.plurals.filter_signal_text,
+                count = totalNumSignals,
                 satelliteMetadata.numSignalsTotal,
                 totalNumSignals
             ),

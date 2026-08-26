@@ -37,6 +37,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontFamily
@@ -73,7 +74,7 @@ internal fun WatchlistHistoryGroupRow(
     ).toString()
     val subtitle = stringResource(
         R.string.watchlist_history_group_subtitle,
-        stringResource(R.string.watchlist_history_group_sightings, group.sightings),
+        pluralStringResource(R.plurals.watchlist_sightings_count, group.sightings, group.sightings),
         matchedBy,
         relative
     )
@@ -266,7 +267,11 @@ internal fun WatchlistNetworkRow(
                 }
             } else {
                 Text(
-                    text = stringResource(R.string.watchlist_history_group_sightings, entry.count),
+                    text = pluralStringResource(
+                        R.plurals.watchlist_sightings_count,
+                        entry.count,
+                        entry.count
+                    ),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )

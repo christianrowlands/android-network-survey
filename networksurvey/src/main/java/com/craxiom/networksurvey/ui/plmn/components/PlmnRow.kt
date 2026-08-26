@@ -27,6 +27,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
@@ -330,7 +331,7 @@ private fun OperatorsCountPill(count: Int) {
             .padding(horizontal = 8.dp, vertical = 2.dp),
     ) {
         Text(
-            text = stringResource(R.string.plmn_lookup_n_operators, count),
+            text = pluralStringResource(R.plurals.plmn_lookup_n_operators, count, count),
             style = TextStyle(fontSize = 11.sp),
             color = WifiTokens.InkMuted,
         )

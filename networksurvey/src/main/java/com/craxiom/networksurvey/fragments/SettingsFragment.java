@@ -242,7 +242,9 @@ public class SettingsFragment extends PreferenceFragmentCompat implements Shared
                         if (getActivity() != null)
                         {
                             Toast.makeText(getActivity(),
-                                    getString(R.string.bluetooth_scan_interval_below_minimum, NetworkSurveyConstants.MINIMUM_BLUETOOTH_SCAN_INTERVAL_SECONDS),
+                                    getResources().getQuantityString(R.plurals.bluetooth_scan_interval_below_minimum,
+                                            NetworkSurveyConstants.MINIMUM_BLUETOOTH_SCAN_INTERVAL_SECONDS,
+                                            NetworkSurveyConstants.MINIMUM_BLUETOOTH_SCAN_INTERVAL_SECONDS),
                                     Toast.LENGTH_LONG).show();
                         }
                     }

@@ -9,7 +9,7 @@
         \n\n4. <b>Notifications</b>:  This permission allows NS to add a notification so you know when a survey is running in the background.</string>
 
     <string name="cdr_required_permissions_rationale_title">CDR Required Permissions</string>
-    <string name="cdr_required_permissions_rationale">The Network Survey app requires a few permissions for Call Detail Record (CDR) logging to work. Denying these permissions will result CDR logging not working.
+    <string name="cdr_required_permissions_rationale">The Network Survey app requires a few permissions for Call Detail Record (CDR) logging to work. Denying these permissions will result in CDR logging not working.
         \n\n1. <b>Make and Manage Phone Calls</b>:  This app does not make or manage phone calls. Instead, it needs this permission to get cellular details to write to the CDR log file.
         \n\n2. <b>Access this Device\'s Location</b>:  The location permission is needed to access Cellular details that are used to write to the CDR file.
         \n\n3. <b>Access Photos, Media, and Files on Your Device</b>:  This permission allows the log file to be written.
@@ -95,7 +95,6 @@
     <string name="cdr_help_variant_cdr_label">CDR Version</string>
     <string name="cdr_help_variant_cdr_desc">Full CDR support including SMS events and call phone numbers</string>
 
-
     <string name="file_help_title">File Logging &amp; MQTT Streaming: Simplified</string>
     <!-- File/MQTT Help Dialog -->
     <string name="file_mqtt_help_dismiss">Got it</string>
@@ -170,10 +169,6 @@
     <string name="bluetooth_permissions_rationale_title">Bluetooth Permissions</string>
     <string name="bluetooth_permissions_rationale">The Find Nearby Devices permission is needed to perform a Bluetooth scan for survey. If this permission is denied then Bluetooth survey will not work.</string>
 
-    <string name="location_permission_rationale_title">Location Permission</string>
-    <string name="location_permission_rationale">The location permission is needed to access Wi-Fi details, Cellular details, GNSS details,
-        and also to write geo-relevant log files.\n\nDenying the location permission will result in pretty much all of the features of this app not working.</string>
-
     <string name="background_location_permission_rationale_title">Background Location</string>
     <string name="background_location_permission_rationale">Network Survey collects location data to enable starting Cellular, Wi-Fi, Bluetooth, and GNSS survey at boot, even when the app is closed or not in use.
         \n\nWithout the background location permission, this app will not be able to start surveying Cellular, Wi-Fi, or GNSS at boot. If you don\'t want to start surveying when the phone boots then you don\'t
@@ -203,7 +198,10 @@
     <string name="branding_none">None</string>
     <string name="network_technology_title">Network Technology</string>
     <string name="network_technology_icon_description">Network technology information</string>
-    <string name="carrier_aggregation_summary">Carrier Aggregation · %1$d carriers · %2$s MHz</string>
+    <plurals name="carrier_aggregation_summary">
+        <item quantity="one">Carrier Aggregation · %1$d carrier · %2$s MHz</item>
+        <item quantity="other">Carrier Aggregation · %1$d carriers · %2$s MHz</item>
+    </plurals>
     <string name="network_technology_explanation">These fields describe the technologies your phone is using right now.\n\nThe large line is the network you are on: the radio access technology (RAT), plus whether 5G is Standalone (NR on its own) or Non-Standalone (NSA, NR added onto an LTE anchor).\n\nThe Voice pill is the technology carrying calls; Wi-Fi Calling is detected directly, while VoLTE and VoNR are inferred because Android does not expose them to apps.\n\nThe Data pill is the radio access technology (RAT) carrying data. It often matches the large line above.\n\nThe Branding pill is the label your carrier uses for the status-bar icon (for example showing 5G on a 4G network). It is marketing branding, not the actual RAT, and reads None when your carrier applies none.</string>
 
     <!-- GSM labels -->
@@ -450,8 +448,10 @@
     <string name="wifi_list_scan_number">Scan #%1$d</string>
     <string name="wifi_list_ap_count">APs: %1$d</string>
     <string name="wifi_list_ap_count_filtered">APs: %1$d of %2$d</string>
-    <string name="wifi_ap_count_one">%1$d AP</string>
-    <string name="wifi_ap_count_other">%1$d APs</string>
+    <plurals name="wifi_ap_count">
+        <item quantity="one">%1$d AP</item>
+        <item quantity="other">%1$d APs</item>
+    </plurals>
     <string name="wifi_hidden_ssid_placeholder">&lt;Hidden SSID&gt;</string>
     <string name="wifi_hidden_network_a11y">Hidden network</string>
     <string name="wifi_sort_pill_label">%1$s ↕</string>
@@ -476,7 +476,10 @@
     <string name="bssid_copy_content_description">Copy BSSID</string>
     <string name="ssid_copied">SSID copied</string>
     <string name="wifi_tag_excluded">Excluded</string>
-    <string name="wifi_group_excluded_count">%1$d excluded</string>
+    <plurals name="wifi_group_excluded_count">
+        <item quantity="one">%1$d excluded</item>
+        <item quantity="other">%1$d excluded</item>
+    </plurals>
 
     <!-- Wi-Fi redesign: display filter -->
     <string name="wifi_filter_title">Filter Networks</string>
@@ -647,7 +650,10 @@
 
     <string name="bluetooth_scan_interval_title">Bluetooth Scan Interval</string>
     <string name="bluetooth_scan_interval_description">The rate at which Bluetooth devices will be scanned for in seconds. Minimum value is 23 seconds due to BLE (10s) and Classic (12s) scan durations. Smaller values will decrease battery life.</string>
-    <string name="bluetooth_scan_interval_below_minimum">Bluetooth scan interval must be at least %d seconds. Value has been adjusted to the minimum.</string>
+    <plurals name="bluetooth_scan_interval_below_minimum">
+        <item quantity="one">Bluetooth scan interval must be at least %d second. Value has been adjusted to the minimum.</item>
+        <item quantity="other">Bluetooth scan interval must be at least %d seconds. Value has been adjusted to the minimum.</item>
+    </plurals>
 
     <string name="gnss_scan_interval_title">GNSS Scan Interval</string>
     <string name="gnss_scan_interval_description">The rate at which GNSS satellites will be scanned for in seconds. Smaller values will decrease battery life.</string>
@@ -739,7 +745,6 @@
     <string name="enable_gps_negative_button">No</string>
 
     <!-- GNSS Failure Alert -->
-    <string name="app_icon_description">App Icon</string>
     <string name="not_supported_title">GNSS Features May Not Work</string>
     <string name="not_supported_description">Network Survey is not receiving raw GNSS measurements from the phone, which are required for generating the GNSS GeoPackage/CSV files, or streaming GNSS records over MQTT. For more information and a list of devices that support raw GNSS, consult Android\'s <a href="https://developer.android.com/guide/topics/sensors/gnss">Raw GNSS Measurements</a> guide.</string>
     <string name="remember_my_decision">Don\'t ask me again</string>
@@ -762,10 +767,16 @@
     <string name="hvdop_label">H/V DOP:</string>
     <string name="gnss_not_available">Global Navigation Satellite System (GNSS) satellites not available</string>
     <string name="sbas_not_available">Satellite-based Augmentation System (SBAS) satellites not available</string>
-    <string name="filter_signal_text">Showing %1$d of %2$d signals</string>
+    <plurals name="filter_signal_text">
+        <item quantity="one">Showing %1$d of %2$d signal</item>
+        <item quantity="other">Showing %1$d of %2$d signals</item>
+    </plurals>
     <string name="filter_showall">(show all)</string>
     <string name="gps_error_time_title">Your GNSS time is wrong</string>
-    <string name="gps_error_time_message">The device GNSS time of:\n\n%1$s\n\n…is more than %2$d days different from your system clock. This can be caused by the GPS week rollover issue - ask your device manufacturer for details. See https://bit.ly/gps-week-rollover for more info.</string>
+    <plurals name="gps_error_time_message">
+        <item quantity="one">The device GNSS time of:\n\n%1$s\n\n…is more than %2$d day different from your system clock. This can be caused by the GPS week rollover issue - ask your device manufacturer for details. See https://bit.ly/gps-week-rollover for more info.</item>
+        <item quantity="other">The device GNSS time of:\n\n%1$s\n\n…is more than %2$d days different from your system clock. This can be caused by the GPS week rollover issue - ask your device manufacturer for details. See https://bit.ly/gps-week-rollover for more info.</item>
+    </plurals>
     <string name="notification_title">%1$d/%2$d sats | %3$d/%4$d signals</string>
 
     <string name="gps_content_description">GPS</string>
@@ -883,7 +894,7 @@
     <string name="uploader_success">Upload successful</string>
     <string name="uploader_success_description">Upload successful. Thanks for your contribution!</string>
     <string name="uploader_partially_succeeded">Partially uploaded</string>
-    <string name="uploader_partially_succeeded_description">Partially uploaded mean that some data has been successfully sent before upload has been aborted. This may be caused by your request or by an error which has been encountered.</string>
+    <string name="uploader_partially_succeeded_description">Partially uploaded means that some data has been successfully sent before the upload was aborted. This may be caused by your request or by an error which has been encountered.</string>
     <string name="uploader_failure">Upload failed</string>
     <string name="uploader_failure_description">Upload failed due to unknown reason. Please check if you have the latest version of the app. If you encounter this problem for a long time, please let me know.</string>
     <string name="uploader_invalid_api_key">Invalid access token</string>
@@ -1018,10 +1029,8 @@
     <string name="ssid_removed_from_exclusion">Removed "%1$s" from exclusion list</string>
     <string name="ssid_already_excluded">"%1$s" is already in the exclusion list</string>
     <string name="exclusion_list_full">Exclusion list is full (maximum 30 SSIDs)</string>
-    <string name="exclusion_list_full_message">The exclusion list has reached its maximum capacity of 30 SSIDs. Please remove some SSIDs before adding new ones.</string>
     <string name="add_ssid_manually">Add SSID Manually</string>
     <string name="enter_ssid">Enter SSID</string>
-    <string name="add">Add</string>
     <string name="remove">Remove</string>
     <string name="remove_format">Remove %1$s</string>
     <string name="clear_all">Clear All</string>
@@ -1050,8 +1059,6 @@
     <string name="confirm_clear_overrides_title">Clear All Overrides?</string>
     <string name="confirm_clear_overrides_message">This will reset all provider colors to their defaults.</string>
     <string name="provider_color_reset_to_default">Reset to Default</string>
-    <string name="provider_color_select_color">Select a color:</string>
-    <string name="provider_color_max_reached">Maximum number of overrides reached.</string>
     <string name="provider_color_status_title">Custom provider colors</string>
     <string name="provider_color_status_full_title">Override limit reached</string>
     <string name="provider_color_section_count">Overrides · %1$d</string>
@@ -1065,7 +1072,10 @@
     <string name="selected">Selected</string>
     <string name="navigate_back">Navigate back</string>
     <string name="more_options">More options</string>
-    <string name="count_of_max_format">%1$d of %2$d used</string>
+    <plurals name="count_of_max_format">
+        <item quantity="one">%1$d of %2$d used</item>
+        <item quantity="other">%1$d of %2$d used</item>
+    </plurals>
 
     <!-- NS Analytics -->
     <string name="ns_analytics">NS Analytics</string>
@@ -1138,7 +1148,10 @@
     <string name="ns_analytics_upload_status_registration_invalid">Registration expired</string>
     <string name="ns_analytics_upload_status_viewer_cannot_upload">Upload not permitted</string>
     <string name="ns_analytics_upload_status_session_expired">Session expired</string>
-    <string name="ns_analytics_upload_result_records">%1$d records uploaded</string>
+    <plurals name="ns_analytics_upload_result_records">
+        <item quantity="one">%1$d record uploaded</item>
+        <item quantity="other">%1$d records uploaded</item>
+    </plurals>
     <string name="ns_analytics_upload_button_upload_now">Upload Now</string>
     <string name="ns_analytics_upload_button_uploading">Uploading…</string>
     <string name="ns_analytics_upload_button_no_records">No Records</string>
@@ -1202,7 +1215,10 @@
     <string name="plmn_lookup_live_label">Live search</string>
     <string name="plmn_lookup_empty_line1">No PLMNs match.</string>
     <string name="plmn_lookup_empty_line2">try a country name, operator brand, or MCC</string>
-    <string name="plmn_lookup_n_operators">%1$d operators</string>
+    <plurals name="plmn_lookup_n_operators">
+        <item quantity="one">%1$d operator</item>
+        <item quantity="other">%1$d operators</item>
+    </plurals>
     <string name="plmn_lookup_plmn_label">PLMN %1$s</string>
     <string name="plmn_lookup_copied_toast">Copied PLMN</string>
     <string name="plmn_lookup_truncated_hint">Showing first results. Refine to narrow.</string>
@@ -1315,7 +1331,6 @@
     <string name="watchlist_add_network">Add network</string>
     <string name="watchlist_history_action">History</string>
     <string name="watchlist_status_active">Alerts on</string>
-    <string name="watchlist_status_active_subtitle">You\'ll be alerted while a survey is running.</string>
     <string name="watchlist_status_disabled">Alerts are turned off</string>
     <string name="watchlist_status_notifications_blocked">Notifications are blocked. Enable them in system settings.</string>
     <string name="watchlist_enable_for">Enable alerts for %1$s</string>
@@ -1329,7 +1344,6 @@
     <string name="watchlist_field_ssid">Network name (SSID)</string>
     <string name="watchlist_field_bssid">MAC address (BSSID)</string>
     <string name="watchlist_bssid_helper">Watch a specific access point by its MAC address.</string>
-    <string name="watchlist_validation_need_one">Enter a network name (SSID) or a MAC address (BSSID).</string>
     <string name="watchlist_validation_bssid_format">Enter a valid MAC address (for example 12:34:56:78:9A:BC).</string>
     <string name="watchlist_validation_duplicate">You\'re already watching this network.</string>
     <string name="watchlist_added">Added \"%1$s\" to your watchlist</string>
@@ -1338,8 +1352,10 @@
     <!-- Watchlist import (deep link) -->
     <string name="watchlist_import_title">Add \"%1$s\"?</string>
     <string name="watchlist_import_title_generic">Add networks to your Watchlist?</string>
-    <string name="watchlist_import_summary">From a link. %1$d new, %2$d already saved.</string>
-    <string name="watchlist_import_summary_no_dupes">From a link. %1$d new.</string>
+    <!-- Composed: %1$s is a newly-added count, %2$s is an already-saved count. -->
+    <string name="watchlist_import_summary">From a link. %1$s, %2$s.</string>
+    <!-- Composed: %1$s is a newly-added count. -->
+    <string name="watchlist_import_summary_no_dupes">From a link. %1$s.</string>
     <string name="watchlist_import_helper">Added networks can be removed anytime on the Watchlist screen.</string>
     <string name="watchlist_import_confirm">Add %1$d</string>
     <string name="watchlist_import_already_saved_tag">Already saved</string>
@@ -1395,15 +1411,17 @@
     <string name="watchlist_history_sort_recent">Most recent</string>
     <string name="watchlist_history_sort_strongest">Strongest</string>
     <string name="watchlist_history_sort_most_seen">Most seen</string>
-    <string name="watchlist_history_count_summary">%1$d sightings · %2$d networks</string>
-    <string name="watchlist_history_group_sightings">%1$d sightings</string>
+    <!-- Composed: %1$s is a sightings count, %2$s is a networks count. -->
+    <string name="watchlist_history_count_summary">%1$s · %2$s</string>
     <string name="watchlist_matched_by_name_short">matched by name</string>
     <string name="watchlist_matched_by_ap_short">matched by AP</string>
     <string name="watchlist_history_best_dbm">best dBm</string>
+    <!-- Composed: %1$s is a sightings count, %2$s is how the network matched, %3$s is a relative time. -->
     <string name="watchlist_history_group_subtitle">%1$s · %2$s · %3$s</string>
     <string name="watchlist_history_map_no_locations">No sightings have a recorded location yet.</string>
     <string name="watchlist_history_map_offline">Map needs a connection to load.</string>
-    <string name="watchlist_history_map_summary">%1$d networks · %2$d located sightings</string>
+    <!-- Composed: %1$s is a networks count, %2$s is a located-sightings count. -->
+    <string name="watchlist_history_map_summary">%1$s · %2$s</string>
     <string name="watchlist_history_view_sightings">View sightings</string>
     <string name="watchlist_history_open_detail">Open sighting details</string>
     <string name="watchlist_map_view_list">List view</string>
@@ -1421,11 +1439,26 @@
         <item quantity="one">%d sighting</item>
         <item quantity="other">%d sightings</item>
     </plurals>
+    <plurals name="watchlist_networks_count">
+        <item quantity="one">%d network</item>
+        <item quantity="other">%d networks</item>
+    </plurals>
+    <plurals name="watchlist_located_sightings_count">
+        <item quantity="one">%d located sighting</item>
+        <item quantity="other">%d located sightings</item>
+    </plurals>
+    <plurals name="watchlist_import_new_count">
+        <item quantity="one">%d new</item>
+        <item quantity="other">%d new</item>
+    </plurals>
+    <plurals name="watchlist_import_saved_count">
+        <item quantity="one">%d already saved</item>
+        <item quantity="other">%d already saved</item>
+    </plurals>
     <string name="watchlist_detail_location_line">%1$s · via %2$s</string>
     <string name="watchlist_detail_latlng">%1$s, %2$s</string>
     <string name="watchlist_detail_clear_title">Clear this network\'s history?</string>
     <string name="watchlist_detail_clear_message">This removes the sightings for \"%1$s\". The watched network is kept.</string>
-    <string name="watchlist_detail_no_sightings">No sightings recorded.</string>
 
     <!-- Watchlist settings -->
     <string name="watchlist_settings_title">Watchlist</string>

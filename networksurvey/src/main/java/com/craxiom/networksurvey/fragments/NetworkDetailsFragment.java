@@ -331,7 +331,8 @@ public class NetworkDetailsFragment extends AServiceDataFragment implements ICel
         {
             chipLabels.add(getString(R.string.mhz_value_label, CellularBandwidthUtils.formatBandwidthMhz(khz)));
         }
-        final String summary = getString(R.string.carrier_aggregation_summary, validKhz.length,
+        final String summary = getResources().getQuantityString(R.plurals.carrier_aggregation_summary,
+                validKhz.length, validKhz.length,
                 CellularBandwidthUtils.formatBandwidthMhz(CellularBandwidthUtils.aggregateBandwidthKhz(validKhz)));
         return new CarrierAggregationViewState(chipLabels, summary);
     }

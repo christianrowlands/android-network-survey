@@ -59,11 +59,26 @@ fun WatchlistImportDialog(
     val summary = if (pending.duplicateCount > 0) {
         stringResource(
             R.string.watchlist_import_summary,
-            pending.addedCount,
-            pending.duplicateCount
+            pluralStringResource(
+                R.plurals.watchlist_import_new_count,
+                pending.addedCount,
+                pending.addedCount
+            ),
+            pluralStringResource(
+                R.plurals.watchlist_import_saved_count,
+                pending.duplicateCount,
+                pending.duplicateCount
+            )
         )
     } else {
-        stringResource(R.string.watchlist_import_summary_no_dupes, pending.addedCount)
+        stringResource(
+            R.string.watchlist_import_summary_no_dupes,
+            pluralStringResource(
+                R.plurals.watchlist_import_new_count,
+                pending.addedCount,
+                pending.addedCount
+            )
+        )
     }
 
     NsConfirmationDialog(

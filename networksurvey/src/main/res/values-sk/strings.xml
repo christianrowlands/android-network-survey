@@ -128,8 +128,6 @@
     <string name="grpc_help_dismiss">Rozumiem</string>
     <string name="bluetooth_permissions_rationale_title">Bluetooth (oprávnenia)</string>
     <string name="bluetooth_permissions_rationale">Na vykonanie vyhľadávania zariadení cez Bluetooth v rámci prieskumu je potrebné povolenie „Nájsť zariadenia v okolí“. Ak bude toto povolenie zamietnuté, prieskum cez Bluetooth nebude fungovať.</string>
-    <string name="location_permission_rationale_title">Oprávnenie na polohu</string>
-    <string name="location_permission_rationale">Oprávnenie na určovanie polohy je potrebné na prístup k údajom o Wi-Fi, mobilnej sieti a GNSS, ako aj na zapisovanie protokolov súvisiacich s polohou.\n\nAk odmietnete udeliť oprávnenie na určovanie polohy, takmer všetky funkcie tejto aplikácie nebudú fungovať.</string>
     <string name="background_location_permission_rationale_title">Oprávnenia týkajúce sa určovania polohy na pozadí</string>
     <string name="background_location_permission_rationale">Aplikácia Network Survey zbiera údaje o polohe, aby mohla pri spustení systému začať meranie signálov mobilnej siete, Wi-Fi, Bluetooth a GNSS, a to aj v prípade, že je aplikácia zatvorená alebo sa nepoužíva. \n\nBez povolenia na určovanie polohy na pozadí nebude táto aplikácia schopná spustiť meranie signálu mobilnej siete, Wi-Fi alebo GNSS pri spustení systému. Ak nechcete, aby sa meranie spustilo pri spustení telefónu, nemusíte toto povolenie aktivovať.\n\nPovolenie na určovanie polohy na pozadí pre túto aplikáciu aktivujte v nastaveniach systému Android výberom možnosti <b>Povoliť vždy</b> na nasledujúcej stránke.</string>
     <string name="open_settings">Otvoriť nastavenia</string>
@@ -141,10 +139,6 @@
     <string name="grant_bluetooth_scan_permission">Na vykonanie prieskumu Bluetooth je potrebné povolenie „Nájsť zariadenia v okolí“</string>
     <string name="grant_bluetooth_connect_permission">Oprávnenie „Bluetooth Connect“ nie je pre prieskum BT potrebné, umožňuje však získať názov zariadenia</string>
     <string name="grant_camera_permission">Na skenovanie QR kódov je potrebné povolenie na používanie fotoaparátu</string>
-    <string name="carrier_label">Prevádzkovateľ</string>
-    <string name="data_network_label">Dátová sieť</string>
-    <string name="override_network_label">Override Network</string>
-    <string name="voice_network_label">Hlasová sieť</string>
     <string name="short_cid_label">Short CID</string>
     <string name="sector_id_label">Sector ID</string>
     <string name="earfcn_band_label">EARFCN/Band</string>
@@ -208,8 +202,6 @@
     <string name="lte_cellular_terms_explanation"><b>MCC</b> (Mobile Country Code): Jedinečný identifikátor krajiny pre mobilné siete.\n\n<b>MNC</b> (Mobile Network Code): Jedinečný identifikátor siete v rámci krajiny. Kombinácia kódov MCC a MNC označuje konkrétneho poskytovateľa služieb (napr. T-Mobile).\n\n<b>TAC</b> (Tracking Area Code – kód sledovacej oblasti): Identifikátor skupiny mobilných vysielačov, ktorý sa používa na vysielanie.\n\n<b>CID</b> (Cell Identity – identifikátor bunky): Identifikátor konkrétneho mobilného vysielača. Kombinácia kódov MCC, MNC a CID jednoznačne identifikuje konkrétny panel bunky LTE spomedzi všetkých ostatných na svete.\n\n<b>eNB ID</b> (eNodeB Identifier): Identifikátor základňovej stanice, ktorá obsahuje jeden alebo viacero buniek. Ide o prvých 20 bitov kódu CID.\n\n<b>Sector ID</b>: Identifikuje sektor (tiež nazývaný bunka) v rámci základňovej stanice. Ide o posledných 8 bitov kódu CID.\n\n<b>EARFCN</b> (E-UTRA Absolute Radio Frequency Channel Number): Číslo reprezentujúce nosnú frekvenciu LTE.\n\n<b>Pásmo</b>: Číslo pásma reprezentujúce frekvenčný rozsah, do ktorého spadá EARFCN.\n\n<b>PCI</b> (Physical Cell ID): Identifikátor bunky na fyzickej vrstve, ktorý pomáha mobilnému zariadeniu rozlíšiť počas výberu/prevýberu bunky dve bunky, ktoré používajú rovnakú frekvenciu. Platný rozsah 0–503. Čísla v zátvorkách predstavujú primárnu synchronizačnú sekvenciu (PSS) a sekundárnu synchronizačnú sekvenciu (SSS).\n\n<b>Šírka pásma</b>: Šírka signálu.\n\n<b>TA</b> (Timing Advance): Časový posun, ktorý mobilné zariadenie používa na synchronizáciu svojich prenosov so základňovou stanicou. Predstavuje RF vzdialenosť od základňovej stanice, ktorú možno voľne preložiť ako fyzickú vzdialenosť. Vyššie čísla znamenajú, že zariadenie je ďalej od základňovej stanice.\n\n<b>CQI</b> (Channel Quality Indicator – indikátor kvality kanála): Používa sa zariadením UE na informovanie obsluhujúcej bunky (eNodeB) o kvalite kanála v smere nadol. Platný rozsah je 0–15, pričom hodnota 15 je najlepšia.\n\n<b>RSRP</b> (Reference Signal Received Power – prijatý výkon referenčného signálu): Výkon referenčného signálu v dBm, ako ho prijíma mobilné zariadenie. Platný rozsah je od -44 do -140.\n\n<b>RSRQ</b> (Reference Signal Received Quality): Meria kvalitu prijatého referenčného signálu. Platný rozsah je od -3 do -19,5, pričom hodnota -3 je najlepšia.\n\n<b>SNR</b> (pomer signálu k šumu): pomer signálu k šumu referenčného signálu meraný v dB. Celý rozsah: od -20 dB do +30 dB, pričom hodnota 30 je najlepšia. Bežný rozsah je približne od 5 do 15.</string>
     <string name="nr_info_description">Informácie o pojmoch v oblasti NR</string>
     <string name="nr_cellular_terms_explanation"><b>MCC</b> (Mobile Country Code): Jedinečný identifikátor krajiny pre mobilné siete.\n\n<b>MNC</b> (Mobile Network Code): Jedinečný identifikátor siete v rámci krajiny. Kombinácia kódov MCC a MNC označuje konkrétneho poskytovateľa služieb (napr. T-Mobile).\n\n<b>TAC</b> (Tracking Area Code): Identifikátor skupiny mobilných vysielačov, ktorý sa používa na vysielanie.\n\n<b>CID</b> (Cell Identity): Identifikátor konkrétneho mobilného vysielača. Kombinácia kódov MCC, MNC a CID jednoznačne identifikuje konkrétny panel bunky NR spomedzi všetkých ostatných na svete.\n\n<b>NARFCN</b> (New radio Absolute Radio Frequency Channel Number): Číslo reprezentujúce nosnú frekvenciu NR.\n\n <b>Pásmo</b>: Prevádzkové pásmo 3GPP NR (napr. n77). Pásma nižšie ako n257 patria do kategórie Sub-6 (FR1), zatiaľ čo n257 a vyššie patria do kategórie mmWave (FR2).\n\n<b>Frekvencia</b>: Stredná frekvencia nosnej vlny NR v MHz, vypočítaná z NARFCN.\n\n<b>PCI</b> (Physical Cell ID): Identifikátor bunky na fyzickej vrstve, ktorý pomáha mobilnému zariadeniu rozlíšiť počas výberu/prevýberu bunky dve bunky, ktoré používajú rovnakú frekvenciu. Platný rozsah 0–1007. Čísla v zátvorkách predstavujú primárnu synchronizačnú sekvenciu (PSS) a sekundárnu synchronizačnú sekvenciu (SSS).\n\n<b>TA</b> (Timing Advance): Časový posun, ktorý mobilné zariadenie používa na udržanie synchronizácie svojich prenosov s vysielačom. Predstavuje RF vzdialenosť od vysielača, ktorú možno voľne preložiť ako fyzickú vzdialenosť. Vyššie čísla znamenajú, že zariadenie je ďalej od veže.\n\n<b>SS_RSRP</b> (Secondary Synchronization Reference Signal Received Power): Výkon referenčného signálu v dBm, ako ho prijíma mobilné zariadenie. Platný rozsah je od -31 do -156.\n\n<b>SS_RSRQ</b> (Kvalita prijatého sekundárneho synchronizačného referenčného signálu): Meria kvalitu prijatého referenčného signálu. Platný rozsah je od 20 do -43, pričom hodnota 20 je najlepšia.</string>
-    <string name="override_network_info_title">Čo je to Override Network?</string>
-    <string name="override_network_explanation">Typ siete „override“ slúži výlučne na účely marketingovej prezentácie alebo vizualizácie. Nemôže sa považovať za skutočný typ siete, ku ktorej je zariadenie pripojené.\n\nInými slovami, poskytovatelia služieb chcú, aby si užívateľ myslel, že je pripojený k lepšej sieti, než je tomu v skutočnosti – napríklad tým, že v hornom paneli zobrazujú 5G, hoci ide v skutočnosti o sieť 4G.</string>
     <string name="no_gps_device">V zariadení nebolo zistené žiadne GPS!</string>
     <string name="turn_on_gps">Zapnite prosím GPS</string>
     <string name="location_hint_open_settings">Trvá to s GPS dlho? Skúste v časti &lt;u&gt;Nastavenia&lt;/u&gt; zmeniť poskytovateľa polohy na GNSS.</string>
@@ -281,8 +273,12 @@
     <string name="wifi_mode_group_by_ssid">Zoskupiť podľa SSID</string>
     <string name="wifi_list_scan_number">Skenovanie #%1$d</string>
     <string name="wifi_list_ap_count">APs: %1$d</string>
-    <string name="wifi_ap_count_one">%1$d AP</string>
-    <string name="wifi_ap_count_other">%1$d APs</string>
+    <plurals name="wifi_ap_count">
+        <item quantity="one">%1$d AP</item>
+        <item quantity="few">%1$d AP</item>
+        <item quantity="many">%1$d AP</item>
+        <item quantity="other">%1$d AP</item>
+    </plurals>
     <string name="wifi_hidden_ssid_placeholder">&lt;Skrytý SSID&gt;</string>
     <string name="wifi_hidden_network_a11y">Skrytá sieť</string>
     <string name="wifi_sort_pill_label">%1$s ↕</string>
@@ -429,7 +425,12 @@
     <string name="wifi_scan_interval_description">Rýchlosť, s akou sa budú vyhľadávať Wi-Fi siete v sekundách. Nižšie hodnoty skrátia výdrž batérie.</string>
     <string name="bluetooth_scan_interval_title">Interval vyhľadávania zariadení cez Bluetooth</string>
     <string name="bluetooth_scan_interval_description">Rýchlosť, s akou sa budú vyhľadávať zariadenia Bluetooth, vyjadrená v sekundách. Minimálna hodnota je 23 sekúnd vzhľadom na dĺžku vyhľadávania v režimoch BLE (10 s) a Classic (12 s). Nižšie hodnoty skrátia výdrž batérie.</string>
-    <string name="bluetooth_scan_interval_below_minimum">Interval vyhľadávania zariadení cez Bluetooth musí byť aspoň %d sekúnd. Hodnota bola nastavená na minimum.</string>
+    <plurals name="bluetooth_scan_interval_below_minimum">
+        <item quantity="one">Interval vyhľadávania zariadení cez Bluetooth musí byť aspoň %d sekúnd. Hodnota bola nastavená na minimum.</item>
+        <item quantity="few">Interval vyhľadávania zariadení cez Bluetooth musí byť aspoň %d sekúnd. Hodnota bola nastavená na minimum.</item>
+        <item quantity="many">Interval vyhľadávania zariadení cez Bluetooth musí byť aspoň %d sekúnd. Hodnota bola nastavená na minimum.</item>
+        <item quantity="other">Interval vyhľadávania zariadení cez Bluetooth musí byť aspoň %d sekúnd. Hodnota bola nastavená na minimum.</item>
+    </plurals>
     <string name="gnss_scan_interval_title">Interval skenovania GNSS</string>
     <string name="gnss_scan_interval_description">Rýchlosť, s akou sa budú vyhľadávať satelity GNSS v sekundách. Nižšie hodnoty skrátia výdrž batérie.</string>
     <string name="device_status_scan_interval_title">Interval hlásení o stave zariadenia</string>
@@ -475,10 +476,20 @@
     <string name="hvdop_label">Faktor horizontálnej/vertikálnej presnosti:</string>
     <string name="gnss_not_available">Satelity globálneho navigačného satelitného systému (GNSS) nie sú k dispozícii</string>
     <string name="sbas_not_available">Satelity systému satelitného augmentačného systému (SBAS) nie sú k dispozícii</string>
-    <string name="filter_signal_text">Zobrazených %1$d z %2$d signálov</string>
+    <plurals name="filter_signal_text">
+        <item quantity="one">Zobrazených %1$d z %2$d signálov</item>
+        <item quantity="few">Zobrazených %1$d z %2$d signálov</item>
+        <item quantity="many">Zobrazených %1$d z %2$d signálov</item>
+        <item quantity="other">Zobrazených %1$d z %2$d signálov</item>
+    </plurals>
     <string name="filter_showall">(zobraziť všetko)</string>
     <string name="gps_error_time_title">Váš čas GNSS je nesprávny</string>
-    <string name="gps_error_time_message">Čas GNSS v zariadení:\n\n%1$s\n\n…sa líši od systémových hodín o viac ako %2$d dní. Príčinou môže byť problém s prechodom na nový týždeň GPS – podrobnosti si vyžiadajte od výrobcu zariadenia. Ďalšie informácie nájdete na stránke https://bit.ly/gps-week-rollover.</string>
+    <plurals name="gps_error_time_message">
+        <item quantity="one">Čas GNSS v zariadení:\n\n%1$s\n\n…sa líši od systémových hodín o viac ako %2$d dní. Príčinou môže byť problém s prechodom na nový týždeň GPS – podrobnosti si vyžiadajte od výrobcu zariadenia. Ďalšie informácie nájdete na stránke https://bit.ly/gps-week-rollover.</item>
+        <item quantity="few">Čas GNSS v zariadení:\n\n%1$s\n\n…sa líši od systémových hodín o viac ako %2$d dní. Príčinou môže byť problém s prechodom na nový týždeň GPS – podrobnosti si vyžiadajte od výrobcu zariadenia. Ďalšie informácie nájdete na stránke https://bit.ly/gps-week-rollover.</item>
+        <item quantity="many">Čas GNSS v zariadení:\n\n%1$s\n\n…sa líši od systémových hodín o viac ako %2$d dní. Príčinou môže byť problém s prechodom na nový týždeň GPS – podrobnosti si vyžiadajte od výrobcu zariadenia. Ďalšie informácie nájdete na stránke https://bit.ly/gps-week-rollover.</item>
+        <item quantity="other">Čas GNSS v zariadení:\n\n%1$s\n\n…sa líši od systémových hodín o viac ako %2$d dní. Príčinou môže byť problém s prechodom na nový týždeň GPS – podrobnosti si vyžiadajte od výrobcu zariadenia. Ďalšie informácie nájdete na stránke https://bit.ly/gps-week-rollover.</item>
+    </plurals>
     <string name="notification_title">%1$d/%2$d satelitov | %3$d/%4$d signálov</string>
     <string name="gps_content_description">GPS</string>
     <string name="glonass_content_description">GLONASS</string>
@@ -683,7 +694,6 @@
     <string name="enable_gps_message">Poloha (GPS/GNSS) je vypnutá. Je potrebná na spojenie záznamov z prieskumu prostredníctvom mobilnej siete s konkrétnou polohou a tiež na získanie údajov z GNSS. \n\nChcete ju teraz zapnúť?</string>
     <string name="enable_gps_positive_button">Zapnúť GPS/GNSS</string>
     <string name="enable_gps_negative_button">Nie</string>
-    <string name="app_icon_description">Ikona aplikácie</string>
     <string name="not_supported_title">Funkcie GNSS nemusia fungovať</string>
     <string name="not_supported_description">Aplikácia Network Survey neprijíma surové merania GNSS z telefónu, ktoré sú potrebné na generovanie súborov GNSS GeoPackage/CSV alebo na streamovanie záznamov GNSS cez MQTT. Ďalšie informácie a zoznam zariadení, ktoré podporujú surové merania GNSS, nájdete v príručke pre Android <a href="https://developer.android.com/guide/topics/sensors/gnss">Surové merania GNSS</a>.</string>
     <string name="remember_my_decision">Už ma na to nepýtaj</string>
@@ -725,10 +735,8 @@
     <string name="ssid_removed_from_exclusion">%1$s bol odstránený zo zoznamu výnimiek</string>
     <string name="ssid_already_excluded">%1$s je už v zozname vylúčených položiek</string>
     <string name="exclusion_list_full">Zoznam vylúčených položiek je plný (maximálne 30 SSID)</string>
-    <string name="exclusion_list_full_message">Zoznam vylúčených položiek dosiahol maximálnu kapacitu 30 SSID. Pred pridávaním nových SSID prosím odstráňte niektoré z nich.</string>
     <string name="add_ssid_manually">Manuálne pridanie SSID</string>
     <string name="enter_ssid">Zadajte SSID</string>
-    <string name="add">Pridať</string>
     <string name="remove">Odstrániť</string>
     <string name="clear_all">Vymazať všetko</string>
     <string name="confirm_clear_exclusion_list_title">Vymazať zoznam vylúčených položiek</string>
@@ -746,8 +754,6 @@
     <string name="confirm_clear_overrides_title">Odstrániť všetky prepísané údaje?</string>
     <string name="confirm_clear_overrides_message">Týmto sa všetky farby poskytovateľov obnovia na predvolené hodnoty.</string>
     <string name="provider_color_reset_to_default">Obnoviť predvolené nastavenia</string>
-    <string name="provider_color_select_color">Vyberte farbu:</string>
-    <string name="provider_color_max_reached">Bol dosiahnutý maximálny počet prepisov.</string>
     <string name="mcc_mnc_format">MCC-MNC: %1$s-%2$s</string>
     <string name="selected">Vybrané</string>
     <string name="navigate_back">Vrátiť sa späť</string>
@@ -811,7 +817,12 @@
     <string name="ns_analytics_upload_status_registration_invalid">Platnosť registrácie vypršala</string>
     <string name="ns_analytics_upload_status_viewer_cannot_upload">Nahrávanie nie je povolené</string>
     <string name="ns_analytics_upload_status_session_expired">Relácia vypršala</string>
-    <string name="ns_analytics_upload_result_records">Nahralo sa %1$d záznamov</string>
+    <plurals name="ns_analytics_upload_result_records">
+        <item quantity="one">Nahralo sa %1$d záznamov</item>
+        <item quantity="few">Nahralo sa %1$d záznamov</item>
+        <item quantity="many">Nahralo sa %1$d záznamov</item>
+        <item quantity="other">Nahralo sa %1$d záznamov</item>
+    </plurals>
     <string name="ns_analytics_upload_button_upload_now">Nahrať teraz</string>
     <string name="ns_analytics_upload_button_uploading">Nahrávanie…</string>
     <string name="ns_analytics_upload_button_no_records">Žiadne záznamy</string>
@@ -865,7 +876,12 @@
     <string name="plmn_lookup_live_label">Vyhľadávanie v reálnom čase</string>
     <string name="plmn_lookup_empty_line1">Nenašli sa žiadne zodpovedajúce PLMN.</string>
     <string name="plmn_lookup_empty_line2">Skúste zadať názov krajiny/regiónu, značku prevádzkovateľa alebo kód MCC</string>
-    <string name="plmn_lookup_n_operators">Operátory %1$d</string>
+    <plurals name="plmn_lookup_n_operators">
+        <item quantity="one">Operátory %1$d</item>
+        <item quantity="few">Operátory %1$d</item>
+        <item quantity="many">Operátory %1$d</item>
+        <item quantity="other">Operátory %1$d</item>
+    </plurals>
     <string name="plmn_lookup_plmn_label">PLMN %1$s</string>
     <string name="plmn_lookup_copied_toast">Skopírované PLMN</string>
     <string name="plmn_lookup_truncated_hint">Zobrazujú sa prvé výsledky. Upresnite vyhľadávanie.</string>
@@ -972,7 +988,12 @@
     <string name="branding_none">Žiadna</string>
     <string name="network_technology_title">Sieťové technológie</string>
     <string name="network_technology_icon_description">Informácie o sieťových technológiách</string>
-    <string name="carrier_aggregation_summary">Agregácia operátorov · %1$d operátorov ·%2$s MHz</string>
+    <plurals name="carrier_aggregation_summary">
+        <item quantity="one">Agregácia operátorov · %1$d operátorov ·%2$s MHz</item>
+        <item quantity="few">Agregácia operátorov · %1$d operátorov ·%2$s MHz</item>
+        <item quantity="many">Agregácia operátorov · %1$d operátorov ·%2$s MHz</item>
+        <item quantity="other">Agregácia operátorov · %1$d operátorov ·%2$s MHz</item>
+    </plurals>
     <string name="network_technology_explanation">Tieto polia opisujú technológie, ktoré váš telefón práve používa.\n\nVeľký riadok označuje sieť, v ktorej sa nachádzate: technológiu rádiového prístupu (RAT) a informáciu, či je 5G v režime Standalone (samostatná sieť NR) alebo Non-Standalone (NSA, sieť NR pripojená k LTE).\n\nPolíčko Hlas označuje technológiu prenášajúcu hovory; volanie cez Wi-Fi sa detekuje priamo, zatiaľ čo technológie VoLTE a VoNR sa odvodzujú, pretože systém Android ich nezobrazuje iným aplikáciám.\n\nPolíčko Dáta označuje technológiu rádiového prístupu (RAT), ktorá prenáša dáta. Často sa zhoduje s veľkým riadkom uvedeným vyššie.\n\nPolíčko Značka označuje, či váš operátor používa ikonu v stavovom riadku (napríklad zobrazenie 5G v sieti 4G). Ide o marketingové označenie, nie o skutočnú technológiu RAT, a ak sa zobrazuje Žiadna, tak váš operátor žiadne označenie nepoužíva.</string>
     <string name="card_title_nr_details">5G NR Sekundárna bunka</string>
     <string name="nr_secondary_cell_subtitle">Operátor 5G, ktorého služby váš telefón využíva popri svojom primárnom mobilnom operátorovi</string>
@@ -984,7 +1005,12 @@
     <string name="location_services_disabled_message">Služby určovania polohy sú vypnuté. Zapnite ich, aby sa vaša poloha zobrazila na mape.</string>
     <string name="wifi_list_ap_count_filtered">APs: %1$d z %2$d</string>
     <string name="wifi_tag_excluded">Vylúčené</string>
-    <string name="wifi_group_excluded_count">%1$d boli vylúčené</string>
+    <plurals name="wifi_group_excluded_count">
+        <item quantity="one">%1$d boli vylúčené</item>
+        <item quantity="few">%1$d boli vylúčené</item>
+        <item quantity="many">%1$d boli vylúčené</item>
+        <item quantity="other">%1$d boli vylúčené</item>
+    </plurals>
     <string name="wifi_filter_title">Filter sietí</string>
     <string name="wifi_filter_content_description">Filtrovať zoznam Wi-Fi sietí</string>
     <string name="wifi_filter_content_description_active">Filtrovať zoznam Wi-Fi sietí. Filtrovanie je aktívne.</string>
@@ -1023,7 +1049,12 @@
     <string name="provider_color_mcc_range">100–999</string>
     <string name="provider_color_mnc_range">0–999</string>
     <string name="more_options">Ďalšie možnosti</string>
-    <string name="count_of_max_format">Použité %1$d z %2$d</string>
+    <plurals name="count_of_max_format">
+        <item quantity="one">Použité %1$d z %2$d</item>
+        <item quantity="few">Použité %1$d z %2$d</item>
+        <item quantity="many">Použité %1$d z %2$d</item>
+        <item quantity="other">Použité %1$d z %2$d</item>
+    </plurals>
     <string name="watchlist_title">Zoznam sledovaných položiek</string>
     <string name="watchlist_alert_channel_name">Upozornenia zo zoznamu sledovaných položiek</string>
     <string name="watchlist_alert_channel_description">Upozornenia pri zistení sledovanej siete</string>
@@ -1035,7 +1066,6 @@
     <string name="watchlist_add_network">Pridať sieť</string>
     <string name="watchlist_history_action">História</string>
     <string name="watchlist_status_active">Upozornenia na</string>
-    <string name="watchlist_status_active_subtitle">Počas prebiehajúceho prieskumu budete informovaní.</string>
     <string name="watchlist_status_disabled">Upozornenia sú vypnuté</string>
     <string name="watchlist_status_notifications_blocked">Oznámenia sú blokované. Zapnite ich v nastaveniach systému.</string>
     <string name="watchlist_enable_for">Zapnúť upozornenia pre %1$s</string>
@@ -1047,15 +1077,14 @@
     <string name="watchlist_field_ssid">Názov siete (SSID)</string>
     <string name="watchlist_field_bssid">Adresa MAC (BSSID)</string>
     <string name="watchlist_bssid_helper">Sledujte konkrétny prístupový bod podľa jeho MAC adresy.</string>
-    <string name="watchlist_validation_need_one">Zadajte názov siete (SSID) alebo MAC adresu (BSSID).</string>
     <string name="watchlist_validation_bssid_format">Zadajte platnú adresu MAC (napríklad 12:34:56:78:9A:BC).</string>
     <string name="watchlist_validation_duplicate">Túto sieť už sledujete.</string>
     <string name="watchlist_added">Pridaná „%1$s“ do vášho zoznamu sledovaných položiek</string>
     <string name="watchlist_added_alerts_enabled">Pridaná „%1$s“ do vášho zoznamu sledovaných položiek a boli zapnuté upozornenia zo zoznamu sledovaných položiek</string>
     <string name="watchlist_import_title">Pridať „%1$s“?</string>
     <string name="watchlist_import_title_generic">Chcete pridať siete do svojho zoznamu sledovaných?</string>
-    <string name="watchlist_import_summary">Pridané z odkazu. %1$d nových,%2$d už uložené.</string>
-    <string name="watchlist_import_summary_no_dupes">Pridané z odkazu. %1$d nových.</string>
+    <string name="watchlist_import_summary">Pridané z odkazu. %1$s, %2$s.</string>
+    <string name="watchlist_import_summary_no_dupes">Pridané z odkazu. %1$s.</string>
     <string name="watchlist_import_helper">Pridané siete je možné kedykoľvek odstrániť na obrazovke „Zoznam sledovaných“.</string>
     <string name="watchlist_import_confirm">Pridať %1$d</string>
     <string name="watchlist_import_already_saved_tag">Už uložené</string>
@@ -1107,15 +1136,14 @@
     <string name="watchlist_history_sort_recent">Najnovšie</string>
     <string name="watchlist_history_sort_strongest">Najsilnejšie</string>
     <string name="watchlist_history_sort_most_seen">Najsledovanejšie</string>
-    <string name="watchlist_history_count_summary">%1$d pozorovania · %2$d sietí</string>
-    <string name="watchlist_history_group_sightings">%1$d pozorovania</string>
+    <string name="watchlist_history_count_summary">%1$s · %2$s</string>
     <string name="watchlist_matched_by_name_short">podľa názvu</string>
     <string name="watchlist_matched_by_ap_short">podľa AP</string>
     <string name="watchlist_history_best_dbm">najlepšia hodnota v dBm</string>
     <string name="watchlist_history_group_subtitle">%1$s · %2$s ·%3$s</string>
     <string name="watchlist_history_map_no_locations">Žiadne pozorovania zatiaľ nemajú zaznamenanú polohu.</string>
     <string name="watchlist_history_map_offline">Na načítanie mapy je potrebné pripojenie.</string>
-    <string name="watchlist_history_map_summary">%1$d sietí · %2$d zaznamenaných pozorovaní</string>
+    <string name="watchlist_history_map_summary">%1$s · %2$s</string>
     <string name="watchlist_history_view_sightings">Zobraziť pozorovania</string>
     <string name="watchlist_history_open_detail">Zobraziť podrobnosti z pozorovania</string>
     <string name="watchlist_map_view_list">Zobrazenie zoznamu</string>
@@ -1135,11 +1163,34 @@
         <item quantity="many">%d pozorovaní</item>
         <item quantity="other">%d pozorovaní</item>
     </plurals>
+    <plurals name="watchlist_networks_count">
+        <item quantity="one">%d sietí</item>
+        <item quantity="few">%d sietí</item>
+        <item quantity="many">%d sietí</item>
+        <item quantity="other">%d sietí</item>
+    </plurals>
+    <plurals name="watchlist_located_sightings_count">
+        <item quantity="one">%d zaznamenaných pozorovaní</item>
+        <item quantity="few">%d zaznamenaných pozorovaní</item>
+        <item quantity="many">%d zaznamenaných pozorovaní</item>
+        <item quantity="other">%d zaznamenaných pozorovaní</item>
+    </plurals>
+    <plurals name="watchlist_import_new_count">
+        <item quantity="one">%d nových</item>
+        <item quantity="few">%d nových</item>
+        <item quantity="many">%d nových</item>
+        <item quantity="other">%d nových</item>
+    </plurals>
+    <plurals name="watchlist_import_saved_count">
+        <item quantity="one">%d už uložené</item>
+        <item quantity="few">%d už uložené</item>
+        <item quantity="many">%d už uložené</item>
+        <item quantity="other">%d už uložené</item>
+    </plurals>
     <string name="watchlist_detail_location_line">%1$s · prostredníctvom %2$s</string>
     <string name="watchlist_detail_latlng">%1$s, %2$s</string>
     <string name="watchlist_detail_clear_title">Vymazať históriu tejto siete?</string>
     <string name="watchlist_detail_clear_message">Týmto sa odstránia pozorovania pre „%1$s“. Sledovaná sieť zostane zachovaná.</string>
-    <string name="watchlist_detail_no_sightings">Neboli zaznamenané žiadne pozorovania.</string>
     <string name="watchlist_settings_title">Zoznam sledovaných položiek</string>
     <string name="watchlist_settings_enable_title">Zapnúť zoznam sledovaných položiek</string>
     <string name="watchlist_settings_enable_summary_on">Pozrieť si, či vaše uložené siete spúšťajú upozornenia</string>

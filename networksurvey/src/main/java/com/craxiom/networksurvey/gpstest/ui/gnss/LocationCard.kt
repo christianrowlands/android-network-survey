@@ -466,8 +466,10 @@ fun ErrorTime(timeText: String, timeMs: Long) {
             text = {
                 Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
                     LinkifyText(
-                        text = Application.get().getString(
-                            R.string.gps_error_time_message, format.format(timeMs),
+                        text = Application.get().resources.getQuantityString(
+                            R.plurals.gps_error_time_message,
+                            DateTimeUtils.NUM_DAYS_TIME_VALID,
+                            format.format(timeMs),
                             DateTimeUtils.NUM_DAYS_TIME_VALID
                         )
                     )
