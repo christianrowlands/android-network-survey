@@ -6,6 +6,10 @@
 * Add a Slovak translation, contributed through Weblate. (Thanks Pa Di)
 * Add a Romanian translation, contributed through Weblate. (Thanks Laur Ioniță)
 * Add the AGC (Automatic Gain Control) column to the GNSS Status UI.
+* Log MMS events (INCOMING_MMS and OUTGOING_MMS) in the CDR file. CDR variant only.
+
+**IMPROVEMENTS**
+* Drop the unused RECEIVE_SMS permission from the CDR variant. SMS events have been captured through the message store (READ_SMS) since 1.29, so the broadcast permission was never needed.
 
 **BUG FIXES**
 * Fix the tower map issuing queries when the map bounds are not usable, which could return no towers on the first load.

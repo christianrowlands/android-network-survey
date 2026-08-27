@@ -11,7 +11,7 @@ import com.craxiom.networksurvey.services.SurveyRecordProcessor;
 import com.craxiom.networksurvey.services.controller.CellularController;
 import com.craxiom.networksurvey.services.controller.TelephonyManagerWrapper;
 
-import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.concurrent.ExecutorService;
 
 import timber.log.Timber;
@@ -29,8 +29,9 @@ public class CdrSmsObserver extends ContentObserver
     private static final String SMS_COLUMN_SUB_ID = "sub_id";
     private static final int SMS_MESSAGE_TYPE_SENT = 2;
     private static final int SMS_MESSAGE_TYPE_RECEIVED = 1;
+    private static final int MAX_TRACKED_MESSAGE_IDS = 10;
 
-    private final LinkedHashMap<String, String> smsIdQueue = new EvictingLinkedHashMap();
+    private final Map<String, String> smsIdQueue = new EvictingLinkedHashMap<>(MAX_TRACKED_MESSAGE_IDS);
 
     private final ContentResolver contentResolver;
     private final CellularController cellularController;
@@ -93,7 +94,7 @@ public class CdrSmsObserver extends ContentObserver
                     {
                         try
                         {
-                            executorService.execute(() -> surveyRecordProcessor.onSmsEvent(CdrEventType.OUTGOING_SMS,
+                            executorService.execute(() -> surveyRecordProcessor.onMessageEvent(CdrEventType.OUTGOING_SMS,
                                     wrapper.getPhoneNumber(), wrapper.getTelephonyManager(), destinationAddress,
                                     wrapper.getSubscriptionId()));
                         } catch (Throwable t)
@@ -114,7 +115,7 @@ public class CdrSmsObserver extends ContentObserver
                     {
                         try
                         {
-                            executorService.execute(() -> surveyRecordProcessor.onSmsEvent(CdrEventType.INCOMING_SMS,
+                            executorService.execute(() -> surveyRecordProcessor.onMessageEvent(CdrEventType.INCOMING_SMS,
                                     sourceAddress, wrapper.getTelephonyManager(), wrapper.getPhoneNumber(),
                                     wrapper.getSubscriptionId()));
                         } catch (Throwable t)
@@ -126,17 +127,4 @@ public class CdrSmsObserver extends ContentObserver
             }
         }
     }
-
-    /**
-     * Acts as a cache and evicts older entries when new ones are added.
-     */
-    private static class EvictingLinkedHashMap extends LinkedHashMap<String, String>
-    {
-        @Override
-        protected boolean removeEldestEntry(Entry<String, String> eldest)
-        {
-            return size() > 10;
-        }
-    }
 }
-

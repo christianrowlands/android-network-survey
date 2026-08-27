@@ -722,13 +722,22 @@ public class SurveyRecordProcessor
         finishCdrEvent(cdrEvent);
     }
 
-    public void onSmsEvent(CdrEventType smsEventType, String originatingAddress, TelephonyManager telephonyManager,
-                           String destinationAddress, int subscriptionId)
+    /**
+     * Creates a CDR event for a messaging (SMS or MMS) event.
+     *
+     * @param messageEventType   One of the SMS or MMS {@link CdrEventType} values.
+     * @param originatingAddress The sender. For outgoing messages this is this device's number.
+     * @param telephonyManager   Used to get the cell identity of the current cell.
+     * @param destinationAddress The recipient(s). For incoming messages this is this device's number.
+     * @param subscriptionId     The subscription (SIM) the message was sent or received on.
+     */
+    public void onMessageEvent(CdrEventType messageEventType, String originatingAddress, TelephonyManager telephonyManager,
+                               String destinationAddress, int subscriptionId)
     {
         if (cdrListeners.isEmpty()) return;
 
-        Timber.d("onSmsEvent outgoingAddress=%s, destinationAddress=%s", originatingAddress, destinationAddress);
-        CdrEvent cdrEvent = new CdrEvent(smsEventType, originatingAddress, destinationAddress, subscriptionId, deviceId);
+        Timber.d("onMessageEvent type=%s, originatingAddress=%s, destinationAddress=%s", messageEventType, originatingAddress, destinationAddress);
+        CdrEvent cdrEvent = new CdrEvent(messageEventType, originatingAddress, destinationAddress, subscriptionId, deviceId);
         setCellInfo(cdrEvent, telephonyManager);
         finishCdrEvent(cdrEvent);
     }

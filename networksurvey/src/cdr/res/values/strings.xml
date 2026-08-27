@@ -2,7 +2,7 @@
 
     <string name="cdr_optional_permissions_rationale">In addition to the required permissions, CDR logging has some optional permissions.
         \n\n1. <b>Access Call Logs</b>:  This is needed to get the phone number for writing it to a CDR log file. You can deny this permission and CDR logging will still work except phone numbers won\'t be logged.
-        \n\n2. <b>Read SMS</b>:  This is needed if you want to log SMS events to the CDR log file. You can deny this permission and CDR logging will still work except SMS events won\'t be logged.</string>
+        \n\n2. <b>Read SMS</b>:  This is needed if you want to log SMS and MMS events to the CDR log file. You can deny this permission and CDR logging will still work except SMS and MMS events won\'t be logged.</string>
 
     <string name="version_suffix" translatable="false">-cdr</string>
 

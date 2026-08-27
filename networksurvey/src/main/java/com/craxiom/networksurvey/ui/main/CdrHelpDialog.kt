@@ -57,6 +57,10 @@ fun CdrHelpDialog(
                         stringResource(R.string.cdr_help_event_tower_label),
                         stringResource(R.string.cdr_help_event_tower_desc)
                     )
+                    HelpItem(
+                        stringResource(R.string.cdr_help_event_rcs_label),
+                        stringResource(R.string.cdr_help_event_rcs_desc)
+                    )
                 }
 
                 Spacer(modifier = Modifier.height(16.dp))

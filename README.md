@@ -39,8 +39,8 @@ functionality provides insight into various interactions your phone has with the
 
 **What is a CDR?**
 A Call Detail Record (CDR) is a data record that documents specific interactions a phone has with
-the cellular network. These interactions include phone calls, SMS messages, and changes in cell
-tower connections.
+the cellular network. These interactions include phone calls, SMS and MMS messages, and changes in
+cell tower connections.
 
 **Use Cases:**
 
@@ -50,13 +50,15 @@ tower connections.
 
 **Note on Feature Limitations:**
 
-- The regular version of Network Survey does not log SMS events in the CDR due to Google Play's
-  policy against apps requesting full SMS permissions.
+- The regular version of Network Survey does not log SMS or MMS events in the CDR due to Google
+  Play's policy against apps requesting full SMS permissions.
 - Logging the "other" phone number associated with call events is also not supported in the regular
   version.
+- RCS chats are not logged by either version. Android only lets the default messaging app see RCS
+  messages, so there is no way for Network Survey to record them.
 
 **Alternative Version with Extended Features:**
-If you're interested in CDR logging that includes SMS events and call details:
+If you're interested in CDR logging that includes SMS and MMS events and call details:
 
 1. **Install from Source:** You can build and install the app using the source code available in
    this repository.

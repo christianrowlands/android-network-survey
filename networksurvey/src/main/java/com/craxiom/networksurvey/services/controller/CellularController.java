@@ -30,6 +30,7 @@ import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 import com.craxiom.networksurvey.R;
 import com.craxiom.networksurvey.SimChangeReceiver;
 import com.craxiom.networksurvey.constants.NetworkSurveyConstants;
+import com.craxiom.networksurvey.listeners.CdrMmsObserver;
 import com.craxiom.networksurvey.listeners.CdrSmsObserver;
 import com.craxiom.networksurvey.logging.CdmaCsvLogger;
 import com.craxiom.networksurvey.logging.CdrLogger;
@@ -111,6 +112,7 @@ public class CellularController extends AController
     private final CdrLogger cdrLogger;
     private final Map<Integer, PhoneStateListener> phoneStateCdrListenerMap = new HashMap<>();
     private ContentObserver smsObserver;
+    private ContentObserver mmsObserver;
 
     public CellularController(NetworkSurveyService surveyService, ExecutorService executorService,
                               Looper serviceLooper, Handler serviceHandler,
@@ -1272,6 +1274,8 @@ public class CellularController extends AController
                     ContentResolver contentResolver = surveyService.getContentResolver();
                     smsObserver = new CdrSmsObserver(serviceHandler, contentResolver, this, surveyRecordProcessor, executorService);
                     contentResolver.registerContentObserver(SMS_URI, true, smsObserver);
+                    mmsObserver = new CdrMmsObserver(serviceHandler, contentResolver, this, surveyRecordProcessor, executorService);
+                    contentResolver.registerContentObserver(CdrMmsObserver.MMS_SMS_URI, true, mmsObserver);
                 }
 
                 Timber.d("Adding the Telephony Manager Service State Listener for CDR events");
@@ -1417,6 +1421,11 @@ public class CellularController extends AController
         if (smsObserver != null)
         {
             surveyService.getContentResolver().unregisterContentObserver(smsObserver);
+        }
+
+        if (mmsObserver != null)
+        {
+            surveyService.getContentResolver().unregisterContentObserver(mmsObserver);
         }
 
         cdrStarted.set(false);

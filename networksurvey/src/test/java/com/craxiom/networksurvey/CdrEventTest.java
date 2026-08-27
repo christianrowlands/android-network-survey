@@ -176,4 +176,20 @@ public class CdrEventTest
         Assert.assertEquals(TEST_MISSION_ID, row[row.length - 2]);
         Assert.assertEquals("42", row[row.length - 1]);
     }
+
+    @Test
+    public void testMmsEventTypesSerializeToCsv()
+    {
+        for (CdrEventType eventType : new CdrEventType[]{CdrEventType.INCOMING_MMS, CdrEventType.OUTGOING_MMS})
+        {
+            CdrEvent cdrEvent = new CdrEvent(eventType, "1234567890", "1122334455;2233445566",
+                    CellularController.DEFAULT_SUBSCRIPTION_ID, DEVICE_ID);
+            cdrEvent.setCircuitSwitchedInformation(NetworkType.LTE, "310-480-12345-12345678");
+            cdrEvent.setPacketSwitchedInformation(NetworkType.LTE, "310-480-222-3");
+
+            String[] row = cdrEvent.getCsvRowArray();
+            Assert.assertEquals(eventType.name(), row[5]);
+            Assert.assertEquals("1122334455;2233445566", row[7]);
+        }
+    }
 }

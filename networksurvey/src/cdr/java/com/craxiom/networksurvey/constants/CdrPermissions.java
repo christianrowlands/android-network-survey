@@ -9,8 +9,6 @@ import android.os.Build;
  * <p>
  * This custom "flavor" of Network Survey can be built and installed using the APK for anyone that
  * wants to log SMS events and the "other" phone number for call events to CDR CSV files.
- *
- * @since 1.11
  */
 public class CdrPermissions
 {
@@ -18,8 +16,7 @@ public class CdrPermissions
     public static final String[] CDR_OPTIONAL_PERMISSIONS = {
             Manifest.permission.READ_CALL_LOG,
             Manifest.permission.READ_PHONE_NUMBERS,
-            Manifest.permission.READ_SMS,
-            Manifest.permission.RECEIVE_SMS};
+            Manifest.permission.READ_SMS};
 
     static
     {
