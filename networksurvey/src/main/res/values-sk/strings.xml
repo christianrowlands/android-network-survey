@@ -66,15 +66,15 @@
     <string name="cdr_help_events_title">Zaznamenané udalosti</string>
     <string name="cdr_help_event_calls_label">Telefonické hovory</string>
     <string name="cdr_help_event_calls_desc">Prichádzajúce a odchádzajúce hovory</string>
-    <string name="cdr_help_event_sms_label">SMS správy</string>
-    <string name="cdr_help_event_sms_desc">Odoslané a prijaté textové správy (len verzia CDR)</string>
+    <string name="cdr_help_event_sms_label">SMS a MMS správy</string>
+    <string name="cdr_help_event_sms_desc">Odoslané a prijaté textové a multimediálne správy (len verzia CDR)</string>
     <string name="cdr_help_event_tower_label">Zmeny základňovej stanici</string>
     <string name="cdr_help_event_tower_desc">Spracovanie odovzdávania a opätovného výberu buniek</string>
     <string name="cdr_help_variants_title">Varianty aplikácie</string>
     <string name="cdr_help_variant_regular_label">Standardná (Play Store)</string>
-    <string name="cdr_help_variant_regular_desc">Nezaznamenáva udalosti týkajúce sa SMS ani telefónne číslo druhej strany, keďže služba Google Play obmedzuje oprávnenie na prístup k SMS</string>
+    <string name="cdr_help_variant_regular_desc">Nezaznamenáva udalosti týkajúce sa SMS alebo MMS ani telefónne číslo druhej strany, keďže služba Google Play obmedzuje oprávnenie na prístup k SMS</string>
     <string name="cdr_help_variant_cdr_label">CDR verzia</string>
-    <string name="cdr_help_variant_cdr_desc">Plná podpora CDR vrátane SMS udalostí a telefónnych čísel volaní</string>
+    <string name="cdr_help_variant_cdr_desc">Plná podpora CDR vrátane udalostí SMS a MMS a telefónnych čísel</string>
     <string name="file_help_title">Zaznamenávanie súborov a streamovanie cez MQTT: zjednodušené</string>
     <string name="file_mqtt_help_dismiss">Rozumiem</string>
     <string name="file_mqtt_help_file_title">Zaznamenávanie súborov</string>
@@ -1195,4 +1195,6 @@
     <string name="watchlist_settings_enable_title">Zapnúť zoznam sledovaných položiek</string>
     <string name="watchlist_settings_enable_summary_on">Pozrieť si, či vaše uložené siete spúšťajú upozornenia</string>
     <string name="watchlist_settings_enable_summary_off">Upozornenia zo zoznamu sledovaných položiek sú vypnuté</string>
+    <string name="cdr_help_event_rcs_label">RCS chaty</string>
+    <string name="cdr_help_event_rcs_desc">Nie je zaznamenané. Systém Android umožňuje prístup k RCS konverzáciám iba predvolenej aplikácii na posielanie správ</string>
 </resources>
