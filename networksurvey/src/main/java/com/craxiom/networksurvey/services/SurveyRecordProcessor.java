@@ -14,6 +14,7 @@ import android.content.pm.PackageManager;
 import android.location.GnssAutomaticGainControl;
 import android.location.GnssMeasurement;
 import android.location.GnssMeasurementsEvent;
+import android.location.GnssStatus;
 import android.location.Location;
 import android.location.LocationManager;
 import android.net.wifi.ScanResult;
@@ -219,6 +220,15 @@ public class SurveyRecordProcessor
 
     private long lastGnssLogTimeMs;
     private int gnssScanRateMs;
+
+    /**
+     * The satellites the receiver reported as used in its most recent fix, keyed by
+     * {@link #createSatelliteKey(int, int)}, together with the instant that status arrived.
+     * Replaced wholesale on each {@link GnssStatus} update so that readers always see a self
+     * consistent snapshot, and left null until the first status arrives so that a record can leave
+     * usedInSolution unset rather than claim false.
+     */
+    private volatile UsedInFixSnapshot usedInFixSnapshot = null;
 
     private int currentCallState = TelephonyManager.CALL_STATE_IDLE;
     private CdrEvent currentCdrCellIdentity = new CdrEvent(CdrEventType.LOCATION_UPDATE, "", "", CellularController.DEFAULT_SUBSCRIPTION_ID, "");
@@ -634,6 +644,124 @@ public class SurveyRecordProcessor
     public void onGnssMeasurements(GnssMeasurementsEvent event)
     {
         execute(() -> processGnssMeasurements(event));
+    }
+
+    /**
+     * Notification for when the latest {@link GnssStatus} is available.
+     * <p>
+     * The status is the only place Android reports which satellites the receiver actually used in
+     * its position solution. The raw {@link GnssMeasurement}s that the survey records are built
+     * from carry no such flag, so the latest status is cached here and joined onto the measurements
+     * as they are converted. The status arrives about once a second, which is at least as often as
+     * the fastest GNSS scan rate, so the cached map is never far behind the measurements it is
+     * applied to.
+     *
+     * @param status The latest GNSS status, which may be null.
+     * @since 1.58
+     */
+    public void onGnssStatus(GnssStatus status)
+    {
+        if (status == null) return;
+
+        usedInFixSnapshot = new UsedInFixSnapshot(buildUsedInFixMap(status), SystemClock.elapsedRealtime());
+    }
+
+    /**
+     * Forgets the cached {@link GnssStatus}, so that records generated after GNSS scanning restarts
+     * are not stamped with the used in fix flags from the previous survey.
+     * <p>
+     * Called when scanning stops rather than when the status callback is unregistered, because the
+     * battery optimized scan mode unregisters the callback in the middle of the very batch of
+     * measurements it is about to record, and that batch still needs the flags. A status that
+     * outlives its callback for longer than that is caught by {@link #USED_IN_FIX_MAX_AGE_MS}
+     * instead, so a scan cycle that produced no status at all cannot inherit the previous one's.
+     *
+     * @since 1.58
+     */
+    public void clearGnssStatus()
+    {
+        usedInFixSnapshot = null;
+    }
+
+    /**
+     * Builds the map of satellites the receiver used in its most recent fix.
+     * <p>
+     * A satellite can appear more than once in a status when it is tracked on several frequencies
+     * (for example GPS L1 and L5), and the used in fix flag is reported per signal. The entries are
+     * therefore combined with a logical OR: a satellite counts as used in the solution if any of
+     * its signals was used. That matches the messaging API, where usedInSolution describes the
+     * satellite rather than an individual signal.
+     *
+     * @param status The status to read, which must not be null.
+     * @return An immutable map from {@link #createSatelliteKey(int, int)} to the used in fix flag.
+     */
+    static Map<Long, Boolean> buildUsedInFixMap(GnssStatus status)
+    {
+        final int satelliteCount = status.getSatelliteCount();
+        final Map<Long, Boolean> map = new HashMap<>(satelliteCount);
+
+        for (int i = 0; i < satelliteCount; i++)
+        {
+            final Long key = createSatelliteKey(status.getConstellationType(i), status.getSvid(i));
+            final Boolean existing = map.get(key);
+            map.put(key, (existing != null && existing) || status.usedInFix(i));
+        }
+
+        return Collections.unmodifiableMap(map);
+    }
+
+    /**
+     * A {@link GnssStatus} derived used in fix map paired with the {@link SystemClock#elapsedRealtime()}
+     * instant it was captured, so that a reader can tell how old the flags are.
+     * <p>
+     * The age matters because the battery optimized scan mode unregisters the status callback in
+     * the middle of the batch of measurements it is about to record, and that batch still needs the
+     * flags, so the map deliberately outlives its callback. Without a timestamp there would be
+     * nothing to distinguish that intended one second overlap from a map left over from a scan
+     * cycle a minute earlier that produced no status at all.
+     */
+    private record UsedInFixSnapshot(Map<Long, Boolean> usedInFix, long capturedAtMs)
+    {
+    }
+
+    /**
+     * How stale a {@link GnssStatus} may be before its used in fix flags stop being applied.
+     * <p>
+     * The status arrives about once a second while the callback is registered, so anything within
+     * a few seconds is contemporaneous with the measurements it is stamped on. Beyond that the
+     * receiver's satellite set may have changed, and reporting a flag the receiver never asserted
+     * for these measurements is worse than reporting nothing.
+     */
+    private static final long USED_IN_FIX_MAX_AGE_MS = 5_000L;
+
+    /**
+     * Returns the used in fix flags to stamp on the measurements being processed right now, or
+     * null if there are none recent enough to trust.
+     *
+     * @param elapsedTimeMillis The {@link SystemClock#elapsedRealtime()} reading for this scan.
+     * @return The satellite key to used in fix map, or null when no fresh status is available.
+     */
+    private Map<Long, Boolean> currentUsedInFixMap(long elapsedTimeMillis)
+    {
+        final UsedInFixSnapshot snapshot = usedInFixSnapshot;
+        if (snapshot == null) return null;
+        if (elapsedTimeMillis - snapshot.capturedAtMs() > USED_IN_FIX_MAX_AGE_MS) return null;
+
+        return snapshot.usedInFix();
+    }
+
+    /**
+     * Creates the key that ties a {@link GnssStatus} entry to a {@link GnssMeasurement}. Both APIs
+     * report the same {@code GnssStatus.CONSTELLATION_*} value and the same space vehicle ID
+     * numbering, so the pair identifies one satellite across the two.
+     *
+     * @param constellationType The Android constellation type.
+     * @param svid              The space vehicle ID.
+     * @return A key that is unique for the constellation and space vehicle ID pair.
+     */
+    static Long createSatelliteKey(int constellationType, int svid)
+    {
+        return ((long) constellationType << 32) | (svid & 0xFFFFFFFFL);
     }
 
     /**
@@ -1071,9 +1199,15 @@ public class SurveyRecordProcessor
 
         final ZonedDateTime deviceTime = ZonedDateTime.now();
         final long elapsedTimeMillis = SystemClock.elapsedRealtime();
+
+        // Read once for the whole batch. The status callback can run on a different thread than
+        // this one, so reading per measurement would let one scan group be stamped from two
+        // different status snapshots.
+        final Map<Long, Boolean> usedInFixMap = currentUsedInFixMap(elapsedTimeMillis);
+
         for (final GnssMeasurement gnssMeasurement : gnssMeasurements)
         {
-            final GnssRecord gnssRecord = generateGnssSurveyRecord(gnssMeasurement, agcMap, deviceTime, elapsedTimeMillis);
+            final GnssRecord gnssRecord = generateGnssSurveyRecord(gnssMeasurement, agcMap, usedInFixMap, deviceTime, elapsedTimeMillis);
             notifyGnssRecordListeners(gnssRecord);
         }
     }
@@ -1107,24 +1241,41 @@ public class SurveyRecordProcessor
     }
 
     /**
-     * Gets the location age in milliseconds, clamped to 0 minimum.
+     * Gets the age of a location fix in milliseconds, where 0 means the age is unknown.
      * <p>
-     * Negative values can occur when the location fix is fresher than the measurement timestamp.
-     * These negative values cause backend upload failures when parsed as unsigned integers,
-     * as they wrap around to large positive values (e.g., -5 becomes 4294967291).
+     * This is derived from {@link Location#getElapsedRealtimeNanos()} rather than from
+     * {@link Location#getElapsedRealtimeAgeMillis(long)}, because the latter is only public API
+     * from Android 13 and using it would leave the age unreported on every older device. The
+     * elapsed realtime clock has been available since API 17, so the age can be reported on every
+     * version this app supports, which matters because the age is what tells a consumer whether a
+     * repeated position is a live fix or a frozen one.
+     * <p>
+     * Three cases deliberately collapse to 0, which the messaging API defines as unknown:
+     * <ul>
+     *     <li>A fix that never had its elapsed realtime set. Reporting the difference would give
+     *     back the entire device uptime as the age, which is worse than saying nothing.</li>
+     *     <li>A fix that is newer than the reference instant. The caller reads the clock once and
+     *     then reads several listeners, so a fresher fix can land in between.</li>
+     *     <li>An age beyond {@link Integer#MAX_VALUE}, which is clamped rather than allowed to
+     *     overflow. Anything approaching 24 days of staleness is equally useless at any precision,
+     *     and an overflowed value would wrap to a small number that looks fresh.</li>
+     * </ul>
      *
-     * @param lastKnownLocation The location to get age from
-     * @param elapsedTimeMillis The elapsed time to compare against
-     * @return Location age in milliseconds, guaranteed to be >= 0
+     * @param lastKnownLocation The location to get the age of.
+     * @param elapsedTimeMillis The {@link SystemClock#elapsedRealtime()} reading to measure
+     *                          against. Callers reading several locations for one message should
+     *                          pass the same value to all of them so the ages stay comparable.
+     * @return The age in milliseconds, always >= 0, where 0 means unknown.
      */
     public static int getLocationAgeMs(Location lastKnownLocation, long elapsedTimeMillis)
     {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU)
-        {
-            long elapsedRealtimeAgeMillis = lastKnownLocation.getElapsedRealtimeAgeMillis(elapsedTimeMillis);
-            return Math.max(0, (int) elapsedRealtimeAgeMillis);
-        }
-        return 0;
+        final long fixRealtimeMs = lastKnownLocation.getElapsedRealtimeNanos() / 1_000_000L;
+        if (fixRealtimeMs <= 0) return 0;
+
+        final long ageMs = elapsedTimeMillis - fixRealtimeMs;
+        if (ageMs <= 0) return 0;
+
+        return (int) Math.min(ageMs, Integer.MAX_VALUE);
     }
 
     /**
@@ -2274,7 +2425,7 @@ public class SurveyRecordProcessor
      * @return The GNSS record to send to any listeners.
      * @since 0.3.0
      */
-    private GnssRecord generateGnssSurveyRecord(GnssMeasurement gnss, Map<ConstellationFreqKey, Float> agcMap, ZonedDateTime deviceTime, long elapsedTimeMillis)
+    private GnssRecord generateGnssSurveyRecord(GnssMeasurement gnss, Map<ConstellationFreqKey, Float> agcMap, Map<Long, Boolean> usedInFixMap, ZonedDateTime deviceTime, long elapsedTimeMillis)
     {
         final GnssRecordData.Builder dataBuilder = GnssRecordData.newBuilder();
 
@@ -2325,6 +2476,18 @@ public class SurveyRecordProcessor
         if (constellation != Constellation.UNKNOWN) dataBuilder.setConstellation(constellation);
 
         dataBuilder.setSpaceVehicleId(UInt32Value.newBuilder().setValue(gnss.getSvid()));
+
+        // Left unset when no recent GnssStatus is available, or when the status did not mention
+        // this satellite, so that an absent value keeps meaning "not reported" rather than "not
+        // used".
+        if (usedInFixMap != null)
+        {
+            final Boolean usedInFix = usedInFixMap.get(createSatelliteKey(gnss.getConstellationType(), gnss.getSvid()));
+            if (usedInFix != null)
+            {
+                dataBuilder.setUsedInSolution(BoolValue.newBuilder().setValue(usedInFix));
+            }
+        }
 
         if (gnss.hasCarrierFrequencyHz())
         {

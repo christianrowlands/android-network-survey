@@ -61,7 +61,7 @@ public class GnssCsvLogger extends CsvRecordLogger implements IGnssSurveyRecordL
     @Override
     String[] getHeaderComments()
     {
-        return new String[]{"CSV Version=0.3.0"};
+        return new String[]{"CSV Version=0.4.0"};
     }
 
     @Override

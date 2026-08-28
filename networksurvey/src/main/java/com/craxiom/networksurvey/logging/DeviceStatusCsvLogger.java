@@ -9,13 +9,16 @@ import static com.craxiom.networksurvey.constants.csv.DeviceStatusCsvConstants.D
 import static com.craxiom.networksurvey.constants.csv.DeviceStatusCsvConstants.GNSS_ACCURACY;
 import static com.craxiom.networksurvey.constants.csv.DeviceStatusCsvConstants.GNSS_ALTITUDE;
 import static com.craxiom.networksurvey.constants.csv.DeviceStatusCsvConstants.GNSS_LATITUDE;
+import static com.craxiom.networksurvey.constants.csv.DeviceStatusCsvConstants.GNSS_AGE;
 import static com.craxiom.networksurvey.constants.csv.DeviceStatusCsvConstants.GNSS_LONGITUDE;
 import static com.craxiom.networksurvey.constants.csv.DeviceStatusCsvConstants.LATITUDE;
+import static com.craxiom.networksurvey.constants.csv.DeviceStatusCsvConstants.MOCK_LOCATION;
 import static com.craxiom.networksurvey.constants.csv.DeviceStatusCsvConstants.LONGITUDE;
 import static com.craxiom.networksurvey.constants.csv.DeviceStatusCsvConstants.MISSION_ID;
 import static com.craxiom.networksurvey.constants.csv.DeviceStatusCsvConstants.NETWORK_ACCURACY;
 import static com.craxiom.networksurvey.constants.csv.DeviceStatusCsvConstants.NETWORK_ALTITUDE;
 import static com.craxiom.networksurvey.constants.csv.DeviceStatusCsvConstants.NETWORK_LATITUDE;
+import static com.craxiom.networksurvey.constants.csv.DeviceStatusCsvConstants.NETWORK_AGE;
 import static com.craxiom.networksurvey.constants.csv.DeviceStatusCsvConstants.NETWORK_LONGITUDE;
 import static com.craxiom.networksurvey.constants.csv.DeviceStatusCsvConstants.RECORD_NUMBER;
 import static com.craxiom.networksurvey.constants.csv.DeviceStatusCsvConstants.SPEED;
@@ -44,17 +47,20 @@ public class DeviceStatusCsvLogger extends CsvRecordLogger implements IDeviceSta
     @Override
     String[] getHeaders()
     {
+        // New columns are appended after recordNumber so that the column order older parsers
+        // depend on never shifts.
         return new String[]{DEVICE_TIME, LATITUDE, LONGITUDE, ALTITUDE, SPEED, ACCURACY,
                 BATTERY_LEVEL_PERCENT, GNSS_LATITUDE, GNSS_LONGITUDE, GNSS_ALTITUDE, GNSS_ACCURACY,
                 NETWORK_LATITUDE, NETWORK_LONGITUDE, NETWORK_ALTITUDE, NETWORK_ACCURACY,
                 DEVICE_SERIAL_NUMBER, LOCATION_AGE,
-                MISSION_ID, RECORD_NUMBER};
+                MISSION_ID, RECORD_NUMBER,
+                GNSS_AGE, NETWORK_AGE, MOCK_LOCATION};
     }
 
     @Override
     String[] getHeaderComments()
     {
-        return new String[]{"CSV Version=0.5.0"};
+        return new String[]{"CSV Version=0.6.0"};
     }
 
     @Override
@@ -107,7 +113,15 @@ public class DeviceStatusCsvLogger extends CsvRecordLogger implements IDeviceSta
                 data.getDeviceSerialNumber(),
                 data.getLocationAge() == 0 ? "" : String.valueOf(data.getLocationAge()),
                 data.getMissionId(),
-                String.valueOf(data.getRecordNumber())
+                String.valueOf(data.getRecordNumber()),
+
+                // An age of 0 means unknown, and the age is only meaningful alongside the fix it
+                // describes, so it is gated on the same check that blanks the coordinates. The
+                // mock flag is only ever set when the location was mocked, so an empty cell means
+                // the location was not mocked or the app did not check.
+                hasGnssLocation && data.getGnssAge() != 0 ? String.valueOf(data.getGnssAge()) : "",
+                hasNetworkLocation && data.getNetworkAge() != 0 ? String.valueOf(data.getNetworkAge()) : "",
+                data.hasMockLocation() ? String.valueOf(data.getMockLocation().getValue()) : ""
         };
     }
 }

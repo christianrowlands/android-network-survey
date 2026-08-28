@@ -71,6 +71,7 @@ public class GnssRecordLogger extends SurveyRecordLogger implements IGnssSurveyR
 
             tableColumns.add(FeatureColumn.createColumn(columnNumber++, GnssMessageConstants.CONSTELLATION, GeoPackageDataType.TEXT, false, null));
             tableColumns.add(FeatureColumn.createColumn(columnNumber++, GnssMessageConstants.SPACE_VEHICLE_ID, GeoPackageDataType.MEDIUMINT, false, null));
+            tableColumns.add(FeatureColumn.createColumn(columnNumber++, GnssMessageConstants.USED_IN_SOLUTION, GeoPackageDataType.BOOLEAN, false, null));
             tableColumns.add(FeatureColumn.createColumn(columnNumber++, GnssMessageConstants.CARRIER_FREQUENCY_HZ, GeoPackageDataType.INT, false, null));
             tableColumns.add(FeatureColumn.createColumn(columnNumber++, GnssMessageConstants.LATITUDE_STD_DEV_M, GeoPackageDataType.FLOAT, false, null));
             tableColumns.add(FeatureColumn.createColumn(columnNumber++, GnssMessageConstants.LONGITUDE_STD_DEV_M, GeoPackageDataType.FLOAT, false, null));
@@ -128,6 +129,13 @@ public class GnssRecordLogger extends SurveyRecordLogger implements IGnssSurveyR
                         if (data.hasSpaceVehicleId())
                         {
                             row.setValue(GnssMessageConstants.SPACE_VEHICLE_ID, data.getSpaceVehicleId().getValue());
+                        }
+
+                        // Left unset when the receiver's status did not mention this satellite, so
+                        // that a null keeps meaning "not reported" rather than "not used".
+                        if (data.hasUsedInSolution())
+                        {
+                            row.setValue(GnssMessageConstants.USED_IN_SOLUTION, data.getUsedInSolution().getValue());
                         }
 
                         if (data.hasCarrierFreqHz())

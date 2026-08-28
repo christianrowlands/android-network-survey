@@ -6,6 +6,8 @@ import android.os.Bundle;
 
 import androidx.annotation.NonNull;
 
+import com.craxiom.networksurvey.util.LocationDiagnostics;
+
 import java.util.List;
 
 /**
@@ -17,7 +19,7 @@ import java.util.List;
 public class ExtraLocationListener implements LocationListener
 {
     private final String selectedProvider;
-    private Location latestLocation;
+    private volatile Location latestLocation;
 
     public ExtraLocationListener(String provider)
     {
@@ -30,6 +32,10 @@ public class ExtraLocationListener implements LocationListener
         if (selectedProvider.equals(location.getProvider()))
         {
             latestLocation = location;
+
+            // Debug only. These are the raw per provider fixes, so this is where a NETWORK_PROVIDER
+            // fix can be inspected to see whether Wi-Fi or cell towers produced it.
+            LocationDiagnostics.logLocationExtras(location);
         }
     }
 

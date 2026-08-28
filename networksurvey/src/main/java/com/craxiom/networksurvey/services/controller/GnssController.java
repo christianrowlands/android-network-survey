@@ -10,6 +10,7 @@ import android.os.Build;
 import android.os.Handler;
 import android.os.Looper;
 
+import androidx.annotation.NonNull;
 import androidx.core.content.ContextCompat;
 
 import com.craxiom.networksurvey.Application;
@@ -68,6 +69,7 @@ public class GnssController extends AController
 
     private volatile int gnssScanRateMs;
     private GnssMeasurementsEvent.Callback measurementListener;
+    private GnssStatus.Callback statusListener;
     private IGnssFailureListener gnssFailureListener;
     private final GnssRecordLogger gnssRecordLogger;
     private final GnssCsvLogger gnssCsvLogger;
@@ -171,6 +173,8 @@ public class GnssController extends AController
                 try
                 {
                     locationManager.unregisterGnssMeasurementsCallback(measurementListener);
+                    unregisterGnssStatusListener();
+                    if (surveyRecordProcessor != null) surveyRecordProcessor.clearGnssStatus();
                     Timber.d("Unregistered GNSS measurements callback for battery pause");
                 } catch (Exception e)
                 {
@@ -203,6 +207,7 @@ public class GnssController extends AController
                     {
                         locationManager.registerGnssMeasurementsCallback(measurementListener);
                     }
+                    registerGnssStatusListener();
                     Timber.d("Re-registered GNSS measurements callback after battery resume");
                 } catch (Exception e)
                 {
@@ -338,6 +343,19 @@ public class GnssController extends AController
                 }
             }
         };
+
+        // The raw GnssMeasurement objects do not say whether a satellite was used in the position
+        // solution, so the status is tracked alongside them purely to supply that flag.
+        statusListener = new GnssStatus.Callback()
+        {
+            @Override
+            public void onSatelliteStatusChanged(@NonNull GnssStatus status)
+            {
+                if (isPaused()) return;
+
+                if (surveyRecordProcessor != null) surveyRecordProcessor.onGnssStatus(status);
+            }
+        };
     }
 
     /**
@@ -377,6 +395,7 @@ public class GnssController extends AController
                                 Timber.d("Registering the normal GNSS measurements listener since the scan rate was frequent enough");
                                 batteryOptimizedGnssMeasurement.set(false);
                                 locationManager.registerGnssMeasurementsCallback(executorService, measurementListener);
+                                registerGnssStatusListener();
                             } else
                             {
                                 // If the scan rate is greater than n seconds, then we use the battery optimized
@@ -392,13 +411,14 @@ public class GnssController extends AController
                         } else
                         {
                             locationManager.registerGnssMeasurementsCallback(measurementListener);
+                            registerGnssStatusListener();
                         }
                         surveyService.getPrimaryLocationListener().addGnssTimeoutCallback(this::checkForGnssTimeout);
                         Timber.i("Successfully registered the GNSS listeners");
                     }
                 } else
                 {
-                    Timber.w("The location manager was null when registering the GNSS listeners");
+                    Timber.w("Skipped registering the GNSS listeners because a location manager was already held");
                 }
 
                 // Only check for missed measurements when not in battery optimized mode
@@ -457,6 +477,8 @@ public class GnssController extends AController
             if (locationManager != null)
             {
                 locationManager.unregisterGnssMeasurementsCallback(measurementListener);
+                unregisterGnssStatusListener();
+                if (surveyRecordProcessor != null) surveyRecordProcessor.clearGnssStatus();
                 surveyService.getPrimaryLocationListener().clearGnssTimeoutCallback();
                 locationManager = null;
             }
@@ -592,10 +614,59 @@ public class GnssController extends AController
                 {
                     locationManager.registerGnssMeasurementsCallback(measurementListener);
                 }
+                registerGnssStatusListener();
             } else
             {
                 Timber.w("Could not run the single GNSS measurement because the app does not have the required permissions");
             }
+        }
+    }
+
+    /**
+     * Registers the {@link GnssStatus} callback so that the used in fix flag is available while
+     * measurements are flowing.
+     * <p>
+     * This is deliberately tied to the lifecycle of the measurements callback rather than to the
+     * survey as a whole, so that the battery optimized scan mode does not leave a status callback
+     * running during the long gaps when no measurements are being collected.
+     */
+    @SuppressLint("MissingPermission")
+    private void registerGnssStatusListener()
+    {
+        if (locationManager == null || statusListener == null) return;
+
+        try
+        {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R)
+            {
+                locationManager.registerGnssStatusCallback(executorService, statusListener);
+            } else
+            {
+                locationManager.registerGnssStatusCallback(statusListener, serviceHandler);
+            }
+        } catch (Exception e)
+        {
+            // A missing status callback only costs the used in fix flag, so it must never take
+            // down the rest of the GNSS scanning.
+            Timber.w(e, "Could not register the GNSS status callback");
+        }
+    }
+
+    /**
+     * Unregisters the {@link GnssStatus} callback. Unregistering a callback that is not currently
+     * registered is a no-op, so this is safe to pair with every unregister of the measurements
+     * callback.
+     */
+    private void unregisterGnssStatusListener()
+    {
+        if (locationManager == null || statusListener == null) return;
+
+        try
+        {
+            locationManager.unregisterGnssStatusCallback(statusListener);
+        } catch (Exception e)
+        {
+            Timber.v(e, "Could not unregister the GNSS status callback");
         }
     }
 
@@ -619,7 +690,11 @@ public class GnssController extends AController
                 if (batteryOptimizedMeasurementCount.incrementAndGet() >= 15)
                 {
                     Timber.i("Saw the 15th GNSS measurement; unregistering the GNSS measurements callback to save battery");
-                    locationManager.unregisterGnssMeasurementsCallback(measurementListener);
+                    if (locationManager != null)
+                    {
+                        locationManager.unregisterGnssMeasurementsCallback(measurementListener);
+                    }
+                    unregisterGnssStatusListener();
                     return true;
                 } else
                 {

@@ -23,4 +23,8 @@ public class DeviceStatusCsvConstants extends SurveyCsvConstants
     public static final String NETWORK_LONGITUDE = "networkLongitude";
     public static final String NETWORK_ALTITUDE = "networkAltitude";
     public static final String NETWORK_ACCURACY = "networkAccuracy";
+
+    public static final String GNSS_AGE = "gnssAge";
+    public static final String NETWORK_AGE = "networkAge";
+    public static final String MOCK_LOCATION = "mockLocation";
 }

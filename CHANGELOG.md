@@ -7,8 +7,12 @@
 * Add a Romanian translation, contributed through Weblate. (Thanks Laur Ioniță)
 * Add the AGC (Automatic Gain Control) column to the GNSS Status UI.
 * Log MMS events (INCOMING_MMS and OUTGOING_MMS) in the CDR file. CDR variant only.
+* Log and stream `gnssAge` and `networkAge` on device status records, the age of the extra GNSS and network provider fixes reported when the location provider is set to "All". Without an age, a receiver that had stopped producing fixes looked identical to one still working. Device status CSV version is now 0.6.0. (NS Messaging API 2.6.0)
+* Log and stream `mockLocation` on device status records, reporting that the location came from a mock location provider. It is only ever sent when the location really was mocked. (NS Messaging API 2.6.0)
+* Populate `usedInSolution` on GNSS records, in the CSV file, the GeoPackage file, and the MQTT and gRPC streams. Android reports which satellites went into the position solution on the GNSS status rather than on the raw measurements the records are built from, so the app now tracks both and joins them. A satellite the status did not mention is left empty rather than reported as unused. GNSS CSV version is now 0.4.0.
 
 **IMPROVEMENTS**
+* Report `locationAge` on every Android version. The age was previously only measured on Android 13 and newer. This affects every record type.
 * Drop the unused RECEIVE_SMS permission from the CDR variant. SMS events have been captured through the message store (READ_SMS) since 1.29, so the broadcast permission was never needed.
 
 **BUG FIXES**

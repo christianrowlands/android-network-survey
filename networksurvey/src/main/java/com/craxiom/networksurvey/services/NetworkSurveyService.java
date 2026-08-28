@@ -91,6 +91,7 @@ import com.craxiom.networksurvey.services.controller.WifiController;
 import com.craxiom.networksurvey.services.watchlist.WatchlistChangePublisher;
 import com.craxiom.networksurvey.services.watchlist.WatchlistDetectionManager;
 import com.craxiom.networksurvey.util.CredentialSecureStorage;
+import com.craxiom.networksurvey.util.LocationDiagnostics;
 import com.craxiom.networksurvey.util.MdmUtils;
 import com.craxiom.networksurvey.util.NsAnalyticsSecureStorage;
 import com.craxiom.networksurvey.util.NsUtils;
@@ -2725,6 +2726,10 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
                 .setDeviceTime(NsUtils.getRfc3339String(ZonedDateTime.now()));
         dataBuilder.setMdmOverride(BoolValue.newBuilder().setValue(mdmOverride).build());
 
+        // Read the clock once so that the primary, GNSS, and network ages in this message are all
+        // measured against the same instant and stay comparable to each other.
+        final long elapsedTimeMillis = SystemClock.elapsedRealtime();
+
         if (primaryLocationListener != null)
         {
             final Location lastKnownLocation = primaryLocationListener.getLatestLocation();
@@ -2734,7 +2739,15 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
                 dataBuilder.setLongitude(lastKnownLocation.getLongitude());
                 dataBuilder.setAltitude((float) lastKnownLocation.getAltitude());
                 dataBuilder.setAccuracy(MathUtils.roundAccuracy(lastKnownLocation.getAccuracy()));
-                dataBuilder.setLocationAge(SurveyRecordProcessor.getLocationAgeMs(lastKnownLocation, SystemClock.elapsedRealtime()));
+                dataBuilder.setLocationAge(SurveyRecordProcessor.getLocationAgeMs(lastKnownLocation, elapsedTimeMillis));
+
+                // Only ever set when the location really was mocked. Mocking is the exceptional
+                // case, so stamping every ordinary record with an explicit false would spend wire
+                // bytes on every message, and a row of the CSV, to say nothing.
+                if (LocationDiagnostics.isMock(lastKnownLocation))
+                {
+                    dataBuilder.setMockLocation(BoolValue.of(true));
+                }
                 if (lastKnownLocation.hasSpeed())
                 {
                     float speed = FormatUtils.formatSpeed(lastKnownLocation.getSpeed());
@@ -2748,7 +2761,9 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
 
         if (locationProviderPreference == LOCATION_PROVIDER_ALL)
         {
-            // Add the extra locations to the message
+            // Add the extra locations to the message. The listeners hold the last fix from each
+            // provider indefinitely, so the age is what tells a consumer whether the provider is
+            // still producing fixes or has gone quiet while the app keeps reporting the old one.
             if (gnssLocationListener != null)
             {
                 Location gnssLocation = gnssLocationListener.getLatestLocation();
@@ -2758,6 +2773,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
                     dataBuilder.setGnssLongitude(gnssLocation.getLongitude());
                     dataBuilder.setGnssAltitude((float) gnssLocation.getAltitude());
                     dataBuilder.setGnssAccuracy(MathUtils.roundAccuracy(gnssLocation.getAccuracy()));
+                    dataBuilder.setGnssAge(SurveyRecordProcessor.getLocationAgeMs(gnssLocation, elapsedTimeMillis));
                 }
             }
 
@@ -2770,6 +2786,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
                     dataBuilder.setNetworkLongitude(networkLocation.getLongitude());
                     dataBuilder.setNetworkAltitude((float) networkLocation.getAltitude());
                     dataBuilder.setNetworkAccuracy(MathUtils.roundAccuracy(networkLocation.getAccuracy()));
+                    dataBuilder.setNetworkAge(SurveyRecordProcessor.getLocationAgeMs(networkLocation, elapsedTimeMillis));
                 }
             }
         }
