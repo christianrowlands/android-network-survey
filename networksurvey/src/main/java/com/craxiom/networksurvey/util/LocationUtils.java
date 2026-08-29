@@ -90,4 +90,25 @@ public class LocationUtils
 
         return provider;
     }
+
+    /**
+     * Reports whether a fix came from a mock location provider.
+     * <p>
+     * {@link Location#isMock()} arrived in API 31 and replaced the deprecated
+     * {@link Location#isFromMockProvider()}, which is what is used below that.
+     *
+     * @param location The fix to inspect, which must not be null.
+     * @return True if the platform reported the fix as coming from a mock provider.
+     */
+    @SuppressWarnings("deprecation")
+    public static boolean isMock(Location location)
+    {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S)
+        {
+            return location.isMock();
+        } else
+        {
+            return location.isFromMockProvider();
+        }
+    }
 }

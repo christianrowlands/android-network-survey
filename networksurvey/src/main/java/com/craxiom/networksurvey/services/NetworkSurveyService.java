@@ -91,7 +91,7 @@ import com.craxiom.networksurvey.services.controller.WifiController;
 import com.craxiom.networksurvey.services.watchlist.WatchlistChangePublisher;
 import com.craxiom.networksurvey.services.watchlist.WatchlistDetectionManager;
 import com.craxiom.networksurvey.util.CredentialSecureStorage;
-import com.craxiom.networksurvey.util.LocationDiagnostics;
+import com.craxiom.networksurvey.util.LocationUtils;
 import com.craxiom.networksurvey.util.MdmUtils;
 import com.craxiom.networksurvey.util.NsAnalyticsSecureStorage;
 import com.craxiom.networksurvey.util.NsUtils;
@@ -2744,7 +2744,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
                 // Only ever set when the location really was mocked. Mocking is the exceptional
                 // case, so stamping every ordinary record with an explicit false would spend wire
                 // bytes on every message, and a row of the CSV, to say nothing.
-                if (LocationDiagnostics.isMock(lastKnownLocation))
+                if (LocationUtils.isMock(lastKnownLocation))
                 {
                     dataBuilder.setMockLocation(BoolValue.of(true));
                 }
