@@ -1,6 +1,6 @@
 # Changelog
 
-## [1.58](https://github.com/christianrowlands/android-network-survey/releases/tag/v1.58) - Unreleased
+## [1.58](https://github.com/christianrowlands/android-network-survey/releases/tag/v1.58) - 2026-09-02
 
 **NEW FEATURES**
 * Add a Slovak translation, contributed through Weblate. (Thanks Pa Di)
