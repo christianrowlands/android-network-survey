@@ -1,19 +1,16 @@
 package com.craxiom.networksurvey.logging.db.uploader;
 
 import android.app.Notification;
-import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.content.Context;
 
 import androidx.annotation.NonNull;
-import androidx.core.app.NotificationCompat;
 import androidx.work.Data;
 import androidx.work.ForegroundInfo;
 import androidx.work.Worker;
 import androidx.work.WorkerParameters;
 
 import com.craxiom.networksurvey.BuildConfig;
-import com.craxiom.networksurvey.R;
 import com.craxiom.networksurvey.constants.NetworkSurveyConstants;
 import com.craxiom.networksurvey.logging.db.SurveyDatabase;
 import com.craxiom.networksurvey.logging.db.dao.SurveyRecordDao;
@@ -68,7 +65,7 @@ public class NsUploaderWorker extends Worker
     public static final String SOURCE_AUTO = "auto";
     public static final String OCID_RESULT_ENUM = "OCID_RESULT_ENUM";
     public static final String BEACONDB_RESULT_ENUM = "BEACONDB_RESULT_ENUM";
-    public static final int NOTIFICATION_ID = 102;
+    public static final int NOTIFICATION_ID = NetworkSurveyConstants.UPLOADER_NOTIFICATION_ID;
     private static final int LOCATIONS_PER_PART = 100; // Batch size for uploads
     public static final String OCID_APP_ID = "NetworkSurvey " + BuildConfig.VERSION_NAME;
 
@@ -181,32 +178,17 @@ public class NsUploaderWorker extends Worker
         super.onStopped();
     }
 
+    /**
+     * Only used by WorkManager for expedited work on Android 11 and below, where expedited work has
+     * to run as a foreground service. Reuses the same notification id and channel as the progress
+     * row so those devices see one upload notification instead of two.
+     */
     @NonNull
     @Override
     public ListenableFuture<ForegroundInfo> getForegroundInfoAsync()
     {
-        // getForegroundInfo is needed for Android SDK prior to S (API 31, Android 12). This is
-        // not used on later versions of Android.
-        Context context = getApplicationContext();
-        String channelId = "ns_upload_channel";
-
-        NotificationChannel channel = new NotificationChannel(
-                channelId,
-                "Upload Worker",
-                NotificationManager.IMPORTANCE_LOW
-        );
-        NotificationManager manager = context.getSystemService(NotificationManager.class);
-        if (manager != null) manager.createNotificationChannel(channel);
-
-        Notification notification = new NotificationCompat.Builder(context, channelId)
-                .setContentTitle("Network Survey Upload")
-                .setContentText("Uploading data...")
-                .setSmallIcon(R.drawable.ic_upload_24)
-                .setOngoing(true)
-                .build();
-
-        ForegroundInfo foregroundInfo = new ForegroundInfo(1337, notification);
-        return Futures.immediateFuture(foregroundInfo);
+        Notification notification = notificationHelper.createNotification(notificationManager);
+        return Futures.immediateFuture(new ForegroundInfo(NOTIFICATION_ID, notification));
     }
 
     private UploadResultBundle processUploadBatch(int batchSize, boolean isBeaconDBUploadEnabled)

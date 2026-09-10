@@ -25,9 +25,23 @@ public class NetworkSurveyConstants
     public static final boolean DEFAULT_MQTT_DEVICE_STATUS_STREAM_SETTING = true;
     public static final boolean DEFAULT_MQTT_WATCHLIST_STREAM_SETTING = true;
 
+    // Notification channel ids. These are persisted by the OS along with the user's per-channel
+    // settings, so they must never change once shipped. Channel display names live in strings.xml.
     public static final String NOTIFICATION_CHANNEL_ID = "network_survey_notification";
-    public static final int GRPC_CONNECTION_NOTIFICATION_ID = 3;
+    public static final String UPLOADER_NOTIFICATION_CHANNEL_ID = "uploader_notification_channel";
+    public static final String NEW_TOWER_NOTIFICATION_CHANNEL_ID = "new_tower_alerts";
+    // A channel that older versions created for the pre-Android 12 expedited upload worker. It is
+    // deleted on startup so it no longer appears in the system notification settings.
+    public static final String LEGACY_UPLOAD_WORKER_CHANNEL_ID = "ns_upload_channel";
+
+    // Notification ids. The survey notification (id 1) is the single ongoing notification for the
+    // NetworkSurveyService and reflects every active survey output, including the gRPC connection.
     public static final int LOGGING_NOTIFICATION_ID = 1;
+    public static final int UPLOADER_NOTIFICATION_ID = 102;
+    public static final int NEW_TOWER_NOTIFICATION_ID = 104;
+
+    // Intent extra used by the survey and upload notifications to land the user on the dashboard.
+    public static final String EXTRA_NAVIGATE_TO_DASHBOARD = "navigate_to_dashboard";
 
     public static final String WAKE_LOCK_TAG = "NetworkSurvey:WakeLock";
 

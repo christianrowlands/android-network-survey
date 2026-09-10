@@ -2,26 +2,17 @@ package com.craxiom.networksurvey.services;
 
 import android.annotation.SuppressLint;
 import android.app.IntentService;
-import android.app.Notification;
-import android.app.NotificationManager;
-import android.app.PendingIntent;
 import android.app.Service;
-import android.app.TaskStackBuilder;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
-import android.content.pm.ServiceInfo;
-import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Binder;
-import android.os.Build;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.Looper;
 import android.widget.Toast;
-
-import androidx.core.app.NotificationCompat;
 
 import com.craxiom.messaging.BluetoothRecord;
 import com.craxiom.messaging.CdmaRecord;
@@ -50,8 +41,6 @@ import com.craxiom.messaging.grpc.WifiBeaconSurveyResponse;
 import com.craxiom.messaging.grpc.WirelessSurveyGrpc;
 import com.craxiom.mqttlibrary.IConnectionStateListener;
 import com.craxiom.mqttlibrary.connection.ConnectionState;
-import com.craxiom.networksurvey.NetworkSurveyActivity;
-import com.craxiom.networksurvey.R;
 import com.craxiom.networksurvey.constants.NetworkSurveyConstants;
 import com.craxiom.networksurvey.fragments.model.GrpcConnectionSettings;
 import com.craxiom.networksurvey.listeners.IBluetoothSurveyRecordListener;
@@ -229,9 +218,19 @@ public class GrpcConnectionService extends Service implements IDeviceStatusListe
     {
         super.onCreate();
 
-        // Bind to the survey service
+        // The gRPC connection is reported in the NetworkSurveyService's foreground notification, and
+        // that service stays alive (and in the foreground) for as long as this connection is active.
+        // Start it explicitly before binding, because the bind below does not auto-create it.
         final Context applicationContext = getApplicationContext();
         final Intent serviceIntent = new Intent(applicationContext, NetworkSurveyService.class);
+        try
+        {
+            applicationContext.startService(serviceIntent);
+        } catch (Exception e)
+        {
+            Timber.e(e, "Could not start the NetworkSurveyService from the GrpcConnectionService");
+        }
+
         final boolean bound = applicationContext.bindService(serviceIntent, surveyServiceConnection, BIND_ABOVE_CLIENT);
         Timber.i("NetworkSurveyService bound in the GrpcConnectionService: %s", bound);
     }
@@ -791,73 +790,6 @@ public class GrpcConnectionService extends Service implements IDeviceStatusListe
     }
 
     /**
-     * Create and add the persistent notification indicating the current connection state to the remote gRPC server.
-     * <p>
-     * If the connection is disconnected, then the notification is removed.
-     * <p>
-     * This method is synchronized since we get notified of connection state changes from multiple threads.
-     */
-    private synchronized void updateConnectionNotification()
-    {
-        // Do nothing if the connection is in a disconnecting state.  We will update the notification once the full disconnection happens.
-        if (connectionState.get() == ConnectionState.DISCONNECTING) return;
-
-        if (connectionState.get() == ConnectionState.DISCONNECTED)
-        {
-            Timber.i("Removing the connection notification");
-
-            final NotificationManager notificationManager = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
-            //noinspection ConstantConditions
-            notificationManager.cancel(NetworkSurveyConstants.GRPC_CONNECTION_NOTIFICATION_ID);
-
-            return;
-        }
-
-        Intent intent = new Intent(this, NetworkSurveyActivity.class);
-        intent.setAction(Intent.ACTION_VIEW);
-        intent.setData(Uri.parse("http://craxiom.com/grpc_server_connection"));
-
-        TaskStackBuilder taskStackBuilder = TaskStackBuilder.create(this).addNextIntentWithParentStack(intent);
-        PendingIntent pendingIntent = taskStackBuilder.getPendingIntent(1234, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
-
-        final CharSequence notificationText = getNotificationText();
-
-        Notification notification = new NotificationCompat.Builder(this, NetworkSurveyConstants.NOTIFICATION_CHANNEL_ID)
-                .setContentTitle(getText(R.string.connection_notification_title))
-                .setContentText(notificationText)
-                .setOngoing(true)
-                .setSmallIcon(R.drawable.connection_icon)
-                .setContentIntent(pendingIntent)
-                .setTicker(getText(R.string.connection_notification_title))
-                .build();
-
-        if (Build.VERSION.SDK_INT > Build.VERSION_CODES.TIRAMISU)
-        {
-            startForeground(NetworkSurveyConstants.GRPC_CONNECTION_NOTIFICATION_ID, notification,
-                    ServiceInfo.FOREGROUND_SERVICE_TYPE_LOCATION);
-        } else
-        {
-            startForeground(NetworkSurveyConstants.GRPC_CONNECTION_NOTIFICATION_ID, notification);
-        }
-    }
-
-    /**
-     * Get the notification text based on the current connection state.
-     * Synchronized for consistency with updateConnectionNotification.
-     *
-     * @return A String that can be used in the Android notification to represent the current connection state.
-     */
-    private synchronized CharSequence getNotificationText()
-    {
-        return switch (connectionState.get())
-        {
-            case CONNECTING -> getText(R.string.connection_notification_connecting_text);
-            case CONNECTED -> getText(R.string.connection_notification_active_text);
-            default -> "";
-        };
-    }
-
-    /**
      * Used to reconnect to the gRPC server using the last known connection settings.
      */
     private void reconnectToGrpcServer()
@@ -946,7 +878,8 @@ public class GrpcConnectionService extends Service implements IDeviceStatusListe
             }
         }
 
-        updateConnectionNotification();
+        // The connection state is shown in the survey notification owned by the NetworkSurveyService.
+        if (networkSurveyService != null) networkSurveyService.updateServiceNotification();
 
         for (IConnectionStateListener listener : grpcConnectionListeners)
         {

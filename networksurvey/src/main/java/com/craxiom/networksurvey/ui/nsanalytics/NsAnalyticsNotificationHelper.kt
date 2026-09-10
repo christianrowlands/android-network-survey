@@ -23,11 +23,6 @@ import timber.log.Timber
  */
 object NsAnalyticsNotificationHelper {
 
-    private const val CHANNEL_ID = "ns_analytics_notification_channel"
-    private const val CHANNEL_NAME = "NS Analytics"
-    private const val CHANNEL_DESCRIPTION =
-        "Notifications about NS Analytics uploads, such as when uploads are paused"
-
     /**
      * Create the NS Analytics notification channel. Idempotent and safe to call from a worker.
      */
@@ -36,11 +31,11 @@ object NsAnalyticsNotificationHelper {
             context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
 
         val channel = NotificationChannel(
-            CHANNEL_ID,
-            CHANNEL_NAME,
+            NsAnalyticsConstants.NS_ANALYTICS_NOTIFICATION_CHANNEL_ID,
+            context.getString(R.string.ns_analytics_notification_channel_name),
             NotificationManager.IMPORTANCE_DEFAULT
         ).apply {
-            description = CHANNEL_DESCRIPTION
+            description = context.getString(R.string.ns_analytics_notification_channel_description)
             setShowBadge(true)
         }
 
@@ -79,7 +74,7 @@ object NsAnalyticsNotificationHelper {
 
         // Collapsed view shows the generic text; the expanded (BigText) view shows the backend
         // quota message when available.
-        val notification = NotificationCompat.Builder(context, CHANNEL_ID)
+        val notification = NotificationCompat.Builder(context, NsAnalyticsConstants.NS_ANALYTICS_NOTIFICATION_CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_upload_24)
             .setContentTitle(context.getString(R.string.ns_analytics_paused_notification_title))
             .setContentText(context.getString(R.string.ns_analytics_paused_notification_text))

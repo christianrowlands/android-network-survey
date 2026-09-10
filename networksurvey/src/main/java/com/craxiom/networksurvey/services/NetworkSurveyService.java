@@ -8,7 +8,7 @@ import static com.craxiom.networksurvey.constants.NetworkSurveyConstants.LOCATIO
 import android.Manifest;
 import android.annotation.SuppressLint;
 import android.app.Notification;
-import android.app.PendingIntent;
+import android.app.NotificationManager;
 import android.app.Service;
 import android.content.BroadcastReceiver;
 import android.content.Context;
@@ -31,10 +31,10 @@ import android.os.Looper;
 import android.os.PowerManager;
 import android.os.SystemClock;
 import android.provider.Settings;
+import android.service.notification.StatusBarNotification;
 import android.telephony.SubscriptionInfo;
 
 import androidx.core.app.ActivityCompat;
-import androidx.core.app.NotificationCompat;
 import androidx.preference.PreferenceManager;
 
 import com.craxiom.messaging.DeviceStatus;
@@ -48,7 +48,6 @@ import com.craxiom.mqttlibrary.connection.BrokerConnectionInfo;
 import com.craxiom.mqttlibrary.connection.ConnectionState;
 import com.craxiom.mqttlibrary.connection.DefaultMqttConnection;
 import com.craxiom.mqttlibrary.ui.AConnectionFragment;
-import com.craxiom.networksurvey.Application;
 import com.craxiom.networksurvey.BuildConfig;
 import com.craxiom.networksurvey.GpsListener;
 import com.craxiom.networksurvey.NetworkSurveyActivity;
@@ -83,6 +82,11 @@ import com.craxiom.networksurvey.model.LogTypeState;
 import com.craxiom.networksurvey.model.SurveyTypes;
 import com.craxiom.networksurvey.model.UploadScanningResult;
 import com.craxiom.networksurvey.mqtt.MqttConnection;
+import com.craxiom.networksurvey.notification.NotificationChannels;
+import com.craxiom.networksurvey.notification.SurveyNotificationBuilder;
+import com.craxiom.networksurvey.notification.SurveyNotificationState;
+import com.craxiom.networksurvey.notification.SurveyStallWatchdog;
+import com.craxiom.networksurvey.ui.activesurvey.NewTowerNotificationHelper;
 import com.craxiom.networksurvey.mqtt.MqttConnectionInfo;
 import com.craxiom.networksurvey.services.controller.BluetoothController;
 import com.craxiom.networksurvey.services.controller.CellularController;
@@ -102,6 +106,7 @@ import com.google.protobuf.Int32Value;
 
 import java.time.LocalDateTime;
 import java.time.ZonedDateTime;
+import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
@@ -115,6 +120,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import kotlin.Unit;
 import timber.log.Timber;
 
 /**
@@ -191,6 +197,12 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
 
     private final Set<ILoggingChangeListener> loggingChangeListeners = new CopyOnWriteArraySet<>();
 
+    // The single ongoing notification for this service. The first post goes through startForeground
+    // and every later refresh goes through the NotificationManager.
+    private SurveyNotificationBuilder surveyNotificationBuilder;
+    private SurveyStallWatchdog surveyStallWatchdog;
+    private final AtomicBoolean foregroundStarted = new AtomicBoolean(false);
+
     private int locationProviderPreference = NetworkSurveyConstants.DEFAULT_LOCATION_PROVIDER;
 
     // Survey session tracking
@@ -246,6 +258,11 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
         deviceId = createDeviceId();
         deviceStatusCsvLogger = new DeviceStatusCsvLogger(this);
 
+        // The channels must exist before the first startForeground call, including when this service
+        // is started at boot without the activity ever running.
+        NotificationChannels.INSTANCE.createAll(context);
+        surveyNotificationBuilder = new SurveyNotificationBuilder(this);
+
         primaryLocationListener = new GpsListener();
         gnssLocationListener = new ExtraLocationListener(LocationManager.GPS_PROVIDER);
         networkLocationListener = new ExtraLocationListener(LocationManager.NETWORK_PROVIDER);
@@ -297,6 +314,9 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
                 pauseAllOperations();
             }
         }
+
+        surveyStallWatchdog = createStallWatchdog();
+        surveyStallWatchdog.start();
 
         updateServiceNotification();
     }
@@ -504,6 +524,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
         stopDeviceStatusReport(true);
         stopAllLogging();
 
+        if (surveyStallWatchdog != null) surveyStallWatchdog.stop();
         serviceLooper.quitSafely();
         shutdownNotifications();
         executorService.shutdown();
@@ -1618,6 +1639,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
                 // is not a mission relevant survey and must not roll a new Mission ID.
                 onSurveyStarted(false);
                 updateWakeLock();
+                updateServiceNotification();
 
                 // Generate appropriate success message based on what was started
                 String message;
@@ -1649,6 +1671,8 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
                 // Track survey session end
                 onSurveyStopped();
                 updateWakeLock();
+                NewTowerNotificationHelper.INSTANCE.resetSessionCount();
+                updateServiceNotification();
 
                 // Check to see if this service is still needed.  It is still needed if we are either logging, the UI is
                 // visible, or a server connection is active.
@@ -1743,6 +1767,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
                 registerDeviceStatusListener(nsAnalyticsDataStore);
 
                 updateWakeLock();
+                updateServiceNotification();
 
                 Timber.i("NS Analytics survey started - Cellular: %b, WiFi: %b, Bluetooth: %b, GNSS: %b",
                         cellularEnabled, wifiEnabled, bluetoothEnabled, gnssEnabled);
@@ -1797,6 +1822,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
 
                 onSurveyStopped();
                 updateWakeLock();
+                updateServiceNotification();
 
                 Timber.i("NS Analytics survey stopped");
 
@@ -2872,123 +2898,128 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
     }
 
     /**
-     * A notification for this service that is started in the foreground so that we can continue to get GPS location
-     * updates while the phone is locked or the app is not in the foreground.
+     * Posts or refreshes the single ongoing notification for this service.
+     * <p>
+     * The first call starts the service in the foreground so that location updates continue while
+     * the phone is locked or the app is in the background. Every later call only refreshes the
+     * notification content through the NotificationManager, which avoids the permission re-checks
+     * that repeated startForeground calls trigger on newer Android versions. The content is built by
+     * {@link SurveyNotificationBuilder} from a {@link SurveyNotificationState} snapshot so that
+     * everything running (file logging, MQTT, gRPC, the community survey, NS Analytics) is listed.
      */
     public void updateServiceNotification()
     {
         try
         {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q)
+            final Notification notification = surveyNotificationBuilder.build(buildNotificationState());
+
+            if (!foregroundStarted.get())
             {
-                startForeground(NetworkSurveyConstants.LOGGING_NOTIFICATION_ID, buildNotification(), ServiceInfo.FOREGROUND_SERVICE_TYPE_LOCATION);
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q)
+                {
+                    startForeground(NetworkSurveyConstants.LOGGING_NOTIFICATION_ID, notification, ServiceInfo.FOREGROUND_SERVICE_TYPE_LOCATION);
+                } else
+                {
+                    startForeground(NetworkSurveyConstants.LOGGING_NOTIFICATION_ID, notification);
+                }
+                foregroundStarted.set(true);
             } else
             {
-                startForeground(NetworkSurveyConstants.LOGGING_NOTIFICATION_ID, buildNotification());
+                final NotificationManager notificationManager = getSystemService(NotificationManager.class);
+                if (notificationManager != null)
+                {
+                    notificationManager.notify(NetworkSurveyConstants.LOGGING_NOTIFICATION_ID, notification);
+                }
             }
         } catch (Exception e)
         {
-            Timber.e(e, "Could not start the foreground service for Network Survey");
-            // TODO This is one possible option for the crash on Samsung S22 devices running Android 13
-            /*AlarmManager alarmManager = (AlarmManager) getSystemService(Context.ALARM_SERVICE);
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S)
-            {
-                if (alarmManager.canScheduleExactAlarms())
-                {
-                    Intent i = new Intent(this, NetworkSurveyService.class);
-                    PendingIntent pi = PendingIntent.getForegroundService(this, 50, i, PendingIntent.FLAG_UPDATE_CURRENT);
-                    alarmManager.setExact(AlarmManager.ELAPSED_REALTIME_WAKEUP, SystemClock.elapsedRealtime() + GO_OFF_OFFSET, pi);
-                } else
-                {
-                    Timber.e("Can't schedule an exact alarm in place of startForeground");
-                }
-            }*/
+            Timber.e(e, "Could not update the foreground service notification for Network Survey");
         }
     }
 
     /**
-     * Creates a new {@link Notification} based on the current state of this service.  The returned notification can
-     * then be passed on to the Android system.
-     *
-     * @return A {@link Notification} that represents the current state of this service (e.g. if logging is enabled).
+     * Snapshots everything the survey notification reflects. Kept as one method so the notification
+     * always sees a consistent view of the service state.
      */
-    private Notification buildNotification()
+    private SurveyNotificationState buildNotificationState()
     {
-        Application.createNotificationChannel(this);
+        final boolean fileLogging = isCellularLoggingEnabled() || isPhoneStateLoggingEnabled() || isWifiLoggingEnabled()
+                || isBluetoothLoggingEnabled() || isGnssLoggingEnabled() || isCdrLoggingEnabled();
+        final ConnectionState mqttState = mqttConnection != null ? mqttConnection.getConnectionState() : ConnectionState.DISCONNECTED;
 
-        final boolean logging = cellularController.isLoggingEnabled() || cellularController.isPhoneStateLoggingEnabled() || wifiController.isLoggingEnabled() || bluetoothController.isLoggingEnabled() || gnssController.isLoggingEnabled() || cellularController.isCdrLoggingEnabled();
-        final com.craxiom.mqttlibrary.connection.ConnectionState connectionState = mqttConnection.getConnectionState();
-        final boolean mqttConnectionActive = connectionState == ConnectionState.CONNECTED || connectionState == ConnectionState.CONNECTING;
-        final CharSequence notificationTitle = getText(R.string.network_survey_notification_title);
-        final String notificationText = getNotificationText(logging, mqttConnectionActive, connectionState);
-
-        final Intent notificationIntent = new Intent(this, NetworkSurveyActivity.class);
-        final PendingIntent pendingIntent = PendingIntent.getActivity(this, 0, notificationIntent, PendingIntent.FLAG_IMMUTABLE);
-
-        final NotificationCompat.Builder builder = new NotificationCompat.Builder(this, NetworkSurveyConstants.NOTIFICATION_CHANNEL_ID)
-                .setContentTitle(notificationTitle)
-                .setOngoing(true)
-                .setOnlyAlertOnce(true)
-                .setSmallIcon(mqttConnectionActive ? R.drawable.ic_cloud_connection : (logging ? R.drawable.logging_thick_icon : R.drawable.gps_map_icon))
-                .setContentIntent(pendingIntent)
-                .setTicker(notificationTitle)
-                .setContentText(notificationText)
-                .setCategory(NotificationCompat.CATEGORY_SERVICE)
-                .setStyle(new NotificationCompat.BigTextStyle().bigText(notificationText));
-
-        if (connectionState == ConnectionState.CONNECTING)
-        {
-            builder.setColor(getResources().getColor(R.color.connectionStatusConnecting, null));
-            builder.setColorized(true);
-        }
-
-        return builder.build();
+        return new SurveyNotificationState(
+                fileLogging,
+                isUploadScanningActive(),
+                isNsAnalyticsScanningActive(),
+                mqttState,
+                isMqttDroppingMessages(),
+                GrpcConnectionService.getConnectedState(),
+                cellularController.isScanningActive(),
+                wifiController.isScanningActive(),
+                bluetoothController.isScanningActive(),
+                gnssController.isScanningActive(),
+                isPhoneStateLoggingEnabled(),
+                isCdrLoggingEnabled(),
+                isPausedForBattery(),
+                getCurrentBatteryLevel(),
+                isPausedForQueueBackpressure(),
+                surveyStallWatchdog != null ? surveyStallWatchdog.getStalledMinutes() : null,
+                surveySessionStartTime);
     }
 
     /**
-     * Gets the text to use for the Network Survey Service Notification.
-     *
-     * @param logging              True if logging is active, false if disabled.
-     * @param mqttConnectionActive True if the MQTT connection is either in a connected or reconnecting state.
-     * @param connectionState      The actual connection state of the MQTT broker connection.
-     * @return The text that can be added to the service notification.
-     * @since 0.1.1
+     * Creates the watchdog that flips the notification title to "No records for N min" when a survey
+     * is running but nothing is being recorded, and that re-posts the notification if the user swiped
+     * it away (which Android 14 and later allow for foreground services).
      */
-    private String getNotificationText(boolean logging,
-                                       boolean mqttConnectionActive, ConnectionState connectionState)
+    private SurveyStallWatchdog createStallWatchdog()
     {
-        // Check if operations are paused due to battery (highest priority - requires external action)
-        if (batteryMonitor != null && batteryMonitor.isPausedDueToBattery())
+        return new SurveyStallWatchdog(serviceHandler,
+                surveySessionRecordCount::get,
+                this::isAnySurveyActive,
+                () -> isPausedForBattery() || isPausedForQueueBackpressure(),
+                this::getStallThresholdMs,
+                () -> {
+                    updateServiceNotification();
+                    return Unit.INSTANCE;
+                },
+                () -> {
+                    repostNotificationIfMissing();
+                    return Unit.INSTANCE;
+                });
+    }
+
+    /**
+     * The quiet period that counts as a stall: three times the longest scan interval currently in
+     * use, with a five minute floor so the default intervals never trip it on a short gap.
+     */
+    private long getStallThresholdMs()
+    {
+        final List<Integer> intervals = new ArrayList<>();
+        if (cellularController.isScanningActive()) intervals.add(cellularController.getScanRateMs());
+        if (wifiController.isScanningActive()) intervals.add(wifiController.getScanRateMs());
+        if (bluetoothController.isScanningActive()) intervals.add(bluetoothController.getScanRateMs());
+        if (gnssController.isScanningActive()) intervals.add(gnssController.getScanRateMs());
+        return SurveyStallWatchdog.Companion.thresholdFor(intervals);
+    }
+
+    /**
+     * Re-posts the survey notification if it is no longer showing, which happens when the user swipes
+     * it away on Android 14 and later while the service keeps running.
+     */
+    private void repostNotificationIfMissing()
+    {
+        if (!foregroundStarted.get()) return;
+        final NotificationManager notificationManager = getSystemService(NotificationManager.class);
+        if (notificationManager == null) return;
+
+        for (StatusBarNotification active : notificationManager.getActiveNotifications())
         {
-            final int batteryLevel = batteryMonitor.getCurrentBatteryLevel();
-            return getString(R.string.battery_paused_notification_text, batteryLevel);
+            if (active.getId() == NetworkSurveyConstants.LOGGING_NOTIFICATION_ID) return;
         }
 
-        // Check if operations are paused due to queue backpressure (lower priority - self-resolving)
-        if (isPausedDueToQueueBackpressure.get())
-        {
-            return getString(R.string.queue_paused_notification);
-        }
-
-        String notificationText = "";
-
-        if (logging)
-        {
-            notificationText = String.valueOf(getText(R.string.logging_notification_text)) + (mqttConnectionActive ? getText(R.string.and) : "");
-        }
-
-        switch (connectionState)
-        {
-            case CONNECTED ->
-                    notificationText += getText(R.string.mqtt_connection_notification_text);
-            case CONNECTING ->
-                    notificationText += getText(R.string.mqtt_reconnecting_notification_text);
-            default ->
-            {
-            }
-        }
-
-        return notificationText;
+        Timber.i("The survey notification is no longer showing, re-posting it");
+        updateServiceNotification();
     }
 
     /**
@@ -3012,6 +3043,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
     private void shutdownNotifications()
     {
         stopForeground(true);
+        foregroundStarted.set(false);
     }
 
     /**
@@ -3286,8 +3318,6 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
     @Override
     public void onConnectionStateChange(ConnectionState connectionState)
     {
-        updateServiceNotification();
-
         if (connectionState == ConnectionState.DISCONNECTED)
         {
             clearMqttBackpressureStates();
@@ -3297,6 +3327,10 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
             // client's silent auto-reconnects, so a backend that missed offline deltas is reconciled.
             watchlistChangePublisher.publishSnapshot();
         }
+
+        // Refresh after the backpressure states are cleared so a disconnect never leaves a stale
+        // drop mode line in the notification.
+        updateServiceNotification();
     }
 
     /**
@@ -3667,6 +3701,7 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
         {
             Timber.i("MQTT queue drained - resuming message queueing");
             notifyMqttDropModeStateListeners(false);
+            updateServiceNotification();
             return;
         }
 

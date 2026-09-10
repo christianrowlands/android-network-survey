@@ -17,6 +17,10 @@ class DeepLinkViewModel : ViewModel() {
     private val _navigationDestination = MutableStateFlow<String?>(null)
     val navigationDestination: StateFlow<String?> = _navigationDestination.asStateFlow()
 
+    // The bottom navigation tab to select on the home screen, as a MainScreens route.
+    private val _homeTabDestination = MutableStateFlow<String?>(null)
+    val homeTabDestination: StateFlow<String?> = _homeTabDestination.asStateFlow()
+
     /**
      * Trigger navigation to the NS Analytics screen.
      * Called by the Activity when a valid NS Analytics deep link is received.
@@ -43,10 +47,27 @@ class DeepLinkViewModel : ViewModel() {
     }
 
     /**
+     * Trigger navigation to the dashboard tab of the home screen.
+     * Called by the Activity when the survey or upload notification is tapped. The main graph pops
+     * back to the home screen and the home screen then selects the dashboard tab.
+     */
+    fun navigateToDashboard() {
+        _navigationDestination.value = NavDrawerOption.None.name
+        _homeTabDestination.value = MainScreens.Dashboard.route
+    }
+
+    /**
      * Clear the navigation event after it has been handled.
      * This prevents re-navigation on configuration changes.
      */
     fun clearNavigation() {
         _navigationDestination.value = null
+    }
+
+    /**
+     * Clear the home tab event after the home screen has selected the tab.
+     */
+    fun clearHomeTab() {
+        _homeTabDestination.value = null
     }
 }

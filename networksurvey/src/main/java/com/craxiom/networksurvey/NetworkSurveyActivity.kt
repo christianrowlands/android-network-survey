@@ -73,6 +73,8 @@ class NetworkSurveyActivity : AppCompatActivity(), StartupDialogActions {
         handleNsAnalyticsNavigationExtra()
         // Handle a tap on a watchlist "Seen" notification
         handleWatchlistNavigationExtra()
+        // Handle a tap on the survey or upload notification
+        handleDashboardNavigationExtra()
 
         // Load user color overrides before Compose renders the tower map
         PlmnColorOverrideManager(this)
@@ -145,6 +147,8 @@ class NetworkSurveyActivity : AppCompatActivity(), StartupDialogActions {
         handleNsAnalyticsNavigationExtra()
         // Handle a tap on a watchlist "Seen" notification when app is already running
         handleWatchlistNavigationExtra()
+        // Handle a tap on the survey or upload notification when app is already running
+        handleDashboardNavigationExtra()
     }
 
     override fun onResume() {
@@ -711,6 +715,24 @@ class NetworkSurveyActivity : AppCompatActivity(), StartupDialogActions {
             deepLinkViewModel.navigateToWatchlistHistory()
             // Clear the extra so a configuration change or re-create doesn't navigate again.
             intent.removeExtra(NetworkSurveyConstants.EXTRA_NAVIGATE_TO_WATCHLIST_HISTORY)
+        }
+    }
+
+    /**
+     * Handle a tap on the survey notification or the upload notification, which routes the user to
+     * the dashboard via the navigation extra set by
+     * [com.craxiom.networksurvey.notification.SurveyNotificationBuilder].
+     */
+    private fun handleDashboardNavigationExtra() {
+        if (intent?.getBooleanExtra(
+                NetworkSurveyConstants.EXTRA_NAVIGATE_TO_DASHBOARD,
+                false
+            ) == true
+        ) {
+            Timber.d("Navigating to the dashboard from notification tap")
+            deepLinkViewModel.navigateToDashboard()
+            // Clear the extra so a configuration change or re-create doesn't navigate again.
+            intent.removeExtra(NetworkSurveyConstants.EXTRA_NAVIGATE_TO_DASHBOARD)
         }
     }
 

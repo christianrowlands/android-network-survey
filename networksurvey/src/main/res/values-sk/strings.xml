@@ -255,14 +255,6 @@
     <string name="network_survey_service_description">Služba Network Survey Service beží vtedy, keď aplikácia potrebuje vykonávať úlohy na pozadí, ako je zápis do súboru protokolu alebo odosielanie dát cez aktívne pripojenie</string>
     <string name="connection_service_description">Služba Connection Service zabezpečuje správu pripojenia k vzdialenému serveru na účely prenosu údajov zo Network Survey</string>
     <string name="notification_channel_name">Network Survey</string>
-    <string name="logging_notification_text">Zápis do súborov protokolu</string>
-    <string name="and">" a "</string>
-    <string name="mqtt_connection_notification_text">Streamovanie záznamov do MQTT proxy</string>
-    <string name="mqtt_reconnecting_notification_text">Opätovné pripojenie k proxy MQTT</string>
-    <string name="network_survey_notification_title">Network Survey je aktivované</string>
-    <string name="connection_notification_title">Network Survey gRPC je pripojené</string>
-    <string name="connection_notification_active_text">Pripojenie je aktívne</string>
-    <string name="connection_notification_connecting_text">Pokúšam sa pripojiť</string>
     <string name="scan_status_scanning">Skenovanie …</string>
     <string name="scan_status_paused">UI pozastavené</string>
     <string name="scan_status_permission">Chýbajúce oprávnenie</string>
@@ -698,7 +690,6 @@
     <string name="not_supported_description">Aplikácia Network Survey neprijíma surové merania GNSS z telefónu, ktoré sú potrebné na generovanie súborov GNSS GeoPackage/CSV alebo na streamovanie záznamov GNSS cez MQTT. Ďalšie informácie a zoznam zariadení, ktoré podporujú surové merania GNSS, nájdete v príručke pre Android <a href="https://developer.android.com/guide/topics/sensors/gnss">Surové merania GNSS</a>.</string>
     <string name="remember_my_decision">Už ma na to nepýtaj</string>
     <string name="queue_paused_mdm_description">Toto nastavenie spravuje váš správca. Ak chcete zmeniť limit fronty, aktivujte v nastaveniach možnosť „MDM Override“.</string>
-    <string name="queue_paused_notification">Prieskumy pozastavené – prerušenie sieťového pripojenia</string>
     <string name="queue_paused_adjust_limit">Nastaviť limit</string>
     <string name="queue_paused_disable_limit">Zrušiť obmedzenie</string>
     <string name="queue_paused_view_settings">Zobraziť nastavenia</string>
@@ -721,7 +712,6 @@
     <string name="battery_pause_active_description">Prieskumy sa pozastavia, keď úroveň nabitia batérie klesne na %1$d%% alebo nižšie</string>
     <string name="battery_threshold_summary">Pozastaviť, ak je stav batérie ≤ %1$d%%</string>
     <string name="battery_status_paused_with_level">Pozastavené (Batéria: %1$d%% ≤%2$d%%)</string>
-    <string name="battery_paused_notification_text">Prieskumy pozastavené – Nízky stav batérie (%1$d%%)</string>
     <string name="battery_warning_title">Upozornenie týkajúce sa batérie</string>
     <string name="battery_paused_title">Prieskumy pozastavené – nízky stav batérie</string>
     <string name="battery_warning_message">Batéria sa blíži k prahu pozastavenia (%1$d%% zostáva)</string>

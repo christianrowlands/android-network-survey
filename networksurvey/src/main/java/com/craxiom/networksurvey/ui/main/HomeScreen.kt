@@ -17,6 +17,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -89,6 +90,22 @@ fun HomeScreen(
         } else {
             null
         }
+
+    // A notification tap asks for a specific bottom tab (the dashboard) through the activity-scoped
+    // DeepLinkViewModel; select it here because the bottom navigation controller lives in this screen.
+    val deepLinkViewModel: DeepLinkViewModel? =
+        if (activity != null) viewModel(viewModelStoreOwner = activity) else null
+    val homeTabDestination = deepLinkViewModel?.homeTabDestination?.collectAsStateWithLifecycle()?.value
+    LaunchedEffect(homeTabDestination) {
+        if (homeTabDestination != null && deepLinkViewModel != null) {
+            bottomNavController.navigate(homeTabDestination) {
+                popUpTo(bottomNavController.graph.findStartDestination().id) { saveState = true }
+                launchSingleTop = true
+                restoreState = true
+            }
+            deepLinkViewModel.clearHomeTab()
+        }
+    }
 
     bottomNavController.addOnDestinationChangedListener { _, destination, _ ->
         BottomNavItem().bottomNavigationItems().forEachIndexed { index, item ->

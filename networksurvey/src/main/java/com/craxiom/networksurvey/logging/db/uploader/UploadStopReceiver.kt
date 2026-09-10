@@ -5,6 +5,7 @@ import android.content.Context
 import android.content.Intent
 import android.widget.Toast
 import androidx.work.WorkManager
+import com.craxiom.networksurvey.R
 import timber.log.Timber
 
 const val STOP_UPLOADER = "com.craxiom.networksurvey.UPLOADER_STOP"
@@ -20,7 +21,7 @@ class UploadStopReceiver : BroadcastReceiver() {
             WorkManager.getInstance(context).cancelAllWorkByTag(NsUploaderWorker.WORKER_TAG)
 
             // Provide user feedback
-            Toast.makeText(context, "Upload canceled", Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, R.string.uploader_canceled, Toast.LENGTH_SHORT).show()
         }
     }
 }

@@ -16,17 +16,14 @@
 
 package com.craxiom.networksurvey;
 
-import android.app.NotificationChannel;
-import android.app.NotificationManager;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.content.res.Configuration;
 
 import androidx.preference.PreferenceManager;
 
-import com.craxiom.networksurvey.constants.NetworkSurveyConstants;
 import com.craxiom.networksurvey.lang.LocaleManager;
-import com.craxiom.networksurvey.services.watchlist.WatchlistNotificationHelper;
+import com.craxiom.networksurvey.notification.NotificationChannels;
 import com.craxiom.networksurvey.util.CredentialSecureStorage;
 
 import dagger.hilt.android.HiltAndroidApp;
@@ -99,26 +96,14 @@ public class Application extends android.app.Application
     }
 
     /**
-     * Creates the notification Channel that is used by this Android app.
+     * Registers every notification channel used by this app. Kept as the single entry point so the
+     * service and the activity both register the same set; see {@link NotificationChannels}.
      *
-     * @param context The context that is used to create the notification channel.
+     * @param context The context that is used to create the notification channels.
      * @since 1.5.0
      */
     public static void createNotificationChannel(Context context)
     {
-        final NotificationManager notificationManager = (NotificationManager) context.getSystemService(NOTIFICATION_SERVICE);
-        if (notificationManager != null)
-        {
-            final NotificationChannel channel = new NotificationChannel(NetworkSurveyConstants.NOTIFICATION_CHANNEL_ID,
-                    context.getText(R.string.notification_channel_name), NotificationManager.IMPORTANCE_LOW);
-            notificationManager.createNotificationChannel(channel);
-
-            // Register the Watchlist alerts channel up front so it appears in system notification
-            // settings before the first alert fires.
-            WatchlistNotificationHelper.INSTANCE.createNotificationChannel(context);
-        } else
-        {
-            Timber.wtf("The Notification Manager could not be retrieved to add the Network Survey notification channel");
-        }
+        NotificationChannels.INSTANCE.createAll(context);
     }
 }

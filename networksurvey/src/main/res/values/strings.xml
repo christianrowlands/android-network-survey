@@ -422,15 +422,40 @@
     <string name="network_survey_service_description">The Network Survey Service runs when the app needs to do work in the background such as write to the log file or stream data out over active connection</string>
     <string name="connection_service_description">The Connection Service handles managing the connection to a remote server to stream Network Survey data</string>
 
+    <!-- Survey notification. The title carries the survey state (Survey Active, Surveys Paused, ...)
+         and the text lists where records are going. The lists are joined with the separator below
+         instead of being composed into a sentence so that the text translates cleanly. -->
     <string name="notification_channel_name">Network Survey</string>
-    <string name="logging_notification_text">Writing to the log file(s)</string>
-    <string name="and">" and "</string>
-    <string name="mqtt_connection_notification_text">Streaming records to an MQTT Broker</string>
-    <string name="mqtt_reconnecting_notification_text">Reconnecting to MQTT Broker</string>
-    <string name="network_survey_notification_title">Network Survey Active</string>
-    <string name="connection_notification_title">Network Survey gRPC Connection</string>
-    <string name="connection_notification_active_text">The Connection is Active</string>
-    <string name="connection_notification_connecting_text">Attempting to Connect</string>
+    <string name="notification_list_separator">", "</string>
+    <string name="notification_dest_log_files">Log files</string>
+    <string name="notification_dest_mqtt">MQTT</string>
+    <string name="notification_dest_grpc">gRPC</string>
+    <string name="notification_dest_community">OpenCelliD &amp; BeaconDB</string>
+    <string name="notification_protocols_line">Scanning: %1$s</string>
+    <string name="notification_health_battery_low">Battery low (%1$d%%)</string>
+    <string name="notification_health_network_interrupted">Network interrupted</string>
+    <!-- %1$s is the destination name (MQTT or gRPC), %2$s is the connection status text -->
+    <string name="notification_health_connecting">%1$s: %2$s</string>
+    <plurals name="notification_stall_title">
+        <item quantity="one">No records for %d min</item>
+        <item quantity="other">No records for %d min</item>
+    </plurals>
+
+    <!-- New tower alert notification -->
+    <string name="new_tower_alert_channel_name">New Tower Alerts</string>
+    <string name="new_tower_alert_channel_description">Notifications when new cellular towers are detected</string>
+    <string name="new_tower_alert_title">New Tower Detected</string>
+    <!-- %1$s is the radio technology (LTE, NR, ...), %2$s-%3$s is MCC-MNC, %4$d is the Cell ID -->
+    <string name="new_tower_alert_content">%1$s  %2$s-%3$s  Cell ID %4$d</string>
+    <string name="new_tower_alert_details">Technology: %1$s\nMCC-MNC: %2$s-%3$s\nTAC/LAC: %4$d\nCell ID: %5$d</string>
+    <plurals name="new_tower_alert_session_count">
+        <item quantity="one">%d new tower this survey</item>
+        <item quantity="other">%d new towers this survey</item>
+    </plurals>
+
+    <!-- NS Analytics notification channel -->
+    <string name="ns_analytics_notification_channel_name">NS Analytics</string>
+    <string name="ns_analytics_notification_channel_description">Notifications about NS Analytics uploads, such as when uploads are paused</string>
 
     <!-- Common for Wi-Fi and Bluetooth Lists -->
     <string name="scan_status_scanning">Scanning …</string>
@@ -984,7 +1009,6 @@
     <string name="queue_paused_subtitle">Upload Delayed</string>
     <string name="queue_paused_description">Surveys are paused because MQTT data streaming is backing up. Surveys will resume automatically when data transmission catches up. If this persists, check your network connection.</string>
     <string name="queue_paused_mdm_description">This setting is managed by your administrator. To change the queue limit, enable MDM Override in Settings.</string>
-    <string name="queue_paused_notification">Surveys paused - Network interrupted</string>
     <string name="queue_paused_adjust_limit">Adjust Limit</string>
     <string name="queue_paused_disable_limit">Disable Limit</string>
     <string name="queue_paused_view_settings">View Settings</string>
@@ -1013,7 +1037,6 @@
     <string name="battery_pause_active_description">Surveys will pause when battery drops to %1$d%% or below</string>
     <string name="battery_threshold_summary">Pause when battery ≤ %1$d%%</string>
     <string name="battery_status_paused_with_level">Paused (Battery: %1$d%% ≤ %2$d%%)</string>
-    <string name="battery_paused_notification_text">Surveys paused - Battery low (%1$d%%)</string>
     <string name="battery_warning_title">Battery Warning</string>
     <string name="battery_paused_title">Surveys Paused - Low Battery</string>
     <string name="battery_warning_message">Battery approaching pause threshold (%1$d%% remaining)</string>

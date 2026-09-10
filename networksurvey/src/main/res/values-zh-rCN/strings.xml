@@ -318,14 +318,6 @@
     <string name="network_survey_service_description">当应用需要在后台执行工作时（例如写入日志文件或通过活动连接流式传输数据），Network Survey 服务会运行</string>
     <string name="connection_service_description">连接服务负责管理与远程服务器的连接，以流式传输 Network Survey 数据</string>
     <string name="notification_channel_name">网络探测</string>
-    <string name="logging_notification_text">正在写入日志文件</string>
-    <string name="and">和</string>
-    <string name="mqtt_connection_notification_text">正在将记录流式传输到 MQTT 代理</string>
-    <string name="mqtt_reconnecting_notification_text">正在重新连接到 MQTT 代理</string>
-    <string name="network_survey_notification_title">网络探测已激活</string>
-    <string name="connection_notification_title">网络探测 gRPC 连接</string>
-    <string name="connection_notification_active_text">连接已激活</string>
-    <string name="connection_notification_connecting_text">正在尝试连接</string>
     <!-- Wi-Fi 和蓝牙列表通用 -->
 	<string name="scan_status_scanning">正在扫描…</string>
     <string name="scan_status_paused">界面已暂停</string>
@@ -778,7 +770,6 @@
     <string name="queue_paused_subtitle">上传延迟</string>
     <string name="queue_paused_description">探测已暂停，因为 MQTT 数据流传输出现积压。当数据传输恢复正常后，探测将自动恢复。如果此情况持续存在，请检查您的网络连接。</string>
     <string name="queue_paused_mdm_description">此设置由管理员管理。要更改队列限制，请在设置中启用 MDM 覆盖。</string>
-    <string name="queue_paused_notification">探测已暂停 - 网络中断</string>
     <string name="queue_paused_adjust_limit">调整限制</string>
     <string name="queue_paused_disable_limit">禁用限制</string>
     <string name="queue_paused_view_settings">查看设置</string>
@@ -804,7 +795,6 @@
     <string name="battery_pause_active_description">当电池电量降至 %1$d%% 或以下时，探测将暂停</string>
     <string name="battery_threshold_summary">当电池电量 ≤ %1$d%% 时暂停</string>
     <string name="battery_status_paused_with_level">已暂停（电池：%1$d%% ≤ %2$d%%）</string>
-    <string name="battery_paused_notification_text">探测已暂停 - 电池电量低（%1$d%%）</string>
     <string name="battery_warning_title">电池警告</string>
     <string name="battery_paused_title">探测已暂停 - 电池电量低</string>
     <string name="battery_warning_message">电池电量接近暂停阈值（剩余 %1$d%%）</string>

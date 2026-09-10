@@ -73,7 +73,9 @@ public class NsAnalyticsConstants
     public static final String NS_ANALYTICS_UPLOAD_WORKER_TAG = "ns_analytics_upload_worker";
     public static final String NS_ANALYTICS_PERIODIC_WORKER_TAG = "ns_analytics_periodic_worker";
 
-    // Notification IDs
+    // Notifications. The channel id is persisted by the OS with the user's settings, so it must
+    // never change once shipped.
+    public static final String NS_ANALYTICS_NOTIFICATION_CHANNEL_ID = "ns_analytics_notification_channel";
     public static final int NS_ANALYTICS_NOTIFICATION_ID = 103;
 
     // Intent Actions

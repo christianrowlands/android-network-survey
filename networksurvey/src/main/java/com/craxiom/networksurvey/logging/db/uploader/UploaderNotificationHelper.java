@@ -5,7 +5,6 @@
 package com.craxiom.networksurvey.logging.db.uploader;
 
 import android.app.Notification;
-import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.content.Context;
@@ -15,28 +14,36 @@ import androidx.core.app.NotificationCompat;
 
 import com.craxiom.networksurvey.NetworkSurveyActivity;
 import com.craxiom.networksurvey.R;
+import com.craxiom.networksurvey.constants.NetworkSurveyConstants;
+import com.craxiom.networksurvey.notification.NotificationChannels;
 
 /**
+ * Builds the community (OpenCelliD / BeaconDB) upload progress notification: a low importance row
+ * with a determinate progress bar, a Cancel action, and a tap that lands on the dashboard where the
+ * upload results are shown.
+ * <p>
  * This class was pulled from the Tower Collector app and modified to work with Network Survey.
  * <p>
  * See: <a href="https://github.com/zamojski/TowerCollector/blob/7c8c4ff7bc2a536a94a34e059189f905ecd52b34/app/src/main/java/info/zamojski/soft/towercollector/uploader/UploaderNotificationHelper.java">here</a>
  */
 public class UploaderNotificationHelper
 {
-    private static final String UPLOADER_NOTIFICATION_CHANNEL_ID = "uploader_notification_channel";
-
     private final Context context;
     private final NotificationCompat.Builder builder;
 
     public UploaderNotificationHelper(Context context)
     {
         this.context = context;
-        builder = new NotificationCompat.Builder(context, UPLOADER_NOTIFICATION_CHANNEL_ID);
+        builder = new NotificationCompat.Builder(context, NetworkSurveyConstants.UPLOADER_NOTIFICATION_CHANNEL_ID);
     }
 
+    /**
+     * Creates the initial "Starting upload" notification, registering the channel first in case
+     * this is the first run after install.
+     */
     public Notification createNotification(NotificationManager notificationManager)
     {
-        createNotificationChannel(notificationManager);
+        NotificationChannels.INSTANCE.createUploaderChannel(context);
         String notificationText = context.getString(R.string.uploader_starting);
         return prepareNotification(notificationText);
     }
@@ -70,14 +77,17 @@ public class UploaderNotificationHelper
         return builder.build();
     }
 
+    /**
+     * Tapping the upload row opens the dashboard, where the upload card shows the queue and the
+     * result of the last upload.
+     */
     private PendingIntent createOpenMainActivityIntent()
     {
-        //final Intent notificationIntent = new Intent(context, NetworkSurveyActivity.class);
-        //final PendingIntent pendingIntent = PendingIntent.getActivity(context, 0, notificationIntent, PendingIntent.FLAG_IMMUTABLE);
         Intent intent = new Intent(context, NetworkSurveyActivity.class);
         intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
-        intent.setAction(NsUploaderWorker.SERVICE_FULL_NAME + "_NID_" + NsUploaderWorker.NOTIFICATION_ID);
-        return PendingIntent.getActivity(context, 0, intent, getImmutablePendingIntentFlags(0));
+        intent.putExtra(NetworkSurveyConstants.EXTRA_NAVIGATE_TO_DASHBOARD, true);
+        return PendingIntent.getActivity(context, NetworkSurveyConstants.UPLOADER_NOTIFICATION_ID, intent,
+                getImmutablePendingIntentFlags(PendingIntent.FLAG_UPDATE_CURRENT));
     }
 
     private PendingIntent createCancelUploaderIntent()
@@ -85,15 +95,6 @@ public class UploaderNotificationHelper
         Intent intent = new Intent(UploadStopReceiverKt.STOP_UPLOADER);
         intent.setPackage(context.getPackageName());
         return PendingIntent.getBroadcast(context, 0, intent, getImmutablePendingIntentFlags(0));
-    }
-
-    private void createNotificationChannel(NotificationManager notificationManager)
-    {
-        NotificationChannel channel = new NotificationChannel(
-                UPLOADER_NOTIFICATION_CHANNEL_ID,
-                context.getString(R.string.uploader_notification_channel_name),
-                NotificationManager.IMPORTANCE_LOW); // Android will automatically promote to DEFAULT but in case they change their mind I leave it here
-        notificationManager.createNotificationChannel(channel);
     }
 
     private int getImmutablePendingIntentFlags(int flags)

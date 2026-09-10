@@ -174,8 +174,14 @@ fun MainCompose(
         LaunchedEffect(deepLinkDestination) {
             deepLinkDestination?.let { destination ->
                 Timber.i("Navigating to %s from deep link", destination)
-                mainNavController.navigate(destination) {
-                    popUpTo(NavDrawerOption.None.name)
+                if (destination == NavDrawerOption.None.name) {
+                    // The home screen is the root of the graph, so pop back to it rather than
+                    // pushing a second copy on top of the stack.
+                    mainNavController.popBackStack(NavDrawerOption.None.name, inclusive = false)
+                } else {
+                    mainNavController.navigate(destination) {
+                        popUpTo(NavDrawerOption.None.name)
+                    }
                 }
                 // Clear the navigation event to prevent re-navigation
                 deepLinkViewModel.clearNavigation()

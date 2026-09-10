@@ -13,19 +13,22 @@ import androidx.core.app.NotificationManagerCompat
 import androidx.core.net.toUri
 import com.craxiom.networksurvey.NetworkSurveyActivity
 import com.craxiom.networksurvey.R
+import com.craxiom.networksurvey.constants.NetworkSurveyConstants
 import timber.log.Timber
+import java.util.concurrent.atomic.AtomicInteger
 
 /**
- * Helper class for creating and managing new tower detection notifications.
+ * Helper for the "New Tower Detected" alert.
+ *
+ * Every detection replaces the previous alert instead of stacking a new one, so a long community
+ * survey never leaves the user with dozens of notifications to clear. The body ends with a running
+ * count of new towers seen during the current community survey, which the service resets when
+ * that survey stops. The alert still sounds on every replacement because it is the sound, not the
+ * row, that tells a driver something new was found.
  */
 object NewTowerNotificationHelper {
 
-    private const val CHANNEL_ID = "new_tower_alerts"
-    private const val CHANNEL_NAME = "New Tower Alerts"
-    private const val CHANNEL_DESCRIPTION = "Notifications when new cellular towers are detected"
-    private const val NOTIFICATION_ID_BASE = 10000
-
-    private var notificationIdCounter = NOTIFICATION_ID_BASE
+    private val sessionCount = AtomicInteger(0)
 
     /**
      * Get the notification sound URI with fallback to system default.
@@ -33,42 +36,47 @@ object NewTowerNotificationHelper {
      */
     private fun getNotificationSoundUri(context: Context): Uri {
         return try {
-            // Directly reference the custom sound resource
             "android.resource://${context.packageName}/${R.raw.new_tower_alert}".toUri()
         } catch (_: Exception) {
-            // If resource doesn't exist, fall back to system default
             RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)
         }
     }
 
     /**
-     * Create the notification channel for new tower alerts.
-     * Must be called before showing notifications on Android O+.
+     * Create the notification channel for new tower alerts. Safe to call repeatedly.
      */
     fun createNotificationChannel(context: Context) {
         val notificationManager =
             context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
 
-        val importance = NotificationManager.IMPORTANCE_HIGH
-        val channel = NotificationChannel(CHANNEL_ID, CHANNEL_NAME, importance).apply {
-            description = CHANNEL_DESCRIPTION
+        val channel = NotificationChannel(
+            NetworkSurveyConstants.NEW_TOWER_NOTIFICATION_CHANNEL_ID,
+            context.getString(R.string.new_tower_alert_channel_name),
+            NotificationManager.IMPORTANCE_HIGH
+        ).apply {
+            description = context.getString(R.string.new_tower_alert_channel_description)
             enableVibration(true)
             setShowBadge(true)
 
-            // Set notification sound (custom or default)
-            val soundUri = getNotificationSoundUri(context)
             val audioAttributes = AudioAttributes.Builder()
                 .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
                 .setUsage(AudioAttributes.USAGE_NOTIFICATION)
                 .build()
-            setSound(soundUri, audioAttributes)
+            setSound(getNotificationSoundUri(context), audioAttributes)
         }
 
         notificationManager.createNotificationChannel(channel)
     }
 
     /**
-     * Show a notification for a newly detected tower.
+     * Reset the per-survey tower counter. Called when the community survey stops.
+     */
+    fun resetSessionCount() {
+        sessionCount.set(0)
+    }
+
+    /**
+     * Show (or replace) the new tower alert.
      *
      * @param context Application context
      * @param mcc Mobile Country Code (string to preserve leading zeros)
@@ -85,50 +93,43 @@ object NewTowerNotificationHelper {
         cellId: Long,
         technology: String
     ) {
-        // Ensure channel exists
         createNotificationChannel(context)
 
-        // Create intent to open the app when notification is tapped
+        val count = sessionCount.incrementAndGet()
+
         val intent = Intent(context, NetworkSurveyActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP
         }
-
         val pendingIntent = PendingIntent.getActivity(
             context,
-            0,
+            NetworkSurveyConstants.NEW_TOWER_NOTIFICATION_ID,
             intent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
-        // Build the notification
-        val notificationBuilder = NotificationCompat.Builder(context, CHANNEL_ID)
+        val contentText = context.getString(R.string.new_tower_alert_content, technology, mcc, mnc, cellId)
+        val details = context.getString(R.string.new_tower_alert_details, technology, mcc, mnc, area, cellId)
+        val countLine = context.resources.getQuantityString(R.plurals.new_tower_alert_session_count, count, count)
+
+        val notification = NotificationCompat.Builder(context, NetworkSurveyConstants.NEW_TOWER_NOTIFICATION_CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_cell_tower)
-            .setContentTitle("New Tower Detected")
-            .setContentText("$technology: MCC-MNC: $mcc-$mnc, Cell ID: $cellId")
-            .setStyle(
-                NotificationCompat.BigTextStyle()
-                    .bigText("New $technology tower detected!\nMCC-MNC: $mcc-$mnc\nTAC/LAC: $area\nCell ID: $cellId")
-            )
+            .setContentTitle(context.getString(R.string.new_tower_alert_title))
+            .setContentText(contentText)
+            .setStyle(NotificationCompat.BigTextStyle().bigText(details + "\n" + countLine))
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setCategory(NotificationCompat.CATEGORY_STATUS)
-            .setAutoCancel(false) // Don't dismiss when tapped
-            .setOngoing(false) // Can be swiped away
+            .setAutoCancel(true)
+            // Each replacement should sound again; the sound is the alert.
+            .setOnlyAlertOnce(false)
             .setContentIntent(pendingIntent)
             .setVibrate(longArrayOf(0, 250, 250, 250))
             .setSound(getNotificationSoundUri(context))
+            .build()
 
-        // Show the notification
         try {
-            with(NotificationManagerCompat.from(context)) {
-                notify(notificationIdCounter++, notificationBuilder.build())
-            }
-
-            Timber.i("New tower notification shown for $technology tower: MCC=$mcc, MNC=$mnc, CID=$cellId")
-
-            // Reset counter if it gets too high
-            if (notificationIdCounter > NOTIFICATION_ID_BASE + 1000) {
-                notificationIdCounter = NOTIFICATION_ID_BASE
-            }
+            NotificationManagerCompat.from(context)
+                .notify(NetworkSurveyConstants.NEW_TOWER_NOTIFICATION_ID, notification)
+            Timber.i("New tower notification shown for $technology tower: MCC=$mcc, MNC=$mnc, CID=$cellId (#$count this survey)")
         } catch (e: SecurityException) {
             Timber.e(e, "Permission denied for showing notification")
         } catch (e: Exception) {

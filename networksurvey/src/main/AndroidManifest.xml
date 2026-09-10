@@ -119,8 +119,7 @@
         <service
             android:name=".services.GrpcConnectionService"
             android:description="@string/connection_service_description"
-            android:exported="false"
-            android:foregroundServiceType="location" />
+            android:exported="false" />
 
         <service
             android:name="androidx.work.impl.foreground.SystemForegroundService"
