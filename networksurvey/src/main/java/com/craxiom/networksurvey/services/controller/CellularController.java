@@ -48,7 +48,6 @@ import com.craxiom.networksurvey.services.SurveyRecordProcessor;
 import com.craxiom.networksurvey.util.CalculationUtils;
 import com.craxiom.networksurvey.util.NsUtils;
 import com.craxiom.networksurvey.util.PreferenceUtils;
-import com.craxiom.networksurvey.util.TelephonyDiagnostics;
 import com.craxiom.networksurvey.util.TelephonyStateUtils;
 
 import java.util.ArrayList;
@@ -871,9 +870,6 @@ public class CellularController extends AController
                 Timber.w(e, "Could not read the ServiceState for the cell bandwidths");
             }
         }
-
-        // Debug-only diagnostic snapshot, correlated with the values above.
-        TelephonyDiagnostics.logNetworkTypeSnapshot(surveyService, telephonyManager, subscriptionId, rawOverride, rawDisplay);
 
         return new NetworkTechnologyInfo(subscriptionId, voiceDisplay, dataDisplay, overrideDisplay,
                 rawOverride, baseRat, nrMode, cellBandwidthsKhz, registrationRows);

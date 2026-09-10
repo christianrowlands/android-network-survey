@@ -1,7 +1,5 @@
 package com.craxiom.networksurvey.util;
 
-import android.telephony.AccessNetworkConstants;
-import android.telephony.NetworkRegistrationInfo;
 import android.telephony.TelephonyDisplayInfo;
 import android.telephony.TelephonyManager;
 
@@ -177,43 +175,6 @@ public final class CalculationUtils
             case TelephonyDisplayInfo.OVERRIDE_NETWORK_TYPE_NR_NSA -> "NR NSA";
             case TelephonyDisplayInfo.OVERRIDE_NETWORK_TYPE_NR_NSA_MMWAVE -> "NR NSA mmWave";
             case TelephonyDisplayInfo.OVERRIDE_NETWORK_TYPE_NR_ADVANCED -> "NR Advanced";
-            default -> NetworkSurveyConstants.UNKNOWN;
-        };
-    }
-
-    /**
-     * Given the Android int value for a network registration domain, return the String value that
-     * it represents.
-     *
-     * @param domain The domain in integer form as reported by Android.
-     * @return The human friendly String representation of the domain int value.
-     * @see NetworkRegistrationInfo#getDomain()
-     */
-    public static String getDomainName(int domain)
-    {
-        return switch (domain)
-        {
-            case NetworkRegistrationInfo.DOMAIN_CS -> "CS";
-            case NetworkRegistrationInfo.DOMAIN_PS -> "PS";
-            case NetworkRegistrationInfo.DOMAIN_CS_PS -> "CS+PS";
-            default -> NetworkSurveyConstants.UNKNOWN;
-        };
-    }
-
-    /**
-     * Given the Android int value for a network transport type, return the String value that it
-     * represents.
-     *
-     * @param transportType The transport type in integer form as reported by Android.
-     * @return The human friendly String representation of the transport type int value.
-     * @see NetworkRegistrationInfo#getTransportType()
-     */
-    public static String getTransportTypeName(int transportType)
-    {
-        return switch (transportType)
-        {
-            case AccessNetworkConstants.TRANSPORT_TYPE_WWAN -> "WWAN";
-            case AccessNetworkConstants.TRANSPORT_TYPE_WLAN -> "WLAN";
             default -> NetworkSurveyConstants.UNKNOWN;
         };
     }

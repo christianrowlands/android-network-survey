@@ -351,19 +351,6 @@ public class TelephonyStateUtilsTest
     }
 
     @Test
-    public void domainAndTransportNames()
-    {
-        assertEquals("CS", CalculationUtils.getDomainName(NetworkRegistrationInfo.DOMAIN_CS));
-        assertEquals("PS", CalculationUtils.getDomainName(NetworkRegistrationInfo.DOMAIN_PS));
-        assertEquals("CS+PS", CalculationUtils.getDomainName(NetworkRegistrationInfo.DOMAIN_CS_PS));
-        assertEquals("Unknown", CalculationUtils.getDomainName(NetworkRegistrationInfo.DOMAIN_UNKNOWN));
-
-        assertEquals("WWAN", CalculationUtils.getTransportTypeName(AccessNetworkConstants.TRANSPORT_TYPE_WWAN));
-        assertEquals("WLAN", CalculationUtils.getTransportTypeName(AccessNetworkConstants.TRANSPORT_TYPE_WLAN));
-        assertEquals("Unknown", CalculationUtils.getTransportTypeName(-42));
-    }
-
-    @Test
     public void validBandwidths_filtersImplausibleEntries()
     {
         assertArrayEquals(new int[]{20000}, CellularBandwidthUtils.validBandwidthsKhz(
