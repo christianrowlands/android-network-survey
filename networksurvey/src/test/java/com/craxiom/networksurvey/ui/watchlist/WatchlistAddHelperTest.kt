@@ -15,7 +15,6 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.RuntimeEnvironment
-import org.robolectric.annotation.Config
 
 /**
  * Integration tests for [WatchlistAddHelper] against a real Room database (Robolectric). This is
@@ -24,7 +23,6 @@ import org.robolectric.annotation.Config
  * opt-in [WatchlistAddHelper.enableWatchlistIfDisabled] preference flip.
  */
 @RunWith(RobolectricTestRunner::class)
-@Config(sdk = [34])
 class WatchlistAddHelperTest {
 
     private lateinit var dao: WatchlistDao

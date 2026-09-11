@@ -9,14 +9,12 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
-import org.robolectric.annotation.Config
 
 /**
  * Unit tests for [NsAnalyticsDeepLinkHandler].
  * Tests deep link parsing, validation, and security checks.
  */
 @RunWith(RobolectricTestRunner::class)
-@Config(sdk = [34])
 class NsAnalyticsDeepLinkHandlerTest {
 
     companion object {

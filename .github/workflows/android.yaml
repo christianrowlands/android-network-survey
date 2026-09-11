@@ -64,12 +64,7 @@ jobs:
   test:
     if: "! startsWith(github.event.head_commit.message, 'Bump version to')"
     name: Run Tests
-    runs-on: macos-latest
-
-    strategy:
-      matrix:
-        api-level: [ 26, 36 ]
-        target: [ default, google_apis ]
+    runs-on: ubuntu-latest
 
     steps:
       - name: Checkout the code

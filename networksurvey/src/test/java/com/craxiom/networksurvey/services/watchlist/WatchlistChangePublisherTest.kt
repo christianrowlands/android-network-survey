@@ -17,7 +17,6 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.RuntimeEnvironment
-import org.robolectric.annotation.Config
 import java.util.concurrent.CopyOnWriteArrayList
 import java.util.function.Supplier
 
@@ -28,7 +27,6 @@ import java.util.function.Supplier
  * publisher instances (the reconnect case).
  */
 @RunWith(RobolectricTestRunner::class)
-@Config(sdk = [34])
 class WatchlistChangePublisherTest {
 
     private lateinit var dao: WatchlistDao

@@ -17,7 +17,6 @@ import org.mockito.Mockito.mock
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.RuntimeEnvironment
 import org.robolectric.Shadows.shadowOf
-import org.robolectric.annotation.Config
 import org.robolectric.shadows.ShadowEnvironment
 
 /**
@@ -29,7 +28,6 @@ import org.robolectric.shadows.ShadowEnvironment
  * CSVPrinter creation, so the disable path closed a null printer.
  */
 @RunWith(RobolectricTestRunner::class)
-@Config(sdk = [34])
 class CsvRecordLoggerLifecycleTest {
 
     @Before

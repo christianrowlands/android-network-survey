@@ -22,7 +22,6 @@ import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.RuntimeEnvironment
 import org.robolectric.Shadows.shadowOf
-import org.robolectric.annotation.Config
 
 /**
  * Unit tests for [NsAnalyticsUploadWorker].
@@ -35,7 +34,6 @@ import org.robolectric.annotation.Config
  *    disables NS Analytics after work has already been enqueued.
  */
 @RunWith(RobolectricTestRunner::class)
-@Config(sdk = [34])
 class NsAnalyticsUploadWorkerTest {
 
     private val context: Context = RuntimeEnvironment.getApplication()

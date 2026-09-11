@@ -14,14 +14,12 @@ import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
-import org.robolectric.annotation.Config
 
 /**
  * One test per row of the survey notification state table: title, collapsed text, expanded text,
  * small icon, and chronometer for every state the service can be in.
  */
 @RunWith(RobolectricTestRunner::class)
-@Config(sdk = [34])
 class SurveyNotificationBuilderTest {
 
     private lateinit var context: Context

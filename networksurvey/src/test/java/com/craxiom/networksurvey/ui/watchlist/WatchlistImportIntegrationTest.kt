@@ -13,7 +13,6 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.RuntimeEnvironment
-import org.robolectric.annotation.Config
 
 /**
  * Integration tests for the watchlist import insert path against a real Room database (Robolectric).
@@ -23,7 +22,6 @@ import org.robolectric.annotation.Config
  * verified deterministically without the ViewModel's coroutine wrapper.
  */
 @RunWith(RobolectricTestRunner::class)
-@Config(sdk = [34])
 class WatchlistImportIntegrationTest {
 
     private lateinit var dao: WatchlistDao

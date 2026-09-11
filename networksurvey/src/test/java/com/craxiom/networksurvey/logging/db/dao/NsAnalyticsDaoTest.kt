@@ -11,7 +11,6 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.RuntimeEnvironment
-import org.robolectric.annotation.Config
 
 /**
  * Unit tests for the retry-cap queries in [NsAnalyticsDao] (poison-pill guard).
@@ -21,7 +20,6 @@ import org.robolectric.annotation.Config
  * uploadable or purgeable and no row can sit invisible in the queue forever.
  */
 @RunWith(RobolectricTestRunner::class)
-@Config(sdk = [34])
 class NsAnalyticsDaoTest {
 
     private lateinit var database: SurveyDatabase

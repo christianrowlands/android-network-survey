@@ -8,7 +8,6 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.Shadows.shadowOf
-import org.robolectric.annotation.Config
 import java.time.Duration
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
@@ -18,7 +17,6 @@ import java.util.concurrent.atomic.AtomicInteger
  * Drives the stall watchdog with Robolectric's paused looper so elapsed time is deterministic.
  */
 @RunWith(RobolectricTestRunner::class)
-@Config(sdk = [34])
 class SurveyStallWatchdogTest {
 
     private val recordCount = AtomicInteger(0)

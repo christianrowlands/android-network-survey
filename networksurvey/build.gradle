@@ -107,6 +107,15 @@ android {
     testOptions {
         unitTests {
             includeAndroidResources = true
+
+            all {
+                // Robolectric emulates API 37 (see src/test/resources/robolectric.properties). On that
+                // level AndroidTestEnvironment initializes ApplicationSharedMemory, and Robolectric's
+                // FileDescriptorInterceptor reflects into jdk.internal.access.SharedSecrets to write the
+                // raw FileDescriptor. java.base does not export that package to the unnamed module, so
+                // without this flag every Robolectric test dies with an IllegalAccessException.
+                it.jvmArgs '--add-opens=java.base/jdk.internal.access=ALL-UNNAMED'
+            }
         }
     }
 
@@ -150,7 +159,8 @@ dependencies {
     implementation(libs.androidx.localbroadcastmanager)
     implementation(libs.androidx.cardview)
     implementation(libs.androidx.preference.ktx)
-    implementation(libs.bundles.androidx.navigation)
+    implementation(libs.androidx.fragment.ktx)
+    implementation(libs.androidx.navigation.compose)
     implementation(libs.androidx.viewpager2)
     implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.drawerlayout)

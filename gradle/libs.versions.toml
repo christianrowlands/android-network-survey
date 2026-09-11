@@ -40,6 +40,7 @@ material = "1.14.0"
 localbroadcastmanager = "1.1.0"
 cardview = "1.0.0"
 preferenceKtx = "1.2.1"
+fragmentKtx = "1.6.2"
 viewpager2 = "1.1.0"
 activityCompose = "1.13.0"
 drawerlayout = "1.2.0"
@@ -77,6 +78,7 @@ androidx-appcompat = { module = "androidx.appcompat:appcompat", version.ref = "a
 androidx-localbroadcastmanager = { module = "androidx.localbroadcastmanager:localbroadcastmanager", version.ref = "localbroadcastmanager" }
 androidx-cardview = { module = "androidx.cardview:cardview", version.ref = "cardview" }
 androidx-preference-ktx = { module = "androidx.preference:preference-ktx", version.ref = "preferenceKtx" }
+androidx-fragment-ktx = { module = "androidx.fragment:fragment-ktx", version.ref = "fragmentKtx" }
 androidx-viewpager2 = { module = "androidx.viewpager2:viewpager2", version.ref = "viewpager2" }
 androidx-activity-compose = { module = "androidx.activity:activity-compose", version.ref = "activityCompose" }
 androidx-drawerlayout = { module = "androidx.drawerlayout:drawerlayout", version.ref = "drawerlayout" }
@@ -86,10 +88,8 @@ androidx-annotation = { module = "androidx.annotation:annotation", version.ref =
 androidx-work-runtime = { module = "androidx.work:work-runtime", version.ref = "workRuntime" }
 androidx-work-testing = { module = "androidx.work:work-testing", version.ref = "workRuntime" }
 
-# Navigation
-androidx-navigation-runtime-ktx = { module = "androidx.navigation:navigation-runtime-ktx", version.ref = "navigation" }
-androidx-navigation-fragment-ktx = { module = "androidx.navigation:navigation-fragment-ktx", version.ref = "navigation" }
-androidx-navigation-ui-ktx = { module = "androidx.navigation:navigation-ui-ktx", version.ref = "navigation" }
+# Navigation. The app is Compose-only, so navigation-compose is the single entry point; it pulls
+# navigation-runtime and navigation-common transitively.
 androidx-navigation-compose = { module = "androidx.navigation:navigation-compose", version.ref = "navigation" }
 
 # Room
@@ -179,14 +179,6 @@ barista = { module = "com.adevinta.android:barista", version.ref = "barista" }
 truth = { module = "com.google.truth:truth", version.ref = "truth" }
 
 [bundles]
-# androidx.navigation family (KTX + Compose). All share the `navigation` version.
-androidx-navigation = [
-    "androidx-navigation-runtime-ktx",
-    "androidx-navigation-fragment-ktx",
-    "androidx-navigation-ui-ktx",
-    "androidx-navigation-compose",
-]
-
 # gRPC family (excluding grpc-protobuf, which has a custom transitive exclusion).
 grpc = [
     "grpc-okhttp",
