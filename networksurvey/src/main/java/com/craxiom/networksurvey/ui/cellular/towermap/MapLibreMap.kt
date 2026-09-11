@@ -30,7 +30,6 @@ import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
-import com.craxiom.networksurvey.data.api.Tower
 import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.suspendCancellableCoroutine
 import org.maplibre.android.MapLibre
@@ -49,6 +48,7 @@ import kotlin.coroutines.resume
  * @param sdfImages Optional map of SDF image IDs to drawable resource IDs (tinted dynamically)
  * @param cameraPositionState Controls or observes camera state
  * @param uiSettings UI-specific map settings
+ * @param onTowersClick Receives the tower ids under a tap, search result first if present
  */
 @Composable
 fun MapLibreMap(
@@ -64,7 +64,7 @@ fun MapLibreMap(
     onMapReady: ((MapView, MapLibreMap, Style) -> Unit)? = null,
     onStyleLoadFailed: ((String) -> Unit)? = null,
     onMyLocationChanged: (Location) -> Unit = {},
-    onTowersClick: ((List<Tower>) -> Unit)? = null,
+    onTowersClick: ((List<String>) -> Unit)? = null,
     content: @Composable () -> Unit = {},
 ) {
     if (LocalInspectionMode.current) {
@@ -205,32 +205,10 @@ private fun MapLifecycle(mapView: MapView, locationSettings: MapLocationSettings
         onDispose {
             Timber.d("MapLibreMap DisposableEffect onDispose called - cleaning up map")
 
-            // Ensure location updates are stopped before destroying the map
-            try {
-                mapView.getMapAsync { map ->
-                    // Force stop all location updates
-                    if (map.locationComponent.isLocationComponentActivated) {
-                        map.locationComponent.isLocationComponentEnabled = false
-
-                        // Try to forcefully remove any location engine callbacks
-                        try {
-                            val locationEngine = map.locationComponent.locationEngine
-                            locationEngine?.removeLocationUpdates(null)
-                        } catch (e: Exception) {
-                            Timber.w(e, "Failed to remove location engine callbacks")
-                        }
-                    }
-
-                    // Clear any pending listeners
-                    map.removeOnCameraIdleListener { }
-                    map.removeOnCameraMoveCancelListener { }
-                    map.removeOnCameraMoveStartedListener { }
-                    map.removeOnCameraMoveListener { }
-                }
-            } catch (e: Exception) {
-                Timber.w(e, "Failed to cleanup map")
-            }
-
+            // MapPropertiesNode.cleanup() already removed the listeners it registered and
+            // stopped location updates when the composition was disposed. Destroying the view
+            // tears down the native map and anything left on it, so no getMapAsync here: its
+            // callback could run after onDestroy.
             // Then destroy the map view
             mapView.onDestroy()
             mapView.removeAllViews()

@@ -16,7 +16,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import androidx.core.app.ActivityCompat
-import com.craxiom.networksurvey.data.api.Tower
 import org.maplibre.android.location.LocationComponentActivationOptions
 import org.maplibre.android.location.LocationComponentOptions
 import org.maplibre.android.location.OnCameraTrackingChangedListener
@@ -37,9 +36,14 @@ internal class MapPropertiesNode(
     cameraPositionState: CameraPositionState,
     locationSettings: MapLocationSettings,
     private val onMyLocationChanged: (Location) -> Unit,
-    onTowersClick: ((List<Tower>) -> Unit)? = null,
+    private val onTowersClick: ((List<String>) -> Unit)? = null,
 ) : MapNode {
     private var locationEngine: LocationEngine? = null
+    private var mapClickListener: MapLibreMap.OnMapClickListener? = null
+    private var cameraIdleListener: MapLibreMap.OnCameraIdleListener? = null
+    private var cameraMoveCancelListener: MapLibreMap.OnCameraMoveCanceledListener? = null
+    private var cameraMoveStartedListener: MapLibreMap.OnCameraMoveStartedListener? = null
+    private var cameraMoveListener: MapLibreMap.OnCameraMoveListener? = null
     private var isLocationCallbackRegistered = false
     private val locationCallback: LocationEngineCallback<LocationEngineResult> =
         object : LocationEngineCallback<LocationEngineResult> {
@@ -103,61 +107,25 @@ internal class MapPropertiesNode(
             }
         }
 
-        // Set up tower click listener
+        // Set up tower click listener. Features carry only the tower id; the caller resolves
+        // ids against its own tower state. Search results take priority over regular towers.
         onTowersClick?.let { clickHandler ->
-            map.addOnMapClickListener { point ->
-                // Query for tower features at the click point - check both regular towers and search results
-                val regularFeatures = map.queryRenderedFeatures(
-                    map.projection.toScreenLocation(point),
-                    TOWER_LAYER_KEY
-                )
-
-                val searchFeatures = map.queryRenderedFeatures(
-                    map.projection.toScreenLocation(point),
-                    SEARCH_TOWER_LAYER_KEY
-                )
-
-                // Prioritize search results over regular towers
-                val features = searchFeatures.ifEmpty { regularFeatures }
-
-                if (features.isNotEmpty()) {
-                    // Parse ALL features into a list of towers
-                    val towers = features.mapNotNull { feature ->
-                        val properties = feature.properties() ?: return@mapNotNull null
-                        try {
-                            Tower(
-                                lat = properties.get("lat").asDouble,
-                                lon = properties.get("lon").asDouble,
-                                mcc = properties.get("mcc").asString,
-                                mnc = properties.get("mnc").asString,
-                                area = properties.get("area").asInt,
-                                cid = properties.get("cid").asLong,
-                                unit = properties.get("unit").asInt,
-                                averageSignal = properties.get("averageSignal").asInt,
-                                range = properties.get("range").asInt,
-                                samples = properties.get("samples").asInt,
-                                changeable = properties.get("changeable").asInt,
-                                createdAt = properties.get("createdAt").asLong,
-                                updatedAt = properties.get("updatedAt").asLong,
-                                radio = properties.get("radio").asString,
-                                source = properties.get("source").asString,
-                                comments = properties.get("comments")?.let {
-                                    if (it.isJsonNull) null else it.asString
-                                }
-                            )
-                        } catch (e: Exception) {
-                            Timber.e(e, "Error parsing tower data from feature")
-                            null
-                        }
-                    }
-
-                    if (towers.isNotEmpty()) {
-                        clickHandler(towers)
-                        return@addOnMapClickListener true
-                    }
+            val listener = MapLibreMap.OnMapClickListener { point ->
+                val screenPoint = map.projection.toScreenLocation(point)
+                val searchFeatures = map.queryRenderedFeatures(screenPoint, SEARCH_TOWER_LAYER_KEY)
+                val features = searchFeatures.ifEmpty {
+                    map.queryRenderedFeatures(screenPoint, TOWER_LAYER_KEY)
                 }
-                false
+                val ids = features.mapNotNull { it.properties()?.get(TOWER_ID_PROPERTY)?.asString }
+                if (ids.isNotEmpty()) {
+                    clickHandler(ids)
+                    true
+                } else {
+                    false
+                }
             }
+            map.addOnMapClickListener(listener)
+            mapClickListener = listener
         }
 
         cameraPositionState.setMap(map)
@@ -191,16 +159,21 @@ internal class MapPropertiesNode(
                 Timber.w(e, "Failed to disable location component during cleanup")
             }
 
-            // Remove all map listeners to prevent callbacks after cleanup
+            // Remove the listeners this node registered so nothing fires after cleanup
             try {
-                map.removeOnCameraIdleListener { }
-                map.removeOnCameraMoveCancelListener { }
-                map.removeOnCameraMoveStartedListener { }
-                map.removeOnCameraMoveListener { }
-                map.removeOnMapClickListener { true }
+                cameraIdleListener?.let { map.removeOnCameraIdleListener(it) }
+                cameraMoveCancelListener?.let { map.removeOnCameraMoveCancelListener(it) }
+                cameraMoveStartedListener?.let { map.removeOnCameraMoveStartedListener(it) }
+                cameraMoveListener?.let { map.removeOnCameraMoveListener(it) }
+                mapClickListener?.let { map.removeOnMapClickListener(it) }
             } catch (e: Exception) {
                 Timber.w(e, "Failed to remove map listeners during cleanup")
             }
+            cameraIdleListener = null
+            cameraMoveCancelListener = null
+            cameraMoveStartedListener = null
+            cameraMoveListener = null
+            mapClickListener = null
 
             // Clear the camera position state map reference
             cameraPositionState.setMap(null)
@@ -218,7 +191,7 @@ internal class MapPropertiesNode(
         }
 
     override fun onAttached() {
-        map.addOnCameraIdleListener {
+        val idle = MapLibreMap.OnCameraIdleListener {
             cameraPositionState.isMoving = false
             // addOnCameraIdleListener is only invoked when the camera position
             // is changed via .animate(). To handle updating state when .move()
@@ -227,18 +200,26 @@ internal class MapPropertiesNode(
             // Updating user location on every camera move due to lack of a better location updates API.
             cameraPositionState.location = map.locationComponent.lastKnownLocation
         }
-        map.addOnCameraMoveCancelListener {
+        val moveCancel = MapLibreMap.OnCameraMoveCanceledListener {
             cameraPositionState.isMoving = false
         }
-        map.addOnCameraMoveStartedListener {
+        val moveStarted = MapLibreMap.OnCameraMoveStartedListener {
             cameraPositionState.cameraMoveStartedReason = CameraMoveStartedReason.fromInt(it)
             cameraPositionState.isMoving = true
         }
-        map.addOnCameraMoveListener {
+        val move = MapLibreMap.OnCameraMoveListener {
             cameraPositionState.rawPosition = map.cameraPosition
             // Updating user location on every camera move due to lack of a better location updates API.
             cameraPositionState.location = map.locationComponent.lastKnownLocation
         }
+        map.addOnCameraIdleListener(idle)
+        map.addOnCameraMoveCancelListener(moveCancel)
+        map.addOnCameraMoveStartedListener(moveStarted)
+        map.addOnCameraMoveListener(move)
+        cameraIdleListener = idle
+        cameraMoveCancelListener = moveCancel
+        cameraMoveStartedListener = moveStarted
+        cameraMoveListener = move
         map.locationComponent.addOnCameraTrackingChangedListener(object :
             OnCameraTrackingChangedListener {
             override fun onCameraTrackingDismissed() {}
@@ -273,7 +254,7 @@ internal inline fun MapUpdater(
     symbolManagerSettings: MapSymbolManagerSettings,
     paddingInsets: PaddingValues,
     noinline onMyLocationChanged: (Location) -> Unit,
-    noinline onTowersClick: ((List<Tower>) -> Unit)? = null,
+    noinline onTowersClick: ((List<String>) -> Unit)? = null,
 ) {
     val mapApplier = currentComposer.applier as MapApplier
     val map = mapApplier.map

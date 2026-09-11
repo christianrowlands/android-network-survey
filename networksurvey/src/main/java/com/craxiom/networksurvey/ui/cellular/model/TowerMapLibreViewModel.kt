@@ -23,6 +23,8 @@ import com.craxiom.networksurvey.util.CellularUtils
 import com.craxiom.networksurvey.util.NsUtils
 import com.craxiom.networksurvey.util.PreferenceUtils
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
@@ -49,7 +51,12 @@ const val SEARCH_RESULT_ZOOM = 17.0
 const val MIN_ZOOM_LEVEL = 9.0
 const val MINIMUM_LOCATION_ZOOM = 12.0  // Minimum zoom when centering on user location
 const val MAX_AREA_SQ_METERS = 40_000_000_000.0
-private const val MAX_TOWERS_ON_MAP = 7_500
+
+/**
+ * Trailing debounce applied to camera idle events before planning a tower request, so a fling
+ * that settles in several small steps produces one request instead of several.
+ */
+private const val CAMERA_IDLE_DEBOUNCE_MS = 500L
 
 const val SERVING_CELL_LINE_LAYER_PREFIX = "line-layer-"
 const val SERVING_CELL_COVERAGE_FILL_LAYER_PREFIX = "circle-fill-layer-"
@@ -58,10 +65,6 @@ const val SERVING_CELL_COVERAGE_OUTLINE_LAYER_PREFIX = "circle-stroke-layer-"
 private const val BEACONDB_STYLE_SOURCE_NAME = "beacondb-source"
 private const val BEACONDB_COVERAGE_COLOR = "#ff8000"
 private const val BEACONDB_COVERAGE_OPACITY = 0.4f
-
-// Hysteresis constants for reducing tower queries
-private const val BOUNDS_CHANGE_THRESHOLD_PERCENT = 0.20 // 20% change required
-private const val ZOOM_CHANGE_THRESHOLD = 0.5 // Half zoom level change required
 
 
 class TowerMapLibreViewModel : ViewModel() {
@@ -77,9 +80,17 @@ class TowerMapLibreViewModel : ViewModel() {
     private val _servingSignals = MutableStateFlow<HashMap<Int, ServingSignalInfo>>(HashMap())
     val servingSignals = _servingSignals.asStateFlow()
 
-    // Tower markers (stub) --------------------------
-    private val _towers = MutableStateFlow(LinkedHashSet<TowerWrapper>(LinkedHashSet()))
+    // Towers ---------------------------------------
+    // Area queries are served through the tile cache; serving cell only mode publishes its
+    // handful of towers directly. Either way the UI only ever sees these two flows.
+    private val tileCache = TowerTileCache()
+    private val _towers = MutableStateFlow<List<TowerWrapper>>(emptyList())
     val towers = _towers.asStateFlow()
+
+    private val _locationBadges = MutableStateFlow<Map<String, LocationBadge>>(emptyMap())
+    val locationBadges = _locationBadges.asStateFlow()
+
+    private var towersById: Map<String, TowerWrapper> = emptyMap()
 
     // UI state flags --------------------------------
     private val _noTowersFound = MutableStateFlow(false)
@@ -105,12 +116,14 @@ class TowerMapLibreViewModel : ViewModel() {
     private val _colorOverrideVersion = MutableStateFlow(0)
     val colorOverrideVersion = _colorOverrideVersion.asStateFlow()
 
-    // Last-queried viewport bounds ------------------
-    private val _lastQueriedBounds = MutableStateFlow<LatLngBounds?>(null)
-    val lastQueriedBounds = _lastQueriedBounds.asStateFlow()
+    // Last viewport bounds reported by the camera, persisted when the screen pauses ------
+    private val _lastViewportBounds = MutableStateFlow<LatLngBounds?>(null)
+    val lastViewportBounds = _lastViewportBounds.asStateFlow()
 
-    // Track last zoom level for hysteresis
-    private var lastQueriedZoom = 0.0
+    // Camera listeners registered in initMapLibre, kept so they can actually be removed
+    private var cameraIdleListener: MapLibreMap.OnCameraIdleListener? = null
+    private var cameraMoveStartedListener: MapLibreMap.OnCameraMoveStartedListener? = null
+    private var cameraIdleJob: Job? = null
 
     private var hasCenteredLocation = false
 
@@ -120,10 +133,6 @@ class TowerMapLibreViewModel : ViewModel() {
 
     // Mutex to prevent concurrent tower queries
     private val towerQueryMutex = Mutex()
-
-    // Debounce timer for tower queries
-    private var lastQueryTime = 0L
-    private val QUERY_DEBOUNCE_MS = 1000L // Minimum 1 second between queries
 
     // Current location for drawing serving cell lines
     private var myLocation: Location? = null
@@ -242,7 +251,7 @@ class TowerMapLibreViewModel : ViewModel() {
             _selectedRadioType.value = radioType
             isManualRadioTypeSelection = isManualSelection
             // Clear towers when radio type changes
-            _towers.value = LinkedHashSet()
+            clearTowerCache()
             _noTowersFound.value = false
             // Automatically trigger a new query for the selected radio type if layer is visible
             if (_showTowersLayer.value) {
@@ -267,7 +276,7 @@ class TowerMapLibreViewModel : ViewModel() {
         if (_plmnFilter.value != plmn) {
             _plmnFilter.value = plmn
             // Clear towers when PLMN filter changes
-            _towers.value = LinkedHashSet()
+            clearTowerCache()
             _noTowersFound.value = false
             // Automatically trigger a new query for the new filter if layer is visible
             if (_showTowersLayer.value) {
@@ -282,7 +291,7 @@ class TowerMapLibreViewModel : ViewModel() {
         if (_selectedSource.value != towerSource) {
             _selectedSource.value = towerSource
             // Clear towers when source changes
-            _towers.value = LinkedHashSet()
+            clearTowerCache()
             _noTowersFound.value = false
             // Automatically trigger a new query for the new source if layer is visible
             if (_showTowersLayer.value) {
@@ -359,16 +368,7 @@ class TowerMapLibreViewModel : ViewModel() {
         // If the layer was hidden and is now being shown, trigger a tower query
         if (wasHidden && show) {
             Timber.d("Tower layer re-enabled, triggering query")
-            val map = mapLibreMap
-            if (map != null) {
-                val bounds = map.projection.visibleRegion.latLngBounds
-                val area = calculateArea(bounds)
-                if (map.cameraPosition.zoom >= MIN_ZOOM_LEVEL && area <= MAX_AREA_SQ_METERS) {
-                    viewModelScope.launch {
-                        runTowerQuery()
-                    }
-                }
-            }
+            viewModelScope.launch { runTowerQuery() }
         }
     }
 
@@ -376,7 +376,7 @@ class TowerMapLibreViewModel : ViewModel() {
         if (_showOnlyServingCell.value != show) {
             _showOnlyServingCell.value = show
             // Clear existing towers to force a fresh query with the new mode
-            _towers.value = LinkedHashSet()
+            clearTowerCache()
             _noTowersFound.value = false
             // Trigger a new query with the updated mode
             if (_showTowersLayer.value) {
@@ -396,7 +396,7 @@ class TowerMapLibreViewModel : ViewModel() {
     fun setMaxTowerAgeMonths(months: Int) {
         if (_maxTowerAgeMonths.value != months) {
             _maxTowerAgeMonths.value = months
-            _towers.value = LinkedHashSet()
+            clearTowerCache()
             _noTowersFound.value = false
             if (_showTowersLayer.value) {
                 viewModelScope.launch {
@@ -551,133 +551,77 @@ class TowerMapLibreViewModel : ViewModel() {
      * Call this from the Composable’s onMapReady.
      */
     fun initMapLibre(view: MapView, map: MapLibreMap, style: Style) {
+        detachCameraListeners()
         mapView = view
         mapLibreMap = map
 
-        // 1) Restore saved viewport if available and check if we need to refresh towers
-        val shouldRefreshTowers = PreferenceUtils.getLatLngBoundsFromPreferences(view.context)
-            ?.let { bounds ->
-                // center & zoom
-                val center = bounds.center
-                val camPos = CameraPosition.Builder()
-                    .target(center)
-                    .zoom(INITIAL_ZOOM)
-                    .build()
-                map.moveCamera(CameraUpdateFactory.newCameraPosition(camPos))
-
-                // If we have tower data but map was recreated (screen off/on), we need to refresh
-                val hasTowerData = _towers.value.isNotEmpty()
-                if (hasTowerData) {
-                    Timber.d("Map recreated with existing tower data, will refresh towers")
-                    // Don't set lastQueriedBounds yet - let the camera idle listener trigger a refresh
-                    true
-                } else {
-                    // No tower data yet, avoid immediate refetching on startup
-                    _lastQueriedBounds.value = bounds
-                    false
-                }
-            }
-            ?: run {
-                // fallback, world view
-                val camPos = CameraPosition.Builder()
-                    .target(LatLng(0.0, 0.0))
-                    .zoom(1.0)
-                    .build()
-                map.moveCamera(CameraUpdateFactory.newCameraPosition(camPos))
-                false
-            }
-
-        // 2) When the camera stops moving, trigger a tower query
-        map.addOnCameraIdleListener {
-            val bounds = map.projection.visibleRegion.latLngBounds
-            val lastBounds = _lastQueriedBounds.value
-            val currentZoom = map.cameraPosition.zoom
-
-            // Check if bounds changed (basic check first)
-            val boundsChanged = lastBounds == null || !areBoundsEqual(bounds, lastBounds)
-
-            // Apply hysteresis logic if bounds have changed
-            val shouldQuery = if (boundsChanged && lastBounds != null) {
-                // Calculate the percentage change in bounds
-                val boundsChangePercent = calculateBoundsChangePercent(lastBounds, bounds)
-                val zoomChange = kotlin.math.abs(currentZoom - lastQueriedZoom)
-
-                // Query if either:
-                // 1. Bounds changed by more than threshold percentage
-                // 2. Zoom changed by more than threshold
-                val exceedsThreshold = boundsChangePercent >= BOUNDS_CHANGE_THRESHOLD_PERCENT ||
-                        zoomChange >= ZOOM_CHANGE_THRESHOLD
-
-                if (!exceedsThreshold) {
-                    Timber.d(
-                        "Bounds changed but below threshold: ${(boundsChangePercent * 100).toInt()}% (threshold: ${(BOUNDS_CHANGE_THRESHOLD_PERCENT * 100).toInt()}%), zoom change: ${
-                            "%.1f".format(
-                                zoomChange
-                            )
-                        }"
-                    )
-                }
-
-                exceedsThreshold
-            } else {
-                // Always query if this is the first time or bounds haven't changed
-                boundsChanged
-            }
-
-            val currentTime = System.currentTimeMillis()
-            val timeSinceLastQuery = currentTime - lastQueryTime
-
-            if (shouldQuery && timeSinceLastQuery >= QUERY_DEBOUNCE_MS) {
-                Timber.d("Camera bounds changed significantly, triggering tower query (time since last: ${timeSinceLastQuery}ms)")
-                lastQueryTime = currentTime
-                _lastQueriedBounds.value = bounds
-                lastQueriedZoom = currentZoom
-
-                val area = calculateArea(bounds)
-                if (currentZoom >= MIN_ZOOM_LEVEL && area <= MAX_AREA_SQ_METERS) {
-                    _isZoomedOutTooFar.value = false
-                    // Only query towers if the layer is visible and not in serving cell only mode
-                    if (_showTowersLayer.value && !_showOnlyServingCell.value) {
-                        viewModelScope.launch { runTowerQuery() }
-                    } else if (_showTowersLayer.value && _showOnlyServingCell.value) {
-                        // In serving cell only mode, we don't query based on camera movement
-                        Timber.d("Serving cell only mode, skipping area query")
-                        _isLoadingInProgress.value = false
-                    } else {
-                        Timber.d("Tower layer is hidden, skipping query")
-                        _isLoadingInProgress.value = false
-                    }
-                } else {
-                    _isZoomedOutTooFar.value = true
-                    _isLoadingInProgress.value = false
-                }
-            }
+        // 1) Restore the saved viewport if there is one, otherwise fall back to a world view.
+        // The camera idle event that follows drives the first tower query; the tile cache
+        // decides whether anything actually needs fetching, so a recreated map over an area
+        // that is already cached costs no request.
+        val savedBounds = PreferenceUtils.getLatLngBoundsFromPreferences(view.context)
+        val camPos = if (savedBounds != null) {
+            CameraPosition.Builder().target(savedBounds.center).zoom(INITIAL_ZOOM).build()
+        } else {
+            CameraPosition.Builder().target(LatLng(0.0, 0.0)).zoom(1.0).build()
         }
+        map.moveCamera(CameraUpdateFactory.newCameraPosition(camPos))
+
+        // 2) When the camera stops moving, plan a tower query after a short trailing debounce.
+        // A move that starts while the debounce is pending cancels it, so a fling followed by
+        // a drag never fires mid gesture.
+        val idleListener = MapLibreMap.OnCameraIdleListener {
+            _lastViewportBounds.value = map.projection.visibleRegion.latLngBounds
+            scheduleViewportQuery()
+        }
+        val moveStartedListener = MapLibreMap.OnCameraMoveStartedListener { cameraIdleJob?.cancel() }
+        map.addOnCameraIdleListener(idleListener)
+        map.addOnCameraMoveStartedListener(moveStartedListener)
+        cameraIdleListener = idleListener
+        cameraMoveStartedListener = moveStartedListener
 
         // 3) tweak gesture settings
         map.uiSettings.apply {
             isZoomGesturesEnabled = true
             isScrollGesturesEnabled = true
         }
+    }
 
-        // 4) If we determined we should refresh towers (map recreated), do it now
-        if (shouldRefreshTowers) {
-            viewModelScope.launch {
-                // Small delay to ensure map is fully initialized
-                kotlinx.coroutines.delay(100)
-                val currentBounds = map.projection.visibleRegion.latLngBounds
-                val area = calculateArea(currentBounds)
-                if (map.cameraPosition.zoom >= MIN_ZOOM_LEVEL && area <= MAX_AREA_SQ_METERS) {
-                    Timber.d("Forcing tower refresh after map recreation")
-                    _isZoomedOutTooFar.value = false
-                    runTowerQuery()
-                    // Now set the bounds so future moves work normally
-                    _lastQueriedBounds.value = currentBounds
-                } else {
-                    _isZoomedOutTooFar.value = true
+    /**
+     * Debounces camera idle events and then runs the shared tower query path. The query itself
+     * decides, through the tile cache, whether a request is needed at all.
+     */
+    private fun scheduleViewportQuery() {
+        cameraIdleJob?.cancel()
+        cameraIdleJob = viewModelScope.launch {
+            delay(CAMERA_IDLE_DEBOUNCE_MS)
+            when {
+                !_showTowersLayer.value -> {
+                    Timber.d("Tower layer is hidden, skipping query")
+                    _isLoadingInProgress.value = false
                 }
+
+                _showOnlyServingCell.value -> {
+                    // In serving cell only mode, camera movement does not change what is shown
+                    Timber.d("Serving cell only mode, skipping area query")
+                    _isLoadingInProgress.value = false
+                }
+
+                else -> runTowerQuery()
             }
         }
+    }
+
+    private fun detachCameraListeners() {
+        val map = mapLibreMap
+        if (map != null) {
+            cameraIdleListener?.let { map.removeOnCameraIdleListener(it) }
+            cameraMoveStartedListener?.let { map.removeOnCameraMoveStartedListener(it) }
+        }
+        cameraIdleListener = null
+        cameraMoveStartedListener = null
+        cameraIdleJob?.cancel()
+        cameraIdleJob = null
     }
 
     /**
@@ -781,7 +725,7 @@ class TowerMapLibreViewModel : ViewModel() {
      * Save the viewport when the Fragment pauses.
      */
     fun saveViewport(context: android.content.Context) {
-        lastQueriedBounds.value?.let { bounds ->
+        lastViewportBounds.value?.let { bounds ->
             PreferenceUtils.saveTowerMapViewLatLngBounds(context, bounds)
         }
     }
@@ -903,7 +847,7 @@ class TowerMapLibreViewModel : ViewModel() {
         val servingCells = _servingCells.value
         if (servingCells.isEmpty()) {
             Timber.d("No serving cells to query")
-            _towers.value = LinkedHashSet()
+            publishTowers(emptyList())
             _noTowersFound.value = true
             _isLoadingInProgress.value = false
             return
@@ -1022,10 +966,7 @@ class TowerMapLibreViewModel : ViewModel() {
         }
 
         // Update towers with fetched serving cells
-        val towerWrappers = LinkedHashSet(fetchedTowers.map { tower ->
-            TowerWrapper(tower)
-        })
-        _towers.value = towerWrappers
+        publishTowers(fetchedTowers.map { TowerWrapper(it) })
         _noTowersFound.value = fetchedTowers.isEmpty()
         _isLoadingInProgress.value = false
 
@@ -1038,22 +979,17 @@ class TowerMapLibreViewModel : ViewModel() {
     private suspend fun queryAllTowersInArea() {
         val map = mapLibreMap ?: return
 
-        // 1) Build bbox string for request.
+        // 1) Validate the viewport.
         //
-        // This gate lives here rather than in the callers because runTowerQuery() has ten call
+        // This gate lives here rather than in the callers because runTowerQuery() has many call
         // sites and only the camera driven ones check the map state first. The settings handlers
         // (radio type, PLMN filter, source, serving cell toggle, max tower age) fire the moment
         // the user changes a filter, which can land before the map surface has been laid out or
         // while the camera is showing a world scale view. Both produce a bbox the tower service
         // rejects with a 400.
         val b = map.projection.visibleRegion.latLngBounds
-        val bboxParam = buildBboxParam(
-            b.latitudeSouth,
-            b.longitudeWest,
-            b.latitudeNorth,
-            b.longitudeEast
-        )
-        if (bboxParam == null) {
+        val viewport = GeoBounds(b.latitudeSouth, b.longitudeWest, b.latitudeNorth, b.longitudeEast)
+        if (buildBboxParam(viewport.south, viewport.west, viewport.north, viewport.east) == null) {
             // Neither case is "zoomed out too far", so leave that flag alone, but the two want
             // different treatment in the UI.
             val mapHasNoBoundsYet = b.latitudeSouth == 0.0 && b.longitudeWest == 0.0 &&
@@ -1089,9 +1025,28 @@ class TowerMapLibreViewModel : ViewModel() {
         }
         _isZoomedOutTooFar.value = false
 
+        // 2) Ask the tile cache what the viewport still needs and plan at most one request.
+        val viewportTiles = TileKey.tilesCovering(viewport)
+        val now = System.currentTimeMillis()
+        val uncovered = tileCache.uncovered(viewportTiles, viewport.approxAreaSqMeters(), now)
+        val request = TowerFetchPlanner.plan(viewportTiles, uncovered)
+        _towersTruncated.value = tileCache.anyIncomplete(viewportTiles)
+        if (request == null) {
+            Timber.d("Viewport (${viewportTiles.size} tiles) is served from the tile cache, no request")
+            _noTowersFound.value = tileCache.towerCountIn(viewportTiles) == 0
+            _isLoadingInProgress.value = false
+            updateServingCellLocations()
+            return
+        }
+        val bboxParam = buildBboxParam(request.south, request.west, request.north, request.east)
+        if (bboxParam == null) {
+            Timber.w("Planned tower request is not queryable: $request")
+            _isLoadingInProgress.value = false
+            return
+        }
+
         _isLoadingInProgress.value = true
-        _towersTruncated.value = false
-        Timber.d("Starting area tower query")
+        Timber.d("Starting area tower query for ${uncovered.size} of ${viewportTiles.size} tiles: $bboxParam")
 
         // Translate the user-selected max age into a Unix-seconds cutoff for the server.
         // 30 days/month is a coarse approximation; this is a "hide stale data" filter, not a
@@ -1103,7 +1058,8 @@ class TowerMapLibreViewModel : ViewModel() {
                 (System.currentTimeMillis() / 1000L) - (months * 30L * 86400L)
             }
 
-        // 2) Fetch from API
+        // 3) Fetch from API
+        val requestStartMs = System.currentTimeMillis()
         val response: Response<TowerResponse> = try {
             if (plmnFilter.value.isSet()) {
                 val p = plmnFilter.value
@@ -1129,71 +1085,55 @@ class TowerMapLibreViewModel : ViewModel() {
             return
         }
 
-        // 3) Extract body or empty
-        val body = response.body()
-        val fetched =
-            if (response.code() == 204 || !response.isSuccessful || body == null) {
-                emptyList<TowerWrapper>()
-            } else {
-                body.cells.map { TowerWrapper(it) }
-            }
-        _towersTruncated.value = body?.truncated == true
-        Timber.i("Fetched ${fetched.size} towers (truncated=${_towersTruncated.value})")
-
-        // 4) Merge into existing set, evict oldest if > MAX
-        // Optimization: Only create a new set if there are actual changes
-        val existing = _towers.value
-
-        // Quick check: if no new towers and existing is within limits, skip update
-        if (fetched.isEmpty() && existing.size <= MAX_TOWERS_ON_MAP) {
-            // No new data and we're within limits - nothing to do
-            Timber.d("No new towers fetched and within limits, skipping update")
-        } else {
-            // Calculate which towers are actually new (not already in the set)
-            val newTowers = fetched.filter { !existing.contains(it) }
-            fetched.filter { existing.contains(it) }
-
-            // Only update if there are actual changes
-            if (newTowers.isNotEmpty() || (existing.size + newTowers.size) > MAX_TOWERS_ON_MAP) {
-                _towers.update { currentSet ->
-                    // Copy to preserve immutability
-                    val merged = LinkedHashSet(currentSet)
-
-                    fetched.forEach { wrapper ->
-                        // If already present, remove it so we can re-add and move to newest
-                        @Suppress("ControlFlowWithEmptyBody")
-                        if (merged.remove(wrapper)) {
-                            // no-op; removal done
-                        }
-                        merged.add(wrapper)
-                    }
-
-                    // Evict the oldest entries if we exceed the limit
-                    val overflow = merged.size - MAX_TOWERS_ON_MAP
-                    if (overflow > 0) {
-                        val iterator = merged.iterator()
-                        repeat(overflow.coerceAtLeast(0)) {
-                            if (iterator.hasNext()) {
-                                iterator.next()  // Must call next() before remove()
-                                iterator.remove()
-                            }
-                        }
-                        Timber.d("Evicted $overflow oldest towers, now have ${merged.size}")
-                    }
-                    merged
-                }
-            } else {
-                Timber.d("All ${fetched.size} fetched towers already in set, skipping update")
-            }
+        // 4) Extract body or empty. A failed request leaves the cache untouched, like a thrown
+        // exception does, so the next camera idle simply tries again.
+        if (!response.isSuccessful) {
+            Timber.w("Tower area request failed with code ${response.code()}")
+            _isLoadingInProgress.value = false
+            return
         }
+        val body = response.body()
+        val fetched = body?.cells?.map { TowerWrapper(it) } ?: emptyList()
+        val truncated = body?.truncated == true
+        Timber.i(
+            "Fetched ${fetched.size} towers in ${System.currentTimeMillis() - requestStartMs} ms (truncated=$truncated)"
+        )
 
-        _noTowersFound.value = _towers.value.isEmpty()
+        // 5) Merge into the tile cache and publish
+        tileCache.ingest(request, fetched, truncated, System.currentTimeMillis())
+        publishFromCache()
+        _towersTruncated.value = tileCache.anyIncomplete(viewportTiles)
+        _noTowersFound.value = tileCache.towerCountIn(viewportTiles) == 0
         _isLoadingInProgress.value = false
 
-        // 5) Recompute serving-cell overlays
+        // 6) Recompute serving-cell overlays
         updateServingCellLocations()
     }
 
+    /** Drops every cached tower and publishes the empty result. */
+    private fun clearTowerCache() {
+        tileCache.clear()
+        publishFromCache()
+    }
+
+    /** Publishes the tile cache contents to the UI, only allocating when the cache changed. */
+    private fun publishFromCache() {
+        val snapshot = tileCache.snapshot()
+        if (snapshot === _towers.value) return
+        towersById = tileCache.byId()
+        _locationBadges.value = TowerLocationGroups.compute(snapshot)
+        _towers.value = snapshot
+    }
+
+    /** Publishes a tower list that did not come from the tile cache (serving cell only mode). */
+    private fun publishTowers(list: List<TowerWrapper>) {
+        towersById = list.associateBy { it.towerId }
+        _locationBadges.value = TowerLocationGroups.compute(list)
+        _towers.value = list
+    }
+
+    /** Looks up a displayed tower by the id carried on its map feature. */
+    fun towerById(towerId: String): TowerWrapper? = towersById[towerId]
 
     /**
      * Updates serving cell lines based on current location and serving cells.
@@ -1278,64 +1218,16 @@ class TowerMapLibreViewModel : ViewModel() {
             }
 
         // Find towers that match serving cells
-        towers.value.forEach { towerItem ->
-            val subscriptionId: Int? = servingCellToSubscriptionMap[towerItem.towerId]
-
-            if (subscriptionId != null) {
-                subIdToServingCellLocations[subscriptionId] = ServingCellLocationInfo(
-                    location = LatLng(towerItem.tower.lat, towerItem.tower.lon),
-                    range = towerItem.tower.range
-                )
-            }
+        servingCellToSubscriptionMap.forEach { (towerId, subscriptionId) ->
+            val towerItem = towersById[towerId] ?: return@forEach
+            subIdToServingCellLocations[subscriptionId] = ServingCellLocationInfo(
+                location = LatLng(towerItem.tower.lat, towerItem.tower.lon),
+                range = towerItem.tower.range
+            )
         }
 
         updateServingCellLines()
         updateServingCellCoverage()
-    }
-
-    /**
-     * Compare two LatLngBounds with tolerance for floating point precision.
-     */
-    private fun areBoundsEqual(
-        bounds1: LatLngBounds,
-        bounds2: LatLngBounds,
-        tolerance: Double = 0.0001
-    ): Boolean {
-        return kotlin.math.abs(bounds1.latitudeNorth - bounds2.latitudeNorth) < tolerance &&
-                kotlin.math.abs(bounds1.latitudeSouth - bounds2.latitudeSouth) < tolerance &&
-                kotlin.math.abs(bounds1.longitudeEast - bounds2.longitudeEast) < tolerance &&
-                kotlin.math.abs(bounds1.longitudeWest - bounds2.longitudeWest) < tolerance
-    }
-
-    /**
-     * Calculate the percentage change between two bounds.
-     * Returns the maximum percentage change in any dimension (lat/lng).
-     */
-    private fun calculateBoundsChangePercent(
-        oldBounds: LatLngBounds,
-        newBounds: LatLngBounds
-    ): Double {
-        val oldLatSpan = oldBounds.latitudeNorth - oldBounds.latitudeSouth
-        val oldLngSpan = oldBounds.longitudeEast - oldBounds.longitudeWest
-        val newLatSpan = newBounds.latitudeNorth - newBounds.latitudeSouth
-        val newLngSpan = newBounds.longitudeEast - newBounds.longitudeWest
-
-        // Calculate center points
-        val oldCenterLat = (oldBounds.latitudeNorth + oldBounds.latitudeSouth) / 2
-        val oldCenterLng = (oldBounds.longitudeEast + oldBounds.longitudeWest) / 2
-        val newCenterLat = (newBounds.latitudeNorth + newBounds.latitudeSouth) / 2
-        val newCenterLng = (newBounds.longitudeEast + newBounds.longitudeWest) / 2
-
-        // Calculate center movement as percentage of old bounds size
-        val latCenterChange = kotlin.math.abs(newCenterLat - oldCenterLat) / oldLatSpan
-        val lngCenterChange = kotlin.math.abs(newCenterLng - oldCenterLng) / oldLngSpan
-
-        // Calculate size change
-        val latSizeChange = kotlin.math.abs(newLatSpan - oldLatSpan) / oldLatSpan
-        val lngSizeChange = kotlin.math.abs(newLngSpan - oldLngSpan) / oldLngSpan
-
-        // Return the maximum change percentage
-        return maxOf(latCenterChange, lngCenterChange, latSizeChange, lngSizeChange)
     }
 
     /**
@@ -1559,6 +1451,7 @@ class TowerMapLibreViewModel : ViewModel() {
         super.onCleared()
 
         // Clear map references to prevent memory leaks
+        detachCameraListeners()
         mapLibreMap = null
         mapView = null
 
@@ -1571,7 +1464,4 @@ class TowerMapLibreViewModel : ViewModel() {
 
 }
 
-data class TowerWrapper(val tower: Tower) {
-    internal val towerId: String = CellularUtils.getTowerId(tower)
-}
 

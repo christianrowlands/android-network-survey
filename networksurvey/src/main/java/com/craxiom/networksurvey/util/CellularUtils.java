@@ -17,6 +17,7 @@ import com.craxiom.networksurvey.model.CellularRecordWrapper;
 import com.craxiom.networksurvey.model.NrRecordWrapper;
 import com.craxiom.networksurvey.ui.cellular.model.ServingCellInfo;
 import com.craxiom.networksurvey.ui.cellular.model.ServingSignalInfo;
+import com.craxiom.networksurvey.ui.cellular.model.TowerIdentity;
 import com.google.protobuf.BoolValue;
 import com.google.protobuf.Descriptors;
 import com.google.protobuf.GeneratedMessage;
@@ -571,9 +572,7 @@ public class CellularUtils
             return "";
         }
 
-        String mcc = tower.getMcc() != null ? tower.getMcc() : "0";
-        String mnc = tower.getMnc() != null ? tower.getMnc() : "0";
-        return mcc + mnc + tower.getArea() + tower.getCid();
+        return TowerIdentity.towerId(tower.getMcc(), tower.getMnc(), tower.getArea(), tower.getCid());
     }
 
     /**
@@ -612,7 +611,7 @@ public class CellularUtils
                 String[] gsmMccMnc = NsUtils.extractMccMncStrings(gsmData.hasPlmn(),
                         gsmData.hasPlmn() ? gsmData.getPlmn().getValue() : null,
                         gsmData.getMcc().getValue(), gsmData.getMnc().getValue());
-                return gsmMccMnc[0] + gsmMccMnc[1] + gsmData.getLac().getValue() + gsmData.getCi().getValue();
+                return TowerIdentity.towerId(gsmMccMnc[0], gsmMccMnc[1], gsmData.getLac().getValue(), gsmData.getCi().getValue());
 
             case CDMA:
                 // We don't support CDMA since it is pretty much gone
@@ -623,21 +622,21 @@ public class CellularUtils
                 String[] umtsMccMnc = NsUtils.extractMccMncStrings(umtsData.hasPlmn(),
                         umtsData.hasPlmn() ? umtsData.getPlmn().getValue() : null,
                         umtsData.getMcc().getValue(), umtsData.getMnc().getValue());
-                return umtsMccMnc[0] + umtsMccMnc[1] + umtsData.getLac().getValue() + umtsData.getCid().getValue();
+                return TowerIdentity.towerId(umtsMccMnc[0], umtsMccMnc[1], umtsData.getLac().getValue(), umtsData.getCid().getValue());
 
             case LTE:
                 final LteRecordData lteData = ((LteRecord) cellularRecord.cellularRecord).getData();
                 String[] lteMccMnc = NsUtils.extractMccMncStrings(lteData.hasPlmn(),
                         lteData.hasPlmn() ? lteData.getPlmn().getValue() : null,
                         lteData.getMcc().getValue(), lteData.getMnc().getValue());
-                return lteMccMnc[0] + lteMccMnc[1] + lteData.getTac().getValue() + lteData.getEci().getValue();
+                return TowerIdentity.towerId(lteMccMnc[0], lteMccMnc[1], lteData.getTac().getValue(), lteData.getEci().getValue());
 
             case NR:
                 final NrRecordData nrData = ((NrRecord) cellularRecord.cellularRecord).getData();
                 String[] nrMccMnc = NsUtils.extractMccMncStrings(nrData.hasPlmn(),
                         nrData.hasPlmn() ? nrData.getPlmn().getValue() : null,
                         nrData.getMcc().getValue(), nrData.getMnc().getValue());
-                return nrMccMnc[0] + nrMccMnc[1] + nrData.getTac().getValue() + nrData.getNci().getValue();
+                return TowerIdentity.towerId(nrMccMnc[0], nrMccMnc[1], nrData.getTac().getValue(), nrData.getNci().getValue());
         }
 
         return "";

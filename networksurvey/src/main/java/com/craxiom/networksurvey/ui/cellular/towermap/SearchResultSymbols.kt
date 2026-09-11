@@ -4,6 +4,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.ComposeNode
 import androidx.compose.runtime.currentComposer
 import com.craxiom.networksurvey.data.api.Tower
+import com.craxiom.networksurvey.util.CellularUtils
 import org.maplibre.android.maps.Style
 import org.maplibre.android.style.layers.PropertyFactory.iconAllowOverlap
 import org.maplibre.android.style.layers.PropertyFactory.iconIgnorePlacement
@@ -43,28 +44,14 @@ internal class SearchResultSymbolsNode(
     }
 
     /**
-     * Updates the search result tower on the map.
+     * Updates the search result tower on the map. The feature carries only the tower id; the
+     * click handler resolves it against the ViewModel's searched tower.
      */
     fun updateData(tower: Tower?) {
         val features = if (tower != null) {
             listOf(
                 Feature.fromGeometry(Point.fromLngLat(tower.lon, tower.lat)).apply {
-                    addStringProperty("radio", tower.radio)
-                    addStringProperty("mcc", tower.mcc)
-                    addStringProperty("mnc", tower.mnc)
-                    addNumberProperty("area", tower.area)
-                    addNumberProperty("cid", tower.cid)
-                    addNumberProperty("unit", tower.unit)
-                    addNumberProperty("range", tower.range)
-                    addNumberProperty("samples", tower.samples)
-                    addNumberProperty("averageSignal", tower.averageSignal)
-                    addNumberProperty("changeable", tower.changeable)
-                    addNumberProperty("createdAt", tower.createdAt)
-                    addNumberProperty("updatedAt", tower.updatedAt)
-                    addStringProperty("source", tower.source)
-                    tower.comments?.let { addStringProperty("comments", it) }
-                    addNumberProperty("lat", tower.lat)
-                    addNumberProperty("lon", tower.lon)
+                    addStringProperty(TOWER_ID_PROPERTY, CellularUtils.getTowerId(tower))
                 }
             )
         } else {

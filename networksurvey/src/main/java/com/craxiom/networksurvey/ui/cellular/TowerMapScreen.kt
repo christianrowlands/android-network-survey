@@ -114,10 +114,8 @@ import com.craxiom.networksurvey.ui.cellular.towermap.KEY_TOWER_ICON
 import com.craxiom.networksurvey.ui.cellular.towermap.LineString
 import com.craxiom.networksurvey.ui.cellular.towermap.MapLibreMap
 import com.craxiom.networksurvey.ui.cellular.towermap.MapUiSettings
-import com.craxiom.networksurvey.ui.cellular.towermap.OperatorCountBadge
 import com.craxiom.networksurvey.ui.cellular.towermap.SearchResultSymbols
 import com.craxiom.networksurvey.ui.cellular.towermap.TowerBottomSheet
-import com.craxiom.networksurvey.ui.cellular.towermap.TowerCountBadge
 import com.craxiom.networksurvey.ui.cellular.towermap.TowerSheetState
 import com.craxiom.networksurvey.ui.cellular.towermap.TowerSymbols
 import com.craxiom.networksurvey.ui.cellular.towermap.rememberCameraPositionState
@@ -260,8 +258,9 @@ internal fun TowerMapScreen(
     var showFiltersDialog by remember { mutableStateOf(false) }
 
     val cameraPositionState = rememberCameraPositionState {
-        // FIXME Is this redundant because there is similar logic in the view model?
-        viewModel.lastQueriedBounds.value?.let { bounds ->
+        // Keeps the camera where it was when the ViewModel outlives the composition (for
+        // example a configuration change); initMapLibre handles the cold start restore.
+        viewModel.lastViewportBounds.value?.let { bounds ->
             position = CameraPosition.Builder()
                 .target(LatLng(bounds.center.latitude, bounds.center.longitude))
                 .zoom(INITIAL_ZOOM)
@@ -422,7 +421,12 @@ internal fun TowerMapScreen(
                         viewModel.onMapStyleLoadFailed(errorMessage)
                     },
                     onMyLocationChanged = viewModel::updateMyLocation,
-                    onTowersClick = { towers ->
+                    onTowersClick = { towerIds ->
+                        val towers = towerIds.mapNotNull { id ->
+                            searchedTower?.takeIf { CellularUtils.getTowerId(it) == id }
+                                ?: viewModel.towerById(id)?.tower
+                        }
+                        if (towers.isEmpty()) return@MapLibreMap
                         towerSheetState = if (towers.size == 1) {
                             TowerSheetState.TowerDetail(towers[0])
                         } else {
@@ -432,9 +436,9 @@ internal fun TowerMapScreen(
                 ) {
                     // Check if towers layer should be shown
                     if (showTowersLayer) {
-                        // 1) Pull your tower wrappers from the VM
-                        val towers by viewModel.towers.collectAsStateWithLifecycle()
-                        val towerWrapperList = towers.toList()
+                        // 1) Pull the tower list and badge counts from the VM
+                        val towerWrapperList by viewModel.towers.collectAsStateWithLifecycle()
+                        val locationBadges by viewModel.locationBadges.collectAsStateWithLifecycle()
 
                         // 2) Pull the “serving cell” IDs so we can highlight them
                         val servingCellInfo by viewModel.servingCells.collectAsStateWithLifecycle()
@@ -459,19 +463,10 @@ internal fun TowerMapScreen(
 
                         TowerSymbols(
                             towerWrapperList = towerWrapperList,
+                            badges = locationBadges,
                             servingIds = servingIds,
                             isDarkMap = darkMap.value,
                             colorVersion = colorOverrideVersion,
-                        )
-
-                        // 4) Count badges for multi-tower locations
-                        TowerCountBadge(
-                            towerWrapperList = towerWrapperList
-                        )
-
-                        // 5) Operator count badges for multi-operator locations
-                        OperatorCountBadge(
-                            towerWrapperList = towerWrapperList
                         )
 
                         // Display search result coverage circle first (behind the icon)
