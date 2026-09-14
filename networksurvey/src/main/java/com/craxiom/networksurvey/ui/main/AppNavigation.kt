@@ -9,6 +9,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -43,6 +44,7 @@ import com.craxiom.networksurvey.fragments.WifiSpectrumFragment
 import com.craxiom.networksurvey.fragments.model.MqttConnectionSettings
 import com.craxiom.networksurvey.model.WifiNetwork
 import com.craxiom.networksurvey.ui.acknowledgments.AcknowledgmentsScreen
+import com.craxiom.networksurvey.ui.activesurvey.SurveyMonitorNavArgs
 import com.craxiom.networksurvey.ui.activesurvey.SurveyMonitorScreen
 import com.craxiom.networksurvey.ui.cellular.CalculatorScreen
 import com.craxiom.networksurvey.ui.cellular.towermap.ProviderColorOverrideScreen
@@ -133,7 +135,15 @@ fun NavGraphBuilder.mainGraph(
         }
 
         composable(NavDrawerOption.SurveyMonitor.name) {
+            // A dashboard "See on map" tap asks for the Map tab; consume the request so a later
+            // drawer visit opens on the Status tab as usual.
+            val initialTab = rememberSaveable {
+                mainNavController.previousBackStackEntry?.savedStateHandle
+                    ?.remove<Int>(SurveyMonitorNavArgs.INITIAL_TAB_KEY)
+                    ?: SurveyMonitorNavArgs.TAB_STATUS
+            }
             SurveyMonitorScreen(
+                initialTab = initialTab,
                 onBackPressed = { mainNavController.navigateUp() },
                 onNavigateToTowerMapSettings = {
                     mainNavController.navigate(NavOption.TowerMapSettings.name)

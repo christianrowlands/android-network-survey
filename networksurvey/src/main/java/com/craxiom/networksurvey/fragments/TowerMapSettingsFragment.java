@@ -1,6 +1,8 @@
 package com.craxiom.networksurvey.fragments;
 
+import android.content.Context;
 import android.os.Bundle;
+import android.widget.Toast;
 
 import androidx.lifecycle.ViewModelProvider;
 import androidx.preference.Preference;
@@ -9,6 +11,8 @@ import androidx.preference.SwitchPreferenceCompat;
 
 import com.craxiom.networksurvey.R;
 import com.craxiom.networksurvey.constants.NetworkSurveyConstants;
+import com.craxiom.networksurvey.logging.db.SurveyDatabase;
+import com.craxiom.networksurvey.logging.db.SurveyedPointStore;
 import com.craxiom.networksurvey.ui.main.SharedViewModel;
 
 import dagger.hilt.android.AndroidEntryPoint;
@@ -26,6 +30,7 @@ public class TowerMapSettingsFragment extends PreferenceFragmentCompat
 
         setupPreferenceDependencies();
         setupProviderColorOverrides();
+        setupClearSurveyedPlaces();
     }
 
     private void setupPreferenceDependencies()
@@ -52,6 +57,43 @@ public class TowerMapSettingsFragment extends PreferenceFragmentCompat
                 return true;
             });
         }
+    }
+
+    /**
+     * Wires the "Clear surveyed places" action to a confirmation dialog and the database clear.
+     */
+    private void setupClearSurveyedPlaces()
+    {
+        Preference clearPreference = findPreference(NetworkSurveyConstants.PROPERTY_CLEAR_SURVEYED_PLACES);
+        if (clearPreference == null) return;
+
+        clearPreference.setOnPreferenceClickListener(preference -> {
+            Context context = getContext();
+            if (context == null) return true;
+            FragmentDialogs.showClearSurveyedPlacesConfirmation(getParentFragmentManager(),
+                    () -> clearSurveyedPlaces(context));
+            return true;
+        });
+    }
+
+    private void clearSurveyedPlaces(Context context)
+    {
+        new Thread(() -> {
+            int toastText;
+            try
+            {
+                SurveyedPointStore.clearAll(SurveyDatabase.getInstance(context).surveyedPointDao());
+                toastText = R.string.clear_surveyed_places_success;
+            } catch (Exception e)
+            {
+                toastText = R.string.clear_surveyed_places_failed;
+            }
+            final int message = toastText;
+            if (isAdded())
+            {
+                requireActivity().runOnUiThread(() -> Toast.makeText(context, message, Toast.LENGTH_SHORT).show());
+            }
+        }).start();
     }
 
     /**

@@ -603,7 +603,7 @@ private fun MetadataSection(tower: Tower) {
 }
 
 @Composable
-private fun SectionHeader(title: String) {
+internal fun SectionHeader(title: String) {
     Text(
         text = title,
         style = MaterialTheme.typography.titleSmall,
@@ -614,7 +614,7 @@ private fun SectionHeader(title: String) {
 }
 
 @Composable
-private fun CompactInfoItem(label: String, value: String) {
+internal fun CompactInfoItem(label: String, value: String) {
     Column {
         Text(
             text = label,
@@ -671,7 +671,7 @@ private fun SourceBadge(source: String) {
 }
 
 @Composable
-private fun TimestampRow(label: String, timestamp: Long) {
+internal fun TimestampRow(label: String, timestamp: Long) {
     val relativeTime = getRelativeTimeString(timestamp)
     val exactTime = formatDateTime(timestamp)
 
@@ -701,7 +701,7 @@ private fun TimestampRow(label: String, timestamp: Long) {
     }
 }
 
-private fun getRelativeTimeString(timestamp: Long): String {
+internal fun getRelativeTimeString(timestamp: Long): String {
     val now = System.currentTimeMillis()
     val time = timestamp * 1000
     val diff = now - time
@@ -740,7 +740,7 @@ private fun getRelativeTimeString(timestamp: Long): String {
     }
 }
 
-private fun formatDateTime(timestamp: Long): String {
+internal fun formatDateTime(timestamp: Long): String {
     val date = Date(timestamp * 1000)
     val sdf = SimpleDateFormat("MMM dd, yyyy HH:mm", Locale.getDefault())
     return sdf.format(date)

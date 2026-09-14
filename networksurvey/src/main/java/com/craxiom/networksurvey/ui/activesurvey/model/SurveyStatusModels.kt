@@ -85,7 +85,8 @@ data class SurveyTrack(
     val points: List<LatLng>,
     val timestamps: List<Long>,
     val sessionId: String,
-    val color: Color = Color.Blue
+    // Slightly translucent so the surveyed places dots drawn over it stay readable
+    val color: Color = Color.Blue.copy(alpha = 0.6f)
 )
 
 /**

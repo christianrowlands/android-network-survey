@@ -28,6 +28,7 @@ private const val TAG_BLUETOOTH_SORT = "BluetoothSort"
 private const val TAG_CELLULAR_INFO = "CellularInfo"
 private const val TAG_QR_TOO_LARGE = "QrCodeTooLarge"
 private const val TAG_DELETE_UPLOAD_DATA = "DeleteUploadData"
+private const val TAG_CLEAR_SURVEYED_PLACES = "ClearSurveyedPlaces"
 private const val TAG_LOCATION_SERVICES_DISABLED = "LocationServicesDisabled"
 
 /**
@@ -91,7 +92,10 @@ fun showCellularInfo(fragmentManager: FragmentManager, title: String, message: C
     ComposeDialogFragment.show(fragmentManager, TAG_CELLULAR_INFO) { dismiss ->
         NsMessageDialog(
             title = title,
-            message = styledCharSequenceToAnnotatedString(message, MaterialTheme.colorScheme.primary),
+            message = styledCharSequenceToAnnotatedString(
+                message,
+                MaterialTheme.colorScheme.primary
+            ),
             onDismiss = dismiss,
             icon = Icons.Outlined.Info,
         )
@@ -122,6 +126,19 @@ fun showQrCodeTooLargeError(fragmentManager: FragmentManager, onAcknowledge: Run
 /**
  * Shows the destructive confirmation dialog before deleting the record of uploaded survey data.
  */
+fun showClearSurveyedPlacesConfirmation(fragmentManager: FragmentManager, onClear: Runnable) {
+    ComposeDialogFragment.show(fragmentManager, TAG_CLEAR_SURVEYED_PLACES) { dismiss ->
+        NsConfirmationDialog(
+            title = stringResource(R.string.clear_surveyed_places_confirm_title),
+            message = stringResource(R.string.clear_surveyed_places_confirm_message),
+            confirmText = stringResource(R.string.clear_surveyed_places_confirm_button),
+            onConfirm = { onClear.run() },
+            onDismiss = dismiss,
+            destructive = true,
+        )
+    }
+}
+
 fun showDeleteUploadDataConfirmation(fragmentManager: FragmentManager, onDelete: Runnable) {
     ComposeDialogFragment.show(fragmentManager, TAG_DELETE_UPLOAD_DATA) { dismiss ->
         NsConfirmationDialog(

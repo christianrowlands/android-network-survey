@@ -2,6 +2,7 @@ package com.craxiom.networksurvey.logging.db;
 
 import android.content.Context;
 
+import androidx.annotation.VisibleForTesting;
 import androidx.room.Database;
 import androidx.room.Room;
 import androidx.room.RoomDatabase;
@@ -14,6 +15,7 @@ import com.craxiom.networksurvey.logging.db.dao.LteRecordDao;
 import com.craxiom.networksurvey.logging.db.dao.NrRecordDao;
 import com.craxiom.networksurvey.logging.db.dao.NsAnalyticsDao;
 import com.craxiom.networksurvey.logging.db.dao.SurveyRecordDao;
+import com.craxiom.networksurvey.logging.db.dao.SurveyedPointDao;
 import com.craxiom.networksurvey.logging.db.dao.TowerCacheDao;
 import com.craxiom.networksurvey.logging.db.dao.UmtsRecordDao;
 import com.craxiom.networksurvey.logging.db.dao.WatchlistDao;
@@ -25,6 +27,7 @@ import com.craxiom.networksurvey.logging.db.model.LteRecordEntity;
 import com.craxiom.networksurvey.logging.db.model.NrRecordEntity;
 import com.craxiom.networksurvey.logging.db.model.NsAnalyticsConnectionEntity;
 import com.craxiom.networksurvey.logging.db.model.NsAnalyticsQueueEntity;
+import com.craxiom.networksurvey.logging.db.model.SurveyedPointEntity;
 import com.craxiom.networksurvey.logging.db.model.TowerCacheEntity;
 import com.craxiom.networksurvey.logging.db.model.UmtsRecordEntity;
 import com.craxiom.networksurvey.logging.db.model.WatchlistEntryEntity;
@@ -34,7 +37,7 @@ import com.craxiom.networksurvey.logging.db.model.WifiBeaconRecordEntity;
 @Database(entities = {GsmRecordEntity.class, CdmaRecordEntity.class, UmtsRecordEntity.class,
         LteRecordEntity.class, NrRecordEntity.class, WifiBeaconRecordEntity.class, TowerCacheEntity.class,
         NsAnalyticsQueueEntity.class, NsAnalyticsConnectionEntity.class, WatchlistEntryEntity.class,
-        WatchlistHitEntity.class}, version = 14, exportSchema = false)
+        WatchlistHitEntity.class, SurveyedPointEntity.class}, version = 16, exportSchema = false)
 public abstract class SurveyDatabase extends RoomDatabase
 {
     public abstract GsmRecordDao gsmRecordDao();
@@ -58,6 +61,8 @@ public abstract class SurveyDatabase extends RoomDatabase
     public abstract WatchlistDao watchlistDao();
 
     public abstract WatchlistHitDao watchlistHitDao();
+
+    public abstract SurveyedPointDao surveyedPointDao();
 
     private static volatile SurveyDatabase INSTANCE;
 
@@ -348,6 +353,64 @@ public abstract class SurveyDatabase extends RoomDatabase
         }
     };
 
+    /**
+     * Migration from version 14 to 15: Add the {@code surveyed_point} table behind the
+     * "My surveyed places" map layer. The DDL must match the schema Room generates from
+     * {@link SurveyedPointEntity}, including the auto-named indices, or Room's schema validation
+     * fails on upgrade. No existing tables are touched.
+     */
+    private static final Migration MIGRATION_14_15 = new Migration(14, 15)
+    {
+        @Override
+        public void migrate(SupportSQLiteDatabase database)
+        {
+            database.execSQL("CREATE TABLE surveyed_point ("
+                    + "id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, "
+                    + "latitude REAL NOT NULL, "
+                    + "longitude REAL NOT NULL, "
+                    + "time INTEGER NOT NULL, "
+                    + "source INTEGER NOT NULL, "
+                    + "observedMask INTEGER NOT NULL, "
+                    + "uploadedMask INTEGER NOT NULL"
+                    + ")");
+
+            database.execSQL("CREATE INDEX index_surveyed_point_latitude_longitude "
+                    + "ON surveyed_point (latitude, longitude)");
+            database.execSQL("CREATE INDEX index_surveyed_point_source_time "
+                    + "ON surveyed_point (source, time)");
+        }
+    };
+
+    /**
+     * Migration from version 15 to 16: describe each surveyed point. Adds the technology, identity,
+     * signal, count, label, and mission columns that let the map color by them and the tap sheet
+     * explain them. ADD COLUMN is metadata only in SQLite, so existing rows are kept and read as
+     * "unknown" through the defaults. Every {@code NOT NULL DEFAULT 0} must match the
+     * {@code @ColumnInfo(defaultValue = "0")} on {@link SurveyedPointEntity}, and TEXT columns
+     * carry no default, or Room's schema validation fails on upgrade.
+     */
+    @VisibleForTesting
+    static final Migration MIGRATION_15_16 = new Migration(15, 16)
+    {
+        @Override
+        public void migrate(SupportSQLiteDatabase database)
+        {
+            database.execSQL("ALTER TABLE surveyed_point ADD COLUMN protocol INTEGER NOT NULL DEFAULT 0");
+            database.execSQL("ALTER TABLE surveyed_point ADD COLUMN plmn TEXT");
+            database.execSQL("ALTER TABLE surveyed_point ADD COLUMN provider TEXT");
+            database.execSQL("ALTER TABLE surveyed_point ADD COLUMN area INTEGER NOT NULL DEFAULT 0");
+            database.execSQL("ALTER TABLE surveyed_point ADD COLUMN cid INTEGER NOT NULL DEFAULT 0");
+            database.execSQL("ALTER TABLE surveyed_point ADD COLUMN cellId TEXT");
+            database.execSQL("ALTER TABLE surveyed_point ADD COLUMN signal INTEGER NOT NULL DEFAULT 0");
+            database.execSQL("ALTER TABLE surveyed_point ADD COLUMN signal2 INTEGER NOT NULL DEFAULT 0");
+            database.execSQL("ALTER TABLE surveyed_point ADD COLUMN signalBucket INTEGER NOT NULL DEFAULT 0");
+            database.execSQL("ALTER TABLE surveyed_point ADD COLUMN nrScg INTEGER NOT NULL DEFAULT 0");
+            database.execSQL("ALTER TABLE surveyed_point ADD COLUMN deviceCount INTEGER NOT NULL DEFAULT 0");
+            database.execSQL("ALTER TABLE surveyed_point ADD COLUMN label TEXT");
+            database.execSQL("ALTER TABLE surveyed_point ADD COLUMN missionId TEXT");
+        }
+    };
+
     public static SurveyDatabase getInstance(Context context)
     {
         if (INSTANCE == null)
@@ -358,7 +421,7 @@ public abstract class SurveyDatabase extends RoomDatabase
                 {
                     INSTANCE = Room.databaseBuilder(context.getApplicationContext(),
                                     SurveyDatabase.class, "survey_db")
-                            .addMigrations(MIGRATION_7_9, MIGRATION_8_9, MIGRATION_9_10, MIGRATION_10_11, MIGRATION_11_12, MIGRATION_12_13, MIGRATION_13_14)
+                            .addMigrations(MIGRATION_7_9, MIGRATION_8_9, MIGRATION_9_10, MIGRATION_10_11, MIGRATION_11_12, MIGRATION_12_13, MIGRATION_13_14, MIGRATION_14_15, MIGRATION_15_16)
                             .fallbackToDestructiveMigration(true)
                             .build();
                 }

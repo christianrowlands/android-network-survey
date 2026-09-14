@@ -19,6 +19,7 @@ import com.craxiom.networksurvey.logging.db.model.CdmaRecordEntity;
 import com.craxiom.networksurvey.logging.db.model.GsmRecordEntity;
 import com.craxiom.networksurvey.logging.db.model.LteRecordEntity;
 import com.craxiom.networksurvey.logging.db.model.NrRecordEntity;
+import com.craxiom.networksurvey.logging.db.model.SurveyedPointEntity;
 import com.craxiom.networksurvey.logging.db.model.UmtsRecordEntity;
 import com.craxiom.networksurvey.logging.db.model.WifiBeaconRecordEntity;
 import com.craxiom.networksurvey.model.CellularRecordWrapper;
@@ -40,6 +41,7 @@ public class DbUploadStore implements ICellularSurveyRecordListener, IWifiSurvey
     public static final int EARTH_RADIUS_METERS = 6371000; // Earth's radius in meters
     private final SurveyDatabase database;
     private final ExecutorService executorService;
+    private final SurveyedPointStore surveyedPointStore;
 
     // Store last known location per subscription ID
     private final Map<Integer, kotlin.Pair<Double, Double>> lastKnownCellularLocations = new HashMap<>();
@@ -53,6 +55,7 @@ public class DbUploadStore implements ICellularSurveyRecordListener, IWifiSurvey
     {
         database = SurveyDatabase.getInstance(context);
         executorService = Executors.newSingleThreadExecutor();
+        surveyedPointStore = new SurveyedPointStore(database.surveyedPointDao(), SurveyedPointEntity.SOURCE_COMMUNITY);
 
         // Force database to open immediately to avoid race condition at boot time
         // Room databases are lazily opened - they don't open until the first DB operation
@@ -62,6 +65,9 @@ public class DbUploadStore implements ICellularSurveyRecordListener, IWifiSurvey
             {
                 // Force database to open by accessing the underlying SQLite database
                 database.getOpenHelper().getWritableDatabase();
+                // Uploads may never run (targets disabled, auto upload off), so the surveyed
+                // places cap is also enforced whenever a survey starts.
+                SurveyedPointStore.trimIfNeeded(database.surveyedPointDao());
             } catch (Exception e)
             {
                 Timber.e(e, "Failed to open database during initialization");
@@ -82,7 +88,11 @@ public class DbUploadStore implements ICellularSurveyRecordListener, IWifiSurvey
     @Override
     public void onCellularBatch(List<CellularRecordWrapper> cellularGroup, int subscriptionId)
     {
+        final long observedAt = System.currentTimeMillis();
         executorService.execute(() -> {
+            // Surveyed places are gated on their own, independent of the upload thinning below.
+            surveyedPointStore.observeCellular(cellularGroup, observedAt);
+
             final List<GsmRecordEntity> gsmRecords = new ArrayList<>();
             final List<CdmaRecordEntity> cdmaRecords = new ArrayList<>();
             final List<UmtsRecordEntity> umtsRecords = new ArrayList<>();
@@ -208,7 +218,10 @@ public class DbUploadStore implements ICellularSurveyRecordListener, IWifiSurvey
     @Override
     public void onWifiBeaconSurveyRecords(List<WifiRecordWrapper> wifiBeaconRecords)
     {
+        final long observedAt = System.currentTimeMillis();
         executorService.execute(() -> {
+            surveyedPointStore.observeWifi(wifiBeaconRecords, observedAt);
+
             final List<WifiBeaconRecordEntity> wifiRecords = new ArrayList<>();
 
             if (!wifiBeaconRecords.isEmpty())
@@ -257,6 +270,7 @@ public class DbUploadStore implements ICellularSurveyRecordListener, IWifiSurvey
 
     public void resetLastLocations()
     {
+        executorService.execute(surveyedPointStore::reset);
         lastKnownCellularLocations.clear();
         lastWifiLatitude = Double.NaN;
         lastWifiLongitude = Double.NaN;
@@ -358,9 +372,19 @@ public class DbUploadStore implements ICellularSurveyRecordListener, IWifiSurvey
     }
 
     /**
-     * @return True if the record has moved enough to be considered a new location, false otherwise.
+     * @return True if the record has moved at least {@link #DISTANCE_MOVED_THRESHOLD_METERS} from
+     * the last location, false otherwise.
      */
     public static boolean hasMovedEnough(double latitude, double longitude, kotlin.Pair<Double, Double> lastLocation)
+    {
+        return hasMovedEnough(latitude, longitude, lastLocation, DISTANCE_MOVED_THRESHOLD_METERS);
+    }
+
+    /**
+     * @return True if the record has moved at least {@code thresholdMeters} from the last
+     * location (or there is no last location), false otherwise.
+     */
+    public static boolean hasMovedEnough(double latitude, double longitude, kotlin.Pair<Double, Double> lastLocation, int thresholdMeters)
     {
         if (lastLocation == null || Double.isNaN(lastLocation.getFirst()) || Double.isNaN(lastLocation.getSecond()))
         {
@@ -380,7 +404,7 @@ public class DbUploadStore implements ICellularSurveyRecordListener, IWifiSurvey
 
         double distance = EARTH_RADIUS_METERS * c;
 
-        return distance >= DISTANCE_MOVED_THRESHOLD_METERS;
+        return distance >= thresholdMeters;
     }
 
     /**

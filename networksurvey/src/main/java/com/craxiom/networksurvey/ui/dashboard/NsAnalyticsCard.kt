@@ -27,6 +27,7 @@ fun NsAnalyticsCard(
     onToggleSurvey: () -> Unit,
     onOpenDetails: () -> Unit,
     onHelpClick: () -> Unit,
+    onSeeOnMap: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     AnimatedVisibility(
@@ -60,6 +61,7 @@ fun NsAnalyticsCard(
                 phoneStateCount = state.phoneStateCount,
                 onToggleSurvey = onToggleSurvey,
                 onOpenDetails = onOpenDetails,
+                onSeeOnMap = onSeeOnMap,
                 modifier = Modifier.padding(0.dp),
             )
         }

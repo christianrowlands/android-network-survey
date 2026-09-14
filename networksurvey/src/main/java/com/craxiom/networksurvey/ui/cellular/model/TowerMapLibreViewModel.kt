@@ -15,9 +15,11 @@ import com.craxiom.networksurvey.data.api.Api
 import com.craxiom.networksurvey.data.api.Tower
 import com.craxiom.networksurvey.data.api.TowerResponse
 import com.craxiom.networksurvey.data.api.retrofit
+import com.craxiom.networksurvey.logging.db.dao.SurveyedPointDao
 import com.craxiom.networksurvey.model.CellularProtocol
 import com.craxiom.networksurvey.model.CellularRecordWrapper
 import com.craxiom.networksurvey.model.Plmn
+import com.craxiom.networksurvey.ui.cellular.towermap.SURVEYED_POINTS_LAYER_KEY
 import com.craxiom.networksurvey.ui.cellular.towermap.TOWER_LAYER_KEY
 import com.craxiom.networksurvey.util.CellularUtils
 import com.craxiom.networksurvey.util.NsUtils
@@ -161,6 +163,11 @@ class TowerMapLibreViewModel : ViewModel() {
 
     private val _showTowersLayer = MutableStateFlow(true)
     val showTowersLayer = _showTowersLayer.asStateFlow()
+
+    // "My surveyed places" layer: the controller owns the queries, this flow only the toggle
+    val surveyedPoints = SurveyedPointsController(viewModelScope)
+    private val _showSurveyedPlaces = MutableStateFlow(false)
+    val showSurveyedPlaces = _showSurveyedPlaces.asStateFlow()
 
     private val _showOnlyServingCell = MutableStateFlow(false)
     val showOnlyServingCell = _showOnlyServingCell.asStateFlow()
@@ -356,6 +363,14 @@ class TowerMapLibreViewModel : ViewModel() {
         _showBeaconDbCoverage.value = show
     }
 
+    /** Attaches the surveyed places table so the layer can query it; safe to call repeatedly. */
+    fun initSurveyedPoints(dao: SurveyedPointDao) = surveyedPoints.attach(dao)
+
+    fun setShowSurveyedPlaces(show: Boolean) {
+        _showSurveyedPlaces.value = show
+        surveyedPoints.setEnabled(show)
+    }
+
     fun setShowTowersLayer(show: Boolean) {
         val wasHidden = !_showTowersLayer.value
         _showTowersLayer.value = show
@@ -451,7 +466,8 @@ class TowerMapLibreViewModel : ViewModel() {
                                     for (existingLayer in existingLayers) {
                                         val layerId = existingLayer.id
                                         // Check if this is one of our custom layers
-                                        if (layerId == TOWER_LAYER_KEY ||  // Tower symbols (exact match)
+                                        if (layerId == SURVEYED_POINTS_LAYER_KEY ||  // Surveyed places (lowest custom layer)
+                                            layerId == TOWER_LAYER_KEY ||  // Tower symbols (exact match)
                                             layerId.startsWith(SERVING_CELL_LINE_LAYER_PREFIX) ||  // Serving cell lines
                                             layerId.startsWith(
                                                 SERVING_CELL_COVERAGE_FILL_LAYER_PREFIX
@@ -571,10 +587,13 @@ class TowerMapLibreViewModel : ViewModel() {
         // A move that starts while the debounce is pending cancels it, so a fling followed by
         // a drag never fires mid gesture.
         val idleListener = MapLibreMap.OnCameraIdleListener {
-            _lastViewportBounds.value = map.projection.visibleRegion.latLngBounds
+            val bounds = map.projection.visibleRegion.latLngBounds
+            _lastViewportBounds.value = bounds
+            surveyedPoints.setViewport(bounds, map.width.toInt())
             scheduleViewportQuery()
         }
-        val moveStartedListener = MapLibreMap.OnCameraMoveStartedListener { cameraIdleJob?.cancel() }
+        val moveStartedListener =
+            MapLibreMap.OnCameraMoveStartedListener { cameraIdleJob?.cancel() }
         map.addOnCameraIdleListener(idleListener)
         map.addOnCameraMoveStartedListener(moveStartedListener)
         cameraIdleListener = idleListener

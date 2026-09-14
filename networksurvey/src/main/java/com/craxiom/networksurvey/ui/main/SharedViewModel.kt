@@ -21,6 +21,7 @@ import javax.inject.Inject
 sealed class NavigationEvent {
     data object UploadSettings : NavigationEvent()
     data object TowerMapSettings : NavigationEvent()
+    data object SurveyMonitorMap : NavigationEvent()
     data class QrCodeScanner(val mqttConnectionSettings: MqttConnectionSettings) : NavigationEvent()
     data class QrCodeShare(val mqttConnectionSettings: MqttConnectionSettings) : NavigationEvent()
     data class TowerMap(val servingCellInfo: ServingCellInfo) : NavigationEvent()
@@ -98,6 +99,10 @@ class SharedViewModel @Inject constructor(application: Application) :
     // Navigation trigger functions
     fun triggerNavigationToUploadSettings() {
         _navigationEvent.value = NavigationEvent.UploadSettings
+    }
+
+    fun triggerNavigationToSurveyMonitorMap() {
+        _navigationEvent.value = NavigationEvent.SurveyMonitorMap
     }
 
     fun triggerNavigationToTowerMapSettings() {

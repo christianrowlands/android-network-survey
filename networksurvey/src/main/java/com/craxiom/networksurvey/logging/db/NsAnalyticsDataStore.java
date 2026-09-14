@@ -14,10 +14,12 @@ import com.craxiom.networksurvey.listeners.IGnssSurveyRecordListener;
 import com.craxiom.networksurvey.listeners.IPhoneStateListener;
 import com.craxiom.networksurvey.listeners.IWifiSurveyRecordListener;
 import com.craxiom.networksurvey.logging.db.model.NsAnalyticsQueueEntity;
+import com.craxiom.networksurvey.logging.db.model.SurveyedPointEntity;
 import com.craxiom.networksurvey.model.CellularRecordWrapper;
 import com.craxiom.networksurvey.model.WifiRecordWrapper;
 import com.google.protobuf.util.JsonFormat;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.ExecutorService;
@@ -34,6 +36,7 @@ public class NsAnalyticsDataStore implements ICellularSurveyRecordListener, IWif
     private final SurveyDatabase database;
     private final ExecutorService executorService;
     private final JsonFormat.Printer jsonPrinter;
+    private final SurveyedPointStore surveyedPointStore;
     private long nsAnalyticsSurveyStartTime = 0;
     private String currentBatchId;
 
@@ -43,6 +46,7 @@ public class NsAnalyticsDataStore implements ICellularSurveyRecordListener, IWif
         executorService = Executors.newSingleThreadExecutor();
 
         jsonPrinter = JsonFormat.printer().preservingProtoFieldNames();
+        surveyedPointStore = new SurveyedPointStore(database.surveyedPointDao(), SurveyedPointEntity.SOURCE_NS_ANALYTICS);
 
         // Force database to open immediately
         // Room databases are lazily opened - they don't open until the first DB operation
@@ -52,6 +56,7 @@ public class NsAnalyticsDataStore implements ICellularSurveyRecordListener, IWif
             {
                 // Force database to open by accessing the underlying SQLite database
                 database.getOpenHelper().getWritableDatabase();
+                SurveyedPointStore.trimIfNeeded(database.surveyedPointDao());
             } catch (Exception e)
             {
                 Timber.e(e, "Failed to open database during initialization");
@@ -69,6 +74,7 @@ public class NsAnalyticsDataStore implements ICellularSurveyRecordListener, IWif
     {
         nsAnalyticsSurveyStartTime = System.currentTimeMillis();
         generateNewBatchId();
+        executorService.execute(surveyedPointStore::reset);
     }
 
     /**
@@ -96,6 +102,11 @@ public class NsAnalyticsDataStore implements ICellularSurveyRecordListener, IWif
             return;
         }
 
+        // The surveyed point is written before the records and stamped with the same time, so the
+        // upload worker's time watermark always covers it once these records are accepted.
+        final long observedAt = System.currentTimeMillis();
+        executorService.execute(() -> surveyedPointStore.observeCellular(cellularGroup, observedAt));
+
         for (CellularRecordWrapper wrapper : cellularGroup)
         {
             String recordType;
@@ -121,7 +132,7 @@ public class NsAnalyticsDataStore implements ICellularSurveyRecordListener, IWif
                     continue;
             }
 
-            storeRecord(recordType, wrapper.cellularRecord);
+            storeRecord(recordType, wrapper.cellularRecord, observedAt);
         }
     }
 
@@ -133,11 +144,14 @@ public class NsAnalyticsDataStore implements ICellularSurveyRecordListener, IWif
             return;
         }
 
+        final long observedAt = System.currentTimeMillis();
+        executorService.execute(() -> surveyedPointStore.observeWifi(wifiBeaconRecords, observedAt));
+
         for (WifiRecordWrapper wrapper : wifiBeaconRecords)
         {
             if (wrapper.getWifiBeaconRecord() != null)
             {
-                storeRecord(NsAnalyticsConstants.RECORD_TYPE_WIFI, wrapper.getWifiBeaconRecord());
+                storeRecord(NsAnalyticsConstants.RECORD_TYPE_WIFI, wrapper.getWifiBeaconRecord(), observedAt);
             }
         }
     }
@@ -150,7 +164,9 @@ public class NsAnalyticsDataStore implements ICellularSurveyRecordListener, IWif
             return;
         }
 
-        storeRecord(NsAnalyticsConstants.RECORD_TYPE_BLUETOOTH, bluetoothRecord);
+        final long observedAt = System.currentTimeMillis();
+        executorService.execute(() -> surveyedPointStore.observeBluetooth(Collections.singletonList(bluetoothRecord), observedAt));
+        storeRecord(NsAnalyticsConstants.RECORD_TYPE_BLUETOOTH, bluetoothRecord, observedAt);
     }
 
     @Override
@@ -161,11 +177,14 @@ public class NsAnalyticsDataStore implements ICellularSurveyRecordListener, IWif
             return;
         }
 
+        final long observedAt = System.currentTimeMillis();
+        executorService.execute(() -> surveyedPointStore.observeBluetooth(bluetoothRecords, observedAt));
+
         for (BluetoothRecord bluetoothRecord : bluetoothRecords)
         {
             if (bluetoothRecord != null)
             {
-                storeRecord(NsAnalyticsConstants.RECORD_TYPE_BLUETOOTH, bluetoothRecord);
+                storeRecord(NsAnalyticsConstants.RECORD_TYPE_BLUETOOTH, bluetoothRecord, observedAt);
             }
         }
     }
@@ -178,7 +197,7 @@ public class NsAnalyticsDataStore implements ICellularSurveyRecordListener, IWif
             return;
         }
 
-        storeRecord(NsAnalyticsConstants.RECORD_TYPE_GNSS, gnssRecord);
+        storeRecord(NsAnalyticsConstants.RECORD_TYPE_GNSS, gnssRecord, System.currentTimeMillis());
     }
 
     @Override
@@ -189,7 +208,7 @@ public class NsAnalyticsDataStore implements ICellularSurveyRecordListener, IWif
             return;
         }
 
-        storeRecord(NsAnalyticsConstants.RECORD_TYPE_DEVICE_STATUS, status);
+        storeRecord(NsAnalyticsConstants.RECORD_TYPE_DEVICE_STATUS, status, System.currentTimeMillis());
     }
 
     @Override
@@ -200,7 +219,7 @@ public class NsAnalyticsDataStore implements ICellularSurveyRecordListener, IWif
             return;
         }
 
-        storeRecord(NsAnalyticsConstants.RECORD_TYPE_PHONE_STATE, phoneState);
+        storeRecord(NsAnalyticsConstants.RECORD_TYPE_PHONE_STATE, phoneState, System.currentTimeMillis());
     }
 
     public long getNsAnalyticsSurveyStartTime()
@@ -209,9 +228,12 @@ public class NsAnalyticsDataStore implements ICellularSurveyRecordListener, IWif
     }
 
     /**
-     * Store a protobuf record in the database
+     * Store a protobuf record in the database.
+     *
+     * @param timestamp The queue timestamp, captured by the caller so every record in a batch
+     *                  shares it with the batch's surveyed point.
      */
-    private void storeRecord(String recordType, com.google.protobuf.Message message)
+    private void storeRecord(String recordType, com.google.protobuf.Message message, long timestamp)
     {
         executorService.execute(() -> {
             try
@@ -223,7 +245,7 @@ public class NsAnalyticsDataStore implements ICellularSurveyRecordListener, IWif
                 NsAnalyticsQueueEntity entity = new NsAnalyticsQueueEntity();
                 entity.recordType = recordType;
                 entity.protobufJson = jsonString;
-                entity.timestamp = System.currentTimeMillis();
+                entity.timestamp = timestamp;
                 entity.batchId = currentBatchId;
                 entity.payloadSize = jsonString.length();
 

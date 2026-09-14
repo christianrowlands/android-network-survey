@@ -171,6 +171,7 @@ fun DashboardScreen(
             onToggleSurvey = { dashboardViewModel.toggleNsAnalyticsSurvey() },
             onOpenDetails = { sharedViewModel.triggerNavigationToNsAnalyticsConnection() },
             onHelpClick = { showNsAnalyticsHelpDialog = true },
+            onSeeOnMap = { sharedViewModel.triggerNavigationToSurveyMonitorMap() },
         )
 
         // Mission ID card (animated visibility handled internally)
@@ -336,6 +337,7 @@ fun DashboardScreen(
                     .cancelAllWorkByTag(NsUploaderWorker.WORKER_TAG)
             },
             onNavigateToUploadSettings = { sharedViewModel.triggerNavigationToUploadSettings() },
+            onSeeOnMap = { sharedViewModel.triggerNavigationToSurveyMonitorMap() },
             onHelpClick = { showUploadHelpDialog = true },
             shouldStartCellular = PreferenceUtils.shouldStartCellularForUpload(context),
             shouldStartWifi = PreferenceUtils.shouldStartWifiForUpload(context),

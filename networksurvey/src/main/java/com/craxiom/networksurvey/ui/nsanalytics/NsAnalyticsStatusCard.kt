@@ -34,6 +34,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.craxiom.networksurvey.R
+import com.craxiom.networksurvey.ui.common.NsSeeOnMapButton
 import com.craxiom.networksurvey.ui.dashboard.DashboardCardDefaults
 
 private val NsAnalyticsStartGreen = Color(0xFF4CAF50)
@@ -67,6 +68,7 @@ fun NsAnalyticsStatusCard(
     phoneStateCount: Int = 0,
     onToggleSurvey: () -> Unit,
     onOpenDetails: (() -> Unit)? = null,
+    onSeeOnMap: (() -> Unit)? = null,
     showDetailedInfo: Boolean = true
 ) {
     val totalCount = cellularCount + wifiCount + bluetoothCount + gnssCount + phoneStateCount
@@ -223,6 +225,10 @@ fun NsAnalyticsStatusCard(
                         )
                         Text("Details")
                     }
+                }
+
+                if (isSurveyActive && onSeeOnMap != null) {
+                    NsSeeOnMapButton(onClick = onSeeOnMap, modifier = Modifier.fillMaxWidth())
                 }
             } else {
                 // NS Analytics Connection Screen - show full width button

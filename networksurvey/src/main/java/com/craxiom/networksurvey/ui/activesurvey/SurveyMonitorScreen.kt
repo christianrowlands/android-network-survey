@@ -82,12 +82,23 @@ import com.craxiom.networksurvey.ui.cellular.towermap.CameraMode
 import com.craxiom.networksurvey.ui.util.copyMissionIdToClipboard
 
 /**
+ * Navigation arguments for the Survey Monitor screen, passed through the previous back stack
+ * entry's saved state handle.
+ */
+object SurveyMonitorNavArgs {
+    const val INITIAL_TAB_KEY = "survey_monitor_initial_tab"
+    const val TAB_STATUS = 0
+    const val TAB_MAP = 1
+}
+
+/**
  * Main screen for monitoring active surveys with status and map views
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SurveyMonitorScreen(
     viewModel: SurveyMonitorViewModel = viewModel(),
+    initialTab: Int = SurveyMonitorNavArgs.TAB_STATUS,
     onBackPressed: () -> Unit,
     onNavigateToTowerMapSettings: () -> Unit
 ) {
@@ -121,7 +132,7 @@ fun SurveyMonitorScreen(
         }
     }
 
-    var selectedTab by remember { mutableIntStateOf(0) }
+    var selectedTab by remember { mutableIntStateOf(initialTab) }
 
     // Handle service connection
     ServiceConnectionHandler(viewModel)

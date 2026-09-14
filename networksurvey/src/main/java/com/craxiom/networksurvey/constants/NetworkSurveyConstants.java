@@ -278,6 +278,13 @@ public class NetworkSurveyConstants
     public static final String PROPERTY_SURVEY_MAP_TILE_SOURCE = "survey_map_tile_source";
     public static final String PROPERTY_SURVEY_SHOW_BEACONDB_COVERAGE = "survey_show_beacondb_coverage";
     public static final String PROPERTY_SURVEY_SHOW_TOWERS_LAYER = "survey_show_towers_layer";
+    public static final String PROPERTY_SHOW_SURVEYED_PLACES = "show_surveyed_places";
+    public static final String PROPERTY_SURVEY_SHOW_SURVEYED_PLACES = "survey_show_surveyed_places";
+    public static final String PROPERTY_SURVEYED_PLACES_COLOR_MODE = "surveyed_places_color_mode";
+    public static final String PROPERTY_SURVEY_SURVEYED_PLACES_COLOR_MODE = "survey_surveyed_places_color_mode";
+    public static final String PROPERTY_SURVEYED_PLACES_KIND = "surveyed_places_kind";
+    public static final String PROPERTY_SURVEY_SURVEYED_PLACES_KIND = "survey_surveyed_places_kind";
+    public static final String PROPERTY_CLEAR_SURVEYED_PLACES = "clear_surveyed_places";
     public static final String PROPERTY_SURVEY_MAP_SHOW_ONLY_SERVING_CELL = "survey_map_show_only_serving_cell";
     public static final String PROPERTY_SURVEY_MAP_KEEP_SCREEN_ON = "survey_map_keep_screen_on";
 

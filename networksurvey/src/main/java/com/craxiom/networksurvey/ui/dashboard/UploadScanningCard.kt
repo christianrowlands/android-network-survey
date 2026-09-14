@@ -31,6 +31,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.craxiom.networksurvey.R
 import com.craxiom.networksurvey.model.SurveyTypes
+import com.craxiom.networksurvey.ui.common.NsSeeOnMapButton
 
 private val DividerColor = DashboardCardDefaults.CardHeaderBlue
 
@@ -46,6 +47,7 @@ fun UploadScanningCard(
     onUpload: () -> Unit,
     onCancelUpload: () -> Unit,
     onNavigateToUploadSettings: () -> Unit,
+    onSeeOnMap: () -> Unit,
     onHelpClick: () -> Unit,
     shouldStartCellular: Boolean,
     shouldStartWifi: Boolean,
@@ -136,6 +138,10 @@ fun UploadScanningCard(
                         }
                     }
 
+                    if (state.scanningActive) {
+                        NsSeeOnMapButton(onClick = onSeeOnMap)
+                    }
+
                     // Active survey type indicators
                     if (state.scanningActive && state.activeSurveys.isNotEmpty()) {
                         Row(
@@ -191,7 +197,11 @@ fun UploadScanningCard(
                 }
 
                 is UploadProgressState.Finished -> {
-                    UploadResultsSection(result = progress)
+                    // The scanning status above already offers the map link while active
+                    UploadResultsSection(
+                        result = progress,
+                        onSeeOnMap = onSeeOnMap.takeUnless { state.scanningActive },
+                    )
 
                     HorizontalDivider(
                         modifier = Modifier.padding(vertical = 8.dp),
@@ -280,7 +290,7 @@ private fun UploadProgressSection(
  * Upload results display showing OpenCelliD and BeaconDB status.
  */
 @Composable
-private fun UploadResultsSection(result: UploadProgressState.Finished) {
+private fun UploadResultsSection(result: UploadProgressState.Finished, onSeeOnMap: (() -> Unit)?) {
     Column(modifier = Modifier.fillMaxWidth()) {
         Text(
             text = stringResource(R.string.upload_result),
@@ -342,6 +352,10 @@ private fun UploadResultsSection(result: UploadProgressState.Finished) {
                     color = DashboardCardDefaults.TextSecondary,
                     modifier = Modifier.padding(start = 16.dp, top = 2.dp),
                 )
+            }
+
+            if (onSeeOnMap != null) {
+                NsSeeOnMapButton(onClick = onSeeOnMap)
             }
         }
     }

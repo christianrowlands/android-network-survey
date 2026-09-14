@@ -30,6 +30,7 @@ import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
+import com.craxiom.networksurvey.ui.cellular.model.SurveyedPointTap
 import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.suspendCancellableCoroutine
 import org.maplibre.android.MapLibre
@@ -49,6 +50,7 @@ import kotlin.coroutines.resume
  * @param cameraPositionState Controls or observes camera state
  * @param uiSettings UI-specific map settings
  * @param onTowersClick Receives the tower ids under a tap, search result first if present
+ * @param onSurveyedPointClick Receives the surveyed places under a tap when no tower was hit
  */
 @Composable
 fun MapLibreMap(
@@ -65,6 +67,7 @@ fun MapLibreMap(
     onStyleLoadFailed: ((String) -> Unit)? = null,
     onMyLocationChanged: (Location) -> Unit = {},
     onTowersClick: ((List<String>) -> Unit)? = null,
+    onSurveyedPointClick: ((SurveyedPointTap) -> Unit)? = null,
     content: @Composable () -> Unit = {},
 ) {
     if (LocalInspectionMode.current) {
@@ -119,6 +122,7 @@ fun MapLibreMap(
                         paddingInsets = paddingInsets,
                         onMyLocationChanged = onMyLocationChanged,
                         onTowersClick = onTowersClick,
+                        onSurveyedPointClick = onSurveyedPointClick,
                     )
                     content()
                 }

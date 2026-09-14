@@ -24,6 +24,7 @@ import com.craxiom.networksurvey.R
 import com.craxiom.networksurvey.fragments.BLUETOOTH_DATA_KEY
 import com.craxiom.networksurvey.fragments.model.MqttConnectionSettings
 import com.craxiom.networksurvey.model.WifiNetwork
+import com.craxiom.networksurvey.ui.activesurvey.SurveyMonitorNavArgs
 import com.craxiom.networksurvey.ui.cellular.model.ServingCellInfo
 import com.craxiom.networksurvey.ui.main.appdrawer.AppDrawerContent
 import com.craxiom.networksurvey.ui.main.appdrawer.AppDrawerItemInfo
@@ -62,6 +63,16 @@ fun MainCompose(
 
                 is NavigationEvent.TowerMapSettings -> {
                     mainNavController.navigate(NavOption.TowerMapSettings.name)
+                }
+
+                is NavigationEvent.SurveyMonitorMap -> {
+                    mainNavController.currentBackStackEntry?.savedStateHandle?.set(
+                        SurveyMonitorNavArgs.INITIAL_TAB_KEY,
+                        SurveyMonitorNavArgs.TAB_MAP
+                    )
+                    mainNavController.navigate(NavDrawerOption.SurveyMonitor.name) {
+                        popUpTo(NavDrawerOption.None.name)
+                    }
                 }
 
                 is NavigationEvent.SsidExclusionList -> {

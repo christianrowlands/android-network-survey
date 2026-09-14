@@ -13,6 +13,7 @@ import androidx.work.WorkerParameters;
 import com.craxiom.networksurvey.BuildConfig;
 import com.craxiom.networksurvey.constants.NetworkSurveyConstants;
 import com.craxiom.networksurvey.logging.db.SurveyDatabase;
+import com.craxiom.networksurvey.logging.db.SurveyedPointStore;
 import com.craxiom.networksurvey.logging.db.dao.SurveyRecordDao;
 import com.craxiom.networksurvey.logging.db.model.CdmaRecordEntity;
 import com.craxiom.networksurvey.logging.db.model.GsmRecordEntity;
@@ -89,6 +90,7 @@ public class NsUploaderWorker extends Worker
     @Override
     public Result doWork()
     {
+        final long uploadStartTime = System.currentTimeMillis();
         try
         {
             Notification notification = notificationHelper.createNotification(notificationManager);
@@ -154,6 +156,7 @@ public class NsUploaderWorker extends Worker
                 reportProgress((i + 1) * 100 / partsCount, PROGRESS_MAX_VALUE, "Uploading records...");
             }
 
+            SurveyedPointStore.onCommunityUploadCompleted(database.surveyedPointDao(), uploadStartTime, uploadResultBundle);
             database.surveyRecordDao().deleteAllUploadedRecords();
 
             Timber.d("Upload process completed.");

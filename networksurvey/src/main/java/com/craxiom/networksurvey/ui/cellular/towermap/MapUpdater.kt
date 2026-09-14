@@ -4,6 +4,7 @@ import android.Manifest
 import android.annotation.SuppressLint
 import android.content.Context
 import android.content.pm.PackageManager
+import android.graphics.RectF
 import android.location.Location
 import android.os.Looper
 import android.view.Gravity
@@ -16,6 +17,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import androidx.core.app.ActivityCompat
+import com.craxiom.networksurvey.ui.cellular.model.SurveyedPointTap
 import org.maplibre.android.location.LocationComponentActivationOptions
 import org.maplibre.android.location.LocationComponentOptions
 import org.maplibre.android.location.OnCameraTrackingChangedListener
@@ -29,6 +31,9 @@ import timber.log.Timber
 
 private const val LOCATION_REQUEST_INTERVAL = 750L
 
+/** Half-size of the hit rectangle for the small surveyed place dots. */
+private const val SURVEYED_POINT_TAP_TOLERANCE_PX = 22f
+
 internal class MapPropertiesNode(
     val map: MapLibreMap,
     style: Style,
@@ -37,6 +42,7 @@ internal class MapPropertiesNode(
     locationSettings: MapLocationSettings,
     private val onMyLocationChanged: (Location) -> Unit,
     private val onTowersClick: ((List<String>) -> Unit)? = null,
+    private val onSurveyedPointClick: ((SurveyedPointTap) -> Unit)? = null,
 ) : MapNode {
     private var locationEngine: LocationEngine? = null
     private var mapClickListener: MapLibreMap.OnMapClickListener? = null
@@ -107,22 +113,45 @@ internal class MapPropertiesNode(
             }
         }
 
-        // Set up tower click listener. Features carry only the tower id; the caller resolves
-        // ids against its own tower state. Search results take priority over regular towers.
-        onTowersClick?.let { clickHandler ->
+        // Set up the click listener. Tower features carry only the tower id; the caller resolves
+        // ids against its own tower state. Search results take priority over regular towers, and
+        // towers take priority over surveyed places, so a tap never fires both.
+        if (onTowersClick != null || onSurveyedPointClick != null) {
             val listener = MapLibreMap.OnMapClickListener { point ->
                 val screenPoint = map.projection.toScreenLocation(point)
-                val searchFeatures = map.queryRenderedFeatures(screenPoint, SEARCH_TOWER_LAYER_KEY)
-                val features = searchFeatures.ifEmpty {
-                    map.queryRenderedFeatures(screenPoint, TOWER_LAYER_KEY)
+                if (onTowersClick != null) {
+                    val searchFeatures =
+                        map.queryRenderedFeatures(screenPoint, SEARCH_TOWER_LAYER_KEY)
+                    val features = searchFeatures.ifEmpty {
+                        map.queryRenderedFeatures(screenPoint, TOWER_LAYER_KEY)
+                    }
+                    val ids =
+                        features.mapNotNull { it.properties()?.get(TOWER_ID_PROPERTY)?.asString }
+                    if (ids.isNotEmpty()) {
+                        onTowersClick.invoke(ids)
+                        return@OnMapClickListener true
+                    }
                 }
-                val ids = features.mapNotNull { it.properties()?.get(TOWER_ID_PROPERTY)?.asString }
-                if (ids.isNotEmpty()) {
-                    clickHandler(ids)
-                    true
-                } else {
-                    false
+                if (onSurveyedPointClick != null) {
+                    // Dots are small, so query a rectangle around the tap
+                    val rect = RectF(
+                        screenPoint.x - SURVEYED_POINT_TAP_TOLERANCE_PX,
+                        screenPoint.y - SURVEYED_POINT_TAP_TOLERANCE_PX,
+                        screenPoint.x + SURVEYED_POINT_TAP_TOLERANCE_PX,
+                        screenPoint.y + SURVEYED_POINT_TAP_TOLERANCE_PX
+                    )
+                    val tap = SurveyedPointTap.fromFeatures(
+                        map.queryRenderedFeatures(
+                            rect,
+                            SURVEYED_POINTS_LAYER_KEY
+                        )
+                    )
+                    if (tap != null) {
+                        onSurveyedPointClick.invoke(tap)
+                        return@OnMapClickListener true
+                    }
                 }
+                false
             }
             map.addOnMapClickListener(listener)
             mapClickListener = listener
@@ -255,6 +284,7 @@ internal inline fun MapUpdater(
     paddingInsets: PaddingValues,
     noinline onMyLocationChanged: (Location) -> Unit,
     noinline onTowersClick: ((List<String>) -> Unit)? = null,
+    noinline onSurveyedPointClick: ((SurveyedPointTap) -> Unit)? = null,
 ) {
     val mapApplier = currentComposer.applier as MapApplier
     val map = mapApplier.map
@@ -275,6 +305,7 @@ internal inline fun MapUpdater(
                 locationSettings = locationSettings,
                 onMyLocationChanged = onMyLocationChanged,
                 onTowersClick = onTowersClick,
+                onSurveyedPointClick = onSurveyedPointClick,
             )
         },
         update = {

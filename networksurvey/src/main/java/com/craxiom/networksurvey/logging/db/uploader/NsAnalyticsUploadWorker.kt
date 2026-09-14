@@ -19,6 +19,7 @@ import com.craxiom.networksurvey.data.api.NsAnalyticsApiFactory
 import com.craxiom.networksurvey.data.api.RecordBatch
 import com.craxiom.networksurvey.data.api.UploadBatchRequest
 import com.craxiom.networksurvey.logging.db.SurveyDatabase
+import com.craxiom.networksurvey.logging.db.SurveyedPointStore
 import com.craxiom.networksurvey.logging.db.model.NsAnalyticsQueueEntity
 import com.craxiom.networksurvey.ui.nsanalytics.NsAnalyticsNotificationHelper
 import com.craxiom.networksurvey.util.MdmUtils
@@ -213,6 +214,13 @@ class NsAnalyticsUploadWorker(context: Context, params: WorkerParameters) :
                     database.nsAnalyticsDao().markAsUploaded(
                         recordIds,
                         System.currentTimeMillis()
+                    )
+                    // A full batch may have been cut mid-millisecond, so only a short (final)
+                    // batch may mark points sharing its newest timestamp.
+                    SurveyedPointStore.markNsAnalyticsUploaded(
+                        database.surveyedPointDao(),
+                        maxTimestamp = pendingRecords.maxOf { it.timestamp },
+                        inclusive = pendingRecords.size < batchSize
                     )
 
                     // Update workspace name if provided in response
@@ -483,6 +491,7 @@ class NsAnalyticsUploadWorker(context: Context, params: WorkerParameters) :
                 // Clean up old uploaded records (keep last 7 days)
                 val sevenDaysAgo = System.currentTimeMillis() - (7 * 24 * 60 * 60 * 1000L)
                 database.nsAnalyticsDao().cleanupOldUploadedRecords(sevenDaysAgo)
+                SurveyedPointStore.trimIfNeeded(database.surveyedPointDao())
             }
 
             Timber.i(
@@ -810,7 +819,15 @@ class NsAnalyticsUploadWorker(context: Context, params: WorkerParameters) :
          * Visible for testing.
          */
         internal fun isDefinitiveRejection(httpCode: Int): Boolean =
-            httpCode == 207 || (httpCode in 400..499 && httpCode !in setOf(401, 402, 403, 408, 410, 425, 429))
+            httpCode == 207 || (httpCode in 400..499 && httpCode !in setOf(
+                401,
+                402,
+                403,
+                408,
+                410,
+                425,
+                429
+            ))
 
         /**
          * Trigger immediate upload.
