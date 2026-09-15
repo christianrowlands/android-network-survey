@@ -1,9 +1,7 @@
 package com.craxiom.networksurvey.fragments;
 
-import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
-import android.content.IntentFilter;
 import android.os.Bundle;
 import android.telephony.SubscriptionInfo;
 import android.view.LayoutInflater;
@@ -15,7 +13,6 @@ import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
 import androidx.fragment.app.FragmentTransaction;
-import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 import androidx.viewpager2.adapter.FragmentStateAdapter;
 import androidx.viewpager2.widget.ViewPager2;
 
@@ -40,7 +37,8 @@ public class MainCellularFragment extends AServiceDataFragment
 {
     private List<SubscriptionInfo> activeSubscriptionInfoList;
 
-    private BroadcastReceiver simBroadcastReceiver;
+    private androidx.lifecycle.Observer<Long> simChangeObserver;
+    private long simChangeEventSequenceBaseline;
     private FragmentMainTabsBinding binding;
 
     @Override
@@ -48,45 +46,45 @@ public class MainCellularFragment extends AServiceDataFragment
     {
         super.onCreate(savedInstanceState);
 
-        simBroadcastReceiver = new BroadcastReceiver()
+        simChangeObserver = eventSequence ->
         {
-            @Override
-            public void onReceive(Context context, Intent intent)
-            {
-                if (intent == null) return;
+            if (eventSequence == null || eventSequence <= simChangeEventSequenceBaseline) return;
 
-                Timber.i("SIM State Change Detected. Restarting the cellular fragment");
-
-                try
-                {
-                    // Restart this fragment (yes, it seems overly complicated but it works)
-                    FragmentManager fragmentManager = getParentFragmentManager();
-                    Fragment currentFragment = fragmentManager.findFragmentById(R.id.cellular_fragment_container_view);
-                    if (currentFragment != null)
-                    {
-                        FragmentTransaction detachTransaction = fragmentManager.beginTransaction();
-                        detachTransaction.detach(currentFragment);
-                        detachTransaction.commit();
-
-                        FragmentTransaction attachTransaction = fragmentManager.beginTransaction();
-                        attachTransaction.attach(currentFragment);
-                        attachTransaction.commit();
-                    }
-                } catch (Exception e)
-                {
-                    Timber.w(e, "Could not restart the cellular fragment after a SIM event.");
-                }
-            }
+            onReceive(null, new Intent(SimChangeReceiver.SIM_CHANGED_INTENT));
         };
-
-        Context context = getContext();
-        if (context != null)
-        {
-            LocalBroadcastManager.getInstance(context).registerReceiver(simBroadcastReceiver,
-                    new IntentFilter(SimChangeReceiver.SIM_CHANGED_INTENT));
-        }
+        simChangeEventSequenceBaseline = SimChangeReceiver.getCurrentSimChangeEventSequence();
+        SimChangeReceiver.getSimChangeEvents().observeForever(simChangeObserver);
     }
 
+    /**
+     * Handles a qualifying SIM-change event by restarting the cellular fragment.
+     */
+    public void onReceive(Context context, Intent intent)
+    {
+        if (intent == null) return;
+
+        Timber.i("SIM State Change Detected. Restarting the cellular fragment");
+
+        try
+        {
+            // Restart this fragment (yes, it seems overly complicated but it works)
+            FragmentManager fragmentManager = getParentFragmentManager();
+            Fragment currentFragment = fragmentManager.findFragmentById(R.id.cellular_fragment_container_view);
+            if (currentFragment != null)
+            {
+                FragmentTransaction detachTransaction = fragmentManager.beginTransaction();
+                detachTransaction.detach(currentFragment);
+                detachTransaction.commit();
+
+                FragmentTransaction attachTransaction = fragmentManager.beginTransaction();
+                attachTransaction.attach(currentFragment);
+                attachTransaction.commit();
+            }
+        } catch (Exception e)
+        {
+            Timber.w(e, "Could not restart the cellular fragment after a SIM event.");
+        }
+    }
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container,
@@ -122,15 +120,14 @@ public class MainCellularFragment extends AServiceDataFragment
     @Override
     public void onDestroy()
     {
-        Context context = getContext();
-        if (context != null)
+        if (simChangeObserver != null)
         {
-            LocalBroadcastManager.getInstance(context).unregisterReceiver(simBroadcastReceiver);
+            SimChangeReceiver.getSimChangeEvents().removeObserver(simChangeObserver);
+            simChangeObserver = null;
         }
 
         super.onDestroy();
     }
-
     @Override
     protected void onSurveyServiceConnected(NetworkSurveyService service)
     {
