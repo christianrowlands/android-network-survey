@@ -8,7 +8,7 @@ import com.craxiom.networksurvey.util.PlmnColorMapper
 import com.craxiom.networksurvey.util.SignalBuckets
 
 /**
- * Every color the surveyed places layer and its legend use, in one place so they cannot drift.
+ * Every color the survey points layer and its legend use, in one place so they cannot drift.
  * Values are ARGB ints because MapLibre expressions take them directly; the Compose side wraps
  * them in [Color].
  */

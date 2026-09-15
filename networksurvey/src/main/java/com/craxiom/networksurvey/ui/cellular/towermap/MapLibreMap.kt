@@ -50,7 +50,7 @@ import kotlin.coroutines.resume
  * @param cameraPositionState Controls or observes camera state
  * @param uiSettings UI-specific map settings
  * @param onTowersClick Receives the tower ids under a tap, search result first if present
- * @param onSurveyedPointClick Receives the surveyed places under a tap when no tower was hit
+ * @param onSurveyedPointClick Receives the survey points under a tap when no tower was hit
  */
 @Composable
 fun MapLibreMap(

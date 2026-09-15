@@ -16,7 +16,7 @@ import com.craxiom.networksurvey.R
 
 /**
  * A compact "See on map" text button that opens the Survey Monitor map, used by the dashboard
- * cards to point at the surveyed places layer.
+ * cards to point at the survey points layer.
  */
 @Composable
 fun NsSeeOnMapButton(onClick: () -> Unit, modifier: Modifier = Modifier) {

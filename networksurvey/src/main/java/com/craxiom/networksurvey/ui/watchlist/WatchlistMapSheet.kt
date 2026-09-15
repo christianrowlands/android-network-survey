@@ -37,8 +37,12 @@ import androidx.compose.ui.unit.dp
 import com.craxiom.networksurvey.R
 import kotlin.math.roundToInt
 
-/** The three heights a watchlist map sheet snaps between (least to most open). */
-enum class SheetDetent { Peek, Half, Full }
+/**
+ * The heights a map sheet snaps between (least to most open). [Hidden] sits entirely below the
+ * screen and only exists for sheets created with `dismissible = true`, where a downward drag is
+ * meant to dismiss rather than park at [Peek].
+ */
+enum class SheetDetent { Hidden, Peek, Half, Full }
 
 /** Fraction of the available height a map sheet occupies at the Half detent. */
 private const val HALF_HEIGHT_FRACTION = 0.33f
@@ -70,12 +74,16 @@ data class MapSheetMetrics(
  *
  * @param availableHeight the height of the area the sheet is anchored in (the screen or map box).
  * @param peekVisibleHeight the visible height at the Peek detent, including any nav-bar inset.
+ * @param dismissible true to add the off-screen [SheetDetent.Hidden] anchor so a downward drag can
+ *   fling the sheet away. The caller is responsible for noticing that the sheet settled on Hidden
+ *   and removing it. Sheets that are the primary content of their screen leave this false.
  */
 @Composable
 fun rememberMapSheetMetrics(
     state: AnchoredDraggableState<SheetDetent>,
     availableHeight: Dp,
     peekVisibleHeight: Dp,
+    dismissible: Boolean = false,
 ): MapSheetMetrics {
     val density = LocalDensity.current
 
@@ -84,12 +92,14 @@ fun rememberMapSheetMetrics(
     val fullVisible = availableHeight * FULL_HEIGHT_FRACTION
 
     val fullPx = with(density) { fullVisible.toPx() }
-    val anchors = remember(peekVisibleHeight, halfVisible, fullVisible, density) {
+    val anchors = remember(peekVisibleHeight, halfVisible, fullVisible, density, dismissible) {
         with(density) {
             DraggableAnchors {
                 SheetDetent.Full at 0f
                 SheetDetent.Half at (fullPx - halfVisible.toPx())
                 SheetDetent.Peek at (fullPx - peekVisibleHeight.toPx())
+                // Offsetting by the sheet's own height puts it completely below the screen
+                if (dismissible) SheetDetent.Hidden at fullPx
             }
         }
     }
@@ -98,6 +108,7 @@ fun rememberMapSheetMetrics(
     remember(anchors) { state.updateAnchors(anchors); anchors }
 
     val mapBottomInset = when (state.targetValue) {
+        SheetDetent.Hidden -> 0.dp
         SheetDetent.Peek -> peekVisibleHeight
         SheetDetent.Half -> halfVisible
         SheetDetent.Full -> fullVisible

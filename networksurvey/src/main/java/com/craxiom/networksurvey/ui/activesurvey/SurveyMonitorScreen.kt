@@ -520,7 +520,7 @@ private fun SurveyMapTab(
         onBackButtonPressed = { /* Tab already has back button */ },
         onNavigateToTowerMapSettings = onNavigateToTowerMapSettings,
         mapContext = MapContext.SURVEY_MONITOR,
-        surveyTracks = surveyState.currentTrack?.let { listOf(it) },
+        surveyTrack = surveyState.currentTrack,
         // Don't override the saved preferences - let TowerMapScreen load them based on context
         initialCameraMode = CameraMode.TRACKING,
         externalServingCellInfo = servingCellInfo

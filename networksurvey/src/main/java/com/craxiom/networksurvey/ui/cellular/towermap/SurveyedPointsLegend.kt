@@ -14,12 +14,20 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -27,6 +35,9 @@ import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.craxiom.networksurvey.R
+import com.craxiom.networksurvey.logging.db.DbUploadStore
+import com.craxiom.networksurvey.logging.db.SurveyedPointGate
+import com.craxiom.networksurvey.logging.db.SurveyedPointStore
 import com.craxiom.networksurvey.logging.db.model.SurveyedPointEntity
 import com.craxiom.networksurvey.ui.cellular.model.SurveyedPointColorMode
 import com.craxiom.networksurvey.ui.cellular.model.SurveyedPointFeatures
@@ -34,7 +45,9 @@ import com.craxiom.networksurvey.ui.cellular.model.SurveyedPointKind
 import com.craxiom.networksurvey.ui.cellular.model.SurveyedPointsData
 import com.craxiom.networksurvey.ui.common.NsSegmentedToggle
 import com.craxiom.networksurvey.ui.common.SegmentedOption
+import com.craxiom.networksurvey.ui.common.dialogs.NsMessageDialog
 import com.craxiom.networksurvey.util.SignalBuckets
+import java.text.NumberFormat
 
 /** The modal host for [SurveyedPointsOptions], opened from the pill or the Layers sheet. */
 @OptIn(ExperimentalMaterial3Api::class)
@@ -48,6 +61,8 @@ fun SurveyedPointsOptionsSheet(
     onKindChange: (SurveyedPointKind) -> Unit,
     onDismiss: () -> Unit,
 ) {
+    var showAbout by remember { mutableStateOf(false) }
+
     ModalBottomSheet(onDismissRequest = onDismiss) {
         Column(
             modifier = Modifier
@@ -56,14 +71,65 @@ fun SurveyedPointsOptionsSheet(
                 .padding(16.dp)
                 .padding(bottom = 32.dp)
         ) {
-            Text(
-                text = stringResource(R.string.surveyed_places_options_title),
-                style = MaterialTheme.typography.headlineSmall,
-                modifier = Modifier.padding(bottom = 16.dp)
-            )
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 16.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = stringResource(R.string.survey_points_options_title),
+                    style = MaterialTheme.typography.headlineSmall,
+                    modifier = Modifier.weight(1f)
+                )
+                IconButton(onClick = { showAbout = true }) {
+                    Icon(
+                        imageVector = Icons.Outlined.Info,
+                        contentDescription = stringResource(R.string.survey_points_about_title),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
             SurveyedPointsOptions(mode, kind, availableKinds, data, onModeChange, onKindChange)
         }
     }
+
+    if (showAbout) {
+        SurveyPointsAboutDialog(onDismiss = { showAbout = false })
+    }
+}
+
+/**
+ * Explains where the layer's data comes from and what it does not cover, so the dots are not read
+ * as a complete record of everywhere the device has been. The spacing, accuracy, and cap numbers
+ * are pulled from the constants that enforce them so the text cannot drift from the behavior.
+ *
+ * Reachable from both the options sheet and the Layers sheet row, because the options sheet is
+ * gated on the layer having points and a user with none is exactly who needs this.
+ */
+@Composable
+fun SurveyPointsAboutDialog(onDismiss: () -> Unit) {
+    val message = listOf(
+        stringResource(R.string.survey_points_about_sources),
+        stringResource(
+            R.string.survey_points_about_spacing,
+            SurveyedPointGate.WALKING_THRESHOLD_METERS,
+            DbUploadStore.DISTANCE_MOVED_THRESHOLD_METERS,
+            DbUploadStore.ACCURACY_THRESHOLD_METERS,
+        ),
+        stringResource(
+            R.string.survey_points_about_storage,
+            NumberFormat.getInstance().format(SurveyedPointStore.MAX_ROWS)
+        ),
+        stringResource(R.string.survey_points_about_reading),
+    ).joinToString("\n\n")
+
+    NsMessageDialog(
+        title = stringResource(R.string.survey_points_about_title),
+        message = message,
+        onDismiss = onDismiss,
+        icon = Icons.Outlined.Info,
+    )
 }
 
 /** Show (kind) toggle, Color by radios, and the legend for the selected mode. */
@@ -77,7 +143,7 @@ fun SurveyedPointsOptions(
     onKindChange: (SurveyedPointKind) -> Unit,
 ) {
     Text(
-        text = stringResource(R.string.surveyed_places_show),
+        text = stringResource(R.string.survey_points_show),
         style = MaterialTheme.typography.titleMedium,
         modifier = Modifier.padding(bottom = 8.dp)
     )
@@ -92,7 +158,7 @@ fun SurveyedPointsOptions(
 
     Spacer(modifier = Modifier.height(16.dp))
     Text(
-        text = stringResource(R.string.surveyed_places_color_by),
+        text = stringResource(R.string.survey_points_color_by),
         style = MaterialTheme.typography.titleMedium,
         modifier = Modifier.padding(bottom = 4.dp)
     )
@@ -106,7 +172,7 @@ fun SurveyedPointsOptions(
         )
     }
     Text(
-        text = stringResource(R.string.surveyed_places_advanced),
+        text = stringResource(R.string.survey_points_advanced),
         style = MaterialTheme.typography.labelLarge,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
         modifier = Modifier.padding(top = 8.dp, bottom = 2.dp)
@@ -159,7 +225,7 @@ fun SurveyedPointsLegend(
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
         if (data?.coarse == true) {
-            Note(stringResource(R.string.surveyed_places_coarse_note))
+            Note(stringResource(R.string.survey_points_coarse_note))
         }
         when (mode) {
             SurveyedPointColorMode.SIGNAL -> SignalLegend(kind)
@@ -192,7 +258,7 @@ fun SurveyedPointsLegend(
                     )
                 }
                 MoreRow(data?.legendMore ?: 0)
-                Note(stringResource(R.string.surveyed_places_colors_repeat))
+                Note(stringResource(R.string.survey_points_colors_repeat))
                 UnknownRow()
             }
 
@@ -202,23 +268,23 @@ fun SurveyedPointsLegend(
                     val plmn = entry.key.substringBeforeLast('-')
                     LegendRow(
                         SurveyedPointPalette.hashed(SurveyedPointFeatures.colorIndex(entry.key)),
-                        stringResource(R.string.surveyed_places_area_label, area),
+                        stringResource(R.string.survey_points_area_label, area),
                         entry.label ?: plmn
                     )
                 }
                 MoreRow(data?.legendMore ?: 0)
-                Note(stringResource(R.string.surveyed_places_colors_repeat))
+                Note(stringResource(R.string.survey_points_colors_repeat))
                 UnknownRow()
             }
 
             SurveyedPointColorMode.SENT -> {
                 LegendRow(
                     SurveyedPointPalette.PENDING,
-                    stringResource(R.string.surveyed_places_legend_pending)
+                    stringResource(R.string.survey_points_legend_pending)
                 )
                 LegendRow(
                     SurveyedPointPalette.SENT,
-                    stringResource(R.string.surveyed_places_legend_uploaded)
+                    stringResource(R.string.survey_points_legend_uploaded)
                 )
             }
         }
@@ -233,39 +299,39 @@ private fun SignalLegend(kind: SurveyedPointKind) {
     LegendRow(
         SurveyedPointPalette.bucket(SignalBuckets.STRONG),
         bucketLabel(SignalBuckets.STRONG),
-        stringResource(R.string.surveyed_places_signal_above, t[0])
+        stringResource(R.string.survey_points_signal_above, t[0])
     )
     LegendRow(
         SurveyedPointPalette.bucket(SignalBuckets.GOOD),
         bucketLabel(SignalBuckets.GOOD),
-        stringResource(R.string.surveyed_places_signal_between, t[0], t[1])
+        stringResource(R.string.survey_points_signal_between, t[0], t[1])
     )
     LegendRow(
         SurveyedPointPalette.bucket(SignalBuckets.FAIR),
         bucketLabel(SignalBuckets.FAIR),
-        stringResource(R.string.surveyed_places_signal_between, t[1], t[2])
+        stringResource(R.string.survey_points_signal_between, t[1], t[2])
     )
     LegendRow(
         SurveyedPointPalette.bucket(SignalBuckets.WEAK),
         bucketLabel(SignalBuckets.WEAK),
-        stringResource(R.string.surveyed_places_signal_between, t[2], t[3])
+        stringResource(R.string.survey_points_signal_between, t[2], t[3])
     )
     LegendRow(
         SurveyedPointPalette.bucket(SignalBuckets.VERY_WEAK),
         bucketLabel(SignalBuckets.VERY_WEAK),
-        stringResource(R.string.surveyed_places_signal_below, t[3])
+        stringResource(R.string.survey_points_signal_below, t[3])
     )
     UnknownRow()
-    if (cellular) Note(stringResource(R.string.surveyed_places_thresholds_note))
+    if (cellular) Note(stringResource(R.string.survey_points_thresholds_note))
 }
 
 @Composable
 private fun UnknownRow() =
-    LegendRow(SurveyedPointPalette.UNKNOWN, stringResource(R.string.surveyed_places_unknown))
+    LegendRow(SurveyedPointPalette.UNKNOWN, stringResource(R.string.survey_points_unknown))
 
 @Composable
 private fun MoreRow(more: Int) {
-    if (more > 0) Note(pluralStringResource(R.plurals.surveyed_places_and_more, more, more))
+    if (more > 0) Note(pluralStringResource(R.plurals.survey_points_and_more, more, more))
 }
 
 @Composable

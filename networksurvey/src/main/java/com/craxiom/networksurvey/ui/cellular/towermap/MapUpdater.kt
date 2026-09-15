@@ -31,7 +31,7 @@ import timber.log.Timber
 
 private const val LOCATION_REQUEST_INTERVAL = 750L
 
-/** Half-size of the hit rectangle for the small surveyed place dots. */
+/** Half-size of the hit rectangle for the small survey point dots. */
 private const val SURVEYED_POINT_TAP_TOLERANCE_PX = 22f
 
 internal class MapPropertiesNode(
@@ -115,7 +115,7 @@ internal class MapPropertiesNode(
 
         // Set up the click listener. Tower features carry only the tower id; the caller resolves
         // ids against its own tower state. Search results take priority over regular towers, and
-        // towers take priority over surveyed places, so a tap never fires both.
+        // towers take priority over survey points, so a tap never fires both.
         if (onTowersClick != null || onSurveyedPointClick != null) {
             val listener = MapLibreMap.OnMapClickListener { point ->
                 val screenPoint = map.projection.toScreenLocation(point)

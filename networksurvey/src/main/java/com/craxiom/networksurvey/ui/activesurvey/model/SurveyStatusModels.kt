@@ -79,13 +79,13 @@ data class NsAnalyticsInfo(
 )
 
 /**
- * Represents a GPS track for survey visualization
+ * The trail drawn over the Survey Monitor map, as one list of points per unbroken segment. A break
+ * in collection becomes a break in the line rather than a straight edge across ground the device
+ * never covered. See [SurveyTrackBuilder].
  */
 data class SurveyTrack(
-    val points: List<LatLng>,
-    val timestamps: List<Long>,
-    val sessionId: String,
-    // Slightly translucent so the surveyed places dots drawn over it stay readable
+    val segments: List<List<LatLng>>,
+    // Slightly translucent so the survey point dots drawn over it stay readable
     val color: Color = Color.Blue.copy(alpha = 0.6f)
 )
 

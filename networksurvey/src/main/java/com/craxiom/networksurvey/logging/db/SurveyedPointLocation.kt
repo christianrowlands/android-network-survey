@@ -11,7 +11,7 @@ import com.craxiom.networksurvey.model.CellularRecordWrapper
 import com.craxiom.networksurvey.model.WifiRecordWrapper
 
 /**
- * The location fields a survey batch contributes to the surveyed places gate. Every record in a
+ * The location fields a survey batch contributes to the survey points gate. Every record in a
  * batch shares one fix, so the first record that carries a non-zero position stands in for the
  * batch.
  */

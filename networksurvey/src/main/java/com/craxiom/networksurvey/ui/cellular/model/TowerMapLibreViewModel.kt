@@ -164,10 +164,10 @@ class TowerMapLibreViewModel : ViewModel() {
     private val _showTowersLayer = MutableStateFlow(true)
     val showTowersLayer = _showTowersLayer.asStateFlow()
 
-    // "My surveyed places" layer: the controller owns the queries, this flow only the toggle
+    // "My survey points" layer: the controller owns the queries, this flow only the toggle
     val surveyedPoints = SurveyedPointsController(viewModelScope)
-    private val _showSurveyedPlaces = MutableStateFlow(false)
-    val showSurveyedPlaces = _showSurveyedPlaces.asStateFlow()
+    private val _showSurveyPoints = MutableStateFlow(false)
+    val showSurveyPoints = _showSurveyPoints.asStateFlow()
 
     private val _showOnlyServingCell = MutableStateFlow(false)
     val showOnlyServingCell = _showOnlyServingCell.asStateFlow()
@@ -363,11 +363,11 @@ class TowerMapLibreViewModel : ViewModel() {
         _showBeaconDbCoverage.value = show
     }
 
-    /** Attaches the surveyed places table so the layer can query it; safe to call repeatedly. */
+    /** Attaches the survey points table so the layer can query it; safe to call repeatedly. */
     fun initSurveyedPoints(dao: SurveyedPointDao) = surveyedPoints.attach(dao)
 
-    fun setShowSurveyedPlaces(show: Boolean) {
-        _showSurveyedPlaces.value = show
+    fun setShowSurveyPoints(show: Boolean) {
+        _showSurveyPoints.value = show
         surveyedPoints.setEnabled(show)
     }
 
@@ -466,7 +466,7 @@ class TowerMapLibreViewModel : ViewModel() {
                                     for (existingLayer in existingLayers) {
                                         val layerId = existingLayer.id
                                         // Check if this is one of our custom layers
-                                        if (layerId == SURVEYED_POINTS_LAYER_KEY ||  // Surveyed places (lowest custom layer)
+                                        if (layerId == SURVEYED_POINTS_LAYER_KEY ||  // Survey points (lowest custom layer)
                                             layerId == TOWER_LAYER_KEY ||  // Tower symbols (exact match)
                                             layerId.startsWith(SERVING_CELL_LINE_LAYER_PREFIX) ||  // Serving cell lines
                                             layerId.startsWith(

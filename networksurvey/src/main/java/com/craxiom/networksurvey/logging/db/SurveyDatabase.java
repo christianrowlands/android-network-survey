@@ -355,7 +355,7 @@ public abstract class SurveyDatabase extends RoomDatabase
 
     /**
      * Migration from version 14 to 15: Add the {@code surveyed_point} table behind the
-     * "My surveyed places" map layer. The DDL must match the schema Room generates from
+     * "My survey points" map layer. The DDL must match the schema Room generates from
      * {@link SurveyedPointEntity}, including the auto-named indices, or Room's schema validation
      * fails on upgrade. No existing tables are touched.
      */

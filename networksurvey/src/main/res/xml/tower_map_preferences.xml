@@ -52,13 +52,13 @@
     </PreferenceCategory>
 
     <PreferenceCategory
-        app:key="surveyed_places_settings"
-        app:title="@string/surveyed_places_category_title">
+        app:key="survey_points_settings"
+        app:title="@string/survey_points_category_title">
 
         <Preference
-            app:key="clear_surveyed_places"
-            app:title="@string/clear_surveyed_places_title"
-            app:summary="@string/clear_surveyed_places_summary" />
+            app:key="clear_survey_points"
+            app:title="@string/clear_survey_points_title"
+            app:summary="@string/clear_survey_points_summary" />
 
     </PreferenceCategory>
 

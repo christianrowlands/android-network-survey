@@ -18,7 +18,7 @@ private const val LATTICE = "CAST((latitude + 90.0) / :step AS INTEGER) AS latKe
         "CAST((longitude + 180.0) / :step AS INTEGER) AS lonKey"
 
 /**
- * DAO for the surveyed places table that backs the "My surveyed places" map layer.
+ * DAO for the survey points table that backs the "My survey points" map layer.
  *
  * The write methods are blocking because the pipelines that call them already run on their own
  * single-thread executors. Every read takes the same kind, time, mission, and source filters

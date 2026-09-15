@@ -28,7 +28,7 @@ import org.maplibre.geojson.FeatureCollection
 import timber.log.Timber
 
 /**
- * The features the surveyed places layer should draw, plus what the legend needs: the PLMNs in
+ * The features the survey points layer should draw, plus what the legend needs: the PLMNs in
  * view (for the provider style expression) and the top identities in view for the data-driven
  * legends. [coarse] is true when the points were grouped into grid cells for a zoomed-out view.
  */
@@ -41,7 +41,7 @@ data class SurveyedPointsData(
 )
 
 /**
- * Feeds the "My surveyed places" layer. Re-queries the surveyed point table whenever the layer
+ * Feeds the "My survey points" layer. Re-queries the surveyed point table whenever the layer
  * is enabled and the viewport, the table, or the display options change, so the map stays live
  * while the user stands still and flips points the moment an upload completes.
  *
@@ -226,7 +226,7 @@ class SurveyedPointsController(private val scope: CoroutineScope) {
                     }
                 }
             } catch (e: Exception) {
-                Timber.e(e, "Failed to load the tapped surveyed places")
+                Timber.e(e, "Failed to load the tapped survey points")
                 null
             }
         }
@@ -326,7 +326,7 @@ class SurveyedPointsController(private val scope: CoroutineScope) {
                     }
                 }
             } catch (e: Exception) {
-                Timber.e(e, "Failed to load surveyed places")
+                Timber.e(e, "Failed to load survey points")
                 return@launch
             }
 

@@ -9,7 +9,7 @@ import org.maplibre.geojson.Feature
 import org.maplibre.geojson.Point
 
 /**
- * Builds the GeoJSON features of the surveyed places layer. Every feature carries the property
+ * Builds the GeoJSON features of the survey points layer. Every feature carries the property
  * for every color mode, so switching modes only changes the layer's style expression.
  */
 object SurveyedPointFeatures {

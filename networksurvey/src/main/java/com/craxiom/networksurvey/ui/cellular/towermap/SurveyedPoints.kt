@@ -30,7 +30,7 @@ private const val DARK_MAP_STROKE = "rgba(255,255,255,0.35)"
 private const val LIGHT_MAP_STROKE = "rgba(0,0,0,0.25)"
 
 /**
- * Draws surveyed places as one circle layer beneath the tower icons. The hue comes from the
+ * Draws survey points as one circle layer beneath the tower icons. The hue comes from the
  * selected color mode's expression (see [SurveyedPointStyles]); recent and pending points sort
  * above older and sent ones so the live walk always draws on top.
  */
@@ -102,7 +102,7 @@ internal class SurveyedPointsNode(
 }
 
 /**
- * The "My surveyed places" map layer. Compose it before [TowerSymbols] so it sits beneath the
+ * The "My survey points" map layer. Compose it before [TowerSymbols] so it sits beneath the
  * tower icons.
  *
  * @param colorVersion bumped when provider color overrides change so the provider hues refresh

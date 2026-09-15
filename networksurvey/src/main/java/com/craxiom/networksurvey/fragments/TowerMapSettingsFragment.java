@@ -30,7 +30,7 @@ public class TowerMapSettingsFragment extends PreferenceFragmentCompat
 
         setupPreferenceDependencies();
         setupProviderColorOverrides();
-        setupClearSurveyedPlaces();
+        setupClearSurveyPoints();
     }
 
     private void setupPreferenceDependencies()
@@ -60,33 +60,33 @@ public class TowerMapSettingsFragment extends PreferenceFragmentCompat
     }
 
     /**
-     * Wires the "Clear surveyed places" action to a confirmation dialog and the database clear.
+     * Wires the "Clear survey points" action to a confirmation dialog and the database clear.
      */
-    private void setupClearSurveyedPlaces()
+    private void setupClearSurveyPoints()
     {
-        Preference clearPreference = findPreference(NetworkSurveyConstants.PROPERTY_CLEAR_SURVEYED_PLACES);
+        Preference clearPreference = findPreference(NetworkSurveyConstants.PROPERTY_CLEAR_SURVEY_POINTS);
         if (clearPreference == null) return;
 
         clearPreference.setOnPreferenceClickListener(preference -> {
             Context context = getContext();
             if (context == null) return true;
-            FragmentDialogs.showClearSurveyedPlacesConfirmation(getParentFragmentManager(),
-                    () -> clearSurveyedPlaces(context));
+            FragmentDialogs.showClearSurveyPointsConfirmation(getParentFragmentManager(),
+                    () -> clearSurveyPoints(context));
             return true;
         });
     }
 
-    private void clearSurveyedPlaces(Context context)
+    private void clearSurveyPoints(Context context)
     {
         new Thread(() -> {
             int toastText;
             try
             {
                 SurveyedPointStore.clearAll(SurveyDatabase.getInstance(context).surveyedPointDao());
-                toastText = R.string.clear_surveyed_places_success;
+                toastText = R.string.clear_survey_points_success;
             } catch (Exception e)
             {
-                toastText = R.string.clear_surveyed_places_failed;
+                toastText = R.string.clear_survey_points_failed;
             }
             final int message = toastText;
             if (isAdded())

@@ -9,7 +9,7 @@ import androidx.room.PrimaryKey;
  * One place a running survey has covered. Rows are thinned by movement (see
  * {@code SurveyedPointGate}) so the table holds a sparse breadcrumb of where the device has
  * surveyed, not every record. Rows survive the upload pipelines' own cleanup so the map can keep
- * showing surveyed places after the raw records are gone.
+ * showing survey points after the raw records are gone.
  * <p>
  * {@link #source} names the pipeline that wrote the row, {@link #observedMask} the kind of record
  * that was seen at that step (one bit per row), and {@link #uploadedMask} the destinations that

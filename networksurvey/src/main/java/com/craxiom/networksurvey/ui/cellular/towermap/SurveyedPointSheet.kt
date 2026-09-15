@@ -39,14 +39,14 @@ import com.craxiom.networksurvey.ui.watchlist.SheetDetent
 import com.craxiom.networksurvey.util.CalculationUtils
 import com.craxiom.networksurvey.util.SignalBuckets
 
-/** Visible height of the surveyed place sheet at its Peek detent, before the nav-bar inset. */
+/** Visible height of the survey point sheet at its Peek detent, before the nav-bar inset. */
 val SURVEYED_POINT_SHEET_PEEK: Dp = 96.dp
 
 /** Surveyed points store epoch milliseconds; the tower sheet's time helpers take epoch seconds. */
 private const val MILLIS_PER_SECOND = 1000L
 
 /**
- * The draggable sheet that explains a tapped surveyed place: one line at Peek (kind,
+ * The draggable sheet that explains a tapped survey point: one line at Peek (kind,
  * technology, signal, age), everything at Half. Several overlapping points show as a list; a
  * zoomed-out cell shows a summary of the places it covers.
  */
@@ -82,13 +82,13 @@ fun SurveyedPointSheet(
                     text = when {
                         point != null -> peekLine(point)
                         selection.aggregateCount != null -> pluralStringResource(
-                            R.plurals.surveyed_place_aggregate_title,
+                            R.plurals.survey_point_aggregate_title,
                             selection.aggregateCount,
                             selection.aggregateCount
                         )
 
                         else -> pluralStringResource(
-                            R.plurals.surveyed_place_multiple_title,
+                            R.plurals.survey_point_multiple_title,
                             selection.points.size,
                             selection.points.size
                         )
@@ -102,7 +102,7 @@ fun SurveyedPointSheet(
                 IconButton(onClick = onDismiss) {
                     Icon(
                         Icons.Filled.Close,
-                        contentDescription = stringResource(R.string.surveyed_places_hint_dismiss)
+                        contentDescription = stringResource(R.string.survey_points_hint_dismiss)
                     )
                 }
             }
@@ -143,18 +143,18 @@ private fun peekLine(point: SurveyedPointEntity): String {
             val tech = techLabel(SurveyedPointFeatures.techOf(point.protocol, point.nrScg))
             val signal = if (point.signal != 0) {
                 stringResource(
-                    R.string.surveyed_place_dbm,
+                    R.string.survey_point_dbm,
                     point.signal
                 ) + " " + bucketLabel(point.signalBucket)
             } else bucketLabel(SignalBuckets.UNKNOWN)
-            "${stringResource(R.string.surveyed_places_kind_cellular)} · $tech · $signal · $ago"
+            "${stringResource(R.string.survey_points_kind_cellular)} · $tech · $signal · $ago"
         }
 
         SurveyedPointEntity.OBSERVED_WIFI -> stringResource(
-            R.string.surveyed_place_peek_heard,
-            stringResource(R.string.surveyed_places_kind_wifi),
+            R.string.survey_point_peek_heard,
+            stringResource(R.string.survey_points_kind_wifi),
             pluralStringResource(
-                R.plurals.surveyed_place_networks_count,
+                R.plurals.survey_point_networks_count,
                 point.deviceCount,
                 point.deviceCount
             ),
@@ -163,10 +163,10 @@ private fun peekLine(point: SurveyedPointEntity): String {
         )
 
         else -> stringResource(
-            R.string.surveyed_place_peek_heard,
-            stringResource(R.string.surveyed_places_kind_bluetooth),
+            R.string.survey_point_peek_heard,
+            stringResource(R.string.survey_points_kind_bluetooth),
             pluralStringResource(
-                R.plurals.surveyed_place_devices_count,
+                R.plurals.survey_point_devices_count,
                 point.deviceCount,
                 point.deviceCount
             ),
@@ -182,10 +182,10 @@ private fun PointDetails(point: SurveyedPointEntity) {
     if (cellular) {
         val tech = SurveyedPointFeatures.techOf(point.protocol, point.nrScg)
         DetailRow(
-            stringResource(R.string.surveyed_place_signal),
+            stringResource(R.string.survey_point_signal),
             if (point.signal != 0) {
                 stringResource(
-                    R.string.surveyed_place_dbm_metric,
+                    R.string.survey_point_dbm_metric,
                     point.signal,
                     metricName(point.protocol)
                 ) + " · " + bucketLabel(point.signalBucket)
@@ -195,18 +195,18 @@ private fun PointDetails(point: SurveyedPointEntity) {
         if (point.signal2 != 0) {
             DetailRow(
                 secondaryMetricName(point.protocol),
-                stringResource(R.string.surveyed_place_dbm, point.signal2)
+                stringResource(R.string.survey_point_dbm, point.signal2)
             )
         }
         DetailRow(
-            stringResource(R.string.surveyed_place_provider),
+            stringResource(R.string.survey_point_provider),
             listOfNotNull(point.provider, point.plmn?.let { "($it)" }).joinToString(" ")
                 .ifBlank { bucketLabel(SignalBuckets.UNKNOWN) },
             swatch = point.plmn?.let { SurveyedPointPalette.plmn(it) }
         )
         DetailRow(
-            stringResource(R.string.surveyed_place_technology),
-            if (point.nrScg == 1) "${techLabel(SurveyedPointFeatures.TECH_LTE)} + ${stringResource(R.string.surveyed_place_nsa)}" else techLabel(
+            stringResource(R.string.survey_point_technology),
+            if (point.nrScg == 1) "${techLabel(SurveyedPointFeatures.TECH_LTE)} + ${stringResource(R.string.survey_point_nsa)}" else techLabel(
                 tech
             ),
             swatch = SurveyedPointPalette.tech(tech)
@@ -215,21 +215,21 @@ private fun PointDetails(point: SurveyedPointEntity) {
             val enb =
                 if (point.protocol == SurveyedPointEntity.PROTOCOL_LTE && point.cid in 0..Int.MAX_VALUE) {
                     stringResource(
-                        R.string.surveyed_place_enb_sector,
+                        R.string.survey_point_enb_sector,
                         CalculationUtils.getEnodebIdFromCellId(point.cid.toInt()),
                         CalculationUtils.getSectorIdFromCellId(point.cid.toInt())
                     )
                 } else null
             DetailRow(
-                stringResource(R.string.surveyed_place_cell),
+                stringResource(R.string.survey_point_cell),
                 cellId,
                 secondary = enb,
                 swatch = SurveyedPointPalette.hashed(SurveyedPointFeatures.colorIndex(cellId))
             )
             DetailRow(
-                stringResource(R.string.surveyed_place_area),
+                stringResource(R.string.survey_point_area),
                 stringResource(
-                    if (point.protocol >= SurveyedPointEntity.PROTOCOL_LTE) R.string.surveyed_place_tac else R.string.surveyed_place_lac,
+                    if (point.protocol >= SurveyedPointEntity.PROTOCOL_LTE) R.string.survey_point_tac else R.string.survey_point_lac,
                     point.area
                 ),
                 swatch = SurveyedPointPalette.hashed(
@@ -241,12 +241,12 @@ private fun PointDetails(point: SurveyedPointEntity) {
         }
     } else {
         val countLabel =
-            if (point.observedMask == SurveyedPointEntity.OBSERVED_WIFI) R.string.surveyed_place_networks_heard else R.string.surveyed_place_devices_heard
+            if (point.observedMask == SurveyedPointEntity.OBSERVED_WIFI) R.string.survey_point_networks_heard else R.string.survey_point_devices_heard
         DetailRow(stringResource(countLabel), point.deviceCount.toString())
         DetailRow(
-            stringResource(R.string.surveyed_place_strongest),
+            stringResource(R.string.survey_point_strongest),
             listOfNotNull(
-                stringResource(R.string.surveyed_place_dbm, point.signal) + " · " + bucketLabel(
+                stringResource(R.string.survey_point_dbm, point.signal) + " · " + bucketLabel(
                     point.signalBucket
                 ),
                 point.label?.let { "\"$it\"" }
@@ -254,15 +254,15 @@ private fun PointDetails(point: SurveyedPointEntity) {
             swatch = SurveyedPointPalette.bucket(point.signalBucket)
         )
     }
-    TimestampRow(stringResource(R.string.surveyed_place_surveyed), point.time / MILLIS_PER_SECOND)
+    TimestampRow(stringResource(R.string.survey_point_surveyed), point.time / MILLIS_PER_SECOND)
     DetailRow(
-        stringResource(R.string.surveyed_place_collected_for),
-        stringResource(if (point.source == SurveyedPointEntity.SOURCE_NS_ANALYTICS) R.string.surveyed_place_destination_ns else R.string.surveyed_place_destination_community)
+        stringResource(R.string.survey_point_collected_for),
+        stringResource(if (point.source == SurveyedPointEntity.SOURCE_NS_ANALYTICS) R.string.survey_point_destination_ns else R.string.survey_point_destination_community)
     )
     destinations(point).forEach { (nameRes, sent) ->
         DetailRow(
             stringResource(nameRes),
-            stringResource(if (sent) R.string.surveyed_place_sent else R.string.surveyed_place_not_sent),
+            stringResource(if (sent) R.string.survey_point_sent else R.string.survey_point_not_sent),
             swatch = if (sent) SurveyedPointPalette.SENT else SurveyedPointPalette.PENDING
         )
     }
@@ -273,7 +273,7 @@ private fun AggregateDetails(selection: SurveyedPointSelection) {
     val points = selection.points
     if (points.isEmpty()) {
         Text(
-            stringResource(R.string.surveyed_place_zoom_in),
+            stringResource(R.string.survey_point_zoom_in),
             style = MaterialTheme.typography.bodyMedium
         )
         return
@@ -281,9 +281,9 @@ private fun AggregateDetails(selection: SurveyedPointSelection) {
     val best = points.maxByOrNull { it.signalBucket }
     if (best != null && best.signalBucket != SignalBuckets.UNKNOWN) {
         DetailRow(
-            stringResource(R.string.surveyed_place_best_signal),
+            stringResource(R.string.survey_point_best_signal),
             stringResource(
-                R.string.surveyed_place_dbm,
+                R.string.survey_point_dbm,
                 best.signal
             ) + " · " + bucketLabel(best.signalBucket),
             swatch = SurveyedPointPalette.bucket(best.signalBucket)
@@ -294,7 +294,7 @@ private fun AggregateDetails(selection: SurveyedPointSelection) {
         .filter { it != SurveyedPointFeatures.TECH_UNKNOWN }
     techs.groupingBy { it }.eachCount().maxByOrNull { it.value }?.let { (tech, _) ->
         DetailRow(
-            stringResource(R.string.surveyed_place_common_tech),
+            stringResource(R.string.survey_point_common_tech),
             techLabel(tech),
             swatch = SurveyedPointPalette.tech(tech)
         )
@@ -303,28 +303,28 @@ private fun AggregateDetails(selection: SurveyedPointSelection) {
         ?.let { (plmn, _) ->
             val provider = points.firstOrNull { it.plmn == plmn }?.provider
             DetailRow(
-                stringResource(R.string.surveyed_place_common_provider),
+                stringResource(R.string.survey_point_common_provider),
                 listOfNotNull(provider, "($plmn)").joinToString(" "),
                 swatch = SurveyedPointPalette.plmn(plmn)
             )
         }
     TimestampRow(
-        stringResource(R.string.surveyed_place_first_surveyed),
+        stringResource(R.string.survey_point_first_surveyed),
         points.minOf { it.time } / MILLIS_PER_SECOND)
     TimestampRow(
-        stringResource(R.string.surveyed_place_last_surveyed),
+        stringResource(R.string.survey_point_last_surveyed),
         points.maxOf { it.time } / MILLIS_PER_SECOND)
     DetailRow(
-        stringResource(R.string.surveyed_place_sent),
+        stringResource(R.string.survey_point_sent),
         pluralStringResource(
-            R.plurals.surveyed_place_sent_count,
+            R.plurals.survey_point_sent_count,
             points.size,
             points.count { it.uploadedMask != 0 },
             points.size
         )
     )
     Text(
-        stringResource(R.string.surveyed_place_zoom_in),
+        stringResource(R.string.survey_point_zoom_in),
         style = MaterialTheme.typography.bodySmall,
         color = MaterialTheme.colorScheme.onSurfaceVariant
     )

@@ -4,7 +4,7 @@ import com.craxiom.networksurvey.logging.db.model.SurveyedPointEntity
 import com.craxiom.networksurvey.util.SignalBuckets.UNKNOWN
 
 /**
- * The single threshold table behind the surveyed places signal ramp. The map layer, the coarse
+ * The single threshold table behind the survey points signal ramp. The map layer, the coarse
  * aggregation (which relies on strong being the highest value so MAX() is "best"), and the legend
  * all read from here so they can never disagree.
  *

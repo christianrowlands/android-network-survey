@@ -5,7 +5,7 @@ import com.craxiom.networksurvey.logging.db.model.SurveyedPointEntity
 import org.maplibre.geojson.Feature
 
 /**
- * What the hue of a surveyed place means. [cellularOnly] modes have no meaning for Wi-Fi or
+ * What the hue of a survey point means. [cellularOnly] modes have no meaning for Wi-Fi or
  * Bluetooth points; [category] names the grouping the zoomed-out view needs, or null when the
  * plain lattice query already carries the value (signal, sent status).
  */
@@ -21,7 +21,7 @@ enum class SurveyedPointColorMode(val cellularOnly: Boolean, val category: Domin
     val advanced: Boolean get() = this == CELL || this == AREA
 }
 
-/** Which kind of surveyed place is drawn; one at a time because every kind shares the same spots. */
+/** Which kind of survey point is drawn; one at a time because every kind shares the same spots. */
 enum class SurveyedPointKind(val mask: Int) {
     CELLULAR(SurveyedPointEntity.OBSERVED_CELLULAR),
     WIFI(SurveyedPointEntity.OBSERVED_WIFI),
@@ -47,7 +47,7 @@ enum class SurveyedPointSourceFilter(val mask: Int) {
     NS_ANALYTICS(SurveyedPointEntity.SOURCE_NS_ANALYTICS),
 }
 
-/** What the user tapped on the surveyed places layer. */
+/** What the user tapped on the survey points layer. */
 sealed class SurveyedPointTap {
     /** One or more individual points under the tap. */
     data class Points(val ids: List<Long>) : SurveyedPointTap()

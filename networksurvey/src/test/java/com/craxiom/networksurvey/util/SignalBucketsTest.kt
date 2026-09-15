@@ -6,7 +6,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Test
 
 /**
- * Tests the single threshold table behind the surveyed places signal ramp and its legend.
+ * Tests the single threshold table behind the survey points signal ramp and its legend.
  */
 class SignalBucketsTest {
 

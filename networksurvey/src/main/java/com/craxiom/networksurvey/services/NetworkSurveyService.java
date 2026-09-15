@@ -152,6 +152,9 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
 
     private volatile int deviceStatusScanRateMs;
 
+    /** The interval location updates were last requested at; see getLocationUpdateRateMs(). */
+    private volatile int locationUpdateRateMs = 0;
+
     private PowerManager.WakeLock wakeLock;
     private final AtomicBoolean wakeLockActive = new AtomicBoolean(false);
 
@@ -463,6 +466,29 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
     public IBinder onBind(Intent intent)
     {
         return surveyServiceBinder;
+    }
+
+    /**
+     * Called once the last bound client has disconnected. Each unregister method already re-checks
+     * {@link #isBeingUsed()} and stops this service, but a client can unbind without unregistering
+     * anything, and {@link com.craxiom.networksurvey.NetworkSurveyActivity#onPause()} runs its own
+     * check before its fragments have been paused. Re-checking here means the last unbind always
+     * gets a chance to shut the service (and its ongoing notification) down when nothing is logging,
+     * connected, or listening.
+     *
+     * @return false so that a later bind goes through {@link #onBind(Intent)} again rather than
+     * {@code onRebind}, which this service does not implement.
+     */
+    @Override
+    public boolean onUnbind(Intent intent)
+    {
+        if (surveyRecordProcessor != null && !isBeingUsed())
+        {
+            Timber.i("The last client unbound from the Network Survey Service and nothing is using it, so it is being stopped");
+            stopSelf();
+        }
+
+        return false;
     }
 
     @Override
@@ -2415,6 +2441,16 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
      * <p>
      * If none of the scanning is active, then this method does nothing an returns immediately.
      */
+    /**
+     * @return The interval in milliseconds that location updates are currently being requested at,
+     * or 0 if no location updates have been requested yet. Consumers that need to reason about how
+     * long a gap between fixes is unusual should scale this rather than assume a fixed interval.
+     */
+    public int getLocationUpdateRateMs()
+    {
+        return locationUpdateRateMs;
+    }
+
     public void updateLocationListener()
     {
         if (!isBeingUsed()) return;
@@ -2480,6 +2516,8 @@ public class NetworkSurveyService extends Service implements IConnectionStateLis
             if (smallestScanRate < 5_000) smallestScanRate = 5_000;
 
             Timber.d("Setting the location update rate to %d", smallestScanRate);
+
+            locationUpdateRateMs = smallestScanRate;
 
             try
             {

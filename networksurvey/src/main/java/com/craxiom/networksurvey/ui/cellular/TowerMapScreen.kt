@@ -1,9 +1,12 @@
 package com.craxiom.networksurvey.ui.cellular
 
 import android.widget.Toast
+import androidx.activity.compose.BackHandler
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.AnchoredDraggableState
+import androidx.compose.foundation.gestures.animateTo
+import androidx.compose.foundation.gestures.snapTo
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
@@ -103,10 +106,10 @@ import com.craxiom.networksurvey.constants.NetworkSurveyConstants
 import com.craxiom.networksurvey.logging.db.SurveyDatabase
 import com.craxiom.networksurvey.model.CellularProtocol
 import com.craxiom.networksurvey.model.Plmn
-import com.craxiom.networksurvey.ui.activesurvey.model.SurveyTrack
 import com.craxiom.networksurvey.ui.cellular.model.INITIAL_ZOOM
 import com.craxiom.networksurvey.ui.cellular.model.MINIMUM_LOCATION_ZOOM
 import com.craxiom.networksurvey.ui.cellular.model.MapTileSource
+import com.craxiom.networksurvey.ui.activesurvey.model.SurveyTrack
 import com.craxiom.networksurvey.ui.cellular.model.ServingCellInfo
 import com.craxiom.networksurvey.ui.cellular.model.ServingSignalInfo
 import com.craxiom.networksurvey.ui.cellular.model.SurveyedPointColorMode
@@ -128,7 +131,8 @@ import com.craxiom.networksurvey.ui.cellular.towermap.MapLibreMap
 import com.craxiom.networksurvey.ui.cellular.towermap.MapUiSettings
 import com.craxiom.networksurvey.ui.cellular.towermap.SURVEYED_POINT_SHEET_PEEK
 import com.craxiom.networksurvey.ui.cellular.towermap.SearchResultSymbols
-import com.craxiom.networksurvey.ui.cellular.towermap.SurveyedPlacesLayerSummary
+import com.craxiom.networksurvey.ui.cellular.towermap.SurveyPointsAboutDialog
+import com.craxiom.networksurvey.ui.cellular.towermap.SurveyPointsLayerSummary
 import com.craxiom.networksurvey.ui.cellular.towermap.SurveyedPointSheet
 import com.craxiom.networksurvey.ui.cellular.towermap.SurveyedPoints
 import com.craxiom.networksurvey.ui.cellular.towermap.SurveyedPointsOptionsSheet
@@ -164,24 +168,24 @@ private fun getBeaconDbCoverageKey(context: MapContext): String {
     }
 }
 
-private fun getSurveyedPlacesKey(context: MapContext): String {
+private fun getSurveyPointsKey(context: MapContext): String {
     return when (context) {
-        MapContext.TOWER_MAP -> NetworkSurveyConstants.PROPERTY_SHOW_SURVEYED_PLACES
-        MapContext.SURVEY_MONITOR -> NetworkSurveyConstants.PROPERTY_SURVEY_SHOW_SURVEYED_PLACES
+        MapContext.TOWER_MAP -> NetworkSurveyConstants.PROPERTY_SHOW_SURVEY_POINTS
+        MapContext.SURVEY_MONITOR -> NetworkSurveyConstants.PROPERTY_SURVEY_MAP_SHOW_SURVEY_POINTS
     }
 }
 
-private fun getSurveyedPlacesModeKey(context: MapContext): String {
+private fun getSurveyPointsModeKey(context: MapContext): String {
     return when (context) {
-        MapContext.TOWER_MAP -> NetworkSurveyConstants.PROPERTY_SURVEYED_PLACES_COLOR_MODE
-        MapContext.SURVEY_MONITOR -> NetworkSurveyConstants.PROPERTY_SURVEY_SURVEYED_PLACES_COLOR_MODE
+        MapContext.TOWER_MAP -> NetworkSurveyConstants.PROPERTY_SURVEY_POINTS_COLOR_MODE
+        MapContext.SURVEY_MONITOR -> NetworkSurveyConstants.PROPERTY_SURVEY_MAP_SURVEY_POINTS_COLOR_MODE
     }
 }
 
-private fun getSurveyedPlacesKindKey(context: MapContext): String {
+private fun getSurveyPointsKindKey(context: MapContext): String {
     return when (context) {
-        MapContext.TOWER_MAP -> NetworkSurveyConstants.PROPERTY_SURVEYED_PLACES_KIND
-        MapContext.SURVEY_MONITOR -> NetworkSurveyConstants.PROPERTY_SURVEY_SURVEYED_PLACES_KIND
+        MapContext.TOWER_MAP -> NetworkSurveyConstants.PROPERTY_SURVEY_POINTS_KIND
+        MapContext.SURVEY_MONITOR -> NetworkSurveyConstants.PROPERTY_SURVEY_MAP_SURVEY_POINTS_KIND
     }
 }
 
@@ -243,7 +247,7 @@ internal fun TowerMapScreen(
     onBackButtonPressed: () -> Unit,
     onNavigateToTowerMapSettings: () -> Unit,
     mapContext: MapContext = MapContext.TOWER_MAP,
-    surveyTracks: List<SurveyTrack>? = null,
+    surveyTrack: SurveyTrack? = null,
     initialBeaconDbEnabled: Boolean? = null,
     initialShowTowers: Boolean? = null,
     initialCameraMode: CameraMode? = null,
@@ -285,8 +289,8 @@ internal fun TowerMapScreen(
     val servingCellLines by viewModel.servingCellLines.collectAsStateWithLifecycle()
     val showTowersLayer by viewModel.showTowersLayer.collectAsStateWithLifecycle()
     val showOnlyServingCell by viewModel.showOnlyServingCell.collectAsStateWithLifecycle()
-    val showSurveyedPlaces by viewModel.showSurveyedPlaces.collectAsStateWithLifecycle()
-    val surveyedPlacesCount by viewModel.surveyedPoints.count.collectAsStateWithLifecycle(
+    val showSurveyPoints by viewModel.showSurveyPoints.collectAsStateWithLifecycle()
+    val surveyPointsCount by viewModel.surveyedPoints.count.collectAsStateWithLifecycle(
         initialValue = 0
     )
     val surveyedMode by viewModel.surveyedPoints.colorMode.collectAsStateWithLifecycle()
@@ -303,6 +307,7 @@ internal fun TowerMapScreen(
         surveyedKindCounts.keys.mapNotNull { SurveyedPointKind.fromMask(it) }.toSet()
     }
     var showSurveyedOptions by remember { mutableStateOf(false) }
+    var showSurveyPointsAbout by remember { mutableStateOf(false) }
     var surveyedSelection by remember { mutableStateOf<SurveyedPointSelection?>(null) }
     val surveyedSheetState = remember { AnchoredDraggableState(initialValue = SheetDetent.Peek) }
     val surveyedScope = rememberCoroutineScope()
@@ -310,11 +315,11 @@ internal fun TowerMapScreen(
     val persistSurveyedOptions = {
         preferences.edit {
             putString(
-                getSurveyedPlacesModeKey(mapContext),
+                getSurveyPointsModeKey(mapContext),
                 viewModel.surveyedPoints.colorMode.value.name
             )
             putString(
-                getSurveyedPlacesKindKey(mapContext),
+                getSurveyPointsKindKey(mapContext),
                 viewModel.surveyedPoints.kind.value.name
             )
         }
@@ -412,18 +417,18 @@ internal fun TowerMapScreen(
                     )
                     viewModel.setShowTowersLayer(showTowers)
 
-                    // The surveyed places layer defaults on everywhere; an empty table draws nothing
+                    // The survey points layer defaults on everywhere; an empty table draws nothing
                     viewModel.initSurveyedPoints(
                         SurveyDatabase.getInstance(context).surveyedPointDao()
                     )
-                    viewModel.setShowSurveyedPlaces(
-                        preferences.getBoolean(getSurveyedPlacesKey(mapContext), true)
+                    viewModel.setShowSurveyPoints(
+                        preferences.getBoolean(getSurveyPointsKey(mapContext), true)
                     )
-                    preferences.getString(getSurveyedPlacesModeKey(mapContext), null)
+                    preferences.getString(getSurveyPointsModeKey(mapContext), null)
                         ?.let { name -> SurveyedPointColorMode.entries.firstOrNull { it.name == name } }
                         ?.let { viewModel.surveyedPoints.setColorMode(it) }
                     val savedKind =
-                        preferences.getString(getSurveyedPlacesKindKey(mapContext), null)
+                        preferences.getString(getSurveyPointsKindKey(mapContext), null)
                             ?.let { name -> SurveyedPointKind.entries.firstOrNull { it.name == name } }
                     if (savedKind != null) {
                         viewModel.surveyedPoints.setKind(savedKind)
@@ -539,12 +544,16 @@ internal fun TowerMapScreen(
                     },
                     onSurveyedPointClick = { tap ->
                         surveyedScope.launch {
-                            viewModel.surveyedPoints.resolve(tap)?.let { surveyedSelection = it }
+                            viewModel.surveyedPoints.resolve(tap)?.let {
+                                // The sheet may have been swiped away or left open; always start small
+                                surveyedSheetState.snapTo(SheetDetent.Peek)
+                                surveyedSelection = it
+                            }
                         }
                     },
                 ) {
-                    // Surveyed places sit beneath everything else, so they are composed first
-                    if (showSurveyedPlaces) {
+                    // Survey points sit beneath everything else, so they are composed first
+                    if (showSurveyPoints) {
                         val surveyedColorVersion by viewModel.colorOverrideVersion.collectAsStateWithLifecycle()
                         SurveyedPoints(
                             data = surveyedData,
@@ -652,18 +661,19 @@ internal fun TowerMapScreen(
                         }
                     }
 
-                    // Render survey tracks if provided (independent of tower layer visibility)
-                    surveyTracks?.forEach { track ->
-                        if (track.points.size >= 2) {
-                            LineString(
-                                state = rememberLineStringState(
-                                    points = track.points,
-                                    color = track.color,
-                                    width = 2.5f, // Thin enough for surveyed places dots to read over it
-                                    dashArray = null // Solid line for tracks
-                                )
+                    // The trail is drawn over the survey point dots on purpose: together they show
+                    // where the device went versus what was actually recorded there. One polyline
+                    // per segment, so a break in collection never draws a line across unvisited
+                    // ground.
+                    surveyTrack?.segments?.forEach { segment ->
+                        LineString(
+                            state = rememberLineStringState(
+                                points = segment,
+                                color = surveyTrack.color,
+                                width = 2.5f, // Thin enough for survey point dots to read over it
+                                dashArray = null // Solid line for the trail
                             )
-                        }
+                        )
                     }
 
                     // Handle BeaconDB overlay
@@ -682,7 +692,7 @@ internal fun TowerMapScreen(
 
                 TopAppBarOverlay(statusBarHeight)
 
-                if (showSurveyedPlaces && surveyedPlacesCount > 0 && surveyedSelection == null) {
+                if (showSurveyPoints && surveyPointsCount > 0 && surveyedSelection == null) {
                     SurveyedPointsPill(
                         mode = surveyedMode,
                         kind = surveyedKind,
@@ -711,6 +721,21 @@ internal fun TowerMapScreen(
                 }
 
                 surveyedSelection?.let { selection ->
+                    // One dismissal for all three routes (drag, X, Back) so the motion matches and
+                    // only the settle effect below knows how the sheet is torn down
+                    val dismissSheet = {
+                        surveyedScope.launch { surveyedSheetState.animateTo(SheetDetent.Hidden) }
+                        Unit
+                    }
+                    // Back closes the sheet rather than leaving the map
+                    BackHandler(onBack = dismissSheet)
+                    // settledValue, not currentValue: currentValue flips at the halfway point of a
+                    // drag, which would tear the sheet out of composition mid-animation
+                    LaunchedEffect(surveyedSheetState.settledValue) {
+                        if (surveyedSheetState.settledValue == SheetDetent.Hidden) {
+                            surveyedSelection = null
+                        }
+                    }
                     BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
                         val navBarHeight =
                             WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
@@ -718,18 +743,19 @@ internal fun TowerMapScreen(
                             state = surveyedSheetState,
                             availableHeight = maxHeight,
                             peekVisibleHeight = SURVEYED_POINT_SHEET_PEEK + navBarHeight,
+                            dismissible = true,
                         )
                         SurveyedPointSheet(
                             selection = selection,
                             state = surveyedSheetState,
                             sheetHeight = metrics.sheetHeight,
-                            onDismiss = { surveyedSelection = null },
+                            onDismiss = dismissSheet,
                             modifier = Modifier.align(Alignment.BottomCenter)
                         )
                     }
                 }
 
-                // Bottom button bar, hidden while a surveyed place sheet is open
+                // Bottom button bar, hidden while a survey point sheet is open
                 if (surveyedSelection == null) {
                     Column(
                         modifier = Modifier
@@ -836,7 +862,7 @@ internal fun TowerMapScreen(
                                 )
 
                                 // Filters button (center, larger) - only when a filterable layer is on
-                                if (showTowersLayer || showSurveyedPlaces) {
+                                if (showTowersLayer || showSurveyPoints) {
                                     MapButton(
                                         iconRes = R.drawable.ic_filter,
                                         contentDescription = "Filters",
@@ -959,6 +985,10 @@ internal fun TowerMapScreen(
             TowerMapInfoDialog(onDismiss = { showInfoDialog = false })
         }
 
+        if (showSurveyPointsAbout) {
+            SurveyPointsAboutDialog(onDismiss = { showSurveyPointsAbout = false })
+        }
+
         TowerBottomSheet(
             state = towerSheetState,
             onStateChange = { towerSheetState = it },
@@ -976,18 +1006,19 @@ internal fun TowerMapScreen(
                 showBeaconDbCoverage = showBeaconDbCoverage,
                 showTowersLayer = showTowersLayer,
                 showOnlyServingCell = showOnlyServingCell,
-                showSurveyedPlaces = showSurveyedPlaces,
-                surveyedPlacesCount = surveyedPlacesCount,
+                showSurveyPoints = showSurveyPoints,
+                surveyPointsCount = surveyPointsCount,
                 surveyedMode = surveyedMode,
                 surveyedKind = surveyedKind,
-                onChangeSurveyedPlaces = {
+                onChangeSurveyPoints = {
                     showLayersDialog = false
                     showSurveyedOptions = true
                 },
-                onSetShowSurveyedPlaces = { show ->
-                    viewModel.setShowSurveyedPlaces(show)
+                onAboutSurveyPoints = { showSurveyPointsAbout = true },
+                onSetShowSurveyPoints = { show ->
+                    viewModel.setShowSurveyPoints(show)
                     preferences.edit {
-                        putBoolean(getSurveyedPlacesKey(mapContext), show)
+                        putBoolean(getSurveyPointsKey(mapContext), show)
                     }
                 },
                 onSetTileSource = { source ->
@@ -1080,7 +1111,7 @@ internal fun TowerMapScreen(
             val currentMaxTowerAgeMonths by viewModel.maxTowerAgeMonths.collectAsStateWithLifecycle()
             CombinedFiltersBottomSheet(
                 showTowerFilters = showTowersLayer,
-                showSurveyedFilters = showSurveyedPlaces,
+                showSurveyedFilters = showSurveyPoints,
                 currentTimeFilter = surveyedTimeFilter,
                 thisSurveyAvailable = surveyedLatestMission != null,
                 currentSourceFilter = surveyedSourceFilter,
@@ -1712,7 +1743,7 @@ fun TowerMapInfoDialog(onDismiss: () -> Unit) {
                         )
                     }
                     Text(
-                        text = stringResource(R.string.surveyed_places_info),
+                        text = stringResource(R.string.survey_points_info),
                         modifier = Modifier.padding(top = 12.dp)
                     )
                 }
@@ -1851,12 +1882,13 @@ fun MapLayersDialog(
     showBeaconDbCoverage: Boolean,
     showTowersLayer: Boolean,
     showOnlyServingCell: Boolean,
-    showSurveyedPlaces: Boolean,
-    surveyedPlacesCount: Int,
+    showSurveyPoints: Boolean,
+    surveyPointsCount: Int,
     surveyedMode: SurveyedPointColorMode,
     surveyedKind: SurveyedPointKind,
-    onChangeSurveyedPlaces: () -> Unit,
-    onSetShowSurveyedPlaces: (Boolean) -> Unit,
+    onChangeSurveyPoints: () -> Unit,
+    onAboutSurveyPoints: () -> Unit,
+    onSetShowSurveyPoints: (Boolean) -> Unit,
     onSetTileSource: (MapTileSource) -> Unit,
     onSetShowBeaconDbCoverage: (Boolean) -> Unit,
     onSetShowTowersLayer: (Boolean) -> Unit,
@@ -1999,13 +2031,14 @@ fun MapLayersDialog(
                 }
             }
 
-            SurveyedPlacesLayerSummary(
-                checked = showSurveyedPlaces,
-                count = surveyedPlacesCount,
+            SurveyPointsLayerSummary(
+                checked = showSurveyPoints,
+                count = surveyPointsCount,
                 mode = surveyedMode,
                 kind = surveyedKind,
-                onCheckedChange = onSetShowSurveyedPlaces,
-                onChange = onChangeSurveyedPlaces
+                onCheckedChange = onSetShowSurveyPoints,
+                onChange = onChangeSurveyPoints,
+                onAbout = onAboutSurveyPoints
             )
 
             Row(
@@ -2643,12 +2676,12 @@ fun CombinedFiltersBottomSheet(
             if (showSurveyedFilters) {
                 if (showTowerFilters) Spacer(modifier = Modifier.height(16.dp))
                 Text(
-                    text = stringResource(R.string.surveyed_places_options_title),
+                    text = stringResource(R.string.survey_points_options_title),
                     style = MaterialTheme.typography.titleMedium,
                     modifier = Modifier.padding(bottom = 8.dp)
                 )
                 Text(
-                    text = stringResource(R.string.surveyed_places_filter_when),
+                    text = stringResource(R.string.survey_points_filter_when),
                     style = MaterialTheme.typography.bodyMedium,
                     modifier = Modifier.padding(bottom = 4.dp)
                 )
@@ -2663,7 +2696,7 @@ fun CombinedFiltersBottomSheet(
                     }
                 if (showSourceFilter) {
                     Text(
-                        text = stringResource(R.string.surveyed_places_filter_collected),
+                        text = stringResource(R.string.survey_points_filter_collected),
                         style = MaterialTheme.typography.bodyMedium,
                         modifier = Modifier.padding(top = 8.dp, bottom = 4.dp)
                     )
@@ -2696,14 +2729,14 @@ private fun FilterRadioRow(label: String, selected: Boolean, onClick: () -> Unit
 }
 
 private fun surveyedTimeFilterLabel(filter: SurveyedPointTimeFilter): Int = when (filter) {
-    SurveyedPointTimeFilter.ANY -> R.string.surveyed_places_filter_any
-    SurveyedPointTimeFilter.LAST_HOUR -> R.string.surveyed_places_filter_last_hour
-    SurveyedPointTimeFilter.LAST_7_DAYS -> R.string.surveyed_places_filter_last_7_days
-    SurveyedPointTimeFilter.THIS_SURVEY -> R.string.surveyed_places_filter_this_survey
+    SurveyedPointTimeFilter.ANY -> R.string.survey_points_filter_any
+    SurveyedPointTimeFilter.LAST_HOUR -> R.string.survey_points_filter_last_hour
+    SurveyedPointTimeFilter.LAST_7_DAYS -> R.string.survey_points_filter_last_7_days
+    SurveyedPointTimeFilter.THIS_SURVEY -> R.string.survey_points_filter_this_survey
 }
 
 private fun surveyedSourceFilterLabel(filter: SurveyedPointSourceFilter): Int = when (filter) {
-    SurveyedPointSourceFilter.BOTH -> R.string.surveyed_places_filter_both
-    SurveyedPointSourceFilter.COMMUNITY -> R.string.surveyed_place_destination_community
-    SurveyedPointSourceFilter.NS_ANALYTICS -> R.string.surveyed_place_destination_ns
+    SurveyedPointSourceFilter.BOTH -> R.string.survey_points_filter_both
+    SurveyedPointSourceFilter.COMMUNITY -> R.string.survey_point_destination_community
+    SurveyedPointSourceFilter.NS_ANALYTICS -> R.string.survey_point_destination_ns
 }

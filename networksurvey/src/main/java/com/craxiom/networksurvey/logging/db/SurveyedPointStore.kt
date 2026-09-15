@@ -12,7 +12,7 @@ import com.craxiom.networksurvey.model.WifiRecordWrapper
 import timber.log.Timber
 
 /**
- * Writes surveyed places for one upload pipeline. Each pipeline's data store owns an instance and
+ * Writes survey points for one upload pipeline. Each pipeline's data store owns an instance and
  * calls [observe] from its own executor thread for every batch it receives; the gate decides
  * which batches become rows.
  *
@@ -27,7 +27,7 @@ class SurveyedPointStore @JvmOverloads constructor(
     private var seenClearGeneration = clearGeneration
 
     /**
-     * Records a surveyed place for [kind] when the device has moved far enough from the last one.
+     * Records a survey point for [kind] when the device has moved far enough from the last one.
      *
      * @param timeMs the observation time; for NS Analytics this must be no later than the queue
      * timestamps of the records in the same batch, or the watermark marking will miss the point.
@@ -77,7 +77,7 @@ class SurveyedPointStore @JvmOverloads constructor(
         }
     }
 
-    /** Records the batch's shared fix as a cellular surveyed place, subject to the gate. */
+    /** Records the batch's shared fix as a cellular survey point, subject to the gate. */
     fun observeCellular(batch: List<CellularRecordWrapper>, timeMs: Long) {
         SurveyedPointLocation.fromCellular(batch)?.let {
             observe(
@@ -88,7 +88,7 @@ class SurveyedPointStore @JvmOverloads constructor(
         }
     }
 
-    /** Records the batch's shared fix as a Wi-Fi surveyed place, subject to the gate. */
+    /** Records the batch's shared fix as a Wi-Fi survey point, subject to the gate. */
     fun observeWifi(batch: List<WifiRecordWrapper>, timeMs: Long) {
         SurveyedPointLocation.fromWifi(batch)?.let {
             observe(SurveyedPointEntity.OBSERVED_WIFI, it, timeMs) {
@@ -99,7 +99,7 @@ class SurveyedPointStore @JvmOverloads constructor(
         }
     }
 
-    /** Records the batch's shared fix as a Bluetooth surveyed place, subject to the gate. */
+    /** Records the batch's shared fix as a Bluetooth survey point, subject to the gate. */
     fun observeBluetooth(batch: List<BluetoothRecord>, timeMs: Long) {
         SurveyedPointLocation.fromBluetooth(batch)?.let {
             observe(
@@ -139,7 +139,7 @@ class SurveyedPointStore @JvmOverloads constructor(
         @Volatile
         private var clearGeneration = 0
 
-        /** Deletes every surveyed place and makes running surveys start a fresh trail. */
+        /** Deletes every survey point and makes running surveys start a fresh trail. */
         @JvmStatic
         fun clearAll(dao: SurveyedPointDao) {
             dao.clear()

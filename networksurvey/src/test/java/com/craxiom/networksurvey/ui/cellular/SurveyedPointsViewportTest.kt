@@ -5,7 +5,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Test
 
 /**
- * Tests the longitude handling that lets the surveyed places query survive a viewport that
+ * Tests the longitude handling that lets the survey points query survive a viewport that
  * crosses the antimeridian, where MapLibre reports a longitude past 180 or an inverted box.
  */
 class SurveyedPointsViewportTest {

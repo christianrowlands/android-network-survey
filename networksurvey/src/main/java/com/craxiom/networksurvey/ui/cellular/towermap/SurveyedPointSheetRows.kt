@@ -22,18 +22,18 @@ import com.craxiom.networksurvey.R
 import com.craxiom.networksurvey.logging.db.model.SurveyedPointEntity
 
 /*
- * Row composables and lookups shared by the surveyed place sheet's detail views.
+ * Row composables and lookups shared by the survey point sheet's detail views.
  */
 
 /** The destinations this point's pipeline feeds, with whether each has accepted it. */
 internal fun destinations(point: SurveyedPointEntity): List<Pair<Int, Boolean>> =
     if (point.source == SurveyedPointEntity.SOURCE_NS_ANALYTICS) {
-        listOf(R.string.surveyed_place_destination_ns to (point.uploadedMask and SurveyedPointEntity.UPLOADED_NS_ANALYTICS != 0))
+        listOf(R.string.survey_point_destination_ns to (point.uploadedMask and SurveyedPointEntity.UPLOADED_NS_ANALYTICS != 0))
     } else buildList {
         if (point.observedMask == SurveyedPointEntity.OBSERVED_CELLULAR) {
-            add(R.string.surveyed_place_destination_ocid to (point.uploadedMask and SurveyedPointEntity.UPLOADED_OCID != 0))
+            add(R.string.survey_point_destination_ocid to (point.uploadedMask and SurveyedPointEntity.UPLOADED_OCID != 0))
         }
-        add(R.string.surveyed_place_destination_beacondb to (point.uploadedMask and SurveyedPointEntity.UPLOADED_BEACONDB != 0))
+        add(R.string.survey_point_destination_beacondb to (point.uploadedMask and SurveyedPointEntity.UPLOADED_BEACONDB != 0))
     }
 
 @Composable

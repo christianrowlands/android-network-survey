@@ -23,6 +23,7 @@ import com.craxiom.networksurvey.services.NetworkSurveyService
 import com.craxiom.networksurvey.ui.activesurvey.model.ActiveSurveyState
 import com.craxiom.networksurvey.ui.activesurvey.model.NsAnalyticsInfo
 import com.craxiom.networksurvey.ui.activesurvey.model.SurveyTrack
+import com.craxiom.networksurvey.ui.activesurvey.model.SurveyTrackBuilder
 import com.craxiom.networksurvey.ui.cellular.model.ServingCellInfo
 import com.craxiom.networksurvey.util.CellularUtils
 import com.craxiom.networksurvey.util.NsAnalyticsSecureStorage
@@ -63,10 +64,10 @@ class SurveyMonitorViewModel(
     private var networkSurveyService: NetworkSurveyService? = null
     private val database = SurveyDatabase.getInstance(application)
 
-    // Track points for the current session
-    private val currentTrackPoints = mutableListOf<LatLng>()
-    private val currentTrackTimestamps = mutableListOf<Long>()
-    private var currentSessionId: String = ""
+    // The map trail. Appends are cheap; the immutable snapshot the UI reads is rebuilt at most
+    // once every TRACK_EMIT_INTERVAL_MS so a long session does not copy a growing list per fix.
+    private val trackBuilder = SurveyTrackBuilder()
+    private var lastTrackEmitMs = 0L
 
     // Refresh interval for statistics - increased to reduce main thread load
     private val STATS_REFRESH_INTERVAL_MS = 10000L  // 10 seconds
@@ -110,6 +111,11 @@ class SurveyMonitorViewModel(
             it.registerLoggingChangeListener(this)
             it.registerCellularSurveyRecordListener(this)
             it.registerMissionIdListener(this)
+            // Re-registering means fixes were missed while this screen was away, so the trail has
+            // to break here rather than draw a straight line across wherever the device went. The
+            // trail itself is kept; only the segment ends.
+            trackBuilder.setGapThreshold(SurveyTrackBuilder.gapThresholdFor(it.locationUpdateRateMs))
+            trackBuilder.startNewSegment()
             it.primaryLocationListener?.registerListener(this)
 
             // Get initial states
@@ -117,60 +123,45 @@ class SurveyMonitorViewModel(
         }
     }
 
-
     /**
-     * LocationListener implementation - Called when location is updated
+     * Appends the fix to the map trail while a survey is running. The exposed state is rebuilt at
+     * most once every [TRACK_EMIT_INTERVAL_MS], because a polyline redrawing twice a second is
+     * indistinguishable to the user from one redrawing on every fix, and rebuilding it per fix is
+     * quadratic over a long session.
      */
     override fun onLocationChanged(location: Location) {
-        // Only track if any survey is active
-        if (_surveyState.value.isAnyActive) {
-            currentTrackPoints.add(LatLng(location.latitude, location.longitude))
-            currentTrackTimestamps.add(System.currentTimeMillis())
+        if (!_surveyState.value.isAnyActive) return
 
-            // Update the current track
-            _surveyState.update { state ->
-                state.copy(
-                    currentTrack = SurveyTrack(
-                        points = currentTrackPoints.toList(),
-                        timestamps = currentTrackTimestamps.toList(),
-                        sessionId = currentSessionId
-                    )
-                )
-            }
+        val now = System.currentTimeMillis()
+        val kept = trackBuilder.add(location.latitude, location.longitude, now)
+        if (!kept && _surveyState.value.currentTrack != null) return
+        if (now - lastTrackEmitMs < TRACK_EMIT_INTERVAL_MS) return
 
-            Timber.d("Added location to track. Total points: ${currentTrackPoints.size}")
+        lastTrackEmitMs = now
+        emitTrack()
+    }
+
+    private fun emitTrack() {
+        val segments = trackBuilder.segments()
+            .map { segment -> segment.map { LatLng(it.latitude, it.longitude) } }
+        _surveyState.update { state ->
+            state.copy(currentTrack = if (segments.isEmpty()) null else SurveyTrack(segments))
         }
     }
 
-    /**
-     * LocationListener implementation - Called when provider status changes
-     */
     @Deprecated("Deprecated in API level 29")
     override fun onStatusChanged(provider: String?, status: Int, extras: Bundle?) {
         // Not needed for our use case
     }
 
-    /**
-     * LocationListener implementation - Called when provider is enabled
-     */
     override fun onProviderEnabled(provider: String) {
         Timber.d("Location provider enabled: $provider")
     }
 
-    /**
-     * LocationListener implementation - Called when provider is disabled
-     */
     override fun onProviderDisabled(provider: String) {
+        // A disabled provider means the next fix could be anywhere, so break the trail
         Timber.d("Location provider disabled: $provider")
-    }
-
-    /**
-     * Starts a new tracking session
-     */
-    private fun startNewTrackingSession() {
-        currentSessionId = System.currentTimeMillis().toString()
-        currentTrackPoints.clear()
-        currentTrackTimestamps.clear()
+        trackBuilder.startNewSegment()
     }
 
     /**
@@ -238,9 +229,10 @@ class SurveyMonitorViewModel(
             val isAnyActive =
                 fileLoggingActive || mqttActive || grpcActive || uploadActive || nsAnalyticsActive
 
-            // Start new tracking session if surveys just became active
+            // A survey just started, so the trail belongs to this session and not the previous one
             if (isAnyActive && !_surveyState.value.isAnyActive) {
-                startNewTrackingSession()
+                trackBuilder.clear()
+                _surveyState.update { state -> state.copy(currentTrack = null) }
             }
 
             _surveyState.update { state ->
@@ -526,4 +518,8 @@ class SurveyMonitorViewModel(
         networkSurveyService?.primaryLocationListener?.unregisterListener(this)
     }
 
+    companion object {
+        /** How often the map trail state is rebuilt for the UI, regardless of the fix rate. */
+        private const val TRACK_EMIT_INTERVAL_MS = 2_000L
+    }
 }

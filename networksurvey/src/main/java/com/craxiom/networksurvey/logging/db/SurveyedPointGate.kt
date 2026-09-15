@@ -2,7 +2,7 @@ package com.craxiom.networksurvey.logging.db
 
 /**
  * Decides when a survey batch is far enough from the last recorded point of the same kind to
- * become a new surveyed place. The threshold adapts to speed so a walked warehouse produces a
+ * become a new survey point. The threshold adapts to speed so a walked warehouse produces a
  * usable trail while a drive does not flood the table.
  *
  * Each observed kind (cellular, Wi-Fi, Bluetooth) keeps its own anchor, so one step can yield at
