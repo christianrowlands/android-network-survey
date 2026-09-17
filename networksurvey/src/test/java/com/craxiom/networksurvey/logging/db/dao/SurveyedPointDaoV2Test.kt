@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.room.Room
 import com.craxiom.networksurvey.logging.db.SurveyDatabase
 import com.craxiom.networksurvey.logging.db.model.SurveyedPointEntity
+import com.craxiom.networksurvey.ui.cellular.model.SurveyedPointUploadFilter
 import com.craxiom.networksurvey.util.SignalBuckets
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
@@ -18,8 +19,8 @@ import org.robolectric.RuntimeEnvironment
 
 /**
  * Tests the v2 queries on [SurveyedPointDao]: the descriptive columns, read filters, per-kind
- * and per-source counts, the "This survey" mission lookup, and the coarse aggregates that back
- * each color mode.
+ * and per-source counts, the "Latest NS Analytics survey" mission lookup, and the coarse
+ * aggregates that back each color mode.
  */
 @RunWith(RobolectricTestRunner::class)
 class SurveyedPointDaoV2Test {
@@ -85,7 +86,8 @@ class SurveyedPointDaoV2Test {
             filter.kinds,
             filter.since,
             filter.missionId,
-            filter.sources
+            filter.sources,
+            filter.uploadState
         )
 
     @Test
@@ -223,7 +225,8 @@ class SurveyedPointDaoV2Test {
             all.kinds,
             all.since,
             all.missionId,
-            all.sources
+            all.sources,
+            all.uploadState
         ).single()
 
         assertEquals(3, cell.count)
@@ -232,8 +235,113 @@ class SurveyedPointDaoV2Test {
         assertEquals(0, cell.minUploadedMask)
     }
 
-    private fun dominant(category: DominantCategory, step: Double = 0.001) = dao.coarseDominant(
-        SurveyedPointQueries.dominant(category, step, world[0], world[1], world[2], world[3], all)
+    @Test
+    fun uploadFilterSplitsSentFromPending() {
+        dao.insert(point(lat = 38.0001, uploaded = 0))
+        dao.insert(point(lat = 38.0002, uploaded = SurveyedPointEntity.UPLOADED_OCID))
+
+        val pending = all.copy(uploadState = SurveyedPointUploadFilter.NOT_SENT.state)
+        val sent = all.copy(uploadState = SurveyedPointUploadFilter.SENT.state)
+
+        assertEquals(2, inWorld(all).size)
+        assertEquals(0, inWorld(pending).single().uploadedMask)
+        assertEquals(
+            SurveyedPointEntity.UPLOADED_OCID,
+            inWorld(sent).single().uploadedMask
+        )
+    }
+
+    @Test
+    fun uploadFilterAppliesToTheCoarseAggregate() {
+        dao.insert(point(lat = 38.0001, uploaded = 0))
+        dao.insert(point(lat = 38.0002, uploaded = SurveyedPointEntity.UPLOADED_OCID))
+
+        assertEquals(2, coarseWorld().single().count)
+        assertEquals(
+            1,
+            coarseWorld(all.copy(uploadState = SurveyedPointUploadFilter.NOT_SENT.state))
+                .single().count
+        )
+        assertEquals(
+            1,
+            coarseWorld(all.copy(uploadState = SurveyedPointUploadFilter.SENT.state))
+                .single().count
+        )
+    }
+
+    @Test
+    fun uploadFilterAppliesToTheDominantRawQuery() {
+        // The raw query carries its own copy of the filter with positional arguments, so it can
+        // drift from the Room one without anything else noticing.
+        dao.insert(
+            point(lat = 38.0001, protocol = SurveyedPointEntity.PROTOCOL_LTE, uploaded = 0)
+        )
+        dao.insert(
+            point(
+                lat = 38.0002,
+                protocol = SurveyedPointEntity.PROTOCOL_UMTS,
+                uploaded = SurveyedPointEntity.UPLOADED_OCID
+            )
+        )
+
+        val pending = dominant(
+            DominantCategory.TECHNOLOGY,
+            filter = all.copy(uploadState = SurveyedPointUploadFilter.NOT_SENT.state)
+        ).single()
+        assertEquals(SurveyedPointEntity.PROTOCOL_LTE.toString(), pending.category)
+        assertEquals(1, pending.cellCount)
+
+        val sent = dominant(
+            DominantCategory.TECHNOLOGY,
+            filter = all.copy(uploadState = SurveyedPointUploadFilter.SENT.state)
+        ).single()
+        assertEquals(SurveyedPointEntity.PROTOCOL_UMTS.toString(), sent.category)
+        assertEquals(1, sent.cellCount)
+    }
+
+    @Test
+    fun missionStartTimeReturnsEarliestPointOfTheMission() {
+        // A community row can carry the mission id too, and the filter draws it, so the reported
+        // start has to account for it rather than only looking at NS Analytics rows.
+        dao.insert(
+            point(
+                time = 100,
+                source = SurveyedPointEntity.SOURCE_COMMUNITY,
+                missionId = "mission-a"
+            )
+        )
+        dao.insert(
+            point(
+                time = 200,
+                source = SurveyedPointEntity.SOURCE_NS_ANALYTICS,
+                missionId = "mission-a"
+            )
+        )
+        dao.insert(
+            point(
+                time = 300,
+                source = SurveyedPointEntity.SOURCE_NS_ANALYTICS,
+                missionId = "mission-a"
+            )
+        )
+
+        assertEquals(100L, dao.missionStartTime("mission-a"))
+        assertNull(dao.missionStartTime("mission-b"))
+    }
+
+    private fun dominant(
+        category: DominantCategory,
+        step: Double = 0.001,
+        filter: SurveyedPointFilter = all,
+    ) = dao.coarseDominant(
+        SurveyedPointQueries.dominant(
+            category, step, world[0], world[1], world[2], world[3], filter
+        )
+    )
+
+    private fun coarseWorld(filter: SurveyedPointFilter = all) = dao.coarse(
+        0.001, world[0], world[1], world[2], world[3],
+        filter.kinds, filter.since, filter.missionId, filter.sources, filter.uploadState
     )
 
     @Test

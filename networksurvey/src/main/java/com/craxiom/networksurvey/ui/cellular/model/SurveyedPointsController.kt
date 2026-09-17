@@ -19,6 +19,7 @@ import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.mapLatest
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -60,12 +61,18 @@ class SurveyedPointsController(private val scope: CoroutineScope) {
         val widthPx: Int
     )
 
-    private data class Settings(
-        val mode: SurveyedPointColorMode,
+    /** Everything that narrows the query. Grouped so the flow combine stays within arity. */
+    private data class FilterSettings(
         val kind: SurveyedPointKind,
         val time: SurveyedPointTimeFilter,
         val source: SurveyedPointSourceFilter,
+        val upload: SurveyedPointUploadFilter,
         val missionId: String?,
+    )
+
+    private data class Settings(
+        val mode: SurveyedPointColorMode,
+        val filters: FilterSettings,
     )
 
     private class Request(val dao: SurveyedPointDao, val viewport: Viewport, val settings: Settings)
@@ -86,6 +93,9 @@ class SurveyedPointsController(private val scope: CoroutineScope) {
     private val _sourceFilter = MutableStateFlow(SurveyedPointSourceFilter.BOTH)
     val sourceFilter: StateFlow<SurveyedPointSourceFilter> = _sourceFilter.asStateFlow()
 
+    private val _uploadFilter = MutableStateFlow(SurveyedPointUploadFilter.ANY)
+    val uploadFilter: StateFlow<SurveyedPointUploadFilter> = _uploadFilter.asStateFlow()
+
     private val _data = MutableStateFlow<SurveyedPointsData?>(null)
     val data = _data.asStateFlow()
 
@@ -102,9 +112,24 @@ class SurveyedPointsController(private val scope: CoroutineScope) {
     val sources: Flow<List<Int>> =
         daoFlow.flatMapLatest { dao -> dao?.observeSources() ?: flowOf(emptyList()) }
 
-    /** The mission behind "This survey", or null when no NS Analytics survey has written rows. */
+    /**
+     * The mission behind "Latest NS Analytics survey", or null when no NS Analytics survey has
+     * written rows.
+     */
     val latestMission: StateFlow<String?> = daoFlow
         .flatMapLatest { dao -> dao?.observeLatestNsAnalyticsMissionId() ?: flowOf(null) }
+        .stateIn(scope, SharingStarted.Eagerly, null)
+
+    /**
+     * When the mission behind "Latest NS Analytics survey" first wrote a point, for the filter's
+     * subtext. Derived from [latestMission] rather than from the table so the lookup runs once per
+     * survey instead of on every insert; it must stay declared after [latestMission].
+     */
+    val latestMissionStart: StateFlow<Long?> = combine(daoFlow, latestMission) { dao, id -> dao to id }
+        .mapLatest { (dao, id) ->
+            if (dao == null || id == null) null
+            else withContext(Dispatchers.IO) { runCatching { dao.missionStartTime(id) }.getOrNull() }
+        }
         .stateIn(scope, SharingStarted.Eagerly, null)
 
     private var queryJob: Job? = null
@@ -114,15 +139,16 @@ class SurveyedPointsController(private val scope: CoroutineScope) {
     private var defaultKindPending = false
 
     init {
-        val settings = combine(
-            _colorMode,
+        val filters = combine(
             _kind,
             _timeFilter,
             _sourceFilter,
+            _uploadFilter,
             latestMission
-        ) { mode, kind, time, source, mission ->
-            Settings(mode, kind, time, source, mission)
+        ) { kind, time, source, upload, mission ->
+            FilterSettings(kind, time, source, upload, mission)
         }
+        val settings = combine(_colorMode, filters) { mode, f -> Settings(mode, f) }
         scope.launch {
             combine(daoFlow, enabled, viewport, settings) { dao, on, vp, st ->
                 if (dao != null && on && vp != null) Request(dao, vp, st) else null
@@ -186,6 +212,10 @@ class SurveyedPointsController(private val scope: CoroutineScope) {
         _sourceFilter.value = filter
     }
 
+    fun setUploadFilter(filter: SurveyedPointUploadFilter) {
+        _uploadFilter.value = filter
+    }
+
     /**
      * Picks the kind with rows in the last hour (cellular first) when the user has never chosen
      * one, so a Wi-Fi-only walk shows its points without a trip to the options sheet.
@@ -220,7 +250,8 @@ class SurveyedPointsController(private val scope: CoroutineScope) {
                         val west = tap.lonKey * tap.step - 180.0
                         val points = dao.inBoundsRecent(
                             south, west, south + tap.step, west + tap.step,
-                            f.kinds, f.since, f.missionId, f.sources, AGGREGATE_LIMIT
+                            f.kinds, f.since, f.missionId, f.sources, f.uploadState,
+                            AGGREGATE_LIMIT
                         )
                         SurveyedPointSelection(points, tap.count)
                     }
@@ -232,27 +263,28 @@ class SurveyedPointsController(private val scope: CoroutineScope) {
         }
 
     private fun currentFilter(): SurveyedPointFilter = filterFor(
-        Settings(
-            _colorMode.value,
+        FilterSettings(
             _kind.value,
             _timeFilter.value,
             _sourceFilter.value,
+            _uploadFilter.value,
             latestMission.value
         )
     )
 
-    private fun filterFor(settings: Settings): SurveyedPointFilter {
+    private fun filterFor(settings: FilterSettings): SurveyedPointFilter {
         val since = when (settings.time) {
-            SurveyedPointTimeFilter.ANY, SurveyedPointTimeFilter.THIS_SURVEY -> 0L
+            SurveyedPointTimeFilter.ANY, SurveyedPointTimeFilter.LATEST_SURVEY -> 0L
             else -> System.currentTimeMillis() - settings.time.windowMs
         }
         val mission =
-            if (settings.time == SurveyedPointTimeFilter.THIS_SURVEY) settings.missionId else null
+            if (settings.time == SurveyedPointTimeFilter.LATEST_SURVEY) settings.missionId else null
         return SurveyedPointFilter(
             kinds = settings.kind.mask,
             since = since,
             missionId = mission,
-            sources = settings.source.mask
+            sources = settings.source.mask,
+            uploadState = settings.upload.state
         )
     }
 
@@ -261,7 +293,7 @@ class SurveyedPointsController(private val scope: CoroutineScope) {
         queryJob = scope.launch(Dispatchers.IO) {
             val vp = request.viewport
             val settings = request.settings
-            val filter = filterFor(settings)
+            val filter = filterFor(settings.filters)
             val degreesPerPx = longitudeSpan(vp.west, vp.east) / vp.widthPx.coerceAtLeast(1)
             val step = degreesPerPx * TARGET_SPACING_PX
             val coarse = step > INDIVIDUAL_STEP_DEGREES
@@ -282,7 +314,8 @@ class SurveyedPointsController(private val scope: CoroutineScope) {
                                 filter.kinds,
                                 filter.since,
                                 filter.missionId,
-                                filter.sources
+                                filter.sources,
+                                filter.uploadState
                             )
                             .map { point ->
                                 legend.add(point); SurveyedPointFeatures.fromPoint(
@@ -320,7 +353,8 @@ class SurveyedPointsController(private val scope: CoroutineScope) {
                                 filter.kinds,
                                 filter.since,
                                 filter.missionId,
-                                filter.sources
+                                filter.sources,
+                                filter.uploadState
                             )
                             .map { cell -> SurveyedPointFeatures.fromCell(cell, step, now) }
                     }

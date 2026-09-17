@@ -740,6 +740,7 @@
     <string name="survey_points_hint_dismiss">Close</string>
     <string name="survey_points_about_title">About survey points</string>
     <string name="survey_points_about_sources">Points are recorded only while upload scanning to OpenCelliD or BeaconDB is on, or while an NS Analytics survey is running, and only for the record types those destinations are set to collect. Logging to files, MQTT, and gRPC do not add points. Bluetooth points come from NS Analytics only.</string>
+    <string name="survey_points_about_filters">Only NS Analytics surveys have a start and an end. Points collected for OpenCelliD and BeaconDB are not grouped into surveys, so the When surveyed filter offers them time ranges only.</string>
     <!-- %1$d is the walking spacing in meters, %2$d the driving spacing, %3$d the location accuracy limit -->
     <string name="survey_points_about_spacing">A point is recorded about every %1$d m on foot and every %2$d m while driving, and only when the location fix is accurate to %3$d m or better. It is a record of where you surveyed, not of every scan.</string>
     <!-- %1$s is the formatted maximum number of points kept on the device -->
@@ -792,9 +793,15 @@
     <string name="survey_points_filter_any">Any time</string>
     <string name="survey_points_filter_last_hour">Last hour</string>
     <string name="survey_points_filter_last_7_days">Last 7 days</string>
-    <string name="survey_points_filter_this_survey">This survey</string>
+    <string name="survey_points_filter_latest_survey">Latest NS Analytics survey</string>
+    <string name="survey_points_filter_latest_survey_started">Started %1$s</string>
     <string name="survey_points_filter_collected">Collected for</string>
     <string name="survey_points_filter_both">Both</string>
+    <string name="survey_points_filter_sent_status">Sent status</string>
+    <string name="survey_points_filter_sent_any">Any</string>
+    <string name="survey_points_filter_none_in_view">No matching points in view</string>
+    <string name="survey_points_filter_clear_all">Clear filters</string>
+    <string name="survey_points_filter_remove">Remove the %1$s filter</string>
     <string name="survey_point_signal">Signal</string>
     <string name="survey_point_provider">Provider</string>
     <string name="survey_point_technology">Technology</string>

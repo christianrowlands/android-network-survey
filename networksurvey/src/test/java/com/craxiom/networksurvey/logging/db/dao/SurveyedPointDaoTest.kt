@@ -82,7 +82,8 @@ class SurveyedPointDaoTest {
             SurveyedPointEntity.OBSERVED_ANY,
             0,
             null,
-            3
+            3,
+            SurveyedPointFilter.UPLOAD_ANY
         )
 
         assertEquals(2, cells.size)
@@ -98,7 +99,10 @@ class SurveyedPointDaoTest {
         dao.insert(point(0.0004, 0.0004, 2))
 
         val cells =
-            dao.coarse(0.001, -1.0, -1.0, 1.0, 1.0, SurveyedPointEntity.OBSERVED_ANY, 0, null, 3)
+            dao.coarse(
+                0.001, -1.0, -1.0, 1.0, 1.0, SurveyedPointEntity.OBSERVED_ANY, 0, null, 3,
+                SurveyedPointFilter.UPLOAD_ANY
+            )
 
         assertEquals(2, cells.size)
     }

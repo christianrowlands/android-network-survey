@@ -13,7 +13,10 @@ import kotlinx.coroutines.flow.Flow
 
 private const val BBOX = "latitude BETWEEN :south AND :north AND longitude BETWEEN :west AND :east"
 private const val FILTER = "(observedMask & :kinds) != 0 AND time >= :since " +
-        "AND (:missionId IS NULL OR missionId = :missionId) AND (source & :sources) != 0"
+        "AND (:missionId IS NULL OR missionId = :missionId) AND (source & :sources) != 0 " +
+        // Spelled out with CASE rather than the terser (uploadedMask != 0) = :uploadState so the
+        // boolean-to-int comparison is explicit. Matches SurveyedPointFeatures' definition of sent.
+        "AND (:uploadState < 0 OR (CASE WHEN uploadedMask != 0 THEN 1 ELSE 0 END) = :uploadState)"
 private const val LATTICE = "CAST((latitude + 90.0) / :step AS INTEGER) AS latKey, " +
         "CAST((longitude + 180.0) / :step AS INTEGER) AS lonKey"
 
@@ -21,8 +24,8 @@ private const val LATTICE = "CAST((latitude + 90.0) / :step AS INTEGER) AS latKe
  * DAO for the survey points table that backs the "My survey points" map layer.
  *
  * The write methods are blocking because the pipelines that call them already run on their own
- * single-thread executors. Every read takes the same kind, time, mission, and source filters
- * (see [SurveyedPointFilter]).
+ * single-thread executors. Every read takes the same kind, time, mission, source, and sent
+ * status filters (see [SurveyedPointFilter]).
  */
 @Dao
 interface SurveyedPointDao {
@@ -46,14 +49,14 @@ interface SurveyedPointDao {
     @Query("SELECT * FROM surveyed_point WHERE $BBOX AND $FILTER")
     fun inBoundsWhere(
         south: Double, west: Double, north: Double, east: Double,
-        kinds: Int, since: Long, missionId: String?, sources: Int,
+        kinds: Int, since: Long, missionId: String?, sources: Int, uploadState: Int,
     ): List<SurveyedPointEntity>
 
     /** The newest points inside the box, for the tap sheet of a coarse cell. */
     @Query("SELECT * FROM surveyed_point WHERE $BBOX AND $FILTER ORDER BY time DESC LIMIT :limit")
     fun inBoundsRecent(
         south: Double, west: Double, north: Double, east: Double,
-        kinds: Int, since: Long, missionId: String?, sources: Int, limit: Int,
+        kinds: Int, since: Long, missionId: String?, sources: Int, uploadState: Int, limit: Int,
     ): List<SurveyedPointEntity>
 
     @Query("SELECT * FROM surveyed_point WHERE id IN (:ids)")
@@ -73,7 +76,7 @@ interface SurveyedPointDao {
     )
     fun coarse(
         step: Double, south: Double, west: Double, north: Double, east: Double,
-        kinds: Int, since: Long, missionId: String?, sources: Int,
+        kinds: Int, since: Long, missionId: String?, sources: Int, uploadState: Int,
     ): List<SurveyedPointCell>
 
     /** The most common category value per lattice cell; build the query with [SurveyedPointQueries.dominant]. */
@@ -114,14 +117,22 @@ interface SurveyedPointDao {
     fun kindsSince(since: Long): List<Int>
 
     /**
-     * The mission id behind "This survey". Only NS Analytics rolls a mission id; community upload
-     * rows carry whatever id was last current, so they never define it.
+     * The mission id behind "Latest NS Analytics survey". Only NS Analytics rolls a mission id;
+     * community upload rows carry whatever id was last current, so they never define it.
      */
     @Query(
         "SELECT missionId FROM surveyed_point WHERE source = ${SurveyedPointEntity.SOURCE_NS_ANALYTICS} " +
                 "AND missionId IS NOT NULL ORDER BY id DESC LIMIT 1"
     )
     fun observeLatestNsAnalyticsMissionId(): Flow<String?>
+
+    /**
+     * When the given mission first wrote a point, for the "Latest NS Analytics survey" subtext.
+     * Deliberately not scoped to NS Analytics rows: the mission clause in the shared filter is not
+     * either, so scoping here could report a start later than the oldest point the filter draws.
+     */
+    @Query("SELECT MIN(time) FROM surveyed_point WHERE missionId = :missionId")
+    fun missionStartTime(missionId: String): Long?
 
     /**
      * Cheap change signal for the map: the max id moves on insert, and Room re-emits on any

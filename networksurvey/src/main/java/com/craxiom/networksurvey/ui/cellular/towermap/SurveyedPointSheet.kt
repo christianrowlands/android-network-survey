@@ -43,7 +43,7 @@ import com.craxiom.networksurvey.util.SignalBuckets
 val SURVEYED_POINT_SHEET_PEEK: Dp = 96.dp
 
 /** Surveyed points store epoch milliseconds; the tower sheet's time helpers take epoch seconds. */
-private const val MILLIS_PER_SECOND = 1000L
+internal const val MILLIS_PER_SECOND = 1000L
 
 /**
  * The draggable sheet that explains a tapped survey point: one line at Peek (kind,

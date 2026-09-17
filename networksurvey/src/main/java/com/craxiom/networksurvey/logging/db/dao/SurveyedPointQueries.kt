@@ -6,15 +6,22 @@ import com.craxiom.networksurvey.logging.db.model.SurveyedPointEntity
 
 /**
  * The read-side filters every surveyed point query applies: which kinds to include (a bit mask
- * over the {@code OBSERVED_} constants), the oldest time to include, an optional mission, and
- * which pipelines (a bit mask over the {@code SOURCE_} constants). The defaults include everything.
+ * over the {@code OBSERVED_} constants), the oldest time to include, an optional mission, which
+ * pipelines (a bit mask over the {@code SOURCE_} constants), and whether to keep only sent or only
+ * unsent points. The defaults include everything.
  */
 data class SurveyedPointFilter(
     val kinds: Int = SurveyedPointEntity.OBSERVED_ANY,
     val since: Long = 0,
     val missionId: String? = null,
     val sources: Int = SurveyedPointEntity.SOURCE_ANY,
-)
+    val uploadState: Int = UPLOAD_ANY,
+) {
+    companion object {
+        /** [uploadState] value meaning "sent or not, keep both". */
+        const val UPLOAD_ANY = -1
+    }
+}
 
 /** The categorical column a coarse "dominant value per lattice cell" query groups by. */
 enum class DominantCategory(internal val sql: String) {
@@ -38,7 +45,8 @@ object SurveyedPointQueries {
         "CAST((latitude + 90.0) / ? AS INTEGER) AS latKey, CAST((longitude + 180.0) / ? AS INTEGER) AS lonKey"
     private const val BBOX = "latitude BETWEEN ? AND ? AND longitude BETWEEN ? AND ?"
     private const val FILTER =
-        "(observedMask & ?) != 0 AND time >= ? AND (? IS NULL OR missionId = ?) AND (source & ?) != 0"
+        "(observedMask & ?) != 0 AND time >= ? AND (? IS NULL OR missionId = ?) AND (source & ?) != 0 " +
+                "AND (? < 0 OR (CASE WHEN uploadedMask != 0 THEN 1 ELSE 0 END) = ?)"
 
     fun dominant(
         category: DominantCategory,
@@ -59,9 +67,12 @@ object SurveyedPointQueries {
                     "COUNT(*) AS count, MIN(uploadedMask) AS minUploadedMask, MAX(signalBucket) AS bestBucket, MAX(time) AS lastTime " +
                     "FROM surveyed_point WHERE $BBOX AND $FILTER GROUP BY latKey, lonKey, category) " +
                     "GROUP BY latKey, lonKey"
+        // Positional, and in the same order the placeholders appear in LATTICE, BBOX, then FILTER.
+        // Anything inserted mid-clause shifts every argument after it, so append rather than insert.
         val args = arrayOf<Any?>(
             step, step, south, north, west, east,
             filter.kinds, filter.since, filter.missionId, filter.missionId, filter.sources,
+            filter.uploadState, filter.uploadState,
         )
         return SimpleSQLiteQuery(sql, args)
     }

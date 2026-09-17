@@ -16,9 +16,13 @@ object SurveyedPointPalette {
     /** Gray for rows written before a value was recorded, or with nothing to show. */
     val UNKNOWN: Int = Color(0xFF9E9E9E).toArgb()
 
-    /** Teal for a place still waiting to upload; the same teal faded once sent. */
-    val PENDING: Int = Color(0xFF00BCD4).toArgb()
-    val SENT: Int = Color(0xFF00BCD4).copy(alpha = 0.35f).toArgb()
+    /**
+     * Amber for a point still waiting to upload, deep teal once it has been sent. Both are fully
+     * opaque and a lightness step apart: the old pair was one cyan at two alphas, which composited
+     * against the basemap and so read differently on the light and dark maps.
+     */
+    val PENDING: Int = Color(0xFFF59E0B).toArgb()
+    val SENT: Int = Color(0xFF0F766E).toArgb()
 
     /** Signal bucket colors indexed by [SignalBuckets] value (0 unknown, 5 strong). */
     val BUCKETS: IntArray = intArrayOf(

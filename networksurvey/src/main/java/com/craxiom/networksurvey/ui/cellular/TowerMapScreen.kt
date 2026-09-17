@@ -117,6 +117,7 @@ import com.craxiom.networksurvey.ui.cellular.model.SurveyedPointKind
 import com.craxiom.networksurvey.ui.cellular.model.SurveyedPointSelection
 import com.craxiom.networksurvey.ui.cellular.model.SurveyedPointSourceFilter
 import com.craxiom.networksurvey.ui.cellular.model.SurveyedPointTimeFilter
+import com.craxiom.networksurvey.ui.cellular.model.SurveyedPointUploadFilter
 import com.craxiom.networksurvey.ui.cellular.model.TowerMapLibreViewModel
 import com.craxiom.networksurvey.ui.cellular.model.TowerSource
 import com.craxiom.networksurvey.ui.cellular.towermap.CameraMode
@@ -301,8 +302,20 @@ internal fun TowerMapScreen(
     )
     val surveyedSources by viewModel.surveyedPoints.sources.collectAsStateWithLifecycle(initialValue = emptyList())
     val surveyedLatestMission by viewModel.surveyedPoints.latestMission.collectAsStateWithLifecycle()
+    val surveyedLatestMissionStart by viewModel.surveyedPoints.latestMissionStart.collectAsStateWithLifecycle()
     val surveyedTimeFilter by viewModel.surveyedPoints.timeFilter.collectAsStateWithLifecycle()
     val surveyedSourceFilter by viewModel.surveyedPoints.sourceFilter.collectAsStateWithLifecycle()
+    val surveyedUploadFilter by viewModel.surveyedPoints.uploadFilter.collectAsStateWithLifecycle()
+    val surveyedFilters = remember(surveyedTimeFilter, surveyedSourceFilter, surveyedUploadFilter) {
+        SurveyedPointFilterSelection(surveyedTimeFilter, surveyedSourceFilter, surveyedUploadFilter)
+    }
+    val applySurveyedFilters: (SurveyedPointFilterSelection) -> Unit = remember(viewModel) {
+        { selection ->
+            viewModel.surveyedPoints.setTimeFilter(selection.time)
+            viewModel.surveyedPoints.setSourceFilter(selection.source)
+            viewModel.surveyedPoints.setUploadFilter(selection.upload)
+        }
+    }
     val availableSurveyedKinds = remember(surveyedKindCounts) {
         surveyedKindCounts.keys.mapNotNull { SurveyedPointKind.fromMask(it) }.toSet()
     }
@@ -693,14 +706,28 @@ internal fun TowerMapScreen(
                 TopAppBarOverlay(statusBarHeight)
 
                 if (showSurveyPoints && surveyPointsCount > 0 && surveyedSelection == null) {
-                    SurveyedPointsPill(
-                        mode = surveyedMode,
-                        kind = surveyedKind,
-                        onClick = { showSurveyedOptions = true },
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
                         modifier = Modifier
                             .align(Alignment.TopCenter)
                             .padding(top = statusBarHeight + 8.dp)
-                    )
+                    ) {
+                        SurveyedPointsPill(
+                            mode = surveyedMode,
+                            kind = surveyedKind,
+                            onClick = { showSurveyedOptions = true },
+                        )
+                        SurveyedPointFilterChips(
+                            selection = surveyedFilters,
+                            noneInView = surveyedData?.features?.features()?.isEmpty() == true,
+                            onChange = applySurveyedFilters,
+                            // Only the chips need to clear the back button at TopStart; the pill
+                            // is short enough to stay centered without being narrowed.
+                            modifier = Modifier
+                                .padding(top = 4.dp)
+                                .padding(horizontal = 56.dp)
+                        )
+                    }
                 }
 
                 // Top area - only show back button if not in Survey Monitor context
@@ -1078,6 +1105,7 @@ internal fun TowerMapScreen(
                 kind = surveyedKind,
                 availableKinds = availableSurveyedKinds,
                 data = surveyedData,
+                uploadFilter = surveyedUploadFilter,
                 onModeChange = setSurveyedMode,
                 onKindChange = setSurveyedKind,
                 onDismiss = { showSurveyedOptions = false }
@@ -1112,12 +1140,11 @@ internal fun TowerMapScreen(
             CombinedFiltersBottomSheet(
                 showTowerFilters = showTowersLayer,
                 showSurveyedFilters = showSurveyPoints,
-                currentTimeFilter = surveyedTimeFilter,
-                thisSurveyAvailable = surveyedLatestMission != null,
-                currentSourceFilter = surveyedSourceFilter,
+                currentSurveyedFilters = surveyedFilters,
+                latestSurveyAvailable = surveyedLatestMission != null,
+                latestSurveyStart = surveyedLatestMissionStart,
                 showSourceFilter = surveyedSources.size > 1,
-                onSetTimeFilter = { viewModel.surveyedPoints.setTimeFilter(it) },
-                onSetSourceFilter = { viewModel.surveyedPoints.setSourceFilter(it) },
+                onSetSurveyedFilters = applySurveyedFilters,
                 currentPlmn = currentPlmnFilter,
                 currentRadio = radio,
                 currentSource = currentSource,
@@ -2392,12 +2419,11 @@ fun TowerSourceSelectionDialog(
 fun CombinedFiltersBottomSheet(
     showTowerFilters: Boolean,
     showSurveyedFilters: Boolean,
-    currentTimeFilter: SurveyedPointTimeFilter,
-    thisSurveyAvailable: Boolean,
-    currentSourceFilter: SurveyedPointSourceFilter,
+    currentSurveyedFilters: SurveyedPointFilterSelection,
+    latestSurveyAvailable: Boolean,
+    latestSurveyStart: Long?,
     showSourceFilter: Boolean,
-    onSetTimeFilter: (SurveyedPointTimeFilter) -> Unit,
-    onSetSourceFilter: (SurveyedPointSourceFilter) -> Unit,
+    onSetSurveyedFilters: (SurveyedPointFilterSelection) -> Unit,
     currentPlmn: Plmn,
     currentRadio: String,
     currentSource: TowerSource,
@@ -2417,8 +2443,7 @@ fun CombinedFiltersBottomSheet(
     var selectedRadio by remember { mutableStateOf(currentRadio) }
     var selectedSource by remember { mutableStateOf(currentSource) }
     var selectedMaxAgeMonths by remember { mutableStateOf(currentMaxAgeMonths) }
-    var selectedTimeFilter by remember { mutableStateOf(currentTimeFilter) }
-    var selectedSourceFilter by remember { mutableStateOf(currentSourceFilter) }
+    var selectedSurveyed by remember { mutableStateOf(currentSurveyedFilters) }
 
     val radioOptions = listOf(
         CellularProtocol.GSM.name,
@@ -2438,8 +2463,7 @@ fun CombinedFiltersBottomSheet(
             onSetRadioType(selectedRadio)
             onSetTowerSource(selectedSource)
             onSetMaxAgeMonths(selectedMaxAgeMonths)
-            onSetTimeFilter(selectedTimeFilter)
-            onSetSourceFilter(selectedSourceFilter)
+            onSetSurveyedFilters(selectedSurveyed)
             onDismiss()
         },
         sheetState = bottomSheetState
@@ -2674,47 +2698,30 @@ fun CombinedFiltersBottomSheet(
             }
 
             if (showSurveyedFilters) {
-                if (showTowerFilters) Spacer(modifier = Modifier.height(16.dp))
-                Text(
-                    text = stringResource(R.string.survey_points_options_title),
-                    style = MaterialTheme.typography.titleMedium,
-                    modifier = Modifier.padding(bottom = 8.dp)
+                SurveyedPointFilterSection(
+                    selection = selectedSurveyed,
+                    latestSurveyAvailable = latestSurveyAvailable,
+                    latestSurveyStart = latestSurveyStart,
+                    showSourceFilter = showSourceFilter,
+                    showLeadingSpacer = showTowerFilters,
+                    onChange = { selectedSurveyed = it }
                 )
-                Text(
-                    text = stringResource(R.string.survey_points_filter_when),
-                    style = MaterialTheme.typography.bodyMedium,
-                    modifier = Modifier.padding(bottom = 4.dp)
-                )
-                SurveyedPointTimeFilter.entries
-                    .filter { it != SurveyedPointTimeFilter.THIS_SURVEY || thisSurveyAvailable }
-                    .forEach { option ->
-                        FilterRadioRow(
-                            label = stringResource(surveyedTimeFilterLabel(option)),
-                            selected = selectedTimeFilter == option,
-                            onClick = { selectedTimeFilter = option }
-                        )
-                    }
-                if (showSourceFilter) {
-                    Text(
-                        text = stringResource(R.string.survey_points_filter_collected),
-                        style = MaterialTheme.typography.bodyMedium,
-                        modifier = Modifier.padding(top = 8.dp, bottom = 4.dp)
-                    )
-                    SurveyedPointSourceFilter.entries.forEach { option ->
-                        FilterRadioRow(
-                            label = stringResource(surveyedSourceFilterLabel(option)),
-                            selected = selectedSourceFilter == option,
-                            onClick = { selectedSourceFilter = option }
-                        )
-                    }
-                }
             }
         }
     }
 }
 
+/**
+ * One filter option. [supportingText] adds a second line under the label, indented to line up with
+ * it, for an option that needs to say more than its name does.
+ */
 @Composable
-private fun FilterRadioRow(label: String, selected: Boolean, onClick: () -> Unit) {
+internal fun FilterRadioRow(
+    label: String,
+    selected: Boolean,
+    onClick: () -> Unit,
+    supportingText: String? = null,
+) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -2724,19 +2731,34 @@ private fun FilterRadioRow(label: String, selected: Boolean, onClick: () -> Unit
     ) {
         RadioButton(selected = selected, onClick = onClick)
         Spacer(modifier = Modifier.width(4.dp))
-        Text(text = label, style = MaterialTheme.typography.bodyMedium)
+        Column {
+            Text(text = label, style = MaterialTheme.typography.bodyMedium)
+            if (supportingText != null) {
+                Text(
+                    text = supportingText,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
     }
 }
 
-private fun surveyedTimeFilterLabel(filter: SurveyedPointTimeFilter): Int = when (filter) {
+internal fun surveyedTimeFilterLabel(filter: SurveyedPointTimeFilter): Int = when (filter) {
     SurveyedPointTimeFilter.ANY -> R.string.survey_points_filter_any
     SurveyedPointTimeFilter.LAST_HOUR -> R.string.survey_points_filter_last_hour
     SurveyedPointTimeFilter.LAST_7_DAYS -> R.string.survey_points_filter_last_7_days
-    SurveyedPointTimeFilter.THIS_SURVEY -> R.string.survey_points_filter_this_survey
+    SurveyedPointTimeFilter.LATEST_SURVEY -> R.string.survey_points_filter_latest_survey
 }
 
-private fun surveyedSourceFilterLabel(filter: SurveyedPointSourceFilter): Int = when (filter) {
+internal fun surveyedSourceFilterLabel(filter: SurveyedPointSourceFilter): Int = when (filter) {
     SurveyedPointSourceFilter.BOTH -> R.string.survey_points_filter_both
     SurveyedPointSourceFilter.COMMUNITY -> R.string.survey_point_destination_community
     SurveyedPointSourceFilter.NS_ANALYTICS -> R.string.survey_point_destination_ns
+}
+
+internal fun surveyedUploadFilterLabel(filter: SurveyedPointUploadFilter): Int = when (filter) {
+    SurveyedPointUploadFilter.ANY -> R.string.survey_points_filter_sent_any
+    SurveyedPointUploadFilter.NOT_SENT -> R.string.survey_points_legend_pending
+    SurveyedPointUploadFilter.SENT -> R.string.survey_points_legend_uploaded
 }

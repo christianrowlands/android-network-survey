@@ -1,6 +1,7 @@
 package com.craxiom.networksurvey.ui.cellular.model
 
 import com.craxiom.networksurvey.logging.db.dao.DominantCategory
+import com.craxiom.networksurvey.logging.db.dao.SurveyedPointFilter
 import com.craxiom.networksurvey.logging.db.model.SurveyedPointEntity
 import org.maplibre.geojson.Feature
 
@@ -32,12 +33,24 @@ enum class SurveyedPointKind(val mask: Int) {
     }
 }
 
-/** The "When surveyed" filter. [THIS_SURVEY] is only offered when an NS Analytics survey has run. */
+/**
+ * The "When surveyed" filter. [LATEST_SURVEY] matches the mission id of the most recent NS
+ * Analytics survey, which is not necessarily the one running now: the mission is read from the
+ * newest row in the table, so after logging stops it keeps naming that last survey. It is only
+ * offered when an NS Analytics survey has written points.
+ */
 enum class SurveyedPointTimeFilter(val windowMs: Long) {
     ANY(0),
     LAST_HOUR(60L * 60 * 1000),
     LAST_7_DAYS(7L * 24 * 60 * 60 * 1000),
-    THIS_SURVEY(0),
+    LATEST_SURVEY(0),
+}
+
+/** The "Sent status" filter; [state] is what the queries compare against, negative for any. */
+enum class SurveyedPointUploadFilter(val state: Int) {
+    ANY(SurveyedPointFilter.UPLOAD_ANY),
+    NOT_SENT(0),
+    SENT(1),
 }
 
 /** The "Collected for" filter, a mask over the {@code SOURCE_} constants. */

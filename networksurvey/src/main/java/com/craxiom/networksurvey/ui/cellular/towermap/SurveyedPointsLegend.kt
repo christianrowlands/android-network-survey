@@ -42,6 +42,7 @@ import com.craxiom.networksurvey.logging.db.model.SurveyedPointEntity
 import com.craxiom.networksurvey.ui.cellular.model.SurveyedPointColorMode
 import com.craxiom.networksurvey.ui.cellular.model.SurveyedPointFeatures
 import com.craxiom.networksurvey.ui.cellular.model.SurveyedPointKind
+import com.craxiom.networksurvey.ui.cellular.model.SurveyedPointUploadFilter
 import com.craxiom.networksurvey.ui.cellular.model.SurveyedPointsData
 import com.craxiom.networksurvey.ui.common.NsSegmentedToggle
 import com.craxiom.networksurvey.ui.common.SegmentedOption
@@ -57,6 +58,7 @@ fun SurveyedPointsOptionsSheet(
     kind: SurveyedPointKind,
     availableKinds: Set<SurveyedPointKind>,
     data: SurveyedPointsData?,
+    uploadFilter: SurveyedPointUploadFilter,
     onModeChange: (SurveyedPointColorMode) -> Unit,
     onKindChange: (SurveyedPointKind) -> Unit,
     onDismiss: () -> Unit,
@@ -90,7 +92,9 @@ fun SurveyedPointsOptionsSheet(
                     )
                 }
             }
-            SurveyedPointsOptions(mode, kind, availableKinds, data, onModeChange, onKindChange)
+            SurveyedPointsOptions(
+                mode, kind, availableKinds, data, uploadFilter, onModeChange, onKindChange
+            )
         }
     }
 
@@ -111,6 +115,7 @@ fun SurveyedPointsOptionsSheet(
 fun SurveyPointsAboutDialog(onDismiss: () -> Unit) {
     val message = listOf(
         stringResource(R.string.survey_points_about_sources),
+        stringResource(R.string.survey_points_about_filters),
         stringResource(
             R.string.survey_points_about_spacing,
             SurveyedPointGate.WALKING_THRESHOLD_METERS,
@@ -139,6 +144,7 @@ fun SurveyedPointsOptions(
     kind: SurveyedPointKind,
     availableKinds: Set<SurveyedPointKind>,
     data: SurveyedPointsData?,
+    uploadFilter: SurveyedPointUploadFilter,
     onModeChange: (SurveyedPointColorMode) -> Unit,
     onKindChange: (SurveyedPointKind) -> Unit,
 ) {
@@ -187,7 +193,7 @@ fun SurveyedPointsOptions(
     }
 
     Spacer(modifier = Modifier.height(12.dp))
-    SurveyedPointsLegend(mode = mode, kind = kind, data = data)
+    SurveyedPointsLegend(mode = mode, kind = kind, data = data, uploadFilter = uploadFilter)
 }
 
 @Composable
@@ -221,7 +227,8 @@ private fun ModeRadio(
 fun SurveyedPointsLegend(
     mode: SurveyedPointColorMode,
     kind: SurveyedPointKind,
-    data: SurveyedPointsData?
+    data: SurveyedPointsData?,
+    uploadFilter: SurveyedPointUploadFilter,
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
         if (data?.coarse == true) {
@@ -278,14 +285,20 @@ fun SurveyedPointsLegend(
             }
 
             SurveyedPointColorMode.SENT -> {
-                LegendRow(
-                    SurveyedPointPalette.PENDING,
-                    stringResource(R.string.survey_points_legend_pending)
-                )
-                LegendRow(
-                    SurveyedPointPalette.SENT,
-                    stringResource(R.string.survey_points_legend_uploaded)
-                )
+                // A Sent status filter makes one of these impossible; do not promise a color
+                // that cannot appear on the map.
+                if (uploadFilter != SurveyedPointUploadFilter.SENT) {
+                    LegendRow(
+                        SurveyedPointPalette.PENDING,
+                        stringResource(R.string.survey_points_legend_pending)
+                    )
+                }
+                if (uploadFilter != SurveyedPointUploadFilter.NOT_SENT) {
+                    LegendRow(
+                        SurveyedPointPalette.SENT,
+                        stringResource(R.string.survey_points_legend_uploaded)
+                    )
+                }
             }
         }
     }
