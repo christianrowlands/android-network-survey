@@ -1276,7 +1276,6 @@
     <string name="survey_points_filter_any">Kedykoľvek</string>
     <string name="survey_points_filter_last_hour">Poslednú hodinu</string>
     <string name="survey_points_filter_last_7_days">Posledných 7 dní</string>
-    <string name="survey_points_filter_this_survey">V tomto prieskume</string>
     <string name="survey_points_filter_collected">Zozbierané pre</string>
     <string name="survey_points_filter_both">Oba</string>
     <string name="survey_point_signal">Signál</string>
