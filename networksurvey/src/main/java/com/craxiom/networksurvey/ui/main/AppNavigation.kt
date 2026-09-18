@@ -46,7 +46,7 @@ import com.craxiom.networksurvey.model.WifiNetwork
 import com.craxiom.networksurvey.ui.acknowledgments.AcknowledgmentsScreen
 import com.craxiom.networksurvey.ui.activesurvey.SurveyMonitorNavArgs
 import com.craxiom.networksurvey.ui.activesurvey.SurveyMonitorScreen
-import com.craxiom.networksurvey.ui.cellular.CalculatorScreen
+import com.craxiom.networksurvey.ui.cellular.CellularToolsScreen
 import com.craxiom.networksurvey.ui.cellular.towermap.ProviderColorOverrideScreen
 import com.craxiom.networksurvey.ui.cellular.towermap.ProviderColorOverrideViewModel
 import com.craxiom.networksurvey.ui.grpc.GrpcHelpDialog
@@ -125,11 +125,27 @@ fun NavGraphBuilder.mainGraph(
         }
 
         composable(NavDrawerOption.CellularCalculators.name) {
+            var showBandHelp by rememberSaveable { mutableStateOf(false) }
             Scaffold(
-                topBar = { TitleBar("Cellular Calculators") { mainNavController.navigateUp() } },
+                topBar = {
+                    TitleBar(
+                        title = stringResource(R.string.cellular_tools),
+                        appBarActions = listOf(
+                            AppBarAction(
+                                icon = R.drawable.ic_help,
+                                description = R.string.band_help_title,
+                                onClick = { showBandHelp = true },
+                            )
+                        ),
+                        onBackClick = { mainNavController.navigateUp() },
+                    )
+                },
             ) { innerPadding ->
                 Box(modifier = Modifier.padding(paddingValues = innerPadding)) {
-                    CalculatorScreen(viewModel = viewModel())
+                    CellularToolsScreen(
+                        showHelp = showBandHelp,
+                        onHelpDismissed = { showBandHelp = false },
+                    )
                 }
             }
         }

@@ -128,4 +128,10 @@
     <string name="opencellid_upload">OpenCelliD:</string>
     <string name="beacondb_upload">BeaconDB:</string>
     <string name="github">GitHub</string>
+
+    <!-- Units and 3GPP tokens. Identical in every locale, so they never go to translators. -->
+    <string name="band_unit_mhz">MHz</string>
+    <string name="band_unit_khz">kHz</string>
+    <string name="band_fr1">FR1</string>
+    <string name="band_fr2">FR2</string>
 </resources>

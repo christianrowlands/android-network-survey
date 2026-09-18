@@ -1,5 +1,7 @@
 package com.craxiom.networksurvey.fragments.model;
 
+import com.craxiom.networksurvey.data.band.BandTapTarget;
+import com.craxiom.networksurvey.data.band.BandTechnology;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
@@ -16,7 +18,8 @@ public class NrSecondaryCellSightingTest
 
     private static NrSecondaryCellViewState state()
     {
-        return new NrSecondaryCellViewState("n77 (TD 3700)", "3900.000 MHz", "123 (0/41)",
+        return new NrSecondaryCellViewState("n77 (TD 3700)",
+                BandTapTarget.of(BandTechnology.NR, 77), "3900.000 MHz", "123 (0/41)",
                 "660000", -95, -11, 12, false);
     }
 

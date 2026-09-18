@@ -2,6 +2,7 @@ package com.craxiom.networksurvey.fragments;
 
 import static com.craxiom.networksurvey.ui.ASignalChartViewModelKt.UNKNOWN_RSSI;
 
+import android.graphics.Rect;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -13,10 +14,12 @@ import android.text.SpannableStringBuilder;
 import android.text.Spanned;
 import android.text.style.ForegroundColorSpan;
 import android.view.LayoutInflater;
+import android.view.TouchDelegate;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TableLayout;
 import android.widget.TableRow;
+import android.util.TypedValue;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
@@ -34,6 +37,9 @@ import com.craxiom.messaging.NrRecord;
 import com.craxiom.messaging.NrRecordData;
 import com.craxiom.messaging.UmtsRecord;
 import com.craxiom.messaging.UmtsRecordData;
+import com.craxiom.networksurvey.ui.cellular.bands.BandLookupLauncher;
+import com.craxiom.networksurvey.data.band.BandTapTarget;
+import com.craxiom.networksurvey.data.band.BandTechnology;
 import com.craxiom.networksurvey.R;
 import com.craxiom.networksurvey.constants.LteMessageConstants;
 import com.craxiom.networksurvey.constants.NetworkSurveyConstants;
@@ -83,6 +89,9 @@ import timber.log.Timber;
  */
 public class NetworkDetailsFragment extends AServiceDataFragment implements ICellularSurveyRecordListener
 {
+    /** Material's minimum comfortable touch target, applied to the tappable Band fields. */
+    private static final int MIN_TOUCH_TARGET_DP = 48;
+
     public static final String SUBSCRIPTION_ID_KEY = "subscription_id";
 
     // The next two values have been added because certain devices don't follow the Interger#MAX_VALUE approach defined
@@ -397,6 +406,10 @@ public class NetworkDetailsFragment extends AServiceDataFragment implements ICel
         viewModel.getFrequency().observe(viewLifecycleOwner, s -> binding.frequency.setText(s));
         viewModel.getBand().observe(viewLifecycleOwner, s -> binding.band.setText(s));
         viewModel.getLteBand().observe(viewLifecycleOwner, s -> binding.lteBand.setText(s));
+        viewModel.getBandTapTarget().observe(viewLifecycleOwner,
+                target -> bindBandTap(binding.band, binding.bandLabel, target));
+        viewModel.getLteBandTapTarget().observe(viewLifecycleOwner,
+                target -> bindBandTap(binding.lteBand, binding.lteBandLabel, target));
 
         viewModel.getPci().observe(viewLifecycleOwner, s -> binding.pci.setText(s));
         viewModel.getBandwidth().observe(viewLifecycleOwner, s -> binding.bandwidth.setText(s));
@@ -442,6 +455,8 @@ public class NetworkDetailsFragment extends AServiceDataFragment implements ICel
         viewModel.getFrequency().removeObservers(viewLifecycleOwner);
         viewModel.getBand().removeObservers(viewLifecycleOwner);
         viewModel.getLteBand().removeObservers(viewLifecycleOwner);
+        viewModel.getBandTapTarget().removeObservers(viewLifecycleOwner);
+        viewModel.getLteBandTapTarget().removeObservers(viewLifecycleOwner);
 
         viewModel.getPci().removeObservers(viewLifecycleOwner);
         viewModel.getBandwidth().removeObservers(viewLifecycleOwner);
@@ -472,7 +487,9 @@ public class NetworkDetailsFragment extends AServiceDataFragment implements ICel
         viewModel.setChannelNumber("");
         viewModel.setFrequency("");
         viewModel.setBand("");
+        viewModel.setBandTapTarget(null);
         viewModel.setLteBand("");
+        viewModel.setLteBandTapTarget(null);
 
         viewModel.setPci("");
         viewModel.setBandwidth("");
@@ -831,13 +848,16 @@ public class NetworkDetailsFragment extends AServiceDataFragment implements ICel
                 {
                     viewModel.setLteBand(String.valueOf(bandNumber));
                 }
+                viewModel.setLteBandTapTarget(BandTapTarget.of(BandTechnology.LTE, bandNumber));
             } else
             {
                 viewModel.setLteBand("");
+                viewModel.setLteBandTapTarget(null);
             }
         } else
         {
             viewModel.setLteBand("");
+            viewModel.setLteBandTapTarget(null);
         }
 
         viewModel.setPci(data.hasPci() ? formatPci(data.getPci().getValue()) : "");
@@ -872,8 +892,10 @@ public class NetworkDetailsFragment extends AServiceDataFragment implements ICel
         // Set NARFCN without band information
         viewModel.setChannelNumber(data.hasNarfcn() ? String.valueOf(data.getNarfcn().getValue()) : "");
 
-        viewModel.setBand(CellularUtils.formatNrBands(bands,
-                data.hasNarfcn() ? data.getNarfcn().getValue() : -1));
+        final int servingNarfcn = data.hasNarfcn() ? data.getNarfcn().getValue() : -1;
+        viewModel.setBand(CellularUtils.formatNrBands(bands, servingNarfcn));
+        viewModel.setBandTapTarget(toBandTapTarget(
+                CellularUtils.resolveNrBands(bands, servingNarfcn)));
 
         viewModel.setPci(data.hasPci() ? formatPci(data.getPci().getValue()) : "");
 
@@ -884,6 +906,87 @@ public class NetworkDetailsFragment extends AServiceDataFragment implements ICel
         viewModel.setSignalOne(data.hasSsRsrp() ? (int) data.getSsRsrp().getValue() : null);
         viewModel.setSignalTwo(data.hasSsRsrq() ? (int) data.getSsRsrq().getValue() : null);
         viewModel.setSignalThree(data.hasSsSinr() ? (int) data.getSsSinr().getValue() : null);
+    }
+
+    /**
+     * Makes a Band field open the band reference for the band or bands it is showing.
+     * <p>
+     * This is the discovery path that matters for the reference: a user meets a band designator
+     * here, on a cell they are looking at, rather than while browsing a drawer entry they have to
+     * remember exists. The field is only made clickable when there is something to show, so an
+     * empty Band field stays inert instead of opening a dialog that says nothing.
+     */
+    private void bindBandTap(TextView field, TextView label, BandTapTarget target)
+    {
+        if (target == null || target.isEmpty())
+        {
+            field.setOnClickListener(null);
+            field.setClickable(false);
+            field.setBackground(null);
+            // These views are reused across updates, so without this TalkBack keeps announcing
+            // the last band long after the field has emptied.
+            field.setContentDescription(null);
+            label.setCompoundDrawablesRelativeWithIntrinsicBounds(0, 0, 0, 0);
+            return;
+        }
+
+        field.setClickable(true);
+        field.setContentDescription(getString(R.string.band_tap_content_description, field.getText()));
+        final TypedValue outValue = new TypedValue();
+        field.getContext().getTheme()
+                .resolveAttribute(android.R.attr.selectableItemBackground, outValue, true);
+        field.setBackgroundResource(outValue.resourceId);
+        field.setOnClickListener(
+                v -> BandLookupLauncher.show(getParentFragmentManager(), target));
+        expandTouchTarget(field);
+        // The ripple only shows after a press, so without a static affordance nothing tells the
+        // user the field does anything at all.
+        label.setCompoundDrawablesRelativeWithIntrinsicBounds(
+                0, 0, R.drawable.ic_chevron_right_small, 0);
+    }
+
+    /**
+     * Grows a Band field's touch area to the 48dp minimum without changing its layout.
+     * <p>
+     * The field is styled at 16sp with a wrap_content height, which measures around 20dp, so on
+     * its own it is less than half of a comfortable target. A {@link TouchDelegate} on the parent
+     * extends the area that accepts the press while leaving the text where the rest of the row
+     * expects it.
+     */
+    private static void expandTouchTarget(TextView field)
+    {
+        final View parent = (View) field.getParent();
+        if (parent == null) return;
+
+        parent.post(() -> {
+            final Rect bounds = new Rect();
+            field.getHitRect(bounds);
+            final int minimum = (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP,
+                    MIN_TOUCH_TARGET_DP, field.getResources().getDisplayMetrics());
+            final int extra = (minimum - bounds.height()) / 2;
+            if (extra <= 0) return;
+
+            bounds.top -= extra;
+            bounds.bottom += extra;
+            parent.setTouchDelegate(new TouchDelegate(bounds, field));
+        });
+    }
+
+    /**
+     * Wraps NR band numbers for the tap target, or returns null when there are none so that the
+     * field stays inert rather than opening an empty sheet.
+     */
+    private static BandTapTarget toBandTapTarget(int[] bands)
+    {
+        if (bands == null || bands.length == 0) return null;
+
+        final List<Integer> numbers = new ArrayList<>(bands.length);
+        for (int band : bands)
+        {
+            numbers.add(band);
+        }
+
+        return new BandTapTarget(BandTechnology.NR, numbers);
     }
 
     /**
@@ -971,9 +1074,10 @@ public class NetworkDetailsFragment extends AServiceDataFragment implements ICel
     {
         final NrRecordData data = ((NrRecord) wrapper.cellularRecord).getData();
 
+        final int secondaryNarfcn = data.hasNarfcn() ? data.getNarfcn().getValue() : -1;
         return new NrSecondaryCellViewState(
-                CellularUtils.formatNrBands(wrapper.bands,
-                        data.hasNarfcn() ? data.getNarfcn().getValue() : -1),
+                CellularUtils.formatNrBands(wrapper.bands, secondaryNarfcn),
+                toBandTapTarget(CellularUtils.resolveNrBands(wrapper.bands, secondaryNarfcn)),
                 data.hasNarfcn() ? formatNrFrequency(data.getNarfcn().getValue()) : "",
                 data.hasPci() ? formatPci(data.getPci().getValue()) : "",
                 data.hasNarfcn() ? String.valueOf(data.getNarfcn().getValue()) : "",
@@ -996,6 +1100,7 @@ public class NetworkDetailsFragment extends AServiceDataFragment implements ICel
         }
 
         binding.nrBand.setText(state.band());
+        bindBandTap(binding.nrBand, binding.nrBandLabel, state.bandTapTarget());
         binding.nrFrequency.setText(state.frequency());
         binding.nrPci.setText(state.pci());
         binding.nrNarfcn.setText(state.narfcn());

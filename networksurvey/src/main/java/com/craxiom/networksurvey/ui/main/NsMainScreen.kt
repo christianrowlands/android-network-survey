@@ -372,9 +372,9 @@ object DrawerParams {
 
     private val cellularCalculatorsItem = AppDrawerItemInfo(
         NavDrawerOption.CellularCalculators,
-        R.string.cellular_calculators,
-        R.drawable.ic_calculator,
-        R.string.device_status_stream_description
+        R.string.cellular_tools,
+        R.drawable.ic_spectrum,
+        R.string.cellular_tools_description
     )
 
     private val plmnLookupItem = AppDrawerItemInfo(

@@ -408,7 +408,6 @@
     <string name="status_connected">Connected</string>
     <string name="status_disconnecting">Disconnecting …</string>
 
-    <string name="cellular_calculators">Cellular Calculators</string>
     <string name="survey_monitor">Survey Monitor</string>
     <string name="settings">Settings</string>
     <string name="manual">User Manual</string>
@@ -1624,4 +1623,78 @@
     <string name="watchlist_settings_enable_title">Enable Watchlist</string>
     <string name="watchlist_settings_enable_summary_on">Watching for your saved networks to trigger alerts</string>
     <string name="watchlist_settings_enable_summary_off">Watchlist alerts are off</string>
+
+    <!-- Cellular Tools: band reference browser and the cellular calculators -->
+    <string name="cellular_tools">Cellular Tools</string>
+    <string name="cellular_tools_description">LTE and 5G NR bands, channels, and cell ID decoders</string>
+    <string name="cellular_tools_pane_bands">Bands</string>
+    <string name="cellular_tools_pane_calculators">Calculators</string>
+
+    <string name="band_search_hint">Band, channel, or frequency</string>
+    <string name="band_search_clear">Clear search</string>
+    <string name="band_reading_label">Reading as</string>
+    <string name="band_reading_auto">Auto</string>
+    <string name="band_reading_band">Band number</string>
+    <string name="band_reading_earfcn">EARFCN</string>
+    <string name="band_reading_narfcn">NARFCN</string>
+    <string name="band_reading_frequency">Frequency</string>
+
+    <string name="band_filter_lte">LTE</string>
+    <string name="band_filter_nr">5G NR</string>
+    <string name="band_filter_resolving_only">Deployed only</string>
+    <string name="band_sort_label">Sort</string>
+    <string name="band_sort_band">Band</string>
+    <string name="band_sort_frequency">Frequency</string>
+    <string name="band_sort_widest">Widest channel</string>
+
+    <string name="band_group_name">Name match</string>
+    <string name="band_group_number">Band number</string>
+    <string name="band_group_earfcn">As LTE EARFCN</string>
+    <string name="band_group_narfcn">As 5G NARFCN</string>
+    <string name="band_group_frequency">At this frequency</string>
+    <string name="band_group_no_band">No band contains this channel</string>
+    <string name="band_group_no_band_frequency">No band covers this frequency</string>
+    <string name="band_no_match">Nothing matches \"%1$s\"</string>
+    <string name="band_catalogue_header">All bands</string>
+    <plurals name="band_count">
+        <item quantity="one">%1$d band</item>
+        <item quantity="other">%1$d bands</item>
+    </plurals>
+    <string name="band_empty">No bands match the current filters.</string>
+
+    <string name="band_detail_downlink">Downlink channels</string>
+    <string name="band_detail_uplink">Uplink range</string>
+    <string name="band_detail_duplex">Duplex</string>
+    <string name="band_detail_duplex_spacing">Duplex spacing</string>
+    <string name="band_detail_width">Total width</string>
+    <string name="band_detail_bandwidths">Channel bandwidths</string>
+    <string name="band_detail_scs">Subcarrier spacing</string>
+    <string name="band_detail_range">Downlink range</string>
+    <string name="band_detail_channels">Uplink channels</string>
+    <string name="band_detail_no_channel_data">Channel numbers for this band are not included yet.</string>
+
+    <string name="band_chip_reference_only">Reference only</string>
+    <string name="band_reference_only_explainer">Listed for reference, but never used to label a live cell, because %1$s.</string>
+    <string name="band_never_resolvable">A channel number can never identify %1$s on its own. Every %1$s channel also falls inside %2$s.</string>
+
+    <string name="band_spectrum_low">Low band</string>
+    <string name="band_spectrum_mid">Mid band</string>
+    <string name="band_spectrum_cband">C-band</string>
+    <string name="band_spectrum_high">5 and 6 GHz</string>
+    <string name="band_spectrum_mmwave">mmWave</string>
+
+    <string name="band_help_title">About the band reference</string>
+    <string name="band_lookup_choose">This channel number falls in more than one band. Pick one to see its details.</string>
+    <string name="band_lookup_unknown">No details are available for this band yet.</string>
+    <string name="band_tap_content_description">Band %1$s. Tap for details.</string>
+    <string name="band_help_ambiguity">NR band ranges overlap, so a channel number alone cannot always identify one band. Where it cannot, every candidate is listed and the frequency is shown instead, because the frequency is always exact. Your phone reports the band directly when it can.</string>
+    <string name="band_help_reference_only">Some bands are listed for reference but never used to label a live cell, because letting them match would make a widely deployed band impossible to identify. They are marked \"Reference only\".</string>
+    <string name="band_browse_all">Browse all bands</string>
+    <string name="calculator_channel_to_band">Channel to Band</string>
+    <string name="calculator_channel_earfcn">EARFCN</string>
+    <string name="calculator_channel_narfcn">NARFCN</string>
+    <string name="calculator_no_band">No band contains this channel</string>
+    <string name="calculator_channel_out_of_range">Out of range. Valid values are 0 to %1$s.</string>
+    <string name="calculator_frequency">Frequency</string>
+    <string name="calculator_ambiguous_hint">NR band ranges overlap, so a channel number alone cannot always identify one. Your phone reports the band directly when it can.</string>
 </resources>

@@ -3,6 +3,8 @@ package com.craxiom.networksurvey.fragments.model;
 import android.location.Location;
 
 import androidx.lifecycle.LiveData;
+
+import com.craxiom.networksurvey.data.band.BandTapTarget;
 import androidx.lifecycle.MutableLiveData;
 import androidx.lifecycle.ViewModel;
 
@@ -89,6 +91,14 @@ public class CellularViewModel extends ViewModel
     private final DistinctLiveData<String> frequency = new DistinctLiveData<>(); // For NR frequency in MHz
     private final DistinctLiveData<String> band = new DistinctLiveData<>(); // For NR band with name
     private final DistinctLiveData<String> lteBand = new DistinctLiveData<>(); // For LTE band with name
+
+    /**
+     * The band numbers behind {@link #band} and {@link #lteBand}, so that tapping either field can
+     * open the band reference for exactly those bands. Held as numbers rather than parsed back out
+     * of the displayed text, which would only work while the display format never changes.
+     */
+    private final DistinctLiveData<BandTapTarget> bandTapTarget = new DistinctLiveData<>();
+    private final DistinctLiveData<BandTapTarget> lteBandTapTarget = new DistinctLiveData<>();
 
     // LTE specific fields
     private final DistinctLiveData<String> pci = new DistinctLiveData<>();
@@ -334,6 +344,26 @@ public class CellularViewModel extends ViewModel
     public LiveData<String> getLteBand()
     {
         return lteBand;
+    }
+
+    public LiveData<BandTapTarget> getBandTapTarget()
+    {
+        return bandTapTarget;
+    }
+
+    public void setBandTapTarget(BandTapTarget target)
+    {
+        bandTapTarget.postIfChanged(target);
+    }
+
+    public LiveData<BandTapTarget> getLteBandTapTarget()
+    {
+        return lteBandTapTarget;
+    }
+
+    public void setLteBandTapTarget(BandTapTarget target)
+    {
+        lteBandTapTarget.postIfChanged(target);
     }
 
     public void setLteBand(String newLteBand)

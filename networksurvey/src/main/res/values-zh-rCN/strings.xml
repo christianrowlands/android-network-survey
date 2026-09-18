@@ -306,7 +306,6 @@
     <string name="status_connecting">正在连接…</string>
     <string name="status_connected">已连接</string>
     <string name="status_disconnecting">正在断开…</string>
-    <string name="cellular_calculators">蜂窝网络计算器</string>
     <string name="survey_monitor">探测监视器</string>
     <string name="settings">设置</string>
     <string name="manual">用户手册</string>

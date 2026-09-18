@@ -2,12 +2,18 @@ package com.craxiom.networksurvey.ui.cellular.model
 
 import androidx.lifecycle.ViewModel
 import com.craxiom.networksurvey.util.CalculationUtils
+import com.craxiom.networksurvey.data.band.BandSearch
 import com.craxiom.networksurvey.util.CellularUtils
+import com.craxiom.networksurvey.util.band.LteBandTable
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
 enum class CalculatorNetworkType { UMTS, LTE, NR }
+
+/** Re-exported from [BandSearch] so the calculator and the browser share one definition. */
+const val MAX_EARFCN = BandSearch.MAX_EARFCN
+const val MAX_NARFCN = BandSearch.MAX_NARFCN
 
 class CalculatorViewModel : ViewModel() {
     private val _networkType = MutableStateFlow(CalculatorNetworkType.LTE)
@@ -52,9 +58,6 @@ class CalculatorViewModel : ViewModel() {
     private val _ltePciError = MutableStateFlow<String?>(null)
     val ltePciError: StateFlow<String?> = _ltePciError.asStateFlow()
 
-    private val _lteEarfcnError = MutableStateFlow<String?>(null)
-    val lteEarfcnError: StateFlow<String?> = _lteEarfcnError.asStateFlow()
-
     // Inputs for LTE Calculators
     private val _lteCellIdInput = MutableStateFlow("")
     val lteCellIdInput: StateFlow<String> = _lteCellIdInput.asStateFlow()
@@ -78,8 +81,14 @@ class CalculatorViewModel : ViewModel() {
     private val _sssOutput = MutableStateFlow("")
     val sssOutput: StateFlow<String> = _sssOutput.asStateFlow()
 
-    private val _bandOutput = MutableStateFlow("")
-    val bandOutput: StateFlow<String> = _bandOutput.asStateFlow()
+    private val _earfcnLookup = MutableStateFlow<ChannelLookup?>(null)
+    val earfcnLookup: StateFlow<ChannelLookup?> = _earfcnLookup.asStateFlow()
+
+    private val _narfcnInput = MutableStateFlow("")
+    val narfcnInput: StateFlow<String> = _narfcnInput.asStateFlow()
+
+    private val _narfcnLookup = MutableStateFlow<ChannelLookup?>(null)
+    val narfcnLookup: StateFlow<ChannelLookup?> = _narfcnLookup.asStateFlow()
 
     // UMTS
     private val _umtsCellIdInput = MutableStateFlow("")
@@ -117,7 +126,7 @@ class CalculatorViewModel : ViewModel() {
 
         val nci = _nciInput.value.toLongOrNull()
         if (nci == null || nci !in 0..68_719_476_735) {
-            _nciError.value = "Invalid NCI. Valid Range is.0 - 68,719,476,735"
+            _nciError.value = "Invalid NCI. Valid range is 0 - 68,719,476,735"
             return
         }
 
@@ -187,21 +196,55 @@ class CalculatorViewModel : ViewModel() {
     }
 
     fun calculateEarfcnToBand() {
-        if (earfcnInput.value.isEmpty()) {
-            _lteEarfcnError.value = null
-            _bandOutput.value = ""
+        val input = earfcnInput.value
+        if (input.isEmpty()) {
+            _earfcnLookup.value = null
             return
         }
 
-        val earfcn = earfcnInput.value.toIntOrNull()
-        if (earfcn == null || earfcn !in 0..262143) {
-            _lteEarfcnError.value = "Invalid EARFCN. Valid Range is 0 - 262143"
-            _bandOutput.value = ""
-        } else {
-            val band = CellularUtils.downlinkEarfcnToBand(earfcn)
-            _lteEarfcnError.value = null
-            _bandOutput.value = band.toString()
+        val earfcn = input.toIntOrNull()
+        if (earfcn == null || earfcn !in 0..MAX_EARFCN) {
+            _earfcnLookup.value = ChannelLookup(-1, null, emptyList(), outOfRange = true)
+            return
         }
+
+        // A valid EARFCN can still fall in no band: the table has interior gaps, for example
+        // between band 11 and band 12. That is an answer, not an error, so it is reported as an
+        // empty band list rather than as the -1 sentinel this used to print verbatim.
+        val band = CellularUtils.downlinkEarfcnToBand(earfcn)
+        _earfcnLookup.value = ChannelLookup(
+            channel = earfcn,
+            frequencyMhz = LteBandTable.downlinkEarfcnToFrequencyMhz(earfcn).takeIf { it >= 0 },
+            bandNumbers = if (band == -1) emptyList() else listOf(band),
+        )
+    }
+
+    fun setNarfcnInput(input: String) {
+        _narfcnInput.value = input
+        calculateNarfcnToBand()
+    }
+
+    fun calculateNarfcnToBand() {
+        val input = narfcnInput.value
+        if (input.isEmpty()) {
+            _narfcnLookup.value = null
+            return
+        }
+
+        val narfcn = input.toIntOrNull()
+        if (narfcn == null || narfcn !in 0..MAX_NARFCN) {
+            _narfcnLookup.value = ChannelLookup(-1, null, emptyList(), outOfRange = true)
+            return
+        }
+
+        // NR ranges overlap heavily, so this deliberately reports every candidate rather than
+        // collapsing to one or refusing to answer.
+        val frequency = CellularUtils.narfcnToFrequencyMhz(narfcn).takeIf { it >= 0 }
+        _narfcnLookup.value = ChannelLookup(
+            channel = narfcn,
+            frequencyMhz = frequency,
+            bandNumbers = CellularUtils.downlinkNarfcnToBands(narfcn).toList(),
+        )
     }
 
     // Function to update input
@@ -212,6 +255,13 @@ class CalculatorViewModel : ViewModel() {
 
     // Function to compute RNC ID and Short Cell ID
     private fun calculateUmtsCellId() {
+        if (_umtsCellIdInput.value.isEmpty()) {
+            _umtsCidError.value = null
+            _rncIdOutput.value = ""
+            _shortCellIdOutput.value = ""
+            return
+        }
+
         val cellId = _umtsCellIdInput.value.toLongOrNull()
         if (cellId == null || cellId < 0 || cellId > 268_435_455) {
             _umtsCidError.value = "Invalid UMTS Cell ID. Valid Range is 0 - 268435455"
@@ -220,8 +270,8 @@ class CalculatorViewModel : ViewModel() {
             return
         }
 
-        val rncId = (cellId shr 16) and 0xFFFF
-        val shortCellId = cellId and 0xFFFF
+        val rncId = CalculationUtils.getUmtsRncFromCid(cellId.toInt()).toLong()
+        val shortCellId = CalculationUtils.getUmtsShortCellIdFromCid(cellId.toInt()).toLong()
 
         _rncIdOutput.value = rncId.toString()
         _shortCellIdOutput.value = shortCellId.toString()

@@ -1,5 +1,7 @@
 package com.craxiom.networksurvey.fragments.model;
 
+import com.craxiom.networksurvey.data.band.BandTapTarget;
+
 /**
  * View state for the NR Secondary Cell details card on the cellular details screen, shown when the
  * device reports an NR cell as SECONDARY_SERVING: on 5G NSA (EN-DC) that is the NR cell carrying
@@ -13,6 +15,7 @@ package com.craxiom.networksurvey.fragments.model;
  * that holding the card idle does not rebuild and re-render the whole card body once per scan.
  *
  * @param band      The formatted NR band display value (e.g. "n77 (TD 3700)"), or an empty string.
+ * @param bandTapTarget The band numbers behind {@code band}, for opening the band reference.
  * @param frequency The formatted frequency display value (e.g. "3709.920 MHz"), or an empty string.
  * @param pci       The formatted PCI display value including the PSS/SSS breakdown, or an empty string.
  * @param narfcn    The NARFCN display value, or an empty string.
@@ -22,7 +25,8 @@ package com.craxiom.networksurvey.fragments.model;
  * @param idle      True when the values are the last-seen cell rather than a live report; the card
  *                  dims and shows the Idle badge so stale data never renders as live.
  */
-public record NrSecondaryCellViewState(String band, String frequency, String pci, String narfcn,
+public record NrSecondaryCellViewState(String band, BandTapTarget bandTapTarget,
+                                       String frequency, String pci, String narfcn,
                                        Integer ssRsrp, Integer ssRsrq, Integer ssSinr,
                                        boolean idle)
 {
@@ -32,7 +36,7 @@ public record NrSecondaryCellViewState(String band, String frequency, String pci
      */
     public NrSecondaryCellViewState asIdle()
     {
-        return new NrSecondaryCellViewState(band, frequency, pci, narfcn, ssRsrp, ssRsrq, ssSinr,
-                true);
+        return new NrSecondaryCellViewState(band, bandTapTarget, frequency, pci, narfcn, ssRsrp,
+                ssRsrq, ssSinr, true);
     }
 }

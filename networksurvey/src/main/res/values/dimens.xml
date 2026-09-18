@@ -10,7 +10,6 @@
 
     <dimen name="divider_margin">8dp</dimen>
 
-    <dimen name="calculator_margin">10dp</dimen>
     <dimen name="fragment_padding_top">4dp</dimen>
 
     <dimen name="medium_text_size">18sp</dimen>

@@ -185,3 +185,13 @@ networksurvey/**/release/**
 
 CLAUDE.md
 .kotlin/
+
+# 3GPP specification documents, downloaded locally for tools/bandtable (large, licensed)
+/36101-*/
+/38101-*/
+
+# Python bytecode from tools/
+__pycache__/
+*.pyc
+
+tools/

@@ -29,21 +29,30 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.craxiom.networksurvey.R
+import com.craxiom.networksurvey.ui.cellular.calculator.ChannelToBandCard
+import com.craxiom.networksurvey.ui.cellular.calculator.LteCalculators
+import com.craxiom.networksurvey.ui.cellular.calculator.UmtsCalculators
 import com.craxiom.networksurvey.ui.cellular.model.CalculatorNetworkType
+import com.craxiom.networksurvey.ui.cellular.model.MAX_NARFCN
 import com.craxiom.networksurvey.ui.cellular.model.CalculatorViewModel
 import com.craxiom.networksurvey.ui.cellular.model.GnbIdLengthOption
 
 @Composable
-fun CalculatorScreen(viewModel: CalculatorViewModel = viewModel()) {
+fun CalculatorScreen(
+    viewModel: CalculatorViewModel = viewModel(),
+    modifier: Modifier = Modifier,
+    onBrowseBands: (String) -> Unit = {},
+) {
     // This will hold the state for which calculator section is being displayed
     val networkType by viewModel.networkType.collectAsState()
 
     Column(
-        modifier = Modifier
-            .fillMaxSize()
+        modifier = modifier
             .padding(12.dp)
             .verticalScroll(rememberScrollState())
     ) {
@@ -55,11 +64,11 @@ fun CalculatorScreen(viewModel: CalculatorViewModel = viewModel()) {
 
         when (networkType) {
             CalculatorNetworkType.NR -> {
-                NrCalculators(viewModel = viewModel)
+                NrCalculators(viewModel = viewModel, onBrowseBands = onBrowseBands)
             }
 
             CalculatorNetworkType.LTE -> {
-                LteCalculators(viewModel = viewModel)
+                LteCalculators(viewModel = viewModel, onBrowseBands = onBrowseBands)
             }
 
             CalculatorNetworkType.UMTS -> {
@@ -110,30 +119,48 @@ fun NetworkTypeDropdown(
 }
 
 @Composable
-fun NrCalculators(viewModel: CalculatorViewModel) {
+fun NrCalculators(viewModel: CalculatorViewModel, onBrowseBands: (String) -> Unit = {}) {
     val selectedGnbIdLength by viewModel.selectedGnbIdLength.collectAsState()
     val gnbIdLengthOptions = viewModel.gnbIdLengthOptions
     val cellIdInput by viewModel.nciInput.collectAsState()
     val gnbIdOutput by viewModel.gnbIdOutput.collectAsState()
     val sectorIdOutput by viewModel.nrSectorIdOutput.collectAsState()
 
-    CardItem {
-        Column {
-            TitleText(text = "NCI to gNB ID and Sector ID")
+    Column {
+        CardItem {
+            Column {
+                TitleText(text = "NCI to gNB ID and Sector ID")
 
-            GnbIdLengthDropdown(
-                selectedGnbIdLength,
-                gnbIdLengthOptions,
-                viewModel::setSelectedGnbIdLength
-            )
-            Spacer(modifier = Modifier.height(16.dp))
-            NciInputField(cellIdInput, viewModel) {
-                viewModel.setCellIdInput(it)
-                viewModel.calculate5GNrGnbIdAndSectorId()
+                GnbIdLengthDropdown(
+                    selectedGnbIdLength,
+                    gnbIdLengthOptions,
+                    viewModel::setSelectedGnbIdLength
+                )
+                Spacer(modifier = Modifier.height(16.dp))
+                NciInputField(cellIdInput, viewModel) {
+                    viewModel.setCellIdInput(it)
+                    viewModel.calculate5GNrGnbIdAndSectorId()
+                }
+                Spacer(modifier = Modifier.height(16.dp))
+                ResultsDisplay(gnbIdOutput, sectorIdOutput, viewModel)
             }
-            Spacer(modifier = Modifier.height(16.dp))
-            Spacer(modifier = Modifier.height(8.dp))
-            ResultsDisplay(gnbIdOutput, sectorIdOutput, viewModel)
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        CardItem {
+            Column {
+                TitleText(text = stringResource(R.string.calculator_channel_to_band))
+                ChannelToBandCard(
+                    label = stringResource(R.string.calculator_channel_narfcn),
+                    value = viewModel.narfcnInput.collectAsState().value,
+                    lookup = viewModel.narfcnLookup.collectAsState().value,
+                    maxChannel = MAX_NARFCN,
+                    bandPrefix = "n",
+                    onValueChange = viewModel::setNarfcnInput,
+                    onBrowseBands = onBrowseBands,
+                )
+            }
         }
     }
 }
@@ -213,159 +240,7 @@ fun ResultsDisplay(gnbIdOutput: String, sectorIdOutput: String, viewModel: Calcu
 }
 
 @Composable
-fun LteCalculators(viewModel: CalculatorViewModel) {
-    Column {
-        // 4G LTE Cell ID calculator
-        CardItem {
-            Column {
-                val lteSectorIdOutput by viewModel.lteSectorIdOutput.collectAsState()
-                val lteCidError by viewModel.lteCidError.collectAsState()
-                val collectAsState by viewModel.enbIdOutput.collectAsState()
-
-                TitleText(text = "Cell ID to eNB ID and Sector ID")
-
-                OutlinedTextField(
-                    value = viewModel.lteCellIdInput.collectAsState().value,
-                    onValueChange = {
-                        viewModel.setLteCellIdInput(it)
-                        viewModel.calculateLteCellId()
-                    },
-                    label = { Text("Cell ID") },
-                    keyboardOptions = KeyboardOptions.Default.copy(keyboardType = KeyboardType.Number),
-                    modifier = Modifier.fillMaxWidth(),
-                    isError = lteCidError != null
-                )
-                Spacer(modifier = Modifier.height(6.dp))
-                Text(
-                    "eNodeB ID: $collectAsState",
-                    modifier = Modifier.padding(start = 8.dp)
-                )
-                Text(
-                    "Sector ID: $lteSectorIdOutput",
-                    modifier = Modifier.padding(start = 8.dp)
-                )
-
-                if (lteCidError != null) {
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Text(text = lteCidError.orEmpty(), color = MaterialTheme.colorScheme.error)
-                }
-            }
-        }
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        // PCI to PSS and SSS calculator
-        CardItem {
-            Column {
-                val ltePciError by viewModel.ltePciError.collectAsState()
-
-                TitleText(text = "PCI to PSS and SSS")
-
-                OutlinedTextField(
-                    value = viewModel.pciInput.collectAsState().value,
-                    onValueChange = {
-                        viewModel.setPciInput(it)
-                        viewModel.calculatePciToPssAndSss()
-                    },
-                    label = { Text("PCI") },
-                    keyboardOptions = KeyboardOptions.Default.copy(keyboardType = KeyboardType.Number),
-                    modifier = Modifier.fillMaxWidth(),
-                    isError = ltePciError != null
-                )
-                Spacer(modifier = Modifier.height(6.dp))
-                Text(
-                    "PSS: ${viewModel.pssOutput.collectAsState().value}",
-                    modifier = Modifier.padding(start = 8.dp)
-                )
-                Text(
-                    "SSS: ${viewModel.sssOutput.collectAsState().value}",
-                    modifier = Modifier.padding(start = 8.dp)
-                )
-
-                if (ltePciError != null) {
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Text(text = ltePciError.orEmpty(), color = MaterialTheme.colorScheme.error)
-                }
-            }
-        }
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        // EARFCN to Band Number calculator
-        CardItem {
-            Column {
-                val lteEarfcnError by viewModel.lteEarfcnError.collectAsState()
-
-                TitleText(text = "EARFCN to Band Number")
-
-                OutlinedTextField(
-                    value = viewModel.earfcnInput.collectAsState().value,
-                    onValueChange = {
-                        viewModel.setEarfcnInput(it)
-                        viewModel.calculateEarfcnToBand()
-                    },
-                    label = { Text("EARFCN") },
-                    keyboardOptions = KeyboardOptions.Default.copy(keyboardType = KeyboardType.Number),
-                    modifier = Modifier.fillMaxWidth(),
-                    isError = lteEarfcnError != null
-                )
-                Spacer(modifier = Modifier.height(6.dp))
-                Text(
-                    "Band: ${viewModel.bandOutput.collectAsState().value}",
-                    modifier = Modifier.padding(start = 8.dp)
-                )
-
-                if (lteEarfcnError != null) {
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Text(text = lteEarfcnError.orEmpty(), color = MaterialTheme.colorScheme.error)
-                }
-            }
-        }
-    }
-}
-
-@Composable
-fun UmtsCalculators(viewModel: CalculatorViewModel) {
-    val umtsCellIdInput by viewModel.umtsCellIdInput.collectAsState()
-    val rncIdOutput by viewModel.rncIdOutput.collectAsState()
-    val shortCellIdOutput by viewModel.shortCellIdOutput.collectAsState()
-    val umtsCidError by viewModel.umtsCidError.collectAsState()
-
-    CardItem {
-        Column {
-            TitleText(text = "UMTS Cell ID to RNC ID and Short Cell ID")
-
-            OutlinedTextField(
-                value = umtsCellIdInput,
-                onValueChange = {
-                    viewModel.setUmtsCellIdInput(it)
-                },
-                label = { Text("UMTS Cell ID") },
-                keyboardOptions = KeyboardOptions.Default.copy(keyboardType = KeyboardType.Number),
-                modifier = Modifier.fillMaxWidth(),
-                singleLine = true,
-                isError = umtsCidError != null
-            )
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            Text(text = "RNC ID: $rncIdOutput", style = MaterialTheme.typography.bodyLarge)
-            Text(
-                text = "Short Cell ID: $shortCellIdOutput",
-                style = MaterialTheme.typography.bodyLarge
-            )
-
-            if (umtsCidError != null) {
-                Spacer(modifier = Modifier.height(8.dp))
-                Text(text = umtsCidError.orEmpty(), color = MaterialTheme.colorScheme.error)
-            }
-        }
-    }
-}
-
-
-@Composable
-private fun CardItem(content: @Composable () -> Unit) {
+fun CardItem(content: @Composable () -> Unit) {
     Card(shape = MaterialTheme.shapes.large, colors = CardDefaults.elevatedCardColors()) {
         Box(Modifier.padding(16.dp)) {
             content()

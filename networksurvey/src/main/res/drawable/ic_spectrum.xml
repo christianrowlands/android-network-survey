@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Equalizer bars, standing in for spectrum. Used by the Cellular Tools drawer entry, where a
+     calculator glyph would undersell a screen that is mostly a band reference. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24"
+    android:tint="?attr/colorControlNormal">
+    <path
+        android:fillColor="@android:color/white"
+        android:pathData="M3,10h2v4H3zM7,7h2v10H7zM11,3h2v18h-2zM15,6h2v12h-2zM19,9h2v6h-2z" />
+</vector>
