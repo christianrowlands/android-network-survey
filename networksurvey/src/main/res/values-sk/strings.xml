@@ -3,9 +3,9 @@
     <string name="permissions_rationale_title">Network Survey (oprávnenia)</string>
     <string name="permissions_rationale">Aplikácia Network Survey potrebuje na svoju činnosť niekoľko oprávnení. Ak tieto oprávnenia odmietnete, aplikácia nebude fungovať správne.\n \n1. <b>Vytvárať a spravovať telefónne hovory</b>: Táto aplikácia neuskutočňuje ani nespravuje telefónne hovory. Toto oprávnenie potrebuje na získanie prístupu k aktuálnemu typu mobilného pripojenia (napr. LTE vs. UMTS).\n \n2. <b>Prístup k polohe tohto zariadenia</b>: Oprávnenie na prístup k polohe je potrebné na prístup k podrobnostiam o Wi-Fi, mobilnom pripojení a GNSS, ako aj na zapisovanie protokolových súborov súvisiacich s polohou.\n \n3. <b>Prístup k fotografiám, médiám a súborom vo vašom zariadení</b>: Toto oprávnenie umožňuje zapisovanie protokolových súborov.\n \n4. <b>Oznámenia</b>: Toto oprávnenie umožňuje aplikácii pridávať oznámenia, aby ste vedeli, kedy prebieha prieskum na pozadí.</string>
     <string name="cdr_required_permissions_rationale_title">CDR (nevyhnutné oprávnenia)</string>
-    <string name="cdr_required_permissions_rationale">Aplikácia Network Survey vyžaduje niekoľko oprávnení, aby fungovalo zaznamenávanie podrobností volania (CDR). Ak tieto oprávnenia odmietnete, zaznamenávanie CDR nebude fungovať.\n\n1. <b>Vytváranie a spravovanie telefónnych hovorov</b>: Táto aplikácia nevytvára ani nespravuje telefónne hovory. Toto oprávnenie potrebuje na získanie údajov o mobilnej sieti, ktoré sa zapisujú do súboru protokolu CDR.\n\n2. <b>Prístup k polohe tohto zariadenia</b>: Oprávnenie na prístup k polohe je potrebné na získanie údajov o mobilnej sieti, ktoré sa používajú na zápis do súboru CDR.\n\n3. <b>Prístup k fotografiám, médiám a súborom vo vašom zariadení</b>: Toto oprávnenie umožňuje zápis do protokolového súboru.\n\n4. <b>Oznámenia</b>: Toto oprávnenie umožňuje aplikácii pridať oznámenie, aby ste vedeli, kedy prebieha prieskum na pozadí.\n \nExistuje známa chyba, pri ktorej sa toto dialógové okno s oprávneniami neustále zobrazuje, ale dialógové okno so žiadosťou o oprávnenie sa po stlačení tlačidla OK nezobrazí. Tento problém môžete vyriešiť odinštalovaním a opätovnou inštaláciou aplikácie a prvým schválením všetkých oprávnení, alebo otvorením nastavení systému Android a manuálnym schválením požadovaných oprávnení.</string>
+    <string name="cdr_required_permissions_rationale">Aplikácia Network Survey vyžaduje niekoľko oprávnení, aby fungovalo protokolovanie podrobností volania (CDR). Ak tieto oprávnenia odmietnete, protokolovanie CDR nebude fungovať.\n\n1. <b>Vytváranie a spravovanie telefónnych hovorov</b>: Táto aplikácia nevytvára ani nespravuje telefónne hovory. Toto oprávnenie potrebuje na získanie údajov o mobilnej sieti, ktoré sa zapisujú do súboru protokolu CDR.\n\n2. <b>Prístup k polohe tohto zariadenia</b>: Oprávnenie na prístup k polohe je potrebné na získanie údajov o mobilnej sieti, ktoré sa používajú na zápis do súboru CDR.\n\n3. <b>Prístup k fotografiám, médiám a súborom vo vašom zariadení</b>: Toto oprávnenie umožňuje zápis do protokolového súboru.\n\n4. <b>Oznámenia</b>: Toto oprávnenie umožňuje aplikácii pridať oznámenie, aby ste vedeli, kedy prebieha prieskum na pozadí.\n \nExistuje známa chyba, pri ktorej sa toto dialógové okno s oprávneniami neustále zobrazuje, ale dialógové okno so žiadosťou o oprávnenie sa po stlačení tlačidla OK nezobrazí. Tento problém môžete vyriešiť odinštalovaním a opätovnou inštaláciou aplikácie a prvým schválením všetkých oprávnení, alebo otvorením nastavení systému Android a manuálnym schválením požadovaných oprávnení.</string>
     <string name="cdr_optional_permissions_rationale_title">CDR (voliteľné oprávnenia)</string>
-    <string name="cdr_optional_permissions_rationale">CDR protokolovanie má voliteľné oprávnenie.\n\n1. <b>Čítanie telefónneho čísla</b>: Toto oprávnenie je potrebné na získanie telefónneho čísla tohto zariadenia s cieľom zapísať ho do súboru protokolu CDR. Toto oprávnenie môžete zamietnuť a zaznamenávanie CDR bude aj naďalej fungovať, avšak vaše telefónne číslo sa nebude zaznamenávať.</string>
+    <string name="cdr_optional_permissions_rationale">CDR protokolovanie má voliteľné oprávnenie.\n\n1. <b>Čítanie telefónneho čísla</b>: Toto oprávnenie je potrebné na získanie telefónneho čísla tohto zariadenia s cieľom zapísať ho do súboru protokolu CDR. Toto oprávnenie môžete zamietnuť a protokolovanie CDR bude aj naďalej fungovať, avšak vaše telefónne číslo sa nebude zaznamenávať.</string>
     <string name="request">Žiadosť</string>
     <string name="ignore">Pokračovať bez oprávnení</string>
     <string name="upload_help_title">Informácie o nahrávaní</string>
@@ -25,7 +25,7 @@
     <string name="upload_help_what_title">Čo sa nahráva</string>
     <string name="upload_help_what_location_label">Poloha zariadenia</string>
     <string name="upload_help_what_location_desc">Zemepisná šírka, zemepisná dĺžka, nadmorská výška, presnosť a rýchlosť</string>
-    <string name="upload_help_what_cellular_label">Informácie o mobilnom operátorovi</string>
+    <string name="upload_help_what_cellular_label">Informácie o mobilnom pripojení</string>
     <string name="upload_help_what_cellular_desc">MCC, MNC, TAC/LAC, identifikátor bunky, sila signálu, PCI, ARFCN atď.</string>
     <string name="upload_help_what_wifi_label">Informácie o Wi-Fi</string>
     <string name="upload_help_what_wifi_desc">SSID, BSSID, frekvencia, kanál, sila signálu, typ šifrovania</string>
@@ -57,7 +57,7 @@
     <string name="phone_state_help_how_event_driven_label">Kontrola udalostí</string>
     <string name="phone_state_help_how_event_driven_desc">Zaznamenáva len v prípade zmien – bez pravidelného skenovania</string>
     <string name="phone_state_help_how_auto_include_label">Automatické zapnutie pri pripojení k mobilnej sieti</string>
-    <string name="phone_state_help_how_auto_include_desc">Spustí sa automaticky, keď je zapnuté zaznamenávanie údajov cez mobilnú sieť (možno nastaviť v Nastaveniach)</string>
+    <string name="phone_state_help_how_auto_include_desc">Spustí sa automaticky, keď je zapnuté protokolovanie údajov cez mobilnú sieť (možno nastaviť v Nastaveniach)</string>
     <string name="phone_state_help_how_dual_sim_label">Podpora dvoch SIM kariet</string>
     <string name="phone_state_help_how_dual_sim_desc">Sledovanie všetkých aktívnych SIM kariet (predplatné)</string>
     <string name="cdr_help_title">CDR (informácie)</string>
@@ -162,14 +162,14 @@
     <string name="upload_progress">Priebeh nahrávania</string>
     <string name="upload_result">Výsledok nahrania</string>
     <string name="uploader_canceled">Nahrávanie bolo zrušené</string>
-    <string name="upload_to_opencellid">Nahrať do OpenCelliD (Cellular)</string>
+    <string name="upload_to_opencellid">Nahrať do OpenCelliD (Mobilná sieť)</string>
     <string name="anonymously">Anonymne</string>
     <string name="upload_dialog_message">Nahraním záznamov z prieskumu sa údaje o polohe zdieľajú so službami tretích strán. Prispievaním do týchto databáz založených na crowdsourcingu pomáhate zlepšovať mapy pokrytia a presnosť geolokácie. Vaša účasť je úplne dobrovoľná; rozhodnutie o zdieľaní vašich údajov je výlučne na vás.</string>
     <string name="access_token_warning">V nastaveniach je potrebné zadať platný prístupový token</string>
-    <string name="upload_to_beacondb">Nahrať do BeaconDB (mobilná sieť a Wi-Fi)</string>
+    <string name="upload_to_beacondb">Nahrať do BeaconDB (Mobilná sieť a Wi-Fi)</string>
     <string name="retry_on_failure">V prípade zlyhania to skúste znova</string>
     <string name="dont_show_again">Toto už viac nezobrazovať</string>
-    <string name="card_title_logging_details">Nastavenie logovania lokálnych súborov</string>
+    <string name="card_title_logging_details">Ovládanie protokolovania lokálnych súborov</string>
     <string name="card_title_mqtt_details">MQTT pripojenie</string>
     <string name="cellular_title">Mobilná sieť</string>
     <string name="wifi_title">Wi-Fi</string>
@@ -195,7 +195,7 @@
     <string name="card_title_neighbors_nr">NR susedná oblasť</string>
     <string name="cellular_info_description">Ikona informácií o mobilnej sieti</string>
     <string name="gsm_info_description">Informácie o pojmoch v oblasti GSM</string>
-    <string name="gsm_cellular_terms_explanation"><b>MCC</b> (Mobile Country Code): Jedinečný identifikátor krajiny pre mobilné siete.\n\n<b>MNC</b> (Mobile Network Code): Jedinečný identifikátor siete v rámci krajiny. Kombinácia kódov MCC a MNC označuje konkrétneho poskytovateľa služieb (napr. T-Mobile).\n\n\n<b>LAC</b> (Location Area Code): Identifikátor skupiny mobilných vysielačov, ktorý sa používa na volanie zariadení\n\n<b>CID</b> (Cell Identity): Identifikátor konkrétneho mobilného vysielača. Kombinácia kódov MCC, MNC, LAC a CID jednoznačne identifikuje konkrétnu GSM bunku spomedzi všetkých ostatných na svete.\n\n<b>ARFCN</b> (Absolute Radio Frequency Channel Number): Číslo reprezentujúce nosnú frekvenciu GSM.\n\n<b>BSIC</b> (Base Station Identity Code): Identifikátor bunky na fyzickej vrstve, ktorý pomáha mobilnému zariadeniu rozlíšiť počas výberu/prevýberu bunky dve bunky, ktoré používajú rovnakú frekvenciu.\n\n<b>RSSI</b> (Received Signal Strength Indicator): Prijatý výkon signálu v smere nadol v dBm, ako ho prijíma mobilné zariadenie.</string>
+    <string name="gsm_cellular_terms_explanation"><b>MCC</b> (Mobile Country Code): Jedinečný identifikátor krajiny pre mobilné siete.\n\n<b>MNC</b> (Mobile Network Code): Jedinečný identifikátor siete v rámci krajiny. Kombinácia kódov MCC a MNC označuje konkrétneho poskytovateľa služieb (napr. T-Mobile).\n\n<b>LAC</b> (Location Area Code): Identifikátor skupiny mobilných vysielačov, ktorý sa používa na volanie zariadení\n\n<b>CID</b> (Cell Identity): Identifikátor konkrétneho mobilného vysielača. Kombinácia kódov MCC, MNC, LAC a CID jednoznačne identifikuje konkrétnu GSM bunku spomedzi všetkých ostatných na svete.\n\n<b>ARFCN</b> (Absolute Radio Frequency Channel Number): Číslo reprezentujúce nosnú frekvenciu GSM.\n\n<b>BSIC</b> (Base Station Identity Code): Identifikátor bunky na fyzickej vrstve, ktorý pomáha mobilnému zariadeniu rozlíšiť počas výberu/prevýberu bunky dve bunky, ktoré používajú rovnakú frekvenciu.\n\n<b>RSSI</b> (Received Signal Strength Indicator): Prijatý výkon signálu v smere nadol v dBm, ako ho prijíma mobilné zariadenie.</string>
     <string name="umts_info_description">Informácie o pojmoch v oblasti UMTS</string>
     <string name="umts_cellular_terms_explanation"><b>MCC</b> (Mobile Country Code): Jedinečný identifikátor krajiny pre mobilné siete.\n\n<b>MNC</b> (Mobile Network Code): Jedinečný identifikátor siete v rámci krajiny. Kombinácia kódov MCC a MNC označuje konkrétneho poskytovateľa služieb (napr. T-Mobile).\n\n<b>LAC</b> (Location Area Code): Identifikátor skupiny mobilných vysielačov,ktorý sa používa na volanie zariadení.\n\n<b>CID</b> (Cell Identity): Identifikátor konkrétneho mobilného vysielača. Kombinácia kódov MCC, MNC, LAC a CID jednoznačne identifikuje konkrétny panel bunky UMTS spomedzi všetkých ostatných na svete.\n\n<b>UARFCN</b> (UTRA Absolute Radio Frequency Channel Number): Číslo reprezentujúce nosnú frekvenciu UMTS.\n\n<b>PSC</b> (Primary Scrambling Code): Identifikátor bunky na fyzickej vrstve, ktorý pomáha mobilnému zariadeniu rozlíšiť dve bunky, ktoré používajú rovnakú frekvenciu.\n\n<b>RSSI</b> (Received Signal Strength Indicator): Sila prijatého signálu v zostupnom smere v dBm, ako ho prijíma mobilné zariadenie.\n\n<b>RSCP</b> (Reference Signal Code Power): Sila referenčného signálu v dBm, ako ho prijíma mobilné zariadenie.</string>
     <string name="lte_info_description">Informácie o pojmoch v oblasti LTE</string>
@@ -417,8 +417,8 @@
     <string name="bluetooth_scan_interval_title">Interval vyhľadávania zariadení cez Bluetooth</string>
     <string name="bluetooth_scan_interval_description">Rýchlosť, s akou sa budú vyhľadávať zariadenia Bluetooth, vyjadrená v sekundách. Minimálna hodnota je 23 sekúnd vzhľadom na dĺžku vyhľadávania v režimoch BLE (10 s) a Classic (12 s). Nižšie hodnoty skrátia výdrž batérie.</string>
     <plurals name="bluetooth_scan_interval_below_minimum">
-        <item quantity="one">Interval vyhľadávania zariadení cez Bluetooth musí byť aspoň %d sekúnd. Hodnota bola nastavená na minimum.</item>
-        <item quantity="few">Interval vyhľadávania zariadení cez Bluetooth musí byť aspoň %d sekúnd. Hodnota bola nastavená na minimum.</item>
+        <item quantity="one">Interval vyhľadávania zariadení cez Bluetooth musí byť aspoň %d sekundu. Hodnota bola nastavená na minimum.</item>
+        <item quantity="few">Interval vyhľadávania zariadení cez Bluetooth musí byť aspoň %d sekundy. Hodnota bola nastavená na minimum.</item>
         <item quantity="many">Interval vyhľadávania zariadení cez Bluetooth musí byť aspoň %d sekúnd. Hodnota bola nastavená na minimum.</item>
         <item quantity="other">Interval vyhľadávania zariadení cez Bluetooth musí byť aspoň %d sekúnd. Hodnota bola nastavená na minimum.</item>
     </plurals>
@@ -476,8 +476,8 @@
     <string name="filter_showall">(zobraziť všetko)</string>
     <string name="gps_error_time_title">Váš čas GNSS je nesprávny</string>
     <plurals name="gps_error_time_message">
-        <item quantity="one">Čas GNSS v zariadení:\n\n%1$s\n\n…sa líši od systémových hodín o viac ako %2$d dní. Príčinou môže byť problém s prechodom na nový týždeň GPS – podrobnosti si vyžiadajte od výrobcu zariadenia. Ďalšie informácie nájdete na stránke https://bit.ly/gps-week-rollover.</item>
-        <item quantity="few">Čas GNSS v zariadení:\n\n%1$s\n\n…sa líši od systémových hodín o viac ako %2$d dní. Príčinou môže byť problém s prechodom na nový týždeň GPS – podrobnosti si vyžiadajte od výrobcu zariadenia. Ďalšie informácie nájdete na stránke https://bit.ly/gps-week-rollover.</item>
+        <item quantity="one">Čas GNSS v zariadení:\n\n%1$s\n\n…sa líši od systémových hodín o viac ako %2$d deň. Príčinou môže byť problém s prechodom na nový týždeň GPS – podrobnosti si vyžiadajte od výrobcu zariadenia. Ďalšie informácie nájdete na stránke https://bit.ly/gps-week-rollover.</item>
+        <item quantity="few">Čas GNSS v zariadení:\n\n%1$s\n\n…sa líši od systémových hodín o viac ako %2$d dni. Príčinou môže byť problém s prechodom na nový týždeň GPS – podrobnosti si vyžiadajte od výrobcu zariadenia. Ďalšie informácie nájdete na stránke https://bit.ly/gps-week-rollover.</item>
         <item quantity="many">Čas GNSS v zariadení:\n\n%1$s\n\n…sa líši od systémových hodín o viac ako %2$d dní. Príčinou môže byť problém s prechodom na nový týždeň GPS – podrobnosti si vyžiadajte od výrobcu zariadenia. Ďalšie informácie nájdete na stránke https://bit.ly/gps-week-rollover.</item>
         <item quantity="other">Čas GNSS v zariadení:\n\n%1$s\n\n…sa líši od systémových hodín o viac ako %2$d dní. Príčinou môže byť problém s prechodom na nový týždeň GPS – podrobnosti si vyžiadajte od výrobcu zariadenia. Ďalšie informácie nájdete na stránke https://bit.ly/gps-week-rollover.</item>
     </plurals>
@@ -807,8 +807,8 @@
     <string name="ns_analytics_upload_status_viewer_cannot_upload">Nahrávanie nie je povolené</string>
     <string name="ns_analytics_upload_status_session_expired">Relácia vypršala</string>
     <plurals name="ns_analytics_upload_result_records">
-        <item quantity="one">Nahralo sa %1$d záznamov</item>
-        <item quantity="few">Nahralo sa %1$d záznamov</item>
+        <item quantity="one">Nahral sa %1$d záznam</item>
+        <item quantity="few">Nahrali sa %1$d záznamy</item>
         <item quantity="many">Nahralo sa %1$d záznamov</item>
         <item quantity="other">Nahralo sa %1$d záznamov</item>
     </plurals>
@@ -866,10 +866,10 @@
     <string name="plmn_lookup_empty_line1">Nenašli sa žiadne zodpovedajúce PLMN.</string>
     <string name="plmn_lookup_empty_line2">Skúste zadať názov krajiny/regiónu, značku prevádzkovateľa alebo kód MCC</string>
     <plurals name="plmn_lookup_n_operators">
-        <item quantity="one">Operátory %1$d</item>
-        <item quantity="few">Operátory %1$d</item>
-        <item quantity="many">Operátory %1$d</item>
-        <item quantity="other">Operátory %1$d</item>
+        <item quantity="one">%1$d operátor</item>
+        <item quantity="few">%1$d Operátori</item>
+        <item quantity="many">%1$d Operátorov</item>
+        <item quantity="other">%1$d Operátorov</item>
     </plurals>
     <string name="plmn_lookup_plmn_label">PLMN %1$s</string>
     <string name="plmn_lookup_copied_toast">Skopírované PLMN</string>
@@ -938,7 +938,7 @@
     </plurals>
     <string name="oui_lookup_section_vendor">Výrobca</string>
     <string name="oui_lookup_section_mac_address">MAC adresa</string>
-    <string name="oui_lookup_legend_oui">OUI prefix</string>
+    <string name="oui_lookup_legend_oui">OUI predpona</string>
     <string name="oui_lookup_legend_nic">NIC prípona</string>
     <string name="oui_lookup_copy_vendor">Kopírovať výrobcu</string>
     <string name="oui_lookup_copy_clip_label">Výrobca</string>
@@ -978,8 +978,8 @@
     <string name="network_technology_title">Sieťové technológie</string>
     <string name="network_technology_icon_description">Informácie o sieťových technológiách</string>
     <plurals name="carrier_aggregation_summary">
-        <item quantity="one">Agregácia operátorov · %1$d operátorov ·%2$s MHz</item>
-        <item quantity="few">Agregácia operátorov · %1$d operátorov ·%2$s MHz</item>
+        <item quantity="one">Agregácia operátorov · %1$d operátor ·%2$s MHz</item>
+        <item quantity="few">Agregácia operátorov · %1$d operátori ·%2$s MHz</item>
         <item quantity="many">Agregácia operátorov · %1$d operátorov ·%2$s MHz</item>
         <item quantity="other">Agregácia operátorov · %1$d operátorov ·%2$s MHz</item>
     </plurals>
@@ -995,10 +995,10 @@
     <string name="wifi_list_ap_count_filtered">APs: %1$d z %2$d</string>
     <string name="wifi_tag_excluded">Vylúčené</string>
     <plurals name="wifi_group_excluded_count">
-        <item quantity="one">%1$d boli vylúčené</item>
-        <item quantity="few">%1$d boli vylúčené</item>
-        <item quantity="many">%1$d boli vylúčené</item>
-        <item quantity="other">%1$d boli vylúčené</item>
+        <item quantity="one">%1$d bol vylúčený</item>
+        <item quantity="few">%1$d boli vylúčení</item>
+        <item quantity="many">%1$d boli vylúčení</item>
+        <item quantity="other">%1$d boli vylúčení</item>
     </plurals>
     <string name="wifi_filter_title">Filter sietí</string>
     <string name="wifi_filter_content_description">Filtrovať zoznam Wi-Fi sietí</string>
@@ -1040,7 +1040,7 @@
     <string name="more_options">Ďalšie možnosti</string>
     <plurals name="count_of_max_format">
         <item quantity="one">Použité %1$d z %2$d</item>
-        <item quantity="few">Použité %1$d z %2$d</item>
+        <item quantity="few">Použité %1$d zo %2$d</item>
         <item quantity="many">Použité %1$d z %2$d</item>
         <item quantity="other">Použité %1$d z %2$d</item>
     </plurals>
@@ -1153,19 +1153,19 @@
         <item quantity="other">%d pozorovaní</item>
     </plurals>
     <plurals name="watchlist_networks_count">
-        <item quantity="one">%d sietí</item>
-        <item quantity="few">%d sietí</item>
+        <item quantity="one">%d sieť</item>
+        <item quantity="few">%d siete</item>
         <item quantity="many">%d sietí</item>
         <item quantity="other">%d sietí</item>
     </plurals>
     <plurals name="watchlist_located_sightings_count">
-        <item quantity="one">%d zaznamenaných pozorovaní</item>
-        <item quantity="few">%d zaznamenaných pozorovaní</item>
+        <item quantity="one">%d zaznamenané pozorovanie</item>
+        <item quantity="few">%d zaznamenané pozorovania</item>
         <item quantity="many">%d zaznamenaných pozorovaní</item>
         <item quantity="other">%d zaznamenaných pozorovaní</item>
     </plurals>
     <plurals name="watchlist_import_new_count">
-        <item quantity="one">%d nových</item>
+        <item quantity="one">%d nové</item>
         <item quantity="few">%d nových</item>
         <item quantity="many">%d nových</item>
         <item quantity="other">%d nových</item>
@@ -1214,4 +1214,135 @@
     </plurals>
     <string name="ns_analytics_notification_channel_name">NS Analytics</string>
     <string name="ns_analytics_notification_channel_description">Oznámenia o nahrávaní údajov do NS Analytics, napríklad keď je nahrávanie pozastavené</string>
+    <string name="survey_points_layer_title">Body môjho prieskumu</string>
+    <plurals name="survey_points_count">
+        <item quantity="one">%1$s zmapovaný bod</item>
+        <item quantity="few">%1$s zmapované body</item>
+        <item quantity="many">%1$s zmapovaných bodov</item>
+        <item quantity="other">%1$s zmapovaných bodov</item>
+    </plurals>
+    <string name="survey_points_empty">Zatiaľ nie sú k dispozícii žiadne body z prieskumu. Zapnite skenovanie pri nahrávaní alebo prieskum NS Analytics, potom začnite s prieskumom a body, ktoré zachytíte, sa tu zobrazia.</string>
+    <string name="survey_points_info">Bodky označujú miesta, kde ste vykonali prieskumy. Ťuknutím na obrázok nad mapou môžete zmeniť význam farieb a ťuknutím na bodku si môžete pozrieť, čo sa tam zaznamenalo.</string>
+    <string name="survey_points_hint_dismiss">Zatvoriť</string>
+    <string name="survey_points_about_title">O prieskumných bodoch</string>
+    <string name="survey_points_about_sources">Body sa zaznamenávajú iba vtedy, keď je zapnuté skenovanie pri nahrávaní do OpenCelliD alebo BeaconDB, alebo keď prebieha prieskum NS Analytics, a to len pre tie typy záznamov, na ktorých zber sú tieto ciele nastavené. Zaznamenávanie do súborov, MQTT a gRPC body nepridáva. Body z Bluetooth pochádzajú výlučne z NS Analytics.</string>
+    <string name="survey_points_about_spacing">Bod sa zaznamenáva približne každých %1$d m pri chôdzi a každých %2$d m pri jazde, a to len vtedy, ak je poloha určená s presnosťou %3$d m alebo lepšou. Ide o záznam miest, kde ste vykonali prieskum, nie o záznam každého skenovania.</string>
+    <string name="survey_points_about_storage">Body zostávajú v tomto zariadení, a to až do veľkosti %1$s. Ak tento limit prekročíte, najskôr sa odstránia najstaršie už odoslané body. Môžete ich kedykoľvek vymazať v nastaveniach mapy.</string>
+    <string name="survey_points_about_reading">Pri oddialení každá značka znázorňuje skôr určitú oblasť ako jeden bod. Zväčšením zobrazenia sa zobrazia jednotlivé body; ťuknutím na jeden z nich si môžete pozrieť, čo sa tam zaznamenalo.</string>
+    <string name="see_on_map">Pozri na mape</string>
+    <string name="survey_points_options_title">Prieskumné body</string>
+    <string name="survey_points_change">Zmena</string>
+    <string name="survey_points_summary">%1$s · %2$s</string>
+    <string name="survey_points_key_description">Kľúč k prieskumu</string>
+    <string name="survey_points_show">Ukázať</string>
+    <string name="survey_points_color_by">Farba pre</string>
+    <string name="survey_points_advanced">Pokročilé</string>
+    <string name="survey_points_mode_signal">Sila signálu</string>
+    <string name="survey_points_mode_technology">Technológia</string>
+    <string name="survey_points_mode_provider">Poskytovateľ</string>
+    <string name="survey_points_mode_sent">Stav odoslania</string>
+    <string name="survey_points_mode_cell">Bunka</string>
+    <string name="survey_points_mode_area">Oblasť (TAC/LAC)</string>
+    <string name="survey_points_kind_cellular">Mobilná sieť</string>
+    <string name="survey_points_kind_wifi">Wi-Fi</string>
+    <string name="survey_points_kind_bluetooth">Bluetooth</string>
+    <string name="survey_points_signal_strong">Silný</string>
+    <string name="survey_points_signal_good">Dobrý</string>
+    <string name="survey_points_signal_fair">Dostatočný</string>
+    <string name="survey_points_signal_weak">Slabý</string>
+    <string name="survey_points_signal_very_weak">Veľmi slabý</string>
+    <string name="survey_points_signal_above">nad %1$d dBm</string>
+    <string name="survey_points_signal_between">%1$d až %2$d dBm</string>
+    <string name="survey_points_signal_below">pod %1$d dBm</string>
+    <string name="survey_points_thresholds_note">Prispôsobenie hraničných hodnôt pre 3G a 2G</string>
+    <string name="survey_points_unknown">Neznámy (zistené pred touto aktualizáciou)</string>
+    <string name="survey_points_unknown_short">Neznámy</string>
+    <plurals name="survey_points_and_more">
+        <item quantity="one">a o %1$d viac</item>
+        <item quantity="few">a o %1$d viac</item>
+        <item quantity="many">a o %1$d viac</item>
+        <item quantity="other">a o %1$d viac</item>
+    </plurals>
+    <string name="survey_points_colors_repeat">Farby sa opakujú, ak je ich na obraze veľa</string>
+    <string name="survey_points_coarse_note">Po oddialení: každá značka znázorňuje určitú oblasť.</string>
+    <string name="survey_points_legend_pending">Ešte nebolo odoslané</string>
+    <string name="survey_points_legend_uploaded">Odoslané</string>
+    <string name="survey_points_tech_nr">5G NR</string>
+    <string name="survey_points_tech_lte">LTE</string>
+    <string name="survey_points_tech_umts">UMTS</string>
+    <string name="survey_points_tech_gsm">GSM</string>
+    <string name="survey_points_area_label">Oblasť %1$s</string>
+    <string name="survey_points_filter_when">Pri prieskume</string>
+    <string name="survey_points_filter_any">Kedykoľvek</string>
+    <string name="survey_points_filter_last_hour">Poslednú hodinu</string>
+    <string name="survey_points_filter_last_7_days">Posledných 7 dní</string>
+    <string name="survey_points_filter_collected">Zozbierané pre</string>
+    <string name="survey_points_filter_both">Oba</string>
+    <string name="survey_point_signal">Signál</string>
+    <string name="survey_point_provider">Poskytovateľ</string>
+    <string name="survey_point_technology">Technológia</string>
+    <string name="survey_point_cell">Bunka</string>
+    <string name="survey_point_area">Oblasť</string>
+    <string name="survey_point_surveyed">Zmapované</string>
+    <string name="survey_point_collected_for">Zozbierané pre</string>
+    <string name="survey_point_sent">Odoslané</string>
+    <string name="survey_point_not_sent">Ešte nebolo odoslané</string>
+    <string name="survey_point_networks_heard">Zachytené siete</string>
+    <string name="survey_point_devices_heard">Zachytené zariadenia</string>
+    <string name="survey_point_strongest">Najsilnejší</string>
+    <string name="survey_point_nsa">5G NR (NSA)</string>
+    <string name="survey_point_enb_sector">eNB %1$d · Sektor %2$d</string>
+    <string name="survey_point_tac">TAC %1$d</string>
+    <string name="survey_point_lac">LAC %1$d</string>
+    <string name="survey_point_dbm">%1$d dBm</string>
+    <string name="survey_point_dbm_metric">%1$d dBm (%2$s)</string>
+    <string name="survey_point_destination_ns">NS Analytics</string>
+    <string name="survey_point_destination_community">OpenCelliD a BeaconDB</string>
+    <string name="survey_point_destination_ocid">OpenCelliD</string>
+    <string name="survey_point_destination_beacondb">BeaconDB</string>
+    <string name="survey_point_peek_heard">%1$s · %2$s · najsilnejší %3$d dBm · %4$s</string>
+    <plurals name="survey_point_networks_count">
+        <item quantity="one">%1$d sieť</item>
+        <item quantity="few">%1$d siete</item>
+        <item quantity="many">%1$d sietí</item>
+        <item quantity="other">%1$d sietí</item>
+    </plurals>
+    <plurals name="survey_point_devices_count">
+        <item quantity="one">%1$d zariadenie</item>
+        <item quantity="few">%1$d zariadenia</item>
+        <item quantity="many">%1$d zariadení</item>
+        <item quantity="other">%1$d zariadení</item>
+    </plurals>
+    <plurals name="survey_point_aggregate_title">
+        <item quantity="one">O %1$d prieskumnom bode viac tu</item>
+        <item quantity="few">O %1$d prieskumných bodoch viac tu</item>
+        <item quantity="many">O %1$d prieskumných bodoch viac tu</item>
+        <item quantity="other">O %1$d prieskumných bodoch viac tu</item>
+    </plurals>
+    <plurals name="survey_point_multiple_title">
+        <item quantity="one">%1$d prieskumnom bode tu</item>
+        <item quantity="few">%1$d prieskumných bodoch tu</item>
+        <item quantity="many">%1$d prieskumných bodoch tu</item>
+        <item quantity="other">%1$d prieskumných bodoch tu</item>
+    </plurals>
+    <string name="survey_point_zoom_in">Zväčšiť pre zobrazenie detailov</string>
+    <string name="survey_point_best_signal">Tu je najlepší signál</string>
+    <string name="survey_point_common_tech">Najbežnejšia technológia</string>
+    <string name="survey_point_common_provider">Najbežnejší poskytovateľ</string>
+    <string name="survey_point_first_surveyed">Prvýkrát zmapované</string>
+    <string name="survey_point_last_surveyed">Naposledy zmapované</string>
+    <plurals name="survey_point_sent_count">
+        <item quantity="one">%1$d z %2$d odoslaných</item>
+        <item quantity="few">%1$d z %2$d odoslaných</item>
+        <item quantity="many">%1$d z %2$d odoslaných</item>
+        <item quantity="other">%1$d z %2$d odoslaných</item>
+    </plurals>
+    <string name="survey_points_category_title">Prieskumné body</string>
+    <string name="clear_survey_points_title">Vymazať body prieskumu</string>
+    <string name="clear_survey_points_summary">Odstráni z tohto zariadenia body prieskumu zobrazené na mape</string>
+    <string name="clear_survey_points_confirm_title">Vymazať body prieskumu?</string>
+    <string name="clear_survey_points_confirm_message">Týmto sa z tohto zariadenia odstránia body prieskumu zobrazené na mape. Nemá to vplyv na údaje, ktoré už boli odoslané do OpenCelliD, BeaconDB alebo NS Analytics.</string>
+    <string name="clear_survey_points_confirm_button">Vymazať</string>
+    <string name="clear_survey_points_success">Prieskumné body boli odstránené</string>
+    <string name="clear_survey_points_failed">Nepodarilo sa vymazať body prieskumu</string>
 </resources>
