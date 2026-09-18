@@ -1,9 +1,6 @@
 package com.craxiom.networksurvey.fragments
 
-import android.content.BroadcastReceiver
 import android.content.Context
-import android.content.Intent
-import android.content.IntentFilter
 import android.location.LocationListener
 import android.location.LocationManager
 import android.os.Bundle
@@ -15,9 +12,9 @@ import androidx.compose.ui.platform.ComposeView
 import androidx.compose.ui.platform.ViewCompositionStrategy
 import androidx.compose.ui.unit.dp
 import androidx.core.location.LocationManagerCompat
+import androidx.lifecycle.Observer
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
-import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import com.craxiom.networksurvey.SimChangeReceiver
 import com.craxiom.networksurvey.listeners.ICellularSurveyRecordListener
 import com.craxiom.networksurvey.model.CellularProtocol
@@ -41,8 +38,9 @@ class TowerMapFragment : AServiceDataFragment(), ICellularSurveyRecordListener {
     private var paddingValues: PaddingValues = PaddingValues(2.dp)
     private var servingCell: ServingCellInfo? = null
     private var locationListener: LocationListener? = null
-    private val simBroadcastReceiver = object : BroadcastReceiver() {
-        override fun onReceive(context: Context, intent: Intent) {
+    private var simChangeSequenceBaseline = 0L
+    private val simChangeObserver = Observer<Long> { sequence ->
+        if (sequence != null && sequence > simChangeSequenceBaseline) {
             Timber.i("SIM State Change Detected. Resetting the tower map VM")
             viewModel?.resetSimCount()
         }
@@ -50,14 +48,9 @@ class TowerMapFragment : AServiceDataFragment(), ICellularSurveyRecordListener {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        context?.let {
-            LocalBroadcastManager.getInstance(it).registerReceiver(
-                simBroadcastReceiver,
-                IntentFilter(SimChangeReceiver.SIM_CHANGED_INTENT)
-            )
-        }
+        simChangeSequenceBaseline = SimChangeReceiver.getCurrentSimChangeEventSequence()
+        SimChangeReceiver.getSimChangeEvents().observeForever(simChangeObserver)
     }
-
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
@@ -92,12 +85,9 @@ class TowerMapFragment : AServiceDataFragment(), ICellularSurveyRecordListener {
     }
 
     override fun onDestroy() {
-        context?.let {
-            LocalBroadcastManager.getInstance(it).unregisterReceiver(simBroadcastReceiver)
-        }
+        SimChangeReceiver.getSimChangeEvents().removeObserver(simChangeObserver)
         super.onDestroy()
     }
-
     override fun onSurveyServiceConnected(service: NetworkSurveyService?) {
         if (service == null) return
         service.registerCellularSurveyRecordListener(this)

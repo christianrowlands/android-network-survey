@@ -25,7 +25,7 @@ import android.telephony.TelephonyManager;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.core.app.ActivityCompat;
-import androidx.localbroadcastmanager.content.LocalBroadcastManager;
+import androidx.lifecycle.Observer;
 
 import com.craxiom.networksurvey.R;
 import com.craxiom.networksurvey.SimChangeReceiver;
@@ -101,7 +101,7 @@ public class CellularController extends AController
     private final CdmaCsvLogger cdmaCsvLogger;
     private final GsmCsvLogger gsmCsvLogger;
     private final Map<Integer, PhoneStateListener> phoneStateListenerMap = new HashMap<>();
-    private BroadcastReceiver simBroadcastReceiver;
+    private Observer<Long> simChangeObserver;
 
     private final AtomicBoolean phoneStateLoggingEnabled = new AtomicBoolean(false);
     private final AtomicBoolean phoneStateAutoStartedByCellular = new AtomicBoolean(false);
@@ -139,13 +139,12 @@ public class CellularController extends AController
         // to the surveyService) does not cause a NPE if logging is still being enabled or disabled.
         synchronized (cellularLoggingEnabled)
         {
-            // Unregister the SIM broadcast receiver to prevent memory leak
-            if (simBroadcastReceiver != null && surveyService != null)
+            // Remove the SIM-change observer to prevent memory leaks and queued-event delivery after teardown.
+            if (simChangeObserver != null)
             {
-                LocalBroadcastManager.getInstance(surveyService).unregisterReceiver(simBroadcastReceiver);
-                simBroadcastReceiver = null;
+                SimChangeReceiver.getSimChangeEvents().removeObserver(simChangeObserver);
+                simChangeObserver = null;
             }
-
             // Clear callback maps to prevent memory leaks from pending TelephonyManager callbacks
             // The cellInfoListenerMap holds strong references to listeners that capture this controller,
             // clearing it breaks the reference chain even if framework binder stubs hold the callbacks
@@ -896,40 +895,43 @@ public class CellularController extends AController
     }
 
     /**
-     * Registers a receiver for SIM state change events.
+     * Registers for SIM state change events.
      */
     private void registerSimStateChangeReceiver()
     {
-        if (surveyService == null) return;
+        if (surveyService == null || simChangeObserver != null) return;
 
-        simBroadcastReceiver = new BroadcastReceiver()
-        {
-            @Override
-            public void onReceive(Context context, Intent intent)
-            {
-                if (intent == null) return;
+        final long subscriptionSequence = SimChangeReceiver.getCurrentSimChangeEventSequence();
+        simChangeObserver = eventSequence -> {
+            if (eventSequence == null || eventSequence <= subscriptionSequence) return;
 
-                Timber.i("SIM State Change Detected. Refreshing the active subscription info list");
-
-                boolean phoneStateWasEnabled = !phoneStateListenerMap.isEmpty();
-                boolean cdrWasEnabled = cdrStarted.get();
-
-                if (phoneStateWasEnabled) stopPhoneStateListener();
-                if (cdrWasEnabled) stopCdrEvents();
-
-                initializeCellularScanningResources();
-
-                // Stop and start the phone state listener so that it will be listening to the new SIM(s),
-                // only if they were started before the SIM change.
-                if (phoneStateWasEnabled) startPhoneStateListener();
-                if (cdrWasEnabled) startCdrEvents();
-            }
+            onReceive(surveyService, new Intent(SimChangeReceiver.SIM_CHANGED_INTENT));
         };
-
-        LocalBroadcastManager.getInstance(surveyService).registerReceiver(simBroadcastReceiver,
-                new IntentFilter(SimChangeReceiver.SIM_CHANGED_INTENT));
+        SimChangeReceiver.getSimChangeEvents().observeForever(simChangeObserver);
     }
 
+    /**
+     * Handles a SIM state change event.
+     */
+    public void onReceive(Context context, Intent intent)
+    {
+        if (intent == null || !SimChangeReceiver.SIM_CHANGED_INTENT.equals(intent.getAction())) return;
+
+        Timber.i("SIM State Change Detected. Refreshing the active subscription info list");
+
+        boolean phoneStateWasEnabled = !phoneStateListenerMap.isEmpty();
+        boolean cdrWasEnabled = cdrStarted.get();
+
+        if (phoneStateWasEnabled) stopPhoneStateListener();
+        if (cdrWasEnabled) stopCdrEvents();
+
+        initializeCellularScanningResources();
+
+        // Stop and start the phone state listener so that it will be listening to the new SIM(s),
+        // only if they were started before the SIM change.
+        if (phoneStateWasEnabled) startPhoneStateListener();
+        if (cdrWasEnabled) startCdrEvents();
+    }
     /**
      * Runs one cellular scan. This is used to prime the UI in the event that the scan interval is really long.
      * <p>
