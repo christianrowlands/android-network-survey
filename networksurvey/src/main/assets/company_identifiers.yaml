@@ -1,5 +1,149 @@
 company_identifiers:
 
+  - value: 0x1124
+    name: 'DOLLAR JUDGE INC'
+
+  - value: 0x1123
+    name: 'Hudl, Inc.'
+
+  - value: 0x1122
+    name: 'FUSE BLUEJAY LIMITED'
+
+  - value: 0x1121
+    name: 'ennos ag'
+
+  - value: 0x1120
+    name: 'PI-CRYSTAL INC.'
+
+  - value: 0x111F
+    name: 'iAppliance Inc.'
+
+  - value: 0x111E
+    name: 'DS TAGS Group B.V.'
+
+  - value: 0x111D
+    name: 'Commodore International Corporation'
+
+  - value: 0x111C
+    name: 'Techavtomatica'
+
+  - value: 0x111B
+    name: 'DIGITANIMAL S.L.'
+
+  - value: 0x111A
+    name: 'BOKE Drivers Co., Ltd.'
+
+  - value: 0x1119
+    name: 'TSUKURUBAI, LIMITED LIABILITY COMPANY'
+
+  - value: 0x1118
+    name: 'Villeroy & Boch AG'
+
+  - value: 0x1117
+    name: 'Tive, Inc.'
+
+  - value: 0x1116
+    name: 'ALLRA LIMITED'
+
+  - value: 0x1115
+    name: 'Thermia Aktiebolag'
+
+  - value: 0x1114
+    name: 'Metabowerke GmbH'
+
+  - value: 0x1113
+    name: 'ONXMAPS, INC'
+
+  - value: 0x1112
+    name: 'JustTec GmbH'
+
+  - value: 0x1111
+    name: 'RAPSODO PTE. LTD.'
+
+  - value: 0x1110
+    name: 'Hamaton Inc.,'
+
+  - value: 0x110F
+    name: 'Nylint, LLC'
+
+  - value: 0x110E
+    name: 'Gigawit Electronics LTD'
+
+  - value: 0x110D
+    name: 'ARETA AI INC.'
+
+  - value: 0x110C
+    name: 'rescuetrack GmbH'
+
+  - value: 0x110B
+    name: 'SIGMA CORPORATION'
+
+  - value: 0x110A
+    name: 'OnRace Motorsports'
+
+  - value: 0x1109
+    name: 'Hamodaz Corporation'
+
+  - value: 0x1108
+    name: 'BEMER Int. AG'
+
+  - value: 0x1107
+    name: 'Optrel AG'
+
+  - value: 0x1106
+    name: 'Flicfit inc.'
+
+  - value: 0x1105
+    name: 'Cirrus Design Corporation'
+
+  - value: 0x1104
+    name: 'Daiichi Elektronik Sanayi ve Ticaret. A.S.'
+
+  - value: 0x1103
+    name: 'BRISANT SECURE LTD'
+
+  - value: 0x1102
+    name: 'Temple Private Limited'
+
+  - value: 0x1101
+    name: 'Nearfaces UG (haftungsbeschränkt)'
+
+  - value: 0x1100
+    name: 'miThings'
+
+  - value: 0x10FF
+    name: 'Sonus Faber spa'
+
+  - value: 0x10FE
+    name: 'Daisen Electronic Industrial Co., Ltd.'
+
+  - value: 0x10FD
+    name: 'Neurabody Inc.'
+
+  - value: 0x10FC
+    name: 'CITECH CO.,LTD.'
+
+  - value: 0x10FB
+    name: 'Hydratune Australia Pty Ltd'
+
+  - value: 0x10FA
+    name: 'QPlay Ltd'
+
+  - value: 0x10F9
+    name: 'Even Realities Ltd.'
+
+  - value: 0x10F8
+    name: 'IONLINE INTERNET SERVICE PROVIDER'
+
+  - value: 0x10F7
+    name: 'HEX INNOVATE (UK) LIMITED'
+
+  - value: 0x10F6
+    name: 'Pressure Systems International, Inc.'
+
+  - value: 0x10F5
+    name: 'Shenzhen DeepX Technology Co., Ltd.'
+
   - value: 0x10F4
     name: 'SUPERARK LTD'
 
@@ -2746,7 +2890,7 @@ company_identifiers:
     name: 'TAG HEUER SA'
 
   - value: 0x0CE6
-    name: 'McWong International, Inc.'
+    name: 'mwConnect'
 
   - value: 0x0CE5
     name: 'Amina Distribution AS'
@@ -4723,7 +4867,7 @@ company_identifiers:
     name: 'API-K'
 
   - value: 0x0A1C
-    name: 'INPEAK S.C.'
+    name: 'INPEAK sp. z o.o.'
 
   - value: 0x0A1B
     name: 'Embrava Pty Ltd'
@@ -9265,7 +9409,7 @@ company_identifiers:
     name: 'Intricon'
 
   - value: 0x03C5
-    name: 'St. Jude Medical, Inc.'
+    name: 'Abbott Medical'
 
   - value: 0x03C4
     name: 'Pico Technology Inc.'
@@ -10588,7 +10732,7 @@ company_identifiers:
     name: 'Jolla Ltd'
 
   - value: 0x01E0
-    name: 'Widex A/S'
+    name: 'WS Audiology Denmark A/S'
 
   - value: 0x01DF
     name: 'Bison Group Ltd.'

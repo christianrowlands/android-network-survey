@@ -307,9 +307,9 @@ uuids:
  - uuid: 0xFE74
    name: unwire
  - uuid: 0xFE73
-   name: "Abbott (formerly St. Jude Medical, Inc.)"
+   name: "Abbott Medical (formerly St. Jude Medical, Inc.)"
  - uuid: 0xFE72
-   name: "Abbott (formerly St. Jude Medical, Inc.)"
+   name: "Abbott Medical (formerly St. Jude Medical, Inc.)"
  - uuid: 0xFE71
    name: Plume Design Inc
  - uuid: 0xFE70
@@ -1448,3 +1448,15 @@ uuids:
    name: Arashi Vision Inc.
  - uuid: 0xFC2C
    name: Verkada Inc.
+ - uuid: 0xFC2B
+   name: "Elder Technologies, Inc"
+ - uuid: 0xFC2A
+   name: Troo Corporation
+ - uuid: 0xFC29
+   name: Google LLC
+ - uuid: 0xFC28
+   name: TechnoPartner Tecnologia Ltda.
+ - uuid: 0xFC27
+   name: Barking Labs Corp.
+ - uuid: 0xFC26
+   name: "Hudl, Inc."
