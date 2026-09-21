@@ -1,0 +1,5 @@
+* New "My survey points" map layer showing where your surveys recorded data, colored by signal, technology, or provider.
+* New Cellular Tools screen: browse every LTE and 5G NR band, and resolve a channel number to its band.
+* The ongoing notification now reports the survey state and where records are being sent.
+* Faster tower map loading, with a session tile cache and more towers on screen.
+* Bug fixes for the 5G NR band display, lingering notifications, and tower map refetching.

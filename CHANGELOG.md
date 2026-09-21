@@ -1,5 +1,27 @@
 # Changelog
 
+## [1.59](https://github.com/christianrowlands/android-network-survey/releases/tag/v1.59) - 2026-09-21
+
+**NEW FEATURES**
+* Add a "My survey points" map layer that shows where your surveys actually recorded data, on both the tower map and the Survey Monitor map. [#101](https://github.com/christianrowlands/android-network-survey/issues/101)
+* Color survey points by signal strength, technology, provider, sent status, cell, or area (TAC/LAC), and switch the layer between cellular, Wi-Fi, and Bluetooth.
+* Filter survey points by when they were surveyed, which upload destination collected them, and whether they have been sent, with the active filters shown as dismissible chips on the map.
+* Add a Cellular Tools screen with a browsable reference of every LTE and 5G NR band, searchable by band designator, name, EARFCN, NARFCN, or frequency.
+* Rename the Cellular Calculators screen to Cellular Tools with Bands and Calculators panes, and add a Channel to Band calculator that resolves an EARFCN or NARFCN to its band and shows the frequency.
+* Tap the Band field on the cellular details screen to open that band's entry in the reference.
+* Rework the ongoing survey notification to report the state of the survey.
+
+**IMPROVEMENTS**
+* Load towers onto the map through a session tile cache, so panning back to an area you have already viewed, or zooming into it, no longer refetches it.
+* Raise the on-map tower budget from 7,500 to 20,000, and build the map features off the main thread.
+* Replace rather than stack new tower alerts, make them dismissible, and count towers per survey.
+* Translation updates contributed through Weblate.
+
+**BUG FIXES**
+* Fix the 5G NR band being left blank when the device does not report one and the NARFCN falls in more than one band. Every candidate is now listed (for example `n48 / n77 / n78`), with a different separator than the bands the modem reported.
+* Fix the tower map repeatedly refetching a dense city view after the server truncated the result.
+* Fix two- and three-digit MNCs producing colliding tower identifiers, which could open the wrong tower when one was tapped.
+
 ## [1.58](https://github.com/christianrowlands/android-network-survey/releases/tag/v1.58) - 2026-09-02
 
 **NEW FEATURES**
