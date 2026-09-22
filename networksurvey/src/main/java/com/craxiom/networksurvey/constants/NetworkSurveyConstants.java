@@ -127,10 +127,11 @@ public class NetworkSurveyConstants
 
     /**
      * Minimum Bluetooth scan interval in seconds. The Bluetooth scanning process requires
-     * at least 23 seconds: 10 seconds for BLE scanning, 12 seconds for Classic Bluetooth
-     * discovery, and 1 second minimum wait between cycles.
+     * at least 24 seconds: 10 seconds for BLE scanning, 12 seconds for Classic Bluetooth
+     * discovery, a 1 second buffer so the inquiry reaches its natural end, and 1 second
+     * minimum wait between cycles. Values below that floor behave identically to the floor.
      */
-    public static final int MINIMUM_BLUETOOTH_SCAN_INTERVAL_SECONDS = 23;
+    public static final int MINIMUM_BLUETOOTH_SCAN_INTERVAL_SECONDS = 24;
 
     public static final String DEFAULT_ROLLOVER_SIZE_MB = "10";
 

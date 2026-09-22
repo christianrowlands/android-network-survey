@@ -74,6 +74,7 @@ import com.craxiom.messaging.UmtsRecordData;
 import com.craxiom.messaging.WifiBeaconRecord;
 import com.craxiom.messaging.WifiBeaconRecordData;
 import com.craxiom.messaging.bluetooth.SupportedTechnologies;
+import com.craxiom.messaging.bluetooth.Technology;
 import com.craxiom.messaging.gnss.Constellation;
 import com.craxiom.messaging.phonestate.Domain;
 import com.craxiom.messaging.phonestate.NetworkType;
@@ -2292,9 +2293,35 @@ public class SurveyRecordProcessor
         }
         if (otaDeviceName != null) dataBuilder.setOtaDeviceName(otaDeviceName);
 
+        // BluetoothLeScanner only ever reports LE advertisements, so a record built from a
+        // ScanResult was definitively observed over LE. Note this is not gated on BLUETOOTH_CONNECT,
+        // because it follows from which scanner produced the result rather than from a
+        // permission-gated API call.
+        //
+        // The Classic path is deliberately left unset. Android's startDiscovery() also surfaces BLE
+        // devices through ACTION_FOUND, and BluetoothDevice#getType() reports the stack's cached
+        // idea of device capability rather than the radio a given packet arrived on, so BR/EDR
+        // cannot be proven for those records. Do not "complete" this by setting BR_EDR there.
+        final boolean observedOverLe = scanResult != null;
+        if (observedOverLe)
+        {
+            dataBuilder.setTechnology(Technology.LE);
+        }
+
         if (hasBluetoothConnect)
         {
-            final SupportedTechnologies supportedTech = BluetoothMessageConstants.getSupportedTechnologies(device.getType());
+            SupportedTechnologies supportedTech = BluetoothMessageConstants.getSupportedTechnologies(device.getType());
+
+            // The stack caches what it has learned about an address, so a dual mode device that the
+            // phone only ever met over BR/EDR keeps reporting DEVICE_TYPE_CLASSIC. Receiving an LE
+            // advertisement from that same address proves it supports LE, so widen the value rather
+            // than record one the observation itself contradicts. This only ever widens BR_EDR to
+            // DUAL; every other value is passed through untouched.
+            if (observedOverLe && supportedTech == SupportedTechnologies.BR_EDR)
+            {
+                supportedTech = SupportedTechnologies.DUAL;
+            }
+
             if (supportedTech != null && supportedTech != SupportedTechnologies.UNKNOWN)
             {
                 dataBuilder.setSupportedTechnologies(supportedTech);

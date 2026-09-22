@@ -28,6 +28,7 @@ import com.craxiom.networksurvey.logging.BluetoothSurveyRecordLogger;
 import com.craxiom.networksurvey.model.LogTypeState;
 import com.craxiom.networksurvey.services.NetworkSurveyService;
 import com.craxiom.networksurvey.services.SurveyRecordProcessor;
+import com.craxiom.networksurvey.util.NsCrashReporter;
 import com.craxiom.networksurvey.util.PreferenceUtils;
 
 import java.util.ArrayList;
@@ -41,6 +42,7 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import timber.log.Timber;
 
@@ -49,9 +51,10 @@ import timber.log.Timber;
  * and managing Bluetooth scanning.
  * <p>
  * The Bluetooth scanning process alternates between BLE scanning (10 seconds) and Classic
- * Bluetooth discovery (12 seconds), with a minimum wait time of 1 second between cycles.
- * This results in an implicit minimum scan interval of 23 seconds that cannot be overridden,
- * even if users set a lower value in preferences.
+ * Bluetooth discovery (12 seconds, plus a 1 second buffer so the inquiry reaches its natural
+ * end), with a minimum wait time of 1 second between cycles. This results in an implicit
+ * minimum scan interval of 24 seconds that cannot be overridden, even if users set a lower
+ * value in preferences.
  *
  * @noinspection NonPrivateFieldAccessedInSynchronizedContext
  */
@@ -59,6 +62,31 @@ public class BluetoothController extends AController
 {
     private static final long BLE_SCAN_DURATION_MS = 10000; // 10 seconds
     private static final long CLASSIC_SCAN_DURATION_MS = 12000; // 12 seconds (Android default)
+    /**
+     * Grace period added to the Classic inquiry so that it reaches its natural completion instead
+     * of being cut short by the phase advancing. This has to be included in the scan cycle
+     * arithmetic in {@link #waitForNextInterval()} or every cycle drifts a second long.
+     */
+    private static final long CLASSIC_DISCOVERY_BUFFER_MS = 1000; // 1 second
+    /**
+     * How many consecutive failed Classic discovery starts to tolerate before reporting a
+     * non-fatal. Chosen so a single transient refusal stays quiet while a genuinely dead Classic
+     * leg gets surfaced within about a minute and a half of scanning.
+     */
+    private static final int CLASSIC_DISCOVERY_FAILURE_REPORT_THRESHOLD = 3;
+    /**
+     * How many consecutive scan cycles may find an inquiry already in progress before the adapter
+     * is treated as wedged. This is deliberately far higher than
+     * {@link #CLASSIC_DISCOVERY_FAILURE_REPORT_THRESHOLD} because an overlapping inquiry is a
+     * normal condition rather than a failure: Android delivers {@link BluetoothDevice#ACTION_FOUND}
+     * to every registered receiver, so another app's discovery still feeds this survey. At the
+     * default scan rate this works out to roughly ten minutes of uninterrupted overlap.
+     */
+    private static final int CLASSIC_INQUIRY_OVERLAP_REPORT_THRESHOLD = 20;
+    /**
+     * Reason text used when {@link BluetoothAdapter#startDiscovery()} refuses to start an inquiry.
+     */
+    private static final String REASON_START_DISCOVERY_REFUSED = "startDiscovery() returned false";
     private static final long DUPLICATE_WINDOW_MS = 30000; // 30 seconds
     private static final int RSSI_CHANGE_THRESHOLD = 10; // dBm
     private static final int MAX_RECENT_DEVICES = 2000; // Maximum devices to track
@@ -77,6 +105,18 @@ public class BluetoothController extends AController
     private final ScheduledThreadPoolExecutor bluetoothScanExecutor = new ScheduledThreadPoolExecutor(1);
     private ScheduledFuture<?> bluetoothScanFuture;
     private volatile ScanPhase currentScanPhase = ScanPhase.IDLE;
+    private final AtomicInteger consecutiveClassicDiscoveryFailures = new AtomicInteger(0);
+    private final AtomicBoolean classicDiscoveryFailureReported = new AtomicBoolean(false);
+    private final AtomicInteger consecutiveClassicInquiryOverlaps = new AtomicInteger(0);
+    private final AtomicBoolean classicInquiryOverlapReported = new AtomicBoolean(false);
+    private final AtomicInteger classicDevicesFoundThisCycle = new AtomicInteger(0);
+    /**
+     * Set by the broadcast receiver whenever the Bluetooth stack reports inquiry activity, no
+     * matter which app started the inquiry. It is what tells a wedged adapter apart from another
+     * app simply holding a long running discovery, because only the former leaves this false for
+     * the whole of an overlap streak.
+     */
+    private volatile boolean sawClassicDiscoveryActivity = false;
     private final Map<String, DeviceInfo> recentDevices = new HashMap<>();
     private long lastCleanupTime = 0;
 
@@ -401,6 +441,8 @@ public class BluetoothController extends AController
             }
 
             if (bluetoothScanningActive.getAndSet(true)) return;
+
+            resetClassicDiscoveryHealth();
 
             final BluetoothAdapter bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
             if (bluetoothAdapter == null)
@@ -820,33 +862,147 @@ public class BluetoothController extends AController
             return;
         }
 
-        currentScanPhase = ScanPhase.CLASSIC_SCANNING;
+        classicDevicesFoundThisCycle.set(0);
 
-        if (!bluetoothAdapter.isDiscovering())
+        if (bluetoothAdapter.isDiscovering())
         {
-            bluetoothAdapter.startDiscovery();
+            // Either our own previous inquiry is still running, since the name resolution tail that
+            // follows an inquiry is unbounded, or another app is discovering. Skipping is the right
+            // move, and Classic records keep flowing either way because ACTION_FOUND goes to every
+            // registered receiver rather than only to whoever started the inquiry.
+            recordClassicInquiryOverlap();
         } else
         {
-            Timber.d("Classic discovery already in progress");
+            // startDiscovery() returns false when the inquiry is refused. Discarding that result
+            // would make a dead Classic leg indistinguishable from a quiet RF environment, because
+            // BLE results keep flowing either way.
+            if (!bluetoothAdapter.startDiscovery())
+            {
+                recordClassicDiscoveryNotStarted(REASON_START_DISCOVERY_REFUSED);
+
+                // Only the BLE phase ran this cycle, so only its duration is charged against the
+                // configured interval. Subtracting the full cycle time here would make a broken
+                // Classic leg quietly scan BLE faster than the user asked for.
+                waitForNextInterval(BLE_SCAN_DURATION_MS);
+                return;
+            }
+
+            resetClassicDiscoveryHealth();
         }
 
-        // Classic discovery stops automatically after ~12 seconds
-        // Schedule check to move to next phase
+        currentScanPhase = ScanPhase.CLASSIC_SCANNING;
+
+        // Classic discovery stops automatically after ~12 seconds. Advance a moment after that so
+        // the inquiry runs to its natural completion rather than being truncated.
         bluetoothScanFuture = bluetoothScanExecutor.schedule(this::startNextScanCycle,
-                CLASSIC_SCAN_DURATION_MS + 1000, TimeUnit.MILLISECONDS);
+                CLASSIC_SCAN_DURATION_MS + CLASSIC_DISCOVERY_BUFFER_MS, TimeUnit.MILLISECONDS);
     }
 
     /**
-     * Waits for the next scan interval.
+     * Clears the Classic discovery health tracking so that a fresh scanning session, or a cycle
+     * that started an inquiry successfully, begins from a clean slate. Re-arming the report latches
+     * here is what allows a second failure episode later in a long survey to be reported; the
+     * consecutive failure thresholds are what keep a flapping adapter from being noisy.
+     */
+    private void resetClassicDiscoveryHealth()
+    {
+        consecutiveClassicDiscoveryFailures.set(0);
+        classicDiscoveryFailureReported.set(false);
+        consecutiveClassicInquiryOverlaps.set(0);
+        classicInquiryOverlapReported.set(false);
+    }
+
+    /**
+     * Records that a scan cycle found an inquiry already in progress, and reports a non-fatal once
+     * the overlap has persisted with no sign that any inquiry is actually running.
+     * <p>
+     * An overlap on its own is benign and must not be reported. When an app really is discovering,
+     * this receiver still sees ACTION_FOUND and ACTION_DISCOVERY_FINISHED and the survey still
+     * captures Classic devices, so nothing is lost. An adapter wedged reporting isDiscovering()
+     * with nothing behind it delivers neither broadcast, and that is the only shape of this
+     * condition where Classic capture is genuinely dead.
+     */
+    private void recordClassicInquiryOverlap()
+    {
+        final int overlapCount = consecutiveClassicInquiryOverlaps.incrementAndGet();
+
+        // A streak that is just beginning starts listening for discovery activity from scratch.
+        if (overlapCount == 1) sawClassicDiscoveryActivity = false;
+
+        Timber.d("Bluetooth Classic discovery was skipped because an inquiry was already in progress. Consecutive overlaps: %d",
+                overlapCount);
+
+        if (overlapCount >= CLASSIC_INQUIRY_OVERLAP_REPORT_THRESHOLD
+                && !sawClassicDiscoveryActivity
+                && classicInquiryOverlapReported.compareAndSet(false, true))
+        {
+            NsCrashReporter.INSTANCE.recordException(
+                    new IllegalStateException("The Bluetooth adapter reported an inquiry in progress for "
+                            + overlapCount + " consecutive scan cycles without any discovery activity"),
+                    "The Bluetooth adapter has reported isDiscovering() for " + overlapCount
+                            + " consecutive scan cycles without delivering a single discovery broadcast,"
+                            + " so Bluetooth Classic capture is not running. BLE scanning is unaffected.");
+        }
+    }
+
+    /**
+     * Records that a Classic discovery cycle failed to start, and reports a non-fatal once the
+     * failures stop looking transient.
+     * <p>
+     * Timber is only planted in debug builds, so a log on its own would never reach a released
+     * device. Without the non-fatal, a Classic leg that has silently stopped collecting is
+     * invisible both to the user and to us, since BLE keeps producing records throughout.
+     * <p>
+     * Note that this is a regular flavor diagnostic. The CDR flavor ships without Crashlytics and
+     * its NsCrashReporter is a no-op that forwards to Timber, so in a CDR release build this
+     * reports nowhere at all. Covering that flavor needs a user visible surface instead.
+     *
+     * @param reason Why the inquiry did not start, used in the log and the report.
+     */
+    private void recordClassicDiscoveryNotStarted(String reason)
+    {
+        final int failureCount = consecutiveClassicDiscoveryFailures.incrementAndGet();
+        Timber.w("Bluetooth Classic discovery did not start because %s. Consecutive failures: %d",
+                reason, failureCount);
+
+        if (failureCount >= CLASSIC_DISCOVERY_FAILURE_REPORT_THRESHOLD
+                && classicDiscoveryFailureReported.compareAndSet(false, true))
+        {
+            // NsCrashReporter is a Kotlin object, so Java reaches it through INSTANCE.
+            NsCrashReporter.INSTANCE.recordException(
+                    new IllegalStateException("Bluetooth Classic discovery repeatedly failed to start because " + reason),
+                    "Bluetooth Classic discovery has not started for " + failureCount
+                            + " consecutive scan cycles. The last cycle heard "
+                            + classicDevicesFoundThisCycle.get() + " Classic device(s) from any"
+                            + " in progress inquiry. BLE scanning is unaffected.");
+        }
+    }
+
+    /**
+     * Waits for the next scan interval, charging a full scan cycle against the configured interval.
+     * <p>
+     * The Classic phase occupies its inquiry duration plus the buffer, so the buffer has to be
+     * counted here too or the cycle overruns the interval the user configured by a second every
+     * time.
      */
     private void waitForNextInterval()
     {
+        waitForNextInterval(BLE_SCAN_DURATION_MS + CLASSIC_SCAN_DURATION_MS + CLASSIC_DISCOVERY_BUFFER_MS);
+    }
+
+    /**
+     * Waits for the next scan interval, charging only the phases that actually ran.
+     *
+     * @param scanningTimeMs How long this cycle spent scanning, subtracted from the configured
+     *                       interval so that the cycle as a whole lands on that interval.
+     */
+    private void waitForNextInterval(long scanningTimeMs)
+    {
         currentScanPhase = ScanPhase.WAITING_NEXT_INTERVAL;
 
-        // Calculate time to wait
-        // Total cycle time is scan interval - time spent scanning
-        long scanningTime = BLE_SCAN_DURATION_MS + CLASSIC_SCAN_DURATION_MS;
-        long waitTime = Math.max(1000, bluetoothScanRateMs - scanningTime);
+        final long waitTime = Math.max(1000, bluetoothScanRateMs - scanningTimeMs);
+
+        Timber.d("Bluetooth scan cycle complete, waiting %d ms before the next cycle", waitTime);
 
         bluetoothScanFuture = bluetoothScanExecutor.schedule(this::startNextScanCycle,
                 waitTime, TimeUnit.MILLISECONDS);
@@ -956,6 +1112,11 @@ public class BluetoothController extends AController
 
             if (BluetoothDevice.ACTION_FOUND.equals(intent.getAction()))
             {
+                // Recorded before the paused check because this is a health signal about the
+                // adapter rather than about this survey: some inquiry is running and producing
+                // results, which is exactly what a wedged adapter never does.
+                ctrl.sawClassicDiscoveryActivity = true;
+
                 if (ctrl.isPaused())
                 {
                     Timber.v("Bluetooth classic device found but scanning is paused, ignoring");
@@ -977,10 +1138,24 @@ public class BluetoothController extends AController
 
                 if (rssi == Short.MIN_VALUE) return;
 
+                // Counted before the de-duplication filter so the completion log reflects what was
+                // heard rather than what survived filtering.
+                ctrl.classicDevicesFoundThisCycle.incrementAndGet();
+
                 if (ctrl.shouldLogDevice(device, rssi))
                 {
                     ctrl.surveyRecordProcessor.onBluetoothClassicScanUpdate(device, rssi);
                 }
+            } else if (BluetoothAdapter.ACTION_DISCOVERY_FINISHED.equals(intent.getAction()))
+            {
+                // This action has always been registered but never handled. It is the only signal
+                // that an inquiry ran to completion, which is what distinguishes a working Classic
+                // leg that found nothing from one that never started. Like ACTION_FOUND it is sent
+                // for any app's inquiry, so the count below is not necessarily ours.
+                ctrl.sawClassicDiscoveryActivity = true;
+
+                Timber.d("Bluetooth Classic discovery finished, %d device(s) were heard during the inquiry",
+                        ctrl.classicDevicesFoundThisCycle.get());
             }
         }
     }
