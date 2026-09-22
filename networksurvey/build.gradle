@@ -156,7 +156,7 @@ dependencies {
     implementation(libs.androidx.appcompat)
     implementation(libs.timber)
     implementation(libs.material)
-    implementation(libs.androidx.localbroadcastmanager)
+    implementation(libs.androidx.lifecycle.livedata)
     implementation(libs.androidx.cardview)
     implementation(libs.androidx.preference.ktx)
     implementation(libs.androidx.fragment.ktx)
