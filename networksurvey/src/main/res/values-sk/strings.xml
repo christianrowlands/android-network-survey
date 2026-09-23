@@ -415,7 +415,7 @@
     <string name="wifi_scan_interval_title">Interval skenovania Wi-Fi</string>
     <string name="wifi_scan_interval_description">Rýchlosť, s akou sa budú vyhľadávať Wi-Fi siete v sekundách. Nižšie hodnoty skrátia výdrž batérie.</string>
     <string name="bluetooth_scan_interval_title">Interval vyhľadávania zariadení cez Bluetooth</string>
-    <string name="bluetooth_scan_interval_description">Rýchlosť, s akou sa budú vyhľadávať zariadenia Bluetooth, vyjadrená v sekundách. Minimálna hodnota je 23 sekúnd vzhľadom na dĺžku vyhľadávania v režimoch BLE (10 s) a Classic (12 s). Nižšie hodnoty skrátia výdrž batérie.</string>
+    <string name="bluetooth_scan_interval_description">Rýchlosť, s akou sa budú vyhľadávať zariadenia Bluetooth, vyjadrená v sekundách. Minimálna hodnota je 24 sekúnd vzhľadom na dĺžku vyhľadávania v režimoch BLE (10 s) a Classic (12 s). Nižšie hodnoty skrátia výdrž batérie.</string>
     <plurals name="bluetooth_scan_interval_below_minimum">
         <item quantity="one">Interval vyhľadávania zariadení cez Bluetooth musí byť aspoň %d sekundu. Hodnota bola nastavená na minimum.</item>
         <item quantity="few">Interval vyhľadávania zariadení cez Bluetooth musí byť aspoň %d sekundy. Hodnota bola nastavená na minimum.</item>
